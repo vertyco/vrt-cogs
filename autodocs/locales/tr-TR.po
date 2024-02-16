@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-10-26 15:33-0400\n"
-"PO-Revision-Date: 2023-10-26 20:37\n"
+"POT-Creation-Date: 2024-02-08 18:30-0500\n"
+"PO-Revision-Date: 2024-02-08 23:51\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -40,55 +40,59 @@ msgstr "{}\n"
 msgid "No data to delete"
 msgstr "Silinecek veri yok"
 
-#: autodocs.py:56
+#: autodocs.py:58
 msgid "name"
 msgstr "isim"
 
-#: autodocs.py:56
+#: autodocs.py:58
 msgid "text"
 msgstr "metin"
 
-#: autodocs.py:59
+#: autodocs.py:61
 msgid "Help"
 msgstr "Yardım"
 
-#: autodocs.py:66
+#: autodocs.py:68
 msgid "{} cog description"
 msgstr "{} dişli açıklaması"
 
-#: autodocs.py:116
+#: autodocs.py:120
 msgid "Create docs for a cog"
 msgstr "Bir dişli için doküman oluşturun"
 
-#: autodocs.py:118
+#: autodocs.py:122
 msgid "The name of the cog you want to make docs for (Case Sensitive)"
 msgstr "Dokümantasyonunu oluşturmak istediğiniz dişlinin adı (Büyük/Küçük Harfe Duyarlı)"
 
-#: autodocs.py:119
+#: autodocs.py:123
 msgid "Replace all occurrences of [p] with the bots prefix"
 msgstr "Bots önekiyle [p] tüm geçtiği yerleri değiştirin"
 
-#: autodocs.py:120
+#: autodocs.py:124
 msgid "Replace all occurrences of [botname] with the bots name"
 msgstr "Botname] ifadesinin tüm geçtiği yerleri botun adıyla değiştirin"
 
-#: autodocs.py:121
+#: autodocs.py:125
 msgid "Include extra info like converters and their docstrings"
 msgstr "Dönüştürücüler ve dokümanları gibi ekstra bilgileri dahil edin"
 
-#: autodocs.py:122
+#: autodocs.py:126
 msgid "Include hidden commands"
 msgstr "Gizli komutları dahil edin"
 
-#: autodocs.py:123
+#: autodocs.py:127
 msgid "Hide commands above specified privilege level (user, mod, admin, guildowner, botowner)"
 msgstr "Belirtilen ayrıcalık seviyesinin üzerindeki komutları gizle (kullanıcı, mod, yönetici, lonca sahibi, bot sahibi)"
 
-#: autodocs.py:124
+#: autodocs.py:128
 msgid "Include a csv with each command isolated per row"
 msgstr "Her komutu ayrı bir satırda izole edilmiş bir csv dosyası ekleyin"
 
-#: autodocs.py:139
+#: autodocs.py:129
+msgid "Hide commands below specified privilege level (user, mod, admin, guildowner, botowner)"
+msgstr ""
+
+#: autodocs.py:145
 #, docstring
 msgid "\n"
 "        Create a Markdown docs page for a cog and send to discord\n\n"
@@ -117,133 +121,133 @@ msgstr "\n"
 "`csv_export:         `(bool) Gömülü olarak kullanılmak üzere her komutu ayrı bir satırda içeren bir csv ekler\n\n"
 "**Not** Eğer cog_name için `all` belirtilirse, şu anda yüklenmiş olan çekirdek olmayan tüm dişliler için dokümantasyon oluşturulacak ve bir zip dosyası içinde gönderilecektir "
 
-#: autodocs.py:159
+#: autodocs.py:166
 msgid "AllCogDocs"
 msgstr "AllCogDocs"
 
-#: autodocs.py:199
+#: autodocs.py:208
 msgid "Here are the docs for all of your currently loaded cogs!"
 msgstr "İşte şu anda yüklü olan tüm çarklarınız için dokümanlar!"
 
-#: autodocs.py:203
+#: autodocs.py:212
 msgid "I could not find that cog, maybe it is not loaded?"
 msgstr "O dişliyi bulamadım, belki de yüklenmemiştir?"
 
-#: autodocs.py:225
+#: autodocs.py:236
 msgid "Here are your docs for {}!"
 msgstr "İşte {} için belgeleriniz!"
 
-#: autodocs.py:298
+#: autodocs.py:309
 #, docstring
 msgid "Registers a command with Assistant enabling it to access to command docs"
 msgstr ""
 
-#: converters.py:65
+#: converters.py:64
 msgid "A single word, if not using slash and multiple words are necessary use a quote e.g \"Hello world\"."
 msgstr "Tek bir kelime, eğik çizgi kullanılmıyorsa ve birden fazla kelime gerekiyorsa tırnak işareti kullanın, örneğin \"Merhaba dünya\"."
 
-#: converters.py:66
+#: converters.py:65
 msgid "A number without decimal places."
 msgstr "Ondalık basamakları olmayan bir sayı."
 
-#: converters.py:67
+#: converters.py:66
 msgid "A number with or without decimal places."
 msgstr "Ondalık basamaklı veya ondalık basamaksız bir sayı."
 
-#: converters.py:68
+#: converters.py:67
 msgid "Can be 1, 0, true, false, t, f"
 msgstr "1, 0, doğru, yanlış, t, f olabilir"
 
-#: formatter.py:41
+#: formatter.py:40
 #, docstring
 msgid "Formats documentation for a single command"
 msgstr "Tek bir komut için belgelemeyi biçimlendirir"
 
-#: formatter.py:102
+#: formatter.py:101
 msgid "per"
 msgstr "başına"
 
-#: formatter.py:103
+#: formatter.py:102
 msgid "seconds"
 msgstr "saniye"
 
-#: formatter.py:104
+#: formatter.py:103
 msgid "second"
 msgstr "ikinci"
 
-#: formatter.py:114
+#: formatter.py:112
 msgid "Slash"
 msgstr "Slash"
 
-#: formatter.py:115
+#: formatter.py:113
 msgid "Command"
 msgstr "Komuta"
 
-#: formatter.py:119
+#: formatter.py:117
 msgid "Hybrid"
 msgstr "Hibrit"
 
-#: formatter.py:127
+#: formatter.py:125
 msgid "Usage"
 msgstr "Kullanım"
 
-#: formatter.py:128
+#: formatter.py:126
 msgid "Checks"
 msgstr "Çekler"
 
-#: formatter.py:140
+#: formatter.py:138
 msgid "Required"
 msgstr "Gerekli"
 
-#: formatter.py:144
+#: formatter.py:142
 msgid "Optional"
 msgstr "Opsiyonel"
 
-#: formatter.py:156
+#: formatter.py:154
 msgid "Server Only"
 msgstr "Yalnızca Sunucu"
 
-#: formatter.py:187
+#: formatter.py:188
 msgid "Restricted to"
 msgstr "Kısıtlı"
 
-#: formatter.py:191
+#: formatter.py:192
 msgid "Aliases"
 msgstr "Takma Adlar"
 
-#: formatter.py:194
+#: formatter.py:195
 msgid "Cooldown"
 msgstr "Bekleme Süresi"
 
-#: formatter.py:215
+#: formatter.py:216
 msgid "Could not get docstring or class for {} converter"
 msgstr "{} dönüştürücü için docstring veya sınıf alınamadı"
 
-#: formatter.py:219 formatter.py:279
+#: formatter.py:220 formatter.py:280
 msgid "Could not get docstring for {} converter"
 msgstr "{} dönüştürücü için doküman dizini alınamadı"
 
-#: formatter.py:223
+#: formatter.py:224
 msgid "Could not get class for {} converter"
 msgstr "{} dönüştürücü için sınıf alınamadı"
 
-#: formatter.py:232
+#: formatter.py:233
 msgid "Autocomplete"
 msgstr "Otomatik Tamamlama"
 
-#: formatter.py:236
+#: formatter.py:237
 msgid "Default"
 msgstr "Varsayılan"
 
-#: formatter.py:241
+#: formatter.py:242
 msgid "Choices"
 msgstr "Seçenekler"
 
-#: formatter.py:271
+#: formatter.py:272
 msgid "Could not find {} for the {} argument of the {} command"
 msgstr "{} komutunun {} bağımsız değişkeni için {} bulunamadı"
 
-#: formatter.py:306
+#: formatter.py:307
 msgid "Extended Arg Info\n"
 msgstr "Genişletilmiş Arg Bilgisi\n"
 

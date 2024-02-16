@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-10-07 20:44-0400\n"
-"PO-Revision-Date: 2023-10-08 14:32\n"
+"POT-Creation-Date: 2024-02-08 18:29-0500\n"
+"PO-Revision-Date: 2024-02-08 23:51\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -17,104 +17,112 @@ msgstr ""
 "X-Crowdin-File-ID: 19\n"
 "Language: ko_KR\n"
 
-#: utils\formatter.py:93
+#: utils\formatter.py:94
 msgid "None"
 msgstr "없음"
 
-#: utils\formatter.py:96
+#: utils\formatter.py:97
 msgid " second"
 msgstr " 두 번째"
 
-#: utils\formatter.py:98
+#: utils\formatter.py:99
 msgid " seconds"
 msgstr " 초"
 
-#: utils\formatter.py:101
+#: utils\formatter.py:102
 msgid " minute"
 msgstr " 분"
 
-#: utils\formatter.py:103
+#: utils\formatter.py:104
 msgid " minutes"
 msgstr " 분"
 
-#: utils\formatter.py:132
+#: utils\formatter.py:133
 #, docstring
 msgid "Get all attachments from context"
 msgstr "컨텍스트에서 모든 첨부 파일을 가져옵니다"
 
-#: utils\formatter.py:151
+#: utils\formatter.py:156
+msgid "Global Weekly "
+msgstr ""
+
+#: utils\formatter.py:156
 msgid "Weekly "
 msgstr "주간 "
 
-#: utils\formatter.py:154
+#: utils\formatter.py:159
+msgid "Global LevelUp "
+msgstr ""
+
+#: utils\formatter.py:159
 msgid "LevelUp "
 msgstr "레벨업 "
 
-#: utils\formatter.py:167
+#: utils\formatter.py:171
 msgid "Voice Leaderboard"
 msgstr "음성 리더보드"
 
-#: utils\formatter.py:170
+#: utils\formatter.py:174
 msgid "Voicetime"
 msgstr "보이스타임"
 
-#: utils\formatter.py:174
+#: utils\formatter.py:178
 msgid "Message Leaderboard"
 msgstr "메시지 리더보드"
 
-#: utils\formatter.py:177
+#: utils\formatter.py:181
 msgid "Messages"
 msgstr "메시지"
 
-#: utils\formatter.py:181
+#: utils\formatter.py:185
 msgid "Star Leaderboard"
 msgstr "스타 리더보드"
 
-#: utils\formatter.py:184
+#: utils\formatter.py:188
 msgid "Stars"
 msgstr "별"
 
-#: utils\formatter.py:188
+#: utils\formatter.py:192
 msgid "Exp Leaderboard"
 msgstr "경험치 순위표"
 
-#: utils\formatter.py:191
+#: utils\formatter.py:195
 msgid "Exp"
 msgstr "경험치"
 
-#: utils\formatter.py:196
+#: utils\formatter.py:200
 msgid "Total "
 msgstr "합계 "
 
-#: utils\formatter.py:197
+#: utils\formatter.py:203
 msgid "Last Reset: "
 msgstr "마지막 재설정: "
 
-#: utils\formatter.py:200
+#: utils\formatter.py:206
 msgid "Next Reset: "
 msgstr "다음 재설정: "
 
-#: utils\formatter.py:202
+#: utils\formatter.py:208
 msgid "Total"
 msgstr "합계"
 
-#: utils\formatter.py:210
+#: utils\formatter.py:216
 msgid "There is no data for the weekly "
 msgstr "주간에 대한 데이터가 없습니다 "
 
-#: utils\formatter.py:210 utils\formatter.py:212
+#: utils\formatter.py:216 utils\formatter.py:218
 msgid " leaderboard yet"
 msgstr " 아직 리더보드가 없습니다"
 
-#: utils\formatter.py:212
+#: utils\formatter.py:218
 msgid "There is no data for the "
 msgstr "에 대한 데이터가 없습니다 "
 
-#: utils\formatter.py:218
+#: utils\formatter.py:224
 msgid "You: "
 msgstr "안녕하세요! 어떻게 도와드릴까요? "
 
-#: utils\formatter.py:265 utils\formatter.py:267
+#: utils\formatter.py:272 utils\formatter.py:274
 msgid "Pages "
 msgstr "페이지 "
 

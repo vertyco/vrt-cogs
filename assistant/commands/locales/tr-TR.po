@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-11-07 16:20-0500\n"
-"PO-Revision-Date: 2023-11-07 22:51\n"
+"POT-Creation-Date: 2024-02-10 17:37-0500\n"
+"PO-Revision-Date: 2024-02-10 23:51\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -21,14 +21,28 @@ msgstr ""
 #, docstring
 msgid "\n"
 "        Setup the assistant\n\n"
-"        You will need an **[api key](https://platform.openai.com/account/api-keys)** from OpenAI to use ChatGPT and their other models.\n\n"
-"        This cog supports setting an endpoint override for [self-hosted](https://github.com/vertyco/gpt-api) models.\n"
+"        You will need an **[api key](https://platform.openai.com/account/api-keys)** from OpenAI to use ChatGPT and their other models.\n"
 "        "
-msgstr "        Asistanı ayarlayın\n\n"
-"        ChatGPT ve diğer modellerini kullanmak için OpenAI'den bir **[api anahtarı](https://platform.openai.com/account/api-keys)** almanız gerekecektir.\n\n"
-"        Bu dişli, [self-hosted](https://github.com/vertyco/gpt-api) modeller için bir uç nokta geçersiz kılma ayarını destekler        "
+msgstr ""
 
-#: commands\admin.py:58
+#: commands\admin.py:57
+#, docstring
+msgid "View current performance statistics about the cog"
+msgstr ""
+
+#: commands\admin.py:69
+msgid "No stats gathered yet"
+msgstr ""
+
+#: commands\admin.py:73
+msgid "- {}: {}ms, {}cpm\n"
+msgstr ""
+
+#: commands\admin.py:74
+msgid "Performance Stats"
+msgstr ""
+
+#: commands\admin.py:80
 #, docstring
 msgid "\n"
 "        View current settings\n\n"
@@ -38,238 +52,275 @@ msgstr "\n"
 "        Geçerli ayarları görüntüle\n\n"
 "        Geçerli kanalda göndermek için `[p]assistant view false` kullanın "
 
-#: commands\admin.py:66 commands\admin.py:175
-msgid "Not Set"
-msgstr "Ayarlanmamış"
-
-#: commands\admin.py:92
-msgid "{} (Global Override)"
-msgstr "{} (Global Geçersiz Kılma)"
-
-#: commands\admin.py:98
+#: commands\admin.py:99
 msgid "`OpenAI Version:      `{}\n"
 msgstr "`OpenAI Sürümü:      `{}\n"
 
-#: commands\admin.py:99
+#: commands\admin.py:100
+msgid "`OpenAI API Status:   `{}\n"
+msgstr ""
+
+#: commands\admin.py:101
 msgid "`Model:               `{}\n"
 msgstr "`Model:               `{}\n"
 
-#: commands\admin.py:100
+#: commands\admin.py:102
+msgid "`Embed Model:         `{}\n"
+msgstr ""
+
+#: commands\admin.py:103
 msgid "`Enabled:             `{}\n"
 msgstr "`Etkin:             `{}\n"
 
-#: commands\admin.py:101
+#: commands\admin.py:104
 msgid "`Timezone:            `{}\n"
 msgstr "`Zaman Dilimi:            `{}\n"
 
-#: commands\admin.py:102
+#: commands\admin.py:105
 msgid "`Channel:             `{}\n"
 msgstr "`Kanal:             `{}\n"
 
-#: commands\admin.py:103
+#: commands\admin.py:105 commands\admin.py:109 commands\admin.py:191
+msgid "Not Set"
+msgstr "Ayarlanmamış"
+
+#: commands\admin.py:106
 msgid "`? Required:          `{}\n"
 msgstr "`? Gerekli:          `{}\n"
 
-#: commands\admin.py:104
-msgid "`Mentions:            `{}\n"
-msgstr "`Bahsetmeler:            `{}\n"
-
-#: commands\admin.py:105
-msgid "`Max Retention:       `{}\n"
-msgstr "`Maksimum Tutma:       `{}\n"
-
-#: commands\admin.py:106
-msgid "`Retention Expire:    `{}s\n"
-msgstr "`Gözaltı Süresi Doldu:    `{}s\n"
-
 #: commands\admin.py:107
-msgid "`Max Tokens:          `{}\n"
-msgstr "`Maksimum Jeton:          `{}\n"
+msgid "`Question Mode:       `{}\n"
+msgstr ""
 
 #: commands\admin.py:108
-msgid "`Max Response Tokens: `{}\n"
-msgstr "`Maksimum Yanıt Belirteçleri: `{}\n"
-
-#: commands\admin.py:109
-msgid "`Min Length:          `{}\n"
-msgstr "`Min Uzunluk:          `{}\n"
-
-#: commands\admin.py:110
-msgid "`Temperature:         `{}\n"
-msgstr "`Sıcaklık:         `{}\n"
+msgid "`Training Channel:    `{}\n"
+msgstr ""
 
 #: commands\admin.py:111
-msgid "`Frequency Penalty:   `{}\n"
+msgid "`Mention on Reply:    `{}\n"
 msgstr ""
 
 #: commands\admin.py:112
-msgid "`Presence Penalty:    `{}\n"
+msgid "`Respond to Mentions: `{}\n"
 msgstr ""
 
 #: commands\admin.py:113
-msgid "`Seed:                `{}\n"
+msgid "`Collaborative Mode:  `{}\n"
 msgstr ""
 
 #: commands\admin.py:114
-msgid "`System Message:      `{} tokens\n"
-msgstr "`Sistem Mesajı:      `{} belirteçleri\n"
+msgid "`Max Retention:       `{}\n"
+msgstr "`Maksimum Tutma:       `{}\n"
 
 #: commands\admin.py:115
-msgid "`Initial Prompt:      `{} tokens\n"
-msgstr "`İlk İstem:      `{} belirteçler\n"
+msgid "`Retention Expire:    `{}s\n"
+msgstr "`Gözaltı Süresi Doldu:    `{}s\n"
+
+#: commands\admin.py:116
+msgid "`Max Tokens:          `{}\n"
+msgstr "`Maksimum Jeton:          `{}\n"
+
+#: commands\admin.py:117
+msgid "`Max Response Tokens: `{}\n"
+msgstr "`Maksimum Yanıt Belirteçleri: `{}\n"
+
+#: commands\admin.py:118
+msgid "`Min Length:          `{}\n"
+msgstr "`Min Uzunluk:          `{}\n"
 
 #: commands\admin.py:119
+msgid "`Temperature:         `{}\n"
+msgstr "`Sıcaklık:         `{}\n"
+
+#: commands\admin.py:120
+msgid "`Frequency Penalty:   `{}\n"
+msgstr ""
+
+#: commands\admin.py:121
+msgid "`Presence Penalty:    `{}\n"
+msgstr ""
+
+#: commands\admin.py:122
+msgid "`Seed:                `{}\n"
+msgstr ""
+
+#: commands\admin.py:123
+msgid "`System Prompt:       `{} tokens\n"
+msgstr ""
+
+#: commands\admin.py:124
+msgid "`User Prompt:         `{} tokens\n"
+msgstr ""
+
+#: commands\admin.py:128
 msgid "Assistant Settings"
 msgstr "Asistan Ayarları"
 
-#: commands\admin.py:127
+#: commands\admin.py:134
+msgid "System prompt override is **Allowed**, users can set a personal system prompt per convo."
+msgstr ""
+
+#: commands\admin.py:136
+msgid "System prompt override is **Disabled**, users cannot set a personal system prompt per convo."
+msgstr ""
+
+#: commands\admin.py:137
+msgid "\n"
+"*This will be restricted to mods if collaborative conversations are enabled!*"
+msgstr ""
+
+#: commands\admin.py:138
+msgid "System Prompt Overriding"
+msgstr ""
+
+#: commands\admin.py:143
 msgid "Mixed (Please Refresh!)"
 msgstr "Karışık (Lütfen Yenileyin!)"
 
-#: commands\admin.py:129
+#: commands\admin.py:145
 msgid "Synced!"
 msgstr "Senkronize!"
 
-#: commands\admin.py:131
+#: commands\admin.py:147
 msgid "N/A"
 msgstr "N/A"
 
-#: commands\admin.py:134
+#: commands\admin.py:150
 msgid "`Top N Embeddings:  `{}\n"
 msgstr "`En İyi N Gömme:  `{}\\n\n"
 
-#: commands\admin.py:135
+#: commands\admin.py:151
 msgid "`Min Relatedness:   `{}\n"
 msgstr "`Min Akrabalık:   `{}\n"
 
-#: commands\admin.py:136
+#: commands\admin.py:152
 msgid "`Embedding Method:  `{}\n"
 msgstr "`Embedding Yöntemi:  `{}\n"
 
-#: commands\admin.py:137
+#: commands\admin.py:153
 msgid "`Encodings:         `{}"
 msgstr ""
 
-#: commands\admin.py:141
+#: commands\admin.py:157
 msgid "Embeddings ({})"
 msgstr "Gömüler ({})"
 
-#: commands\admin.py:147
-msgid "The following roles/users are considered tutors, if function calls are on the model can create its own embeddings: "
-msgstr "Aşağıdaki roller/kullanıcılar eğitmen olarak kabul edilir, eğer fonksiyon çağrıları model üzerindeyse kendi katıştırmalarını oluşturabilir: "
+#: commands\admin.py:163
+msgid "The following roles/users are considered tutors. If function calls are on and create_memory is enabled, the model can create its own embeddings: "
+msgstr ""
 
-#: commands\admin.py:156
+#: commands\admin.py:172
 msgid "`Function Calling:  `{}\n"
 msgstr "`Fonksiyon Çağrısı:  `{}\\n\n"
 
-#: commands\admin.py:157
+#: commands\admin.py:173
 msgid "`Maximum Recursion: `{}\n"
 msgstr "`Maksimum Yineleme: `{}\n"
 
-#: commands\admin.py:158
+#: commands\admin.py:174
 msgid "`Function Tokens:   `{}\n"
 msgstr "`Fonksiyon Belirteçleri:   `{}\n"
 
-#: commands\admin.py:162
+#: commands\admin.py:178
 msgid "The following cogs also have functions registered with the assistant\n"
 "{}"
 msgstr "Aşağıdaki çarkların da asistana kayıtlı işlevleri vardır\n"
 "{}"
 
-#: commands\admin.py:167
+#: commands\admin.py:183
 msgid "Custom Functions ({})"
 msgstr "Özel İşlevler ({})"
 
-#: commands\admin.py:174
+#: commands\admin.py:190
 msgid "OpenAI Key"
 msgstr "OpenAI Anahtarı"
 
-#: commands\admin.py:182
+#: commands\admin.py:198
 msgid "Regex Blacklist"
 msgstr "Regex Kara Listesi"
 
-#: commands\admin.py:184
+#: commands\admin.py:200
 msgid "Regex Failure Blocking"
 msgstr "Regex Hata Engelleme"
 
-#: commands\admin.py:185
+#: commands\admin.py:201
 msgid "Block reply if regex replacement fails: **{}**"
 msgstr "Regex değiştirme başarısız olursa yanıtı engelleyin: **{}**"
 
-#: commands\admin.py:190
+#: commands\admin.py:206
 msgid "Conversations are stored persistently"
 msgstr "Görüşmeler kalıcı olarak saklanır"
 
-#: commands\admin.py:192
+#: commands\admin.py:208
 msgid "conversations are stored in memory until reboot or reload"
 msgstr "Konuşmalar yeniden başlatma veya yeniden yüklemeye kadar bellekte saklanır"
 
-#: commands\admin.py:194
+#: commands\admin.py:210
 msgid "Persistent Conversations"
 msgstr "Kalıcı Görüşmeler"
 
-#: commands\admin.py:208
+#: commands\admin.py:224
 msgid "Blacklist"
 msgstr "Kara Liste"
 
-#: commands\admin.py:220
+#: commands\admin.py:236
 msgid "Model Role Overrides"
 msgstr "Model Rol Geçersiz Kılmaları"
 
-#: commands\admin.py:231
+#: commands\admin.py:247
 msgid "Max Token Role Overrides"
 msgstr "Maksimum Belirteç Rol Geçersiz Kılmaları"
 
-#: commands\admin.py:242
+#: commands\admin.py:258
 msgid "Max Message Retention Role Overrides"
 msgstr "Maksimum Mesaj Saklama Rol Geçersiz Kılmaları"
 
-#: commands\admin.py:254
+#: commands\admin.py:270
 msgid "Max Message Retention Time Role Overrides"
 msgstr "Maksimum Mesaj Saklama Süresi Rol Geçersiz Kılmaları"
 
-#: commands\admin.py:268
+#: commands\admin.py:284
 msgid "Max Response Token Role Overrides"
 msgstr "Maksimum Yanıt Belirteci Rol Geçersiz Kılmaları"
 
-#: commands\admin.py:270
+#: commands\admin.py:286
 msgid "Showing settings for {}"
 msgstr "{} için ayarlar gösteriliyor"
 
-#: commands\admin.py:276
+#: commands\admin.py:292
 msgid "SystemPrompt"
 msgstr "Sistem İsteği"
 
-#: commands\admin.py:282
+#: commands\admin.py:298
 msgid "InitialPrompt"
 msgstr "Başlangıç İsteği"
 
-#: commands\admin.py:292
+#: commands\admin.py:308
 msgid "Sent your current settings for this server in DMs!"
 msgstr "Bu sunucu için mevcut ayarlarınızı DM'lerde gönderin!"
 
-#: commands\admin.py:294
+#: commands\admin.py:310
 msgid "You need to allow DMs so I can message you!"
 msgstr "Size mesaj gönderebilmem için DM'lere izin vermelisiniz!"
 
-#: commands\admin.py:301
+#: commands\admin.py:317
 #, docstring
 msgid "View the token usage stats for this server"
 msgstr "Bu sunucunun belirteç kullanım istatistiklerini görüntüleyin"
 
-#: commands\admin.py:304
+#: commands\admin.py:320
 msgid "There is no usage data yet!"
 msgstr "Henüz kullanım verisi yok!"
 
-#: commands\admin.py:330
+#: commands\admin.py:346
 msgid "`Total:  `{} (${} @ ${}/1k tokens)"
 msgstr "`Toplam: `{} (${} @ ${}/1k belirteç)"
 
-#: commands\admin.py:337
+#: commands\admin.py:353
 msgid "Free/Self-Hosted"
 msgstr "Ücretsiz/Self-Hosted"
 
-#: commands\admin.py:341
+#: commands\admin.py:357
 msgid "`Input:  `{} (${} @ ${}/1k tokens)\n"
 "`Output: `{} (${} @ ${}/1k tokens)\n"
 "`Total:  `{} (${})"
@@ -277,68 +328,66 @@ msgstr "`Girdi: `{} (${} @ ${}/1k belirteç)\n"
 "`Çıktı: `{} (${} @ ${}/1k belirteç)\n"
 "`Toplam: `{} (${})"
 
-#: commands\admin.py:355
-msgid "**Overall Token Usage and Cost**\n"
-"`Input:  `{} (${})\n"
-"`Output: `{} (${})\n"
-"`Total:  `{} (${})"
-msgstr "**Toplam Token Kullanımı ve Maliyeti**\n"
-"`Girdi:  `{0} ({1})\n"
-"`Çıktı: `{2} ({3})\n"
-"`Toplam: `{4} ({5})"
-
 #: commands\admin.py:371
+msgid "**Overall Token Usage and Cost**\n"
+"`Input:      `{} (${})\n"
+"`Output:     `{} (${})\n"
+"`Total:      `{} (${})\n"
+"`Tool Calls: `{}\n"
+msgstr ""
+
+#: commands\admin.py:392
 #, docstring
 msgid "Reset the token usage stats for this server"
 msgstr "Bu sunucu için belirteç kullanım istatistiklerini sıfırlayın"
 
-#: commands\admin.py:374
+#: commands\admin.py:395
 msgid "Token usage stats have been reset!"
 msgstr "Token kullanım istatistikleri sıfırlandı!"
 
-#: commands\admin.py:380
+#: commands\admin.py:401
 #, docstring
 msgid "\n"
-"        Set your OpenAI key\n\n"
-"        Setting this will disable any endpoint overrides you have for this server.\n"
+"        Set your OpenAI key\n"
 "        "
 msgstr ""
 
-#: commands\admin.py:388
+#: commands\admin.py:407
 msgid "Click to set your OpenAI key\n\n"
 "To remove your keys, enter `none`"
 msgstr "OpenAI anahtarınızı ayarlamak için tıklayın\n\n"
 "Anahtarlarınızı kaldırmak için `none` girin"
 
-#: commands\admin.py:396
+#: commands\admin.py:415
 msgid "OpenAI key has been removed!"
 msgstr "OpenAI anahtarı kaldırıldı!"
 
-#: commands\admin.py:399
+#: commands\admin.py:418
 msgid "No API key was entered!"
 msgstr "API anahtarı girilmedi!"
 
-#: commands\admin.py:402
+#: commands\admin.py:421
 msgid "OpenAI key has been set!"
 msgstr "OpenAI anahtarı ayarlandı!"
 
-#: commands\admin.py:408
+#: commands\admin.py:427
 #, docstring
 msgid "Set the timezone used for prompt placeholders"
 msgstr "Bilgi istemi yer tutucuları için kullanılan saat dilimini ayarlayın"
 
-#: commands\admin.py:414
+#: commands\admin.py:433
 msgid "Invalid Timezone, did you mean `{}`?"
 msgstr "Geçersiz Zaman Dilimi, `{}` mi demek istediniz?"
 
-#: commands\admin.py:416
+#: commands\admin.py:435
 msgid "Timezone set to **{}** (`{}`)"
 msgstr "Saat dilimi **{}** (`{}`) olarak ayarlandı"
 
-#: commands\admin.py:423
+#: commands\admin.py:442
 #, docstring
 msgid "\n"
 "        Set the initial prompt for GPT to use\n\n"
+"        Check out [This Guide](https://platform.openai.com/docs/guides/prompt-engineering) for prompting help.\n\n"
 "        **Placeholders**\n"
 "        - **botname**: [botname]\n"
 "        - **timestamp**: discord timestamp\n"
@@ -367,69 +416,41 @@ msgid "\n"
 "        - **bank**: bank name\n"
 "        - **balance**: the user's current balance\n"
 "        "
-msgstr "\n"
-"        GPT'nin kullanması için başlangıç ​​ipucunu ayarlayın\n\n"
-"        **Yer tutucular**\n"
-"        - **botname**: [botname]\n"
-"        - **timestamp**: discord zaman damgası\n"
-"        - **gün**: Pazartesi-Pazar\n"
-"        - **tarih**: MM-DD-YYYY\n"
-"        - **zaman**: HH:MM AM/PM\n"
-"        - **timetz**: HH:MM AM/PM Saat Dilimi\n"
-"        - **members**: sunucu üye sayısı\n"
-"        - **kullanıcıadı**: kullanıcının adı\n"
-"        - **displayname**: kullanıcının görünen adı\n"
-"        - **roles**: kullanıcının rollerinin adları\n"
-"        - **rolementions**: kullanıcının rollerinden bahsedenler\n"
-"        - **avatar**: kullanıcının avatar url'si\n"
-"        - **owner**: sunucunun sahibi\n"
-"        - **servercreated**: sunucunun oluşturulma tarihi/saati\n"
-"        - **sunucu**: sunucunun adı\n"
-"        - **py**: python sürümü\n"
-"        - **dpy**: discord.py sürümü\n"
-"        - **kırmızı**: kırmızı versiyon\n"
-"        - **cogs**: şu anda yüklü olan çarkların listesi\n"
-"        - **kanaladı**: görüşmenin gerçekleştiği kanalın adı\n"
-"        - **channelmention**: mevcut kanal adı\n"
-"        - **topic**: mevcut kanalın konusu (eğer forum veya konu başlığı değilse)\n"
-"        - **banka türü**: bankanın küresel olup olmadığı\n"
-"        - **currency**: para birimi adı\n"
-"        - **bank**: banka adı\n"
-"        - **bakiye**: kullanıcının mevcut bakiyesi\n"
-"        "
+msgstr ""
 
-#: commands\admin.py:459 commands\admin.py:537
+#: commands\admin.py:480 commands\admin.py:560 commands\base.py:309
 msgid "Failed to read `{}`, bot owner can use `{}` for more information"
 msgstr "`{}` okunamadı, bot sahibi daha fazla bilgi için `{}` kullanabilir"
 
-#: commands\admin.py:475 commands\admin.py:554
+#: commands\admin.py:496 commands\admin.py:577
 msgid "Your system and initial prompt combined will use {} tokens!\n"
 "Write a prompt combination using {} tokens or less to leave 10% of your configured max tokens for your response."
 msgstr "Sisteminiz ve başlangıç ​​istemi birlikte {} belirteç kullanacak!\n"
 "Yanıtınız için yapılandırılan maksimum belirteçlerin %10'unu bırakmak için {} belirteç veya daha azını kullanarak bir istem kombinasyonu yazın."
 
-#: commands\admin.py:483
+#: commands\admin.py:504
 msgid "The initial prompt has been removed!"
 msgstr "İlk komut istemi kaldırıldı!"
 
-#: commands\admin.py:486
+#: commands\admin.py:507
 msgid "Please include an initial prompt or .txt file!\n"
 "Use `{}` to view details for this command"
 msgstr "Lütfen bir başlangıç istemi veya .txt dosyası ekleyin!\n"
 "Bu komutun ayrıntılarını görüntülemek için `{}` kullanın"
 
-#: commands\admin.py:492
+#: commands\admin.py:513
 msgid "The initial prompt has been overwritten!"
 msgstr "İlk bilgi istemi üzerine yazıldı!"
 
-#: commands\admin.py:495
+#: commands\admin.py:516
 msgid "Initial prompt has been set!"
 msgstr "İlk istem ayarlandı!"
 
-#: commands\admin.py:501
+#: commands\admin.py:522
 #, docstring
 msgid "\n"
 "        Set the system prompt for GPT to use\n\n"
+"        Check out [This Guide](https://platform.openai.com/docs/guides/prompt-engineering) for prompting help.\n\n"
 "        **Placeholders**\n"
 "        - **botname**: [botname]\n"
 "        - **timestamp**: discord timestamp\n"
@@ -458,111 +479,125 @@ msgid "\n"
 "        - **bank**: bank name\n"
 "        - **balance**: the user's current balance\n"
 "        "
-msgstr "\n"
-"        GPT'nin kullanması için sistem istemini ayarlayın\n\n"
-"        **Yer tutucular**\n"
-"        - **botname**: [botname]\n"
-"        - **timestamp**: discord zaman damgası\n"
-"        - **gün**: Pazartesi-Pazar\n"
-"        - **tarih**: MM-DD-YYYY\n"
-"        - **zaman**: HH:MM AM/PM\n"
-"        - **timetz**: HH:MM AM/PM Saat Dilimi\n"
-"        - **members**: sunucu üye sayısı\n"
-"        - **kullanıcıadı**: kullanıcının adı\n"
-"        - **displayname**: kullanıcının görünen adı\n"
-"        - **roles**: kullanıcının rollerinin adları\n"
-"        - **rolementions**: kullanıcının rollerinden bahsedenler\n"
-"        - **avatar**: kullanıcının avatar url'si\n"
-"        - **owner**: sunucunun sahibi\n"
-"        - **servercreated**: sunucunun oluşturulma tarihi/saati\n"
-"        - **sunucu**: sunucunun adı\n"
-"        - **py**: python sürümü\n"
-"        - **dpy**: discord.py sürümü\n"
-"        - **kırmızı**: kırmızı versiyon\n"
-"        - **cogs**: şu anda yüklü olan çarkların listesi\n"
-"        - **kanaladı**: görüşmenin gerçekleştiği kanalın adı\n"
-"        - **channelmention**: mevcut kanal adı\n"
-"        - **topic**: mevcut kanalın konusu (eğer forum veya konu başlığı değilse)\n"
-"        - **banka türü**: bankanın küresel olup olmadığı\n"
-"        - **currency**: para birimi adı\n"
-"        - **bank**: banka adı\n"
-"        - **bakiye**: kullanıcının mevcut bakiyesi "
+msgstr ""
 
-#: commands\admin.py:562
+#: commands\admin.py:585
 msgid "The system prompt has been removed!"
 msgstr "Sistem istemi kaldırıldı!"
 
-#: commands\admin.py:565
+#: commands\admin.py:588
 msgid "Please include a system prompt or .txt file!\n"
 "Use `{}` to view details for this command"
 msgstr "Lütfen bir sistem istemi veya .txt dosyası ekleyin!\n"
 "Bu komutun ayrıntılarını görüntülemek için `{}` kullanın"
 
-#: commands\admin.py:571
+#: commands\admin.py:594
 msgid "The system prompt has been overwritten!"
 msgstr "Sistem istemi üzerine yazıldı!"
 
-#: commands\admin.py:574
+#: commands\admin.py:597
 msgid "System prompt has been set!"
 msgstr "Sistem istemi ayarlandı!"
 
-#: commands\admin.py:588
+#: commands\admin.py:611
 #, docstring
 msgid "Set the channel for the assistant"
 msgstr "Asistan için kanalı ayarlayın"
 
-#: commands\admin.py:593
+#: commands\admin.py:616
 msgid "Assistant channel has been removed"
 msgstr "Asistan kanalı kaldırıldı"
 
-#: commands\admin.py:596
+#: commands\admin.py:619
 msgid "Assistant channel has been overwritten"
 msgstr "Yardımcı kanalın üzerine yazıldı"
 
-#: commands\admin.py:599
+#: commands\admin.py:622
 msgid "Channel id has been set"
 msgstr "Kanal kimliği ayarlandı"
 
-#: commands\admin.py:605
+#: commands\admin.py:628
+#, docstring
+msgid "Toggle allowing per-conversation system prompt overriding"
+msgstr ""
+
+#: commands\admin.py:632
+msgid "System prompt overriding **Disabled**, users cannot set per-convo system prompts"
+msgstr ""
+
+#: commands\admin.py:635
+msgid "System prompt overriding **Enabled**, users can now set per-convo system prompts"
+msgstr ""
+
+#: commands\admin.py:640
 #, docstring
 msgid "Toggle whether questions need to end with **__?__**"
 msgstr "Soruların **__?__** ile bitmesi gerekip gerekmediğini değiştirin"
 
-#: commands\admin.py:609
+#: commands\admin.py:644
 msgid "Questions will be answered regardless of if they end with **?**"
 msgstr "Sorular **?** ile bitse de bitmese de yanıtlanacaktır"
 
-#: commands\admin.py:612
+#: commands\admin.py:647
 msgid "Questions must end in **?** to be answered"
 msgstr "Soruların cevaplanabilmesi için **?** ile bitmesi gerekir"
 
-#: commands\admin.py:617
+#: commands\admin.py:652
+#, docstring
+msgid "Toggle whether the bot responds to mentions in any channel"
+msgstr ""
+
+#: commands\admin.py:656
+msgid "The bot will no longer respond to mentions"
+msgstr ""
+
+#: commands\admin.py:659
+msgid "The bot will now respond to mentions"
+msgstr ""
+
+#: commands\admin.py:664
 #, docstring
 msgid "Toggle the assistant on or off"
 msgstr "Asistanı aç veya kapat"
 
-#: commands\admin.py:621
+#: commands\admin.py:668
 msgid "The assistant is now **Disabled**"
 msgstr "Asistan artık **Devre Dışı**"
 
-#: commands\admin.py:624
+#: commands\admin.py:671
 msgid "The assistant is now **Enabled**"
 msgstr "Asistan şimdi **Etkin**"
 
-#: commands\admin.py:629
+#: commands\admin.py:676
 #, docstring
 msgid "Toggle whether to ping the user on replies"
 msgstr "Yanıtlarda kullanıcıya ping atılıp atılmayacağını değiştir"
 
-#: commands\admin.py:633
+#: commands\admin.py:680
 msgid "Mentions are now **Disabled**"
 msgstr "Mansiyonlar artık **Devre Dışı**"
 
-#: commands\admin.py:636
+#: commands\admin.py:683
 msgid "Mentions are now **Enabled**"
 msgstr "Mansiyonlar artık **Etkin**"
 
-#: commands\admin.py:641
+#: commands\admin.py:688
+#, docstring
+msgid "\n"
+"        Toggle collaborative conversations\n\n"
+"        Multiple people speaking in a channel will be treated as a single conversation.\n"
+"        "
+msgstr ""
+
+#: commands\admin.py:696
+msgid "Collaborative conversations are now **Disabled**"
+msgstr ""
+
+#: commands\admin.py:699
+msgid "Collaborative conversations are now **Enabled**"
+msgstr ""
+
+#: commands\admin.py:704
 #, docstring
 msgid "\n"
 "        Set the max messages for a conversation\n\n"
@@ -580,19 +615,19 @@ msgstr "\n"
 "Görüşme saklama özelliğini devre dışı bırakmak için 0 olarak ayarlayın.\n\n"
 "**Not:** *API çağrısı sırasında gerçek mesaj sayısı maksimum saklama süresini aşabilir* "
 
-#: commands\admin.py:654 commands\admin.py:1561
+#: commands\admin.py:717 commands\admin.py:1759
 msgid "Max retention needs to be at least 0 or higher"
 msgstr "Maksimum tutma süresi en az 0 veya daha yüksek olmalıdır"
 
-#: commands\admin.py:658
+#: commands\admin.py:721
 msgid "Conversation retention has been disabled"
 msgstr "Görüşme saklama devre dışı bırakıldı"
 
-#: commands\admin.py:660
+#: commands\admin.py:723
 msgid "Conversations can now retain up to **{}** messages"
 msgstr "Konuşmalar artık **{}** mesaja kadar saklanabilir"
 
-#: commands\admin.py:665
+#: commands\admin.py:728
 #, docstring
 msgid "\n"
 "        Set the conversation expiration time\n\n"
@@ -606,19 +641,19 @@ msgstr "\n"
 "        bu sadece bundan sonra kullanıcı ve bot arasındaki herhangi bir konuşma için geçerlidir.\n\n"
 "        Konuşmaları süresiz olarak veya bot yeniden başlatılana ya da dişli yeniden yüklenene kadar saklamak için 0 olarak ayarlayın "
 
-#: commands\admin.py:674 commands\admin.py:1584
+#: commands\admin.py:737 commands\admin.py:1782
 msgid "Max retention time needs to be at least 0 or higher"
 msgstr "Maksimum alıkoyma süresi en azından 0 veya daha yüksek olmalıdır"
 
-#: commands\admin.py:678
+#: commands\admin.py:741
 msgid "Conversations will be stored until the bot restarts or the cog is reloaded"
 msgstr "Konuşmalar, bot yeniden başlatılana veya dişli yeniden yüklenene kadar saklanacaktır"
 
-#: commands\admin.py:680
+#: commands\admin.py:743
 msgid "Conversations will be considered active for **{}** seconds"
 msgstr "Görüşmeler **{}** saniye boyunca aktif olarak kabul edilecektir"
 
-#: commands\admin.py:685
+#: commands\admin.py:748
 #, docstring
 msgid "\n"
 "        Set the temperature for the model (0.0 - 2.0)\n"
@@ -627,15 +662,15 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: commands\admin.py:692
+#: commands\admin.py:755
 msgid "Temperature must be between **0.0** and **2.0**"
 msgstr "Sıcaklık **0.0** ile **2.0** arasında olmalıdır"
 
-#: commands\admin.py:697
+#: commands\admin.py:760
 msgid "Temperature has been set to **{}**"
 msgstr "Sıcaklık **{}** olarak ayarlandı"
 
-#: commands\admin.py:701
+#: commands\admin.py:764
 #, docstring
 msgid "\n"
 "        Set the frequency penalty for the model (-2.0 to 2.0)\n"
@@ -644,15 +679,15 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: commands\admin.py:708
+#: commands\admin.py:771
 msgid "Frequency penalty must be between **-2.0** and **2.0**"
 msgstr ""
 
-#: commands\admin.py:713
+#: commands\admin.py:776
 msgid "Frequency penalty has been set to **{}**"
 msgstr ""
 
-#: commands\admin.py:717
+#: commands\admin.py:780
 #, docstring
 msgid "\n"
 "        Set the presence penalty for the model (-2.0 to 2.0)\n"
@@ -661,15 +696,15 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: commands\admin.py:724
+#: commands\admin.py:787
 msgid "Presence penalty must be between **-2.0** and **2.0**"
 msgstr ""
 
-#: commands\admin.py:729
+#: commands\admin.py:792
 msgid "Presence penalty has been set to **{}**"
 msgstr ""
 
-#: commands\admin.py:733
+#: commands\admin.py:796
 #, docstring
 msgid "\n"
 "        Make the model more deterministic by setting a seed for the model.\n"
@@ -678,35 +713,32 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: commands\admin.py:740
+#: commands\admin.py:803
 msgid "Seed must be a positive integer"
 msgstr ""
 
-#: commands\admin.py:744
+#: commands\admin.py:807
 msgid "The seed has been set to **{}**"
 msgstr ""
 
-#: commands\admin.py:748
+#: commands\admin.py:811
 #, docstring
 msgid "\n"
 "        Refresh embedding weights\n\n"
-"        *This command can be used when changing the embedding method you use with your self-hosted llm*\n\n"
+"        *This command can be used when changing the embedding model*\n\n"
 "        Embeddings that were created using OpenAI cannot be use with the self-hosted model and vice versa\n"
 "        "
-msgstr "\n"
-"        Gömme ağırlıklarını yenileyin\n\n"
-"        *Bu komut, kendi barındırdığınız llm* ile kullandığınız gömme yöntemini değiştirirken kullanılabilir\n\n"
-"        OpenAI kullanılarak oluşturulan gömüler, kendi kendine barındırılan modelle kullanılamaz ve bunun tersi de geçerlidir "
+msgstr ""
 
-#: commands\admin.py:761
+#: commands\admin.py:824
 msgid "{} embeddings have been updated"
 msgstr "{} katıştırmaları güncellendi"
 
-#: commands\admin.py:763
+#: commands\admin.py:826
 msgid "No embeddings needed to be refreshed"
 msgstr "Yerleştirmelerin yenilenmesine gerek yok"
 
-#: commands\admin.py:767
+#: commands\admin.py:830
 #, docstring
 msgid "Toggle whether GPT can call functions\n\n"
 "        Only the following models can call functions at the moment (With OpenAI key only)\n"
@@ -723,15 +755,15 @@ msgstr "GPT'nin fonksiyonları çağırıp çağıramayacağını değiştir\n\n
 "        - gpt-4-32k\n"
 "        "
 
-#: commands\admin.py:778
+#: commands\admin.py:841
 msgid "Assistant will not call functions"
 msgstr "Asistan fonksiyonları çağırmayacak"
 
-#: commands\admin.py:781
+#: commands\admin.py:844
 msgid "Assistant will now call functions as needed"
 msgstr "Asistan artık gerektiğinde fonksiyonları çağıracak"
 
-#: commands\admin.py:786
+#: commands\admin.py:849
 #, docstring
 msgid "Set the maximum function calls allowed in a row\n\n"
 "        This sets how many times the model can call functions in a row\n\n"
@@ -749,15 +781,15 @@ msgstr "Bir satırda izin verilen maksimum işlev çağrısını ayarlama\n\n"
 "- gpt-4\n"
 "- gpt-4-32k "
 
-#: commands\admin.py:799
+#: commands\admin.py:862
 msgid "Function calls will not be used since recursion is 0"
 msgstr "Özyineleme 0 olduğu için fonksiyon çağrıları kullanılmayacaktır"
 
-#: commands\admin.py:801
+#: commands\admin.py:864
 msgid "The model can now call various functions up to {} times before returning a response"
 msgstr "Model artık bir yanıt döndürmeden önce çeşitli işlevleri {} defa çağırabilir"
 
-#: commands\admin.py:807
+#: commands\admin.py:870
 #, docstring
 msgid "\n"
 "        set min character length for questions\n\n"
@@ -767,19 +799,19 @@ msgstr "\n"
 "        sorular için minimum karakter uzunluğunu ayarlayın\n\n"
 "        Herhangi bir şeye yanıt vermek için 0 olarak ayarlayın "
 
-#: commands\admin.py:813
+#: commands\admin.py:876
 msgid "Minimum length needs to be at least 0 or higher"
 msgstr "Minimum uzunluğun en az 0 veya daha yüksek olması gerekir"
 
-#: commands\admin.py:817
+#: commands\admin.py:880
 msgid "{} will respond regardless of message length"
 msgstr "{} mesaj uzunluğuna bakılmaksızın yanıt verecektir"
 
-#: commands\admin.py:820
+#: commands\admin.py:883
 msgid "{} will respond to messages with more than **{}** characters"
 msgstr "{} **{}** karakterden daha fazla karakter içeren mesajlara yanıt verecektir"
 
-#: commands\admin.py:828
+#: commands\admin.py:891
 #, docstring
 msgid "\n"
 "        Set the max tokens that the bot will send to the model\n\n"
@@ -797,17 +829,17 @@ msgstr "\n"
 "- İdeal olarak, yeterli yanıtlara izin vermek için maksimum değeri modelin maksimum değerinden 500 daha az olarak ayarlayın.\n\n"
 "Modelin kaldırabileceğinden daha fazlasını kullanmak istisnaları tetikleyebilir "
 
-#: commands\admin.py:839 commands\admin.py:1512
+#: commands\admin.py:902 commands\admin.py:1710
 msgid "Use at least 100 tokens"
 msgstr "En az 100 jeton kullanın"
 
-#: commands\admin.py:842
+#: commands\admin.py:905
 msgid "The maximum amount of tokens sent in a payload will be {}.\n"
 "*Note that models with token limits lower than this will still be trimmed*"
 msgstr "Bir yük içinde gönderilen maksimum belirteç miktarı {} olacaktır.\n"
 "*Belirteç sınırları bundan daha düşük olan modellerin yine de kırpılacağını unutmayın*"
 
-#: commands\admin.py:851
+#: commands\admin.py:914
 #, docstring
 msgid "\n"
 "        Set the max response tokens the model can respond with\n\n"
@@ -816,84 +848,49 @@ msgid "\n"
 msgstr "        Modelin yanıt verebileceği maksimum yanıt belirteçlerini ayarlayın\n\n"
 "        Yanıt belirteçlerinin dinamik olması için 0 olarak ayarlayın        "
 
-#: commands\admin.py:857 commands\admin.py:1538
+#: commands\admin.py:920 commands\admin.py:1736
 msgid "Cannot be a negative number!"
 msgstr "Negatif bir sayı olamaz!"
 
-#: commands\admin.py:861
+#: commands\admin.py:924
 msgid "The maximum amount of tokens in the models responses will be {}."
 msgstr "Model yanıtlarındaki maksimum belirteç miktarı {} olacaktır."
 
-#: commands\admin.py:863
+#: commands\admin.py:926
 msgid "Response tokens will now be dynamic"
 msgstr "Yanıt belirteçleri artık dinamik olacak"
 
-#: commands\admin.py:869
+#: commands\admin.py:932
 #, docstring
 msgid "\n"
 "        Set the OpenAI model to use\n"
 "        "
 msgstr ""
 
-#: commands\admin.py:877 commands\admin.py:1478
-msgid "**Chat**\n"
-"{}\n"
-"**Completion**\n"
-"{}\n"
-msgstr "**Sohbet**\n"
-"{}\n"
-"**Tamamlama**\n"
-"{}\n"
-
-#: commands\admin.py:880 commands\admin.py:1481
+#: commands\admin.py:944 commands\admin.py:972 commands\admin.py:1679
 msgid "Valid models are:\n"
 "{}"
 msgstr "Geçerli modeller şunlardır:\n"
 "{}"
 
-#: commands\admin.py:887 commands\admin.py:1488
+#: commands\admin.py:951 commands\admin.py:1686
 msgid "Error: {}"
 msgstr ""
 
-#: commands\admin.py:891
+#: commands\admin.py:955
 msgid "The **{}** model will now be used"
 msgstr "Artık **{}** modeli kullanılacaktır"
 
-#: commands\admin.py:896
+#: commands\admin.py:960
 #, docstring
-msgid "\n"
-"        Set a custom endpoint to use a [self-hosted model](https://github.com/vertyco/gpt-api)\n\n"
-"        Example: `http://localhost:8000/v1`\n\n"
-"        Endpoint overrides will not be used if there is an API key set.\n"
-"        "
+msgid "Set the OpenAI Embedding model to use"
 msgstr ""
 
-#: commands\admin.py:904 commands\admin.py:929
-msgid "Invalid URL, must start with `http`"
+#: commands\admin.py:974
+msgid "The **{}** model will now be used for embeddings"
 msgstr ""
 
-#: commands\admin.py:908 commands\admin.py:932
-msgid "Endpoint has been reset!"
-msgstr "Uç nokta sıfırlandı!"
-
-#: commands\admin.py:911 commands\admin.py:935
-msgid "Endpoint has been overwritten!"
-msgstr "Bitiş noktası üzerine yazıldı!"
-
-#: commands\admin.py:914 commands\admin.py:938
-msgid "Endpoint has been set!"
-msgstr "Uç nokta ayarlandı!"
-
-#: commands\admin.py:921
-#, docstring
-msgid "\n"
-"        Set a custom global endpoint to use a [self-hosted model](https://github.com/vertyco/gpt-api) for all guilds as a fallback\n\n"
-"        Example: `http://localhost:8000/v1`\n\n"
-"        Endpoint overrides will not be used if there is an API key set.\n"
-"        "
-msgstr ""
-
-#: commands\admin.py:945
+#: commands\admin.py:979
 #, docstring
 msgid "\n"
 "        Wipe saved embeddings for the assistant\n\n"
@@ -903,15 +900,15 @@ msgstr "\n"
 "        Asistan için kaydedilmiş katıştırmaları silme\n\n"
 "        Bu işlem asistan için kaydedilmiş tüm gömme eğitim verilerini silecektir "
 
-#: commands\admin.py:951 commands\admin.py:1716
+#: commands\admin.py:985 commands\admin.py:1914
 msgid "Not wiping embedding data"
 msgstr "Yerleştirme verilerini silmemek"
 
-#: commands\admin.py:954
+#: commands\admin.py:988
 msgid "All embedding data has been wiped!"
 msgstr "Tüm yerleştirme verileri silindi!"
 
-#: commands\admin.py:959
+#: commands\admin.py:993
 #, docstring
 msgid "\n"
 "        Wipe saved conversations for the assistant in this server\n\n"
@@ -921,15 +918,15 @@ msgstr "\n"
 "Bu sunucudaki asistan için kaydedilmiş konuşmaları silin\n\n"
 "Bu işlem asistan için kaydedilmiş tüm konuşmaları silecektir "
 
-#: commands\admin.py:965 commands\admin.py:1689
+#: commands\admin.py:999 commands\admin.py:1887
 msgid "Not wiping conversations"
 msgstr "Konuşmaları silmemek"
 
-#: commands\admin.py:969
+#: commands\admin.py:1003
 msgid "Conversations have been wiped in this server!"
 msgstr "Bu sunucuda konuşmalar silindi!"
 
-#: commands\admin.py:974
+#: commands\admin.py:1008
 #, docstring
 msgid "\n"
 "        Set the embedding inclusion amout\n\n"
@@ -939,19 +936,19 @@ msgstr "\n"
 "        Gömme dahil etme miktarını ayarlayın\n\n"
 "        Top N, ilk istemle birlikte eklenecek gömme sayısıdır "
 
-#: commands\admin.py:980
+#: commands\admin.py:1014
 msgid "Top N must be between 0 and 10"
 msgstr "Üst N 0 ile 10 arasında olmalıdır"
 
-#: commands\admin.py:984
+#: commands\admin.py:1018
 msgid "Embeddings will not be pulled during conversations"
 msgstr "Yerleştirmeler konuşmalar sırasında çekilmeyecek"
 
-#: commands\admin.py:986
+#: commands\admin.py:1020
 msgid "Up to **{}** embeddings will be pulled for each interaction"
 msgstr "Her etkileşim için **{}** adede kadar gömme çekilecektir"
 
-#: commands\admin.py:991
+#: commands\admin.py:1025
 #, docstring
 msgid "\n"
 "        Set the minimum relatedness an embedding must be to include with the prompt\n\n"
@@ -965,32 +962,32 @@ msgstr "\n"
 "        Sorular gömülere dönüştürülür ve en alakalı olanları çekmek için depolanan gömülerle karşılaştırılır, bu karşılaştırmadan elde edilen puandır\n\n"
 "        **İpucu**: 1'e ne kadar yaklaşırsanız, sonuçlar o kadar deterministik ve doğru olabilir, sadece *çok katı* olmayın, aksi takdirde herhangi bir sonuç olmayacaktır "
 
-#: commands\admin.py:1001
+#: commands\admin.py:1035
 msgid "Minimum relatedness must be between 0 and 1"
 msgstr "Minimum akrabalık 0 ile 1 arasında olmalıdır"
 
-#: commands\admin.py:1004
+#: commands\admin.py:1038
 msgid "Minimum relatedness has been set to **{}**"
 msgstr "Minimum akrabalık **{}** olarak ayarlanmıştır"
 
-#: commands\admin.py:1009
+#: commands\admin.py:1043
 #, docstring
 msgid "Remove certain words/phrases in the bot's responses"
 msgstr "Bot'un yanıtlarında belirli kelimeleri/ifadeleri kaldırın"
 
-#: commands\admin.py:1013
+#: commands\admin.py:1047
 msgid "That regex is invalid"
 msgstr "Bu regex geçersizdir"
 
-#: commands\admin.py:1017
+#: commands\admin.py:1051
 msgid "`{}` has been **Removed** from the blacklist"
 msgstr "`{}` kara listeden **Çıkarıldı**"
 
-#: commands\admin.py:1020
+#: commands\admin.py:1054
 msgid "`{}` has been **Added** to the blacklist"
 msgstr "`{}` kara listeye **Eklendi**"
 
-#: commands\admin.py:1025
+#: commands\admin.py:1059
 #, docstring
 msgid "\n"
 "        Toggle whether failed regex blocks the assistant's reply\n\n"
@@ -1002,15 +999,31 @@ msgstr "\n"
 "        Bazı regexler [felaket bir şekilde geri izleme](https://www.rexegg.com/regex-explosive-quantifiers.html)'ye neden olabilir\n"
 "        Bot bu durumda güvenli bir şekilde işlem yapabilir ve ya devam eder ya da yanıtı engeller "
 
-#: commands\admin.py:1034
+#: commands\admin.py:1068
 msgid "If a regex blacklist fails, the bots reply will be blocked"
 msgstr "Eğer bir regex kara listesi başarısız olursa, botların yanıtı engellenir"
 
-#: commands\admin.py:1037
+#: commands\admin.py:1071
 msgid "If a reges blacklist fails, the bot will still reply"
 msgstr "Bir reges kara listesi başarısız olursa, bot yine de yanıt verecektir"
 
-#: commands\admin.py:1042
+#: commands\admin.py:1076
+#, docstring
+msgid "\n"
+"        Toggle question mode\n\n"
+"        If question mode is on, embeddings will only be sourced during the first message of a conversation and messages that end in **?**\n"
+"        "
+msgstr ""
+
+#: commands\admin.py:1084
+msgid "Question mode is now **Disabled**"
+msgstr ""
+
+#: commands\admin.py:1087
+msgid "Question mode is now **Enabled**"
+msgstr ""
+
+#: commands\admin.py:1092
 #, docstring
 msgid "\n"
 "        Cycle between embedding methods\n\n"
@@ -1028,19 +1041,19 @@ msgstr "\n"
 "        **Hibrit** gömmeler bir kombinasyondur, ilk gömme konuşmada saklanır ve geri kalanı dinamiktir, bu belirteç kullanımında biraz tasarruf sağlar.\n\n"
 "        Dinamik gömmeler, Soru-Cevap için faydalıdır, ancak gömmelerden elde edilen bağlamı korumanız gerektiğinde sohbet için o kadar da fazla değildir. Hibrit yöntem iyi bir orta yol sağlar "
 
-#: commands\admin.py:1057
+#: commands\admin.py:1107
 msgid "Embedding method has been set to **Static**"
 msgstr "Gömme yöntemi **Statik** olarak ayarlandı"
 
-#: commands\admin.py:1060
+#: commands\admin.py:1110
 msgid "Embedding method has been set to **Hybrid**"
 msgstr "Gömme yöntemi **Hybrid** olarak ayarlanmıştır"
 
-#: commands\admin.py:1063
+#: commands\admin.py:1113
 msgid "Embedding method has been set to **Dynamic**"
 msgstr "Yerleştirme yöntemi **Dinamik** olarak ayarlandı"
 
-#: commands\admin.py:1068
+#: commands\admin.py:1118
 #, docstring
 msgid "Import embeddings to use with the assistant\n\n"
 "        Args:\n"
@@ -1052,57 +1065,57 @@ msgstr "Asistan ile kullanmak için katıştırmaları içe aktarın\n\n"
 "            overwrite (bool): mevcut giriş adlarıyla katıştırmaları üzerine yaz\n\n"
 "        Bu ayrıca excel dosyalarını okuyacak "
 
-#: commands\admin.py:1081
+#: commands\admin.py:1131
 msgid "You must attach **.csv** files to this command or reference a message that has them!"
 msgstr "Bu komuta **.csv** dosyaları eklemeli veya bu dosyaları içeren bir mesaja referans vermelisiniz!"
 
-#: commands\admin.py:1094 commands\admin.py:1173
+#: commands\admin.py:1144 commands\admin.py:1220 commands\admin.py:1268
 msgid "Error reading **{}**: {}"
 msgstr "**{}** okunurken hata oluştu: {}"
 
-#: commands\admin.py:1102
+#: commands\admin.py:1149
 msgid "**{}** contains invalid formatting, columns must be "
 msgstr "**{}** geçersiz biçimlendirme içeriyor, sütunlar şu şekilde olmalıdır "
 
-#: commands\admin.py:1110
+#: commands\admin.py:1157
 msgid "There are no valid files to import!"
 msgstr "İçe aktırılacak geçerli dosya bulunmamaktadır!"
 
-#: commands\admin.py:1112
+#: commands\admin.py:1159 commands\admin.py:1285
 msgid "Processing the following files in the background\n"
 "{}"
 msgstr "Arka planda aşağıdaki dosyalar işleniyor\n"
 "{}"
 
-#: commands\admin.py:1126
+#: commands\admin.py:1173 commands\admin.py:1296
 msgid "processing"
 msgstr "işleme"
 
-#: commands\admin.py:1128
+#: commands\admin.py:1175 commands\admin.py:1298
 msgid "overwriting"
 msgstr "üzerine yazma"
 
-#: commands\admin.py:1135
+#: commands\admin.py:1182 commands\admin.py:1306
 msgid "{}\n"
 "`Currently {}: `**{}** ({}/{})"
 msgstr "{}\n"
 "`Şu anda {}: `**{}** ({}/{})"
 
-#: commands\admin.py:1141
+#: commands\admin.py:1188 commands\admin.py:1313
 msgid "Failed to process embedding: `{}`"
 msgstr "Gömme işlemi başarısız oldu: `{}`"
 
-#: commands\admin.py:1146
+#: commands\admin.py:1193 commands\admin.py:1326 commands\admin.py:1330
 msgid "{}\n"
 "**COMPLETE**"
 msgstr "{}\n"
 "**TAMAMLANDI**"
 
-#: commands\admin.py:1147
+#: commands\admin.py:1194 commands\admin.py:1327
 msgid "Successfully imported {} embeddings!"
 msgstr "{} katıştırmaları başarıyla içe aktarıldı!"
 
-#: commands\admin.py:1152
+#: commands\admin.py:1199
 #, docstring
 msgid "Import embeddings to use with the assistant\n\n"
 "        Args:\n"
@@ -1112,21 +1125,53 @@ msgstr "Asistan ile kullanmak için katıştırmaları içe aktarın\n\n"
 "        Args:\n"
 "            overwrite (bool): mevcut giriş adlarıyla katıştırmaların üzerine yazın "
 
-#: commands\admin.py:1161 commands\admin.py:1673
+#: commands\admin.py:1208 commands\admin.py:1871
 msgid "You must attach **.json** files to this command or reference a message that has them!"
 msgstr "Bu komuta **.json** dosyalarını eklemeli veya bu dosyaları içeren bir mesaja referans vermelisiniz!"
 
-#: commands\admin.py:1184
+#: commands\admin.py:1231
 msgid "Failed to import **{}** because it contains invalid formatting!"
 msgstr "Geçersiz biçimlendirme içerdiği için **{}** içe aktarılamadı!"
 
-#: commands\admin.py:1189
+#: commands\admin.py:1236
 msgid "Imported the following files: `{}`\n"
 "{} embeddings imported"
 msgstr "Aşağıdaki dosyalar içe aktarıldı: `{}`\n"
 "{} gömüler içe aktarıldı"
 
-#: commands\admin.py:1198
+#: commands\admin.py:1244
+#, docstring
+msgid "Import embeddings from an .xlsx file\n\n"
+"        Args:\n"
+"            overwrite (bool): overwrite embeddings with existing entry names\n"
+"        "
+msgstr ""
+
+#: commands\admin.py:1254
+msgid "You must attach **.xlsx** files to this command or reference a message that has them!"
+msgstr ""
+
+#: commands\admin.py:1277
+msgid "{} is invalid! Must contain the following columns: {}"
+msgstr ""
+
+#: commands\admin.py:1331
+msgid "No embeddings needed to be updated!"
+msgstr ""
+
+#: commands\admin.py:1336
+#, docstring
+msgid "\n"
+"        Export embeddings to an .xlsx file\n\n"
+"        **Note:** csv exports do not include the embedding values\n"
+"        "
+msgstr ""
+
+#: commands\admin.py:1343 commands\admin.py:1386 commands\admin.py:1430
+msgid "There are no embeddings to export!"
+msgstr "Dışa aktarılacak gömme yok!"
+
+#: commands\admin.py:1380
 #, docstring
 msgid "Export embeddings to a .csv file\n\n"
 "        **Note:** csv exports do not include the embedding values\n"
@@ -1134,29 +1179,25 @@ msgid "Export embeddings to a .csv file\n\n"
 msgstr "Yerleştirmeleri bir .csv dosyasına aktarın\n\n"
 "        **Not:** csv dışa aktarımları gömme değerlerini içermez "
 
-#: commands\admin.py:1204 commands\admin.py:1248
-msgid "There are no embeddings to export!"
-msgstr "Dışa aktarılacak gömme yok!"
-
-#: commands\admin.py:1217 commands\admin.py:1237 commands\admin.py:1256
-#: commands\admin.py:1276 commands\admin.py:1659
+#: commands\admin.py:1399 commands\admin.py:1419 commands\admin.py:1438
+#: commands\admin.py:1458 commands\admin.py:1857
 msgid "Here is your embeddings export!"
 msgstr "İşte yerleştirmelerinizin dışa aktarımı!"
 
-#: commands\admin.py:1220 commands\admin.py:1259 commands\admin.py:1641
+#: commands\admin.py:1402 commands\admin.py:1441 commands\admin.py:1839
 msgid "File too large, attempting to compress..."
 msgstr "Dosya çok büyük, sıkıştırılmaya çalışılıyor..."
 
-#: commands\admin.py:1240 commands\admin.py:1279 commands\admin.py:1662
+#: commands\admin.py:1422 commands\admin.py:1461 commands\admin.py:1860
 msgid "File is still too large even with compression!"
 msgstr "Dosya sıkıştırma ile bile hala çok büyük!"
 
-#: commands\admin.py:1245
+#: commands\admin.py:1427
 #, docstring
 msgid "Export embeddings to a json file"
 msgstr "Yerleştirmeleri bir json dosyasına aktarın"
 
-#: commands\admin.py:1287
+#: commands\admin.py:1469
 #, docstring
 msgid "\n"
 "        Manage embeddings for training\n\n"
@@ -1172,7 +1213,7 @@ msgstr "\n"
 "        **Not**\n"
 "        Bu komutla bir arama sorgusu girerek menüyü getirebilir ve doğrudan o yerleştirme seçimine gidebilirsiniz "
 
-#: commands\admin.py:1335
+#: commands\admin.py:1517
 #, docstring
 msgid "\n"
 "        Add custom function calls for Assistant to use\n\n"
@@ -1200,7 +1241,7 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: commands\admin.py:1417
+#: commands\admin.py:1599
 #, docstring
 msgid "\n"
 "        Add/Remove items from the blacklist\n\n"
@@ -1211,15 +1252,15 @@ msgstr "\n"
 "        `channel_role_member` bir üye, rol, kanal veya kategori kanalı olabilir\n"
 "        "
 
-#: commands\admin.py:1425
+#: commands\admin.py:1607
 msgid "{} has been removed from the blacklist"
 msgstr "{} kara listeden çıkarıldı"
 
-#: commands\admin.py:1428
+#: commands\admin.py:1610
 msgid "{} has been added to the blacklist"
 msgstr "{} kara listeye eklendi"
 
-#: commands\admin.py:1441
+#: commands\admin.py:1623
 #, docstring
 msgid "\n"
 "        Add/Remove items from the tutor list.\n\n"
@@ -1231,15 +1272,35 @@ msgstr "\n"
 "        Eğer OpenAI'nin işlev çağrısı kullanılıyorsa ve bir eğitmenle konuşuluyorsa, yapay zeka daha sonra hatırlamak üzere kendi gömülerini oluşturabilir.\n\n"
 "        `role_or_member` bir üye veya rol olabilir "
 
-#: commands\admin.py:1451
+#: commands\admin.py:1633
 msgid "{} has been removed from the tutor list"
 msgstr "{} öğretmen listesinden çıkarıldı"
 
-#: commands\admin.py:1454
+#: commands\admin.py:1636
 msgid "{} has been added to the tutor list"
 msgstr "{} öğretmen listesine eklendi"
 
-#: commands\admin.py:1459
+#: commands\admin.py:1641
+#, docstring
+msgid "\n"
+"        Set the channel for training messages\n\n"
+"        If no channel is specified, the channel will be reset\n"
+"        "
+msgstr ""
+
+#: commands\admin.py:1649
+msgid "Training channel has been reset!"
+msgstr ""
+
+#: commands\admin.py:1652
+msgid "I do not have permission to send messages in that channel"
+msgstr ""
+
+#: commands\admin.py:1654
+msgid "Training channel has been set to {}"
+msgstr ""
+
+#: commands\admin.py:1659
 #, docstring
 msgid "\n"
 "        Override settings for specific roles\n\n"
@@ -1248,7 +1309,7 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: commands\admin.py:1468
+#: commands\admin.py:1668
 #, docstring
 msgid "\n"
 "        Assign a role to use a model\n\n"
@@ -1258,19 +1319,19 @@ msgstr "\n"
 "        Bir modeli kullanmak için bir rol atama\n\n"
 "        *Geçersiz kılmayı kaldırmak için aynı rolü ve modeli belirtin* "
 
-#: commands\admin.py:1494
+#: commands\admin.py:1692
 msgid "Role override for {} removed!"
 msgstr "{} için rol geçersiz kılma kaldırıldı!"
 
-#: commands\admin.py:1497
+#: commands\admin.py:1695
 msgid "Role override for {} overwritten!"
 msgstr "{} için rol geçersiz kılma üzerine yazıldı!"
 
-#: commands\admin.py:1500
+#: commands\admin.py:1698
 msgid "Role override for {} added!"
 msgstr "{} için rol geçersiz kılma eklendi!"
 
-#: commands\admin.py:1506
+#: commands\admin.py:1704
 #, docstring
 msgid "\n"
 "        Assign a max token override to a role\n\n"
@@ -1280,19 +1341,19 @@ msgstr "\n"
 "        Bir role maksimum belirteç geçersiz kılma atama\n\n"
 "        *Geçersiz kılmayı kaldırmak için aynı rolü ve belirteç sayısını belirtin* "
 
-#: commands\admin.py:1518
+#: commands\admin.py:1716
 msgid "Max token override for {} removed!"
 msgstr "{} için maksimum belirteç geçersiz kılma kaldırıldı!"
 
-#: commands\admin.py:1521
+#: commands\admin.py:1719
 msgid "Max token override for {} overwritten!"
 msgstr "{} için maksimum belirteç geçersiz kılma üzerine yazıldı!"
 
-#: commands\admin.py:1524
+#: commands\admin.py:1722
 msgid "Max token override for {} added!"
 msgstr "{} için maksimum belirteç geçersiz kılma eklendi!"
 
-#: commands\admin.py:1530
+#: commands\admin.py:1728
 #, docstring
 msgid "\n"
 "        Assign a max response token override to a role\n\n"
@@ -1303,19 +1364,19 @@ msgstr "        Bir role maksimum yanıt belirteci geçersiz kılma atama\n\n"
 "        Yanıt belirteçlerinin dinamik olması için 0 olarak ayarlayın\n\n"
 "        *Geçersiz kılmayı kaldırmak için aynı rolü ve belirteç sayısını belirtin*        "
 
-#: commands\admin.py:1544
+#: commands\admin.py:1742
 msgid "Max response token override for {} removed!"
 msgstr "{} için maksimum yanıt belirteci geçersiz kılma kaldırıldı!"
 
-#: commands\admin.py:1547
+#: commands\admin.py:1745
 msgid "Max response token override for {} overwritten!"
 msgstr "{} için maksimum yanıt belirteci geçersiz kılma üzerine yazıldı!"
 
-#: commands\admin.py:1550
+#: commands\admin.py:1748
 msgid "Max response token override for {} added!"
 msgstr "{} için maksimum yanıt belirteci geçersiz kılma eklendi!"
 
-#: commands\admin.py:1555
+#: commands\admin.py:1753
 #, docstring
 msgid "\n"
 "        Assign a max message retention override to a role\n\n"
@@ -1325,19 +1386,19 @@ msgstr "\n"
 "        Bir role maksimum ileti saklama geçersiz kılma atama\n\n"
 "        *Geçersiz kılmayı kaldırmak için aynı rolü ve saklama miktarını belirtin* "
 
-#: commands\admin.py:1567
+#: commands\admin.py:1765
 msgid "Max retention override for {} removed!"
 msgstr "{} için maksimum tutma geçersiz kılma kaldırıldı!"
 
-#: commands\admin.py:1570
+#: commands\admin.py:1768
 msgid "Max retention override for {} overwritten!"
 msgstr "{} için maksimum bekletme geçersiz kılma üzerine yazıldı!"
 
-#: commands\admin.py:1573
+#: commands\admin.py:1771
 msgid "Max retention override for {} added!"
 msgstr "{} için maksimum tutma geçersiz kılma eklendi!"
 
-#: commands\admin.py:1578
+#: commands\admin.py:1776
 #, docstring
 msgid "\n"
 "        Assign a max retention time override to a role\n\n"
@@ -1347,32 +1408,32 @@ msgstr "\n"
 "        Bir role maksimum saklama süresi geçersiz kılma atama\n\n"
 "        *Geçersiz kılmayı kaldırmak için aynı rolü ve zamanı belirtin* "
 
-#: commands\admin.py:1590
+#: commands\admin.py:1788
 msgid "Max retention time override for {} removed!"
 msgstr "{} için maksimum saklama süresi geçersiz kılma kaldırıldı!"
 
-#: commands\admin.py:1593
+#: commands\admin.py:1791
 msgid "Max retention time override for {} overwritten!"
 msgstr "{} için maksimum saklama süresi geçersiz kılındı!"
 
-#: commands\admin.py:1596
+#: commands\admin.py:1794
 msgid "Max retention time override for {} added!"
 msgstr "{} için maksimum saklama süresi geçersiz kılma eklendi!"
 
-#: commands\admin.py:1608
+#: commands\admin.py:1806
 #, docstring
 msgid "Wipe all settings and data for entire cog"
 msgstr "Tüm çark için tüm ayarları ve verileri silme"
 
-#: commands\admin.py:1610
+#: commands\admin.py:1808
 msgid "Not wiping cog"
 msgstr "Çark silinmiyor"
 
-#: commands\admin.py:1615
+#: commands\admin.py:1813
 msgid "Cog has been wiped!"
 msgstr "Cog silindi!"
 
-#: commands\admin.py:1620
+#: commands\admin.py:1818
 #, docstring
 msgid "\n"
 "        Take a backup of the cog\n\n"
@@ -1382,11 +1443,11 @@ msgstr "\n"
 "        Çarkın yedeğini alın\n\n"
 "        - Bu, konuşma verilerini yedeklemez "
 
-#: commands\admin.py:1638
+#: commands\admin.py:1836
 msgid "Here is your export!"
 msgstr "İşte ihracatınız!"
 
-#: commands\admin.py:1667
+#: commands\admin.py:1865
 #, docstring
 msgid "\n"
 "        Restore the cog from a backup\n"
@@ -1394,11 +1455,11 @@ msgid "\n"
 msgstr "\n"
 "        Çarkı bir yedekten geri yükleme "
 
-#: commands\admin.py:1677
+#: commands\admin.py:1875
 msgid "Cog has been restored!"
 msgstr "Cog restore edildi!"
 
-#: commands\admin.py:1683
+#: commands\admin.py:1881
 #, docstring
 msgid "\n"
 "        Wipe saved conversations for the assistant in all servers\n\n"
@@ -1408,24 +1469,24 @@ msgstr "\n"
 "        Tüm sunucularda asistan için kayıtlı konuşmaları silme\n\n"
 "        Bu işlem asistan için kaydedilmiş tüm konuşmaları silecektir "
 
-#: commands\admin.py:1692
+#: commands\admin.py:1890
 msgid "Conversations have been wiped for all servers!"
 msgstr "Konuşmalar tüm sunucular için silindi!"
 
-#: commands\admin.py:1698
+#: commands\admin.py:1896
 #, docstring
 msgid "Toggle persistent conversations"
 msgstr "Kalıcı konuşmaları aç / kapat"
 
-#: commands\admin.py:1701
+#: commands\admin.py:1899
 msgid "Persistent conversations have been **Disabled**"
 msgstr "Kalıcı konuşmalar **Devre Dışı** bırakıldı"
 
-#: commands\admin.py:1704
+#: commands\admin.py:1902
 msgid "Persistent conversations have been **Enabled**"
 msgstr "Kalıcı konuşmalar **Etkinleştirildi**"
 
-#: commands\admin.py:1710
+#: commands\admin.py:1908
 #, docstring
 msgid "\n"
 "        Wipe saved embeddings for all servers\n\n"
@@ -1435,11 +1496,11 @@ msgstr "\n"
 "        Tüm sunucular için kayıtlı katıştırmaları sil\n\n"
 "        Bu işlem asistan için kaydedilmiş tüm gömme eğitim verilerini silecektir "
 
-#: commands\admin.py:1719
+#: commands\admin.py:1917
 msgid "All embedding data has been wiped for all servers!"
 msgstr "Tüm sunucular için tüm gömme verileri silindi!"
 
-#: commands\admin.py:1725
+#: commands\admin.py:1923
 #, docstring
 msgid "\n"
 "        Toggle whether the assistant listens to other bots\n\n"
@@ -1449,20 +1510,20 @@ msgstr "\n"
 "        Asistanın diğer botları dinleyip dinlemediğini değiştirme\n\n"
 "        **HALKA AÇIK BOTLAR IÇIN ÖNERILMEZ!** "
 
-#: commands\admin.py:1732
+#: commands\admin.py:1930
 msgid "Assistant will no longer listen to other bot messages"
 msgstr "Asistan artık diğer bot mesajlarını dinlemeyecek"
 
-#: commands\admin.py:1735
+#: commands\admin.py:1933
 msgid "Assistant will listen to other bot messages"
 msgstr "Asistan diğer bot mesajlarını dinleyecek"
 
-#: commands\base.py:23
+#: commands\base.py:31
 #, docstring
 msgid "Get help using assistant"
 msgstr ""
 
-#: commands\base.py:25
+#: commands\base.py:33
 msgid "\n"
 "# How to Use\n\n"
 "### Commands\n"
@@ -1494,33 +1555,24 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: commands\base.py:83
+#: commands\base.py:91
 #, docstring
 msgid "\n"
 "        Chat with [botname]!\n\n"
 "        Conversations are *Per* user *Per* channel, meaning a conversation you have in one channel will be kept in memory separately from another conversation in a separate channel\n\n"
 "        **Optional Arguments**\n"
 "        `--outputfile <filename>` - uploads a file with the reply instead (no spaces)\n"
-"        `--extract` - extracts code blocks from the reply\n\n"
+"        `--extract` - extracts code blocks from the reply\n"
+"        `--last` - resends the last message of the conversation\n\n"
 "        **Example**\n"
 "        `[p]chat write a python script that prints \"Hello World!\"`\n"
 "        - Including `--outputfile hello.py` will output a file containing the whole response.\n"
 "        - Including `--outputfile hello.py --extract` will output a file containing just the code blocks and send the rest as text.\n"
 "        - Including `--extract` will send the code separately from the reply\n"
 "        "
-msgstr "\n"
-"        Botname] ile sohbet edin!\n\n"
-"        Konuşmalar *Kullanıcı başına* *Kanal başına* şeklindedir, yani bir kanalda yaptığınız bir konuşma, ayrı bir kanaldaki başka bir konuşmadan ayrı olarak bellekte tutulacaktır.\n\n"
-"        **Opsiyonel Argümanlar**\n"
-"        `--outputfile <filename>` - yanıtı içeren bir dosyayı yükler (boşluk olmadan).\n"
-"        `--extract` - yanıttan kod bloklarını çıkarır.\n\n"
-"        **Örnek**\n"
-"        `[p]sohbet \"Merhaba Dünya!\"` yazdıran bir Python betiği yazın.\n"
-"        - `--outputfile hello.py` dahil edildiğinde, tüm yanıtı içeren bir dosya çıktısı verir.\n"
-"        - `--outputfile hello.py --extract` dahil edildiğinde, sadece kod bloklarını içeren bir dosya çıktısı verir ve geri kalanını metin olarak gönderir.\n"
-"        - `--extract` dahil edildiğinde, kod yanıttan ayrı olarak gönderilir "
+msgstr ""
 
-#: commands\base.py:109
+#: commands\base.py:118
 #, docstring
 msgid "\n"
 "        Check the token and message count of yourself or another user's conversation for this channel\n\n"
@@ -1532,29 +1584,35 @@ msgstr "\n"
 "Konuşmalar *Kullanıcı başına* *Kanal başına* şeklindedir, yani bir kanalda yaptığınız bir konuşma, ayrı bir kanaldaki başka bir konuşmadan ayrı olarak bellekte tutulacaktır\n\n"
 "Konuşmalar yalnızca bot yeniden başlatılana veya dişli yeniden yüklenene kadar bellekte saklanır "
 
-#: commands\base.py:154
-msgid "Could not fetch external model"
-msgstr "Harici model getirilemedi"
+#: commands\base.py:162
+msgid "`Messages:   `{}/{}\n"
+"`Tokens:     `{}/{}\n"
+"`Expired:    `{}\n"
+"`Model:      `{}"
+msgstr ""
 
-#: commands\base.py:160
-msgid "`Messages: `{}/{}\n"
-"`Tokens:   `{}/{}\n"
-"`Expired:  `{}\n"
-"`Model:    `{}"
-msgstr "`Mesajlar: `{}/{}\n"
-"`Tokenler:   `{}/{}\n"
-"`Süresi doldu:  `{}\n"
-"`Model:    `{}"
+#: commands\base.py:171
+msgid "\n"
+"`Tool Calls: `{}"
+msgstr ""
 
-#: commands\base.py:174
+#: commands\base.py:173
+msgid "*Collabroative conversations are enabled*"
+msgstr ""
+
+#: commands\base.py:179
 msgid "Conversation stats for {}"
 msgstr "{} için konuşma istatistikleri"
 
-#: commands\base.py:177
+#: commands\base.py:182
 msgid "Token limit is a soft cap and excess is trimmed before sending to the api"
 msgstr "Token limiti bir yumuşak sınırdır ve fazlalıklar api'ye gönderilmeden önce kırpılır"
 
-#: commands\base.py:183
+#: commands\base.py:186
+msgid "System prompt override for this conversation"
+msgstr ""
+
+#: commands\base.py:191
 #, docstring
 msgid "\n"
 "        Reset your conversation with the bot\n\n"
@@ -1564,49 +1622,87 @@ msgstr "\n"
 "        Bot ile konuşmanızı sıfırlayın\n\n"
 "        Bu, bu kanal için sizinle bot arasındaki tüm mesaj geçmişini temizleyecektir "
 
-#: commands\base.py:190
+#: commands\base.py:204
+msgid "Only moderators can clear channel conversations when collaborative conversations are enabled!"
+msgstr ""
+
+#: commands\base.py:208
 msgid "Your conversation in this channel has been reset!"
 msgstr "Bu kanaldaki konuşmanız sıfırlandı!"
 
-#: commands\base.py:195
+#: commands\base.py:214
 #, docstring
 msgid "\n"
-"        Fetch related embeddings according to the current settings along with their scores\n\n"
-"        You can use this to fine-tune the minimum relatedness for your assistant\n"
+"        Pop the last message from your conversation\n"
 "        "
-msgstr "\n"
-"        Mevcut ayarlara göre ilgili katıştırmaları puanlarıyla birlikte getirin\n\n"
-"        Bunu asistanınız için minimum ilişkiyi ince ayarlamak için kullanabilirsiniz "
+msgstr ""
 
-#: commands\base.py:202
-msgid "You do not have any embeddings configured!"
-msgstr "Yapılandırılmış herhangi bir yerleştirmeniz yok!"
+#: commands\base.py:225
+msgid "Only moderators can pop messages from conversations when collaborative conversations are enabled!"
+msgstr ""
 
-#: commands\base.py:204
-msgid "Top N is set to 0 so no embeddings will be returned"
-msgstr "Top N değeri 0 olarak ayarlandığı için hiçbir gömme döndürülmeyecektir"
+#: commands\base.py:229 commands\base.py:261
+msgid "There are no messages in this conversation yet!"
+msgstr ""
 
-#: commands\base.py:210
-msgid "Failed to get embedding for your query"
-msgstr "Sorgunuzun yerleştirilmesi alınamadı"
+#: commands\base.py:234
+msgid "Removed the last message from this conversation"
+msgstr ""
 
-#: commands\base.py:214
-msgid "No embeddings could be related to this query with the current settings"
-msgstr "Geçerli ayarlarla bu sorguyla hiçbir gömme ilişkilendirilemedi"
+#: commands\base.py:242
+#, docstring
+msgid "\n"
+"        Copy the conversation to another channel, thread, or forum\n"
+"        "
+msgstr ""
 
-#: commands\base.py:218
-msgid "`Entry Name:  `{}\n"
-msgstr "`Giriş Adı:  `{}\n"
+#: commands\base.py:253
+msgid "Only moderators can copy conversations when collaborative conversations are enabled!"
+msgstr ""
 
-#: commands\base.py:219
-msgid "`Relatedness: `{}\n"
-msgstr "`İlgililik: `{}\n"
+#: commands\base.py:264
+msgid "You cannot copy a conversation to a channel you can't see!"
+msgstr ""
 
-#: commands\base.py:220
-msgid "`Dimensions:  `{}\n"
-msgstr "`Boyutlar:  `{}\n"
+#: commands\base.py:270
+msgid "This conversation has been overwritten in {}"
+msgstr ""
 
-#: commands\base.py:232
+#: commands\base.py:272
+msgid "This conversation has been copied over to {}"
+msgstr ""
+
+#: commands\base.py:282
+#, docstring
+msgid "\n"
+"        Set a system prompt for this conversation!\n\n"
+"        This allows customization of assistant behavior on a per channel basis!\n\n"
+"        Check out [This Guide](https://platform.openai.com/docs/guides/prompt-engineering) for prompting help.\n"
+"        "
+msgstr ""
+
+#: commands\base.py:291
+msgid "Conversation system prompt overriding is **Disabled**."
+msgstr ""
+
+#: commands\base.py:301
+msgid "Only moderators can set conversation prompts when collaborative conversations are enabled!"
+msgstr ""
+
+#: commands\base.py:321
+msgid "This prompt is uses {} tokens which is more than 90% of the maximum tokens allowed per conversation!\n"
+"Write a prompt using {} tokens or less to leave 10% of your token limit for responses"
+msgstr ""
+
+#: commands\base.py:330
+msgid "System prompt has been set for this conversation!"
+msgstr ""
+
+#: commands\base.py:332
+msgid "System prompt has been **Removed** for this conversation!"
+msgstr ""
+
+#: commands\base.py:339
 #, docstring
 msgid "\n"
 "        View the current transcript of a conversation\n\n"
@@ -1616,11 +1712,47 @@ msgstr "\n"
 "Bir görüşmenin geçerli dökümünü görüntüleme\n\n"
 "Bu esas olarak moderasyon amacıyla burada "
 
-#: commands\base.py:241
+#: commands\base.py:353
 msgid "You have no conversation in this channel!"
 msgstr "Bu kanalda hiç konuşmanız yok!"
 
-#: commands\base.py:253
+#: commands\base.py:366
 msgid "Here is your conversation transcript!"
 msgstr "İşte konuşma metniniz!"
+
+#: commands\base.py:371
+#, docstring
+msgid "\n"
+"        Fetch related embeddings according to the current topn setting along with their scores\n\n"
+"        You can use this to fine-tune the minimum relatedness for your assistant\n"
+"        "
+msgstr ""
+
+#: commands\base.py:378
+msgid "You do not have any embeddings configured!"
+msgstr "Yapılandırılmış herhangi bir yerleştirmeniz yok!"
+
+#: commands\base.py:380
+msgid "Top N is set to 0 so no embeddings will be returned"
+msgstr "Top N değeri 0 olarak ayarlandığı için hiçbir gömme döndürülmeyecektir"
+
+#: commands\base.py:386
+msgid "Failed to get embedding for your query"
+msgstr "Sorgunuzun yerleştirilmesi alınamadı"
+
+#: commands\base.py:390
+msgid "No embeddings could be related to this query with the current settings"
+msgstr "Geçerli ayarlarla bu sorguyla hiçbir gömme ilişkilendirilemedi"
+
+#: commands\base.py:394
+msgid "`Entry Name:  `{}\n"
+msgstr "`Giriş Adı:  `{}\n"
+
+#: commands\base.py:395
+msgid "`Relatedness: `{}\n"
+msgstr "`İlgililik: `{}\n"
+
+#: commands\base.py:396
+msgid "`Dimensions:  `{}\n"
+msgstr "`Boyutlar:  `{}\n"
 
