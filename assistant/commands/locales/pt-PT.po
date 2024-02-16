@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-11-07 16:20-0500\n"
-"PO-Revision-Date: 2023-11-07 22:51\n"
+"POT-Creation-Date: 2024-02-10 17:37-0500\n"
+"PO-Revision-Date: 2024-02-10 23:51\n"
 "Last-Translator: \n"
 "Language-Team: Portuguese\n"
 "MIME-Version: 1.0\n"
@@ -21,15 +21,28 @@ msgstr ""
 #, docstring
 msgid "\n"
 "        Setup the assistant\n\n"
-"        You will need an **[api key](https://platform.openai.com/account/api-keys)** from OpenAI to use ChatGPT and their other models.\n\n"
-"        This cog supports setting an endpoint override for [self-hosted](https://github.com/vertyco/gpt-api) models.\n"
+"        You will need an **[api key](https://platform.openai.com/account/api-keys)** from OpenAI to use ChatGPT and their other models.\n"
 "        "
-msgstr "\n"
-"        Configurar o assistente\n\n"
-"        Necessita de uma **[chave api](https://platform.openai.com/account/api-keys)** da OpenAI para utilizar o ChatGPT e os seus outros modelos.\n\n"
-"        Esta engrenagem suporta a definição de um endpoint override para modelos [self-hosted](https://github.com/vertyco/gpt-api) "
+msgstr ""
 
-#: commands\admin.py:58
+#: commands\admin.py:57
+#, docstring
+msgid "View current performance statistics about the cog"
+msgstr ""
+
+#: commands\admin.py:69
+msgid "No stats gathered yet"
+msgstr ""
+
+#: commands\admin.py:73
+msgid "- {}: {}ms, {}cpm\n"
+msgstr ""
+
+#: commands\admin.py:74
+msgid "Performance Stats"
+msgstr ""
+
+#: commands\admin.py:80
 #, docstring
 msgid "\n"
 "        View current settings\n\n"
@@ -39,238 +52,275 @@ msgstr "\n"
 "Ver configurações atuais\n\n"
 "Para enviar no canal atual, use `[p]assistant view false`        "
 
-#: commands\admin.py:66 commands\admin.py:175
-msgid "Not Set"
-msgstr "Não definido"
-
-#: commands\admin.py:92
-msgid "{} (Global Override)"
-msgstr "{} (Substituição global)"
-
-#: commands\admin.py:98
+#: commands\admin.py:99
 msgid "`OpenAI Version:      `{}\n"
 msgstr "`Versão OpenAI:      `{}\\n\n"
 
-#: commands\admin.py:99
+#: commands\admin.py:100
+msgid "`OpenAI API Status:   `{}\n"
+msgstr ""
+
+#: commands\admin.py:101
 msgid "`Model:               `{}\n"
 msgstr "`Modelo:               `{}\n"
 
-#: commands\admin.py:100
+#: commands\admin.py:102
+msgid "`Embed Model:         `{}\n"
+msgstr ""
+
+#: commands\admin.py:103
 msgid "`Enabled:             `{}\n"
 msgstr "`Ativado:             `{}\n"
 
-#: commands\admin.py:101
+#: commands\admin.py:104
 msgid "`Timezone:            `{}\n"
 msgstr "`Fuso horário: `{}\n"
 
-#: commands\admin.py:102
+#: commands\admin.py:105
 msgid "`Channel:             `{}\n"
 msgstr "`Canal:             `{}\n"
 
-#: commands\admin.py:103
+#: commands\admin.py:105 commands\admin.py:109 commands\admin.py:191
+msgid "Not Set"
+msgstr "Não definido"
+
+#: commands\admin.py:106
 msgid "`? Required:          `{}\n"
 msgstr "`? Obrigatório:          `{}\n"
 
-#: commands\admin.py:104
-msgid "`Mentions:            `{}\n"
-msgstr "`Menções:            `{}\n"
-
-#: commands\admin.py:105
-msgid "`Max Retention:       `{}\n"
-msgstr "`Retenção máxima:       `{}\n"
-
-#: commands\admin.py:106
-msgid "`Retention Expire:    `{}s\n"
-msgstr "`Expiração da retenção:    `{}s\n"
-
 #: commands\admin.py:107
-msgid "`Max Tokens:          `{}\n"
-msgstr "`Max Tokens: `{}\n"
+msgid "`Question Mode:       `{}\n"
+msgstr ""
 
 #: commands\admin.py:108
-msgid "`Max Response Tokens: `{}\n"
-msgstr "`Tokens máximos de resposta: `{}\n"
-
-#: commands\admin.py:109
-msgid "`Min Length:          `{}\n"
-msgstr "`Comprimento mínimo:          `{}\\n\n"
-
-#: commands\admin.py:110
-msgid "`Temperature:         `{}\n"
-msgstr "`Temperatura:         `{}\n"
+msgid "`Training Channel:    `{}\n"
+msgstr ""
 
 #: commands\admin.py:111
-msgid "`Frequency Penalty:   `{}\n"
+msgid "`Mention on Reply:    `{}\n"
 msgstr ""
 
 #: commands\admin.py:112
-msgid "`Presence Penalty:    `{}\n"
+msgid "`Respond to Mentions: `{}\n"
 msgstr ""
 
 #: commands\admin.py:113
-msgid "`Seed:                `{}\n"
+msgid "`Collaborative Mode:  `{}\n"
 msgstr ""
 
 #: commands\admin.py:114
-msgid "`System Message:      `{} tokens\n"
-msgstr "`Mensagem do sistema:      `{} tokens\n"
+msgid "`Max Retention:       `{}\n"
+msgstr "`Retenção máxima:       `{}\n"
 
 #: commands\admin.py:115
-msgid "`Initial Prompt:      `{} tokens\n"
-msgstr "`Prompt inicial:      `{} tokens\n"
+msgid "`Retention Expire:    `{}s\n"
+msgstr "`Expiração da retenção:    `{}s\n"
+
+#: commands\admin.py:116
+msgid "`Max Tokens:          `{}\n"
+msgstr "`Max Tokens: `{}\n"
+
+#: commands\admin.py:117
+msgid "`Max Response Tokens: `{}\n"
+msgstr "`Tokens máximos de resposta: `{}\n"
+
+#: commands\admin.py:118
+msgid "`Min Length:          `{}\n"
+msgstr "`Comprimento mínimo:          `{}\\n\n"
 
 #: commands\admin.py:119
+msgid "`Temperature:         `{}\n"
+msgstr "`Temperatura:         `{}\n"
+
+#: commands\admin.py:120
+msgid "`Frequency Penalty:   `{}\n"
+msgstr ""
+
+#: commands\admin.py:121
+msgid "`Presence Penalty:    `{}\n"
+msgstr ""
+
+#: commands\admin.py:122
+msgid "`Seed:                `{}\n"
+msgstr ""
+
+#: commands\admin.py:123
+msgid "`System Prompt:       `{} tokens\n"
+msgstr ""
+
+#: commands\admin.py:124
+msgid "`User Prompt:         `{} tokens\n"
+msgstr ""
+
+#: commands\admin.py:128
 msgid "Assistant Settings"
 msgstr "Definições do Assistente"
 
-#: commands\admin.py:127
+#: commands\admin.py:134
+msgid "System prompt override is **Allowed**, users can set a personal system prompt per convo."
+msgstr ""
+
+#: commands\admin.py:136
+msgid "System prompt override is **Disabled**, users cannot set a personal system prompt per convo."
+msgstr ""
+
+#: commands\admin.py:137
+msgid "\n"
+"*This will be restricted to mods if collaborative conversations are enabled!*"
+msgstr ""
+
+#: commands\admin.py:138
+msgid "System Prompt Overriding"
+msgstr ""
+
+#: commands\admin.py:143
 msgid "Mixed (Please Refresh!)"
 msgstr "Misto (Por favor, atualize!)"
 
-#: commands\admin.py:129
+#: commands\admin.py:145
 msgid "Synced!"
 msgstr "Sincronizado!"
 
-#: commands\admin.py:131
+#: commands\admin.py:147
 msgid "N/A"
 msgstr "N/A"
 
-#: commands\admin.py:134
+#: commands\admin.py:150
 msgid "`Top N Embeddings:  `{}\n"
 msgstr "`Principais N Embeddings:  `{}\n"
 
-#: commands\admin.py:135
+#: commands\admin.py:151
 msgid "`Min Relatedness:   `{}\n"
 msgstr "`Parentesco mínimo:   `{}\n"
 
-#: commands\admin.py:136
+#: commands\admin.py:152
 msgid "`Embedding Method:  `{}\n"
 msgstr "`Método de Incorporação:  `{}\n"
 
-#: commands\admin.py:137
+#: commands\admin.py:153
 msgid "`Encodings:         `{}"
 msgstr ""
 
-#: commands\admin.py:141
+#: commands\admin.py:157
 msgid "Embeddings ({})"
 msgstr "Embeddings ({})"
 
-#: commands\admin.py:147
-msgid "The following roles/users are considered tutors, if function calls are on the model can create its own embeddings: "
-msgstr "As seguintes funções/utilizadores são considerados tutores, se as chamadas de função estiverem ativas, o modelo pode criar suas próprias incorporações: "
+#: commands\admin.py:163
+msgid "The following roles/users are considered tutors. If function calls are on and create_memory is enabled, the model can create its own embeddings: "
+msgstr ""
 
-#: commands\admin.py:156
+#: commands\admin.py:172
 msgid "`Function Calling:  `{}\n"
 msgstr "`Chamada de função:  `{}\n"
 
-#: commands\admin.py:157
+#: commands\admin.py:173
 msgid "`Maximum Recursion: `{}\n"
 msgstr "`Recursão máxima: `{}\n"
 
-#: commands\admin.py:158
+#: commands\admin.py:174
 msgid "`Function Tokens:   `{}\n"
 msgstr "`Tokens de função:   `{}\n"
 
-#: commands\admin.py:162
+#: commands\admin.py:178
 msgid "The following cogs also have functions registered with the assistant\n"
 "{}"
 msgstr "As seguintes rodas dentadas também têm funções registadas no assistente\n"
 "{}"
 
-#: commands\admin.py:167
+#: commands\admin.py:183
 msgid "Custom Functions ({})"
 msgstr "Funções personalizadas ({})"
 
-#: commands\admin.py:174
+#: commands\admin.py:190
 msgid "OpenAI Key"
 msgstr "Chave OpenAI"
 
-#: commands\admin.py:182
+#: commands\admin.py:198
 msgid "Regex Blacklist"
 msgstr "Lista Negra de Regex"
 
-#: commands\admin.py:184
+#: commands\admin.py:200
 msgid "Regex Failure Blocking"
 msgstr "Bloqueio de falhas Regex"
 
-#: commands\admin.py:185
+#: commands\admin.py:201
 msgid "Block reply if regex replacement fails: **{}**"
 msgstr "Bloquear resposta se a substituição do regex falhar: **{}**"
 
-#: commands\admin.py:190
+#: commands\admin.py:206
 msgid "Conversations are stored persistently"
 msgstr "As conversas são armazenadas de forma persistente"
 
-#: commands\admin.py:192
+#: commands\admin.py:208
 msgid "conversations are stored in memory until reboot or reload"
 msgstr "as conversas são armazenadas na memória até serem reiniciadas ou recarregadas"
 
-#: commands\admin.py:194
+#: commands\admin.py:210
 msgid "Persistent Conversations"
 msgstr "Conversas persistentes"
 
-#: commands\admin.py:208
+#: commands\admin.py:224
 msgid "Blacklist"
 msgstr "Lista negra"
 
-#: commands\admin.py:220
+#: commands\admin.py:236
 msgid "Model Role Overrides"
 msgstr "Substituições da função de modelo"
 
-#: commands\admin.py:231
+#: commands\admin.py:247
 msgid "Max Token Role Overrides"
 msgstr "Substituições máximas de funções de fichas"
 
-#: commands\admin.py:242
+#: commands\admin.py:258
 msgid "Max Message Retention Role Overrides"
 msgstr "Substituições de função de retenção máxima de mensagens"
 
-#: commands\admin.py:254
+#: commands\admin.py:270
 msgid "Max Message Retention Time Role Overrides"
 msgstr "Substituições de Funções para Tempo Máximo de Retenção de Mensagens"
 
-#: commands\admin.py:268
+#: commands\admin.py:284
 msgid "Max Response Token Role Overrides"
 msgstr "Máximo de Substituições de Função de Token de Resposta"
 
-#: commands\admin.py:270
+#: commands\admin.py:286
 msgid "Showing settings for {}"
 msgstr "Mostrando configurações para {}"
 
-#: commands\admin.py:276
+#: commands\admin.py:292
 msgid "SystemPrompt"
 msgstr "SistemaPrompt"
 
-#: commands\admin.py:282
+#: commands\admin.py:298
 msgid "InitialPrompt"
 msgstr "Olá! Como posso ajudar você hoje"
 
-#: commands\admin.py:292
+#: commands\admin.py:308
 msgid "Sent your current settings for this server in DMs!"
 msgstr "Enviei as suas configurações atuais para este servidor em mensagens diretas!"
 
-#: commands\admin.py:294
+#: commands\admin.py:310
 msgid "You need to allow DMs so I can message you!"
 msgstr "Tens de permitir DMs para que eu possa enviar-te mensagens!"
 
-#: commands\admin.py:301
+#: commands\admin.py:317
 #, docstring
 msgid "View the token usage stats for this server"
 msgstr "Ver as estatísticas de utilização de tokens para este servidor"
 
-#: commands\admin.py:304
+#: commands\admin.py:320
 msgid "There is no usage data yet!"
 msgstr "Ainda não existem dados de utilização!"
 
-#: commands\admin.py:330
+#: commands\admin.py:346
 msgid "`Total:  `{} (${} @ ${}/1k tokens)"
 msgstr "`Total: `{} (${} @ ${}/1k tokens)"
 
-#: commands\admin.py:337
+#: commands\admin.py:353
 msgid "Free/Self-Hosted"
 msgstr "Gratuito/Auto-hospedado"
 
-#: commands\admin.py:341
+#: commands\admin.py:357
 msgid "`Input:  `{} (${} @ ${}/1k tokens)\n"
 "`Output: `{} (${} @ ${}/1k tokens)\n"
 "`Total:  `{} (${})"
@@ -278,68 +328,66 @@ msgstr "`Entrada: `{} (${} @ ${}/1k tokens)\n"
 "`Saída: `{} (${} @ ${}/1k tokens)\n"
 "`Total: `{} (${})"
 
-#: commands\admin.py:355
-msgid "**Overall Token Usage and Cost**\n"
-"`Input:  `{} (${})\n"
-"`Output: `{} (${})\n"
-"`Total:  `{} (${})"
-msgstr "**Utilização e custo globais de fichas**\n"
-"`Entrada:  `{} (${})\n"
-"`Saída: `{} (${})\n"
-"`Total:  `{} (${})"
-
 #: commands\admin.py:371
+msgid "**Overall Token Usage and Cost**\n"
+"`Input:      `{} (${})\n"
+"`Output:     `{} (${})\n"
+"`Total:      `{} (${})\n"
+"`Tool Calls: `{}\n"
+msgstr ""
+
+#: commands\admin.py:392
 #, docstring
 msgid "Reset the token usage stats for this server"
 msgstr "Repor as estatísticas de utilização de tokens para este servidor"
 
-#: commands\admin.py:374
+#: commands\admin.py:395
 msgid "Token usage stats have been reset!"
 msgstr "As estatísticas de utilização de tokens foram repostas!"
 
-#: commands\admin.py:380
+#: commands\admin.py:401
 #, docstring
 msgid "\n"
-"        Set your OpenAI key\n\n"
-"        Setting this will disable any endpoint overrides you have for this server.\n"
+"        Set your OpenAI key\n"
 "        "
 msgstr ""
 
-#: commands\admin.py:388
+#: commands\admin.py:407
 msgid "Click to set your OpenAI key\n\n"
 "To remove your keys, enter `none`"
 msgstr "Clique para definir sua chave OpenAI\n\n"
 "Para remover suas chaves, digite `nenhuma`"
 
-#: commands\admin.py:396
+#: commands\admin.py:415
 msgid "OpenAI key has been removed!"
 msgstr "A chave OpenAI foi removida!"
 
-#: commands\admin.py:399
+#: commands\admin.py:418
 msgid "No API key was entered!"
 msgstr "Não foi introduzida nenhuma chave API!"
 
-#: commands\admin.py:402
+#: commands\admin.py:421
 msgid "OpenAI key has been set!"
 msgstr "A chave OpenAI foi definida!"
 
-#: commands\admin.py:408
+#: commands\admin.py:427
 #, docstring
 msgid "Set the timezone used for prompt placeholders"
 msgstr "Definir o fuso horário usado para os marcadores de posição do prompt"
 
-#: commands\admin.py:414
+#: commands\admin.py:433
 msgid "Invalid Timezone, did you mean `{}`?"
 msgstr "Fuso horário inválido, queria dizer `{}`?"
 
-#: commands\admin.py:416
+#: commands\admin.py:435
 msgid "Timezone set to **{}** (`{}`)"
 msgstr "Fuso horário definido para **{}** (`{}`)"
 
-#: commands\admin.py:423
+#: commands\admin.py:442
 #, docstring
 msgid "\n"
 "        Set the initial prompt for GPT to use\n\n"
+"        Check out [This Guide](https://platform.openai.com/docs/guides/prompt-engineering) for prompting help.\n\n"
 "        **Placeholders**\n"
 "        - **botname**: [botname]\n"
 "        - **timestamp**: discord timestamp\n"
@@ -368,67 +416,41 @@ msgid "\n"
 "        - **bank**: bank name\n"
 "        - **balance**: the user's current balance\n"
 "        "
-msgstr "Definir o prompt inicial a ser usado pelo GPT\n\n"
-"**Espaços reservados**\n"
-"- **botname**: [botname]\n"
-"- **timestamp**: timestamp do Discord\n"
-"- **day**: Seg-Dom\n"
-"- **date**: MM-DD-AAAA\n"
-"- **time**: HH:MM AM/PM\n"
-"- **timetz**: HH:MM AM/PM Fuso horário\n"
-"- **members**: contagem de membros do servidor\n"
-"- **username**: nome do usuário\n"
-"- **displayname**: nome de exibição do usuário\n"
-"- **roles**: os nomes das funções do usuário\n"
-"- **rolementions**: as menções das funções do usuário\n"
-"- **avatar**: URL do avatar do usuário\n"
-"- **owner**: o proprietário do servidor\n"
-"- **servercreated**: a data/hora de criação do servidor\n"
-"- **server**: o nome do servidor\n"
-"- **py**: versão do Python\n"
-"- **dpy**: versão do discord.py\n"
-"- **red**: versão do Red\n"
-"- **cogs**: lista dos cogs atualmente carregados\n"
-"- **channelname**: nome do canal em que a conversa está ocorrendo\n"
-"- **channelmention**: menção do canal atual\n"
-"- **topic**: tópico do canal atual (se não for fórum ou tópico)\n"
-"- **banktype**: se o banco é global ou não\n"
-"- **currency**: nome da moeda\n"
-"- **bank**: nome do banco\n"
-"- **balance**: o saldo atual do usuário               "
+msgstr ""
 
-#: commands\admin.py:459 commands\admin.py:537
+#: commands\admin.py:480 commands\admin.py:560 commands\base.py:309
 msgid "Failed to read `{}`, bot owner can use `{}` for more information"
 msgstr "Falha na leitura de `{}`, o proprietário do bot pode usar `{}` para obter mais informações"
 
-#: commands\admin.py:475 commands\admin.py:554
+#: commands\admin.py:496 commands\admin.py:577
 msgid "Your system and initial prompt combined will use {} tokens!\n"
 "Write a prompt combination using {} tokens or less to leave 10% of your configured max tokens for your response."
 msgstr "O seu sistema e a pergunta inicial combinados utilizarão {} tokens!\n"
 "Escreva uma combinação de comandos que utilize {} tokens ou menos para deixar 10% do máximo de tokens configurados para a sua resposta."
 
-#: commands\admin.py:483
+#: commands\admin.py:504
 msgid "The initial prompt has been removed!"
 msgstr "O aviso inicial foi removido!"
 
-#: commands\admin.py:486
+#: commands\admin.py:507
 msgid "Please include an initial prompt or .txt file!\n"
 "Use `{}` to view details for this command"
 msgstr "Inclua um prompt inicial ou um arquivo .txt!\n"
 "Utilize `{}` para ver os detalhes deste comando"
 
-#: commands\admin.py:492
+#: commands\admin.py:513
 msgid "The initial prompt has been overwritten!"
 msgstr "A mensagem inicial foi substituída!"
 
-#: commands\admin.py:495
+#: commands\admin.py:516
 msgid "Initial prompt has been set!"
 msgstr "O prompt inicial foi definido!"
 
-#: commands\admin.py:501
+#: commands\admin.py:522
 #, docstring
 msgid "\n"
 "        Set the system prompt for GPT to use\n\n"
+"        Check out [This Guide](https://platform.openai.com/docs/guides/prompt-engineering) for prompting help.\n\n"
 "        **Placeholders**\n"
 "        - **botname**: [botname]\n"
 "        - **timestamp**: discord timestamp\n"
@@ -457,110 +479,125 @@ msgid "\n"
 "        - **bank**: bank name\n"
 "        - **balance**: the user's current balance\n"
 "        "
-msgstr "Definir o prompt do sistema a ser usado pelo GPT\n\n"
-"**Espaços reservados**\n"
-"- **botname**: [botname]\n"
-"- **timestamp**: timestamp do Discord\n"
-"- **dia**: Seg-Dom\n"
-"- **date**: MM-DD-AAAA\n"
-"- **hora**: HH:MM AM/PM\n"
-"- **timetz**: HH:MM AM/PM Fuso horário\n"
-"- **members**: contagem de membros do servidor\n"
-"- **username**: nome do usuário\n"
-"- **displayname**: nome de exibição do usuário\n"
-"- **roles**: nomes das funções do usuário\n"
-"- **rolementions**: menções das funções do usuário\n"
-"- **avatar**: URL do avatar do usuário\n"
-"- **owner**: proprietário do servidor\n"
-"- **servercreated**: data/hora de criação do servidor\n"
-"- **server**: nome do servidor\n"
-"- **py**: versão do Python\n"
-"- **dpy**: versão do discord.py\n"
-"- **red**: versão do Red\n"
-"- **cogs**: lista dos cogs carregados atualmente\n"
-"- **channelname**: nome do canal onde a conversa está ocorrendo\n"
-"- **channelmention**: menção do canal atual\n"
-"- **topic**: tópico do canal atual (se não for fórum ou tópico)\n"
-"- **banktype**: se o banco é global ou não\n"
-"- **currency**: nome da moeda\n"
-"- **bank**: nome do banco\n"
-"- **balance**: saldo atual do usuário               "
+msgstr ""
 
-#: commands\admin.py:562
+#: commands\admin.py:585
 msgid "The system prompt has been removed!"
 msgstr "O prompt do sistema foi removido!"
 
-#: commands\admin.py:565
+#: commands\admin.py:588
 msgid "Please include a system prompt or .txt file!\n"
 "Use `{}` to view details for this command"
 msgstr "Por favor, inclua um prompt do sistema ou um arquivo .txt!\n"
 "Use `{}` para visualizar os detalhes deste comando"
 
-#: commands\admin.py:571
+#: commands\admin.py:594
 msgid "The system prompt has been overwritten!"
 msgstr "A mensagem do sistema foi substituída!"
 
-#: commands\admin.py:574
+#: commands\admin.py:597
 msgid "System prompt has been set!"
 msgstr "O prompt do sistema foi definido!"
 
-#: commands\admin.py:588
+#: commands\admin.py:611
 #, docstring
 msgid "Set the channel for the assistant"
 msgstr "Defina o canal para o assistente"
 
-#: commands\admin.py:593
+#: commands\admin.py:616
 msgid "Assistant channel has been removed"
 msgstr "O canal do assistente foi removido"
 
-#: commands\admin.py:596
+#: commands\admin.py:619
 msgid "Assistant channel has been overwritten"
 msgstr "O canal do assistente foi substituído"
 
-#: commands\admin.py:599
+#: commands\admin.py:622
 msgid "Channel id has been set"
 msgstr "O id do canal foi definido"
 
-#: commands\admin.py:605
+#: commands\admin.py:628
+#, docstring
+msgid "Toggle allowing per-conversation system prompt overriding"
+msgstr ""
+
+#: commands\admin.py:632
+msgid "System prompt overriding **Disabled**, users cannot set per-convo system prompts"
+msgstr ""
+
+#: commands\admin.py:635
+msgid "System prompt overriding **Enabled**, users can now set per-convo system prompts"
+msgstr ""
+
+#: commands\admin.py:640
 #, docstring
 msgid "Toggle whether questions need to end with **__?__**"
 msgstr "Alterar se as perguntas precisam terminar com **__?__**"
 
-#: commands\admin.py:609
+#: commands\admin.py:644
 msgid "Questions will be answered regardless of if they end with **?**"
 msgstr "As perguntas serão respondidas independentemente de terminarem com **?**"
 
-#: commands\admin.py:612
+#: commands\admin.py:647
 msgid "Questions must end in **?** to be answered"
 msgstr "As perguntas devem terminar em **?** para serem respondidas"
 
-#: commands\admin.py:617
+#: commands\admin.py:652
+#, docstring
+msgid "Toggle whether the bot responds to mentions in any channel"
+msgstr ""
+
+#: commands\admin.py:656
+msgid "The bot will no longer respond to mentions"
+msgstr ""
+
+#: commands\admin.py:659
+msgid "The bot will now respond to mentions"
+msgstr ""
+
+#: commands\admin.py:664
 #, docstring
 msgid "Toggle the assistant on or off"
 msgstr "Ativar ou desativar o assistente"
 
-#: commands\admin.py:621
+#: commands\admin.py:668
 msgid "The assistant is now **Disabled**"
 msgstr "O assistente está agora **Desativado**"
 
-#: commands\admin.py:624
+#: commands\admin.py:671
 msgid "The assistant is now **Enabled**"
 msgstr "O assistente está agora **Ativado**"
 
-#: commands\admin.py:629
+#: commands\admin.py:676
 #, docstring
 msgid "Toggle whether to ping the user on replies"
 msgstr "Alternar se o utilizador deve receber ping nas respostas"
 
-#: commands\admin.py:633
+#: commands\admin.py:680
 msgid "Mentions are now **Disabled**"
 msgstr "As menções estão agora **Desativadas**"
 
-#: commands\admin.py:636
+#: commands\admin.py:683
 msgid "Mentions are now **Enabled**"
 msgstr "As menções estão agora **ativadas**"
 
-#: commands\admin.py:641
+#: commands\admin.py:688
+#, docstring
+msgid "\n"
+"        Toggle collaborative conversations\n\n"
+"        Multiple people speaking in a channel will be treated as a single conversation.\n"
+"        "
+msgstr ""
+
+#: commands\admin.py:696
+msgid "Collaborative conversations are now **Disabled**"
+msgstr ""
+
+#: commands\admin.py:699
+msgid "Collaborative conversations are now **Enabled**"
+msgstr ""
+
+#: commands\admin.py:704
 #, docstring
 msgid "\n"
 "        Set the max messages for a conversation\n\n"
@@ -578,19 +615,19 @@ msgstr "\n"
 "Defina como 0 para desativar a retenção da conversa\n\n"
 "**Nota:** *a contagem real de mensagens pode exceder a retenção máxima durante uma chamada à API*        "
 
-#: commands\admin.py:654 commands\admin.py:1561
+#: commands\admin.py:717 commands\admin.py:1759
 msgid "Max retention needs to be at least 0 or higher"
 msgstr "A retenção máxima precisa ser pelo menos 0 ou maior"
 
-#: commands\admin.py:658
+#: commands\admin.py:721
 msgid "Conversation retention has been disabled"
 msgstr "A retenção de conversas foi desativada"
 
-#: commands\admin.py:660
+#: commands\admin.py:723
 msgid "Conversations can now retain up to **{}** messages"
 msgstr "As conversas agora podem reter até **{}** mensagens"
 
-#: commands\admin.py:665
+#: commands\admin.py:728
 #, docstring
 msgid "\n"
 "        Set the conversation expiration time\n\n"
@@ -603,19 +640,19 @@ msgstr "Definir o tempo de expiração da conversação\n\n"
 "isto só se aplica a qualquer conversa entre o utilizador e o bot depois disso.\n\n"
 "Definir como 0 para guardar as conversas indefinidamente ou até o bot reiniciar ou o cog ser recarregado               "
 
-#: commands\admin.py:674 commands\admin.py:1584
+#: commands\admin.py:737 commands\admin.py:1782
 msgid "Max retention time needs to be at least 0 or higher"
 msgstr "O tempo máximo de retenção precisa ser pelo menos 0 ou maior"
 
-#: commands\admin.py:678
+#: commands\admin.py:741
 msgid "Conversations will be stored until the bot restarts or the cog is reloaded"
 msgstr "As conversas serão armazenadas até que o bot seja reiniciado ou o cog seja recarregado"
 
-#: commands\admin.py:680
+#: commands\admin.py:743
 msgid "Conversations will be considered active for **{}** seconds"
 msgstr "As conversas serão consideradas ativas por **{}** segundos"
 
-#: commands\admin.py:685
+#: commands\admin.py:748
 #, docstring
 msgid "\n"
 "        Set the temperature for the model (0.0 - 2.0)\n"
@@ -624,15 +661,15 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: commands\admin.py:692
+#: commands\admin.py:755
 msgid "Temperature must be between **0.0** and **2.0**"
 msgstr "A temperatura deve estar compreendida entre **0,0** e **2,0**"
 
-#: commands\admin.py:697
+#: commands\admin.py:760
 msgid "Temperature has been set to **{}**"
 msgstr "A temperatura foi definida para **{}**"
 
-#: commands\admin.py:701
+#: commands\admin.py:764
 #, docstring
 msgid "\n"
 "        Set the frequency penalty for the model (-2.0 to 2.0)\n"
@@ -641,15 +678,15 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: commands\admin.py:708
+#: commands\admin.py:771
 msgid "Frequency penalty must be between **-2.0** and **2.0**"
 msgstr ""
 
-#: commands\admin.py:713
+#: commands\admin.py:776
 msgid "Frequency penalty has been set to **{}**"
 msgstr ""
 
-#: commands\admin.py:717
+#: commands\admin.py:780
 #, docstring
 msgid "\n"
 "        Set the presence penalty for the model (-2.0 to 2.0)\n"
@@ -658,15 +695,15 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: commands\admin.py:724
+#: commands\admin.py:787
 msgid "Presence penalty must be between **-2.0** and **2.0**"
 msgstr ""
 
-#: commands\admin.py:729
+#: commands\admin.py:792
 msgid "Presence penalty has been set to **{}**"
 msgstr ""
 
-#: commands\admin.py:733
+#: commands\admin.py:796
 #, docstring
 msgid "\n"
 "        Make the model more deterministic by setting a seed for the model.\n"
@@ -675,34 +712,32 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: commands\admin.py:740
+#: commands\admin.py:803
 msgid "Seed must be a positive integer"
 msgstr ""
 
-#: commands\admin.py:744
+#: commands\admin.py:807
 msgid "The seed has been set to **{}**"
 msgstr ""
 
-#: commands\admin.py:748
+#: commands\admin.py:811
 #, docstring
 msgid "\n"
 "        Refresh embedding weights\n\n"
-"        *This command can be used when changing the embedding method you use with your self-hosted llm*\n\n"
+"        *This command can be used when changing the embedding model*\n\n"
 "        Embeddings that were created using OpenAI cannot be use with the self-hosted model and vice versa\n"
 "        "
-msgstr "Atualizar os pesos de incorporação\n\n"
-"*Este comando pode ser usado ao alterar o método de incorporação que você utiliza com seu llm auto-hospedado*\n\n"
-"Os embeddings criados usando o OpenAI não podem ser usados com o modelo auto-hospedado e vice-versa               "
+msgstr ""
 
-#: commands\admin.py:761
+#: commands\admin.py:824
 msgid "{} embeddings have been updated"
 msgstr "As incrustações {} foram atualizadas"
 
-#: commands\admin.py:763
+#: commands\admin.py:826
 msgid "No embeddings needed to be refreshed"
 msgstr "Não é necessário atualizar as incorporações"
 
-#: commands\admin.py:767
+#: commands\admin.py:830
 #, docstring
 msgid "Toggle whether GPT can call functions\n\n"
 "        Only the following models can call functions at the moment (With OpenAI key only)\n"
@@ -718,15 +753,15 @@ msgstr "Alternar se o GPT pode chamar funções\n\n"
 "        - gpt-4\n"
 "        - gpt-4-32k        "
 
-#: commands\admin.py:778
+#: commands\admin.py:841
 msgid "Assistant will not call functions"
 msgstr "O Assistente não irá chamar funções"
 
-#: commands\admin.py:781
+#: commands\admin.py:844
 msgid "Assistant will now call functions as needed"
 msgstr "O assistente agora irá chamar as funções conforme necessário"
 
-#: commands\admin.py:786
+#: commands\admin.py:849
 #, docstring
 msgid "Set the maximum function calls allowed in a row\n\n"
 "        This sets how many times the model can call functions in a row\n\n"
@@ -744,15 +779,15 @@ msgstr "Definir o máximo de chamadas de função permitidas em sequência\n\n"
 "- gpt-4\n"
 "- gpt-4-32k        "
 
-#: commands\admin.py:799
+#: commands\admin.py:862
 msgid "Function calls will not be used since recursion is 0"
 msgstr "As chamadas de função não serão usadas, uma vez que a recursão é 0"
 
-#: commands\admin.py:801
+#: commands\admin.py:864
 msgid "The model can now call various functions up to {} times before returning a response"
 msgstr "O modelo agora pode chamar várias funções até {} vezes antes de retornar uma resposta"
 
-#: commands\admin.py:807
+#: commands\admin.py:870
 #, docstring
 msgid "\n"
 "        set min character length for questions\n\n"
@@ -761,19 +796,19 @@ msgid "\n"
 msgstr "definir o comprimento mínimo de caracteres para as perguntas\n\n"
 "Definir como 0 para responder a qualquer coisa               "
 
-#: commands\admin.py:813
+#: commands\admin.py:876
 msgid "Minimum length needs to be at least 0 or higher"
 msgstr "O comprimento mínimo precisa ser pelo menos 0 ou maior"
 
-#: commands\admin.py:817
+#: commands\admin.py:880
 msgid "{} will respond regardless of message length"
 msgstr "{} responderá independentemente do comprimento da mensagem"
 
-#: commands\admin.py:820
+#: commands\admin.py:883
 msgid "{} will respond to messages with more than **{}** characters"
 msgstr "{} responderá a mensagens com mais de **{}** caracteres"
 
-#: commands\admin.py:828
+#: commands\admin.py:891
 #, docstring
 msgid "\n"
 "        Set the max tokens that the bot will send to the model\n\n"
@@ -790,17 +825,17 @@ msgstr "Definir o número máximo de tokens que o bot enviará para o modelo.\n\
 "- Idealmente, defina o máximo para 500 tokens a menos do que o limite máximo do modelo, para permitir respostas adequadas.\n\n"
 "Usar mais tokens do que o modelo pode lidar resultará em exceções        "
 
-#: commands\admin.py:839 commands\admin.py:1512
+#: commands\admin.py:902 commands\admin.py:1710
 msgid "Use at least 100 tokens"
 msgstr "Utilize pelo menos 100 tokens"
 
-#: commands\admin.py:842
+#: commands\admin.py:905
 msgid "The maximum amount of tokens sent in a payload will be {}.\n"
 "*Note that models with token limits lower than this will still be trimmed*"
 msgstr "A quantidade máxima de tokens enviados em um payload será {}.\n"
 "*Observe que os modelos com limites de tokens inferiores a este ainda serão cortados*"
 
-#: commands\admin.py:851
+#: commands\admin.py:914
 #, docstring
 msgid "\n"
 "        Set the max response tokens the model can respond with\n\n"
@@ -810,84 +845,49 @@ msgstr "\n"
 "        Definir o número máximo de tokens de resposta com que o modelo pode responder\n\n"
 "        Definir como 0 para que os tokens de resposta sejam dinâmicos "
 
-#: commands\admin.py:857 commands\admin.py:1538
+#: commands\admin.py:920 commands\admin.py:1736
 msgid "Cannot be a negative number!"
 msgstr "Não pode ser um número negativo!"
 
-#: commands\admin.py:861
+#: commands\admin.py:924
 msgid "The maximum amount of tokens in the models responses will be {}."
 msgstr "A quantidade máxima de tokens nas respostas dos modelos será {}."
 
-#: commands\admin.py:863
+#: commands\admin.py:926
 msgid "Response tokens will now be dynamic"
 msgstr "Os tokens de resposta agora serão dinâmicos"
 
-#: commands\admin.py:869
+#: commands\admin.py:932
 #, docstring
 msgid "\n"
 "        Set the OpenAI model to use\n"
 "        "
 msgstr ""
 
-#: commands\admin.py:877 commands\admin.py:1478
-msgid "**Chat**\n"
-"{}\n"
-"**Completion**\n"
-"{}\n"
-msgstr "**Conversa**\n"
-"{}\n"
-"**Conclusão**\n"
-"{}\n"
-
-#: commands\admin.py:880 commands\admin.py:1481
+#: commands\admin.py:944 commands\admin.py:972 commands\admin.py:1679
 msgid "Valid models are:\n"
 "{}"
 msgstr "Os modelos válidos são:\n"
 "{}"
 
-#: commands\admin.py:887 commands\admin.py:1488
+#: commands\admin.py:951 commands\admin.py:1686
 msgid "Error: {}"
 msgstr ""
 
-#: commands\admin.py:891
+#: commands\admin.py:955
 msgid "The **{}** model will now be used"
 msgstr "O modelo **{}** será agora utilizado"
 
-#: commands\admin.py:896
+#: commands\admin.py:960
 #, docstring
-msgid "\n"
-"        Set a custom endpoint to use a [self-hosted model](https://github.com/vertyco/gpt-api)\n\n"
-"        Example: `http://localhost:8000/v1`\n\n"
-"        Endpoint overrides will not be used if there is an API key set.\n"
-"        "
+msgid "Set the OpenAI Embedding model to use"
 msgstr ""
 
-#: commands\admin.py:904 commands\admin.py:929
-msgid "Invalid URL, must start with `http`"
+#: commands\admin.py:974
+msgid "The **{}** model will now be used for embeddings"
 msgstr ""
 
-#: commands\admin.py:908 commands\admin.py:932
-msgid "Endpoint has been reset!"
-msgstr "O ponto final foi reiniciado!"
-
-#: commands\admin.py:911 commands\admin.py:935
-msgid "Endpoint has been overwritten!"
-msgstr "O ponto final foi substituído!"
-
-#: commands\admin.py:914 commands\admin.py:938
-msgid "Endpoint has been set!"
-msgstr "O ponto final foi definido!"
-
-#: commands\admin.py:921
-#, docstring
-msgid "\n"
-"        Set a custom global endpoint to use a [self-hosted model](https://github.com/vertyco/gpt-api) for all guilds as a fallback\n\n"
-"        Example: `http://localhost:8000/v1`\n\n"
-"        Endpoint overrides will not be used if there is an API key set.\n"
-"        "
-msgstr ""
-
-#: commands\admin.py:945
+#: commands\admin.py:979
 #, docstring
 msgid "\n"
 "        Wipe saved embeddings for the assistant\n\n"
@@ -896,15 +896,15 @@ msgid "\n"
 msgstr "Limpar os embeddings guardados para o assistente.\n\n"
 "Esta ação elimina todos e quaisquer dados de treino de incorporação guardados para o assistente        "
 
-#: commands\admin.py:951 commands\admin.py:1716
+#: commands\admin.py:985 commands\admin.py:1914
 msgid "Not wiping embedding data"
 msgstr "Não apagando os dados de incorporação"
 
-#: commands\admin.py:954
+#: commands\admin.py:988
 msgid "All embedding data has been wiped!"
 msgstr "Todos os dados de incorporação foram apagados!"
 
-#: commands\admin.py:959
+#: commands\admin.py:993
 #, docstring
 msgid "\n"
 "        Wipe saved conversations for the assistant in this server\n\n"
@@ -913,15 +913,15 @@ msgid "\n"
 msgstr "Limpar as conversas guardadas para o assistente neste servidor.\n\n"
 "Esta ação elimina todas e quaisquer conversas guardadas para o assistente        "
 
-#: commands\admin.py:965 commands\admin.py:1689
+#: commands\admin.py:999 commands\admin.py:1887
 msgid "Not wiping conversations"
 msgstr "Não apagando as conversas"
 
-#: commands\admin.py:969
+#: commands\admin.py:1003
 msgid "Conversations have been wiped in this server!"
 msgstr "As conversas foram apagadas neste servidor!"
 
-#: commands\admin.py:974
+#: commands\admin.py:1008
 #, docstring
 msgid "\n"
 "        Set the embedding inclusion amout\n\n"
@@ -930,19 +930,19 @@ msgid "\n"
 msgstr "Defina a quantidade de inclusão de incorporação\n\n"
 "Top N é a quantidade de incorporações a incluir na mensagem inicial               "
 
-#: commands\admin.py:980
+#: commands\admin.py:1014
 msgid "Top N must be between 0 and 10"
 msgstr "Top N deve estar entre 0 e 10"
 
-#: commands\admin.py:984
+#: commands\admin.py:1018
 msgid "Embeddings will not be pulled during conversations"
 msgstr "As incorporações não serão retiradas durante as conversações"
 
-#: commands\admin.py:986
+#: commands\admin.py:1020
 msgid "Up to **{}** embeddings will be pulled for each interaction"
 msgstr "Serão extraídos até **{}** embeddings para cada interação"
 
-#: commands\admin.py:991
+#: commands\admin.py:1025
 #, docstring
 msgid "\n"
 "        Set the minimum relatedness an embedding must be to include with the prompt\n\n"
@@ -955,32 +955,32 @@ msgstr "Definir a relação mínima que uma incorporação deve ter para ser inc
 "As perguntas são convertidas em incorporações e comparadas com as incorporações armazenadas para selecionar as mais relevantes; esta é a pontuação derivada dessa comparação.\n\n"
 "**Dica**: Quanto mais próximo de 1 estiver, mais determinísticos e precisos serão os resultados, mas não seja *muito* rigoroso ou não haverá resultados        "
 
-#: commands\admin.py:1001
+#: commands\admin.py:1035
 msgid "Minimum relatedness must be between 0 and 1"
 msgstr "O grau mínimo de relacionamento deve estar entre 0 e 1"
 
-#: commands\admin.py:1004
+#: commands\admin.py:1038
 msgid "Minimum relatedness has been set to **{}**"
 msgstr "O parentesco mínimo foi definido para **{}**"
 
-#: commands\admin.py:1009
+#: commands\admin.py:1043
 #, docstring
 msgid "Remove certain words/phrases in the bot's responses"
 msgstr "Remover certas palavras/frases nas respostas do bot"
 
-#: commands\admin.py:1013
+#: commands\admin.py:1047
 msgid "That regex is invalid"
 msgstr "Esse regex é inválido"
 
-#: commands\admin.py:1017
+#: commands\admin.py:1051
 msgid "`{}` has been **Removed** from the blacklist"
 msgstr "`{}` foi **Removido** da lista negra"
 
-#: commands\admin.py:1020
+#: commands\admin.py:1054
 msgid "`{}` has been **Added** to the blacklist"
 msgstr "`{}` foi **Adicionado** à lista negra"
 
-#: commands\admin.py:1025
+#: commands\admin.py:1059
 #, docstring
 msgid "\n"
 "        Toggle whether failed regex blocks the assistant's reply\n\n"
@@ -991,15 +991,31 @@ msgstr "Altere se o regex falhado bloqueia a resposta do assistente.\n\n"
 "Alguns regexes podem causar [catastrophic backtracking](https://www.rexegg.com/regex-explosive-quantifiers.html).\n"
 "O bot pode lidar com segurança se isso acontecer e irá continuar ou bloquear a resposta        "
 
-#: commands\admin.py:1034
+#: commands\admin.py:1068
 msgid "If a regex blacklist fails, the bots reply will be blocked"
 msgstr "Se uma lista negra de regex falhar, a resposta dos bots será bloqueada"
 
-#: commands\admin.py:1037
+#: commands\admin.py:1071
 msgid "If a reges blacklist fails, the bot will still reply"
 msgstr "Se uma lista negra de reges falhar, o bot ainda irá responder"
 
-#: commands\admin.py:1042
+#: commands\admin.py:1076
+#, docstring
+msgid "\n"
+"        Toggle question mode\n\n"
+"        If question mode is on, embeddings will only be sourced during the first message of a conversation and messages that end in **?**\n"
+"        "
+msgstr ""
+
+#: commands\admin.py:1084
+msgid "Question mode is now **Disabled**"
+msgstr ""
+
+#: commands\admin.py:1087
+msgid "Question mode is now **Enabled**"
+msgstr ""
+
+#: commands\admin.py:1092
 #, docstring
 msgid "\n"
 "        Cycle between embedding methods\n\n"
@@ -1016,19 +1032,19 @@ msgstr "Ciclo entre métodos de incorporação\n\n"
 "**As incorporações híbridas** são uma combinação, com a primeira incorporação sendo armazenada na conversa e as demais sendo dinâmicas, o que economiza um pouco no uso de tokens.\n\n"
 "As incorporações dinâmicas são úteis para perguntas e respostas, mas não tanto para conversas em que é necessário manter o contexto das incorporações. O método híbrido é um bom meio-termo.               "
 
-#: commands\admin.py:1057
+#: commands\admin.py:1107
 msgid "Embedding method has been set to **Static**"
 msgstr "O método de incorporação foi definido como **Estático**"
 
-#: commands\admin.py:1060
+#: commands\admin.py:1110
 msgid "Embedding method has been set to **Hybrid**"
 msgstr "O método de incorporação foi definido para **Híbrido**"
 
-#: commands\admin.py:1063
+#: commands\admin.py:1113
 msgid "Embedding method has been set to **Dynamic**"
 msgstr "O método de incorporação foi definido como **Dinâmico**"
 
-#: commands\admin.py:1068
+#: commands\admin.py:1118
 #, docstring
 msgid "Import embeddings to use with the assistant\n\n"
 "        Args:\n"
@@ -1040,57 +1056,57 @@ msgstr "Importar embeddings para usar com o assistente\n\n"
 "            overwrite (bool): substituir embeddings com nomes de entrada existentes\n\n"
 "        Isso também irá ler arquivos do Excel        "
 
-#: commands\admin.py:1081
+#: commands\admin.py:1131
 msgid "You must attach **.csv** files to this command or reference a message that has them!"
 msgstr "É necessário anexar ficheiros **.csv** a este comando ou fazer referência a uma mensagem que os tenha!"
 
-#: commands\admin.py:1094 commands\admin.py:1173
+#: commands\admin.py:1144 commands\admin.py:1220 commands\admin.py:1268
 msgid "Error reading **{}**: {}"
 msgstr "Erro ao ler **{}**: {}"
 
-#: commands\admin.py:1102
+#: commands\admin.py:1149
 msgid "**{}** contains invalid formatting, columns must be "
 msgstr "**{}** contém formatação inválida, as colunas devem ser "
 
-#: commands\admin.py:1110
+#: commands\admin.py:1157
 msgid "There are no valid files to import!"
 msgstr "Não existem ficheiros válidos para importar!"
 
-#: commands\admin.py:1112
+#: commands\admin.py:1159 commands\admin.py:1285
 msgid "Processing the following files in the background\n"
 "{}"
 msgstr "Processando os seguintes arquivos em segundo plano\n"
 "{}"
 
-#: commands\admin.py:1126
+#: commands\admin.py:1173 commands\admin.py:1296
 msgid "processing"
 msgstr "processamento"
 
-#: commands\admin.py:1128
+#: commands\admin.py:1175 commands\admin.py:1298
 msgid "overwriting"
 msgstr "sobregravação"
 
-#: commands\admin.py:1135
+#: commands\admin.py:1182 commands\admin.py:1306
 msgid "{}\n"
 "`Currently {}: `**{}** ({}/{})"
 msgstr "{}\n"
 "`Atualmente {}: `**{}** ({}/{})"
 
-#: commands\admin.py:1141
+#: commands\admin.py:1188 commands\admin.py:1313
 msgid "Failed to process embedding: `{}`"
 msgstr "Falha ao processar a incorporação: `{}`"
 
-#: commands\admin.py:1146
+#: commands\admin.py:1193 commands\admin.py:1326 commands\admin.py:1330
 msgid "{}\n"
 "**COMPLETE**"
 msgstr "{}\n"
 "**COMPLETO**"
 
-#: commands\admin.py:1147
+#: commands\admin.py:1194 commands\admin.py:1327
 msgid "Successfully imported {} embeddings!"
 msgstr "Importou com sucesso {} embeddings!"
 
-#: commands\admin.py:1152
+#: commands\admin.py:1199
 #, docstring
 msgid "Import embeddings to use with the assistant\n\n"
 "        Args:\n"
@@ -1100,21 +1116,53 @@ msgstr "Importar embeddings para usar com o assistente\n\n"
 "        Args:\n"
 "            overwrite (bool): substituir embeddings com nomes de entrada existentes        "
 
-#: commands\admin.py:1161 commands\admin.py:1673
+#: commands\admin.py:1208 commands\admin.py:1871
 msgid "You must attach **.json** files to this command or reference a message that has them!"
 msgstr "É necessário anexar ficheiros **.json** a este comando ou fazer referência a uma mensagem que os tenha!"
 
-#: commands\admin.py:1184
+#: commands\admin.py:1231
 msgid "Failed to import **{}** because it contains invalid formatting!"
 msgstr "Falha ao importar **{}** porque contém uma formatação inválida!"
 
-#: commands\admin.py:1189
+#: commands\admin.py:1236
 msgid "Imported the following files: `{}`\n"
 "{} embeddings imported"
 msgstr "Importou os seguintes ficheiros: `{}`\n"
 "{} incorporações importadas"
 
-#: commands\admin.py:1198
+#: commands\admin.py:1244
+#, docstring
+msgid "Import embeddings from an .xlsx file\n\n"
+"        Args:\n"
+"            overwrite (bool): overwrite embeddings with existing entry names\n"
+"        "
+msgstr ""
+
+#: commands\admin.py:1254
+msgid "You must attach **.xlsx** files to this command or reference a message that has them!"
+msgstr ""
+
+#: commands\admin.py:1277
+msgid "{} is invalid! Must contain the following columns: {}"
+msgstr ""
+
+#: commands\admin.py:1331
+msgid "No embeddings needed to be updated!"
+msgstr ""
+
+#: commands\admin.py:1336
+#, docstring
+msgid "\n"
+"        Export embeddings to an .xlsx file\n\n"
+"        **Note:** csv exports do not include the embedding values\n"
+"        "
+msgstr ""
+
+#: commands\admin.py:1343 commands\admin.py:1386 commands\admin.py:1430
+msgid "There are no embeddings to export!"
+msgstr "Não existem incorporações para exportar!"
+
+#: commands\admin.py:1380
 #, docstring
 msgid "Export embeddings to a .csv file\n\n"
 "        **Note:** csv exports do not include the embedding values\n"
@@ -1122,29 +1170,25 @@ msgid "Export embeddings to a .csv file\n\n"
 msgstr "Exportar embeddings para um ficheiro .csv\n\n"
 "        **Nota:** as exportações csv não incluem os valores de incorporação        "
 
-#: commands\admin.py:1204 commands\admin.py:1248
-msgid "There are no embeddings to export!"
-msgstr "Não existem incorporações para exportar!"
-
-#: commands\admin.py:1217 commands\admin.py:1237 commands\admin.py:1256
-#: commands\admin.py:1276 commands\admin.py:1659
+#: commands\admin.py:1399 commands\admin.py:1419 commands\admin.py:1438
+#: commands\admin.py:1458 commands\admin.py:1857
 msgid "Here is your embeddings export!"
 msgstr "Aqui está a exportação das suas incorporações!"
 
-#: commands\admin.py:1220 commands\admin.py:1259 commands\admin.py:1641
+#: commands\admin.py:1402 commands\admin.py:1441 commands\admin.py:1839
 msgid "File too large, attempting to compress..."
 msgstr "Ficheiro demasiado grande, a tentar comprimir..."
 
-#: commands\admin.py:1240 commands\admin.py:1279 commands\admin.py:1662
+#: commands\admin.py:1422 commands\admin.py:1461 commands\admin.py:1860
 msgid "File is still too large even with compression!"
 msgstr "O arquivo ainda está muito grande mesmo com a compressão!"
 
-#: commands\admin.py:1245
+#: commands\admin.py:1427
 #, docstring
 msgid "Export embeddings to a json file"
 msgstr "Exportar embeddings para um ficheiro json"
 
-#: commands\admin.py:1287
+#: commands\admin.py:1469
 #, docstring
 msgid "\n"
 "        Manage embeddings for training\n\n"
@@ -1159,7 +1203,7 @@ msgstr "Gerir incorporações para treinamento.\n\n"
 "**Nota**\n"
 "Você pode inserir uma consulta de pesquisa com este comando para abrir o menu e ir diretamente para a seleção de incorporação correspondente        "
 
-#: commands\admin.py:1335
+#: commands\admin.py:1517
 #, docstring
 msgid "\n"
 "        Add custom function calls for Assistant to use\n\n"
@@ -1187,7 +1231,7 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: commands\admin.py:1417
+#: commands\admin.py:1599
 #, docstring
 msgid "\n"
 "        Add/Remove items from the blacklist\n\n"
@@ -1196,15 +1240,15 @@ msgid "\n"
 msgstr "Adicionar/Remover itens da lista negra\n\n"
 "`membro_de_função_do_canal` pode ser um membro, função, canal ou canal de categoria        "
 
-#: commands\admin.py:1425
+#: commands\admin.py:1607
 msgid "{} has been removed from the blacklist"
 msgstr "{} foi removido da lista negra"
 
-#: commands\admin.py:1428
+#: commands\admin.py:1610
 msgid "{} has been added to the blacklist"
 msgstr "{} foi adicionado à lista negra"
 
-#: commands\admin.py:1441
+#: commands\admin.py:1623
 #, docstring
 msgid "\n"
 "        Add/Remove items from the tutor list.\n\n"
@@ -1215,15 +1259,35 @@ msgstr "Adicionar/Remover itens da lista de tutores.\n\n"
 "Se utilizar a chamada de funções da OpenAI e falar com um tutor, a IA é capaz de criar as suas próprias incorporações para se lembrar mais tarde.\n\n"
 "`role_or_member` pode ser um membro ou uma função        "
 
-#: commands\admin.py:1451
+#: commands\admin.py:1633
 msgid "{} has been removed from the tutor list"
 msgstr "{} foi removido da lista de tutores"
 
-#: commands\admin.py:1454
+#: commands\admin.py:1636
 msgid "{} has been added to the tutor list"
 msgstr "{} foi adicionado à lista de tutores"
 
-#: commands\admin.py:1459
+#: commands\admin.py:1641
+#, docstring
+msgid "\n"
+"        Set the channel for training messages\n\n"
+"        If no channel is specified, the channel will be reset\n"
+"        "
+msgstr ""
+
+#: commands\admin.py:1649
+msgid "Training channel has been reset!"
+msgstr ""
+
+#: commands\admin.py:1652
+msgid "I do not have permission to send messages in that channel"
+msgstr ""
+
+#: commands\admin.py:1654
+msgid "Training channel has been set to {}"
+msgstr ""
+
+#: commands\admin.py:1659
 #, docstring
 msgid "\n"
 "        Override settings for specific roles\n\n"
@@ -1232,7 +1296,7 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: commands\admin.py:1468
+#: commands\admin.py:1668
 #, docstring
 msgid "\n"
 "        Assign a role to use a model\n\n"
@@ -1242,19 +1306,19 @@ msgstr "\n"
 "Atribuir uma função para utilizar um modelo\n\n"
 "*Especificar a mesma função e modelo para remover a substituição*        "
 
-#: commands\admin.py:1494
+#: commands\admin.py:1692
 msgid "Role override for {} removed!"
 msgstr "Substituição de função para {} removida!"
 
-#: commands\admin.py:1497
+#: commands\admin.py:1695
 msgid "Role override for {} overwritten!"
 msgstr "Substituição de função para {} substituída!"
 
-#: commands\admin.py:1500
+#: commands\admin.py:1698
 msgid "Role override for {} added!"
 msgstr "Substituição de função para {} adicionada!"
 
-#: commands\admin.py:1506
+#: commands\admin.py:1704
 #, docstring
 msgid "\n"
 "        Assign a max token override to a role\n\n"
@@ -1264,19 +1328,19 @@ msgstr "\n"
 "Atribuir uma substituição de token máximo a uma função\n\n"
 "*Especificar a mesma função e contagem de tokens para remover a substituição*        "
 
-#: commands\admin.py:1518
+#: commands\admin.py:1716
 msgid "Max token override for {} removed!"
 msgstr "Substituição do token máximo para {} removida!"
 
-#: commands\admin.py:1521
+#: commands\admin.py:1719
 msgid "Max token override for {} overwritten!"
 msgstr "Substituição máxima de fichas para {} substituída!"
 
-#: commands\admin.py:1524
+#: commands\admin.py:1722
 msgid "Max token override for {} added!"
 msgstr "Substituição de token máximo para {} adicionada!"
 
-#: commands\admin.py:1530
+#: commands\admin.py:1728
 #, docstring
 msgid "\n"
 "        Assign a max response token override to a role\n\n"
@@ -1288,19 +1352,19 @@ msgstr "\n"
 "Definir como 0 para que os tokens de resposta sejam dinâmicos\n\n"
 "*Especificar a mesma função e contagem de tokens para remover a substituição* "
 
-#: commands\admin.py:1544
+#: commands\admin.py:1742
 msgid "Max response token override for {} removed!"
 msgstr "Substituição do token de resposta máximo para {} removido!"
 
-#: commands\admin.py:1547
+#: commands\admin.py:1745
 msgid "Max response token override for {} overwritten!"
 msgstr "Substituição do token de resposta máximo para {} substituído!"
 
-#: commands\admin.py:1550
+#: commands\admin.py:1748
 msgid "Max response token override for {} added!"
 msgstr "Substituição do token de resposta máximo para {} adicionada!"
 
-#: commands\admin.py:1555
+#: commands\admin.py:1753
 #, docstring
 msgid "\n"
 "        Assign a max message retention override to a role\n\n"
@@ -1310,19 +1374,19 @@ msgstr "\n"
 "Atribuir uma substituição de retenção máxima de mensagens a uma função\n\n"
 "*Especificar a mesma função e o montante de retenção para remover a substituição*        "
 
-#: commands\admin.py:1567
+#: commands\admin.py:1765
 msgid "Max retention override for {} removed!"
 msgstr "Anulação da retenção máxima para {} removida!"
 
-#: commands\admin.py:1570
+#: commands\admin.py:1768
 msgid "Max retention override for {} overwritten!"
 msgstr "Substituição da retenção máxima para {} substituída!"
 
-#: commands\admin.py:1573
+#: commands\admin.py:1771
 msgid "Max retention override for {} added!"
 msgstr "Substituição da retenção máxima para {} adicionada!"
 
-#: commands\admin.py:1578
+#: commands\admin.py:1776
 #, docstring
 msgid "\n"
 "        Assign a max retention time override to a role\n\n"
@@ -1332,32 +1396,32 @@ msgstr "\n"
 "Atribuir uma substituição do tempo máximo de retenção a uma função\n\n"
 "*Especificar a mesma função e hora para remover a substituição*        "
 
-#: commands\admin.py:1590
+#: commands\admin.py:1788
 msgid "Max retention time override for {} removed!"
 msgstr "Anulação do tempo máximo de retenção para {} removida!"
 
-#: commands\admin.py:1593
+#: commands\admin.py:1791
 msgid "Max retention time override for {} overwritten!"
 msgstr "Substituição do tempo de retenção máximo para {} substituído!"
 
-#: commands\admin.py:1596
+#: commands\admin.py:1794
 msgid "Max retention time override for {} added!"
 msgstr "Substituição do tempo máximo de retenção para {} adicionada!"
 
-#: commands\admin.py:1608
+#: commands\admin.py:1806
 #, docstring
 msgid "Wipe all settings and data for entire cog"
 msgstr "Limpar todas as definições e dados para toda a engrenagem"
 
-#: commands\admin.py:1610
+#: commands\admin.py:1808
 msgid "Not wiping cog"
 msgstr "Não limpando a engrenagem"
 
-#: commands\admin.py:1615
+#: commands\admin.py:1813
 msgid "Cog has been wiped!"
 msgstr "O Cog foi eliminado!"
 
-#: commands\admin.py:1620
+#: commands\admin.py:1818
 #, docstring
 msgid "\n"
 "        Take a backup of the cog\n\n"
@@ -1366,22 +1430,22 @@ msgid "\n"
 msgstr "Fazer uma cópia de segurança da engrenagem\n\n"
 "- Isso não faz backup dos dados da conversa        "
 
-#: commands\admin.py:1638
+#: commands\admin.py:1836
 msgid "Here is your export!"
 msgstr "Aqui está a sua exportação!"
 
-#: commands\admin.py:1667
+#: commands\admin.py:1865
 #, docstring
 msgid "\n"
 "        Restore the cog from a backup\n"
 "        "
 msgstr "Restaurar a engrenagem a partir de uma cópia de segurança        "
 
-#: commands\admin.py:1677
+#: commands\admin.py:1875
 msgid "Cog has been restored!"
 msgstr "O Cog foi restaurado!"
 
-#: commands\admin.py:1683
+#: commands\admin.py:1881
 #, docstring
 msgid "\n"
 "        Wipe saved conversations for the assistant in all servers\n\n"
@@ -1390,24 +1454,24 @@ msgid "\n"
 msgstr "Limpar as conversas guardadas para o assistente em todos os servidores.\n\n"
 "Esta ação elimina todas e quaisquer conversas guardadas para o assistente        "
 
-#: commands\admin.py:1692
+#: commands\admin.py:1890
 msgid "Conversations have been wiped for all servers!"
 msgstr "As conversas foram apagadas em todos os servidores!"
 
-#: commands\admin.py:1698
+#: commands\admin.py:1896
 #, docstring
 msgid "Toggle persistent conversations"
 msgstr "Alternar conversas persistentes"
 
-#: commands\admin.py:1701
+#: commands\admin.py:1899
 msgid "Persistent conversations have been **Disabled**"
 msgstr "As conversas persistentes foram **Desativadas**"
 
-#: commands\admin.py:1704
+#: commands\admin.py:1902
 msgid "Persistent conversations have been **Enabled**"
 msgstr "As conversas persistentes foram **ativadas**"
 
-#: commands\admin.py:1710
+#: commands\admin.py:1908
 #, docstring
 msgid "\n"
 "        Wipe saved embeddings for all servers\n\n"
@@ -1416,11 +1480,11 @@ msgid "\n"
 msgstr "Limpar as incorporações guardadas para todos os servidores.\n\n"
 "Esta ação eliminará todos e quaisquer dados de treino de incorporação guardados para o assistente        "
 
-#: commands\admin.py:1719
+#: commands\admin.py:1917
 msgid "All embedding data has been wiped for all servers!"
 msgstr "Todos os dados de incorporação foram eliminados de todos os servidores!"
 
-#: commands\admin.py:1725
+#: commands\admin.py:1923
 #, docstring
 msgid "\n"
 "        Toggle whether the assistant listens to other bots\n\n"
@@ -1430,20 +1494,20 @@ msgstr "\n"
 "Alternar se o assistente ouve outros bots        \n\n"
 "**NÃO RECOMENDADO PARA BOTS PÚBLICOS!**        "
 
-#: commands\admin.py:1732
+#: commands\admin.py:1930
 msgid "Assistant will no longer listen to other bot messages"
 msgstr "O Assistente deixará de ouvir as mensagens de outros bots"
 
-#: commands\admin.py:1735
+#: commands\admin.py:1933
 msgid "Assistant will listen to other bot messages"
 msgstr "O Assistente irá ouvir outras mensagens do bot"
 
-#: commands\base.py:23
+#: commands\base.py:31
 #, docstring
 msgid "Get help using assistant"
 msgstr ""
 
-#: commands\base.py:25
+#: commands\base.py:33
 msgid "\n"
 "# How to Use\n\n"
 "### Commands\n"
@@ -1475,32 +1539,24 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: commands\base.py:83
+#: commands\base.py:91
 #, docstring
 msgid "\n"
 "        Chat with [botname]!\n\n"
 "        Conversations are *Per* user *Per* channel, meaning a conversation you have in one channel will be kept in memory separately from another conversation in a separate channel\n\n"
 "        **Optional Arguments**\n"
 "        `--outputfile <filename>` - uploads a file with the reply instead (no spaces)\n"
-"        `--extract` - extracts code blocks from the reply\n\n"
+"        `--extract` - extracts code blocks from the reply\n"
+"        `--last` - resends the last message of the conversation\n\n"
 "        **Example**\n"
 "        `[p]chat write a python script that prints \"Hello World!\"`\n"
 "        - Including `--outputfile hello.py` will output a file containing the whole response.\n"
 "        - Including `--outputfile hello.py --extract` will output a file containing just the code blocks and send the rest as text.\n"
 "        - Including `--extract` will send the code separately from the reply\n"
 "        "
-msgstr "Conversar com [botname]!\n\n"
-"As conversas são *Por* utilizador *Por* canal, o que significa que uma conversa que tenhas num canal será guardada na memória separadamente de outra conversa num canal diferente\n\n"
-"**Argumentos opcionais**\n"
-"`--outputfile <filename>` - carrega um arquivo com a resposta (sem espaços)\n"
-"`--extract` - extrai blocos de código da resposta\n\n"
-"**Exemplo**\n"
-"`[p]chat escreve um script python que imprime \"Hello World!\"`\n"
-"- Incluir `--outputfile hello.py` produzirá um arquivo contendo toda a resposta.\n"
-"- Incluindo `--outputfile hello.py --extract` produzirá um arquivo contendo apenas os blocos de código e enviará o restante como texto.\n"
-"- A inclusão de `--extract` enviará o código separadamente da resposta        "
+msgstr ""
 
-#: commands\base.py:109
+#: commands\base.py:118
 #, docstring
 msgid "\n"
 "        Check the token and message count of yourself or another user's conversation for this channel\n\n"
@@ -1511,29 +1567,35 @@ msgstr "Verifique o token e a contagem de mensagens da sua conversa ou da conver
 "As conversas são *Por* usuário *Por* canal, o que significa que uma conversa que você tem em um canal será mantida na memória separadamente de outra conversa em um canal separado\n\n"
 "As conversas são armazenadas apenas na memória até que o bot seja reiniciado ou o cog seja recarregado               "
 
-#: commands\base.py:154
-msgid "Could not fetch external model"
-msgstr "Não foi possível obter o modelo externo"
+#: commands\base.py:162
+msgid "`Messages:   `{}/{}\n"
+"`Tokens:     `{}/{}\n"
+"`Expired:    `{}\n"
+"`Model:      `{}"
+msgstr ""
 
-#: commands\base.py:160
-msgid "`Messages: `{}/{}\n"
-"`Tokens:   `{}/{}\n"
-"`Expired:  `{}\n"
-"`Model:    `{}"
-msgstr "`Mensagens: `{}/{}\n"
-"`Tokens:   `{}/{}\n"
-"`Expirado:  `{}\n"
-"`Modelo:    `{}"
+#: commands\base.py:171
+msgid "\n"
+"`Tool Calls: `{}"
+msgstr ""
 
-#: commands\base.py:174
+#: commands\base.py:173
+msgid "*Collabroative conversations are enabled*"
+msgstr ""
+
+#: commands\base.py:179
 msgid "Conversation stats for {}"
 msgstr "Estatísticas de conversação para {}"
 
-#: commands\base.py:177
+#: commands\base.py:182
 msgid "Token limit is a soft cap and excess is trimmed before sending to the api"
 msgstr "O limite de tokens é um limite suave e o excesso é cortado antes de ser enviado para a API"
 
-#: commands\base.py:183
+#: commands\base.py:186
+msgid "System prompt override for this conversation"
+msgstr ""
+
+#: commands\base.py:191
 #, docstring
 msgid "\n"
 "        Reset your conversation with the bot\n\n"
@@ -1542,48 +1604,87 @@ msgid "\n"
 msgstr "Redefina sua conversa com o bot        \n\n"
 "Isso irá limpar todo o histórico de mensagens entre você e o bot para este canal        "
 
-#: commands\base.py:190
+#: commands\base.py:204
+msgid "Only moderators can clear channel conversations when collaborative conversations are enabled!"
+msgstr ""
+
+#: commands\base.py:208
 msgid "Your conversation in this channel has been reset!"
 msgstr "A tua conversa neste canal foi reiniciada!"
 
-#: commands\base.py:195
+#: commands\base.py:214
 #, docstring
 msgid "\n"
-"        Fetch related embeddings according to the current settings along with their scores\n\n"
-"        You can use this to fine-tune the minimum relatedness for your assistant\n"
+"        Pop the last message from your conversation\n"
 "        "
-msgstr "Obter os embeddings relacionados de acordo com as configurações atuais, juntamente com suas pontuações        \n\n"
-"Pode usar isso para ajustar a relação mínima para o seu assistente               "
+msgstr ""
 
-#: commands\base.py:202
-msgid "You do not have any embeddings configured!"
-msgstr "Não tem quaisquer incorporações configuradas!"
+#: commands\base.py:225
+msgid "Only moderators can pop messages from conversations when collaborative conversations are enabled!"
+msgstr ""
 
-#: commands\base.py:204
-msgid "Top N is set to 0 so no embeddings will be returned"
-msgstr "Top N está definido como 0, portanto, nenhuma incorporação será retornada"
+#: commands\base.py:229 commands\base.py:261
+msgid "There are no messages in this conversation yet!"
+msgstr ""
 
-#: commands\base.py:210
-msgid "Failed to get embedding for your query"
-msgstr "Falha ao obter a incorporação para a sua consulta"
+#: commands\base.py:234
+msgid "Removed the last message from this conversation"
+msgstr ""
 
-#: commands\base.py:214
-msgid "No embeddings could be related to this query with the current settings"
-msgstr "Não foi possível relacionar nenhum embeddings com esta consulta com as definições atuais"
+#: commands\base.py:242
+#, docstring
+msgid "\n"
+"        Copy the conversation to another channel, thread, or forum\n"
+"        "
+msgstr ""
 
-#: commands\base.py:218
-msgid "`Entry Name:  `{}\n"
-msgstr "`Nome da entrada:  `{}\n"
+#: commands\base.py:253
+msgid "Only moderators can copy conversations when collaborative conversations are enabled!"
+msgstr ""
 
-#: commands\base.py:219
-msgid "`Relatedness: `{}\n"
-msgstr "`Relacionamento: `{}\n"
+#: commands\base.py:264
+msgid "You cannot copy a conversation to a channel you can't see!"
+msgstr ""
 
-#: commands\base.py:220
-msgid "`Dimensions:  `{}\n"
-msgstr "`Dimensões:  `{}\n"
+#: commands\base.py:270
+msgid "This conversation has been overwritten in {}"
+msgstr ""
 
-#: commands\base.py:232
+#: commands\base.py:272
+msgid "This conversation has been copied over to {}"
+msgstr ""
+
+#: commands\base.py:282
+#, docstring
+msgid "\n"
+"        Set a system prompt for this conversation!\n\n"
+"        This allows customization of assistant behavior on a per channel basis!\n\n"
+"        Check out [This Guide](https://platform.openai.com/docs/guides/prompt-engineering) for prompting help.\n"
+"        "
+msgstr ""
+
+#: commands\base.py:291
+msgid "Conversation system prompt overriding is **Disabled**."
+msgstr ""
+
+#: commands\base.py:301
+msgid "Only moderators can set conversation prompts when collaborative conversations are enabled!"
+msgstr ""
+
+#: commands\base.py:321
+msgid "This prompt is uses {} tokens which is more than 90% of the maximum tokens allowed per conversation!\n"
+"Write a prompt using {} tokens or less to leave 10% of your token limit for responses"
+msgstr ""
+
+#: commands\base.py:330
+msgid "System prompt has been set for this conversation!"
+msgstr ""
+
+#: commands\base.py:332
+msgid "System prompt has been **Removed** for this conversation!"
+msgstr ""
+
+#: commands\base.py:339
 #, docstring
 msgid "\n"
 "        View the current transcript of a conversation\n\n"
@@ -1593,11 +1694,47 @@ msgstr "\n"
 "Ver a transcrição atual de uma conversa\n\n"
 "Isto serve principalmente para efeitos de moderação        "
 
-#: commands\base.py:241
+#: commands\base.py:353
 msgid "You have no conversation in this channel!"
 msgstr "Não há conversa neste canal!"
 
-#: commands\base.py:253
+#: commands\base.py:366
 msgid "Here is your conversation transcript!"
 msgstr "Aqui está a transcrição da sua conversa!"
+
+#: commands\base.py:371
+#, docstring
+msgid "\n"
+"        Fetch related embeddings according to the current topn setting along with their scores\n\n"
+"        You can use this to fine-tune the minimum relatedness for your assistant\n"
+"        "
+msgstr ""
+
+#: commands\base.py:378
+msgid "You do not have any embeddings configured!"
+msgstr "Não tem quaisquer incorporações configuradas!"
+
+#: commands\base.py:380
+msgid "Top N is set to 0 so no embeddings will be returned"
+msgstr "Top N está definido como 0, portanto, nenhuma incorporação será retornada"
+
+#: commands\base.py:386
+msgid "Failed to get embedding for your query"
+msgstr "Falha ao obter a incorporação para a sua consulta"
+
+#: commands\base.py:390
+msgid "No embeddings could be related to this query with the current settings"
+msgstr "Não foi possível relacionar nenhum embeddings com esta consulta com as definições atuais"
+
+#: commands\base.py:394
+msgid "`Entry Name:  `{}\n"
+msgstr "`Nome da entrada:  `{}\n"
+
+#: commands\base.py:395
+msgid "`Relatedness: `{}\n"
+msgstr "`Relacionamento: `{}\n"
+
+#: commands\base.py:396
+msgid "`Dimensions:  `{}\n"
+msgstr "`Dimensões:  `{}\n"
 

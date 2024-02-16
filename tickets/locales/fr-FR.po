@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-10-11 19:12-0400\n"
-"PO-Revision-Date: 2023-10-15 23:16\n"
+"POT-Creation-Date: 2024-02-08 18:31-0500\n"
+"PO-Revision-Date: 2024-02-08 23:50\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -17,11 +17,7 @@ msgstr ""
 "X-Crowdin-File-ID: 13\n"
 "Language: fr_FR\n"
 
-#: menu.py:65 views.py:75
-msgid "You are not allowed to interact with this button."
-msgstr "Vous n'êtes pas autorisé à interagir avec ce bouton."
-
-#: tickets.py:30
+#: tickets.py:32
 #, docstring
 msgid "\n"
 "    Support ticket system with multi-panel functionality\n"
@@ -29,244 +25,20 @@ msgid "\n"
 msgstr "\n"
 "Système de support de tickets avec fonctionnalité multi-panels "
 
-#: tickets.py:43
+#: tickets.py:45
 #, docstring
 msgid "No data to delete"
 msgstr "Aucune donnée à supprimer"
 
-#: tickets.py:327
+#: tickets.py:274
 msgid "If you do not respond to this ticket within the next 20 minutes it will be closed automatically."
 msgstr "Si vous ne répondez pas à ce billet dans les 20 prochaines minutes, il sera fermé automatiquement."
 
-#: tickets.py:343
+#: tickets.py:291
 msgid "(Auto-Close) Opened ticket with no response for "
 msgstr "(Clôture automatique) Billet ouvert sans réponse pendant "
 
-#: tickets.py:389
+#: tickets.py:338
 msgid "User left guild(Auto-Close)"
 msgstr "L'utilisateur a quitté la guilde (Fermeture automatique)"
-
-#: utils.py:103
-msgid "I am missing the `Manage Channels` permission to close this ticket!"
-msgstr "Il me manque l'autorisation de « Gérer les canaux » pour fermer ce ticket !"
-
-#: utils.py:109
-msgid "I am missing the `Manage Threads` permission to close this ticket!"
-msgstr "Il me manque l'autorisation «Gérer les threads» pour fermer ce ticket !"
-
-#: utils.py:116
-msgid "Ticket created by **{}-{}** has been closed.\n"
-"`PanelType: `{}\n"
-"`Opened on: `<t:{}:F>\n"
-"`Closed on: `<t:{}:F>\n"
-"`Closed by: `{}\n"
-"`Reason:    `{}\n"
-msgstr "Le billet créé par **{}-{}** a été fermé.\n"
-"`PanelType: {}`\n"
-"`Ouvert le: <t:{}:F>`\n"
-"`Fermé le: <t:{}:F>`\n"
-"`Fermé par: {}`\n"
-"`Raison: {}`\n"
-
-#: utils.py:132
-msgid "Ticket Closed\n"
-"{}\n"
-"Currently missing permissions to send embeds to this channel!"
-msgstr "Billet fermé\n"
-"{}\n"
-"Autorisations actuellement manquantes pour envoyer des intégrations à cette chaîne !"
-
-#: utils.py:136
-msgid "Ticket Closed"
-msgstr "Billet fermé"
-
-#: utils.py:147
-msgid "Archiving channel..."
-msgstr "Archivage du canal..."
-
-#: utils.py:150
-msgid "This channel will be deleted once complete"
-msgstr "Ce canal sera supprimé une fois terminé"
-
-#: utils.py:156
-msgid "Question: {}\n"
-"Response: {}\n"
-msgstr "Question: {}\n"
-"Réponse: {}\n"
-
-#: utils.py:167
-msgid "Files uploaded: "
-msgstr "Fichiers téléchargés: "
-
-#: utils.py:261
-msgid "There are no tickets stored in the database."
-msgstr "Il n'y a pas de billets stockés dans la base de données."
-
-#: utils.py:307
-msgid "ticket"
-msgstr "billet"
-
-#: utils.py:307
-msgid "tickets"
-msgstr "des billets"
-
-#: utils.py:309
-msgid "Pruned `{}` invalid {}"
-msgstr "Taillé `{}` invalide {}"
-
-#: utils.py:312
-msgid "There are no tickets to prune"
-msgstr "Il n'y a pas de billets à élaguer"
-
-#: utils.py:322
-msgid "Ticket Overview"
-msgstr "Aperçu des billets"
-
-#: utils.py:347
-msgid "There are no active tickets."
-msgstr "Il n'y a pas de billets actifs."
-
-#: utils.py:373
-#, docstring
-msgid "Update active ticket overview\n\n"
-"    Args:\n"
-"        guild (discord.Guild): discord server\n"
-"        conf (dict): settings for the guild\n\n"
-"    Returns:\n"
-"        int: Message ID of the overview panel\n"
-"    "
-msgstr "Mettre à jour la vue d'ensemble des billets actifs\n\n"
-"    Args:\n"
-"        guild (discord.Guild): serveur Discord\n"
-"        conf (dict): paramètres pour la guilde\n\n"
-"    Retour:\n"
-"        int: ID du message du panneau d'aperçu "
-
-#: views.py:37
-msgid "cancel"
-msgstr "Annuler"
-
-#: views.py:129
-msgid "Closing your ticket"
-msgstr "Clôture de votre billet"
-
-#: views.py:131
-msgid "Reason for closing"
-msgstr "Raison de la clôture"
-
-#: views.py:171
-msgid "You do not have permissions to close this ticket"
-msgstr "Vous n'avez pas d'autorisations pour fermer ce billet"
-
-#: views.py:183 views.py:185
-msgid "Closing..."
-msgstr "Fermeture..."
-
-#: views.py:254
-msgid "You been blacklisted from creating tickets!"
-msgstr "Vous avez été mis sur liste noire de la création de billets !"
-
-#: views.py:260
-msgid "You have a role that has been blacklisted from creating tickets!"
-msgstr "Vous avez un rôle qui a été mis sur liste noire de la création de billets !"
-
-#: views.py:270
-msgid "You must have one of the following roles to open this ticket: "
-msgstr "Vous devez avoir l'un des rôles suivants pour ouvrir ce billet : "
-
-#: views.py:282
-msgid "You have the maximum amount of tickets opened already!{}"
-msgstr "Vous avez déjà ouvert le nombre maximum de billets!{}"
-
-#: views.py:290
-msgid "The category for this support panel cannot be found!\n"
-"please contact an admin!"
-msgstr "La catégorie de ce panneau de support ne peut pas être trouvée !\n"
-"Veuillez contacter un administrateur !"
-
-#: views.py:305
-msgid "Submission Info"
-msgstr "Informations sur la soumission"
-
-#: views.py:323
-msgid "Unanswered"
-msgstr "Sans réponse"
-
-#: views.py:341
-msgid "Your ticket is being created, one moment..."
-msgstr "Votre billet est en train d'être créé, à un moment..."
-
-#: views.py:419
-msgid "{} ticket for {}"
-msgstr "{} ticket pour {}"
-
-#: views.py:443
-msgid "I am missing the required permissions to create a ticket for you. Please contact an admin so they may fix my permissions."
-msgstr "Je n'ai pas les autorisations nécessaires pour créer un ticket pour vous. Veuillez contacter un administrateur afin qu'il puisse corriger mes autorisations."
-
-#: views.py:452
-msgid "There was an error while preparing your ticket, please contact an admin!\n"
-"{}"
-msgstr "Il y a eu une erreur lors de la préparation de votre billet, veuillez contacter un administrateur !\n"
-"{}"
-
-#: views.py:461
-msgid "Welcome to your ticket channel "
-msgstr "Bienvenue dans votre chaîne de billets "
-
-#: views.py:463
-msgid "\n"
-"You or an admin can close this with the `{}close` command"
-msgstr "\n"
-"Vous ou un administrateur pouvez fermer cela avec la commande `{}close`"
-
-#: views.py:513
-msgid "Ticket form questions"
-msgstr "Questions de formulaire de billets"
-
-#: views.py:515
-msgid "I tried to pin the response message but don't have the manage messages permissions!"
-msgstr "J'ai essayé d'épingler le message de réponse mais je n'ai pas les autorisations de gestion des messages !"
-
-#: views.py:518
-msgid "Your ticket has been created! {}"
-msgstr "Votre billet a été créé ! {}"
-
-#: views.py:536
-msgid "`Created By: `{user}\n"
-"`User ID:    `{userid}\n"
-"`Opened:     `{timestamp}\n"
-"`Ticket:     `{channelname}\n"
-"`Panel Name: `{panelname}\n"
-"**[Click to Jump!]({jumpurl})**"
-msgstr "`Créé par:` {utilisateur}\n"
-"`ID utilisateur:` {userId}\n"
-"`Ouvert:` {horodatage}\n"
-"`Ticket:` {ChannelName}\n"
-"`Nom du panneau:` {PannelName}\n"
-"**[Cliquez pour sauter!]({Jumpurl})**"
-
-#: views.py:545
-msgid "Ticket Opened"
-msgstr "Billet ouvert"
-
-#: views.py:622
-msgid "You have already been added to the ticket **{}**!"
-msgstr "Vous avez déjà été ajouté au billet **{}** !"
-
-#: views.py:628
-msgid "The maximum amount of staff have claimed this ticket!"
-msgstr "Le nombre maximum d'employés a réclamé ce ticket !"
-
-#: views.py:639
-msgid "You already have access to the ticket **{}**!"
-msgstr "Vous avez déjà accès au billet **{}** !"
-
-#: views.py:644
-msgid "{} was added to the ticket"
-msgstr "{} a été ajouté au billet"
-
-#: views.py:649
-msgid "You have been added to the ticket **{}**"
-msgstr "Vous avez été ajouté au billet **{}**"
 
