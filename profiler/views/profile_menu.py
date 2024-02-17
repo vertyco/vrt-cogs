@@ -181,11 +181,13 @@ class ProfileMenu(discord.ui.View):
         self.remove_item(self.filter_results)
         self.remove_item(self.change_sorting)
         self.remove_item(self.inspect)
+        self.remove_item(self.refresh)
         await self.update()
 
     @discord.ui.button(label="Sort: Avg", style=discord.ButtonStyle.success, row=2)
     async def change_sorting(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.defer()
+        with suppress(discord.NotFound):
+            await interaction.response.defer()
 
         if self.sorting_by == "Name":
             self.sorting_by = "Max"
@@ -209,6 +211,14 @@ class ProfileMenu(discord.ui.View):
         self.pages = await asyncio.to_thread(format_runtime_pages, self.db.stats, self.sorting_by, self.query)
         await self.update()
 
+    @discord.ui.button(label="Refresh", style=discord.ButtonStyle.success, row=2)
+    async def refresh(self, interaction: discord.Interaction, button: discord.ui.Button):
+        with suppress(discord.NotFound):
+            await interaction.response.defer()
+
+        self.pages = await asyncio.to_thread(format_runtime_pages, self.db.stats, self.sorting_by, self.query)
+        await self.update()
+
     @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=3)
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
         with suppress(discord.NotFound):
@@ -218,6 +228,7 @@ class ProfileMenu(discord.ui.View):
         self.add_item(self.filter_results)
         self.add_item(self.change_sorting)
         self.add_item(self.inspect)
+        self.add_item(self.refresh)
         self.remove_item(self.back)
         self.inspecting = False
         self.tables.clear()
