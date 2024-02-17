@@ -1,6 +1,8 @@
 import asyncio
 import logging
+from contextlib import suppress
 
+import discord
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, pagify
 
@@ -122,7 +124,10 @@ class Owner(MixinMeta):
         Profile memory usage of objects in the current environment
         """
         async with ctx.typing():
+            msg = await ctx.send("Profiling memory usage, standby...")
             res = await asyncio.to_thread(profile_memory, limit)
+            with suppress(discord.NotFound):
+                await msg.delete()
             for p in pagify(res, page_length=1980):
                 await ctx.send(box(p, "py"))
 
