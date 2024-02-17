@@ -6,7 +6,6 @@ from typing import Callable, Dict, List, Optional, Union
 
 import discord
 from discord.ext import tasks
-from perftracker import perf
 from pydantic import ValidationError
 from redbot.core import Config, commands
 from redbot.core.bot import Red
@@ -54,7 +53,7 @@ class Assistant(
     """
 
     __author__ = "vertyco"
-    __version__ = "6.0.11"
+    __version__ = "6.1.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -120,7 +119,6 @@ class Assistant(
         await asyncio.sleep(30)
         self.save_loop.start()
 
-    @perf()
     async def save_conf(self):
         if self.saving:
             return

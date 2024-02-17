@@ -11,7 +11,6 @@ import tiktoken
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.chat.chat_completion_message import ChatCompletionMessage
 from openai.types.create_embedding_response import CreateEmbeddingResponse
-from perftracker import perf
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_number
@@ -27,7 +26,6 @@ _ = Translator("Assistant", __file__)
 
 @cog_i18n(_)
 class API(MixinMeta):
-    @perf()
     async def openai_status(self) -> str:
         try:
             timeout = aiohttp.ClientTimeout(total=5)
@@ -280,7 +278,7 @@ class API(MixinMeta):
     # -------------------- FORMATTING -----------------------
     # -------------------------------------------------------
     # -------------------------------------------------------
-    @perf()
+
     async def degrade_conversation(
         self,
         messages: List[dict],
