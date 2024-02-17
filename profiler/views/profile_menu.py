@@ -37,7 +37,7 @@ class SearchModal(discord.ui.Modal):
 
 class ProfileMenu(discord.ui.View):
     def __init__(self, ctx: commands.Context, db: DB):
-        super().__init__(timeout=None)
+        super().__init__(timeout=1800)
         self.ctx = ctx
         self.db = db
 
@@ -60,6 +60,22 @@ class ProfileMenu(discord.ui.View):
             await interaction.response.send_message("You are not allowed to interact with this menu", ephemeral=True)
             return False
         return True
+
+    async def on_timeout(self) -> None:
+        if self.message:
+            self.left10.disabled = True
+            self.left.disabled = True
+            self.close.disabled = True
+            self.right.disabled = True
+            self.right10.disabled = True
+            self.filter_results.disabled = True
+            self.inspect.disabled = True
+            self.change_sorting.disabled = True
+            self.back.disabled = True
+            with suppress(discord.NotFound):
+                await self.message.edit(view=self)
+
+        self.stop()
 
     async def start(self):
         self.pages = await asyncio.to_thread(format_runtime_pages, self.db.stats, "Avg")
