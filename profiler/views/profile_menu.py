@@ -52,6 +52,12 @@ class ProfileMenu(discord.ui.View):
         self.skip10_removed: bool = False
         self.remove_item(self.back)
 
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.ctx.author.id:
+            await interaction.response.send_message("You are not allowed to interact with this menu", ephemeral=True)
+            return False
+        return True
+
     async def start(self):
         self.pages = await asyncio.to_thread(format_runtime_pages, self.db.stats, "Avg")
         if len(self.pages) < 20:
