@@ -1,0 +1,16 @@
+{
+  "author": ["Vertyco"],
+  "description": "Cog profiling tools for bot owners and developers. Attach profilers to cogs and get runtime metrics for their commands and methods.",
+  "disabled": false,
+  "end_user_data_statement": "This cog does not store data about users.",
+  "hidden": false,
+  "install_msg": "Thank you for installing!\n\n**DISCLAIMER**\nThis cog overrides attributes of other cogs when profiling.\n\nTo get started, attach a profiler to a cog with `[p]profiler attach <cog>`. Then use `[p]profiler view` to view the metrics.",
+  "min_bot_version": "3.5.3",
+  "min_python_version": [3, 9, 0],
+  "permissions": [],
+  "required_cogs": {},
+  "requirements": ["pydantic", "Pympler", "tabulate"],
+  "short": "Cog profiling tools for bot owners and developers",
+  "tags": [],
+  "type": "COG"
+}
