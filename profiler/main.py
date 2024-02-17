@@ -22,7 +22,7 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
     """Cog profiling tools for bot owners and developers"""
 
     __author__ = "vertyco"
-    __version__ = "0.0.3a"
+    __version__ = "0.0.4a"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -62,19 +62,20 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
         used_keys = []
 
         attached = False
+        # TODO: fix attaching to commands
         # Attach the profiler to the commands of the cog
-        for command in cog.walk_commands():
-            if not command.enabled:
-                continue
-            key = f"{command.__module__}.{command.qualified_name}"
-            used_keys.append(key)
+        # for command in cog.walk_commands():
+        #     if not command.enabled:
+        #         continue
+        #     key = f"{command.__module__}.{command.qualified_name}"
+        #     used_keys.append(key)
 
-            original_callback = command.callback
-            wrapped_callback = self._profile_wrapper(original_callback, cog_name, "command")
-            command.callback = wrapped_callback
-            self.original_callbacks.setdefault(cog_name, {})[command.qualified_name] = original_callback
-            attached = True
-            log.debug(f"Attaching profiler to command {cog_name}.{command.qualified_name}")
+        #     original_callback = command.callback
+        #     wrapped_callback = self._profile_wrapper(original_callback, cog_name, "command")
+        #     command.callback = wrapped_callback
+        #     self.original_callbacks.setdefault(cog_name, {})[command.qualified_name] = original_callback
+        #     attached = True
+        #     log.debug(f"Attaching profiler to command {cog_name}.{command.qualified_name}")
 
         # Attach the profiler to the methods of the cog
         for attr_name in dir(cog):
