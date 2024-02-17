@@ -62,6 +62,17 @@ class Owner(MixinMeta):
         await self.save()
         await ctx.send(f"Verbose stats is now **{self.db.verbose}**")
 
+    @profiler.command(name="delta")
+    async def set_delta(self, ctx: commands.Context, delta: int):
+        """
+        Set the data retention period in hours
+        """
+        if delta < 1:
+            return await ctx.send("Delta must be at least 1 hour")
+        self.db.delta = delta
+        await self.save()
+        await ctx.send(f"Data retention is now set to **{delta} {'hour' if delta == 1 else 'hours'}**")
+
     @profiler.command(name="attach")
     async def attach_cog(self, ctx: commands.Context, cog_name: str):
         """
