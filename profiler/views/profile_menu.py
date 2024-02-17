@@ -142,6 +142,8 @@ class ProfileMenu(discord.ui.View):
     async def right10(self, interaction: discord.Interaction, button: discord.ui.Button):
         with suppress(discord.NotFound):
             await interaction.response.defer()
+        self.page += 10
+        await self.update()
 
     @discord.ui.button(label="Filter", style=discord.ButtonStyle.secondary, row=1)
     async def filter_results(self, interaction: discord.Interaction, button: discord.ui.Button):
