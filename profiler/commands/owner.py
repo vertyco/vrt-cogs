@@ -68,12 +68,12 @@ class Owner(MixinMeta):
             return await ctx.send(f"**{cog_name}** is not a valid cog")
 
         if cog_name in self.db.watching:
-            return await ctx.send(f"**{cog_name}** is already being watched")
+            return await ctx.send(f"**{cog_name}** is already being profiled")
 
         self.db.watching.append(cog_name)
         self.rebuild()
         await self.save()
-        await ctx.send(f"**{cog_name}** is now being watched")
+        await ctx.send(f"**{cog_name}** is now being profiled")
 
     @profiler.command(name="detach")
     async def detach_cog(self, ctx: commands.Context, cog_name: str):
@@ -83,7 +83,7 @@ class Owner(MixinMeta):
         This will remove all collected stats for this cog from the config
         """
         if cog_name not in self.db.watching:
-            return await ctx.send(f"**{cog_name}** is not being watched")
+            return await ctx.send(f"**{cog_name}** is not being profiled")
 
         self.db.watching.remove(cog_name)
         self.rebuild()
@@ -92,7 +92,7 @@ class Owner(MixinMeta):
             del self.db.stats[cog_name]
 
         await self.save()
-        await ctx.send(f"**{cog_name}** is no longer being watched")
+        await ctx.send(f"**{cog_name}** is no longer being profiled")
 
     @profiler.command(name="memory", aliases=["mem", "m"])
     async def profile_summary(self, ctx: commands.Context, limit: int = 15):
