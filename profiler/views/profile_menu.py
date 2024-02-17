@@ -88,12 +88,12 @@ class ProfileMenu(discord.ui.View):
 
     async def update(self):
         if len(self.pages) > 20 and self.skip10_removed:
-            self.add_item(self.right10)
             self.add_item(self.left10)
+            self.add_item(self.right10)
             self.skip10_removed = False
         elif len(self.pages) <= 20 and not self.skip10_removed:
-            self.remove_item(self.right10)
             self.remove_item(self.left10)
+            self.remove_item(self.right10)
             self.skip10_removed = True
         self.page %= len(self.pages)
 
