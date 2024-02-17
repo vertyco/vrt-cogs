@@ -162,7 +162,8 @@ class ProfileMenu(discord.ui.View):
         self.inspecting = True
         self.pages = await asyncio.to_thread(format_method_pages, modal.query, method_stats)
         self.tables = await asyncio.to_thread(format_method_tables, method_stats)
-        self.plot = await asyncio.to_thread(generate_line_graph, method_stats)
+        if len(method_stats) > 10:
+            self.plot = await asyncio.to_thread(generate_line_graph, method_stats)
         self.add_item(self.back)
         self.remove_item(self.filter_results)
         self.remove_item(self.change_sorting)
