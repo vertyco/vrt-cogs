@@ -11,6 +11,18 @@
   "required_cogs": {},
   "requirements": ["pydantic", "Pympler", "tabulate"],
   "short": "Cog profiling tools for bot owners and developers",
-  "tags": [],
+  "tags": [
+    "profiler",
+    "profiling",
+    "monitoring",
+    "monitor",
+    "metrics",
+    "stats",
+    "statistics",
+    "botinfo",
+    "performance",
+    "tracking",
+    "tracker"
+  ],
   "type": "COG"
 }
