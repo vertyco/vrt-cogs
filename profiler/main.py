@@ -22,7 +22,7 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
     """Cog profiling tools for bot owners and developers"""
 
     __author__ = "vertyco"
-    __version__ = "0.0.1a"
+    __version__ = "0.0.2a"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -86,7 +86,8 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
                     not hasattr(attr, "__module__"),  # Skip builtins
                     not callable(attr),  # Skip non-callable attributes
                     attr_name.startswith("__"),  # Skip dunder methods
-                    getattr(attr, "__cog_listener__", None) is not None,  # Skip listeners
+                    getattr(attr, "__cog_listener__", None)
+                    is not None,  # Skip listeners because idk how to make them work yet
                 ]
             ):
                 continue
