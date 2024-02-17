@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import json
 import os
 import platform
 import sys
@@ -12,11 +13,13 @@ import psutil
 import speedtest
 from redbot.cogs.downloader.converters import InstalledCog
 from redbot.core import commands, version_info
+from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import (
     box,
     humanize_number,
     humanize_timedelta,
     pagify,
+    text_to_file,
 )
 
 from ..abc import MixinMeta
@@ -546,3 +549,18 @@ class BotInfo(MixinMeta):
             embeds.append(embed)
 
         await menu(ctx, embeds, DEFAULT_CONTROLS)
+
+    @commands.command(name="viewapikeys")
+    @commands.is_owner()
+    async def view_api_keys(self, ctx: commands.Context):
+        """
+        DM yourself the bot's API keys
+        """
+        bot: Red = self.bot
+        data = await bot.get_shared_api_tokens()
+        dump = json.dumps(data, indent=4)
+        file = text_to_file(dump, "apikeys.json")
+        try:
+            await ctx.author.send("Here are the bot's API keys", file=file)
+        except discord.Forbidden:
+            await ctx.send("I cannot DM you, please enable DMs and try again.")
