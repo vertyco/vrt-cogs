@@ -131,6 +131,8 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
             log.debug(f"Detaching profiler from {cog_name}.{attr_name}")
         for command_name, original_callback in self.original_callbacks.get(cog_name, {}).items():
             command = self.bot.get_command(command_name)
+            if not command:
+                continue
             command.callback = original_callback
             log.debug(f"Detaching profiler from command {cog_name}.{command_name}")
         return True
