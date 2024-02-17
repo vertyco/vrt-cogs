@@ -92,7 +92,7 @@ class ProfileMenu(discord.ui.View):
             self.plot = None
             await self.message.edit(content=self.pages[self.page], view=self, attachments=[])
 
-    @discord.ui.button(emoji="\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}", style=discord.ButtonStyle.primary)
+    @discord.ui.button(emoji="\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}", style=discord.ButtonStyle.primary, row=4)
     async def left10(self, interaction: discord.Interaction, button: discord.ui.Button):
         with suppress(discord.NotFound):
             await interaction.response.defer()
@@ -115,17 +115,14 @@ class ProfileMenu(discord.ui.View):
             await interaction.response.defer()
         await self.message.delete()
 
-    @discord.ui.button(
-        emoji="\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}",
-        style=discord.ButtonStyle.primary,
-    )
+    @discord.ui.button(emoji="\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}", style=discord.ButtonStyle.primary)
     async def right(self, interaction: discord.Interaction, button: discord.ui.Button):
         with suppress(discord.NotFound):
             await interaction.response.defer()
         self.page += 1
         await self.update()
 
-    @discord.ui.button(emoji="\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}", style=discord.ButtonStyle.primary)
+    @discord.ui.button(emoji="\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}", style=discord.ButtonStyle.primary, row=4)
     async def right10(self, interaction: discord.Interaction, button: discord.ui.Button):
         with suppress(discord.NotFound):
             await interaction.response.defer()
