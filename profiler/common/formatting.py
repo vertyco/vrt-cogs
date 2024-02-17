@@ -40,7 +40,9 @@ def format_method_tables(data: t.List[StatsProfile]) -> t.List[str]:
 
 
 def format_runtime_pages(
-    data: t.Dict[str, t.Dict[str, t.List[StatsProfile]]], sort_by: str, query: str = None
+    data: t.Dict[str, t.Dict[str, t.List[StatsProfile]]],
+    sort_by: str,
+    query: str = None,
 ) -> t.List[str]:
     stats: t.Dict[str, list] = {}
     for methodlist in data.values():
@@ -111,8 +113,11 @@ def format_runtime_pages(
                 ]
             )
 
-        page = f"{tabulate(rows, headers=cols)}\n\n(C) = Command\nPage {p + 1}/{page_count}"
-        pages.append(box(page, lang="py"))
+        page = f"{box(tabulate(rows, headers=cols), lang='py')}\n(C) = Command\nPage `{p + 1}/{page_count}`"
+        if query:
+            page += f"\nCurrent Filter: `{query}`"
+
+        pages.append(page)
         start += per_page
         end += per_page
 
