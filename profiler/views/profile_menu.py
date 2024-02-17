@@ -72,6 +72,7 @@ class ProfileMenu(discord.ui.View):
             self.inspect.disabled = True
             self.change_sorting.disabled = True
             self.back.disabled = True
+            self.refresh.disabled = True
             with suppress(discord.NotFound):
                 await self.message.edit(view=self)
 
