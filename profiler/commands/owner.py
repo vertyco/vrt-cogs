@@ -23,12 +23,20 @@ class Owner(MixinMeta):
         """
         View the current profiler settings
         """
-        txt = (
-            f"`Save Stats:     `{self.db.save_stats}\n"
-            f"`Verbose Stats:  `{self.db.verbose}\n"
-            f"`Data Retention: `{self.db.delta} hours\n"
-            f"`Watching:       `{', '.join(self.db.watching) if self.db.watching else 'None'}"
-        )
+        txt = "## Profiler Settings"
+        if self.db.save_stats:
+            txt += "\n- Persistent Storage: Profiling metrics are **saved**"
+        else:
+            txt += "\n- Persistent Storage: Profiling metrics are **not saved**"
+
+        if self.db.verbose:
+            txt += f"\n- Verbose stat metrics are **enabled**, you can use the `Inspect` button in the `{ctx.clean_prefix}profiler view` menu to view detailed stats"
+        else:
+            txt += "\n- Verbose stat metrics are **disabled**, the `Inspect` button in the menu will not be available"
+
+        txt += f"\n- Data retention is set to **{self.db.delta} {'hour' if self.db.delta == 1 else 'hours'}**"
+        txt += f"\n\n### Profiling the following cogs:\n{', '.join(self.db.watching) if self.db.watching else 'None'}"
+
         await ctx.send(txt)
 
     @profiler.command(name="save")
