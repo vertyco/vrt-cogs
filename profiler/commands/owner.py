@@ -5,6 +5,7 @@ from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, pagify
 
 from ..abc import MixinMeta
+from ..common.constants import IGNORED_COGS
 from ..common.mem_profiler import profile_memory
 from ..views.profile_menu import ProfileMenu
 
@@ -64,6 +65,17 @@ class Owner(MixinMeta):
         """
         Attach a profiler to a cog
         """
+        if cog_name.lower() == "all":
+            for cog_name in self.bot.cogs:
+                if cog_name in IGNORED_COGS:
+                    continue
+                if cog_name not in self.db.watching:
+                    self.db.watching.append(cog_name)
+
+            self.rebuild()
+            await self.save()
+            return await ctx.send("All cogs are now being profiled")
+
         if not self.bot.get_cog(cog_name):
             return await ctx.send(f"**{cog_name}** is not a valid cog")
 
@@ -82,6 +94,16 @@ class Owner(MixinMeta):
 
         This will remove all collected stats for this cog from the config
         """
+        if not self.db.watching:
+            return await ctx.send("No cogs are being profiled")
+
+        if cog_name.lower() == "all":
+            self.db.watching.clear()
+            self.rebuild()
+            self.db.stats.clear()
+            await self.save()
+            return await ctx.send("All cogs removed from profiling")
+
         if cog_name not in self.db.watching:
             return await ctx.send(f"**{cog_name}** is not being profiled")
 
