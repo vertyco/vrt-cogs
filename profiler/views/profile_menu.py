@@ -1,6 +1,7 @@
 import asyncio
 import typing as t
 from contextlib import suppress
+from io import BytesIO
 
 import discord
 from redbot.core import commands
@@ -11,6 +12,7 @@ from ..common.formatting import (
     format_method_tables,
     format_runtime_pages,
 )
+from ..common.generator import generate_line_graph
 from ..common.models import DB
 
 
@@ -44,6 +46,7 @@ class ProfileMenu(discord.ui.View):
         self.page: int = 0
 
         self.tables: t.List[str] = []
+        self.plot: bytes = None
 
         self.sorting_by: str = "Avg"
         self.query: t.Union[str, None] = None
@@ -80,8 +83,13 @@ class ProfileMenu(discord.ui.View):
 
         if self.inspecting and self.tables:
             file = text_to_file(self.tables[self.page], filename="profile.txt")
-            await self.message.edit(content=self.pages[self.page], view=self, attachments=[file])
+            files = [file]
+            if self.plot:
+                file = discord.File(BytesIO(self.plot), filename="plot.png")
+                files.append(file)
+            await self.message.edit(content=self.pages[self.page], view=self, attachments=files)
         else:
+            self.plot = None
             await self.message.edit(content=self.pages[self.page], view=self, attachments=[])
 
     @discord.ui.button(emoji="\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}", style=discord.ButtonStyle.primary)
@@ -154,6 +162,7 @@ class ProfileMenu(discord.ui.View):
         self.inspecting = True
         self.pages = await asyncio.to_thread(format_method_pages, modal.query, method_stats)
         self.tables = await asyncio.to_thread(format_method_tables, method_stats)
+        self.plot = await asyncio.to_thread(generate_line_graph, method_stats)
         self.add_item(self.back)
         self.remove_item(self.filter_results)
         self.remove_item(self.change_sorting)
