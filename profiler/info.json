@@ -9,7 +9,7 @@
   "min_python_version": [3, 9, 0],
   "permissions": [],
   "required_cogs": {},
-  "requirements": ["pydantic", "Pympler", "tabulate"],
+  "requirements": ["pydantic", "Pympler", "tabulate", "plotly"],
   "short": "Cog profiling tools for bot owners and developers",
   "tags": [
     "profiler",
