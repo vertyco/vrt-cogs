@@ -79,7 +79,7 @@ class ProfileMenu(discord.ui.View):
         self.stop()
 
     async def start(self):
-        self.pages = await asyncio.to_thread(format_runtime_pages, self.db.stats, "Avg")
+        self.pages = await asyncio.to_thread(format_runtime_pages, self.db, "Avg")
         if len(self.pages) < 20:
             self.remove_item(self.right10)
             self.remove_item(self.left10)
@@ -155,7 +155,7 @@ class ProfileMenu(discord.ui.View):
             return
 
         self.query = modal.query
-        self.pages = await asyncio.to_thread(format_runtime_pages, self.db.stats, self.sorting_by, self.query)
+        self.pages = await asyncio.to_thread(format_runtime_pages, self.db, self.sorting_by, self.query)
         await self.update()
 
     @discord.ui.button(label="Inspect Method", style=discord.ButtonStyle.secondary, row=1)
@@ -206,12 +206,12 @@ class ProfileMenu(discord.ui.View):
             button.label = "Sort: CPM"
         elif self.sorting_by == "CPM":
             self.sorting_by = "LHC"
-            button.label = "Sort: Last Hour Calls"
+            button.label = f"Sort: Last {'Hour' if self.db.delta == 1 else f'{self.db.delta}hrs'}"
         elif self.sorting_by == "LHC":
             self.sorting_by = "Name"
             button.label = "Sort: Name"
 
-        self.pages = await asyncio.to_thread(format_runtime_pages, self.db.stats, self.sorting_by, self.query)
+        self.pages = await asyncio.to_thread(format_runtime_pages, self.db, self.sorting_by, self.query)
         await self.update()
 
     @discord.ui.button(label="Refresh", style=discord.ButtonStyle.success, row=2)
@@ -219,7 +219,7 @@ class ProfileMenu(discord.ui.View):
         with suppress(discord.NotFound):
             await interaction.response.defer()
 
-        self.pages = await asyncio.to_thread(format_runtime_pages, self.db.stats, self.sorting_by, self.query)
+        self.pages = await asyncio.to_thread(format_runtime_pages, self.db, self.sorting_by, self.query)
         await self.update()
 
     @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=3)
@@ -235,5 +235,5 @@ class ProfileMenu(discord.ui.View):
         self.remove_item(self.back)
         self.inspecting = False
         self.tables.clear()
-        self.pages = await asyncio.to_thread(format_runtime_pages, self.db.stats, self.sorting_by, self.query)
+        self.pages = await asyncio.to_thread(format_runtime_pages, self.db, self.sorting_by, self.query)
         await self.update()
