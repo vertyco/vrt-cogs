@@ -22,7 +22,6 @@ from openai.types.chat.chat_completion_message import (
 from openai.types.chat.chat_completion_message_tool_call import (
     ChatCompletionMessageToolCall,
 )
-from perftracker import perf
 from redbot.core import bank
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_number, pagify, text_to_file
@@ -48,7 +47,6 @@ _ = Translator("Assistant", __file__)
 
 @cog_i18n(_)
 class ChatHandler(MixinMeta):
-    @perf()
     async def handle_message(
         self, message: discord.Message, question: str, conf: GuildSettings, listener: bool = False
     ) -> str:
@@ -217,7 +215,6 @@ class ChatHandler(MixinMeta):
             else:
                 await self.send_reply(message, text, conf, None, False)
 
-    @perf()
     async def get_chat_response(
         self,
         message: str,
@@ -574,7 +571,6 @@ class ChatHandler(MixinMeta):
         subbed = await asyncio.wait_for(new_task, timeout=5)
         return subbed
 
-    @perf()
     async def prepare_messages(
         self,
         message: str,
@@ -654,7 +650,6 @@ class ChatHandler(MixinMeta):
         )
         return messages
 
-    @perf()
     async def send_reply(
         self,
         message: discord.Message,

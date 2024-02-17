@@ -5,7 +5,6 @@ from typing import List, Optional
 import httpx
 import openai
 from openai.types.chat import ChatCompletion
-from perftracker import perf
 from sentry_sdk import add_breadcrumb
 from tenacity import (
     retry,
@@ -31,7 +30,6 @@ log = logging.getLogger("red.vrt.assistant.calls")
     stop=stop_after_attempt(3),
     reraise=True,
 )
-@perf()
 async def request_chat_completion_raw(
     model: str,
     messages: List[dict],
@@ -89,7 +87,6 @@ async def request_chat_completion_raw(
     stop=stop_after_attempt(3),
     reraise=True,
 )
-@perf()
 async def request_embedding_raw(
     text: str,
     api_key: str,
