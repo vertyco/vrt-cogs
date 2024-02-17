@@ -51,7 +51,7 @@ class Owner(MixinMeta):
         """
         self.db.save_stats = not self.db.save_stats
         await self.save()
-        await ctx.send(f"Save stats is now **{self.db.save_stats}**")
+        await ctx.send(f"Saving of metrics is now **{self.db.save_stats}**")
 
     @profiler.command(name="verbose")
     async def verbose_settings(self, ctx: commands.Context):
