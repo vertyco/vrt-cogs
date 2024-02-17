@@ -21,7 +21,7 @@ class StatsProfile(Base):
     func_type: str  # Function type (command, method)
     is_coro: bool  # Async if True
     func_profiles: t.Dict[str, FunctionProfile] = {}  # Empty if not verbose
-    timestamp: int = Field(default_factory=datetime.now)  # Time the profile was recorded
+    timestamp: datetime = Field(default_factory=datetime.now)  # Time the profile was recorded
 
 
 class DB(Base):

@@ -23,7 +23,7 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
     """Cog profiling tools for bot owners and developers"""
 
     __author__ = "vertyco"
-    __version__ = "0.0.15a"
+    __version__ = "0.0.16a"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -63,7 +63,6 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
         used_keys = []
 
         attached = False
-        # TODO: fix attaching to commands
         # Attach the profiler to the commands of the cog
         for command in cog.walk_commands():
             if not command.enabled:
