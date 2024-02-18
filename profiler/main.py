@@ -29,7 +29,7 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "vertyco"
-    __version__ = "0.1.9b"
+    __version__ = "0.1.10b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -210,11 +210,24 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
     async def save(self) -> None:
         if self.saving:
             return
+
+        def _dump():
+            db = DB(
+                save_stats=self.db.save_stats,
+                verbose=self.db.verbose,
+                delta=self.db.delta,
+                watching=self.db.watching,
+                # Break it down to avoid RuntimeErrors
+                stats={k: v for k, v in self.db.stats.copy().items()},
+            )
+            return db.model_dump(mode="json")
+
         try:
             self.saving = True
             if not self.db.save_stats:
                 self.db.stats.clear()
-            dump = await asyncio.to_thread(self.db.model_dump, mode="json")
+
+            dump = await asyncio.to_thread(_dump)
             await self.config.db.set(dump)
         except Exception as e:
             log.exception("Failed to save config", exc_info=e)
