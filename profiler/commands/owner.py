@@ -41,7 +41,7 @@ class Owner(MixinMeta):
 
         txt += f"\n- Data retention is set to **{self.db.delta} {'hour' if self.db.delta == 1 else 'hours'}**"
 
-        mem_usage = humanize_size(sys.getsizeof(self.db))
+        mem_usage = humanize_size(sys.getsizeof(self.db.stats))
         txt += f"\n- Config Size: **{mem_usage}**"
 
         records = 0
