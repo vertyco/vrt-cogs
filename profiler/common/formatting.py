@@ -1,4 +1,5 @@
 import math
+import statistics
 import typing as t
 from datetime import datetime, timedelta
 
@@ -50,34 +51,38 @@ def format_runtime_pages(
         for method_key, profiles in methodlist.items():
             if query and query not in method_key:
                 continue
-            if profiles[0].func_type == "command":
-                method_key = f"{method_key} (C)"
-            elif profiles[0].func_type == "listener":
-                method_key = f"{method_key} (L)"
-            elif profiles[0].func_type == "task":
-                method_key = f"{method_key} (T)"
-            elif profiles[0].func_type == "slash":
-                method_key = f"{method_key} (S)"
-            max_runtime = max(profile.total_tt for profile in profiles)
-            min_runtime = min(profile.total_tt for profile in profiles)
-            avg_runtime = sum(profile.total_tt for profile in profiles) / len(profiles)
 
             # Calculate the calls per minute and total calls in the last specified delta
-            calls_over_delta = [i for i in profiles if i.timestamp > (now - timedelta(hours=db.delta))]
-            if not calls_over_delta:
+            valid_profiles = [i for i in profiles if i.timestamp > (now - timedelta(hours=db.delta))]
+            if not valid_profiles:
                 # Don't show any results beyond the set delta
                 continue
 
-            # Caclulate the min and max timestamp
-            newest, oldest = (
-                max(calls_over_delta, key=lambda i: i.timestamp),
-                min(calls_over_delta, key=lambda i: i.timestamp),
-            )
-            timeframe_minutes = (newest.timestamp - oldest.timestamp).total_seconds() / 60
+            runtimes = [profile.total_tt for profile in valid_profiles]
+
+            max_runtime = max(runtimes)
+            min_runtime = min(runtimes)
+            avg_runtime = statistics.mean(runtimes)
+
             # Now calculate the calls per minute
-            calls_per_minute = len(calls_over_delta) / timeframe_minutes if timeframe_minutes else 0
-            total_calls = len(calls_over_delta)
-            stats[method_key] = [max_runtime, min_runtime, avg_runtime, calls_per_minute, total_calls]
+            newest, oldest = (
+                max(valid_profiles, key=lambda i: i.timestamp),
+                min(valid_profiles, key=lambda i: i.timestamp),
+            )
+            timeframe_minutes = (newest.timestamp - oldest.timestamp).total_seconds() / 6
+            calls_per_minute = len(valid_profiles) / timeframe_minutes if timeframe_minutes else 0
+
+            total_calls = len(valid_profiles)
+
+            # Calculate impact score
+            std_dev = statistics.stdev(runtimes) if len(runtimes) > 1 else 0
+            variability_score = std_dev / avg_runtime if avg_runtime > 0 else 0
+            impact_score = (avg_runtime * calls_per_minute) * (1 + variability_score)
+
+            if profiles[0].func_type != "method":
+                method_key = f"{method_key} ({profiles[0].func_type[0].upper()})"
+
+            stats[method_key] = [max_runtime, min_runtime, avg_runtime, calls_per_minute, total_calls, impact_score]
 
     per_page = 10
     start = 0
@@ -85,25 +90,28 @@ def format_runtime_pages(
     page_count = math.ceil(len(stats) / per_page)
     delta_text = f"Last {'Hour' if db.delta == 1 else f'{db.delta}hrs'}"
 
-    cols = ["Method", "Max", "Min", "Avg", "Calls/Min", delta_text]
+    cols = ["Method", "Max", "Min", "Avg", "Calls/Min", delta_text, "Impact"]
     if sort_by == "Name":
-        cols = ["[Method]", "Max", "Min", "Avg", "Calls/Min", delta_text]
+        cols = ["[Method]", "Max", "Min", "Avg", "Calls/Min", delta_text, "Impact"]
         stats = dict(sorted(stats.items()))
     elif sort_by == "Max":
-        cols = ["Method", "[Max]", "Min", "Avg", "Calls/Min", delta_text]
+        cols = ["Method", "[Max]", "Min", "Avg", "Calls/Min", delta_text, "Impact"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][0], reverse=True))
     elif sort_by == "Min":
-        cols = ["Method", "Max", "[Min]", "Avg", "Calls/Min", delta_text]
+        cols = ["Method", "Max", "[Min]", "Avg", "Calls/Min", delta_text, "Impact"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][1], reverse=True))
     elif sort_by == "Avg":
-        cols = ["Method", "Max", "Min", "[Avg]", "Calls/Min", delta_text]
+        cols = ["Method", "Max", "Min", "[Avg]", "Calls/Min", delta_text, "Impact"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][2], reverse=True))
     elif sort_by == "CPM":
-        cols = ["Method", "Max", "Min", "Avg", "[Calls/Min]", delta_text]
+        cols = ["Method", "Max", "Min", "Avg", "[Calls/Min]", delta_text, "Impact"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][3], reverse=True))
-    elif sort_by == "LHC":
-        cols = ["Method", "Max", "Min", "Avg", "Calls/Min", f"[{delta_text}]"]
+    elif sort_by == "Count":
+        cols = ["Method", "Max", "Min", "Avg", "Calls/Min", f"[{delta_text}]", "Impact"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][4], reverse=True))
+    elif sort_by == "Impact":
+        cols = ["Method", "Max", "Min", "Avg", "Calls/Min", delta_text, "[Impact]"]
+        stats = dict(sorted(stats.items(), key=lambda item: item[1][5], reverse=True))
 
     def _format(value: float):
         if value < 1:
@@ -118,7 +126,7 @@ def format_runtime_pages(
         rows = []
         for i in range(start, end):
             method_key = list(stats.keys())[i]
-            max_runtime, min_runtime, avg_runtime, calls_per_minute, calls_last_hour = stats[method_key]
+            max_runtime, min_runtime, avg_runtime, calls_per_minute, total_calls, impact_score = stats[method_key]
 
             rows.append(
                 [
@@ -127,7 +135,8 @@ def format_runtime_pages(
                     _format(min_runtime),
                     _format(avg_runtime),
                     round(calls_per_minute, 4),
-                    calls_last_hour,
+                    total_calls,
+                    round(impact_score, 2),
                 ]
             )
         page = (

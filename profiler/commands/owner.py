@@ -21,7 +21,6 @@ class Owner(MixinMeta):
     @commands.is_owner()
     async def profiler(self, ctx: commands.Context):
         """Profiling commands"""
-        pass
 
     @profiler.command(name="settings")
     async def view_settings(self, ctx: commands.Context):
@@ -212,6 +211,25 @@ class Owner(MixinMeta):
     async def profile_menu(self, ctx: commands.Context):
         """
         View a menu of the current stats
+
+        **Columns**:
+        - Method: The method being profiled
+        - Max: The highest recorded runtime of the method
+        - Min: The lowest recorded runtime of the method
+        - Avg: The average runtime of the method
+        - Calls/Min: The average calls per minute of the method over the set delta
+        - Last X: The total number of times the method was called over the set delta
+        - Impact Score: A score calculated from the average runtime and calls per minute
+
+        **Note**: The `Inspect` button will only be available if verbose stats are enabled
+
+        **Impact Score**:
+        The impact score represents the impact of the method on the bot's performance.
+        ```python
+        variability_score = standard_deviation_of_runtimes / avg_runtime
+        impact_score = (avg_runtime * calls_per_minute) * (1 + variability_score)
+        ```
+        The higher the score, the more impact the method has on the bot's performance
         """
         view = ProfileMenu(ctx, self.db)
         await view.start()
