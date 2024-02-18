@@ -29,7 +29,7 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "vertyco"
-    __version__ = "0.1.10b"
+    __version__ = "0.2.0b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -39,8 +39,6 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
         self.config.register_global(db={})
         self.db: DB = DB()
         self.saving = False
-
-        self.ignored_methods: t.List[str] = [i for i in dir(self)]
 
         # {cog_name: {method_name: original_method}}
         self.original_methods: t.Dict[str, t.Dict[str, t.Callable]] = {}
@@ -70,82 +68,85 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
 
         attached = False
         # Attach the profiler to the commands of the cog
-        for command in cog.walk_commands():
-            if not command.enabled:
-                continue
-            key = f"{command.callback.__module__}.{command.callback.__name__}"
-            log.debug(f"Attaching profiler to COMMAND {key}")
+        if self.db.track_commands:
+            for command in cog.walk_commands():
+                if not command.enabled:
+                    continue
+                key = f"{command.callback.__module__}.{command.callback.__name__}"
+                log.debug(f"Attaching profiler to COMMAND {key}")
 
-            used_keys.append(key)
+                used_keys.append(key)
 
-            original_callback = command.callback
-            wrapped_callback = self._profile_wrapper(original_callback, cog_name, "command")
-            command.callback = wrapped_callback
-            self.original_callbacks.setdefault(cog_name, {})[command.qualified_name] = original_callback
-            attached = True
+                original_callback = command.callback
+                wrapped_callback = self._profile_wrapper(original_callback, cog_name, "command")
+                command.callback = wrapped_callback
+                self.original_callbacks.setdefault(cog_name, {})[command.qualified_name] = original_callback
+                attached = True
 
-        for command in cog.walk_app_commands():
-            key = f"{command.callback.__module__}.{command.callback.__name__}"
-            log.debug(f"Attaching profiler to SLASH COMMAND {key}")
+            for command in cog.walk_app_commands():
+                key = f"{command.callback.__module__}.{command.callback.__name__}"
+                log.debug(f"Attaching profiler to SLASH COMMAND {key}")
 
-            used_keys.append(key)
+                used_keys.append(key)
 
-            original_callback = command.callback
-            wrapped_callback = self._profile_wrapper(original_callback, cog_name, "slash")
+                original_callback = command.callback
+                wrapped_callback = self._profile_wrapper(original_callback, cog_name, "slash")
 
-            setattr(command, "_callback", wrapped_callback)
-            self.original_slash_callbacks.setdefault(cog_name, {})[command.qualified_name] = original_callback
-            attached = True
+                setattr(command, "_callback", wrapped_callback)
+                self.original_slash_callbacks.setdefault(cog_name, {})[command.qualified_name] = original_callback
+                attached = True
 
         # Attach the profiler to the listeners of the cog
-        for listener_name, listener_coro in cog.get_listeners():
-            if listener_coro.__qualname__.split(".")[0] != cog_name:
-                continue
+        if self.db.track_listeners:
+            for listener_name, listener_coro in cog.get_listeners():
+                if listener_coro.__qualname__.split(".")[0] != cog_name:
+                    continue
 
-            key = f"{listener_coro.__module__}.{listener_coro.__name__}"
-            log.debug(f"Attaching profiler to LISTENER {key}")
+                key = f"{listener_coro.__module__}.{listener_coro.__name__}"
+                log.debug(f"Attaching profiler to LISTENER {key}")
 
-            used_keys.append(key)
+                used_keys.append(key)
 
-            self.original_listeners.setdefault(cog_name, {})[listener_name] = listener_coro
-            wrapped_listener = self._profile_wrapper(listener_coro, cog_name, "listener")
-            self.bot.remove_listener(listener_coro, name=listener_name)
-            self.bot.add_listener(wrapped_listener, name=listener_name)
+                self.original_listeners.setdefault(cog_name, {})[listener_name] = listener_coro
+                wrapped_listener = self._profile_wrapper(listener_coro, cog_name, "listener")
+                self.bot.remove_listener(listener_coro, name=listener_name)
+                self.bot.add_listener(wrapped_listener, name=listener_name)
 
-            attached = True
+                attached = True
 
         # Attach the profiler to the methods of the cog
-        for attr_name in dir(cog):
-            attr = getattr(cog, attr_name, None)
-            if any(
-                [
-                    attr_name in self.ignored_methods,
-                    attr is None,
-                    not hasattr(attr, "__module__"),  # Skip builtins
-                    not callable(attr),  # Skip non-callable attributes
-                    attr_name.startswith("__"),  # Skip dunder methods
-                    getattr(attr, "__cog_listener__", None) is not None,  # Skip listeners
-                ]
-            ):
-                continue
+        if self.db.track_methods:
+            for attr_name in dir(cog):
+                attr = getattr(cog, attr_name, None)
+                if any(
+                    [
+                        attr_name in [i for i in dir(self)],
+                        attr is None,
+                        not hasattr(attr, "__module__"),  # Skip builtins
+                        not callable(attr),  # Skip non-callable attributes
+                        attr_name.startswith("__"),  # Skip dunder methods
+                        getattr(attr, "__cog_listener__", None) is not None,  # Skip listeners
+                    ]
+                ):
+                    continue
 
-            key = f"{attr.__module__}.{attr_name}"
-            if key.startswith(("redbot")):
-                continue
+                key = f"{attr.__module__}.{attr_name}"
+                if key.startswith(("redbot")):
+                    continue
 
-            if isinstance(attr, tasks.Loop):
-                log.debug(f"Attaching profiler to TASK {key}")
-                original_coro = attr.coro
-                wrapped_coro = self._profile_wrapper(original_coro, cog_name, "task")
-                attr.coro = wrapped_coro
-                self.original_loops.setdefault(cog_name, {})[attr_name] = original_coro
-            else:
-                log.debug(f"Attaching profiler to METHOD {key}")
-                wrapped_fn = self._profile_wrapper(attr, cog_name, "method")
-                self.original_methods.setdefault(cog_name, {})[attr_name] = attr
-                setattr(cog, attr_name, wrapped_fn)
+                if isinstance(attr, tasks.Loop):
+                    log.debug(f"Attaching profiler to TASK {key}")
+                    original_coro = attr.coro
+                    wrapped_coro = self._profile_wrapper(original_coro, cog_name, "task")
+                    attr.coro = wrapped_coro
+                    self.original_loops.setdefault(cog_name, {})[attr_name] = original_coro
+                else:
+                    log.debug(f"Attaching profiler to METHOD {key}")
+                    wrapped_fn = self._profile_wrapper(attr, cog_name, "method")
+                    self.original_methods.setdefault(cog_name, {})[attr_name] = attr
+                    setattr(cog, attr_name, wrapped_fn)
 
-            attached = True
+                attached = True
 
         return attached
 
@@ -217,6 +218,10 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
                 verbose=self.db.verbose,
                 delta=self.db.delta,
                 watching=self.db.watching,
+                track_methods=self.db.track_methods,
+                track_commands=self.db.track_commands,
+                track_listeners=self.db.track_listeners,
+                track_tasks=self.db.track_tasks,
                 # Break it down to avoid RuntimeErrors
                 stats={k: v for k, v in self.db.stats.copy().items()},
             )
@@ -224,6 +229,7 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
 
         try:
             self.saving = True
+            log.debug("Saving config")
             if not self.db.save_stats:
                 self.db.stats.clear()
 
@@ -233,6 +239,53 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
             log.exception("Failed to save config", exc_info=e)
         finally:
             self.saving = False
+
+    async def cleanup(self) -> bool:
+        def _clean() -> bool:
+            oldest_allowed_record = datetime.now() - timedelta(hours=self.db.delta)
+            cleaned = False
+            copied = {k: v.copy() for k, v in self.db.stats.items()}
+            for cog_name, methods in copied.items():
+                if not self.bot.get_cog(cog_name):
+                    del self.db.stats[cog_name]
+                    cleaned = True
+                    continue
+
+                for method_name, profiles in methods.items():
+                    if profiles[0].func_type == "command" and not self.db.track_commands:
+                        del self.db.stats[cog_name][method_name]
+                        cleaned = True
+                        continue
+                    elif profiles[0].func_type == "listener" and not self.db.track_listeners:
+                        del self.db.stats[cog_name][method_name]
+                        cleaned = True
+                        continue
+                    elif profiles[0].func_type == "task" and not self.db.track_tasks:
+                        del self.db.stats[cog_name][method_name]
+                        cleaned = True
+                        continue
+                    elif profiles[0].func_type == "method" and not self.db.track_methods:
+                        del self.db.stats[cog_name][method_name]
+                        cleaned = True
+                        continue
+                    elif profiles[0].timestamp < oldest_allowed_record:
+                        self.db.stats[cog_name][method_name] = [
+                            i for i in profiles if i.timestamp > oldest_allowed_record
+                        ]
+                        cleaned = True
+                        continue
+
+                    for idx, profile in enumerate(profiles):
+                        if profile.func_profiles and not self.db.verbose:
+                            self.db.stats[cog_name][method_name][idx].func_profiles = {}
+                            cleaned = True
+
+            return cleaned
+
+        cleaned = await asyncio.to_thread(_clean)
+        if cleaned:
+            await self.save()
+        return cleaned
 
     def rebuild(self) -> None:
         self._teardown()
@@ -258,6 +311,7 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
         data = await self.config.db()
         self.db = await asyncio.to_thread(DB.model_validate, data)
         log.info("Config loaded")
+        await self.cleanup()
         self._build()
         await asyncio.sleep(10)
         self.save_loop.start()

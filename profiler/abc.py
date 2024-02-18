@@ -17,9 +17,13 @@ class MixinMeta(metaclass=ABCMeta):
     db: DB
 
     @abstractmethod
-    def save(self):
+    def save(self) -> None:
         raise NotImplementedError
 
     @abstractmethod
-    def rebuild(self):
+    def rebuild(self) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def cleanup(self) -> bool:
         raise NotImplementedError

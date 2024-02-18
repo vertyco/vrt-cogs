@@ -52,8 +52,6 @@ class ProfileMenu(discord.ui.View):
         self.query: t.Union[str, None] = None
 
         self.inspecting: bool = False
-        self.skip10_removed: bool = False
-        self.remove_item(self.back)
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user.id != self.ctx.author.id:
@@ -79,23 +77,38 @@ class ProfileMenu(discord.ui.View):
         self.stop()
 
     async def start(self):
+        self.remove_item(self.back)
+
         self.pages = await asyncio.to_thread(format_runtime_pages, self.db, "Avg")
-        if len(self.pages) < 20:
+        if len(self.pages) < 15:
             self.remove_item(self.right10)
             self.remove_item(self.left10)
-            self.skip10_removed = True
 
         self.message = await self.ctx.send(self.pages[self.page], view=self)
 
     async def update(self):
-        if len(self.pages) > 20 and self.skip10_removed:
-            self.add_item(self.left10)
-            self.add_item(self.right10)
-            self.skip10_removed = False
-        elif len(self.pages) <= 20 and not self.skip10_removed:
-            self.remove_item(self.left10)
-            self.remove_item(self.right10)
-            self.skip10_removed = True
+        self.clear_items()
+        if self.inspecting:
+            self.add_item(self.left)
+            self.add_item(self.close)
+            self.add_item(self.right)
+            if len(self.pages) >= 15:
+                self.add_item(self.left10)
+            self.add_item(self.back)
+            if len(self.pages) >= 15:
+                self.add_item(self.right10)
+        else:
+            self.add_item(self.left)
+            self.add_item(self.close)
+            self.add_item(self.right)
+            self.add_item(self.filter_results)
+            self.add_item(self.inspect)
+            self.add_item(self.change_sorting)
+            self.add_item(self.refresh)
+            if len(self.pages) >= 15:
+                self.add_item(self.left10)
+                self.add_item(self.right10)
+
         self.page %= len(self.pages)
 
         if self.inspecting and self.tables:
@@ -186,11 +199,6 @@ class ProfileMenu(discord.ui.View):
         self.tables = await asyncio.to_thread(format_method_tables, method_stats)
         if len(method_stats) > 10:
             self.plot = await asyncio.to_thread(generate_line_graph, method_stats)
-        self.add_item(self.back)
-        self.remove_item(self.filter_results)
-        self.remove_item(self.change_sorting)
-        self.remove_item(self.inspect)
-        self.remove_item(self.refresh)
         await self.update()
 
     @discord.ui.button(label="Sort: Avg", style=discord.ButtonStyle.success, row=2)
@@ -228,18 +236,13 @@ class ProfileMenu(discord.ui.View):
         self.pages = await asyncio.to_thread(format_runtime_pages, self.db, self.sorting_by, self.query)
         await self.update()
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=3)
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=4)
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
         with suppress(discord.NotFound):
             await interaction.response.defer()
 
         if not self.inspecting:
             return
-        self.add_item(self.filter_results)
-        self.add_item(self.change_sorting)
-        self.add_item(self.inspect)
-        self.add_item(self.refresh)
-        self.remove_item(self.back)
         self.inspecting = False
         self.tables.clear()
         self.pages = await asyncio.to_thread(format_runtime_pages, self.db, self.sorting_by, self.query)
