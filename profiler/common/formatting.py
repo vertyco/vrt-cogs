@@ -139,14 +139,16 @@ def format_runtime_pages(
                     round(impact_score, 2),
                 ]
             )
-        page = (
-            f"{box(tabulate(rows, headers=cols), lang='py')}\n"
-            "(C) = Command\n"
-            "(S) = Slash Command\n"
-            "(T) = Task Loop\n"
-            "(L) = Listener\n"
-            f"Page `{p + 1}/{page_count}`"
-        )
+
+        page = f"{box(tabulate(rows, headers=cols), lang='py')}\n"
+        if db.track_commands:
+            page += "(C) = Command\n(S) = Slash Command\n"
+        if db.track_tasks:
+            page += "(T) = Task Loop\n"
+        if db.track_listeners:
+            page += "(L) = Listener\n"
+        page += f"Page `{p + 1}/{page_count}`"
+
         if query:
             page += f"\nCurrent Filter: `{query}`"
 
