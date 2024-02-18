@@ -29,7 +29,7 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "vertyco"
-    __version__ = "0.1.8b"
+    __version__ = "0.1.9b"
 
     def __init__(self, bot: Red):
         super().__init__()
