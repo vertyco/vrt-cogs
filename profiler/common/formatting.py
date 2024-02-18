@@ -54,6 +54,8 @@ def format_runtime_pages(
                 method_key = f"{method_key} (C)"
             elif profiles[0].func_type == "listener":
                 method_key = f"{method_key} (L)"
+            elif profiles[0].func_type == "task":
+                method_key = f"{method_key} (T)"
             max_runtime = max(profile.total_tt for profile in profiles)
             min_runtime = min(profile.total_tt for profile in profiles)
             avg_runtime = sum(profile.total_tt for profile in profiles) / len(profiles)
@@ -122,8 +124,12 @@ def format_runtime_pages(
                     calls_last_hour,
                 ]
             )
-
-        page = f"{box(tabulate(rows, headers=cols), lang='py')}\n(C) = Command\nPage `{p + 1}/{page_count}`"
+        page = (
+            f"{box(tabulate(rows, headers=cols), lang='py')}\n"
+            "(C) = Command\n"
+            "(T) = Task Loop\n"
+            f"Page `{p + 1}/{page_count}`"
+        )
         if query:
             page += f"\nCurrent Filter: `{query}`"
 
