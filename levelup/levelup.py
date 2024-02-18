@@ -277,6 +277,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         # If message was from a bot
         if message.author.bot:
             return
+        print(f"{message.author} sent a message")
         # If message wasn't sent in a guild
         if not message.guild:
             return
@@ -857,7 +858,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             jobs.append(self.check_levelups(gid, uid, channel_obj=voice_state.channel))
         await asyncio.gather(*jobs)
 
-    @tasks.loop(seconds=20)
+    @tasks.loop(seconds=60)
     async def voice_checker(self):
         await self.voice_check()
 

@@ -18,7 +18,7 @@ class FunctionProfile(Base):
 
 class StatsProfile(Base):
     total_tt: float  # Execution time in seconds
-    func_type: str  # Function type (command, method)
+    func_type: str  # Function type (command, method, task)
     is_coro: bool  # Async if True
     func_profiles: t.Dict[str, FunctionProfile] = {}  # Empty if not verbose
     timestamp: datetime = Field(default_factory=datetime.now)  # Time the profile was recorded
