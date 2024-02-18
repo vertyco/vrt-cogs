@@ -62,6 +62,10 @@ def format_runtime_pages(
 
             # Calculate the calls per minute and total calls in the last specified delta
             calls_over_delta = [i for i in profiles if i.timestamp > (now - timedelta(hours=db.delta))]
+            if not calls_over_delta:
+                # Don't show any results beyond the set delta
+                continue
+
             # Caclulate the min and max timestamp
             newest, oldest = (
                 max(calls_over_delta, key=lambda i: i.timestamp),
