@@ -13,7 +13,6 @@ from redbot.core.bot import Red
 
 from .abc import CompositeMetaClass
 from .commands.owner import Owner
-from .common.constants import IGNORED_COGS
 from .common.models import DB, StatsProfile
 
 log = logging.getLogger("red.vrt.profiler")
@@ -29,7 +28,7 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "vertyco"
-    __version__ = "0.3.2b"
+    __version__ = "0.3.3b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -61,7 +60,7 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
             True if attached successfully, False otherwise.
         """
         cog: commands.Cog = self.bot.get_cog(cog_name)
-        if not cog or cog_name in IGNORED_COGS:
+        if not cog:
             return False
 
         used_keys = []
@@ -165,7 +164,6 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
         if any(
             [
                 not cog,
-                cog_name in IGNORED_COGS,
                 cog_name not in self.original_methods,
             ]
         ):

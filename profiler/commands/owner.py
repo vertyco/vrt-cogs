@@ -8,7 +8,6 @@ from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, humanize_number, pagify
 
 from ..abc import MixinMeta
-from ..common.constants import IGNORED_COGS
 from ..common.formatting import humanize_size
 from ..common.mem_profiler import profile_memory
 from ..views.profile_menu import ProfileMenu
@@ -133,8 +132,7 @@ class Owner(MixinMeta):
         Attach a profiler to a cog
         """
         if cogs[0].lower() == "all":
-            cogs = [cog for cog in self.bot.cogs if cog not in IGNORED_COGS]
-            self.db.watching = cogs
+            self.db.watching = [cog for cog in self.bot.cogs]
             await self.rebuild()
             await self.save()
             return await ctx.send("All cogs are now being profiled")
