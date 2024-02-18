@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import sys
 from contextlib import suppress
 
 import discord
@@ -8,6 +9,7 @@ from redbot.core.utils.chat_formatting import box, pagify
 
 from ..abc import MixinMeta
 from ..common.constants import IGNORED_COGS
+from ..common.formatting import humanize_size
 from ..common.mem_profiler import profile_memory
 from ..views.profile_menu import ProfileMenu
 
@@ -38,6 +40,18 @@ class Owner(MixinMeta):
             txt += "\n- Verbose stat metrics are **disabled**, the `Inspect` button in the menu will not be available"
 
         txt += f"\n- Data retention is set to **{self.db.delta} {'hour' if self.db.delta == 1 else 'hours'}**"
+
+        mem_usage = humanize_size(sys.getsizeof(self.db))
+        txt += f"\n- Config Size: {mem_usage}"
+
+        records = 0
+        monitoring = 0
+        for methods in self.db.stats.values():
+            monitoring += len(methods)
+            for statprofiles in methods.values():
+                records += len(statprofiles)
+        txt += f"\n- Records: {records} | Monitoring: {monitoring} methods"
+
         txt += f"\n\n### Profiling the following cogs:\n{', '.join(self.db.watching) if self.db.watching else 'None'}"
 
         await ctx.send(txt)
