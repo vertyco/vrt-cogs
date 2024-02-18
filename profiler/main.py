@@ -29,7 +29,7 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "vertyco"
-    __version__ = "0.1.3b"
+    __version__ = "0.1.4b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -184,6 +184,7 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
             for command in cog.walk_app_commands():
                 if command.qualified_name != slash_name:
                     continue
+                setattr(command, "_callback", original_callback)
             log.debug(f"Detaching profiler from slash command {cog_name}.{slash_name}")
 
         for loop_name, original_coro in self.original_loops.get(cog_name, {}).items():
