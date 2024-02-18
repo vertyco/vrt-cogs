@@ -56,6 +56,8 @@ def format_runtime_pages(
                 method_key = f"{method_key} (L)"
             elif profiles[0].func_type == "task":
                 method_key = f"{method_key} (T)"
+            elif profiles[0].func_type == "slash":
+                method_key = f"{method_key} (S)"
             max_runtime = max(profile.total_tt for profile in profiles)
             min_runtime = min(profile.total_tt for profile in profiles)
             avg_runtime = sum(profile.total_tt for profile in profiles) / len(profiles)
@@ -131,6 +133,7 @@ def format_runtime_pages(
         page = (
             f"{box(tabulate(rows, headers=cols), lang='py')}\n"
             "(C) = Command\n"
+            "(S) = Slash Command\n"
             "(T) = Task Loop\n"
             "(L) = Listener\n"
             f"Page `{p + 1}/{page_count}`"
