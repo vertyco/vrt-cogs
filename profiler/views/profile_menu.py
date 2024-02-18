@@ -219,9 +219,12 @@ class ProfileMenu(discord.ui.View):
             self.sorting_by = "CPM"
             button.label = "Sort: CPM"
         elif self.sorting_by == "CPM":
-            self.sorting_by = "LHC"
+            self.sorting_by = "Count"
             button.label = f"Sort: Last {'Hour' if self.db.delta == 1 else f'{self.db.delta}hrs'}"
-        elif self.sorting_by == "LHC":
+        elif self.sorting_by == "Count":
+            self.sorting_by = "Impact"
+            button.label = "Sort: Impact Score"
+        elif self.sorting_by == "Impact":
             self.sorting_by = "Name"
             button.label = "Sort: Name"
 

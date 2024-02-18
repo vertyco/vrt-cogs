@@ -29,7 +29,7 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "vertyco"
-    __version__ = "0.2.1b"
+    __version__ = "0.3.0b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -331,40 +331,28 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
         self.original_methods.clear()
 
     def _add_stats(self, func: t.Callable, profile: cProfile.Profile, cog_name: str, func_type: str):
-        key = f"{func.__module__}.{func.__name__}"
-        results = pstats.Stats(profile)
-        results.sort_stats(pstats.SortKey.CUMULATIVE)
+        try:
+            key = f"{func.__module__}.{func.__name__}"
+            results = pstats.Stats(profile)
+            results.sort_stats(pstats.SortKey.CUMULATIVE)
 
-        stats = asdict(results.get_stats_profile())
-        stats["func_type"] = func_type
-        stats["is_coro"] = asyncio.iscoroutinefunction(func)
-        if not self.db.verbose:
-            stats["func_profiles"] = {}
+            stats = asdict(results.get_stats_profile())
+            stats["func_type"] = func_type
+            stats["is_coro"] = asyncio.iscoroutinefunction(func)
+            if not self.db.verbose:
+                stats["func_profiles"] = {}
 
-        stats_profile = StatsProfile.model_validate(stats)
-        self.db.stats.setdefault(cog_name, {}).setdefault(key, []).append(stats_profile)
+            stats_profile = StatsProfile.model_validate(stats)
+            self.db.stats.setdefault(cog_name, {}).setdefault(key, []).append(stats_profile)
 
-        # Only keep the last delta hours of data
-        min_age = datetime.now() - timedelta(hours=self.db.delta)
-        to_keep = [i for i in self.db.stats[cog_name][key] if i.timestamp > min_age]
-        self.db.stats[cog_name][key] = to_keep
+            # Only keep the last delta hours of data
+            min_age = datetime.now() - timedelta(hours=self.db.delta)
+            to_keep = [i for i in self.db.stats[cog_name][key] if i.timestamp > min_age]
+            self.db.stats[cog_name][key] = to_keep
+        except Exception as e:
+            log.exception(f"Failed to {func_type} stats for the {cog_name} cog", exc_info=e)
 
     def _profile_wrapper(self, func: t.Callable, cog_name: str, func_type: str):
-        if func_type == "listener":
-
-            @functools.wraps(func)
-            async def listener_wrapper(*args, **kwargs):
-                with cProfile.Profile() as profile:
-                    retval = await func(*args, **kwargs)
-
-                await asyncio.to_thread(self._add_stats, func, profile, cog_name, func_type)
-
-                return retval
-
-            # Preserve the signature of the original function
-            functools.update_wrapper(listener_wrapper, func)
-            return listener_wrapper
-
         if asyncio.iscoroutinefunction(func):
 
             async def async_wrapper(*args, **kwargs):
