@@ -81,7 +81,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "vertyco"
-    __version__ = "3.12.3"
+    __version__ = "3.12.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -857,11 +857,8 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             jobs.append(self.check_levelups(gid, uid, channel_obj=voice_state.channel))
         await asyncio.gather(*jobs)
 
-    @tasks.loop(seconds=60)
+    @tasks.loop(seconds=120)
     async def voice_checker(self):
-        await self.voice_check()
-
-    async def voice_check(self):
         vtasks = []
         for guild in self.bot.guilds:
             vtasks.append(self.check_voice(guild))
