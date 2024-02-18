@@ -20,10 +20,16 @@ log = logging.getLogger("red.vrt.profiler")
 
 
 class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
-    """Cog profiling tools for bot owners and developers"""
+    """
+    Cog profiling tools for bot owners and developers
+
+    This cog provides tools to profile the performance of other cogs' commands, methods, tasks, and listeners.
+
+    By default, metrics are not stored persistently and are only kept for 1 hour in memory. You can change these settings with the `[p]profiler` base command.
+    """
 
     __author__ = "vertyco"
-    __version__ = "0.0.17a"
+    __version__ = "0.1.0b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -42,6 +48,8 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
         self.original_callbacks: t.Dict[str, t.Dict[str, t.Callable]] = {}
         # {cog_name: {loop_name: original_coro}}
         self.original_loops: t.Dict[str, t.Dict[str, t.Callable]] = {}
+        # {cog_name: {listener_name, original_coro}}
+        self.original_listeners: t.Dict[str, t.Dict[str, t.Callable]] = {}
 
         logging.getLogger("perftracker").setLevel(logging.INFO)
 
@@ -58,7 +66,7 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
         Returns:
             True if attached successfully, False otherwise.
         """
-        cog = self.bot.get_cog(cog_name)
+        cog: commands.Cog = self.bot.get_cog(cog_name)
         if not cog or cog_name in IGNORED_COGS:
             return False
 
@@ -70,6 +78,8 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
             if not command.enabled:
                 continue
             key = f"{command.callback.__module__}.{command.callback.__name__}"
+            log.debug(f"Attaching profiler to COMMAND {key}")
+
             used_keys.append(key)
 
             original_callback = command.callback
@@ -77,7 +87,6 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
             command.callback = wrapped_callback
             self.original_callbacks.setdefault(cog_name, {})[command.qualified_name] = original_callback
             attached = True
-            # log.debug(f"Attaching profiler to COMMAND {key}")
 
         # Attach the profiler to the methods of the cog
         for attr_name in dir(cog):
@@ -89,39 +98,44 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
                     not hasattr(attr, "__module__"),  # Skip builtins
                     not callable(attr),  # Skip non-callable attributes
                     attr_name.startswith("__"),  # Skip dunder methods
-                    # getattr(attr, "__cog_listener__", None)
-                    # is not None,  # Skip listeners because idk how to make them work yet
+                    getattr(attr, "__cog_listener__", None) is not None,  # Skip listeners
                 ]
             ):
                 continue
 
             key = f"{attr.__module__}.{attr_name}"
+            if key.startswith(("redbot")):
+                continue
 
             if isinstance(attr, tasks.Loop):
+                log.debug(f"Attaching profiler to TASK {key}")
                 original_coro = attr.coro
                 wrapped_coro = self._profile_wrapper(original_coro, cog_name, "task")
                 attr.coro = wrapped_coro
                 self.original_loops.setdefault(cog_name, {})[attr_name] = original_coro
-                # log.debug(f"Attaching profiler to LOOP {key}")
-            elif getattr(attr, "__cog_listener__", False):
-                # TODO: Figure out how to attach the profiler to listeners
-                # Inspect the listener and get all its attributes so we can figure out how to attach the profiler
-                # if "messages" in key:
-                #     print(f"TYPE: {type(attr.__call__)}")
-                #     ret = inspect.getmembers(attr)
-                #     print(ret)
-
-                # print(attr.__cog_listener_names__)
-                pass
             else:
+                log.debug(f"Attaching profiler to METHOD {key}")
                 wrapped_fn = self._profile_wrapper(attr, cog_name, "method")
                 self.original_methods.setdefault(cog_name, {})[attr_name] = attr
                 setattr(cog, attr_name, wrapped_fn)
 
             attached = True
 
-            # if "messages" in key:
-            #     log.debug(f"Attaching profiler to {attr.__module__}.{attr_name}")
+        for listener_name, listener_coro in cog.get_listeners():
+            if listener_coro.__qualname__.split(".")[0] != cog_name:
+                continue
+
+            key = f"{listener_coro.__module__}.{listener_coro.__name__}"
+            log.debug(f"Attaching profiler to LISTENER {key}")
+
+            self.original_listeners.setdefault(cog_name, {})[listener_name] = listener_coro
+
+            wrapped_listener = self._profile_wrapper(listener_coro, cog_name, "listener")
+
+            self.bot.remove_listener(listener_coro, name=listener_name)
+            self.bot.add_listener(wrapped_listener, name=listener_name)
+
+            attached = True
 
         return attached
 
@@ -162,6 +176,11 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
                 continue
             loop.coro = original_coro
             log.debug(f"Detaching profiler from loop {cog_name}.{loop_name}")
+
+        for listener_name, original_coro in self.original_listeners.get(cog_name, {}).items():
+            self.bot.remove_listener(original_coro, name=listener_name)
+            self.bot.add_listener(original_coro, name=listener_name)
+            log.debug(f"Detaching profiler from listener {cog_name}.{listener_name}")
 
         return True
 
@@ -243,6 +262,21 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
         self.db.stats[cog_name][key] = to_keep
 
     def _profile_wrapper(self, func: t.Callable, cog_name: str, func_type: str):
+        if func_type == "listener":
+
+            @functools.wraps(func)
+            async def listener_wrapper(*args, **kwargs):
+                with cProfile.Profile() as profile:
+                    retval = await func(*args, **kwargs)
+
+                await asyncio.to_thread(self._add_stats, func, profile, cog_name, func_type)
+
+                return retval
+
+            # Preserve the signature of the original function
+            functools.update_wrapper(listener_wrapper, func)
+            return listener_wrapper
+
         if asyncio.iscoroutinefunction(func):
 
             async def async_wrapper(*args, **kwargs):

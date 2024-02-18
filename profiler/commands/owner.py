@@ -74,34 +74,36 @@ class Owner(MixinMeta):
         await ctx.send(f"Data retention is now set to **{delta} {'hour' if delta == 1 else 'hours'}**")
 
     @profiler.command(name="attach")
-    async def attach_cog(self, ctx: commands.Context, cog_name: str):
+    async def attach_cog(self, ctx: commands.Context, *cogs: str):
         """
         Attach a profiler to a cog
         """
-        if cog_name.lower() == "all":
-            for cog_name in self.bot.cogs:
-                if cog_name in IGNORED_COGS:
-                    continue
-                if cog_name not in self.db.watching:
-                    self.db.watching.append(cog_name)
-
+        if cogs[0].lower() == "all":
+            cogs = [cog for cog in self.bot.cogs if cog not in IGNORED_COGS]
+            self.db.watching = cogs
             self.rebuild()
             await self.save()
             return await ctx.send("All cogs are now being profiled")
 
-        if not self.bot.get_cog(cog_name):
-            return await ctx.send(f"**{cog_name}** is not a valid cog")
+        for cog_name in cogs:
+            if not self.bot.get_cog(cog_name):
+                await ctx.send(f"**{cog_name}** isn't valid cog")
+                continue
+            elif cog_name in self.db.watching:
+                await ctx.send(f"**{cog_name}** was already being profiled")
+                continue
+            self.db.watching.append(cog_name)
 
-        if cog_name in self.db.watching:
-            return await ctx.send(f"**{cog_name}** is already being profiled")
-
-        self.db.watching.append(cog_name)
         self.rebuild()
         await self.save()
-        await ctx.send(f"**{cog_name}** is now being profiled")
+        if len(cogs) == 1:
+            await ctx.send(f"**{cogs[0]}** is now being profiled")
+        else:
+            joined = ", ".join([f"`{i}`" for i in cogs])
+            await ctx.send(f"The following cogs are now being profiled: {joined}")
 
     @profiler.command(name="detach")
-    async def detach_cog(self, ctx: commands.Context, cog_name: str):
+    async def detach_cog(self, ctx: commands.Context, *cogs: str):
         """
         Remove a cog from the profiling list
 
@@ -110,24 +112,28 @@ class Owner(MixinMeta):
         if not self.db.watching:
             return await ctx.send("No cogs are being profiled")
 
-        if cog_name.lower() == "all":
+        if cogs[0].lower() == "all":
             self.db.watching.clear()
             self.rebuild()
             self.db.stats.clear()
             await self.save()
             return await ctx.send("All cogs removed from profiling")
 
-        if cog_name not in self.db.watching:
-            return await ctx.send(f"**{cog_name}** is not being profiled")
+        for cog_name in cogs:
+            if cog_name not in self.db.watching:
+                await ctx.send(f"**{cog_name}** wasn't being profiled")
+                continue
+            self.db.watching.remove(cog_name)
+            if cog_name in self.db.stats:
+                del self.db.stats[cog_name]
 
-        self.db.watching.remove(cog_name)
         self.rebuild()
-
-        if cog_name in self.db.stats:
-            del self.db.stats[cog_name]
-
         await self.save()
-        await ctx.send(f"**{cog_name}** is no longer being profiled")
+        if len(cogs) == 1:
+            await ctx.send(f"**{cogs[0]}** is no longer being profiled")
+        else:
+            joined = ", ".join([f"`{i}`" for i in cogs])
+            await ctx.send(f"The following cogs are no longer being profiled: {joined}")
 
     @profiler.command(name="memory", aliases=["mem", "m"])
     async def profile_summary(self, ctx: commands.Context, limit: int = 15):
