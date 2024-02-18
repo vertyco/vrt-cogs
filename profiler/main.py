@@ -46,6 +46,8 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
         self.original_methods: t.Dict[str, t.Dict[str, t.Callable]] = {}
         # {cog_name: {command_name: original_callback}}
         self.original_callbacks: t.Dict[str, t.Dict[str, t.Callable]] = {}
+        # {cog_name: {slash_name: original_callback}}
+        self.original_slash_callbacks: t.Dict[str, t.Dict[str, t.Callable]] = {}
         # {cog_name: {loop_name: original_coro}}
         self.original_loops: t.Dict[str, t.Dict[str, t.Callable]] = {}
         # {cog_name: {listener_name, original_coro}}
@@ -80,6 +82,19 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
             wrapped_callback = self._profile_wrapper(original_callback, cog_name, "command")
             command.callback = wrapped_callback
             self.original_callbacks.setdefault(cog_name, {})[command.qualified_name] = original_callback
+            attached = True
+
+        for command in cog.walk_app_commands():
+            key = f"{command.callback.__module__}.{command.callback.__name__}"
+            log.debug(f"Attaching profiler to SLASH COMMAND {key}")
+
+            used_keys.append(key)
+
+            original_callback = command.callback
+            wrapped_callback = self._profile_wrapper(original_callback, cog_name, "slash")
+
+            setattr(command, "_callback", wrapped_callback)
+            self.original_slash_callbacks.setdefault(cog_name, {})[command.qualified_name] = original_callback
             attached = True
 
         # Attach the profiler to the listeners of the cog
@@ -164,6 +179,12 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
                 continue
             command.callback = original_callback
             log.debug(f"Detaching profiler from command {cog_name}.{command_name}")
+
+        for slash_name, original_callback in self.original_slash_callbacks.get(cog_name, {}).items():
+            for command in cog.walk_app_commands():
+                if command.qualified_name != slash_name:
+                    continue
+            log.debug(f"Detaching profiler from slash command {cog_name}.{slash_name}")
 
         for loop_name, original_coro in self.original_loops.get(cog_name, {}).items():
             loop = getattr(cog, loop_name, None)
