@@ -35,9 +35,9 @@ class Owner(MixinMeta):
             txt += "\n- Persistent Storage: Profiling metrics are **Not Saved**"
 
         if self.db.verbose:
-            txt += f"\n- Verbose stat metrics are **Enabled**, you can use the `Inspect` button in the `{ctx.clean_prefix}profiler view` menu to view detailed stats"
+            txt += f"\n- Globally verbose stat metrics are **Enabled**, you can use the `Inspect` button in the `{ctx.clean_prefix}profiler view` menu to view detailed stats"
         else:
-            txt += "\n- Verbose stat metrics are **Disabled**, the `Inspect` button in the menu will not be available"
+            txt += "\n- Globally verbose stat metrics are **Disabled**, the `Inspect` button in the menu will only be available for methods being tracked verbosely"
 
         txt += f"\n- Data retention is set to **{self.db.delta} {'hour' if self.db.delta == 1 else 'hours'}**"
 
@@ -64,9 +64,8 @@ class Owner(MixinMeta):
         joined = ", ".join([f"`{i}`" for i in self.db.watching]) if self.db.watching else "None"
         txt += f"\n### Profiling the following cogs:\n{joined}"
 
-        if self.db.verbose_methods:
-            joined = ", ".join([f"`{i}`" for i in self.db.verbose_methods])
-            txt += f"\n### Profiling the following methods verbosely:\n{joined}"
+        joined = ", ".join([f"`{i}`" for i in self.db.verbose_methods]) if self.db.verbose_methods else "None"
+        txt += f"\n### Profiling the following methods verbosely:\n{joined}"
 
         await ctx.send(txt)
 
