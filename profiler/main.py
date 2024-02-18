@@ -29,7 +29,7 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "vertyco"
-    __version__ = "0.1.1b"
+    __version__ = "0.1.2b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -88,6 +88,23 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
             self.original_callbacks.setdefault(cog_name, {})[command.qualified_name] = original_callback
             attached = True
 
+        # Attach the profiler to the listeners of the cog
+        for listener_name, listener_coro in cog.get_listeners():
+            if listener_coro.__qualname__.split(".")[0] != cog_name:
+                continue
+
+            key = f"{listener_coro.__module__}.{listener_coro.__name__}"
+            log.debug(f"Attaching profiler to LISTENER {key}")
+
+            used_keys.append(key)
+
+            self.original_listeners.setdefault(cog_name, {})[listener_name] = listener_coro
+            wrapped_listener = self._profile_wrapper(listener_coro, cog_name, "listener")
+            self.bot.remove_listener(listener_coro, name=listener_name)
+            self.bot.add_listener(wrapped_listener, name=listener_name)
+
+            attached = True
+
         # Attach the profiler to the methods of the cog
         for attr_name in dir(cog):
             attr = getattr(cog, attr_name, None)
@@ -118,22 +135,6 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
                 wrapped_fn = self._profile_wrapper(attr, cog_name, "method")
                 self.original_methods.setdefault(cog_name, {})[attr_name] = attr
                 setattr(cog, attr_name, wrapped_fn)
-
-            attached = True
-
-        for listener_name, listener_coro in cog.get_listeners():
-            if listener_coro.__qualname__.split(".")[0] != cog_name:
-                continue
-
-            key = f"{listener_coro.__module__}.{listener_coro.__name__}"
-            log.debug(f"Attaching profiler to LISTENER {key}")
-
-            self.original_listeners.setdefault(cog_name, {})[listener_name] = listener_coro
-
-            wrapped_listener = self._profile_wrapper(listener_coro, cog_name, "listener")
-
-            self.bot.remove_listener(listener_coro, name=listener_name)
-            self.bot.add_listener(wrapped_listener, name=listener_name)
 
             attached = True
 
