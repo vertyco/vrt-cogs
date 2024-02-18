@@ -28,6 +28,7 @@ class DB(Base):
     save_stats: bool = False  # Save stats persistently
     verbose: bool = False  # Include FunctionProfiles in stats
     delta: int = 1  # Data retention in hours
+    verbose_methods: t.List[str] = []  # List of methods to include FunctionProfiles in stats
 
     watching: t.List[str] = []  # List of cogs to profile
     track_methods: bool = True  # Track method execution time

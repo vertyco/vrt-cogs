@@ -79,6 +79,9 @@ def format_runtime_pages(
             if profiles[0].func_type != "method":
                 method_key = f"{method_key} ({profiles[0].func_type[0].upper()})"
 
+            if method_key in db.verbose_methods:
+                method_key = f"[{method_key}]"
+
             stats[method_key] = [max_runtime, min_runtime, avg_runtime, calls_per_minute, total_calls, impact_score]
 
     per_page = 10
@@ -144,6 +147,8 @@ def format_runtime_pages(
             page += "(T) = Task Loop\n"
         if db.track_listeners:
             page += "(L) = Listener\n"
+        if db.verbose_methods:
+            page += "[Method] = Verbosely Tracked\n"
         page += f"Page `{p + 1}/{page_count}`"
 
         if query:

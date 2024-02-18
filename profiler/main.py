@@ -6,6 +6,7 @@ import pstats
 import typing as t
 from dataclasses import asdict
 from datetime import datetime, timedelta
+from time import perf_counter
 
 from discord.ext import tasks
 from redbot.core import Config, commands
@@ -28,7 +29,7 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "vertyco"
-    __version__ = "0.3.4b"
+    __version__ = "0.4.0b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -216,6 +217,7 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
                 save_stats=self.db.save_stats,
                 verbose=self.db.verbose,
                 delta=self.db.delta,
+                verbose_methods=self.db.verbose_methods,
                 watching=self.db.watching,
                 track_methods=self.db.track_methods,
                 track_commands=self.db.track_commands,
@@ -328,19 +330,26 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
             self.detach_profiler(cog_name)
         self.original_methods.clear()
 
-    def _add_stats(self, func: t.Callable, profile: cProfile.Profile, cog_name: str, func_type: str):
+    def _add_stats(
+        self, func: t.Callable, profile_or_delta: t.Union[cProfile.Profile, float], cog_name: str, func_type: str
+    ):
         try:
             key = f"{func.__module__}.{func.__name__}"
-            results = pstats.Stats(profile)
-            results.sort_stats(pstats.SortKey.CUMULATIVE)
+            if isinstance(profile_or_delta, cProfile.Profile):
+                results = pstats.Stats(profile_or_delta)
+                results.sort_stats(pstats.SortKey.CUMULATIVE)
+                stats = asdict(results.get_stats_profile())
+                stats_profile = StatsProfile.model_validate(
+                    {**stats, "func_type": func_type, "is_coro": asyncio.iscoroutinefunction(func)}
+                )
+            else:
+                stats_profile = StatsProfile(
+                    total_tt=profile_or_delta,
+                    func_type=func_type,
+                    is_coro=asyncio.iscoroutinefunction(func),
+                    func_profiles={},
+                )
 
-            stats = asdict(results.get_stats_profile())
-            stats["func_type"] = func_type
-            stats["is_coro"] = asyncio.iscoroutinefunction(func)
-            if not self.db.verbose:
-                stats["func_profiles"] = {}
-
-            stats_profile = StatsProfile.model_validate(stats)
             self.db.stats.setdefault(cog_name, {}).setdefault(key, []).append(stats_profile)
 
             # Only keep the last delta hours of data
@@ -351,11 +360,17 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
             log.exception(f"Failed to {func_type} stats for the {cog_name} cog", exc_info=e)
 
     def _profile_wrapper(self, func: t.Callable, cog_name: str, func_type: str):
+        key = f"{func.__module__}.{func.__name__}"
         if asyncio.iscoroutinefunction(func):
 
             async def async_wrapper(*args, **kwargs):
-                with cProfile.Profile() as profile:
+                if self.db.verbose or key in self.db.verbose_methods:
+                    with cProfile.Profile() as profile:
+                        retval = await func(*args, **kwargs)
+                else:
+                    start = perf_counter()
                     retval = await func(*args, **kwargs)
+                    profile = perf_counter() - start
 
                 await asyncio.to_thread(self._add_stats, func, profile, cog_name, func_type)
 
@@ -368,8 +383,13 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
         else:
 
             def sync_wrapper(*args, **kwargs):
-                with cProfile.Profile() as profile:
+                if self.db.verbose or key in self.db.verbose_methods:
+                    with cProfile.Profile() as profile:
+                        retval = func(*args, **kwargs)
+                else:
+                    start = perf_counter()
                     retval = func(*args, **kwargs)
+                    profile = perf_counter() - start
 
                 self._add_stats(func, profile, cog_name, func_type)
 

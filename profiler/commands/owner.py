@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import sys
+import typing as t
 from contextlib import suppress
 
 import discord
@@ -60,12 +61,17 @@ class Owner(MixinMeta):
             f"- Tasks: **{self.db.track_tasks}**"
         )
 
-        txt += f"\n### Profiling the following cogs:\n{', '.join(self.db.watching) if self.db.watching else 'None'}"
+        joined = ", ".join([f"`{i}`" for i in self.db.watching]) if self.db.watching else "None"
+        txt += f"\n### Profiling the following cogs:\n{joined}"
+
+        if self.db.verbose_methods:
+            joined = ", ".join([f"`{i}`" for i in self.db.verbose_methods])
+            txt += f"\n### Profiling the following methods verbosely:\n{joined}"
 
         await ctx.send(txt)
 
     @profiler.command(name="save")
-    async def save_settings(self, ctx: commands.Context):
+    async def save_toggle(self, ctx: commands.Context):
         """
         Toggle saving stats persistently
 
@@ -75,15 +81,53 @@ class Owner(MixinMeta):
         await self.save()
         await ctx.send(f"Saving of metrics is now **{self.db.save_stats}**")
 
-    @profiler.command(name="verbose")
-    async def verbose_settings(self, ctx: commands.Context):
+    @profiler.command(name="globalverbose")
+    async def verbose_global_toggle(self, ctx: commands.Context):
         """
-        Toggle verbose stats
+        Toggle verbose stats for all methods
+
+        **WARNING**: Enabling this will increase memory usage significantly
         """
         self.db.verbose = not self.db.verbose
         if not await self.cleanup():
             await self.save()
-        await ctx.send(f"Verbose stats is now **{self.db.verbose}**")
+        if self.db.verbose:
+            txt = (
+                "Verbose stats are now **Enabled**\n"
+                "**Warning**: This will increase memory usage significantly\n"
+                f"Use `{ctx.clean_prefix}profiler verbose add/remove` to add/remove specific methods to/from verbose tracking"
+            )
+            await ctx.send(txt)
+        else:
+            await ctx.send("Globally verbose stats are now **Disabled**")
+
+    @profiler.command(name="verbose")
+    async def verbose_toggle(self, ctx: commands.Context, add_remove: t.Literal["add", "remove"], method: str):
+        """
+        Add/Remove a specific method to/from verbose stats tracking
+
+        Using this rather than enabling global verbose stats will save memory
+        """
+        if add_remove == "add":
+            if method in self.db.verbose_methods:
+                return await ctx.send(f"**{method}** is already being tracked")
+            # Check if method exists in config
+            for methods in self.db.stats.values():
+                if method in methods:
+                    self.db.verbose_methods.append(method)
+                    if not await self.cleanup():
+                        await self.save()
+                    return await ctx.send(f"**{method}** is now being tracked verbosely")
+            else:
+                return await ctx.send(f"**{method}** wasn't found in the stats, make sure it's being tracked first")
+
+        elif add_remove == "remove":
+            if method not in self.db.verbose_methods:
+                return await ctx.send(f"**{method}** isn't being tracked")
+            self.db.verbose_methods.remove(method)
+            if not await self.cleanup():
+                await self.save()
+            return await ctx.send(f"**{method}** is no longer being tracked verbosely")
 
     @profiler.command(name="delta")
     async def set_delta(self, ctx: commands.Context, delta: int):
@@ -98,7 +142,7 @@ class Owner(MixinMeta):
         await ctx.send(f"Data retention is now set to **{delta} {'hour' if delta == 1 else 'hours'}**")
 
     @profiler.command(name="track")
-    async def track_settings(self, ctx: commands.Context, method: str, state: bool):
+    async def track_toggle(self, ctx: commands.Context, method: str, state: bool):
         """
         Toggle tracking of a method
 
