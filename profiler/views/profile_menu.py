@@ -104,10 +104,16 @@ class ProfileMenu(discord.ui.View):
             if self.plot:
                 file = discord.File(BytesIO(self.plot), filename="plot.png")
                 files.append(file)
-            await self.message.edit(content=self.pages[self.page], view=self, attachments=files)
+            try:
+                await self.message.edit(content=self.pages[self.page], view=self, attachments=files)
+            except discord.NotFound:
+                self.message = await self.ctx.send(self.pages[self.page], view=self, files=files)
         else:
             self.plot = None
-            await self.message.edit(content=self.pages[self.page], view=self, attachments=[])
+            try:
+                await self.message.edit(content=self.pages[self.page], view=self, attachments=[])
+            except discord.NotFound:
+                self.message = await self.ctx.send(self.pages[self.page], view=self)
 
     @discord.ui.button(emoji="\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}", style=discord.ButtonStyle.primary, row=4)
     async def left10(self, interaction: discord.Interaction, button: discord.ui.Button):
