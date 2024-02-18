@@ -226,6 +226,7 @@ class ProfileMenu(discord.ui.View):
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
         with suppress(discord.NotFound):
             await interaction.response.defer()
+
         if not self.inspecting:
             return
         self.add_item(self.filter_results)
