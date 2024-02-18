@@ -50,9 +50,18 @@ class Owner(MixinMeta):
             monitoring += len(methods)
             for statprofiles in methods.values():
                 records += len(statprofiles)
+
         txt += f"\n- Monitoring: **{humanize_number(monitoring)}** methods (`{humanize_number(records)}` Records)"
 
-        txt += f"\n\n### Profiling the following cogs:\n{', '.join(self.db.watching) if self.db.watching else 'None'}"
+        txt += (
+            f"\n### Tracking:\n"
+            f"- Methods: **{self.db.track_methods}**\n"
+            f"- Commands: **{self.db.track_commands}**\n"
+            f"- Listeners: **{self.db.track_listeners}**\n"
+            f"- Tasks: **{self.db.track_tasks}**"
+        )
+
+        txt += f"\n### Profiling the following cogs:\n{', '.join(self.db.watching) if self.db.watching else 'None'}"
 
         await ctx.send(txt)
 
@@ -73,7 +82,8 @@ class Owner(MixinMeta):
         Toggle verbose stats
         """
         self.db.verbose = not self.db.verbose
-        await self.save()
+        if not await self.cleanup():
+            await self.save()
         await ctx.send(f"Verbose stats is now **{self.db.verbose}**")
 
     @profiler.command(name="delta")
@@ -84,8 +94,38 @@ class Owner(MixinMeta):
         if delta < 1:
             return await ctx.send("Delta must be at least 1 hour")
         self.db.delta = delta
-        await self.save()
+        if not await self.cleanup():
+            await self.save()
         await ctx.send(f"Data retention is now set to **{delta} {'hour' if delta == 1 else 'hours'}**")
+
+    @profiler.command(name="track")
+    async def track_settings(self, ctx: commands.Context, method: str, state: bool):
+        """
+        Toggle tracking of a method
+
+        **Arguments**:
+        - `method`: The method to toggle tracking for (methods, commands, listeners, tasks)
+        - `state`: The state to set tracking to (True/False, 1/0, t/f)
+        """
+        if method not in ("methods", "commands", "listeners", "tasks"):
+            return await ctx.send("Invalid method, use one of: `methods`, `commands`, `listeners`, `tasks`")
+
+        if getattr(self.db, f"track_{method}") == state:
+            return await ctx.send(f"Tracking of {method} is already set to **{state}**")
+
+        # setattr(self.db, f"track_{method}", state)
+        if method == "methods":
+            self.db.track_methods = state
+        elif method == "commands":
+            self.db.track_commands = state
+        elif method == "listeners":
+            self.db.track_listeners = state
+        elif method == "tasks":
+            self.db.track_tasks = state
+
+        if not await self.cleanup():
+            await self.save()
+        await ctx.send(f"Tracking of {method} is now set to **{state}**")
 
     @profiler.command(name="attach")
     async def attach_cog(self, ctx: commands.Context, *cogs: str):

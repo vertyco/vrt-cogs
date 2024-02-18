@@ -28,7 +28,12 @@ class DB(Base):
     save_stats: bool = False  # Save stats persistently
     verbose: bool = False  # Include FunctionProfiles in stats
     delta: int = 1  # Data retention in hours
+
     watching: t.List[str] = []  # List of cogs to profile
+    track_methods: bool = True  # Track method execution time
+    track_commands: bool = True  # Track command execution time (Including Slash)
+    track_listeners: bool = True  # Track listener execution time
+    track_tasks: bool = True  # Track task execution time
 
     # {cog_name: {method_key: [StatsProfile]}}
     stats: t.Dict[str, t.Dict[str, t.List[StatsProfile]]] = {}
