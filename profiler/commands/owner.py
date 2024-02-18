@@ -4,6 +4,7 @@ import sys
 from contextlib import suppress
 
 import discord
+from rapidfuzz import fuzz
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, humanize_number, pagify
 
@@ -131,16 +132,31 @@ class Owner(MixinMeta):
         """
         Attach a profiler to a cog
         """
+
+        def _match(cog_name: str):
+            matches = map(lambda x: (x, fuzz.ratio(cog_name, x)), self.bot.cogs)
+            matches = sorted(matches, key=lambda x: x[1], reverse=True)
+            return matches[0][0]
+
         if cogs[0].lower() == "all":
             self.db.watching = [cog for cog in self.bot.cogs]
             await self.rebuild()
             await self.save()
             return await ctx.send("All cogs are now being profiled")
 
+        if len(cogs) == 1:
+            if self.bot.get_cog(cogs[0]):
+                self.db.watching.append(cogs[0])
+                await self.rebuild()
+                await self.save()
+                return await ctx.send(f"**{cogs[0]}** is now being profiled")
+
+            return await ctx.send(f"**{cogs[0]}** isn't a valid cog, did you mean **{_match(cogs[0])}**?")
+
         attached = False
         for cog_name in cogs:
             if not self.bot.get_cog(cog_name):
-                await ctx.send(f"**{cog_name}** isn't valid cog")
+                await ctx.send(f"**{cog_name}** isn't valid cog, did you mean **{_match(cog_name)}**?")
                 continue
             elif cog_name in self.db.watching:
                 await ctx.send(f"**{cog_name}** was already being profiled")
@@ -153,11 +169,8 @@ class Owner(MixinMeta):
 
         await self.rebuild()
         await self.save()
-        if len(cogs) == 1:
-            await ctx.send(f"**{cogs[0]}** is now being profiled")
-        else:
-            joined = ", ".join([f"`{i}`" for i in cogs])
-            await ctx.send(f"The following cogs are now being profiled: {joined}")
+        joined = ", ".join([f"`{i}`" for i in cogs])
+        await ctx.send(f"The following cogs are now being profiled: {joined}")
 
     @profiler.command(name="detach", aliases=["remove"])
     async def detach_cog(self, ctx: commands.Context, *cogs: str):
@@ -166,6 +179,15 @@ class Owner(MixinMeta):
 
         This will remove all collected stats for this cog from the config
         """
+
+        def _match(cog_name: str):
+            matches = map(lambda x: (x, fuzz.ratio(cog_name, x)), self.db.watching)
+            matches = [i for i in matches if i[1] > 70]
+            if not matches:
+                return None
+            matches = sorted(matches, key=lambda x: x[1], reverse=True)
+            return matches[0][0]
+
         if not self.db.watching:
             return await ctx.send("No cogs are being profiled")
 
@@ -176,9 +198,25 @@ class Owner(MixinMeta):
             await self.save()
             return await ctx.send("All cogs removed from profiling")
 
+        if len(cogs) == 1:
+            if cogs[0] not in self.db.watching:
+                if match := _match(cogs[0]):
+                    return await ctx.send(f"**{cogs[0]}** wasn't being profiled, did you mean **{match}**?")
+                return await ctx.send(f"**{cogs[0]}** wasn't being profiled")
+
+            self.db.watching.remove(cogs[0])
+            if cogs[0] in self.db.stats:
+                del self.db.stats[cogs[0]]
+            await self.rebuild()
+            await self.save()
+            return await ctx.send(f"**{cogs[0]}** is no longer being profiled")
+
         for cog_name in cogs:
             if cog_name not in self.db.watching:
-                await ctx.send(f"**{cog_name}** wasn't being profiled")
+                if match := _match(cog_name):
+                    await ctx.send(f"**{cog_name}** wasn't being profiled, did you mean **{match}**?")
+                else:
+                    await ctx.send(f"**{cog_name}** wasn't being profiled")
                 continue
             self.db.watching.remove(cog_name)
             if cog_name in self.db.stats:
