@@ -50,7 +50,7 @@ class Owner(MixinMeta):
             monitoring += len(methods)
             for statprofiles in methods.values():
                 records += len(statprofiles)
-        txt += f"\n- Records: **{humanize_number(records)}** | Monitoring: **{monitoring}** methods"
+        txt += f"\n- Monitoring: **{humanize_number(monitoring)}** methods (`{humanize_number(records)}` Records)"
 
         txt += f"\n\n### Profiling the following cogs:\n{', '.join(self.db.watching) if self.db.watching else 'None'}"
 
