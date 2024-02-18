@@ -29,7 +29,7 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "vertyco"
-    __version__ = "0.1.2b"
+    __version__ = "0.1.3b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -40,7 +40,7 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
         self.db: DB = DB()
         self.saving = False
 
-        self.ignored_methods: t.List[str] = self.get_ignored_methods()
+        self.ignored_methods: t.List[str] = [i for i in dir(self)]
 
         # {cog_name: {method_name: original_method}}
         self.original_methods: t.Dict[str, t.Dict[str, t.Callable]] = {}
@@ -50,12 +50,6 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
         self.original_loops: t.Dict[str, t.Dict[str, t.Callable]] = {}
         # {cog_name: {listener_name, original_coro}}
         self.original_listeners: t.Dict[str, t.Dict[str, t.Callable]] = {}
-
-        logging.getLogger("perftracker").setLevel(logging.INFO)
-
-    def get_ignored_methods(self) -> t.List[str]:
-        ignored = [i for i in dir(self)]
-        return ignored
 
     def attach_profiler(self, cog_name: str) -> bool:
         """Attach a profiler to the methods of a specified cog.

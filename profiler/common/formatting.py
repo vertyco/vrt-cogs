@@ -212,3 +212,11 @@ def timedelta_format(delta: t.Optional[timedelta] = None, seconds: t.Optional[in
             strings.append(f"{period_value}{period_name}")
 
     return ", ".join(strings)
+
+
+def humanize_size(num: float) -> str:
+    for unit in ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB"]:
+        if abs(num) < 1024.0:
+            return "{0:.1f}{1}".format(num, unit)
+        num /= 1024.0
+    return "{0:.1f}{1}".format(num, "YB")
