@@ -126,8 +126,9 @@ class Owner(MixinMeta):
         if not await self.cleanup():
             await self.save()
         await ctx.send(f"Tracking of {method} is now set to **{state}**")
+        await self.rebuild()
 
-    @profiler.command(name="attach")
+    @profiler.command(name="attach", aliases=["add"])
     async def attach_cog(self, ctx: commands.Context, *cogs: str):
         """
         Attach a profiler to a cog
@@ -135,7 +136,7 @@ class Owner(MixinMeta):
         if cogs[0].lower() == "all":
             cogs = [cog for cog in self.bot.cogs if cog not in IGNORED_COGS]
             self.db.watching = cogs
-            self.rebuild()
+            await self.rebuild()
             await self.save()
             return await ctx.send("All cogs are now being profiled")
 
@@ -153,7 +154,7 @@ class Owner(MixinMeta):
         if not attached:
             return await ctx.send("No valid cogs were provided")
 
-        self.rebuild()
+        await self.rebuild()
         await self.save()
         if len(cogs) == 1:
             await ctx.send(f"**{cogs[0]}** is now being profiled")
@@ -161,7 +162,7 @@ class Owner(MixinMeta):
             joined = ", ".join([f"`{i}`" for i in cogs])
             await ctx.send(f"The following cogs are now being profiled: {joined}")
 
-    @profiler.command(name="detach")
+    @profiler.command(name="detach", aliases=["remove"])
     async def detach_cog(self, ctx: commands.Context, *cogs: str):
         """
         Remove a cog from the profiling list
@@ -173,7 +174,7 @@ class Owner(MixinMeta):
 
         if cogs[0].lower() == "all":
             self.db.watching.clear()
-            self.rebuild()
+            await self.rebuild()
             self.db.stats.clear()
             await self.save()
             return await ctx.send("All cogs removed from profiling")
@@ -186,7 +187,7 @@ class Owner(MixinMeta):
             if cog_name in self.db.stats:
                 del self.db.stats[cog_name]
 
-        self.rebuild()
+        await self.rebuild()
         await self.save()
         if len(cogs) == 1:
             await ctx.send(f"**{cogs[0]}** is no longer being profiled")

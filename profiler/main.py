@@ -29,7 +29,7 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "vertyco"
-    __version__ = "0.2.0b"
+    __version__ = "0.2.1b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -48,8 +48,8 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
         self.original_slash_callbacks: t.Dict[str, t.Dict[str, t.Callable]] = {}
         # {cog_name: {loop_name: original_coro}}
         self.original_loops: t.Dict[str, t.Dict[str, t.Callable]] = {}
-        # {cog_name: {listener_name, original_coro}}
-        self.original_listeners: t.Dict[str, t.Dict[str, t.Callable]] = {}
+        # {cog_name: {listener_name, (original_coro, wrapped_coro)}}
+        self.original_listeners: t.Dict[str, t.Dict[str, t.Tuple[t.Callable, t.Callable]]] = {}
 
     def attach_profiler(self, cog_name: str) -> bool:
         """Attach a profiler to the methods of a specified cog.
@@ -107,10 +107,11 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
 
                 used_keys.append(key)
 
-                self.original_listeners.setdefault(cog_name, {})[listener_name] = listener_coro
-                wrapped_listener = self._profile_wrapper(listener_coro, cog_name, "listener")
+                wrapped_coro = self._profile_wrapper(listener_coro, cog_name, "listener")
+
+                self.original_listeners.setdefault(cog_name, {})[listener_name] = (listener_coro, wrapped_coro)
                 self.bot.remove_listener(listener_coro, name=listener_name)
-                self.bot.add_listener(wrapped_listener, name=listener_name)
+                self.bot.add_listener(wrapped_coro, name=listener_name)
 
                 attached = True
 
@@ -195,8 +196,8 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
             loop.coro = original_coro
             log.debug(f"Detaching profiler from loop {cog_name}.{loop_name}")
 
-        for listener_name, original_coro in self.original_listeners.get(cog_name, {}).items():
-            self.bot.remove_listener(original_coro, name=listener_name)
+        for listener_name, (original_coro, wrapped_coro) in self.original_listeners.get(cog_name, {}).items():
+            self.bot.remove_listener(wrapped_coro, name=listener_name)
             self.bot.add_listener(original_coro, name=listener_name)
             log.debug(f"Detaching profiler from listener {cog_name}.{listener_name}")
 
@@ -287,9 +288,12 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
             await self.save()
         return cleaned
 
-    def rebuild(self) -> None:
-        self._teardown()
-        self._build()
+    async def rebuild(self) -> None:
+        def _rebuild():
+            self._teardown()
+            self._build()
+
+        await asyncio.to_thread(_rebuild)
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
