@@ -28,7 +28,7 @@ class GuildLock(BaseCommands, Listener, commands.Cog, metaclass=CompositeMetaCla
     """
 
     __author__ = "vertyco"
-    __version__ = "0.1.4"
+    __version__ = "0.1.6"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -84,7 +84,7 @@ class GuildLock(BaseCommands, Listener, commands.Cog, metaclass=CompositeMetaCla
         return mapping[log_type]
 
     async def notify_guild(self, log_type: str, guild: discord.Guild):
-        message = await asyncio.to_thread(self.notify_reason, log_type, guild)
+        message = self.notify_reason(log_type, guild)
         if guild.system_channel and guild.system_channel.permissions_for(guild.me).send_messages:
             await guild.system_channel.send(message)
         else:
