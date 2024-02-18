@@ -65,11 +65,8 @@ def format_runtime_pages(
             avg_runtime = statistics.mean(runtimes)
 
             # Now calculate the calls per minute
-            newest, oldest = (
-                max(valid_profiles, key=lambda i: i.timestamp),
-                min(valid_profiles, key=lambda i: i.timestamp),
-            )
-            timeframe_minutes = (newest.timestamp - oldest.timestamp).total_seconds() / 6
+            oldest_profile = min(valid_profiles, key=lambda i: i.timestamp)
+            timeframe_minutes = (now - oldest_profile.timestamp).total_seconds() / 60
             calls_per_minute = len(valid_profiles) / timeframe_minutes if timeframe_minutes else 0
 
             total_calls = len(valid_profiles)
