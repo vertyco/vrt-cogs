@@ -179,7 +179,7 @@ class ProfileMenu(discord.ui.View):
 
     @discord.ui.button(label="Inspect Method", style=discord.ButtonStyle.secondary, row=1)
     async def inspect(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if not self.db.verbose:
+        if not self.db.verbose and not self.db.verbose_methods:
             return await interaction.response.send_message("Verbose stats are not enabled", ephemeral=True)
 
         modal = SearchModal(None, "Inpsect a Method", "Enter Method Key")
@@ -192,7 +192,11 @@ class ProfileMenu(discord.ui.View):
             if method_stats := methodlist.get(modal.query):
                 break
         else:
-            return await interaction.response.send_message("No method found with that key")
+            return await interaction.followup.send("No method found with that key", ephemeral=True)
+
+        if not self.db.verbose:
+            if not any(i.func_profiles for i in method_stats):
+                return await interaction.followup.send("This method isn't being profiled verbosely", ephemeral=True)
 
         self.inspecting = True
         self.pages = await asyncio.to_thread(format_method_pages, modal.query, method_stats)
