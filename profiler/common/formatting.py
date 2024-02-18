@@ -47,8 +47,12 @@ def format_runtime_pages(
 ) -> t.List[str]:
     now = datetime.now()
     stats: t.Dict[str, list] = {}
-    for methodlist in db.stats.values():
-        for method_key, profiles in methodlist.items():
+    keys = list(db.stats.keys())
+    for k in keys:
+        methodlist = db.stats[k]
+        method_keys = list(methodlist.keys())
+        for method_key in method_keys:
+            profiles = methodlist[method_key]
             if query and query not in method_key:
                 continue
 
