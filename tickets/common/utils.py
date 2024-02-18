@@ -468,6 +468,8 @@ async def update_active_overview(guild: discord.Guild, conf: dict) -> Optional[i
     channel: discord.TextChannel = guild.get_channel(conf["overview_channel"])
     if not channel:
         return
+    if not channel.permissions_for(guild.me).send_messages:
+        return
 
     txt = prep_overview_text(guild, conf["opened"], conf.get("overview_mention", False))
     title = _("Ticket Overview")
@@ -516,5 +518,8 @@ async def update_active_overview(guild: discord.Guild, conf: dict) -> Optional[i
             message = await channel.send(embeds=embeds, files=attachments)
             return message.id
     else:
-        message = await channel.send(embeds=embeds, files=attachments)
-        return message.id
+        try:
+            message = await channel.send(embeds=embeds, files=attachments)
+            return message.id
+        except discord.Forbidden:
+            message = await channel.send(_("Failed to send overview message due to missing permissions"))
