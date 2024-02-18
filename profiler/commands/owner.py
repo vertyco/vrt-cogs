@@ -99,6 +99,7 @@ class Owner(MixinMeta):
             await self.save()
             return await ctx.send("All cogs are now being profiled")
 
+        attached = False
         for cog_name in cogs:
             if not self.bot.get_cog(cog_name):
                 await ctx.send(f"**{cog_name}** isn't valid cog")
@@ -107,6 +108,10 @@ class Owner(MixinMeta):
                 await ctx.send(f"**{cog_name}** was already being profiled")
                 continue
             self.db.watching.append(cog_name)
+            attached = True
+
+        if not attached:
+            return await ctx.send("No valid cogs were provided")
 
         self.rebuild()
         await self.save()
