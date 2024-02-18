@@ -277,7 +277,6 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         # If message was from a bot
         if message.author.bot:
             return
-        print(f"{message.author} sent a message")
         # If message wasn't sent in a guild
         if not message.guild:
             return
