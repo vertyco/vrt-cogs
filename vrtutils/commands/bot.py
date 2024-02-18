@@ -11,6 +11,7 @@ import cpuinfo
 import discord
 import psutil
 import speedtest
+from discord import app_commands
 from redbot.cogs.downloader.converters import InstalledCog
 from redbot.core import commands, version_info
 from redbot.core.bot import Red
@@ -28,6 +29,14 @@ from ..common.utils import do_shell_command, get_bar, get_bitsize, get_size
 
 
 class BotInfo(MixinMeta):
+    @app_commands.command(name="latency", description="Return the bot's latency.")
+    async def get_latency(self, interaction: discord.Interaction):
+        """
+        Return the bot's latency.
+        """
+        latency = round(self.bot.latency * 1000)
+        await interaction.response.send_message(f"Pong! `{latency}ms`", ephemeral=True)
+
     @commands.command(name="pull")
     @commands.is_owner()
     async def update_cog(self, ctx, *cogs: InstalledCog):
