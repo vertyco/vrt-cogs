@@ -13,9 +13,9 @@ log = logging.getLogger("red.vrt.guildlock.listener")
 class Listener(MixinMeta):
     async def handle_log(self, log_type: str, guild: discord.Guild):
         log_reason = await asyncio.to_thread(self.log_reason, log_type, guild)
-        notify_reason = await asyncio.to_thread(self.notify_reason, log_type, guild)
+        message = await asyncio.to_thread(self.notify_reason, log_type, guild)
         await self.log_leave(log_reason, guild)
-        await self.notify_guild(notify_reason, guild)
+        await self.notify_guild(message, guild)
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
