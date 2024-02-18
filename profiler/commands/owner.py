@@ -5,7 +5,7 @@ from contextlib import suppress
 
 import discord
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import box, pagify
+from redbot.core.utils.chat_formatting import box, humanize_number, pagify
 
 from ..abc import MixinMeta
 from ..common.constants import IGNORED_COGS
@@ -30,19 +30,19 @@ class Owner(MixinMeta):
         """
         txt = "## Profiler Settings"
         if self.db.save_stats:
-            txt += "\n- Persistent Storage: Profiling metrics are **saved**"
+            txt += "\n- Persistent Storage: Profiling metrics are **Saved**"
         else:
-            txt += "\n- Persistent Storage: Profiling metrics are **not saved**"
+            txt += "\n- Persistent Storage: Profiling metrics are **Not Saved**"
 
         if self.db.verbose:
-            txt += f"\n- Verbose stat metrics are **enabled**, you can use the `Inspect` button in the `{ctx.clean_prefix}profiler view` menu to view detailed stats"
+            txt += f"\n- Verbose stat metrics are **Enabled**, you can use the `Inspect` button in the `{ctx.clean_prefix}profiler view` menu to view detailed stats"
         else:
-            txt += "\n- Verbose stat metrics are **disabled**, the `Inspect` button in the menu will not be available"
+            txt += "\n- Verbose stat metrics are **Disabled**, the `Inspect` button in the menu will not be available"
 
         txt += f"\n- Data retention is set to **{self.db.delta} {'hour' if self.db.delta == 1 else 'hours'}**"
 
         mem_usage = humanize_size(sys.getsizeof(self.db))
-        txt += f"\n- Config Size: {mem_usage}"
+        txt += f"\n- Config Size: **{mem_usage}**"
 
         records = 0
         monitoring = 0
@@ -50,7 +50,7 @@ class Owner(MixinMeta):
             monitoring += len(methods)
             for statprofiles in methods.values():
                 records += len(statprofiles)
-        txt += f"\n- Records: {records} | Monitoring: {monitoring} methods"
+        txt += f"\n- Records: **{humanize_number(records)}** | Monitoring: **{monitoring}** methods"
 
         txt += f"\n\n### Profiling the following cogs:\n{', '.join(self.db.watching) if self.db.watching else 'None'}"
 
