@@ -128,6 +128,7 @@ def format_runtime_pages(
             f"{box(tabulate(rows, headers=cols), lang='py')}\n"
             "(C) = Command\n"
             "(T) = Task Loop\n"
+            "(L) = Listener\n"
             f"Page `{p + 1}/{page_count}`"
         )
         if query:
