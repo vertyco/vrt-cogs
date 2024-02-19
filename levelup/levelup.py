@@ -81,7 +81,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "vertyco"
-    __version__ = "3.12.4"
+    __version__ = "3.12.6"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -3278,9 +3278,9 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         dayname = self.daymap[weekly["reset_day"]]
         txt = _("`Reset Day:  `") + f"{weekly['reset_day']} ({dayname})\n"
         txt += _("`Reset Hour: `") + f"{weekly['reset_hour']}\n"
-        txt += _("`Last Reset: `") + f"<t:{weekly['last_reset']}:F> UTC\n"
+        txt += _("`Last Reset: `") + f"<t:{weekly['last_reset']}:F>\n"
         reset_time = get_next_reset(weekly["reset_day"], weekly["reset_hour"])
-        txt += _("`Next Reset: `") + f"<t:{reset_time}:F> UTC\n"
+        txt += _("`Next Reset: `") + f"<t:{reset_time}:F>\n"
         status = _("(Enabled)") if weekly["autoreset"] else _("(Disabled)")
         em.add_field(name=_("Auto Reset ") + status, value=txt, inline=False)
         await ctx.send(embed=em)
