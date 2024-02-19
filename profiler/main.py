@@ -29,7 +29,7 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "vertyco"
-    __version__ = "0.4.4b"
+    __version__ = "0.4.5b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -280,10 +280,18 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
                         cleaned = True
                         continue
 
+                    indexes_to_remove = set()
                     for idx, profile in enumerate(profiles):
+                        if idx >= len(self.db.stats[cog_name][method_name]):
+                            break
                         if profile.func_profiles and not self.db.verbose:
-                            self.db.stats[cog_name][method_name][idx].func_profiles = {}
-                            cleaned = True
+                            indexes_to_remove.add(idx)
+
+                    if indexes_to_remove:
+                        self.db.stats[cog_name][method_name] = [
+                            i for idx, i in enumerate(profiles) if idx not in indexes_to_remove
+                        ]
+                        cleaned = True
 
             return cleaned
 
