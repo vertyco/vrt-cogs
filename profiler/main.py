@@ -29,7 +29,7 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "vertyco"
-    __version__ = "0.4.3b"
+    __version__ = "0.4.4b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -253,6 +253,10 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
                     continue
 
                 for method_name, profiles in methods.items():
+                    if not profiles:
+                        del self.db.stats[cog_name][method_name]
+                        cleaned = True
+                        continue
                     if profiles[0].func_type == "command" and not self.db.track_commands:
                         del self.db.stats[cog_name][method_name]
                         cleaned = True
