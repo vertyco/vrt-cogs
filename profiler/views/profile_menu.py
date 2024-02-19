@@ -48,10 +48,10 @@ class ProfileMenu(discord.ui.View):
         self.tables: t.List[str] = []
         self.plot: bytes = None
 
-        self.sorting_by: str = "Avg"
+        self.sorting_by: str = "Impact"
         self.query: t.Union[str, None] = None
 
-        self.inspecting: bool = False
+        self.inspecting: t.Union[str, None] = None
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user.id != self.ctx.author.id:
@@ -79,7 +79,7 @@ class ProfileMenu(discord.ui.View):
     async def start(self):
         self.remove_item(self.back)
 
-        self.pages = await asyncio.to_thread(format_runtime_pages, self.db, "Avg")
+        self.pages = await asyncio.to_thread(format_runtime_pages, self.db, self.sorting_by)
         if len(self.pages) < 15:
             self.remove_item(self.right10)
             self.remove_item(self.left10)
@@ -97,6 +97,7 @@ class ProfileMenu(discord.ui.View):
             self.add_item(self.back)
             if len(self.pages) >= 15:
                 self.add_item(self.right10)
+            self.add_item(self.filter_results)
         else:
             self.add_item(self.left)
             self.add_item(self.close)
@@ -167,15 +168,41 @@ class ProfileMenu(discord.ui.View):
 
     @discord.ui.button(label="Filter", style=discord.ButtonStyle.secondary, row=1)
     async def filter_results(self, interaction: discord.Interaction, button: discord.ui.Button):
-        modal = SearchModal(self.query, "Filter Results", "Enter Search Query")
-        await interaction.response.send_modal(modal)
-        await modal.wait()
-        if modal.query is None:
-            return
+        if self.inspecting:
+            modal = SearchModal(self.query, "Filter Results", "Enter Minimum Execution Threshold (ms)")
+            await interaction.response.send_modal(modal)
+            await modal.wait()
+            if modal.query is None:
+                return
 
-        self.query = modal.query
-        self.pages = await asyncio.to_thread(format_runtime_pages, self.db, self.sorting_by, self.query)
-        await self.update()
+            if not modal.strip():
+                # Remove filter
+                threshold = None
+            else:
+                try:
+                    threshold = float(modal.query)
+                except ValueError:
+                    return await interaction.followup.send("Invalid threshold, must be a decimal", ephemeral=True)
+
+            for methodlist in self.db.stats.values():
+                if method_stats := methodlist.get(self.inspecting):
+                    break
+            else:
+                return await interaction.followup.send("No method found with that key", ephemeral=True)
+
+            self.pages = await asyncio.to_thread(format_method_pages, self.inspecting, method_stats, threshold)
+            await self.update()
+
+        else:
+            modal = SearchModal(self.query, "Filter Results", "Enter Search Query")
+            await interaction.response.send_modal(modal)
+            await modal.wait()
+            if modal.query is None:
+                return
+
+            self.query = modal.query
+            self.pages = await asyncio.to_thread(format_runtime_pages, self.db, self.sorting_by, self.query)
+            await self.update()
 
     @discord.ui.button(label="Inspect Method", style=discord.ButtonStyle.secondary, row=1)
     async def inspect(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -198,7 +225,7 @@ class ProfileMenu(discord.ui.View):
             if not any(i.func_profiles for i in method_stats):
                 return await interaction.followup.send("This method isn't being profiled verbosely", ephemeral=True)
 
-        self.inspecting = True
+        self.inspecting = modal.query
         self.pages = await asyncio.to_thread(format_method_pages, modal.query, method_stats)
         self.tables = await asyncio.to_thread(format_method_tables, method_stats)
         if len(method_stats) > 10:
@@ -250,7 +277,7 @@ class ProfileMenu(discord.ui.View):
 
         if not self.inspecting:
             return
-        self.inspecting = False
+        self.inspecting = None
         self.tables.clear()
         self.pages = await asyncio.to_thread(format_runtime_pages, self.db, self.sorting_by, self.query)
         await self.update()
