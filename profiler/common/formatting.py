@@ -9,10 +9,12 @@ from tabulate import tabulate
 from .models import DB, StatsProfile
 
 
-def format_method_pages(method_key: str, data: t.List[StatsProfile]) -> t.List[str]:
+def format_method_pages(method_key: str, data: t.List[StatsProfile], threshold: float = None) -> t.List[str]:
     data = [i for i in data if i.func_profiles]
     pages = []
     for stats in data:
+        if threshold and (stats.total_tt * 1000) < threshold:
+            continue
         ts = int(stats.timestamp.timestamp())
         exe_time = f"{stats.total_tt:.4f}s"
         if stats.total_tt < 1:
@@ -25,9 +27,15 @@ def format_method_pages(method_key: str, data: t.List[StatsProfile]) -> t.List[s
             f"- Time Recorded: <t:{ts}:F> (<t:{ts}:R>)\n\n"
             f"Page {len(pages) + 1}/{len(data)}"
         )
+        if threshold:
+            txt += f"\nFiltering by threshold: `{threshold:.2f}ms`"
         pages.append(txt)
+
     if not pages:
-        pages.append("No data to display. Come back later.")
+        if threshold:
+            pages.append("No data to display. Come back later or try a lower threshold.")
+        else:
+            pages.append("No data to display. Come back later.")
     return pages
 
 
@@ -80,13 +88,14 @@ def format_runtime_pages(
             variability_score = std_dev / avg_runtime if avg_runtime > 0 else 0
             impact_score = (avg_runtime * calls_per_minute) * (1 + variability_score)
 
+            name = method_key
             if profiles[0].func_type != "method":
-                method_key = f"{method_key} ({profiles[0].func_type[0].upper()})"
+                name = f"{method_key} ({profiles[0].func_type[0].upper()})"
 
             if method_key in db.verbose_methods:
-                method_key = f"[{method_key}]"
+                name = f"[{name}]"
 
-            stats[method_key] = [max_runtime, min_runtime, avg_runtime, calls_per_minute, total_calls, impact_score]
+            stats[name] = [max_runtime, min_runtime, avg_runtime, calls_per_minute, total_calls, impact_score]
 
     per_page = 10
     start = 0
