@@ -29,7 +29,7 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "vertyco"
-    __version__ = "0.4.2b"
+    __version__ = "0.4.3b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -354,7 +354,11 @@ class Profiler(Owner, commands.Cog, metaclass=CompositeMetaClass):
 
             # Only keep the last delta hours of data
             min_age = datetime.now() - timedelta(hours=self.db.delta)
+            if cog_name not in self.db.stats:
+                return
             to_keep = [i for i in self.db.stats[cog_name][key] if i.timestamp > min_age]
+            if cog_name not in self.db.stats:
+                return
             self.db.stats[cog_name][key] = to_keep
         except Exception as e:
             log.exception(f"Failed to {func_type} stats for the {cog_name} cog", exc_info=e)
