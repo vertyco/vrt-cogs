@@ -169,7 +169,7 @@ class ProfileMenu(discord.ui.View):
         self.page += 10
         await self.update()
 
-    @discord.ui.button(label="Filter", style=discord.ButtonStyle.secondary, row=1)
+    @discord.ui.button(label="Filter", style=discord.ButtonStyle.success, row=1)
     async def filter_results(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.inspecting:
             modal = SearchModal(self.query, "Filter Results", "Enter Minimum Execution Threshold (ms)")
@@ -212,7 +212,7 @@ class ProfileMenu(discord.ui.View):
             self.pages = await asyncio.to_thread(format_runtime_pages, self.db, self.sorting_by, self.query)
             await self.update()
 
-    @discord.ui.button(label="Inspect", style=discord.ButtonStyle.secondary, row=1)
+    @discord.ui.button(label="Inspect", style=discord.ButtonStyle.success, row=1)
     async def inspect(self, interaction: discord.Interaction, button: discord.ui.Button):
         modal = SearchModal(None, "Inpsect a Method", "Enter Method Key")
         await interaction.response.send_modal(modal)
@@ -237,7 +237,7 @@ class ProfileMenu(discord.ui.View):
             self.plot = await asyncio.to_thread(generate_line_graph, method_stats)
         await self.update()
 
-    @discord.ui.button(label="Sort: Impact", style=discord.ButtonStyle.success, row=1)
+    @discord.ui.button(label="Sort: Impact", style=discord.ButtonStyle.secondary, row=1)
     async def change_sorting(self, interaction: discord.Interaction, button: discord.ui.Button):
         with suppress(discord.NotFound):
             await interaction.response.defer()
@@ -272,7 +272,7 @@ class ProfileMenu(discord.ui.View):
         matches = sorted(matches, key=lambda x: x[1], reverse=True)
         return matches[0][0]
 
-    @discord.ui.button(label="Attach", style=discord.ButtonStyle.secondary, row=2)
+    @discord.ui.button(label="Attach", style=discord.ButtonStyle.success, row=2)
     async def add_profiler(self, interaction: discord.Interaction, button: discord.ui.Button):
         modal = SearchModal(None, "Attach a profiler", "Enter Cog Name or Method Key")
         await interaction.response.send_modal(modal)
@@ -307,7 +307,7 @@ class ProfileMenu(discord.ui.View):
             f"No cog or method found with that name, did you mean `{self._match(data, query)}`?", ephemeral=True
         )
 
-    @discord.ui.button(label="Detach", style=discord.ButtonStyle.secondary, row=2)
+    @discord.ui.button(label="Detach", style=discord.ButtonStyle.success, row=2)
     async def remove_profiler(self, interaction: discord.Interaction, button: discord.ui.Button):
         modal = SearchModal(None, "Detach a profiler", "Enter Cog Name or Method Key")
         await interaction.response.send_modal(modal)
@@ -337,7 +337,7 @@ class ProfileMenu(discord.ui.View):
             f"No cog or method found with that name, did you mean `{self._match(data, query)}`?", ephemeral=True
         )
 
-    @discord.ui.button(label="Refresh", style=discord.ButtonStyle.success, row=2)
+    @discord.ui.button(label="Refresh", style=discord.ButtonStyle.primary, row=2)
     async def refresh(self, interaction: discord.Interaction, button: discord.ui.Button):
         with suppress(discord.NotFound):
             await interaction.response.defer()
