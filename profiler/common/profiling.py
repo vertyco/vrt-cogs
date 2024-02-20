@@ -251,23 +251,23 @@ class Profiling(MixinMeta):
             cog = self.bot.get_cog(cog_name)
             # Add commands
             for command in cog.walk_commands():
-                key = f"{command.callback.__module__}.{command.callback.__name__}"
                 if isinstance(command, commands.HybridCommand) or isinstance(command, commands.HybridGroup):
                     func_type = "hybrid"
                 elif isinstance(command, commands.Command) or isinstance(command, commands.Group):
                     func_type = "command"
                 else:
                     continue
+                key = f"{command.callback.__module__}.{command.callback.__name__}"
                 self.methods[key] = Method(
                     is_coro=True, func_type=func_type, cog_name=cog_name, command_name=command.qualified_name
                 )
             # Add app commands
             for command in cog.walk_app_commands():
-                key = f"{command.callback.__module__}.{command.callback.__name__}"
                 if isinstance(command, app_commands.Command):
                     func_type = "slash"
                 else:
                     continue
+                key = f"{command.callback.__module__}.{command.callback.__name__}"
                 self.methods[key] = Method(
                     is_coro=True, func_type=func_type, cog_name=cog_name, command_name=command.qualified_name
                 )
