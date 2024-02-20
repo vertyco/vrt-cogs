@@ -81,7 +81,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "vertyco"
-    __version__ = "3.12.6"
+    __version__ = "3.12.7"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -286,15 +286,19 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         # Ignore webhooks
         if not isinstance(message.author, discord.Member):
             return
-        # Check if cog is disabled
-        if await self.bot.cog_disabled_in_guild(self, message.guild):
-            return
-        # Check whether the message author isn't on allowlist/blocklist
-        if not await self.bot.allowed_by_whitelist_blacklist(message.author):
-            return
+        # # Check if cog is disabled
+        # if await self.bot.cog_disabled_in_guild(self, message.guild):
+        #     return
+        # # Check whether the message author isn't on allowlist/blocklist
+        # if not await self.bot.allowed_by_whitelist_blacklist(message.author):
+        #     return
         gid = message.guild.id
         if gid not in self.data:
-            await self.initialize()
+            data = await self.config.guild(message.guild).all()
+            self.data[gid] = data
+            self.stars[gid] = {}
+            self.voice[gid] = {}
+            self.lastmsg[gid] = {}
         if message.author.id in self.data[gid]["ignoredusers"]:
             return
         if message.channel.id in self.data[gid]["ignoredchannels"]:
@@ -678,8 +682,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         now = datetime.now()
         guild = message.guild
         gid = guild.id
-        if gid not in self.data:
-            await self.initialize()
+
         conf = self.data[gid]
         xpmin = int(conf["xp"][0])
         xpmax = int(conf["xp"][1]) + 1
@@ -723,10 +726,15 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             addxp = False
 
         if conf["length"]:  # Make sure message meets minimum length requirements
-            regex = r"<(@!|#)[0-9]{18}>|<a{0,1}:[a-zA-Z0-9_.]{2,32}:[0-9]{18,19}>"
-            cleaned = re.sub(regex, "", message.content)
-            if len(cleaned) < conf["length"]:
-                addxp = False
+
+            def _sub():
+                regex = r"<(@!|#)[0-9]{18}>|<a{0,1}:[a-zA-Z0-9_.]{2,32}:[0-9]{18,19}>"
+                cleaned = re.sub(regex, "", message.content)
+                if len(cleaned) < conf["length"]:
+                    return False
+                return True
+
+            addxp = await asyncio.to_thread(_sub)
 
         if addxp:  # Give XP
             xp_to_give = xp
@@ -764,7 +772,11 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         if str(gid) in self.ignored_guilds:
             return
         if gid not in self.data:
-            await self.initialize()
+            data = await self.config.guild(guild).all()
+            self.data[gid] = data
+            self.stars[gid] = {}
+            self.voice[gid] = {}
+            self.lastmsg[gid] = {}
 
         conf = self.data[gid]
         xp_per_minute = conf["voicexp"]
