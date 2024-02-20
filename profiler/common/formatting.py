@@ -9,12 +9,22 @@ from tabulate import tabulate
 from .models import DB, StatsProfile
 
 
-def format_method_pages(method_key: str, data: t.List[StatsProfile], threshold: float = None) -> t.List[str]:
-    data = [i for i in data if i.func_profiles]
+def format_method_pages(
+    method_key: str,
+    data: t.List[StatsProfile],
+    threshold: float = 0.0,
+    sort_by_delta: bool = False,
+) -> t.List[str]:
+    if threshold:
+        data = [i for i in data if i.func_profiles if (i.total_tt * 1000) >= threshold]
+    else:
+        data = [i for i in data if i.func_profiles]
+
+    if sort_by_delta:
+        data.sort(key=lambda i: i.total_tt, reverse=True)
+
     pages = []
     for stats in data:
-        if threshold and (stats.total_tt * 1000) < threshold:
-            continue
         ts = int(stats.timestamp.timestamp())
         exe_time = f"{stats.total_tt:.4f}s"
         if stats.total_tt < 1:
@@ -25,7 +35,7 @@ def format_method_pages(method_key: str, data: t.List[StatsProfile], threshold: 
             f"- Type: {stats.func_type.capitalize()}\n"
             f"- Is Coroutine: {stats.is_coro}\n"
             f"- Time Recorded: <t:{ts}:F> (<t:{ts}:R>)\n\n"
-            f"Page {len(pages) + 1}/{len(data)}"
+            f"Page `{len(pages) + 1}/{len(data)}`"
         )
         if threshold:
             txt += f"\nFiltering by threshold: `{threshold:.2f}ms`"
@@ -92,8 +102,10 @@ def format_runtime_pages(
             if profiles[0].func_type != "method":
                 name = f"{method_key} ({profiles[0].func_type[0].upper()})"
 
-            if method_key in db.verbose_methods:
-                name = f"[{name}]"
+            if method_key in db.tracked_methods:
+                name = f"+ {name}"
+            else:
+                name = f"- {name}"
 
             stats[name] = [max_runtime, min_runtime, avg_runtime, calls_per_minute, total_calls, impact_score]
 
@@ -140,7 +152,6 @@ def format_runtime_pages(
         for i in range(start, end):
             method_key = list(stats.keys())[i]
             max_runtime, min_runtime, avg_runtime, calls_per_minute, total_calls, impact_score = stats[method_key]
-
             rows.append(
                 [
                     method_key,
@@ -153,16 +164,19 @@ def format_runtime_pages(
                 ]
             )
 
-        page = f"{box(tabulate(rows, headers=cols), lang='py')}\n"
+        # page = f"{box(tabulate(rows, headers=cols), lang='diff')}\n\n"
+        page = f"{tabulate(rows, headers=cols)}\n\n+ Verbose Tracking\n- Simple Tracking\n"
+        page = box(page, lang="diff")
+
         if db.track_commands:
-            page += "(C) = Command\n(S) = Slash Command\n"
+            page += "(C) = `Command`, (S) = `Slash Command`, (H) = `Hybrid Command`"
         if db.track_tasks:
-            page += "(T) = Task Loop\n"
+            page += ", (T) = `Task Loop`"
         if db.track_listeners:
-            page += "(L) = Listener\n"
-        if db.verbose_methods:
-            page += "[Method] = Verbosely Tracked\n"
-        page += f"Page `{p + 1}/{page_count}`"
+            page += ", (L) = `Listener`"
+
+        page += "\n"
+        page += f"**Page** `{p + 1}/{page_count}`"
 
         if query:
             page += f"\nCurrent Filter: `{query}`"

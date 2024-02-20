@@ -5,6 +5,7 @@ import typing as t
 from contextlib import suppress
 
 import discord
+from discord import app_commands
 from rapidfuzz import fuzz
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, humanize_number, pagify
@@ -18,17 +19,28 @@ log = logging.getLogger("red.vrt.profiler.commands")
 
 
 class Owner(MixinMeta):
-    @commands.group()
+    @commands.hybrid_group()
     @commands.is_owner()
     async def profiler(self, ctx: commands.Context):
         """Profiling commands"""
+        if ctx.invoked_subcommand is None:
+            txt = (
+                "## Profiler Tips\n"
+                "- Start by attaching the profiler to a cog using the `attach` command\n"
+                " - Example: `[p]profiler attach cog MyCog`\n"
+                "- Identify suspicious methods using the `[p]profiler view` command\n"
+                "- Attach profilers to specific methods to be tracked verbosely using the `attach` command and specifying the method.\n"
+                "- Detach the profiler from the cog and only monitor the necessary methods and save memory overhead.\n"
+                "- Add a threshold using the `threshold` command to only record entries that exceed a certain execution time in ms\n"
+            )
+            await ctx.send(txt)
 
-    @profiler.command(name="settings")
+    @profiler.command(name="settings", aliases=["s"])
     async def view_settings(self, ctx: commands.Context):
         """
         View the current profiler settings
         """
-        txt = "## Profiler Settings"
+        txt = "# Profiler Settings"
         if self.db.save_stats:
             txt += "\n- Persistent Storage: Profiling metrics are **Saved**"
         else:
@@ -53,19 +65,23 @@ class Owner(MixinMeta):
 
         txt += f"\n- Monitoring: **{humanize_number(monitoring)}** methods (`{humanize_number(records)}` Records)"
 
+        joined = ", ".join([f"`{i}`" for i in self.db.tracked_cogs]) if self.db.tracked_cogs else "`None`"
+        txt += f"\n## General Profiling:\nThe following cogs are being profiled: {joined}\n"
+
         txt += (
-            f"\n### Tracking:\n"
+            f"**Tracking:**\nApplies to the cogs above that are being profiled without specific methods targeted.\n"
             f"- Methods: **{self.db.track_methods}**\n"
             f"- Commands: **{self.db.track_commands}**\n"
             f"- Listeners: **{self.db.track_listeners}**\n"
-            f"- Tasks: **{self.db.track_tasks}**"
+            f"- Tasks: **{self.db.track_tasks}**\n"
         )
 
-        joined = ", ".join([f"`{i}`" for i in self.db.watching]) if self.db.watching else "None"
-        txt += f"\n### Profiling the following cogs:\n{joined}"
-
-        joined = ", ".join([f"`{i}`" for i in self.db.verbose_methods]) if self.db.verbose_methods else "None"
-        txt += f"\n### Profiling the following methods verbosely:\n{joined}"
+        joined = ", ".join([f"`{i}`" for i in self.db.tracked_methods]) if self.db.tracked_methods else "`None`"
+        txt += (
+            "## Fine Grain Profiling:\nMethods that are being profiled verbosely and independently of the cogs above.\n"
+        )
+        txt += f"The current threshold for tracking is `{self.db.tracked_threshold}ms` so only runtimes above this will be stored.\n"
+        txt += f"{joined}\n"
 
         await ctx.send(txt)
 
@@ -100,34 +116,6 @@ class Owner(MixinMeta):
         else:
             await ctx.send("Globally verbose stats are now **Disabled**")
 
-    @profiler.command(name="verbose")
-    async def verbose_toggle(self, ctx: commands.Context, add_remove: t.Literal["add", "remove"], method: str):
-        """
-        Add/Remove a specific method to/from verbose stats tracking
-
-        Using this rather than enabling global verbose stats will save memory
-        """
-        if add_remove == "add":
-            if method in self.db.verbose_methods:
-                return await ctx.send(f"**{method}** is already being tracked")
-            # Check if method exists in config
-            for methods in self.db.stats.values():
-                if method in methods:
-                    self.db.verbose_methods.append(method)
-                    if not await self.cleanup():
-                        await self.save()
-                    return await ctx.send(f"**{method}** is now being tracked verbosely")
-            else:
-                return await ctx.send(f"**{method}** wasn't found in the stats, make sure it's being tracked first")
-
-        elif add_remove == "remove":
-            if method not in self.db.verbose_methods:
-                return await ctx.send(f"**{method}** isn't being tracked")
-            self.db.verbose_methods.remove(method)
-            if not await self.cleanup():
-                await self.save()
-            return await ctx.send(f"**{method}** is no longer being tracked verbosely")
-
     @profiler.command(name="delta")
     async def set_delta(self, ctx: commands.Context, delta: int):
         """
@@ -140,10 +128,12 @@ class Owner(MixinMeta):
             await self.save()
         await ctx.send(f"Data retention is now set to **{delta} {'hour' if delta == 1 else 'hours'}**")
 
-    @profiler.command(name="track")
+    @profiler.command(name="tracking")
     async def track_toggle(self, ctx: commands.Context, method: str, state: bool):
         """
         Toggle tracking of a method
+
+        Enabled methods will be profiled and included in the stats when attaching a profiler to a cog
 
         **Arguments**:
         - `method`: The method to toggle tracking for (methods, commands, listeners, tasks)
@@ -170,108 +160,119 @@ class Owner(MixinMeta):
         await ctx.send(f"Tracking of {method} is now set to **{state}**")
         await self.rebuild()
 
-    @profiler.command(name="attach", aliases=["add"])
-    async def attach_cog(self, ctx: commands.Context, *cogs: str):
+    @profiler.command(name="threshold")
+    async def set_threshold(self, ctx: commands.Context, threshold: float):
         """
-        Attach a profiler to a cog
+        Set the minimum execution delta to record a profile of tracked methods
         """
-
-        def _match(cog_name: str):
-            matches = map(lambda x: (x, fuzz.ratio(cog_name, x)), self.bot.cogs)
-            matches = sorted(matches, key=lambda x: x[1], reverse=True)
-            return matches[0][0]
-
-        if cogs[0].lower() == "all":
-            self.db.watching = [cog for cog in self.bot.cogs]
-            await self.rebuild()
-            await self.save()
-            return await ctx.send("All cogs are now being profiled")
-
-        if len(cogs) == 1:
-            if self.bot.get_cog(cogs[0]):
-                self.db.watching.append(cogs[0])
-                await self.rebuild()
-                await self.save()
-                return await ctx.send(f"**{cogs[0]}** is now being profiled")
-
-            return await ctx.send(f"**{cogs[0]}** isn't a valid cog, did you mean **{_match(cogs[0])}**?")
-
-        attached = False
-        for cog_name in cogs:
-            if not self.bot.get_cog(cog_name):
-                await ctx.send(f"**{cog_name}** isn't valid cog, did you mean **{_match(cog_name)}**?")
-                continue
-            elif cog_name in self.db.watching:
-                await ctx.send(f"**{cog_name}** was already being profiled")
-                continue
-            self.db.watching.append(cog_name)
-            attached = True
-
-        if not attached:
-            return await ctx.send("No valid cogs were provided")
-
-        await self.rebuild()
+        self.db.tracked_threshold = threshold
+        await ctx.send(f"Tracking threshold is now set to **{threshold}ms**")
         await self.save()
-        joined = ", ".join([f"`{i}`" for i in cogs])
-        await ctx.send(f"The following cogs are now being profiled: {joined}")
 
-    @profiler.command(name="detach", aliases=["remove"])
-    async def detach_cog(self, ctx: commands.Context, *cogs: str):
+    @profiler.command(name="attach", description="Attach a profiler to a cog or method")
+    @app_commands.describe(
+        item="'cog' or 'method'",
+        item_name="Name of the cog or method to profile",
+    )
+    @commands.is_owner()
+    async def profile_an_item(self, ctx: commands.Context, item: t.Literal["cog", "method"], item_name: str):
         """
-        Remove a cog from the profiling list
-
-        This will remove all collected stats for this cog from the config
+        Attach a profiler to a cog or method
         """
 
-        def _match(cog_name: str):
-            matches = map(lambda x: (x, fuzz.ratio(cog_name, x)), self.db.watching)
-            matches = [i for i in matches if i[1] > 70]
+        def _match(data: t.List[str], name: str):
+            matches = map(lambda x: (x, fuzz.ratio(name.lower(), x.lower())), data)
+            matches = [i for i in matches if i[1] > 50]
             if not matches:
                 return None
             matches = sorted(matches, key=lambda x: x[1], reverse=True)
             return matches[0][0]
 
-        if not self.db.watching:
-            return await ctx.send("No cogs are being profiled")
+        if item.lower().startswith("m"):
+            if item_name in self.db.tracked_methods:
+                return await ctx.send(f"**{item_name}** is already being profiled")
+            elif self.attach_method(item_name):
+                self.db.tracked_methods.append(item_name)
+                await ctx.send(f"**{item_name}** is now being profiled")
+                await self.rebuild()
+                await self.save()
+                return
+            if match := _match(self.methods.keys(), item_name):
+                return await ctx.send(f"**{item_name}** wasn't being profiled, did you mean **{match}**?")
+            return await ctx.send(f"Could not find **{item_name}**")
 
-        if cogs[0].lower() == "all":
-            self.db.watching.clear()
+        if item_name in self.db.tracked_cogs:
+            return await ctx.send(f"**{item_name}** was already being profiled")
+        if self.bot.get_cog(item_name):
+            self.db.tracked_cogs.append(item_name)
+            await ctx.send(f"**{item_name}** is now being profiled")
             await self.rebuild()
-            self.db.stats.clear()
             await self.save()
-            return await ctx.send("All cogs removed from profiling")
+            return
+        if match := _match(self.bot.cogs, item_name):
+            return await ctx.send(f"Could not find **{item_name}**. Closest match is **{match}**")
+        await ctx.send(f"Could not find **{item_name}**")
 
-        if len(cogs) == 1:
-            if cogs[0] not in self.db.watching:
-                if match := _match(cogs[0]):
-                    return await ctx.send(f"**{cogs[0]}** wasn't being profiled, did you mean **{match}**?")
-                return await ctx.send(f"**{cogs[0]}** wasn't being profiled")
+    @profiler.command(name="detach")
+    @app_commands.describe(
+        item="'cog' or 'method'",
+        item_name="Name of the cog or method to profile",
+    )
+    @commands.is_owner()
+    async def detach_item(self, ctx: commands.Context, item: t.Literal["cog", "method"], item_name: str):
+        """
+        Remove the profiler from a cog or method
+        """
 
-            self.db.watching.remove(cogs[0])
-            if cogs[0] in self.db.stats:
-                del self.db.stats[cogs[0]]
+        def _match(data: t.List[str], name: str):
+            matches = map(lambda x: (x, fuzz.ratio(name, x)), data)
+            matches = [i for i in matches if i[1] > 50]
+            if not matches:
+                return None
+            matches = sorted(matches, key=lambda x: x[1], reverse=True)
+            return matches[0][0]
+
+        if not self.db.tracked_cogs and not self.db.tracked_methods:
+            return await ctx.send("No cogs or methods are being profiled")
+
+        if item.lower().startswith("m"):
+            if item_name not in self.db.tracked_methods:
+                if match := _match(self.db.tracked_methods, item_name):
+                    return await ctx.send(f"**{item_name}** wasn't being profiled, did you mean **{match}**?")
+                return await ctx.send(f"**{item_name}** wasn't being profiled")
+            self.db.tracked_methods.remove(item_name)
             await self.rebuild()
             await self.save()
-            return await ctx.send(f"**{cogs[0]}** is no longer being profiled")
+            return await ctx.send(f"**{item_name}** is no longer being profiled")
 
-        for cog_name in cogs:
-            if cog_name not in self.db.watching:
-                if match := _match(cog_name):
-                    await ctx.send(f"**{cog_name}** wasn't being profiled, did you mean **{match}**?")
-                else:
-                    await ctx.send(f"**{cog_name}** wasn't being profiled")
-                continue
-            self.db.watching.remove(cog_name)
-            if cog_name in self.db.stats:
-                del self.db.stats[cog_name]
-
+        if item_name not in self.db.tracked_cogs:
+            if match := _match(self.db.tracked_cogs, item_name):
+                return await ctx.send(f"**{item_name}** wasn't being profiled, did you mean **{match}**?")
+            return await ctx.send(f"**{item_name}** wasn't being profiled")
+        self.db.tracked_cogs.remove(item_name)
+        await ctx.send(f"**{item_name}** is no longer being profiled")
         await self.rebuild()
         await self.save()
-        if len(cogs) == 1:
-            await ctx.send(f"**{cogs[0]}** is no longer being profiled")
-        else:
-            joined = ", ".join([f"`{i}`" for i in cogs])
-            await ctx.send(f"The following cogs are no longer being profiled: {joined}")
+
+    @profile_an_item.autocomplete("item")
+    @detach_item.autocomplete("item")
+    async def autocomplete_item(self, interaction: discord.Interaction, current: str):
+        options = ["cog", "method"]
+        return [app_commands.Choice(name=i, value=i) for i in options]
+
+    @profile_an_item.autocomplete("item_name")
+    async def autocomplete_names_attach(self, interaction: discord.Interaction, current: str):
+        l1 = [app_commands.OptionChoice(name=i, value=i) for i in self.methods.keys()]
+        l2 = [app_commands.OptionChoice(name=i, value=i) for i in self.bot.cogs]
+        final = set(l1 + l2)
+        return [app_commands.Choice(name=i.name, value=i.value) for i in final if current.lower() in i.lower()][:25]
+
+    @detach_item.autocomplete("item_name")
+    async def autocomplete_names_detach(self, interaction: discord.Interaction, current: str):
+        l1 = [app_commands.OptionChoice(name=i, value=i) for i in self.db.tracked_cogs]
+        l2 = [app_commands.OptionChoice(name=i, value=i) for i in self.db.tracked_methods]
+        final = set(l1 + l2)
+        return [app_commands.Choice(name=i.name, value=i.value) for i in final if current.lower() in i.lower()][:25]
 
     @profiler.command(name="memory", aliases=["mem", "m"])
     async def profile_summary(self, ctx: commands.Context, limit: int = 15):
@@ -310,5 +311,5 @@ class Owner(MixinMeta):
         ```
         The higher the score, the more impact the method has on the bot's performance
         """
-        view = ProfileMenu(ctx, self.db)
+        view = ProfileMenu(ctx, self)
         await view.start()
