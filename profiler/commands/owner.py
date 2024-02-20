@@ -259,23 +259,39 @@ class Owner(MixinMeta):
 
     @profile_an_item.autocomplete("item")
     @detach_item.autocomplete("item")
-    async def autocomplete_item(self, interaction: discord.Interaction, current: str):
+    async def autocomplete_item(self, interaction: discord.Interaction, current: str) -> t.List[app_commands.Choice]:
         options = ["cog", "method"]
-        return [app_commands.Choice(name=i, value=i) for i in options]
+        choices = [app_commands.Choice(name=i, value=i) for i in options if current.lower() in i.lower()]
+        return choices
 
     @profile_an_item.autocomplete("item_name")
-    async def autocomplete_names_attach(self, interaction: discord.Interaction, current: str):
-        l1 = [app_commands.OptionChoice(name=i, value=i) for i in self.methods.keys()]
-        l2 = [app_commands.OptionChoice(name=i, value=i) for i in self.bot.cogs]
-        final = set(l1 + l2)
-        return [app_commands.Choice(name=i.name, value=i.value) for i in final if current.lower() in i.lower()][:25]
+    async def autocomplete_names_attach(
+        self, interaction: discord.Interaction, current: str
+    ) -> t.List[app_commands.Choice]:
+        choices: t.List[app_commands.Choice] = []
+        for i in self.bot.cogs:
+            if current.lower() in i.lower() and len(choices) < 25:
+                choices.append(app_commands.Choice(name=i, value=i))
+        for i in self.methods.keys():
+            if current.lower() in i.lower() and len(choices) < 25:
+                choices.append(app_commands.Choice(name=i, value=i))
+        choices.sort(key=lambda x: x.name.lower())
+        return choices
 
     @detach_item.autocomplete("item_name")
-    async def autocomplete_names_detach(self, interaction: discord.Interaction, current: str):
-        l1 = [app_commands.OptionChoice(name=i, value=i) for i in self.db.tracked_cogs]
-        l2 = [app_commands.OptionChoice(name=i, value=i) for i in self.db.tracked_methods]
-        final = set(l1 + l2)
-        return [app_commands.Choice(name=i.name, value=i.value) for i in final if current.lower() in i.lower()][:25]
+    async def autocomplete_names_detach(
+        self, interaction: discord.Interaction, current: str
+    ) -> t.List[app_commands.Choice]:
+        print(f"Current: {current}")
+        choices: t.List[app_commands.Choice] = []
+        for i in self.db.tracked_cogs:
+            if current.lower() in i.lower() and len(choices) < 25:
+                choices.append(app_commands.Choice(name=i, value=i))
+        for i in self.db.tracked_methods:
+            if current.lower() in i.lower() and len(choices) < 25:
+                choices.append(app_commands.Choice(name=i, value=i))
+        choices.sort(key=lambda x: x.name.lower())
+        return choices
 
     @profiler.command(name="memory", aliases=["mem", "m"])
     async def profile_summary(self, ctx: commands.Context, limit: int = 15):
