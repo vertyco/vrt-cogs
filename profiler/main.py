@@ -86,7 +86,12 @@ class Profiler(Owner, Profiling, Wrapper, commands.Cog, metaclass=CompositeMetaC
         def _dump():
             db = DB.model_validate(self.db.model_dump(exclude={"stats"}))
             # Break stats down to avoid RuntimeErrors
-            db.stats = {k: v for k, v in self.db.stats.copy().items()}
+            keys = list(self.db.stats.keys())
+            for cog_name in keys:
+                db.stats[cog_name] = {}
+                method_keys = list(self.db.stats[cog_name].keys())
+                for method_key in method_keys:
+                    db.stats[cog_name][method_key] = self.db.stats[cog_name][method_key].copy()
             return db.model_dump(mode="json")
 
         try:
