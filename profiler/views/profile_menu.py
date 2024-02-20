@@ -73,6 +73,8 @@ class ProfileMenu(discord.ui.View):
             self.change_sorting.disabled = True
             self.back.disabled = True
             self.refresh.disabled = True
+            self.add_profiler.disabled = True
+            self.remove_profiler.disabled = True
             with suppress(discord.NotFound):
                 await self.message.edit(view=self)
 
@@ -288,17 +290,17 @@ class ProfileMenu(discord.ui.View):
         if self.cog.bot.get_cog(query):
             self.db.tracked_cogs.append(query)
             await interaction.followup.send(f"Cog `{query}` is now being tracked", ephemeral=True)
+            await self.cog.rebuild()
             self.pages = await asyncio.to_thread(format_runtime_pages, self.db, self.sorting_by, self.query)
             await self.update()
-            await self.cog.rebuild()
             await self.cog.save()
             return
         if query in self.cog.methods or query in self.db.get_methods():
             self.db.tracked_methods.append(query)
-            await interaction.followup.send(f"Method `{query}` is now being tracked", ephemeral=True)
+            await interaction.followup.send(f"Method `{query}` is now being tracked verbosely", ephemeral=True)
+            await self.cog.rebuild()
             self.pages = await asyncio.to_thread(format_runtime_pages, self.db, self.sorting_by, self.query)
             await self.update()
-            await self.cog.rebuild()
             await self.cog.save()
             return
 
@@ -318,17 +320,19 @@ class ProfileMenu(discord.ui.View):
         if query in self.db.tracked_cogs:
             self.db.tracked_cogs.remove(query)
             await interaction.followup.send(f"Cog `{query}` is no longer being tracked", ephemeral=True)
+            self.db.stats.pop(query, None)
+            await self.cog.rebuild()
             self.pages = await asyncio.to_thread(format_runtime_pages, self.db, self.sorting_by, self.query)
             await self.update()
-            await self.cog.rebuild()
             await self.cog.save()
             return
         if query in self.db.tracked_methods:
             self.db.tracked_methods.remove(query)
-            await interaction.followup.send(f"Method `{query}` is no longer being tracked", ephemeral=True)
+            await interaction.followup.send(f"Method `{query}` is no longer being tracked verbosely", ephemeral=True)
+            self.db.discard_method(query)
+            await self.cog.rebuild()
             self.pages = await asyncio.to_thread(format_runtime_pages, self.db, self.sorting_by, self.query)
             await self.update()
-            await self.cog.rebuild()
             await self.cog.save()
             return
 

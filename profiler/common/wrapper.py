@@ -17,7 +17,11 @@ log = logging.getLogger("red.vrt.profiler.wrapper")
 class Wrapper(MixinMeta):
     def profile_wrapper(self, func: t.Callable, cog_name: str, func_type: str):
         key = f"{func.__module__}.{func.__name__}"
+        if key in self.currently_tracked:
+            raise ValueError(f"{key} is already being profiled")
         self.currently_tracked.add(key)
+        log.debug(f"Attaching profiler to {func_type.upper()}: {key}")
+
         if asyncio.iscoroutinefunction(func):
 
             async def async_wrapper(*args, **kwargs):
