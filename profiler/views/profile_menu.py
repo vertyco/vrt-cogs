@@ -4,16 +4,17 @@ from contextlib import suppress
 from io import BytesIO
 
 import discord
+from rapidfuzz import fuzz
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import text_to_file
 
+from ..abc import MixinMeta
 from ..common.formatting import (
     format_method_pages,
     format_method_tables,
     format_runtime_pages,
 )
 from ..common.generator import generate_line_graph
-from ..common.models import DB
 
 
 class SearchModal(discord.ui.Modal):
@@ -36,10 +37,11 @@ class SearchModal(discord.ui.Modal):
 
 
 class ProfileMenu(discord.ui.View):
-    def __init__(self, ctx: commands.Context, db: DB):
+    def __init__(self, ctx: commands.Context, cog: MixinMeta):
         super().__init__(timeout=1800)
         self.ctx = ctx
-        self.db = db
+        self.cog = cog
+        self.db = cog.db
 
         self.message: discord.Message = None
         self.pages: t.List[str] = []
@@ -92,12 +94,11 @@ class ProfileMenu(discord.ui.View):
             self.add_item(self.left)
             self.add_item(self.close)
             self.add_item(self.right)
-            if len(self.pages) >= 15:
-                self.add_item(self.left10)
+            self.add_item(self.filter_results)
             self.add_item(self.back)
             if len(self.pages) >= 15:
+                self.add_item(self.left10)
                 self.add_item(self.right10)
-            self.add_item(self.filter_results)
         else:
             self.add_item(self.left)
             self.add_item(self.close)
@@ -105,6 +106,8 @@ class ProfileMenu(discord.ui.View):
             self.add_item(self.filter_results)
             self.add_item(self.inspect)
             self.add_item(self.change_sorting)
+            self.add_item(self.add_profiler)
+            self.add_item(self.remove_profiler)
             self.add_item(self.refresh)
             if len(self.pages) >= 15:
                 self.add_item(self.left10)
@@ -175,9 +178,10 @@ class ProfileMenu(discord.ui.View):
             if modal.query is None:
                 return
 
-            if not modal.strip():
+            if not modal.query.strip():
                 # Remove filter
                 threshold = None
+                await interaction.followup.send("Removing filter", ephemeral=True)
             else:
                 try:
                     threshold = float(modal.query)
@@ -190,6 +194,9 @@ class ProfileMenu(discord.ui.View):
             else:
                 return await interaction.followup.send("No method found with that key", ephemeral=True)
 
+            await interaction.followup.send(
+                f"Filtering results with a threshold of `{threshold:.2f}ms`", ephemeral=True
+            )
             self.pages = await asyncio.to_thread(format_method_pages, self.inspecting, method_stats, threshold)
             await self.update()
 
@@ -201,14 +208,12 @@ class ProfileMenu(discord.ui.View):
                 return
 
             self.query = modal.query
+            await interaction.followup.send(f"Filtering results with query: `{self.query}`", ephemeral=True)
             self.pages = await asyncio.to_thread(format_runtime_pages, self.db, self.sorting_by, self.query)
             await self.update()
 
-    @discord.ui.button(label="Inspect Method", style=discord.ButtonStyle.secondary, row=1)
+    @discord.ui.button(label="Inspect", style=discord.ButtonStyle.secondary, row=1)
     async def inspect(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if not self.db.verbose and not self.db.verbose_methods:
-            return await interaction.response.send_message("Verbose stats are not enabled", ephemeral=True)
-
         modal = SearchModal(None, "Inpsect a Method", "Enter Method Key")
         await interaction.response.send_modal(modal)
         await modal.wait()
@@ -232,7 +237,7 @@ class ProfileMenu(discord.ui.View):
             self.plot = await asyncio.to_thread(generate_line_graph, method_stats)
         await self.update()
 
-    @discord.ui.button(label="Sort: Avg", style=discord.ButtonStyle.success, row=2)
+    @discord.ui.button(label="Sort: Impact", style=discord.ButtonStyle.success, row=1)
     async def change_sorting(self, interaction: discord.Interaction, button: discord.ui.Button):
         with suppress(discord.NotFound):
             await interaction.response.defer()
@@ -254,13 +259,83 @@ class ProfileMenu(discord.ui.View):
             button.label = f"Sort: Last {'Hour' if self.db.delta == 1 else f'{self.db.delta}hrs'}"
         elif self.sorting_by == "Count":
             self.sorting_by = "Impact"
-            button.label = "Sort: Impact Score"
+            button.label = "Sort: Impact"
         elif self.sorting_by == "Impact":
             self.sorting_by = "Name"
             button.label = "Sort: Name"
 
         self.pages = await asyncio.to_thread(format_runtime_pages, self.db, self.sorting_by, self.query)
         await self.update()
+
+    def _match(self, data: t.List[str], name: str):
+        matches = map(lambda x: (x, fuzz.ratio(name.lower(), x.lower())), data)
+        matches = sorted(matches, key=lambda x: x[1], reverse=True)
+        return matches[0][0]
+
+    @discord.ui.button(label="Attach", style=discord.ButtonStyle.secondary, row=2)
+    async def add_profiler(self, interaction: discord.Interaction, button: discord.ui.Button):
+        modal = SearchModal(None, "Attach a profiler", "Enter Cog Name or Method Key")
+        await interaction.response.send_modal(modal)
+        await modal.wait()
+        if modal.query is None:
+            return
+        query = modal.query.strip()
+        if query in self.db.tracked_cogs:
+            return await interaction.followup.send("This cog is already being tracked", ephemeral=True)
+        if query in self.db.tracked_methods:
+            return await interaction.followup.send("This method is already being tracked", ephemeral=True)
+
+        if self.cog.bot.get_cog(query):
+            self.db.tracked_cogs.append(query)
+            await interaction.followup.send(f"Cog `{query}` is now being tracked", ephemeral=True)
+            self.pages = await asyncio.to_thread(format_runtime_pages, self.db, self.sorting_by, self.query)
+            await self.update()
+            await self.cog.rebuild()
+            await self.cog.save()
+            return
+        if query in self.cog.methods or query in self.db.get_methods():
+            self.db.tracked_methods.append(query)
+            await interaction.followup.send(f"Method `{query}` is now being tracked", ephemeral=True)
+            self.pages = await asyncio.to_thread(format_runtime_pages, self.db, self.sorting_by, self.query)
+            await self.update()
+            await self.cog.rebuild()
+            await self.cog.save()
+            return
+
+        data = list(self.cog.methods.keys()) + list(self.cog.bot.cogs.keys()) + list(self.db.get_methods())
+        await interaction.followup.send(
+            f"No cog or method found with that name, did you mean `{self._match(data, query)}`?", ephemeral=True
+        )
+
+    @discord.ui.button(label="Detach", style=discord.ButtonStyle.secondary, row=2)
+    async def remove_profiler(self, interaction: discord.Interaction, button: discord.ui.Button):
+        modal = SearchModal(None, "Detach a profiler", "Enter Cog Name or Method Key")
+        await interaction.response.send_modal(modal)
+        await modal.wait()
+        if modal.query is None:
+            return
+        query = modal.query.strip()
+        if query in self.db.tracked_cogs:
+            self.db.tracked_cogs.remove(query)
+            await interaction.followup.send(f"Cog `{query}` is no longer being tracked", ephemeral=True)
+            self.pages = await asyncio.to_thread(format_runtime_pages, self.db, self.sorting_by, self.query)
+            await self.update()
+            await self.cog.rebuild()
+            await self.cog.save()
+            return
+        if query in self.db.tracked_methods:
+            self.db.tracked_methods.remove(query)
+            await interaction.followup.send(f"Method `{query}` is no longer being tracked", ephemeral=True)
+            self.pages = await asyncio.to_thread(format_runtime_pages, self.db, self.sorting_by, self.query)
+            await self.update()
+            await self.cog.rebuild()
+            await self.cog.save()
+            return
+
+        data = list(self.cog.methods.keys()) + list(self.cog.bot.cogs.keys())
+        await interaction.followup.send(
+            f"No cog or method found with that name, did you mean `{self._match(data, query)}`?", ephemeral=True
+        )
 
     @discord.ui.button(label="Refresh", style=discord.ButtonStyle.success, row=2)
     async def refresh(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -270,7 +345,7 @@ class ProfileMenu(discord.ui.View):
         self.pages = await asyncio.to_thread(format_runtime_pages, self.db, self.sorting_by, self.query)
         await self.update()
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=4)
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary, row=1)
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
         with suppress(discord.NotFound):
             await interaction.response.defer()
