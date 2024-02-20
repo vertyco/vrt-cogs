@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from datetime import datetime, timedelta
 
 from discord import app_commands
 from discord.ext import tasks
@@ -22,6 +21,8 @@ class Profiling(MixinMeta):
         Returns:
             True if attached successfully, False otherwise.
         """
+        if method_key in self.currently_tracked:
+            return False
         method = self.methods.get(method_key)
         if not method:
             log.warning(f"{method_key} method not found. Cant track method.")
@@ -93,8 +94,6 @@ class Profiling(MixinMeta):
         if not cog:
             return False
 
-        used_keys = []
-
         attached = False
         # Attach the profiler to the commands of the cog
         if self.db.track_commands:
@@ -102,9 +101,8 @@ class Profiling(MixinMeta):
                 if not command.enabled:
                     continue
                 key = f"{command.callback.__module__}.{command.callback.__name__}"
-                log.debug(f"Attaching profiler to COMMAND {key}")
-
-                used_keys.append(key)
+                if key in self.currently_tracked:
+                    continue
 
                 original_callback = command.callback
                 wrapped_callback = self.profile_wrapper(original_callback, cog_name, "command")
@@ -116,9 +114,8 @@ class Profiling(MixinMeta):
                 if isinstance(command, app_commands.Group):
                     continue
                 key = f"{command.callback.__module__}.{command.callback.__name__}"
-                log.debug(f"Attaching profiler to SLASH COMMAND {key}")
-
-                used_keys.append(key)
+                if key in self.currently_tracked:
+                    continue
 
                 original_callback = command.callback
                 wrapped_callback = self.profile_wrapper(original_callback, cog_name, "slash")
@@ -134,9 +131,8 @@ class Profiling(MixinMeta):
                     continue
 
                 key = f"{listener_coro.__module__}.{listener_coro.__name__}"
-                log.debug(f"Attaching profiler to LISTENER {key}")
-
-                used_keys.append(key)
+                if key in self.currently_tracked:
+                    continue
 
                 wrapped_coro = self.profile_wrapper(listener_coro, cog_name, "listener")
 
@@ -162,18 +158,21 @@ class Profiling(MixinMeta):
                 ):
                     continue
 
-                key = f"{attr.__module__}.{attr_name}"
-                if key.startswith("redbot"):
+                if attr.__module__.startswith("redbot"):
                     continue
 
                 if isinstance(attr, tasks.Loop):
-                    log.debug(f"Attaching profiler to TASK {key}")
                     original_coro = attr.coro
+                    key = f"{original_coro.__module__}.{original_coro.__name__}"
+                    if key in self.currently_tracked:
+                        continue
                     wrapped_coro = self.profile_wrapper(original_coro, cog_name, "task")
                     attr.coro = wrapped_coro
                     self.original_loops.setdefault(cog_name, {})[attr_name] = original_coro
                 else:
-                    log.debug(f"Attaching profiler to METHOD {key}")
+                    key = f"{attr.__module__}.{attr_name}"
+                    if key in self.currently_tracked:
+                        continue
                     wrapped_fn = self.profile_wrapper(attr, cog_name, "method")
                     self.original_methods.setdefault(cog_name, {})[attr_name] = attr
                     setattr(cog, attr_name, wrapped_fn)
@@ -298,6 +297,7 @@ class Profiling(MixinMeta):
                 self.methods[key] = Method(is_coro=is_coro, func_type=func_type, cog_name=cog_name)
 
     def build(self) -> None:
+        self.currently_tracked.clear()
         for cog_name in self.db.tracked_cogs:
             attached = self.attach_cog(cog_name)
             if not attached:
@@ -309,66 +309,3 @@ class Profiling(MixinMeta):
             attached = self.attach_method(method_key)
             if not attached:
                 log.warning(f"Failed to attach profiler to {method_key}")
-
-    async def cleanup(self) -> bool:
-        def _run() -> bool:
-            oldest_allowed_record = datetime.now() - timedelta(hours=self.db.delta)
-            cleaned = False
-            copied = {k: v.copy() for k, v in self.db.stats.items()}
-            for cog_name, methods in copied.items():
-                if not self.bot.get_cog(cog_name):
-                    del self.db.stats[cog_name]
-                    cleaned = True
-                    continue
-                if cog_name not in self.db.tracked_cogs:
-                    del self.db.stats[cog_name]
-                    cleaned = True
-                    continue
-
-                for method_name, profiles in methods.items():
-                    if not profiles:
-                        del self.db.stats[cog_name][method_name]
-                        cleaned = True
-                        continue
-                    if profiles[0].func_type in ["command", "hybrid", "slash"] and not self.db.track_commands:
-                        del self.db.stats[cog_name][method_name]
-                        cleaned = True
-                        continue
-                    elif profiles[0].func_type == "listener" and not self.db.track_listeners:
-                        del self.db.stats[cog_name][method_name]
-                        cleaned = True
-                        continue
-                    elif profiles[0].func_type == "task" and not self.db.track_tasks:
-                        del self.db.stats[cog_name][method_name]
-                        cleaned = True
-                        continue
-                    elif profiles[0].func_type == "method" and not self.db.track_methods:
-                        del self.db.stats[cog_name][method_name]
-                        cleaned = True
-                        continue
-                    elif profiles[0].timestamp < oldest_allowed_record:
-                        self.db.stats[cog_name][method_name] = [
-                            i for i in profiles if i.timestamp > oldest_allowed_record
-                        ]
-                        cleaned = True
-                        continue
-
-                    indexes_to_remove = set()
-                    for idx, profile in enumerate(profiles):
-                        if idx >= len(self.db.stats[cog_name][method_name]):
-                            break
-                        if profile.func_profiles and not self.db.verbose:
-                            indexes_to_remove.add(idx)
-
-                    if indexes_to_remove:
-                        self.db.stats[cog_name][method_name] = [
-                            i for idx, i in enumerate(profiles) if idx not in indexes_to_remove
-                        ]
-                        cleaned = True
-
-            return cleaned
-
-        cleaned = await asyncio.to_thread(_run)
-        if cleaned:
-            await self.save()
-        return cleaned

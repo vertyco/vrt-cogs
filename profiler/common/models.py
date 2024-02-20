@@ -1,6 +1,6 @@
 import typing as t
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from pydantic import Field
 
@@ -60,3 +60,58 @@ class DB(Base):
             for method in methods:
                 keys.add(method)
         return keys
+
+    def discard_method(self, method: str) -> None:
+        for methods in self.stats.values():
+            methods.pop(method, None)
+
+    def cleanup(self) -> int:
+        oldest_time = datetime.now() - timedelta(hours=self.delta)
+        cleaned = 0
+        keys = list(self.stats.keys())
+        for cog_name in keys:
+            methods = self.stats[cog_name].copy()
+            for method_key, profiles in methods.items():
+                if not self.stats[cog_name][method_key]:
+                    self.stats[cog_name].pop(method_key)
+                    cleaned += 1
+                    continue
+
+                invalid = [
+                    profiles[0].func_type in ["command", "hybrid", "slash"] and not self.track_commands,
+                    profiles[0].func_type == "listener" and not self.track_listeners,
+                    profiles[0].func_type == "task" and not self.track_tasks,
+                    profiles[0].func_type == "method" and not self.track_methods,
+                ]
+                if any(invalid):
+                    self.stats[cog_name].pop(method_key)
+                    cleaned += 1
+                    continue
+
+                if profiles[0].timestamp < oldest_time:
+                    self.stats[cog_name][method_key] = [p for p in profiles if p.timestamp > oldest_time]
+                    if not self.stats[cog_name][method_key]:
+                        self.stats[cog_name].pop(method_key)
+                    cleaned += 1
+                    continue
+
+                indexes_to_remove = []
+                for idx, profile in enumerate(profiles):
+                    if self.verbose and not profile.func_profiles:
+                        indexes_to_remove.append(idx)
+                    elif method_key in self.tracked_methods and (profile.total_tt * 1000) < self.tracked_threshold:
+                        indexes_to_remove.append(idx)
+                    elif cog_name not in self.tracked_cogs and method_key not in self.tracked_methods:
+                        indexes_to_remove.append(idx)
+
+                if indexes_to_remove:
+                    self.stats[cog_name][method_key] = [
+                        p for idx, p in enumerate(profiles) if idx not in indexes_to_remove
+                    ]
+                    cleaned += 1
+
+            if not self.stats[cog_name]:
+                self.stats.pop(cog_name)
+                cleaned += 1
+
+        return cleaned

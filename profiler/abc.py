@@ -61,10 +61,6 @@ class MixinMeta(metaclass=ABCMeta):
     def build(self) -> None:
         raise NotImplementedError
 
-    @abstractmethod
-    async def cleanup(self) -> bool:
-        raise NotImplementedError
-
     # -------------- profiler.common.wrapper --------------
     @abstractmethod
     def profile_wrapper(self, func: t.Callable, cog_name: str, func_type: str):

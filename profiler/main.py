@@ -25,7 +25,7 @@ class Profiler(Owner, Profiling, Wrapper, commands.Cog, metaclass=CompositeMetaC
     """
 
     __author__ = "vertyco"
-    __version__ = "1.0.2b"
+    __version__ = "1.1.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -72,7 +72,9 @@ class Profiler(Owner, Profiling, Wrapper, commands.Cog, metaclass=CompositeMetaC
         data = await self.config.db()
         self.db = await asyncio.to_thread(DB.model_validate, data)
         log.info("Config loaded")
-        await self.cleanup()
+        cleaned = await asyncio.to_thread(self.db.cleanup)
+        if cleaned:
+            await self.save()
         self.build()
         await asyncio.sleep(10)
         self.save_loop.start()
@@ -109,9 +111,13 @@ class Profiler(Owner, Profiling, Wrapper, commands.Cog, metaclass=CompositeMetaC
     async def rebuild(self) -> None:
         def _run():
             self.detach_profilers()
+            cleaned = self.db.cleanup()
             self.build()
+            return cleaned
 
-        await asyncio.to_thread(_run)
+        cleaned = await asyncio.to_thread(_run)
+        if cleaned:
+            await self.save()
 
     @commands.Cog.listener()
     async def on_cog_add(self, cog: commands.Cog) -> None:

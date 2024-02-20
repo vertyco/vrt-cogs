@@ -19,7 +19,7 @@ log = logging.getLogger("red.vrt.profiler.commands")
 
 
 class Owner(MixinMeta):
-    @commands.hybrid_group()
+    @commands.group()
     @commands.is_owner()
     async def profiler(self, ctx: commands.Context):
         """Profiling commands"""
@@ -104,7 +104,8 @@ class Owner(MixinMeta):
         **WARNING**: Enabling this will increase memory usage significantly
         """
         self.db.verbose = not self.db.verbose
-        if not await self.cleanup():
+        cleaned = await asyncio.to_thread(self.db.cleanup)
+        if cleaned:
             await self.save()
         if self.db.verbose:
             txt = (
@@ -124,7 +125,8 @@ class Owner(MixinMeta):
         if delta < 1:
             return await ctx.send("Delta must be at least 1 hour")
         self.db.delta = delta
-        if not await self.cleanup():
+        cleaned = await asyncio.to_thread(self.db.cleanup)
+        if cleaned:
             await self.save()
         await ctx.send(f"Data retention is now set to **{delta} {'hour' if delta == 1 else 'hours'}**")
 
@@ -155,7 +157,8 @@ class Owner(MixinMeta):
         elif method == "tasks":
             self.db.track_tasks = state
 
-        if not await self.cleanup():
+        cleaned = await asyncio.to_thread(self.db.cleanup)
+        if cleaned:
             await self.save()
         await ctx.send(f"Tracking of {method} is now set to **{state}**")
         await self.rebuild()
@@ -169,7 +172,7 @@ class Owner(MixinMeta):
         await ctx.send(f"Tracking threshold is now set to **{threshold}ms**")
         await self.save()
 
-    @profiler.command(name="attach", description="Attach a profiler to a cog or method")
+    @commands.hybrid_command(name="attach", description="Attach a profiler to a cog or method")
     @app_commands.describe(
         item="'cog' or 'method'",
         item_name="Name of the cog or method to profile",
@@ -213,7 +216,7 @@ class Owner(MixinMeta):
             return await ctx.send(f"Could not find **{item_name}**. Closest match is **{match}**")
         await ctx.send(f"Could not find **{item_name}**")
 
-    @profiler.command(name="detach")
+    @commands.hybrid_command(name="detach")
     @app_commands.describe(
         item="'cog' or 'method'",
         item_name="Name of the cog or method to profile",
