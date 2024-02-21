@@ -81,7 +81,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "vertyco"
-    __version__ = "3.12.7"
+    __version__ = "3.12.8"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -766,8 +766,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             self.data[gid]["weekly"]["users"][uid]["messages"] += 1
         await self.check_levelups(gid, uid, message)
 
-    async def check_voice(self, guild: discord.guild):
-        jobs = []
+    async def check_voice(self, guild: discord.Guild):
         gid = guild.id
         if str(gid) in self.ignored_guilds:
             return
@@ -784,92 +783,94 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         channel_bonuses = conf["channelbonuses"]["voice"]
         stream_bonus = conf["streambonus"]
         weekly_on = conf["weekly"]["on"]
-        bonusrole = None
-        async for member in AsyncIter(guild.members, steps=100, delay=0.001):
-            member: discord.Member = member
-            if member.bot:
-                continue
-            now = datetime.now()
-            uid = str(member.id)
-            voice_state = member.voice
-            if not voice_state:  # Only cache if user is in a vc
-                if uid in self.voice[gid]:
-                    del self.voice[gid][uid]
-                continue
 
-            if uid not in self.voice[gid]:
-                self.voice[gid][uid] = now
-            if uid not in self.data[gid]["users"]:
-                self.init_user(gid, uid)
+        def _prep():
+            jobs = []
+            members = [i for i in guild.members if not i.bot]
+            for member in members:
+                now = datetime.now()
+                uid = str(member.id)
+                voice_state = member.voice
+                if not voice_state:  # Only cache if user is in a vc
+                    if uid in self.voice[gid]:
+                        del self.voice[gid][uid]
+                    continue
 
-            if weekly_on and uid not in self.data[gid]["weekly"]["users"]:
-                self.init_user_weekly(gid, uid)
+                if uid not in self.voice[gid]:
+                    self.voice[gid][uid] = now
+                if uid not in self.data[gid]["users"]:
+                    self.init_user(gid, uid)
 
-            ts = self.voice[gid][uid]
-            td = (now - ts).total_seconds()
-            xp_to_give = (td / 60) * xp_per_minute
-            addxp = True
-            # Ignore muted users
-            if conf["muted"] and voice_state.self_mute:
-                addxp = False
-            # Ignore deafened users
-            if conf["deafened"] and voice_state.self_deaf:
-                addxp = False
-            # Ignore offline/invisible users
-            if conf["invisible"] and member.status.name == "offline":
-                addxp = False
-            # Ignore if user is only one in channel
-            in_voice = 0
-            if voice_state.channel:
-                for mem in voice_state.channel.members:
-                    if mem.bot:
-                        continue
-                    in_voice += 1
-            if conf["solo"] and in_voice <= 1:
-                addxp = False
-            # Check ignored roles
-            for role in member.roles:
-                rid = str(role.id)
-                if role.id in conf["ignoredroles"]:
+                if weekly_on and uid not in self.data[gid]["weekly"]["users"]:
+                    self.init_user_weekly(gid, uid)
+
+                ts = self.voice[gid][uid]
+                td = (now - ts).total_seconds()
+                xp_to_give = (td / 60) * xp_per_minute
+                addxp = True
+                # Ignore muted users
+                if conf["muted"] and voice_state.self_mute:
                     addxp = False
-                if rid in bonuses:
-                    bonusrole = rid
-            # Check ignored users
-            if int(uid) in conf["ignoredusers"]:
-                addxp = False
-            # Check ignored channels
-            if voice_state.channel.id in conf["ignoredchannels"]:
-                addxp = False
-            if addxp:
-                if bonusrole:
-                    bonusrange = bonuses[bonusrole]
-                    bmin = int(bonusrange[0])
-                    bmax = int(bonusrange[1]) + 1
-                    bxp = random.choice(range(bmin, bmax))
-                    xp_to_give += bxp
-                cid = str(voice_state.channel.id)
-                if cid in channel_bonuses:
-                    bonuschannelrange = channel_bonuses[cid]
-                    bmin = int(bonuschannelrange[0])
-                    bmax = int(bonuschannelrange[1]) + 1
-                    bxp = random.choice(range(bmin, bmax))
-                    xp_to_give += bxp
-                if stream_bonus and voice_state.self_stream:
-                    bmin = int(stream_bonus[0])
-                    bmax = int(stream_bonus[1]) + 1
-                    bxp = random.choice(range(bmin, bmax))
-                    xp_to_give += bxp
-                self.data[gid]["users"][uid]["xp"] += xp_to_give
+                # Ignore deafened users
+                if conf["deafened"] and voice_state.self_deaf:
+                    addxp = False
+                # Ignore offline/invisible users
+                if conf["invisible"] and member.status.name == "offline":
+                    addxp = False
+                # Ignore if user is only one in channel
+                in_voice = 0
+                if voice_state.channel:
+                    in_voice = len([i for i in voice_state.channel.members if not i.bot])
+                if conf["solo"] and in_voice <= 1:
+                    addxp = False
+
+                bonusrole = None
+                # Check ignored roles
+                for role in member.roles:
+                    rid = str(role.id)
+                    if role.id in conf["ignoredroles"]:
+                        addxp = False
+                    if rid in bonuses:
+                        bonusrole = rid
+                # Check ignored users
+                if int(uid) in conf["ignoredusers"]:
+                    addxp = False
+                # Check ignored channels
+                if voice_state.channel.id in conf["ignoredchannels"]:
+                    addxp = False
+                if addxp:
+                    if bonusrole:
+                        bonusrange = bonuses[bonusrole]
+                        bmin = int(bonusrange[0])
+                        bmax = int(bonusrange[1]) + 1
+                        bxp = random.choice(range(bmin, bmax))
+                        xp_to_give += bxp
+                    cid = str(voice_state.channel.id)
+                    if cid in channel_bonuses:
+                        bonuschannelrange = channel_bonuses[cid]
+                        bmin = int(bonuschannelrange[0])
+                        bmax = int(bonuschannelrange[1]) + 1
+                        bxp = random.choice(range(bmin, bmax))
+                        xp_to_give += bxp
+                    if stream_bonus and voice_state.self_stream:
+                        bmin = int(stream_bonus[0])
+                        bmax = int(stream_bonus[1]) + 1
+                        bxp = random.choice(range(bmin, bmax))
+                        xp_to_give += bxp
+                    self.data[gid]["users"][uid]["xp"] += xp_to_give
+                    if weekly_on:
+                        self.data[gid]["weekly"]["users"][uid]["xp"] += xp_to_give
+                self.data[gid]["users"][uid]["voice"] += td
                 if weekly_on:
-                    self.data[gid]["weekly"]["users"][uid]["xp"] += xp_to_give
-            self.data[gid]["users"][uid]["voice"] += td
-            if weekly_on:
-                self.data[gid]["weekly"]["users"][uid]["voice"] += td
-            self.voice[gid][uid] = now
-            jobs.append(self.check_levelups(gid, uid, channel_obj=voice_state.channel))
+                    self.data[gid]["weekly"]["users"][uid]["voice"] += td
+                self.voice[gid][uid] = now
+                jobs.append(self.check_levelups(gid, uid, channel_obj=voice_state.channel))
+            return jobs
+
+        jobs = await asyncio.to_thread(_prep)
         await asyncio.gather(*jobs)
 
-    @tasks.loop(seconds=120)
+    @tasks.loop(seconds=300)
     async def voice_checker(self):
         vtasks = []
         for guild in self.bot.guilds:
