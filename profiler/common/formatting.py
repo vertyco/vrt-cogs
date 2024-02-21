@@ -108,7 +108,7 @@ def format_runtime_pages(
 
             if method_key in db.tracked_methods:
                 name = f"+ {name}"
-            else:
+            elif error_count > 0:
                 name = f"- {name}"
 
             stats[name] = [
@@ -183,7 +183,7 @@ def format_runtime_pages(
             )
 
         # page = f"{box(tabulate(rows, headers=cols), lang='diff')}\n\n"
-        page = f"{tabulate(rows, headers=cols)}\n\n+ Verbose Tracking\n- Simple Tracking\n"
+        page = f"{tabulate(rows, headers=cols)}\n\n+ Verbose Tracking\n- Exceptions Thrown\n"
         page = box(page, lang="diff")
 
         if db.track_commands:
