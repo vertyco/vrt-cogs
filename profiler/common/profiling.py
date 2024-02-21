@@ -171,7 +171,7 @@ class Profiling(MixinMeta):
                     self.original_loops.setdefault(cog_name, {})[attr_name] = original_coro
                 else:
                     key = f"{attr.__module__}.{attr_name}"
-                    if key in self.currently_tracked:
+                    if key in self.currently_tracked or not hasattr(attr, "__name__"):
                         continue
                     wrapped_fn = self.profile_wrapper(attr, cog_name, "method")
                     self.original_methods.setdefault(cog_name, {})[attr_name] = attr
