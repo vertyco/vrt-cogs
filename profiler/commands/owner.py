@@ -212,7 +212,7 @@ class Owner(MixinMeta):
                 return await ctx.send(f"**{item_name}** wasn't being profiled, did you mean **{match}**?")
             return await ctx.send(f"Could not find **{item_name}**")
 
-        if item == "all":
+        if item_name == "all":
             for cog in self.bot.cogs:
                 if cog not in self.db.tracked_cogs:
                     self.db.tracked_cogs.append(cog)
@@ -283,7 +283,7 @@ class Owner(MixinMeta):
             await self.save()
             return await ctx.send(f"**{item_name}** is no longer being profiled")
 
-        if item == "all":
+        if item_name == "all":
             self.db.tracked_cogs = []
             await ctx.send("All cogs are no longer being profiled")
             await self.rebuild()
