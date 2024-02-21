@@ -23,6 +23,7 @@ def format_method_pages(
     if sort_by_delta:
         data.sort(key=lambda i: i.total_tt, reverse=True)
 
+    warning_sign = "⚠️"
     pages = []
     for stats in data:
         ts = int(stats.timestamp.timestamp())
@@ -39,6 +40,8 @@ def format_method_pages(
         )
         if threshold:
             txt += f"\nFiltering by threshold: `{threshold:.2f}ms`"
+        if stats.exception_thrown:
+            txt += f"\n{warning_sign} **Exception**: `{stats.exception_thrown}`"
         pages.append(txt)
 
     if not pages:
@@ -92,6 +95,7 @@ def format_runtime_pages(
             calls_per_minute = len(valid_profiles) / timeframe_minutes if timeframe_minutes else 0
 
             total_calls = len(valid_profiles)
+            error_count = len([i for i in valid_profiles if i.exception_thrown])
 
             # Calculate impact score
             std_dev = statistics.stdev(runtimes) if len(runtimes) > 1 else 0
@@ -107,7 +111,15 @@ def format_runtime_pages(
             else:
                 name = f"- {name}"
 
-            stats[name] = [max_runtime, min_runtime, avg_runtime, calls_per_minute, total_calls, impact_score]
+            stats[name] = [
+                max_runtime,
+                min_runtime,
+                avg_runtime,
+                calls_per_minute,
+                total_calls,
+                error_count,
+                impact_score,
+            ]
 
     per_page = 10
     start = 0
@@ -115,28 +127,31 @@ def format_runtime_pages(
     page_count = math.ceil(len(stats) / per_page)
     delta_text = f"Last {'Hour' if db.delta == 1 else f'{db.delta}hrs'}"
 
-    cols = ["Method", "Max", "Min", "Avg", "Calls/Min", delta_text, "Impact"]
+    cols = ["Method", "Max", "Min", "Avg", "Calls/Min", delta_text, "Errors", "Impact"]
     if sort_by == "Name":
-        cols = ["[Method]", "Max", "Min", "Avg", "Calls/Min", delta_text, "Impact"]
+        cols = ["[Method]", "Max", "Min", "Avg", "Calls/Min", delta_text, "Errors", "Impact"]
         stats = dict(sorted(stats.items()))
     elif sort_by == "Max":
-        cols = ["Method", "[Max]", "Min", "Avg", "Calls/Min", delta_text, "Impact"]
+        cols = ["Method", "[Max]", "Min", "Avg", "Calls/Min", delta_text, "Errors", "Impact"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][0], reverse=True))
     elif sort_by == "Min":
-        cols = ["Method", "Max", "[Min]", "Avg", "Calls/Min", delta_text, "Impact"]
+        cols = ["Method", "Max", "[Min]", "Avg", "Calls/Min", delta_text, "Errors", "Impact"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][1], reverse=True))
     elif sort_by == "Avg":
-        cols = ["Method", "Max", "Min", "[Avg]", "Calls/Min", delta_text, "Impact"]
+        cols = ["Method", "Max", "Min", "[Avg]", "Calls/Min", delta_text, "Errors", "Impact"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][2], reverse=True))
     elif sort_by == "CPM":
-        cols = ["Method", "Max", "Min", "Avg", "[Calls/Min]", delta_text, "Impact"]
+        cols = ["Method", "Max", "Min", "Avg", "[Calls/Min]", delta_text, "Errors", "Impact"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][3], reverse=True))
     elif sort_by == "Count":
-        cols = ["Method", "Max", "Min", "Avg", "Calls/Min", f"[{delta_text}]", "Impact"]
+        cols = ["Method", "Max", "Min", "Avg", "Calls/Min", f"[{delta_text}]", "Errors", "Impact"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][4], reverse=True))
-    elif sort_by == "Impact":
-        cols = ["Method", "Max", "Min", "Avg", "Calls/Min", delta_text, "[Impact]"]
+    elif sort_by == "Errors":
+        cols = ["Method", "Max", "Min", "Avg", "Calls/Min", delta_text, "[Errors]", "Impact"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][5], reverse=True))
+    elif sort_by == "Impact":
+        cols = ["Method", "Max", "Min", "Avg", "Calls/Min", delta_text, "Errors", "[Impact]"]
+        stats = dict(sorted(stats.items(), key=lambda item: item[1][6], reverse=True))
 
     def _format(value: float):
         if value < 1:
@@ -151,7 +166,9 @@ def format_runtime_pages(
         rows = []
         for i in range(start, end):
             method_key = list(stats.keys())[i]
-            max_runtime, min_runtime, avg_runtime, calls_per_minute, total_calls, impact_score = stats[method_key]
+            max_runtime, min_runtime, avg_runtime, calls_per_minute, total_calls, error_count, impact_score = stats[
+                method_key
+            ]
             rows.append(
                 [
                     method_key,
@@ -160,6 +177,7 @@ def format_runtime_pages(
                     _format(avg_runtime),
                     round(calls_per_minute, 4),
                     total_calls,
+                    error_count,
                     round(impact_score, 2),
                 ]
             )

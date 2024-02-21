@@ -260,6 +260,9 @@ class ProfileMenu(discord.ui.View):
             self.sorting_by = "Count"
             button.label = f"Sort: Last {'Hour' if self.db.delta == 1 else f'{self.db.delta}hrs'}"
         elif self.sorting_by == "Count":
+            self.sorting_by = "Errors"
+            button.label = "Sort: Errors"
+        elif self.sorting_by == "Errors":
             self.sorting_by = "Impact"
             button.label = "Sort: Impact"
         elif self.sorting_by == "Impact":
