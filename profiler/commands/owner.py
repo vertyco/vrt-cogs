@@ -186,7 +186,7 @@ class Owner(MixinMeta):
         item_name="Name of the cog or method to profile",
     )
     @commands.is_owner()
-    async def profile_an_item(self, ctx: commands.Context, item: t.Literal["cog", "method"], item_name: str):
+    async def profile_an_item(self, ctx: commands.Context, item: t.Literal["cog", "method"], *, item_name: str):
         """
         Attach a profiler to a cog or method
         """
@@ -212,6 +212,33 @@ class Owner(MixinMeta):
                 return await ctx.send(f"**{item_name}** wasn't being profiled, did you mean **{match}**?")
             return await ctx.send(f"Could not find **{item_name}**")
 
+        if item == "all":
+            for cog in self.bot.cogs:
+                if cog not in self.db.tracked_cogs:
+                    self.db.tracked_cogs.append(cog)
+            await ctx.send("All cogs are now being profiled")
+            await self.rebuild()
+            await self.save()
+            return
+        elif len(item_name.split()) > 1:
+            added = []
+            cogs = [i.strip() for i in item_name.split()]
+            for cog in cogs:
+                if not self.bot.get_cog(cog):
+                    await ctx.send(f"Could not find **{cog}**")
+                    continue
+                if cog not in self.db.tracked_cogs:
+                    self.db.tracked_cogs.append(cog)
+                    added.append(cog)
+
+            if added:
+                await ctx.send(f"**{', '.join(added)}** are now being profiled")
+                await self.rebuild()
+                await self.save()
+                return
+
+            return await ctx.send("No valid cogs were given")
+
         if item_name in self.db.tracked_cogs:
             return await ctx.send(f"**{item_name}** was already being profiled")
         if self.bot.get_cog(item_name):
@@ -230,7 +257,7 @@ class Owner(MixinMeta):
         item_name="Name of the cog or method to profile",
     )
     @commands.is_owner()
-    async def detach_item(self, ctx: commands.Context, item: t.Literal["cog", "method"], item_name: str):
+    async def detach_item(self, ctx: commands.Context, item: t.Literal["cog", "method"], *, item_name: str):
         """
         Remove the profiler from a cog or method
         """
@@ -255,6 +282,30 @@ class Owner(MixinMeta):
             await self.rebuild()
             await self.save()
             return await ctx.send(f"**{item_name}** is no longer being profiled")
+
+        if item == "all":
+            self.db.tracked_cogs = []
+            await ctx.send("All cogs are no longer being profiled")
+            await self.rebuild()
+            await self.save()
+            return
+
+        elif len(item_name.split()) > 1:
+            removed = []
+            cogs = [i.strip() for i in item_name.split()]
+            for cog in cogs:
+                if cog in self.db.tracked_cogs:
+                    self.db.tracked_cogs.remove(cog)
+                    removed.append(cog)
+                else:
+                    await ctx.send(f"**{cog}** wasn't being profiled")
+            if removed:
+                await ctx.send(f"**{', '.join(removed)}** are no longer being profiled")
+                await self.rebuild()
+                await self.save()
+                return
+
+            return await ctx.send("No valid cogs were given")
 
         if item_name not in self.db.tracked_cogs:
             if match := _match(self.db.tracked_cogs, item_name):
