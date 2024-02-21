@@ -40,6 +40,8 @@ class Owner(MixinMeta):
         """Run a cleanup of the stats"""
         cleaned = await asyncio.to_thread(self.db.cleanup)
         await ctx.send(f"Cleanup complete, {cleaned} records were removed")
+        if cleaned:
+            await self.save()
 
     @profiler.command(name="settings", aliases=["s"])
     async def view_settings(self, ctx: commands.Context):
