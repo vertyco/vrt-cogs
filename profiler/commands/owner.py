@@ -27,7 +27,7 @@ class Owner(MixinMeta):
             txt = (
                 "## Profiler Tips\n"
                 "- Start by attaching the profiler to a cog using the `attach` command\n"
-                " - Example: `[p]profiler attach cog MyCog`\n"
+                " - Example: `[p]attach cog <cog_name>`\n"
                 "- Identify suspicious methods using the `[p]profiler view` command\n"
                 "- Attach profilers to specific methods to be tracked verbosely using the `attach` command and specifying the method.\n"
                 "- Detach the profiler from the cog and only monitor the necessary methods and save memory overhead.\n"

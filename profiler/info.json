@@ -4,7 +4,7 @@
   "disabled": false,
   "end_user_data_statement": "This cog does not store data about users.",
   "hidden": false,
-  "install_msg": "Thank you for installing!\n\n**DISCLAIMERS**\n- This cog overrides attributes of other cogs when profiling.\n- It is not recommended to profile more than a couple of cogs at a time.\n- If enabling persistent stat saving, make sure to keep globally verbose tracking disabled.\n- It is generally better to verbosely track individual methods rather than everything.\n\nTo get started, attach a profiler to a cog with `[p]profiler attach <cog>`. Then use `[p]profiler view` to view the metrics.",
+  "install_msg": "Thank you for installing!\n\n**DISCLAIMERS**\n- This cog overrides attributes of other cogs when profiling.\n- It is not recommended to profile more than a couple of cogs at a time.\n- If enabling persistent stat saving, make sure to keep globally verbose tracking disabled.\n- It is generally better to verbosely track individual methods rather than everything.\n\nTo get started, attach a profiler to a cog with `[p]attach cog <cog_name>`. Then use `[p]profiler view` to view the metrics.",
   "min_bot_version": "3.5.3",
   "min_python_version": [3, 9, 0],
   "permissions": [],
