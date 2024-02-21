@@ -30,6 +30,7 @@ class StatsProfile(Base):
     func_type: str  # Function type (command, slash, method, task)
     is_coro: bool  # Async if True
     func_profiles: t.Dict[str, FunctionProfile] = {}  # Empty if not verbose
+    exception_thrown: t.Optional[str] = None  # Exception thrown if any
     timestamp: datetime = Field(default_factory=datetime.now)  # Time the profile was recorded
 
 
