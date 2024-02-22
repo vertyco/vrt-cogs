@@ -32,7 +32,7 @@ def get_xp(level: int, base: int, exp: int) -> int:
 def time_to_level(
     level: int,
     base: int,
-    exp: t.t.Union[int, float],
+    exp: t.Union[int, float],
     cooldown: int,
     xp_range: list,
 ) -> int:
@@ -151,7 +151,7 @@ def get_leaderboard(
     stat: str,
     lbtype: str,
     is_global: bool,
-) -> t.t.Union[t.List[discord.Embed], str]:
+) -> t.Union[t.List[discord.Embed], str]:
     if lbtype == "weekly":
         lb = settings["weekly"]["users"]
         title = _("Global Weekly ") if is_global else _("Weekly ")
