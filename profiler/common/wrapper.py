@@ -5,7 +5,6 @@ import logging
 import pstats
 import typing as t
 from dataclasses import asdict
-from datetime import datetime, timedelta
 from time import perf_counter
 
 from ..abc import MixinMeta
@@ -121,16 +120,6 @@ class Wrapper(MixinMeta):
                     func_profiles={},
                     exception_thrown=exception_thrown,
                 )
-
             self.db.stats.setdefault(cog_name, {}).setdefault(key, []).append(stats_profile)
-
-            # Only keep the last delta hours of data
-            min_age = datetime.now() - timedelta(hours=self.db.delta)
-            if cog_name not in self.db.stats:
-                return
-            to_keep = [i for i in self.db.stats[cog_name][key] if i.timestamp > min_age]
-            if cog_name not in self.db.stats:
-                return
-            self.db.stats[cog_name][key] = to_keep
         except Exception as e:
             log.exception(f"Failed to {func_type} stats for the {cog_name} cog", exc_info=e)

@@ -89,13 +89,6 @@ class DB(Base):
                     cleaned += 1
                     continue
 
-                if profiles[0].timestamp < oldest_time:
-                    self.stats[cog_name][method_key] = [p for p in profiles if p.timestamp > oldest_time]
-                    if not self.stats[cog_name][method_key]:
-                        self.stats[cog_name].pop(method_key)
-                    cleaned += 1
-                    continue
-
                 indexes_to_remove = []
                 for idx, profile in enumerate(profiles):
                     if self.verbose and not profile.func_profiles:
@@ -104,11 +97,17 @@ class DB(Base):
                         indexes_to_remove.append(idx)
                     elif cog_name not in self.tracked_cogs and method_key not in self.tracked_methods:
                         indexes_to_remove.append(idx)
+                    elif profile.timestamp < oldest_time:
+                        indexes_to_remove.append(idx)
 
                 if indexes_to_remove:
                     self.stats[cog_name][method_key] = [
                         p for idx, p in enumerate(profiles) if idx not in indexes_to_remove
                     ]
+                    cleaned += 1
+
+                if not self.stats[cog_name][method_key]:
+                    self.stats[cog_name].pop(method_key)
                     cleaned += 1
 
             if not self.stats[cog_name]:
