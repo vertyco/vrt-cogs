@@ -25,7 +25,7 @@ class Profiler(Owner, Profiling, Wrapper, commands.Cog, metaclass=CompositeMetaC
     """
 
     __author__ = "vertyco"
-    __version__ = "1.2.11"
+    __version__ = "1.3.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -127,7 +127,8 @@ class Profiler(Owner, Profiling, Wrapper, commands.Cog, metaclass=CompositeMetaC
     @commands.Cog.listener()
     async def on_cog_add(self, cog: commands.Cog) -> None:
         await asyncio.to_thread(self.map_methods)
-        await self.rebuild()
+        if cog.qualified_name in self.db.tracked_cogs:
+            await asyncio.to_thread(self.attach_cog, cog.qualified_name)
 
     @commands.Cog.listener()
     async def on_cog_remove(self, cog: commands.Cog) -> None:

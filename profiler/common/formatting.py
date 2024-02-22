@@ -16,39 +16,69 @@ def format_method_pages(
     sort_by_delta: bool = False,
 ) -> t.List[str]:
     if threshold:
-        data = [i for i in data if i.func_profiles if (i.total_tt * 1000) >= threshold]
-    else:
-        data = [i for i in data if i.func_profiles]
+        data = [i for i in data if (i.total_tt * 1000) >= threshold]
 
-    if sort_by_delta:
+    if not data:
+        if threshold:
+            return ["No data to display. Come back later or try a lower threshold."]
+        else:
+            return ["No data to display. Come back later."]
+
+    if sort_by_delta and data:
         data.sort(key=lambda i: i.total_tt, reverse=True)
+
+    runtimes = [profile.total_tt for profile in data]
+    max_runtime = max(runtimes)
+    min_runtime = min(runtimes)
+    avg_runtime = statistics.mean(runtimes)
+
+    max_exe = f"{max_runtime:.4f}s" if max_runtime > 1 else f"{max_runtime * 1000:.2f}ms"
+    min_exe = f"{min_runtime:.4f}s" if min_runtime > 1 else f"{min_runtime * 1000:.2f}ms"
+    avg_exe = f"{avg_runtime:.4f}s" if avg_runtime > 1 else f"{avg_runtime * 1000:.2f}ms"
+
+    # Now calculate the calls per minute
+    oldest_profile = min(data, key=lambda i: i.timestamp)
+    timeframe_minutes = (datetime.now() - oldest_profile.timestamp).total_seconds() / 60
+    calls_per_minute = len(data) / timeframe_minutes if timeframe_minutes else 0
+
+    total_calls = len(data)
+    error_count = len([i for i in data if i.exception_thrown])
+
+    base_page = (
+        f"# {method_key}\n"
+        "## Overview\n"
+        f"- Max Runtime: {max_exe}\n"
+        f"- Min Runtime: {min_exe}\n"
+        f"- Avg Runtime: {avg_exe}\n"
+        f"- Calls/Min: {calls_per_minute:.1f}\n"
+        f"- Total Calls: {total_calls}\n"
+        f"- Errors: {error_count}\n"
+    )
 
     warning_sign = "⚠️"
     pages = []
-    for stats in data:
+    for idx, stats in enumerate(data):
         ts = int(stats.timestamp.timestamp())
         exe_time = f"{stats.total_tt:.4f}s"
         if stats.total_tt < 1:
             exe_time = f"{stats.total_tt * 1000:.2f}ms"
-        txt = (
-            f"## {method_key}\n"
-            f"- Execution time: {exe_time}\n"
+
+        page = (
+            f"{base_page}"
+            "### Runtime Instance\n"
+            f"- Time Recorded: <t:{ts}:F> (<t:{ts}:R>)\n"
             f"- Type: {stats.func_type.capitalize()}\n"
             f"- Is Coroutine: {stats.is_coro}\n"
-            f"- Time Recorded: <t:{ts}:F> (<t:{ts}:R>)\n\n"
-            f"Page `{len(pages) + 1}/{len(data)}`"
+            f"- Time: {exe_time}\n"
         )
-        if threshold:
-            txt += f"\nFiltering by threshold: `{threshold:.2f}ms`"
         if stats.exception_thrown:
-            txt += f"\n{warning_sign} **Exception**: `{stats.exception_thrown}`"
-        pages.append(txt)
-
-    if not pages:
+            page += f"- {warning_sign} **Exception**: `{stats.exception_thrown}`\n"
+        page += "\n"
         if threshold:
-            pages.append("No data to display. Come back later or try a lower threshold.")
-        else:
-            pages.append("No data to display. Come back later.")
+            page += f"Filtering by threshold: `{threshold:.2f}ms`\n"
+        page += f"Page `{idx + 1}/{len(data)}`"
+        pages.append(page)
+
     return pages
 
 
@@ -183,7 +213,11 @@ def format_runtime_pages(
             )
 
         # page = f"{box(tabulate(rows, headers=cols), lang='diff')}\n\n"
-        page = f"{tabulate(rows, headers=cols)}\n\n+ Verbose Tracking\n- Exceptions Thrown\n"
+        page = f"{tabulate(rows, headers=cols)}\n\n"
+        if db.verbose:
+            page += "+ Verbose Tracking\n- Has Errors\n"
+        else:
+            page += "+ Tracking\n- Has Errors\n"
         page = box(page, lang="diff")
 
         if db.track_commands:

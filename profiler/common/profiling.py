@@ -22,6 +22,7 @@ class Profiling(MixinMeta):
             True if attached successfully, False otherwise.
         """
         if method_key in self.currently_tracked:
+            log.warning(f"{method_key} method already tracked. Cant track method.")
             return False
         method = self.methods.get(method_key)
         if not method:
@@ -90,8 +91,12 @@ class Profiling(MixinMeta):
         Returns:
             True if attached successfully, False otherwise.
         """
+        if cog_name not in self.db.tracked_cogs:
+            log.warning(f"{cog_name} not in tracked cogs. Cant attach profiler to cog.")
+            return False
         cog: commands.Cog = self.bot.get_cog(cog_name)
         if not cog:
+            log.warning(f"{cog_name} cog not found. Cant attach profiler to cog.")
             return False
 
         attached = False
@@ -99,6 +104,7 @@ class Profiling(MixinMeta):
         if self.db.track_commands:
             for command in cog.walk_commands():
                 if not command.enabled:
+                    log.warning(f"Skipping disabled command {command.qualified_name}")
                     continue
                 key = f"{command.callback.__module__}.{command.callback.__name__}"
                 if key in self.currently_tracked:
@@ -170,7 +176,7 @@ class Profiling(MixinMeta):
                     attr.coro = wrapped_coro
                     self.original_loops.setdefault(cog_name, {})[attr_name] = original_coro
                 else:
-                    key = f"{attr.__module__}.{attr_name}"
+                    key = f"{attr.__module__}.{attr.__name__}"
                     if key in self.currently_tracked or not hasattr(attr, "__name__"):
                         continue
                     wrapped_fn = self.profile_wrapper(attr, cog_name, "method")
@@ -180,6 +186,129 @@ class Profiling(MixinMeta):
                 attached = True
 
         return attached
+
+    def detach_method(self, method_key: str) -> bool:
+        """Detach a profiler from a specific method."""
+        if method_key not in self.currently_tracked:
+            log.warning(f"{method_key} method not currently tracked. Cant detach method.")
+            return False
+        self.map_methods()
+        method = self.methods.get(method_key)
+        if not method:
+            log.warning(f"{method_key} method not found. Cant detach method.")
+            return False
+        cog = self.bot.get_cog(method.cog_name)
+        if not cog:
+            log.warning(f"{method.cog_name} cog not found. Cant detach {method_key} method.")
+            return False
+        if method.func_type == "method":
+            original_method = self.original_methods.get(method.cog_name, {}).get(method_key.split(".")[-1])
+            if not original_method:
+                log.warning(f"{method_key} not found in {method.cog_name}'s original methods.")
+                return False
+            setattr(cog, method_key.split(".")[-1], original_method)
+            self.original_methods[method.cog_name].pop(method_key, None)
+        elif method.func_type in ["command", "hybrid"] and method.command_name:
+            command = self.bot.get_command(method.command_name)
+            if not command:
+                log.warning(f"{method_key} not found in {method.cog_name} cog.")
+                return False
+            original_callback = self.original_callbacks.get(method.cog_name, {}).get(command.qualified_name)
+            if not original_callback:
+                log.warning(f"{method_key} not found in {method.cog_name}'s original callbacks.")
+                return False
+            command.callback = original_callback
+            self.original_callbacks[method.cog_name].pop(command.qualified_name, None)
+        elif method.func_type == "slash":
+            command: app_commands.Command = getattr(cog, method_key.split(".")[-1], None)
+            if not command:
+                log.warning(f"{method_key} not found in {method.cog_name} cog.")
+                return False
+            original_callback = self.original_slash_callbacks.get(method.cog_name, {}).get(command.qualified_name)
+            if not original_callback:
+                log.warning(f"{method_key} not found in {method.cog_name}'s original slash callbacks.")
+                return False
+            setattr(command, "_callback", original_callback)
+            self.original_slash_callbacks[method.cog_name].pop(command.qualified_name, None)
+        elif method.func_type == "task":
+            loop: tasks.Loop = getattr(cog, method_key.split(".")[-1], None)
+            if not loop:
+                log.warning(f"{method_key} not found in {method.cog_name} cog.")
+                return False
+            original_coro = self.original_loops.get(method.cog_name, {}).get(method_key.split(".")[-1])
+            if not original_coro:
+                log.warning(f"{method_key} not found in {method.cog_name}'s original loops.")
+                return False
+            loop.coro = original_coro
+            self.original_loops[method.cog_name].pop(method_key, None)
+        elif method.func_type == "listener":
+            for listener_name, listener_coro in cog.get_listeners():
+                if f"{listener_coro.__module__}.{listener_coro.__name__}" == method_key:
+                    break
+            else:
+                log.warning(f"{method_key} not found in {method.cog_name} cog.")
+                return False
+            coros = self.original_listeners.get(method.cog_name, {}).get(listener_name)
+            if not coros:
+                log.warning(f"{method_key} not found in {method.cog_name}'s original listeners.")
+                return False
+            original_coro, wrapped_coro = coros
+            self.bot.remove_listener(wrapped_coro, name=listener_name)
+            self.bot.add_listener(original_coro, name=listener_name)
+            self.original_listeners[method.cog_name].pop(listener_name, None)
+        else:
+            raise ValueError(f"Invalid method type: {method.func_type}")
+        return True
+
+    def detach_cog(self, cog_name: str) -> bool:
+        """Detach a profiler from the methods of a specified cog."""
+        cog = self.bot.get_cog(cog_name)
+        if not cog:
+            log.warning(f"{cog_name} cog not found. Cant detach profiler from cog.")
+            return False
+        self.map_methods()
+        detached = False
+        # Detach methods
+        if original_methods := self.original_methods.pop(cog_name, None):
+            for method_name, original_method in original_methods.items():
+                setattr(cog, method_name, original_method)
+                log.debug(f"Detaching profiler from method {cog_name}.{method_name}")
+                detached = True
+        # Detach loops
+        if original_loops := self.original_loops.pop(cog_name, None):
+            for loop_name, original_coro in original_loops.items():
+                loop = getattr(cog, loop_name, None)
+                if not loop:
+                    continue
+                loop.coro = original_coro
+                log.debug(f"Detaching profiler from loop {cog_name}.{loop_name}")
+                detached = True
+        # Detach commands
+        if original_callbacks := self.original_callbacks.pop(cog_name, None):
+            for command_name, original_callback in original_callbacks.items():
+                command = self.bot.get_command(command_name)
+                if not command:
+                    continue
+                command.callback = original_callback
+                log.debug(f"Detaching profiler from command {cog_name}.{command_name}")
+                detached = True
+        # Detach app commands
+        if original_slash_callbacks := self.original_slash_callbacks.pop(cog_name, None):
+            for command_name, original_callback in original_slash_callbacks.items():
+                for command in cog.walk_app_commands():
+                    if command.qualified_name != command_name:
+                        continue
+                    setattr(command, "_callback", original_callback)
+                log.debug(f"Detaching profiler from slash command {cog_name}.{command_name}")
+                detached = True
+        # Detach listeners
+        if original_listeners := self.original_listeners.pop(cog_name, None):
+            for listener_name, (original_coro, wrapped_coro) in original_listeners.items():
+                self.bot.remove_listener(wrapped_coro, name=listener_name)
+                self.bot.add_listener(original_coro, name=listener_name)
+                log.debug(f"Detaching profiler from listener {cog_name}.{listener_name}")
+                detached = True
+        return detached
 
     def detach_profilers(self) -> None:
         """Detach profilers from all methods, commands, tasks, and listeners."""
