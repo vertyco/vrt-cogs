@@ -25,7 +25,7 @@ class Profiler(Owner, Profiling, Wrapper, commands.Cog, metaclass=CompositeMetaC
     """
 
     __author__ = "vertyco"
-    __version__ = "1.2.9"
+    __version__ = "1.2.10"
 
     def __init__(self, bot: Red):
         super().__init__()
