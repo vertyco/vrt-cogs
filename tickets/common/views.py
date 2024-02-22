@@ -329,7 +329,10 @@ class SupportButton(Button):
                 form_embed.set_author(name=title)
 
             m = TicketModal(panel_title, modal)
-            await interaction.response.send_modal(m)
+            try:
+                await interaction.response.send_modal(m)
+            except discord.NotFound:
+                return
             await m.wait()
 
             if not m.fields:
