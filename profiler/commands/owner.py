@@ -18,6 +18,32 @@ from ..views.profile_menu import ProfileMenu
 log = logging.getLogger("red.vrt.profiler.commands")
 
 
+def deep_getsizeof(obj: t.Any, seen: t.Optional[set] = None) -> int:
+    if seen is None:
+        seen = set()
+    if id(obj) in seen:
+        return 0
+    # Mark object as seen
+    seen.add(id(obj))
+
+    size = sys.getsizeof(obj)
+
+    if isinstance(obj, dict):
+        # If the object is a dictionary, recursively add the size of keys and values
+        size += sum([deep_getsizeof(k, seen) + deep_getsizeof(v, seen) for k, v in obj.items()])
+    elif hasattr(obj, "__dict__"):
+        # If the object has a __dict__, it's likely an object. Find size of its dictionary
+        size += deep_getsizeof(obj.__dict__, seen)
+    elif hasattr(obj, "__iter__") and not isinstance(obj, (str, bytes, bytearray)):
+        # If the object is an iterable (not a string or bytes), iterate through its items
+        size += sum([deep_getsizeof(i, seen) for i in obj])
+    elif hasattr(obj, "model_dump"):
+        # If the object is a pydantic model, get the size of its dictionary
+        size += deep_getsizeof(obj.model_dump(), seen)
+
+    return size
+
+
 class Owner(MixinMeta):
     @commands.group()
     @commands.is_owner()
@@ -34,14 +60,6 @@ class Owner(MixinMeta):
                 "- Add a threshold using the `threshold` command to only record entries that exceed a certain execution time in ms\n"
             )
             await ctx.send(txt)
-
-    @profiler.command(name="cleanup")
-    async def run_cleanup(self, ctx: commands.Context):
-        """Run a cleanup of the stats"""
-        cleaned = await asyncio.to_thread(self.db.cleanup)
-        await ctx.send(f"Cleanup complete, {cleaned} records were removed")
-        if cleaned:
-            await self.save()
 
     @profiler.command(name="settings", aliases=["s"])
     async def view_settings(self, ctx: commands.Context):
@@ -61,7 +79,8 @@ class Owner(MixinMeta):
 
         txt += f"\n- Data retention is set to **{self.db.delta} {'hour' if self.db.delta == 1 else 'hours'}**"
 
-        mem_usage = humanize_size(sys.getsizeof(self.db.stats))
+        mem_size_raw = await asyncio.to_thread(deep_getsizeof, self.db.stats)
+        mem_usage = humanize_size(mem_size_raw)
         txt += f"\n- Config Size: **{mem_usage}**"
 
         records = 0
@@ -92,6 +111,14 @@ class Owner(MixinMeta):
         txt += f"{joined}\n"
 
         await ctx.send(txt)
+
+    @profiler.command(name="cleanup", aliases=["c"])
+    async def run_cleanup(self, ctx: commands.Context):
+        """Run a cleanup of the stats"""
+        cleaned = await asyncio.to_thread(self.db.cleanup)
+        await ctx.send(f"Cleanup complete, {cleaned} records were removed")
+        if cleaned:
+            await self.save()
 
     @profiler.command(name="save")
     async def save_toggle(self, ctx: commands.Context):
