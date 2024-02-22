@@ -117,9 +117,11 @@ class ProfileMenu(discord.ui.View):
 
         self.page %= len(self.pages)
 
-        if self.inspecting and self.tables:
-            file = text_to_file(self.tables[self.page], filename="profile.txt")
-            files = [file]
+        if self.inspecting:
+            files = []
+            if self.tables:
+                file = text_to_file(self.tables[self.page], filename="profile.txt")
+                files.append(file)
             if self.plot:
                 file = discord.File(BytesIO(self.plot), filename="plot.png")
                 files.append(file)
@@ -228,10 +230,6 @@ class ProfileMenu(discord.ui.View):
         else:
             return await interaction.followup.send("No method found with that key", ephemeral=True)
 
-        if not self.db.verbose:
-            if not any(i.func_profiles for i in method_stats):
-                return await interaction.followup.send("This method isn't being profiled verbosely", ephemeral=True)
-
         self.inspecting = modal.query
         self.pages = await asyncio.to_thread(format_method_pages, modal.query, method_stats)
         self.tables = await asyncio.to_thread(format_method_tables, method_stats)
@@ -292,16 +290,17 @@ class ProfileMenu(discord.ui.View):
 
         if self.cog.bot.get_cog(query):
             self.db.tracked_cogs.append(query)
+            await asyncio.to_thread(self.cog.attach_cog, query)
             await interaction.followup.send(f"Cog `{query}` is now being tracked", ephemeral=True)
-            await self.cog.rebuild()
             self.pages = await asyncio.to_thread(format_runtime_pages, self.db, self.sorting_by, self.query)
             await self.update()
             await self.cog.save()
             return
+
         if query in self.cog.methods or query in self.db.get_methods():
             self.db.tracked_methods.append(query)
-            await interaction.followup.send(f"Method `{query}` is now being tracked verbosely", ephemeral=True)
-            await self.cog.rebuild()
+            await interaction.followup.send(f"Method `{query}` is now being tracked", ephemeral=True)
+            await asyncio.to_thread(self.cog.attach_method, query)
             self.pages = await asyncio.to_thread(format_runtime_pages, self.db, self.sorting_by, self.query)
             await self.update()
             await self.cog.save()
@@ -322,18 +321,42 @@ class ProfileMenu(discord.ui.View):
         query = modal.query.strip()
         if query in self.db.tracked_cogs:
             self.db.tracked_cogs.remove(query)
-            await interaction.followup.send(f"Cog `{query}` is no longer being tracked", ephemeral=True)
+            detached = await asyncio.to_thread(self.cog.detach_cog, query)
+            if not detached:
+                return await interaction.followup.send(
+                    f"Failed to detach `{query}`, is it still loaded?", ephemeral=True
+                )
+
             self.db.stats.pop(query, None)
-            await self.cog.rebuild()
+            cleaned = await asyncio.to_thread(self.db.cleanup)
+            if cleaned:
+                await interaction.followup.send(
+                    f"Cog `{query}` is no longer being tracked, cleaned `{cleaned}` objects.", ephemeral=True
+                )
+            else:
+                await interaction.followup.send(f"Cog `{query}` is no longer being tracked", ephemeral=True)
+
             self.pages = await asyncio.to_thread(format_runtime_pages, self.db, self.sorting_by, self.query)
             await self.update()
             await self.cog.save()
             return
+
         if query in self.db.tracked_methods:
             self.db.tracked_methods.remove(query)
-            await interaction.followup.send(f"Method `{query}` is no longer being tracked verbosely", ephemeral=True)
+            detached = await asyncio.to_thread(self.cog.detach_method, query)
+            if not detached:
+                return await interaction.followup.send(
+                    f"Failed to detach `{query}`, is the cog it belongs to still loaded?", ephemeral=True
+                )
             self.db.discard_method(query)
-            await self.cog.rebuild()
+            cleaned = await asyncio.to_thread(self.db.cleanup)
+            if cleaned:
+                await interaction.followup.send(
+                    f"Method `{query}` is no longer being tracked, cleaned `{cleaned}` objects.", ephemeral=True
+                )
+            else:
+                await interaction.followup.send(f"Method `{query}` is no longer being tracked", ephemeral=True)
+
             self.pages = await asyncio.to_thread(format_runtime_pages, self.db, self.sorting_by, self.query)
             await self.update()
             await self.cog.save()

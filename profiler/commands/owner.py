@@ -52,63 +52,63 @@ class Owner(MixinMeta):
         if ctx.invoked_subcommand is None:
             txt = (
                 "## Profiler Tips\n"
-                "- Start by attaching the profiler to a cog using the `attach` command\n"
-                " - Example: `[p]attach cog <cog_name>`\n"
-                "- Identify suspicious methods using the `[p]profiler view` command\n"
-                "- Attach profilers to specific methods to be tracked verbosely using the `attach` command and specifying the method.\n"
+                "- Start by attaching the profiler to a cog using the `attach` command.\n"
+                f" - Example: `{ctx.clean_prefix}attach cog <cog_name>`.\n"
+                f"- Identify suspicious methods using the `{ctx.clean_prefix}profiler view` command.\n"
+                f"- Attach profilers to specific methods to be tracked verbosely using the `{ctx.clean_prefix}attach` command.\n"
+                f" - Attaching to a cog: `{ctx.clean_prefix}attach cog <cog_name>`.\n"
+                f" - Attaching to a method: `{ctx.clean_prefix}attach method <method_key>`.\n"
                 "- Detach the profiler from the cog and only monitor the necessary methods and save memory overhead.\n"
-                "- Add a threshold using the `threshold` command to only record entries that exceed a certain execution time in ms\n"
+                "- Add a threshold using the `threshold` command to only record entries that exceed a certain execution time in ms.\n"
+                f"- To enable more verbose profiling of tracked methods, use the `{ctx.clean_prefix}profiler verbose` command.\n"
             )
             await ctx.send(txt)
 
     @profiler.command(name="settings", aliases=["s"])
+    @commands.bot_has_permissions(embed_links=True)
     async def view_settings(self, ctx: commands.Context):
         """
         View the current profiler settings
         """
-        txt = "# Profiler Settings"
-        if self.db.save_stats:
-            txt += "\n- Persistent Storage: Profiling metrics are **Saved**"
-        else:
-            txt += "\n- Persistent Storage: Profiling metrics are **Not Saved**"
+        txt = "# Profiler Settings\n"
+        # PERSISTENT STORAGE
+        txt += f"- Persistent Storage: Profiling metrics are **{'Saved' if self.db.save_stats else 'Not Saved'}**\n"
 
-        if self.db.verbose:
-            txt += f"\n- Globally verbose stat metrics are **Enabled**, you can use the `Inspect` button in the `{ctx.clean_prefix}profiler view` menu to view detailed stats"
-        else:
-            txt += "\n- Globally verbose stat metrics are **Disabled**, the `Inspect` button in the menu will only be available for methods being tracked verbosely"
+        # DATA RETENTION
+        txt += f" Data retention is set to **{self.db.delta} {'hour' if self.db.delta == 1 else 'hours'}**\n"
 
-        txt += f"\n- Data retention is set to **{self.db.delta} {'hour' if self.db.delta == 1 else 'hours'}**"
-
+        # CONFIG SIZE
         mem_size_raw = await asyncio.to_thread(deep_getsizeof, self.db.stats)
         mem_usage = humanize_size(mem_size_raw)
-        txt += f"\n- Config Size: **{mem_usage}**"
+        txt += f"- Config Size: `{mem_usage}`\n"
 
+        # TRACKING COUNTS
         records = 0
         monitoring = 0
         for methods in self.db.stats.values():
             monitoring += len(methods)
             for statprofiles in methods.values():
                 records += len(statprofiles)
+        txt += f"- Monitoring: `{humanize_number(monitoring)}` methods (`{humanize_number(records)}` Records)\n"
 
-        txt += f"\n- Monitoring: **{humanize_number(monitoring)}** methods (`{humanize_number(records)}` Records)"
-
+        # TRACKED COGS
+        y = "**Included**"
+        n = "**Not Included**"
         joined = ", ".join([f"`{i}`" for i in self.db.tracked_cogs]) if self.db.tracked_cogs else "`None`"
-        txt += f"\n## General Profiling:\nThe following cogs are being profiled: {joined}\n"
-
+        txt += "## Tracked Cogs:\n"
         txt += (
-            f"**Tracking:**\nApplies to the cogs above that are being profiled without specific methods targeted.\n"
-            f"- Methods: **{self.db.track_methods}**\n"
-            f"- Commands: **{self.db.track_commands}**\n"
-            f"- Listeners: **{self.db.track_listeners}**\n"
-            f"- Tasks: **{self.db.track_tasks}**\n"
+            f"- Methods are {y if self.db.track_methods else n}\n"
+            f"- Commands are {y if self.db.track_commands else n}\n"
+            f"- Listeners are {y if self.db.track_listeners else n}\n"
+            f"- Tasks are {y if self.db.track_tasks else n}\n"
         )
+        txt += f"The following cogs are being profiled: {joined}\n"
 
+        # TRACKED METHODS
         joined = ", ".join([f"`{i}`" for i in self.db.tracked_methods]) if self.db.tracked_methods else "`None`"
-        txt += (
-            "## Fine Grain Profiling:\nMethods that are being profiled verbosely and independently of the cogs above.\n"
-        )
-        txt += f"The current threshold for tracking is `{self.db.tracked_threshold}ms` so only runtimes above this will be stored.\n"
-        txt += f"{joined}\n"
+        txt += f"## Tracked Methods:\n- Verbose profiling of tracked methods is **{'Enabled' if self.db.verbose else 'Disabled'}**\n"
+        txt += f"- All methods with a runtime greater than **{self.db.tracked_threshold}ms** are being recorded\n"
+        txt += f"The following methods are being tracked: {joined}\n"
 
         await ctx.send(txt)
 
@@ -131,12 +131,12 @@ class Owner(MixinMeta):
         await self.save()
         await ctx.send(f"Saving of metrics is now **{self.db.save_stats}**")
 
-    @profiler.command(name="globalverbose")
-    async def verbose_global_toggle(self, ctx: commands.Context):
+    @profiler.command(name="verbose")
+    async def verbose_toggle(self, ctx: commands.Context):
         """
-        Toggle verbose stats for all methods
+        Toggle verbose stats for methods on the watchlist
 
-        **WARNING**: Enabling this will increase memory usage significantly
+        **WARNING**: Enabling this will increase memory usage significantly if there are a lot of watched methods
         """
         self.db.verbose = not self.db.verbose
         cleaned = await asyncio.to_thread(self.db.cleanup)
@@ -145,8 +145,8 @@ class Owner(MixinMeta):
         if self.db.verbose:
             txt = (
                 "Verbose stats are now **Enabled**\n"
-                "**Warning**: This will increase memory usage significantly\n"
-                f"Use `{ctx.clean_prefix}profiler verbose add/remove` to add/remove specific methods to/from verbose tracking"
+                "**Warning**: This will increase memory usage!\n"
+                f"Methods attached to a profiler via `{ctx.clean_prefix}attach method <method_key>` will be profiled verbosely\n"
             )
             await ctx.send(txt)
         else:
@@ -231,8 +231,8 @@ class Owner(MixinMeta):
                 return await ctx.send(f"**{item_name}** is already being profiled")
             elif self.attach_method(item_name):
                 self.db.tracked_methods.append(item_name)
+                self.attach_method(item_name)
                 await ctx.send(f"**{item_name}** is now being profiled")
-                await self.rebuild()
                 await self.save()
                 return
             if match := _match(self.methods.keys(), item_name):
@@ -243,10 +243,11 @@ class Owner(MixinMeta):
             for cog in self.bot.cogs:
                 if cog not in self.db.tracked_cogs:
                     self.db.tracked_cogs.append(cog)
+                    self.attach_cog(cog)
             await ctx.send("All cogs are now being profiled")
-            await self.rebuild()
             await self.save()
             return
+
         elif len(item_name.split()) > 1:
             added = []
             cogs = [i.strip() for i in item_name.split()]
@@ -257,10 +258,10 @@ class Owner(MixinMeta):
                 if cog not in self.db.tracked_cogs:
                     self.db.tracked_cogs.append(cog)
                     added.append(cog)
+                    self.attach_cog(cog)
 
             if added:
                 await ctx.send(f"**{', '.join(added)}** are now being profiled")
-                await self.rebuild()
                 await self.save()
                 return
 
@@ -271,7 +272,7 @@ class Owner(MixinMeta):
         if self.bot.get_cog(item_name):
             self.db.tracked_cogs.append(item_name)
             await ctx.send(f"**{item_name}** is now being profiled")
-            await self.rebuild()
+            await self.attach_cog(item_name)
             await self.save()
             return
         if match := _match(self.bot.cogs, item_name):
@@ -306,7 +307,7 @@ class Owner(MixinMeta):
                     return await ctx.send(f"**{item_name}** wasn't being profiled, did you mean **{match}**?")
                 return await ctx.send(f"**{item_name}** wasn't being profiled")
             self.db.tracked_methods.remove(item_name)
-            await self.rebuild()
+            self.detach_method(item_name)
             await self.save()
             return await ctx.send(f"**{item_name}** is no longer being profiled")
 
@@ -321,14 +322,14 @@ class Owner(MixinMeta):
             removed = []
             cogs = [i.strip() for i in item_name.split()]
             for cog in cogs:
-                if cog in self.db.tracked_cogs:
+                if cog in self.db.tracked_cogs.copy():
                     self.db.tracked_cogs.remove(cog)
                     removed.append(cog)
+                    self.detach_cog(cog)
                 else:
                     await ctx.send(f"**{cog}** wasn't being profiled")
             if removed:
                 await ctx.send(f"**{', '.join(removed)}** are no longer being profiled")
-                await self.rebuild()
                 await self.save()
                 return
 
@@ -338,9 +339,10 @@ class Owner(MixinMeta):
             if match := _match(self.db.tracked_cogs, item_name):
                 return await ctx.send(f"**{item_name}** wasn't being profiled, did you mean **{match}**?")
             return await ctx.send(f"**{item_name}** wasn't being profiled")
+
         self.db.tracked_cogs.remove(item_name)
+        self.detach_cog(item_name)
         await ctx.send(f"**{item_name}** is no longer being profiled")
-        await self.rebuild()
         await self.save()
 
     @profile_an_item.autocomplete("item")

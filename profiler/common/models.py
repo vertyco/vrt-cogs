@@ -46,11 +46,9 @@ class DB(Base):
     track_tasks: bool = True  # Track task execution time
 
     # For tracking specific methods independent of the watched cogs
-    tracked_methods: t.List[str] = []  # List of specific methods to track verbosely
+    tracked_methods: t.List[str] = []  # List of specific methods to track
+    verbose: bool = False  # If true, tracked_methods will be profiled verbosely
     tracked_threshold: float = 0.0  # Minimum execution delta to record a profile of tracked methods
-
-    # For both tracked_cogs and tracked_methods
-    verbose: bool = False  # If true, ALL recorded methods calls will be verbosely profiled
 
     # {cog_name: {method_key: [StatsProfile]}}
     stats: t.Dict[str, t.Dict[str, t.List[StatsProfile]]] = {}
@@ -73,11 +71,6 @@ class DB(Base):
         for cog_name in keys:
             methods = self.stats[cog_name].copy()
             for method_key, profiles in methods.items():
-                if not self.stats[cog_name][method_key]:
-                    self.stats[cog_name].pop(method_key)
-                    cleaned += 1
-                    continue
-
                 invalid = [
                     profiles[0].func_type in ["command", "hybrid", "slash"] and not self.track_commands,
                     profiles[0].func_type == "listener" and not self.track_listeners,
@@ -91,9 +84,7 @@ class DB(Base):
 
                 indexes_to_remove = []
                 for idx, profile in enumerate(profiles):
-                    if self.verbose and not profile.func_profiles:
-                        indexes_to_remove.append(idx)
-                    elif method_key in self.tracked_methods and (profile.total_tt * 1000) < self.tracked_threshold:
+                    if method_key in self.tracked_methods and (profile.total_tt * 1000) < self.tracked_threshold:
                         indexes_to_remove.append(idx)
                     elif cog_name not in self.tracked_cogs and method_key not in self.tracked_methods:
                         indexes_to_remove.append(idx)

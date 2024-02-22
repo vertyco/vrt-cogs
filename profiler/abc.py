@@ -37,7 +37,7 @@ class MixinMeta(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def rebuild(self) -> None:
+    async def rebuild(self) -> None:
         raise NotImplementedError
 
     # -------------- profiler.common.profiling --------------
@@ -47,6 +47,14 @@ class MixinMeta(metaclass=ABCMeta):
 
     @abstractmethod
     def attach_cog(self, cog_name: str) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
+    def detach_method(self, method_key: str) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
+    def detach_cog(self, cog_name: str) -> bool:
         raise NotImplementedError
 
     @abstractmethod
