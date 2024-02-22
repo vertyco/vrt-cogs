@@ -19,28 +19,39 @@ class Wrapper(MixinMeta):
         key = f"{func.__module__}.{func.__name__}"
         if key in self.currently_tracked:
             raise ValueError(f"{key} is already being profiled")
+
         self.currently_tracked.add(key)
         log.debug(f"Attaching profiler to {func_type.upper()}: {key}")
 
         if asyncio.iscoroutinefunction(func):
 
             async def async_wrapper(*args, **kwargs):
-                try:
-                    exc = None
-                    if self.db.verbose or key in self.db.tracked_methods:
-                        with cProfile.Profile() as profile:
-                            retval = await func(*args, **kwargs)
-                    else:
-                        start = perf_counter()
-                        retval = await func(*args, **kwargs)
-                        profile = perf_counter() - start
-                except Exception as e:
-                    exc = str(e)
-                    raise e
-                finally:
-                    await asyncio.to_thread(self.add_stats, func, profile, cog_name, func_type, exc)
+                exception = None
 
-                return retval
+                if self.db.verbose or key in self.db.tracked_methods:
+                    profile = cProfile.Profile()
+                    profile.enable()
+                    try:
+                        retval = await func(*args, **kwargs)
+                        return retval
+                    except Exception as exc:
+                        exception = str(exc)
+                        raise exc
+                    finally:
+                        profile.disable()
+                        await asyncio.to_thread(self.add_stats, func, profile, cog_name, func_type, exception)
+
+                else:
+                    start = perf_counter()
+                    try:
+                        retval = await func(*args, **kwargs)
+                        return retval
+                    except Exception as exc:
+                        exception = str(exc)
+                        raise exc
+                    finally:
+                        delta = perf_counter() - start
+                        await asyncio.to_thread(self.add_stats, func, delta, cog_name, func_type, exception)
 
             # Preserve the signature of the original function
             functools.update_wrapper(async_wrapper, func)
@@ -49,22 +60,32 @@ class Wrapper(MixinMeta):
         else:
 
             def sync_wrapper(*args, **kwargs):
-                try:
-                    exc = None
-                    if self.db.verbose or key in self.db.tracked_methods:
-                        with cProfile.Profile() as profile:
-                            retval = func(*args, **kwargs)
-                    else:
-                        start = perf_counter()
-                        retval = func(*args, **kwargs)
-                        profile = perf_counter() - start
-                except Exception as e:
-                    exc = str(e)
-                    raise e
-                finally:
-                    self.add_stats(func, profile, cog_name, func_type, exc)
+                exception = None
 
-                return retval
+                if self.db.verbose or key in self.db.tracked_methods:
+                    profile = cProfile.Profile()
+                    profile.enable()
+                    try:
+                        retval = func(*args, **kwargs)
+                        return retval
+                    except Exception as exc:
+                        exception = str(exc)
+                        raise exc
+                    finally:
+                        profile.disable()
+                        self.add_stats(func, profile, cog_name, func_type, exception)
+
+                else:
+                    start = perf_counter()
+                    try:
+                        retval = func(*args, **kwargs)
+                        return retval
+                    except Exception as exc:
+                        exception = str(exc)
+                        raise exc
+                    finally:
+                        delta = perf_counter() - start
+                        self.add_stats(func, delta, cog_name, func_type, exception)
 
             # Preserve the signature of the original function
             functools.update_wrapper(sync_wrapper, func)
@@ -89,7 +110,7 @@ class Wrapper(MixinMeta):
                         **stats,
                         "func_type": func_type,
                         "is_coro": asyncio.iscoroutinefunction(func),
-                        "exception_thrown": exception_thrown,
+                        "exception_thrown": str(exception_thrown),
                     }
                 )
             else:
@@ -98,7 +119,7 @@ class Wrapper(MixinMeta):
                     func_type=func_type,
                     is_coro=asyncio.iscoroutinefunction(func),
                     func_profiles={},
-                    exception_thrown=exception_thrown,
+                    exception_thrown=str(exception_thrown),
                 )
 
             self.db.stats.setdefault(cog_name, {}).setdefault(key, []).append(stats_profile)
