@@ -25,7 +25,7 @@ class Profiler(Owner, Profiling, Wrapper, commands.Cog, metaclass=CompositeMetaC
     """
 
     __author__ = "vertyco"
-    __version__ = "1.2.10"
+    __version__ = "1.2.11"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -107,6 +107,7 @@ class Profiler(Owner, Profiling, Wrapper, commands.Cog, metaclass=CompositeMetaC
 
     @tasks.loop(seconds=60)
     async def save_loop(self) -> None:
+        await asyncio.to_thread(self.db.cleanup)
         if not self.db.save_stats:
             return
         await self.save()
