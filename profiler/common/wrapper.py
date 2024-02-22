@@ -110,7 +110,7 @@ class Wrapper(MixinMeta):
                         **stats,
                         "func_type": func_type,
                         "is_coro": asyncio.iscoroutinefunction(func),
-                        "exception_thrown": str(exception_thrown),
+                        "exception_thrown": exception_thrown,
                     }
                 )
             else:
@@ -119,7 +119,7 @@ class Wrapper(MixinMeta):
                     func_type=func_type,
                     is_coro=asyncio.iscoroutinefunction(func),
                     func_profiles={},
-                    exception_thrown=str(exception_thrown),
+                    exception_thrown=exception_thrown,
                 )
 
             self.db.stats.setdefault(cog_name, {}).setdefault(key, []).append(stats_profile)
