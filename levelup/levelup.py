@@ -5,7 +5,6 @@ import logging
 import math
 import random
 import re
-import sys
 from datetime import datetime
 from io import BytesIO
 from time import perf_counter
@@ -35,6 +34,7 @@ from tenacity import (
 )
 
 from levelup.utils.formatter import (
+    deep_getsizeof,
     get_attachments,
     get_content_from_url,
     get_level,
@@ -81,7 +81,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "vertyco"
-    __version__ = "3.12.8"
+    __version__ = "3.12.9"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1359,7 +1359,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             self.stars.copy(),
             self.profiles.copy(),
         ]
-        cachesize = self.get_size(sum(sys.getsizeof(i) for i in cache))
+        cachesize = await asyncio.to_thread(deep_getsizeof, cache)
         ct = self.cache_seconds
         em = discord.Embed(description=_("Cog Stats"), color=ctx.author.color)
 

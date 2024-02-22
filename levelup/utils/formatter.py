@@ -1,9 +1,10 @@
 import logging
 import math
 import random
+import sys
+import typing as t
 from datetime import datetime, timedelta
 from io import StringIO
-from typing import List, Union
 
 import discord
 from aiocache import cached
@@ -31,7 +32,7 @@ def get_xp(level: int, base: int, exp: int) -> int:
 def time_to_level(
     level: int,
     base: int,
-    exp: Union[int, float],
+    exp: t.t.Union[int, float],
     cooldown: int,
     xp_range: list,
 ) -> int:
@@ -129,7 +130,7 @@ def get_next_reset(weekday: int, hour: int):
     return int(reset.replace(hour=hour, minute=0, second=0).timestamp())
 
 
-def get_attachments(ctx) -> List[discord.Attachment]:
+def get_attachments(ctx) -> t.List[discord.Attachment]:
     """Get all attachments from context"""
     content = []
     if ctx.message.attachments:
@@ -150,7 +151,7 @@ def get_leaderboard(
     stat: str,
     lbtype: str,
     is_global: bool,
-) -> Union[List[discord.Embed], str]:
+) -> t.t.Union[t.List[discord.Embed], str]:
     if lbtype == "weekly":
         lb = settings["weekly"]["users"]
         title = _("Global Weekly ") if is_global else _("Weekly ")
@@ -298,6 +299,7 @@ async def get_user_position(conf: dict, user_id: str) -> dict:
     leaderboard = {}
     total_xp = 0
     user_xp = 0
+    pos_data = {"p": 0, "pr": 0}
     for user, data in conf["users"].items():
         xp = int(data["xp"])
         prestige = int(data["prestige"])
@@ -318,3 +320,30 @@ async def get_user_position(conf: dict, user_id: str) -> dict:
             pos = sorted_users.index(i) + 1
             pos_data = {"p": pos, "pr": percent}
             return pos_data
+    return pos_data
+
+
+def deep_getsizeof(obj: t.Any, seen: t.Optional[set] = None) -> int:
+    if seen is None:
+        seen = set()
+    if id(obj) in seen:
+        return 0
+    # Mark object as seen
+    seen.add(id(obj))
+
+    size = sys.getsizeof(obj)
+
+    if isinstance(obj, dict):
+        # If the object is a dictionary, recursively add the size of keys and values
+        size += sum([deep_getsizeof(k, seen) + deep_getsizeof(v, seen) for k, v in obj.items()])
+    elif hasattr(obj, "__dict__"):
+        # If the object has a __dict__, it's likely an object. Find size of its dictionary
+        size += deep_getsizeof(obj.__dict__, seen)
+    elif hasattr(obj, "__iter__") and not isinstance(obj, (str, bytes, bytearray)):
+        # If the object is an iterable (not a string or bytes), iterate through its items
+        size += sum([deep_getsizeof(i, seen) for i in obj])
+    elif hasattr(obj, "model_dump"):
+        # If the object is a pydantic model, get the size of its dictionary
+        size += deep_getsizeof(obj.model_dump(), seen)
+
+    return size
