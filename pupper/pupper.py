@@ -1,6 +1,8 @@
 import asyncio
 import logging
 import random
+import typing as t
+from contextlib import suppress
 from datetime import datetime
 
 import discord
@@ -16,7 +18,7 @@ class Pupper(commands.Cog):
     """Pet the doggo!"""
 
     __author__ = "vertyco"
-    __version__ = "1.0.2"
+    __version__ = "1.1.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -36,7 +38,6 @@ class Pupper(commands.Cog):
         super().__init__(*args, **kwargs)
         self.bot = bot
         self.config = Config.get_conf(self, 2767241393, force_registration=True)
-        self.pets = {}
 
         default_guild = {
             "borf_msg": "borf! (thank for pats h00man, have a doggocoin)",
@@ -48,46 +49,39 @@ class Pupper(commands.Cog):
             "toggle": False,
             "delete_after": 10,
         }
-
         self.config.register_guild(**default_guild)
 
-        self.cache = {}
+        # Active petting locks {guild_id: bool}
+        self.pets: t.Dict[int, bool] = {}
+        # Config cache {guild_id: {config_data}}
+        self.cache: t.Dict[int, t.Dict[str, t.Any]] = {}
 
-    async def initialize(self, target: discord.Guild = None):
-        if target:
-            data = await self.config.guild(target).all()
+    async def init_guild(self, guild: discord.Guild) -> bool:
+        if guild.id in self.cache:
+            return False
+        data = await self.config.guild(guild).all()
+        # Some cleanup for new schema, using timestamps not isoformat
+        if isinstance(data["last_pet"], str):
+            data["last_pat"] = 0
+        self.cache[guild.id] = data
+        self.pets[guild.id] = False
+        log.debug(f"Initialized guild {guild.name}")
+        return True
 
-            # Some cleanup for new schema, using timestamps not isoformat
-            if isinstance(data["last_pet"], str):
-                await self.config.guild(target).last_pet.set(0)
-                data["last_pat"] = 0
-
-            self.cache[target.id] = data
-            self.pets[target.id] = False
-            return
-
-        configs = await self.config.all_guilds()
-        for gid, data in configs.items():
-            guild = self.bot.get_guild(gid)
-            if not guild:
-                continue
-
-            # Some cleanup for new schema, using timestamps not isoformat
-            if isinstance(data["last_pet"], str):
-                await self.config.guild(guild).last_pet.set(0)
-                data["last_pat"] = 0
-
-            self.cache[gid] = data
-            self.pets[gid] = False
+    async def save_guild(self, guild: discord.Guild) -> bool:
+        if guild.id not in self.cache:
+            return False
+        await self.config.guild(guild).set(self.cache[guild.id])
+        log.debug(f"Saved guild {guild.name}")
+        return True
 
     @commands.guild_only()
     @checks.mod_or_permissions(administrator=True)
     @commands.group(name="pets", aliases=["pupper"])
     async def petscmd(self, ctx):
         """Manage your pet."""
+        await self.init_guild(ctx.guild)
         if ctx.invoked_subcommand is None:
-            if ctx.guild.id not in self.cache:
-                await self.initialize(ctx.guild)
             guild_data = self.cache[ctx.guild.id]
             if not guild_data["channel"]:
                 channel_names = ["No channels set."]
@@ -100,8 +94,8 @@ class Pupper(commands.Cog):
 
             last_pet = guild_data["last_pet"]
             if isinstance(last_pet, str):
-                await self.config.guild(ctx.guild).last_pet.set(0)
-                await self.initialize(ctx.guild)
+                self.cache[ctx.guild.id]["last_pet"] = 0
+                await self.save_guild(ctx.guild)
 
             space = "\N{EN SPACE}"
             toggle = "Active" if guild_data["toggle"] else "Inactive"
@@ -123,10 +117,11 @@ class Pupper(commands.Cog):
     @petscmd.command()
     async def toggle(self, ctx):
         """Toggle pets on the server."""
-        toggle = await self.config.guild(ctx.guild).toggle()
-        await self.config.guild(ctx.guild).toggle.set(not toggle)
-        await ctx.send(f"The pet is now {'' if not toggle else 'in'}active.")
-        await self.initialize(ctx.guild)
+        await self.init_guild(ctx.guild)
+        on = self.cache[ctx.guild.id]["toggle"]
+        self.cache[ctx.guild.id]["toggle"] = not on
+        await ctx.send(f"The pet is now {'active' if not on else 'inactive'}.")
+        await self.save_guild(ctx.guild)
 
     @petscmd.command()
     async def delete(self, ctx, amount: int = 0):
@@ -136,6 +131,7 @@ class Pupper(commands.Cog):
         10 is the default.
         Max is 5 minutes (300).
         """
+        await self.init_guild(ctx.guild)
 
         if amount < 0:
             return await ctx.send("Use a positive number.")
@@ -145,39 +141,46 @@ class Pupper(commands.Cog):
             return await ctx.send("Use a smaller number, less than or equal to 300.")
 
         set_amount = None if amount == 0 else amount
-        await self.config.guild(ctx.guild).delete_after.set(set_amount)
         msg = f"Timer set to {amount}." if set_amount else "Delete timer has been turned off."
+        self.cache[ctx.guild.id]["delete_after"] = set_amount
         await ctx.send(msg)
-        await self.initialize(ctx.guild)
+        await self.save_guild(ctx.guild)
 
     @petscmd.command()
     async def cooldown(self, ctx, seconds: int = None):
-        """Set the pet appearance cooldown in seconds.
+        """
+        Set the pet appearance cooldown in seconds.
 
-        300s/5 minute minimum. Default is 3600s/1 hour."""
+        300s/5 minute minimum. Default is 3600s/1 hour.
+        """
+        await self.init_guild(ctx.guild)
 
         if not seconds:
             seconds = 3600
         if seconds < 60:
             seconds = 60
-        await self.config.guild(ctx.guild).cooldown.set(seconds)
+
+        self.cache[ctx.guild.id]["cooldown"] = seconds
         await ctx.send(f"Pet appearance cooldown set to {seconds}.")
-        await self.initialize(ctx.guild)
+        await self.save_guild(ctx.guild)
 
     @petscmd.command()
     async def credits(self, ctx, min_amt: int, max_amt: int):
         """Set the pet credits range on successful petting."""
+        await self.init_guild(ctx.guild)
         if min_amt > max_amt:
             return await ctx.send("Min must be less than max.")
         if min_amt < 1 or max_amt < 1:
             return await ctx.send("Min and max amounts must be greater than 1.")
-        await self.config.guild(ctx.guild).credits.set([min_amt, max_amt])
+
+        self.cache[ctx.guild.id]["credits"] = [min_amt, max_amt]
         await ctx.send(f"Pet credit range set to {min_amt} - {max_amt}.")
-        await self.initialize(ctx.guild)
+        await self.save_guild(ctx.guild)
 
     @petscmd.command()
     async def hello(self, ctx, *, message: str = None):
         """Set the pet greeting message."""
+        await self.init_guild(ctx.guild)
         if not message:
             hello = await self.config.guild(ctx.guild).hello_msg()
             return await ctx.send(
@@ -185,13 +188,15 @@ class Pupper(commands.Cog):
             )
         if len(message) > 1000:
             return await ctx.send("That dog sure likes to talk a lot. Try a shorter message.")
-        await self.config.guild(ctx.guild).hello_msg.set(message)
+
+        self.cache[ctx.guild.id]["hello_msg"] = message
         await ctx.send(f"Pet hello message set to: `{message}`.")
-        await self.initialize(ctx.guild)
+        await self.save_guild(ctx.guild)
 
     @petscmd.command()
     async def thanks(self, ctx, *, message: str = None):
         """Set the pet thanks message."""
+        await self.init_guild(ctx.guild)
         if not message:
             bye = await self.config.guild(ctx.guild).borf_msg()
             return await ctx.send(
@@ -199,15 +204,17 @@ class Pupper(commands.Cog):
             )
         if len(message) > 1000:
             return await ctx.send("That dog sure likes to talk a lot. Try a shorter message.")
-        await self.config.guild(ctx.guild).borf_msg.set(message)
+
+        self.cache[ctx.guild.id]["borf_msg"] = message
         await ctx.send(f"Pet thanks message set to: `{message}`.")
-        await self.initialize(ctx.guild)
+        await self.save_guild(ctx.guild)
 
     @commands.guild_only()
     @checks.mod_or_permissions(administrator=True)
     @petscmd.group(invoke_without_command=True)
     async def channel(self, ctx):
         """Channel management for pet appearance."""
+        await self.init_guild(ctx.guild)
         await ctx.send_help()
         channel_list = await self.config.guild(ctx.guild).channel()
         channel_msg = "[Petting Channels]:\n"
@@ -221,22 +228,23 @@ class Pupper(commands.Cog):
     @channel.command()
     async def add(self, ctx, channel: discord.TextChannel):
         """Add a text channel for pets."""
-        channel_list = await self.config.guild(ctx.guild).channel()
+        await self.init_guild(ctx.guild)
+        channel_list = self.cache[ctx.guild.id]["channel"]
         if channel.id not in channel_list:
-            channel_list.append(channel.id)
-            await self.config.guild(ctx.guild).channel.set(channel_list)
+            self.cache[ctx.guild.id]["channel"].append(channel.id)
             await ctx.send(f"{channel.mention} added to the valid petting channels.")
-            await self.initialize(ctx.guild)
+            await self.save_guild(ctx.guild)
         else:
             await ctx.send(f"{channel.mention} is already in the list of petting channels.")
 
     @channel.command()
     async def addall(self, ctx):
         """Add all valid channels for the guild that the bot can speak in."""
+        await self.init_guild(ctx.guild)
         bot_text_channels = [
             c for c in ctx.guild.text_channels if c.permissions_for(ctx.guild.me).send_messages is True
         ]
-        channel_list = await self.config.guild(ctx.guild).channel()
+        channel_list = self.cache[ctx.guild.id]["channel"]
         channels_appended = []
         channels_in_list = []
 
@@ -250,7 +258,7 @@ class Pupper(commands.Cog):
 
         first_msg = ""
         second_msg = ""
-        await self.config.guild(ctx.guild).channel.set(channel_list)
+        self.cache[ctx.guild.id]["channel"] = channel_list
         if len(channels_appended) > 0:
             first_msg = f"{humanize_list(channels_appended)} added to the valid petting channels.\n"
         if len(channels_in_list) > 0:
@@ -258,26 +266,28 @@ class Pupper(commands.Cog):
         txt = f"{first_msg}\n{second_msg}"
         for p in pagify(txt, page_length=2000):
             await ctx.send(p)
-        await self.initialize(ctx.guild)
+        await self.save_guild(ctx.guild)
 
     @channel.command()
     async def remove(self, ctx, channel: discord.TextChannel):
         """Remove a text channel from petting."""
-        channel_list = await self.config.guild(ctx.guild).channel()
+        await self.init_guild(ctx.guild)
+        channel_list = self.cache[ctx.guild.id]["channel"]
         if channel.id in channel_list:
             channel_list.remove(channel.id)
         else:
             return await ctx.send(f"{channel.mention} not in the active channel list.")
-        await self.config.guild(ctx.guild).channel.set(channel_list)
+        self.cache[ctx.guild.id]["channel"] = channel_list
         await ctx.send(f"{channel.mention} removed from the list of petting channels.")
-        await self.initialize(ctx.guild)
+        await self.save_guild(ctx.guild)
 
     @channel.command()
     async def removeall(self, ctx):
         """Remove all petting channels from the list."""
-        await self.config.guild(ctx.guild).channel.set([])
+        await self.init_guild(ctx.guild)
+        self.cache[ctx.guild.id]["channel"].clear()
         await ctx.send("All channels have been removed from the list of petting channels.")
-        await self.initialize(ctx.guild)
+        await self.save_guild(ctx.guild)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -289,14 +299,19 @@ class Pupper(commands.Cog):
             return
         if isinstance(message.channel, discord.abc.PrivateChannel):
             return
-        if not self.cache:
-            await self.initialize()
-        if message.guild.id not in self.cache:
-            await self.initialize(message.guild)
+
+        await self.init_guild(message.guild)
+
+        conf = self.cache[message.guild.id]
+        if not conf["toggle"]:
+            return
+        if not conf["channel"]:
+            return
+
         if self.pets[message.guild.id]:
             return
-        self.pets[message.guild.id] = True
         try:
+            self.pets[message.guild.id] = True
             await self.do_pet_stuff(message)
         except Exception as e:
             log.error(f"Error in pupper loop: {e}")
@@ -305,63 +320,66 @@ class Pupper(commands.Cog):
 
     async def do_pet_stuff(self, message: discord.Message):
         guild_data = self.cache[message.guild.id].copy()
-        if not guild_data["toggle"]:
-            return
-        if not guild_data["channel"]:
-            return
-
         last_time = datetime.fromtimestamp(guild_data["last_pet"])
         now = datetime.now()
-        if int((now - last_time).total_seconds()) > guild_data["cooldown"]:
-            await asyncio.sleep(random.randint(30, 480))
-            while True:
-                if not guild_data["channel"]:
-                    return
-                rando_channel = random.choice(guild_data["channel"])
-                rando_channel_obj = self.bot.get_channel(rando_channel)
-                if not rando_channel_obj:
-                    guild_data["channel"].remove(rando_channel)
-                    self.cache[message.guild.id]["channel"].remove(rando_channel)
-                else:
-                    break
-            if not rando_channel_obj:
-                return
-            if not rando_channel_obj.permissions_for(message.guild.me).send_messages:
-                return
+        if (now - last_time).total_seconds() < guild_data["cooldown"]:
+            return
 
-            borf_msg = await rando_channel_obj.send(guild_data["hello_msg"])
+        rando_channel = random.choice(guild_data["channel"])
+        rando_channel_obj: discord.TextChannel = self.bot.get_channel(rando_channel)
+        if not rando_channel_obj:
+            log.warning(f"Channel with ID {rando_channel} not found in guild {message.guild.name}.")
+            self.cache[message.guild.id]["channel"].remove(rando_channel)
+            await self.save_guild(message.guild)
+            return
+        if not rando_channel_obj.permissions_for(message.guild.me).send_messages:
+            log.warning(
+                f"Bot does not have permissions to send messages in {rando_channel_obj.name} in {message.guild.name}."
+            )
+            self.cache[message.guild.id]["channel"].remove(rando_channel)
+            await self.save_guild(message.guild)
+            return
 
-            emojis = ["👋", "\N{WAVING HAND SIGN}"]
+        await asyncio.sleep(random.randint(30, 480))
 
-            start_adding_reactions(borf_msg, emojis)
+        borf_msg = await rando_channel_obj.send(guild_data["hello_msg"])
 
-            def check(r, u):
-                if u.bot:
-                    return False
-                return r.message.id == borf_msg.id and any(emoji in str(r.emoji) for emoji in emojis)
+        emojis = ["👋", "\N{WAVING HAND SIGN}"]
 
-            try:
-                reaction, user = await self.bot.wait_for("reaction_add", check=check, timeout=300.0)
-            except asyncio.TimeoutError:
-                return await borf_msg.delete()
+        start_adding_reactions(borf_msg, emojis)
 
-            if str(reaction.emoji) in emojis:
+        def check(r: discord.Reaction, u: discord.Member):
+            if u.bot:
+                return False
+            return r.message.id == borf_msg.id and any(emoji in str(r.emoji) for emoji in emojis)
+
+        try:
+            timeout = random.randint(300, 400)
+            reaction, user = await self.bot.wait_for("reaction_add", check=check, timeout=timeout)
+        except asyncio.TimeoutError:
+            return await borf_msg.delete()
+
+        if str(reaction.emoji) not in emojis:
+            with suppress(discord.NotFound):
                 await borf_msg.delete()
-                deposit = random.randint(guild_data["credits"][0], guild_data["credits"][1])
-                try:
-                    large_bank = False
-                    await bank.deposit_credits(user, deposit)
-                except BalanceTooHigh as e:
-                    large_bank = True
-                    await bank.set_balance(user, e.max_balance)
-                credits_name = await bank.get_currency_name(message.guild)
-                msg = (
-                    f"{guild_data['borf_msg']} (`+{deposit}` {credits_name})"
-                    if not large_bank
-                    else guild_data["borf_msg"]
-                )
-                await rando_channel_obj.send(content=msg, delete_after=guild_data["delete_after"])
-            else:
-                pass
-            self.cache[message.guild.id]["last_pet"] = int(now.timestamp())
-            await self.config.guild(message.guild).last_pet.set(int(now.timestamp()))
+            return
+
+        deposit = random.randint(guild_data["credits"][0], guild_data["credits"][1])
+        try:
+            await bank.deposit_credits(user, deposit)
+        except BalanceTooHigh as e:
+            bal = await bank.get_balance(user)
+            newbal = await bank.set_balance(user, e.max_balance)
+            deposit = newbal - bal
+
+        credits_name = await bank.get_currency_name(message.guild)
+        msg = f"{guild_data['borf_msg']} (`+{deposit}` {credits_name})"
+        await borf_msg.edit(content=msg)
+
+        self.cache[message.guild.id]["last_pet"] = int(now.timestamp())
+        await self.save_guild(message.guild)
+
+        if wait := guild_data["delete_after"]:
+            await asyncio.sleep(wait)
+            with suppress(discord.NotFound):
+                await borf_msg.delete()
