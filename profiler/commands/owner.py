@@ -78,9 +78,9 @@ class Owner(MixinMeta):
         txt += f" Data retention is set to **{self.db.delta} {'hour' if self.db.delta == 1 else 'hours'}**\n"
 
         # CONFIG SIZE
-        mem_size_raw = await asyncio.to_thread(deep_getsizeof, self.db.stats)
+        mem_size_raw = await asyncio.to_thread(deep_getsizeof, self.db)
         mem_usage = humanize_size(mem_size_raw)
-        txt += f"- Config Size: `{mem_usage}`\n"
+        txt += f"- Cog RAM Usage: `{mem_usage}`\n"
 
         # TRACKING COUNTS
         records = 0
