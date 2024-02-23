@@ -317,7 +317,12 @@ class Admin(MixinMeta):
             total_input_cost += input_cost
             total_output_cost += output_cost
 
-            if model_name in ["text-embedding-ada-002", "text-embedding-ada-002-v2"]:
+            if model_name in [
+                "text-embedding-ada-002",
+                "text-embedding-ada-002-v2",
+                "text-embedding-3-small",
+                "text-embedding-3-large",
+            ]:
                 field = _("`Total:  `{} (${} @ ${}/1k tokens)").format(
                     humanize_number(usage.input_tokens), round(input_cost, 2), input_price
                 )
@@ -1072,7 +1077,9 @@ class Admin(MixinMeta):
 
         **Static** embeddings are applied in front of each user message and get stored with the conversation instead of being replaced with each question.
 
-        **Hybrid** embeddings are a combination, with the first embedding being stored in the conversation and the rest being dynamic, this saves a bit on token usage
+        **Hybrid** embeddings are a combination, with the first embedding being stored in the conversation and the rest being dynamic, this saves a bit on token usage.
+
+        **User** embeddigns are injected into the beginning of the prompt as the first user message.
 
         Dynamic embeddings are helpful for Q&A, but not so much for chat when you need to retain the context pulled from the embeddings. The hybrid method is a good middle ground
         """
@@ -1083,7 +1090,10 @@ class Admin(MixinMeta):
         elif conf.embed_method == "static":
             conf.embed_method = "hybrid"
             await ctx.send(_("Embedding method has been set to **Hybrid**"))
-        else:  # Conf is hybrid
+        elif conf.embed_method == "hybrid":
+            conf.embed_method = "user"
+            await ctx.send(_("Embedding method has been set to **User**"))
+        elif conf.embed_method == "user":
             conf.embed_method = "dynamic"
             await ctx.send(_("Embedding method has been set to **Dynamic**"))
         await self.save_conf()
