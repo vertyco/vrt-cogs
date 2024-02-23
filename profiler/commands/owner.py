@@ -272,7 +272,7 @@ class Owner(MixinMeta):
         if self.bot.get_cog(item_name):
             self.db.tracked_cogs.append(item_name)
             await ctx.send(f"**{item_name}** is now being profiled")
-            await self.attach_cog(item_name)
+            self.attach_cog(item_name)
             await self.save()
             return
         if match := _match(self.bot.cogs, item_name):
