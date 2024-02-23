@@ -92,11 +92,11 @@ class Profiling(MixinMeta):
             True if attached successfully, False otherwise.
         """
         if cog_name not in self.db.tracked_cogs:
-            log.warning(f"{cog_name} not in tracked cogs. Cant attach profiler to cog.")
+            log.warning(f"{cog_name} is not in the tracked cogs list.")
             return False
         cog: commands.Cog = self.bot.get_cog(cog_name)
         if not cog:
-            log.warning(f"{cog_name} cog not found. Cant attach profiler to cog.")
+            log.warning(f"{cog_name} cog not found, cant attach profiler.")
             return False
 
         attached = False
@@ -428,13 +428,9 @@ class Profiling(MixinMeta):
     def build(self) -> None:
         self.currently_tracked.clear()
         for cog_name in self.db.tracked_cogs:
-            attached = self.attach_cog(cog_name)
-            if not attached:
-                log.warning(f"Failed to attach profiler to {cog_name}")
+            self.attach_cog(cog_name)
 
         for method_key in self.db.tracked_methods:
             if method_key in self.currently_tracked:
                 continue
-            attached = self.attach_method(method_key)
-            if not attached:
-                log.warning(f"Failed to attach profiler to {method_key}")
+            self.attach_method(method_key)
