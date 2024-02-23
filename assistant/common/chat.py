@@ -623,26 +623,27 @@ class ChatHandler(MixinMeta):
 
         embeds: List[str] = []
         # Get related embeddings (Name, text, score, dimensions)
-        for idx, i in enumerate(related):
+        for i in related:
             embed_tokens = await self.count_tokens(i[1], model)
             if embed_tokens + current_tokens > max_tokens:
                 log.debug("Cannot fit anymore embeddings")
                 break
             embeds.append(f"[{i[0]}](Relatedness: {round(i[2], 2)}): {i[1]}\n")
 
-        if conf.embed_method == "static":
-            # Ebeddings go directly into the user message
-            message += f"\n\n# RELATED EMBEDDINGS\n{''.join(embeds)}"
-        elif conf.embed_method == "dynamic":
-            # Embeddings go into the system prompt
-            system_prompt += f"\n\n# RELATED EMBEDDINGS\n{''.join(embeds)}"
-        elif conf.embed_method == "user":
-            # Embeddings get injected into the initial user message
-            initial_prompt += f"\n\n# RELATED EMBEDDINGS\n{''.join(embeds)}"
-        else:  # Hybrid, first embed goes into user message, rest go into system prompt
-            message += f"\n\n# RELATED EMBEDDINGS\n{embeds[0]}"
-            if len(embeds) > 1:
-                system_prompt += f"\n\n# RELATED EMBEDDINGS\n{''.join(embeds[1:])}"
+        if embeds:
+            if conf.embed_method == "static":
+                # Ebeddings go directly into the user message
+                message += f"\n\n# RELATED EMBEDDINGS\n{''.join(embeds)}"
+            elif conf.embed_method == "dynamic":
+                # Embeddings go into the system prompt
+                system_prompt += f"\n\n# RELATED EMBEDDINGS\n{''.join(embeds)}"
+            elif conf.embed_method == "user":
+                # Embeddings get injected into the initial user message
+                initial_prompt += f"\n\n# RELATED EMBEDDINGS\n{''.join(embeds)}"
+            else:  # Hybrid, first embed goes into user message, rest go into system prompt
+                message += f"\n\n# RELATED EMBEDDINGS\n{embeds[0]}"
+                if len(embeds) > 1:
+                    system_prompt += f"\n\n# RELATED EMBEDDINGS\n{''.join(embeds[1:])}"
 
         images = images if model in SUPPORTS_VISION else []
         messages = conversation.prepare_chat(

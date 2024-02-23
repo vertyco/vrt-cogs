@@ -81,7 +81,7 @@ class AssistantFunctions(MixinMeta):
 
         results = []
         for embed in embeddings:
-            entry = {"memory name": embed[0], "relatedness": embed[2], "content": embed[1]}
+            entry = {"memory name": embed[0], "relatedness": round(embed[2], 2), "content": embed[1]}
             results.append(entry)
 
         return f"Memories related to `{search_query}`\n{json.dumps(results, indent=2)}"
