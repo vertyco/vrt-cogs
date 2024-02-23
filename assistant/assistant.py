@@ -53,7 +53,7 @@ class Assistant(
     """
 
     __author__ = "vertyco"
-    __version__ = "6.1.0"
+    __version__ = "6.2.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -258,7 +258,7 @@ class Assistant(
         function_map: Optional[Dict[str, Callable]] = None,
         extend_function_calls: bool = True,
         message_obj: Optional[discord.Message] = None,
-    ) -> str:
+    ) -> Union[str, None]:
         """
         Method for other cogs to call the chat API
 

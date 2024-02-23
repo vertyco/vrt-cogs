@@ -85,7 +85,7 @@ class GuildSettings(AssistantBaseModel):
     training_channel: int = 0  # Model will ask for training data here
     top_n: int = 3
     min_relatedness: float = 0.78
-    embed_method: str = "dynamic"  # hybrid, dynamic, static
+    embed_method: str = "dynamic"  # hybrid, dynamic, static, user
     question_mode: bool = False  # If True, only the first message and messages that end with ? will have emebddings
     channel_id: Optional[int] = 0
     api_key: Optional[str] = None
@@ -279,7 +279,7 @@ class Conversation(AssistantBaseModel):
             name (str): the name of the bot or user
             position (int): the index to place the message in
         """
-        message = {"role": role, "content": message}
+        message: dict = {"role": role, "content": message}
         if name:
             message["name"] = name
         if tool_id:

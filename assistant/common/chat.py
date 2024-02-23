@@ -49,7 +49,7 @@ _ = Translator("Assistant", __file__)
 class ChatHandler(MixinMeta):
     async def handle_message(
         self, message: discord.Message, question: str, conf: GuildSettings, listener: bool = False
-    ) -> str:
+    ):
         outputfile_pattern = r"--outputfile\s+([^\s]+)"
         extract_pattern = r"--extract"
         get_last_message_pattern = r"--last"
@@ -227,7 +227,7 @@ class ChatHandler(MixinMeta):
         extend_function_calls: bool = True,
         message_obj: Optional[discord.Message] = None,
         images: list[str] = None,
-    ) -> str:
+    ) -> Union[str, None]:
         """Call the API asynchronously"""
         functions = function_calls.copy() if function_calls else []
         mapping = function_map.copy() if function_map else {}
@@ -283,7 +283,7 @@ class ChatHandler(MixinMeta):
         function_map: Dict[str, Callable],
         message_obj: Optional[discord.Message] = None,
         images: list[str] = None,
-    ) -> str:
+    ) -> Union[str, None]:
         if isinstance(author, int):
             author = guild.get_member(author)
         if isinstance(channel, int):
@@ -298,7 +298,7 @@ class ChatHandler(MixinMeta):
         words = message.split(" ")
         get_embed_conditions = [
             conf.embeddings,  # We actually have embeddings to compare with
-            len(words) > 3,  # Message is long enough
+            len(words) > 1,  # Message is long enough
             conf.top_n,  # Top n is greater than 0
             message_tokens < 8191,
         ]
@@ -309,6 +309,8 @@ class ChatHandler(MixinMeta):
                     query_embedding = await self.request_embedding(message, conf)
             else:
                 query_embedding = await self.request_embedding(message, conf)
+
+        log.debug(f"Query embedding: {len(query_embedding)}")
 
         mem = guild.get_member(author) if isinstance(author, int) else author
         bal = humanize_number(await bank.get_balance(mem)) if mem else _("None")
@@ -619,26 +621,28 @@ class ChatHandler(MixinMeta):
 
         related = await asyncio.to_thread(conf.get_related_embeddings, query_embedding)
 
-        embeddings = []
+        embeds: List[str] = []
         # Get related embeddings (Name, text, score, dimensions)
-        for i in related:
+        for idx, i in enumerate(related):
             embed_tokens = await self.count_tokens(i[1], model)
             if embed_tokens + current_tokens > max_tokens:
                 log.debug("Cannot fit anymore embeddings")
                 break
-            embeddings.append(i)
+            embeds.append(f"[{i[0]}](Relatedness: {round(i[2], 2)}): {i[1]}\n")
 
-        if embeddings:
-            joined = "\n".join([i[1] for i in embeddings])
-            if conf.embed_method == "static":
-                message = f"{joined}\n\n{message}"
-            elif conf.embed_method == "dynamic":
-                system_prompt += f"\n\n{joined}"
-            else:  # Hybrid embedding
-                message = f"{embeddings[0][1]}\n\n{message}"
-                if len(embeddings) > 1:
-                    joined = "\n".join([i[1] for i in embeddings[1:]])
-                    system_prompt += f"\n\n{joined}"
+        if conf.embed_method == "static":
+            # Ebeddings go directly into the user message
+            message += f"\n\n# RELATED EMBEDDINGS\n{''.join(embeds)}"
+        elif conf.embed_method == "dynamic":
+            # Embeddings go into the system prompt
+            system_prompt += f"\n\n# RELATED EMBEDDINGS\n{''.join(embeds)}"
+        elif conf.embed_method == "user":
+            # Embeddings get injected into the initial user message
+            initial_prompt += f"\n\n# RELATED EMBEDDINGS\n{''.join(embeds)}"
+        else:  # Hybrid, first embed goes into user message, rest go into system prompt
+            message += f"\n\n# RELATED EMBEDDINGS\n{embeds[0]}"
+            if len(embeds) > 1:
+                system_prompt += f"\n\n# RELATED EMBEDDINGS\n{''.join(embeds[1:])}"
 
         images = images if model in SUPPORTS_VISION else []
         messages = conversation.prepare_chat(
