@@ -150,7 +150,9 @@ class Owner(MixinMeta):
             )
             await ctx.send(txt)
         else:
-            await ctx.send("Globally verbose stats are now **Disabled**")
+            await ctx.send(
+                "Verbose stats are now **Disabled**. Detailed stat breakdowns will no longer be recorded for tracked methods"
+            )
 
     @profiler.command(name="delta")
     async def set_delta(self, ctx: commands.Context, delta: int):
