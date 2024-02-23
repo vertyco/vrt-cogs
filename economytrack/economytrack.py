@@ -31,7 +31,7 @@ class EconomyTrack(commands.Cog, EconomyTrackCommands, PlotGraph, metaclass=Comp
     """
 
     __author__ = "vertyco"
-    __version__ = "0.5.5"
+    __version__ = "0.5.6"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
