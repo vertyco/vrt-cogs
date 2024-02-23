@@ -217,6 +217,7 @@ class Owner(MixinMeta):
         """
         Attach a profiler to a cog or method
         """
+        self.map_methods()
 
         def _match(data: t.List[str], name: str):
             matches = map(lambda x: (x, fuzz.ratio(name.lower(), x.lower())), data)
