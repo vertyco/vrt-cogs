@@ -153,7 +153,7 @@ class EconomyTrackCommands(MixinMeta):
             )
             return await ctx.send(embed=embed)
 
-        newrows = [i for i in data if i[1] <= max_value]
+        newrows = [i for i in data if i[1] and i[1] <= max_value]
         deleted = len(data) - len(newrows)
         if not deleted:
             return await ctx.send("No data to delete")
