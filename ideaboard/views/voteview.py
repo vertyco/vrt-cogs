@@ -55,7 +55,8 @@ class VoteView(discord.ui.View):
         suggestion = conf.suggestions.get(self.suggestion_number)
         if not suggestion:
             txt = _("This suggestion no longer exists in the config!")
-            return await interaction.response.send_message(txt, ephemeral=True)
+            await interaction.response.send_message(txt, ephemeral=True)
+            return False
 
         # Check voting requirements
         voter = self.guild.get_member(interaction.user.id)
