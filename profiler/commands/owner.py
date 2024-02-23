@@ -75,7 +75,7 @@ class Owner(MixinMeta):
         txt += f"- Persistent Storage: Profiling metrics are **{'Saved' if self.db.save_stats else 'Not Saved'}**\n"
 
         # DATA RETENTION
-        txt += f" Data retention is set to **{self.db.delta} {'hour' if self.db.delta == 1 else 'hours'}**\n"
+        txt += f"- Data retention is set to **{self.db.delta} {'hour' if self.db.delta == 1 else 'hours'}**\n"
 
         # CONFIG SIZE
         mem_size_raw = await asyncio.to_thread(deep_getsizeof, self.db)
