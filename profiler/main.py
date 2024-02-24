@@ -84,8 +84,8 @@ class Profiler(Owner, Profiling, Wrapper, commands.Cog, metaclass=CompositeMetaC
         def _dump():
             db = DB.model_validate(self.db.model_dump(exclude={"stats"}))
             # Break stats down to avoid RuntimeErrors
-            keys = list(self.db.stats.keys())
             if self.db.save_stats:
+                keys = list(self.db.stats.keys())
                 for cog_name in keys:
                     db.stats[cog_name] = {}
                     method_keys = list(self.db.stats[cog_name].keys())
