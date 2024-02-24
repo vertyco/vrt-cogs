@@ -25,7 +25,7 @@ class Profiler(Owner, Profiling, Wrapper, commands.Cog, metaclass=CompositeMetaC
     """
 
     __author__ = "vertyco"
-    __version__ = "1.3.3"
+    __version__ = "1.3.4"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -85,19 +85,17 @@ class Profiler(Owner, Profiling, Wrapper, commands.Cog, metaclass=CompositeMetaC
             db = DB.model_validate(self.db.model_dump(exclude={"stats"}))
             # Break stats down to avoid RuntimeErrors
             keys = list(self.db.stats.keys())
-            for cog_name in keys:
-                db.stats[cog_name] = {}
-                method_keys = list(self.db.stats[cog_name].keys())
-                for method_key in method_keys:
-                    db.stats[cog_name][method_key] = self.db.stats[cog_name][method_key].copy()
+            if self.db.save_stats:
+                for cog_name in keys:
+                    db.stats[cog_name] = {}
+                    method_keys = list(self.db.stats[cog_name].keys())
+                    for method_key in method_keys:
+                        db.stats[cog_name][method_key] = self.db.stats[cog_name][method_key].copy()
             return db.model_dump(mode="json")
 
         try:
             self.saving = True
             log.debug("Saving config")
-            if not self.db.save_stats:
-                self.db.stats.clear()
-
             dump = await asyncio.to_thread(_dump)
             await self.config.db.set(dump)
         except Exception as e:
