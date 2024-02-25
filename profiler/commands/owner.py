@@ -103,6 +103,8 @@ class Owner(MixinMeta):
             f"- Tasks are {y if self.db.track_tasks else n}\n"
         )
         txt += f"The following cogs are being profiled: {joined}\n"
+        joined = ", ".join([f"`{i}`" for i in self.db.ignored_methods]) if self.db.ignored_methods else "`None`"
+        txt += f"The following methods are being ignored: {joined}\n"
 
         # TRACKED METHODS
         joined = ", ".join([f"`{i}`" for i in self.db.tracked_methods]) if self.db.tracked_methods else "`None`"
@@ -207,6 +209,27 @@ class Owner(MixinMeta):
         """
         self.db.tracked_threshold = threshold
         await ctx.send(f"Tracking threshold is now set to **{threshold}ms**")
+        await self.save()
+
+    @profiler.command(name="ignore")
+    async def manage_ignorelist(self, ctx: commands.Context, method_name: str):
+        """
+        Add or remove a method from the ignore list
+        """
+        if method_name in self.db.ignored_methods:
+            self.db.ignored_methods.remove(method_name)
+            await ctx.send(f"**{method_name}** is no longer being ignored")
+            await self.save()
+            return
+        if method_name not in self.methods:
+            return await ctx.send(f"Could not find **{method_name}**")
+        if method_name in self.db.tracked_methods:
+            return await ctx.send(
+                f"**{method_name}** is being explicitly tracked, remove it from the tracked list first"
+            )
+        self.db.ignored_methods.append(method_name)
+        await ctx.send(f"**{method_name}** is now being ignored")
+        await self.rebuild()
         await self.save()
 
     @commands.hybrid_command(name="attach", description="Attach a profiler to a cog or method")

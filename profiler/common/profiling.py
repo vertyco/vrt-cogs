@@ -32,6 +32,9 @@ class Profiling(MixinMeta):
         if not cog:
             log.warning(f"{method.cog_name} cog not found. Cant track {method_key} method.")
             return False
+        if method_key in self.db.ignored_methods and method_key not in self.db.tracked_methods:
+            log.warning(f"{method_key} method is ignored. Cant track method.")
+            return False
         if method.func_type == "method":
             original_method = getattr(cog, method_key.split(".")[-1], None)
             if not original_method:
@@ -109,6 +112,8 @@ class Profiling(MixinMeta):
                 key = f"{command.callback.__module__}.{command.callback.__name__}"
                 if key in self.currently_tracked:
                     continue
+                if key in self.db.ignored_methods and key not in self.db.tracked_methods:
+                    continue
 
                 original_callback = command.callback
                 wrapped_callback = self.profile_wrapper(original_callback, cog_name, "command")
@@ -121,6 +126,8 @@ class Profiling(MixinMeta):
                     continue
                 key = f"{command.callback.__module__}.{command.callback.__name__}"
                 if key in self.currently_tracked:
+                    continue
+                if key in self.db.ignored_methods and key not in self.db.tracked_methods:
                     continue
 
                 original_callback = command.callback
@@ -138,6 +145,8 @@ class Profiling(MixinMeta):
 
                 key = f"{listener_coro.__module__}.{listener_coro.__name__}"
                 if key in self.currently_tracked:
+                    continue
+                if key in self.db.ignored_methods and key not in self.db.tracked_methods:
                     continue
 
                 wrapped_coro = self.profile_wrapper(listener_coro, cog_name, "listener")
@@ -172,12 +181,16 @@ class Profiling(MixinMeta):
                     key = f"{original_coro.__module__}.{original_coro.__name__}"
                     if key in self.currently_tracked:
                         continue
+                    if key in self.db.ignored_methods and key not in self.db.tracked_methods:
+                        continue
                     wrapped_coro = self.profile_wrapper(original_coro, cog_name, "task")
                     attr.coro = wrapped_coro
                     self.original_loops.setdefault(cog_name, {})[attr_name] = original_coro
                 else:
                     key = f"{attr.__module__}.{attr.__name__}"
                     if key in self.currently_tracked or not hasattr(attr, "__name__"):
+                        continue
+                    if key in self.db.ignored_methods and key not in self.db.tracked_methods:
                         continue
                     wrapped_fn = self.profile_wrapper(attr, cog_name, "method")
                     self.original_methods.setdefault(cog_name, {})[attr_name] = attr
