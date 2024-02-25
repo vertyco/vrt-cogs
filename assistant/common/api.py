@@ -375,7 +375,7 @@ class API(MixinMeta):
                 token_reduction += 1
 
             content_to_tokenize = msg["content"] or msg.get("tool_calls", "") or msg.get("function_call", "")
-            token_reduction += await self.count_tokens(content_to_tokenize, model)
+            token_reduction += await self.count_tokens(str(content_to_tokenize), model)
             messages_to_purge.add(idx)
 
             # Check if we are under the max token limit
