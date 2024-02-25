@@ -44,6 +44,7 @@ class DB(Base):
     track_commands: bool = True  # Track command execution time (Including Slash)
     track_listeners: bool = True  # Track listener execution time
     track_tasks: bool = True  # Track task execution time
+    ignored_methods: t.List[str] = []  # List of methods to ignore
 
     # For tracking specific methods independent of the watched cogs
     tracked_methods: t.List[str] = []  # List of specific methods to track
