@@ -217,6 +217,7 @@ class Owner(MixinMeta):
         Add or remove a method from the ignore list
         """
         if method_name in self.db.ignored_methods:
+            self.db.discard_method(method_name)
             self.db.ignored_methods.remove(method_name)
             await ctx.send(f"**{method_name}** is no longer being ignored")
             await self.save()
