@@ -628,7 +628,7 @@ class ChatHandler(MixinMeta):
             if embed_tokens + current_tokens > max_tokens:
                 log.debug("Cannot fit anymore embeddings")
                 break
-            embeds.append(f"[{i[0]}](Relatedness: {round(i[2], 2)}): {i[1]}\n")
+            embeds.append(f"[{i[0]}](Relatedness: {round(i[2], 4)}): {i[1]}\n")
 
         if embeds:
             if conf.embed_method == "static":
