@@ -152,8 +152,8 @@ class ChatHandler(MixinMeta):
                     message_obj=message,
                     images=images,
                 )
-            except openai.InternalServerError:
-                reply = _("The server had an error processing your request! Please try again later.")
+            except openai.InternalServerError as e:
+                reply = _("Internal Server Error({}): {}").format(e.status_code, e.message)
             except openai.APIConnectionError as e:
                 reply = _("Failed to communicate with API!")
                 log.error(f"APIConnectionError (From listener: {listener})", exc_info=e)
