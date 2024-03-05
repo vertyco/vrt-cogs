@@ -388,7 +388,8 @@ class Profiling(MixinMeta):
     def map_methods(self) -> None:
         """Populate the methods cache"""
         self.methods.clear()
-        for cog_name in self.bot.cogs:
+        cogs = [i for i in self.bot.cogs]
+        for cog_name in cogs:
             cog = self.bot.get_cog(cog_name)
             # Add commands
             for command in cog.walk_commands():
