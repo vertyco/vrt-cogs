@@ -169,6 +169,7 @@ class Profiling(MixinMeta):
                         not callable(attr),  # Skip non-callable attributes
                         attr_name.startswith("__"),  # Skip dunder methods
                         getattr(attr, "__cog_listener__", None) is not None,  # Skip listeners
+                        not hasattr(attr, "__name__"),  # Skip HelpFormattedGroup and others with no __name__
                     ]
                 ):
                     continue
