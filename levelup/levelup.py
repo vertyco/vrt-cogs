@@ -81,7 +81,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "vertyco"
-    __version__ = "3.12.10"
+    __version__ = "3.12.11"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -2983,8 +2983,8 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
 
                 if highest_prestige:
                     prestige_role_ids = [i["role"] for i in prestiges.values()]
-                    role_id = prestiges[str(highest_prestige)]
-                    if role := guild.get_role(role_id):
+                    prestige = prestiges[str(highest_prestige)]
+                    if role := guild.get_role(prestige["role"]):
                         to_add[user].add(role)
                         for user_role in user.roles:
                             if user_role.id in prestige_role_ids and user_role.id != role.id:
