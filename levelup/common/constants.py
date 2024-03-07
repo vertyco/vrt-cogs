@@ -18,6 +18,7 @@ default_guild = {
         "voice": {},
     },  # ChannelID keys, list values for bonus xp range
     "streambonus": [],  # Bonus voice XP for streaming in voice
+    "command_xp": False,  # Whether to give XP for using commands
     "cooldown": 60,  # Only gives XP every 60 seconds
     "base": 100,  # Base denominator for level algorithm, higher takes longer to level
     "exp": 2,  # Exponent for level algorithm, higher is a more exponential/steeper curve

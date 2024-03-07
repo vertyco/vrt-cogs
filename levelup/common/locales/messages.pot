@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2024-02-08 18:29-0500\n"
+"POT-Creation-Date: 2024-03-07 13:19-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -296,7 +296,7 @@ msgid ""
 msgstr ""
 
 #: common\base.py:552 common\base.py:578 common\base.py:616 common\base.py:655
-#: common\base.py:708 common\base.py:769 common\base.py:799
+#: common\base.py:708 common\base.py:770 common\base.py:800
 msgid "Image profiles are disabled on this server, this setting has no effect"
 msgstr ""
 
@@ -427,7 +427,7 @@ msgstr ""
 msgid "Your background image has been set to `{}`!"
 msgstr ""
 
-#: common\base.py:762
+#: common\base.py:763
 #, docstring
 msgid ""
 "\n"
@@ -438,19 +438,19 @@ msgid ""
 "        "
 msgstr ""
 
-#: common\base.py:778
+#: common\base.py:779
 msgid "Your profile font has been reverted to default"
 msgstr ""
 
-#: common\base.py:788
+#: common\base.py:789
 msgid "I could not find a font file with that name"
 msgstr ""
 
-#: common\base.py:791
+#: common\base.py:792
 msgid "Your profile font has been set to "
 msgstr ""
 
-#: common\base.py:795
+#: common\base.py:796
 #, docstring
 msgid ""
 "\n"
@@ -458,68 +458,68 @@ msgid ""
 "        "
 msgstr ""
 
-#: common\base.py:808
+#: common\base.py:809
 msgid "Your profile background blur has been set to "
 msgstr ""
 
-#: common\base.py:814
+#: common\base.py:815
 #, docstring
 msgid "View your profile"
 msgstr ""
 
-#: common\base.py:834
+#: common\base.py:837
 msgid "No information available yet!"
 msgstr ""
 
-#: common\base.py:837
+#: common\base.py:840
 msgid "I do not have permission to send images to this channel"
 msgstr ""
 
-#: common\base.py:839
+#: common\base.py:842
 msgid "I do not have permission to send embeds to this channel"
 msgstr ""
 
-#: common\base.py:908 common\generator.py:884
+#: common\base.py:911 common\generator.py:880
 msgid "Level "
 msgstr ""
 
-#: common\base.py:910 common\generator.py:270
+#: common\base.py:913 common\generator.py:268
 msgid "Prestige "
 msgstr ""
 
-#: common\base.py:911
+#: common\base.py:914
 msgid " stars\n"
 msgstr ""
 
-#: common\base.py:912
+#: common\base.py:915
 msgid " messages sent\n"
 msgstr ""
 
-#: common\base.py:913
+#: common\base.py:916
 msgid " in voice\n"
 msgstr ""
 
-#: common\base.py:918
+#: common\base.py:921
 msgid "Rank "
 msgstr ""
 
-#: common\base.py:918
+#: common\base.py:921
 msgid ", with "
 msgstr ""
 
-#: common\base.py:918
+#: common\base.py:921
 msgid "% of global server Exp"
 msgstr ""
 
-#: common\base.py:919
+#: common\base.py:922
 msgid "{}'s Profile"
 msgstr ""
 
-#: common\base.py:922
+#: common\base.py:925
 msgid "Progress"
 msgstr ""
 
-#: common\base.py:995
+#: common\base.py:998
 #, docstring
 msgid ""
 "\n"
@@ -531,55 +531,55 @@ msgid ""
 "        "
 msgstr ""
 
-#: common\base.py:1009
+#: common\base.py:1012
 msgid "Prestige is disabled on this server!"
 msgstr ""
 
-#: common\base.py:1012
+#: common\base.py:1015
 msgid "Prestige levels have not been set yet!"
 msgstr ""
 
-#: common\base.py:1016
+#: common\base.py:1019
 msgid "No information available for you yet!"
 msgstr ""
 
-#: common\base.py:1023
+#: common\base.py:1026
 msgid "**You are not eligible to prestige yet!**\n"
 msgstr ""
 
-#: common\base.py:1024
+#: common\base.py:1027
 msgid "`Your level:     `"
 msgstr ""
 
-#: common\base.py:1025
+#: common\base.py:1028
 msgid "`Required Level: `"
 msgstr ""
 
-#: common\base.py:1030
+#: common\base.py:1033
 msgid "Prestige level "
 msgstr ""
 
-#: common\base.py:1030
+#: common\base.py:1033
 msgid " has not been set yet!"
 msgstr ""
 
-#: common\base.py:1040
+#: common\base.py:1043
 msgid "I do not have the proper permissions to assign you to the {} role!"
 msgstr ""
 
-#: common\base.py:1055
+#: common\base.py:1058
 msgid "You have reached Prestige "
 msgstr ""
 
-#: common\base.py:1077
+#: common\base.py:1080
 msgid "I don't have permissions to remove your old roles!"
 msgstr ""
 
-#: common\base.py:1091
+#: common\base.py:1094
 msgid "I was not able to re-add the {} role to your profile!"
 msgstr ""
 
-#: common\base.py:1102
+#: common\base.py:1105
 #, docstring
 msgid ""
 "\n"
@@ -595,44 +595,44 @@ msgid ""
 "        "
 msgstr ""
 
-#: common\base.py:1116
+#: common\base.py:1119
 msgid "Use the `"
 msgstr ""
 
-#: common\base.py:1116
+#: common\base.py:1119
 msgid "startop` command for that"
 msgstr ""
 
-#: common\base.py:1142 common\base.py:1238
+#: common\base.py:1145 common\base.py:1241
 msgid "No user data yet!"
 msgstr ""
 
-#: common\base.py:1158
+#: common\base.py:1161
 #, docstring
 msgid "View the star leaderboard"
 msgstr ""
 
-#: common\base.py:1181
+#: common\base.py:1184
 msgid "Nobody has stars yet 😕"
 msgstr ""
 
-#: common\base.py:1200
+#: common\base.py:1203
 msgid "Global Star Leaderboard"
 msgstr ""
 
-#: common\base.py:1200
+#: common\base.py:1203
 msgid "Star Leaderboard"
 msgstr ""
 
-#: common\base.py:1201
+#: common\base.py:1204
 msgid "Total ⭐'s: {}\n"
 msgstr ""
 
-#: common\base.py:1224 common\base.py:1226
+#: common\base.py:1227 common\base.py:1229
 msgid "Pages "
 msgstr ""
 
-#: common\base.py:1249
+#: common\base.py:1252
 #, docstring
 msgid ""
 "\n"
@@ -649,67 +649,67 @@ msgid ""
 "        "
 msgstr ""
 
-#: common\base.py:1281 common\base.py:1302
+#: common\base.py:1284 common\base.py:1305
 msgid "Weekly stats are disabled for this guild"
 msgstr ""
 
-#: common\base.py:1283
+#: common\base.py:1286
 msgid ""
 "There is no data for the weekly leaderboard yet, please chat a bit first."
 msgstr ""
 
-#: common\base.py:1299
+#: common\base.py:1302
 #, docstring
 msgid "View the last weekly embed"
 msgstr ""
 
-#: common\base.py:1304
+#: common\base.py:1307
 msgid "There is no recorded weekly embed saved"
 msgstr ""
 
-#: common\base.py:1306
+#: common\base.py:1309
 msgid "Last Weekly Winners"
 msgstr ""
 
-#: common\base.py:1307
+#: common\base.py:1310
 msgid ""
 "{}\n"
 "`Last Reset:     `{}"
 msgstr ""
 
-#: common\generator.py:260 common\generator.py:678
+#: common\generator.py:258 common\generator.py:675
 msgid "Rank: #"
 msgstr ""
 
-#: common\generator.py:261 common\generator.py:679
+#: common\generator.py:259 common\generator.py:676
 msgid "Level: "
 msgstr ""
 
-#: common\generator.py:263
+#: common\generator.py:261
 msgid "Exp: "
 msgstr ""
 
-#: common\generator.py:266 common\generator.py:681
+#: common\generator.py:264 common\generator.py:678
 msgid "Messages: "
 msgstr ""
 
-#: common\generator.py:267
+#: common\generator.py:265
 msgid "Voice: "
 msgstr ""
 
-#: common\generator.py:269
+#: common\generator.py:267
 msgid "Balance: "
 msgstr ""
 
-#: common\generator.py:682
+#: common\generator.py:679
 msgid "Voice Time: "
 msgstr ""
 
-#: common\generator.py:685
+#: common\generator.py:682
 msgid " - Prestige "
 msgstr ""
 
-#: common\generator.py:1171
+#: common\generator.py:1156
 #, docstring
 msgid "Get average duration sequence of gif frames"
 msgstr ""

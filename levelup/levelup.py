@@ -81,7 +81,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "vertyco"
-    __version__ = "3.12.11"
+    __version__ = "3.13.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -104,7 +104,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
 
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.bot = bot
+        self.bot: Red = bot
         self.config = Config.get_conf(self, 117117117, force_registration=True)
         self.config.register_guild(**constants.default_guild)
         self.config.register_global(**constants.default_global)
@@ -705,10 +705,14 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         addxp = False
         if uid not in self.lastmsg[gid]:
             addxp = True
-        else:
-            td = (now - self.lastmsg[gid][uid]).total_seconds()
-            if td > conf["cooldown"]:
-                addxp = True
+        elif (now - self.lastmsg[gid][uid]).total_seconds() > conf["cooldown"]:
+            addxp = True
+
+        if not conf["command_xp"]:
+            prefixes = await self.bot.get_valid_prefixes(guild)
+            if message.content.startswith(prefixes):
+                addxp = False
+
         try:
             roles = list(message.author.roles)
         except AttributeError:  # User sent message and then left?
@@ -1046,6 +1050,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         prestige = conf["prestige"]
         pdata = conf["prestigedata"]
         stacking = conf["stackprestigeroles"]
+        command_xp = conf["command_xp"]
         xp = conf["xp"]
         xpbonus = conf["rolebonuses"]["msg"]
         xpchanbonus = conf["channelbonuses"]["msg"]
@@ -1086,6 +1091,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         msg += _("`Message XP:        `") + f"{xp[0]}-{xp[1]}\n"
         msg += _("`Min Msg Length:    `") + f"{length}\n"
         msg += _("`Cooldown:          `") + f"{cooldown} seconds\n"
+        msg += _("`Command XP:        `") + f"{command_xp}\n"
         msg += _("**Voice**\n")
         msg += _("`Voice XP:          `") + f"{voicexp} per minute\n"
         msg += _("`Ignore Muted:      `") + f"{muted}\n"
@@ -2632,6 +2638,18 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
             return img_bytes
         except Exception as e:
             log.warning("Failed to plot levels", exc_info=e)
+
+    @lvl_group.command(name="commandxp")
+    async def toggle_command_xp(self, ctx: commands.Context):
+        """Toggle XP gain from commands"""
+        commandxp = self.data[ctx.guild.id]["commandxp"]
+        if commandxp:
+            self.data[ctx.guild.id]["commandxp"] = False
+            await ctx.send(_("XP from commands has been **Disabled**"))
+        else:
+            self.data[ctx.guild.id]["commandxp"] = True
+            await ctx.send(_("XP from commands has been **Enabled**"))
+        await self.save_cache(ctx.guild)
 
     @lvl_group.command(name="dm")
     async def toggle_dm(self, ctx: commands.Context):
