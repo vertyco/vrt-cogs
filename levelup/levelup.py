@@ -81,7 +81,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "vertyco"
-    __version__ = "3.13.0"
+    __version__ = "3.13.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -710,7 +710,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
 
         if not conf["command_xp"]:
             prefixes = await self.bot.get_valid_prefixes(guild)
-            if message.content.startswith(prefixes):
+            if message.content.startswith(tuple(prefixes)):
                 addxp = False
 
         try:
@@ -2642,12 +2642,12 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     @lvl_group.command(name="commandxp")
     async def toggle_command_xp(self, ctx: commands.Context):
         """Toggle XP gain from commands"""
-        commandxp = self.data[ctx.guild.id]["commandxp"]
+        commandxp = self.data[ctx.guild.id]["command_xp"]
         if commandxp:
-            self.data[ctx.guild.id]["commandxp"] = False
+            self.data[ctx.guild.id]["command_xp"] = False
             await ctx.send(_("XP from commands has been **Disabled**"))
         else:
-            self.data[ctx.guild.id]["commandxp"] = True
+            self.data[ctx.guild.id]["command_xp"] = True
             await ctx.send(_("XP from commands has been **Enabled**"))
         await self.save_cache(ctx.guild)
 
