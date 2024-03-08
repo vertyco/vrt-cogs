@@ -392,6 +392,8 @@ class Profiling(MixinMeta):
         cogs = [i for i in self.bot.cogs]
         for cog_name in cogs:
             cog = self.bot.get_cog(cog_name)
+            if not cog:
+                continue
             # Add commands
             for command in cog.walk_commands():
                 if isinstance(command, commands.HybridCommand) or isinstance(command, commands.HybridGroup):
