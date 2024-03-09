@@ -105,6 +105,7 @@ READ_EXTENSIONS = [
     ".sh",
     ".bat",
     ".pde",
+    ".spec",
 ]
 REACT_SUMMARY_MESSAGE = """
 You are SummaryGPT, an AI creates memories from conversations.
