@@ -19,7 +19,7 @@ class NoNuke(Listen, commands.Cog, metaclass=CompositeMetaClass):
 
     Monitors the following events:
     Kicks & Bans
-    Channel/Thread Creation/Edit/Deletion
+    Channel Creation/Edit/Deletion
     Role Creation/Edit/Deletion
     Emoji/Webhook Deletion
     Member role updates
@@ -34,7 +34,7 @@ class NoNuke(Listen, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "vertyco"
-    __version__ = "1.1.3"
+    __version__ = "1.1.4"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
