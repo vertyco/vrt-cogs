@@ -166,9 +166,9 @@ class ChatHandler(MixinMeta):
                 else:
                     reply = _("Uh oh, looks like my API key is invalid!")
             except openai.RateLimitError as e:
-                reply = str(e)
+                reply = _("Rate limit error: {}").format(e.message)
             except httpx.ReadTimeout as e:
-                reply = str(e)
+                reply = _("Read timeout error: {}").format(str(e))
             except Exception as e:
                 prefix = (await self.bot.get_valid_prefixes(message.guild))[0]
                 log.error(f"API Error (From listener: {listener})", exc_info=e)
