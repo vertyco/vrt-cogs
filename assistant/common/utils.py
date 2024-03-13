@@ -92,7 +92,7 @@ async def can_use(message: discord.Message, blacklist: list, respond: bool = Tru
 
 def embed_to_content(message: discord.Message) -> None:
     if not message.embeds or message.content is not None:
-        return message
+        return
     extracted = ""
     embed = message.embeds[0]
     if title := embed.title:
