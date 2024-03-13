@@ -454,7 +454,7 @@ class ChatHandler(MixinMeta):
                     log.error(f"GPT suggested a function not provided: {function_name}")
                     e = {
                         "role": role,
-                        "name": function_name,
+                        "name": "invalid_function",
                         "content": f"{function_name} is not a valid function name",
                     }
                     if tool_id:
