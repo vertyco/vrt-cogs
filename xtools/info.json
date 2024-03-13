@@ -24,7 +24,7 @@
   "required_cogs": {},
   "requirements": [
     "xmltojson",
-    "xbox-webapi==2.0.11",
+    "xbox-webapi==2.1.0",
     "utils",
     "tabulate"
   ],

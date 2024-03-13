@@ -15,6 +15,7 @@ from redbot.core.utils.chat_formatting import box
 from xbox.webapi.api.client import XboxLiveClient
 from xbox.webapi.authentication.manager import AuthenticationManager
 from xbox.webapi.authentication.models import OAuth2TokenResponse
+from xbox.webapi.common.signed_session import SignedSession
 
 from .dpymenu import DEFAULT_CONTROLS, menu
 from .formatter import (
@@ -41,7 +42,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "vertyco"
-    __version__ = "3.10.6"
+    __version__ = "3.11.0"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -168,7 +169,7 @@ class XTools(commands.Cog):
         client_id = await self.config.clientid()
         client_secret = await self.config.clientsecret()
 
-        async with aiohttp.ClientSession() as session:
+        async with SignedSession() as session:
             auth_mgr = AuthenticationManager(session, client_id, client_secret, REDIRECT_URI)
             try:
                 await auth_mgr.request_tokens(code)
@@ -326,7 +327,7 @@ class XTools(commands.Cog):
     async def set_gamertag(self, ctx, *, gamertag):
         """Set your Gamertag to use commands without entering it"""
         async with ctx.typing():
-            async with aiohttp.ClientSession() as session:
+            async with SignedSession() as session:
                 xbl_client = await self.auth_manager(session, ctx)
                 if not xbl_client:
                     return
@@ -348,7 +349,7 @@ class XTools(commands.Cog):
             gamertag = await self.pull_user(ctx)
             if not gamertag:
                 return
-        async with aiohttp.ClientSession() as session:
+        async with SignedSession() as session:
             xbl_client = await self.auth_manager(session, ctx)
             if not xbl_client:
                 return
@@ -362,7 +363,7 @@ class XTools(commands.Cog):
     @commands.command(name="gamertag")
     async def get_gamertag(self, ctx, *, xuid):
         """Get the Gamertag associated with an XUID"""
-        async with aiohttp.ClientSession() as session:
+        async with SignedSession() as session:
             xbl_client = await self.auth_manager(session, ctx)
             if not xbl_client:
                 return
@@ -382,7 +383,7 @@ class XTools(commands.Cog):
             gamertag = await self.pull_user(ctx)
             if not gamertag:
                 return
-        async with aiohttp.ClientSession() as session:
+        async with SignedSession() as session:
             xbl_client = await self.auth_manager(session, ctx)
             if not xbl_client:
                 return
@@ -432,7 +433,7 @@ class XTools(commands.Cog):
             gamertag = await self.pull_user(ctx)
             if not gamertag:
                 return
-        async with aiohttp.ClientSession() as session:
+        async with SignedSession() as session:
             xbl_client = await self.auth_manager(session, ctx)
             if not xbl_client:
                 return
@@ -479,7 +480,7 @@ class XTools(commands.Cog):
             gamertag = await self.pull_user(ctx)
             if not gamertag:
                 return
-        async with aiohttp.ClientSession() as session:
+        async with SignedSession() as session:
             xbl_client = await self.auth_manager(session, ctx)
             if not xbl_client:
                 return
@@ -608,7 +609,7 @@ class XTools(commands.Cog):
                 gamertag = await self.pull_user(ctx)
                 if not gamertag:
                     return
-            async with aiohttp.ClientSession() as session:
+            async with SignedSession() as session:
                 xbl_client = await self.auth_manager(session, ctx)
                 if not xbl_client:
                     return
@@ -716,7 +717,7 @@ class XTools(commands.Cog):
             gamertag = await self.pull_user(ctx)
             if not gamertag:
                 return
-        async with aiohttp.ClientSession() as session:
+        async with SignedSession() as session:
             xbl_client = await self.auth_manager(session, ctx)
             if not xbl_client:
                 return
@@ -779,7 +780,7 @@ class XTools(commands.Cog):
                     game_ids.append(game["Id"])
                 if len(game_ids) == 0:
                     return await ctx.send("No games found!")
-                async with aiohttp.ClientSession() as session:
+                async with SignedSession() as session:
                     xbl_client = await self.auth_manager(session, ctx)
                     if not xbl_client:
                         return
@@ -796,7 +797,7 @@ class XTools(commands.Cog):
             gamertag = await self.pull_user(ctx)
             if not gamertag:
                 return
-        async with aiohttp.ClientSession() as session:
+        async with SignedSession() as session:
             xbl_client = await self.auth_manager(session, ctx)
             if not xbl_client:
                 return
@@ -927,7 +928,7 @@ class XTools(commands.Cog):
         await cog.register_function("XTools", schema)
 
     async def get_gamertag_profile(self, user: discord.Member, gamertag: str = None, *args, **kwargs):
-        async with aiohttp.ClientSession() as session:
+        async with SignedSession() as session:
             if not gamertag:
                 users = await self.config.users()
                 if str(user.id) not in users:

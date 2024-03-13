@@ -180,3 +180,6 @@ function_wizard.py
 dbtestnew/
 locallm/
 llm/
+scratches/
+setools/test.py
+setools/
