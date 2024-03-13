@@ -64,81 +64,87 @@ class VoteView(discord.ui.View):
             # This should never happen
             return False
 
-        # Check blacklists
-        if voter.id in conf.user_blacklist:
-            await interaction.response.send_message(_("You are blacklisted from voting."), ephemeral=True)
-            return False
-        if any(role.id in conf.role_blacklist for role in voter.roles):
-            await interaction.response.send_message(_("You have a blacklisted role and cannot vote."), ephemeral=True)
-            return False
-
-        # If vote_roles isnt empty, make sure voter has one of the roles
-        if conf.vote_roles and not any(role.id in conf.vote_roles for role in voter.roles):
-            await interaction.response.send_message(_("You do not have the required roles to vote."), ephemeral=True)
-            return False
-
-        # Check account age
-        if conf.min_account_age_to_vote:
-            age = (datetime.now().astimezone() - voter.created_at).total_seconds() / 3600
-            if age < conf.min_account_age_to_vote:
+        if not await self.bot.is_admin(voter):
+            # Check blacklists
+            if voter.id in conf.user_blacklist:
+                await interaction.response.send_message(_("You are blacklisted from voting."), ephemeral=True)
+                return False
+            if any(role.id in conf.role_blacklist for role in voter.roles):
                 await interaction.response.send_message(
-                    _("Your account is too young to vote. You must wait {age} more hours.").format(
-                        age=conf.min_account_age_to_vote - age
-                    ),
-                    ephemeral=True,
+                    _("You have a blacklisted role and cannot vote."), ephemeral=True
                 )
                 return False
 
-        # Check join time
-        if conf.min_join_time_to_vote:
-            age = (datetime.now().astimezone() - voter.joined_at).total_seconds() / 3600
-            if age < conf.min_join_time_to_vote:
+            # If vote_roles isnt empty, make sure voter has one of the roles
+            if conf.vote_roles and not any(role.id in conf.vote_roles for role in voter.roles):
                 await interaction.response.send_message(
-                    _("You must wait {age} more hours before you can vote.").format(
-                        age=conf.min_join_time_to_vote - age
-                    ),
-                    ephemeral=True,
+                    _("You do not have the required roles to vote."), ephemeral=True
                 )
                 return False
 
-        # Check LevelUp requirement
-        if conf.min_level_to_vote and self.bot.get_cog("LevelUp"):
-            try:
-                levelup = self.bot.get_cog("LevelUp")
-                if self.guild.id in levelup.data:
-                    levelup.init_user(self.guild.id, str(interaction.user.id))
-                    level = levelup.data[self.guild.id]["users"][str(interaction.user.id)]["level"]
-                    if level < conf.min_level_to_vote:
-                        await interaction.response.send_message(
-                            _("You must be level {level} to vote.").format(level=conf.min_level_to_vote), ephemeral=True
-                        )
-                        return False
-            except Exception as e:
-                log.exception("Error checking LevelUp requirement", exc_info=e)
-
-        # Check ArkTools requirement
-        if conf.min_playtime_to_vote and self.bot.get_cog("ArkTools"):
-            try:
-                arktools = self.bot.get_cog("ArkTools")
-                player = await arktools.db_utils.search_player_cached(self.guild, interaction.user)
-                if not player:
-                    prefixes = await self.bot.get_valid_prefixes()
-                    prefix = prefixes[0]
-                    txt = _("Your in-game profile must be registered in order to vote on suggestions.\n")
-                    txt += _("Use the {} command to link your discord account.").format(f"`{prefix}register`")
-                    await interaction.response.send_message(txt, ephemeral=True)
-                    return False
-                playtime_hours = player.total_playtime / 3600
-                if playtime_hours < conf.min_playtime_to_vote:
+            # Check account age
+            if conf.min_account_age_to_vote:
+                age = (datetime.now().astimezone() - voter.created_at).total_seconds() / 3600
+                if age < conf.min_account_age_to_vote:
                     await interaction.response.send_message(
-                        _("You must have at least {hours} hours of playtime to vote.").format(
-                            hours=conf.min_playtime_to_vote
+                        _("Your account is too young to vote. You must wait {age} more hours.").format(
+                            age=conf.min_account_age_to_vote - age
                         ),
                         ephemeral=True,
                     )
                     return False
-            except Exception as e:
-                log.exception("Error checking ArkTools requirement", exc_info=e)
+
+            # Check join time
+            if conf.min_join_time_to_vote:
+                age = (datetime.now().astimezone() - voter.joined_at).total_seconds() / 3600
+                if age < conf.min_join_time_to_vote:
+                    await interaction.response.send_message(
+                        _("You must wait {age} more hours before you can vote.").format(
+                            age=round(conf.min_join_time_to_vote - age, 1)
+                        ),
+                        ephemeral=True,
+                    )
+                    return False
+
+            # Check LevelUp requirement
+            if conf.min_level_to_vote and self.bot.get_cog("LevelUp"):
+                try:
+                    levelup = self.bot.get_cog("LevelUp")
+                    if self.guild.id in levelup.data:
+                        levelup.init_user(self.guild.id, str(interaction.user.id))
+                        level = levelup.data[self.guild.id]["users"][str(interaction.user.id)]["level"]
+                        if level < conf.min_level_to_vote:
+                            await interaction.response.send_message(
+                                _("You must be level {level} to vote.").format(level=conf.min_level_to_vote),
+                                ephemeral=True,
+                            )
+                            return False
+                except Exception as e:
+                    log.exception("Error checking LevelUp requirement", exc_info=e)
+
+            # Check ArkTools requirement
+            if conf.min_playtime_to_vote and self.bot.get_cog("ArkTools"):
+                try:
+                    arktools = self.bot.get_cog("ArkTools")
+                    player = await arktools.db_utils.search_player_cached(self.guild, interaction.user)
+                    if not player:
+                        prefixes = await self.bot.get_valid_prefixes()
+                        prefix = prefixes[0]
+                        txt = _("Your in-game profile must be registered in order to vote on suggestions.\n")
+                        txt += _("Use the {} command to link your discord account.").format(f"`{prefix}register`")
+                        await interaction.response.send_message(txt, ephemeral=True)
+                        return False
+                    playtime_hours = player.total_playtime / 3600
+                    if playtime_hours < conf.min_playtime_to_vote:
+                        await interaction.response.send_message(
+                            _("You must have at least {hours} hours of playtime to vote.").format(
+                                hours=conf.min_playtime_to_vote
+                            ),
+                            ephemeral=True,
+                        )
+                        return False
+                except Exception as e:
+                    log.exception("Error checking ArkTools requirement", exc_info=e)
 
         return True
 
