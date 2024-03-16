@@ -16,7 +16,7 @@ class VrtUtils(Utils, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "vertyco"
-    __version__ = "2.4.1"
+    __version__ = "2.4.2"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
