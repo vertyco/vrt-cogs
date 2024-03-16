@@ -573,3 +573,16 @@ class BotInfo(MixinMeta):
             await ctx.author.send("Here are the bot's API keys", file=file)
         except discord.Forbidden:
             await ctx.send("I cannot DM you, please enable DMs and try again.")
+
+    @commands.command(name="isownerof")
+    @commands.is_owner()
+    async def is_owner_of(self, ctx: commands.Context, user_id: int):
+        """Get a list of servers the specified user is the owner of"""
+        owner_of = ""
+        for guild in self.bot.guilds:
+            if guild.owner_id == user_id:
+                owner_of += f"- {guild.name} ({guild.id})\n"
+        if not owner_of:
+            return await ctx.send("That user is not the owner of any servers I am in.")
+        for p in pagify(owner_of):
+            await ctx.send(p)
