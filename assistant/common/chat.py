@@ -156,6 +156,8 @@ class ChatHandler(MixinMeta):
                 if e.body and isinstance(e.body, dict):
                     if msg := e.body.get("error", {}).get("message"):
                         reply = _("Internal Server Error({}): {}").format(e.status_code, msg)
+                    elif msg := e.body.get("message"):
+                        reply = _("Internal Server Error({}): {}").format(e.status_code, msg)
                     else:
                         log.error(f"Internal Server Error (From listener: {listener})", exc_info=e)
                         reply = _("Internal Server Error({}): {}").format(e.status_code, e.body)
