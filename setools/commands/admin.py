@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import typing as t
@@ -8,6 +9,7 @@ from redbot.core import commands
 from redbot.core.utils.chat_formatting import text_to_file
 
 from ..abc import MixinMeta
+from ..common.imgen import generate_visualization
 from ..views.editserver import EditServerMenu
 from ..vragepy import VRageClient
 
@@ -102,6 +104,39 @@ class Admin(MixinMeta):
             return
 
         await ctx.send(f"Server `{server_name}` saved")
+
+    @setools.command(name="visualize")
+    @commands.bot_has_permissions(attach_files=True)
+    async def visualize_world(self, ctx: commands.Context, *, server_name: str):
+        """
+        Generate an visualization of the world
+
+        **Note**: The HTML file needs to be opened in a browser to view the visualization
+        """
+        conf = self.db.get_conf(ctx.guild)
+        server = conf.get_server(server_name)
+        if not server:
+            suggested = conf.get_server_similar(server_name)
+            if suggested:
+                await ctx.send(f"Server {server_name} not found. Did you mean **{suggested.name}**?")
+            else:
+                await ctx.send(f"Server {server_name} not found")
+            return
+        async with ctx.typing():
+            try:
+                client = VRageClient(base_url=server.address, token=server.token)
+                asteroids = (await client.get_asteroids()).data.Asteroids
+                planets = (await client.get_planets()).data.Planets
+                grids = (await client.get_grids()).data.Grids
+                objects = (await client.get_floating_objects()).data.FloatingObjects
+            except Exception as e:
+                log.error(f"Failed to visualize world for {server_name}", exc_info=e)
+                await ctx.send(f"Failed to visualize world for {server_name}")
+                return
+
+            html = await asyncio.to_thread(generate_visualization, asteroids, planets, grids, objects)
+            file = text_to_file(html, filename="visualization.html")
+            await ctx.send(file=file)
 
     @setools.command(name="delete")
     async def delete_thing(
