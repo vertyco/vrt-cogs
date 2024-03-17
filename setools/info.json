@@ -1,0 +1,26 @@
+{
+  "author": ["Vertyco"],
+  "description": "Server management tools for Space Engineers servers.",
+  "disabled": false,
+  "end_user_data_statement": "This cog does not store any user data.",
+  "hidden": false,
+  "install_msg": "Thank you for installing!",
+  "min_bot_version": "3.5.3",
+  "min_python_version": [3, 10, 0],
+  "permissions": [],
+  "required_cogs": {},
+  "requirements": ["pydantic"],
+  "short": "Space Engineers Server Manager",
+  "tags": [
+    "space",
+    "engineers",
+    "server",
+    "manager",
+    "utility",
+    "management",
+    "tools",
+    "se",
+    "vrage"
+  ],
+  "type": "COG"
+}
