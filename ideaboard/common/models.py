@@ -10,6 +10,7 @@ class Suggestion(Base):
     id: str
     message_id: int
     author_id: int
+    thread_id: int = 0
 
     # Upvotes/Downvotes are a list of user IDs
     upvotes: list[int] = []
@@ -47,6 +48,8 @@ class GuildSettings(Base):
     upvote: str | int = "\N{THUMBS UP SIGN}"
     downvote: str | int = "\N{THUMBS DOWN SIGN}"
     show_vote_counts: bool = True
+    # Whether to open a discussion thread for each suggestion
+    discussion_threads: bool = False
 
     # Roles required to make suggestions and vote
     vote_roles: list[int] = []

@@ -23,7 +23,7 @@ class User(MixinMeta):
     @commands.hybrid_command(name="idea", aliases=["suggest"], description=_("Share an idea/make a suggestion."))
     @app_commands.describe(content="Your idea or suggestion")
     @commands.guild_only()
-    @commands.bot_has_guild_permissions(send_messages=True, embed_links=True)
+    @commands.bot_has_guild_permissions(send_messages=True, embed_links=True, create_public_threads=True)
     async def idea(self, ctx: commands.Context, *, content: str):
         """Share an idea/make a suggestion."""
 
@@ -78,9 +78,7 @@ class User(MixinMeta):
                 return await resp(_("You haven't been in the server long enough to make suggestions."))
 
         # Check role blacklist
-        if conf.role_blacklist and any(
-            role in [role.id for role in ctx.author.roles] for role in conf.role_blacklist
-        ):
+        if conf.role_blacklist and any(role in [role.id for role in ctx.author.roles] for role in conf.role_blacklist):
             return await resp(_("You are not allowed to make suggestions due to a blacklisted role."))
 
         # Check user blacklist
@@ -172,6 +170,13 @@ class User(MixinMeta):
         message = await channel.send(count, embed=embed, view=view)
 
         suggestion = Suggestion(id=suggestion_id, message_id=message.id, author_id=ctx.author.id)
+        if conf.discussion_threads:
+            try:
+                thread = await message.create_thread(name="Discussion")
+                suggestion.thread_id = thread.id
+            except discord.Forbidden:
+                log.warning(f"Failed to create a discussion thread for suggestion {suggestion_number} in {ctx.guild}")
+
         conf.suggestions[suggestion_number] = suggestion
         conf.counter = suggestion_number
 

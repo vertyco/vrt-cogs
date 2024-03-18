@@ -36,17 +36,18 @@ class Admin(MixinMeta):
         }
         up, down = conf.get_emojis(self.bot)
         main = _(
-            "`Approved Channel: `{}\n"
-            "`Rejected Channel: `{}\n"
-            "`Pending Channel:  `{}\n"
-            "`Anonymous:        `{}\n"
-            "`Reveal Complete:  `{}\n"
-            "`DM Result:        `{}\n"
-            "`Upvote Emoji:     `{}\n"
-            "`Downvote Emoji:   `{}\n"
-            "`Show Vote Counts: `{}\n"
-            "`Suggestions:      `{}\n"
-            "`Suggestion #:     `{}\n"
+            "`Approved Channel:   `{}\n"
+            "`Rejected Channel:   `{}\n"
+            "`Pending Channel:    `{}\n"
+            "`Anonymous:          `{}\n"
+            "`Reveal Complete:    `{}\n"
+            "`DM Result:          `{}\n"
+            "`Discussion Threads: `{}\n"
+            "`Upvote Emoji:       `{}\n"
+            "`Downvote Emoji:     `{}\n"
+            "`Show Vote Counts:   `{}\n"
+            "`Suggestions:        `{}\n"
+            "`Suggestion #:       `{}\n"
         ).format(
             f"<#{conf.approved}>" if conf.approved else _("Not set"),
             f"<#{conf.rejected}>" if conf.rejected else _("Not set"),
@@ -54,6 +55,7 @@ class Admin(MixinMeta):
             conf.anonymous,
             conf.reveal,
             conf.dm,
+            conf.discussion_threads,
             up,
             down,
             conf.show_vote_counts,
@@ -187,6 +189,15 @@ class Admin(MixinMeta):
         conf.dm = not conf.dm
         state = "enabled" if conf.dm else "disabled"
         await ctx.send(_("DMing users about suggestion results is now {}.").format(state))
+        await self.save()
+
+    @ideaset.command(name="discussions", aliases=["threads", "discussion"])
+    async def toggle_discussions(self, ctx: commands.Context):
+        """Toggle opening a discussion thread for each suggestion"""
+        conf = self.db.get_conf(ctx.guild)
+        conf.discussion_threads = not conf.discussion_threads
+        state = "enabled" if conf.discussion_threads else "disabled"
+        await ctx.send(_("Discussion threads are now {}.").format(state))
         await self.save()
 
     @ideaset.command(name="upvoteemoji", aliases=["upvote", "up"])
@@ -444,6 +455,12 @@ class Admin(MixinMeta):
             await self.save()
             return
 
+        if suggestion.thread_id:
+            thread = await ctx.guild.fetch_channel(suggestion.thread_id)
+            if thread:
+                with suppress(discord.NotFound):
+                    await thread.delete()
+
         content = message.embeds[0].description
         embed = discord.Embed(color=discord.Color.green(), description=content, title=_("Approved Suggestion"))
         if author := ctx.guild.get_member(suggestion.author_id):
@@ -554,6 +571,12 @@ class Admin(MixinMeta):
             await ctx.send(txt)
             await self.save()
             return
+
+        if suggestion.thread_id:
+            thread = await ctx.guild.fetch_channel(suggestion.thread_id)
+            if thread:
+                with suppress(discord.NotFound):
+                    await thread.delete()
 
         content = message.embeds[0].description
         embed = discord.Embed(color=discord.Color.red(), description=content, title=_("Rejected Suggestion"))
