@@ -53,6 +53,8 @@ class StatusChannel(MixinMeta):
                     objs = await client.get_floating_objects()
                     grids = await client.get_grids()
                     planets = await client.get_planets()
+                except asyncio.TimeoutError:
+                    continue
                 except Exception as e:
                     log.exception(f"get_status failed for {server.name} in {guild}", exc_info=e)
                     all_online = False

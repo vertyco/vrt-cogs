@@ -46,6 +46,8 @@ class CrossChat(MixinMeta):
         date = self.last_timestamp.get(key)
         try:
             resp = await client.get_chat(date=date)
+        except asyncio.TimeoutError:
+            return
         except Exception as e:
             log.exception(f"get_chat failed for {server.name} in {guild}", exc_info=e)
             return

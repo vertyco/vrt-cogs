@@ -19,7 +19,7 @@ class SETools(SETasks, MessageListener, Commands, commands.Cog, metaclass=Compos
     """Space Engineers Server Tools for Discord"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.0.2a"
+    __version__ = "0.0.3a"
 
     def __init__(self, bot: Red):
         super().__init__()

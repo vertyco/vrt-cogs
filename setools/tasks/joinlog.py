@@ -44,6 +44,8 @@ class JoinLog(MixinMeta):
             try:
                 client = VRageClient(base_url=server.address, token=server.token)
                 resp = await client.get_players()
+            except asyncio.TimeoutError:
+                return
             except Exception as e:
                 log.exception(f"get_players failed for {server.name} in {guild}", exc_info=e)
                 continue
