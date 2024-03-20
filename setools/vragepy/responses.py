@@ -100,7 +100,7 @@ class Asteroid(_Base):
 
     @property
     def pos(self) -> str:
-        return f"{round(self.Position.X, 2)}, {round(self.Position.Y, 2)}, {round(self.Position.Z, 2)}"
+        return f"{round(self.Position.X, 4)}, {round(self.Position.Y, 4)}, {round(self.Position.Z, 4)}"
 
 
 class FloatingObject(_Base):
@@ -114,7 +114,7 @@ class FloatingObject(_Base):
 
     @property
     def pos(self) -> str:
-        return f"{round(self.Position.X, 2)}, {round(self.Position.Y, 2)}, {round(self.Position.Z, 2)}"
+        return f"{round(self.Position.X, 4)}, {round(self.Position.Y, 4)}, {round(self.Position.Z, 4)}"
 
 
 class GridSize(Enum):
@@ -137,7 +137,7 @@ class Grid(_Base):
 
     @property
     def pos(self) -> str:
-        return f"{round(self.Position.X, 2)}, {round(self.Position.Y, 2)}, {round(self.Position.Z, 2)}"
+        return f"{round(self.Position.X, 4)}, {round(self.Position.Y, 4)}, {round(self.Position.Z, 4)}"
 
 
 class Planet(_Base):
@@ -147,7 +147,7 @@ class Planet(_Base):
 
     @property
     def pos(self) -> str:
-        return f"{round(self.Position.X, 2)}, {round(self.Position.Y, 2)}, {round(self.Position.Z, 2)}"
+        return f"{round(self.Position.X, 4)}, {round(self.Position.Y, 4)}, {round(self.Position.Z, 4)}"
 
 
 class Message(_Base):
