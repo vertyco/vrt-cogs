@@ -136,7 +136,7 @@ class Admin(MixinMeta):
 
             html = await asyncio.to_thread(generate_visualization, asteroids, planets, grids, objects)
             file = text_to_file(html, filename="visualization.html")
-            await ctx.send(file=file)
+            await ctx.send("Open the file below in your web browser", file=file)
 
     @setools.command(name="delete")
     async def delete_thing(
