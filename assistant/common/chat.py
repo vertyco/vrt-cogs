@@ -114,7 +114,7 @@ class ChatHandler(MixinMeta):
                 except UnicodeDecodeError:
                     pass
                 except Exception as e:
-                    log.info(f"Failed to decode content of {i.filename}", exc_info=e)
+                    log.error(f"Failed to decode content of {i.filename}", exc_info=e)
 
             if i.filename == "message.txt":
                 question += f"\n\n### Uploaded File:\n{text}\n"
@@ -428,7 +428,7 @@ class ChatHandler(MixinMeta):
                 continue
 
             if len(response_functions) > 1:
-                log.info(f"Calling {len(response_functions)} functions at once")
+                log.debug(f"Calling {len(response_functions)} functions at once")
 
             dump = response.model_dump()
             if not dump["function_call"]:
@@ -531,7 +531,7 @@ class ChatHandler(MixinMeta):
                     f"Called function {function_name} in {guild.name} for {author.display_name}\n"
                     f"Params: {args}\nResult: {result}"
                 )
-                log.info(info)
+                log.debug(info)
                 e = {"role": role, "name": function_name, "content": result}
                 if tool_id:
                     e["tool_call_id"] = tool_id
@@ -546,7 +546,7 @@ class ChatHandler(MixinMeta):
 
         # Handle the rest of the reply
         if calls > 1:
-            log.info(f"Made {calls} function calls in a row")
+            log.debug(f"Made {calls} function calls in a row")
 
         block = False
         if reply:
