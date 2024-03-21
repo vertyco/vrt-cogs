@@ -73,6 +73,9 @@ class AssistantListener(MixinMeta):
             ignore_prefixes = [",", ".", "+", "!", "-", ">"]
             if any(message.content.startswith(i) for i in ignore_prefixes):
                 return
+            if ref.author.id == self.bot.user.id and not conf.mention_respond:
+                # Ignore mentions on reply if mention_respond is disabled
+                return
 
         if not await can_use(message, conf.blacklist, respond=False):
             return
