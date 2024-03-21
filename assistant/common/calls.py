@@ -4,6 +4,7 @@ from typing import List, Optional
 
 import httpx
 import openai
+from openai.types import CreateEmbeddingResponse
 from openai.types.chat import ChatCompletion
 from sentry_sdk import add_breadcrumb
 from tenacity import (
@@ -24,6 +25,7 @@ log = logging.getLogger("red.vrt.assistant.calls")
             httpx.TimeoutException,
             openai.BadRequestError,
             httpx.ReadTimeout,
+            openai.InternalServerError,
         ]
     ),
     wait=wait_random_exponential(min=5, max=15),
@@ -81,6 +83,7 @@ async def request_chat_completion_raw(
             httpx.TimeoutException,
             openai.BadRequestError,
             httpx.ReadTimeout,
+            openai.InternalServerError,
         ]
     ),
     wait=wait_random_exponential(min=5, max=15),
@@ -91,7 +94,7 @@ async def request_embedding_raw(
     text: str,
     api_key: str,
     model: str,
-) -> List[float]:
+) -> CreateEmbeddingResponse:
     log.debug("request_embedding_raw")
     client = openai.AsyncOpenAI(api_key=api_key)
     add_breadcrumb(
