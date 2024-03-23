@@ -81,7 +81,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "vertyco"
-    __version__ = "3.13.1"
+    __version__ = "3.13.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -708,11 +708,6 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         elif (now - self.lastmsg[gid][uid]).total_seconds() > conf["cooldown"]:
             addxp = True
 
-        if not conf["command_xp"]:
-            prefixes = await self.bot.get_valid_prefixes(guild)
-            if message.content.startswith(tuple(prefixes)):
-                addxp = False
-
         try:
             roles = list(message.author.roles)
         except AttributeError:  # User sent message and then left?
@@ -729,7 +724,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         if int(uid) in conf["ignoredusers"]:
             addxp = False
 
-        if conf["length"]:  # Make sure message meets minimum length requirements
+        if conf["length"] and addxp:  # Make sure message meets minimum length requirements
 
             def _sub():
                 regex = r"<(@!|#)[0-9]{18}>|<a{0,1}:[a-zA-Z0-9_.]{2,32}:[0-9]{18,19}>"
@@ -739,6 +734,11 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
                 return True
 
             addxp = await asyncio.to_thread(_sub)
+
+        if addxp and not conf["command_xp"]:
+            prefixes = await self.bot.get_valid_prefixes(guild)
+            if message.content.startswith(tuple(prefixes)):
+                addxp = False
 
         if addxp:  # Give XP
             xp_to_give = xp
