@@ -174,7 +174,8 @@ class VoteView(discord.ui.View):
             suggestion.upvotes.append(uid)
             profile.upvotes += 1
 
-        await interaction.followup.send(txt, ephemeral=True)
+        with suppress(discord.NotFound):
+            await interaction.followup.send(txt, ephemeral=True)
 
         if conf.show_vote_counts:
             self.update_labels()
@@ -208,7 +209,8 @@ class VoteView(discord.ui.View):
             suggestion.downvotes.append(uid)
             profile.downvotes += 1
 
-        await interaction.followup.send(txt, ephemeral=True)
+        with suppress(discord.NotFound):
+            await interaction.followup.send(txt, ephemeral=True)
 
         if conf.show_vote_counts:
             self.update_labels()
