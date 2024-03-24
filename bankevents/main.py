@@ -3,7 +3,6 @@ import logging
 import typing as t
 from pathlib import Path
 
-import discord
 from redbot.core import bank, commands
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import box
@@ -21,7 +20,7 @@ class BankEvents(commands.Cog):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.0.1"
+    __version__ = "0.0.2"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -81,24 +80,17 @@ class BankEvents(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    @commands.bot_has_permissions(embed_links=True)
     async def bankevents(self, ctx: commands.Context):
         """Get help using the BankEvents cog"""
         examples = Path(__file__).parent / "examples.txt"
         txt = (
-            "This cog dispatches listener events for Red bank transactions.\n"
-            "The following events are available:\n"
+            "This cog allows you to add listeners for Red bank transactions in your own cogs "
+            "by dispatching the following events:\n"
             "- bank_set_balance\n"
             "- bank_withdraw_credits\n"
             "- bank_deposit_credits\n"
             "- bank_transfer_credits\n"
-            "This cog allows you to add listeners for these events in your own cogs.\n"
-            "Here are some examples:\n"
+            "Here are the implementations you can use in your cogs that will work when this cog is loaded:\n"
             f"{box(examples.read_text(), 'python')}"
         )
-        embed = discord.Embed(
-            title="BankEvents Listener Help",
-            description=txt,
-            color=await ctx.embed_color(),
-        )
-        return await ctx.send(embed=embed)
+        return await ctx.send(txt)
