@@ -112,7 +112,7 @@ class User(MixinMeta):
                 if not player:
                     txt = _("You must be registered in the ArkTools database to make suggestions.")
                     return await resp(txt)
-                playtime_hours = player.playtime / 3600
+                playtime_hours = player.total_playtime / 3600
                 if playtime_hours < conf.min_playtime_to_suggest:
                     return await resp(
                         _("You must have at least {} hours of playtime to make suggestions.").format(
