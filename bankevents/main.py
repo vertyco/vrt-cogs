@@ -1,7 +1,7 @@
 import functools
 import logging
-import typing as t
 from pathlib import Path
+from typing import Callable
 
 from redbot.core import bank, commands
 from redbot.core.bot import Red
@@ -20,7 +20,7 @@ class BankEvents(commands.Cog):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.0.2"
+    __version__ = "0.0.3"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -31,7 +31,7 @@ class BankEvents(commands.Cog):
         self.deposit_credits = None
         self.transfer_credits = None
 
-    def format_help_for_context(self, ctx: commands.Context):
+    def format_help_for_context(self, ctx: commands.Context) -> str:
         helpcmd = super().format_help_for_context(ctx)
         txt = "Version: {}\nAuthor: {}".format(self.__version__, self.__author__)
         return f"{helpcmd}\n\n{txt}"
@@ -69,10 +69,9 @@ class BankEvents(commands.Cog):
 
         log.info("Bank methods restored")
 
-    def bank_wrapper(self, coro: t.Callable, event: str):
+    def bank_wrapper(self, coro: Callable, event: str) -> Callable:
         async def wrapped(*args, **kwargs):
             self.bot.dispatch(event, *args, **kwargs)
-            # log.debug(f"Dispatched {event} - args: {args}, kwargs: {kwargs}")
             return await coro(*args, **kwargs)
 
         functools.update_wrapper(wrapped, coro)
