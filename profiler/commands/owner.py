@@ -397,7 +397,6 @@ class Owner(MixinMeta):
     async def autocomplete_names_detach(
         self, interaction: discord.Interaction, current: str
     ) -> t.List[app_commands.Choice]:
-        print(f"Current: {current}")
         choices: t.List[app_commands.Choice] = []
         for i in self.db.tracked_cogs:
             if current.lower() in i.lower() and len(choices) < 25:

@@ -295,7 +295,7 @@ class XTools(commands.Cog):
         except discord.Forbidden:
             await ctx.send("I do not have permissions to delete your message!")
         except discord.NotFound:
-            print("Where dafuq did the message go?")
+            pass
 
     @api_settings.command(name="reset")
     async def reset_cog(self, ctx: commands.Context):
