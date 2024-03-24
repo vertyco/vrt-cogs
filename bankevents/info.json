@@ -1,0 +1,16 @@
+{
+  "author": ["Vertyco"],
+  "description": "Dispatches events when different bank transactions occur, such as when a user deposits credits, withdraws credits, or transfers credits.",
+  "disabled": false,
+  "end_user_data_statement": "This cog does not store end user data.",
+  "hidden": false,
+  "install_msg": "Thank you for installing!\n**WARNING:** This cog modifies Red's bank methods by wrapping them in event dispatchers. If you are not okay with that, please uninstall this cog.",
+  "min_bot_version": "3.5.0",
+  "min_python_version": [3, 9, 0],
+  "permissions": [],
+  "required_cogs": {},
+  "requirements": [],
+  "short": "Bank transaction listener events for 3rd party cogs",
+  "tags": ["bank", "events", "listeners", "economy", "developers"],
+  "type": "COG"
+}
