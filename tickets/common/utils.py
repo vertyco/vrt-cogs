@@ -259,7 +259,7 @@ async def close_ticket(
             elif perms[1]:
                 log_msg = await log_chan.send(backup_text, files=attachments or None, view=view)
         except discord.HTTPException as e:
-            if "Payload Too Large" in e.text:
+            if "Payload Too Large" in str(e) or "Request entity too large" in str(e):
                 text_file = text_to_file(text, filename) if text else None
                 zip_file = discord.File(BytesIO(zip_bytes), filename="attachments.zip") if zip_bytes else None
                 attachments = []
