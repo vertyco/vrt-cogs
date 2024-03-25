@@ -75,7 +75,6 @@ async def on_red_economy_payday_claim(self, payload: PayDayClaimInformation):
     - amount_received: int
     - is_global: bool
     """
-
 ```
 
 This cog was written with the intention of being a placeholder until the following PR gets merged:

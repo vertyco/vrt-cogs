@@ -18,14 +18,11 @@ from .constants import SUPPORTS_SEED, SUPPORTS_TOOLS
 
 log = logging.getLogger("red.vrt.assistant.calls")
 
-retry_on = (httpx.TimeoutException, httpx.ReadTimeout, openai.BadRequestError, openai.InternalServerError)
-
 
 @retry(
     retry=retry_if_exception_type(
         t.Union[
             httpx.TimeoutException,
-            openai.BadRequestError,
             httpx.ReadTimeout,
             openai.InternalServerError,
         ]
@@ -84,7 +81,6 @@ async def request_chat_completion_raw(
     retry=retry_if_exception_type(
         t.Union[
             httpx.TimeoutException,
-            openai.BadRequestError,
             httpx.ReadTimeout,
             openai.InternalServerError,
         ]

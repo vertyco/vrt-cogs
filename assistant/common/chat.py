@@ -155,8 +155,10 @@ class ChatHandler(MixinMeta):
             except openai.InternalServerError as e:
                 if e.body and isinstance(e.body, dict):
                     if msg := e.body.get("error", {}).get("message"):
+                        log.warning("InternalServerError [error][message]", exc_info=e)
                         reply = _("Internal Server Error({}): {}").format(e.status_code, msg)
-                    elif msg := e.body.get("message"):
+                    if msg := e.body.get("message"):
+                        log.warning("InternalServerError [message]", exc_info=e)
                         reply = _("Internal Server Error({}): {}").format(e.status_code, msg)
                     else:
                         log.error(f"Internal Server Error (From listener: {listener})", exc_info=e)
@@ -403,6 +405,24 @@ class ChatHandler(MixinMeta):
             except httpx.ReadTimeout:
                 reply = _("Request timed out, please try again.")
                 break
+            except openai.BadRequestError as e:
+                if e.body and isinstance(e.body, dict):
+                    if msg := e.body.get("error", {}).get("message"):
+                        log.warning("BadRequestError [error][message]", exc_info=e)
+                        reply = _("Bad Request Error({}): {}").format(e.status_code, msg)
+                    if msg := e.body.get("message"):
+                        log.warning("BadRequestError [message]", exc_info=e)
+                        reply = _("Bad Request Error({}): {}").format(e.status_code, msg)
+                    else:
+                        log.error("Bad Request Error", exc_info=e)
+                        reply = _("Bad Request Error({}): {}").format(e.status_code, e.body)
+                else:
+                    reply = _("Bad Request Error({}): {}").format(e.status_code, e.message)
+                if guild.id == 625757527765811240:
+                    # Dump payload for debugging if its my guild
+                    dump_file = text_to_file(json.dumps(messages, indent=2), filename=f"{author}_convo_BadRequest.json")
+                    await channel.send(file=dump_file)
+                break
             except Exception as e:
                 add_breadcrumb(
                     category="chat",
@@ -411,7 +431,7 @@ class ChatHandler(MixinMeta):
                 )
                 if guild.id == 625757527765811240:
                     # Dump payload for debugging if its my guild
-                    dump_file = text_to_file(json.dumps(messages, indent=2), filename=f"{author}_convo.json")
+                    dump_file = text_to_file(json.dumps(messages, indent=2), filename=f"{author}_convo_Exception.json")
                     await channel.send(file=dump_file)
 
                 raise e
