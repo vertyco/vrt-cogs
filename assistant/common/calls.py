@@ -18,6 +18,8 @@ from .constants import SUPPORTS_SEED, SUPPORTS_TOOLS
 
 log = logging.getLogger("red.vrt.assistant.calls")
 
+retry_on = (httpx.TimeoutException, httpx.ReadTimeout, openai.BadRequestError, openai.InternalServerError)
+
 
 @retry(
     retry=retry_if_exception_type(
@@ -28,8 +30,8 @@ log = logging.getLogger("red.vrt.assistant.calls")
             openai.InternalServerError,
         ]
     ),
-    wait=wait_random_exponential(min=5, max=15),
-    stop=stop_after_attempt(3),
+    wait=wait_random_exponential(min=5, max=30),
+    stop=stop_after_attempt(5),
     reraise=True,
 )
 async def request_chat_completion_raw(
@@ -87,8 +89,8 @@ async def request_chat_completion_raw(
             openai.InternalServerError,
         ]
     ),
-    wait=wait_random_exponential(min=5, max=15),
-    stop=stop_after_attempt(3),
+    wait=wait_random_exponential(min=5, max=30),
+    stop=stop_after_attempt(5),
     reraise=True,
 )
 async def request_embedding_raw(
