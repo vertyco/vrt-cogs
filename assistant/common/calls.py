@@ -43,7 +43,6 @@ async def request_chat_completion_raw(
     presence_penalty: float = 0.0,
     seed: int = None,
 ) -> ChatCompletion:
-    log.debug(f"request_chat_completion_raw: {model}")
     client = openai.AsyncOpenAI(api_key=api_key)
     kwargs = {
         "model": model,
@@ -73,7 +72,9 @@ async def request_chat_completion_raw(
         level="info",
         data=kwargs,
     )
-    response = await client.chat.completions.create(**kwargs)
+    response: ChatCompletion = await client.chat.completions.create(**kwargs)
+
+    log.debug(f"request_chat_completion_raw: {model} -> {response.model}")
     return response
 
 
@@ -95,7 +96,6 @@ async def request_embedding_raw(
     api_key: str,
     model: str,
 ) -> CreateEmbeddingResponse:
-    log.debug("request_embedding_raw")
     client = openai.AsyncOpenAI(api_key=api_key)
     add_breadcrumb(
         category="api",
@@ -103,5 +103,6 @@ async def request_embedding_raw(
         level="info",
         data={"text": text},
     )
-    response = await client.embeddings.create(input=text, model=model)
+    response: CreateEmbeddingResponse = await client.embeddings.create(input=text, model=model)
+    log.debug(f"request_embedding_raw: {model} -> {response.model}")
     return response

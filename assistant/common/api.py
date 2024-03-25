@@ -278,7 +278,6 @@ class API(MixinMeta):
     # -------------------- FORMATTING -----------------------
     # -------------------------------------------------------
     # -------------------------------------------------------
-
     async def degrade_conversation(
         self,
         messages: List[dict],
@@ -306,13 +305,112 @@ class API(MixinMeta):
         Returns:
             bool: whether the conversation was degraded
         """
+        # Fetch the current model the user is using
+        model = conf.get_user_model(user)
+        # Fetch the max token limit for the current user
+        max_tokens = min(self.get_max_tokens(conf, user), MODELS[model] - 96)
+        # Token count of current conversation
+        convo_tokens = await self.count_payload_tokens(messages, model)
+        # Token count of function calls available to model
+        function_tokens = await self.count_function_tokens(function_list, model)
 
-        def _degrade_text(txt: str) -> str:
-            words = txt.split()
-            if len(words) > 1:
-                return " ".join(words[:-1])
-            else:
-                return ""
+        total_tokens = convo_tokens + function_tokens
+
+        # Check if the total token count is already under the max token limit
+        if total_tokens <= max_tokens:
+            return False
+
+        log.debug(f"Degrading messages for {user} (total: {total_tokens}/max: {max_tokens})")
+
+        def count(role: str):
+            return sum(1 for msg in messages if msg["role"] == role)
+
+        async def pop(role: str) -> int:
+            for idx, msg in enumerate(messages):
+                if msg["role"] != role:
+                    continue
+                removed = messages.pop(idx)
+                reduction = 4
+                if "name" in removed:
+                    reduction += 1
+                if content := removed.get("content"):
+                    reduction += await self.count_tokens(content, model)
+                elif tool_calls := removed.get("tool_calls"):
+                    reduction += await self.count_tokens(str(tool_calls), model)
+                elif function_call := removed.get("function_call"):
+                    reduction += await self.count_tokens(str(function_call), model)
+                return reduction
+            return 0
+
+        # We will NOT remove the most recent user message or assistant message
+        # We will also not touch system messages
+        # We will also not touch function calls available to model (yet)
+        iters = 0
+        while True:
+            iters += 1
+            break_conditions = [
+                count("user") <= 1,
+                count("assistant") <= 1,
+                iters > 100,
+            ]
+            if any(break_conditions):
+                break
+            # First we will iterate through the messages and remove in the following sweep order:
+            # 1. Remove oldest tool call or response
+            reduced = await pop("tool")
+            if reduced:
+                total_tokens -= reduced
+                if total_tokens <= max_tokens:
+                    break
+            reduced = await pop("function")
+            if reduced:
+                total_tokens -= reduced
+                if total_tokens <= max_tokens:
+                    break
+            # 2. Remove oldest assistant message
+            reduced = await pop("assistant")
+            if reduced:
+                total_tokens -= reduced
+                if total_tokens <= max_tokens:
+                    break
+            # 3. Remove oldest user message
+            reduced = await pop("user")
+            if reduced:
+                total_tokens -= reduced
+                if total_tokens <= max_tokens:
+                    break
+            # Then we will repeat the process until we are under the max token limit
+
+        log.debug(f"Convo degradation finished for {user} (total: {total_tokens}/max: {max_tokens})")
+        return True
+
+    async def degrade_conversation_old(
+        self,
+        messages: List[dict],
+        function_list: List[dict],
+        conf: GuildSettings,
+        user: Optional[discord.Member],
+    ) -> bool:
+        """
+        Iteratively degrade a conversation payload in-place to fit within the max token limit, prioritizing more recent messages and critical context.
+
+        Order of importance:
+        - System messages
+        - Function calls available to model
+        - Most recent user message
+        - Most recent assistant message
+        - Most recent function/tool message
+
+        System messages are always ignored.
+
+        Args:
+            messages (List[dict]): message entries sent to the api
+            function_list (List[dict]): list of json function schemas for the model
+            conf: (GuildSettings): current settings
+
+        Returns:
+            bool: whether the conversation was degraded
+        """
 
         def _most_recent():
             most_recent_user = most_recent_assistant = most_recent_tool = None
@@ -347,12 +445,30 @@ class API(MixinMeta):
         log.debug(f"Degrading messages for {user} (total: {total_tokens_used}/max: {max_tokens})")
         # First we will iterate through the messages and remove in the following sweep order:
         # 1. Remove oldest tool call or response
+        for idx, msg in enumerate(messages):
+            if msg["role"] not in ["tool", "function"]:
+                continue
+            tokens = await self.count_tokens(str(msg.get("tool_calls", "")), model)
+            total_tokens_used -= tokens
+            messages.pop(idx)
+            break
+        if total_tokens_used <= max_tokens:
+            return True
         # 2. Remove oldest assistant message
         # 3. Remove oldest user message
         # Then we will repeat the process until we are under the max token limit
         # We will NOT remove the most recent user message or assistant message
         # We will also not touch system messages
         # We will also not touch function calls available to model (yet)
+
+        while True:
+            # Remove oldest tool call or response
+            for idx, msg in enumerate(messages):
+                if msg["role"] in ["tool", "function"]:
+                    messages.pop(idx)
+                    break
+            if total_tokens_used <= max_tokens:
+                break
 
         most_recent_user, most_recent_assistant, most_recent_tool = _most_recent()
 
@@ -391,56 +507,6 @@ class API(MixinMeta):
         if total_tokens_used <= max_tokens:
             log.debug(f"First sweep successful for {user} (total: {total_tokens_used}/max: {max_tokens})")
             return True
-
-        # # If still not under the max token limit, we will now remove function calls available to model
-        # function_indexes_to_purge = set()
-        # token_reduction = 0
-        # for idx, func in enumerate(function_list):
-        #     token_reduction += await self.count_tokens(json.dumps(func), model)
-        #     function_indexes_to_purge.add(idx)
-        #     if total_tokens_used - token_reduction <= max_tokens:
-        #         break
-
-        # # Remove function calls
-        # total_tokens_used -= token_reduction
-        # for idx in sorted(function_indexes_to_purge, reverse=True):
-        #     function_list.pop(idx)
-
-        # # Check if we are under the max token limit
-        # if total_tokens_used <= max_tokens:
-        #     log.debug(f"Second sweep successful for {user} (total: {total_tokens_used}/max: {max_tokens})")
-        #     return True
-
-        # # If still not under the max token limit, we will now DEGRADE the most recent user and assistant messages
-        # # We will also remove the most recent function/tool message if it exists
-        # messages_to_purge = set()
-        # token_reduction = 0
-        # # Just start degrading from the first onward
-        # for idx, msg in enumerate(messages):
-        #     if msg["role"] == "system":
-        #         continue
-        #     # This message will get popped
-        #     token_reduction += 4
-        #     if "name" in msg:
-        #         token_reduction += 1
-
-        #     content_to_tokenize = msg["content"] or msg.get("tool_calls", "") or msg.get("function_call", "")
-        #     token_reduction += await self.count_tokens(content_to_tokenize, model)
-        #     messages_to_purge.add(idx)
-
-        #     # Check if we are under the max token limit
-        #     if total_tokens_used - token_reduction <= max_tokens:
-        #         break
-
-        # # Remove messages
-        # total_tokens_used -= token_reduction
-        # for idx in sorted(messages_to_purge, reverse=True):
-        #     messages.pop(idx)
-
-        # # Check if we are under the max token limit
-        # if total_tokens_used <= max_tokens:
-        #     log.debug(f"Third sweep successful for {user} (total: {total_tokens_used}/max: {max_tokens})")
-        #     return True
 
         # Check if we destroyed the whole convo somehow
         messages_without_system = sum(1 for msg in messages if msg["role"] != "system")

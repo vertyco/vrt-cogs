@@ -911,6 +911,10 @@ class Admin(MixinMeta):
     async def set_model(self, ctx: commands.Context, model: str = None):
         """
         Set the OpenAI model to use
+
+        **NOTE**
+        Specifying a model without it's identifier (like `gpt-3.5-turbo` instead of `gpt-3.5-turbo-0125`)
+        will sometimes lose the ability to call functions in parallel for some reason, this is an OpenAI issue.
         """
         model = model.lower().strip() if model else None
         conf = self.db.get_conf(ctx.guild)
