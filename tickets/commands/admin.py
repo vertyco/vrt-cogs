@@ -781,7 +781,9 @@ class AdminCommands(MixinMeta):
         panel_name = panel_name.lower()
         panels = await self.config.guild(ctx.guild).panels()
         if not panels:
-            return await ctx.send(_("There are no panels available!\nUse ") + f"`{ctx.clean_prefix}tset addpanel` " + _("to create one."))
+            return await ctx.send(
+                _("There are no panels available!\nUse ") + f"`{ctx.clean_prefix}tset addpanel` " + _("to create one.")
+            )
         if panel_name not in panels:
             valid = _("Valid panels are: ") + f"`{', '.join(list(panels.keys()))}`"
             return await ctx.send(_("Panel does not exist!") + "\n" + valid)
@@ -865,7 +867,7 @@ class AdminCommands(MixinMeta):
             desc += _("`ButtonColor:    `") + f"{info['button_color']}\n"
             desc += _("`ButtonEmoji:    `") + f"{info['button_emoji']}\n"
             desc += _("`TicketNum:      `") + f"{info['ticket_num']}\n"
-            desc += _("`Use Threads:    `") + f"{info['threads']}\n"
+            desc += _("`Use Threads:    `") + f"{info.get('threads', False)}\n"
             desc += _("`TicketMessages: `") + f"{len(info['ticket_messages'])}\n"
             desc += _("`TicketName:     `") + f"{info['ticket_name']}\n"
             desc += _("`Modal Fields:   `") + f"{len(info.get('modal', {}))}\n"
