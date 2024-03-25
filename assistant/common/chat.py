@@ -420,8 +420,10 @@ class ChatHandler(MixinMeta):
                 break
 
             if response.tool_calls:
+                log.debug("Tool calls detected")
                 response_functions: list[ChatCompletionMessageToolCall] = response.tool_calls
             elif response.function_call:
+                log.debug("Function call detected")
                 response_functions: list[FunctionCall] = [response.function_call]
             else:
                 log.error("No reply and no function calls???")
