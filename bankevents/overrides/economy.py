@@ -1,6 +1,7 @@
 import calendar
 import logging
 from datetime import datetime, timedelta, timezone
+from typing import NamedTuple
 
 import discord
 from redbot.core import bank, commands, errors
@@ -13,18 +14,11 @@ log = logging.getLogger("red.vrt.bankevents")
 _ = Translator("BankEvents", __file__)
 
 
-class PayDayClaimInformation:
-    def __init__(
-        self,
-        member_id: int,
-        guild_id: int,
-        amount_received: int,
-        is_global: bool,
-    ):
-        self.member_id = member_id
-        self.guild_id = guild_id
-        self.amount_received = amount_received  # 0 if on cooldown
-        self.is_global = is_global
+class PayDayClaimInformation(NamedTuple):
+    member_id: int
+    guild_id: int
+    amount_received: int
+    is_global: bool
 
 
 class PaydayOverride(MixinMeta):
@@ -88,8 +82,6 @@ class PaydayOverride(MixinMeta):
                         author=author, relative_time=relative_time
                     )
                 )
-                payload = PayDayClaimInformation(author.id, guild.id, 0, True)
-                ctx.bot.dispatch("red_economy_payday_claim", payload)
         else:
             # Gets the users latest successfully payday and adds the guilds payday time
             next_payday = await cog.config.member(author).next_payday() + await cog.config.guild(guild).PAYDAY_TIME()
@@ -145,5 +137,3 @@ class PaydayOverride(MixinMeta):
                         author=author, relative_time=relative_time
                     )
                 )
-                payload = PayDayClaimInformation(author.id, guild.id, 0, False)
-                ctx.bot.dispatch("red_economy_payday_claim", payload)
