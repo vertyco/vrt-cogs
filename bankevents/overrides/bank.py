@@ -110,14 +110,24 @@ async def transfer_credits(
     to: Union[discord.Member, discord.User],
     amount: int,
 ) -> int:
-    new_recipient_balance = await bank.transfer_credits(from_, to, amount)
-    new_sender_balance = await bank.get_balance(from_)
+    if not isinstance(amount, int):
+        raise TypeError("Transfer amount must be of type int, not {}.".format(type(amount)))
+    if bank._invalid_amount(amount):
+        raise ValueError("Invalid transfer amount {} <= 0".format(humanize_number(amount, override_locale="en_US")))
     guild = getattr(to, "guild", None)
+
+    max_bal = await bank.get_max_balance(guild)
+    if await bank.get_balance(to) + amount > max_bal:
+        currency = await bank.get_currency_name(guild)
+        raise bank.errors.BalanceTooHigh(user=to.display_name, max_balance=max_bal, currency_name=currency)
+
+    sender_new = await withdraw_credits(from_, amount)
+    recipient_new = await deposit_credits(to, amount)
     payload = BankTransferInformation(
-        amount, from_.id, to.id, (0 if _cache_is_global else guild.id), new_sender_balance, new_recipient_balance
+        amount, from_.id, to.id, (0 if _cache_is_global else guild.id), sender_new, recipient_new
     )
     _bot_ref.dispatch("red_bank_transfer_credits", payload)
-    return new_recipient_balance
+    return recipient_new
 
 
 async def withdraw_credits(member: discord.Member, amount: int) -> int:
