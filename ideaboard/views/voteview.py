@@ -5,6 +5,7 @@ from datetime import datetime
 import discord
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
+from redbot.core.utils.chat_formatting import humanize_timedelta
 
 from ..abc import MixinMeta
 
@@ -86,10 +87,9 @@ class VoteView(discord.ui.View):
             if conf.min_account_age_to_vote:
                 age = (datetime.now().astimezone() - voter.created_at).total_seconds() / 3600
                 if age < conf.min_account_age_to_vote:
+                    tleft = humanize_timedelta(seconds=(conf.min_account_age_to_vote - age) * 3600)
                     await interaction.response.send_message(
-                        _("Your account is too young to vote. You must wait {age} more hours.").format(
-                            age=conf.min_account_age_to_vote - age
-                        ),
+                        _("Your account is too new! You must wait `{tleft}` before you can vote.").format(tleft=tleft),
                         ephemeral=True,
                     )
                     return False
@@ -98,9 +98,10 @@ class VoteView(discord.ui.View):
             if conf.min_join_time_to_vote:
                 age = (datetime.now().astimezone() - voter.joined_at).total_seconds() / 3600
                 if age < conf.min_join_time_to_vote:
+                    tleft = humanize_timedelta(seconds=(conf.min_join_time_to_vote - age) * 3600)
                     await interaction.response.send_message(
-                        _("You must wait {age} more hours before you can vote.").format(
-                            age=round(conf.min_join_time_to_vote - age, 1)
+                        _("You joined the server too recently! You must wait `{tleft}` before you can vote.").format(
+                            tleft=tleft
                         ),
                         ephemeral=True,
                     )
