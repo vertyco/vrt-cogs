@@ -172,10 +172,10 @@ class User(MixinMeta):
         suggestion = Suggestion(id=suggestion_id, message_id=message.id, author_id=ctx.author.id)
         if conf.discussion_threads:
             try:
-                thread = await message.create_thread(name="Discussion")
+                thread = await message.create_thread(name=f"Suggestion #{suggestion_number} Discussion")
                 suggestion.thread_id = thread.id
             except discord.Forbidden:
-                log.warning(f"Failed to create a discussion thread for suggestion {suggestion_number} in {ctx.guild}")
+                log.warning(f"Missing permissions to create a discussion thread in {ctx.guild}")
 
         conf.suggestions[suggestion_number] = suggestion
         conf.counter = suggestion_number
