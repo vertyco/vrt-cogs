@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, NamedTuple, Optional, Union
 
 import discord
 from redbot.core import bank
@@ -19,62 +19,33 @@ def init(bot: Red):
 # Thanks to YamiKaitou for starting the work on this 2+ years ago
 # Maybe one day it will be merged
 # https://github.com/Cog-Creators/Red-DiscordBot/pull/5325
-class BankTransferInformation:
-    def __init__(
-        self,
-        transfer_amount: int,
-        sender_id: int,
-        recipient_id: int,
-        guild_id: int,
-        sender_new_balance: int,
-        recipient_new_balance: int,
-    ):
-        self.transfer_amount = transfer_amount
-        self.sender_id = sender_id
-        self.recipient_id = recipient_id
-        self.guild_id = guild_id  # 0 if global bank
-        self.sender_new_balance = sender_new_balance
-        self.recipient_new_balance = recipient_new_balance
+class BankTransferInformation(NamedTuple):
+    transfer_amount: int
+    sender_id: int
+    recipient_id: int
+    guild_id: int  # 0 if global bank
+    sender_new_balance: int
+    recipient_new_balance: int
 
 
-class BankSetBalanceInformation:
-    def __init__(
-        self,
-        recipient_id: int,
-        guild_id: int,
-        recipient_old_balance: int,
-        recipient_new_balance: int,
-    ):
-        self.recipient_id = recipient_id
-        self.guild_id = guild_id  # 0 if global bank
-        self.recipient_old_balance = recipient_old_balance
-        self.recipient_new_balance = recipient_new_balance
+class BankSetBalanceInformation(NamedTuple):
+    recipient_id: int
+    guild_id: int  # 0 if global bank
+    recipient_old_balance: int
+    recipient_new_balance: int
 
 
-class BankWithdrawDepositInformation:
-    def __init__(
-        self,
-        member_id: int,
-        guild_id: int,
-        amount: int,
-        old_balance: int,
-        new_balance: int,
-    ):
-        self.member_id = member_id
-        self.guild_id = guild_id  # 0 if global bank
-        self.amount = amount
-        self.old_balance = old_balance
-        self.new_balance = new_balance
+class BankWithdrawDepositInformation(NamedTuple):
+    member_id: int
+    guild_id: int  # 0 if global bank
+    amount: int
+    old_balance: int
+    new_balance: int
 
 
-class BankPruneInformation:
-    def __init__(
-        self,
-        scope: int,
-        pruned_users: Union[List[int], Dict[str, List[int]]],
-    ):
-        self.scope = scope  # 1 for guild, 2 for global, 3 for user
-        self.pruned_users = pruned_users  # list[user_id] or dict[guild_id, list[user_id]]
+class BankPruneInformation(NamedTuple):
+    scope: int  # 1 for guild, 2 for global, 3 for user
+    pruned_users: Union[List[int], Dict[str, List[int]]]  # list[user_id] or dict[guild_id, list[user_id]]
 
 
 async def set_balance(member: Union[discord.Member, discord.User], amount: int) -> int:
