@@ -149,6 +149,13 @@ class VoteView(discord.ui.View):
 
         return True
 
+    async def followup(self, interaction: discord.Interaction, text: str):
+        try:
+            await interaction.followup.send(text, ephemeral=True)
+        except (discord.HTTPException, discord.NotFound):
+            with suppress(discord.NotFound, discord.Forbidden):
+                await interaction.channel.send(text, delete_after=10)
+
     @discord.ui.button(style=discord.ButtonStyle.primary)
     async def upvote(self, interaction: discord.Interaction, buttons: discord.ui.Button):
         if not await self.check(interaction):
@@ -160,7 +167,10 @@ class VoteView(discord.ui.View):
         profile = conf.get_profile(interaction.user)
         suggestion = conf.suggestions[self.suggestion_number]
         uid = interaction.user.id
-        if uid in suggestion.downvotes:
+        if uid == suggestion.author_id:
+            txt = _("You cannot vote on your own suggestion.")
+            return await self.followup(interaction, txt)
+        elif uid in suggestion.downvotes:
             txt = _("You have switched your downvote to an upvote.")
             suggestion.upvotes.append(uid)
             suggestion.downvotes.remove(uid)
@@ -175,8 +185,7 @@ class VoteView(discord.ui.View):
             suggestion.upvotes.append(uid)
             profile.upvotes += 1
 
-        with suppress(discord.NotFound):
-            await interaction.followup.send(txt, ephemeral=True)
+        await self.followup(interaction, txt)
 
         if conf.show_vote_counts:
             self.update_labels()
@@ -195,7 +204,10 @@ class VoteView(discord.ui.View):
         profile = conf.get_profile(interaction.user)
         suggestion = conf.suggestions[self.suggestion_number]
         uid = interaction.user.id
-        if uid in suggestion.upvotes:
+        if uid == suggestion.author_id:
+            txt = _("You cannot vote on your own suggestion.")
+            return await self.followup(interaction, txt)
+        elif uid in suggestion.upvotes:
             txt = _("You have switched your upvote to a downvote.")
             suggestion.upvotes.remove(uid)
             suggestion.downvotes.append(uid)
@@ -210,8 +222,7 @@ class VoteView(discord.ui.View):
             suggestion.downvotes.append(uid)
             profile.downvotes += 1
 
-        with suppress(discord.NotFound):
-            await interaction.followup.send(txt, ephemeral=True)
+        await self.followup(interaction, txt)
 
         if conf.show_vote_counts:
             self.update_labels()
