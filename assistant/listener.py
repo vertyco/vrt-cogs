@@ -66,16 +66,17 @@ class AssistantListener(MixinMeta):
 
         # Ignore references to other members unless bot is pinged
         if hasattr(message, "reference") and message.reference:
-            ref = message.reference.resolved
-            if ref and ref.author.id != self.bot.user.id and self.bot.user.id not in mention_ids:
-                return
-            # Ignore common prefixes from other bots
-            ignore_prefixes = [",", ".", "+", "!", "-", ">"]
-            if any(message.content.startswith(i) for i in ignore_prefixes):
-                return
-            if ref.author.id == self.bot.user.id and not conf.mention_respond:
-                # Ignore mentions on reply if mention_respond is disabled
-                return
+            if ref := message.reference.resolved:
+                # If bot was replied and mention respond is disabled
+                if ref.author.id == self.bot.user.id and not conf.mention_respond:
+                    return
+                # If responding to another user and bot wasn't mentioned
+                if ref.author.id != self.bot.user.id and self.bot.user.id not in mention_ids:
+                    return
+
+        # Ignore common prefixes from other bots
+        if message.content.startswith((",", ".", "+", "!", "-", ">" "<", "?", "$", "%", "^", "&", "*", "_")):
+            return
 
         if not await can_use(message, conf.blacklist, respond=False):
             return
