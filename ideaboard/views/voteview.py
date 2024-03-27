@@ -55,7 +55,10 @@ class VoteView(discord.ui.View):
             await interaction.response.send_message(text, ephemeral=True, delete_after=delete_after)
         except (discord.HTTPException, discord.NotFound):
             try:
-                await interaction.followup.send(text, ephemeral=True)
+                msg: discord.WebhookMessage = await interaction.followup.send(text, ephemeral=True)
+                if msg:
+                    with suppress(discord.NotFound):
+                        await msg.delete(delay=delete_after)
             except (discord.HTTPException, discord.NotFound):
                 with suppress(discord.NotFound, discord.Forbidden):
                     await interaction.channel.send(text, delete_after=delete_after)
