@@ -661,6 +661,21 @@ class Admin(MixinMeta):
             await ctx.send(_("That suggestion does not exist!"))
             return
 
+        description = _("Suggestion could not be found in pending channel!")
+
+        if pending_channel := ctx.guild.get_channel(conf.pending):
+            try:
+                message = await pending_channel.fetch_message(suggestion.message_id)
+                description = message.embeds[0].description
+            except discord.NotFound:
+                pass
+
+        embed = discord.Embed(
+            color=discord.Color.blue(),
+            title=_("Votes for Suggestion #{}").format(number),
+            description=description,
+        )
+
         upvoter_ids = suggestion.upvotes
         downvoter_ids = suggestion.downvotes
 
@@ -669,8 +684,6 @@ class Admin(MixinMeta):
 
         upvoters_label = _("Upvoters ({})").format(len(upvoter_ids)) if upvoter_ids else _("No upvotes yet")
         downvoters_label = _("Downvoters ({})").format(len(downvoter_ids)) if downvoter_ids else _("No downvotes yet")
-
-        embed = discord.Embed(color=discord.Color.blue(), title=_("Votes for Suggestion #{}").format(number))
 
         file = None
         if len(upvoter_mentions) > 1024 or len(downvoter_mentions) > 1024:
