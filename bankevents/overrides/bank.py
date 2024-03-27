@@ -163,8 +163,6 @@ async def bank_prune(bot: Red, guild: discord.Guild = None, user_id: int = None)
                     _guilds.add(g)
     else:
         group = bank._config._get_base_group(bank._config.MEMBER, str(guild.id))
-        if guild is None:
-            raise BankPruneError("'guild' can't be None when pruning a local bank")
         if user_id is None:
             if guild.unavailable:
                 _uguilds.add(guild)

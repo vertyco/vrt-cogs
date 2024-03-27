@@ -20,7 +20,7 @@ async def on_red_bank_transfer_credits(self, payload: BankTransferInformation):
 
 @commands.Cog.listener()
 async def on_red_bank_wipe(self, scope: int):
-    """scope: int (0 for server, -1 for global)"""
+    """scope: int (-1 for global, 0 if no guild found, guild_id if guild found)"""
 
 @commands.Cog.listener()
 async def on_red_bank_prune_accounts(self, payload: BankPruneInformation):
