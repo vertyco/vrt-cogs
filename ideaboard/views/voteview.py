@@ -50,13 +50,23 @@ class VoteView(discord.ui.View):
             else:
                 self.downvote.label = None
 
+    async def respond(self, interaction: discord.Interaction, text: str, delete_after: int | None = None):
+        try:
+            await interaction.response.send_message(text, ephemeral=True, delete_after=delete_after)
+        except (discord.HTTPException, discord.NotFound):
+            try:
+                await interaction.followup.send(text, ephemeral=True)
+            except (discord.HTTPException, discord.NotFound):
+                with suppress(discord.NotFound, discord.Forbidden):
+                    await interaction.channel.send(text, delete_after=delete_after)
+
     async def check(self, interaction: discord.Interaction) -> bool:
         """Return True if the user can vote"""
         conf = self.cog.db.get_conf(self.guild)
         suggestion = conf.suggestions.get(self.suggestion_number)
         if not suggestion:
             txt = _("This suggestion no longer exists in the config!")
-            await interaction.response.send_message(txt, ephemeral=True)
+            await self.respond(interaction, txt)
             return False
 
         # Check voting requirements
@@ -68,19 +78,24 @@ class VoteView(discord.ui.View):
         if not await self.bot.is_admin(voter):
             # Check blacklists
             if voter.id in conf.user_blacklist:
-                await interaction.response.send_message(_("You are blacklisted from voting."), ephemeral=True)
+                txt = _("You are blacklisted from voting.")
+                await self.respond(interaction, txt)
                 return False
-            if any(role.id in conf.role_blacklist for role in voter.roles):
-                await interaction.response.send_message(
-                    _("You have a blacklisted role and cannot vote."), ephemeral=True
-                )
+            blacklisted_user_roles = [role.id for role in voter.roles if role.id in conf.role_blacklist]
+            if blacklisted_user_roles:
+                humanized = ", ".join([f"<@&{role}>" for role in blacklisted_user_roles])
+                grammar = "a blacklisted role" if len(blacklisted_user_roles) == 1 else "blacklisted roles"
+                txt = _("You have {grammar} and cannot vote.").format(grammar=grammar)
+                txt += f"\n{humanized}"
+                await self.respond(interaction, txt)
                 return False
 
             # If vote_roles isnt empty, make sure voter has one of the roles
             if conf.vote_roles and not any(role.id in conf.vote_roles for role in voter.roles):
-                await interaction.response.send_message(
-                    _("You do not have the required roles to vote."), ephemeral=True
-                )
+                humanized = ", ".join([f"<@&{role}>" for role in conf.vote_roles])
+                txt = _("You do not have any of the required roles to vote.")
+                txt += f"\n{humanized}"
+                await self.respond(interaction, txt)
                 return False
 
             # Check account age
@@ -88,10 +103,8 @@ class VoteView(discord.ui.View):
                 age = (datetime.now().astimezone() - voter.created_at).total_seconds() / 3600
                 if age < conf.min_account_age_to_vote:
                     tleft = humanize_timedelta(seconds=(conf.min_account_age_to_vote - age) * 3600)
-                    await interaction.response.send_message(
-                        _("Your account is too new! You must wait `{tleft}` before you can vote.").format(tleft=tleft),
-                        ephemeral=True,
-                    )
+                    txt = _("Your account is too new! You must wait `{tleft}` before you can vote.").format(tleft=tleft)
+                    await self.respond(interaction, txt)
                     return False
 
             # Check join time
@@ -99,12 +112,10 @@ class VoteView(discord.ui.View):
                 age = (datetime.now().astimezone() - voter.joined_at).total_seconds() / 3600
                 if age < conf.min_join_time_to_vote:
                     tleft = humanize_timedelta(seconds=(conf.min_join_time_to_vote - age) * 3600)
-                    await interaction.response.send_message(
-                        _("You joined the server too recently! You must wait `{tleft}` before you can vote.").format(
-                            tleft=tleft
-                        ),
-                        ephemeral=True,
+                    txt = _("You joined the server too recently! You must wait `{tleft}` before you can vote.").format(
+                        tleft=tleft
                     )
+                    await self.respond(interaction, txt)
                     return False
 
             # Check LevelUp requirement
@@ -115,10 +126,8 @@ class VoteView(discord.ui.View):
                         levelup.init_user(self.guild.id, str(interaction.user.id))
                         level = levelup.data[self.guild.id]["users"][str(interaction.user.id)]["level"]
                         if level < conf.min_level_to_vote:
-                            await interaction.response.send_message(
-                                _("You must be level {level} to vote.").format(level=conf.min_level_to_vote),
-                                ephemeral=True,
-                            )
+                            txt = _("You must be level {level} or higher to vote.").format(level=conf.min_level_to_vote)
+                            await self.respond(interaction, txt)
                             return False
                 except Exception as e:
                     log.exception("Error checking LevelUp requirement", exc_info=e)
@@ -133,35 +142,24 @@ class VoteView(discord.ui.View):
                         prefix = prefixes[0]
                         txt = _("Your in-game profile must be registered in order to vote on suggestions.\n")
                         txt += _("Use the {} command to link your discord account.").format(f"`{prefix}register`")
-                        await interaction.response.send_message(txt, ephemeral=True)
+                        await self.respond(interaction, txt)
                         return False
                     playtime_hours = player.total_playtime / 3600
                     if playtime_hours < conf.min_playtime_to_vote:
-                        await interaction.response.send_message(
-                            _("You must have at least {hours} hours of playtime to vote.").format(
-                                hours=conf.min_playtime_to_vote
-                            ),
-                            ephemeral=True,
+                        txt = _("You must have at least {hours} hours of playtime to vote.").format(
+                            hours=conf.min_playtime_to_vote
                         )
+                        await self.respond(interaction, txt)
                         return False
                 except Exception as e:
                     log.exception("Error checking ArkTools requirement", exc_info=e)
 
         return True
 
-    async def followup(self, interaction: discord.Interaction, text: str):
-        try:
-            await interaction.followup.send(text, ephemeral=True)
-        except (discord.HTTPException, discord.NotFound):
-            with suppress(discord.NotFound, discord.Forbidden):
-                await interaction.channel.send(text, delete_after=10)
-
     @discord.ui.button(style=discord.ButtonStyle.primary)
     async def upvote(self, interaction: discord.Interaction, buttons: discord.ui.Button):
         if not await self.check(interaction):
             return
-        with suppress(discord.NotFound):
-            await interaction.response.defer()
 
         conf = self.cog.db.get_conf(self.guild)
         profile = conf.get_profile(interaction.user)
@@ -185,7 +183,7 @@ class VoteView(discord.ui.View):
             suggestion.upvotes.append(uid)
             profile.upvotes += 1
 
-        await self.followup(interaction, txt)
+        await self.respond(interaction, txt, 10)
 
         if conf.show_vote_counts:
             self.update_labels()
@@ -197,8 +195,6 @@ class VoteView(discord.ui.View):
     async def downvote(self, interaction: discord.Interaction, buttons: discord.ui.Button):
         if not await self.check(interaction):
             return
-        with suppress(discord.NotFound):
-            await interaction.response.defer()
 
         conf = self.cog.db.get_conf(self.guild)
         profile = conf.get_profile(interaction.user)
@@ -222,7 +218,7 @@ class VoteView(discord.ui.View):
             suggestion.downvotes.append(uid)
             profile.downvotes += 1
 
-        await self.followup(interaction, txt)
+        await self.respond(interaction, txt, 10)
 
         if conf.show_vote_counts:
             self.update_labels()
