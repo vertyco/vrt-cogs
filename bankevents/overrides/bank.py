@@ -1,4 +1,4 @@
-from typing import Dict, List, NamedTuple, Optional, Union
+from typing import Dict, NamedTuple, Optional, Union
 
 import discord
 from redbot.core import bank
@@ -45,7 +45,8 @@ class BankWithdrawDepositInformation(NamedTuple):
 
 class BankPruneInformation(NamedTuple):
     scope: int  # 1 for guild, 2 for global, 3 for user
-    pruned_users: Union[List[int], Dict[str, List[int]]]  # list[user_id] or dict[guild_id, list[user_id]]
+    # {user_id: {name: str, balance: int, created_at: int}}
+    pruned_users: Dict[str, Dict[str, Union[int, str]]]
 
 
 async def set_balance(member: Union[discord.Member, discord.User], amount: int) -> int:
@@ -146,6 +147,47 @@ async def wipe_bank(guild: Optional[discord.Guild] = None) -> None:
 
 
 async def bank_prune(bot: Red, guild: discord.Guild = None, user_id: int = None) -> None:
+    global_bank = await bank.is_global()
+    if not global_bank and guild is None:
+        raise BankPruneError("'guild' can't be None when pruning a local bank")
+
+    _guilds = set()
+    _uguilds = set()
+    if global_bank:
+        group = bank._config._get_base_group(bank._config.USER)
+        if user_id is None:
+            async for g in AsyncIter(bot.guilds, steps=100):
+                if g.unavailable:
+                    _uguilds.add(g)
+                elif not g.chunked:
+                    _guilds.add(g)
+    else:
+        group = bank._config._get_base_group(bank._config.MEMBER, str(guild.id))
+        if guild is None:
+            raise BankPruneError("'guild' can't be None when pruning a local bank")
+        if user_id is None:
+            if guild.unavailable:
+                _uguilds.add(guild)
+            else:
+                _guilds.add(guild)
+
+    if user_id is None:
+        for _guild in _guilds:
+            await _guild.chunk()
+        members = bot.get_all_members() if global_bank else guild.members
+        valid_users = {str(m.id) for m in members if m.guild not in _uguilds}
+        accounts = await group.all()
+        valid_accounts = {k: v for k, v in accounts.items() if k in valid_users}
+        await group.set(valid_accounts)
+        pruned = {k: v for k, v in accounts.items() if k not in valid_users}
+    else:
+        pruned = {}
+        user_id = str(user_id)
+        accounts = await group.all()
+        if user_id in accounts:
+            pruned = {user_id: accounts[user_id]}
+            await group.clear_raw(user_id)
+
     if guild is None and user_id is None:
         scope = 1  # prune global
     if guild is not None and user_id is None:
@@ -153,44 +195,7 @@ async def bank_prune(bot: Red, guild: discord.Guild = None, user_id: int = None)
     else:
         scope = 3  # prune user
 
-    global_bank = await bank.is_global()
-    if global_bank:
-        _guilds = set()
-        _uguilds = set()
-        if user_id is None:
-            async for g in AsyncIter(bot.guilds, steps=100):
-                if not g.unavailable and g.large and not g.chunked:
-                    _guilds.add(g)
-                elif g.unavailable:
-                    _uguilds.add(g)
-        group = bank._config._get_base_group(bank._config.USER)
-    else:
-        if guild is None:
-            raise BankPruneError("'guild' can't be None when pruning a local bank")
-        if user_id is None:
-            _guilds = {guild} if not guild.unavailable and guild.large else set()
-            _uguilds = {guild} if guild.unavailable else set()
-        group = bank._config._get_base_group(bank._config.MEMBER, str(guild.id))
-
-    if user_id is None:
-        for _guild in _guilds:
-            await _guild.chunk()
-        accounts = await group.all()
-        tmp = accounts.copy()
-        members = bot.get_all_members() if global_bank else guild.members
-        user_list = {str(m.id) for m in members if m.guild not in _uguilds}
-
-    async with group.all() as bank_data:
-        if user_id is None:
-            for acc in tmp:
-                if acc not in user_list:
-                    del bank_data[acc]
-        else:
-            user_id = str(user_id)
-            if user_id in bank_data:
-                del bank_data[user_id]
-
-    payload = BankPruneInformation(scope, tmp)
+    payload = BankPruneInformation(scope, pruned)
 
     _bot_ref.dispatch("red_bank_prune_accounts", payload)
 
