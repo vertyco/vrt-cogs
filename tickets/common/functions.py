@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from datetime import datetime
 from io import StringIO
 
@@ -13,6 +14,7 @@ from ..common.utils import update_active_overview
 from ..common.views import CloseView, LogView
 
 _ = Translator("SupportViews", __file__)
+log = logging.getLogger("red.vrt.tickets.functions")
 
 
 class Functions(MixinMeta):
@@ -302,6 +304,7 @@ class Functions(MixinMeta):
             "time": now.strftime("%I-%M-%p"),
         }
         channel_name = name_fmt.format(**params) if name_fmt else user.name
+        default_channel_name = f"{panel_name}-{num}"
         try:
             if panel.get("threads"):
                 if alt_cid := panel.get("alt_channel"):
@@ -314,12 +317,28 @@ class Functions(MixinMeta):
                 auto_archive_duration = int(arr[index])
 
                 reason = _("{} ticket for {}").format(panel_name, str(user))
-                channel_or_thread: discord.Thread = await channel.create_thread(
-                    name=channel_name,
-                    auto_archive_duration=auto_archive_duration,
-                    reason=reason,
-                    invitable=conf["user_can_manage"],
-                )
+                try:
+                    channel_or_thread: discord.Thread = await channel.create_thread(
+                        name=channel_name,
+                        auto_archive_duration=auto_archive_duration,
+                        reason=reason,
+                        invitable=conf["user_can_manage"],
+                    )
+                except Exception as e:
+                    if "Contains words not allowed" in str(e):
+                        channel_or_thread = await channel.create_thread(
+                            name=default_channel_name,
+                            auto_archive_duration=auto_archive_duration,
+                            reason=reason,
+                            invitable=conf["user_can_manage"],
+                        )
+                        await channel_or_thread.send(
+                            _(
+                                "I was not able to name the ticket properly due to Discord's filter!\nIntended name: {}"
+                            ).format(channel_name)
+                        )
+                    else:
+                        raise e
                 asyncio.create_task(channel_or_thread.add_user(user))
                 if conf["auto_add"] and not support_mentions:
                     for role in support_roles:
@@ -333,13 +352,27 @@ class Functions(MixinMeta):
                     elif alt_channel and isinstance(alt_channel, discord.TextChannel):
                         if alt_channel.category:
                             category = alt_channel.category
-                channel_or_thread: discord.TextChannel = await category.create_text_channel(
-                    channel_name, overwrites=overwrite
-                )
+                try:
+                    channel_or_thread: discord.TextChannel = await category.create_text_channel(
+                        channel_name, overwrites=overwrite
+                    )
+                except Exception as e:
+                    if "Contains words not allowed" in str(e):
+                        channel_or_thread = await category.create_text_channel(
+                            default_channel_name, overwrites=overwrite
+                        )
+                        await channel_or_thread.send(
+                            _(
+                                "I was not able to name the ticket properly due to Discord's filter!\nIntended name: {}"
+                            ).format(channel_name)
+                        )
+                    else:
+                        raise e
         except discord.Forbidden:
             return "Missing requried permissions to create the ticket!"
 
         except Exception as e:
+            log.error("Error creating ticket channel", exc_info=e)
             return f"ERROR: {e}"
 
         prefix = (await self.bot.get_valid_prefixes(guild))[0]
