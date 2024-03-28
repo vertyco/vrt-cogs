@@ -431,6 +431,7 @@ class SupportButton(Button):
             "time": now.strftime("%I-%M-%p"),
         }
         channel_name = name_fmt.format(**params) if name_fmt else user.name
+        default_channel_name = f"{self.panel_name}-{num}"
         try:
             if panel.get("threads"):
                 if alt_cid := panel.get("alt_channel"):
@@ -443,12 +444,28 @@ class SupportButton(Button):
                 auto_archive_duration = int(arr[index])
 
                 reason = _("{} ticket for {}").format(self.panel_name, str(interaction.user))
-                channel_or_thread = await channel.create_thread(
-                    name=channel_name,
-                    auto_archive_duration=auto_archive_duration,  # type: ignore
-                    reason=reason,
-                    invitable=conf["user_can_manage"],
-                )
+                try:
+                    channel_or_thread = await channel.create_thread(
+                        name=channel_name,
+                        auto_archive_duration=auto_archive_duration,  # type: ignore
+                        reason=reason,
+                        invitable=conf["user_can_manage"],
+                    )
+                except Exception as e:
+                    if "Contains words not allowed" in str(e):
+                        channel_or_thread = await channel.create_thread(
+                            name=default_channel_name,
+                            auto_archive_duration=auto_archive_duration,
+                            reason=reason,
+                            invitable=conf["user_can_manage"],
+                        )
+                        await channel_or_thread.send(
+                            _(
+                                "I was not able to name the ticket properly due to Discord's filter!\nIntended name: {}"
+                            ).format(channel_name)
+                        )
+                    else:
+                        raise e
                 asyncio.create_task(channel_or_thread.add_user(interaction.user))
                 if conf["auto_add"] and not support_mentions:
                     for role in support_roles:
@@ -462,7 +479,20 @@ class SupportButton(Button):
                     elif alt_channel and isinstance(alt_channel, discord.TextChannel):
                         if alt_channel.category:
                             category = alt_channel.category
-                channel_or_thread = await category.create_text_channel(channel_name, overwrites=overwrite)
+                try:
+                    channel_or_thread = await category.create_text_channel(channel_name, overwrites=overwrite)
+                except Exception as e:
+                    if "Contains words not allowed" in str(e):
+                        channel_or_thread = await category.create_text_channel(
+                            default_channel_name, overwrites=overwrite
+                        )
+                        await channel_or_thread.send(
+                            _(
+                                "I was not able to name the ticket properly due to Discord's filter!\nIntended name: {}"
+                            ).format(channel_name)
+                        )
+                    else:
+                        raise e
         except discord.Forbidden:
             txt = _(
                 "I am missing the required permissions to create a ticket for you. "
