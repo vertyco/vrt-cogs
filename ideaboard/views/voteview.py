@@ -170,7 +170,7 @@ class VoteView(discord.ui.View):
         uid = interaction.user.id
         if uid == suggestion.author_id:
             txt = _("You cannot vote on your own suggestion.")
-            return await self.followup(interaction, txt)
+            return await self.respond(interaction, txt)
         elif uid in suggestion.downvotes:
             txt = _("You have switched your downvote to an upvote.")
             suggestion.upvotes.append(uid)
@@ -205,7 +205,7 @@ class VoteView(discord.ui.View):
         uid = interaction.user.id
         if uid == suggestion.author_id:
             txt = _("You cannot vote on your own suggestion.")
-            return await self.followup(interaction, txt)
+            return await self.respond(interaction, txt)
         elif uid in suggestion.upvotes:
             txt = _("You have switched your upvote to a downvote.")
             suggestion.upvotes.remove(uid)
