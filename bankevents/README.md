@@ -10,6 +10,7 @@ This cog allows you to add listeners for Red bank transactions in your own cogs 
 - red_economy_payday_claim
 
 Here are the implementations you can use in your cogs that will work when this cog is loaded:
+All payload objects have a `to_dict` and `to_json` method that will serialize the payload object into a dictionary or JSON string respectively.
 
 ```python
 @commands.Cog.listener()
