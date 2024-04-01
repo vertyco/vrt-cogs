@@ -1,8 +1,8 @@
+import json
 from typing import Dict, NamedTuple, Optional, Union
 
 import discord
 from redbot.core import bank
-from redbot.core.bank import _cache_is_global
 from redbot.core.bot import Red
 from redbot.core.errors import BalanceTooHigh, BankPruneError
 from redbot.core.utils import AsyncIter
@@ -19,34 +19,83 @@ def init(bot: Red):
 # Thanks to YamiKaitou for starting the work on this 2+ years ago
 # Maybe one day it will be merged
 # https://github.com/Cog-Creators/Red-DiscordBot/pull/5325
-class BankTransferInformation(NamedTuple):
-    transfer_amount: int
-    sender_id: int
-    recipient_id: int
-    guild_id: int  # 0 if global bank
-    sender_new_balance: int
-    recipient_new_balance: int
-
-
 class BankSetBalanceInformation(NamedTuple):
-    recipient_id: int
-    guild_id: int  # 0 if global bank
+    recipient: Union[discord.Member, discord.User]
+    guild: Union[discord.Guild, None]
     recipient_old_balance: int
     recipient_new_balance: int
 
+    def to_dict(self) -> dict:
+        return {
+            "recipient": self.recipient.id,
+            "guild": getattr(self.guild, "id", None),
+            "recipient_old_balance": self.recipient_old_balance,
+            "recipient_new_balance": self.recipient_new_balance,
+        }
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict())
+
+
+class BankTransferInformation(NamedTuple):
+    sender: Union[discord.Member, discord.User]
+    recipient: Union[discord.Member, discord.User]
+    guild: Union[discord.Guild, None]
+    transfer_amount: int
+    sender_new_balance: int
+    recipient_new_balance: int
+
+    def to_dict(self) -> dict:
+        return {
+            "sender": self.sender.id,
+            "recipient": self.recipient.id,
+            "guild": getattr(self.guild, "id", None),
+            "transfer_amount": self.transfer_amount,
+            "sender_new_balance": self.sender_new_balance,
+            "recipient_new_balance": self.recipient_new_balance,
+        }
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict())
+
 
 class BankWithdrawDepositInformation(NamedTuple):
-    member_id: int
-    guild_id: int  # 0 if global bank
+    member: discord.Member
+    guild: Union[discord.Guild, None]
     amount: int
     old_balance: int
     new_balance: int
 
+    def to_dict(self) -> dict:
+        return {
+            "member": self.member.id,
+            "guild": getattr(self.guild, "id", None),
+            "amount": self.amount,
+            "old_balance": self.old_balance,
+            "new_balance": self.new_balance,
+        }
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict())
+
 
 class BankPruneInformation(NamedTuple):
+    guild: Union[discord.Guild, None]
+    user_id: Union[int, None]
     scope: int  # 1 for guild, 2 for global, 3 for user
     # {user_id: {name: str, balance: int, created_at: int}}
     pruned_users: Dict[str, Dict[str, Union[int, str]]]
+
+    def to_dict(self) -> dict:
+        return {
+            "guild": getattr(self.guild, "id", None),
+            "user_id": self.user_id,
+            "scope": self.scope,
+            "pruned_users": self.pruned_users,
+        }
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict())
 
 
 async def set_balance(member: Union[discord.Member, discord.User], amount: int) -> int:
@@ -72,7 +121,7 @@ async def set_balance(member: Union[discord.Member, discord.User], amount: int) 
         await group.created_at.set(time)
     if await group.name() == "":
         await group.name.set(member.display_name)
-    payload = BankSetBalanceInformation(member.id, (0 if _cache_is_global else guild.id), old_balance, amount)
+    payload = BankSetBalanceInformation(member, guild, old_balance, amount)
     _bot_ref.dispatch("red_bank_set_balance", payload)
     return amount
 
@@ -95,9 +144,7 @@ async def transfer_credits(
 
     sender_new = await withdraw_credits(from_, amount)
     recipient_new = await deposit_credits(to, amount)
-    payload = BankTransferInformation(
-        amount, from_.id, to.id, (0 if _cache_is_global else guild.id), sender_new, recipient_new
-    )
+    payload = BankTransferInformation(from_, to, guild, amount, sender_new, recipient_new)
     _bot_ref.dispatch("red_bank_transfer_credits", payload)
     return recipient_new
 
@@ -116,9 +163,7 @@ async def withdraw_credits(member: discord.Member, amount: int) -> int:
                 humanize_number(bal, override_locale="en_US"),
             )
         )
-    payload = BankWithdrawDepositInformation(
-        member.id, (0 if _cache_is_global else member.guild.id), amount, bal, bal - amount
-    )
+    payload = BankWithdrawDepositInformation(member, member.guild, amount, bal, bal - amount)
     _bot_ref.dispatch("red_bank_withdraw_credits", payload)
     return await set_balance(member, bal - amount)
 
@@ -130,9 +175,7 @@ async def deposit_credits(member: discord.Member, amount: int) -> int:
         raise ValueError("Invalid deposit amount {} <= 0".format(humanize_number(amount, override_locale="en_US")))
 
     bal = await bank.get_balance(member)
-    payload = BankWithdrawDepositInformation(
-        member.id, (0 if _cache_is_global else member.guild.id), amount, bal, bal + amount
-    )
+    payload = BankWithdrawDepositInformation(member, member.guild, amount, bal, bal + amount)
     _bot_ref.dispatch("red_bank_deposit_credits", payload)
     return await set_balance(member, amount + bal)
 
@@ -143,7 +186,7 @@ async def wipe_bank(guild: Optional[discord.Guild] = None) -> None:
         _bot_ref.dispatch("red_bank_wipe", -1)
     else:
         await bank._config.clear_all_members(guild)
-        _bot_ref.dispatch("red_bank_wipe", getattr(guild, "id", 0))
+        _bot_ref.dispatch("red_bank_wipe", getattr(guild, "id", None))
 
 
 async def bank_prune(bot: Red, guild: discord.Guild = None, user_id: int = None) -> None:
@@ -193,7 +236,7 @@ async def bank_prune(bot: Red, guild: discord.Guild = None, user_id: int = None)
     else:
         scope = 3  # prune user
 
-    payload = BankPruneInformation(scope, pruned)
+    payload = BankPruneInformation(guild, user_id, scope, pruned)
 
     _bot_ref.dispatch("red_bank_prune_accounts", payload)
 
@@ -209,7 +252,7 @@ async def set_global(global_: bool) -> bool:
         _bot_ref.dispatch("red_bank_wipe", -1)
     else:
         await bank._config.clear_all_members()
-        _bot_ref.dispatch("red_bank_wipe", 0)
+        _bot_ref.dispatch("red_bank_wipe", None)
 
     await bank._config.is_global.set(global_)
     _cache_is_global = global_
