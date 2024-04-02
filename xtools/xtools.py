@@ -8,6 +8,7 @@ from typing import Optional
 
 import aiohttp
 import discord
+import httpx
 import xmltojson
 from discord.ext import tasks
 from redbot.core import Config, commands
@@ -42,7 +43,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "vertyco"
-    __version__ = "3.11.0"
+    __version__ = "3.11.1"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -808,6 +809,12 @@ class XTools(commands.Cog):
                 profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
             except aiohttp.ClientResponseError:
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
+                return await msg.edit(embed=embed)
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 404:
+                    embed = discord.Embed(description="Invalid Gamertag. Try again.")
+                    return await msg.edit(embed=embed)
+                embed = discord.Embed(description=f"Failed to gather data!\nError: {box(str(e), 'py')}")
                 return await msg.edit(embed=embed)
             gt, xuid, _, _, _, _, _, _, _ = profile(profile_data)
 
