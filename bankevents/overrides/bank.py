@@ -82,9 +82,16 @@ class BankWithdrawDepositInformation(NamedTuple):
 class BankPruneInformation(NamedTuple):
     guild: Union[discord.Guild, None]
     user_id: Union[int, None]
-    scope: int  # 1 for guild, 2 for global, 3 for user
     # {user_id: {name: str, balance: int, created_at: int}}
     pruned_users: Dict[str, Dict[str, Union[int, str]]]
+
+    @property
+    def scope(self) -> str:
+        if self.guild is None and self.user_id is None:
+            return "global"
+        elif self.guild is not None and self.user_id is None:
+            return "guild"
+        return "user"
 
     def to_dict(self) -> dict:
         return {
@@ -229,14 +236,7 @@ async def bank_prune(bot: Red, guild: discord.Guild = None, user_id: int = None)
             pruned = {user_id: accounts[user_id]}
             await group.clear_raw(user_id)
 
-    if guild is None and user_id is None:
-        scope = 1  # prune global
-    if guild is not None and user_id is None:
-        scope = 2  # prune server
-    else:
-        scope = 3  # prune user
-
-    payload = BankPruneInformation(guild, user_id, scope, pruned)
+    payload = BankPruneInformation(guild, user_id, pruned)
 
     _bot_ref.dispatch("red_bank_prune_accounts", payload)
 

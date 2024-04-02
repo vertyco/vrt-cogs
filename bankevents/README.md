@@ -35,7 +35,7 @@ async def on_red_bank_transfer_credits(self, payload: BankTransferInformation):
 
 @commands.Cog.listener()
 async def on_red_bank_wipe(self, scope: Union[int, None]):
-    """scope: int (-1 for global, None for all members, guild_id for server bank)"""
+    """scope: int (-1 for global, None for wiping all guilds, guild_id for wiping one guild)"""
 
 @commands.Cog.listener()
 async def on_red_bank_prune_accounts(self, payload: BankPruneInformation):
