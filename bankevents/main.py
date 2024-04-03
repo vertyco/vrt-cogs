@@ -21,8 +21,6 @@ class BankEvents(PaydayOverride, commands.Cog, metaclass=CompositeMetaClass):
     Dispatches listener events for Red bank transactions and payday claims.
     - red_bank_set_balance
     - red_bank_transfer_credits
-    - red_bank_withdraw_credits
-    - red_bank_deposit_credits
     - red_bank_wipe
     - red_bank_prune_accounts
     - red_bank_set_global
@@ -34,7 +32,7 @@ class BankEvents(PaydayOverride, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.0.1"
+    __version__ = "2.0.2"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -42,8 +40,6 @@ class BankEvents(PaydayOverride, commands.Cog, metaclass=CompositeMetaClass):
         # Original methods
         self.set_balance_coro = None
         self.transfer_credits_coro = None
-        self.withdraw_credits_coro = None
-        self.deposit_credits_coro = None
         self.wipe_bank_coro = None
         self.bank_prune_coro = None
         self.set_global_coro = None
@@ -69,8 +65,6 @@ class BankEvents(PaydayOverride, commands.Cog, metaclass=CompositeMetaClass):
         # Save original methods
         self.set_balance_coro = bank.set_balance
         self.transfer_credits_coro = bank.transfer_credits
-        self.withdraw_credits_coro = bank.withdraw_credits
-        self.deposit_credits_coro = bank.deposit_credits
         self.wipe_bank_coro = bank.wipe_bank
         self.bank_prune_coro = bank.bank_prune
         self.set_global_coro = bank.set_global
@@ -78,8 +72,6 @@ class BankEvents(PaydayOverride, commands.Cog, metaclass=CompositeMetaClass):
         # Wrap methods
         setattr(bank, "set_balance", custombank.set_balance)
         setattr(bank, "transfer_credits", custombank.transfer_credits)
-        setattr(bank, "withdraw_credits", custombank.withdraw_credits)
-        setattr(bank, "deposit_credits", custombank.deposit_credits)
         setattr(bank, "wipe_bank", custombank.wipe_bank)
         setattr(bank, "bank_prune", custombank.bank_prune)
         setattr(bank, "set_global", custombank.set_global)
@@ -96,10 +88,6 @@ class BankEvents(PaydayOverride, commands.Cog, metaclass=CompositeMetaClass):
             setattr(bank, "set_balance", self.set_balance_coro)
         if self.transfer_credits_coro is not None:
             setattr(bank, "transfer_credits", self.transfer_credits_coro)
-        if self.withdraw_credits_coro is not None:
-            setattr(bank, "withdraw_credits", self.withdraw_credits_coro)
-        if self.deposit_credits_coro is not None:
-            setattr(bank, "deposit_credits", self.deposit_credits_coro)
         if self.wipe_bank_coro is not None:
             setattr(bank, "wipe_bank", self.wipe_bank_coro)
         if self.bank_prune_coro is not None:
@@ -131,8 +119,6 @@ class BankEvents(PaydayOverride, commands.Cog, metaclass=CompositeMetaClass):
             "by dispatching the following events:\n"
             "- red_bank_set_balance\n"
             "- red_bank_transfer_credits\n"
-            "- red_bank_withdraw_credits\n"
-            "- red_bank_deposit_credits\n"
             "- red_bank_wipe\n"
             "- red_bank_prune_accounts\n"
             "- red_bank_set_global\n"
