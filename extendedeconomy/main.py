@@ -2,6 +2,7 @@ import asyncio
 import logging
 import typing as t
 
+import discord
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 
@@ -19,7 +20,7 @@ class ExtendedEconomy(Commands, Checks, Listeners, commands.Cog, metaclass=Compo
     """Description"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.0.4b"
+    __version__ = "0.0.5b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -51,6 +52,8 @@ class ExtendedEconomy(Commands, Checks, Listeners, commands.Cog, metaclass=Compo
         for cmd in self.bot.walk_commands():
             cmd.remove_check(self.cost_check)
         for cmd in self.bot.tree.walk_commands():
+            if isinstance(cmd, discord.app_commands.Group):
+                continue
             cmd.remove_check(self.cost_check)
 
     async def initialize(self) -> None:
