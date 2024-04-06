@@ -4,6 +4,7 @@ from contextlib import suppress
 from datetime import datetime
 
 import discord
+from discord.ext import tasks
 from redbot.core import bank, commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_number
@@ -15,6 +16,27 @@ _ = Translator("ExtendedEconomy", __file__)
 
 
 class Listeners(MixinMeta):
+    def __init__(self):
+        super().__init__()
+        self.payloads: t.Dict[int, t.List[discord.Embed]] = {}
+
+    @tasks.loop(seconds=4)
+    async def send_payloads(self):
+        """Send embeds in chunks to avoid rate limits"""
+        if not self.payloads:
+            return
+        tmp = self.payloads.copy()
+        self.payloads.clear()
+        for channel_id, embeds in tmp.items():
+            channel = self.bot.get_channel(channel_id)
+            if not channel:
+                continue
+            # Group the embeds into 5 per message
+            for i in range(0, len(embeds), 5):
+                chunk = embeds[i : i + 5]
+                with suppress(discord.HTTPException, discord.Forbidden):
+                    await channel.send(embeds=chunk)
+
     @commands.Cog.listener()
     async def on_cog_add(self, cog: commands.Cog):
         if cog.qualified_name in self.checks:
@@ -27,20 +49,11 @@ class Listeners(MixinMeta):
 
     async def log_event(self, event: str, payload: t.NamedTuple):
         is_global = await bank.is_global()
-        if event == "payday_claim":
-            guild = payload.member.guild
-        else:
-            guild = getattr(payload, "guild", None)
-
+        guild = payload.member.guild if event == "payday_claim" else getattr(payload, "guild", None)
         if not is_global and not guild:
             log.error(f"Guild is None for non-global bank event: {event}\n{payload}")
             return
-
-        if is_global:
-            logs = self.db.logs
-        else:
-            logs = self.db.get_conf(guild).logs
-
+        logs = self.db.logs if is_global else self.db.get_conf(guild).logs
         channel_id = getattr(logs, event, 0) or logs.default_log_channel
         if not channel_id:
             return
@@ -56,7 +69,6 @@ class Listeners(MixinMeta):
             "payday_claim": _("Payday Claim"),
         }
         currency = await bank.get_currency_name(guild)
-
         title = _("Bank Event: {}").format(event_map[event])
         color = await self.bot.get_embed_color(channel)
         embed = discord.Embed(title=title, color=color, timestamp=datetime.now())
@@ -84,7 +96,6 @@ class Listeners(MixinMeta):
             embed.add_field(name=_("Amount"), value=f"{humanize_number(payload.amount)} {currency}")
             embed.add_field(name=_("Old Balance"), value=humanize_number(payload.old_balance))
             embed.add_field(name=_("New Balance"), value=humanize_number(payload.new_balance))
-
             if is_global:
                 embed.add_field(name=_("Guild"), value=payload.member.guild.name)
             else:
@@ -92,8 +103,10 @@ class Listeners(MixinMeta):
         else:
             log.error(f"Unknown event type: {event}")
             return
-        with suppress(discord.HTTPException, discord.Forbidden):
-            await channel.send(embed=embed)
+        if channel.id in self.payloads:
+            self.payloads[channel.id].append(embed)
+        else:
+            self.payloads[channel.id] = [embed]
 
     @commands.Cog.listener()
     async def on_red_bank_set_balance(self, payload: t.NamedTuple):

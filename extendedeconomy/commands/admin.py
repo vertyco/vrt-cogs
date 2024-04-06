@@ -126,6 +126,23 @@ class Admin(MixinMeta):
         await ctx.send(txt)
         await self.save()
 
+    @commands.command(name="deleteafter")
+    @commands.is_owner()
+    async def set_delete_after(self, ctx: commands.Context, seconds: int):
+        """
+        Set the delete after time for cost check messages
+
+        - Set to 0 to disable (Recommended for public bots)
+        - Default is 0 (disabled)
+        """
+        if not seconds:
+            self.db.delete_after = None
+            await ctx.send(_("Delete after time disabled."))
+        else:
+            self.db.delete_after = seconds
+            await ctx.send(_("Delete after time set to {} seconds.").format(seconds))
+        await self.save()
+
     @commands.command(name="addcost")
     @commands.admin_or_permissions(manage_guild=True)
     async def add_cost(

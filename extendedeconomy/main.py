@@ -19,7 +19,7 @@ class ExtendedEconomy(Commands, Checks, Listeners, commands.Cog, metaclass=Compo
     """Description"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.0.3b"
+    __version__ = "0.0.4b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -47,6 +47,7 @@ class ExtendedEconomy(Commands, Checks, Listeners, commands.Cog, metaclass=Compo
 
     async def cog_unload(self) -> None:
         log.info("Detaching any cost checks from commands")
+        self.send_payloads.cancel()
         for cmd in self.bot.walk_commands():
             cmd.remove_check(self.cost_check)
         for cmd in self.bot.tree.walk_commands():
@@ -65,6 +66,7 @@ class ExtendedEconomy(Commands, Checks, Listeners, commands.Cog, metaclass=Compo
             for cmd in cog.walk_app_commands():
                 cmd.add_check(self.cost_check)
             self.checks.add(cogname)
+        self.send_payloads.start()
 
     async def save(self) -> None:
         if self.saving:

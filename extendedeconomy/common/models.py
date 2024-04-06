@@ -96,7 +96,8 @@ class GuildSettings(Base):
 
 
 class DB(Base):
-    configs: dict[int, GuildSettings] = {}
+    configs: t.Dict[int, GuildSettings] = {}
+    delete_after: t.Union[int, None] = None
 
     logs: LogChannels = LogChannels()
     command_costs: t.Dict[str, CommandCost] = {}

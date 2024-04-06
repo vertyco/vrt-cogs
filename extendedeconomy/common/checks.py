@@ -38,11 +38,15 @@ class Checks(MixinMeta):
         finally:
             self.running.remove(user.id)
 
-    async def _cost_check(self, ctx: t.Union[commands.Context, discord.Interaction], user: t.Union[discord.Member, discord.User]):
+    async def _cost_check(
+        self,
+        ctx: t.Union[commands.Context, discord.Interaction],
+        user: t.Union[discord.Member, discord.User],
+    ):
         async def _edit_delete_delay(message: discord.Message, new_content: str):
             await message.edit(content=new_content, view=None)
             await message.clear_reactions()
-            await message.delete(delay=15)
+            await message.delete(delay=self.db.delete_after)
 
         if isinstance(ctx, discord.Interaction):
             user = ctx.guild.get_member(ctx.user.id) if ctx.guild else ctx.user
@@ -100,7 +104,7 @@ class Checks(MixinMeta):
                 if cost_obj.prompt != "notify":
                     asyncio.create_task(_edit_delete_delay(message, is_broke))
                 else:
-                    asyncio.create_task(ctx.send(is_broke, delete_after=10))
+                    asyncio.create_task(ctx.send(is_broke, delete_after=self.db.delete_after))
                 return False
 
             if cost_obj.prompt == "notify":
@@ -109,7 +113,7 @@ class Checks(MixinMeta):
                         _("{}, You spent {} {} to run this command.").format(
                             user.display_name, humanize_number(cost), currency
                         ),
-                        delete_after=8,
+                        delete_after=self.db.delete_after,
                     )
                 )
 
@@ -122,11 +126,11 @@ class Checks(MixinMeta):
                         _("{}, You spent {} {} to run this command.").format(
                             user.display_name, humanize_number(cost), currency
                         ),
-                        delete_after=10,
+                        delete_after=self.db.delete_after,
                     )
                 )
             return True
         except ValueError:
             # Cant afford
-            asyncio.create_task(ctx.channel.send(is_broke, delete_after=10))
+            asyncio.create_task(ctx.channel.send(is_broke, delete_after=self.db.delete_after))
             return False

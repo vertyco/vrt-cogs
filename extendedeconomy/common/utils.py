@@ -42,7 +42,7 @@ async def confirm_msg_reaction(message: discord.Message, author: t.Union[discord
         return pred.result
 
 
-def format_settings(conf: t.Union[DB, GuildSettings], is_global: bool) -> discord.Embed:
+def format_settings(conf: t.Union[DB, GuildSettings], is_global: bool, owner: bool) -> discord.Embed:
     not_set = _("Not Set")
     txt = _(
         "# Extended Economy Settings\n"
@@ -68,6 +68,10 @@ def format_settings(conf: t.Union[DB, GuildSettings], is_global: bool) -> discor
     if is_global:
         txt += _("`Set Global:          `{}\n").format(
             f"<#{conf.logs.set_global}>" if conf.logs.set_global else not_set
+        )
+    if owner and is_global:
+        txt += _("`Delete After:        `{}\n").format(
+            humanize_timedelta(seconds=conf.delete_after) if conf.delete_after else _("Disabled")
         )
     if isinstance(conf, DB):
         footer = _("Showing settings for global bank")
