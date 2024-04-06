@@ -253,7 +253,7 @@ class CostMenu(discord.ui.View):
             start += PER_PAGE
             stop += PER_PAGE
         if not pages:
-            pages.append(format_settings(conf, self.global_bank))
+            pages.append(format_settings(conf, self.global_bank, self.author.id in self.bot.owner_ids))
         return pages
 
     # ROW 1
