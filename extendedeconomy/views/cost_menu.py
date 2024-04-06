@@ -240,7 +240,7 @@ class CostMenu(discord.ui.View):
         pages = []
         page_count = math.ceil(len(conf.command_costs) / PER_PAGE)
         for p in range(page_count):
-            embed = format_settings(conf, self.global_bank, self.author.id in self.bot.owner_ids)
+            embed = format_settings(conf, self.global_bank, self.author.id in self.bot.owner_ids, self.db.delete_after)
             embed.set_footer(text=_("Page {}/{}").format(p + 1, page_count))
             stop = min(stop, len(conf.command_costs))
             for i in range(start, stop):
@@ -253,7 +253,9 @@ class CostMenu(discord.ui.View):
             start += PER_PAGE
             stop += PER_PAGE
         if not pages:
-            pages.append(format_settings(conf, self.global_bank, self.author.id in self.bot.owner_ids))
+            pages.append(
+                format_settings(conf, self.global_bank, self.author.id in self.bot.owner_ids, self.db.delete_after)
+            )
         return pages
 
     # ROW 1
