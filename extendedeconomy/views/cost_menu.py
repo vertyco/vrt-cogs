@@ -236,6 +236,7 @@ class CostMenu(discord.ui.View):
     def get_pages(self):
         conf = self.db if self.global_bank else self.db.get_conf(self.ctx.guild)
         itemized: t.List[t.Tuple[str, CommandCost]] = list(conf.command_costs.items())
+        itemized.sort(key=lambda x: x[0])
         start, stop = 0, PER_PAGE
         pages = []
         page_count = math.ceil(len(conf.command_costs) / PER_PAGE)
