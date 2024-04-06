@@ -46,10 +46,12 @@ def format_settings(
     conf: t.Union[DB, GuildSettings], is_global: bool, owner: bool, delay: t.Union[int, None]
 ) -> discord.Embed:
     not_set = _("Not Set")
+    del_after = _("`Delete After:        `{}\n").format(humanize_timedelta(seconds=delay) if delay else _("Disabled"))
     txt = _(
         "# Extended Economy Settings\n"
         "`Command Costs:       `{}\n"
         "`Global Bank:         `{}\n"
+        "{}"
         "## Event Log Channels\n"
         "`Default Log Channel: `{}\n"
         "`Set Balance:         `{}\n"
@@ -60,6 +62,7 @@ def format_settings(
     ).format(
         len(conf.command_costs) or _("None"),
         is_global,
+        del_after if owner else "",
         f"<#{conf.logs.default_log_channel}>" if conf.logs.default_log_channel else not_set,
         f"<#{conf.logs.set_balance}>" if conf.logs.set_balance else not_set,
         f"<#{conf.logs.transfer_credits}>" if conf.logs.transfer_credits else not_set,
@@ -67,12 +70,11 @@ def format_settings(
         f"<#{conf.logs.prune}>" if conf.logs.prune else not_set,
         f"<#{conf.logs.payday_claim}>" if conf.logs.payday_claim else not_set,
     )
+
     if is_global:
         txt += _("`Set Global:          `{}\n").format(
             f"<#{conf.logs.set_global}>" if conf.logs.set_global else not_set
         )
-    if owner:
-        txt += _("`Delete After:        `{}\n").format(humanize_timedelta(seconds=delay) if delay else _("Disabled"))
     if isinstance(conf, DB):
         footer = _("Showing settings for global bank")
     else:
