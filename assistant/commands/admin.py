@@ -1083,7 +1083,7 @@ class Admin(MixinMeta):
 
         **Hybrid** embeddings are a combination, with the first embedding being stored in the conversation and the rest being dynamic, this saves a bit on token usage.
 
-        **User** embeddigns are injected into the beginning of the prompt as the first user message.
+        **User** embeddings are injected into the beginning of the prompt as the first user message.
 
         Dynamic embeddings are helpful for Q&A, but not so much for chat when you need to retain the context pulled from the embeddings. The hybrid method is a good middle ground
         """
