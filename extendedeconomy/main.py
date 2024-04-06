@@ -19,7 +19,7 @@ class ExtendedEconomy(Commands, Checks, Listeners, commands.Cog, metaclass=Compo
     """Description"""
 
     __author__ = "Vertyco#0117"
-    __version__ = "0.0.2b"
+    __version__ = "0.0.3b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -29,6 +29,7 @@ class ExtendedEconomy(Commands, Checks, Listeners, commands.Cog, metaclass=Compo
 
         self.db: DB = DB()
         self.saving = False
+        self.checks = set()
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -56,10 +57,14 @@ class ExtendedEconomy(Commands, Checks, Listeners, commands.Cog, metaclass=Compo
         data = await self.config.db()
         self.db = await asyncio.to_thread(DB.model_validate, data)
         log.info("Config loaded")
-        for cmd in self.bot.walk_commands():
-            cmd.add_check(self.cost_check)
-        for cmd in self.bot.tree.walk_commands():
-            cmd.add_check(self.cost_check)
+        for cogname, cog in self.bot.cogs.items():
+            if cogname in self.checks:
+                continue
+            for cmd in cog.walk_commands():
+                cmd.add_check(self.cost_check)
+            for cmd in cog.walk_app_commands():
+                cmd.add_check(self.cost_check)
+            self.checks.add(cogname)
 
     async def save(self) -> None:
         if self.saving:

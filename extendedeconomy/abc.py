@@ -18,6 +18,7 @@ class MixinMeta(metaclass=ABCMeta):
 
     bot: Red
     db: DB
+    checks: set
 
     @abstractmethod
     async def save(self) -> None:

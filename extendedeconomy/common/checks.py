@@ -17,11 +17,28 @@ _ = Translator("ExtendedEconomy", __file__)
 
 
 class Checks(MixinMeta):
+    def __init__(self):
+        super().__init__()
+        self.running = set()
+
     @cached(ttl=600)
     async def get_credits_name(self, guild: discord.Guild) -> str:
         return await bank.get_currency_name(guild)
 
     async def cost_check(self, ctx: t.Union[commands.Context, discord.Interaction]):
+        if isinstance(ctx, discord.Interaction):
+            user = ctx.guild.get_member(ctx.user.id) if ctx.guild else ctx.user
+        else:
+            user = ctx.author
+        if user.id in self.running:
+            return True
+        try:
+            self.running.add(user.id)
+            return await self._cost_check(ctx, user)
+        finally:
+            self.running.remove(user.id)
+
+    async def _cost_check(self, ctx: t.Union[commands.Context, discord.Interaction], user: t.Union[discord.Member, discord.User]):
         async def _edit_delete_delay(message: discord.Message, new_content: str):
             await message.edit(content=new_content, view=None)
             await message.clear_reactions()
