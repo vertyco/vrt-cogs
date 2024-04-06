@@ -67,6 +67,8 @@ class ExtendedEconomy(Commands, Checks, Listeners, commands.Cog, metaclass=Compo
             for cmd in cog.walk_commands():
                 cmd.add_check(self.cost_check)
             for cmd in cog.walk_app_commands():
+                if isinstance(cmd, discord.app_commands.Group):
+                    continue
                 cmd.add_check(self.cost_check)
             self.checks.add(cogname)
         self.send_payloads.start()
