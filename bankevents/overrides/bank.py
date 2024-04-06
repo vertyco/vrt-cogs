@@ -9,6 +9,7 @@ from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import humanize_number
 
 _bot_ref: Optional[Red] = None
+_cache_is_global = None
 
 
 def init(bot: Red):
@@ -228,6 +229,9 @@ async def is_global() -> bool:
 
 
 async def set_global(global_: bool) -> bool:
+    if (await is_global()) is global_:
+        return global_
+
     global _cache_is_global
 
     if await is_global():
