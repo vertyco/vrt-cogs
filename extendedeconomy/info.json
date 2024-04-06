@@ -9,7 +9,7 @@
   "min_python_version": [3, 10, 0],
   "permissions": [],
   "required_cogs": {"bankevents": "https://github.com/vertyco/vrt-cogs.git"},
-  "requirements": ["pydantic"],
+  "requirements": ["pydantic", "aiocache"],
   "short": "Extended bot currency economy features.",
   "tags": [
     "economy",
