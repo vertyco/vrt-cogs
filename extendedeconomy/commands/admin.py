@@ -20,6 +20,7 @@ _ = Translator("ExtendedEconomy", __file__)
 class Admin(MixinMeta):
     @commands.group(aliases=["ecoset", "exteco"])
     @commands.admin_or_permissions(manage_guild=True)
+    @commands.guild_only()
     async def extendedeconomy(self, ctx: commands.Context):
         """
         Extended Economy settings
@@ -126,7 +127,7 @@ class Admin(MixinMeta):
         await ctx.send(txt)
         await self.save()
 
-    @commands.command(name="deleteafter")
+    @extendedeconomy.command(name="deleteafter")
     @commands.is_owner()
     async def set_delete_after(self, ctx: commands.Context, seconds: int):
         """
@@ -145,6 +146,7 @@ class Admin(MixinMeta):
 
     @commands.command(name="addcost")
     @commands.admin_or_permissions(manage_guild=True)
+    @commands.guild_only()
     async def add_cost(
         self,
         ctx: commands.Context,
