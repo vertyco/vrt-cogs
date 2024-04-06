@@ -17,10 +17,13 @@ _ = Translator("ExtendedEconomy", __file__)
 class Listeners(MixinMeta):
     @commands.Cog.listener()
     async def on_cog_add(self, cog: commands.Cog):
+        if cog.qualified_name in self.checks:
+            return
         for cmd in cog.walk_commands():
             cmd.add_check(self.cost_check)
         for cmd in cog.walk_app_commands():
             cmd.add_check(self.cost_check)
+        self.checks.add(cog.qualified_name)
 
     async def log_event(self, event: str, payload: t.NamedTuple):
         is_global = await bank.is_global()
