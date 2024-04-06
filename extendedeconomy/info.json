@@ -1,0 +1,26 @@
+{
+  "author": ["Vertyco"],
+  "description": "Add customizable/interactive costs to commands dynamically, log bank events and more!",
+  "disabled": false,
+  "end_user_data_statement": "This cog stores User ID-timestamp pairs to keep track of command usage.",
+  "hidden": false,
+  "install_msg": "Thank you for installing!\n\n**Disclaimer**\nThis cog is in BETA. Going from beta to stable may require a config wipe!",
+  "min_bot_version": "3.5.3",
+  "min_python_version": [3, 10, 0],
+  "permissions": [],
+  "required_cogs": {"bankevents": "https://github.com/vertyco/vrt-cogs.git"},
+  "requirements": ["pydantic"],
+  "short": "Extended bot currency economy features.",
+  "tags": [
+    "economy",
+    "currency",
+    "credits",
+    "bank",
+    "banking",
+    "costs",
+    "interactive",
+    "events",
+    "log"
+  ],
+  "type": "COG"
+}
