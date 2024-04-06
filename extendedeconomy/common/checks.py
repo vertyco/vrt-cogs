@@ -17,10 +17,6 @@ _ = Translator("ExtendedEconomy", __file__)
 
 
 class Checks(MixinMeta):
-    def __init__(self):
-        super().__init__()
-        self.currency_names: t.Dict[int, str] = {}
-
     @cached(ttl=600)
     async def get_credits_name(self, guild: discord.Guild) -> str:
         return await bank.get_currency_name(guild)
@@ -57,7 +53,7 @@ class Checks(MixinMeta):
 
         is_broke = _("You can't afford to run that command! (Need {} credits)").format(humanize_number(cost))
         is_slash = isinstance(ctx, discord.Interaction) or ctx.interaction is not None
-        currency = self.currency_names.setdefault(ctx.guild.id, await self.get_credits_name(ctx.guild))
+        currency = await self.get_credits_name(ctx.guild)
 
         if not is_slash and cost_obj.prompt != "silent":
             is_broke = _("You do not have enough {} to run that command! (Need {})").format(
