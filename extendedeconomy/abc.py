@@ -22,8 +22,12 @@ class MixinMeta(metaclass=ABCMeta):
 
     @abstractmethod
     async def save(self) -> None:
-        raise NotImplementedError
+        raise NotImplementedError()
 
     @abstractmethod
     async def cost_check(self, ctx: t.Union[commands.Context, discord.Interaction]):
-        raise NotImplementedError
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def send_payloads(self):
+        raise NotImplementedError()
