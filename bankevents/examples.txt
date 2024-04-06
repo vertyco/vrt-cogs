@@ -23,7 +23,7 @@ async def on_red_bank_wipe(self, scope: Union[int, None]):
     """scope: int (-1 for global, None for all members, guild_id for server bank)"""
 
 @commands.Cog.listener()
-async def on_red_bank_prune_accounts(self, payload: BankPruneInformation):
+async def on_red_bank_prune(self, payload: BankPruneInformation):
     """Payload attributes:
     - guild: Union[discord.Guild, None]
     - user_id: Union[int, None]

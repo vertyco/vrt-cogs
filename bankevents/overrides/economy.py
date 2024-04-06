@@ -39,7 +39,7 @@ class PaydayOverride(MixinMeta):
     @commands.command(hidden=True)
     @commands.guild_only()
     async def payday_override(self, ctx: commands.Context):
-        cog = ctx.bot.get_cog("Economy")
+        cog = self.bot.get_cog("Economy")
         if cog is None:
             raise commands.ExtensionError("Economy cog is not loaded.")
 
@@ -67,7 +67,7 @@ class PaydayOverride(MixinMeta):
                     payload = PaydayClaimInformation(
                         author, ctx.channel, exc.max_balance - credit_amount, old_balance, new_balance
                     )
-                    ctx.bot.dispatch("red_economy_payday_claim", payload)
+                    self.bot.dispatch("red_economy_payday_claim", payload)
                     return
 
                 await cog.config.user(author).next_payday.set(cur_time)
@@ -88,7 +88,7 @@ class PaydayOverride(MixinMeta):
                     )
                 )
                 payload = PaydayClaimInformation(author, ctx.channel, credit_amount, new_balance, old_balance)
-                ctx.bot.dispatch("red_economy_payday_claim", payload)
+                self.bot.dispatch("red_economy_payday_claim", payload)
             else:
                 relative_time = discord.utils.format_dt(
                     datetime.now(timezone.utc) + timedelta(seconds=next_payday - cur_time), "R"
@@ -121,7 +121,7 @@ class PaydayOverride(MixinMeta):
                     payload = PaydayClaimInformation(
                         author, ctx.channel, exc.max_balance - credit_amount, new_balance, old_balance
                     )
-                    ctx.bot.dispatch("red_economy_payday_claim", payload)
+                    self.bot.dispatch("red_economy_payday_claim", payload)
                     return
 
                 # Sets the latest payday time to the current time
@@ -144,7 +144,7 @@ class PaydayOverride(MixinMeta):
                     )
                 )
                 payload = PaydayClaimInformation(author, ctx.channel, credit_amount, new_balance, old_balance)
-                ctx.bot.dispatch("red_economy_payday_claim", payload)
+                self.bot.dispatch("red_economy_payday_claim", payload)
             else:
                 relative_time = discord.utils.format_dt(
                     datetime.now(timezone.utc) + timedelta(seconds=next_payday - cur_time), "R"
