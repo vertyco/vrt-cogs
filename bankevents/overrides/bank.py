@@ -115,7 +115,7 @@ async def set_balance(member: Union[discord.Member, discord.User], amount: int) 
     if amount > max_bal:
         currency = await bank.get_currency_name(guild)
         raise BalanceTooHigh(user=member, max_balance=max_bal, currency_name=currency)
-    if await bank.is_global():
+    if await is_global():
         group = bank._config.user(member)
     else:
         group = bank._config.member(member)
@@ -157,7 +157,7 @@ async def transfer_credits(
 
 
 async def wipe_bank(guild: Optional[discord.Guild] = None) -> None:
-    if await bank.is_global():
+    if await is_global():
         await bank._config.clear_all_users()
         _bot_ref.dispatch("red_bank_wipe", -1)
     else:
@@ -166,7 +166,7 @@ async def wipe_bank(guild: Optional[discord.Guild] = None) -> None:
 
 
 async def bank_prune(bot: Red, guild: discord.Guild = None, user_id: int = None) -> None:
-    global_bank = await bank.is_global()
+    global_bank = await is_global()
     if not global_bank and guild is None:
         raise BankPruneError("'guild' can't be None when pruning a local bank")
 
@@ -207,16 +207,30 @@ async def bank_prune(bot: Red, guild: discord.Guild = None, user_id: int = None)
 
     payload = BankPruneInformation(guild, user_id, pruned)
 
-    _bot_ref.dispatch("red_bank_prune_accounts", payload)
+    _bot_ref.dispatch("red_bank_prune", payload)
+
+
+async def is_global() -> bool:
+    """Determine if the bank is currently global.
+
+    Returns
+    -------
+    bool
+        :code:`True` if the bank is global, otherwise :code:`False`.
+
+    """
+    global _cache_is_global
+
+    if _cache_is_global is None:
+        _cache_is_global = await bank._config.is_global()
+
+    return _cache_is_global
 
 
 async def set_global(global_: bool) -> bool:
-    if (await bank.is_global()) is global_:
-        return global_
-
     global _cache_is_global
 
-    if await bank.is_global():
+    if await is_global():
         await bank._config.clear_all_users()
         _bot_ref.dispatch("red_bank_wipe", -1)
     else:

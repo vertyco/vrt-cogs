@@ -22,7 +22,7 @@ class BankEvents(PaydayOverride, commands.Cog, metaclass=CompositeMetaClass):
     - red_bank_set_balance
     - red_bank_transfer_credits
     - red_bank_wipe
-    - red_bank_prune_accounts
+    - red_bank_prune
     - red_bank_set_global
     - red_economy_payday_claim
 
@@ -32,11 +32,12 @@ class BankEvents(PaydayOverride, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco#0117"
-    __version__ = "2.0.2"
+    __version__ = "2.1.0"
 
     def __init__(self, bot: Red):
         super().__init__()
         self.bot: Red = bot
+        init(self.bot)
         # Original methods
         self.set_balance_coro = None
         self.transfer_credits_coro = None
@@ -61,13 +62,13 @@ class BankEvents(PaydayOverride, commands.Cog, metaclass=CompositeMetaClass):
 
     async def initialize(self) -> None:
         await self.bot.wait_until_red_ready()
-        init(self.bot)
         # Save original methods
         self.set_balance_coro = bank.set_balance
         self.transfer_credits_coro = bank.transfer_credits
         self.wipe_bank_coro = bank.wipe_bank
         self.bank_prune_coro = bank.bank_prune
         self.set_global_coro = bank.set_global
+        self.is_gobal_coro = bank.is_global
 
         # Wrap methods
         setattr(bank, "set_balance", custombank.set_balance)
@@ -75,6 +76,7 @@ class BankEvents(PaydayOverride, commands.Cog, metaclass=CompositeMetaClass):
         setattr(bank, "wipe_bank", custombank.wipe_bank)
         setattr(bank, "bank_prune", custombank.bank_prune)
         setattr(bank, "set_global", custombank.set_global)
+        setattr(bank, "is_global", custombank.is_global)
 
         payday: commands.Command = self.bot.get_command("payday")
         if payday:
@@ -94,6 +96,8 @@ class BankEvents(PaydayOverride, commands.Cog, metaclass=CompositeMetaClass):
             setattr(bank, "bank_prune", self.bank_prune_coro)
         if self.set_global_coro is not None:
             setattr(bank, "set_global", self.set_global_coro)
+        if self.is_gobal_coro is not None:
+            setattr(bank, "is_global", self.is_gobal_coro)
 
         payday: commands.Command = self.bot.get_command("payday")
         if payday and self.payday_callback:
@@ -120,7 +124,7 @@ class BankEvents(PaydayOverride, commands.Cog, metaclass=CompositeMetaClass):
             "- red_bank_set_balance\n"
             "- red_bank_transfer_credits\n"
             "- red_bank_wipe\n"
-            "- red_bank_prune_accounts\n"
+            "- red_bank_prune\n"
             "- red_bank_set_global\n"
             "- red_economy_payday_claim\n"
             "Here are the implementations you can use in your cogs that will work when this cog is loaded:\n"
