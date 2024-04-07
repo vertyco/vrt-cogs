@@ -13,7 +13,7 @@ class GuildLog(commands.Cog):
     """
 
     __author__ = "vertyco"
-    __version__ = "0.1.2"
+    __version__ = "0.1.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -67,6 +67,7 @@ class GuildLog(commands.Cog):
                         users += 1
                 params = {
                     "guild": new_guild.name,
+                    "guildid": new_guild.id,
                     "servers": len(self.bot.guilds),
                     "botname": self.bot.user.name,
                     "bots": bots,
@@ -114,6 +115,7 @@ class GuildLog(commands.Cog):
                         users += 1
                 params = {
                     "guild": old_guild.name,
+                    "guildid": old_guild.id,
                     "servers": len(self.bot.guilds),
                     "botname": self.bot.user.name,
                     "bots": bots,
@@ -192,6 +194,7 @@ class GuildLog(commands.Cog):
 
         Valid placeholders are:
         `{guild}` - the name of the guild the bot just joined
+        `{guildid}` - the id of the guild the bot just joined
         `{servers}` - the amount of servers the bot is now in
         `{botname}` - the name of the bot
         `{bots}` - the amount of bots in the guild
@@ -231,6 +234,7 @@ class GuildLog(commands.Cog):
 
         Valid placeholders are:
         `{guild}` - the name of the guild the bot just joined
+        `{guildid}` - the id of the guild the bot just joined
         `{servers}` - the amount of servers the bot is now in
         `{botname}` - the name of the bot
         `{bots}` - the amount of bots that were in the guild
