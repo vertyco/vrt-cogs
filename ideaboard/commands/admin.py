@@ -9,6 +9,7 @@ from discord import app_commands
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_number, text_to_file
+from redbot.core.utils.predicates import MessagePredicate
 
 from ..abc import MixinMeta
 from ..common.models import Profile
@@ -725,6 +726,31 @@ class Admin(MixinMeta):
             embed.set_footer(text=_("Suggested by {} [No longer in server]").format(f"{user.name} ({user.id})"))
 
         await ctx.send(embed=embed, file=file)
+
+    @ideaset.command(name="resetuser")
+    async def reset_user_stats(self, ctx: commands.Context, *, member: discord.Member):
+        """Reset a user's stats"""
+        conf = self.db.get_conf(ctx.guild)
+        if member.id not in conf.profiles:
+            return await ctx.send(_("This user has no stats to reset."))
+        del conf.profiles[member.id]
+        await ctx.send(_("Users stats for {} have been reset.").format(member.display_name))
+        await self.save()
+
+    @ideaset.command(name="resetall")
+    async def reset_all_stats(self, ctx: commands.Context):
+        """Reset all user stats"""
+        conf = self.db.get_conf(ctx.guild)
+        if not conf.profiles:
+            return await ctx.send(_("No user stats to reset."))
+        msg = await ctx.send(_("Are you sure you want to reset all user stats?"))
+        pred = MessagePredicate.yes_or_no(ctx)
+        await self.bot.wait_for("message", check=pred)
+        if not pred.result:
+            return await msg.edit(content=_("Reset cancelled."))
+        conf.profiles = {}
+        await msg.edit(content=_("All user stats have been reset."))
+        await self.save()
 
     @ideaset.command(name="insights")
     async def view_insights(self, ctx: commands.Context, amount: int = 3):
