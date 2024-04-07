@@ -52,16 +52,13 @@ class VoteView(discord.ui.View):
 
     async def respond(self, interaction: discord.Interaction, text: str, delete_after: int | None = None):
         try:
-            await interaction.response.send_message(text, ephemeral=True, delete_after=delete_after)
+            msg: discord.WebhookMessage = await interaction.followup.send(text, ephemeral=True)
+            if msg:
+                with suppress(discord.NotFound):
+                    await msg.delete(delay=delete_after)
         except (discord.HTTPException, discord.NotFound):
-            try:
-                msg: discord.WebhookMessage = await interaction.followup.send(text, ephemeral=True)
-                if msg:
-                    with suppress(discord.NotFound):
-                        await msg.delete(delay=delete_after)
-            except (discord.HTTPException, discord.NotFound):
-                with suppress(discord.NotFound, discord.Forbidden):
-                    await interaction.channel.send(text, delete_after=delete_after)
+            with suppress(discord.NotFound, discord.Forbidden):
+                await interaction.channel.send(text, delete_after=delete_after)
 
     async def check(self, interaction: discord.Interaction) -> bool:
         """Return True if the user can vote"""
@@ -161,6 +158,8 @@ class VoteView(discord.ui.View):
 
     @discord.ui.button(style=discord.ButtonStyle.primary)
     async def upvote(self, interaction: discord.Interaction, buttons: discord.ui.Button):
+        with suppress(discord.NotFound):
+            await interaction.response.defer()
         if not await self.check(interaction):
             return
 
@@ -196,6 +195,8 @@ class VoteView(discord.ui.View):
 
     @discord.ui.button(style=discord.ButtonStyle.primary)
     async def downvote(self, interaction: discord.Interaction, buttons: discord.ui.Button):
+        with suppress(discord.NotFound):
+            await interaction.response.defer()
         if not await self.check(interaction):
             return
 

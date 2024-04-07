@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import typing as t
 from contextlib import suppress
@@ -10,6 +11,7 @@ from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_number, text_to_file
 
 from ..abc import MixinMeta
+from ..common.models import Profile
 
 log = logging.getLogger("red.vrt.ideaboard.commands.admin")
 _ = Translator("IdeaBoard", __file__)
@@ -723,3 +725,130 @@ class Admin(MixinMeta):
             embed.set_footer(text=_("Suggested by {} [No longer in server]").format(f"{user.name} ({user.id})"))
 
         await ctx.send(embed=embed, file=file)
+
+    @ideaset.command(name="insights")
+    async def view_insights(self, ctx: commands.Context):
+        """View insights about the server's suggestions."""
+        conf = self.db.get_conf(ctx.guild)
+        if not conf.profiles:
+            return await ctx.send(_("No suggestions have been made yet."))
+        p: t.Dict[discord.Member, Profile] = {
+            ctx.guild.get_member(k): v for k, v in conf.profiles.items() if ctx.guild.get_member(k)
+        }
+
+        def winloss_ratio(x: t.Tuple[discord.Member, Profile]) -> float:
+            return round(x[1].suggestions_approved / (x[1].suggestions_denied or 1), 2)
+
+        def upvote_ratio(x: t.Tuple[discord.Member, Profile]) -> float:
+            return round(x[1].upvotes / (x[1].downvotes or 1), 2)
+
+        def downvote_ratio(x: t.Tuple[discord.Member, Profile]) -> float:
+            return round(x[1].downvotes / (x[1].upvotes or 1), 2)
+
+        def fmt_results(res: t.List[t.Tuple[discord.Member, Profile]], attr: str) -> str:
+            # Return a numbered list of the top users
+            place_emojis = ["🥇", "🥈", "🥉"]
+            buffer = StringIO()
+            for i, (member, profile) in enumerate(res):
+                place = place_emojis[i] if i < 3 else f"{i+1}."
+                buffer.write(f"{place} {member.mention} ({humanize_number(getattr(profile, attr))})\n")
+            return buffer.getvalue()
+
+        def fmt_ratio(res: t.List[t.Tuple[discord.Member, Profile]], func: t.Callable) -> str:
+            place_emojis = ["🥇", "🥈", "🥉"]
+            buffer = StringIO()
+            for i, (member, profile) in enumerate(res):
+                place = place_emojis[i] if i < 3 else f"{i+1}."
+                buffer.write(f"{place} {member.mention} ({humanize_number(func((member, profile)))})\n")
+            return buffer.getvalue()
+
+        def _embed() -> discord.Embed:
+            avg_suggestions = sum(i.suggestions_made for i in p.values()) / len(p)
+            # Top 5 users based on suggestions made
+            top_suggesters = sorted(p.items(), key=lambda x: x[1].suggestions_made, reverse=True)[:5]
+            # Top 5 users with most approved suggestions
+            most_successful = sorted(p.items(), key=lambda x: x[1].suggestions_approved, reverse=True)[:5]
+            # Top 5 users with most denied suggestions
+            most_denied = sorted(p.items(), key=lambda x: x[1].suggestions_denied, reverse=True)[:5]
+            # Top 5 users with highest approval ratio
+            highest_ratio = sorted(p.items(), key=winloss_ratio, reverse=True)[:5]
+            # Top 5 users with most wins
+            most_wins = sorted(p.items(), key=lambda x: x[1].wins, reverse=True)[:5]
+            # Top 5 users with most losses
+            most_losses = sorted(p.items(), key=lambda x: x[1].losses, reverse=True)[:5]
+            # Top 5 users with highest upvote to downvote ratio
+            highest_vote_ratio = sorted(p.items(), key=upvote_ratio, reverse=True)[:5]
+            # Top 5 most negative users by downvote/upvote ratio
+            highest_downvote_ratio = sorted(p.items(), key=downvote_ratio, reverse=True)[:5]
+
+            embed = discord.Embed(title=_("Server Insights"), color=discord.Color.gold())
+            embed.add_field(
+                name=_("Average Suggestions Made Per User"),
+                value=humanize_number(avg_suggestions),
+                inline=False,
+            )
+            embed.add_field(
+                name=_("Most Suggestions Made"),
+                value=fmt_results(top_suggesters, "suggestions_made"),
+                inline=False,
+            )
+            embed.add_field(
+                name=_("Most Successful Users"),
+                value=(
+                    _("These users have the most suggestions approved.\n")
+                    + fmt_results(most_successful, "suggestions_approved")
+                ),
+                inline=False,
+            )
+            embed.add_field(
+                name=_("Least Successful Users"),
+                value=(
+                    _("These users have the most suggestions denied.\n")
+                    + fmt_results(most_denied, "suggestions_denied")
+                ),
+                inline=False,
+            )
+            embed.add_field(
+                name=_("Highest Approval Ratio"),
+                value=(
+                    _("These users have the highest approval to rejection ratio.\n")
+                    + fmt_ratio(highest_ratio, winloss_ratio)
+                ),
+                inline=False,
+            )
+            embed.add_field(
+                name=_("Most Wins"),
+                value=(
+                    _("These users have the most votes that ended in their favor.\n") + fmt_results(most_wins, "wins")
+                ),
+                inline=False,
+            )
+            embed.add_field(
+                name=_("Most Losses"),
+                value=(
+                    _("These users have the most votes that ended against their favor.\n")
+                    + fmt_results(most_losses, "losses")
+                ),
+                inline=False,
+            )
+            embed.add_field(
+                name=_("Most Optimistic Users"),
+                value=(
+                    _("These users have the highest upvote to downvote ratio.\n")
+                    + fmt_ratio(highest_vote_ratio, upvote_ratio)
+                ),
+                inline=False,
+            )
+            embed.add_field(
+                name=_("Most Negative Users"),
+                value=(
+                    _("These users have the highest downvote to upvote ratio.\n")
+                    + fmt_ratio(highest_downvote_ratio, downvote_ratio)
+                ),
+                inline=False,
+            )
+            return embed
+
+        async with ctx.typing():
+            embed = await asyncio.to_thread(_embed)
+            await ctx.send(embed=embed)
