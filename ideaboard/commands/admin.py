@@ -768,7 +768,8 @@ class Admin(MixinMeta):
             return buffer.getvalue()
 
         def _embed() -> discord.Embed:
-            avg_suggestions = sum(i.suggestions_made for i in p.values()) / len(p)
+            made_suggestions = [i for i in p.values() if i.suggestions_made > 0]
+            avg_suggestions = sum(i.suggestions_made for i in made_suggestions) / (len(made_suggestions) or 1)
             # Top X users based on suggestions made
             top_suggesters = sorted(p.items(), key=lambda x: x[1].suggestions_made, reverse=True)[:amount]
             # Top X users with most approved suggestions
