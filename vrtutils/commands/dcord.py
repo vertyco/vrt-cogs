@@ -23,7 +23,7 @@ class Dcord(MixinMeta):
         if not guild:
             try:
                 guild = await self.bot.fetch_guild(guild_id)
-            except discord.Forbidden:
+            except (discord.Forbidden, discord.NotFound):
                 guild = None
         if not guild:
             return await ctx.send("Could not find that guild")
