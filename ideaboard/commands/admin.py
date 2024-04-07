@@ -734,7 +734,7 @@ class Admin(MixinMeta):
         if member.id not in conf.profiles:
             return await ctx.send(_("This user has no stats to reset."))
         del conf.profiles[member.id]
-        await ctx.send(_("Users stats for {} have been reset.").format(member.display_name))
+        await ctx.send(_("Stats for {} have been reset.").format(member.display_name))
         await self.save()
 
     @ideaset.command(name="resetall")
