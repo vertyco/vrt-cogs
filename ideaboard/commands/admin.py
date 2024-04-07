@@ -727,8 +727,13 @@ class Admin(MixinMeta):
         await ctx.send(embed=embed, file=file)
 
     @ideaset.command(name="insights")
-    async def view_insights(self, ctx: commands.Context):
-        """View insights about the server's suggestions."""
+    async def view_insights(self, ctx: commands.Context, amount: int = 3):
+        """View insights about the server's suggestions.
+
+        **Arguments**
+        - `amount` The number of top users to display for each section.
+        """
+        amount = max(1, min(amount, 10))
         conf = self.db.get_conf(ctx.guild)
         if not conf.profiles:
             return await ctx.send(_("No suggestions have been made yet."))
@@ -764,22 +769,22 @@ class Admin(MixinMeta):
 
         def _embed() -> discord.Embed:
             avg_suggestions = sum(i.suggestions_made for i in p.values()) / len(p)
-            # Top 5 users based on suggestions made
-            top_suggesters = sorted(p.items(), key=lambda x: x[1].suggestions_made, reverse=True)[:5]
-            # Top 5 users with most approved suggestions
-            most_successful = sorted(p.items(), key=lambda x: x[1].suggestions_approved, reverse=True)[:5]
-            # Top 5 users with most denied suggestions
-            most_denied = sorted(p.items(), key=lambda x: x[1].suggestions_denied, reverse=True)[:5]
-            # Top 5 users with highest approval ratio
-            highest_ratio = sorted(p.items(), key=winloss_ratio, reverse=True)[:5]
-            # Top 5 users with most wins
-            most_wins = sorted(p.items(), key=lambda x: x[1].wins, reverse=True)[:5]
-            # Top 5 users with most losses
-            most_losses = sorted(p.items(), key=lambda x: x[1].losses, reverse=True)[:5]
-            # Top 5 users with highest upvote to downvote ratio
-            highest_vote_ratio = sorted(p.items(), key=upvote_ratio, reverse=True)[:5]
-            # Top 5 most negative users by downvote/upvote ratio
-            highest_downvote_ratio = sorted(p.items(), key=downvote_ratio, reverse=True)[:5]
+            # Top X users based on suggestions made
+            top_suggesters = sorted(p.items(), key=lambda x: x[1].suggestions_made, reverse=True)[:amount]
+            # Top X users with most approved suggestions
+            most_successful = sorted(p.items(), key=lambda x: x[1].suggestions_approved, reverse=True)[:amount]
+            # Top X users with most denied suggestions
+            most_denied = sorted(p.items(), key=lambda x: x[1].suggestions_denied, reverse=True)[:amount]
+            # Top X users with highest approval ratio
+            highest_ratio = sorted(p.items(), key=winloss_ratio, reverse=True)[:amount]
+            # Top X users with most wins
+            most_wins = sorted(p.items(), key=lambda x: x[1].wins, reverse=True)[:amount]
+            # Top X users with most losses
+            most_losses = sorted(p.items(), key=lambda x: x[1].losses, reverse=True)[:amount]
+            # Top X users with highest upvote to downvote ratio
+            highest_vote_ratio = sorted(p.items(), key=upvote_ratio, reverse=True)[:amount]
+            # Top X most negative users by downvote/upvote ratio
+            highest_downvote_ratio = sorted(p.items(), key=downvote_ratio, reverse=True)[:amount]
 
             embed = discord.Embed(title=_("Server Insights"), color=discord.Color.gold())
             embed.add_field(
