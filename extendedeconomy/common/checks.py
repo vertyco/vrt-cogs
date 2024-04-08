@@ -27,16 +27,21 @@ class Checks(MixinMeta):
 
     async def cost_check(self, ctx: t.Union[commands.Context, discord.Interaction]):
         if isinstance(ctx, discord.Interaction):
+            ctx: discord.Interaction = ctx
             user = ctx.guild.get_member(ctx.user.id) if ctx.guild else ctx.user
+            usage_id = f"{ctx.id}-{user.id}"
         else:
+            ctx: commands.Context = ctx
             user = ctx.author
-        if user.id in self.running:
+            usage_id = f"{ctx.message.id}"
+
+        if usage_id in self.running:
             return True
         try:
-            self.running.add(user.id)
+            self.running.add(usage_id)
             return await self._cost_check(ctx, user)
         finally:
-            self.running.remove(user.id)
+            self.running.remove(usage_id)
 
     async def _cost_check(
         self,
