@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import typing as t
 
@@ -53,6 +54,25 @@ class Checks(MixinMeta):
             await message.clear_reactions()
             await message.delete(delay=self.db.delete_after)
 
+        def ctx_to_dict(c: t.Union[commands.Context, discord.Interaction]):
+            if isinstance(c, discord.Interaction):
+                info = {
+                    "type": "Interaction",
+                    "id": c.id,
+                    "user": c.user.id,
+                    "guild": c.guild.id if c.guild else None,
+                    "channel": c.channel.id,
+                }
+            else:
+                info = {
+                    "type": "Context",
+                    "id": c.message.id,
+                    "user": c.author.id,
+                    "guild": c.guild.id if c.guild else None,
+                    "channel": c.channel.id,
+                }
+            return json.dumps(info, indent=2)
+
         if isinstance(ctx, discord.Interaction):
             user = ctx.guild.get_member(ctx.user.id) if ctx.guild else ctx.user
         else:
@@ -60,13 +80,17 @@ class Checks(MixinMeta):
 
         command_name = ctx.command.qualified_name
         is_global = await bank.is_global()
+        if not is_global and ctx.guild is None:
+            # Command run in DMs and bank is not global, cant apply cost so just return
+            return True
+
         if is_global:
             cost_obj = self.db.command_costs.get(command_name)
         elif ctx.guild is not None:
             conf = self.db.get_conf(ctx.guild)
             cost_obj = conf.command_costs.get(command_name)
         else:
-            log.error(f"Unknown condition in cost check for {user.name}: {ctx}")
+            log.error(f"Unknown condition in cost check for {user.name}: {ctx_to_dict(ctx)}")
             return True
 
         if not cost_obj:
@@ -77,7 +101,9 @@ class Checks(MixinMeta):
             cost_obj.update_usage(user.id)
             return True
 
-        is_broke = _("You can't afford to run that command! (Need {} credits)").format(humanize_number(cost))
+        is_broke = _("You can't afford to run the `{}` command! (Need {} credits)").format(
+            command_name, humanize_number(cost)
+        )
         is_slash = isinstance(ctx, discord.Interaction) or ctx.interaction is not None
         currency = await self.get_credits_name(ctx.guild)
 
@@ -128,8 +154,8 @@ class Checks(MixinMeta):
             if is_slash and cost_obj.prompt != "silent":
                 asyncio.create_task(
                     ctx.channel.send(
-                        _("{}, You spent {} {} to run this command.").format(
-                            user.display_name, humanize_number(cost), currency
+                        _("{}, You spent {} {} to run the `{}` command.").format(
+                            user.display_name, humanize_number(cost), currency, command_name
                         ),
                         delete_after=self.db.delete_after,
                     )
