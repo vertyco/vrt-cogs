@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import typing as t
+from contextlib import suppress
 
 import discord
 from aiocache import cached
@@ -51,7 +52,8 @@ class Checks(MixinMeta):
     ):
         async def _edit_delete_delay(message: discord.Message, new_content: str):
             await message.edit(content=new_content, view=None)
-            await message.clear_reactions()
+            with suppress(discord.Forbidden):
+                await message.clear_reactions()
             await message.delete(delay=self.db.delete_after)
 
         def ctx_to_dict(c: t.Union[commands.Context, discord.Interaction]):
