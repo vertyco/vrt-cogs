@@ -11,7 +11,7 @@ from aiocache import cached
 from aiohttp import ClientSession
 from redbot.core import commands
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import box, humanize_number
+from redbot.core.utils.chat_formatting import humanize_number
 
 DPY2 = True if discord.__version__ > "1.7.3" else False
 _ = Translator("LevelUp", __file__)
@@ -257,11 +257,11 @@ def get_leaderboard(
                     if lvl := data.get("level"):
                         stat += f" 🎖{lvl}"
 
-            buf.write(f"{place}. {user} ({stat})\n")
+            buf.write(f"**{place}**. {user} (`{stat}`)\n")
 
         embed = discord.Embed(
             title=title,
-            description=desc + box(buf.getvalue(), lang="python"),
+            description=buf.getvalue(),
             color=discord.Color.random(),
         )
         if DPY2:
