@@ -87,7 +87,7 @@ class User(MixinMeta):
 
         if not conf.approvers:
             txt = _("No approvers have been set! Admins needs to use the {} command to add one.").format(
-                f"`{ctx.clean_prefix}approverole @role`"
+                f"`{ctx.clean_prefix}ideaset approverole @role`"
             )
             return await resp(txt)
 
@@ -182,7 +182,14 @@ class User(MixinMeta):
 
         profile.suggestions_made += 1
 
-        txt = _("Your [suggestion]({}) has been posted!").format(message.jump_url)
+        if ctx.invoked_with == "idea":
+            word = "idea"
+        else:
+            word = "suggestion"
+        if channel.permissions_for(ctx.author).view_channel:
+            txt = _("Your **[{}]({})** has been posted!").format(word, message.jump_url)
+        else:
+            txt = _("Your {} has been posted!").format(word)
 
         if ctx.interaction:
             try:
