@@ -19,7 +19,7 @@ RequestType = t.Literal["discord_deleted_user", "owner", "user", "user_strict"]
 class ExtendedEconomy(Commands, Checks, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     """Description"""
 
-    __author__ = "Vertyco#0117"
+    __author__ = "vertyco"
     __version__ = "0.0.13b"
 
     def __init__(self, bot: Red):

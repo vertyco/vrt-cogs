@@ -31,7 +31,7 @@ class BankEvents(PaydayOverride, commands.Cog, metaclass=CompositeMetaClass):
     https://github.com/Cog-Creators/Red-DiscordBot/pull/5325
     """
 
-    __author__ = "Vertyco#0117"
+    __author__ = "vertyco"
     __version__ = "2.1.1"
 
     def __init__(self, bot: Red):
