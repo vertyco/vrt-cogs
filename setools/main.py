@@ -18,7 +18,7 @@ RequestType = t.Literal["discord_deleted_user", "owner", "user", "user_strict"]
 class SETools(SETasks, MessageListener, Commands, commands.Cog, metaclass=CompositeMetaClass):
     """Space Engineers Server Tools for Discord"""
 
-    __author__ = "Vertyco#0117"
+    __author__ = "vertyco"
     __version__ = "0.0.4a"
 
     def __init__(self, bot: Red):

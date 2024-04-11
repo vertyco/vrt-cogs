@@ -14,7 +14,7 @@ log = logging.getLogger("vragepy")
 
 
 class VRageClient:
-    def __init__(self, base_url: str, token: str, timeout: int = 10, raw: bool = False) -> None:
+    def __init__(self, base_url: str, token: str, timeout: int = 10) -> None:
         self.base_url = base_url
         self.token = token
         self.timeout = timeout
