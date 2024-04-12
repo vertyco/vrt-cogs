@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime, timezone
-from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import discord
@@ -10,12 +9,6 @@ from pydantic import VERSION, BaseModel, Field
 from redbot.core.bot import Red
 
 log = logging.getLogger("red.vrt.assistant.models")
-
-
-class ImageSize(Enum):
-    SMALL = "256x256"
-    MEDIUM = "512x512"
-    LARGE = "1024x1024"
 
 
 class AssistantBaseModel(BaseModel):
@@ -118,7 +111,8 @@ class GuildSettings(AssistantBaseModel):
     max_time_role_override: Dict[int, int] = {}
 
     image_tools: bool = True
-    image_size: ImageSize = ImageSize.LARGE
+    image_size: str = "512x512"  # 256x256, 512x512, 1024x1024
+    vision_detail: str = "low"  # high, low
 
     use_function_calls: bool = False
     max_function_calls: int = 20  # Max calls in a row
@@ -311,7 +305,12 @@ class Conversation(AssistantBaseModel):
             content = [{"type": "text", "text": user_message}]
             for img in images:
                 if img.lower().startswith("http"):
-                    content.append({"type": "image_url", "image_url": img})
+                    content.append(
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": img},
+                        }
+                    )
                 else:
                     content.append(
                         {

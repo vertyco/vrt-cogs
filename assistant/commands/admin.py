@@ -95,6 +95,7 @@ class Admin(MixinMeta):
             + _("`Frequency Penalty:   `{}\n").format(conf.frequency_penalty)
             + _("`Presence Penalty:    `{}\n").format(conf.presence_penalty)
             + _("`Seed:                `{}\n").format(conf.seed)
+            + _("`Vision Resolution:   `{}\n").format(conf.vision_detail)
             + _("`System Prompt:       `{} tokens\n").format(humanize_number(system_tokens))
             + _("`User Prompt:         `{} tokens\n").format(humanize_number(prompt_tokens))
         )
@@ -615,6 +616,30 @@ class Admin(MixinMeta):
             await ctx.send(_("System prompt overriding **Enabled**, users can now set per-convo system prompts"))
         await self.save_conf()
 
+    @assistant.command(name="toggle")
+    async def toggle_gpt(self, ctx: commands.Context):
+        """Toggle the assistant on or off"""
+        conf = self.db.get_conf(ctx.guild)
+        if conf.enabled:
+            conf.enabled = False
+            await ctx.send(_("The assistant is now **Disabled**"))
+        else:
+            conf.enabled = True
+            await ctx.send(_("The assistant is now **Enabled**"))
+        await self.save_conf()
+
+    @assistant.command(name="resolution")
+    async def switch_vision_resolution(self, ctx: commands.Context):
+        """Switch vision resolution between high and low for relevant GPT-4-Turbo models"""
+        conf = self.db.get_conf(ctx.guild)
+        if conf.vision_detail == "high":
+            conf.vision_detail = "low"
+            await ctx.send(_("Vision resolution has been set to **Low**"))
+        else:
+            conf.vision_detail = "high"
+            await ctx.send(_("Vision resolution has been set to **High**"))
+        await self.save_conf()
+
     @assistant.command(name="questionmark")
     async def toggle_question(self, ctx: commands.Context):
         """Toggle whether questions need to end with **__?__**"""
@@ -637,18 +662,6 @@ class Admin(MixinMeta):
         else:
             conf.mention_respond = True
             await ctx.send(_("The bot will now respond to mentions"))
-        await self.save_conf()
-
-    @assistant.command(name="toggle")
-    async def toggle_gpt(self, ctx: commands.Context):
-        """Toggle the assistant on or off"""
-        conf = self.db.get_conf(ctx.guild)
-        if conf.enabled:
-            conf.enabled = False
-            await ctx.send(_("The assistant is now **Disabled**"))
-        else:
-            conf.enabled = True
-            await ctx.send(_("The assistant is now **Enabled**"))
         await self.save_conf()
 
     @assistant.command(name="mention")
