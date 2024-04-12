@@ -1,5 +1,4 @@
 import asyncio
-import base64
 import functools
 import json
 import logging
@@ -98,9 +97,10 @@ class ChatHandler(MixinMeta):
         for i in get_attachments(message):
             has_extension = i.filename.count(".") > 0
             if any(i.filename.lower().endswith(ext) for ext in img_ext):
-                image_bytes: bytes = await i.read()
-                image_b64 = base64.b64encode(image_bytes).decode()
-                images.append(image_b64)
+                # No reason to download the image now, we can just use the url
+                # image_bytes: bytes = await i.read()
+                # image_b64 = base64.b64encode(image_bytes).decode()
+                images.append(i.url)
                 continue
 
             if not any(i.filename.lower().endswith(ext) for ext in READ_EXTENSIONS) and has_extension:
@@ -683,6 +683,7 @@ class ChatHandler(MixinMeta):
             system_prompt.strip(),
             name=clean_name(author.name) if author else None,
             images=images,
+            resolution=conf.vision_detail,
         )
         return messages
 
