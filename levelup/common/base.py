@@ -10,7 +10,6 @@ from time import perf_counter
 from typing import Optional, Union
 
 import discord
-import validators
 from aiocache import cached
 from redbot.core import VersionInfo, bank, commands, version_info
 from redbot.core.data_manager import bundled_data_path, cog_data_path
@@ -69,10 +68,6 @@ class UserCommands(MixinMeta, ABC):
 
     # Function to test a given URL and see if it's valid
     async def valid_url(self, ctx: commands.Context, image_url: str):
-        valid = validators.url(image_url)
-        if not valid:
-            await ctx.send(_("Uh Oh, looks like that is not a valid URL"))
-            return
         try:
             # Try running it through profile generator blind to see if it errors
             params = {"bg_image": image_url}
