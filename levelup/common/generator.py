@@ -81,6 +81,7 @@ class Generator(MixinMeta, ABC):
         font_name: str = None,
         render_gifs: bool = False,
         blur: bool = False,
+        testing: bool = False,
     ):
         # get profile pic
         if profile_image:
@@ -100,11 +101,15 @@ class Generator(MixinMeta, ABC):
             bg_bytes = self.get_image_content_from_url(bg_image)
             try:
                 if bg_bytes is None:
+                    if testing:
+                        raise ValueError(f"Failed to download image {bg_image}")
                     log.error(f"Failed to download image {bg_image}")
                     card = self.get_random_background()
                 else:
                     card = Image.open(BytesIO(bg_bytes))
             except UnidentifiedImageError as e:
+                if testing:
+                    raise e
                 log.error(f"Failed to load {bg_image}", exc_info=e)
                 card = self.get_random_background()
         else:

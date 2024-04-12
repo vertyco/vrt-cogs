@@ -70,7 +70,7 @@ class UserCommands(MixinMeta, ABC):
     async def valid_url(self, ctx: commands.Context, image_url: str):
         try:
             # Try running it through profile generator blind to see if it errors
-            params = {"bg_image": image_url}
+            params = {"bg_image": image_url, "testing": True}
             await asyncio.to_thread(self.generate_profile, **params)
         except Exception as e:
             log.error(f"Failed to validate image url for {ctx.author.name} in {ctx.guild.name}", exc_info=e)
@@ -78,7 +78,7 @@ class UserCommands(MixinMeta, ABC):
                 await ctx.send(_("Uh Oh, looks like that is not a valid image, cannot identify the file"))
                 return
             else:
-                await ctx.send(_("Uh Oh, looks like that is not a valid image"))
+                await ctx.send(_("Uh Oh, looks like that is not a valid image\n{}").format(box(str(e), lang="python")))
                 return
         return True
 
