@@ -10,6 +10,7 @@ MODELS = {
     "gpt-4-1106-preview": 128000,
     "gpt-4-0125-preview": 128000,
     "gpt-4-vision-preview": 128000,
+    "gpt-4-turbo-2024-04-09": 128000,
 }
 PRICES = {
     "gpt-3.5-turbo": [0.001, 0.0015],
@@ -30,6 +31,7 @@ PRICES = {
     "gpt-4-0125-preview": [0.01, 0.03],
     "gpt-4-vision-preview": [0.01, 0.03],
     "gpt-4-1106-vision-preview": [0.01, 0.03],
+    "gpt-4-turbo-2024-04-09": [0.01, 0.03],
     "gpt-4-32k": [0.06, 0.12],
     "gpt-4-32k-0301": [0.06, 0.12],
     "gpt-4-32k-0613": [0.06, 0.12],
@@ -52,10 +54,12 @@ SUPPORTS_SEED = [
     "gpt-4-1106-vision-preview",
     "gpt-4-turbo-preview",
     "gpt-4-0125-preview",
+    "gpt-4-turbo-2024-04-09",
 ]
 SUPPORTS_VISION = [
     "gpt-4-vision-preview",
     "gpt-4-1106-vision-preview",
+    "gpt-4-turbo-2024-04-09",
 ]
 SUPPORTS_TOOLS = [
     "gpt-3.5-turbo-1106",
@@ -63,6 +67,7 @@ SUPPORTS_TOOLS = [
     "gpt-4-1106-preview",
     "gpt-4-0125-preview",
     "gpt-4-turbo-preview",
+    "gpt-4-turbo-2024-04-09",
 ]
 READ_EXTENSIONS = [
     ".txt",
