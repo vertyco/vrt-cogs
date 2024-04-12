@@ -85,9 +85,8 @@ class Generator(MixinMeta, ABC):
         # get profile pic
         if profile_image:
             pfp_image = self.get_image_content_from_url(str(profile_image))
-            profile_bytes = BytesIO(pfp_image)
             try:
-                profile = Image.open(profile_bytes)
+                profile = Image.open(BytesIO(pfp_image))
             except UnidentifiedImageError:
                 profile = Image.open(self.default_pfp)
         else:
@@ -98,9 +97,13 @@ class Generator(MixinMeta, ABC):
         if bg_image is None or str(bg_image) == "random":
             card = self.get_random_background()
         elif bg_image.startswith("http"):
+            bg_bytes = self.get_image_content_from_url(bg_image)
             try:
-                bg_bytes = self.get_image_content_from_url(bg_image)
-                card = Image.open(BytesIO(bg_bytes))
+                if bg_bytes is None:
+                    log.error(f"Failed to download image {bg_image}")
+                    card = self.get_random_background()
+                else:
+                    card = Image.open(BytesIO(bg_bytes))
             except UnidentifiedImageError as e:
                 log.error(f"Failed to load {bg_image}", exc_info=e)
                 card = self.get_random_background()
