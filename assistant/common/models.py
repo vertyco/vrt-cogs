@@ -112,7 +112,7 @@ class GuildSettings(AssistantBaseModel):
 
     image_tools: bool = True
     image_size: str = "512x512"  # 256x256, 512x512, 1024x1024
-    vision_detail: str = "low"  # high, low
+    vision_detail: str = "auto"  # high, low, auto
 
     use_function_calls: bool = False
     max_function_calls: int = 20  # Max calls in a row
@@ -291,7 +291,7 @@ class Conversation(AssistantBaseModel):
         system_prompt: str,
         name: str = None,
         images: List[str] = None,
-        resolution: str = "low",
+        resolution: str = "auto",
     ) -> List[dict]:
         """Pre-appends the prmompts before the user's messages without motifying them"""
         prepared = []
@@ -308,7 +308,7 @@ class Conversation(AssistantBaseModel):
                     content.append(
                         {
                             "type": "image_url",
-                            "image_url": {"url": img},
+                            "image_url": {"url": img, "detail": resolution},
                         }
                     )
                 else:

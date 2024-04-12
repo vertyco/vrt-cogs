@@ -632,12 +632,15 @@ class Admin(MixinMeta):
     async def switch_vision_resolution(self, ctx: commands.Context):
         """Switch vision resolution between high and low for relevant GPT-4-Turbo models"""
         conf = self.db.get_conf(ctx.guild)
-        if conf.vision_detail == "high":
+        if conf.vision_detail == "auto":
             conf.vision_detail = "low"
             await ctx.send(_("Vision resolution has been set to **Low**"))
-        else:
+        elif conf.vision_detail == "low":
             conf.vision_detail = "high"
             await ctx.send(_("Vision resolution has been set to **High**"))
+        else:
+            conf.vision_detail = "auto"
+            await ctx.send(_("Vision resolution has been set to **Auto**"))
         await self.save_conf()
 
     @assistant.command(name="questionmark")
