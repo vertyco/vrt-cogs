@@ -261,7 +261,7 @@ def get_leaderboard(
 
         embed = discord.Embed(
             title=title,
-            description=buf.getvalue(),
+            description=desc + buf.getvalue(),
             color=discord.Color.random(),
         )
         if DPY2:
