@@ -1,4 +1,4 @@
-from abc import ABCMeta, abstractmethod
+from abc import ABC, ABCMeta, abstractmethod
 from multiprocessing.pool import Pool
 from typing import Callable, Dict, List, Optional, Union
 
@@ -15,13 +15,14 @@ class CompositeMetaClass(CogMeta, ABCMeta):
     """Type detection"""
 
 
-class MixinMeta(metaclass=ABCMeta):
+class MixinMeta(ABC):
     """Type hinting"""
 
-    bot: Red
-    db: DB
-    mp_pool: Pool
-    registry: Dict[str, Dict[str, dict]]
+    def __init__(self, *_args):
+        self.bot: Red
+        self.db: DB
+        self.mp_pool: Pool
+        self.registry: Dict[str, Dict[str, dict]]
 
     @abstractmethod
     async def openai_status(self) -> str:
