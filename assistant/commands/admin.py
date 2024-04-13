@@ -49,9 +49,9 @@ class Admin(MixinMeta):
         """
         pass
 
-    @assistant.command(name="view")
+    @assistant.command(name="view", aliases=["v"])
     @commands.bot_has_permissions(embed_links=True)
-    async def view_settings(self, ctx: commands.Context, private: bool = True):
+    async def view_settings(self, ctx: commands.Context, private: bool = False):
         """
         View current settings
 

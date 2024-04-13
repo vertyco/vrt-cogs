@@ -54,38 +54,33 @@ class AssistantListener(MixinMeta):
 
         channel = message.channel
         mention_ids = [m.id for m in message.mentions]
+        bot_mentioned = self.bot.user.id in mention_ids
+        # If bot wasnt mentioned in the message, see if someone replied to it
+        if not bot_mentioned and hasattr(message, "reference") and message.reference:
+            ref = message.reference.resolved
+            if not isinstance(ref, discord.Message):
+                try:
+                    ref = await message.channel.fetch_message(message.reference.message_id)
+                except discord.HTTPException:
+                    pass
+            if ref and ref.author.id == self.bot.user.id:
+                bot_mentioned = True
 
-        # Ignore channels that arent a dedicated assistant channel
         if channel.id != conf.channel_id:
-            # Perform some preliminary checks
-            if self.bot.user.id not in mention_ids:
+            # Message outside of assistant channel
+            # The ONLY way we dont return is if the bot was mentioned and mention_respond is enabled
+            if not bot_mentioned or not conf.mention_respond:
                 return
-            # If here, bot was mentioned
-            if not conf.mention_respond:
-                return
-
-        # Ignore references to other members unless bot is pinged
-        if hasattr(message, "reference") and message.reference:
-            if ref := message.reference.resolved:
-                # If bot was replied and mention respond is disabled
-                if ref.author.id == self.bot.user.id and not conf.mention_respond:
-                    return
-                # If responding to another user and bot wasn't mentioned
-                if ref.author.id != self.bot.user.id and self.bot.user.id not in mention_ids:
-                    return
 
         # Ignore common prefixes from other bots
         if message.content.startswith((",", ".", "+", "!", "-", ">" "<", "?", "$", "%", "^", "&", "*", "_")):
             return
-
         if not await can_use(message, conf.blacklist, respond=False):
             return
         if not message.content.endswith("?") and conf.endswith_questionmark and self.bot.user.id not in mention_ids:
             return
-
         if len(message.content.strip()) < conf.min_length:
             return
-
         self.responding_to.add(message.author.id)
         try:
             async with channel.typing():
