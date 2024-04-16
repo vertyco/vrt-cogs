@@ -29,7 +29,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "vertyco"
-    __version__ = "0.7.0"
+    __version__ = "1.0.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -46,27 +46,30 @@ class AutoDocs(commands.Cog):
     def generate_readme(
         self,
         cog: commands.Cog,
-        guild: discord.Guild,
         prefix: str,
         replace_botname: bool,
         extended_info: bool,
         include_hidden: bool,
-        privilege_level: str,
-        embedding_style: bool = False,
+        include_help: bool,
+        max_privilege_level: str,
         min_privilage_level: str = "user",
+        embedding_style: bool = False,
     ) -> Tuple[str, pd.DataFrame]:
         columns = [_("name"), _("text")]
         rows = []
         cog_name = cog.qualified_name
-        helptxt = _("Help")
-        docs = f"# {cog_name} {helptxt}\n\n"
-        cog_help = cog.help if cog.help else None
-        if not embedding_style and cog_help:
-            cog_help = cog_help.replace("\n", "<br/>")
-        if cog_help:
-            docs += f"{cog_help}\n\n"
-            entry_name = _("{} cog description").format(cog_name)
-            rows.append([entry_name, f"{entry_name}\n{cog_help}"])
+        if include_help:
+            helptxt = _("Help")
+            docs = f"# {cog_name} {helptxt}\n\n"
+            cog_help = cog.help if cog.help else None
+            if not embedding_style and cog_help:
+                cog_help = cog_help.replace("\n", "<br/>")
+            if cog_help:
+                docs += f"{cog_help}\n\n"
+                entry_name = _("{} cog description").format(cog_name)
+                rows.append([entry_name, f"{entry_name}\n{cog_help}"])
+        else:
+            docs = ""
 
         for cmd in cog.walk_app_commands():
             c = CustomCmdFmt(
@@ -75,7 +78,7 @@ class AutoDocs(commands.Cog):
                 prefix,
                 replace_botname,
                 extended_info,
-                privilege_level,
+                max_privilege_level,
                 embedding_style,
                 min_privilage_level,
             )
@@ -96,7 +99,7 @@ class AutoDocs(commands.Cog):
                 prefix,
                 replace_botname,
                 extended_info,
-                privilege_level,
+                max_privilege_level,
                 embedding_style,
                 min_privilage_level,
             )
@@ -124,9 +127,9 @@ class AutoDocs(commands.Cog):
         replace_botname=_("Replace all occurrences of [botname] with the bots name"),
         extended_info=_("Include extra info like converters and their docstrings"),
         include_hidden=_("Include hidden commands"),
-        privilege_level=_("Hide commands above specified privilege level (user, mod, admin, guildowner, botowner)"),
-        csv_export=_("Include a csv with each command isolated per row"),
+        max_privilege_level=_("Hide commands above specified privilege level (user, mod, admin, guildowner, botowner)"),
         min_privilage_level=_("Hide commands below specified privilege level (user, mod, admin, guildowner, botowner)"),
+        csv_export=_("Include a csv with each command isolated per row"),
     )
     @commands.is_owner()
     @commands.bot_has_permissions(attach_files=True)
@@ -138,22 +141,25 @@ class AutoDocs(commands.Cog):
         replace_botname: Optional[bool] = False,
         extended_info: Optional[bool] = False,
         include_hidden: Optional[bool] = False,
-        privilege_level: Literal["user", "mod", "admin", "guildowner", "botowner"] = "botowner",
-        csv_export: Optional[bool] = False,
+        include_help: Optional[bool] = True,
+        max_privilege_level: Literal["user", "mod", "admin", "guildowner", "botowner"] = "botowner",
         min_privilage_level: Literal["user", "mod", "admin", "guildowner", "botowner"] = "user",
+        csv_export: Optional[bool] = False,
     ):
         """
         Create a Markdown docs page for a cog and send to discord
 
         **Arguments**
-        `cog_name:           `(str) The name of the cog you want to make docs for (Case Sensitive)
-        `replace_prefix:     `(bool) If True, replaces the `prefix` placeholder with the bots prefix
-        `replace_botname:    `(bool) If True, replaces the `botname` placeholder with the bots name
-        `extended_info:      `(bool) If True, include extra info like converters and their docstrings
-        `include_hidden:     `(bool) If True, includes hidden commands
-        `privilege_level:    `(str) Hide commands above specified privilege level
+        `cog_name:            `(str) The name of the cog you want to make docs for (Case Sensitive)
+        `replace_prefix:      `(bool) If True, replaces the `prefix` placeholder with the bots prefix
+        `replace_botname:     `(bool) If True, replaces the `botname` placeholder with the bots name
+        `extended_info:       `(bool) If True, include extra info like converters and their docstrings
+        `include_hidden:      `(bool) If True, includes hidden commands
+        `include_help:        `(bool) If True, includes the cog help text at the top of the docs
+        `max_privilege_level: `(str) Hide commands above specified privilege level
+        `min_privilage_level: `(str) Hide commands below specified privilege level
         - (user, mod, admin, guildowner, botowner)
-        `csv_export:         `(bool) Include a csv with each command isolated per row for use as embeddings
+        `csv_export:          `(bool) Include a csv with each command isolated per row for use as embeddings
 
         **Note** If `all` is specified for cog_name, all currently loaded non-core cogs will have docs generated for
         them and sent in a zip file
@@ -173,14 +179,14 @@ class AutoDocs(commands.Cog):
                         partial_func = functools.partial(
                             self.generate_readme,
                             cog,
-                            ctx.guild,
                             prefix,
                             replace_botname,
                             extended_info,
                             include_hidden,
-                            privilege_level,
-                            csv_export,
+                            include_help,
+                            max_privilege_level,
                             min_privilage_level,
+                            csv_export,
                         )
                         docs, df = await self.bot.loop.run_in_executor(None, partial_func)
                         filename = f"{folder_name}/{cog.qualified_name}.md"
@@ -213,14 +219,14 @@ class AutoDocs(commands.Cog):
                 partial_func = functools.partial(
                     self.generate_readme,
                     cog,
-                    ctx.guild,
                     prefix,
                     replace_botname,
                     extended_info,
                     include_hidden,
-                    privilege_level,
-                    csv_export,
+                    include_help,
+                    max_privilege_level,
                     min_privilage_level,
+                    csv_export,
                 )
                 docs, df = await self.bot.loop.run_in_executor(None, partial_func)
                 if csv_export:
