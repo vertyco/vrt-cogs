@@ -82,8 +82,9 @@ READ_EXTENSIONS = [
     ".md",
     ".ini",
     ".conf",
-    ".go",
+    ".config",
     ".cfg",
+    ".go",
     ".java",
     ".c",
     ".php",
@@ -110,6 +111,7 @@ READ_EXTENSIONS = [
     ".bat",
     ".pde",
     ".spec",
+    ".sql",
 ]
 REACT_SUMMARY_MESSAGE = """
 You are SummaryGPT, an AI creates memories from conversations.
