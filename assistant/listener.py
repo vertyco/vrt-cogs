@@ -55,6 +55,8 @@ class AssistantListener(MixinMeta):
         channel = message.channel
         mention_ids = [m.id for m in message.mentions]
         bot_mentioned = self.bot.user.id in mention_ids
+
+        ref: discord.Message = None
         # If bot wasnt mentioned in the message, see if someone replied to it
         if not bot_mentioned and hasattr(message, "reference") and message.reference:
             ref = message.reference.resolved
@@ -63,14 +65,22 @@ class AssistantListener(MixinMeta):
                     ref = await message.channel.fetch_message(message.reference.message_id)
                 except discord.HTTPException:
                     pass
-            if ref and ref.author.id == self.bot.user.id:
-                bot_mentioned = True
+
+        if ref and ref.author.id == self.bot.user.id:
+            bot_mentioned = True
 
         if channel.id != conf.channel_id:
             # Message outside of assistant channel
             # The ONLY way we dont return is if the bot was mentioned and mention_respond is enabled
             if not bot_mentioned or not conf.mention_respond:
                 return
+        elif ref is not None:  # Message in assistant channel and user is replying to someone
+            # If user is replying to anyone other than the bot, ignore
+            if ref.author.id != self.bot.user.id:
+                return
+        elif mention_ids and self.bot.user.id not in mention_ids:
+            # Message in the assistant channel and user mentioned someone other than the bot
+            return
 
         # Ignore common prefixes from other bots
         if message.content.startswith((",", ".", "+", "!", "-", ">" "<", "?", "$", "%", "^", "&", "*", "_")):
