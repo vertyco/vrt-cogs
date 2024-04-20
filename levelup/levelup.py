@@ -71,7 +71,7 @@ async def confirm(ctx: commands.Context):
 # Thanks aikaterna#1393 and epic guy#0715 for the caching advice :)
 # Thanks Fixator10#7133 for having a Leveler cog to get a reference for what kinda settings a leveler cog might need!
 
-# redgettext -D levelup.py common/generator.py common/base.py utils/formatter.py --command-docstring
+# redgettext -D levelup.py dashboard_integration.py common/generator.py common/base.py utils/formatter.py --command-docstring
 
 
 @cog_i18n(_)
@@ -83,7 +83,7 @@ class LevelUp(UserCommands, Generator, DashboardIntegration, commands.Cog, metac
     """
 
     __author__ = "vertyco"
-    __version__ = "3.14.2"
+    __version__ = "3.14.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
