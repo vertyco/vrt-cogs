@@ -82,7 +82,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "vertyco"
-    __version__ = "3.14.0"
+    __version__ = "3.14.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -167,7 +167,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         lbtype: str,
         is_global: bool,
         use_displayname: bool,
-        member: discord.member = None,
+        member: discord.Member = None,
     ) -> dict:
         payload = await asyncio.to_thread(
             get_leaderboard_dash,

@@ -358,7 +358,7 @@ def get_leaderboard_dash(
 
     payload = {
         "title": title,
-        "description": desc,
+        "description": desc.strip(),
         "stat": statname,
         "total": total,
         "type": lbtype,
