@@ -83,7 +83,7 @@ class LevelUp(UserCommands, Generator, DashboardIntegration, commands.Cog, metac
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "3.14.4"
+    __version__ = "3.14.5"
     __contributors__ = [
         "[aikaterna](https://github.com/aikaterna/aikaterna-cogs)",
         "[AAA3A](https://github.com/AAA3A-AAA3A/AAA3A-cogs)",
