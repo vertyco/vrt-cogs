@@ -82,8 +82,12 @@ class LevelUp(UserCommands, Generator, DashboardIntegration, commands.Cog, metac
     Earn experience by chatting in text and voice channels, compare levels with your friends, customize your profile and view various leaderboards!
     """
 
-    __author__ = "vertyco"
-    __version__ = "3.14.3"
+    __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
+    __version__ = "3.14.4"
+    __contributors__ = [
+        "[aikaterna](https://github.com/aikaterna/aikaterna-cogs)",
+        "[AAA3A](https://github.com/AAA3A-AAA3A/AAA3A-cogs)",
+    ]
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -91,7 +95,7 @@ class LevelUp(UserCommands, Generator, DashboardIntegration, commands.Cog, metac
             f"{helpcmd}\n"
             f"Cog Version: {self.__version__}\n"
             f"Author: {self.__author__}\n"
-            f"Contributors: aikaterna#1393"
+            f"Contributors: {humanize_list(self.__contributors__)}\n"
         )
         return info
 
