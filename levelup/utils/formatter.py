@@ -388,7 +388,7 @@ def get_leaderboard_dash(
                 if lvl := data.get("level"):
                     stat += f" 🎖{lvl}"
 
-        entry = {"position": place, "name": user, "stat": stat}
+        entry = {"position": place, "name": user, "id": uid, "stat": stat}
         payload["stats"].append(entry)
 
     return payload
