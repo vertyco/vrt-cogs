@@ -51,6 +51,7 @@ from .abc import CompositeMetaClass
 from .common import constants
 from .common.base import UserCommands
 from .common.generator import Generator
+from .dashboard_integration import DashboardIntegration
 
 log = logging.getLogger("red.vrt.levelup")
 _ = Translator("LevelUp", __file__)
@@ -74,7 +75,7 @@ async def confirm(ctx: commands.Context):
 
 
 @cog_i18n(_)
-class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClass):
+class LevelUp(UserCommands, Generator, DashboardIntegration, commands.Cog, metaclass=CompositeMetaClass):
     """
     Your friendly neighborhood leveling system
 
