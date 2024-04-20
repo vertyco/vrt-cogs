@@ -17,7 +17,7 @@ log = logging.getLogger("red.vrt.pupper")
 class Pupper(commands.Cog):
     """Pet the doggo!"""
 
-    __author__ = "vertyco"
+    __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
     __version__ = "1.1.0"
 
     def format_help_for_context(self, ctx):

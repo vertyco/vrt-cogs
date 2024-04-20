@@ -17,7 +17,7 @@ class NoBot(commands.Cog):
     message, this cog will delete them.
     """
 
-    __author__ = "vertyco"
+    __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
     __version__ = "1.2.0"
 
     def format_help_for_context(self, ctx):

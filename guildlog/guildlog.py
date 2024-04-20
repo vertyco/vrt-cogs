@@ -12,7 +12,7 @@ class GuildLog(commands.Cog):
     Log when the bot joins or leaves a guild
     """
 
-    __author__ = "vertyco"
+    __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
     __version__ = "0.1.3"
 
     def format_help_for_context(self, ctx):

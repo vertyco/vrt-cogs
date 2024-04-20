@@ -40,7 +40,7 @@ else:
 class Pixl(commands.Cog):
     """Guess pictures for points"""
 
-    __author__ = "vertyco"
+    __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
     __version__ = "0.3.5"
 
     def __init__(self, bot: Red, *args, **kwargs):

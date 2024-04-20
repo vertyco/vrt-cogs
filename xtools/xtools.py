@@ -42,7 +42,7 @@ class XTools(commands.Cog):
     Provides various features and functionalities related to Xbox, including profile retrieval, game clips and screenshot viewing, Microsoft services status checking, and more.
     """
 
-    __author__ = "vertyco"
+    __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
     __version__ = "3.11.1"
 
     def format_help_for_context(self, ctx: commands.Context):

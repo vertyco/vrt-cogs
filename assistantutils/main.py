@@ -15,7 +15,7 @@ class AssistantUtils(Functions, commands.Cog, metaclass=CompositeMetaClass):
     Assistant Utils adds pre-baked functions to the Assistant cog, allowing extended functionality.
     """
 
-    __author__ = "vertyco"
+    __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
     __version__ = "0.0.2"
 
     def __init__(self, bot: Red):
