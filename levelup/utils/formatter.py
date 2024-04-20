@@ -280,6 +280,120 @@ def get_leaderboard(
     return embeds
 
 
+def get_leaderboard_dash(
+    guild: discord.Guild,
+    settings: dict,
+    stat: str,
+    lbtype: str,
+    is_global: bool,
+    use_displayname: bool,
+    member: discord.Member = None,
+) -> dict:
+    """Prep leaderboard for Dashboard integration"""
+    if lbtype == "weekly":
+        lb = settings["weekly"]["users"]
+        title = _("Global Weekly ") if is_global else _("Weekly ")
+    else:
+        lb = settings["users"]
+        title = _("Global LevelUp ") if is_global else _("LevelUp ")
+
+        if "xp" in stat.lower():
+            lb = {uid: data.copy() for uid, data in settings["users"].items()}
+            if prestige_req := settings.get("prestige"):
+                # If this isnt pulled its global lb
+                for uid, data in lb.items():
+                    if prestige := data["prestige"]:
+                        data["xp"] += prestige * get_xp(prestige_req, settings["base"], settings["exp"])
+
+    if "v" in stat.lower():
+        sorted_users = sorted(lb.items(), key=lambda x: x[1]["voice"], reverse=True)
+        title += _("Voice Leaderboard")
+        key = "voice"
+        col = "🎙️"
+        statname = _("Voicetime")
+        total = time_formatter(sum(v["voice"] for v in lb.values()))
+    elif "m" in stat.lower():
+        sorted_users = sorted(lb.items(), key=lambda x: x[1]["messages"], reverse=True)
+        title += _("Message Leaderboard")
+        key = "messages"
+        col = "💬"
+        statname = _("Messages")
+        total = humanize_number(round(sum(v["messages"] for v in lb.values())))
+    elif "s" in stat.lower():
+        sorted_users = sorted(lb.items(), key=lambda x: x[1]["stars"], reverse=True)
+        title += _("Star Leaderboard")
+        key = "stars"
+        col = "⭐"
+        statname = _("Stars")
+        total = humanize_number(round(sum(v["stars"] for v in lb.values())))
+    else:  # Exp
+        sorted_users = sorted(lb.items(), key=lambda x: x[1]["xp"], reverse=True)
+        title += _("Exp Leaderboard")
+        key = "xp"
+        col = "💡"
+        statname = _("Exp")
+        total = humanize_number(round(sum(v["xp"] for v in lb.values())))
+
+    if lbtype == "weekly":
+        w = settings["weekly"]
+        desc = _("Total ") + f"{statname}: `{total}`{col}\n"
+        if last_reset := w.get("last_reset"):
+            # If not global
+            desc += _("Last Reset: ") + f"<t:{last_reset}:d>\n"
+            if w["autoreset"]:
+                tl = get_next_reset(w["reset_day"], w["reset_hour"])
+                desc += _("Next Reset: ") + f"<t:{tl}:d> (<t:{tl}:R>)\n"
+    else:
+        desc = _("Total") + f" {statname}: `{total}`{col}\n"
+
+    for i in sorted_users.copy():
+        if not i[1][key]:
+            sorted_users.remove(i)
+
+    you = ""
+    if member:
+        for i in sorted_users:
+            if i[0] == str(member.id):
+                you = _("You: ") + f"{sorted_users.index(i) + 1}/{len(sorted_users)}\n"
+
+    payload = {
+        "title": title,
+        "description": desc,
+        "stat": statname,
+        "total": total,
+        "type": lbtype,
+        "user_position": you,
+        "stats": [],
+    }
+    for idx, i in enumerate(sorted_users):
+        uid = i[0]
+        data = i[1]
+        user_obj = guild.get_member(int(uid))
+        user = (user_obj.display_name if use_displayname else user_obj.name) if user_obj else uid
+        place = idx + 1
+        if key == "voice":
+            stat = time_formatter(data[key])
+        else:
+            v = data[key]
+            if v > 999999999:
+                stat = f"{round(v / 1000000000, 1)}B"
+            elif v > 999999:
+                stat = f"{round(v / 1000000, 1)}M"
+            elif v > 9999:
+                stat = f"{round(v / 1000, 1)}K"
+            else:
+                stat = str(round(v))
+
+            if key == "xp" and lbtype != "weekly":
+                if lvl := data.get("level"):
+                    stat += f" 🎖{lvl}"
+
+        entry = {"position": place, "name": user, "stat": stat}
+        payload["stats"].append(entry)
+
+    return payload
+
+
 @cached(ttl=3600)
 async def get_content_from_url(url: str):
     try:

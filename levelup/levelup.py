@@ -37,6 +37,7 @@ from levelup.utils.formatter import (
     deep_getsizeof,
     get_attachments,
     get_content_from_url,
+    get_leaderboard_dash,
     get_level,
     get_next_reset,
     get_twemoji,
@@ -81,7 +82,7 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "vertyco"
-    __version__ = "3.13.7"
+    __version__ = "3.14.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -157,6 +158,28 @@ class LevelUp(UserCommands, Generator, commands.Cog, metaclass=CompositeMetaClas
         self.voice_checker.cancel()
         self.weekly_checker.cancel()
         asyncio.create_task(self.save_cache())
+
+    async def get_leaderboard_for_dash(
+        self,
+        guild: discord.Guild,
+        settings: dict,
+        stat: str,
+        lbtype: str,
+        is_global: bool,
+        use_displayname: bool,
+        member: discord.member = None,
+    ) -> dict:
+        payload = await asyncio.to_thread(
+            get_leaderboard_dash,
+            guild,
+            settings,
+            stat,
+            lbtype,
+            is_global,
+            use_displayname,
+            member,
+        )
+        return payload
 
     @staticmethod
     def get_size(num: float) -> str:
