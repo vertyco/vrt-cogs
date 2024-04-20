@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2024-03-07 13:19-0500\n"
+"POT-Creation-Date: 2024-04-20 13:44-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -36,67 +36,67 @@ msgstr ""
 msgid "Get all attachments from context"
 msgstr ""
 
-#: utils\formatter.py:157
+#: utils\formatter.py:157 utils\formatter.py:295
 msgid "Global Weekly "
 msgstr ""
 
-#: utils\formatter.py:157
+#: utils\formatter.py:157 utils\formatter.py:295
 msgid "Weekly "
 msgstr ""
 
-#: utils\formatter.py:160
+#: utils\formatter.py:160 utils\formatter.py:298
 msgid "Global LevelUp "
 msgstr ""
 
-#: utils\formatter.py:160
+#: utils\formatter.py:160 utils\formatter.py:298
 msgid "LevelUp "
 msgstr ""
 
-#: utils\formatter.py:172
+#: utils\formatter.py:172 utils\formatter.py:310
 msgid "Voice Leaderboard"
 msgstr ""
 
-#: utils\formatter.py:175
+#: utils\formatter.py:175 utils\formatter.py:313
 msgid "Voicetime"
 msgstr ""
 
-#: utils\formatter.py:179
+#: utils\formatter.py:179 utils\formatter.py:317
 msgid "Message Leaderboard"
 msgstr ""
 
-#: utils\formatter.py:182
+#: utils\formatter.py:182 utils\formatter.py:320
 msgid "Messages"
 msgstr ""
 
-#: utils\formatter.py:186
+#: utils\formatter.py:186 utils\formatter.py:324
 msgid "Star Leaderboard"
 msgstr ""
 
-#: utils\formatter.py:189
+#: utils\formatter.py:189 utils\formatter.py:327
 msgid "Stars"
 msgstr ""
 
-#: utils\formatter.py:193
+#: utils\formatter.py:193 utils\formatter.py:331
 msgid "Exp Leaderboard"
 msgstr ""
 
-#: utils\formatter.py:196
+#: utils\formatter.py:196 utils\formatter.py:334
 msgid "Exp"
 msgstr ""
 
-#: utils\formatter.py:201
+#: utils\formatter.py:201 utils\formatter.py:339
 msgid "Total "
 msgstr ""
 
-#: utils\formatter.py:204
+#: utils\formatter.py:204 utils\formatter.py:342
 msgid "Last Reset: "
 msgstr ""
 
-#: utils\formatter.py:207
+#: utils\formatter.py:207 utils\formatter.py:345
 msgid "Next Reset: "
 msgstr ""
 
-#: utils\formatter.py:209
+#: utils\formatter.py:209 utils\formatter.py:347
 msgid "Total"
 msgstr ""
 
@@ -112,10 +112,15 @@ msgstr ""
 msgid "There is no data for the "
 msgstr ""
 
-#: utils\formatter.py:225
+#: utils\formatter.py:225 utils\formatter.py:357
 msgid "You: "
 msgstr ""
 
 #: utils\formatter.py:273 utils\formatter.py:275
 msgid "Pages "
+msgstr ""
+
+#: utils\formatter.py:292
+#, docstring
+msgid "Prep leaderboard for Dashboard integration"
 msgstr ""
