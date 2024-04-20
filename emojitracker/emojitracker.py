@@ -16,7 +16,7 @@ class EmojiTracker(commands.Cog):
     It will also only count one reaction per emoji for each user on a message so user's can't spam react/unreact
     """
 
-    __author__ = "vertyco"
+    __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
     __version__ = "0.1.0"
 
     def format_help_for_context(self, ctx):

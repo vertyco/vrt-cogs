@@ -33,7 +33,7 @@ class Fluent(commands.Cog):
     If a deepl key is set, it will use that before falling back to google translate and then flowery.
     """
 
-    __author__ = "vertyco"
+    __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
     __version__ = "2.1.5"
 
     def format_help_for_context(self, ctx: commands.Context):

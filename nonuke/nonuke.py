@@ -33,7 +33,7 @@ class NoNuke(Listen, commands.Cog, metaclass=CompositeMetaClass):
     Additionally, any dangerous permissions added to a role will be logged.
     """
 
-    __author__ = "vertyco"
+    __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
     __version__ = "1.1.4"
 
     def format_help_for_context(self, ctx: commands.Context):

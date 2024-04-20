@@ -27,7 +27,7 @@ class GuildLock(BaseCommands, Listener, commands.Cog, metaclass=CompositeMetaCla
     Tools for managing guild joins and leaves.
     """
 
-    __author__ = "vertyco"
+    __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
     __version__ = "0.1.7"
 
     def __init__(self, bot: Red):

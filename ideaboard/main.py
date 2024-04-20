@@ -18,7 +18,7 @@ log = logging.getLogger("red.vrt.ideaboard")
 class IdeaBoard(Commands, AssistantListener, commands.Cog, metaclass=CompositeMetaClass):
     """Share Ideas and Suggestions"""
 
-    __author__ = "vertyco"
+    __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
     __version__ = "0.4.13"
 
     def __init__(self, bot: Red):

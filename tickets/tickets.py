@@ -33,7 +33,7 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
     Support ticket system with multi-panel functionality
     """
 
-    __author__ = "vertyco"
+    __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
     __version__ = "2.7.12"
 
     def format_help_for_context(self, ctx):

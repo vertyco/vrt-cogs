@@ -27,7 +27,7 @@ class Meow(commands.Cog):
     My girlfriend had a dream about this cog, so I had to make it ¯\_(ツ)_/¯
     """
 
-    __author__ = "vertyco"
+    __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
     __version__ = "0.2.0"
 
     def format_help_for_context(self, ctx):
