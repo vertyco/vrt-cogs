@@ -19,7 +19,7 @@ class IdeaBoard(Commands, AssistantListener, commands.Cog, metaclass=CompositeMe
     """Share Ideas and Suggestions"""
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.4.13"
+    __version__ = "0.4.14"
 
     def __init__(self, bot: Red):
         super().__init__()

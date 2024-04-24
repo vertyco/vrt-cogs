@@ -144,13 +144,16 @@ class Admin(MixinMeta):
     ):
         """Set the approved, rejected, or pending channels for IdeaBoard"""
         conf = self.db.get_conf(ctx.guild)
-        if channel_type == "approved":
-            conf.approved = channel.id
-        elif channel_type == "rejected":
-            conf.rejected = channel.id
+        current = getattr(conf, channel_type)
+        if current == channel.id:
+            return await ctx.send(_("This channel is already set as the {} channel!").format(channel_type))
+        if current:
+            txt = _("The {} channel has been changed from {} to {}").format(
+                channel_type, f"<#{current}>", channel.mention
+            )
         else:
-            conf.pending = channel.id
-        txt = _("Set {} channel to {}").format(channel_type, channel.mention)
+            txt = _("Set {} channel to {}").format(channel_type, channel.mention)
+        setattr(conf, channel_type, channel.id)
         await ctx.send(txt)
         await self.save()
 
@@ -449,10 +452,12 @@ class Admin(MixinMeta):
         if not suggestion:
             txt = _("That suggestion does not exist!")
             return await ctx.send(txt)
-
-        message = await pending_channel.fetch_message(suggestion.message_id)
-        if not message:
-            txt = _("Cannot find the message associated with this suggestion! Cleaning from config...")
+        try:
+            message = await pending_channel.fetch_message(suggestion.message_id)
+        except discord.NotFound:
+            txt = _(
+                "Cannot find the message associated with this suggestion, if you changed the pending channel recently that could be why! Cleaning from config..."
+            )
             del conf.suggestions[number]
             await ctx.send(txt)
             await self.save()
@@ -567,9 +572,12 @@ class Admin(MixinMeta):
             txt = _("That suggestion does not exist!")
             return await ctx.send(txt)
 
-        message = await pending_channel.fetch_message(suggestion.message_id)
-        if not message:
-            txt = _("Cannot find the message associated with this suggestion! Cleaning from config...")
+        try:
+            message = await pending_channel.fetch_message(suggestion.message_id)
+        except discord.NotFound:
+            txt = _(
+                "Cannot find the message associated with this suggestion, if you changed the pending channel recently that could be why! Cleaning from config..."
+            )
             del conf.suggestions[number]
             await ctx.send(txt)
             await self.save()

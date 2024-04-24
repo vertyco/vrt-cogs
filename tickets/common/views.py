@@ -181,7 +181,16 @@ class CloseView(View):
         reason = None
         if requires_reason:
             modal = CloseReasonModal()
-            await interaction.response.send_modal(modal)
+            try:
+                await interaction.response.send_modal(modal)
+            except discord.NotFound:
+                txt = _("Something went wrong, please try again.")
+                try:
+                    await interaction.followup.send(txt, ephemeral=True)
+                except discord.NotFound:
+                    await interaction.channel.send(txt, delete_after=10)
+                return
+
             await modal.wait()
             if modal.reason is None:
                 return
