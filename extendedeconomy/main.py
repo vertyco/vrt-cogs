@@ -20,7 +20,7 @@ class ExtendedEconomy(Commands, Checks, Listeners, commands.Cog, metaclass=Compo
     """Description"""
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.0.13b"
+    __version__ = "0.0.14b"
 
     def __init__(self, bot: Red):
         super().__init__()

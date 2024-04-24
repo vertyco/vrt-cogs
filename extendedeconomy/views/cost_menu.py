@@ -115,7 +115,8 @@ class CostModal(discord.ui.Modal):
         self.data["modifier"] = modifier
         if self.add:
             self.data["command"] = self.command.value
-        await interaction.response.defer()
+        with suppress(discord.NotFound):
+            await interaction.response.defer()
         self.stop()
 
     async def on_timeout(self) -> None:
