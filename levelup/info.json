@@ -7,12 +7,8 @@
   "end_user_data_statement": "This cog records Discord ID's and messages sent for each user",
   "hidden": false,
   "install_msg": "Thank you for installing LevelUp! type `[p]help LevelUp` to see all commands.\n\nDOCUMENTATION: https://github.com/vertyco/vrt-cogs/blob/main/levelup/README.md",
-  "min_bot_version": "3.4.0",
-  "min_python_version": [
-    3,
-    9,
-    1
-  ],
+  "min_bot_version": "3.5.0",
+  "min_python_version": [3, 9, 1],
   "permissions": [
     "read_messages",
     "send_messages",

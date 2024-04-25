@@ -11,7 +11,9 @@ from typing import Optional, Union
 
 import discord
 from aiocache import cached
-from redbot.core import VersionInfo, bank, commands, version_info
+from discord import app_commands
+from redbot.core import bank, commands
+from redbot.core.bot import Red
 from redbot.core.data_manager import bundled_data_path, cog_data_path
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_list, humanize_number
@@ -31,18 +33,19 @@ from levelup.utils.formatter import (
 
 from ..abc import MixinMeta
 from .constants import default_guild
-
-if version_info >= VersionInfo.from_str("3.5.0"):
-    from .dpymenu import DEFAULT_CONTROLS, menu
-
-    DPY2 = True
-else:
-    from .menus import DEFAULT_CONTROLS, menu
-
-    DPY2 = False
+from .dpymenu import DEFAULT_CONTROLS, menu
 
 log = logging.getLogger("red.vrt.levelup.commands")
 _ = Translator("LevelUp", __file__)
+
+
+@app_commands.context_menu(name="View Profile")
+async def view_profile_context(interaction: discord.Interaction, member: discord.Member):
+    """View a user's profile"""
+    await interaction.response.defer(ephemeral=True)
+    bot: Red = interaction.client
+    cog = bot.get_cog("LevelUp")
+    await cog.send_user_profile(member, interaction.channel, interaction)
 
 
 @cog_i18n(_)
@@ -244,10 +247,7 @@ class UserCommands(MixinMeta, ABC):
         conf = self.data[ctx.guild.id]["users"]
         if uid in conf:
             font = conf[uid]["font"]
-        if DPY2:
-            pfp = user.display_avatar.url
-        else:
-            pfp = user.avatar_url
+        pfp = user.display_avatar.url
         args = {
             "bg_image": banner,
             "profile_image": pfp,
@@ -806,21 +806,64 @@ class UserCommands(MixinMeta, ABC):
     @commands.command(name="pf")
     @commands.guild_only()
     @commands.cooldown(1, 5, commands.BucketType.user)
+    @commands.bot_has_permissions(send_messages=True)
     async def get_profile(self, ctx: commands.Context, *, user: discord.Member = None):
         """View your profile"""
-        if not isinstance(ctx.author, discord.Member):
-            return
-        if not user:
-            user = ctx.author
-        if user.bot:
-            return await ctx.send("Bots can't have profiles!")
+        user = user or ctx.author
+        await self.send_user_profile(user, ctx.channel, message=ctx.message)
+        log.debug(f"Profile command used by {ctx.author} in {ctx.guild}")
 
-        gid = ctx.guild.id
-        if gid not in self.data:
+    async def send_user_profile(
+        self,
+        user: discord.Member,
+        channel: discord.TextChannel,
+        interaction: discord.Interaction = None,
+        message: discord.Message = None,
+    ):
+        async def send(
+            obj: Union[discord.Embed, str] = None,
+            mention: bool = False,
+            reply: bool = True,
+            file: discord.File = None,
+        ):
+            if isinstance(obj, str):
+                if message and reply:
+                    try:
+                        await message.reply(obj, mention_author=mention, file=file)
+                    except discord.HTTPException:
+                        if interaction:
+                            await interaction.followup.send(obj, file=file, ephemeral=True)
+                        else:
+                            await channel.send(obj, file=file)
+                elif interaction:
+                    await interaction.followup.send(obj, file=file, ephemeral=True)
+                else:
+                    await channel.send(obj, file=file)
+            else:
+                if message and reply:
+                    try:
+                        await message.reply(embed=obj, mention_author=mention, file=file)
+                    except discord.HTTPException:
+                        if interaction:
+                            await interaction.followup.send(embed=obj, file=file, ephemeral=True)
+                        else:
+                            await channel.send(embed=obj, file=file)
+                elif interaction:
+                    await interaction.followup.send(embed=obj, file=file, ephemeral=True)
+                else:
+                    await channel.send(embed=obj, file=file)
+
+        if not isinstance(user, discord.Member):
+            return
+        guild = channel.guild or user.guild
+        if user.bot:
+            return await send(_("Bots can't have profiles!"))
+
+        if guild.id not in self.data:
             await self.initialize()
 
         # Main config stuff
-        conf = self.data[gid]
+        conf = self.data[guild.id]
         buttons = conf["emojis"]
         usepics = conf["usepics"]
         users = conf["users"]
@@ -829,26 +872,22 @@ class UserCommands(MixinMeta, ABC):
         barlength = conf["barlength"]
         user_id = str(user.id)
         if user_id not in users:
-            return await ctx.send(_("No information available yet!"))
+            return await send(_("No information available yet!"))
 
-        if usepics and not ctx.channel.permissions_for(ctx.me).attach_files:
-            return await ctx.send(_("I do not have permission to send images to this channel"))
-        if not usepics and not ctx.channel.permissions_for(ctx.me).embed_links:
-            return await ctx.send(_("I do not have permission to send embeds to this channel"))
+        if usepics and not channel.permissions_for(guild.me).attach_files:
+            return await send(_("I do not have permission to send images to this channel"))
+        if not usepics and not channel.permissions_for(guild.me).embed_links:
+            return await send(_("I do not have permission to send embeds to this channel"))
 
         bal = await bank.get_balance(user)
-        currency_name = await bank.get_currency_name(ctx.guild)
+        currency_name = await bank.get_currency_name(guild)
 
-        role_icon = None
-        if DPY2:
-            pfp = user.display_avatar
-            role_icon = user.top_role.display_icon
-            if isinstance(role_icon, str):
-                role_icon = get_twemoji(role_icon)
-            elif role_icon:
-                role_icon = role_icon.url
-        else:
-            pfp = user.avatar_url
+        pfp = user.display_avatar
+        role_icon = user.top_role.display_icon
+        if isinstance(role_icon, str):
+            role_icon = get_twemoji(role_icon)
+        elif role_icon:
+            role_icon = role_icon.url
 
         p = users[user_id]
         full = p["full"]
@@ -901,7 +940,7 @@ class UserCommands(MixinMeta, ABC):
         bulb_emoji = get_emoji("bulb")
         money_emoji = get_emoji("money")
 
-        async with ctx.typing():
+        async with channel.typing():
             if not usepics:
                 msg = f"{level_emoji}｜" + _("Level ") + humanize_number(level) + "\n"
                 if prestige:
@@ -918,12 +957,7 @@ class UserCommands(MixinMeta, ABC):
                 em.set_author(name=author_name, icon_url=pfp)
                 em.set_footer(text=footer, icon_url=role_icon)
                 em.add_field(name=_("Progress"), value=box(lvlbar, "py"))
-
-                try:
-                    await ctx.reply(embed=em, mention_author=mention)
-                except discord.HTTPException:
-                    await ctx.send(embed=em)
-
+                await send(em, mention)
             else:
                 bg_image = bg if bg else await self.get_banner(user)
                 colors = users[user_id]["colors"]
@@ -967,23 +1001,23 @@ class UserCommands(MixinMeta, ABC):
                 file = await self.get_or_fetch_profile(user, args, full)
                 rtime = round((perf_counter() - start) * 1000)
                 if not file:
-                    return await ctx.send("Failed to generate profile image :( try again in a bit")
+                    return await send(_("Failed to generate profile image :( try again in a bit"))
                 start2 = perf_counter()
                 try:
-                    await ctx.reply(file=file, mention_author=mention)
+                    await send(file=file, mention_author=mention)
                 except Exception as e:
                     if "In message_reference: Unknown message" not in str(e):
                         log.error(f"Failed to send profile pic: {e}")
                     try:
                         file = await self.get_or_fetch_profile(user, args, full)
                         if mention:
-                            await ctx.send(ctx.author.mention, file=file)
+                            await send(user.mention, file=file)
                         else:
-                            await ctx.send(file=file)
+                            await send(file=file)
                     except Exception as e:
                         log.error(f"Failed AGAIN to send profile pic: {e}")
                 mtime = round((perf_counter() - start2) * 1000)
-                if ctx.author.id == 350053505815281665:
+                if user.id == 350053505815281665:
                     log.info(f"Render time: {humanize_number(rtime)}ms\n" f"Send Time: {humanize_number(mtime)}ms")
 
     @commands.command(name="prestige")
@@ -1187,10 +1221,7 @@ class UserCommands(MixinMeta, ABC):
                 i = sorted_users.index(i)
                 you = f"You: {i + 1}/{len(sorted_users)}\n"
 
-        if DPY2:
-            icon = ctx.guild.icon
-        else:
-            icon = ctx.guild.icon_url
+        icon = ctx.guild.icon
 
         pages = math.ceil(len(sorted_users) / 10)
         start = 0

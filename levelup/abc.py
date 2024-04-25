@@ -1,6 +1,7 @@
 from abc import ABC, ABCMeta, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 
+import discord
 from discord.ext.commands.cog import CogMeta
 from redbot.core.bot import Red
 from redbot.core.config import Config
@@ -95,4 +96,14 @@ class MixinMeta(ABC):
 
     @abstractmethod
     def get_all_backgrounds(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    async def send_user_profile(
+        self,
+        user: discord.Member,
+        channel: discord.TextChannel,
+        interaction: discord.Interaction = None,
+        message: discord.Message = None,
+    ):
         raise NotImplementedError
