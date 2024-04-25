@@ -726,7 +726,7 @@ class UserCommands(MixinMeta, ABC):
             if not await self.valid_url(ctx, image_url):
                 return
             self.data[ctx.guild.id]["users"][user_id]["background"] = image_url
-            return await ctx.send(_("Your profile background has been set!"))
+            await ctx.send(_("Your profile background has been set!"))
 
         if image_url.lower() == "random":
             self.data[ctx.guild.id]["users"][user_id]["background"] = "random"
@@ -738,6 +738,7 @@ class UserCommands(MixinMeta, ABC):
         if image_url.lower().startswith("http"):
             if not await self.valid_url(ctx, image_url):
                 return
+            self.data[ctx.guild.id]["users"][user_id]["background"] = image_url
             return await ctx.send(_("Your profile background has been set!"))
         else:
             # Check if the user provided a filename

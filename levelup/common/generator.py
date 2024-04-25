@@ -97,7 +97,7 @@ class Generator(MixinMeta, ABC):
         card = None
         if bg_image is None or str(bg_image) == "random":
             card = self.get_random_background()
-        elif bg_image.startswith("http"):
+        elif bg_image.lower().startswith("http"):
             bg_bytes = self.get_image_content_from_url(bg_image)
             try:
                 if bg_bytes is None:
