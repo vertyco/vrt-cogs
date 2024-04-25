@@ -823,35 +823,39 @@ class UserCommands(MixinMeta, ABC):
         async def send(
             obj: Union[discord.Embed, str] = None,
             mention: bool = False,
-            reply: bool = True,
             file: discord.File = None,
         ):
+            kwargs = {}
+            if interaction:
+                kwargs["ephemeral"] = True
+            if file:
+                kwargs["file"] = file
             if isinstance(obj, str):
-                if message and reply:
+                if message:
                     try:
-                        await message.reply(obj, mention_author=mention, file=file)
+                        await message.reply(obj, mention_author=mention, **kwargs)
                     except discord.HTTPException:
                         if interaction:
-                            await interaction.followup.send(obj, file=file, ephemeral=True)
+                            await interaction.followup.send(obj, **kwargs)
                         else:
-                            await channel.send(obj, file=file)
+                            await channel.send(obj, **kwargs)
                 elif interaction:
-                    await interaction.followup.send(obj, file=file, ephemeral=True)
+                    await interaction.followup.send(obj, **kwargs)
                 else:
-                    await channel.send(obj, file=file)
+                    await channel.send(obj, **kwargs)
             else:
-                if message and reply:
+                if message:
                     try:
-                        await message.reply(embed=obj, mention_author=mention, file=file)
+                        await message.reply(embed=obj, mention_author=mention, **kwargs)
                     except discord.HTTPException:
                         if interaction:
-                            await interaction.followup.send(embed=obj, file=file, ephemeral=True)
+                            await interaction.followup.send(embed=obj, **kwargs)
                         else:
-                            await channel.send(embed=obj, file=file)
+                            await channel.send(embed=obj, **kwargs)
                 elif interaction:
-                    await interaction.followup.send(embed=obj, file=file, ephemeral=True)
+                    await interaction.followup.send(embed=obj, **kwargs)
                 else:
-                    await channel.send(embed=obj, file=file)
+                    await channel.send(embed=obj, **kwargs)
 
         if not isinstance(user, discord.Member):
             return
