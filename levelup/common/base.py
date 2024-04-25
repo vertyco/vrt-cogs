@@ -1021,7 +1021,7 @@ class UserCommands(MixinMeta, ABC):
                     return await send(_("Failed to generate profile image :( try again in a bit"))
                 start2 = perf_counter()
                 try:
-                    await send(file=file, mention_author=mention)
+                    await send(file=file, mention=mention)
                 except Exception as e:
                     if "In message_reference: Unknown message" not in str(e):
                         log.error(f"Failed to send profile pic: {e}")
