@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2024-02-08 18:29-0500\n"
-"PO-Revision-Date: 2024-02-08 23:50\n"
+"POT-Creation-Date: 2024-04-20 13:44-0400\n"
+"PO-Revision-Date: 2024-04-20 18:33\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -17,112 +17,117 @@ msgstr ""
 "X-Crowdin-File-ID: 19\n"
 "Language: es_ES\n"
 
-#: utils\formatter.py:94
+#: utils\formatter.py:95
 msgid "None"
 msgstr "Ninguno"
 
-#: utils\formatter.py:97
+#: utils\formatter.py:98
 msgid " second"
 msgstr " segundo"
 
-#: utils\formatter.py:99
+#: utils\formatter.py:100
 msgid " seconds"
 msgstr " segundos"
 
-#: utils\formatter.py:102
+#: utils\formatter.py:103
 msgid " minute"
 msgstr " minuto"
 
-#: utils\formatter.py:104
+#: utils\formatter.py:105
 msgid " minutes"
 msgstr " minutos"
 
-#: utils\formatter.py:133
+#: utils\formatter.py:134
 #, docstring
 msgid "Get all attachments from context"
 msgstr "Obtener todos los archivos adjuntos del contexto"
 
-#: utils\formatter.py:156
+#: utils\formatter.py:157 utils\formatter.py:295
 msgid "Global Weekly "
 msgstr ""
 
-#: utils\formatter.py:156
+#: utils\formatter.py:157 utils\formatter.py:295
 msgid "Weekly "
 msgstr "Semanal "
 
-#: utils\formatter.py:159
+#: utils\formatter.py:160 utils\formatter.py:298
 msgid "Global LevelUp "
 msgstr ""
 
-#: utils\formatter.py:159
+#: utils\formatter.py:160 utils\formatter.py:298
 msgid "LevelUp "
 msgstr "LevelUp "
 
-#: utils\formatter.py:171
+#: utils\formatter.py:172 utils\formatter.py:310
 msgid "Voice Leaderboard"
 msgstr "Clasificación por voz"
 
-#: utils\formatter.py:174
+#: utils\formatter.py:175 utils\formatter.py:313
 msgid "Voicetime"
 msgstr "Tiempo de voz"
 
-#: utils\formatter.py:178
+#: utils\formatter.py:179 utils\formatter.py:317
 msgid "Message Leaderboard"
 msgstr "Clasificación"
 
-#: utils\formatter.py:181
+#: utils\formatter.py:182 utils\formatter.py:320
 msgid "Messages"
 msgstr "Mensajes"
 
-#: utils\formatter.py:185
+#: utils\formatter.py:186 utils\formatter.py:324
 msgid "Star Leaderboard"
 msgstr "Clasificación por estrellas"
 
-#: utils\formatter.py:188
+#: utils\formatter.py:189 utils\formatter.py:327
 msgid "Stars"
 msgstr "Estrellas"
 
-#: utils\formatter.py:192
+#: utils\formatter.py:193 utils\formatter.py:331
 msgid "Exp Leaderboard"
 msgstr "Clasificación Exp"
 
-#: utils\formatter.py:195
+#: utils\formatter.py:196 utils\formatter.py:334
 msgid "Exp"
 msgstr "Exp"
 
-#: utils\formatter.py:200
+#: utils\formatter.py:201 utils\formatter.py:339
 msgid "Total "
 msgstr "Total "
 
-#: utils\formatter.py:203
+#: utils\formatter.py:204 utils\formatter.py:342
 msgid "Last Reset: "
 msgstr "Último reinicio: "
 
-#: utils\formatter.py:206
+#: utils\formatter.py:207 utils\formatter.py:345
 msgid "Next Reset: "
 msgstr "Siguiente Reinicio: "
 
-#: utils\formatter.py:208
+#: utils\formatter.py:209 utils\formatter.py:347
 msgid "Total"
 msgstr "Total"
 
-#: utils\formatter.py:216
+#: utils\formatter.py:217
 msgid "There is no data for the weekly "
 msgstr "No hay datos para la semana "
 
-#: utils\formatter.py:216 utils\formatter.py:218
+#: utils\formatter.py:217 utils\formatter.py:219
 msgid " leaderboard yet"
 msgstr " tabla de clasificación aún"
 
-#: utils\formatter.py:218
+#: utils\formatter.py:219
 msgid "There is no data for the "
 msgstr "No hay datos para el "
 
-#: utils\formatter.py:224
+#: utils\formatter.py:225 utils\formatter.py:357
 msgid "You: "
 msgstr "Tú:"
 
-#: utils\formatter.py:272 utils\formatter.py:274
+#: utils\formatter.py:273 utils\formatter.py:275
 msgid "Pages "
 msgstr "Páginas "
+
+#: utils\formatter.py:292
+#, docstring
+msgid "Prep leaderboard for Dashboard integration"
+msgstr ""
 

@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2024-02-08 18:29-0500\n"
-"PO-Revision-Date: 2024-02-08 23:51\n"
+"POT-Creation-Date: 2024-04-20 13:44-0400\n"
+"PO-Revision-Date: 2024-04-20 18:33\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -17,19 +17,16 @@ msgstr ""
 "X-Crowdin-File-ID: 68\n"
 "Language: de_DE\n"
 
-#: common\base.py:74
-msgid "Uh Oh, looks like that is not a valid URL"
-msgstr "Uh Oh, das ist wohl keine gültige URL"
-
-#: common\base.py:83
+#: common\base.py:78
 msgid "Uh Oh, looks like that is not a valid image, cannot identify the file"
 msgstr "Oh, das ist kein gültiges Bild, ich kann die Datei nicht identifizieren"
 
-#: common\base.py:86
-msgid "Uh Oh, looks like that is not a valid image"
-msgstr "Oh, das ist wohl kein gültiges Bild"
+#: common\base.py:81
+msgid "Uh Oh, looks like that is not a valid image\n"
+"{}"
+msgstr ""
 
-#: common\base.py:170
+#: common\base.py:165
 #, docstring
 msgid "\n"
 "        Reward a good noodle\n"
@@ -40,48 +37,48 @@ msgstr "\n"
 "        Verleihe einem Benutzer einen Stern, weil er eine gute Nudel ist\n"
 "        "
 
-#: common\base.py:180
+#: common\base.py:175
 msgid "Cache not loaded yet, wait a few more seconds."
 msgstr "Der Cache ist noch nicht geladen, warten Sie noch ein paar Sekunden."
 
-#: common\base.py:195
+#: common\base.py:190
 msgid "You can give more stars in {}"
 msgstr ""
 
-#: common\base.py:198
+#: common\base.py:193
 msgid "You can give more stars now! Just mention a user in this command."
 msgstr ""
 
-#: common\base.py:205
+#: common\base.py:200
 msgid "You can't give stars to yourself!"
 msgstr "Du kannst dir selbst keine Sterne geben!"
 
-#: common\base.py:207
+#: common\base.py:202
 msgid "You can't give stars to a bot!"
 msgstr "Einem Bot kann man keine Sterne geben!"
 
-#: common\base.py:221
+#: common\base.py:216
 msgid "You need to wait "
 msgstr "Sie müssen warten"
 
-#: common\base.py:221
+#: common\base.py:216
 msgid " before you can give more stars!"
 msgstr " bevor Sie mehr Sterne vergeben können!"
 
-#: common\base.py:228
+#: common\base.py:223
 msgid "No data available for that user yet!"
 msgstr "Für diesen Benutzer sind noch keine Daten verfügbar!"
 
-#: common\base.py:236
+#: common\base.py:231
 msgid "You just gave a star to {}!"
 msgstr ""
 
-#: common\base.py:241
+#: common\base.py:236
 #, docstring
 msgid "Test levelup image gen"
 msgstr "Test-Levelup-Bildgenerierung"
 
-#: common\base.py:278
+#: common\base.py:273
 #, docstring
 msgid "\n"
 "        Customize your profile colors\n\n"
@@ -94,61 +91,61 @@ msgstr "\n"
 "        **[Hex Color Picker](https://htmlcolorcodes.com/)**\n"
 "        "
 
-#: common\base.py:295 common\base.py:296 common\base.py:297 common\base.py:298
+#: common\base.py:290 common\base.py:291 common\base.py:292 common\base.py:293
 msgid "Not Set"
 msgstr "Nicht festgelegt"
 
-#: common\base.py:301
+#: common\base.py:296
 msgid "`Profile Size:    `"
 msgstr ""
 
-#: common\base.py:302
+#: common\base.py:297
 msgid "`Name Color:      `"
 msgstr ""
 
-#: common\base.py:303
+#: common\base.py:298
 msgid "`Stat Color:      `"
 msgstr ""
 
-#: common\base.py:304
+#: common\base.py:299
 msgid "`Level Bar Color: `"
 msgstr ""
 
-#: common\base.py:305
+#: common\base.py:300
 msgid "`Font:            `"
 msgstr ""
 
-#: common\base.py:306
+#: common\base.py:301
 msgid "`Background:      `"
 msgstr ""
 
-#: common\base.py:307
+#: common\base.py:302
 msgid "`Blur:            `"
 msgstr ""
 
-#: common\base.py:310
+#: common\base.py:305
 msgid "Your Profile Settings"
 msgstr "Ihre Profileinstellungen"
 
-#: common\base.py:340
+#: common\base.py:335
 #, docstring
 msgid "Get folder path for this cog's default backgrounds"
 msgstr "Ordnerpfad für die Standard-Hintergründe dieses Cogs abrufen"
 
-#: common\base.py:342
+#: common\base.py:337
 msgid "Your default background folder path is \n"
 msgstr "Ihr Standard-Hintergrundordnerpfad lautet\n"
 
-#: common\base.py:348
+#: common\base.py:343
 #, docstring
 msgid "Get folder path for this cog's saved backgrounds"
 msgstr "Ordnerpfad für die gespeicherten Hintergründe dieses Zahnrads abrufen"
 
-#: common\base.py:350
+#: common\base.py:345
 msgid "Your saved background folder path is \n"
 msgstr "Ihr gespeicherter Hintergrundordnerpfad lautet\n"
 
-#: common\base.py:356
+#: common\base.py:351
 #, docstring
 msgid "\n"
 "        Add a custom background to the cog from discord\n\n"
@@ -161,58 +158,58 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: common\base.py:369 common\base.py:438
+#: common\base.py:364 common\base.py:433
 msgid "I was not able to find any attachments"
 msgstr "Ich habe keine Anhänge finden können"
 
-#: common\base.py:375
+#: common\base.py:370
 msgid "That is not a valid format, must be on of the following extensions: "
 msgstr "Das ist kein gültiges Format, es muss eine der folgenden Erweiterungen sein:"
 
-#: common\base.py:383 common\base.py:450
+#: common\base.py:378 common\base.py:445
 msgid "I was not able to get the file from Discord"
 msgstr "Ich war nicht in der Lage, die Datei von Discord zu bekommen"
 
-#: common\base.py:391
+#: common\base.py:386
 msgid "Your custom background has been saved as "
 msgstr "Ihr benutzerdefinierter Hintergrund wurde gespeichert als"
 
-#: common\base.py:396
+#: common\base.py:391
 #, docstring
 msgid "Remove a default background from the cog's backgrounds folder"
 msgstr "Entfernen eines Standardhintergrunds aus dem Ordner \"backgrounds\" des Zahnrads"
 
-#: common\base.py:402
+#: common\base.py:397
 msgid "I could not find any background images with that name"
 msgstr "Ich konnte keine Hintergrundbilder mit diesem Namen finden"
 
-#: common\base.py:407 common\base.py:475
+#: common\base.py:402 common\base.py:470
 msgid "Could not delete file: "
 msgstr "Datei konnte nicht gelöscht werden:"
 
-#: common\base.py:408
+#: common\base.py:403
 msgid "Background named {} has been removed!"
 msgstr ""
 
-#: common\base.py:413
+#: common\base.py:408
 #, docstring
 msgid "Get folder path for this cog's default fonts"
 msgstr "Ordnerpfad für die Standardschriftarten dieses Cogs abrufen"
 
-#: common\base.py:415
+#: common\base.py:410
 msgid "Your default font folder path is \n"
 msgstr "Ihr Standard-Schriftartenordnerpfad lautet\n"
 
-#: common\base.py:421
+#: common\base.py:416
 #, docstring
 msgid "Get folder path for this cog's saved fonts"
 msgstr "Ordnerpfad für die gespeicherten Schriftarten dieses Zahnrads abrufen"
 
-#: common\base.py:423
+#: common\base.py:418
 msgid "Your custom font folder path is \n"
 msgstr "Der Pfad zu Ihrem benutzerdefinierten Schriftartenordner lautet\n"
 
-#: common\base.py:429
+#: common\base.py:424
 #, docstring
 msgid "\n"
 "        Add a custom font to the cog from discord\n\n"
@@ -222,71 +219,71 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: common\base.py:443
+#: common\base.py:438
 msgid "That is not a valid format, must be `.ttf` or `.otf` extensions"
 msgstr ""
 
-#: common\base.py:459
+#: common\base.py:454
 msgid "Your custom font file has been saved as "
 msgstr "Ihre benutzerdefinierte Schriftartdatei wurde gespeichert als"
 
-#: common\base.py:464
+#: common\base.py:459
 #, docstring
 msgid "Remove a font from the cog's font folder"
 msgstr "Entfernen einer Schriftart aus dem Schriftartenordner des Zahnrads"
 
-#: common\base.py:470
+#: common\base.py:465
 msgid "I could not find any fonts with that name"
 msgstr "Ich konnte keine Schriftarten mit diesem Namen finden"
 
-#: common\base.py:476
+#: common\base.py:471
 msgid "Font named {} has been removed!"
 msgstr ""
 
-#: common\base.py:482
+#: common\base.py:477
 #, docstring
 msgid "View the all available backgrounds"
 msgstr "Alle verfügbaren Hintergründe anzeigen"
 
-#: common\base.py:484 common\base.py:517
+#: common\base.py:479 common\base.py:512
 msgid "Image profiles are disabled on this server so this command is off"
 msgstr "Bildprofile sind auf diesem Server deaktiviert, daher ist dieser Befehl ausgeschaltet"
 
-#: common\base.py:486 common\base.py:519
+#: common\base.py:481 common\base.py:514
 msgid "\n"
 "Use the `{}` command to toggle image profiles and enable this command."
 msgstr ""
 
-#: common\base.py:494 common\base.py:526
+#: common\base.py:489 common\base.py:521
 msgid "Failed to generate background samples"
 msgstr "Hintergrundproben konnten nicht erzeugt werden"
 
-#: common\base.py:504
+#: common\base.py:499
 msgid "Here are the current default backgrounds, to set one permanently you can use the "
 msgstr "Hier sind die aktuellen Standard-Hintergründe, um einen dauerhaft einzustellen, können Sie die"
 
-#: common\base.py:505 common\base.py:537
+#: common\base.py:500 common\base.py:532
 msgid "command"
 msgstr "befehl"
 
-#: common\base.py:509
+#: common\base.py:504
 msgid "Could not send background collage, file size may be too large."
 msgstr "Die Hintergrundcollage konnte nicht gesendet werden, die Dateigröße ist möglicherweise zu groß."
 
-#: common\base.py:515
+#: common\base.py:510
 #, docstring
 msgid "View available fonts to use"
 msgstr "Verfügbare Schriftarten anzeigen"
 
-#: common\base.py:536
+#: common\base.py:531
 msgid "Here are the current fonts, to set one permanently you can use the "
 msgstr "Hier sind die aktuellen Schriftarten, um eine dauerhaft einzustellen, können Sie die"
 
-#: common\base.py:541
+#: common\base.py:536
 msgid "Could not send font collage, file size may be too large."
 msgstr "Die Schriftcollage konnte nicht gesendet werden, die Dateigröße ist möglicherweise zu groß."
 
-#: common\base.py:545
+#: common\base.py:540
 #, docstring
 msgid "\n"
 "        Toggle your profile image type (full/slim)\n\n"
@@ -299,24 +296,24 @@ msgstr "\n"
 "        Schlank ist eine kleinere, verschlankte Version\n"
 "        "
 
-#: common\base.py:552 common\base.py:578 common\base.py:616 common\base.py:655
-#: common\base.py:708 common\base.py:769 common\base.py:799
+#: common\base.py:547 common\base.py:573 common\base.py:611 common\base.py:650
+#: common\base.py:703 common\base.py:765 common\base.py:795
 msgid "Image profiles are disabled on this server, this setting has no effect"
 msgstr "Bildprofile sind auf diesem Server deaktiviert, diese Einstellung hat keine Auswirkungen"
 
-#: common\base.py:556
+#: common\base.py:551
 msgid "You have no information stored about your account yet. Talk for a bit first"
 msgstr "Sie haben noch keine Informationen über Ihr Konto gespeichert. Sprechen Sie zuerst ein wenig"
 
-#: common\base.py:560
+#: common\base.py:555
 msgid "Your profile image has been set to **Slim**"
 msgstr "Ihr Profilbild wurde auf **Slim** eingestellt"
 
-#: common\base.py:563
+#: common\base.py:558
 msgid "Your profile image has been set to **Full**"
 msgstr "Ihr Profilbild wurde auf **Voll** gesetzt"
 
-#: common\base.py:569
+#: common\base.py:564
 #, docstring
 msgid "\n"
 "        Set a hex color for your username\n\n"
@@ -326,19 +323,19 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: common\base.py:586
+#: common\base.py:581
 msgid "Your name color has been reset to default"
 msgstr "Die Farbe Ihres Namens wurde auf den Standardwert zurückgesetzt"
 
-#: common\base.py:591 common\base.py:629 common\base.py:668
+#: common\base.py:586 common\base.py:624 common\base.py:663
 msgid "That is an invalid color, please use a valid integer color code or hex color."
 msgstr "Das ist eine ungültige Farbe, bitte verwenden Sie einen gültigen Integer-Farbcode oder eine Hex-Farbe."
 
-#: common\base.py:599 common\base.py:638 common\base.py:677
+#: common\base.py:594 common\base.py:633 common\base.py:672
 msgid "Failed to set color, the following error occurred:\n"
 msgstr "Beim Einstellen der Farbe ist der folgende Fehler aufgetreten:\n"
 
-#: common\base.py:607
+#: common\base.py:602
 #, docstring
 msgid "\n"
 "        Set a hex color for your server stats\n\n"
@@ -348,11 +345,11 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: common\base.py:624
+#: common\base.py:619
 msgid "Your stats color has been reset to default"
 msgstr "Die Farbe Ihrer Statistik wurde auf den Standardwert zurückgesetzt"
 
-#: common\base.py:646
+#: common\base.py:641
 #, docstring
 msgid "\n"
 "        Set a hex color for your level bar\n\n"
@@ -362,11 +359,11 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: common\base.py:663
+#: common\base.py:658
 msgid "Your level bar color has been reset to default"
 msgstr "Die Farbe der Leiste wurde auf den Standardwert zurückgesetzt"
 
-#: common\base.py:685
+#: common\base.py:680
 #, docstring
 msgid "\n"
 "        Set a background for your profile\n\n"
@@ -387,31 +384,31 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: common\base.py:723
+#: common\base.py:718
 msgid "You must provide a url, filename, or attach a file"
 msgstr "Sie müssen eine URL oder einen Dateinamen angeben oder eine Datei anhängen"
 
-#: common\base.py:726
+#: common\base.py:721
 msgid "Your background has been removed!"
 msgstr ""
 
-#: common\base.py:734 common\base.py:746
+#: common\base.py:729 common\base.py:741
 msgid "Your profile background has been set!"
 msgstr ""
 
-#: common\base.py:739
+#: common\base.py:734
 msgid "Your profile background will be randomized each time you run the profile command!"
 msgstr ""
 
-#: common\base.py:753
+#: common\base.py:748
 msgid "I could not find a background image with that name"
 msgstr ""
 
-#: common\base.py:755
+#: common\base.py:750
 msgid "Your background image has been set to `{}`!"
 msgstr ""
 
-#: common\base.py:762
+#: common\base.py:758
 #, docstring
 msgid "\n"
 "        Set a font for your profile\n\n"
@@ -420,19 +417,19 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: common\base.py:778
+#: common\base.py:774
 msgid "Your profile font has been reverted to default"
 msgstr "Die Schriftart Ihres Profils wurde auf die Standardschriftart zurückgesetzt"
 
-#: common\base.py:788
+#: common\base.py:784
 msgid "I could not find a font file with that name"
 msgstr "Ich konnte keine Schriftartdatei mit diesem Namen finden"
 
-#: common\base.py:791
+#: common\base.py:787
 msgid "Your profile font has been set to "
 msgstr "Die Schriftart Ihres Profils wurde eingestellt auf"
 
-#: common\base.py:795
+#: common\base.py:791
 #, docstring
 msgid "\n"
 "        Toggle a slight blur effect on the background image where the text is displayed.\n"
@@ -441,68 +438,68 @@ msgstr "\n"
 "        Schaltet einen leichten Unschärfeeffekt für das Hintergrundbild ein, in dem der Text angezeigt wird.\n"
 "        "
 
-#: common\base.py:808
+#: common\base.py:804
 msgid "Your profile background blur has been set to "
 msgstr "Der Hintergrund Ihres Profils wurde auf \"unscharf\" gesetzt"
 
-#: common\base.py:814
+#: common\base.py:810
 #, docstring
 msgid "View your profile"
 msgstr "Ihr Profil ansehen"
 
-#: common\base.py:834
+#: common\base.py:832
 msgid "No information available yet!"
 msgstr "Noch keine Informationen verfügbar!"
 
-#: common\base.py:837
+#: common\base.py:835
 msgid "I do not have permission to send images to this channel"
 msgstr "Ich habe keine Erlaubnis, Bilder an diesen Kanal zu senden"
 
-#: common\base.py:839
+#: common\base.py:837
 msgid "I do not have permission to send embeds to this channel"
 msgstr "Ich habe nicht die Erlaubnis, Einbettungen an diesen Kanal zu senden"
 
-#: common\base.py:908 common\generator.py:884
+#: common\base.py:906 common\generator.py:888
 msgid "Level "
 msgstr "Ebene"
 
-#: common\base.py:910 common\generator.py:270
+#: common\base.py:908 common\generator.py:276
 msgid "Prestige "
 msgstr "Prestige"
 
-#: common\base.py:911
+#: common\base.py:909
 msgid " stars\n"
 msgstr " sterne\n"
 
-#: common\base.py:912
+#: common\base.py:910
 msgid " messages sent\n"
 msgstr " nachrichten sent\n"
 
-#: common\base.py:913
+#: common\base.py:911
 msgid " in voice\n"
 msgstr " mit der Stimme\n"
 
-#: common\base.py:918
+#: common\base.py:916
 msgid "Rank "
 msgstr "Rang"
 
-#: common\base.py:918
+#: common\base.py:916
 msgid ", with "
 msgstr ", mit"
 
-#: common\base.py:918
+#: common\base.py:916
 msgid "% of global server Exp"
 msgstr "% des globalen Servers Exp"
 
-#: common\base.py:919
+#: common\base.py:917
 msgid "{}'s Profile"
 msgstr ""
 
-#: common\base.py:922
+#: common\base.py:920
 msgid "Progress"
 msgstr "Fortschritt"
 
-#: common\base.py:995
+#: common\base.py:993
 #, docstring
 msgid "\n"
 "        Prestige your rank!\n"
@@ -517,55 +514,55 @@ msgstr "\n"
 "        Wenn du beim Prestige über Level und XP bist, werden deine XP und Level übertragen\n"
 "        "
 
-#: common\base.py:1009
+#: common\base.py:1007
 msgid "Prestige is disabled on this server!"
 msgstr "Prestige ist auf diesem Server deaktiviert!"
 
-#: common\base.py:1012
+#: common\base.py:1010
 msgid "Prestige levels have not been set yet!"
 msgstr "Die Prestigestufen wurden noch nicht festgelegt!"
 
-#: common\base.py:1016
+#: common\base.py:1014
 msgid "No information available for you yet!"
 msgstr "Noch keine Informationen für Sie verfügbar!"
 
-#: common\base.py:1023
+#: common\base.py:1021
 msgid "**You are not eligible to prestige yet!**\n"
 msgstr "**Sie können noch nicht prestigeberechtigt sein!*\n"
 
-#: common\base.py:1024
+#: common\base.py:1022
 msgid "`Your level:     `"
 msgstr ""
 
-#: common\base.py:1025
+#: common\base.py:1023
 msgid "`Required Level: `"
 msgstr ""
 
-#: common\base.py:1030
+#: common\base.py:1028
 msgid "Prestige level "
 msgstr "Prestigestufe"
 
-#: common\base.py:1030
+#: common\base.py:1028
 msgid " has not been set yet!"
 msgstr " ist noch nicht festgelegt worden!"
 
-#: common\base.py:1040
+#: common\base.py:1038
 msgid "I do not have the proper permissions to assign you to the {} role!"
 msgstr ""
 
-#: common\base.py:1055
+#: common\base.py:1053
 msgid "You have reached Prestige "
 msgstr "Sie haben Prestige erreicht"
 
-#: common\base.py:1077
+#: common\base.py:1075
 msgid "I don't have permissions to remove your old roles!"
 msgstr "Ich habe nicht die Berechtigung, Ihre alten Rollen zu löschen!"
 
-#: common\base.py:1091
+#: common\base.py:1089
 msgid "I was not able to re-add the {} role to your profile!"
 msgstr ""
 
-#: common\base.py:1102
+#: common\base.py:1100
 #, docstring
 msgid "\n"
 "        View the Leaderboard\n\n"
@@ -577,44 +574,44 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: common\base.py:1116
+#: common\base.py:1114
 msgid "Use the `"
 msgstr ""
 
-#: common\base.py:1116
+#: common\base.py:1114
 msgid "startop` command for that"
 msgstr ""
 
-#: common\base.py:1142 common\base.py:1238
+#: common\base.py:1140 common\base.py:1236
 msgid "No user data yet!"
 msgstr "Noch keine Benutzerdaten!"
 
-#: common\base.py:1158
+#: common\base.py:1156
 #, docstring
 msgid "View the star leaderboard"
 msgstr "Ansicht der Star-Rangliste"
 
-#: common\base.py:1181
+#: common\base.py:1179
 msgid "Nobody has stars yet 😕"
 msgstr "Noch hat niemand Sterne 😕"
 
-#: common\base.py:1200
+#: common\base.py:1198
 msgid "Global Star Leaderboard"
 msgstr ""
 
-#: common\base.py:1200
+#: common\base.py:1198
 msgid "Star Leaderboard"
 msgstr "Star-Leaderboard"
 
-#: common\base.py:1201
+#: common\base.py:1199
 msgid "Total ⭐'s: {}\n"
 msgstr ""
 
-#: common\base.py:1224 common\base.py:1226
+#: common\base.py:1222 common\base.py:1224
 msgid "Pages "
 msgstr "Seiten"
 
-#: common\base.py:1249
+#: common\base.py:1247
 #, docstring
 msgid "\n"
 "        View the weekly leaderboard\n\n"
@@ -626,65 +623,65 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: common\base.py:1281 common\base.py:1302
+#: common\base.py:1279 common\base.py:1300
 msgid "Weekly stats are disabled for this guild"
 msgstr "Wöchentliche Statistiken sind für diese Gilde deaktiviert"
 
-#: common\base.py:1283
+#: common\base.py:1281
 msgid "There is no data for the weekly leaderboard yet, please chat a bit first."
 msgstr "Es gibt noch keine Daten für die wöchentliche Rangliste, bitte chatten Sie zuerst ein wenig."
 
-#: common\base.py:1299
+#: common\base.py:1297
 #, docstring
 msgid "View the last weekly embed"
 msgstr "Ansicht der letzten wöchentlichen Einbettung"
 
-#: common\base.py:1304
+#: common\base.py:1302
 msgid "There is no recorded weekly embed saved"
 msgstr "Es wird keine wöchentliche Einbettung gespeichert"
 
-#: common\base.py:1306
+#: common\base.py:1304
 msgid "Last Weekly Winners"
 msgstr "Letzte Wochengewinner"
 
-#: common\base.py:1307
+#: common\base.py:1305
 msgid "{}\n"
 "`Last Reset:     `{}"
 msgstr ""
 
-#: common\generator.py:260 common\generator.py:678
+#: common\generator.py:266 common\generator.py:683
 msgid "Rank: #"
 msgstr "Rang: #"
 
-#: common\generator.py:261 common\generator.py:679
+#: common\generator.py:267 common\generator.py:684
 msgid "Level: "
 msgstr "Niveau:"
 
-#: common\generator.py:263
+#: common\generator.py:269
 msgid "Exp: "
 msgstr "Exp: "
 
-#: common\generator.py:266 common\generator.py:681
+#: common\generator.py:272 common\generator.py:686
 msgid "Messages: "
 msgstr "Nachrichten:"
 
-#: common\generator.py:267
+#: common\generator.py:273
 msgid "Voice: "
 msgstr "Stimme:"
 
-#: common\generator.py:269
+#: common\generator.py:275
 msgid "Balance: "
 msgstr "Gleichgewicht:"
 
-#: common\generator.py:682
+#: common\generator.py:687
 msgid "Voice Time: "
 msgstr "Sprechzeit:"
 
-#: common\generator.py:685
+#: common\generator.py:690
 msgid " - Prestige "
 msgstr " - Prestige"
 
-#: common\generator.py:1171
+#: common\generator.py:1164
 #, docstring
 msgid "Get average duration sequence of gif frames"
 msgstr "Ermitteln der durchschnittlichen Dauer einer Folge von Gif-Bildern"
