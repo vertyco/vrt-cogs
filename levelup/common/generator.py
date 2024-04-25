@@ -1052,8 +1052,11 @@ class Generator(MixinMeta, ABC):
         if str(url) == "None":
             return None
         try:
-            res = requests.get(url)
-            return res.content
+            headers = {"User-Agent": "Mozilla/5.0"}
+            res = requests.get(url, headers=headers)
+            content = res.content
+            log.debug(f"Got image from url: {url} - {res.status_code} - {len(content)} bytes")
+            return content
         except Exception as e:
             log.error(
                 f"Failed to get image from url: {url}\nError: {e}",
