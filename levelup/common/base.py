@@ -727,6 +727,7 @@ class UserCommands(MixinMeta, ABC):
                 return
             self.data[ctx.guild.id]["users"][user_id]["background"] = image_url
             await ctx.send(_("Your profile background has been set!"))
+            return
 
         if image_url.lower() == "random":
             self.data[ctx.guild.id]["users"][user_id]["background"] = "random"
