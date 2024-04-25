@@ -10,7 +10,7 @@ CATS = [
     "(=^･ω･^=)",
     "(^・x・^)",
     "(=^･ｪ･^=))ﾉ彡☆",
-    "/ᐠ｡▿｡ᐟ\*ᵖᵘʳʳ*",
+    "/ᐠ｡▿｡ᐟ\\*ᵖᵘʳʳ*",
     "✧/ᐠ-ꞈ-ᐟ\\",
     "/ᐠ –ꞈ –ᐟ\\",
     "龴ↀ◡ↀ龴",
@@ -24,11 +24,11 @@ class Meow(commands.Cog):
     Meow!
 
 
-    My girlfriend had a dream about this cog, so I had to make it ¯\_(ツ)_/¯
+    My girlfriend had a dream about this cog, so I had to make it ¯\\_(ツ)_/¯
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.2.0"
+    __version__ = "0.2.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
