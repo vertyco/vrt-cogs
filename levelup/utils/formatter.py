@@ -13,7 +13,6 @@ from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_number
 
-DPY2 = True if discord.__version__ > "1.7.3" else False
 _ = Translator("LevelUp", __file__)
 log = logging.getLogger("red.vrt.levelup.formatter")
 
@@ -264,10 +263,7 @@ def get_leaderboard(
             description=desc + buf.getvalue(),
             color=discord.Color.random(),
         )
-        if DPY2:
-            icon = ctx.guild.icon
-        else:
-            icon = ctx.guild.icon_url
+        icon = ctx.guild.icon
 
         if you:
             embed.set_footer(text=_("Pages ") + f"{p + 1}/{pages} | {you}", icon_url=icon)

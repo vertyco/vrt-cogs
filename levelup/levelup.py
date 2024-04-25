@@ -14,7 +14,7 @@ import discord
 import plotly.graph_objects as go
 from aiohttp import ClientSession, ClientTimeout
 from discord.ext import tasks
-from redbot.core import Config, VersionInfo, commands, version_info
+from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator, cog_i18n
@@ -49,7 +49,7 @@ from levelup.utils.formatter import (
 
 from .abc import CompositeMetaClass
 from .common import constants
-from .common.base import UserCommands
+from .common.base import UserCommands, view_profile_context
 from .common.generator import Generator
 from .dashboard_integration import DashboardIntegration
 
@@ -83,7 +83,7 @@ class LevelUp(UserCommands, Generator, DashboardIntegration, commands.Cog, metac
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "3.14.5"
+    __version__ = "3.15.0"
     __contributors__ = [
         "[aikaterna](https://github.com/aikaterna/aikaterna-cogs)",
         "[AAA3A](https://github.com/AAA3A-AAA3A/AAA3A-cogs)",
@@ -142,7 +142,6 @@ class LevelUp(UserCommands, Generator, DashboardIntegration, commands.Cog, metac
 
         # Constants
         self.loading = "https://i.imgur.com/l3p6EMX.gif"
-        self.dpy2 = True if version_info >= VersionInfo.from_str("3.5.0") else False
         self.daymap = {
             0: _("Monday"),
             1: _("Tuesday"),
@@ -158,11 +157,47 @@ class LevelUp(UserCommands, Generator, DashboardIntegration, commands.Cog, metac
         self.voice_checker.start()
         self.weekly_checker.start()
 
-    def cog_unload(self):
+    async def cog_load(self):
+        await super().cog_load()
+        self.bot.tree.add_command(view_profile_context)
+        asyncio.create_task(self.initialize())
+
+    async def cog_unload(self):
+        self.bot.tree.remove_command(view_profile_context.name)
         self.cache_dumper.cancel()
         self.voice_checker.cancel()
         self.weekly_checker.cancel()
         asyncio.create_task(self.save_cache())
+        await super().cog_unload()
+
+    async def initialize(self):
+        await self.bot.wait_until_red_ready()
+        self.ignored_guilds = await self.config.ignored_guilds()
+        self.cache_seconds = await self.config.cache_seconds()
+        self.render_gifs = await self.config.render_gifs()
+        allclean = []
+        for guild in self.bot.guilds:
+            gid = guild.id
+            if gid in self.data:  # Already in cache
+                continue
+            data = await self.config.guild(guild).all()
+            cleaned, newdata = self.cleanup(data.copy())
+            if cleaned:
+                data = newdata
+                for i in cleaned:
+                    if i not in allclean:
+                        allclean.append(i)
+                log.info(f"Cleaned up {guild.name} config")
+            self.data[gid] = data
+            self.stars[gid] = {}
+            self.voice[gid] = {}
+            self.lastmsg[gid] = {}
+        if allclean and self.first_run:
+            log.info(allclean)
+            await self.save_cache()
+        if self.first_run:
+            log.info("Config initialized")
+        self.first_run = False
 
     async def get_leaderboard_for_dash(
         self,
@@ -332,34 +367,6 @@ class LevelUp(UserCommands, Generator, DashboardIntegration, commands.Cog, metac
         if message.channel.id in self.data[gid]["ignoredchannels"]:
             return
         await self.message_handler(message)
-
-    async def initialize(self):
-        self.ignored_guilds = await self.config.ignored_guilds()
-        self.cache_seconds = await self.config.cache_seconds()
-        self.render_gifs = await self.config.render_gifs()
-        allclean = []
-        for guild in self.bot.guilds:
-            gid = guild.id
-            if gid in self.data:  # Already in cache
-                continue
-            data = await self.config.guild(guild).all()
-            cleaned, newdata = self.cleanup(data.copy())
-            if cleaned:
-                data = newdata
-                for i in cleaned:
-                    if i not in allclean:
-                        allclean.append(i)
-                log.info(f"Cleaned up {guild.name} config")
-            self.data[gid] = data
-            self.stars[gid] = {}
-            self.voice[gid] = {}
-            self.lastmsg[gid] = {}
-        if allclean and self.first_run:
-            log.info(allclean)
-            await self.save_cache()
-        if self.first_run:
-            log.info("Config initialized")
-        self.first_run = False
 
     @staticmethod
     def cleanup(data: dict) -> tuple:
@@ -557,14 +564,7 @@ class LevelUp(UserCommands, Generator, DashboardIntegration, commands.Cog, metac
             return
         mentionuser = member.mention
         name = member.name
-        pfp = None
-        try:
-            if self.dpy2:
-                pfp = member.display_avatar.url
-            else:
-                pfp = member.avatar_url
-        except AttributeError:
-            log.warning(f"Failed to get avatar url for {member.name} in {guild.name}. DPY2 = {self.dpy2}")
+        pfp = member.display_avatar.url
 
         # Get roles to be added and removed
         roles_to_add = []
@@ -992,10 +992,7 @@ class LevelUp(UserCommands, Generator, DashboardIntegration, commands.Cog, metac
         if ctx and ctx.guild:
             guild = ctx.guild
 
-        if self.dpy2:
-            em.set_thumbnail(url=guild.icon)
-        else:
-            em.set_thumbnail(url=guild.icon_url)
+        em.set_thumbnail(url=guild.icon)
 
         sorted_users = sorted(users.items(), key=lambda x: x[1]["xp"], reverse=True)
         top_uids = []
