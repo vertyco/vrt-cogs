@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2024-03-07 13:19-0500\n"
-"PO-Revision-Date: 2024-03-07 18:29\n"
+"POT-Creation-Date: 2024-04-20 13:44-0400\n"
+"PO-Revision-Date: 2024-04-20 18:33\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -17,7 +17,31 @@ msgstr ""
 "X-Crowdin-File-ID: 11\n"
 "Language: ko_KR\n"
 
-#: levelup.py:77
+#: dashboard_integration.py:28
+msgid "Weekly stats disabled"
+msgstr ""
+
+#: dashboard_integration.py:28
+msgid "Weekly stats are disabled for this guild."
+msgstr ""
+
+#: dashboard_integration.py:30
+msgid "No Weekly stats available"
+msgstr ""
+
+#: dashboard_integration.py:30
+msgid "There is no data for the weekly leaderboard yet, please chat a bit first."
+msgstr ""
+
+#: dashboard_integration.py:33
+msgid "No stats available"
+msgstr ""
+
+#: dashboard_integration.py:33
+msgid "There is no data for the leaderboard yet, please chat a bit first."
+msgstr ""
+
+#: levelup.py:79
 #, docstring
 msgid "\n"
 "    Your friendly neighborhood leveling system\n\n"
@@ -26,330 +50,330 @@ msgid "\n"
 msgstr "친근한 이웃 레벨링 시스템\n\n"
 "문자 및 음성 채널에서 채팅을 통해 경험을 쌓고, 친구들과 레벨을 비교하고, 프로필을 커스터마이징하고, 다양한 리더 보드를 확인하세요!    "
 
-#: levelup.py:141
+#: levelup.py:143
 msgid "Monday"
 msgstr "월요일"
 
-#: levelup.py:142
+#: levelup.py:144
 msgid "Tuesday"
 msgstr "화요일"
 
-#: levelup.py:143
+#: levelup.py:145
 msgid "Wednesday"
 msgstr "수요일"
 
-#: levelup.py:144
+#: levelup.py:146
 msgid "Thursday"
 msgstr "목요일"
 
-#: levelup.py:145
+#: levelup.py:147
 msgid "Friday"
 msgstr "금요일"
 
-#: levelup.py:146
+#: levelup.py:148
 msgid "Saturday"
 msgstr "토요일"
 
-#: levelup.py:147
+#: levelup.py:149
 msgid "Sunday"
 msgstr "일요일"
 
-#: levelup.py:266 levelup.py:270
+#: levelup.py:290 levelup.py:294
 msgid "just gave a star to"
 msgstr "방금 별을 준"
 
-#: levelup.py:588
+#: levelup.py:612
 msgid "You have just reached level {} in {} and obtained the {} role!"
 msgstr ""
 
-#: levelup.py:595
+#: levelup.py:619
 msgid "{} just reached level {} and obtained the {} role!"
 msgstr ""
 
-#: levelup.py:603
+#: levelup.py:627
 msgid "You have just reached level {} in {}!"
 msgstr ""
 
-#: levelup.py:608
+#: levelup.py:632
 msgid "{} just reached level {}!"
 msgstr ""
 
-#: levelup.py:671
+#: levelup.py:695
 msgid "Leveled Up!"
 msgstr ""
 
-#: levelup.py:677
+#: levelup.py:701
 msgid "Auto-remove previous level roles"
 msgstr ""
 
-#: levelup.py:941
+#: levelup.py:965
 #, docstring
 msgid "Announce and reset the weekly leaderboard"
 msgstr "주간 순위표 발표 및 초기화"
 
-#: levelup.py:948
+#: levelup.py:972
 msgid "There are no users with exp"
 msgstr "경험치가 있는 사용자가 없습니다"
 
-#: levelup.py:957
+#: levelup.py:981
 msgid "Top Weekly Exp Earners"
 msgstr "주간 최고 경험치 획득자"
 
-#: levelup.py:958
+#: levelup.py:982
 msgid "`Total Exp:      `"
 msgstr "`총 경험치:      `"
 
-#: levelup.py:959
+#: levelup.py:983
 msgid "`Total Messages: `"
 msgstr "`총 메시지 수: `"
 
-#: levelup.py:960
+#: levelup.py:984
 msgid "`Total Stars:    `"
 msgstr "`총 별:    `"
 
-#: levelup.py:961
+#: levelup.py:985
 msgid "`Total Voice:    `"
 msgstr "`총 음성:`"
 
-#: levelup.py:986
+#: levelup.py:1010
 msgid "`Exp:      `"
 msgstr "`경험: `"
 
-#: levelup.py:987
+#: levelup.py:1011
 msgid "`Messages: `"
 msgstr "`메시지: `"
 
-#: levelup.py:988
+#: levelup.py:1012
 msgid "`Stars:    `"
 msgstr "`별:    `"
 
-#: levelup.py:989
+#: levelup.py:1013
 msgid "`Voice:    `"
 msgstr "`음성:    `"
 
-#: levelup.py:1037
+#: levelup.py:1061
 #, docstring
 msgid "Access LevelUp setting commands"
 msgstr "레벨업 설정 명령에 액세스하세요"
 
-#: levelup.py:1043
+#: levelup.py:1067
 #, docstring
 msgid "View all LevelUP settings"
 msgstr "레벨업 설정 모두 보기"
 
-#: levelup.py:1084
+#: levelup.py:1108
 msgid "Image"
 msgstr "이미지"
 
-#: levelup.py:1084
+#: levelup.py:1108
 msgid "Embed"
 msgstr "퍼가기"
 
-#: levelup.py:1086
+#: levelup.py:1110
 msgid "**Main**\n"
 msgstr "**메인**\n"
 
-#: levelup.py:1087
+#: levelup.py:1111
 msgid "`Profile Type:      `"
 msgstr "`프로필 유형:      `"
 
-#: levelup.py:1088
+#: levelup.py:1112
 msgid "`Include Balance:   `"
 msgstr "`잔액 포함:   `"
 
-#: levelup.py:1089
+#: levelup.py:1113
 msgid "`Progress Bar:      `"
 msgstr "`진행률 표시줄:      `"
 
-#: levelup.py:1090
+#: levelup.py:1114
 msgid "**Messages**\n"
 msgstr "메시지\n"
 
-#: levelup.py:1091
+#: levelup.py:1115
 msgid "`Message XP:        `"
 msgstr "`메시지 XP:        `"
 
-#: levelup.py:1092
+#: levelup.py:1116
 msgid "`Min Msg Length:    `"
 msgstr "`최소 메시지 길이:    `"
 
-#: levelup.py:1093 levelup.py:1111
+#: levelup.py:1117 levelup.py:1135
 msgid "`Cooldown:          `"
 msgstr "`쿨다운:          `"
 
-#: levelup.py:1094
+#: levelup.py:1118
 msgid "`Command XP:        `"
 msgstr ""
 
-#: levelup.py:1095
+#: levelup.py:1119
 msgid "**Voice**\n"
 msgstr "음성\n"
 
-#: levelup.py:1096
+#: levelup.py:1120
 msgid "`Voice XP:          `"
 msgstr "`음성 XP:`"
 
-#: levelup.py:1097
+#: levelup.py:1121
 msgid "`Ignore Muted:      `"
 msgstr "`음소거 무시:      `"
 
-#: levelup.py:1098
+#: levelup.py:1122
 msgid "`Ignore Solo:       `"
 msgstr "`솔로 무시:       `"
 
-#: levelup.py:1099
+#: levelup.py:1123
 msgid "`Ignore Deafened:   `"
 msgstr "`청각 장애 무시:   `"
 
-#: levelup.py:1100
+#: levelup.py:1124
 msgid "`Ignore Invisible:  `"
 msgstr "`무시 무시:  `"
 
-#: levelup.py:1101
+#: levelup.py:1125
 msgid "**Level Algorithm**\n"
 msgstr "**레벨 알고리즘**\n"
 
-#: levelup.py:1102
+#: levelup.py:1126
 msgid "`Base Multiplier:   `"
 msgstr "`기본 승수: `"
 
-#: levelup.py:1103
+#: levelup.py:1127
 msgid "`Exp Multiplier:    `"
 msgstr "`경험 곱하기: `"
 
-#: levelup.py:1104
+#: levelup.py:1128
 msgid "**LevelUps**\n"
 msgstr "**레벨업**\n"
 
-#: levelup.py:1105
+#: levelup.py:1129
 msgid "`LevelUp Notify:    `"
 msgstr "`레벨업 알림:    `"
 
-#: levelup.py:1106
+#: levelup.py:1130
 msgid "`Notify in DMs:     `"
 msgstr "`메시지로 알립니다:     `"
 
-#: levelup.py:1107
+#: levelup.py:1131
 msgid "`Mention User:      `"
 msgstr "`사용자 멘션: `"
 
-#: levelup.py:1108
+#: levelup.py:1132
 msgid "`AutoRemove Roles:  `"
 msgstr "`역할 자동 제거:  `"
 
-#: levelup.py:1109
+#: levelup.py:1133
 msgid "`LevelUp Channel:   `"
 msgstr "`레벨업 채널:   `"
 
-#: levelup.py:1110
+#: levelup.py:1134
 msgid "**Stars**\n"
 msgstr "별\n"
 
-#: levelup.py:1112
+#: levelup.py:1136
 msgid "`React Mention:     `"
 msgstr "`리액트 멘션:     `"
 
-#: levelup.py:1113
+#: levelup.py:1137
 msgid "`MentionAutoDelete: `"
 msgstr "`멘션 자동 삭제: `"
 
-#: levelup.py:1115
+#: levelup.py:1139
 msgid "**Levels**\n"
 msgstr "**레벨**\n"
 
-#: levelup.py:1122
+#: levelup.py:1146
 msgid "`Level "
 msgstr "`레벨 "
 
-#: levelup.py:1124
+#: levelup.py:1148
 msgid "**Prestige**\n"
 "`Stack Roles: `"
 msgstr "**프레스티지**\n"
 "`스택 역할: `"
 
-#: levelup.py:1125
+#: levelup.py:1149
 msgid "`Level Req:  `"
 msgstr "`레벨 요구 사항: `"
 
-#: levelup.py:1134
+#: levelup.py:1158
 msgid "`Prestige "
 msgstr "`프레스티지 "
 
-#: levelup.py:1136
+#: levelup.py:1160
 msgid "LevelUp Settings"
 msgstr "레벨업 설정"
 
-#: levelup.py:1148
+#: levelup.py:1172
 msgid "Voice XP Bonus Roles"
 msgstr "음성 XP 보너스 역할"
 
-#: levelup.py:1157
+#: levelup.py:1181
 msgid "Voice XP Bonus Channels"
 msgstr "음성 XP 보너스 채널"
 
-#: levelup.py:1160
+#: levelup.py:1184
 msgid "Stream XP Bonus"
 msgstr "스트림 XP 보너스"
 
-#: levelup.py:1169
+#: levelup.py:1193
 msgid "Message XP Bonus Roles"
 msgstr "메시지 XP 보너스 역할"
 
-#: levelup.py:1178
+#: levelup.py:1202
 msgid "Message XP Bonus Channels"
 msgstr "메시지 XP 보너스 채널"
 
-#: levelup.py:1183
+#: levelup.py:1207
 msgid "Ignored Roles"
 msgstr "무시된 역할"
 
-#: levelup.py:1188
+#: levelup.py:1212
 msgid "Ignored Channels"
 msgstr "무시된 채널"
 
-#: levelup.py:1193
+#: levelup.py:1217
 msgid "Ignored Users"
 msgstr "무시된 사용자"
 
-#: levelup.py:1197
+#: levelup.py:1221
 msgid "LevelUp DM Role Message"
 msgstr ""
 
-#: levelup.py:1199
+#: levelup.py:1223
 msgid "LevelUp DM Message"
 msgstr ""
 
-#: levelup.py:1201
+#: levelup.py:1225
 msgid "LevelUp Channel Role Message"
 msgstr ""
 
-#: levelup.py:1203
+#: levelup.py:1227
 msgid "LevelUp Channel Message"
 msgstr ""
 
-#: levelup.py:1220
+#: levelup.py:1244
 #, docstring
 msgid "Set the emojis for embed profiles"
 msgstr ""
 
-#: levelup.py:1250
+#: levelup.py:1274
 #, docstring
 msgid "Reset a user's weekly stats"
 msgstr ""
 
-#: levelup.py:1252
+#: levelup.py:1276
 msgid "Weekly stats are not enabled"
 msgstr ""
 
-#: levelup.py:1254
+#: levelup.py:1278
 msgid "That user has no weekly stats"
 msgstr ""
 
-#: levelup.py:1261
+#: levelup.py:1285
 msgid "Reset weekly stats for "
 msgstr ""
 
-#: levelup.py:1268
+#: levelup.py:1292
 #, docstring
 msgid "\n"
 "        Cog admin commands\n\n"
@@ -358,7 +382,7 @@ msgid "\n"
 msgstr "Cog 관리자 명령어\n\n"
 "레벨 재설정, 코그 데이터 백업 및 복원               "
 
-#: levelup.py:1278
+#: levelup.py:1302
 #, docstring
 msgid "\n"
 "        Set how long to keep profile images in cache\n"
@@ -371,135 +395,135 @@ msgstr "프로필 이미지를 캐시에 보관할 기간을 설정하세요.\n"
 "프로필 임베드가 활성화된 경우 이 설정은 적용되지 않습니다.\n"
 "5초 미만으로 설정하면 캐시가 효과적으로 비활성화됩니다        "
 
-#: levelup.py:1292
+#: levelup.py:1316
 #, docstring
 msgid "Toggle whether to render profiles as gifs if the user's discord profile is animated"
 msgstr "사용자의 디스코드 프로필이 애니메이션인 경우 프로필을 GIF로 렌더링할지 여부를 전환합니다"
 
-#: levelup.py:1296
+#: levelup.py:1320
 msgid "I will no longer render profiles with GIFs"
 msgstr "더 이상 GIF로 프로필을 렌더링하지 않습니다"
 
-#: levelup.py:1299
+#: levelup.py:1323
 msgid "I will now render GIFs with user profiles"
 msgstr "이제 사용자 프로필이 있는 GIF를 렌더링합니다"
 
-#: levelup.py:1306
+#: levelup.py:1330
 #, docstring
 msgid "Reset cog data for all guilds"
 msgstr "모든 길드의 톱니바퀴 데이터를 초기화합니다"
 
-#: levelup.py:1307
+#: levelup.py:1331
 msgid "Are you sure you want to reset all stats and settings for the entire cog?"
 msgstr "전체 톱니바퀴에 대한 모든 통계와 설정을 초기화하시겠습니까?"
 
-#: levelup.py:1311
+#: levelup.py:1335
 msgid "Not resetting all guilds"
 msgstr "모든 길드를 초기화하지 않음"
 
-#: levelup.py:1315
+#: levelup.py:1339
 msgid "Settings and stats for all guilds have been reset"
 msgstr "모든 길드의 설정 및 통계가 초기화되었습니다"
 
-#: levelup.py:1321
+#: levelup.py:1345
 #, docstring
 msgid "Reset cog data for this guild"
 msgstr "이 길드의 톱니바퀴 데이터를 초기화합니다"
 
-#: levelup.py:1322
+#: levelup.py:1346
 msgid "Are you sure you want to reset all stats and settings for this guild?"
 msgstr "이 길드의 모든 통계와 설정을 초기화하시겠습니까?"
 
-#: levelup.py:1326
+#: levelup.py:1350
 msgid "Not resetting config"
 msgstr "구성을 재설정하지 않음"
 
-#: levelup.py:1329
+#: levelup.py:1353
 msgid "All settings and stats reset"
 msgstr "모든 설정 및 통계가 초기화되었습니다"
 
-#: levelup.py:1335
+#: levelup.py:1359
 #, docstring
 msgid "Reset everyone's exp and level"
 msgstr "모든 사람의 경험치와 레벨을 초기화합니다"
 
-#: levelup.py:1337
+#: levelup.py:1361
 msgid "Not resetting everyone's exp and levels"
 msgstr ""
 
-#: levelup.py:1341
+#: levelup.py:1365
 msgid "Are you sure you want to reset "
 msgstr "정말로 재설정하시겠습니까? "
 
-#: levelup.py:1341
+#: levelup.py:1365
 msgid " users' stats?"
 msgstr " 사용자 통계를 확인하시겠습니까?"
 
-#: levelup.py:1342
+#: levelup.py:1366
 msgid "\n"
 "This will reset their exp, voice time, messages, level, prestige and stars"
 msgstr "\n"
 "이렇게 하면 경험치, 음성 시간, 메시지, 레벨, 명성 및 별이 초기화됩니다"
 
-#: levelup.py:1354
+#: levelup.py:1378
 msgid "Reset stats for "
 msgstr "다음에 대한 통계를 재설정합니다 "
 
-#: levelup.py:1354
+#: levelup.py:1378
 msgid " users"
 msgstr " 사용자"
 
-#: levelup.py:1361
+#: levelup.py:1385
 #, docstring
 msgid "View current loop times and cached data"
 msgstr "현재 루프 시간과 캐시된 데이터를 확인하세요"
 
-#: levelup.py:1370
+#: levelup.py:1394
 msgid "Cog Stats"
 msgstr "코그 통계"
 
-#: levelup.py:1372
+#: levelup.py:1396
 msgid "`Profile Cache Time: `"
 msgstr "`프로필 캐시 시간: `"
 
-#: levelup.py:1372
+#: levelup.py:1396
 msgid "Disabled\n"
 msgstr "장애인\n"
 
-#: levelup.py:1373
+#: levelup.py:1397
 msgid "`Cache Size:         `"
 msgstr "`캐시 크기:         `"
 
-#: levelup.py:1374
+#: levelup.py:1398
 msgid "Cache"
 msgstr "캐시"
 
-#: levelup.py:1376 levelup.py:3315
+#: levelup.py:1400 levelup.py:3339
 msgid "(Disabled)"
 msgstr "(장애인)"
 
-#: levelup.py:1377
+#: levelup.py:1401
 msgid "Profiles will be static regardless of if the user has an animated profile"
 msgstr "프로필은 사용자가 애니메이션 프로필을 가지고 있는지 여부에 관계없이 정적으로 유지됩니다"
 
-#: levelup.py:1379 levelup.py:3315
+#: levelup.py:1403 levelup.py:3339
 msgid "(Enabled)"
 msgstr "(사용)"
 
-#: levelup.py:1380
+#: levelup.py:1404
 msgid "Users with animated profiles will render as a gif"
 msgstr "애니메이션 프로필을 가진 사용자는 GIF로 렌더링됩니다"
 
-#: levelup.py:1382
+#: levelup.py:1406
 msgid "GIF Rendering "
 msgstr "GIF 렌더링 "
 
-#: levelup.py:1390 levelup.py:1401
+#: levelup.py:1414 levelup.py:1425
 #, docstring
 msgid "Create a backup of the LevelUp config"
 msgstr "레벨업 구성의 백업을 만듭니다"
 
-#: levelup.py:1411
+#: levelup.py:1435
 #, docstring
 msgid "\n"
 "        Restore a global backup\n\n"
@@ -509,19 +533,19 @@ msgstr "\n"
 "글로벌 백업 복원\n\n"
 "명령 메시지에 .json 파일을 첨부하여 가져오세요        "
 
-#: levelup.py:1418 levelup.py:1445
+#: levelup.py:1442 levelup.py:1469
 msgid "Attach your backup file to the message when using this command."
 msgstr "이 명령을 사용할 때는 백업 파일을 메시지에 첨부하세요."
 
-#: levelup.py:1423
+#: levelup.py:1447
 msgid "This is an invalid global config!"
 msgstr "잘못된 전역 설정입니다!"
 
-#: levelup.py:1433 levelup.py:1457
+#: levelup.py:1457 levelup.py:1481
 msgid "Config restored from backup file!"
 msgstr "백업 파일에서 구성이 복원되었습니다!"
 
-#: levelup.py:1438
+#: levelup.py:1462
 #, docstring
 msgid "\n"
 "        Restore a guild backup\n\n"
@@ -531,11 +555,11 @@ msgstr "\n"
 "길드 백업 복원\n\n"
 "명령 메시지에 .json 파일을 첨부하여 가져옵니다        "
 
-#: levelup.py:1451
+#: levelup.py:1475
 msgid "This is an invalid guild config!"
 msgstr "길드 구성이 잘못되었습니다!"
 
-#: levelup.py:1469
+#: levelup.py:1493
 #, docstring
 msgid "\n"
 "        Import levels and exp from Malarne's Leveler cog\n\n"
@@ -554,23 +578,23 @@ msgstr "말라르네의 레벨러 톱니바퀴에서 레벨과 경험치를 가�
 "`replace` - (True/False) True인 경우 사용자의 경험치 또는 레벨을 대체하고, 그렇지 않으면 추가합니다.\n"
 "`i_agree` - (예/아니요) 이 명령을 실행하려는지 확인하기 위한 추가 옵션입니다        "
 
-#: levelup.py:1480
+#: levelup.py:1504
 msgid "Not importing levels"
 msgstr "레벨을 가져오지 않습니다"
 
-#: levelup.py:1483
+#: levelup.py:1507
 msgid "No config found for Malarne's Leveler cog!"
 msgstr "말라르네의 레벨러 코그에 대한 설정이 없습니다!"
 
-#: levelup.py:1525
+#: levelup.py:1549
 msgid "There were no profiles to import"
 msgstr "가져올 프로필이 없습니다"
 
-#: levelup.py:1526
+#: levelup.py:1550
 msgid "Imported {} profile(s)"
 msgstr "가져온 {} 프로필(들)"
 
-#: levelup.py:1593
+#: levelup.py:1617
 #, docstring
 msgid "\n"
 "        Import levels and exp from MEE6\n\n"
@@ -590,51 +614,51 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: levelup.py:1613
+#: levelup.py:1637
 msgid "Not importing MEE6 levels"
 msgstr "MEE6 레벨 가져오기를 하지 않습니다"
 
-#: levelup.py:1615
+#: levelup.py:1639
 msgid "Fetching mee6 leaderboard data, this could take a while..."
 msgstr "Mee6 순위표 데이터를 가져오는 데 시간이 걸릴 수 있습니다..."
 
-#: levelup.py:1638
+#: levelup.py:1662
 msgid "Mee6 is rate limiting too heavily! Import Failed!"
 msgstr "Mee6의 속도 제한이 너무 심합니다! 가져오기에 실패했습니다!"
 
-#: levelup.py:1646 levelup.py:1929
+#: levelup.py:1670 levelup.py:1953
 msgid "Your leaderboard needs to be set to public!"
 msgstr "순위표를 공개로 설정해야 합니다!"
 
-#: levelup.py:1650 levelup.py:1793 levelup.py:1933
+#: levelup.py:1674 levelup.py:1817 levelup.py:1957
 msgid "No data found!"
 msgstr "데이터를 찾을 수 없습니다!"
 
-#: levelup.py:1675
+#: levelup.py:1699
 msgid "{} pages failed to fetch from mee6 api, check logs for more info"
 msgstr "{} 페이지를 Mee6 API에서 가져오지 못했습니다. 자세한 내용은 로그를 확인하세요"
 
-#: levelup.py:1678 levelup.py:1806 levelup.py:1966
+#: levelup.py:1702 levelup.py:1830 levelup.py:1990
 msgid "No leaderboard data found!"
 msgstr "리더보드 데이터를 찾을 수 없습니다!"
 
-#: levelup.py:1680 levelup.py:1808 levelup.py:1968
+#: levelup.py:1704 levelup.py:1832 levelup.py:1992
 msgid "Data retrieved, importing..."
 msgstr "데이터 검색, 가져오기..."
 
-#: levelup.py:1721
+#: levelup.py:1745
 msgid "No MEE6 stats were found"
 msgstr "MEE6 통계가 발견되지 않았습니다"
 
-#: levelup.py:1723 levelup.py:1863 levelup.py:1997
+#: levelup.py:1747 levelup.py:1887 levelup.py:2021
 msgid "Imported {} User(s)"
 msgstr "가져온 {} 사용자(들)"
 
-#: levelup.py:1725 levelup.py:1865 levelup.py:1999
+#: levelup.py:1749 levelup.py:1889 levelup.py:2023
 msgid " ({} skipped since they are no longer in the discord)"
 msgstr " ({}는 더 이상 디스코드에 포함되지 않으므로 건너뛰기)"
 
-#: levelup.py:1736
+#: levelup.py:1760
 #, docstring
 msgid "\n"
 "        Import levels and exp from AmariBot\n\n"
@@ -652,27 +676,27 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: levelup.py:1753
+#: levelup.py:1777
 msgid "Not importing AmariBot levels"
 msgstr "아마리봇 레벨 가져오기 안 함"
 
-#: levelup.py:1755
+#: levelup.py:1779
 msgid "Fetching AmariBot leaderboard data, this could take a while..."
 msgstr "아마리봇 순위표 데이터를 가져오는 데 시간이 걸릴 수 있습니다..."
 
-#: levelup.py:1780
+#: levelup.py:1804
 msgid "AmariBot is rate limiting too heavily! Import Failed!"
 msgstr "아마리봇의 속도 제한이 너무 심합니다! 가져오기에 실패했습니다!"
 
-#: levelup.py:1803
+#: levelup.py:1827
 msgid "{} pages failed to fetch from AmariBot api, check logs for more info"
 msgstr ""
 
-#: levelup.py:1861
+#: levelup.py:1885
 msgid "No AmariBot stats were found"
 msgstr "아마리봇 통계가 발견되지 않았습니다"
 
-#: levelup.py:1880
+#: levelup.py:1904
 #, docstring
 msgid "\n"
 "        Import levels and exp from [Polaris](https://gdcolon.com/polaris/)\n\n"
@@ -688,27 +712,27 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: levelup.py:1896
+#: levelup.py:1920
 msgid "Not importing Polaris levels"
 msgstr "폴라리스 레벨 가져오기 안 함"
 
-#: levelup.py:1898
+#: levelup.py:1922
 msgid "Fetching Polaris leaderboard data, this could take a while..."
 msgstr "폴라리스 순위표 데이터를 가져오는 데 시간이 걸릴 수 있습니다..."
 
-#: levelup.py:1921
+#: levelup.py:1945
 msgid "Polaris is rate limiting too heavily! Import Failed!"
 msgstr "폴라리스에서 속도 제한이 너무 심합니다! 가져오기에 실패했습니다!"
 
-#: levelup.py:1963
+#: levelup.py:1987
 msgid "{} pages failed to fetch from Polaris api, check logs for more info"
 msgstr ""
 
-#: levelup.py:1995
+#: levelup.py:2019
 msgid "No Polaris stats were found"
 msgstr "폴라리스 통계가 발견되지 않았습니다"
 
-#: levelup.py:2008
+#: levelup.py:2032
 #, docstring
 msgid "\n"
 "        Import data from Fixator's Leveler cog\n\n"
@@ -721,35 +745,35 @@ msgstr "픽스처의 레벨러 톱니바퀴에서 데이터를 가져옵니다.\
 "또한 XP 범위 레벨 역할과 무시된 채널도 가져올 것입니다.\n"
 "*이 명령을 실행하는 동안 MongoDB가 실행 중이어야 합니다.*        "
 
-#: levelup.py:2016
+#: levelup.py:2040
 msgid "Not importing users"
 msgstr "사용자 가져오기 안 함"
 
-#: levelup.py:2020
+#: levelup.py:2044
 msgid "No config found for Fixator's Leveler cog!"
 msgstr "픽스터의 레벨러 코그에 대한 설정이 없습니다!"
 
-#: levelup.py:2044
+#: levelup.py:2068
 msgid "Failed to import `pymongo` and `motor` libraries. Run `{}pipinstall pymongo` and `{}pipinstall motor`"
 msgstr "실패했습니다. `pymongo`와 `motor` 라이브러리를 가져오지 못했습니다. `{}pip install pymongo`와 `{}pip install motor`를 실행하세요"
 
-#: levelup.py:2066
+#: levelup.py:2090
 msgid "Failed to connect to MongoDB"
 msgstr "MongoDB에 연결하지 못했습니다"
 
-#: levelup.py:2070
+#: levelup.py:2094
 msgid "Importing users from Leveler..."
 msgstr "레벨러에서 사용자 가져오는 중..."
 
-#: levelup.py:2128
+#: levelup.py:2152
 msgid "Importing Complete!\n"
 msgstr "가져오기 완료!\n"
 
-#: levelup.py:2128
+#: levelup.py:2152
 msgid " users imported"
 msgstr " 가져온 사용자를 최종 검토하고 필요한 수정을 하여, 번역된 소스 텍스트의 중복된 줄이 없는지 확인한 후 수정된 번역만 출력해주세요"
 
-#: levelup.py:2142
+#: levelup.py:2166
 #, docstring
 msgid "\n"
 "        Delete users no longer in the server\n\n"
@@ -759,24 +783,24 @@ msgstr "\n"
 "삭제되지 않은 사용자들을 서버에서 삭제합니다.\n\n"
 "또한 구성 파일에서 누락된 키나 불일치를 정리합니다        "
 
-#: levelup.py:2160
+#: levelup.py:2184
 msgid "Nothing to clean"
 msgstr "청소할 것이 없습니다"
 
-#: levelup.py:2162
+#: levelup.py:2186
 msgid "Deleted "
 msgstr "삭제됨 "
 
-#: levelup.py:2162
+#: levelup.py:2186
 msgid " user IDs from the config that are no longer in the server."
 msgstr " 구성에서 더 이상 서버에 없는 사용자 ID를 제거합니다."
 
-#: levelup.py:2168
+#: levelup.py:2192
 #, docstring
 msgid "Message settings"
 msgstr "번역을 최종 검토하고 필요한 수정을 하고, 번역에 중복된 줄이 없는지 확인한 후, 원본 텍스트의 수정된 번역만 출력해주세요"
 
-#: levelup.py:2172
+#: levelup.py:2196
 #, docstring
 msgid "\n"
 "        Set message XP range\n"
@@ -786,15 +810,15 @@ msgstr "\n"
 "메시지 XP 범위 설정\n"
 "메시지가 획득할 수 있는 최소 및 최대 XP 양을 설정하세요        "
 
-#: levelup.py:2178
+#: levelup.py:2202
 msgid "Message XP range has been set to "
 msgstr "메시지 XP 범위가 설정되었습니다 "
 
-#: levelup.py:2178
+#: levelup.py:2202
 msgid " per valid message"
 msgstr " 유효한 메시지당"
 
-#: levelup.py:2189
+#: levelup.py:2213
 #, docstring
 msgid "\n"
 "        Add a range of bonus XP to apply to certain roles\n\n"
@@ -806,33 +830,33 @@ msgstr "\n"
 "이 보너스는 메시지 경험치에 적용됩니다.\n\n"
 "역할 보너스를 제거하려면 최소값과 최대값을 모두 0으로 설정하세요        "
 
-#: levelup.py:2197 levelup.py:2300 levelup.py:2332
+#: levelup.py:2221 levelup.py:2324 levelup.py:2356
 msgid "I cannot find that role"
 msgstr "해당 역할을 찾을 수 없습니다"
 
-#: levelup.py:2199 levelup.py:2231 levelup.py:2302 levelup.py:2334
-#: levelup.py:2358
+#: levelup.py:2223 levelup.py:2255 levelup.py:2326 levelup.py:2358
+#: levelup.py:2382
 msgid "Max xp needs to be higher than min xp"
 msgstr "최대 경험치는 최소 경험치보다 높아야 합니다"
 
-#: levelup.py:2205 levelup.py:2308
+#: levelup.py:2229 levelup.py:2332
 msgid "That role has no bonus xp associated with it"
 msgstr "해당 역할에는 보너스 경험치가 없습니다"
 
-#: levelup.py:2207 levelup.py:2210 levelup.py:2239 levelup.py:2242
-#: levelup.py:2310 levelup.py:2313 levelup.py:2342 levelup.py:2345
+#: levelup.py:2231 levelup.py:2234 levelup.py:2263 levelup.py:2266
+#: levelup.py:2334 levelup.py:2337 levelup.py:2366 levelup.py:2369
 msgid "Bonus xp for "
 msgstr "보너스 경험치 "
 
-#: levelup.py:2207 levelup.py:2239 levelup.py:2310 levelup.py:2342
+#: levelup.py:2231 levelup.py:2263 levelup.py:2334 levelup.py:2366
 msgid " has been removed"
 msgstr " 제거되었습니다"
 
-#: levelup.py:2210 levelup.py:2242 levelup.py:2313 levelup.py:2345
+#: levelup.py:2234 levelup.py:2266 levelup.py:2337 levelup.py:2369
 msgid " has been set to "
 msgstr " 로 설정되었습니다 "
 
-#: levelup.py:2221
+#: levelup.py:2245
 #, docstring
 msgid "\n"
 "        Add a range of bonus XP to apply to certain channels\n\n"
@@ -844,15 +868,15 @@ msgstr "\n"
 "이 보너스는 메시지 XP에 적용됩니다.\n\n"
 "역할 보너스를 제거하려면 최소값과 최대값을 모두 0으로 설정하세요        "
 
-#: levelup.py:2229
+#: levelup.py:2253
 msgid "I cannot find that channel"
 msgstr "해당 채널을 찾을 수 없습니다"
 
-#: levelup.py:2237 levelup.py:2340
+#: levelup.py:2261 levelup.py:2364
 msgid "That channel has no bonus xp associated with it"
 msgstr "해당 채널에는 보너스 경험치가 없습니다"
 
-#: levelup.py:2247
+#: levelup.py:2271
 #, docstring
 msgid "\n"
 "        Cooldown threshold for message XP\n\n"
@@ -862,7 +886,7 @@ msgid "\n"
 msgstr "쿨다운 임계값에 따른 메시지 XP\n\n"
 "사용자가 메시지를 보내면 메시지가 XP로 인정되기 전에 X초 동안 기다려야 합니다               "
 
-#: levelup.py:2259
+#: levelup.py:2283
 #, docstring
 msgid "\n"
 "        Set minimum message length for XP\n"
@@ -874,12 +898,12 @@ msgstr "\n"
 "획득 경험치에 포함되려면 메시지의 최소 길이를 설정해야 합니다.\n"
 "비활성화하려면 0으로 설정하세요        "
 
-#: levelup.py:2271
+#: levelup.py:2295
 #, docstring
 msgid "Voice settings"
 msgstr "음성 설정"
 
-#: levelup.py:2276
+#: levelup.py:2300
 #, docstring
 msgid "\n"
 "        Set voice XP gain\n"
@@ -889,7 +913,7 @@ msgstr "\n"
 "음성 XP 획득 설정\n"
 "음성 채널에서 분당 획득되는 XP 양을 설정합니다 (기본값은 2)        "
 
-#: levelup.py:2292
+#: levelup.py:2316
 #, docstring
 msgid "\n"
 "        Add a range of bonus XP to apply to certain roles\n\n"
@@ -901,7 +925,7 @@ msgstr "추가해주세요.\n"
 "이 보너스는 음성 시간 경험치에 적용됩니다.\n\n"
 "역할 보너스를 제거하려면 최소값과 최대값을 모두 0으로 설정하세요               "
 
-#: levelup.py:2324
+#: levelup.py:2348
 #, docstring
 msgid "\n"
 "        Add a range of bonus XP to apply to certain channels\n\n"
@@ -913,7 +937,7 @@ msgstr "\n"
 "이 보너스는 음성 시간 XP에 적용됩니다.\n\n"
 "역할 보너스를 제거하려면 최소값과 최대값을 모두 0으로 설정하세요        "
 
-#: levelup.py:2350
+#: levelup.py:2374
 #, docstring
 msgid "\n"
 "        Add a range of bonus XP to users who are Discord streaming\n\n"
@@ -924,19 +948,19 @@ msgstr "추가할 보너스 XP 범위를 Discord 스트리밍 중인 사용자�
 "이 보너스는 음성 시간 XP에 적용됩니다.\n\n"
 "보너스를 제거하려면 최소값과 최대값을 모두 0으로 설정하세요.               "
 
-#: levelup.py:2363
+#: levelup.py:2387
 msgid "There is no stream bonus set yet"
 msgstr "아직 스트림 보너스 세트가 없습니다"
 
-#: levelup.py:2365
+#: levelup.py:2389
 msgid "Stream bonus has been removed"
 msgstr "스트림 보너스가 제거되었습니다"
 
-#: levelup.py:2368
+#: levelup.py:2392
 msgid "Stream bonus has been set to "
 msgstr "스트림 보너스가 다음과 같이 설정되었습니다 "
 
-#: levelup.py:2373
+#: levelup.py:2397
 #, docstring
 msgid "\n"
 "        Ignore muted voice users\n"
@@ -946,15 +970,15 @@ msgstr "\n"
 "음소거된 음성 사용자를 무시합니다.\n"
 "음성 채널에서 스스로 음소거한 사용자가 음성 경험치를 획득할 수 있는지 여부를 전환합니다        "
 
-#: levelup.py:2380
+#: levelup.py:2404
 msgid "Self-Muted users can now gain XP while in a voice channel"
 msgstr "이제 음소거된 사용자는 음성 채널에 있을 때 경험치를 얻을 수 있습니다"
 
-#: levelup.py:2383
+#: levelup.py:2407
 msgid "Self-Muted users can no longer gain XP while in a voice channel"
 msgstr "음소거된 사용자는 음성 채널에서는 더 이상 경험치를 획득할 수 없습니다"
 
-#: levelup.py:2388
+#: levelup.py:2412
 #, docstring
 msgid "\n"
 "        Ignore solo voice users\n"
@@ -964,15 +988,15 @@ msgstr "\n"
 "솔로 음성 사용자를 무시합니다.\n"
 "음성 채널의 솔로 사용자가 음성 경험치를 얻을 수 있는지 여부를 전환합니다        "
 
-#: levelup.py:2395
+#: levelup.py:2419
 msgid "Solo users can now gain XP while in a voice channel"
 msgstr "이제 솔로 사용자도 음성 채널에 있을 때 경험치를 획득할 수 있습니다"
 
-#: levelup.py:2398
+#: levelup.py:2422
 msgid "Solo users can no longer gain XP while in a voice channel"
 msgstr "솔로 사용자는 음성 채널에서 더 이상 경험치를 획득할 수 없습니다"
 
-#: levelup.py:2403
+#: levelup.py:2427
 #, docstring
 msgid "\n"
 "        Ignore deafened voice users\n"
@@ -981,15 +1005,15 @@ msgid "\n"
 msgstr "청각 장애가 있는 음성 사용자를 무시합니다.\n"
 "음성 채널에서 청각 장애가 있는 사용자가 음성 경험치를 획득할 수 있는지 여부를 전환합니다               "
 
-#: levelup.py:2410
+#: levelup.py:2434
 msgid "Deafened users can now gain XP while in a voice channel"
 msgstr "청각 장애가 있는 사용자는 이제 음성 채널에서 경험치를 얻을 수 있습니다"
 
-#: levelup.py:2413
+#: levelup.py:2437
 msgid "Deafened users can no longer gain XP while in a voice channel"
 msgstr "청각 장애가 있는 사용자는 음성 채널에서 귀가 막힌 상태로 있을 때 경험치를 획득할 수 없습니다"
 
-#: levelup.py:2418
+#: levelup.py:2442
 #, docstring
 msgid "\n"
 "        Ignore invisible voice users\n"
@@ -998,61 +1022,61 @@ msgid "\n"
 msgstr "보이지 않는 음성 사용자를 무시합니다.\n"
 "음성 채널에서 보이지 않는 사용자가 음성 경험치를 획득할 수 있는지 여부를 전환합니다               "
 
-#: levelup.py:2425
+#: levelup.py:2449
 msgid "Invisible users can now gain XP while in a voice channel"
 msgstr "보이지 않는 사용자들은 이제 음성 채널에서 경험치를 획득할 수 있습니다"
 
-#: levelup.py:2428
+#: levelup.py:2452
 msgid "Invisible users can no longer gain XP while in a voice channel"
 msgstr "보이지 않는 사용자는 음성 채널에 있을 때 더 이상 경험치를 얻을 수 없습니다"
 
-#: levelup.py:2438
+#: levelup.py:2462
 #, docstring
 msgid "Add XP to a user or role"
 msgstr "사용자 또는 역할에 XP를 추가하세요"
 
-#: levelup.py:2441
+#: levelup.py:2465
 msgid "I cannot find that user or role"
 msgstr "해당 사용자 또는 역할을 찾을 수 없습니다"
 
-#: levelup.py:2447
+#: levelup.py:2471
 msgid "xp has been added to "
 msgstr "xP에 추가되었습니다 "
 
-#: levelup.py:2460
+#: levelup.py:2484
 msgid "Added "
 msgstr "추가됨 "
 
-#: levelup.py:2460
+#: levelup.py:2484
 msgid " xp to "
 msgstr " xp에서 "
 
-#: levelup.py:2460
+#: levelup.py:2484
 msgid " users that had the "
 msgstr " 사용자 중 "
 
-#: levelup.py:2461
+#: levelup.py:2485
 msgid "role"
 msgstr "역할"
 
-#: levelup.py:2467
+#: levelup.py:2491
 #, docstring
 msgid "Set a user to a specific level"
 msgstr "사용자를 특정 레벨로 설정하세요"
 
-#: levelup.py:2471 levelup.py:2491
+#: levelup.py:2495 levelup.py:2515
 msgid "There is no data for that user!"
 msgstr "해당 사용자에 대한 데이터가 없습니다!"
 
-#: levelup.py:2478
+#: levelup.py:2502
 msgid "User "
 msgstr "사용자 "
 
-#: levelup.py:2478
+#: levelup.py:2502
 msgid " is now level "
 msgstr " 이제 레벨이 되었습니다 "
 
-#: levelup.py:2483
+#: levelup.py:2507
 #, docstring
 msgid "\n"
 "        Set a user to a specific prestige level\n\n"
@@ -1061,15 +1085,15 @@ msgid "\n"
 msgstr "사용자를 특정 명성 레벨로 설정합니다.        \n\n"
 "이 명령을 사용할 때는 프레스티지 역할을 수동으로 추가/제거해야 합니다.        "
 
-#: levelup.py:2494
+#: levelup.py:2518
 msgid "Prestige levels have not been set yet!"
 msgstr "명성 레벨은 아직 설정되지 않았습니다!"
 
-#: levelup.py:2497
+#: levelup.py:2521
 msgid "That prestige level isn't set!"
 msgstr "명성 레벨이 설정되지 않았습니다!"
 
-#: levelup.py:2506
+#: levelup.py:2530
 #, docstring
 msgid "Customize the leveling algorithm for your guild\n\n"
 "        - Default base is 100\n"
@@ -1077,7 +1101,7 @@ msgid "Customize the leveling algorithm for your guild\n\n"
 "        "
 msgstr ""
 
-#: levelup.py:2515
+#: levelup.py:2539
 #, docstring
 msgid "\n"
 "        Base multiplier for the leveling algorithm\n\n"
@@ -1086,7 +1110,7 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: levelup.py:2528
+#: levelup.py:2552
 #, docstring
 msgid "\n"
 "        Exponent multiplier for the leveling algorithm\n\n"
@@ -1095,45 +1119,45 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: levelup.py:2536
+#: levelup.py:2560
 msgid "Your exponent needs to be higher than 0"
 msgstr "지수는 0보다 커야 합니다"
 
-#: levelup.py:2538
+#: levelup.py:2562
 msgid "Your exponent needs to be 10 or lower"
 msgstr "지수는 10 이하여야 합니다"
 
-#: levelup.py:2545
+#: levelup.py:2569
 #, docstring
 msgid "Toggle using embeds or generated pics"
 msgstr "임베드 또는 생성된 사진을 사용하여 토글하기"
 
-#: levelup.py:2549
+#: levelup.py:2573
 msgid "LevelUp will now use **embeds** instead of generated images"
 msgstr "레벨업은 이제 생성된 이미지 대신 **임베드**를 사용합니다"
 
-#: levelup.py:2552
+#: levelup.py:2576
 msgid "LevelUp will now use **generated images** instead of embeds"
 msgstr "레벨업은 이제 **생성된 이미지**를 사용하여 임베드 대신 표시됩니다"
 
-#: levelup.py:2557
+#: levelup.py:2581
 #, docstring
 msgid "Set the progress bar length for embed profiles"
 msgstr "임베드 프로필의 진행률 표시줄 길이를 설정하세요"
 
-#: levelup.py:2560
+#: levelup.py:2584
 msgid "Embed profiles are disabled. Enable them to set the progress bar length with "
 msgstr "임베드 프로필이 비활성화되었습니다. 진행률 표시줄 길이를 설정하려면 이를 활성화하세요 "
 
-#: levelup.py:2564
+#: levelup.py:2588
 msgid "Progress bar length must be a minimum of 15 and maximum of 40"
 msgstr "진행률 표시줄의 길이는 최소 15에서 최대 40이어야 합니다"
 
-#: levelup.py:2566
+#: levelup.py:2590
 msgid "Progress bar length has been set to "
 msgstr "진행률 표시줄 길이가 다음과 같이 설정되었습니다 "
 
-#: levelup.py:2572
+#: levelup.py:2596
 #, docstring
 msgid "\n"
 "        Test the level algorithm\n"
@@ -1143,62 +1167,62 @@ msgstr "\n"
 "테스트를 위한 레벨 알고리즘\n"
 "현재 알고리즘을 사용하여 첫 20개의 레벨을 확인하여 경험 곡선을 테스트하세요        "
 
-#: levelup.py:2588
+#: levelup.py:2612
 msgid "XP required for a level = Base * Level^ᵉˣᵖ\n\n"
 "Approx time is the time it would take for a user to reach a level with randomized breaks"
 msgstr "레벨에 필요한 경험치 = 기본 * 레벨^ᵉˣᵖ\n\n"
 "대략적인 시간은 사용자가 무작위 휴식 시간이 있는 레벨에 도달하는 데 걸리는 시간입니다"
 
-#: levelup.py:2592
+#: levelup.py:2616
 msgid "`Base Multiplier:  `"
 msgstr "`기본 승수: `"
 
-#: levelup.py:2593
+#: levelup.py:2617
 msgid "`Exp Multiplier:   `"
 msgstr "`경험 곱하기: `"
 
-#: levelup.py:2594
+#: levelup.py:2618
 msgid "`Experience Range: `"
 msgstr "`경험치 범위: `"
 
-#: levelup.py:2595
+#: levelup.py:2619
 msgid "`Message Cooldown: `"
 msgstr "`메시지 쿨다운: `"
 
-#: levelup.py:2597
+#: levelup.py:2621
 msgid "Level Example"
 msgstr "레벨 예제"
 
-#: levelup.py:2616
+#: levelup.py:2640
 msgid "- lvl {}, {} xp, {}\n"
 msgstr ""
 
-#: levelup.py:2626
+#: levelup.py:2650
 msgid "XP Curve"
 msgstr "경험치 곡선"
 
-#: levelup.py:2627
+#: levelup.py:2651
 msgid "Level"
 msgstr "레벨"
 
-#: levelup.py:2628
+#: levelup.py:2652
 msgid "Experience Required"
 msgstr "필요한 경험"
 
-#: levelup.py:2644
+#: levelup.py:2668
 #, docstring
 msgid "Toggle XP gain from commands"
 msgstr ""
 
-#: levelup.py:2648
+#: levelup.py:2672
 msgid "XP from commands has been **Disabled**"
 msgstr ""
 
-#: levelup.py:2651
+#: levelup.py:2675
 msgid "XP from commands has been **Enabled**"
 msgstr ""
 
-#: levelup.py:2656
+#: levelup.py:2680
 #, docstring
 msgid "\n"
 "        Toggle DM notifications\n"
@@ -1208,15 +1232,15 @@ msgstr "\n"
 "DM 알림 토글\n"
 "레벨업 메시지를 사용자에게 DM으로 전송할지 여부를 전환합니다        "
 
-#: levelup.py:2663
+#: levelup.py:2687
 msgid "Users will no longer be DM'd when they level up"
 msgstr "사용자가 레벨을 올리면 더 이상 DM을 받지 않습니다"
 
-#: levelup.py:2666
+#: levelup.py:2690
 msgid "Users will now be DM'd when they level up"
 msgstr "사용자가 레벨 업을 할 때 이제 DM을 받게 됩니다"
 
-#: levelup.py:2671
+#: levelup.py:2695
 #, docstring
 msgid "\n"
 "        Toggle levelup mentions\n"
@@ -1225,15 +1249,15 @@ msgid "\n"
 msgstr "레벨업 멘션 토글\n"
 "레벨업 메시지에서 사용자를 언급할지 여부를 토글합니다        "
 
-#: levelup.py:2678
+#: levelup.py:2702
 msgid "Mentions **Disabled**"
 msgstr "멘션 **사용 안 함**"
 
-#: levelup.py:2681
+#: levelup.py:2705
 msgid "Mentions **Enabled**"
 msgstr "멘션 **사용**"
 
-#: levelup.py:2686
+#: levelup.py:2710
 #, docstring
 msgid "\n"
 "        Toggle star reaction mentions\n"
@@ -1242,15 +1266,15 @@ msgid "\n"
 msgstr "별표 반응 멘션 토글\n"
 "봇이 사용자가 메시지에 별표로 반응한 것을 언급할지 여부를 전환합니다        "
 
-#: levelup.py:2693
+#: levelup.py:2717
 msgid "Star reaction mentions **Disabled**"
 msgstr "별 반응에 **장애**가 언급됨"
 
-#: levelup.py:2696
+#: levelup.py:2720
 msgid "Star reaction mention **Enabled**"
 msgstr "스타 반응 멘션 **활성화됨**"
 
-#: levelup.py:2701
+#: levelup.py:2725
 #, docstring
 msgid "\n"
 "        Toggle whether the bot auto-deletes the star mentions\n"
@@ -1259,19 +1283,19 @@ msgid "\n"
 msgstr "봇이 별 멘션을 자동으로 삭제할지 여부를 토글합니다.\n"
 "자동 삭제를 비활성화하려면 0으로 설정하세요        "
 
-#: levelup.py:2707
+#: levelup.py:2731
 msgid "Star reaction mentions will auto-delete after "
 msgstr "별 반응 멘션은 일정 시간이 지나면 자동으로 삭제됩니다 "
 
-#: levelup.py:2707
+#: levelup.py:2731
 msgid " seconds"
 msgstr " 초"
 
-#: levelup.py:2709
+#: levelup.py:2733
 msgid "Star reaction mentions will not be deleted"
 msgstr "별 반응 멘션은 삭제되지 않습니다"
 
-#: levelup.py:2718
+#: levelup.py:2742
 #, docstring
 msgid "\n"
 "        Set LevelUP message channel\n"
@@ -1280,39 +1304,39 @@ msgid "\n"
 msgstr "레벨업 메시지 채널 설정\n"
 "모든 레벨 업 메시지를 전송할 채널을 설정하세요        "
 
-#: levelup.py:2725
+#: levelup.py:2749
 msgid "LevelUp channel has been **Disabled**\n"
 "level up messages will now happen in the channel the user is in"
 msgstr "레벨업 채널이 **비활성화되었습니다**.\n"
 "레벨업 메시지는 이제 사용자가 있는 채널에서 발생합니다"
 
-#: levelup.py:2733
+#: levelup.py:2757
 msgid "I do not have permission to send messages to that channel."
 msgstr "해당 채널에 메시지를 보낼 수 있는 권한이 없습니다."
 
-#: levelup.py:2735
+#: levelup.py:2759
 msgid "LevelUp channel has been set to "
 msgstr "레벨업 채널이 설정되었습니다 "
 
-#: levelup.py:2740
+#: levelup.py:2764
 #, docstring
 msgid "Toggle whether to show user's economy credit balance in their profile"
 msgstr "프로필에 사용자의 이코노미 크레딧 잔액을 표시할지 여부를 전환합니다"
 
-#: levelup.py:2744
+#: levelup.py:2768
 msgid "I will no longer include economy balance in user profiles"
 msgstr "더 이상 사용자 프로필에 경제 잔액을 포함하지 않을 것입니다"
 
-#: levelup.py:2747
+#: levelup.py:2771
 msgid "I will now include economy balance in user profiles"
 msgstr "이제 사용자 프로필에 경제 밸런스를 포함하겠습니다"
 
-#: levelup.py:2752
+#: levelup.py:2776
 #, docstring
 msgid "Toggle the level up message when a user levels up"
 msgstr "사용자가 레벨 업을 할 때 레벨 업 메시지를 토글하세요"
 
-#: levelup.py:2764
+#: levelup.py:2788
 #, docstring
 msgid "\n"
 "        Set the star cooldown\n\n"
@@ -1322,7 +1346,7 @@ msgstr "\n"
 "별 재사용 대기시간 설정\n\n"
 "사용자는 X초마다 다른 사용자에게 별을 줄 수 있습니다        "
 
-#: levelup.py:2775
+#: levelup.py:2799
 #, docstring
 msgid "Level up alert messages\n\n"
 "        **Arguments**\n"
@@ -1335,7 +1359,7 @@ msgid "Level up alert messages\n\n"
 "        "
 msgstr ""
 
-#: levelup.py:2788
+#: levelup.py:2812
 #, docstring
 msgid "\n"
 "        Set the DM a user gets when they level up (Without recieving a role).\n\n"
@@ -1351,23 +1375,23 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: levelup.py:2806
+#: levelup.py:2830
 msgid "Level up DM message has been removed"
 msgstr ""
 
-#: levelup.py:2807 levelup.py:2844 levelup.py:2881 levelup.py:2918
+#: levelup.py:2831 levelup.py:2868 levelup.py:2905 levelup.py:2942
 msgid "You need to provide a message"
 msgstr ""
 
-#: levelup.py:2819 levelup.py:2857 levelup.py:2893 levelup.py:2931
+#: levelup.py:2843 levelup.py:2881 levelup.py:2917 levelup.py:2955
 msgid "Invalid placeholder: "
 msgstr ""
 
-#: levelup.py:2821
+#: levelup.py:2845
 msgid "Level up DM message has been set"
 msgstr ""
 
-#: levelup.py:2827
+#: levelup.py:2851
 #, docstring
 msgid "\n"
 "        Set the DM a user gets when they level up and recieve a role.\n\n"
@@ -1382,15 +1406,15 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: levelup.py:2843
+#: levelup.py:2867
 msgid "Level up DM role message has been removed"
 msgstr ""
 
-#: levelup.py:2859
+#: levelup.py:2883
 msgid "Level up DM role message has been set"
 msgstr ""
 
-#: levelup.py:2865
+#: levelup.py:2889
 #, docstring
 msgid "\n"
 "        Set the message sent when a user levels up.\n\n"
@@ -1404,15 +1428,15 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: levelup.py:2880
+#: levelup.py:2904
 msgid "Level up message has been removed"
 msgstr ""
 
-#: levelup.py:2895
+#: levelup.py:2919
 msgid "Level up message has been set"
 msgstr ""
 
-#: levelup.py:2901
+#: levelup.py:2925
 #, docstring
 msgid "\n"
 "        Set the message sent when a user levels up and recieves a role.\n\n"
@@ -1427,20 +1451,20 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: levelup.py:2917
+#: levelup.py:2941
 msgid "Level up role message has been removed"
 msgstr ""
 
-#: levelup.py:2933
+#: levelup.py:2957
 msgid "Level up role message has been set"
 msgstr ""
 
-#: levelup.py:2940
+#: levelup.py:2964
 #, docstring
 msgid "Level role assignment"
 msgstr "레벨 역할 할당"
 
-#: levelup.py:2945
+#: levelup.py:2969
 #, docstring
 msgid "\n"
 "        Initialize level roles\n\n"
@@ -1451,116 +1475,116 @@ msgstr "레벨 역할 초기화\n\n"
 "이 명령은 사용자가 해당 레벨을 달성한 후 레벨 역할을 추가한 경우에 사용됩니다.\n"
 "사용자의 레벨과 명성에 따라 필요한 모든 역할이 적용됩니다        "
 
-#: levelup.py:2955
+#: levelup.py:2979
 msgid "I dont have the proper permissions to manage roles!"
 msgstr "역할을 관리할 수 있는 적절한 권한이 없습니다!"
 
-#: levelup.py:2959
+#: levelup.py:2983
 msgid "Calculating roles, this may take a while..."
 msgstr "역할을 계산하는 데 시간이 걸릴 수 있습니다..."
 
-#: levelup.py:3023
+#: levelup.py:3047
 msgid "Assigning roles, this may take a while..."
 msgstr "역할을 할당하는 데 시간이 걸릴 수 있습니다..."
 
-#: levelup.py:3063
+#: levelup.py:3087
 msgid "Role initialization completed!"
 msgstr "역할 초기화가 완료되었습니다!"
 
-#: levelup.py:3065
+#: levelup.py:3089
 msgid "\n"
 "Added `{}`"
 msgstr ""
 
-#: levelup.py:3067 levelup.py:3072
+#: levelup.py:3091 levelup.py:3096
 msgid " (`{}` failed)"
 msgstr ""
 
-#: levelup.py:3070
+#: levelup.py:3094
 msgid "\n"
 "Removed `{}`"
 msgstr ""
 
-#: levelup.py:3075
+#: levelup.py:3099
 msgid "\n"
 "No roles needed to be added or removed!"
 msgstr "\n"
 "역할을 추가하거나 제거할 필요가 없습니다!"
 
-#: levelup.py:3080
+#: levelup.py:3104
 msgid "Initialization took {} to complete."
 msgstr ""
 
-#: levelup.py:3086
+#: levelup.py:3110
 #, docstring
 msgid "Automatic removal of previous level roles"
 msgstr "이전 레벨 역할의 자동 제거를 최종 검토하고 필요한 수정을 하여, 번역된 소스 텍스트의 수정된 번역만 출력해주세요"
 
-#: levelup.py:3090
+#: levelup.py:3114
 msgid "Automatic role removal **Disabled**"
 msgstr "자동 역할 제거 **사용 안 함**"
 
-#: levelup.py:3093
+#: levelup.py:3117
 msgid "Automatic role removal **Enabled**"
 msgstr "자동 역할 제거 **사용됨**"
 
-#: levelup.py:3098
+#: levelup.py:3122
 #, docstring
 msgid "Assign a role to a level"
 msgstr "레벨에 역할을 할당하세요"
 
-#: levelup.py:3100
+#: levelup.py:3124
 msgid "The role you are trying to set is higher than the one you currently have!"
 msgstr "설정하려는 역할이 현재 가지고 있는 역할보다 높습니다!"
 
-#: levelup.py:3102
+#: levelup.py:3126
 msgid "I cannot assign roles higher than my own!"
 msgstr "내 역할보다 높은 역할을 할당할 수 없습니다!"
 
-#: levelup.py:3105
+#: levelup.py:3129
 msgid "I do not have permission to manage roles"
 msgstr "역할을 관리할 수 있는 권한이 없습니다"
 
-#: levelup.py:3107
+#: levelup.py:3131
 msgid "Overwritten"
 msgstr "덮어쓰기"
 
-#: levelup.py:3109
+#: levelup.py:3133
 msgid "Set"
 msgstr "설정"
 
-#: levelup.py:3111
+#: levelup.py:3135
 msgid "Level "
 msgstr "레벨\n"
 "레벨 "
 
-#: levelup.py:3111
+#: levelup.py:3135
 msgid " has been "
 msgstr " 된 것입니다 "
 
-#: levelup.py:3111
+#: levelup.py:3135
 msgid " as "
 msgstr " 제공한 번역 텍스트가 원본보다 현저히 긴 경우. 번역이 원본 텍스트의 핵심 의미를 유지하면서 불필요한 추가 내용을 포함하지 않도록 하세요. 업데이트된 번역만 수정하여 반환합니다 "
 
-#: levelup.py:3117
+#: levelup.py:3141
 #, docstring
 msgid "Unassign a role from a level"
 msgstr "레벨에서 역할 할당 취소"
 
-#: levelup.py:3120
+#: levelup.py:3144
 msgid "Level role has been deleted!"
 msgstr "레벨 역할이 삭제되었습니다!"
 
-#: levelup.py:3123
+#: levelup.py:3147
 msgid "Level doesnt exist!"
 msgstr "레벨이 존재하지 않습니다!"
 
-#: levelup.py:3127
+#: levelup.py:3151
 #, docstring
 msgid "Level Prestige Settings"
 msgstr "레벨 명성 설정"
 
-#: levelup.py:3132
+#: levelup.py:3156
 #, docstring
 msgid "\n"
 "        Set the level required to prestige\n"
@@ -1569,20 +1593,20 @@ msgid "\n"
 msgstr "설정하려는 명성 부여에 필요한 레벨을 입력하세요.\n"
 "명성을 비활성화하려면 0으로 설정하세요               "
 
-#: levelup.py:3142
+#: levelup.py:3166
 #, docstring
 msgid "Automatic removal of previous prestige level roles"
 msgstr "이전 명성 레벨 역할의 자동 제거를 최종 검토하고 필요한 수정을 하여, 번역된 소스 텍스트의 수정된 번역만 출력해주세요"
 
-#: levelup.py:3146
+#: levelup.py:3170
 msgid "Automatic prestige role removal **Disabled**"
 msgstr "명성 역할 자동 제거 **사용 안 함**"
 
-#: levelup.py:3149
+#: levelup.py:3173
 msgid "Automatic prestige role removal **Enabled**"
 msgstr "명성 역할 자동 제거 **활성화됨**"
 
-#: levelup.py:3160
+#: levelup.py:3184
 #, docstring
 msgid "\n"
 "        Add a prestige level role\n"
@@ -1593,30 +1617,30 @@ msgstr "추가적으로, 명성 레벨 역할을 추가하세요.\n"
 "특정 명성 레벨과 연관된 역할과 이모티콘을 추가하세요.\n\n"
 "사용자가 명성을 올리면 해당 역할을 받고 이모티콘이 프로필에 표시됩니다.               "
 
-#: levelup.py:3167 levelup.py:3189
+#: levelup.py:3191 levelup.py:3213
 msgid "prestige_level must be a number!"
 msgstr "프레스티지 레벨은 숫자여야 합니다!"
 
-#: levelup.py:3178
+#: levelup.py:3202
 #, docstring
 msgid "Test emojis to see if the bot is able to get a valid url for them"
 msgstr "이모티콘을 테스트하여 봇이 유효한 URL을 가져올 수 있는지 확인합니다"
 
-#: levelup.py:3187
+#: levelup.py:3211
 #, docstring
 msgid "Delete a prestige level role"
 msgstr "명성 레벨 역할을 삭제하세요"
 
-#: levelup.py:3194
+#: levelup.py:3218
 msgid "That prestige level doesnt exist!"
 msgstr "명성 레벨이 존재하지 않습니다!"
 
-#: levelup.py:3200
+#: levelup.py:3224
 #, docstring
 msgid "Base command for all ignore lists"
 msgstr "모든 무시 목록에 대한 기본 명령어를 최종 검토하고 필요한 수정을 하여, 번역된 원본 텍스트의 수정된 번역만 출력해주세요"
 
-#: levelup.py:3206
+#: levelup.py:3230
 #, docstring
 msgid "\n"
 "        Add/Remove a guild in the ignore list\n\n"
@@ -1628,15 +1652,15 @@ msgstr "\n"
 "**이것은 전역 설정으로, 봇 소유자만 사용할 수 있습니다**\n\n"
 "무시 목록에 이미 있는 길드를 제거하려면 해당 명령을 사용하세요        "
 
-#: levelup.py:3215
+#: levelup.py:3239
 msgid "Guild removed from ignore list"
 msgstr "길드가 무시 목록에서 제거되었습니다"
 
-#: levelup.py:3218
+#: levelup.py:3242
 msgid "Guild added to ignore list"
 msgstr "무시 목록에 길드가 추가되었습니다"
 
-#: levelup.py:3227
+#: levelup.py:3251
 #, docstring
 msgid "\n"
 "        Add/Remove a channel in the ignore list\n"
@@ -1648,15 +1672,15 @@ msgstr "\n"
 "무시 목록에 있는 채널은 경험치를 획득하지 않습니다\n\n"
 "이미 무시 목록에 있는 채널을 제거하려면 해당 명령을 사용하세요        "
 
-#: levelup.py:3236
+#: levelup.py:3260
 msgid "Channel removed from ignore list"
 msgstr "채널이 무시 목록에서 제거되었습니다"
 
-#: levelup.py:3239
+#: levelup.py:3263
 msgid "Channel added to ignore list"
 msgstr "무시 목록에 채널이 추가되었습니다"
 
-#: levelup.py:3244
+#: levelup.py:3268
 #, docstring
 msgid "\n"
 "        Add/Remove a role from the ignore list\n"
@@ -1668,15 +1692,15 @@ msgstr "\n"
 "무시 목록에 있는 역할은 경험치를 얻지 못합니다.\n\n"
 "이미 무시 목록에 있는 역할을 제거하려면 다음 명령을 사용하세요        "
 
-#: levelup.py:3253
+#: levelup.py:3277
 msgid "Role removed from ignore list"
 msgstr "무시 목록에서 역할이 제거되었습니다"
 
-#: levelup.py:3256
+#: levelup.py:3280
 msgid "Role added to ignore list"
 msgstr "무시 목록에 역할이 추가되었습니다"
 
-#: levelup.py:3261
+#: levelup.py:3285
 #, docstring
 msgid "\n"
 "        Add/Remove a member from the ignore list\n"
@@ -1688,132 +1712,132 @@ msgstr "\n"
 "무시 목록에 있는 멤버는 경험치를 얻지 못합니다.\n\n"
 "이미 무시 목록에 있는 멤버를 제거하려면 다음 명령을 사용합니다        "
 
-#: levelup.py:3270
+#: levelup.py:3294
 msgid "Member removed from ignore list"
 msgstr "회원이 무시 목록에서 제거되었습니다"
 
-#: levelup.py:3273
+#: levelup.py:3297
 msgid "Member added to ignore list"
 msgstr "무시 목록에 멤버가 추가되었습니다"
 
-#: levelup.py:3280
+#: levelup.py:3304
 #, docstring
 msgid "Access the weekly settings for levelUp"
 msgstr "레벨업의 주간 설정에 액세스하세요"
 
-#: levelup.py:3286
+#: levelup.py:3310
 #, docstring
 msgid "View the current weekly settings"
 msgstr "현재 주간 설정 보기"
 
-#: levelup.py:3288
+#: levelup.py:3312
 msgid "**Enabled**"
 msgstr "**활성화됨**"
 
-#: levelup.py:3288
+#: levelup.py:3312
 msgid "**Disabled**"
 msgstr "**비활성화**"
 
-#: levelup.py:3289
+#: levelup.py:3313
 msgid "Weekly stat tracking is currently "
 msgstr "주간 통계 추적은 현재입니다 "
 
-#: levelup.py:3291
+#: levelup.py:3315
 msgid "Weekly LevelUp settings"
 msgstr "주간 레벨업 설정"
 
-#: levelup.py:3300
+#: levelup.py:3324
 msgid "`Winner Count:   `"
 msgstr "`승자 수:   `"
 
-#: levelup.py:3301
+#: levelup.py:3325
 msgid "`Last Winner(s): `"
 msgstr "`최종 우승자<b>(</b>): `"
 
-#: levelup.py:3301 levelup.py:3302 levelup.py:3303
+#: levelup.py:3325 levelup.py:3326 levelup.py:3327
 msgid "None"
 msgstr "없음"
 
-#: levelup.py:3302
+#: levelup.py:3326
 msgid "`Channel:        `"
 msgstr "`채널: `"
 
-#: levelup.py:3303
+#: levelup.py:3327
 msgid "`Role:           `"
 msgstr "`역할:           `"
 
-#: levelup.py:3304
+#: levelup.py:3328
 msgid "`RoleAllWinners: `"
 msgstr "`RoleAllWinners: `"
 
-#: levelup.py:3305
+#: levelup.py:3329
 msgid "`Auto Remove:    `"
 msgstr "`자동 제거:    `"
 
-#: levelup.py:3306
+#: levelup.py:3330
 msgid "`Bonus Exp:      `"
 msgstr "`보너스 경험치: `"
 
-#: levelup.py:3307
+#: levelup.py:3331
 msgid "Settings"
 msgstr "설정"
 
-#: levelup.py:3310
+#: levelup.py:3334
 msgid "`Reset Day:  `"
 msgstr "`리셋 데이:  `"
 
-#: levelup.py:3311
+#: levelup.py:3335
 msgid "`Reset Hour: `"
 msgstr "`리셋 시간: `"
 
-#: levelup.py:3312
+#: levelup.py:3336
 msgid "`Last Reset: `"
 msgstr "`마지막 재설정: `"
 
-#: levelup.py:3314
+#: levelup.py:3338
 msgid "`Next Reset: `"
 msgstr "`다음 재설정: `"
 
-#: levelup.py:3316
+#: levelup.py:3340
 msgid "Auto Reset "
 msgstr "자동 재설정 "
 
-#: levelup.py:3322
+#: levelup.py:3346
 #, docstring
 msgid "Reset the weekly leaderboard manually and announce winners"
 msgstr "주간 순위표를 수동으로 재설정하고 우승자를 발표하세요"
 
-#: levelup.py:3324
+#: levelup.py:3348
 msgid "Not resetting weekly leaderboard"
 msgstr "주간 순위표를 초기화하지 않음"
 
-#: levelup.py:3330
+#: levelup.py:3354
 #, docstring
 msgid "Toggle weekly stat tracking"
 msgstr "주간 통계 추적 토글"
 
-#: levelup.py:3334
+#: levelup.py:3358
 msgid "Weekly stat tracking has been **Disabled**"
 msgstr "주간 통계 추적이 **비활성화**되었습니다"
 
-#: levelup.py:3337
+#: levelup.py:3361
 msgid "Weekly stat tracking has been **Enabled**"
 msgstr "주간 통계 추적이 **활성화**되었습니다"
 
-#: levelup.py:3342
+#: levelup.py:3366
 #, docstring
 msgid "Toggle weekly auto-reset"
 msgstr "주간 자동 재설정 토글"
 
-#: levelup.py:3346
+#: levelup.py:3370
 msgid "Weekly auto-reset has been **Disabled**"
 msgstr "주간 자동 재설정이 **비활성화되었습니다**"
 
-#: levelup.py:3349
+#: levelup.py:3373
 msgid "Weekly auto-reset has been **Enabled**"
 msgstr "주간 자동 재설정이 **활성화**되었습니다"
 
-#: levelup.py:3354
+#: levelup.py:3378
 #, docstring
 msgid "\n"
 "        What hour the weekly stats reset\n"
@@ -1822,15 +1846,15 @@ msgid "\n"
 msgstr "주간 통계가 초기화되는 시간은 몇 시인가요?\n\n"
 "주간 재설정이 이루어지는 시간을 설정하세요 (UTC 기준 0 - 23시)        "
 
-#: levelup.py:3359
+#: levelup.py:3383
 msgid "Hour must be 0 to 23"
 msgstr "시간은 0부터 23까지여야 합니다"
 
-#: levelup.py:3361
+#: levelup.py:3385
 msgid "Weekly stats auto reset hour is now "
 msgstr "주간 통계 자동 초기화 시간이 변경되었습니다 "
 
-#: levelup.py:3368
+#: levelup.py:3392
 #, docstring
 msgid "\n"
 "        What day of the week the weekly stats reset\n"
@@ -1840,15 +1864,15 @@ msgstr "\n"
 "주간 통계가 초기화되는 요일은 무슨 요일인가요?\n"
 "주간 초기화를 진행할 요일을 설정해주세요 (0 - 6 = 월요일 - 일요일)        "
 
-#: levelup.py:3373
+#: levelup.py:3397
 msgid "Day must be 0 to 6 (Monday to Sunday)"
 msgstr "요일은 0부터 6까지여야 합니다 (월요일부터 일요일까지)"
 
-#: levelup.py:3375
+#: levelup.py:3399
 msgid "Weekly stats auto reset day is now "
 msgstr "주간 통계 자동 초기화 요일이 변경되었습니다 "
 
-#: levelup.py:3382
+#: levelup.py:3406
 #, docstring
 msgid "\n"
 "        Top weekly member count\n"
@@ -1857,15 +1881,15 @@ msgid "\n"
 msgstr "주간 상위 회원 수\n"
 "주간 상위 순위표에 포함할 회원 수를 설정합니다        "
 
-#: levelup.py:3387
+#: levelup.py:3411
 msgid "There must be at least one winner!"
 msgstr "적어도 한 명의 우승자가 있어야 합니다!"
 
-#: levelup.py:3389
+#: levelup.py:3413
 msgid "There can only be up to 25 winners!"
 msgstr "당첨자는 최대 25명까지만 가능합니다!"
 
-#: levelup.py:3396
+#: levelup.py:3420
 #, docstring
 msgid "Weekly winner announcement channel\n"
 "        set the channel for weekly winners to be announced in when auto-reset is enabled\n"
@@ -1873,39 +1897,39 @@ msgid "Weekly winner announcement channel\n"
 msgstr "주간 당첨자 발표 채널\n"
 "자동 재설정이 활성화된 경우 주간 당첨자 발표를 위한 채널을 설정하세요        "
 
-#: levelup.py:3400
+#: levelup.py:3424
 msgid "I do not have permission to send messages to that channel!"
 msgstr "해당 채널에 메시지를 보낼 수 있는 권한이 없습니다!"
 
-#: levelup.py:3402
+#: levelup.py:3426
 msgid "I do not have permission to send embeds to that channel!"
 msgstr "해당 채널에 임베드를 보낼 수 있는 권한이 없습니다!"
 
-#: levelup.py:3409
+#: levelup.py:3433
 #, docstring
 msgid "Weekly winner role reward\n"
 "        Set the role awarded to the top member of the weekly leaderboard"
 msgstr "주간 우승자 역할 보상\n"
 "주간 리더보드의 최상위 회원에게 수여되는 역할을 설정하세요"
 
-#: levelup.py:3412
+#: levelup.py:3436
 msgid "I do not have permission to manage roles!"
 msgstr "역할 관리 권한이 없습니다!"
 
-#: levelup.py:3419
+#: levelup.py:3443
 #, docstring
 msgid "Toggle whether to give the weekly winner role to all winners or only 1st place"
 msgstr "주간 우승자 역할을 모든 우승자에게 부여할지, 아니면 1위에게만 부여할지 전환하기"
 
-#: levelup.py:3423
+#: levelup.py:3447
 msgid "Only the 1st place winner of the weekly stats reset will receive the weekly role"
 msgstr "주간 통계 초기화에서 1위를 차지한 플레이어만 주간 역할을 받게 됩니다"
 
-#: levelup.py:3426
+#: levelup.py:3450
 msgid "All top members listed in the weekly stat reset will receive the weekly role"
 msgstr "주간 스탯 초기화에 나열된 모든 상위 멤버는 주간 역할을 받게 됩니다"
 
-#: levelup.py:3431
+#: levelup.py:3455
 #, docstring
 msgid "One role holder at a time\n"
 "        Toggle whether the winner role is removed from the previous holder when a new winner is selected\n"
@@ -1913,15 +1937,15 @@ msgid "One role holder at a time\n"
 msgstr "한 번에 한 명의 역할 보유자\n"
 "새로운 우승자가 선택될 때 이전 우승자의 역할이 제거되는지 여부를 토글하세요        "
 
-#: levelup.py:3437
+#: levelup.py:3461
 msgid "Auto role removal from previous winner has been **Disabled**"
 msgstr "이전 우승자의 자동 역할 제거가 **사용 안 함**으로 설정되었습니다"
 
-#: levelup.py:3440
+#: levelup.py:3464
 msgid "Auto role removal from previous winner has been **Enabled**"
 msgstr "이전 우승자의 자동 역할 제거가 **활성화**되었습니다"
 
-#: levelup.py:3445
+#: levelup.py:3469
 #, docstring
 msgid "\n"
 "        Weekly winners bonus experience points\n"
@@ -1930,34 +1954,34 @@ msgid "\n"
 msgstr "주간 우승자 보너스 경험치\n\n"
 "경험치 보너스를 비활성화하려면 0으로 설정합니다               "
 
-#: levelup.py:3457
+#: levelup.py:3481
 #, docstring
 msgid "Force level a user or yourself"
 msgstr "사용자 또는 본인의 레벨을 강제로 지정하세요"
 
-#: levelup.py:3474 levelup.py:3499
+#: levelup.py:3498 levelup.py:3523
 msgid "Forced "
 msgstr "강제 "
 
-#: levelup.py:3474
+#: levelup.py:3498
 msgid " to level up!"
 msgstr " 레벨 업!"
 
-#: levelup.py:3482
+#: levelup.py:3506
 #, docstring
 msgid "Force de-level a user or yourself"
 msgstr "사용자 또는 본인을 강제로 레벨 해제합니다"
 
-#: levelup.py:3499
+#: levelup.py:3523
 msgid " to level down!"
 msgstr " 레벨을 낮추려면!"
 
-#: levelup.py:3507
+#: levelup.py:3531
 #, docstring
 msgid "Force Initialization"
 msgstr "강제 초기화"
 
-#: levelup.py:3514
+#: levelup.py:3538
 #, docstring
 msgid "Force save the cache"
 msgstr "캐시를 강제로 저장하세요"
