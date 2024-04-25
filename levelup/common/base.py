@@ -944,7 +944,20 @@ class UserCommands(MixinMeta, ABC):
         bulb_emoji = get_emoji("bulb")
         money_emoji = get_emoji("money")
 
-        async with channel.typing():
+        # Only async with channel.typing if interaction is None, otherwise use a fake typing
+        class FakeTyping:
+            async def __aenter__(self):
+                pass
+
+            async def __aexit__(self, exc_type, exc, tb):
+                pass
+
+        if interaction:
+            typing = FakeTyping
+        else:
+            typing = channel.typing
+
+        async with typing():
             if not usepics:
                 msg = f"{level_emoji}｜" + _("Level ") + humanize_number(level) + "\n"
                 if prestige:
