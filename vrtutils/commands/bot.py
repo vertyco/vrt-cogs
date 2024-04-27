@@ -284,7 +284,7 @@ class BotInfo(MixinMeta):
 
     # Inspired by kennnyshiwa's imperialtoolkit botstat command
     # https://github.com/kennnyshiwa/kennnyshiwa-cogs
-    @commands.hybrid_command()
+    @commands.command()
     @commands.bot_has_permissions(embed_links=True)
     @commands.cooldown(1, 15, commands.BucketType.user)
     async def botinfo(self, ctx: commands.Context):
