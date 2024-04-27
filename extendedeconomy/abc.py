@@ -19,13 +19,18 @@ class MixinMeta(metaclass=ABCMeta):
     bot: Red
     db: DB
     checks: set
+    charged: t.Dict[str, int]
 
     @abstractmethod
     async def save(self) -> None:
         raise NotImplementedError()
 
     @abstractmethod
-    async def cost_check(self, ctx: t.Union[commands.Context, discord.Interaction]):
+    async def cost_check(self, ctx: commands.Context):
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def slash_cost_check(self, interaction: discord.Interaction):
         raise NotImplementedError()
 
     @abstractmethod
