@@ -1,8 +1,10 @@
 import asyncio
+import json
 import typing as t
 
 import discord
-from redbot.core import commands
+from aiocache import cached
+from redbot.core import bank, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_number, humanize_timedelta
@@ -12,6 +14,66 @@ from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
 from ..common.models import DB, CommandCost, GuildSettings
 
 _ = Translator("ExtendedEconomy", __file__)
+CTYPES = commands.Context | discord.app_commands.ContextMenu | discord.app_commands.Command
+
+
+async def edit_delete_delay(message: discord.Message, new_content: str, delay: int = None):
+    await message.edit(content=new_content, view=None)
+    if delay:
+        await message.delete(delay=delay)
+
+
+def ctx_to_id(ctx: commands.Context):
+    """Generate a unique ID for a context command"""
+    parts = [
+        str(ctx.author.id),
+        str(ctx.guild.id if ctx.guild else 0),
+        str(ctx.channel.id if ctx.guild else 0),
+        str(int(ctx.message.created_at.timestamp())),
+        ctx.command.qualified_name,
+    ]
+    return "-".join(parts)
+
+
+def ctx_to_dict(c: t.Union[commands.Context, discord.Interaction]):
+    if isinstance(c, discord.Interaction):
+        info = {
+            "type": "Interaction",
+            "id": c.id,
+            "user": c.user.id,
+            "guild": c.guild.id if c.guild else None,
+            "channel": c.channel.id,
+        }
+    else:
+        info = {
+            "type": "Context",
+            "id": c.message.id,
+            "user": c.author.id,
+            "guild": c.guild.id if c.guild else None,
+            "channel": c.channel.id,
+        }
+    return json.dumps(info, indent=2)
+
+
+@cached(ttl=600)
+async def get_cached_credits_name(guild: discord.Guild) -> str:
+    return await bank.get_currency_name(guild)
+
+
+def has_is_owner_check(command: t.Union[commands.Command, commands.HybridCommand]) -> bool:
+    """Check if a command already has the is_owner check attached to it"""
+    priv: commands.requires.PrivilegeLevel = command.requires.privilege_level
+    if not priv:
+        return False
+    return priv.value == 5
+
+
+def has_cost_check(command: CTYPES):
+    """Check if a command already has the cost check attached to it"""
+    for check in command.checks:
+        if check.__qualname__ == "Checks.cost_check":
+            return True
+    return False
 
 
 async def confirm_msg(ctx: t.Union[commands.Context, discord.Interaction]):

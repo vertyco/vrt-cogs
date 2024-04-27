@@ -9,6 +9,7 @@ from redbot.core.i18n import Translator, cog_i18n
 
 from ..abc import MixinMeta
 from ..common.models import CommandCost
+from ..common.utils import has_is_owner_check
 from ..views.confirm import ConfirmView
 from ..views.cost_menu import CostMenu
 
@@ -217,6 +218,12 @@ class Admin(MixinMeta):
             if not isinstance(command_obj, app_commands.Command):
                 return await ctx.send(_("That is not a valid app command"))
 
+        if isinstance(command_obj, commands.commands._AlwaysAvailableCommand):
+            return await ctx.send(_("You can't add costs to commands that are always available!"))
+        if isinstance(command_obj, (commands.Command, commands.HybridCommand)):
+            if has_is_owner_check(command_obj) and ctx.author.id not in self.bot.owner_ids:
+                return await ctx.send(_("You can't add costs to commands that are owner only!"))
+
         cost_obj = CommandCost(
             cost=cost,
             duration=duration,
@@ -233,9 +240,9 @@ class Admin(MixinMeta):
             await view.wait()
             if not view.value:
                 return await msg.edit(content=_("Not adding cost."))
-            await msg.edit(content=_("{command} cost updated.").format(command=command))
+            await msg.edit(content=_("{} cost updated.", view=None).format(command))
         else:
-            await ctx.send(_("{command} cost added.").format(command=command))
+            await ctx.send(_("{} cost added.").format(command))
 
         if is_global:
             self.db.command_costs[command] = cost_obj

@@ -5,11 +5,12 @@ from datetime import datetime
 
 import discord
 from discord.ext import tasks
-from redbot.core import bank, commands
+from redbot.core import bank, commands, errors
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_number
 
 from ..abc import MixinMeta
+from ..common.utils import ctx_to_id, has_cost_check
 
 log = logging.getLogger("red.vrt.extendedeconomy.listeners")
 _ = Translator("ExtendedEconomy", __file__)
@@ -20,31 +21,39 @@ class Listeners(MixinMeta):
         super().__init__()
         self.payloads: t.Dict[int, t.List[discord.Embed]] = {}
 
-    @tasks.loop(seconds=4)
-    async def send_payloads(self):
-        """Send embeds in chunks to avoid rate limits"""
-        if not self.payloads:
+    @commands.Cog.listener()
+    async def on_command_error(self, ctx: commands.Context, error: Exception):
+        if not ctx.command:
             return
-        tmp = self.payloads.copy()
-        self.payloads.clear()
-        for channel_id, embeds in tmp.items():
-            channel = self.bot.get_channel(channel_id)
-            if not channel:
-                continue
-            # Group the embeds into 5 per message
-            for i in range(0, len(embeds), 5):
-                chunk = embeds[i : i + 5]
-                with suppress(discord.HTTPException, discord.Forbidden):
-                    await channel.send(embeds=chunk)
+        log.debug(f"Command error in '{ctx.command.qualified_name}' for {ctx.author.name}:({type(error)}) {error}")
+        runtime_id = ctx_to_id(ctx)
+        if runtime_id not in self.charged:
+            # User wasn't charged for this command
+            return
+        # We need to refund the user if the command failed
+        amount = self.charged.pop(runtime_id)
+        try:
+            await bank.deposit_credits(ctx.author, amount)
+        except errors.BalanceTooHigh as e:
+            await bank.set_balance(ctx.author, e.max_balance)
+        log.error(f"{ctx.author.name} has been refunded since the '{ctx.command.qualified_name}' command failed.")
+        txt = _("You have been refunded since this command failed.")
+        await ctx.send(txt)
+
+    @commands.Cog.listener()
+    async def on_command_completion(self, ctx: commands.Context):
+        if not ctx.command:
+            return
+        self.charged.pop(ctx_to_id(ctx), None)
 
     @commands.Cog.listener()
     async def on_cog_add(self, cog: commands.Cog):
         if cog.qualified_name in self.checks:
             return
-        for cmd in cog.walk_commands():
-            cmd.add_check(self.cost_check)
         for cmd in cog.walk_app_commands():
             if isinstance(cmd, discord.app_commands.Group):
+                continue
+            if has_cost_check(cmd):
                 continue
             cmd.add_check(self.cost_check)
         self.checks.add(cog.qualified_name)
@@ -202,3 +211,20 @@ class Listeners(MixinMeta):
         - new_balance: int
         """
         await self.log_event("payday_claim", payload)
+
+    @tasks.loop(seconds=4)
+    async def send_payloads(self):
+        """Send embeds in chunks to avoid rate limits"""
+        if not self.payloads:
+            return
+        tmp = self.payloads.copy()
+        self.payloads.clear()
+        for channel_id, embeds in tmp.items():
+            channel = self.bot.get_channel(channel_id)
+            if not channel:
+                continue
+            # Group the embeds into 5 per message
+            for i in range(0, len(embeds), 5):
+                chunk = embeds[i : i + 5]
+                with suppress(discord.HTTPException, discord.Forbidden):
+                    await channel.send(embeds=chunk)
