@@ -11,6 +11,17 @@ from ..common.dpymenu import DEFAULT_CONTROLS, menu
 
 
 class Misc(MixinMeta):
+    @commands.hybrid_command(name="throwerror")
+    @commands.is_owner()
+    async def throw_error(self, ctx: commands.Context):
+        """
+        Throw an unhandled exception
+
+        A zero division error will be raised
+        """
+        bad = 10 / 0
+        await ctx.send(f"Woah how'd you get here? {bad}")
+
     @commands.command(name="getsource")
     @commands.is_owner()
     async def get_sourcecode(self, ctx: commands.Context, *, command: str):

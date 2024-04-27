@@ -284,37 +284,30 @@ class BotInfo(MixinMeta):
 
     # Inspired by kennnyshiwa's imperialtoolkit botstat command
     # https://github.com/kennnyshiwa/kennnyshiwa-cogs
-    @commands.command()
+    @commands.hybrid_command()
     @commands.bot_has_permissions(embed_links=True)
     @commands.cooldown(1, 15, commands.BucketType.user)
     async def botinfo(self, ctx: commands.Context):
         """
         Get info about the bot
         """
-        async with ctx.typing():
+        async with ctx.channel.typing():
             latency = self.bot.latency * 1000
-
             latency_ratio = max(0.0, min(1.0, latency / 100))
-
             # Calculate RGB values based on latency ratio
             green = 255 - round(255 * latency_ratio) if latency_ratio > 0.5 else 255
             red = 255 if latency_ratio > 0.5 else round(255 * latency_ratio)
-
             color = discord.Color.from_rgb(red, green, 0)
-
             embed = await asyncio.to_thread(self.get_bot_info_embed, color)
-
             latency_txt = f"Websocket: {humanize_number(round(latency, 2))} ms"
             embed.add_field(
                 name="\N{HIGH VOLTAGE SIGN} Latency",
                 value=box(latency_txt, lang="python"),
                 inline=False,
             )
-
             start = perf_counter()
             message = await ctx.send(embed=embed)
             end = perf_counter()
-
             field = embed.fields[-1]
             latency_txt += f"\nMessage:   {humanize_number(round((end - start) * 1000, 2))} ms"
             embed.set_field_at(
