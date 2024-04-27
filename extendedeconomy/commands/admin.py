@@ -25,6 +25,11 @@ class Admin(MixinMeta):
     async def extendedeconomy(self, ctx: commands.Context):
         """
         Extended Economy settings
+
+        **NOTE**
+        Although setting prices for pure slash commands works, there is no refund mechanism in place for them.
+
+        Should a hybrid or text command fail due to an unhandled exception, the user will be refunded.
         """
         pass
 
