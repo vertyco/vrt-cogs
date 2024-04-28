@@ -60,6 +60,7 @@ async def on_red_economy_payday_claim(self, payload: PaydayClaimInformation):
     """Payload attributes:
     - member: discord.Member
     - channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel]
+    - message: discord.Message
     - amount: int
     - old_balance: int
     - new_balance: int

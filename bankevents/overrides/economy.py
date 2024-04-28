@@ -18,6 +18,7 @@ _ = Translator("BankEvents", __file__)
 class PaydayClaimInformation(NamedTuple):
     member: discord.Member
     channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel]
+    message: discord.Message
     amount: int
     old_balance: int
     new_balance: int
@@ -26,6 +27,7 @@ class PaydayClaimInformation(NamedTuple):
         return {
             "member": self.member.id,
             "channel": self.channel.id,
+            "message": self.message.id,
             "amount": self.amount,
             "old_balance": self.old_balance,
             "new_balance": self.new_balance,
@@ -65,7 +67,7 @@ class PaydayOverride(MixinMeta):
                         ).format(currency=credits_name, new_balance=humanize_number(exc.max_balance))
                     )
                     payload = PaydayClaimInformation(
-                        author, ctx.channel, exc.max_balance - credit_amount, old_balance, new_balance
+                        author, ctx.channel, ctx.message, exc.max_balance - credit_amount, old_balance, new_balance
                     )
                     self.bot.dispatch("red_economy_payday_claim", payload)
                     return
@@ -87,7 +89,9 @@ class PaydayOverride(MixinMeta):
                         pos=humanize_number(pos) if pos else pos,
                     )
                 )
-                payload = PaydayClaimInformation(author, ctx.channel, credit_amount, new_balance, old_balance)
+                payload = PaydayClaimInformation(
+                    author, ctx.channel, ctx.message, credit_amount, new_balance, old_balance
+                )
                 self.bot.dispatch("red_economy_payday_claim", payload)
             else:
                 relative_time = discord.utils.format_dt(
@@ -119,7 +123,7 @@ class PaydayOverride(MixinMeta):
                         ).format(currency=credits_name, new_balance=humanize_number(exc.max_balance))
                     )
                     payload = PaydayClaimInformation(
-                        author, ctx.channel, exc.max_balance - credit_amount, new_balance, old_balance
+                        author, ctx.channel, ctx.message, exc.max_balance - credit_amount, new_balance, old_balance
                     )
                     self.bot.dispatch("red_economy_payday_claim", payload)
                     return
@@ -143,7 +147,9 @@ class PaydayOverride(MixinMeta):
                         pos=humanize_number(pos) if pos else pos,
                     )
                 )
-                payload = PaydayClaimInformation(author, ctx.channel, credit_amount, new_balance, old_balance)
+                payload = PaydayClaimInformation(
+                    author, ctx.channel, ctx.message, credit_amount, new_balance, old_balance
+                )
                 self.bot.dispatch("red_economy_payday_claim", payload)
             else:
                 relative_time = discord.utils.format_dt(
