@@ -20,8 +20,6 @@ RequestType = t.Literal["discord_deleted_user", "owner", "user", "user_strict"]
 class ExtendedEconomy(Commands, Checks, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     """
     Log bank events, set prices for commands, customize how prices are applied and more!
-
-
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
