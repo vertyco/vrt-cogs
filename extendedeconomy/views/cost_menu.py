@@ -11,7 +11,7 @@ from redbot.core.i18n import Translator
 
 from ..abc import MixinMeta
 from ..common.models import CommandCost
-from ..common.utils import format_command_txt, format_settings, has_is_owner_check
+from ..common.utils import format_command_txt, format_settings
 
 log = logging.getLogger("red.vrt.extendedeconomy.admin")
 _ = Translator("ExtendedEconomy", __file__)
@@ -279,9 +279,10 @@ class CostMenu(discord.ui.View):
             txt = _("You can't add a cost to a command that is always available!")
             return await interaction.followup.send(txt, ephemeral=True)
         if isinstance(command_obj, (commands.Command, commands.HybridCommand)):
-            if has_is_owner_check(command_obj) and self.author.id not in self.bot.owner_ids:
-                txt = _("You can't add a cost to a command that is only available to the bot owner!")
+            if (command_obj.requires.privilege_level or 0) > await commands.requires.PrivilegeLevel.from_ctx(self.ctx):
+                txt = _("You can't add costs to commands you don't have permission to run!")
                 return await interaction.followup.send(txt, ephemeral=True)
+
         cost_obj = CommandCost(
             cost=modal.data["cost"],
             duration=modal.data["duration"],

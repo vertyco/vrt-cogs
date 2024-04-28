@@ -10,7 +10,6 @@ from redbot.core.i18n import Translator, cog_i18n
 from ..abc import MixinMeta
 from ..common.models import CommandCost
 from ..common.parser import SetParser
-from ..common.utils import has_is_owner_check
 from ..views.confirm import ConfirmView
 from ..views.cost_menu import CostMenu
 
@@ -227,8 +226,8 @@ class Admin(MixinMeta):
         if isinstance(command_obj, commands.commands._AlwaysAvailableCommand):
             return await ctx.send(_("You can't add costs to commands that are always available!"))
         if isinstance(command_obj, (commands.Command, commands.HybridCommand)):
-            if has_is_owner_check(command_obj) and ctx.author.id not in self.bot.owner_ids:
-                return await ctx.send(_("You can't add costs to commands that are owner only!"))
+            if (command_obj.requires.privilege_level or 0) > await commands.requires.PrivilegeLevel.from_ctx(ctx):
+                return await ctx.send(_("You can't add costs to commands you don't have permission to run!"))
 
         cost_obj = CommandCost(
             cost=cost,
