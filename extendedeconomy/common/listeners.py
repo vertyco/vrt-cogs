@@ -111,6 +111,8 @@ class Listeners(MixinMeta):
                 embed.add_field(name=_("Guild"), value=payload.member.guild.name)
             else:
                 embed.add_field(name=_("Channel"), value=payload.channel.mention)
+                if message := getattr(payload, "message", None):
+                    embed.add_field(name=_("Message"), value=f"[Jump]({message.jump_url})")
         else:
             log.error(f"Unknown event type: {event}")
             return
