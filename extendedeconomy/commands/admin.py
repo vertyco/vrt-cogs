@@ -9,6 +9,7 @@ from redbot.core.i18n import Translator, cog_i18n
 
 from ..abc import MixinMeta
 from ..common.models import CommandCost
+from ..common.parser import SetParser
 from ..common.utils import has_is_owner_check
 from ..views.confirm import ConfirmView
 from ..views.cost_menu import CostMenu
@@ -255,3 +256,60 @@ class Admin(MixinMeta):
             conf = self.db.get_conf(ctx.guild)
             conf.command_costs[command] = cost_obj
         await self.save()
+
+    @commands.command(name="banksetrole")
+    @bank.is_owner_if_bank_global()
+    @commands.admin_or_permissions(manage_guild=True)
+    async def bank_set_role(self, ctx: commands.Context, role: discord.Role, creds: SetParser):
+        """Set the balance of all user accounts that have a specific role
+
+        Putting + or - signs before the amount will add/remove currency on the user's bank account instead.
+
+        Examples:
+        - `[p]banksetrole @everyone 420` - Sets everyones balance to 420
+        - `[p]banksetrole @role +69` - Increases balance by 69 for everyone with the role
+        - `[p]banksetrole @role -42` - Decreases balance by 42 for everyone with the role
+
+        **Arguments**
+
+        - `<role>` The role to set the currency of for each user that has it.
+        - `<creds>` The amount of currency to set their balance to.
+        """
+        async with ctx.typing():
+            currency = await bank.get_currency_name(ctx.guild)
+            max_bal = await bank.get_max_balance(ctx.guild)
+            global_bank = await bank.is_global()
+            if global_bank:
+                group = bank._config._get_base_group(bank._config.USER)
+            else:
+                group = bank._config._get_base_group(bank._config.MEMBER, str(ctx.guild.id))
+            users_affected = 0
+            total = 0
+            async with group.all() as accounts:
+                for user_id, wallet in accounts.items():
+                    # wallet = {name: str, balance: int, created_at: int}
+                    user = ctx.guild.get_member(int(user_id))
+                    if not user:
+                        continue
+                    if role not in user.roles:
+                        continue
+                    match creds.operation:
+                        case "deposit":
+                            amount = min(max_bal - wallet["balance"], creds.sum)
+                        case "withdraw":
+                            amount = -min(wallet["balance"], creds.sum)
+                        case _:  # set
+                            amount = creds.sum - wallet["balance"]
+
+                    accounts[user_id]["balance"] += amount
+                    total += amount
+                    users_affected += 1
+
+            if not users_affected:
+                return await ctx.send(_("No users were affected."))
+            if not total:
+                return await ctx.send(_("No balances were changed."))
+            msg = _("Balances for {} users were updated, total change was {} {}.").format(
+                users_affected, total, currency
+            )
+            await ctx.send(msg)
