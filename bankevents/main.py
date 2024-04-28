@@ -32,7 +32,7 @@ class BankEvents(PaydayOverride, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "2.1.1"
+    __version__ = "2.2.0"
 
     def __init__(self, bot: Red):
         super().__init__()
