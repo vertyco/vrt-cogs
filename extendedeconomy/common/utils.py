@@ -60,14 +60,6 @@ async def get_cached_credits_name(guild: discord.Guild) -> str:
     return await bank.get_currency_name(guild)
 
 
-def has_is_owner_check(command: t.Union[commands.Command, commands.HybridCommand]) -> bool:
-    """Check if a command already has the is_owner check attached to it"""
-    priv: commands.requires.PrivilegeLevel = command.requires.privilege_level
-    if not priv:
-        return False
-    return priv.value == 5
-
-
 def has_cost_check(command: CTYPES):
     """Check if a command already has the cost check attached to it"""
     for check in command.checks:
