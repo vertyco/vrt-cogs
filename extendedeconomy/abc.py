@@ -34,5 +34,9 @@ class MixinMeta(metaclass=ABCMeta):
         raise NotImplementedError()
 
     @abstractmethod
+    async def transfer_tax_check(self, ctx: commands.Context):
+        raise NotImplementedError()
+
+    @abstractmethod
     async def send_payloads(self):
         raise NotImplementedError()
