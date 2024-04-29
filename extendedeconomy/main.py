@@ -23,7 +23,7 @@ class ExtendedEconomy(Commands, Checks, Listeners, commands.Cog, metaclass=Compo
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.0.19b"
+    __version__ = "0.1.0b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -51,12 +51,13 @@ class ExtendedEconomy(Commands, Checks, Listeners, commands.Cog, metaclass=Compo
     async def cog_load(self) -> None:
         self.send_payloads.start()
         self.bot.before_invoke(self.cost_check)
+        self.bot.before_invoke(self.transfer_tax_check)
         asyncio.create_task(self.initialize())
 
     async def cog_unload(self) -> None:
         self.bot.remove_before_invoke_hook(self.cost_check)
+        self.bot.remove_before_invoke_hook(self.transfer_tax_check)
         self.send_payloads.cancel()
-        log.info("Detaching any cost checks from commands")
         for cmd in self.bot.tree.walk_commands():
             if isinstance(cmd, discord.app_commands.Group):
                 continue
@@ -75,7 +76,6 @@ class ExtendedEconomy(Commands, Checks, Listeners, commands.Cog, metaclass=Compo
                     continue
                 if has_cost_check(cmd):
                     continue
-                log.debug(f"Adding cost check to {cmd.qualified_name}")
                 cmd.add_check(self.slash_cost_check)
             self.checks.add(cogname)
 

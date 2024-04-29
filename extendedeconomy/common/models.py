@@ -93,6 +93,8 @@ class LogChannels(Base):
 class GuildSettings(Base):
     logs: LogChannels = LogChannels()
     command_costs: t.Dict[str, CommandCost] = {}
+    transfer_tax: float = 0.0
+    transfer_tax_prompt: t.Literal["text", "reaction", "button", "silent", "notify"] = "notify"
 
 
 class DB(Base):
@@ -101,6 +103,8 @@ class DB(Base):
 
     logs: LogChannels = LogChannels()
     command_costs: t.Dict[str, CommandCost] = {}
+    transfer_tax: float = 0.0
+    transfer_tax_prompt: t.Literal["text", "reaction", "button", "silent", "notify"] = "notify"
 
     def get_conf(self, guild: discord.Guild | int) -> GuildSettings:
         gid = guild if isinstance(guild, int) else guild.id

@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import math
 import typing as t
 
 import discord
@@ -116,3 +117,26 @@ class Checks(MixinMeta):
                 return False
             # asyncio.create_task(ctx.send(is_broke, delete_after=del_delay, ephemeral=True))
             raise commands.UserFeedbackCheckFailure()
+
+    async def transfer_tax_check(self, ctx: commands.Context):
+        if ctx.command.qualified_name != "bank transfer":
+            return True
+        conf = self.db if await bank.is_global() else self.db.get_conf(ctx.guild)
+        tax = conf.transfer_tax
+        if tax == 0:
+            log.debug("No transfer tax set")
+            return True
+
+        # Args: EconomyCog, ctx, to, amount
+        amount: int = ctx.args[-1]
+
+        deduction = math.ceil(amount * tax)
+        # Modify the amount to be transferred
+        ctx.args[-1] = amount - deduction
+
+        currency = await get_cached_credits_name(ctx.guild)
+        txt = _("{}% transfer tax applied, {} deducted from transfer").format(
+            f"{round(tax * 100)}", f"{humanize_number(deduction)} {currency}"
+        )
+        await ctx.send(txt)
+        return True

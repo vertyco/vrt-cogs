@@ -25,7 +25,7 @@ class Listeners(MixinMeta):
     async def on_command_error(self, ctx: commands.Context, error: Exception):
         if not ctx.command:
             return
-        log.debug(f"Command error in '{ctx.command.qualified_name}' for {ctx.author.name}:({type(error)}) {error}")
+        # log.debug(f"Command error in '{ctx.command.qualified_name}' for {ctx.author.name}:({type(error)}) {error}")
         runtime_id = ctx_to_id(ctx)
         if runtime_id not in self.charged:
             # User wasn't charged for this command
@@ -36,7 +36,8 @@ class Listeners(MixinMeta):
             await bank.deposit_credits(ctx.author, amount)
         except errors.BalanceTooHigh as e:
             await bank.set_balance(ctx.author, e.max_balance)
-        log.error(f"{ctx.author.name} has been refunded since the '{ctx.command.qualified_name}' command failed.")
+        cmd = ctx.command.qualified_name
+        log.info(f"{ctx.author.name} has been refunded {amount} since the '{cmd}' command failed.")
         txt = _("You have been refunded since this command failed.")
         await ctx.send(txt)
 
@@ -57,6 +58,10 @@ class Listeners(MixinMeta):
                 continue
             cmd.add_check(self.cost_check)
         self.checks.add(cog.qualified_name)
+
+    @commands.Cog.listener()
+    async def on_cog_remove(self, cog: commands.Cog):
+        self.checks.pop(cog.qualified_name, None)
 
     async def log_event(self, event: str, payload: t.NamedTuple):
         is_global = await bank.is_global()

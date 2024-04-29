@@ -103,6 +103,7 @@ def format_settings(
     del_after = _("`Delete After:        `{}\n").format(humanize_timedelta(seconds=delay) if delay else _("Disabled"))
     txt = _(
         "# Extended Economy Settings\n"
+        "`Transfer Tax:        `{}\n"
         "`Command Costs:       `{}\n"
         "`Global Bank:         `{}\n"
         "{}"
@@ -114,6 +115,7 @@ def format_settings(
         "`Prune Accounts:      `{}\n"
         "`Payday Claim:        `{}\n"
     ).format(
+        f"{round(conf.transfer_tax * 100, 2)}%" if conf.transfer_tax else _("None"),
         len(conf.command_costs) or _("None"),
         is_global,
         del_after if owner else "",

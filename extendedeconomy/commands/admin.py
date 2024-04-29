@@ -4,7 +4,6 @@ import typing as t
 import discord
 from discord import app_commands
 from redbot.core import bank, commands
-from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
 
 from ..abc import MixinMeta
@@ -39,12 +38,35 @@ class Admin(MixinMeta):
         """
         View the current settings
         """
-        self.bot: Red = self.bot
         is_global = await bank.is_global()
         if is_global and ctx.author.id not in self.bot.owner_ids:
             return await ctx.send(_("You must be a bot owner to view these settings when global bank is enabled."))
         view = CostMenu(ctx, self, is_global, self.cost_check)
         await view.refresh()
+
+    @extendedeconomy.command(name="transfertax")
+    async def set_transfertax(self, ctx: commands.Context, tax: float):
+        """
+        Set the transfer tax percentage as a decimal
+
+        *Example: `0.05` is for 5% tax*
+
+        - Set to 0 to disable
+        - Default is 0
+        """
+        is_global = await bank.is_global()
+        if is_global and ctx.author.id not in self.bot.owner_ids:
+            return await ctx.send(_("You must be a bot owner to set the transfer tax when global bank is enabled."))
+        if tax < 0 or tax >= 1:
+            return await ctx.send(_("Invalid tax percentage. Must be between 0 and 1."))
+
+        if is_global:
+            self.db.transfer_tax = tax
+        else:
+            conf = self.db.get_conf(ctx.guild)
+            conf.transfer_tax = tax
+        await ctx.send(_("Transfer tax set to {}%").format(round(tax * 100, 2)))
+        await self.save()
 
     @extendedeconomy.command(name="mainlog")
     async def set_mainlog(self, ctx: commands.Context, channel: t.Optional[discord.TextChannel] = None):
@@ -214,7 +236,6 @@ class Admin(MixinMeta):
                     return await ctx.send(_("You must be a bot owner to use the global level."))
                 return await ctx.send(_("You must enable global bank to use the global level."))
 
-        self.bot: Red = self.bot
         command_obj: commands.Command = self.bot.get_command(command)
         if not command_obj:
             command_obj: app_commands.Command = self.bot.tree.get_command(command)
@@ -286,7 +307,7 @@ class Admin(MixinMeta):
             total = 0
             async with group.all() as accounts:
                 for user_id, wallet in accounts.items():
-                    # wallet = {name: str, balance: int, created_at: int}
+                    # wallet: {name: str, balance: int, created_at: int}
                     user = ctx.guild.get_member(int(user_id))
                     if not user:
                         continue
@@ -308,7 +329,8 @@ class Admin(MixinMeta):
                 return await ctx.send(_("No users were affected."))
             if not total:
                 return await ctx.send(_("No balances were changed."))
-            msg = _("Balances for {} users were updated, total change was {} {}.").format(
-                users_affected, total, currency
+            grammar = _("user was") if users_affected == 1 else _("users were")
+            msg = _("Balances for {} updated, total change was {}.").format(
+                f"{users_affected} {grammar}", f"{total} {currency}"
             )
             await ctx.send(msg)
