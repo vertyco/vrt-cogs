@@ -144,6 +144,8 @@ class Admin(MixinMeta):
     ):
         """Set the approved, rejected, or pending channels for IdeaBoard"""
         conf = self.db.get_conf(ctx.guild)
+        if channel_type == "pending" and conf.suggestions:
+            return await ctx.send(_("You cannot change the pending channel while there are pending suggestions!"))
         current = getattr(conf, channel_type)
         if current == channel.id:
             return await ctx.send(_("This channel is already set as the {} channel!").format(channel_type))
@@ -456,8 +458,17 @@ class Admin(MixinMeta):
             message = await pending_channel.fetch_message(suggestion.message_id)
         except discord.NotFound:
             txt = _(
-                "Cannot find the message associated with this suggestion, if you changed the pending channel recently that could be why! Cleaning from config..."
+                "Cannot find the message associated with this suggestion, "
+                "if you changed the pending channel recently that could be why! Cleaning from config..."
             )
+            profile = conf.get_profile(suggestion.author_id)
+            profile.suggestions_made -= 1
+            for uid in suggestion.upvotes:
+                profile = conf.get_profile(uid)
+                profile.upvotes -= 1
+            for uid in suggestion.downvotes:
+                profile = conf.get_profile(uid)
+                profile.downvotes -= 1
             del conf.suggestions[number]
             await ctx.send(txt)
             await self.save()
@@ -578,6 +589,14 @@ class Admin(MixinMeta):
             txt = _(
                 "Cannot find the message associated with this suggestion, if you changed the pending channel recently that could be why! Cleaning from config..."
             )
+            profile = conf.get_profile(suggestion.author_id)
+            profile.suggestions_made -= 1
+            for uid in suggestion.upvotes:
+                profile = conf.get_profile(uid)
+                profile.upvotes -= 1
+            for uid in suggestion.downvotes:
+                profile = conf.get_profile(uid)
+                profile.downvotes -= 1
             del conf.suggestions[number]
             await ctx.send(txt)
             await self.save()
