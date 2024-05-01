@@ -89,7 +89,7 @@ class AdminBase(MixinMeta):
                     await thread.delete()
             else:
                 # Close and lock the thread
-                newname = thread.name.replace(_(" Discussion"), "") + _(" [Approved]")
+                newname = thread.name + _(" [Approved]")
                 embed = discord.Embed(color=discord.Color.green(), description=content, title=_("Approved Suggestion"))
                 with suppress(discord.HTTPException):
                     await thread.send(embed=embed)
@@ -224,7 +224,7 @@ class AdminBase(MixinMeta):
                     await thread.delete()
             else:
                 # Close and lock the thread
-                newname = thread.name.replace(_(" Discussion"), "") + _(" [Rejected]")
+                newname = thread.name + _(" [Rejected]")
                 embed = discord.Embed(color=discord.Color.red(), description=content, title=_("Rejected Suggestion"))
                 with suppress(discord.HTTPException):
                     await thread.send(embed=embed)
