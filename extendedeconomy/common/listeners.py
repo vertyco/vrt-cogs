@@ -61,7 +61,7 @@ class Listeners(MixinMeta):
 
     @commands.Cog.listener()
     async def on_cog_remove(self, cog: commands.Cog):
-        self.checks.pop(cog.qualified_name, None)
+        self.checks.discard(cog.qualified_name)
 
     async def log_event(self, event: str, payload: t.NamedTuple):
         is_global = await bank.is_global()

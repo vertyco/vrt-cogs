@@ -19,11 +19,11 @@ RequestType = t.Literal["discord_deleted_user", "owner", "user", "user_strict"]
 
 class ExtendedEconomy(Commands, Checks, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     """
-    Log bank events, set prices for commands, customize how prices are applied and more!
+    Set prices for commands, customize how prices are applied, log bank events and more!
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.1.2b"
+    __version__ = "0.1.3b"
 
     def __init__(self, bot: Red):
         super().__init__()
