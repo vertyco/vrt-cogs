@@ -81,6 +81,7 @@ class AdminBase(MixinMeta):
             await self.save()
             return
 
+        content = message.embeds[0].description
         thread: discord.Thread = await ctx.guild.fetch_channel(suggestion.thread_id)
         if thread:
             if conf.delete_threads:
@@ -89,10 +90,11 @@ class AdminBase(MixinMeta):
             else:
                 # Close and lock the thread
                 newname = thread.name.replace(_(" Discussion"), "") + _(" [Approved]")
+                embed = discord.Embed(color=discord.Color.green(), description=content, title=_("Approved Suggestion"))
                 with suppress(discord.HTTPException):
+                    await thread.send(embed=embed)
                     await thread.edit(archived=True, locked=True, name=newname)
 
-        content = message.embeds[0].description
         embed = discord.Embed(color=discord.Color.green(), description=content, title=_("Approved Suggestion"))
         if author := ctx.guild.get_member(suggestion.author_id):
             foot = _("Suggested by {}").format(f"{author.name} ({author.id})")
@@ -214,6 +216,7 @@ class AdminBase(MixinMeta):
             await self.save()
             return
 
+        content = message.embeds[0].description
         thread: discord.Thread = await ctx.guild.fetch_channel(suggestion.thread_id)
         if thread:
             if conf.delete_threads:
@@ -222,10 +225,11 @@ class AdminBase(MixinMeta):
             else:
                 # Close and lock the thread
                 newname = thread.name.replace(_(" Discussion"), "") + _(" [Rejected]")
+                embed = discord.Embed(color=discord.Color.red(), description=content, title=_("Rejected Suggestion"))
                 with suppress(discord.HTTPException):
+                    await thread.send(embed=embed)
                     await thread.edit(archived=True, locked=True, name=newname)
 
-        content = message.embeds[0].description
         embed = discord.Embed(color=discord.Color.red(), description=content, title=_("Rejected Suggestion"))
         if conf.anonymous and not conf.reveal:
             embed.set_footer(text=_("Suggested anonymously"))
