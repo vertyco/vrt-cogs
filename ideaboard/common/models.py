@@ -50,6 +50,8 @@ class GuildSettings(Base):
     show_vote_counts: bool = True
     # Whether to open a discussion thread for each suggestion
     discussion_threads: bool = False
+    # Delete threads when suggestion is approved/denied
+    delete_threads: bool = True
 
     # Roles required to make suggestions and vote
     vote_roles: list[int] = []

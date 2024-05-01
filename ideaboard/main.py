@@ -6,7 +6,7 @@ from redbot.core.bot import Red
 
 from .abc import CompositeMetaClass
 from .commands import Commands
-from .common.listener import AssistantListener
+from .common.listener import Listeners
 from .common.models import DB
 from .views.voteview import VoteView
 
@@ -15,11 +15,11 @@ log = logging.getLogger("red.vrt.ideaboard")
 # redgettext -D views/voteview.py commands/user.py commands/admin.py --command-docstring
 
 
-class IdeaBoard(Commands, AssistantListener, commands.Cog, metaclass=CompositeMetaClass):
+class IdeaBoard(Commands, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     """Share Ideas and Suggestions"""
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.4.15"
+    __version__ = "0.5.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -65,7 +65,7 @@ class IdeaBoard(Commands, AssistantListener, commands.Cog, metaclass=CompositeMe
             859930241119289345,  # VrtDev
             857070505294430218,  # Arkon
         ]:
-            # Remove playtime requirement command since ArkToold isnt public
+            # Remove playtime requirement command since ArkTools isn't public
             # ideaset minplaytime
             self.bot.remove_command("ideaset minplaytime")
 
