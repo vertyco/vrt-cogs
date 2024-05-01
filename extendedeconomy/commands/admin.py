@@ -296,23 +296,32 @@ class Admin(MixinMeta):
         - `<creds>` The amount of currency to set their balance to.
         """
         async with ctx.typing():
-            currency = await bank.get_currency_name(ctx.guild)
-            max_bal = await bank.get_max_balance(ctx.guild)
-            global_bank = await bank.is_global()
-            if global_bank:
+            if await bank.is_global():
                 group = bank._config._get_base_group(bank._config.USER)
             else:
                 group = bank._config._get_base_group(bank._config.MEMBER, str(ctx.guild.id))
+
+            currency = await bank.get_currency_name(ctx.guild)
+            max_bal = await bank.get_max_balance(ctx.guild)
+            try:
+                default_balance = await bank.get_default_balance(ctx.guild)
+            except AttributeError:
+                default_balance = await bank.get_default_balance()
+            members: t.List[discord.Member] = [user for user in ctx.guild.members if role in user.roles]
+            if not members:
+                return await ctx.send(_("No users found with that role."))
+
             users_affected = 0
             total = 0
             async with group.all() as accounts:
-                for user_id, wallet in accounts.items():
-                    # wallet: {name: str, balance: int, created_at: int}
-                    user = ctx.guild.get_member(int(user_id))
-                    if not user:
-                        continue
-                    if role not in user.roles:
-                        continue
+                for mem in members:
+                    uid = str(mem.id)
+                    if uid in accounts:
+                        wallet = accounts[uid]
+                    else:
+                        wallet = {"name": mem.display_name, "balance": default_balance, "created_at": 0}
+                        accounts[uid] = wallet
+
                     match creds.operation:
                         case "deposit":
                             amount = min(max_bal - wallet["balance"], creds.sum)
@@ -321,7 +330,7 @@ class Admin(MixinMeta):
                         case _:  # set
                             amount = creds.sum - wallet["balance"]
 
-                    accounts[user_id]["balance"] += amount
+                    accounts[uid]["balance"] += amount
                     total += amount
                     users_affected += 1
 
