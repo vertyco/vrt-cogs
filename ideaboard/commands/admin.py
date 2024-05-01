@@ -1,18 +1,16 @@
 import asyncio
 import logging
 import typing as t
-from contextlib import suppress
 from io import StringIO
 
 import discord
-from discord import app_commands
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import humanize_number, text_to_file
+from redbot.core.utils.chat_formatting import humanize_number
 from redbot.core.utils.predicates import MessagePredicate
 
 from ..abc import MixinMeta
-from ..common.models import Profile
+from ..common.models import Profile, Suggestion
 
 log = logging.getLogger("red.vrt.ideaboard.commands.admin")
 _ = Translator("IdeaBoard", __file__)
@@ -46,6 +44,7 @@ class Admin(MixinMeta):
             "`Reveal Complete:    `{}\n"
             "`DM Result:          `{}\n"
             "`Discussion Threads: `{}\n"
+            "`Delete Threads:     `{}\n"
             "`Upvote Emoji:       `{}\n"
             "`Downvote Emoji:     `{}\n"
             "`Show Vote Counts:   `{}\n"
@@ -59,6 +58,7 @@ class Admin(MixinMeta):
             conf.reveal,
             conf.dm,
             conf.discussion_threads,
+            conf.delete_threads,
             up,
             down,
             conf.show_vote_counts,
@@ -206,6 +206,18 @@ class Admin(MixinMeta):
         conf.discussion_threads = not conf.discussion_threads
         state = "enabled" if conf.discussion_threads else "disabled"
         await ctx.send(_("Discussion threads are now {}.").format(state))
+        await self.save()
+
+    @ideaset.command(name="deletethreads", aliases=["delete", "delthreads"])
+    async def toggle_delete_threads(self, ctx: commands.Context):
+        """Toggle deleting discussion threads when a suggestion is approved/denied"""
+        conf = self.db.get_conf(ctx.guild)
+        if conf.delete_threads:
+            txt = _("Threads will now be locked/archived when a suggestion is approved/denied.")
+        else:
+            txt = _("Threads will now be deleted when a suggestion is approved/denied.")
+        conf.delete_threads = not conf.delete_threads
+        await ctx.send(txt)
         await self.save()
 
     @ideaset.command(name="upvoteemoji", aliases=["upvote", "up"])
@@ -409,351 +421,6 @@ class Admin(MixinMeta):
         )
         await self.save()
 
-    @commands.hybrid_command(name="approve", description=_("Approve a suggestion."))
-    @app_commands.describe(number=_("Suggestion number"))
-    @commands.guild_only()
-    async def approve_suggestion(self, ctx: commands.Context, number: int, *, reason: str = None):
-        """Approve an idea/suggestion."""
-        conf = self.db.get_conf(ctx.guild)
-        if not conf.approvers:
-            txt = _("No approvers have been set! Use the {} command to add one.").format(
-                f"`{ctx.clean_prefix}ideaset approverole @role`"
-            )
-            return await ctx.send(txt)
-        if not any(role in [role.id for role in ctx.author.roles] for role in conf.approvers):
-            txt = _("You do not have the required roles to approve suggestions.")
-            return await ctx.send(txt)
-
-        if not conf.pending:
-            txt = _("The pending suggestions channel has not been set!")
-            return await ctx.send(txt)
-        if not conf.approved:
-            txt = _("The approved suggestions channel has not been set!")
-            return await ctx.send(txt)
-
-        pending_channel = ctx.guild.get_channel(conf.pending)
-        if not pending_channel:
-            txt = _("The pending suggestions channel no longer exists!")
-            return await ctx.send(txt)
-        approved_channel = ctx.guild.get_channel(conf.approved)
-        if not approved_channel:
-            txt = _("The approved suggestions channel no longer exists!")
-            return await ctx.send(txt)
-
-        perms = [
-            pending_channel.permissions_for(ctx.me).send_messages,
-            pending_channel.permissions_for(ctx.me).embed_links,
-            approved_channel.permissions_for(ctx.me).send_messages,
-            approved_channel.permissions_for(ctx.me).embed_links,
-        ]
-        if not all(perms):
-            txt = _("I do not have the required permissions to send messages in the suggestion channels.")
-            return await ctx.send(txt)
-
-        suggestion = conf.suggestions.get(number)
-        if not suggestion:
-            txt = _("That suggestion does not exist!")
-            return await ctx.send(txt)
-        try:
-            message = await pending_channel.fetch_message(suggestion.message_id)
-        except discord.NotFound:
-            txt = _(
-                "Cannot find the message associated with this suggestion, "
-                "if you changed the pending channel recently that could be why! Cleaning from config..."
-            )
-            profile = conf.get_profile(suggestion.author_id)
-            profile.suggestions_made -= 1
-            for uid in suggestion.upvotes:
-                profile = conf.get_profile(uid)
-                profile.upvotes -= 1
-            for uid in suggestion.downvotes:
-                profile = conf.get_profile(uid)
-                profile.downvotes -= 1
-            del conf.suggestions[number]
-            await ctx.send(txt)
-            await self.save()
-            return
-
-        if suggestion.thread_id:
-            thread = await ctx.guild.fetch_channel(suggestion.thread_id)
-            if thread:
-                with suppress(discord.NotFound):
-                    await thread.delete()
-
-        content = message.embeds[0].description
-        embed = discord.Embed(color=discord.Color.green(), description=content, title=_("Approved Suggestion"))
-        if author := ctx.guild.get_member(suggestion.author_id):
-            foot = _("Suggested by {}").format(f"{author.name} ({author.id})")
-            embed.set_footer(text=foot, icon_url=author.display_avatar)
-        else:
-            embed.set_footer(text=_("Suggested by a user who is no longer in the server."))
-
-        if reason:
-            embed.add_field(name=_("Reason"), value=reason)
-
-        up, down = conf.get_emojis(self.bot)
-        embed.add_field(
-            name=_("Results"),
-            value=f"{len(suggestion.upvotes)}x {up}\n{len(suggestion.downvotes)}x {down}",
-            inline=False,
-        )
-
-        with suppress(discord.NotFound):
-            await message.delete()
-
-        try:
-            txt = _("Suggestion #{}").format(number)
-            message = await approved_channel.send(txt, embed=embed)
-        except discord.Forbidden:
-            txt = _("I do not have the required permissions to send messages in the approved suggestions channel.")
-            return await ctx.send(txt)
-        except discord.NotFound:
-            txt = _("The approved suggestions channel no longer exists!")
-            return await ctx.send(txt)
-
-        # Add stats to users before deleting the suggestion from config
-        profile = conf.get_profile(suggestion.author_id)
-        profile.suggestions_approved += 1
-
-        for uid in suggestion.upvotes:
-            profile = conf.get_profile(uid)
-            profile.wins += 1
-
-        for uid in suggestion.downvotes:
-            profile = conf.get_profile(uid)
-            profile.losses += 1
-
-        member = ctx.guild.get_member(suggestion.author_id)
-        if member and conf.dm:
-            txt = _("Your [suggestion]({}) has been approved!").format(message.jump_url)
-            try:
-                await member.send(txt)
-            except discord.Forbidden:
-                pass
-
-        del conf.suggestions[number]
-
-        await ctx.send(_("Suggestion #{} has been approved.").format(number))
-
-        await self.save()
-
-    @commands.hybrid_command(name="reject", description=_("Reject a suggestion."))
-    @app_commands.describe(number=_("Suggestion number"))
-    @commands.guild_only()
-    async def reject_suggestion(self, ctx: commands.Context, number: int, *, reason: str = None):
-        """Reject an idea/suggestion."""
-        conf = self.db.get_conf(ctx.guild)
-        if not conf.approvers:
-            txt = _("No approvers have been set! Use the {} command to add one.").format(
-                f"`{ctx.clean_prefix}ideaset approverole @role`"
-            )
-            return await ctx.send(txt)
-        if not any(role in [role.id for role in ctx.author.roles] for role in conf.approvers):
-            txt = _("You do not have the required roles to reject suggestions.")
-            return await ctx.send(txt)
-
-        if not conf.pending:
-            txt = _("The pending suggestions channel has not been set!")
-            return await ctx.send(txt)
-        if not conf.rejected:
-            txt = _("The rejected suggestions channel has not been set!")
-            return await ctx.send(txt)
-
-        pending_channel = ctx.guild.get_channel(conf.pending)
-        if not pending_channel:
-            txt = _("The pending suggestions channel no longer exists!")
-            return await ctx.send(txt)
-        rejected_channel = ctx.guild.get_channel(conf.rejected)
-        if not rejected_channel:
-            txt = _("The rejected suggestions channel no longer exists!")
-            return await ctx.send(txt)
-
-        perms = [
-            pending_channel.permissions_for(ctx.me).send_messages,
-            pending_channel.permissions_for(ctx.me).embed_links,
-            rejected_channel.permissions_for(ctx.me).send_messages,
-            rejected_channel.permissions_for(ctx.me).embed_links,
-        ]
-        if not all(perms):
-            txt = _("I do not have the required permissions to send messages in the suggestion channels.")
-            return await ctx.send(txt)
-
-        suggestion = conf.suggestions.get(number)
-        if not suggestion:
-            txt = _("That suggestion does not exist!")
-            return await ctx.send(txt)
-
-        try:
-            message = await pending_channel.fetch_message(suggestion.message_id)
-        except discord.NotFound:
-            txt = _(
-                "Cannot find the message associated with this suggestion, if you changed the pending channel recently that could be why! Cleaning from config..."
-            )
-            profile = conf.get_profile(suggestion.author_id)
-            profile.suggestions_made -= 1
-            for uid in suggestion.upvotes:
-                profile = conf.get_profile(uid)
-                profile.upvotes -= 1
-            for uid in suggestion.downvotes:
-                profile = conf.get_profile(uid)
-                profile.downvotes -= 1
-            del conf.suggestions[number]
-            await ctx.send(txt)
-            await self.save()
-            return
-
-        if suggestion.thread_id:
-            thread = await ctx.guild.fetch_channel(suggestion.thread_id)
-            if thread:
-                with suppress(discord.NotFound):
-                    await thread.delete()
-
-        content = message.embeds[0].description
-        embed = discord.Embed(color=discord.Color.red(), description=content, title=_("Rejected Suggestion"))
-        if conf.anonymous and not conf.reveal:
-            embed.set_footer(text=_("Suggested anonymously"))
-        elif author := ctx.guild.get_member(suggestion.author_id):
-            foot = _("Suggested by {}").format(f"{author.name} ({author.id})")
-            embed.set_footer(text=foot, icon_url=author.display_avatar)
-
-        if reason:
-            embed.add_field(name=_("Reason for Rejection"), value=reason)
-
-        up, down = conf.get_emojis(self.bot)
-        embed.add_field(
-            name=_("Results"),
-            value=f"{len(suggestion.upvotes)}x {up}\n{len(suggestion.downvotes)}x {down}",
-            inline=False,
-        )
-
-        with suppress(discord.NotFound):
-            await message.delete()
-
-        try:
-            txt = _("Suggestion #{}").format(number)
-            message = await rejected_channel.send(txt, embed=embed)
-        except discord.Forbidden:
-            txt = _("I do not have the required permissions to send messages in the denied suggestions channel.")
-            return await ctx.send(txt)
-        except discord.NotFound:
-            txt = _("The denied suggestions channel no longer exists!")
-            return await ctx.send(txt)
-
-        # Add stats to users before deleting the suggestion from config
-        profile = conf.get_profile(suggestion.author_id)
-        profile.suggestions_denied += 1
-
-        for uid in suggestion.upvotes:
-            profile = conf.get_profile(uid)
-            profile.losses += 1
-
-        for uid in suggestion.downvotes:
-            profile = conf.get_profile(uid)
-            profile.wins += 1
-
-        member = ctx.guild.get_member(suggestion.author_id)
-        if member and conf.dm:
-            txt = _("Your [suggestion]({}) has been rejected!").format(message.jump_url)
-            try:
-                await member.send(txt)
-            except discord.Forbidden:
-                pass
-
-        del conf.suggestions[number]
-
-        await ctx.send(_("Suggestion #{} has been rejected.").format(number))
-
-        await self.save()
-
-    @commands.hybrid_command(
-        name="viewvotes",
-        description=_("View the current upvoters and downvoters of a suggestion."),
-    )
-    @app_commands.describe(number=_("Suggestion number to view votes for"))
-    @commands.guild_only()
-    @commands.bot_has_permissions(attach_files=True, embed_links=True)
-    async def view_votes(self, ctx: commands.Context, number: int):
-        """View the list of who has upvoted and who has downvoted a suggestion."""
-        conf = self.db.get_conf(ctx.guild)
-
-        if not conf.approvers:
-            txt = _("No approvers have been set! Use the {} command to add one.").format(
-                f"`{ctx.clean_prefix}ideaset approverole @role`"
-            )
-            return await ctx.send(txt)
-
-        if not any(role in [role.id for role in ctx.author.roles] for role in conf.approvers):
-            txt = _("You do not have the required roles to inspect suggestions.")
-            return await ctx.send(txt)
-
-        suggestion = conf.suggestions.get(number)
-        if not suggestion:
-            await ctx.send(_("That suggestion does not exist!"))
-            return
-
-        description = _("Suggestion could not be found in pending channel!")
-
-        if pending_channel := ctx.guild.get_channel(conf.pending):
-            try:
-                message = await pending_channel.fetch_message(suggestion.message_id)
-                description = message.embeds[0].description
-            except discord.NotFound:
-                pass
-
-        embed = discord.Embed(
-            color=discord.Color.blue(),
-            title=_("Votes for Suggestion #{}").format(number),
-            description=description,
-        )
-
-        upvoter_ids = suggestion.upvotes
-        downvoter_ids = suggestion.downvotes
-
-        upvoter_mentions = ", ".join(f"<@{uid}>" for uid in upvoter_ids)
-        downvoter_mentions = ", ".join(f"<@{uid}>" for uid in downvoter_ids)
-
-        upvoters_label = _("Upvoters ({})").format(len(upvoter_ids)) if upvoter_ids else _("No upvotes yet")
-        downvoters_label = _("Downvoters ({})").format(len(downvoter_ids)) if downvoter_ids else _("No downvotes yet")
-
-        file = None
-        if len(upvoter_mentions) > 1024 or len(downvoter_mentions) > 1024:
-            embed.add_field(name=upvoters_label, value=humanize_number(len(upvoter_ids) or _("N/A")), inline=False)
-            embed.add_field(name=downvoters_label, value=humanize_number(len(upvoter_ids) or _("N/A")), inline=False)
-
-            raw = StringIO()
-            raw.write(_("Upvoters ({}):\n").format(len(upvoter_ids)))
-            for uid in upvoter_ids:
-                member = ctx.guild.get_member(uid)
-                if member:
-                    raw.write(f"{member.name} ({member.id})\n")
-                else:
-                    raw.write(f"LEFT SERVER ({uid})\n")
-
-            raw.write(_("\nDownvoters ({}):\n").format(len(downvoter_ids)))
-            for uid in downvoter_ids:
-                member = ctx.guild.get_member(uid)
-                if member:
-                    raw.write(f"{member.name} ({member.id})\n")
-                else:
-                    raw.write(f"LEFT SERVER ({uid})\n")
-
-            file = text_to_file(raw.getvalue(), filename="votes.txt")
-
-        else:
-            embed.add_field(name=upvoters_label, value=upvoter_mentions or _("N/A"), inline=False)
-            embed.add_field(name=downvoters_label, value=downvoter_mentions or _("N/A"), inline=False)
-
-        author = ctx.guild.get_member(suggestion.author_id)
-        if author:
-            embed.set_footer(
-                text=_("Suggested by {}").format(f"{author.name} ({author.id})"), icon_url=author.display_avatar
-            )
-        else:
-            user = await self.bot.fetch_user(suggestion.author_id)
-            embed.set_footer(text=_("Suggested by {} [No longer in server]").format(f"{user.name} ({user.id})"))
-
-        await ctx.send(embed=embed, file=file)
-
     @ideaset.command(name="resetuser")
     async def reset_user_stats(self, ctx: commands.Context, *, member: discord.Member):
         """Reset a user's stats"""
@@ -777,6 +444,61 @@ class Admin(MixinMeta):
             return await msg.edit(content=_("Reset cancelled."))
         conf.profiles = {}
         await msg.edit(content=_("All user stats have been reset."))
+        await self.save()
+
+    @ideaset.command(name="cleanup")
+    async def cleanup_config(self, ctx: commands.Context):
+        """
+        Cleanup the config.
+        - Remove suggestions who's message no longer exists.
+        - Remove profiles of users who have left the server.
+        """
+        conf = self.db.get_conf(ctx.guild)
+        to_remove = [uid for uid in conf.profiles if not ctx.guild.get_member(uid)]
+        for uid in to_remove:
+            del conf.profiles[uid]
+        results = StringIO()
+        if to_remove:
+            results.write(_("- Removed {} profiles of users who have left the server.\n").format(len(to_remove)))
+        else:
+            results.write(_("- No profiles were removed.\n"))
+
+        to_remove: t.Dict[int, Suggestion] = {}
+        if pending := ctx.guild.get_channel(conf.pending):
+            for num, suggestion in conf.suggestions.items():
+                try:
+                    await pending.fetch_message(suggestion.message_id)
+                except discord.NotFound:
+                    to_remove[num] = suggestion
+                    profile = conf.get_profile(suggestion.author_id)
+                    profile.suggestions_made -= 1
+                    for uid in suggestion.upvotes:
+                        profile = conf.get_profile(uid)
+                        profile.upvotes -= 1
+                    for uid in suggestion.downvotes:
+                        profile = conf.get_profile(uid)
+                        profile.downvotes -= 1
+
+        for num, suggestion in to_remove.items():
+            results.write(_("- Removed suggestion #{} as the message no longer exists.\n").format(num))
+            profile = conf.get_profile(suggestion.author_id)
+            profile.suggestions_made -= 1
+            for uid in suggestion.upvotes:
+                profile = conf.get_profile(uid)
+                profile.upvotes -= 1
+            for uid in suggestion.downvotes:
+                profile = conf.get_profile(uid)
+                profile.downvotes -= 1
+            if thread := ctx.guild.get_channel(suggestion.thread_id):
+                try:
+                    await thread.delete()
+                except discord.HTTPException as e:
+                    results.write(
+                        _("- Failed to delete discussion thread for suggestion #{}: {}.\n").format(num, str(e))
+                    )
+            del conf.suggestions[num]
+
+        await ctx.send(results.getvalue())
         await self.save()
 
     @ideaset.command(name="insights")
@@ -831,6 +553,8 @@ class Admin(MixinMeta):
             most_denied = sorted(p.items(), key=lambda x: x[1].suggestions_denied, reverse=True)[:amount]
             # Top X users with highest approval ratio
             highest_ratio = sorted(p.items(), key=winloss_ratio, reverse=True)[:amount]
+            # Top X users with the lowest approval ratio
+            lowest_ratio = sorted(p.items(), key=winloss_ratio, reverse=False)[:amount]
             # Top X users with most wins
             most_wins = sorted(p.items(), key=lambda x: x[1].wins, reverse=True)[:amount]
             # Top X users with most losses
@@ -872,6 +596,14 @@ class Admin(MixinMeta):
                 value=(
                     _("These users have the highest approval to rejection ratio.\n")
                     + fmt_ratio(highest_ratio, winloss_ratio)
+                ),
+                inline=False,
+            )
+            embed.add_field(
+                name=_("Lowest Approval Ratio"),
+                value=(
+                    _("These users have the lowest approval to rejection ratio.\n")
+                    + fmt_ratio(lowest_ratio, winloss_ratio)
                 ),
                 inline=False,
             )

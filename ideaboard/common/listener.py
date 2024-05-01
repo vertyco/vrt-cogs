@@ -8,7 +8,7 @@ from ..abc import MixinMeta
 log = logging.getLogger("red.vrt.ideaboard.listeners")
 
 
-class AssistantListener(MixinMeta):
+class Listeners(MixinMeta):
     @commands.Cog.listener()
     async def on_assistant_cog_add(self, cog: commands.Cog):
         schema = {
@@ -39,3 +39,25 @@ class AssistantListener(MixinMeta):
             f"Suggestions user voted on that did not go in their favor: {profile.losses}\n"
         )
         return txt
+
+    @commands.Cog.listener()
+    async def on_message_delete(self, message: discord.Message) -> None:
+        if message.guild is None:
+            return
+        if not message.content.startswith("Suggestion #"):
+            return
+        conf = self.db.get_conf(message.guild)
+        for num, suggestion in conf.suggestions.copy().items():
+            if suggestion.message_id != message.id:
+                continue
+            profile = conf.get_profile(message.author)
+            profile.suggestions_made -= 1
+            for uid in suggestion.upvotes:
+                profile = conf.get_profile(uid)
+                profile.upvotes -= 1
+            for uid in suggestion.downvotes:
+                profile = conf.get_profile(uid)
+                profile.downvotes -= 1
+            del conf.suggestions[num]
+            await self.save()
+            break

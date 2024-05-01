@@ -52,13 +52,11 @@ class VoteView(discord.ui.View):
 
     async def respond(self, interaction: discord.Interaction, text: str, delete_after: int | None = None):
         try:
-            msg: discord.WebhookMessage = await interaction.followup.send(text, ephemeral=True)
-            if msg:
-                with suppress(discord.NotFound):
+            if msg := await interaction.followup.send(text, ephemeral=True):
+                with suppress(discord.HTTPException):
                     await msg.delete(delay=delete_after)
-        except (discord.HTTPException, discord.NotFound):
-            with suppress(discord.NotFound, discord.Forbidden):
-                await interaction.channel.send(text, delete_after=delete_after)
+        except discord.HTTPException:
+            pass
 
     async def check(self, interaction: discord.Interaction) -> bool:
         """Return True if the user can vote"""
