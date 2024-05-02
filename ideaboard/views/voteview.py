@@ -50,11 +50,11 @@ class VoteView(discord.ui.View):
             else:
                 self.downvote.label = None
 
-    async def respond(self, interaction: discord.Interaction, text: str, delete_after: int | None = None):
+    async def respond(self, interaction: discord.Interaction, text: str):
         try:
             if msg := await interaction.followup.send(text, ephemeral=True):
                 with suppress(discord.HTTPException):
-                    await msg.delete(delay=delete_after)
+                    await msg.delete(delay=60)
         except discord.HTTPException:
             pass
 
@@ -144,8 +144,8 @@ class VoteView(discord.ui.View):
                         return False
                     playtime_hours = player.total_playtime / 3600
                     if playtime_hours < conf.min_playtime_to_vote:
-                        txt = _("You must have at least {hours} hours of playtime to vote.").format(
-                            hours=conf.min_playtime_to_vote
+                        txt = _("You must have at least {} hours of playtime to vote.").format(
+                            conf.min_playtime_to_vote
                         )
                         await self.respond(interaction, txt)
                         return False
@@ -157,7 +157,7 @@ class VoteView(discord.ui.View):
     @discord.ui.button(style=discord.ButtonStyle.primary)
     async def upvote(self, interaction: discord.Interaction, buttons: discord.ui.Button):
         with suppress(discord.NotFound):
-            await interaction.response.defer()
+            await interaction.response.defer(ephemeral=True)
         if not await self.check(interaction):
             return
 
@@ -183,7 +183,7 @@ class VoteView(discord.ui.View):
             suggestion.upvotes.append(uid)
             profile.upvotes += 1
 
-        await self.respond(interaction, txt, 10)
+        await self.respond(interaction, txt)
 
         if conf.show_vote_counts:
             self.update_labels()
@@ -194,7 +194,7 @@ class VoteView(discord.ui.View):
     @discord.ui.button(style=discord.ButtonStyle.primary)
     async def downvote(self, interaction: discord.Interaction, buttons: discord.ui.Button):
         with suppress(discord.NotFound):
-            await interaction.response.defer()
+            await interaction.response.defer(ephemeral=True)
         if not await self.check(interaction):
             return
 
@@ -220,7 +220,7 @@ class VoteView(discord.ui.View):
             suggestion.downvotes.append(uid)
             profile.downvotes += 1
 
-        await self.respond(interaction, txt, 10)
+        await self.respond(interaction, txt)
 
         if conf.show_vote_counts:
             self.update_labels()
