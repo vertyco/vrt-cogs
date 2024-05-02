@@ -24,8 +24,8 @@ _ = Translator("ExtendedEconomy", __file__)
 
 
 class Checks(MixinMeta):
-    async def cost_check(self, ctx: commands.Context):
-        return await self._cost_check(ctx, ctx.author)
+    async def cost_check(self, ctx: t.Union[commands.Context, discord.Interaction]):
+        return await self._cost_check(ctx, ctx.author if isinstance(ctx, commands.Context) else ctx.user)
 
     async def slash_cost_check(self, interaction: discord.Interaction):
         return await self._cost_check(interaction, interaction.user)
