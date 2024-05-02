@@ -554,7 +554,9 @@ class Admin(MixinMeta):
             # Top X users with highest approval ratio
             highest_ratio = sorted(p.items(), key=winloss_ratio, reverse=True)[:amount]
             # Top X users with the lowest approval ratio
-            lowest_ratio = sorted(p.items(), key=winloss_ratio, reverse=False)[:amount]
+            lowest_ratio = sorted(
+                [i for i in p.items() if i[1].suggestions_made > 0] or p.items(), key=winloss_ratio, reverse=False
+            )[:amount]
             # Top X users with most wins
             most_wins = sorted(p.items(), key=lambda x: x[1].wins, reverse=True)[:amount]
             # Top X users with most losses
