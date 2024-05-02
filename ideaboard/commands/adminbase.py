@@ -143,7 +143,7 @@ class AdminBase(MixinMeta):
 
         member = ctx.guild.get_member(suggestion.author_id)
         if member and conf.dm:
-            txt = _("Your [suggestion]({}) has been approved!").format(message.jump_url)
+            txt = _("Your [suggestion #{}]({}) has been approved!").format(number, message.jump_url)
             try:
                 await member.send(txt)
             except discord.Forbidden:
@@ -282,7 +282,7 @@ class AdminBase(MixinMeta):
 
         member = ctx.guild.get_member(suggestion.author_id)
         if member and conf.dm:
-            txt = _("Your [suggestion]({}) has been rejected!").format(message.jump_url)
+            txt = _("Your [suggestion #{}]({}) has been rejected!").format(number, message.jump_url)
             try:
                 await member.send(txt)
             except discord.Forbidden:

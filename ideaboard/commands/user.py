@@ -181,7 +181,6 @@ class User(MixinMeta):
 
         conf.suggestions[suggestion_number] = suggestion
         conf.counter = suggestion_number
-
         profile.suggestions_made += 1
 
         if ctx.invoked_with == "idea":
@@ -189,26 +188,26 @@ class User(MixinMeta):
         else:
             word = "suggestion"
         if channel.permissions_for(ctx.author).view_channel:
-            txt = _("Your **[{}]({})** has been posted!").format(word, message.jump_url)
+            txt = _("Your [{}]({}) has been posted!").format(f"{word} #{suggestion_number}", message.jump_url)
         else:
-            txt = _("Your {} has been posted!").format(word)
+            txt = _("Your {} has been posted!").format(f"{word} #{suggestion_number}")
 
         if ctx.interaction:
             try:
-                await ctx.interaction.response.send_message(txt, ephemeral=True)
+                await ctx.interaction.response.send_message(txt, embed=embed, ephemeral=True)
             except discord.NotFound:
                 try:
-                    await ctx.interaction.followup.send(txt, ephemeral=True)
+                    await ctx.interaction.followup.send(txt, embed=embed, ephemeral=True)
                 except discord.NotFound:
                     try:
-                        await ctx.author.send(txt)
+                        await ctx.author.send(txt, embed=embed)
                     except discord.Forbidden:
-                        await ctx.channel.send(txt)
+                        await ctx.channel.send(txt, embed=embed)
         else:
             try:
-                await ctx.author.send(txt)
+                await ctx.author.send(txt, embed=embed)
             except discord.Forbidden:
-                await ctx.channel.send(txt, delete_after=10)
+                await ctx.channel.send(txt, embed=embed, delete_after=10)
 
         await self.save()
 
