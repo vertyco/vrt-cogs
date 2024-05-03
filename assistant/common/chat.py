@@ -31,6 +31,7 @@ from .constants import READ_EXTENSIONS, SUPPORTS_VISION
 from .models import Conversation, GuildSettings
 from .utils import (
     clean_name,
+    clean_response,
     ensure_supports_vision,
     ensure_tool_consistency,
     extract_code_blocks,
@@ -438,6 +439,8 @@ class ChatHandler(MixinMeta):
 
             if reply := response.content:
                 break
+
+            await clean_response(response)
 
             if response.tool_calls:
                 log.debug("Tool calls detected")

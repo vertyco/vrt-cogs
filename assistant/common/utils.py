@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import List, Optional, Tuple, Union
 
 import discord
+from openai.types.chat.chat_completion_message import ChatCompletionMessage
 from redbot.core import commands, version_info
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
@@ -214,6 +215,56 @@ async def ensure_supports_vision(messages: List[dict], conf: GuildSettings, user
                     cleaned = True
                     break
     return cleaned
+
+
+async def clean_response(response: ChatCompletionMessage) -> bool:
+    """Clean the model response since its stupid and breaks itself
+
+    Example
+    ```
+    {
+        "id": "call_JhCP7H8Mv768cXbFiupO4lxQ",
+        "function": {
+          "arguments": "{\"panel_name\":\"pve\",\"answer1\":\"Unknown\",\"answer2\":\"I am experiencing an issue where the game is not allowing me to demolish a structure even though it says I can. It seems to be a bug.\",\"answer3\":\"N/A\",\"answer4\":\"N/A\",\"answer5\":\"N/A\"}",
+          "name": "multi_tool_use.create_ticket_for_user"
+        },
+        "type": "function"
+      }
+    ```
+    Will return: Bad Request Error(400): 'multi_tool_use.create_ticket_for_user' does not match '^[a-zA-Z0-9_-]{1,64}$' - 'messages.16.tool_calls.0.function.name'
+    """
+    if not response.tool_calls and not response.function_call:
+        return False
+    modified = False
+    if response.tool_calls:
+        for tool_call in response.tool_calls:
+            original = tool_call.function.name
+            cleaned = clean_name(original)
+            if cleaned != original:
+                tool_call.function.name = cleaned
+                modified = True
+    elif response.function_call:
+        original = response.function_call.name
+        cleaned = clean_name(original)
+        if cleaned != original:
+            response.function_call.name = cleaned
+            modified = True
+    return modified
+
+
+async def clean_responses(messages: List[dict]) -> bool:
+    """Same as clean_response but cleans the whole message payload"""
+    modified = False
+    for message in messages:
+        if "tool_calls" not in message:
+            continue
+        for tool_call in message["tool_calls"]:
+            original = tool_call["function"]["name"]
+            cleaned = clean_name(original)
+            if cleaned != original:
+                tool_call["function"]["name"] = cleaned
+                modified = True
+    return modified
 
 
 async def ensure_tool_consistency(messages: List[dict]) -> bool:
