@@ -32,6 +32,7 @@ from .models import Conversation, GuildSettings
 from .utils import (
     clean_name,
     clean_response,
+    clean_responses,
     ensure_supports_vision,
     ensure_tool_consistency,
     extract_code_blocks,
@@ -389,6 +390,8 @@ class ChatHandler(MixinMeta):
             cleaned = await ensure_tool_consistency(messages)
             if cleaned and before == len(messages):
                 log.error("Something went wrong while ensuring tool call consistency")
+
+            await clean_responses(messages)
 
             if cleaned or degraded:
                 conversation.overwrite(messages)
