@@ -79,21 +79,22 @@ class Functions(MixinMeta):
         guild = user.guild
         conf = await self.config.guild(guild).all()
         if user.id in conf["blacklist"]:
-            return _("This user has been blacklisted from opening tickets!")
+            return "This user has been blacklisted from opening tickets!"
         if any(r.id in conf["blacklist"] for r in user.roles):
-            return _("This user has a role that is blacklisted from opening tickets!")
+            return "This user has a role that is blacklisted from opening tickets!"
 
         opened = conf["opened"]
         if str(user.id) in opened and conf["max_tickets"] <= len(opened[str(user.id)]):
             channels = "\n".join([f"<#{i}>" for i in opened[str(user.id)]])
-            txt = _("This user has the maximum amount of tickets opened already!\nTickets: {}").format(channels)
+            txt = f"This user has the maximum amount of tickets opened already!\nTickets: {channels}"
             return txt
 
         panels = conf["panels"]
         if not panels:
-            return _("There are no support ticket panels available!")
+            return "There are no support ticket panels available!"
 
         buffer = StringIO()
+        q = "Pre-ticket questions (USER MUST ANSWER THESE IN DETAIL BEFORE TICKET CAN BE OPENED!)\n"
         for panel_name, panel_data in panels.items():
             # Check if the panel is disabled
             if panel_data.get("disabled", False):
@@ -109,28 +110,20 @@ class Functions(MixinMeta):
             if required_roles and not any(role.id in required_roles for role in user.roles):
                 continue
 
-            txt = _("# SUPPORT TICKET PANEL NAME: {}\n").format(panel_name)
+            buffer.write(f"# Support ticket panel name: {panel_name}\n")
             if btext := panel_data["button_text"]:
-                txt += _("Button label: {}\n").format(btext)
+                buffer.write(f"- Tag: {btext}\n")
 
             if modal := panel_data.get("modal"):
-                section = 1
-                txt += _("## PRE-TICKET QUESTIONS (USER MUST ANSWER THESE BEFORE TICKET CAN BE OPENED!)\n")
-                for i in modal.values():
-                    txt += _("### Question {} {}\n").format(
-                        section,
-                        _("(Required)") if i["required"] else _("(Optional)"),
-                    )
-                    txt += _("- Question: {}\n").format(i["label"])
-                    if placeholder := i["placeholder"]:
-                        txt += _("- Example Placeholder: {}\n").format(placeholder)
-                    if maxlength := i["max_length"]:
-                        txt += _("- Maximum length: {}\n").format(maxlength)
-                    section += 1
+                if questions := list(modal.values()):
+                    buffer.write(q)
+                    for idx, i in enumerate(questions):
+                        required = "(Required)" if i["required"] else "(Optional)"
+                        buffer.write(f"- Question {idx + 1} {required}: {i['label']}\n")
+                        if placeholder := i["placeholder"]:
+                            buffer.write(f" - Example: {placeholder}\n")
 
-            txt += "\n"
-
-            buffer.write(txt)
+            buffer.write("\n")
 
         final = buffer.getvalue()
         if not final:
@@ -224,7 +217,7 @@ class Functions(MixinMeta):
 
         form_embed = discord.Embed()
         if answers:
-            title = _("Submission Info")
+            title = "Submission Info"
             form_embed = discord.Embed(color=user.color)
             if user.avatar:
                 form_embed.set_author(name=title, icon_url=user.display_avatar.url)
