@@ -149,7 +149,8 @@ class AdminBase(MixinMeta):
             except discord.Forbidden:
                 pass
 
-        del conf.suggestions[number]
+        if number in conf.suggestions:
+            del conf.suggestions[number]
 
         await ctx.send(_("Suggestion #{} has been approved.").format(number))
 
@@ -288,7 +289,8 @@ class AdminBase(MixinMeta):
             except discord.Forbidden:
                 pass
 
-        del conf.suggestions[number]
+        if number in conf.suggestions:
+            del conf.suggestions[number]
 
         await ctx.send(_("Suggestion #{} has been rejected.").format(number))
 
