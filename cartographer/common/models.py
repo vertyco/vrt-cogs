@@ -1,38 +1,26 @@
 import asyncio
 import base64
 import logging
+import typing as t
 from datetime import datetime, timedelta
-from io import BytesIO
+from io import BytesIO, StringIO
 
 import discord
 import orjson
 from discord.enums import ContentFilter, NotificationLevel, VerificationLevel
 from pydantic import VERSION, BaseModel, Field
 from redbot.core.i18n import Translator
+from redbot.core.utils.chat_formatting import pagify
 
 log = logging.getLogger("red.vrt.cartographer.models")
 _ = Translator("Cartographer", __file__)
 
-
-def get_named_channel(
-    guild: discord.Guild, channel_name: str
-) -> discord.TextChannel | discord.CategoryChannel | discord.ForumChannel | None:
-    mapping = {i.name: i for i in guild.channels}
-    return mapping.get(channel_name)
+VOICE = t.Union[discord.VoiceChannel, discord.StageChannel]
+GuildChannels = t.Union[VOICE, discord.ForumChannel, discord.TextChannel, discord.CategoryChannel]
 
 
-def get_named_forum_channel(guild: discord.Guild, channel_name: str) -> discord.ForumChannel | None:
-    mapping = {i.name: i for i in guild.forums}
-    return mapping.get(channel_name)
-
-
-def get_named_text_channel(guild: discord.Guild, channel_name: str) -> discord.TextChannel | None:
-    mapping = {i.name: i for i in guild.text_channels}
-    return mapping.get(channel_name)
-
-
-def get_named_voice_channel(guild: discord.Guild, channel_name: str) -> discord.VoiceChannel | None:
-    mapping = {i.name: i for i in guild.voice_channels}
+def get_named_channel(guild: discord.Guild, channel_name: str) -> GuildChannels | None:
+    mapping: dict = {i.name: i for i in guild.channels}
     return mapping.get(channel_name)
 
 
@@ -46,12 +34,7 @@ def get_named_role(guild: discord.Guild, role_name: str) -> discord.Role | None:
     return mapping.get(role_name)
 
 
-class FriendlyBase(BaseModel):
-    def model_dump_json(self, *args, **kwargs):
-        if VERSION >= "2.0.1":
-            return super().model_dump_json(*args, **kwargs)
-        return super().json(*args, **kwargs)
-
+class Base(BaseModel):
     def model_dump(self, *args, **kwargs):
         if VERSION >= "2.0.1":
             return super().model_dump(*args, **kwargs)
@@ -60,46 +43,38 @@ class FriendlyBase(BaseModel):
         return super().dict(*args, **kwargs)
 
     @classmethod
-    def model_validate_json(cls, obj, *args, **kwargs):
-        if VERSION >= "2.0.1":
-            return super().model_validate_json(obj, *args, **kwargs)
-        return super().parse_raw(obj, *args, **kwargs)
-
-    @classmethod
     def model_validate(cls, obj, *args, **kwargs):
         if VERSION >= "2.0.1":
             return super().model_validate(obj, *args, **kwargs)
         return super().parse_obj(obj, *args, **kwargs)
 
 
-class Overwrites(FriendlyBase):
+class Overwrites(Base):
     type: int  # 0 for role, 1 for member
     id: int
     role_name: str | None = None
     values: dict[str, bool] = {}
 
     @classmethod
-    def serialize(cls, obj: discord.TextChannel | discord.VoiceChannel | discord.CategoryChannel) -> list:
+    def serialize(cls, obj: discord.TextChannel | discord.VoiceChannel | discord.CategoryChannel) -> list[t.Self]:
         overwrites = []
         for role_or_mem_obj, overwrite in obj.overwrites.items():
-            overwrites.append(
-                cls(
-                    type=0 if isinstance(role_or_mem_obj, discord.Role) else 1,
-                    id=role_or_mem_obj.id,
-                    values=overwrite._values,
-                    role_name=role_or_mem_obj.name if isinstance(role_or_mem_obj, discord.Role) else None,
-                )
-            )
+            obj_type = 0 if isinstance(role_or_mem_obj, discord.Role) else 1
+            name = role_or_mem_obj.name if isinstance(role_or_mem_obj, discord.Role) else None
+            overwrites.append(cls(type=obj_type, id=role_or_mem_obj.id, values=overwrite._values, role_name=name))
         return overwrites
 
     def get(self, guild: discord.Guild) -> discord.Member | discord.Role | None:
         if self.type == 0:
-            return get_named_role(guild, self.role_name)
+            role = guild.get_role(self.id)
+            if not role:
+                role = get_named_role(guild, self.role_name)
+            return role
         else:
             return guild.get_member(self.id)
 
 
-class Role(FriendlyBase):
+class Role(Base):
     id: int
     name: str
     color: int
@@ -135,7 +110,6 @@ class Role(FriendlyBase):
     @classmethod
     async def serialize(cls, role: discord.Role):
         icon = await role.icon.read() if role.icon else None
-        icon = base64.b64encode(icon).decode() if icon else None
         return cls(
             id=role.id,
             name=role.name,
@@ -144,7 +118,7 @@ class Role(FriendlyBase):
             position=role.position,
             permissions=role.permissions.value,
             mentionable=role.mentionable,
-            icon=icon,
+            icon=base64.b64encode(icon).decode() if icon else None,
             is_assignable=role.is_assignable(),
             is_managed=role.is_bot_managed(),
             is_integration=role.is_integration(),
@@ -163,7 +137,8 @@ class Role(FriendlyBase):
         return any(skip)
 
     async def restore(self, guild: discord.Guild) -> discord.Role | None:
-        if get_named_role(guild, self.name):
+        if guild.get_channel(self.id):
+            # Role already exists
             return
         if self.leave_alone():
             return
@@ -193,35 +168,43 @@ class Role(FriendlyBase):
         return role
 
     async def update(self, guild: discord.Guild) -> None:
-        if role := get_named_role(guild, self.name):
-            skip = [
-                role.name == self.name,
-                str(role.color) == str(self.color),
-                role.hoist == self.hoist,
-                role.position == self.position,
-                role.permissions.value == self.permissions,
-                role.mentionable == self.mentionable,
-                role.icon == self.icon,
-                role >= guild.me.top_role,
-                not role.is_assignable(),
-                role.is_bot_managed(),
-                role.is_default(),
-                role.is_integration(),
-                role.is_premium_subscriber(),
-                self.position >= guild.me.top_role.position,
-            ]
-            if all(skip):
-                return
-            log.debug(f"Updating role {role.name}")
-            reason = _("Restored from backup")
-            perms = discord.Permissions(self.permissions)
-            if self.leave_alone():
-                await role.edit(
-                    reason=reason,
-                    permissions=perms,
-                    mentionable=self.mentionable,
-                )
-                return
+        role = guild.get_role(self.id)
+        if not role:
+            return
+        skip = [
+            role.name == self.name,
+            str(role.color) == str(self.color),
+            role.hoist == self.hoist,
+            role.position == self.position,
+            role.permissions.value == self.permissions,
+            role.mentionable == self.mentionable,
+            role.icon == self.icon,
+            role >= guild.me.top_role,
+            not role.is_assignable(),
+            role.is_bot_managed(),
+            role.is_default(),
+            role.is_integration(),
+            role.is_premium_subscriber(),
+            self.position >= guild.me.top_role.position,
+        ]
+        if all(skip):
+            return
+        log.debug(f"Updating role {role.name}")
+        reason = _("Restored from backup")
+        perms = discord.Permissions(self.permissions)
+        if self.leave_alone():
+            await role.edit(
+                reason=reason,
+                permissions=perms,
+                mentionable=self.mentionable,
+            )
+            return
+        # All roles will need to be placed below the bot's top role so it can properly set the position
+        # This means the saved position will need to be adjusted
+        top_role = guild.me.top_role
+        if self.position >= top_role.position:
+            self.position -= top_role.position - 1
+        try:
             await role.edit(
                 reason=reason,
                 name=self.name,
@@ -232,9 +215,19 @@ class Role(FriendlyBase):
                 mentionable=self.mentionable,
                 display_icon=base64.b64decode(self.icon) if self.icon else None,
             )
+        except discord.HTTPException:
+            await role.edit(
+                reason=reason,
+                name=self.name,
+                color=self.color,
+                hoist=self.hoist,
+                permissions=perms,
+                mentionable=self.mentionable,
+                display_icon=base64.b64decode(self.icon) if self.icon else None,
+            )
 
 
-class Member(FriendlyBase):
+class Member(Base):
     id: int
     roles: list[Role]
 
@@ -258,7 +251,10 @@ class Member(FriendlyBase):
                 continue
             if role_backup.leave_alone():
                 continue
-            if role := get_named_role(guild, role_backup.name):
+            role = guild.get_role(role_backup.id)
+            if not role:
+                role = get_named_role(guild, role_backup.name)
+            if role:
                 skip = [
                     not role.is_assignable(),
                     role.is_bot_managed(),
@@ -289,7 +285,7 @@ class Member(FriendlyBase):
             asyncio.create_task(member.add_roles(*to_add))
 
 
-class CategoryChannel(FriendlyBase):
+class CategoryChannel(Base):
     id: int
     name: str
     position: int
@@ -310,10 +306,7 @@ class CategoryChannel(FriendlyBase):
         return {i.get(guild): discord.PermissionOverwrite(**i.values) for i in self.overwrites if i.get(guild)}
 
     async def restore(self, guild: discord.Guild) -> discord.CategoryChannel | None:
-        if channel := get_named_category(guild, self.name):
-            if not isinstance(channel, discord.CategoryChannel):
-                return
-            self.id = channel.id
+        if guild.get_channel(self.id):
             return
         log.debug(f"Restoring category channel {self.name}")
         channel = await guild.create_category(
@@ -326,27 +319,29 @@ class CategoryChannel(FriendlyBase):
         return channel
 
     async def update(self, guild: discord.Guild) -> None:
-        if channel := get_named_category(guild, self.name):
-            if not isinstance(channel, discord.CategoryChannel):
-                return
-            equal = [
-                channel.name == self.name,
-                channel.position == self.position,
-                channel.nsfw == self.nsfw,
-                channel.overwrites == self.get_overwrites(guild),
-            ]
-            if all(equal):
-                return
-            log.debug(f"Updating category {channel.name}")
-            await channel.edit(
-                name=self.name,
-                position=self.position,
-                nsfw=self.nsfw,
-                overwrites=self.get_overwrites(guild),
-            )
+        channel = guild.get_channel(self.id)
+        if not channel:
+            return
+        if not isinstance(channel, discord.CategoryChannel):
+            return
+        equal = [
+            channel.name == self.name,
+            channel.position == self.position,
+            channel.nsfw == self.nsfw,
+            channel.overwrites == self.get_overwrites(guild),
+        ]
+        if all(equal):
+            return
+        log.debug(f"Updating category {channel.name}")
+        await channel.edit(
+            name=self.name,
+            position=self.position,
+            nsfw=self.nsfw,
+            overwrites=self.get_overwrites(guild),
+        )
 
 
-class TextChannel(FriendlyBase):
+class TextChannel(Base):
     id: int
     category: str | None
     name: str
@@ -379,10 +374,7 @@ class TextChannel(FriendlyBase):
         return {i.get(guild): discord.PermissionOverwrite(**i.values) for i in self.overwrites if i.get(guild)}
 
     async def restore(self, guild: discord.Guild) -> discord.TextChannel | None:
-        if channel := get_named_text_channel(guild, self.name):
-            if not isinstance(channel, discord.TextChannel):
-                return
-            self.id = channel.id
+        if guild.get_channel(self.id):
             return
         log.debug(f"Restoring text channel {self.name}")
         channel = await guild.create_text_channel(
@@ -401,43 +393,45 @@ class TextChannel(FriendlyBase):
         return channel
 
     async def update(self, guild: discord.Guild) -> None:
-        if channel := get_named_text_channel(guild, self.name):
-            if not isinstance(channel, discord.TextChannel):
-                return
-            equal = [
-                channel.name == self.name,
-                channel.category == get_named_category(guild, self.category),
-                channel.position == self.position,
-                channel.nsfw == self.nsfw,
-                channel.overwrites == self.get_overwrites(guild),
-                channel.topic == self.topic,
-                channel.is_news() == self.news,
-                channel.slowmode_delay == self.slowmode_delay,
-                channel.default_auto_archive_duration == self.default_auto_archive_duration,
-                channel.default_thread_slowmode_delay == self.default_thread_slowmode_delay,
-            ]
-            if all(equal):
-                return
-            log.debug(f"Updating text channel {channel.name}")
-            coro = channel.edit(
-                name=self.name,
-                category=get_named_category(guild, self.category),
-                position=self.position,
-                news=self.news,
-                topic=self.topic,
-                nsfw=self.nsfw,
-                slowmode_delay=self.slowmode_delay,
-                overwrites=self.get_overwrites(guild),
-                default_auto_archive_duration=self.default_auto_archive_duration,
-                default_thread_slowmode_delay=self.default_thread_slowmode_delay,
-            )
-            if channel.position == self.position:
-                asyncio.create_task(coro)
-            else:
-                await coro
+        channel = guild.get_channel(self.id)
+        if not channel:
+            return
+        if not isinstance(channel, discord.TextChannel):
+            return
+        equal = [
+            channel.name == self.name,
+            channel.category == get_named_category(guild, self.category),
+            channel.position == self.position,
+            channel.nsfw == self.nsfw,
+            channel.overwrites == self.get_overwrites(guild),
+            channel.topic == self.topic,
+            channel.is_news() == self.news,
+            channel.slowmode_delay == self.slowmode_delay,
+            channel.default_auto_archive_duration == self.default_auto_archive_duration,
+            channel.default_thread_slowmode_delay == self.default_thread_slowmode_delay,
+        ]
+        if all(equal):
+            return
+        log.debug(f"Updating text channel {channel.name}")
+        coro = channel.edit(
+            name=self.name,
+            category=get_named_category(guild, self.category),
+            position=self.position,
+            news=self.news,
+            topic=self.topic,
+            nsfw=self.nsfw,
+            slowmode_delay=self.slowmode_delay,
+            overwrites=self.get_overwrites(guild),
+            default_auto_archive_duration=self.default_auto_archive_duration,
+            default_thread_slowmode_delay=self.default_thread_slowmode_delay,
+        )
+        if channel.position == self.position:
+            asyncio.create_task(coro)
+        else:
+            await coro
 
 
-class ForumChannel(FriendlyBase):
+class ForumChannel(Base):
     id: int
     category: str | None
     name: str
@@ -466,10 +460,7 @@ class ForumChannel(FriendlyBase):
         return {i.get(guild): discord.PermissionOverwrite(**i.values) for i in self.overwrites if i.get(guild)}
 
     async def restore(self, guild: discord.Guild) -> discord.ForumChannel | None:
-        if channel := get_named_forum_channel(guild, self.name):
-            if not isinstance(channel, discord.ForumChannel):
-                return
-            self.id = channel.id
+        if guild.get_channel(self.id):
             return
         log.debug(f"Restoring forum {self.name}")
         channel = await guild.create_forum(name=self.name)
@@ -477,33 +468,35 @@ class ForumChannel(FriendlyBase):
         return channel
 
     async def update(self, guild: discord.Guild) -> None:
-        if channel := get_named_forum_channel(guild, self.name):
-            if not isinstance(channel, discord.ForumChannel):
-                return
-            equal = [
-                channel.name == self.name,
-                channel.category == get_named_category(guild, self.category),
-                channel.position == self.position,
-                channel.nsfw == self.nsfw,
-                channel.overwrites == self.get_overwrites(guild),
-                channel.topic == self.topic,
-            ]
-            if all(equal):
-                return
-            log.debug(f"Updating forum {channel.name}")
-            await channel.edit(
-                name=self.name,
-                category=get_named_category(guild, self.category),
-                position=self.position,
-                topic=self.topic,
-                overwrites=self.get_overwrites(guild),
-                nsfw=self.nsfw,
-                default_auto_archive_duration=self.default_auto_archive_duration,
-                default_thread_slowmode_delay=self.default_thread_slowmode_delay,
-            )
+        channel = guild.get_channel(self.id)
+        if not channel:
+            return
+        if not isinstance(channel, discord.ForumChannel):
+            return
+        equal = [
+            channel.name == self.name,
+            channel.category == get_named_category(guild, self.category),
+            channel.position == self.position,
+            channel.nsfw == self.nsfw,
+            channel.overwrites == self.get_overwrites(guild),
+            channel.topic == self.topic,
+        ]
+        if all(equal):
+            return
+        log.debug(f"Updating forum {channel.name}")
+        await channel.edit(
+            name=self.name,
+            category=get_named_category(guild, self.category),
+            position=self.position,
+            topic=self.topic,
+            overwrites=self.get_overwrites(guild),
+            nsfw=self.nsfw,
+            default_auto_archive_duration=self.default_auto_archive_duration,
+            default_thread_slowmode_delay=self.default_thread_slowmode_delay,
+        )
 
 
-class VoiceChannel(FriendlyBase):
+class VoiceChannel(Base):
     id: int
     category: str | None
     name: str
@@ -528,10 +521,7 @@ class VoiceChannel(FriendlyBase):
         return {i.get(guild): discord.PermissionOverwrite(**i.values) for i in self.overwrites if i.get(guild)}
 
     async def restore(self, guild: discord.Guild) -> discord.VoiceChannel | None:
-        if channel := get_named_voice_channel(guild, self.name):
-            if not isinstance(channel, discord.VoiceChannel):
-                return
-            self.id = channel.id
+        if guild.get_channel(self.id):
             return
         log.debug(f"Restoring voice channel {self.name}")
         channel = await guild.create_voice_channel(
@@ -546,36 +536,38 @@ class VoiceChannel(FriendlyBase):
         return channel
 
     async def update(self, guild: discord.Guild) -> None:
-        if channel := get_named_voice_channel(guild, self.name):
-            if not isinstance(channel, discord.VoiceChannel):
-                return
-            equal = [
-                channel.name == self.name,
-                channel.category == get_named_category(guild, self.category),
-                channel.position == self.position,
-                channel.user_limit == self.user_limit,
-                channel.bitrate == self.bitrate,
-                channel.overwrites == self.get_overwrites(guild),
-            ]
-            if all(equal):
-                return
-            log.debug(f"Updating voice channel {channel.name}")
-            channel: discord.VoiceChannel = channel
-            coro = channel.edit(
-                name=self.name,
-                category=get_named_category(guild, self.category),
-                position=self.position,
-                user_limit=self.user_limit,
-                bitrate=self.bitrate if self.bitrate <= guild.bitrate_limit else 64000,
-                overwrites=self.get_overwrites(guild),
-            )
-            if channel.position == self.position:
-                asyncio.create_task(coro)
-            else:
-                await coro
+        channel = guild.get_channel(self.id)
+        if not channel:
+            return
+        if not isinstance(channel, discord.VoiceChannel):
+            return
+        equal = [
+            channel.name == self.name,
+            channel.category == get_named_category(guild, self.category),
+            channel.position == self.position,
+            channel.user_limit == self.user_limit,
+            channel.bitrate == self.bitrate,
+            channel.overwrites == self.get_overwrites(guild),
+        ]
+        if all(equal):
+            return
+        log.debug(f"Updating voice channel {channel.name}")
+        channel: discord.VoiceChannel = channel
+        coro = channel.edit(
+            name=self.name,
+            category=get_named_category(guild, self.category),
+            position=self.position,
+            user_limit=self.user_limit,
+            bitrate=self.bitrate if self.bitrate <= guild.bitrate_limit else 64000,
+            overwrites=self.get_overwrites(guild),
+        )
+        if channel.position == self.position:
+            asyncio.create_task(coro)
+        else:
+            await coro
 
 
-class GuildBackup(FriendlyBase):
+class GuildBackup(Base):
     created: datetime = Field(default_factory=lambda: datetime.now().astimezone())
     id: int
     owner_id: int
@@ -692,78 +684,10 @@ class GuildBackup(FriendlyBase):
     ):
         log.info(f"Restoring backup '{self.name}' to guild '{guild.name}'")
         reason = _("Cartographer Restore")
-        remove = _(" (Removal)")
-        all_objs = self.categories + self.text_channels + self.voice_channels + self.forums
-
-        if remove_old:
-            backup_roles = [i.name for i in self.roles]
-            for role in guild.roles:
-                skip = [
-                    not role.is_assignable(),
-                    role.is_bot_managed(),
-                    role.is_default(),
-                    role.is_integration(),
-                    role.is_premium_subscriber(),
-                    role >= guild.me.top_role,
-                ]
-                if any(skip):
-                    continue
-                if role.name not in backup_roles:
-                    await role.delete(reason=reason + remove)
-
-            # Ensure consistency of all channels
-            backup_names = [i.name for i in all_objs]
-            for chan in guild.channels:
-                if chan.id == current_channel.id:
-                    continue
-                if chan.name not in backup_names:
-                    try:
-                        await chan.delete(reason=reason + remove)
-                    except discord.HTTPException as e:
-                        log.debug(f"Failed to delete channel {chan.name}", exc_info=e)
-            for chan in guild.categories:
-                if chan.name not in backup_names:
-                    try:
-                        await chan.delete(reason=reason + remove)
-                    except discord.HTTPException as e:
-                        log.debug(f"Failed to delete channel {chan.name}", exc_info=e)
-            for chan in guild.forums:
-                if chan.name not in backup_names:
-                    try:
-                        await chan.delete(reason=reason + remove)
-                    except discord.HTTPException as e:
-                        log.debug(f"Failed to delete channel {chan.name}", exc_info=e)
-
-        log.debug("Recreating roles")
-        # Ensure all roles exist before sorting them
-        for role_backup in self.roles:
-            await role_backup.restore(guild)
-        log.debug("Updating members")
-        # Ensure members have roles reassigned
-        for member in self.members:
-            await member.restore(guild, remove_old)
-
-        # Ensure all categories exist before sorting them
-        for obj in self.categories:
-            await obj.restore(guild)
-        # Ensure all text channels exist before sorting them
-        for obj in self.text_channels:
-            await obj.restore(guild)
-        # Ensure all voice channels exist before sorting them
-        for obj in self.voice_channels:
-            await obj.restore(guild)
-        log.debug("Updating roles")
-        # Ensure role consistency
-        for role_backup in self.roles:
-            if role_backup.position >= guild.me.top_role.position:
-                continue
-            try:
-                await role_backup.update(guild)
-            except discord.HTTPException as e:
-                log.debug(f"Failed to update role {role_backup.name}", exc_info=e)
+        results = StringIO(_("Server restore has completed successfully!"))
 
         # Update guild before forums just in case it wasnt a community server
-        log.debug("Updating guild")
+        log.debug("Restoring guild")
         verification = VerificationLevel(self.verification_level)
         content_filter = ContentFilter(self.content_filter)
         if self.community and self.verification_level < VerificationLevel.medium.value:
@@ -774,11 +698,12 @@ class GuildBackup(FriendlyBase):
         rules_channel = get_named_channel(guild, self.rules_channel) or get_named_channel(
             guild, self.public_updates_channel
         )
+        if not rules_channel:
+            rules_channel = await guild.create_text_channel(name="rules")
+
         public_updates_channel = get_named_channel(guild, self.public_updates_channel) or get_named_channel(
             guild, self.rules_channel
         )
-        if not rules_channel:
-            rules_channel = await guild.create_text_channel(name="rules")
         if not public_updates_channel:
             public_updates_channel = await guild.create_text_channel(name="public-updates")
 
@@ -809,6 +734,7 @@ class GuildBackup(FriendlyBase):
             )
         except Exception as e:
             log.warning("Couldn't fully edit guild", exc_info=e)
+            results.write(_("\nFailed to fully edit guild: {}").format(str(e)))
             await guild.edit(
                 reason=reason,
                 name=self.name,
@@ -824,19 +750,132 @@ class GuildBackup(FriendlyBase):
                 explicit_content_filter=content_filter,
             )
 
-        # Ensure all forum channels exist before sorting them
+        remove = _(" (Removal)")
+        all_objs = self.categories + self.text_channels + self.voice_channels + self.forums
+
+        if remove_old:
+            log.info("Removing any roles or channels that arent in the backup")
+            role_ids = [i.id for i in self.roles]
+            for role in guild.roles:
+                skip = [
+                    not role.is_assignable(),
+                    role.is_bot_managed(),
+                    role.is_default(),
+                    role.is_integration(),
+                    role.is_premium_subscriber(),
+                    role >= guild.me.top_role,
+                ]
+                if any(skip):
+                    continue
+                if role.id in role_ids:
+                    continue
+                try:
+                    await role.delete(reason=reason + remove)
+                    log.info(f"Deleted role {role.name}")
+                except discord.HTTPException as e:
+                    results.write(_("\nFailed to delete role {}: {}").format(role.name, str(e.text)))
+            chan_ids = [i.id for i in all_objs]
+            # Ensure consistency of all channels
+            for chan in guild.channels:
+                if chan.id in chan_ids:
+                    continue
+                if chan.id == current_channel.id:
+                    results.write(_("\nCan't delete {} as it is the current channel").format(chan.name))
+                    continue
+                try:
+                    await chan.delete(reason=reason + remove)
+                    log.info(f"Deleted channel {chan.name}")
+                except discord.HTTPException as e:
+                    results.write(_("\nFailed to delete channel {}: {}").format(chan.name, str(e.text)))
+            for chan in guild.categories:
+                if chan.id in chan_ids:
+                    continue
+                try:
+                    await chan.delete(reason=reason + remove)
+                    log.info(f"Deleted channel {chan.name}")
+                except discord.HTTPException as e:
+                    results.write(_("\nFailed to delete category {}: {}").format(chan.name, str(e.text)))
+            for chan in guild.forums:
+                if chan.id in chan_ids:
+                    continue
+                try:
+                    await chan.delete(reason=reason + remove)
+                    log.info(f"Deleted channel {chan.name}")
+                except discord.HTTPException as e:
+                    results.write(_("\nFailed to delete forum {}: {}").format(chan.name, str(e.text)))
+
+        log.info("Recreating roles")
+        for role_backup in self.roles:
+            try:
+                await role_backup.restore(guild)
+            except discord.HTTPException as e:
+                results.write(_("\nFailed to restore role {}: {}").format(role_backup.name, str(e.text)))
+        log.info("Updating roles")
+        for role_backup in self.roles:
+            try:
+                await role_backup.update(guild)
+            except discord.HTTPException as e:
+                results.write(_("\nFailed to update role {}: {}").format(role_backup.name, str(e.text)))
+        log.info("Syncing member roles")
+        for member in self.members:
+            await member.restore(guild, remove_old)
+
+        log.info("Restoring categories")
+        for obj in self.categories:
+            try:
+                await obj.restore(guild)
+            except discord.HTTPException as e:
+                results.write(_("\nFailed to restore category {}: {}").format(obj.name, str(e.text)))
+        log.info("Restoring text channels")
+        for obj in self.text_channels:
+            try:
+                await obj.restore(guild)
+            except discord.HTTPException as e:
+                results.write(_("\nFailed to restore text channel {}: {}").format(obj.name, str(e.text)))
+        log.info("Restoring voice channels")
+        for obj in self.voice_channels:
+            try:
+                await obj.restore(guild)
+            except discord.HTTPException as e:
+                results.write(_("\nFailed to restore voice channel {}: {}").format(obj.name, str(e.text)))
+        log.info("Restoring forum channels")
         for obj in self.forums:
-            await obj.restore(guild)
+            try:
+                await obj.restore(guild)
+            except discord.HTTPException as e:
+                results.write(_("\nFailed to restore forum {}: {}").format(obj.name, str(e.text)))
 
         # Ensure all channel consistency
-        for obj in all_objs:
-            await obj.update(guild)
+        log.info("Syncing categories")
+        for obj in self.categories:
+            try:
+                await obj.update(guild)
+            except discord.HTTPException as e:
+                results.write(_("\nFailed to update category {}: {}").format(obj.name, str(e.text)))
+        log.info("Syncing text channels")
+        for obj in self.text_channels:
+            try:
+                await obj.update(guild)
+            except discord.HTTPException as e:
+                results.write(_("\nFailed to update text channel {}: {}").format(obj.name, str(e.text)))
+        log.info("Syncing voice channels")
+        for obj in self.voice_channels:
+            try:
+                await obj.update(guild)
+            except discord.HTTPException as e:
+                results.write(_("\nFailed to update voice channel {}: {}").format(obj.name, str(e.text)))
+        log.info("Syncing forum channels")
+        for obj in self.forums:
+            try:
+                await obj.update(guild)
+            except discord.HTTPException as e:
+                results.write(_("\nFailed to update forum {}: {}").format(obj.name, str(e.text)))
 
-        txt = _("Server restore has completed successfully!")
-        await current_channel.send(txt)
+        for p in pagify(results.getvalue(), page_length=1900):
+            await current_channel.send(p)
 
 
-class GuildSettings(FriendlyBase):
+class GuildSettings(Base):
     backups: list[GuildBackup] = []
     auto_backup_interval_hours: int = 0
     last_backup: datetime = Field(default_factory=lambda: datetime.now().astimezone() - timedelta(days=999))
@@ -862,7 +901,7 @@ class GuildSettings(FriendlyBase):
         self.last_backup = datetime.now().astimezone()
 
 
-class DB(FriendlyBase):
+class DB(Base):
     configs: dict[int, GuildSettings] = {}
     max_backups_per_guild: int = 5
     allow_auto_backups: bool = False
