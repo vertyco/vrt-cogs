@@ -169,6 +169,7 @@ class BackupMenu(discord.ui.View):
             return
 
         if modal.confirm:
+            self.page %= len(self.conf.backups)
             backup: GuildBackup = self.conf.backups[self.page]
             asyncio.create_task(backup.restore(self.guild, interaction.channel, modal.rem_old))
             txt = _("Your backup is being restored!")
