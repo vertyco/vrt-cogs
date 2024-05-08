@@ -144,9 +144,16 @@ class Admin(MixinMeta):
     ):
         """Set the approved, rejected, or pending channels for IdeaBoard"""
         conf = self.db.get_conf(ctx.guild)
-        if channel_type == "pending" and conf.suggestions:
-            return await ctx.send(_("You cannot change the pending channel while there are pending suggestions!"))
         current = getattr(conf, channel_type)
+        if channel_type == "pending" and conf.suggestions:
+            # Did it get deleted?
+            if ctx.guild.get_channel(current):
+                return await ctx.send(
+                    _("You cannot change the pending channel while there are pending suggestions in {}!").format(
+                        f"<#{current}>"
+                    )
+                )
+
         if current == channel.id:
             return await ctx.send(_("This channel is already set as the {} channel!").format(channel_type))
         if current:
