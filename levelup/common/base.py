@@ -812,15 +812,20 @@ class UserCommands(MixinMeta, ABC):
     async def get_profile(self, ctx: commands.Context, *, user: discord.Member = None):
         """View your profile"""
         user = user or ctx.author
-        await self.send_user_profile(user, ctx.channel, message=ctx.message)
+        await self.send_user_profile(user, ctx.channel, ctx.interaction, ctx)
         log.debug(f"Profile command used by {ctx.author} in {ctx.guild}")
+
+    @discord.app_commands.command(name="profile", description="View your profile")
+    async def get_profile_slash(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        await self.send_user_profile(interaction.user, interaction.channel, interaction)
 
     async def send_user_profile(
         self,
         user: discord.Member,
         channel: discord.TextChannel,
         interaction: discord.Interaction = None,
-        message: discord.Message = None,
+        ctx: commands.Context = None,
     ):
         async def send(
             obj: Union[discord.Embed, str] = None,
@@ -837,36 +842,32 @@ class UserCommands(MixinMeta, ABC):
             else:
                 kwargs["content"] = obj
 
-            if isinstance(obj, str):
-                if message:
-                    try:
-                        await message.reply(**kwargs, mention_author=mention)
-                    except discord.HTTPException:
-                        if interaction:
-                            await interaction.followup.send(**kwargs)
-                        else:
-                            await channel.send(**kwargs)
-                elif interaction:
-                    await interaction.followup.send(**kwargs)
-                else:
-                    await channel.send(**kwargs)
-                return
-
-            if message:
+            if ctx is not None:
                 try:
                     try:
-                        await message.reply(**kwargs, mention_author=mention)
+                        await ctx.reply(**kwargs, mention_author=mention)
                     except TypeError:
-                        await message.reply(**kwargs)
-                except discord.HTTPException:
-                    if interaction:
-                        await interaction.followup.send(**kwargs)
+                        await ctx.reply(**kwargs)
+                except (discord.HTTPException, discord.InteractionResponded):
+                    if ctx.interaction:
+                        try:
+                            await ctx.interaction.response.send_message(**kwargs)
+                        except discord.InteractionResponded:
+                            try:
+                                await ctx.interaction.followup.send(**kwargs)
+                            except discord.HTTPException:
+                                await channel.send(**kwargs)
                     else:
                         await channel.send(**kwargs)
-            elif interaction:
-                await interaction.followup.send(**kwargs)
-            else:
-                await channel.send(**kwargs)
+
+            elif interaction is not None:
+                try:
+                    await interaction.response.send_message(**kwargs)
+                except discord.InteractionResponded:
+                    try:
+                        await interaction.followup.send(**kwargs)
+                    except discord.HTTPException:
+                        await channel.send(**kwargs)
 
         if not isinstance(user, discord.Member):
             return
@@ -1035,7 +1036,7 @@ class UserCommands(MixinMeta, ABC):
                     await send(file=file, mention=mention)
                 except Exception as e:
                     if "In message_reference: Unknown message" not in str(e):
-                        log.error(f"Failed to send profile pic: {e}")
+                        log.error("Failed to send profile pic", exc_info=e)
                     try:
                         file = await self.get_or_fetch_profile(user, args, full)
                         if mention:
@@ -1043,7 +1044,7 @@ class UserCommands(MixinMeta, ABC):
                         else:
                             await send(file=file)
                     except Exception as e:
-                        log.error(f"Failed AGAIN to send profile pic: {e}")
+                        log.error("Failed AGAIN to send profile pic", exc_info=e)
                 mtime = round((perf_counter() - start2) * 1000)
                 if user.id == 350053505815281665:
                     log.info(f"Render time: {humanize_number(rtime)}ms\n" f"Send Time: {humanize_number(mtime)}ms")
