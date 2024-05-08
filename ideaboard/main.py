@@ -3,6 +3,7 @@ import logging
 
 from redbot.core import Config, commands
 from redbot.core.bot import Red
+from redbot.core.i18n import Translator
 
 from .abc import CompositeMetaClass
 from .commands import Commands
@@ -11,7 +12,7 @@ from .common.models import DB, run_migrations
 from .views.voteview import VoteView
 
 log = logging.getLogger("red.vrt.ideaboard")
-
+_ = Translator("IdeaBoard", __file__)
 # redgettext -D views/voteview.py commands/user.py commands/admin.py --command-docstring
 
 
