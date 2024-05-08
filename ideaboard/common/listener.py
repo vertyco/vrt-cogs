@@ -1,11 +1,15 @@
 import logging
+from contextlib import suppress
 
 import discord
 from redbot.core import commands
+from redbot.core.i18n import Translator
 
 from ..abc import MixinMeta
 
 log = logging.getLogger("red.vrt.ideaboard.listeners")
+
+_ = Translator("IdeaBoard", __file__)
 
 
 class Listeners(MixinMeta):
@@ -58,6 +62,23 @@ class Listeners(MixinMeta):
             for uid in suggestion.downvotes:
                 profile = conf.get_profile(uid)
                 profile.downvotes -= 1
+
+            if thread_id := suggestion.thread_id:
+                thread = message.guild.get_thread(thread_id)
+                if thread:
+                    with suppress(discord.HTTPException):
+                        if conf.delete_threads:
+                            await thread.delete()
+                        else:
+                            newname = thread.name + _(" [Deleted]")
+                            embed = discord.Embed(
+                                color=discord.Color.dark_red(),
+                                description=suggestion.content,
+                                title=_("Deleted Suggestion"),
+                            )
+                            await thread.send(embed=embed)
+                            await thread.edit(archived=True, locked=True, name=newname)
+
             del conf.suggestions[num]
             log.info(f"Suggestion #{num} had its message deleted in {message.guild.name} ({message.guild.id})")
             await self.save()

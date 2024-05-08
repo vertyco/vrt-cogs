@@ -79,7 +79,7 @@ class AdminBase(MixinMeta):
 
         if suggestion.thread_id:
             with suppress(discord.NotFound):
-                thread: discord.Thread = await ctx.guild.fetch_channel(suggestion.thread_id)
+                thread: discord.Thread = await ctx.guild.get_thread(suggestion.thread_id)
                 if thread:
                     if conf.delete_threads:
                         with suppress(discord.HTTPException):
@@ -215,20 +215,19 @@ class AdminBase(MixinMeta):
 
         if suggestion.thread_id:
             with suppress(discord.NotFound):
-                thread: discord.Thread = await ctx.guild.fetch_channel(suggestion.thread_id)
+                thread: discord.Thread = await ctx.guild.get_thread(suggestion.thread_id)
                 if thread:
-                    if conf.delete_threads:
-                        with suppress(discord.HTTPException):
+                    with suppress(discord.HTTPException):
+                        if conf.delete_threads:
                             await thread.delete()
-                    else:
-                        # Close and lock the thread
-                        newname = thread.name + _(" [Rejected]")
-                        embed = discord.Embed(
-                            color=discord.Color.red(),
-                            description=suggestion.content,
-                            title=_("Rejected Suggestion"),
-                        )
-                        with suppress(discord.HTTPException):
+                        else:
+                            # Close and lock the thread
+                            newname = thread.name + _(" [Rejected]")
+                            embed = discord.Embed(
+                                color=discord.Color.red(),
+                                description=suggestion.content,
+                                title=_("Rejected Suggestion"),
+                            )
                             await thread.send(embed=embed)
                             await thread.edit(archived=True, locked=True, name=newname)
 

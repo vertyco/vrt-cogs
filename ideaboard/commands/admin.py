@@ -171,6 +171,7 @@ class Admin(MixinMeta):
                 pending = ctx.guild.get_channel(current)
                 sorted_suggestions = sorted(conf.suggestions.items(), key=lambda x: x[0])
                 for num, suggestion in sorted_suggestions:
+                    original_thread = ctx.guild.get_thread(suggestion.thread_id) if suggestion.thread_id else None
                     original_message = None
                     if pending:
                         with suppress(discord.HTTPException):
@@ -189,11 +190,26 @@ class Admin(MixinMeta):
                     view = VoteView(self, ctx.guild, num, suggestion.id)
                     message = await channel.send(content=content, embed=embed, view=view)
                     conf.suggestions[num].message_id = message.id
+                    if conf.discussion_threads:
+                        name = _("Suggestion #{} Discussion").format(num)
+                        reason = _("Discussion thread for suggestion #{}").format(num)
+                        try:
+                            thread = await channel.create_thread(name=name, reason=reason)
+                            conf.suggestions[num].thread_id = thread.id
+                        except discord.HTTPException as e:
+                            txt = _("Faile to create discussion thread in {} for suggestion #{}: {}").format(
+                                channel.mention, num, str(e.text)
+                            )
+                            await ctx.send(txt)
 
                     # Delete from old channel if it exists
                     if original_message:
                         with suppress(discord.HTTPException):
                             await original_message.delete()
+                    # Delete the thread if it exists
+                    if original_thread:
+                        with suppress(discord.HTTPException):
+                            await original_thread.delete()
 
         if current:
             txt = _("The {} channel has been changed from {} to {}").format(
