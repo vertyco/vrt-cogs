@@ -7,8 +7,10 @@ from discord import app_commands
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_number, text_to_file
+from redbot.core.utils.predicates import MessagePredicate
 
 from ..abc import MixinMeta
+from ..views.voteview import VoteView
 
 log = logging.getLogger("red.vrt.ideaboard.commands.adminbase")
 _ = Translator("IdeaBoard", __file__)
@@ -61,27 +63,20 @@ class AdminBase(MixinMeta):
         if not suggestion:
             txt = _("That suggestion does not exist!")
             return await ctx.send(txt)
+
         try:
             message = await pending_channel.fetch_message(suggestion.message_id)
-        except discord.NotFound:
-            txt = _(
-                "Cannot find the message associated with this suggestion, "
-                "if you changed the pending channel recently that could be why! Cleaning from config..."
-            )
-            profile = conf.get_profile(suggestion.author_id)
-            profile.suggestions_made -= 1
-            for uid in suggestion.upvotes:
-                profile = conf.get_profile(uid)
-                profile.upvotes -= 1
-            for uid in suggestion.downvotes:
-                profile = conf.get_profile(uid)
-                profile.downvotes -= 1
-            del conf.suggestions[number]
-            await ctx.send(txt)
-            await self.save()
-            return
+            await message.delete()
+        except discord.HTTPException:
+            message = None
 
-        content = message.embeds[0].description
+        if message:
+            try:
+                await message.delete()
+            except discord.HTTPException as e:
+                txt = _("I couldn't delete the pending message: {}").format(e.text)
+                await ctx.send(txt)
+
         if suggestion.thread_id:
             with suppress(discord.NotFound):
                 thread: discord.Thread = await ctx.guild.fetch_channel(suggestion.thread_id)
@@ -93,13 +88,19 @@ class AdminBase(MixinMeta):
                         # Close and lock the thread
                         newname = thread.name + _(" [Approved]")
                         embed = discord.Embed(
-                            color=discord.Color.green(), description=content, title=_("Approved Suggestion")
+                            color=discord.Color.green(),
+                            description=suggestion.content,
+                            title=_("Approved Suggestion"),
                         )
                         with suppress(discord.HTTPException):
                             await thread.send(embed=embed)
                             await thread.edit(archived=True, locked=True, name=newname)
 
-        embed = discord.Embed(color=discord.Color.green(), description=content, title=_("Approved Suggestion"))
+        embed = discord.Embed(
+            color=discord.Color.green(),
+            description=suggestion.content,
+            title=_("Approved Suggestion"),
+        )
         if author := ctx.guild.get_member(suggestion.author_id):
             foot = _("Suggested by {}").format(f"{author.name} ({author.id})")
             embed.set_footer(text=foot, icon_url=author.display_avatar)
@@ -115,9 +116,6 @@ class AdminBase(MixinMeta):
             value=f"{len(suggestion.upvotes)}x {up}\n{len(suggestion.downvotes)}x {down}",
             inline=False,
         )
-
-        with suppress(discord.NotFound):
-            await message.delete()
 
         try:
             txt = _("Suggestion #{}").format(number)
@@ -204,24 +202,17 @@ class AdminBase(MixinMeta):
 
         try:
             message = await pending_channel.fetch_message(suggestion.message_id)
-        except discord.NotFound:
-            txt = _(
-                "Cannot find the message associated with this suggestion, if you changed the pending channel recently that could be why! Cleaning from config..."
-            )
-            profile = conf.get_profile(suggestion.author_id)
-            profile.suggestions_made -= 1
-            for uid in suggestion.upvotes:
-                profile = conf.get_profile(uid)
-                profile.upvotes -= 1
-            for uid in suggestion.downvotes:
-                profile = conf.get_profile(uid)
-                profile.downvotes -= 1
-            del conf.suggestions[number]
-            await ctx.send(txt)
-            await self.save()
-            return
+            await message.delete()
+        except discord.HTTPException:
+            message = None
 
-        content = message.embeds[0].description
+        if message:
+            try:
+                await message.delete()
+            except discord.HTTPException as e:
+                txt = _("I couldn't delete the pending message: {}").format(e.text)
+                await ctx.send(txt)
+
         if suggestion.thread_id:
             with suppress(discord.NotFound):
                 thread: discord.Thread = await ctx.guild.fetch_channel(suggestion.thread_id)
@@ -233,13 +224,19 @@ class AdminBase(MixinMeta):
                         # Close and lock the thread
                         newname = thread.name + _(" [Rejected]")
                         embed = discord.Embed(
-                            color=discord.Color.red(), description=content, title=_("Rejected Suggestion")
+                            color=discord.Color.red(),
+                            description=suggestion.content,
+                            title=_("Rejected Suggestion"),
                         )
                         with suppress(discord.HTTPException):
                             await thread.send(embed=embed)
                             await thread.edit(archived=True, locked=True, name=newname)
 
-        embed = discord.Embed(color=discord.Color.red(), description=content, title=_("Rejected Suggestion"))
+        embed = discord.Embed(
+            color=discord.Color.red(),
+            description=suggestion.content,
+            title=_("Rejected Suggestion"),
+        )
         if conf.anonymous and not conf.reveal:
             embed.set_footer(text=_("Suggested anonymously"))
         elif author := ctx.guild.get_member(suggestion.author_id):
@@ -255,9 +252,6 @@ class AdminBase(MixinMeta):
             value=f"{len(suggestion.upvotes)}x {up}\n{len(suggestion.downvotes)}x {down}",
             inline=False,
         )
-
-        with suppress(discord.NotFound):
-            await message.delete()
 
         try:
             txt = _("Suggestion #{}").format(number)
@@ -331,19 +325,44 @@ class AdminBase(MixinMeta):
             await ctx.send(_("That suggestion does not exist!"))
             return
 
-        description = _("Suggestion could not be found in pending channel!")
-
-        if pending_channel := ctx.guild.get_channel(conf.pending):
+        pending = ctx.guild.get_channel(conf.pending)
+        if pending:
             try:
-                message = await pending_channel.fetch_message(suggestion.message_id)
-                description = message.embeds[0].description
-            except discord.NotFound:
-                pass
+                await pending.fetch_message(suggestion.message_id)
+            except discord.HTTPException:
+                txt = _(
+                    "I cannot find the message associated with this suggestion, would you like me to repost it? (y/n)"
+                )
+                msg = await ctx.send(txt)
+                pred = MessagePredicate.yes_or_no(ctx)
+                await self.bot.wait_for("message", check=pred)
+                if pred.result:
+                    content = _("Suggestion #{}").format(number)
+                    embed = discord.Embed(color=discord.Color.blurple(), description=suggestion.content)
+                    if conf.anonymous:
+                        embed.set_footer(text=_("Posted anonymously"))
+                    else:
+                        user = ctx.guild.get_member(suggestion.author_id) or await self.bot.get_or_fetch_user(
+                            suggestion.author_id
+                        )
+                        text = _("Posted by {}").format(f"{user.name} ({user.id})")
+                        embed.set_footer(text=text, icon_url=user.display_avatar)
+                    view = VoteView(self, ctx.guild, number, suggestion.id)
+                    message = await pending.send(content=content, embed=embed, view=view)
+                    conf.suggestions[number].message_id = message.id
+                    await self.save()
+                    await msg.edit(content=_("Suggestion #{} has been reposted.").format(number))
+                else:
+                    txt = _("Not reposting Suggestion #{}.\n").format(number)
+                    txt += _("You can remove it from the config by typing {}").format(
+                        f"`{ctx.clean_prefix}ideaset cleanup`"
+                    )
+                    await msg.edit(content=txt)
 
         embed = discord.Embed(
             color=discord.Color.blue(),
             title=_("Votes for Suggestion #{}").format(number),
-            description=description,
+            description=suggestion.content,
         )
 
         upvoter_ids = suggestion.upvotes

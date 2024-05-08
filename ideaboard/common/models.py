@@ -1,15 +1,22 @@
+import logging
+import typing as t
 from datetime import datetime
 
 import discord
+from pydantic import Field
 from redbot.core.bot import Red
 
 from . import Base
+
+log = logging.getLogger("red.vrt.ideaboard.models")
 
 
 class Suggestion(Base):
     id: str
     message_id: int
     author_id: int
+    content: str
+    created: datetime = Field(default_factory=datetime.now)
     thread_id: int = 0
 
     # Upvotes/Downvotes are a list of user IDs
@@ -118,7 +125,53 @@ class GuildSettings(Base):
 
 class DB(Base):
     configs: dict[int, GuildSettings] = {}
+    migrations: list[str] = []
 
     def get_conf(self, guild: discord.Guild | int) -> GuildSettings:
         gid = guild if isinstance(guild, int) else guild.id
         return self.configs.setdefault(gid, GuildSettings())
+
+
+async def run_migrations(data: dict[str, t.Any], bot: Red) -> bool:
+    """
+    Run migrations on the config in-place before validating
+    v0.6.0 - add `created` and `content` attributes to Suggestion model
+    """
+    if not data:
+        # First time loading the cog, no need to cleanup
+        return False
+    if "migrations" not in data:
+        data["migrations"] = []
+    migrated = False
+    if "0.6.0" not in data["migrations"]:
+        migrated = True
+        log.warning("Performing schema migration for 0.6.0")
+        data["migrations"].append("0.6.0")
+        for gid, conf in data["configs"].items():
+            guild = bot.get_guild(int(gid))
+            if not guild:
+                conf["suggestions"] = {}
+                continue
+            if not conf["suggestions"]:
+                continue
+            if not conf["pending"]:
+                conf["suggestions"] = {}
+                continue
+            channel = guild.get_channel(conf["pending"])
+            if not channel:
+                log.waring(f"Channel {conf['pending']} not found in guild {guild.name}")
+                conf["suggestions"] = {}
+                continue
+            suggestions_to_remove = []
+            for num, suggestion in conf["suggestions"].items():
+                if "content" in suggestion:  # Just in case?
+                    continue
+                try:
+                    message = await channel.fetch_message(suggestion["message_id"])
+                except discord.HTTPException:
+                    suggestions_to_remove.append(num)
+                    continue
+                conf["suggestions"][num]["content"] = message.embeds[0].description
+            for num in suggestions_to_remove:
+                del conf["suggestions"][num]
+    return migrated

@@ -169,7 +169,12 @@ class User(MixinMeta):
         view = VoteView(self, ctx.guild, suggestion_number, suggestion_id)
         message = await channel.send(count, embed=embed, view=view)
 
-        suggestion = Suggestion(id=suggestion_id, message_id=message.id, author_id=ctx.author.id)
+        suggestion = Suggestion(
+            id=suggestion_id,
+            message_id=message.id,
+            author_id=ctx.author.id,
+            content=content,
+        )
         if conf.discussion_threads:
             try:
                 name = _("Suggestion #{} Discussion").format(suggestion_number)

@@ -59,5 +59,6 @@ class Listeners(MixinMeta):
                 profile = conf.get_profile(uid)
                 profile.downvotes -= 1
             del conf.suggestions[num]
+            log.info(f"Suggestion #{num} had its message deleted in {message.guild.name} ({message.guild.id})")
             await self.save()
             break
