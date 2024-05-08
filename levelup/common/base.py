@@ -832,32 +832,41 @@ class UserCommands(MixinMeta, ABC):
                 kwargs["ephemeral"] = True
             if file:
                 kwargs["file"] = file
+            if isinstance(obj, discord.Embed):
+                kwargs["embed"] = obj
+            else:
+                kwargs["content"] = obj
+
             if isinstance(obj, str):
                 if message:
                     try:
-                        await message.reply(obj, mention_author=mention, **kwargs)
+                        await message.reply(**kwargs, mention_author=mention)
                     except discord.HTTPException:
                         if interaction:
-                            await interaction.followup.send(obj, **kwargs)
+                            await interaction.followup.send(**kwargs)
                         else:
-                            await channel.send(obj, **kwargs)
+                            await channel.send(**kwargs)
                 elif interaction:
-                    await interaction.followup.send(obj, **kwargs)
+                    await interaction.followup.send(**kwargs)
                 else:
-                    await channel.send(obj, **kwargs)
-            else:
-                if message:
+                    await channel.send(**kwargs)
+                return
+
+            if message:
+                try:
                     try:
-                        await message.reply(embed=obj, mention_author=mention, **kwargs)
-                    except discord.HTTPException:
-                        if interaction:
-                            await interaction.followup.send(embed=obj, **kwargs)
-                        else:
-                            await channel.send(embed=obj, **kwargs)
-                elif interaction:
-                    await interaction.followup.send(embed=obj, **kwargs)
-                else:
-                    await channel.send(embed=obj, **kwargs)
+                        await message.reply(**kwargs, mention_author=mention)
+                    except TypeError:
+                        await message.reply(**kwargs)
+                except discord.HTTPException:
+                    if interaction:
+                        await interaction.followup.send(**kwargs)
+                    else:
+                        await channel.send(**kwargs)
+            elif interaction:
+                await interaction.followup.send(**kwargs)
+            else:
+                await channel.send(**kwargs)
 
         if not isinstance(user, discord.Member):
             return
