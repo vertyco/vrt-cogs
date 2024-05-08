@@ -7,7 +7,7 @@ from redbot.core.bot import Red
 from .abc import CompositeMetaClass
 from .commands import Commands
 from .common.listener import Listeners
-from .common.models import DB
+from .common.models import DB, run_migrations
 from .views.voteview import VoteView
 
 log = logging.getLogger("red.vrt.ideaboard")
@@ -19,7 +19,7 @@ class IdeaBoard(Commands, Listeners, commands.Cog, metaclass=CompositeMetaClass)
     """Share Ideas and Suggestions"""
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.5.8"
+    __version__ = "0.6.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -42,8 +42,11 @@ class IdeaBoard(Commands, Listeners, commands.Cog, metaclass=CompositeMetaClass)
     async def initialize(self) -> None:
         await self.bot.wait_until_red_ready()
         data = await self.config.db()
-        self.db = await asyncio.to_thread(DB.model_validate, data)
+        migrated = await run_migrations(data, self.bot)  # Schema migration handling
+        self.db = await asyncio.to_thread(DB.load, data)
         log.info("Config loaded")
+        if migrated:
+            await self.save()
 
         for gid, conf in self.db.configs.items():
             guild = self.bot.get_guild(gid)
@@ -74,7 +77,7 @@ class IdeaBoard(Commands, Listeners, commands.Cog, metaclass=CompositeMetaClass)
             return
         try:
             self.saving = True
-            dump = await asyncio.to_thread(self.db.model_dump, mode="json")
+            dump = await asyncio.to_thread(self.db.dump)
             await self.config.db.set(dump)
         except Exception as e:
             log.exception("Failed to save config", exc_info=e)

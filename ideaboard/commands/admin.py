@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import typing as t
+from contextlib import suppress
 from io import StringIO
 
 import discord
@@ -11,6 +12,7 @@ from redbot.core.utils.predicates import MessagePredicate
 
 from ..abc import MixinMeta
 from ..common.models import Profile, Suggestion
+from ..views.voteview import VoteView
 
 log = logging.getLogger("red.vrt.ideaboard.commands.admin")
 _ = Translator("IdeaBoard", __file__)
@@ -145,17 +147,54 @@ class Admin(MixinMeta):
         """Set the approved, rejected, or pending channels for IdeaBoard"""
         conf = self.db.get_conf(ctx.guild)
         current = getattr(conf, channel_type)
-        if channel_type == "pending" and conf.suggestions:
-            # Did it get deleted?
-            if ctx.guild.get_channel(current):
-                return await ctx.send(
-                    _("You cannot change the pending channel while there are pending suggestions in {}!").format(
-                        f"<#{current}>"
-                    )
-                )
-
         if current == channel.id:
             return await ctx.send(_("This channel is already set as the {} channel!").format(channel_type))
+        if not channel.permissions_for(ctx.me).send_messages:
+            return await ctx.send(_("I don't have permission to send messages in {}!").format(channel.mention))
+        if not channel.permissions_for(ctx.me).embed_links:
+            return await ctx.send(_("I don't have permission to send embeds in {}!").format(channel.mention))
+
+        if channel_type == "pending" and conf.suggestions:
+            # Prompt user if they want to move pending suggestions to the new channel
+            txt = _("Changing the pending channel will move all pending suggestions to the new channel.\n")
+            txt += _("Are you sure you want to continue? (y/n)")
+            msg = await ctx.send(txt)
+            pred = MessagePredicate.yes_or_no(ctx)
+            await self.bot.wait_for("message", check=pred)
+            if not pred.result:
+                return await msg.edit(content=_("Change cancelled."))
+            with suppress(discord.HTTPException):
+                await msg.delete()
+
+            async with ctx.channel.typing():
+                # Move pending suggestions to the new channel
+                pending = ctx.guild.get_channel(current)
+                sorted_suggestions = sorted(conf.suggestions.items(), key=lambda x: x[0])
+                for num, suggestion in sorted_suggestions:
+                    original_message = None
+                    if pending:
+                        with suppress(discord.HTTPException):
+                            original_message = await pending.fetch_message(suggestion.message_id)
+                    # Send the suggestion to the new channel
+                    content = _("Suggestion #{}").format(num)
+                    embed = discord.Embed(color=discord.Color.blurple(), description=suggestion.content)
+                    if conf.anonymous:
+                        embed.set_footer(text=_("Posted anonymously"))
+                    else:
+                        user = ctx.guild.get_member(suggestion.author_id) or await self.bot.get_or_fetch_user(
+                            suggestion.author_id
+                        )
+                        text = _("Posted by {}").format(f"{user.name} ({user.id})")
+                        embed.set_footer(text=text, icon_url=user.display_avatar)
+                    view = VoteView(self, ctx.guild, num, suggestion.id)
+                    message = await channel.send(content=content, embed=embed, view=view)
+                    conf.suggestions[num].message_id = message.id
+
+                    # Delete from old channel if it exists
+                    if original_message:
+                        with suppress(discord.HTTPException):
+                            await original_message.delete()
+
         if current:
             txt = _("The {} channel has been changed from {} to {}").format(
                 channel_type, f"<#{current}>", channel.mention
@@ -452,6 +491,29 @@ class Admin(MixinMeta):
         conf.profiles = {}
         await msg.edit(content=_("All user stats have been reset."))
         await self.save()
+
+    @ideaset.command(name="showstale")
+    async def show_stale_suggestions(self, ctx: commands.Context):
+        """View the numbers of suggestions who's message no longer exists."""
+        conf = self.db.get_conf(ctx.guild)
+        if not conf.suggestions:
+            return await ctx.send(_("No suggestions have been made yet."))
+        pending = ctx.guild.get_channel(conf.pending)
+        if not pending:
+            return await ctx.send(_("The pending channel is not set."))
+        dont_exist = []
+        for num, suggestion in conf.suggestions.items():
+            try:
+                await pending.fetch_message(suggestion.message_id)
+            except discord.NotFound:
+                dont_exist.append(num)
+        if not dont_exist:
+            return await ctx.send(_("All suggestions are accounted for."))
+        txt = _("The following suggestions are missing their message:\n")
+        txt += ", ".join(f"`{num}`" for num in dont_exist)
+        txt += _("\n- To prune these suggestions, use {}").format(f"`{ctx.clean_prefix}ideaset cleanup`")
+        txt += _("\n- To view the content of a suggestion, use {}").format(f"`{ctx.clean_prefix}viewvotes <number>`")
+        await ctx.send(txt)
 
     @ideaset.command(name="cleanup")
     async def cleanup_config(self, ctx: commands.Context):
