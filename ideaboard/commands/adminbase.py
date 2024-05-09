@@ -67,15 +67,9 @@ class AdminBase(MixinMeta):
         try:
             message = await pending_channel.fetch_message(suggestion.message_id)
             await message.delete()
-        except discord.HTTPException:
-            message = None
-
-        if message:
-            try:
-                await message.delete()
-            except discord.HTTPException as e:
-                txt = _("I couldn't delete the pending message: {}").format(e.text)
-                await ctx.send(txt)
+        except discord.HTTPException as e:
+            txt = _("I couldn't delete the pending message: {}").format(e.text)
+            await ctx.send(txt)
 
         if suggestion.thread_id:
             with suppress(discord.NotFound):
@@ -203,15 +197,9 @@ class AdminBase(MixinMeta):
         try:
             message = await pending_channel.fetch_message(suggestion.message_id)
             await message.delete()
-        except discord.HTTPException:
-            message = None
-
-        if message:
-            try:
-                await message.delete()
-            except discord.HTTPException as e:
-                txt = _("I couldn't delete the pending message: {}").format(e.text)
-                await ctx.send(txt)
+        except discord.HTTPException as e:
+            txt = _("I couldn't delete the pending message: {}").format(e.text)
+            await ctx.send(txt)
 
         if suggestion.thread_id:
             with suppress(discord.NotFound):
