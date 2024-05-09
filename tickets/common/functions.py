@@ -22,7 +22,10 @@ class Functions(MixinMeta):
     async def on_assistant_cog_add(self, cog: commands.Cog):
         schema = {
             "name": "get_ticket_types",
-            "description": "Fetch support ticket types available for the user to open",
+            "description": (
+                "Fetch support ticket types available for the user to open (Use this before opening a ticket). "
+                "The user MUST answer the questions in detail before the ticket can be opened!"
+            ),
             "parameters": {
                 "type": "object",
                 "properties": {},
