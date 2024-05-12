@@ -16,6 +16,10 @@ from ..views.settings import AddEmail, EditEmail
 
 
 class Admin(MixinMeta):
+    def __init__(self):
+        super().__init__()
+        self.recipient_cache: dict[int, list[str]] = {}
+
     @app_commands.command(name="email", description="Send an email")
     @app_commands.guild_only()
     async def email_slash(
@@ -59,6 +63,7 @@ class Admin(MixinMeta):
         attachments = [attachment for attachment in (attachment1, attachment2, attachment3) if attachment]
         await self.send_email(sender, recipient, subject, message, attachments, account.password)
         await interaction.followup.send("Email sent!")
+        self.recipient_cache.setdefault(interaction.guild.id, []).append(recipient)
 
     @email_slash.autocomplete("sender")
     async def email_sender_autocomplete(
@@ -69,6 +74,18 @@ class Admin(MixinMeta):
             app_commands.Choice(name=account.email, value=account.email)
             for account in conf.accounts
             if current.lower() in account.email
+        ]
+        return choices[:25]
+
+    @email_slash.autocomplete("recipient")
+    async def email_recipient_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> list[app_commands.Choice]:
+        history = self.recipient_cache.get(interaction.guild.id, [])
+        choices = [
+            app_commands.Choice(name=recipient, value=recipient)
+            for recipient in history
+            if current.lower() in recipient
         ]
         return choices[:25]
 
@@ -107,6 +124,7 @@ class Admin(MixinMeta):
             if ctx.message.reference.resolved:
                 attachments += ctx.message.reference.resolved.attachments
         await self.send_email(sender, recipient, subject, message, attachments, account.password)
+        self.recipient_cache.setdefault(ctx.guild.id, []).append(recipient)
         await ctx.tick()
 
     async def send_email(

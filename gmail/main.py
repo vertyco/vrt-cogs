@@ -19,7 +19,7 @@ class Gmail(Commands, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "vertyco"
-    __version__ = "0.0.1b"
+    __version__ = "0.0.2b"
 
     def __init__(self, bot: Red):
         super().__init__()
