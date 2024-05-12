@@ -171,7 +171,7 @@ class Admin(MixinMeta):
                 pending = ctx.guild.get_channel(current)
                 sorted_suggestions = sorted(conf.suggestions.items(), key=lambda x: x[0])
                 for num, suggestion in sorted_suggestions:
-                    original_thread = ctx.guild.get_thread(suggestion.thread_id) if suggestion.thread_id else None
+                    original_thread = await ctx.guild.fetch_channel(suggestion.thread_id) if suggestion.thread_id else None
                     original_message = None
                     if pending:
                         with suppress(discord.HTTPException):
