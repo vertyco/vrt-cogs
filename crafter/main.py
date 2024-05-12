@@ -57,16 +57,17 @@ def get_item_breakdown(
         # Format the line to be written
         line = f"{prefix}{pointer}{required_amount} x {ingredient}\n"
         buffer.write(line)
-        # Fetch the ingredient item
-        ingredient_item = items[ingredient]
+
         # Determine new prefix for sub-items
         if index == len(sub_items):
             new_prefix = prefix + space  # Last item
         else:
             new_prefix = prefix + branch
         # Recursive call to process sub-ingredients, if any
-        if ingredient_item.ingredients:
-            get_item_breakdown(ingredient_item, items, required_amount, buffer, depth + 1, new_prefix)
+        # Fetch the ingredient item
+        if ingredient_item := items.get(ingredient):
+            if ingredient_item.ingredients:
+                get_item_breakdown(ingredient_item, items, required_amount, buffer, depth + 1, new_prefix)
 
     return buffer.getvalue()
 
@@ -75,7 +76,7 @@ class Crafter(commands.Cog):
     """Get crafting information for Ark items"""
 
     __author__ = "vertyco"
-    __version__ = "0.0.3"
+    __version__ = "0.0.4"
 
     def __init__(self, bot: Red):
         super().__init__()
