@@ -76,7 +76,7 @@ class Crafter(commands.Cog):
     """Get crafting information for Ark items"""
 
     __author__ = "vertyco"
-    __version__ = "0.0.5"
+    __version__ = "0.0.6"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -133,7 +133,7 @@ class Crafter(commands.Cog):
                 break
         return choices
 
-    async def get_crafting_info(self, item_name: str):
+    async def get_crafting_info(self, item_name: str, **kwargs):
         item_name = item_name.lower()
         item_name = max(self.items, key=lambda x: fuzz.ratio(x.lower(), item_name.lower()))
         item: Item = self.items[item_name]
