@@ -76,7 +76,7 @@ class Crafter(commands.Cog):
     """Get crafting information for Ark items"""
 
     __author__ = "vertyco"
-    __version__ = "0.0.4"
+    __version__ = "0.0.5"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -132,3 +132,28 @@ class Crafter(commands.Cog):
             if len(choices) >= 25:
                 break
         return choices
+
+    async def get_crafting_info(self, item: str):
+        item = item.lower()
+        item = max(self.items, key=lambda x: fuzz.ratio(x.lower(), item.lower()))
+        item: Item = self.items[item]
+        desc = (
+            f"`Item:       `{item.name}\n"
+            f"`Stack Size: `{item.stack_size}\n"
+            f"`Weight:     `{item.weight}\n"
+            f"`Category:   `{item.category}\n"
+            f"`Class Name: `[{item.class_name}]({item.link})\n"
+        )
+        if item.ingredients:
+            breakdown = await self.bot.loop.run_in_executor(None, get_item_breakdown, item, self.items)
+            desc += box(breakdown, lang="python")
+        return desc
+
+    @commands.Cog.listener()
+    async def on_assistant_cog_add(self, cog: commands.Cog):
+        schema = {
+            "name": "get_crafting_info",
+            "description": "Get crafting information for an item in Ark Survival Evolved",
+            "parameters": {"type": "object", "properties": {}},
+        }
+        await cog.register_function(self.qualified_name, schema)
