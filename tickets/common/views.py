@@ -590,11 +590,17 @@ class SupportButton(Button):
 
         desc = _("Your ticket has been created! {}").format(channel_or_thread.mention)
         em = discord.Embed(description=desc, color=user.color)
-        with contextlib.suppress(discord.HTTPException):
-            if existing_msg:
-                asyncio.create_task(existing_msg.edit(content=None, embed=em))
-            else:
-                asyncio.create_task(interaction.followup.send(embed=em, ephemeral=True))
+
+        async def delete_delay():
+            with contextlib.suppress(discord.HTTPException):
+                if existing_msg:
+                    await existing_msg.edit(content=None, embed=em)
+                    await existing_msg.delete(delay=30)
+                else:
+                    msg = await interaction.followup.send(embed=em, ephemeral=True)
+                    await msg.delete(delay=30)
+
+        asyncio.create_task(delete_delay())
 
         if (
             logchannel
