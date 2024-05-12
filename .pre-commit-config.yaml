@@ -12,8 +12,6 @@ repos:
         exclude: (?x)(tests/|pixl/defaults.py|README.md|locales/)
       - id: debug-statements
         exclude: (?x)(tests/|pixl/defaults.py|README.md|locales/)
-      - id: check-added-large-files
-        exclude: (?x)(tests/|pixl/defaults.py|README.md|locales/)
       - id: requirements-txt-fixer
         exclude: (?x)(tests/|pixl/defaults.py|README.md|locales/)
   - repo: https://github.com/PyCQA/isort
