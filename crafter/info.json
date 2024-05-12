@@ -1,0 +1,16 @@
+{
+  "author": ["Vertyco"],
+  "description": "Get crafting information for Ark Survival Evolved!",
+  "disabled": false,
+  "end_user_data_statement": "This cog does not store any data.",
+  "hidden": false,
+  "install_msg": "Thank you for installing!",
+  "min_bot_version": "3.5.3",
+  "min_python_version": [3, 9, 0],
+  "permissions": [],
+  "required_cogs": {},
+  "requirements": [],
+  "short": "Get crafting information for Ark Survival Evolved!",
+  "tags": ["ark", "survival", "crafting", "crafter"],
+  "type": "COG"
+}
