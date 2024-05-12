@@ -1,0 +1,16 @@
+{
+  "author": ["Vertyco"],
+  "description": "Send emails through your Gmail account. Configure multiple accounts, set signatures, configure allowed roles to send.",
+  "disabled": false,
+  "end_user_data_statement": "This cog stores email addresses and app passwords in order to send emails!",
+  "hidden": false,
+  "install_msg": "Thank you for installing! Type `[p]gmailhelp` to get started! (This cog is in Beta, please report any bugs to Vertyco on Discord!)",
+  "min_bot_version": "3.5.0",
+  "min_python_version": [3, 10, 0],
+  "permissions": ["administrator"],
+  "required_cogs": {},
+  "requirements": ["pydantic[email]", "aiosmtplib"],
+  "short": "Send emails through your Gmail account!",
+  "tags": ["email", "mail", "smtp", "gmail", "google"],
+  "type": "COG"
+}
