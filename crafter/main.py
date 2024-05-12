@@ -133,10 +133,10 @@ class Crafter(commands.Cog):
                 break
         return choices
 
-    async def get_crafting_info(self, item: str):
-        item = item.lower()
-        item = max(self.items, key=lambda x: fuzz.ratio(x.lower(), item.lower()))
-        item: Item = self.items[item]
+    async def get_crafting_info(self, item_name: str):
+        item_name = item_name.lower()
+        item_name = max(self.items, key=lambda x: fuzz.ratio(x.lower(), item_name.lower()))
+        item: Item = self.items[item_name]
         desc = (
             f"`Item:       `{item.name}\n"
             f"`Stack Size: `{item.stack_size}\n"
@@ -154,6 +154,10 @@ class Crafter(commands.Cog):
         schema = {
             "name": "get_crafting_info",
             "description": "Get crafting information for an item in Ark Survival Evolved",
-            "parameters": {"type": "object", "properties": {}},
+            "parameters": {
+                "type": "object",
+                "properties": {"item_name": {"type": "string"}},
+                "required": ["item_name"],
+            },
         }
         await cog.register_function(self.qualified_name, schema)
