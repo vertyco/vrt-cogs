@@ -75,7 +75,7 @@ class Crafter(commands.Cog):
     """Get crafting information for Ark items"""
 
     __author__ = "vertyco"
-    __version__ = "0.0.2"
+    __version__ = "0.0.3"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -109,7 +109,7 @@ class Crafter(commands.Cog):
         )
         embed = discord.Embed(description=desc, color=await self.bot.get_embed_color(ctx))
         embed.set_author(name=item.name, icon_url=item.img_small, url=item.link)
-        embed.set_thumbnail(url=item.img_large)
+        embed.set_image(url=item.img_large)
         if item.ingredients:
             # Break it down like this example:
             # 1 x Gunpowder
