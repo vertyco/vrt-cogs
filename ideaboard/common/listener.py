@@ -64,7 +64,7 @@ class Listeners(MixinMeta):
                 profile.downvotes -= 1
 
             if thread_id := suggestion.thread_id:
-                thread = message.guild.get_thread(thread_id)
+                thread = await message.guild.fetch_channel(thread_id)
                 if thread:
                     with suppress(discord.HTTPException):
                         if conf.delete_threads:
