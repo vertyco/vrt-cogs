@@ -1,3 +1,4 @@
+import json
 import math
 import typing as t
 from datetime import datetime
@@ -10,6 +11,28 @@ from redbot.core.i18n import Translator
 from . import Base
 
 _ = Translator("ExtendedEconomy", __file__)
+
+
+class PaydayClaimInformation(t.NamedTuple):
+    member: discord.Member
+    channel: t.Union[discord.TextChannel, discord.Thread, discord.ForumChannel]
+    message: discord.Message
+    amount: int
+    old_balance: int
+    new_balance: int
+
+    def to_dict(self) -> dict:
+        return {
+            "member": self.member.id,
+            "channel": self.channel.id,
+            "message": self.message.id,
+            "amount": self.amount,
+            "old_balance": self.old_balance,
+            "new_balance": self.new_balance,
+        }
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict())
 
 
 class CommandCost(Base):
@@ -95,6 +118,10 @@ class GuildSettings(Base):
     command_costs: t.Dict[str, CommandCost] = {}
     transfer_tax: float = 0.0
 
+    # Unique to GuildSettings (local bank only)
+    stack_paydays: bool = False
+    auto_claim_roles: t.List[int] = []  # Role IDs that auto claim paydays
+
 
 class DB(Base):
     configs: t.Dict[int, GuildSettings] = {}
@@ -103,6 +130,11 @@ class DB(Base):
     logs: LogChannels = LogChannels()
     command_costs: t.Dict[str, CommandCost] = {}
     transfer_tax: float = 0.0
+
+    # Unique to DB (global bank only)
+    auto_payday_claim: bool = False
+
+    auto_payday_disabled: bool = False
 
     def get_conf(self, guild: discord.Guild | int) -> GuildSettings:
         gid = guild if isinstance(guild, int) else guild.id

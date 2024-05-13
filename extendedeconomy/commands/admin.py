@@ -44,6 +44,71 @@ class Admin(MixinMeta):
         view = CostMenu(ctx, self, is_global, self.cost_check)
         await view.refresh()
 
+    @extendedeconomy.command(name="stackpaydays", aliases=["stackpayday"])
+    async def stack_paydays(self, ctx: commands.Context):
+        """Toggle whether payday roles stack or not"""
+        is_global = await bank.is_global()
+        if is_global:
+            return await ctx.send(_("This setting is not available when global bank is enabled."))
+        conf = self.db.get_conf(ctx.guild)
+        conf.stack_paydays = not conf.stack_paydays
+        if conf.stack_paydays:
+            txt = _("Payday role amounts will now stack.")
+        else:
+            txt = _("Payday role amounts will no longer stack.")
+        await ctx.send(txt)
+        await self.save()
+
+    @extendedeconomy.command(name="autopaydayrole")
+    async def autopayday_roles(self, ctx: commands.Context, *, role: discord.Role):
+        """Add/Remove auto payday roles"""
+        is_global = await bank.is_global()
+        if is_global:
+            txt = _("This setting is not available when global bank is enabled.")
+            txt += _("\nUse {} to allow auto-claiming for for all users.").format(
+                f"`{ctx.clean_prefix}ecoset autopayday`"
+            )
+            return await ctx.send(txt)
+        conf = self.db.get_conf(ctx.guild)
+        if role.id in conf.auto_claim_roles:
+            conf.auto_claim_roles.remove(role.id)
+            txt = _("This role will no longer recieve paydays automatically.")
+        else:
+            conf.auto_claim_roles.append(role.id)
+            txt = _("This role will now recieve paydays automatically.")
+        await ctx.send(txt)
+        await self.save()
+
+    @extendedeconomy.command(name="autopayday")
+    async def autopayday(self, ctx: commands.Context):
+        """Toggle whether paydays are claimed automatically (Global bank)"""
+        is_global = await bank.is_global()
+        if not is_global:
+            txt = _("This setting is only available when global bank is enabled.")
+            txt += _("\nUse {} to allow auto-claiming for certain roles.").format(
+                f"`{ctx.clean_prefix}ecoset autopaydayrole`"
+            )
+            return await ctx.send(txt)
+        self.db.auto_payday_claim = not self.db.auto_payday_claim
+        if self.db.auto_payday_claim:
+            txt = _("Paydays will now be claimed automatically.")
+        else:
+            txt = _("Paydays will no longer be claimed automatically.")
+        await ctx.send(txt)
+        await self.save()
+
+    @extendedeconomy.command(name="disableautopayday")
+    @commands.is_owner()
+    async def disable_autopayday(self, ctx: commands.Context):
+        """(Owner Only) Toggle auto payday claim globally"""
+        self.db.auto_payday_claim = not self.db.auto_payday_claim
+        if self.db.auto_payday_claim:
+            txt = _("Paydays can now be claimed automatically when set by guild or owner.")
+        else:
+            txt = _("Servers can no longer claim paydays automatically whether the bank is global or not.")
+        await ctx.send(txt)
+        await self.save()
+
     @extendedeconomy.command(name="transfertax")
     async def set_transfertax(self, ctx: commands.Context, tax: float):
         """

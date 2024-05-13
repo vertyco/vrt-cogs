@@ -11,19 +11,29 @@ from .commands import Commands
 from .common.checks import Checks
 from .common.listeners import Listeners
 from .common.models import DB
+from .common.tasks import Tasks
 from .common.utils import has_cost_check
+from .overrides.payday import PaydayOverride
 
 log = logging.getLogger("red.vrt.cookiecutter")
 RequestType = t.Literal["discord_deleted_user", "owner", "user", "user_strict"]
 
 
-class ExtendedEconomy(Commands, Checks, Listeners, commands.Cog, metaclass=CompositeMetaClass):
+class ExtendedEconomy(
+    Commands,
+    Checks,
+    Listeners,
+    Tasks,
+    PaydayOverride,
+    commands.Cog,
+    metaclass=CompositeMetaClass,
+):
     """
     Set prices for commands, customize how prices are applied, log bank events and more!
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.1.4b"
+    __version__ = "0.2.0b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -36,6 +46,9 @@ class ExtendedEconomy(Commands, Checks, Listeners, commands.Cog, metaclass=Compo
         self.saving = False
         self.checks = set()
         self.charged: t.Dict[str, int] = {}  # Commands that were successfully charged credits
+
+        # Overrides
+        self.payday_callback = None
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -63,6 +76,12 @@ class ExtendedEconomy(Commands, Checks, Listeners, commands.Cog, metaclass=Compo
                 continue
             cmd.remove_check(self.slash_cost_check)
 
+        payday: commands.Command = self.bot.get_command("payday")
+        if payday and self.payday_callback:
+            payday.callback = self.payday_callback
+
+        self.auto_paydays.cancel()
+
     async def initialize(self) -> None:
         await self.bot.wait_until_red_ready()
         data = await self.config.db()
@@ -78,6 +97,13 @@ class ExtendedEconomy(Commands, Checks, Listeners, commands.Cog, metaclass=Compo
                     continue
                 cmd.add_check(self.slash_cost_check)
             self.checks.add(cogname)
+
+        payday: commands.Command = self.bot.get_command("payday")
+        if payday:
+            self.payday_callback = payday.callback
+            payday.callback = self._extendedeconomy_payday_override.callback
+
+        self.auto_paydays.start()
 
     async def save(self) -> None:
         if self.saving:

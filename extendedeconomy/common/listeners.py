@@ -49,6 +49,12 @@ class Listeners(MixinMeta):
 
     @commands.Cog.listener()
     async def on_cog_add(self, cog: commands.Cog):
+        if cog.qualified_name == "BankEvents":
+            log.debug("BankEvents cog loaded 'after' ExtendedEconomy, overriding payday command.")
+            payday: commands.Command = self.bot.get_command("payday")
+            if payday:
+                self.payday_callback = payday.callback
+                payday.callback = self._extendedeconomy_payday_override.callback
         if cog.qualified_name in self.checks:
             return
         for cmd in cog.walk_app_commands():

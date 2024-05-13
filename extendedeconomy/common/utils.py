@@ -131,6 +131,12 @@ def format_settings(
         txt += _("`Set Global:          `{}\n").format(
             f"<#{conf.logs.set_global}>" if conf.logs.set_global else not_set
         )
+        txt += _("`Auto Paydays:        `{}\n").format(conf.auto_payday_claim)
+        txt += _("`Disable AutoPayday:  `{}\n").format(conf.auto_payday_disabled)
+    else:
+        txt += _("`Stack Paydays:       `{}\n").format(conf.stack_paydays)
+        autoclaim = [f"<@&{r}>" for r in conf.auto_claim_roles]
+        txt += _("`Auto Claim Roles:    `{}\n").format(", ".join(autoclaim) or not_set)
     if isinstance(conf, DB):
         footer = _("Showing settings for global bank")
     else:
