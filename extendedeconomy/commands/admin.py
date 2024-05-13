@@ -75,7 +75,7 @@ class Admin(MixinMeta):
             txt = _("This role will no longer recieve paydays automatically.")
         else:
             conf.auto_claim_roles.append(role.id)
-            txt = _("This role will now recieve paydays automatically.")
+            txt = _("This role will now receive paydays automatically.")
         await ctx.send(txt)
         await self.save()
 
