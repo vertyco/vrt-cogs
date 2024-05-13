@@ -101,8 +101,8 @@ class Admin(MixinMeta):
     @commands.is_owner()
     async def disable_autopayday(self, ctx: commands.Context):
         """(Owner Only) Toggle auto payday claim globally"""
-        self.db.auto_payday_claim = not self.db.auto_payday_claim
-        if self.db.auto_payday_claim:
+        self.db.auto_payday_disabled = not self.db.auto_payday_disabled
+        if self.db.auto_payday_disabled:
             txt = _("Paydays can now be claimed automatically when set by guild or owner.")
         else:
             txt = _("Servers can no longer claim paydays automatically whether the bank is global or not.")
