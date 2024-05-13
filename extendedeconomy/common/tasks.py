@@ -26,7 +26,6 @@ class Tasks(MixinMeta):
         if is_global and not self.db.auto_payday_claim:
             return
         cur_time = calendar.timegm(datetime.now(tz=timezone.utc).utctimetuple())
-        log.info(f"Current time: {cur_time}")
         if is_global:
             bankgroup = bank._config._get_base_group(bank._config.USER)
             ecogroup = eco_conf._get_base_group(eco_conf.USER)
