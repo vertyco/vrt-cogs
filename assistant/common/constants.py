@@ -6,11 +6,14 @@ MODELS = {
     "gpt-3.5-turbo-instruct": 8192,
     "gpt-4": 8192,
     "gpt-4-32k": 32768,
+    "gpt-4-turbo": 128000,
     "gpt-4-turbo-preview": 128000,
     "gpt-4-1106-preview": 128000,
     "gpt-4-0125-preview": 128000,
     "gpt-4-vision-preview": 128000,
     "gpt-4-turbo-2024-04-09": 128000,
+    "gpt-4o": 128000,
+    "gpt-4o-2024-05-13": 128000,
 }
 PRICES = {
     "gpt-3.5-turbo": [0.001, 0.0015],
@@ -26,6 +29,7 @@ PRICES = {
     "gpt-4": [0.03, 0.06],
     "gpt-4-0301": [0.03, 0.06],
     "gpt-4-0613": [0.03, 0.06],
+    "gpt-4-turbo": [0.01, 0.03],
     "gpt-4-turbo-preview": [0.01, 0.03],
     "gpt-4-1106-preview": [0.01, 0.03],
     "gpt-4-0125-preview": [0.01, 0.03],
@@ -34,7 +38,8 @@ PRICES = {
     "gpt-4-turbo-2024-04-09": [0.01, 0.03],
     "gpt-4-32k": [0.06, 0.12],
     "gpt-4-32k-0301": [0.06, 0.12],
-    "gpt-4-32k-0613": [0.06, 0.12],
+    "gpt-4o": [0.005, 0.015],
+    "gpt-4o-2024-05-13": [0.005, 0.015],
     "text-ada-001": [0.0004, 0.0016],
     "text-babbage-001": [0.0006, 0.0024],
     "text-curie-001": [0.003, 0.012],
@@ -55,11 +60,15 @@ SUPPORTS_SEED = [
     "gpt-4-turbo-preview",
     "gpt-4-0125-preview",
     "gpt-4-turbo-2024-04-09",
+    "gpt-4o",
+    "gpt-4o-2024-05-13",
 ]
 SUPPORTS_VISION = [
     "gpt-4-vision-preview",
     "gpt-4-1106-vision-preview",
     "gpt-4-turbo-2024-04-09",
+    "gpt-4o",
+    "gpt-4o-2024-05-13",
 ]
 SUPPORTS_TOOLS = [
     "gpt-3.5-turbo-1106",
@@ -67,6 +76,8 @@ SUPPORTS_TOOLS = [
     "gpt-4-1106-preview",
     "gpt-4-0125-preview",
     "gpt-4-turbo-preview",
+    "gpt-4o",
+    "gpt-4o-2024-05-13",
 ]
 READ_EXTENSIONS = [
     ".txt",
@@ -114,24 +125,18 @@ READ_EXTENSIONS = [
     ".sql",
 ]
 REACT_SUMMARY_MESSAGE = """
-You are SummaryGPT, an AI creates memories from conversations.
-
-You will be given a snippet of text to summarize based on a larger conversation.
-This text will be stored as your "Memory" and will be used to provide context for future conversations.
+You will be given a snippet of text, your job is to create a summary of the text to provide context for future conversations.
 
 # RULES
 - OUTPUT ONLY THE SUMMARY WITHOUT THE ORIGINAL TEXT OR EXTRA DIALOGUE FROM YOU.
 - KEEP THE SUMMARY SHORT AND TO THE POINT.
 """
 REACT_NAME_MESSAGE = """
-You are NameGPT, an AI that creates names for things.
-
-You will read a snippet of text, and come up with a short name for it based on the text.
-For example, given a text snippet about the winter olympics, you might come up with the name "Winter Olympics".
+You will be given a snippet of text, your job is to create a "Memory Name" for the given text to provide context for future conversations.
 
 # RULES
 - OUTPUT ONLY THE NAME WITHOUT THE ORIGINAL TEXT OR EXTRA DIALOGUE FROM YOU.
-- KEEP THE NAME LESS THAN 40 CHARACTERS OR 3 WORDS TOPS.
+- KEEP THE NAME LESS THAN 3 WORDS AND LESS THAN 40 CHARACTERS.
 """
 
 CREATE_MEMORY = {
