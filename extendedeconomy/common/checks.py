@@ -131,6 +131,7 @@ class Checks(MixinMeta):
         amount: int = ctx.args[-1]
 
         deduction = math.ceil(amount * tax)
+        asyncio.create_task(bank.withdraw_credits(ctx.author, deduction))
         # Modify the amount to be transferred
         ctx.args[-1] = amount - deduction
 

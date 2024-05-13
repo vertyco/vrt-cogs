@@ -1,5 +1,5 @@
 import typing as t
-from abc import ABCMeta, abstractmethod
+from abc import ABC, ABCMeta, abstractmethod
 
 import discord
 from discord.ext.commands.cog import CogMeta
@@ -13,13 +13,17 @@ class CompositeMetaClass(CogMeta, ABCMeta):
     """Type detection"""
 
 
-class MixinMeta(metaclass=ABCMeta):
+class MixinMeta(ABC):
     """Type hinting"""
 
-    bot: Red
-    db: DB
-    checks: set
-    charged: t.Dict[str, int]
+    def __init__(self, *_args):
+        self.bot: Red
+        self.db: DB
+
+        self.checks: set
+        self.charged: t.Dict[str, int]
+
+        self.payday_callback: t.Optional[t.Callable]
 
     @abstractmethod
     async def save(self) -> None:
