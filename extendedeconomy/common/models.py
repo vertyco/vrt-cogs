@@ -112,6 +112,8 @@ class LogChannels(Base):
     set_global: int = 0
     payday_claim: int = 0
 
+    auto_claim: int = 0
+
 
 class GuildSettings(Base):
     logs: LogChannels = LogChannels()
@@ -131,10 +133,12 @@ class DB(Base):
     command_costs: t.Dict[str, CommandCost] = {}
     transfer_tax: float = 0.0
 
-    # Unique to DB (global bank only)
-    auto_payday_claim: bool = False
-
     auto_payday_disabled: bool = False
+
+    auto_payday_claim: bool = False  # Unique to DB (global bank only)
+
+    # Allow prices per guild when global bank is enabled
+    # per_guild_override: bool = False
 
     def get_conf(self, guild: discord.Guild | int) -> GuildSettings:
         gid = guild if isinstance(guild, int) else guild.id

@@ -1,11 +1,14 @@
 import calendar
 import logging
 import typing as t
+from contextlib import suppress
 from datetime import datetime, timezone
 
+import discord
 from discord.ext import tasks
 from redbot.core import Config, bank
 from redbot.core.i18n import Translator
+from redbot.core.utils.chat_formatting import humanize_number, text_to_file
 
 from ..abc import MixinMeta
 
@@ -35,7 +38,7 @@ class Tasks(MixinMeta):
             payday_time = await eco_conf.PAYDAY_TIME()
             payday_credits = await eco_conf.PAYDAY_CREDITS()
 
-            updated = 0
+            updated = []
             for user in self.bot.users:
                 uid = str(user.id)
                 if uid not in accounts or uid not in ecousers:
@@ -47,12 +50,22 @@ class Tasks(MixinMeta):
                     continue
                 accounts[uid]["balance"] = min(max_bal, accounts[uid]["balance"] + payday_credits)
                 ecousers[uid]["next_payday"] = cur_time
-                updated += 1
+                updated.append((f"{user.name} ({user.id}): {humanize_number(payday_credits)}\n", payday_credits))
 
             if updated:
                 await bankgroup.set(accounts)
                 await ecogroup.set(ecousers)
-                log.info(f"Claimed {updated} global paydays")
+                if self.db.logs.auto_claim:
+                    log.info(f"Claimed {len(updated)} global paydays")
+                    ordered = sorted(updated, key=lambda x: x[1], reverse=True)
+                    claimed = "\n".join([x[0] for x in ordered])
+                    channel = self.bot.get_channel(self.db.logs.auto_claim)
+                    if channel is not None:
+                        with suppress(discord.HTTPException):
+                            await channel.send(
+                                f"Claimed {len(updated)} global paydays",
+                                file=text_to_file(claimed, "paydays.txt"),
+                            )
         else:
             keys = list(self.db.configs.keys())
             for guild_id in keys:
@@ -72,7 +85,7 @@ class Tasks(MixinMeta):
                 payday_credits = await eco_conf.guild(guild).PAYDAY_CREDITS()
                 payday_roles: t.Dict[str, int] = await eco_conf.all_roles()
 
-                updated = 0
+                updated = []
                 for member in guild.members:
                     uid = str(member.id)
                     if uid not in accounts or uid not in ecousers:
@@ -97,9 +110,21 @@ class Tasks(MixinMeta):
                         continue
                     accounts[uid]["balance"] = min(max_bal, accounts[uid]["balance"] + to_give)
                     ecousers[uid]["next_payday"] = cur_time
-                    updated += 1
+                    updated.append(
+                        (f"{member.name} ({member.id}): {humanize_number(payday_credits)}\n", payday_credits)
+                    )
 
                 if updated:
                     await bankgroup.set(accounts)
                     await ecogroup.set(ecousers)
-                    log.info(f"Claimed {updated} paydays in {guild.name}")
+                    if conf.logs.auto_claim:
+                        log.info(f"Claimed {updated} paydays in {guild.name}")
+                        ordered = sorted(updated, key=lambda x: x[1], reverse=True)
+                        claimed = "\n".join([x[0] for x in ordered])
+                        channel = guild.get_channel(conf.logs.auto_claim)
+                        if channel is not None:
+                            with suppress(discord.HTTPException):
+                                await channel.send(
+                                    f"Claimed {len(updated)} paydays",
+                                    file=text_to_file(claimed, "paydays.txt"),
+                                )

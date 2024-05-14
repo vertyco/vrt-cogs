@@ -44,6 +44,7 @@ class Checks(MixinMeta):
         if not is_global and ctx.guild is None:
             # Command run in DMs and bank is not global, cant apply cost so just return
             return True
+
         if is_global:
             cost_obj = self.db.command_costs.get(command_name)
         elif ctx.guild is not None:
