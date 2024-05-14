@@ -109,6 +109,23 @@ class Admin(MixinMeta):
         await ctx.send(txt)
         await self.save()
 
+    @extendedeconomy.command(name="autoclaimchannel")
+    async def auto_claim_channel(self, ctx: commands.Context, *, channel: t.Optional[discord.TextChannel] = None):
+        """Set the auto claim channel"""
+        is_global = await bank.is_global()
+        if is_global and ctx.author.id not in self.bot.owner_ids:
+            return await ctx.send(
+                _("You must be a bot owner to set the auto-claim channel when global bank is enabled.")
+            )
+        txt = _("Auto claim channel set to {}").format(channel.mention) if channel else _("Auto claim channel removed.")
+        if is_global:
+            self.db.logs.auto_claim = channel.id if channel else 0
+        else:
+            conf = self.db.get_conf(ctx.guild)
+            conf.logs.auto_claim = channel.id if channel else 0
+        await ctx.send(txt)
+        await self.save()
+
     @extendedeconomy.command(name="transfertax")
     async def set_transfertax(self, ctx: commands.Context, tax: float):
         """
@@ -236,6 +253,18 @@ class Admin(MixinMeta):
             self.db.delete_after = seconds
             await ctx.send(_("Delete after time set to {} seconds.").format(seconds))
         await self.save()
+
+    # @extendedeconomy.command(name="perguildoverride")
+    # @commands.is_owner()
+    # async def per_guild_override(self, ctx: commands.Context):
+    #     """Toggle per guild prices when global bank is enabled"""
+    #     self.db.per_guild_override = not self.db.per_guild_override
+    #     if self.db.per_guild_override:
+    #         txt = _("Per guild prices are now enabled.")
+    #     else:
+    #         txt = _("Per guild prices are now disabled.")
+    #     await ctx.send(txt)
+    #     await self.save()
 
     @commands.command(name="addcost")
     @commands.admin_or_permissions(manage_guild=True)
