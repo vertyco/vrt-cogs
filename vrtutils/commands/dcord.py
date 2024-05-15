@@ -48,7 +48,7 @@ class Dcord(MixinMeta):
         embed.add_field(name="ID", value=channel.id)
         embed.add_field(name="Server", value=channel.guild.name)
         embed.add_field(name="Created", value=created)
-        embed.add_field(name="Members", value=str(channel.member_count))
+        embed.add_field(name="Members", value=str(len(channel.members)))
         await ctx.send(embed=embed)
 
     # Find a message by channelID-messageID combo
