@@ -15,7 +15,7 @@ from ..common.dpymenu import DEFAULT_CONTROLS, confirm, menu
 
 
 class Dcord(MixinMeta):
-    @commands.command()
+    @commands.command(aliases=["findguild", "getguild"])
     @commands.is_owner()
     async def findguildbyid(self, ctx, guild_id: int):
         """Find a guild by ID"""
@@ -29,7 +29,56 @@ class Dcord(MixinMeta):
             return await ctx.send("Could not find that guild")
         await ctx.send(f"That ID belongs to the guild `{guild.name}`")
 
-    @commands.command()
+    @commands.command(aliases=["findchannel", "getchannel"])
+    @commands.is_owner()
+    @commands.bot_has_guild_permissions(embed_links=True)
+    async def findchannelbyid(self, ctx, channel_id: int):
+        """Find a channel by ID"""
+        channel = self.bot.get_channel(channel_id)
+        if not channel:
+            try:
+                channel = await self.bot.fetch_channel(channel_id)
+            except (discord.Forbidden, discord.NotFound):
+                channel = None
+        if not channel:
+            return await ctx.send("Could not find that channel")
+        created = f"<t:{int(channel.created_at.timestamp())}:F> (<t:{int(channel.created_at.timestamp())}:R>)"
+        embed = discord.Embed(color=await self.bot.get_embed_color(ctx))
+        embed.add_field(name="Name", value=channel.name)
+        embed.add_field(name="ID", value=channel.id)
+        embed.add_field(name="Server", value=channel.guild.name)
+        embed.add_field(name="Created", value=created)
+        embed.add_field(name="Members", value=str(channel.member_count))
+        await ctx.send(embed=embed)
+
+    # Find a message by channelID-messageID combo
+    @commands.command(aliases=["findmessage", "getmessage"])
+    @commands.is_owner()
+    @commands.bot_has_guild_permissions(embed_links=True)
+    async def findmessagebyid(self, ctx, channel_id: int, message_id: int):
+        """Fetch a message from a channel/message ID combo, used for debugging purposes"""
+        channel = self.bot.get_channel(channel_id)
+        if not channel:
+            try:
+                channel = await self.bot.fetch_channel(channel_id)
+            except (discord.Forbidden, discord.NotFound):
+                channel = None
+        if not channel:
+            return await ctx.send("Could not find that channel")
+        try:
+            message = await channel.fetch_message(message_id)
+        except (discord.Forbidden, discord.NotFound):
+            message = None
+        if not message:
+            return await ctx.send("Could not find that message")
+        created = f"<t:{int(message.created_at.timestamp())}:F> (<t:{int(message.created_at.timestamp())}:R>)"
+        embed = discord.Embed(color=await self.bot.get_embed_color(ctx))
+        embed.add_field(name="Author", value=f"{message.author} ({message.author.id})")
+        embed.add_field(name="Created", value=created)
+        await ctx.send(embed=embed)
+        await ctx.send(message.content, embeds=message.embeds, files=message.attachments)
+
+    @commands.command(aliases=["finduser"])
     async def getuser(self, ctx, *, user_id: t.Union[int, discord.User]):
         """Find a user by ID"""
         if isinstance(user_id, int):
