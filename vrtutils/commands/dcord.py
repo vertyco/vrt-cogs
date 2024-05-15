@@ -19,7 +19,7 @@ class MessageParser:
         if "-" not in argument:
             raise commands.BadArgument("Invalid format, must be `channelID-messageID`")
         try:
-            cid, mid = argument.split("-")
+            cid, mid = [i.strip() for i in argument.split("-")]
         except ValueError:
             raise commands.BadArgument("Invalid format, must be `channelID-messageID`")
         try:
@@ -79,16 +79,17 @@ class Dcord(MixinMeta):
         if not channel:
             try:
                 channel = await self.bot.fetch_channel(channel_message.channel_id)
-            except (discord.Forbidden, discord.NotFound):
-                channel = None
-        if not channel:
-            return await ctx.send("Could not find that channel")
+            except discord.Forbidden:
+                return await ctx.send("I do not have permission to fetch that channel")
+            except discord.NotFound:
+                return await ctx.send("I could not find that channel")
         try:
             message = await channel.fetch_message(channel_message.channel_id)
-        except (discord.Forbidden, discord.NotFound):
-            message = None
-        if not message:
-            return await ctx.send("Could not find that message")
+        except discord.Forbidden:
+            return await ctx.send("I do not have permission to fetch that message")
+        except discord.NotFound:
+            return await ctx.send("I could not find that message")
+
         created = f"<t:{int(message.created_at.timestamp())}:F> (<t:{int(message.created_at.timestamp())}:R>)"
         embed = discord.Embed(color=await self.bot.get_embed_color(ctx))
         embed.add_field(name="Author", value=f"{message.author} ({message.author.id})")
