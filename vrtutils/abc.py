@@ -12,5 +12,6 @@ class CompositeMetaClass(CogMeta, ABCMeta):
 class MixinMeta(ABC):
     """Type hinting"""
 
-    bot: Red
-    path: Path
+    def __init__(self, *_args):
+        self.bot: Red
+        self.path: Path
