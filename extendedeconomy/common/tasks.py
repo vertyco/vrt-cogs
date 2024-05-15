@@ -118,7 +118,7 @@ class Tasks(MixinMeta):
                     await bankgroup.set(accounts)
                     await ecogroup.set(ecousers)
                     if conf.logs.auto_claim:
-                        log.info(f"Claimed {updated} paydays in {guild.name}")
+                        log.debug(f"Claimed {len(updated)} paydays in {guild.name}")
                         ordered = sorted(updated, key=lambda x: x[1], reverse=True)
                         claimed = "\n".join([x[0] for x in ordered])
                         channel = guild.get_channel(conf.logs.auto_claim)
