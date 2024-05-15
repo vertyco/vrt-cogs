@@ -84,11 +84,11 @@ class Dcord(MixinMeta):
             except discord.NotFound:
                 return await ctx.send("I could not find that channel")
         try:
-            message = await channel.fetch_message(channel_message.channel_id)
+            message = await channel.fetch_message(channel_message.message_id)
         except discord.Forbidden:
             return await ctx.send("I do not have permission to fetch that message")
         except discord.NotFound:
-            return await ctx.send("I could not find that message")
+            return await ctx.send(f"I could not find a message with the ID `{channel_message.message_id}`")
 
         created = f"<t:{int(message.created_at.timestamp())}:F> (<t:{int(message.created_at.timestamp())}:R>)"
         embed = discord.Embed(color=await self.bot.get_embed_color(ctx))
