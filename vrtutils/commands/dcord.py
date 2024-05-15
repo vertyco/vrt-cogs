@@ -14,10 +14,28 @@ from ..abc import MixinMeta
 from ..common.dpymenu import DEFAULT_CONTROLS, confirm, menu
 
 
+class MessageParser:
+    def __init__(self, argument):
+        if "-" not in argument:
+            raise commands.BadArgument("Invalid format, must be `channelID-messageID`")
+        try:
+            cid, mid = argument.split("-")
+        except ValueError:
+            raise commands.BadArgument("Invalid format, must be `channelID-messageID`")
+        try:
+            self.channel_id = int(cid)
+        except ValueError:
+            raise commands.BadArgument("Channel ID must be an integer")
+        try:
+            self.message_id = int(mid)
+        except ValueError:
+            raise commands.BadArgument("Message ID must be an integer")
+
+
 class Dcord(MixinMeta):
     @commands.command(aliases=["findguild", "getguild"])
     @commands.is_owner()
-    async def findguildbyid(self, ctx, guild_id: int):
+    async def findguildbyid(self, ctx: commands.Context, guild_id: int):
         """Find a guild by ID"""
         guild = self.bot.get_guild(guild_id)
         if not guild:
@@ -32,7 +50,7 @@ class Dcord(MixinMeta):
     @commands.command(aliases=["findchannel", "getchannel"])
     @commands.is_owner()
     @commands.bot_has_guild_permissions(embed_links=True)
-    async def findchannelbyid(self, ctx, channel_id: int):
+    async def findchannelbyid(self, ctx: commands.Context, channel_id: int):
         """Find a channel by ID"""
         channel = self.bot.get_channel(channel_id)
         if not channel:
@@ -55,18 +73,18 @@ class Dcord(MixinMeta):
     @commands.command(aliases=["findmessage", "getmessage"])
     @commands.is_owner()
     @commands.bot_has_guild_permissions(embed_links=True)
-    async def findmessagebyid(self, ctx, channel_id: int, message_id: int):
+    async def findmessagebyid(self, ctx: commands.Context, channel_message: MessageParser):
         """Fetch a message from a channel/message ID combo, used for debugging purposes"""
-        channel = self.bot.get_channel(channel_id)
+        channel = self.bot.get_channel(channel_message.channel_id)
         if not channel:
             try:
-                channel = await self.bot.fetch_channel(channel_id)
+                channel = await self.bot.fetch_channel(channel_message.channel_id)
             except (discord.Forbidden, discord.NotFound):
                 channel = None
         if not channel:
             return await ctx.send("Could not find that channel")
         try:
-            message = await channel.fetch_message(message_id)
+            message = await channel.fetch_message(channel_message.channel_id)
         except (discord.Forbidden, discord.NotFound):
             message = None
         if not message:
@@ -80,7 +98,7 @@ class Dcord(MixinMeta):
         await ctx.send(message.content, embeds=message.embeds, files=message.attachments)
 
     @commands.command(aliases=["finduser"])
-    async def getuser(self, ctx, *, user_id: t.Union[int, discord.User]):
+    async def getuser(self, ctx: commands.Context, *, user_id: t.Union[int, discord.User]):
         """Find a user by ID"""
         if isinstance(user_id, int):
             try:
@@ -114,7 +132,7 @@ class Dcord(MixinMeta):
 
     @commands.command()
     @commands.guild_only()
-    async def oldestchannels(self, ctx, amount: int = 10):
+    async def oldestchannels(self, ctx: commands.Context, amount: int = 10):
         """See which channel is the oldest"""
         async with ctx.typing():
             channels = [c for c in ctx.guild.channels if not isinstance(c, discord.CategoryChannel)]
@@ -134,7 +152,7 @@ class Dcord(MixinMeta):
     @commands.guild_only()
     async def oldestmembers(
         self,
-        ctx,
+        ctx: commands.Context,
         amount: t.Optional[int] = 10,
         include_bots: t.Optional[bool] = False,
     ):
@@ -169,7 +187,7 @@ class Dcord(MixinMeta):
     @commands.guild_only()
     async def oldestaccounts(
         self,
-        ctx,
+        ctx: commands.Context,
         amount: t.Optional[int] = 10,
         include_bots: t.Optional[bool] = False,
     ):
@@ -202,7 +220,7 @@ class Dcord(MixinMeta):
 
     @commands.command()
     @commands.guild_only()
-    async def rolemembers(self, ctx, role: discord.Role):
+    async def rolemembers(self, ctx: commands.Context, role: discord.Role):
         """View all members that have a specific role"""
         members = []
         async for member in AsyncIter(ctx.guild.members, steps=500, delay=0.001):
