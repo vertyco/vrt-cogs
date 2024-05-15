@@ -74,7 +74,7 @@ class Dcord(MixinMeta):
     @commands.is_owner()
     @commands.bot_has_guild_permissions(embed_links=True)
     async def findmessagebyid(self, ctx: commands.Context, channel_message: MessageParser):
-        """Fetch a message from a channel/message ID combo, used for debugging purposes"""
+        """Fetch a channelID-MessageID combo and display the message"""
         channel = self.bot.get_channel(channel_message.channel_id)
         if not channel:
             try:
