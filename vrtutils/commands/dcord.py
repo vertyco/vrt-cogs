@@ -75,6 +75,7 @@ class Dcord(MixinMeta):
         embed = discord.Embed(color=await self.bot.get_embed_color(ctx))
         embed.add_field(name="Author", value=f"{message.author} ({message.author.id})")
         embed.add_field(name="Created", value=created)
+        embed.add_field(name="Server", value=message.guild.name)
         await ctx.send(embed=embed)
         await ctx.send(message.content, embeds=message.embeds, files=message.attachments)
 
