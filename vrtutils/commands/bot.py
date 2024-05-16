@@ -25,6 +25,7 @@ from redbot.core.utils.chat_formatting import (
 
 from ..abc import MixinMeta
 from ..common.dpymenu import DEFAULT_CONTROLS, confirm, menu
+from ..common.dynamic_menu import DynamicMenu
 from ..common.utils import do_shell_command, get_bar, get_bitsize, get_size
 
 
@@ -39,7 +40,7 @@ class BotInfo(MixinMeta):
 
     @commands.command(name="pull")
     @commands.is_owner()
-    async def update_cog(self, ctx, *cogs: InstalledCog):
+    async def update_cog(self, ctx: commands.Context, *cogs: InstalledCog):
         """Auto update & reload cogs"""
         cog_update_command = ctx.bot.get_command("cog update")
         if cog_update_command is None:
@@ -50,7 +51,7 @@ class BotInfo(MixinMeta):
 
     @commands.command()
     @commands.is_owner()
-    async def pip(self, ctx, *, command: str):
+    async def pip(self, ctx: commands.Context, *, command: str):
         """Run a pip command from within your bots venv"""
         async with ctx.typing():
             command = f"pip {command}"
@@ -62,7 +63,7 @@ class BotInfo(MixinMeta):
                 embed.set_footer(text=f"Page {idx + 1}/{len(pages)}")
                 embeds.append(embed)
             if len(embeds) > 1:
-                await menu(ctx, embeds, DEFAULT_CONTROLS)
+                await DynamicMenu(ctx.author, embeds, ctx.channel).start()
             else:
                 if embeds:
                     await ctx.send(embed=embeds[0])
@@ -71,7 +72,7 @@ class BotInfo(MixinMeta):
 
     @commands.command()
     @commands.is_owner()
-    async def runshell(self, ctx, *, command: str):
+    async def runshell(self, ctx: commands.Context, *, command: str):
         """Run a shell command from within your bots venv"""
         async with ctx.typing():
             command = f"{command}"
@@ -84,7 +85,7 @@ class BotInfo(MixinMeta):
                 page += 1
                 embeds.append(embed)
             if len(embeds) > 1:
-                await menu(ctx, embeds, DEFAULT_CONTROLS)
+                await DynamicMenu(ctx.author, embeds, ctx.channel).start()
             else:
                 if embeds:
                     await ctx.send(embed=embeds[0])
@@ -528,7 +529,7 @@ class BotInfo(MixinMeta):
             embed.set_footer(text=f"Page {idx + 1}/{len(pages)}")
             embeds.append(embed)
 
-        await menu(ctx, embeds, DEFAULT_CONTROLS)
+        await DynamicMenu(ctx.author, embeds, ctx.channel).start()
 
     @commands.command(name="botshared")
     @commands.is_owner()
@@ -550,7 +551,7 @@ class BotInfo(MixinMeta):
             embed.set_footer(text=f"Page {idx + 1}/{len(pages)}")
             embeds.append(embed)
 
-        await menu(ctx, embeds, DEFAULT_CONTROLS)
+        await DynamicMenu(ctx.author, embeds, ctx.channel).start()
 
     @commands.command(name="viewapikeys")
     @commands.is_owner()
