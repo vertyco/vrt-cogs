@@ -93,6 +93,9 @@ class Dcord(MixinMeta):
         embed = discord.Embed(color=await self.bot.get_embed_color(ctx))
         embed.add_field(name="Author", value=f"{message.author} ({message.author.id})")
         embed.add_field(name="Created", value=created)
+        if message.edited_at:
+            edited = f"<t:{int(message.edited_at.timestamp())}:F> (<t:{int(message.edited_at.timestamp())}:R>)"
+            embed.add_field(name="Edited", value=edited)
         embed.add_field(name="Server", value=message.guild.name)
         await ctx.send(embed=embed)
 
