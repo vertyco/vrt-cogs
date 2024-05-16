@@ -95,7 +95,11 @@ class Dcord(MixinMeta):
         embed.add_field(name="Created", value=created)
         embed.add_field(name="Server", value=message.guild.name)
         await ctx.send(embed=embed)
-        await ctx.send(message.content, embeds=message.embeds, files=message.attachments)
+
+        kwargs = {"content": message.content, "embeds": message.embeds}
+        if message.attachments:
+            kwargs["files"] = [await a.to_file() for a in message.attachments]
+        await ctx.send(**kwargs)
 
     @commands.command(aliases=["finduser"])
     async def getuser(self, ctx: commands.Context, user_id: int):
