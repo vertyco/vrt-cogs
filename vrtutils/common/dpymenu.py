@@ -1,6 +1,7 @@
 """
 This is a red-like recursive menu for dpy2
 """
+
 import asyncio
 import functools
 from typing import List, Union
@@ -159,7 +160,7 @@ async def menu(
     controls: dict,
     message: discord.Message = None,
     page: int = 0,
-    timeout: float = 60.0,
+    timeout: float = 120.0,
 ):
     """
     An emoji-based dpy2 menu
