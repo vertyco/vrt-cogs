@@ -26,8 +26,9 @@ class Logs(MixinMeta):
         combined = "\n".join(log.read_text(encoding="utf-8", errors="ignore") for log in logs)
         split = [i for i in pagify(combined, page_length=1800)]
         split.reverse()
+        split = split[:max_pages]
         pages = []
-        for idx, chunk in enumerate(split[:max_pages]):
+        for idx, chunk in enumerate(split):
             foot = f"Page {idx + 1}/{len(split)}"
             txt = f"{box(chunk, lang='python')}\n{foot}"
             pages.append(txt)
