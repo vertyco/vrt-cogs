@@ -122,6 +122,22 @@ class Dcord(MixinMeta):
         embed.set_image(url=member.display_avatar.url)
         await ctx.send(embed=embed)
 
+    @commands.command(alias=["findwebhook"])
+    async def getwebhook(self, ctx: commands.Context, webhook_id: int):
+        """Find a webhook by ID"""
+        try:
+            webhook = await self.bot.fetch_webhook(webhook_id)
+        except discord.NotFound:
+            return await ctx.send(f"I could not find any webhooks with the ID `{webhook_id}`")
+        created = f"<t:{int(webhook.created_at.timestamp())}:F> (<t:{int(webhook.created_at.timestamp())}:R>)"
+        embed = discord.Embed(color=await self.bot.get_embed_color(ctx))
+        embed.add_field(name="Name", value=webhook.name)
+        embed.add_field(name="ID", value=webhook.id)
+        embed.add_field(name="Channel", value=webhook.channel.name)
+        embed.add_field(name="Created", value=created)
+        embed.add_field(name="Guild", value=webhook.guild.name)
+        await ctx.send(embed=embed)
+
     @commands.command()
     @commands.is_owner()
     @commands.bot_has_permissions(attach_files=True)
