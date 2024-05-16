@@ -34,7 +34,7 @@ class MessageParser:
 class Dcord(MixinMeta):
     @commands.command(aliases=["findguild"])
     @commands.is_owner()
-    async def getguild(self, ctx: commands.Context, guild_id: int):
+    async def getguildid(self, ctx: commands.Context, guild_id: int):
         """Find a guild by ID"""
         guild = self.bot.get_guild(guild_id)
         if not guild:
