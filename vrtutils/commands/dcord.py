@@ -1,4 +1,3 @@
-import datetime
 import json
 import math
 import string
@@ -99,27 +98,24 @@ class Dcord(MixinMeta):
         await ctx.send(message.content, embeds=message.embeds, files=message.attachments)
 
     @commands.command(aliases=["finduser"])
-    async def getuser(self, ctx: commands.Context, *, user_id: t.Union[int, discord.User]):
+    async def getuser(self, ctx: commands.Context, user_id: int):
         """Find a user by ID"""
-        if isinstance(user_id, int):
+        user: discord.User = self.bot.get_user(user_id)
+        if not user:
             try:
-                member = await self.bot.get_or_fetch_user(int(user_id))
+                user = await self.bot.fetch_user(user_id)
             except discord.NotFound:
                 return await ctx.send(f"I could not find any users with the ID `{user_id}`")
-        else:
-            try:
-                member = await self.bot.get_or_fetch_user(user_id.id)
-            except discord.NotFound:
-                return await ctx.send(f"I could not find any users with the ID `{user_id.id}`")
-        since_created = f"<t:{int(member.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:R>"
-        user_created = f"<t:{int(member.created_at.replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
-        created_on = f"Joined Discord on {user_created}\n({since_created})"
-        embed = discord.Embed(
-            title=f"{member.name} - {member.id}",
-            description=created_on,
-            color=await ctx.embed_color(),
-        )
-        embed.set_image(url=member.display_avatar.url)
+        created = f"<t:{int(user.created_at.timestamp())}:F> (<t:{int(user.created_at.timestamp())}:R>)"
+        embed = discord.Embed(color=await ctx.embed_color())
+        embed.set_image(url=user.display_avatar)
+        embed.add_field(name="Username", value=user.name)
+        embed.add_field(name="Display Name", value=user.display_name)
+        embed.add_field(name="Created", value=created)
+        # See if the bot shares any guilds with the user
+        mutual_guilds = [g.name for g in self.bot.guilds if user.id in [m.id for m in g.members]]
+        if mutual_guilds:
+            embed.add_field(name="Mutual Server", value="\n".join(mutual_guilds))
         await ctx.send(embed=embed)
 
     @commands.command(alias=["findwebhook"])
@@ -130,9 +126,8 @@ class Dcord(MixinMeta):
         except discord.NotFound:
             return await ctx.send(f"I could not find any webhooks with the ID `{webhook_id}`")
         created = f"<t:{int(webhook.created_at.timestamp())}:F> (<t:{int(webhook.created_at.timestamp())}:R>)"
-        embed = discord.Embed(color=await self.bot.get_embed_color(ctx))
+        embed = discord.Embed(title="Webhook Info", color=await self.bot.get_embed_color(ctx))
         embed.add_field(name="Name", value=webhook.name)
-        embed.add_field(name="ID", value=webhook.id)
         embed.add_field(name="Channel", value=webhook.channel.name)
         embed.add_field(name="Created", value=created)
         embed.add_field(name="Guild", value=webhook.guild.name)
