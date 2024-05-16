@@ -32,9 +32,9 @@ class MessageParser:
 
 
 class Dcord(MixinMeta):
-    @commands.command(aliases=["findguild", "getguild"])
+    @commands.command(aliases=["findguild"])
     @commands.is_owner()
-    async def findguildbyid(self, ctx: commands.Context, guild_id: int):
+    async def getguild(self, ctx: commands.Context, guild_id: int):
         """Find a guild by ID"""
         guild = self.bot.get_guild(guild_id)
         if not guild:
@@ -46,10 +46,10 @@ class Dcord(MixinMeta):
             return await ctx.send("Could not find that guild")
         await ctx.send(f"That ID belongs to the guild `{guild.name}`")
 
-    @commands.command(aliases=["findchannel", "getchannel"])
+    @commands.command(aliases=["findchannel"])
     @commands.is_owner()
     @commands.bot_has_guild_permissions(embed_links=True)
-    async def findchannelbyid(self, ctx: commands.Context, channel_id: int):
+    async def getchannel(self, ctx: commands.Context, channel_id: int):
         """Find a channel by ID"""
         channel = self.bot.get_channel(channel_id)
         if not channel:
@@ -69,10 +69,10 @@ class Dcord(MixinMeta):
         await ctx.send(embed=embed)
 
     # Find a message by channelID-messageID combo
-    @commands.command(aliases=["findmessage", "getmessage"])
+    @commands.command(aliases=["findmessage"])
     @commands.is_owner()
     @commands.bot_has_guild_permissions(embed_links=True)
-    async def findmessagebyid(self, ctx: commands.Context, channel_message: MessageParser):
+    async def getmessage(self, ctx: commands.Context, channel_message: MessageParser):
         """Fetch a channelID-MessageID combo and display the message"""
         channel = self.bot.get_channel(channel_message.channel_id)
         if not channel:
