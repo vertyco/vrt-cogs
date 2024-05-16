@@ -32,4 +32,4 @@ class Logs(MixinMeta):
             foot = f"Page {idx + 1}/{len(split)}"
             txt = f"{box(chunk, lang='python')}\n{foot}"
             pages.append(txt)
-        await DynamicMenu(ctx.author, pages, ctx.channel).refresh()
+        await DynamicMenu(ctx.author, pages, ctx.channel, timeout=7200).refresh()

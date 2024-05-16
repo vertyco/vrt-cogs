@@ -27,7 +27,7 @@ class DynamicMenu(discord.ui.View):
         channel: t.Union[discord.TextChannel, discord.Thread, discord.ForumChannel, discord.DMChannel],
         message: t.Union[discord.Message, discord.InteractionMessage, None] = None,
         page: int = 0,
-        timeout: t.Union[int, float] = 300,
+        timeout: t.Union[int, float, None] = 300,
         image_bytes: bytes = None,
     ):
         super().__init__(timeout=timeout)
