@@ -13,7 +13,7 @@ from ..common.dynamic_menu import DynamicMenu
 class Logs(MixinMeta):
     @commands.command(name="logs")
     @commands.is_owner()
-    async def scroll_logs(self, ctx: commands.Context):
+    async def scroll_logs(self, ctx: commands.Context, max_pages: int = 20):
         """View the bot's logs."""
         core = core_data_path()
         log_dir = core / "logs"
@@ -27,7 +27,7 @@ class Logs(MixinMeta):
         split = [i for i in pagify(combined, page_length=1800)]
         split.reverse()
         pages = []
-        for idx, chunk in enumerate(split):
+        for idx, chunk in enumerate(split[:max_pages]):
             foot = f"Page {idx + 1}/{len(split)}"
             txt = f"{box(chunk, lang='python')}\n{foot}"
             pages.append(txt)
