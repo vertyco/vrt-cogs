@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from contextlib import suppress
 from typing import Optional, Union
 
 import discord
@@ -1236,6 +1237,22 @@ class AdminCommands(MixinMeta):
         async with ctx.typing():
             conf = await self.config.guild(ctx.guild).all()
             await prune_invalid_tickets(ctx.guild, conf, self.config, ctx)
+
+    @tickets.command()
+    async def getlink(self, ctx: commands.Context, message: discord.Message):
+        """Refetch the transcript link for a ticket"""
+        notrans = _("This message does not have a transcript attached!")
+        if not message.attachments:
+            return await ctx.send(notrans)
+        attachment = message.attachments[0]
+        if not attachment.filename.endswith(".html"):
+            return await ctx.send(notrans)
+        user_id = attachment.filename.split("-")[-1].split(".")[0]
+        if not user_id.isdigit():
+            return await ctx.send(notrans)
+        url = f"https://mahto.id/chat-exporter?url={attachment.url}"
+        with suppress(discord.HTTPException):
+            await ctx.channel.send(url, delete_after=3600)
 
     # TOGGLES --------------------------------------------------------------------------------
     @tickets.command()
