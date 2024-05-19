@@ -99,9 +99,11 @@ async def close_ticket(
     panel.get("threads")
 
     if not channel.permissions_for(guild.me).manage_channels and isinstance(channel, discord.TextChannel):
-        return await channel.send(_("I am missing the `Manage Channels` permission to close this ticket!"))
+        await channel.send(_("I am missing the `Manage Channels` permission to close this ticket!"))
+        return
     if not channel.permissions_for(guild.me).manage_threads and isinstance(channel, discord.Thread):
-        return await channel.send(_("I am missing the `Manage Threads` permission to close this ticket!"))
+        await channel.send(_("I am missing the `Manage Threads` permission to close this ticket!"))
+        return
 
     opened = int(datetime.fromisoformat(ticket["opened"]).timestamp())
     closed = int(datetime.now().timestamp())
