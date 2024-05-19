@@ -63,7 +63,7 @@ class BotInfo(MixinMeta):
                 embed.set_footer(text=f"Page {idx + 1}/{len(pages)}")
                 embeds.append(embed)
             if len(embeds) > 1:
-                await DynamicMenu(ctx.author, embeds, ctx.channel).start()
+                await DynamicMenu(ctx.author, embeds, ctx.channel).refresh()
             else:
                 if embeds:
                     await ctx.send(embed=embeds[0])
@@ -85,7 +85,7 @@ class BotInfo(MixinMeta):
                 page += 1
                 embeds.append(embed)
             if len(embeds) > 1:
-                await DynamicMenu(ctx.author, embeds, ctx.channel).start()
+                await DynamicMenu(ctx.author, embeds, ctx.channel).refresh()
             else:
                 if embeds:
                     await ctx.send(embed=embeds[0])
@@ -529,7 +529,7 @@ class BotInfo(MixinMeta):
             embed.set_footer(text=f"Page {idx + 1}/{len(pages)}")
             embeds.append(embed)
 
-        await DynamicMenu(ctx.author, embeds, ctx.channel).start()
+        await DynamicMenu(ctx.author, embeds, ctx.channel).refresh()
 
     @commands.command(name="botshared")
     @commands.is_owner()
@@ -551,7 +551,7 @@ class BotInfo(MixinMeta):
             embed.set_footer(text=f"Page {idx + 1}/{len(pages)}")
             embeds.append(embed)
 
-        await DynamicMenu(ctx.author, embeds, ctx.channel).start()
+        await DynamicMenu(ctx.author, embeds, ctx.channel).refresh()
 
     @commands.command(name="viewapikeys")
     @commands.is_owner()
