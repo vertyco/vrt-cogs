@@ -23,7 +23,7 @@
     "pillow",
     "validators",
     "colorgram.py",
-    "emoji",
+    "emoji==2.11.1",
     "aiocache",
     "ujson",
     "msgpack",
