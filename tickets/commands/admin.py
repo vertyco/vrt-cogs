@@ -1526,3 +1526,6 @@ class AdminCommands(MixinMeta):
         ).format(panel_name, user.display_name)
         embed = discord.Embed(description=desc, color=await self.bot.get_embed_color(ctx))
         await ctx.send(embed=embed, view=view, delete_after=120)
+        await asyncio.sleep(120)
+        if not ctx.interaction:
+            await ctx.tick()
