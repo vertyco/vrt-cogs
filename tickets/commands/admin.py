@@ -13,7 +13,7 @@ from ..abc import MixinMeta
 from ..common.constants import MODAL_SCHEMA, TICKET_PANEL_SCHEMA
 from ..common.menu import SMALL_CONTROLS, MenuButton, menu
 from ..common.utils import prune_invalid_tickets, update_active_overview
-from ..common.views import TestButton, confirm, wait_reply
+from ..common.views import PanelView, TestButton, confirm, wait_reply
 
 log = logging.getLogger("red.vrt.admincommands")
 _ = Translator("TicketsCommands", __file__)
@@ -1509,3 +1509,19 @@ class AdminCommands(MixinMeta):
             await msg.edit(content=_("Your embed has been sent!"), embed=None)
         except Exception as e:
             await ctx.send(_("Failed to send embed!\nException: {}").format(box(str(e), "py")))
+
+    @commands.command()
+    async def openfor(self, ctx: commands.Context, user: discord.Member, *, panel_name: str):
+        """Open a ticket for another user"""
+        conf = await self.config.guild(ctx.guild).all()
+        panel_name = panel_name.lower()
+        if panel_name not in conf["panels"]:
+            return await ctx.send(_("Panel does not exist!"))
+        panel = conf["panels"][panel_name]
+        # Create a custom temp view by manipulting the panel
+        view = PanelView(self.bot, ctx.guild, self.config, [panel], mock_user=user)
+        desc = _(
+            "Click the button below to open a {} ticket for {}\nThis message will self-cleanup in 2 minutes."
+        ).format(panel_name, user.display_name)
+        embed = discord.Embed(description=desc, color=await self.bot.get_embed_color(ctx))
+        await ctx.send(embed=embed, view=view, delete_after=120)

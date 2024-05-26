@@ -239,7 +239,7 @@ class TicketModal(Modal):
 
 
 class SupportButton(Button):
-    def __init__(self, panel: dict):
+    def __init__(self, panel: dict, mock_user: discord.Member = None):
         super().__init__(
             style=get_color(panel["button_color"]),
             label=panel["button_text"],
@@ -249,18 +249,19 @@ class SupportButton(Button):
             disabled=panel.get("disabled", False),
         )
         self.panel_name = panel["name"]
+        self.mock_user = mock_user
 
     async def callback(self, interaction: Interaction):
         try:
             await self.create_ticket(interaction)
         except Exception as e:
             guild = interaction.guild.name
-            user = interaction.user.name
+            user = self.mock_user.name if self.mock_user else interaction.user.name
             log.exception(f"Failed to create ticket in {guild} for {user}", exc_info=e)
 
     async def create_ticket(self, interaction: Interaction):
         guild = interaction.guild
-        user = guild.get_member(interaction.user.id)
+        user = self.mock_user or guild.get_member(interaction.user.id)
         if not isinstance(interaction.channel, discord.TextChannel) or not guild:
             return
 
@@ -588,10 +589,9 @@ class SupportButton(Button):
                 txt = _("I tried to pin the response message but don't have the manage messages permissions!")
                 asyncio.create_task(channel_or_thread.send(txt))
 
-        desc = _("Your ticket has been created! {}").format(channel_or_thread.mention)
-        em = discord.Embed(description=desc, color=user.color)
-
         async def delete_delay():
+            desc = _("Your ticket has been created! {}").format(channel_or_thread.mention)
+            em = discord.Embed(description=desc, color=user.color)
             with contextlib.suppress(discord.HTTPException):
                 if existing_msg:
                     await existing_msg.edit(content=None, embed=em)
@@ -667,14 +667,16 @@ class PanelView(View):
         guild: discord.Guild,
         config: Config,
         panels: list,  # List of support panels that have the same message/channel ID
+        mock_user: Optional[discord.Member] = None,
+        timeout: Optional[int] = None,
     ):
-        super().__init__(timeout=None)
+        super().__init__(timeout=timeout)
         self.bot = bot
         self.guild = guild
         self.config = config
         self.panels = panels
         for panel in self.panels:
-            self.add_item(SupportButton(panel))
+            self.add_item(SupportButton(panel, mock_user=mock_user))
 
     async def start(self):
         chan = self.guild.get_channel(self.panels[0]["channel_id"])
