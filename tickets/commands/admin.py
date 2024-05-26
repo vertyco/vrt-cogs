@@ -1510,7 +1510,8 @@ class AdminCommands(MixinMeta):
         except Exception as e:
             await ctx.send(_("Failed to send embed!\nException: {}").format(box(str(e), "py")))
 
-    @commands.command()
+    @commands.hybrid_command(name="openfor")
+    @commands.admin_or_permissions(manage_guild=True)
     async def openfor(self, ctx: commands.Context, user: discord.Member, *, panel_name: str):
         """Open a ticket for another user"""
         conf = await self.config.guild(ctx.guild).all()
