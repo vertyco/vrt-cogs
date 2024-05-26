@@ -53,7 +53,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "6.2.28"
+    __version__ = "6.2.29"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -127,7 +127,7 @@ class Assistant(
             start = perf_counter()
             if not self.db.persistent_conversations:
                 self.db.conversations.clear()
-            dump = await asyncio.to_thread(self.db.model_dump, mode="json")
+            dump = await asyncio.to_thread(self.db.model_dump)
             await self.config.db.set(dump)
             txt = f"Config saved in {round((perf_counter() - start) * 1000, 2)}ms"
             if self.first_run:

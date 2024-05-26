@@ -20,10 +20,8 @@ class AssistantBaseModel(BaseModel):
 
     def model_dump(self, *args, **kwargs):
         if VERSION >= "2.0.1":
-            return super().model_dump(*args, **kwargs)
-        if kwargs.pop("mode", "") == "json":
-            return orjson.loads(super().json(*args, **kwargs))
-        return super().dict(*args, **kwargs)
+            return super().model_dump(mode="json", exclude_defaults=True)
+        return orjson.loads(super().json(exclude_defaults=True))
 
 
 class Embedding(AssistantBaseModel):

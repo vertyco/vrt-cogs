@@ -1435,7 +1435,7 @@ class Admin(MixinMeta):
             return await ctx.send(_("There are no embeddings to export!"))
 
         async with ctx.typing():
-            dump = {name: em.model_dump(mode="json") for name, em in conf.embeddings.items()}
+            dump = {name: em.model_dump() for name, em in conf.embeddings.items()}
             json_buffer = BytesIO(orjson.dumps(dump))
             file = discord.File(json_buffer, filename="embeddings_export.json")
 
