@@ -1,12 +1,22 @@
+import asyncio
+import json
 import logging
 import random
 import sys
 import typing as t
 from datetime import datetime, timedelta
 
+import aiohttp
 import discord
 from redbot.core import commands
 from redbot.core.i18n import Translator
+from redbot.core.utils.predicates import MessagePredicate
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_random_exponential,
+)
 
 _ = Translator("LevelUp", __file__)
 log = logging.getLogger("red.vrt.levelup.formatter")
@@ -167,12 +177,115 @@ def deep_getsizeof(obj: t.Any, seen: t.Optional[set] = None) -> int:
     elif hasattr(obj, "model_dump"):
         # If the object is a pydantic model, get the size of its dictionary
         size += deep_getsizeof(obj.model_dump(), seen)
+    elif hasattr(obj, "dict"):
+        # If the object is a pydantic model, get the size of its dictionary
+        size += deep_getsizeof(obj.dict(), seen)
     return size
 
 
-def huminize_size(num: float) -> str:
+def humanize_size(num: float) -> str:
     for unit in ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB"]:
         if abs(num) < 1024.0:
             return "{0:.1f}{1}".format(num, unit)
         num /= 1024.0
     return "{0:.1f}{1}".format(num, "YB")
+
+
+def abbreviate_number(num: int) -> str:
+    if num < 1000:
+        return str(num)
+    for unit in ["", "K", "M", "B", "T", "Q"]:
+        if abs(num) < 1000.0:
+            return "{0:.1f}{1}".format(num, unit)
+        num /= 1000.0
+    return "{0:.1f}{1}".format(num, "E")
+
+
+def get_day_name(day: int) -> str:
+    daymap = {
+        0: _("Monday"),
+        1: _("Tuesday"),
+        2: _("Wednesday"),
+        3: _("Thursday"),
+        4: _("Friday"),
+        5: _("Saturday"),
+        6: _("Sunday"),
+    }
+    return daymap[day]
+
+
+async def get_content_from_url(url: str) -> t.Optional[bytes]:
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as resp:
+            return await resp.content.read()
+
+
+async def confirm_msg(ctx: t.Union[commands.Context, discord.Interaction]) -> t.Union[bool, None]:
+    """Wait for user to respond yes or no"""
+    if isinstance(ctx, discord.Interaction):
+        pred = MessagePredicate.yes_or_no(channel=ctx.channel, user=ctx.user)
+        bot = ctx.client
+    else:
+        pred = MessagePredicate.yes_or_no(ctx)
+        bot = ctx.bot
+    try:
+        await bot.wait_for("message", check=pred, timeout=30)
+    except asyncio.TimeoutError:
+        return None
+    else:
+        return pred.result
+
+
+@retry(
+    retry=retry_if_exception_type(json.JSONDecodeError),
+    wait=wait_random_exponential(min=120, max=600),
+    stop=stop_after_attempt(6),
+    reraise=True,
+)
+async def fetch_amari_payload(guild_id: int, page: int, key: str):
+    url = f"https://amaribot.com/api/v1/guild/leaderboard/{guild_id}?page={page}&limit=1000"
+    headers = {"Accept": "application/json", "Authorization": key}
+    timeout = aiohttp.ClientTimeout(total=60)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        async with session.get(url, headers=headers) as res:
+            status = res.status
+            if status == 429:
+                log.warning("amari import is being rate limited!")
+            data = await res.json(content_type=None)
+            return data, status
+
+
+@retry(
+    retry=retry_if_exception_type(json.JSONDecodeError),
+    wait=wait_random_exponential(min=120, max=600),
+    stop=stop_after_attempt(6),
+    reraise=True,
+)
+async def fetch_polaris_payload(guild_id: int, page: int):
+    url = f"https://gdcolon.com/polaris/api/leaderboard/{guild_id}?page={page}"
+    timeout = aiohttp.ClientTimeout(total=60)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        async with session.get(url, headers={"Accept": "application/json"}) as res:
+            status = res.status
+            if status == 429:
+                log.warning("polaris import is being rate limited!")
+            data = await res.json(content_type=None)
+            return data, status
+
+
+@retry(
+    retry=retry_if_exception_type(json.JSONDecodeError),
+    wait=wait_random_exponential(min=120, max=600),
+    stop=stop_after_attempt(6),
+    reraise=True,
+)
+async def fetch_mee6_payload(guild_id: int, page: int):
+    url = f"https://mee6.xyz/api/plugins/levels/leaderboard/{guild_id}?page={page}&limit=1000"
+    timeout = aiohttp.ClientTimeout(total=60)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        async with session.get(url, headers={"Accept": "application/json"}) as res:
+            status = res.status
+            if status == 429:
+                log.warning("mee6 import is being rate limited!")
+            data = await res.json(content_type=None)
+            return data, status
