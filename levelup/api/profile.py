@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import random
 import typing as t
 
 import discord
@@ -9,12 +10,46 @@ from redbot.core.utils.chat_formatting import box, humanize_number
 
 from ..abc import MixinMeta
 from ..common import formatter, utils
+from ..common.models import Profile
 
 log = logging.getLogger("red.vrt.levelup.api.profile")
 _ = Translator("LevelUp", __file__)
 
 
 class ProfileFormatting(MixinMeta):
+    async def get_profile_background(self, user_id: int, profile: Profile) -> bytes:
+        """Get a background for a user's profile in the following priority:
+        - Custom background selected by user
+        - Banner of user's Discord profile
+        - Random background
+        """
+        if profile.background == "default":
+            if banner_url := await self.get_banner(user_id):
+                if banner_bytes := await utils.get_content_from_url(banner_url):
+                    return banner_bytes
+
+        if profile.background.lower().startswith("http"):
+            if content := await utils.get_content_from_url(profile.background):
+                return content
+
+        valid = list(self.backgrounds.glob("*.webp")) + list(self.custom_backgrounds.iterdir())
+        if profile.background == "random":
+            return random.choice(valid).read_bytes()
+
+        # See if filename is specified
+        for path in valid:
+            if profile.background == path.stem:
+                return path.read_bytes()
+
+        # If we're here then the profile's preference failed
+        # Try banner first if not default
+        if profile.background != "default":
+            if banner_url := await self.get_banner(user_id):
+                if banner_bytes := await utils.get_content_from_url(banner_url):
+                    return banner_bytes
+
+        return random.choice(valid).read_bytes()
+
     async def get_banner(self, user_id: int) -> t.Optional[str]:
         req = await self.bot.http.request(discord.http.Route("GET", "/users/{uid}", uid=user_id))
         if banner_id := req.get("banner"):

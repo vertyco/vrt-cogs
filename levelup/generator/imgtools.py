@@ -10,10 +10,12 @@ import colorgram
 from PIL import Image, ImageDraw, ImageFont
 from redbot.core.i18n import Translator
 
-try:
-    from . import const
-except ImportError:
-    import const
+ASSETS = Path(__file__).parent.parent / "data"
+DEFAULT_BACKGROUNDS = ASSETS / "backgrounds"
+DEFAULT_FONTS = ASSETS / "fonts"
+DEFAULT_FONT = DEFAULT_FONTS / "BebasNeue.ttf"
+STOCK = ASSETS / "stock"
+
 
 log = logging.getLogger("red.vrt.levelup.imagetools")
 _ = Translator("LevelUp", __file__)
@@ -53,7 +55,7 @@ def format_backgrounds(filepaths: t.List[str]) -> Image.Image:
             draw.text(
                 (10, 10),
                 name,
-                font=ImageFont.truetype(str(const.DEFAULT_FONT), 100),
+                font=ImageFont.truetype(str(DEFAULT_FONT), 100),
                 fill=(255, 255, 255),
                 stroke_width=5,
                 stroke_fill="#000000",
@@ -200,7 +202,7 @@ def fit_aspect_ratio(
 
 def get_random_background() -> Image.Image:
     """Get a random background image"""
-    files = list(const.BACKGROUNDS.glob("*.webp"))
+    files = list(DEFAULT_BACKGROUNDS.glob("*.webp"))
     if not files:
         raise FileNotFoundError("No background images found")
     return Image.open(random.choice(files))

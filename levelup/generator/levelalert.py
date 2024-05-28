@@ -1,3 +1,17 @@
+"""Generate LevelUp Image
+
+Args:
+    background (t.Optional[bytes], optional): The background image as bytes. Defaults to None.
+    avatar (t.Optional[bytes], optional): The avatar image as bytes. Defaults to None.
+    level (t.Optional[int], optional): The level number. Defaults to 1.
+    color (t.Optional[t.Tuple[int, int, int]], optional): The color of the level text as a tuple of RGB values. Defaults to None.
+    font (t.Optional[t.Union[str, Path]], optional): The path to the font file or the name of the font. Defaults to None.
+    debug (t.Optional[bool], optional): Whether to show the generated image for debugging purposes. Defaults to False.
+
+Returns:
+    bytes: The generated image as bytes.
+"""
+
 import logging
 import typing as t
 from io import BytesIO
@@ -6,29 +20,31 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 from redbot.core.i18n import Translator
 
-from . import const, imgtools
+try:
+    from . import imgtools
+except ImportError:
+    import imgtools
 
-log = logging.getLogger("red.vrt.levelup.generator")
+log = logging.getLogger("red.vrt.levelup.generator.levelalert")
 _ = Translator("LevelUp", __file__)
 
 
-def generate_levelup(
+def generate_level_img(
     background: t.Optional[bytes] = None,
     avatar: t.Optional[bytes] = None,
-    level: int = 1,
+    level: t.Optional[int] = 1,
     color: t.Optional[t.Tuple[int, int, int]] = None,
     font: t.Optional[t.Union[str, Path]] = None,
-):
-    """Generate LevelUp Image"""
+    debug: t.Optional[bool] = False,
+) -> bytes:
     if background:
         card = Image.open(BytesIO(background))
     else:
         card = imgtools.get_random_background()
-
     if avatar:
         pfp = Image.open(BytesIO(avatar))
     else:
-        pfp = Image.open(const.STOCK / "defaultpfp.png")
+        pfp = Image.open(imgtools.STOCK / "defaultpfp.png")
 
     desired_card_size = (200, 70)
     aspect_ratio = imgtools.calc_aspect_ratio(*desired_card_size)
@@ -36,7 +52,7 @@ def generate_levelup(
 
     # Shrink the font size if the text is too long
     fontsize = round(card.height / 2.5)
-    fontpath = str(font) if font else str(const.DEFAULT_FONT)
+    fontpath = str(font) if font else str(imgtools.DEFAULT_FONT)
     font = ImageFont.truetype(fontpath, fontsize)
     text = _("Level {}").format(level)
     while font.getlength(text) + int(card.height * 1.2) > card.width - (int(card.height * 1.2) - card.height):
@@ -89,4 +105,13 @@ def generate_levelup(
     )
     # Finally resize the image
     final = final.resize(desired_card_size, Image.Resampling.LANCZOS)
-    return final
+    if debug:
+        final.show(title="LevelUp Image")
+    buffer = BytesIO()
+    final.save(buffer, format="WEBP")
+    final.close()
+    return buffer.getvalue()
+
+
+if __name__ == "__main__":
+    assert isinstance(generate_level_img(debug=True), bytes)

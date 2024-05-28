@@ -1,10 +1,11 @@
+import asyncio
 import typing as t
 from time import perf_counter
 
 import discord
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import humanize_number, humanize_timedelta
+from redbot.core.utils.chat_formatting import box, humanize_number, humanize_timedelta
 
 from ..abc import MixinMeta
 from ..common import const, utils
@@ -384,13 +385,37 @@ class Admin(MixinMeta):
         await ctx.send(_("Mentioning user in LevelUp messages has been {}").format(status))
 
     @levelset.command(name="seelevels")
+    @commands.bot_has_permissions(attach_files=True, embed_links=True)
     async def see_levels(self, ctx: commands.Context):
         """
         Test the level algorithm
         View the first 20 levels using the current algorithm to test experience curve
         """
-        # TODO: Seelevels command
-        return await ctx.send("Not implemented yet")
+        conf = self.db.get_conf(ctx.guild)
+        txt, file = await asyncio.to_thread(
+            utils.plot_levels,
+            base=conf.algorithm.base,
+            exponent=conf.algorithm.exp,
+            cooldown=conf.cooldown,
+            xp_range=conf.xp,
+        )
+        img = f"attachment://{file.filename if file else 'levels.png'}"
+        example = _(
+            "XP required for a level = Base * Level^ᵉˣᵖ\n\n"
+            "Approx time is the time it would take for a user to reach a level with randomized breaks"
+        )
+        desc = _("`Base Multiplier:  `") + f"{conf.algorithm.base}\n"
+        desc += _("`Exp Multiplier:   `") + f"{conf.algorithm.exp}\n"
+        desc += _("`Experience Range: `") + f"{conf.xp}\n"
+        desc += _("`Message Cooldown: `") + f"{conf.cooldown}\n"
+        desc += f"{box(example)}\n{box(txt, lang='python')}"
+        embed = discord.Embed(
+            title=_("Leveling Algorithm"),
+            description=desc,
+            color=await self.bot.get_embed_color(ctx),
+        )
+        embed.set_image(url=img)
+        await ctx.send(file=file, embed=embed)
 
     @levelset.command(name="setlevel")
     async def set_level(self, ctx: commands.Context, user: discord.Member, level: int):

@@ -7,7 +7,8 @@ from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
 
 from ..abc import MixinMeta
-from ..common import const, generator, utils
+from ..common import utils
+from ..generator import imgtools, levelalert
 
 _ = Translator("LevelUp", __file__)
 
@@ -93,7 +94,7 @@ class Owner(MixinMeta):
                 banner = await utils.get_content_from_url(banner_url)
 
         level = random.randint(1, 10000)
-        fonts = list(const.FONTS.glob("*.ttf"))
+        fonts = list(imgtools.FONTS.glob("*.ttf"))
         font = str(random.choice(fonts))
         if profile.font:
             if (self.fonts / profile.font).exists():
@@ -102,17 +103,14 @@ class Owner(MixinMeta):
                 font = str(self.custom_fonts / profile.font)
 
         def _run() -> discord.File:
-            img = generator.generate_levelup(
+            img_bytes = levelalert.generate_level_img(
                 background=banner,
                 avatar=avatar,
                 level=level,
                 font=font,
-                color=utils.string_to_rgb(str(ctx.author.color)),
+                color=ctx.author.color.to_rgb(),
             )
-            buffer = BytesIO()
-            img.save(buffer, format="WEBP")
-            buffer.seek(0)
-            return discord.File(buffer, filename="levelup.webp")
+            return discord.File(BytesIO(img_bytes), filename="levelup.webp")
 
         async with ctx.typing():
             file = await asyncio.to_thread(_run)

@@ -1,13 +1,16 @@
 import asyncio
 import json
 import logging
+import math
 import random
 import sys
 import typing as t
 from datetime import datetime, timedelta
+from io import BytesIO, StringIO
 
 import aiohttp
 import discord
+import plotly.graph_objects as go
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.predicates import MessagePredicate
@@ -20,23 +23,6 @@ from tenacity import (
 
 _ = Translator("LevelUp", __file__)
 log = logging.getLogger("red.vrt.levelup.formatter")
-
-
-# Estimate how much time it would take to reach a certain level based on current algorithm
-def time_to_level(
-    xp_needed: int,
-    xp_range: list,
-    cooldown: int,
-) -> int:
-    xp_obtained = 0
-    time_to_reach_level = 0  # Seconds
-    while True:
-        xp_obtained += random.randin(xp_range[0], xp_range[1] + 1)
-        mod = (60, 7200) if random.random() < 0.75 else (5, 300)
-        wait = cooldown + random.randint(*mod)
-        time_to_reach_level += wait
-        if xp_obtained >= xp_needed:
-            return time_to_reach_level
 
 
 def string_to_rgb(color: str) -> t.Tuple[int, int, int]:
@@ -289,3 +275,78 @@ async def fetch_mee6_payload(guild_id: int, page: int):
                 log.warning("mee6 import is being rate limited!")
             data = await res.json(content_type=None)
             return data, status
+
+
+def get_level(xp: int, base: int, exp: int) -> int:
+    """Get a level that would be achieved from the amount of XP"""
+    return int((xp / base) ** (1 / exp))
+
+
+def get_xp(level: int, base: int, exp: int) -> int:
+    """Get how much XP is needed to reach a level"""
+    return math.ceil(base * (level**exp))
+
+
+# Estimate how much time it would take to reach a certain level based on current algorithm
+def time_to_level(
+    xp_needed: int,
+    xp_range: list,
+    cooldown: int,
+) -> int:
+    xp_obtained = 0
+    time_to_reach_level = 0  # Seconds
+    while xp_obtained < xp_needed:
+        xp_obtained += random.randint(xp_range[0], xp_range[1] + 1)
+        mod = (60, 7200) if random.random() < 0.20 else (0, 60)
+        wait = cooldown + random.randint(*mod)
+        time_to_reach_level += wait
+    return time_to_reach_level
+
+
+def plot_levels(
+    base: int,
+    exponent: float,
+    cooldown: int,
+    xp_range: t.Tuple[int, int],
+) -> t.Tuple[str, t.Optional[discord.File]]:
+    buffer = StringIO()
+    x, y = [], []
+    for level in range(1, 21):
+        xp_required = get_xp(level, base, exponent)
+        seconds_required = time_to_level(xp_required, xp_range, cooldown)
+        time = humanize_delta(seconds_required)
+        buffer.write(_("• lvl {}, {} xp, {}\n").format(level, xp_required, time))
+        x.append(level)
+        y.append(xp_required)
+
+    try:
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=x, y=y, mode="lines", name="Total"))
+        fig.update_layout(
+            title={
+                "text": _("XP Curve"),
+                "x": 0.5,  # Set the x position to center
+                "y": 0.95,  # Set the y position to top
+                "xanchor": "center",  # Set the x anchor to center
+                "yanchor": "top",  # Set the y anchor to top
+            },
+            xaxis_title=_("Level"),
+            yaxis_title=_("Experience Required"),
+            autosize=False,
+            width=500,
+            height=500,
+            margin=dict(l=50, r=50, b=100, t=100, pad=4),
+            plot_bgcolor="black",  # Set the background color to black
+            paper_bgcolor="black",  # Set the paper color to black
+            font=dict(color="white"),  # Set the font color to white
+        )
+        try:
+            img_bytes = fig.to_image(format="WEBP")
+            ext = "webp"
+        except KeyError:
+            img_bytes = fig.to_image(format="PNG")
+            ext = "png"
+        return buffer.getvalue(), discord.File(BytesIO(img_bytes), filename=f"levels.{ext}")
+    except Exception as e:
+        log.error("Failed to plot levels", exc_info=e)
+        return buffer.getvalue(), None
