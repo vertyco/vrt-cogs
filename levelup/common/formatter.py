@@ -14,12 +14,12 @@ from ..common.models import DB, GuildSettings, Profile, ProfileWeekly, WeeklySet
 _ = Translator("LevelUp", __file__)
 
 
-def get_user_position(conf: GuildSettings, lbtype: t.Literal["lb", "weekly"], user_id: int, key: str) -> dict:
+def get_user_position(conf: GuildSettings, lbtype: t.Literal["lb", "weekly"], target_user: int, key: str) -> dict:
     """Get the position of a user in the leaderboard
 
     Args:
         lb (t.Dict[int, t.Union[Profile, ProfileWeekly]]): The leaderboard
-        user_id (int): The user's ID
+        target_user (int): The user's ID
         key (str): The key to sort by
 
     Returns:
@@ -30,7 +30,11 @@ def get_user_position(conf: GuildSettings, lbtype: t.Literal["lb", "weekly"], us
     else:
         lb: t.Dict[int, Profile] = {}
         for user_id in list(conf.users.keys()):
-            profile = conf.users[user_id]
+            profile = (
+                conf.users[user_id].model_copy()
+                if hasattr(conf.users[user_id], "model_copy")
+                else conf.users[user_id].copy()
+            )
             if profile.prestige and conf.prestigelevel:
                 profile.xp += profile.prestige * conf.algorithm.get_xp(conf.prestigelevel)
                 profile.level += profile.prestige * conf.prestigelevel
@@ -38,13 +42,13 @@ def get_user_position(conf: GuildSettings, lbtype: t.Literal["lb", "weekly"], us
 
     sorted_users = sorted(lb.items(), key=lambda x: getattr(x[1], key), reverse=True)
     for idx, (uid, _) in enumerate(sorted_users):
-        if uid == user_id:
+        if uid == target_user:
             position = idx + 1
             break
     else:
         position = -1
     total = sum([getattr(x[1], key) for x in sorted_users])
-    percent = getattr(lb[user_id], key) / total * 100 if total else 0
+    percent = getattr(lb[target_user], key) / total * 100 if total else 0
     return {"position": position, "total": total, "percent": percent}
 
 

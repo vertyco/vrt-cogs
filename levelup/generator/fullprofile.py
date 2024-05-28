@@ -32,15 +32,17 @@ Returns:
 
 import logging
 import typing as t
+from io import BytesIO
 
+from PIL import Image
 from redbot.core.i18n import Translator
 
-# try:
-#     from . import imgtools
-# except ImportError:
-#     import imgtools
+try:
+    from . import imgtools
+except ImportError:
+    import imgtools
 
-log = logging.getLogger("red.vrt.levelup.generator.levelalert")
+log = logging.getLogger("red.vrt.levelup.generator.profile")
 _ = Translator("LevelUp", __file__)
 
 
@@ -63,19 +65,30 @@ def generate_full_profile(
     position: t.Optional[int] = 0,
     role_icon: t.Optional[bytes] = None,
     blur: t.Optional[bool] = False,
-    user_color: t.Optional[t.Tuple[int, int, int]] = None,
-    base_color: t.Optional[t.Tuple[int, int, int]] = None,
-    stat_color: t.Optional[t.Tuple[int, int, int]] = None,
-    level_bar_color: t.Optional[t.Tuple[int, int, int]] = None,
+    user_color: t.Optional[t.Tuple[int, int, int]] = (255, 255, 255),
+    base_color: t.Optional[t.Tuple[int, int, int]] = (255, 255, 255),
+    stat_color: t.Optional[t.Tuple[int, int, int]] = (255, 255, 255),
+    level_bar_color: t.Optional[t.Tuple[int, int, int]] = (255, 255, 255),
     render_gif: t.Optional[bool] = False,
     debug: t.Optional[bool] = False,
 ):
-    # if background:
-    #     card = Image.open(BytesIO(background))
-    # else:
-    #     card = imgtools.get_random_background()
-    # if avatar:
-    #     pfp = Image.open(BytesIO(avatar))
-    # else:
-    #     pfp = Image.open(imgtools.STOCK / "defaultpfp.png")
-    pass
+    if background:
+        card = Image.open(BytesIO(background))
+    else:
+        card = imgtools.get_random_background()
+    if avatar:
+        pfp = Image.open(BytesIO(avatar))
+    else:
+        pfp = Image.open(imgtools.STOCK / "defaultpfp.png")
+
+    if card.mode != "RGBA":
+        log.debug("Converting card to RGBA")
+        card = card.convert("RGBA")
+    if pfp.mode != "RGBA":
+        log.debug("Converting pfp to RGBA")
+        pfp = pfp.convert("RGBA")
+
+    # Ensure the card is the correct size and aspect ratio, crop dynamically if needed
+    desired_card_size = (1050, 450)
+    aspect_ratio = imgtools.calc_aspect_ratio(*desired_card_size)
+    card = imgtools.fit_aspect_ratio(card, aspect_ratio)
