@@ -11,7 +11,8 @@ from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list
 
 from ..abc import MixinMeta
-from ..common import const, formatter, imgtools, utils
+from ..common import const, formatter, utils
+from ..generator import imgtools
 from ..views.dynamic_menu import DynamicMenu
 
 _ = Translator("LevelUp", __file__)

@@ -1,12 +1,16 @@
+import asyncio
 import logging
+import random
 import typing as t
 from contextlib import suppress
+from io import BytesIO
 
 import discord
 from redbot.core.i18n import Translator
 
 from ..abc import MixinMeta
 from ..common.models import GuildSettings, Profile
+from ..generator import levelalert
 
 log = logging.getLogger("red.vrt.levelup.api.levelups")
 _ = Translator("LevelUp", __file__)
@@ -90,7 +94,35 @@ class LevelUps(MixinMeta):
                         await log_channel.send(embed=embed)
             return
 
-        # TODO: Generate levelup image
+        banner = await self.get_profile_background(member.id, profile)
+        avatar = await member.display_avatar.read()
+        fonts = list(conf.fonts.glob("*.ttf")) + list(self.custom_fonts.iterdir())
+        font = str(random.choice(fonts))
+        if profile.font:
+            if (conf.fonts / profile.font).exists():
+                font = str(conf.fonts / profile.font)
+            elif (self.custom_fonts / profile.font).exists():
+                font = str(self.custom_fonts / profile.font)
+
+        def _run() -> bytes:
+            img_bytes = levelalert.generate_level_img(
+                background=banner,
+                avatar=avatar,
+                level=profile.level,
+                color=member.color.to_rgb(),
+                font=font,
+            )
+            return img_bytes
+
+        filebytes = await asyncio.to_thread(_run)
+        if conf.notifydm:
+            file = discord.File(BytesIO(filebytes), filename="levelup.webp")
+            with suppress(discord.HTTPException):
+                await member.send(dm_txt, file=file)
+        if log_channel:
+            file = discord.File(BytesIO(filebytes), filename="levelup.webp")
+            with suppress(discord.HTTPException):
+                await log_channel.send(msg_txt, file=file)
 
     async def ensure_roles(
         self, member: discord.Member, conf: GuildSettings

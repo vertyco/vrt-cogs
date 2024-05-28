@@ -65,3 +65,7 @@ class MixinMeta(ABC):
     @abstractmethod
     async def get_banner(self, user_id: int) -> t.Optional[str]:
         raise NotImplementedError
+
+    @abstractmethod
+    async def get_profile_background(self, user_id: int, profile: Profile) -> bytes:
+        raise NotImplementedError
