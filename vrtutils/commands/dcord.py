@@ -122,7 +122,38 @@ class Dcord(MixinMeta):
         # See if the bot shares any guilds with the user
         mutual_guilds = [g.name for g in self.bot.guilds if user.id in [m.id for m in g.members]]
         if mutual_guilds:
-            embed.add_field(name="Mutual Server", value="\n".join(mutual_guilds))
+            embed.add_field(name="Mutual Servers", value="\n".join(mutual_guilds))
+        await ctx.send(embed=embed)
+
+    async def get_banner(self, user_id: int) -> t.Optional[str]:
+        req = await self.bot.http.request(discord.http.Route("GET", "/users/{uid}", uid=user_id))
+        if banner_id := req.get("banner"):
+            return f"https://cdn.discordapp.com/banners/{user_id}/{banner_id}?size=1024"
+
+    @commands.command(name="getbanner")
+    @commands.bot_has_permissions(embed_links=True)
+    async def get_user_banner(self, ctx: commands.Context, user: t.Union[discord.Member, int] = None):
+        """Get a user's banner"""
+        if user is None:
+            user = ctx.author
+        user_id = user if isinstance(user, int) else user.id
+        member = user if isinstance(user, discord.Member) else ctx.guild.get_member(user_id)
+        if not member:
+            try:
+                member = await self.bot.get_or_fetch_user(user_id)
+            except discord.NotFound:
+                pass
+        req = await self.bot.http.request(discord.http.Route("GET", "/users/{uid}", uid=user_id))
+        banner_id = req.get("banner")
+        if not banner_id:
+            return await ctx.send("This user does not have a banner")
+        banner_url = f"https://cdn.discordapp.com/banners/{user_id}/{banner_id}?size=1024"
+        embed = discord.Embed(color=await self.bot.get_embed_color(ctx))
+        if member:
+            embed.set_author(name=f"{member.name}'s banner", icon_url=member.display_avatar)
+        else:
+            embed.set_author(name=f"Banner for user {user_id}")
+        embed.set_image(url=banner_url)
         await ctx.send(embed=embed)
 
     @commands.command(alias=["findwebhook"])
