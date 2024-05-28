@@ -18,7 +18,9 @@
   ],
   "required_cogs": {},
   "requirements": [
-    "pydantic"
+    "pydantic",
+    "tenacity",
+    "colorgram.py"
   ],
   "short": "Discord leveling system",
   "tags": [
