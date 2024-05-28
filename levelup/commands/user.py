@@ -320,7 +320,7 @@ class User(MixinMeta):
         await msg.edit(content=_("The font {} has been deleted").format(f"`{path}`"))
 
     @set_profile.command(name="backgrounds")
-    @commands.cooldown(1, 30, commands.BucketType.user)
+    @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.bot_has_permissions(attach_files=True)
     async def view_all_backgrounds(self, ctx: commands.Context):
         """View the all available backgrounds"""
@@ -342,7 +342,7 @@ class User(MixinMeta):
             await ctx.send(txt, file=file)
 
     @set_profile.command(name="fonts")
-    @commands.cooldown(1, 30, commands.BucketType.user)
+    @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.bot_has_permissions(attach_files=True)
     async def view_fonts(self, ctx: commands.Context):
         """View available fonts to use"""
@@ -475,7 +475,6 @@ class User(MixinMeta):
         await ctx.send(embed=embed)
 
     @set_profile.command(name="background", aliases=["bg"])
-    @commands.cooldown(1, 30, commands.BucketType.user)
     @commands.bot_has_permissions(embed_links=True)
     async def set_user_background(self, ctx: commands.Context, image_url: t.Union[str, None] = None):
         """

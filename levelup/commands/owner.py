@@ -94,7 +94,7 @@ class Owner(MixinMeta):
                 banner = await utils.get_content_from_url(banner_url)
 
         level = random.randint(1, 10000)
-        fonts = list(imgtools.FONTS.glob("*.ttf"))
+        fonts = list(imgtools.DEFAULT_FONTS.glob("*.ttf"))
         font = str(random.choice(fonts))
         if profile.font:
             if (self.fonts / profile.font).exists():
