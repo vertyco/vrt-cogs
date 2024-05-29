@@ -15,10 +15,89 @@ DEFAULT_BACKGROUNDS = ASSETS / "backgrounds"
 DEFAULT_FONTS = ASSETS / "fonts"
 DEFAULT_FONT = DEFAULT_FONTS / "BebasNeue.ttf"
 STOCK = ASSETS / "stock"
-
+STAR = Image.open(STOCK / "star.webp")
+ONLINE = Image.open(STOCK / "online.webp")
+OFFLINE = Image.open(STOCK / "offline.webp")
+IDLE = Image.open(STOCK / "idle.webp")
+DND = Image.open(STOCK / "dnd.webp")
+STREAMING = Image.open(STOCK / "streaming.webp")
+DEFAULT_PFP = Image.open(STOCK / "defaultpfp.webp")
 
 log = logging.getLogger("red.vrt.levelup.imagetools")
 _ = Translator("LevelUp", __file__)
+
+
+def make_circle_outline(thickness: int, color: tuple) -> Image.Image:
+    """Make a transparent circle"""
+    size = (1080, 1080)
+    img = Image.new("RGBA", size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    draw.ellipse((0, 0, size[0], size[1]), outline=color, width=thickness * 4)
+    return img
+
+
+def make_profile_circle(pfp: Image.Image) -> Image.Image:
+    """Crop an image into a circle"""
+    # Create a mask at 4x size (So we can scale down to smooth the edges later)
+    mask = Image.new("L", (pfp.width * 4, pfp.height * 4), 0)
+    draw = ImageDraw.Draw(mask)
+    draw.ellipse((0, 0, mask.width, mask.height), fill=255)
+    # Resize the mask to the image size
+    mask = mask.resize(pfp.size, Image.Resampling.LANCZOS)
+    # Apply the mask
+    pfp.putalpha(mask)
+    return pfp
+
+
+def round_image_corners(image: Image.Image, radius: int) -> Image.Image:
+    """Round the edges of an image"""
+    mask = Image.new("L", (image.width * 4, image.height * 4), 0)
+    draw = ImageDraw.Draw(mask)
+    draw.rounded_rectangle((0, 0, mask.width, mask.height), fill=255, radius=radius * 4)
+    mask = mask.resize(image.size, Image.Resampling.LANCZOS)
+    image.putalpha(mask)
+    return image
+
+
+def make_progress_bar(
+    width: int,
+    height: int,
+    progress: float,  # 0.0 - 1.0
+    color: t.Tuple[int, int, int] = None,
+    background_color: t.Tuple[int, int, int] = None,
+    hollow: bool = False,
+) -> Image.Image:
+    """Make a pretty rounded progress bar."""
+    if not color:
+        # White
+        color = (255, 255, 255)
+    if not background_color:
+        # Dark grey
+        background_color = (100, 100, 100)
+    # Ensure progress is within 0.0 - 1.0
+    progress = max(0.0, min(1.0, progress))
+    scale = 4
+    scaled_width = width * scale
+    scaled_height = height * scale
+    radius = scaled_height // 2
+    img = Image.new("RGBA", (scaled_width, scaled_height), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    # Draw the background (empty bar)
+    placement = [(0, 0), (scaled_width, scaled_height)]
+    if hollow:
+        draw.rounded_rectangle(placement, radius, outline=background_color, width=scale * 4)
+    else:
+        draw.rounded_rectangle(placement, radius, fill=background_color)
+    # Draw the progress
+    if progress > 0:
+        # Length of progress bar
+        bar_length = int(scaled_width * progress)
+        # Draw the rounded rectangle for the progress
+        draw.rounded_rectangle([(0, 0), (max(bar_length, scaled_height), scaled_height)], radius, fill=color)
+
+    # Scale down to smooth edges
+    img = img.resize((width, height), resample=Image.Resampling.LANCZOS)
+    return img
 
 
 def format_fonts(filepaths: t.List[str]) -> Image.Image:

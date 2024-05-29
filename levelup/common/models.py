@@ -95,7 +95,9 @@ class Profile(Base):
     barcolor: t.Union[str, None] = None  # Hex color
     font: t.Union[str, None] = None  # Font name (must match font file)
     blur: bool = True  # Blur background of stat area
+    # TODO: Add command to set these
     show_displayname: bool = False  # Show display name instead of username on profile
+    hollow_bar: bool = True  # Use a hollow progress bar instead of filled
 
     def add_message(self) -> t.Self:
         self.messages += 1

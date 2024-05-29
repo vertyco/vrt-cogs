@@ -110,7 +110,7 @@ class LevelUps(MixinMeta):
                 avatar=avatar,
                 level=profile.level,
                 color=member.color.to_rgb(),
-                font=font,
+                font_path=font,
             )
             return img_bytes
 

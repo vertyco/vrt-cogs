@@ -34,7 +34,7 @@ def generate_level_img(
     avatar: t.Optional[bytes] = None,
     level: t.Optional[int] = 1,
     color: t.Optional[t.Tuple[int, int, int]] = None,
-    font: t.Optional[t.Union[str, Path]] = None,
+    font_path: t.Optional[t.Union[str, Path]] = None,
     debug: t.Optional[bool] = False,
 ) -> bytes:
     if background:
@@ -52,12 +52,12 @@ def generate_level_img(
 
     # Shrink the font size if the text is too long
     fontsize = round(card.height / 2.5)
-    fontpath = str(font) if font else str(imgtools.DEFAULT_FONT)
-    font = ImageFont.truetype(fontpath, fontsize)
+    font_path = str(font_path) if font_path else str(imgtools.DEFAULT_FONT)
+    font = ImageFont.truetype(font_path, fontsize)
     text = _("Level {}").format(level)
     while font.getlength(text) + int(card.height * 1.2) > card.width - (int(card.height * 1.2) - card.height):
         fontsize -= 1
-        font = ImageFont.truetype(fontpath, fontsize)
+        font = ImageFont.truetype(font_path, fontsize)
 
     # Draw rounded rectangle at 4x size and scale down to crop card to
     mask = Image.new("RGBA", ((card.size[0]), (card.size[1])), 0)
