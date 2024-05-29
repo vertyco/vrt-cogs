@@ -107,7 +107,7 @@ class Owner(MixinMeta):
                 background=banner,
                 avatar=avatar,
                 level=level,
-                font=font,
+                font_path=font,
                 color=ctx.author.color.to_rgb(),
             )
             return discord.File(BytesIO(img_bytes), filename="levelup.webp")

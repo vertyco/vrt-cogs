@@ -183,4 +183,5 @@ locallm/
 llm/
 scratches/
 heist/
+levelup/data/tests/
 levelup_old/
