@@ -16,12 +16,16 @@ DEFAULT_FONTS = ASSETS / "fonts"
 DEFAULT_FONT = DEFAULT_FONTS / "BebasNeue.ttf"
 STOCK = ASSETS / "stock"
 STAR = Image.open(STOCK / "star.webp")
-ONLINE = Image.open(STOCK / "online.webp")
-OFFLINE = Image.open(STOCK / "offline.webp")
-IDLE = Image.open(STOCK / "idle.webp")
-DND = Image.open(STOCK / "dnd.webp")
-STREAMING = Image.open(STOCK / "streaming.webp")
 DEFAULT_PFP = Image.open(STOCK / "defaultpfp.webp")
+RS_TEMPLATE = Image.open(STOCK / "runescapeui.webp")
+RS_TEMPLATE_BALANCE = Image.open(STOCK / "runescapeui2.webp")
+STATUS = {
+    "online": Image.open(STOCK / "online.webp"),
+    "offline": Image.open(STOCK / "offline.webp"),
+    "idle": Image.open(STOCK / "idle.webp"),
+    "dnd": Image.open(STOCK / "dnd.webp"),
+    "streaming": Image.open(STOCK / "streaming.webp"),
+}
 
 log = logging.getLogger("red.vrt.levelup.imagetools")
 _ = Translator("LevelUp", __file__)
@@ -32,7 +36,7 @@ def make_circle_outline(thickness: int, color: tuple) -> Image.Image:
     size = (1080, 1080)
     img = Image.new("RGBA", size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    draw.ellipse((0, 0, size[0], size[1]), outline=color, width=thickness * 4)
+    draw.ellipse((0, 0, size[0], size[1]), outline=color, width=thickness * 3)
     return img
 
 
@@ -82,18 +86,19 @@ def make_progress_bar(
     radius = scaled_height // 2
     img = Image.new("RGBA", (scaled_width, scaled_height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    # Draw the background (empty bar)
-    placement = [(0, 0), (scaled_width, scaled_height)]
-    if hollow:
-        draw.rounded_rectangle(placement, radius, outline=background_color, width=scale * 4)
-    else:
-        draw.rounded_rectangle(placement, radius, fill=background_color)
     # Draw the progress
     if progress > 0:
         # Length of progress bar
         bar_length = int(scaled_width * progress)
         # Draw the rounded rectangle for the progress
         draw.rounded_rectangle([(0, 0), (max(bar_length, scaled_height), scaled_height)], radius, fill=color)
+
+    # Draw the background (empty bar)
+    placement = [(0, 0), (scaled_width, scaled_height)]
+    if hollow:
+        draw.rounded_rectangle(placement, radius, outline=background_color, width=scale * 4)
+    else:
+        draw.rounded_rectangle(placement, radius, fill=background_color)
 
     # Scale down to smooth edges
     img = img.resize((width, height), resample=Image.Resampling.LANCZOS)
@@ -285,6 +290,22 @@ def get_random_background() -> Image.Image:
     if not files:
         raise FileNotFoundError("No background images found")
     return Image.open(random.choice(files))
+
+
+def get_avg_duration(image: Image.Image) -> int:
+    """Get the average duration of a GIF"""
+    if not getattr(image, "is_animated", False):
+        log.warning("Image is not animated")
+        return 0
+    try:
+        durations = []
+        for frame in range(1, image.n_frames):
+            image.seek(frame)
+            durations.append(image.info.get("duration", 0))
+        return sum(durations) // len(durations)
+    except Exception as e:
+        log.error("Failed to get average duration of GIF", exc_info=e)
+        return 0
 
 
 if __name__ == "__main__":
