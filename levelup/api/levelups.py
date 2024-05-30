@@ -96,11 +96,11 @@ class LevelUps(MixinMeta):
 
         banner = await self.get_profile_background(member.id, profile)
         avatar = await member.display_avatar.read()
-        fonts = list(conf.fonts.glob("*.ttf")) + list(self.custom_fonts.iterdir())
+        fonts = list(self.fonts.glob("*.ttf")) + list(self.custom_fonts.iterdir())
         font = str(random.choice(fonts))
         if profile.font:
-            if (conf.fonts / profile.font).exists():
-                font = str(conf.fonts / profile.font)
+            if (self.fonts / profile.font).exists():
+                font = str(self.fonts / profile.font)
             elif (self.custom_fonts / profile.font).exists():
                 font = str(self.custom_fonts / profile.font)
 

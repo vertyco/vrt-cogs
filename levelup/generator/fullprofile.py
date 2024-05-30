@@ -29,11 +29,13 @@ Args:
     base_color (t.Optional[t.Tuple[int, int, int]], optional): The base color. Defaults to None.
     stat_color (t.Optional[t.Tuple[int, int, int]], optional): The color for the stats. Defaults to None.
     level_bar_color (t.Optional[t.Tuple[int, int, int]], optional): The color for the level bar. Defaults to None.
+    hollow_bar (t.Optional[bool], optional): Whether the level bar is hollow. Defaults to True.
+    font_path (t.Optional[t.Union[str, Path], optional): The path to the font file. Defaults to None.
     render_gif (t.Optional[bool], optional): Whether to render as gif if profile or background is one. Defaults to False.
     debug (t.Optional[bool], optional): Whether to raise any errors rather than suppressing. Defaults to False.
 
 Returns:
-    bytes: The generated full profile image as bytes.
+    t.Tuple[bytes, bool]: The generated full profile image as bytes, and whether the image is animated.
 """
 
 import logging
@@ -42,24 +44,17 @@ from io import BytesIO
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
-from pilmoji import Pilmoji
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_number
 
 try:
     from . import imgtools
+    from .pilmojisrc.core import Pilmoji
 except ImportError:
     import imgtools
+    from pilmojisrc.core import Pilmoji
 
-# defaultpfp = Image.open(imgtools.DEFAULT_PFP)
-# star = Image.open(imgtools.STAR)
-# dnd = Image.open(imgtools.DND)
-# idle = Image.open(imgtools.IDLE)
-# offline = Image.open(imgtools.OFFLINE)
-# online = Image.open(imgtools.ONLINE)
-# streaming = Image.open(imgtools.STREAMING)
-
-log = logging.getLogger("red.vrt.levelup.generator.profile")
+log = logging.getLogger("red.vrt.levelup.generator.fullprofile")
 _ = Translator("LevelUp", __file__)
 
 
@@ -74,7 +69,7 @@ def generate_full_profile(
     stars: t.Optional[int] = 69,
     prestige: t.Optional[int] = 0,
     prestige_emoji: t.Optional[bytes] = None,
-    balance: t.Optional[int] = 69420,
+    balance: t.Optional[int] = 0,
     currency_name: t.Optional[str] = "Credits",
     previous_xp: t.Optional[int] = 100,
     current_xp: t.Optional[int] = 125,
@@ -82,15 +77,15 @@ def generate_full_profile(
     position: t.Optional[int] = 3,
     role_icon: t.Optional[bytes] = None,
     blur: t.Optional[bool] = False,
-    user_color: t.Optional[t.Tuple[int, int, int]] = (255, 255, 255),
     base_color: t.Optional[t.Tuple[int, int, int]] = (255, 255, 255),
+    user_color: t.Optional[t.Tuple[int, int, int]] = (255, 255, 255),
     stat_color: t.Optional[t.Tuple[int, int, int]] = (255, 255, 255),
     level_bar_color: t.Optional[t.Tuple[int, int, int]] = (255, 255, 255),
     hollow_bar: t.Optional[bool] = True,
     font_path: t.Optional[t.Union[str, Path]] = None,
     render_gif: t.Optional[bool] = False,
     debug: t.Optional[bool] = False,
-):
+) -> t.Tuple[bytes, bool]:
     if background_bytes:
         card = Image.open(BytesIO(background_bytes))
     else:
@@ -100,30 +95,22 @@ def generate_full_profile(
     else:
         pfp = imgtools.DEFAULT_PFP
 
+    pfp_animated = getattr(pfp, "is_animated", False)
+    log.debug(f"PFP animated: {pfp_animated}")
+
     # This will stop the image from being animated
-    # TODO: Preserve animation for both images
     if card.mode != "RGBA":
         log.debug(f"Converting card mode '{card.mode}' to RGBA")
         card = card.convert("RGBA")
-    if pfp.mode != "RGBA":
-        log.debug(f"Converting pfp mode '{pfp.mode}' to RGBA")
-        pfp = pfp.convert("RGBA")
-    card_animated = getattr(card, "is_animated", False)
-    pfp_animated = getattr(pfp, "is_animated", False)
-    log.debug(f"Card animated: {card_animated}, PFP animated: {pfp_animated}")
 
     # Ensure the card is the correct size and aspect ratio
     desired_card_size = (1050, 450)
     aspect_ratio = imgtools.calc_aspect_ratio(*desired_card_size)
     card = imgtools.fit_aspect_ratio(card, aspect_ratio)
     card = card.resize(desired_card_size, Image.Resampling.LANCZOS)
-    # Round edges of the card
-    card = imgtools.round_image_corners(card, 45)
-    # Resize the profile image
-    desired_pfp_size = (330, 330)
-    pfp = pfp.resize(desired_pfp_size, Image.Resampling.LANCZOS)
-    # Crop the profile image into a circle
-    pfp = imgtools.make_profile_circle(pfp)
+    # Round edges of the card if its not animated
+    if not pfp_animated or not render_gif:
+        card = imgtools.round_image_corners(card, 45)
 
     # Setup
     default_fill = (0, 0, 0)  # Default fill color for text
@@ -142,22 +129,26 @@ def generate_full_profile(
     stat_offset = 45  # Offset between stats
     circle_x = 60  # Left bound of profile circle
     circle_y = 60  # Top bound of profile circle
-    star_text_x = 960  # Left bound of star text
+    star_text_x = 910  # Left bound of star text
     star_text_y = 35  # Top bound of star text
-    star_icon_x = 900  # Left bound of star icon
-    star_icon_y = 20  # Top bound of star icon
+    star_icon_x = 850  # Left bound of star icon
+    star_icon_y = 35  # Top bound of star icon
 
     # Create a new transparent layer for the stat text
-    stats = Image.new("RGBA", card.size, (0, 0, 0, 0))
+    stats = Image.new("RGBA", desired_card_size, (0, 0, 0, 0))
     # Add blur to the stats box
     if blur:
         # Apply gaussian blur to the card to create a blur effect for the stats box area
         blurred = card.filter(ImageFilter.GaussianBlur(3))
         blur_box = blurred.crop((blur_edge, 0, card.width, card.height))
         # Darken the image
-        blur_box = ImageEnhance.Brightness(blur_box).enhance(0.5)
+        blur_box = ImageEnhance.Brightness(blur_box).enhance(0.6)
         # Paste onto the stats
         stats.paste(blur_box, (blur_edge, 0), blur_box)
+    else:
+        # Apply semi-transparent grey box to the stats area
+        box = Image.new("RGBA", (card.width - blur_edge, card.height), (0, 0, 0, 150))
+        stats.paste(box, (blur_edge, 0), box)
 
     # Setup progress bar
     progress = (current_xp - previous_xp) / (next_xp - previous_xp)
@@ -189,6 +180,27 @@ def generate_full_profile(
             stroke_fill=default_fill,
             font=font,
         )
+    # ---------------- Prestige text ----------------
+    if prestige:
+        text = _("(Prestige {})").format(f"{humanize_number(prestige)}")
+        fontsize = 40
+        font = ImageFont.truetype(font_path, fontsize)
+        # Ensure text doesnt pass stat_end
+        while font.getlength(text) + stat_start > stat_end:
+            fontsize -= 1
+            font = ImageFont.truetype(font_path, fontsize)
+        draw.text(
+            xy=(stat_start, name_y + 70),
+            text=text,
+            fill=stat_color,
+            stroke_width=stroke_width,
+            stroke_fill=default_fill,
+            font=font,
+        )
+        if prestige_emoji:
+            prestige_icon = Image.open(BytesIO(prestige_emoji)).resize((50, 50), Image.Resampling.LANCZOS)
+            placement = (round(stat_start + font.getlength(text) + 10), name_y + 65)
+            stats.paste(prestige_icon, placement, prestige_icon)
     # ---------------- Stars text ----------------
     text = humanize_number(stars)
     fontsize = 60
@@ -271,28 +283,33 @@ def generate_full_profile(
         font=font,
     )
     # ---------------- Balance text ----------------
-    text = _("Balance: {}").format(f"{humanize_number(balance)} {currency_name}")
-    fontsize = 40
-    emoji_scale = 1.4
-    font = ImageFont.truetype(font_path, fontsize)
-    # Ensure text doesnt pass the stat_end
-    while font.getlength(text) + stat_start > stat_end:
-        fontsize -= 1
-        emoji_scale -= 0.1
+    if balance:
+        text = _("Balance: {}").format(f"{humanize_number(balance)} {currency_name}")
+        fontsize = 40
+        emoji_scale = 1.4
+        emoji_y_offset = 50
         font = ImageFont.truetype(font_path, fontsize)
-    with Pilmoji(stats) as pilmoji:
-        text_bbox = font.getbbox(text)
-        text_emoji_y = text_bbox[3] - round(fontsize * emoji_scale)
-        pilmoji.text(
-            xy=(stat_start, stat_bottom - stat_offset * 2),
-            text=text,
-            fill=stat_color,
-            stroke_width=stroke_width,
-            stroke_fill=default_fill,
-            font=font,
-            emoji_scale_factor=emoji_scale,
-            emoji_position_offset=(0, text_emoji_y),
-        )
+        # Ensure text doesnt pass the stat_end
+        while font.getlength(text) + stat_start > stat_end and fontsize > 5:
+            fontsize -= 1
+            emoji_scale -= 0.1
+            emoji_y_offset -= 0.2
+            font = ImageFont.truetype(font_path, fontsize)
+        with Pilmoji(stats) as pilmoji:
+            text_bbox = font.getbbox(text)
+            text_emoji_y = text_bbox[3] - round(emoji_y_offset)
+            placement = (stat_start, stat_bottom - stat_offset * 2)
+            print(f"textbbox: {text_bbox}, text_emoji_y: {text_emoji_y}, placement: {placement}, fontsize: {fontsize} ")
+            pilmoji.text(
+                xy=placement,
+                text=text,
+                fill=stat_color,
+                stroke_width=stroke_width,
+                stroke_fill=default_fill,
+                font=font,
+                emoji_scale_factor=max(0.3, emoji_scale),
+                emoji_position_offset=(0, text_emoji_y),
+            )
     # ---------------- Experience text ----------------
     current = current_xp - previous_xp
     goal = next_xp - previous_xp
@@ -321,12 +338,68 @@ def generate_full_profile(
     circle = circle.resize(outline_size, Image.Resampling.LANCZOS)
     placement = (circle_x - 25, circle_y - 25)
     stats.paste(circle, placement, circle)
+    # Place status icon
+    status_icon = imgtools.STATUS[status]
+    stats.paste(status_icon, (circle_x + 273, circle_y + 273), status_icon)
+    # Paste role icon on top left of profile circle
+    if role_icon:
+        role_icon_img = Image.open(BytesIO(role_icon)).resize((70, 70), Image.Resampling.LANCZOS)
+        stats.paste(role_icon_img, (10, 10), role_icon_img)
     # ---------------- Start finalizing the image ----------------
-    # Paste the stats onto the card
-    card.paste(stats, (0, 0), stats)
-    # Paste the profile image onto the card
-    card.paste(pfp, (circle_x, circle_y), pfp)
-    card.show()
+    # Resize the profile image
+    desired_pfp_size = (330, 330)
+    if pfp_animated and render_gif:
+        avg_duration = imgtools.get_avg_duration(pfp)
+        log.debug(f"Rendering pfp as gif with avg duration of {avg_duration}ms")
+        frames: t.List[Image.Image] = []
+        for frame in range(pfp.n_frames):
+            pfp.seek(frame)
+            # Prepare copies of the card, stats, and pfp
+            card_frame = card.copy()
+            pfp_frame = pfp.copy()
+            if pfp_frame.mode != "RGBA":
+                pfp_frame = pfp_frame.convert("RGBA")
+            # Resize the profile image for each frame
+            pfp_frame = pfp_frame.resize(desired_pfp_size, Image.Resampling.NEAREST)
+            # Crop the profile image into a circle
+            pfp_frame = imgtools.make_profile_circle(pfp_frame)
+            # Paste items onto the card
+            card_frame.paste(stats, (0, 0), stats)
+            card_frame.paste(pfp_frame, (circle_x, circle_y), pfp_frame)
+            frames.append(card_frame)
+
+        buffer = BytesIO()
+        frames[0].save(
+            buffer,
+            format="GIF",
+            save_all=True,
+            append_images=frames[1:],
+            duration=avg_duration,
+            loop=0,
+            optimize=True,
+        )
+        buffer.seek(0)
+        if debug:
+            Image.open(buffer).show()
+        return buffer.getvalue(), True
+
+    else:
+        if pfp.mode != "RGBA":
+            log.debug(f"Converting pfp mode '{pfp.mode}' to RGBA")
+            pfp = pfp.convert("RGBA")
+        pfp = pfp.resize(desired_pfp_size, Image.Resampling.LANCZOS)
+        # Crop the profile image into a circle
+        pfp = imgtools.make_profile_circle(pfp)
+
+        # Paste the items onto the card
+        card.paste(stats, (0, 0), stats)
+        card.paste(pfp, (circle_x, circle_y), pfp)
+        if debug:
+            card.show()
+        buffer = BytesIO()
+        card.save(buffer, format="WEBP")
+        card.close()
+        return buffer.getvalue(), False
 
 
 if __name__ == "__main__":
@@ -336,18 +409,28 @@ if __name__ == "__main__":
     test_banner = (imgtools.ASSETS / "tests" / "banner.gif").read_bytes()
     test_avatar = (imgtools.ASSETS / "tests" / "tree.gif").read_bytes()
     test_icon = (imgtools.ASSETS / "tests" / "icon.png").read_bytes()
-    font_path = imgtools.ASSETS / "fonts" / "Truckin.ttf"
-    generate_full_profile(
+    font_path = imgtools.ASSETS / "fonts" / "BebasNeue.ttf"
+    res, animated = generate_full_profile(
         background_bytes=test_banner,
         avatar_bytes=test_avatar,
-        role_icon=test_icon,
-        blur=True,
+        username="Vertyco",
+        status="online",
+        level=999,
+        messages=420,
+        voicetime="99d 11h 55m",
+        stars=693333,
+        prestige=2,
+        prestige_emoji=test_icon,
+        balance=1000000,
+        currency_name="Coinz 💰",
         previous_xp=1000,
         current_xp=1258,
         next_xp=5000,
-        voicetime="99d 11h 55m",
+        role_icon=test_icon,
+        blur=True,
         font_path=font_path,
-        level=999,
-        currency_name="Coinz 💰",
-        username="Vertyco",
+        render_gif=False,
+        debug=True,
     )
+    result_path = imgtools.ASSETS / "tests" / "result.gif"
+    result_path.write_bytes(res)

@@ -20,7 +20,8 @@
   "requirements": [
     "pydantic",
     "tenacity",
-    "colorgram.py"
+    "colorgram.py",
+    "emoji"
   ],
   "short": "Discord leveling system",
   "tags": [

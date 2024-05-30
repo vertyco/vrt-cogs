@@ -2,6 +2,7 @@ import asyncio
 import logging
 import random
 import typing as t
+from io import BytesIO
 
 import discord
 from redbot.core import bank
@@ -11,6 +12,7 @@ from redbot.core.utils.chat_formatting import box, humanize_number
 from ..abc import MixinMeta
 from ..common import formatter, utils
 from ..common.models import Profile
+from ..generator import fullprofile
 
 log = logging.getLogger("red.vrt.levelup.api.profile")
 _ = Translator("LevelUp", __file__)
@@ -90,10 +92,14 @@ class ProfileFormatting(MixinMeta):
         bulb = conf.emojis.get("bulb", self.bot)
         money = conf.emojis.get("money", self.bot)
 
+        # Prestige data
+        pdata = None
+        if profile.prestige and profile.prestige in conf.prestigedata:
+            pdata = conf.prestigedata[profile.prestige]
+
         if conf.use_embeds:
             txt = f"{level}｜" + _("Level {}\n").format(humanize_number(profile.level))
-            if profile.prestige and profile.prestige in conf.prestigedata:
-                pdata = conf.prestigedata[profile.prestige]
+            if pdata:
                 txt += f"{trophy}｜" + _("Prestige {}\n").format(
                     f"{humanize_number(profile.prestige)} {pdata.emoji_string}"
                 )
@@ -126,3 +132,49 @@ class ProfileFormatting(MixinMeta):
             )
             embed.add_field(name=_("Progress"), value=box(bar, lang="python"), inline=False)
             return embed
+
+        avatar = await member.display_avatar.read()
+        background = await self.get_profile_background(member.id, profile)
+        kwargs = {
+            "background_bytes": background,
+            "avatar_bytes": avatar,
+            "username": member.display_name if profile.show_displayname else member.name,
+            "status": str(member.status).strip(),
+            "level": profile.level,
+            "messages": profile.messages,
+            "voicetime": utils.humanize_delta(profile.voice),
+            "stars": profile.stars,
+            "prestige": profile.prestige,
+            "previous_xp": last_level_xp,
+            "current_xp": current_xp,
+            "next_xp": next_level_xp,
+            "position": stat["position"],
+            "blur": profile.blur,
+            "base_color": member.color.to_rgb(),
+            "user_color": utils.string_to_rgb(profile.namecolor) if profile.namecolor else None,
+            "stat_color": utils.string_to_rgb(profile.statcolor) if profile.statcolor else None,
+            "level_bar_color": utils.string_to_rgb(profile.barcolor) if profile.barcolor else None,
+            "hollow_bar": profile.hollow_bar,
+            "render_gif": self.db.render_gifs,
+        }
+        if pdata:
+            emoji_bytes = await utils.get_content_from_url(pdata.emoji_url)
+            kwargs["prestige_emoji"] = emoji_bytes
+        if conf.showbal:
+            kwargs["balance"] = await bank.get_balance(member)
+            kwargs["currency_name"] = await bank.get_currency_name(guild)
+        if role_icon := member.top_role.icon:
+            kwargs["role_icon"] = await role_icon.read()
+        if profile.font:
+            if (self.fonts / profile.font).exists():
+                kwargs["font_path"] = str(self.fonts / profile.font)
+            elif (self.custom_fonts / profile.font).exists():
+                kwargs["font_path"] = str(self.custom_fonts / profile.font)
+
+        def _run() -> discord.File:
+            img_bytes, animated = fullprofile.generate_full_profile(**kwargs)
+            ext = "gif" if animated else "webp"
+            return discord.File(BytesIO(img_bytes), filename=f"profile.{ext}")
+
+        file = await asyncio.to_thread(_run)
+        return file
