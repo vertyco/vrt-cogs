@@ -15,6 +15,7 @@ from .api import API
 from .commands import Commands
 from .commands.user import view_profile_context
 from .common.models import DB, run_migrations
+from .dashboard.integration import DashboardIntegration
 from .listeners import Listeners
 
 log = logging.getLogger("red.vrt.levelup")
@@ -26,6 +27,7 @@ RequestType = t.Literal["discord_deleted_user", "owner", "user", "user_strict"]
 class LevelUp(
     Commands,
     API,
+    DashboardIntegration,
     Listeners,
     commands.Cog,
     metaclass=CompositeMetaClass,
