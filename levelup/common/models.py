@@ -88,7 +88,7 @@ class Profile(Base):
     )
 
     # For image profiles
-    format: int = 1  # 1 = Full, 2 = Slim
+    style: str = "default"  # Can be default, runescape... (WIP)
     background: str = "default"  # Can be default, random, filename, or URL
     namecolor: t.Union[str, None] = None  # Hex color
     statcolor: t.Union[str, None] = None  # Hex color
@@ -300,7 +300,6 @@ def run_migrations(settings: dict[str, t.Any]) -> DB:
         # Migrate profiles
         if "users" in conf:
             for profile in conf["users"].values():
-                profile["format"] = 1 if profile["full"] else 2
                 colors = profile.pop("colors", {})
                 profile["namecolor"] = colors.get("name")
                 profile["statcolor"] = colors.get("stat")

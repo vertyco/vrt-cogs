@@ -13,7 +13,7 @@ Args:
     status (t.Optional[str], optional): The status. Defaults to "online".
     level (t.Optional[int], optional): The level. Defaults to 1.
     messages (t.Optional[int], optional): The number of messages. Defaults to 0.
-    voicetime (t.Optional[str], optional): The voicetime. Defaults to "None".
+    voicetime (t.Optional[int], optional): The voicetime. Defaults to 3600.
     stars (t.Optional[int], optional): The number of stars. Defaults to 0.
     prestige (t.Optional[int], optional): The prestige level. Defaults to 0.
     prestige_emoji (t.Optional[bytes], optional): The prestige emoji as bytes. Defaults to None.
@@ -65,7 +65,7 @@ def generate_full_profile(
     status: t.Optional[str] = "online",
     level: t.Optional[int] = 3,
     messages: t.Optional[int] = 420,
-    voicetime: t.Optional[str] = "None",
+    voicetime: t.Optional[int] = 3600,
     stars: t.Optional[int] = 69,
     prestige: t.Optional[int] = 0,
     prestige_emoji: t.Optional[bytes] = None,
@@ -267,7 +267,7 @@ def generate_full_profile(
         font=font,
     )
     # ---------------- Voice text ----------------
-    text = _("Voice: {}").format(voicetime)
+    text = _("Voice: {}").format(imgtools.abbreviate_time(voicetime))
     fontsize = 40
     font = ImageFont.truetype(font_path, fontsize)
     # Ensure text doesnt pass the stat_end
@@ -417,7 +417,7 @@ if __name__ == "__main__":
         status="online",
         level=999,
         messages=420,
-        voicetime="99d 11h 55m",
+        voicetime=399815,
         stars=693333,
         prestige=2,
         prestige_emoji=test_icon,
