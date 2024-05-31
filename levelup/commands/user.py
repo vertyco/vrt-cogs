@@ -156,19 +156,23 @@ class User(MixinMeta):
             profile = conf.get_profile(ctx.author)
 
             desc = _(
-                "`Profile Style:  `{}\n"
-                "`Blur:           `{}\n"
-                "`Name Color:     `{}\n"
-                "`Stat Color:     `{}\n"
-                "`LevelBar Color: `{}\n"
-                "`Font:           `{}\n"
-                "`Background:     `{}\n"
+                "`Profile Style:   `{}\n"
+                "`Show Nickname:   `{}\n"
+                "`Blur:            `{}\n"
+                "`Name Color:      `{}\n"
+                "`Stat Color:      `{}\n"
+                "`LevelBar Color:  `{}\n"
+                "`Hollow LevelBar: `{}\n"
+                "`Font:            `{}\n"
+                "`Background:      `{}\n"
             ).format(
                 profile.style,
+                profile.show_displayname,
                 _("Enabled") if profile.blur else _("Disabled"),
                 profile.namecolor,
                 profile.statcolor,
                 profile.barcolor,
+                profile.hollow_bar,
                 profile.font,
                 profile.background,
             )
@@ -386,6 +390,32 @@ class User(MixinMeta):
         profile.style = style
         self.save()
         await ctx.send(_("Your profile type has been set to {}").format(style.capitalize()))
+
+    @set_profile.command(name="shownick")
+    async def toggle_show_nickname(self, ctx: commands.Context):
+        """Toggle showing your nickname in your profile"""
+        conf = self.db.get_conf(ctx.guild)
+        profile = conf.get_profile(ctx.author)
+        profile.show_displayname = not profile.show_displayname
+        self.save()
+        txt = (
+            _("Your nickname will now be shown in your profile!")
+            if profile.show_displayname
+            else _("Your username will now be shown in your profile!")
+        )
+        await ctx.send(txt)
+
+    @set_profile.command(name="hollowbar")
+    async def toggle_hollow_bar(self, ctx: commands.Context):
+        """Toggle whether the progress bar is hollow or filled"""
+        conf = self.db.get_conf(ctx.guild)
+        profile = conf.get_profile(ctx.author)
+        if profile.style != "default":
+            return await ctx.send(_("You cannot change the progress bar with your current profile style!"))
+        profile.hollow_bar = not profile.hollow_bar
+        self.save()
+        txt = _("Your level bar will now be hollow!") if profile.hollow_bar else _("Your level bar will now be filled!")
+        await ctx.send(txt)
 
     @set_profile.command(name="namecolor", aliases=["name"])
     @commands.bot_has_permissions(embed_links=True)

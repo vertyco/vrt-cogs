@@ -85,15 +85,19 @@ def generate_full_profile(
     role_icon: t.Optional[bytes] = None,
     blur: t.Optional[bool] = False,
     base_color: t.Optional[t.Tuple[int, int, int]] = (255, 255, 255),
-    user_color: t.Optional[t.Tuple[int, int, int]] = (255, 255, 255),
-    stat_color: t.Optional[t.Tuple[int, int, int]] = (255, 255, 255),
-    level_bar_color: t.Optional[t.Tuple[int, int, int]] = (255, 255, 255),
+    user_color: t.Optional[t.Tuple[int, int, int]] = None,
+    stat_color: t.Optional[t.Tuple[int, int, int]] = None,
+    level_bar_color: t.Optional[t.Tuple[int, int, int]] = None,
     hollow_bar: t.Optional[bool] = True,
     font_path: t.Optional[t.Union[str, Path]] = None,
     render_gif: t.Optional[bool] = False,
     debug: t.Optional[bool] = False,
     reraise: t.Optional[bool] = False,
 ) -> t.Tuple[bytes, bool]:
+    user_color = user_color or base_color
+    stat_color = stat_color or base_color
+    level_bar_color = level_bar_color or base_color
+
     if background_bytes:
         try:
             card = Image.open(BytesIO(background_bytes))
