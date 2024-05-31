@@ -29,7 +29,6 @@ Args:
     base_color (t.Optional[t.Tuple[int, int, int]], optional): The base color. Defaults to None.
     stat_color (t.Optional[t.Tuple[int, int, int]], optional): The color for the stats. Defaults to None.
     level_bar_color (t.Optional[t.Tuple[int, int, int]], optional): The color for the level bar. Defaults to None.
-    hollow_bar (t.Optional[bool], optional): Whether the level bar is hollow. Defaults to True.
     font_path (t.Optional[t.Union[str, Path], optional): The path to the font file. Defaults to None.
     render_gif (t.Optional[bool], optional): Whether to render as gif if profile or background is one. Defaults to False.
     debug (t.Optional[bool], optional): Whether to raise any errors rather than suppressing. Defaults to False.
@@ -88,7 +87,6 @@ def generate_full_profile(
     user_color: t.Optional[t.Tuple[int, int, int]] = None,
     stat_color: t.Optional[t.Tuple[int, int, int]] = None,
     level_bar_color: t.Optional[t.Tuple[int, int, int]] = None,
-    hollow_bar: t.Optional[bool] = True,
     font_path: t.Optional[t.Union[str, Path]] = None,
     render_gif: t.Optional[bool] = False,
     debug: t.Optional[bool] = False,
@@ -174,7 +172,6 @@ def generate_full_profile(
         bar_height,
         progress,
         level_bar_color,
-        hollow=hollow_bar,
     )
     stats.paste(level_bar, (bar_start, bar_top), level_bar)
 

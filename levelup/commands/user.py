@@ -162,7 +162,6 @@ class User(MixinMeta):
                 "`Name Color:      `{}\n"
                 "`Stat Color:      `{}\n"
                 "`LevelBar Color:  `{}\n"
-                "`Hollow LevelBar: `{}\n"
                 "`Font:            `{}\n"
                 "`Background:      `{}\n"
             ).format(
@@ -172,7 +171,6 @@ class User(MixinMeta):
                 profile.namecolor,
                 profile.statcolor,
                 profile.barcolor,
-                profile.hollow_bar,
                 profile.font,
                 profile.background,
             )
@@ -405,17 +403,6 @@ class User(MixinMeta):
         )
         await ctx.send(txt)
 
-    @set_profile.command(name="hollowbar")
-    async def toggle_hollow_bar(self, ctx: commands.Context):
-        """Toggle whether the progress bar is hollow or filled"""
-        conf = self.db.get_conf(ctx.guild)
-        profile = conf.get_profile(ctx.author)
-        if profile.style != "default":
-            return await ctx.send(_("You cannot change the progress bar with your current profile style!"))
-        profile.hollow_bar = not profile.hollow_bar
-        self.save()
-        txt = _("Your level bar will now be hollow!") if profile.hollow_bar else _("Your level bar will now be filled!")
-        await ctx.send(txt)
 
     @set_profile.command(name="namecolor", aliases=["name"])
     @commands.bot_has_permissions(embed_links=True)
