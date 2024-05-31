@@ -33,15 +33,15 @@ class DashboardIntegration(MixinMeta):
         stat: t.Literal["exp", "messages", "voice", "stars"] = "exp",
         **kwargs,
     ):
-        conf = self.data[guild.id]
+        conf = self.db.get_conf(guild)
         if lbtype == "weekly":
-            if not conf["weekly"]["on"]:
+            if not conf.weeklysettings.on:
                 return {
                     "status": 1,
                     "error_title": _("Weekly stats disabled"),
                     "error_message": _("Weekly stats are disabled for this guild."),
                 }
-            if not conf["weekly"]["users"]:
+            if not conf.users_weekly:
                 return {
                     "status": 1,
                     "error_title": _("No Weekly stats available"),
