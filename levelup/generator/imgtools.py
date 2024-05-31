@@ -52,21 +52,23 @@ def abbreviate_time(delta: int, short: bool = False) -> str:
     if not any([s, m, h, d, y]):
         return _("None")
     if not any([m, h, d, y]):
+        if short:
+            return f"{int(s)}S"
         return f"{int(s)}s"
     if not any([h, d, y]):
         if short:
-            return f"{int(m)}m"
+            return f"{int(m)}M"
         return f"{int(m)}m {int(s)}s"
     if not any([d, y]):
         if short:
-            return f"{int(h)}h"
+            return f"{int(h)}H"
         return f"{int(h)}h {int(m)}m"
     if not y:
         if short:
-            return f"{int(d)}d"
+            return f"{int(d)}D"
         return f"{int(d)}d {int(h)}h"
     if short:
-        return f"{int(y)}y"
+        return f"{int(y)}Y"
     return f"{int(y)}y {int(d)}d"
 
 
