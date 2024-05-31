@@ -90,7 +90,6 @@ def generate_full_profile(
     font_path: t.Optional[t.Union[str, Path]] = None,
     render_gif: t.Optional[bool] = False,
     debug: t.Optional[bool] = False,
-    reraise: t.Optional[bool] = False,
 ) -> t.Tuple[bytes, bool]:
     user_color = user_color or base_color
     stat_color = stat_color or base_color
@@ -103,8 +102,6 @@ def generate_full_profile(
             log.error(
                 f"Failed to open background image ({type(background_bytes)} - {len(background_bytes)})", exc_info=e
             )
-            if reraise:
-                raise e
             card = imgtools.get_random_background()
     else:
         card = imgtools.get_random_background()
@@ -342,8 +339,8 @@ def generate_full_profile(
     placement = (circle_x - 25, circle_y - 25)
     stats.paste(circle, placement, circle)
     # Place status icon
-    status_icon = imgtools.STATUS[status]
-    stats.paste(status_icon, (circle_x + 273, circle_y + 273), status_icon)
+    status_icon = imgtools.STATUS[status].resize((75, 75), Image.Resampling.LANCZOS)
+    stats.paste(status_icon, (circle_x + 260, circle_y + 260), status_icon)
     # Paste role icon on top left of profile circle
     if role_icon:
         role_icon_img = Image.open(BytesIO(role_icon)).resize((70, 70), Image.Resampling.LANCZOS)

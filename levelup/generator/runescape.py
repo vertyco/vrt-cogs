@@ -45,8 +45,6 @@ from redbot.core.i18n import Translator
 
 try:
     from . import imgtools
-
-    # from .pilmojisrc.core import Pilmoji
 except ImportError:
     import imgtools
 

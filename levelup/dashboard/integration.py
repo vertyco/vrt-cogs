@@ -47,7 +47,7 @@ class DashboardIntegration(MixinMeta):
                     "error_title": _("No Weekly stats available"),
                     "error_message": _("There is no data for the weekly leaderboard yet, please chat a bit first."),
                 }
-        payload: dict = asyncio.to_thread(
+        payload: dict = await asyncio.to_thread(
             formatter.get_leaderboard,
             bot=self.bot,
             guild=guild,
