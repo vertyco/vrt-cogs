@@ -14,7 +14,7 @@ from ..common.dynamic_menu import DynamicMenu
 class Logs(MixinMeta):
     @commands.command(name="logs")
     @commands.is_owner()
-    async def scroll_logs(self, ctx: commands.Context, max_pages: int = 50):
+    async def scroll_logs(self, ctx: commands.Context):
         """View the bot's logs."""
         latest_re = re.compile(r"latest(?:-part(?P<part>\d+))?\.log")
 
@@ -28,7 +28,6 @@ class Logs(MixinMeta):
             # Combine contents of all log files
             combined = "\n".join(log.read_text(encoding="utf-8", errors="ignore") for log in logs)
             split = [i for i in pagify(combined, page_length=1800)]
-            split = split[:max_pages]
             split.reverse()
             pages = []
             for idx, chunk in enumerate(split):
