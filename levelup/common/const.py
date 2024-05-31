@@ -72,4 +72,11 @@ COLORS = {
     "lightskyblue": (135, 206, 250),
     "lightsteelblue": (176, 196, 222),
     "lightgoldenrodyellow": (250, 250, 210),
+    "lightpurple": (191, 148, 228),
+    "lightorange": (255, 160, 122),
+    "lightviolet": (191, 148, 228),
+    "lightturquoise": (175, 238, 238),
+    "lighttan": (250, 235, 215),
+    "lightbeige": (245, 245, 220),
+    "lightlavender": (230, 230, 250),
 }
