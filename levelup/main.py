@@ -13,6 +13,7 @@ from redbot.core.utils.chat_formatting import humanize_list
 from .abc import CompositeMetaClass
 from .api import API
 from .commands import Commands
+from .commands.user import view_profile_context
 from .common.models import DB, run_migrations
 from .listeners import Listeners
 
@@ -69,10 +70,11 @@ class LevelUp(
         self.saving = False
 
     async def cog_load(self) -> None:
+        self.bot.tree.add_command(view_profile_context)
         asyncio.create_task(self.initialize())
 
     async def cog_unload(self) -> None:
-        pass
+        self.bot.tree.remove_command(view_profile_context)
 
     async def initialize(self) -> None:
         await self.bot.wait_until_red_ready()
