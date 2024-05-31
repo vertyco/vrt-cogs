@@ -35,7 +35,7 @@ def string_to_rgb(color: str) -> t.Tuple[int, int, int]:
         b = (color >> 16) & 255
         return r, g, b
     elif color in COLORS:
-        return COLORS[color]
+        color = COLORS[color]
     color = color.strip("#")
     r = int(color[:2], 16)
     g = int(color[2:4], 16)

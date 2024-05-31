@@ -411,7 +411,7 @@ class User(MixinMeta):
         await ctx.send(txt)
 
     @set_profile.command(name="namecolor", aliases=["name"])
-    @commands.bot_has_permissions(embed_links=True)
+    @commands.bot_has_permissions(embed_links=True, attach_files=True)
     async def set_name_color(self, ctx: commands.Context, hex_color: str):
         """
         Set a hex color for your username
@@ -432,7 +432,10 @@ class User(MixinMeta):
         try:
             rgb = utils.string_to_rgb(hex_color)
         except ValueError:
-            return await ctx.send(_("That is an invalid color, please use a valid integer color code or hex color."))
+            file = discord.File(imgtools.COLORTABLE)
+            return await ctx.send(
+                _("That is an invalid color, please use a valid name, integer, or hex color."), file=file
+            )
         embed = discord.Embed(
             description=_("Name color updated! This is the color you chose."),
             color=discord.Color.from_rgb(*rgb),
@@ -442,7 +445,7 @@ class User(MixinMeta):
         await ctx.send(embed=embed)
 
     @set_profile.command(name="statcolor", aliases=["stat"])
-    @commands.bot_has_permissions(embed_links=True)
+    @commands.bot_has_permissions(embed_links=True, attach_files=True)
     async def set_stat_color(self, ctx: commands.Context, hex_color: str):
         """
         Set a hex color for your server stats
@@ -461,7 +464,10 @@ class User(MixinMeta):
         try:
             rgb = utils.string_to_rgb(hex_color)
         except ValueError:
-            return await ctx.send(_("That is an invalid color, please use a valid integer color code or hex color."))
+            file = discord.File(imgtools.COLORTABLE)
+            return await ctx.send(
+                _("That is an invalid color, please use a valid name, integer, or hex color."), file=file
+            )
         embed = discord.Embed(
             description=_("Stat color updated! This is the color you chose."),
             color=discord.Color.from_rgb(*rgb),
@@ -471,7 +477,7 @@ class User(MixinMeta):
         await ctx.send(embed=embed)
 
     @set_profile.command(name="barcolor", aliases=["levelbar", "lvlbar", "bar"])
-    @commands.bot_has_permissions(embed_links=True)
+    @commands.bot_has_permissions(embed_links=True, attach_files=True)
     async def set_levelbar_color(self, ctx: commands.Context, hex_color: str):
         """
         Set a hex color for your level bar
@@ -492,7 +498,10 @@ class User(MixinMeta):
         try:
             rgb = utils.string_to_rgb(hex_color)
         except ValueError:
-            return await ctx.send(_("That is an invalid color, please use a valid integer color code or hex color."))
+            file = discord.File(imgtools.COLORTABLE)
+            return await ctx.send(
+                _("That is an invalid color, please use a valid name, integer, or hex color."), file=file
+            )
         embed = discord.Embed(
             description=_("Level bar color updated! This is the color you chose."),
             color=discord.Color.from_rgb(*rgb),
