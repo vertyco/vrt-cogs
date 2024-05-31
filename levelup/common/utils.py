@@ -21,91 +21,21 @@ from tenacity import (
     wait_random_exponential,
 )
 
+from .const import COLORS
+
 _ = Translator("LevelUp", __file__)
 log = logging.getLogger("red.vrt.levelup.formatter")
 
 
 def string_to_rgb(color: str) -> t.Tuple[int, int, int]:
-    colors = {
-        "red": (255, 0, 0),
-        "green": (0, 255, 0),
-        "blue": (0, 0, 255),
-        "yellow": (255, 255, 0),
-        "cyan": (0, 255, 255),
-        "magenta": (255, 0, 255),
-        "white": (255, 255, 255),
-        "black": (0, 0, 0),
-        "purple": (128, 0, 128),
-        "orange": (255, 165, 0),
-        "pink": (255, 192, 203),
-        "brown": (165, 42, 42),
-        "teal": (0, 128, 128),
-        "navy": (0, 0, 128),
-        "gold": (255, 215, 0),
-        "silver": (192, 192, 192),
-        "gray": (128, 128, 128),
-        "grey": (128, 128, 128),
-        "maroon": (128, 0, 0),
-        "olive": (128, 128, 0),
-        "lime": (0, 128, 0),
-        "aqua": (0, 255, 255),
-        "fuchsia": (255, 0, 255),
-        "indigo": (75, 0, 130),
-        "violet": (238, 130, 238),
-        "turquoise": (64, 224, 208),
-        "tan": (210, 180, 140),
-        "beige": (245, 245, 220),
-        "lavender": (230, 230, 250),
-        "salmon": (250, 128, 114),
-        "coral": (255, 127, 80),
-        "khaki": (240, 230, 140),
-        "crimson": (220, 20, 60),
-        "orchid": (218, 112, 214),
-        "plum": (221, 160, 221),
-        "chocolate": (210, 105, 30),
-        "tomato": (255, 99, 71),
-        "firebrick": (178, 34, 34),
-        "darkred": (139, 0, 0),
-        "rosybrown": (188, 143, 143),
-        "darkmagenta": (139, 0, 139),
-        "darkviolet": (148, 0, 211),
-        "darkorange": (255, 140, 0),
-        "darkgoldenrod": (184, 134, 11),
-        "darkkhaki": (189, 183, 107),
-        "darkolivegreen": (85, 107, 47),
-        "darkseagreen": (143, 188, 143),
-        "darkslateblue": (72, 61, 139),
-        "darkslategray": (47, 79, 79),
-        "darkturquoise": (0, 206, 209),
-        "darkorchid": (153, 50, 204),
-        "darkcyan": (0, 139, 139),
-        "darkgreen": (0, 100, 0),
-        "darkblue": (0, 0, 139),
-        "darkslategrey": (47, 79, 79),
-        "darkgray": (169, 169, 169),
-        "darkgrey": (169, 169, 169),
-        "lightgray": (211, 211, 211),
-        "lightgrey": (211, 211, 211),
-        "lightyellow": (255, 255, 224),
-        "lightgreen": (144, 238, 144),
-        "lightblue": (173, 216, 230),
-        "lightcyan": (224, 255, 255),
-        "lightcoral": (240, 128, 128),
-        "lightpink": (255, 182, 193),
-        "lightsalmon": (255, 160, 122),
-        "lightseagreen": (32, 178, 170),
-        "lightskyblue": (135, 206, 250),
-        "lightsteelblue": (176, 196, 222),
-        "lightgoldenrodyellow": (250, 250, 210),
-    }
     if color.isdigit():
         color = int(color)
         r = color & 255
         g = (color >> 8) & 255
         b = (color >> 16) & 255
         return r, g, b
-    elif color in colors:
-        return colors[color]
+    elif color in COLORS:
+        return COLORS[color]
     color = color.strip("#")
     r = int(color[:2], 16)
     g = int(color[2:4], 16)
