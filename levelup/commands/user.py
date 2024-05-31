@@ -79,6 +79,7 @@ class User(MixinMeta):
                     try:
                         await ctx.reply(file=result, mention_author=conf.notifymention)
                     except discord.HTTPException:
+                        result.fp.seek(0)
                         await ctx.send(file=result)
         else:
             await ctx.defer(ephemeral=True)
