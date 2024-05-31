@@ -1,0 +1,34 @@
+<div class="d-flex justify-content-between">
+    <h5>{{ total }}</h5>
+    <div class="dropdown">
+        <a class="btn btn-secondary" role="button" id="sort_by_dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Sort by <i class="ni ni-bold-down"></i>
+        </a>
+        <div class="dropdown-menu" aria-labelledby="sort_by_dropdown">
+            <a class="dropdown-item" href="{{ url_for_query(stat=None) }}">{% if stat == "exp" %}<i class="ni ni-check-bold me-2" style="vertical-align: -1.5px;"></i>{% endif %}Exp</a>
+            <a class="dropdown-item" href="{{ url_for_query(stat='messages') }}">{% if stat == "messages" %}<i class="ni ni-check-bold me-2" style="vertical-align: -1.5px;"></i>{% endif %}Messages</a>
+            <a class="dropdown-item" href="{{ url_for_query(stat='voice') }}">{% if stat == "voice" %}<i class="ni ni-check-bold me-2" style="vertical-align: -1.5px;"></i>{% endif %}Voice</a>
+            <a class="dropdown-item" href="{{ url_for_query(stat='stars') }}">{% if stat == "stars" %}<i class="ni ni-check-bold me-2" style="vertical-align: -1.5px;"></i>{% endif %}Stars</a>
+        </div>
+    </div>
+</div>
+<div id="users-container" class="table-responsive p-0">
+    <table class="table align-items-center mb-0">
+        <thead>
+            <tr>
+                <td class="medium"><b>#</b></td>
+                <td class="large"><b>Name:</b></th>
+                <td class="medium"><b>{{ statname }}:</b></td>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+                <tr {% if user.id = current_user.id|string %} class="text-{{ variables['meta']['color'] }}"{% endif %}>
+                    <td class="medium">{{ user.position }}</td>
+                    <td class="large" title="{{ user.id }}">{{ user.name }}</td>
+                    <td class="medium">{{ user.stat }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
