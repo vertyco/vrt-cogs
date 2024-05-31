@@ -154,25 +154,43 @@ def get_leaderboard(
         you = ""
 
     if lbtype == "weekly":
-        desc = _("➣ **Total {}:** {}\n").format(statname, f"`{total}`{emoji}")
+        if dashboard:
+            desc = _("➣ Total {}: {}\n").format(statname, f"`{total}`{emoji}")
+        else:
+            desc = _("➣ **Total {}:** {}\n").format(statname, f"`{total}`{emoji}")
         if dashboard:
             if weekly.last_reset:
                 ts = datetime.fromtimestamp(weekly.last_reset).strftime("%m/%d/%Y @ %I:%M:%S %p")
-                desc += _("➣ **Last Reset:** {}\n").format(ts)
+                if dashboard:
+                    desc += _("➣ Last Reset: {}\n").format(ts)
+                else:
+                    desc += _("➣ **Last Reset:** {}\n").format(ts)
 
             if weekly.autoreset:
                 ts = datetime.fromtimestamp(weekly.next_reset).strftime("%m/%d/%Y @ %I:%M:%S %p")
                 delta = utils.humanize_delta(weekly.next_reset - int(datetime.now().timestamp()))
-                desc += _("➣ **Next Reset:** ({})\n").format(ts, delta)
+                if dashboard:
+                    desc += _("➣ Next Reset: {} ({})\n").format(ts, delta)
+                else:
+                    desc += _("➣ **Next Reset:** ({})\n").format(ts, delta)
         else:
             if weekly.last_reset:
-                desc += _("➣ **Last Reset:** {}\n").format(f"<t:{weekly.last_reset}:d>")
+                if dashboard:
+                    desc += _("➣ Last Reset: {}\n").format(f"<t:{weekly.last_reset}:d>")
+                else:
+                    desc += _("➣ **Last Reset:** {}\n").format(f"<t:{weekly.last_reset}:d>")
             if weekly.autoreset:
                 ts = weekly.next_reset
-                desc += _("➣ **Next Reset:** {}\n").format(f"<t:{ts}:d> (<t:{ts}:R>)")
+                if dashboard:
+                    desc += _("➣ Next Reset: {} ({})\n").format(f"<t:{ts}:d> (<t:{ts}:R>)")
+                else:
+                    desc += _("➣ **Next Reset:** {}\n").format(f"<t:{ts}:d> (<t:{ts}:R>)")
         desc += "\n"
     else:
-        desc = _("**Total {}:** {}\n\n").format(statname, f"`{total}`{emoji}")
+        if dashboard:
+            desc = _("Total {}: {}\n").format(statname, f"`{total}`{emoji}")
+        else:
+            desc = _("**Total {}:** {}\n\n").format(statname, f"`{total}`{emoji}")
 
     if dashboard:
         # Format for when dashboard integration calls this function
