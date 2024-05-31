@@ -14,22 +14,22 @@ from ..common.dynamic_menu import DynamicMenu
 class Logs(MixinMeta):
     @commands.command(name="logs")
     @commands.is_owner()
-    async def scroll_logs(self, ctx: commands.Context, max_pages: int = 20):
+    async def scroll_logs(self, ctx: commands.Context, max_pages: int = 50):
         """View the bot's logs."""
+        latest_re = re.compile(r"latest(?:-part(?P<part>\d+))?\.log")
 
         def _get_logs() -> t.List[str]:
-            core = core_data_path()
-            log_dir = core / "logs"
+            log_dir = core_data_path() / "logs"
             logs: t.List[Path] = []
             for file in log_dir.iterdir():
-                if re.match(r"latest(?:-part(?P<part>\d+))?\.log", file.name):
+                if latest_re.match(file.name):
                     logs.append(file)
             logs.sort(reverse=True)
             # Combine contents of all log files
             combined = "\n".join(log.read_text(encoding="utf-8", errors="ignore") for log in logs)
             split = [i for i in pagify(combined, page_length=1800)]
-            split.reverse()
             split = split[:max_pages]
+            split.reverse()
             pages = []
             for idx, chunk in enumerate(split):
                 foot = f"Page {idx + 1}/{len(split)}"
