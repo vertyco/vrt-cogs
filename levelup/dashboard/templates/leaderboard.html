@@ -23,7 +23,7 @@
         </thead>
         <tbody>
             {% for user in users %}
-                <tr {% if user.id = current_user.id|string %} class="text-{{ variables['meta']['color'] }}"{% endif %}>
+                <tr {% if user.id == current_user.id|string %} class="text-{{ variables['meta']['color'] }}"{% endif %}>
                     <td class="medium">{{ user.position }}</td>
                     <td class="large" title="{{ user.id }}">{{ user.name }}</td>
                     <td class="medium">{{ user.stat }}</td>
