@@ -298,19 +298,8 @@ def generate_full_profile(
     # ---------------- Balance text ----------------
     if balance:
         text = _("Balance: {}").format(f"{humanize_number(balance)} {currency_name}")
-        fontsize = 40
-        emoji_scale = 1.4
-        emoji_y_offset = 50
-        font = ImageFont.truetype(font_path, fontsize)
-        # Ensure text doesnt pass the stat_end
-        while font.getlength(text) + stat_start > stat_end + 10:
-            fontsize -= 1
-            emoji_scale -= 0.05
-            emoji_y_offset -= 0.05
-            font = ImageFont.truetype(font_path, fontsize)
+        font = ImageFont.truetype(font_path, 40)
         with Pilmoji(stats) as pilmoji:
-            text_bbox = font.getbbox(text)
-            text_emoji_y = text_bbox[3] - round(emoji_y_offset)
             placement = (stat_start, stat_bottom - stat_offset * 2)
             pilmoji.text(
                 xy=placement,
@@ -319,8 +308,6 @@ def generate_full_profile(
                 stroke_width=stroke_width,
                 stroke_fill=default_fill,
                 font=font,
-                emoji_scale_factor=max(0.3, emoji_scale),
-                emoji_position_offset=(0, text_emoji_y),
             )
     # ---------------- Experience text ----------------
     current = current_xp - previous_xp
