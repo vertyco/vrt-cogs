@@ -568,7 +568,7 @@ class User(MixinMeta):
         if image_url.startswith("http"):
             profile.background = image_url
             try:
-                await self.get_user_profile(ctx.author)
+                await self.get_user_profile(ctx.author, reraise=True)
             except Exception as e:
                 profile.background = "default"
                 return await ctx.send(_("That image is not a valid profile background!\n{}").format(str(e)))

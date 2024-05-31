@@ -92,7 +92,7 @@ def generate_runescape_profile(
     pfp = pfp.resize((145, 145), Image.Resampling.LANCZOS)
     # Place status icon
     status_icon = imgtools.STATUS[status].resize((25, 25), Image.Resampling.LANCZOS)
-    card.paste(status_icon, (196, -2), status_icon)
+    card.paste(status_icon, (197, -2), status_icon)
     # Place pfp
     card.paste(pfp, (65, 9), pfp)
     # Place template on top
@@ -198,5 +198,5 @@ if __name__ == "__main__":
         avatar_bytes=test_avatar,
         username="vertyco",
         debug=True,
-        status="idle",
+        status="dnd",
     )
