@@ -100,6 +100,9 @@ def generate_full_profile(
         try:
             card = Image.open(BytesIO(background_bytes))
         except UnidentifiedImageError as e:
+            log.error(
+                f"Failed to open background image ({type(background_bytes)} - {len(background_bytes)})", exc_info=e
+            )
             if reraise:
                 raise e
             card = imgtools.get_random_background()

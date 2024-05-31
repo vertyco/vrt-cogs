@@ -403,7 +403,6 @@ class User(MixinMeta):
         )
         await ctx.send(txt)
 
-
     @set_profile.command(name="namecolor", aliases=["name"])
     @commands.bot_has_permissions(embed_links=True)
     async def set_name_color(self, ctx: commands.Context, hex_color: str):
@@ -552,7 +551,7 @@ class User(MixinMeta):
         else:
             return await ctx.send(_("No background found with that name!"))
         file = discord.File(path)
-        profile.background = path.name
+        profile.background = path.stem
         self.save()
         txt = _("Your profile background has been set to {}").format(f"`{path.name}`")
         await ctx.send(txt, file=file)
