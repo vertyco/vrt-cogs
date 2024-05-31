@@ -265,7 +265,7 @@ class GuildSettings(Base):
 class DB(Base):
     configs: dict[int, GuildSettings] = {}
     ignored_guilds: t.List[int] = []
-    cache_seconds: int = 60
+    cache_seconds: int = 0
     render_gifs: bool = False
     migrations: t.List[str] = []
 

@@ -43,7 +43,14 @@ import typing as t
 from io import BytesIO
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
+from PIL import (
+    Image,
+    ImageDraw,
+    ImageEnhance,
+    ImageFilter,
+    ImageFont,
+    UnidentifiedImageError,
+)
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_number
 
@@ -85,9 +92,15 @@ def generate_full_profile(
     font_path: t.Optional[t.Union[str, Path]] = None,
     render_gif: t.Optional[bool] = False,
     debug: t.Optional[bool] = False,
+    reraise: t.Optional[bool] = False,
 ) -> t.Tuple[bytes, bool]:
     if background_bytes:
-        card = Image.open(BytesIO(background_bytes))
+        try:
+            card = Image.open(BytesIO(background_bytes))
+        except UnidentifiedImageError as e:
+            if reraise:
+                raise e
+            card = imgtools.get_random_background()
     else:
         card = imgtools.get_random_background()
     if avatar_bytes:
@@ -290,16 +303,15 @@ def generate_full_profile(
         emoji_y_offset = 50
         font = ImageFont.truetype(font_path, fontsize)
         # Ensure text doesnt pass the stat_end
-        while font.getlength(text) + stat_start > stat_end and fontsize > 5:
+        while font.getlength(text) + stat_start > stat_end + 10:
             fontsize -= 1
-            emoji_scale -= 0.1
-            emoji_y_offset -= 0.2
+            emoji_scale -= 0.05
+            emoji_y_offset -= 0.05
             font = ImageFont.truetype(font_path, fontsize)
         with Pilmoji(stats) as pilmoji:
             text_bbox = font.getbbox(text)
             text_emoji_y = text_bbox[3] - round(emoji_y_offset)
             placement = (stat_start, stat_bottom - stat_offset * 2)
-            print(f"textbbox: {text_bbox}, text_emoji_y: {text_emoji_y}, placement: {placement}, fontsize: {fontsize} ")
             pilmoji.text(
                 xy=placement,
                 text=text,
