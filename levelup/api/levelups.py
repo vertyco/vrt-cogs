@@ -32,6 +32,9 @@ class LevelUps(MixinMeta):
         if calculated_level == profile.level:
             # No action needed, user hasn't leveled up
             return
+        if not calculated_level:
+            # User hasnt reached level 1 yet
+            return
         profile.level = calculated_level
         # User has reached a new level, time to log and award roles if needed
         added, __ = await self.ensure_roles(member, conf)
