@@ -108,7 +108,7 @@ def generate_runescape_profile(
     # Draw balance
     if balance:
         balance_text = f"{imgtools.abbreviate_number(balance)}"
-        balance_size = 19
+        balance_size = 20
         balance_font = ImageFont.truetype(str(font_path), balance_size)
         draw.text(
             xy=(44, 23),
@@ -119,7 +119,7 @@ def generate_runescape_profile(
         )
     # Draw level
     level_text = f"{imgtools.abbreviate_number(level)}"
-    level_size = 19
+    level_size = 20
     level_font = ImageFont.truetype(str(font_path), level_size)
     draw.text(
         xy=(20, 58),
@@ -131,7 +131,7 @@ def generate_runescape_profile(
     )
     # Draw rank
     rank_text = f"#{imgtools.abbreviate_number(position)}"
-    rank_size = 19
+    rank_size = 20
     rank_font = ImageFont.truetype(str(font_path), rank_size)
     draw.text(
         xy=(17, 93),
@@ -142,7 +142,7 @@ def generate_runescape_profile(
     )
     # Draw messages
     messages_text = f"{imgtools.abbreviate_number(messages)}"
-    messages_size = 19
+    messages_size = 20
     messages_font = ImageFont.truetype(str(font_path), messages_size)
     draw.text(
         xy=(27, 127),
@@ -154,7 +154,7 @@ def generate_runescape_profile(
     )
     # Draw voicetime
     voicetime_text = f"{imgtools.abbreviate_time(voicetime, short=True)}"
-    voicetime_size = 19
+    voicetime_size = 20
     voicetime_font = ImageFont.truetype(str(font_path), voicetime_size)
     lb, rb = 30, 65
     while voicetime_font.getlength(voicetime_text) > rb - lb:
@@ -173,7 +173,7 @@ def generate_runescape_profile(
     goal = imgtools.abbreviate_number(next_xp - previous_xp)
     percent = round((current_xp - previous_xp) / (next_xp - previous_xp) * 100)
     xp_text = f"{current}/{goal} ({percent}%)"
-    xp_size = 19
+    xp_size = 20
     xp_font = ImageFont.truetype(str(font_path), xp_size)
     draw.text(
         xy=(105, 182),
