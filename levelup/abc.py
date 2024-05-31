@@ -69,3 +69,7 @@ class MixinMeta(ABC):
     @abstractmethod
     async def get_profile_background(self, user_id: int, profile: Profile) -> bytes:
         raise NotImplementedError
+
+    @abstractmethod
+    async def get_user_profile(self, member: discord.Member) -> t.Union[discord.Embed, discord.File]:
+        raise NotImplementedError
