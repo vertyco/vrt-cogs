@@ -541,8 +541,27 @@ class User(MixinMeta):
         if image_url is None:
             # TODO: Validate the image by running it through the profile generator
             profile.background = attachments[0].url
+            try:
+                await self.get_user_profile(ctx.author)
+            except Exception as e:
+                profile.background = "default"
+                return await ctx.send(_("That image is not a valid profile background!\n{}").format(str(e)))
             self.save()
             return await ctx.send(_("Your profile background has been set!"))
+
+        if image_url.startswith("http"):
+            profile.background = image_url
+            try:
+                await self.get_user_profile(ctx.author)
+            except Exception as e:
+                profile.background = "default"
+                return await ctx.send(_("That image is not a valid profile background!\n{}").format(str(e)))
+            self.save()
+            return await ctx.send(_("Your profile background has been set!"))
+
+        if image_url and not image_url.startswith("http"):
+            return await ctx.send(_("That is not a valid image url!"))
+
         # Check if the user provided a filename
         backgrounds = list(self.backgrounds.iterdir()) + list(self.custom_backgrounds.iterdir())
         for path in backgrounds:
