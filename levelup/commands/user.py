@@ -71,9 +71,15 @@ class User(MixinMeta):
                 result = await self.get_user_profile(user)
                 conf = self.db.get_conf(ctx.guild)
                 if isinstance(result, discord.Embed):
-                    return await ctx.reply(embed=result, mention_author=conf.notifymention)
+                    try:
+                        return await ctx.reply(embed=result, mention_author=conf.notifymention)
+                    except discord.HTTPException:
+                        return await ctx.send(embed=result)
                 else:
-                    await ctx.reply(file=result, mention_author=conf.notifymention)
+                    try:
+                        await ctx.reply(file=result, mention_author=conf.notifymention)
+                    except discord.HTTPException:
+                        await ctx.send(file=result)
         else:
             await ctx.defer(ephemeral=True)
             result = await self.get_user_profile(user)
@@ -558,6 +564,15 @@ class User(MixinMeta):
                 return await ctx.send(_("That image is not a valid profile background!\n{}").format(str(e)))
             self.save()
             return await ctx.send(_("Your profile background has been set!"))
+
+        if image_url == "random":
+            profile.background = "random"
+            self.save()
+            return await ctx.send(_("Your profile background has been set to random!"))
+        if image_url == "default":
+            profile.background = "default"
+            self.save()
+            return await ctx.send(_("Your profile background has been set to default!"))
 
         if image_url and not image_url.startswith("http"):
             return await ctx.send(_("That is not a valid image url!"))
