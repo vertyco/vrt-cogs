@@ -463,7 +463,7 @@ class User(MixinMeta):
         self.save()
         await ctx.send(embed=embed)
 
-    @set_profile.command(name="levelbar", aliases=["lvlbar", "bar"])
+    @set_profile.command(name="barcolor", aliases=["levelbar", "lvlbar", "bar"])
     @commands.bot_has_permissions(embed_links=True)
     async def set_levelbar_color(self, ctx: commands.Context, hex_color: str):
         """
