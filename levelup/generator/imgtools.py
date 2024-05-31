@@ -107,7 +107,6 @@ def make_progress_bar(
     progress: float,  # 0.0 - 1.0
     color: t.Tuple[int, int, int] = None,
     background_color: t.Tuple[int, int, int] = None,
-    hollow: bool = False,
 ) -> Image.Image:
     """Make a pretty rounded progress bar."""
     if not color:
@@ -133,10 +132,7 @@ def make_progress_bar(
 
     # Draw the background (empty bar)
     placement = [(0, 0), (scaled_width, scaled_height)]
-    if hollow:
-        draw.rounded_rectangle(placement, radius, outline=background_color, width=scale * 4)
-    else:
-        draw.rounded_rectangle(placement, radius, fill=background_color)
+    draw.rounded_rectangle(placement, radius, fill=background_color)
 
     # Scale down to smooth edges
     img = img.resize((width, height), resample=Image.Resampling.LANCZOS)

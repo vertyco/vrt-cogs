@@ -154,7 +154,6 @@ class ProfileFormatting(MixinMeta):
             "user_color": utils.string_to_rgb(profile.namecolor) if profile.namecolor else None,
             "stat_color": utils.string_to_rgb(profile.statcolor) if profile.statcolor else None,
             "level_bar_color": utils.string_to_rgb(profile.barcolor) if profile.barcolor else None,
-            "hollow_bar": profile.hollow_bar,
             "render_gif": self.db.render_gifs,
         }
         if pdata:
