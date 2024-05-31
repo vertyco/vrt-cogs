@@ -54,6 +54,7 @@ class DashboardIntegration(MixinMeta):
             db=self.db,
             stat=stat,
             lbtype=lbtype,
+            is_global=False,
             member=guild.get_member(user.id),
             use_displayname=True,
             dashboard=True,

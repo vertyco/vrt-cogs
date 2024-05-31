@@ -1,5 +1,5 @@
 <div class="d-flex justify-content-between">
-    <h5>{{ total }}</h5>
+    <h5>{{ total|markdown }}</h5>
     <div class="dropdown">
         <a class="btn btn-secondary" role="button" id="sort_by_dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             Sort by <i class="ni ni-bold-down"></i>
@@ -23,7 +23,7 @@
         </thead>
         <tbody>
             {% for user in users %}
-                <tr {% if user.id == current_user.id|string %} class="text-{{ variables['meta']['color'] }}"{% endif %}>
+                <tr {% if user.id == current_user.id %} class="text-{{ variables['meta']['color'] }}"{% endif %}>
                     <td class="medium">{{ user.position }}</td>
                     <td class="large" title="{{ user.id }}">{{ user.name }}</td>
                     <td class="medium">{{ user.stat }}</td>
