@@ -2,7 +2,7 @@ import logging
 
 from redbot.core import commands
 from redbot.core.bot import Red
-from redbot.core.data_manager import cog_data_path
+from redbot.core.data_manager import cog_data_path, core_data_path
 
 from .abc import CompositeMetaClass
 from .commands import Utils
@@ -29,3 +29,4 @@ class VrtUtils(Utils, commands.Cog, metaclass=CompositeMetaClass):
         super().__init__()
         self.bot: Red = bot
         self.path = cog_data_path(self)
+        self.core = core_data_path()

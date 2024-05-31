@@ -4,11 +4,12 @@ import typing as t
 from pathlib import Path
 
 from redbot.core import commands
-from redbot.core.data_manager import core_data_path
 from redbot.core.utils.chat_formatting import box, pagify
 
 from ..abc import MixinMeta
 from ..common.dynamic_menu import DynamicMenu
+
+LATEST_LOG_RE = re.compile(r"latest(?:-part(?P<part>\d+))?\.log")
 
 
 class Logs(MixinMeta):
@@ -16,17 +17,15 @@ class Logs(MixinMeta):
     @commands.is_owner()
     async def scroll_logs(self, ctx: commands.Context):
         """View the bot's logs."""
-        latest_re = re.compile(r"latest(?:-part(?P<part>\d+))?\.log")
 
         def _get_logs() -> t.List[str]:
-            log_dir = core_data_path() / "logs"
             logs: t.List[Path] = []
-            for file in log_dir.iterdir():
-                if latest_re.match(file.name):
+            for file in (self.core / "logs").iterdir():
+                if LATEST_LOG_RE.match(file.name):
                     logs.append(file)
             logs.sort(reverse=True)
             # Combine contents of all log files
-            combined = "\n".join(log.read_text(encoding="utf-8", errors="ignore") for log in logs)
+            combined = "\n".join(log.read_text(encoding="utf-8", errors="ignore").strip() for log in logs)
             split = [i for i in pagify(combined, page_length=1800)]
             split.reverse()
             pages = []
