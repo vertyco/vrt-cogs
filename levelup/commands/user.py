@@ -584,9 +584,6 @@ class User(MixinMeta):
             self.save()
             return await ctx.send(_("Your profile background has been set to default!"))
 
-        if image_url and not image_url.startswith("http"):
-            return await ctx.send(_("That is not a valid image url!"))
-
         # Check if the user provided a filename
         backgrounds = list(self.backgrounds.iterdir()) + list(self.custom_backgrounds.iterdir())
         for path in backgrounds:

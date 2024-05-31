@@ -452,7 +452,7 @@ class Admin(MixinMeta):
         self.save()
         await ctx.send(_("{} has been set to prestige level {}").format(user.name, prestige))
 
-    @levelset.command(name="showbalance")
+    @levelset.command(name="showbalance", aliases=["showbal"])
     async def toggle_profile_balance(self, ctx: commands.Context):
         """Toggle whether to show user's economy credit balance in their profile"""
         conf = self.db.get_conf(ctx.guild)
