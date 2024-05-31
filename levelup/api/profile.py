@@ -40,7 +40,7 @@ class ProfileFormatting(MixinMeta):
 
         # See if filename is specified
         for path in valid:
-            if profile.background == path.stem:
+            if profile.background == path.stem or profile.background == path.name:
                 return path.read_bytes()
 
         # If we're here then the profile's preference failed
