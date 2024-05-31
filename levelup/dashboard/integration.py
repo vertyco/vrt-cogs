@@ -4,7 +4,6 @@ from pathlib import Path
 
 import discord
 from redbot.core import commands
-from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 
 from ..abc import MixinMeta
@@ -22,8 +21,6 @@ def dashboard_page(*args, **kwargs):
 
 
 class DashboardIntegration(MixinMeta):
-    bot: Red
-
     @commands.Cog.listener()
     async def on_dashboard_cog_add(self, dashboard_cog: commands.Cog) -> None:
         dashboard_cog.rpc.third_parties_handler.add_third_party(self)
