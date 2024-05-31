@@ -150,7 +150,7 @@ class ProfileFormatting(MixinMeta):
             "next_xp": next_level_xp,
             "position": stat["position"],
             "blur": profile.blur,
-            "base_color": member.color.to_rgb(),
+            "base_color": member.color.to_rgb() if member.color.to_rgb() != (0, 0, 0) else None,
             "user_color": utils.string_to_rgb(profile.namecolor) if profile.namecolor else None,
             "stat_color": utils.string_to_rgb(profile.statcolor) if profile.statcolor else None,
             "level_bar_color": utils.string_to_rgb(profile.barcolor) if profile.barcolor else None,
