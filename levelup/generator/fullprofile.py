@@ -90,6 +90,7 @@ def generate_full_profile(
     font_path: t.Optional[t.Union[str, Path]] = None,
     render_gif: t.Optional[bool] = False,
     debug: t.Optional[bool] = False,
+    reraise: t.Optional[bool] = False,
 ) -> t.Tuple[bytes, bool]:
     user_color = user_color or base_color
     stat_color = stat_color or base_color
@@ -99,6 +100,8 @@ def generate_full_profile(
         try:
             card = Image.open(BytesIO(background_bytes))
         except UnidentifiedImageError as e:
+            if reraise:
+                raise e
             log.error(
                 f"Failed to open background image ({type(background_bytes)} - {len(background_bytes)})", exc_info=e
             )

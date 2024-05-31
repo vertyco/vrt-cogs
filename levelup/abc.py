@@ -71,5 +71,7 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_user_profile(self, member: discord.Member) -> t.Union[discord.Embed, discord.File]:
+    async def get_user_profile(
+        self, member: discord.Member, reraise: bool = False
+    ) -> t.Union[discord.Embed, discord.File]:
         raise NotImplementedError

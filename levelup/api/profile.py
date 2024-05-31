@@ -57,7 +57,20 @@ class ProfileFormatting(MixinMeta):
         if banner_id := req.get("banner"):
             return f"https://cdn.discordapp.com/banners/{user_id}/{banner_id}?size=1024"
 
-    async def get_user_profile(self, member: discord.Member) -> t.Union[discord.Embed, discord.File]:
+    async def get_user_profile(
+        self, member: discord.Member, reraise: bool = False
+    ) -> t.Union[discord.Embed, discord.File]:
+        """Get a user's profile as an embed or file
+        If embed profiles are disabled, a file will be returned, otherwise an embed will be returned
+
+        Args:
+            member (discord.Member): The member to get the profile for
+            reraise (bool, optional): Fetching profiles will normally catch almost all exceptions and try to
+            handle them silently, this will make them throw an exception. Defaults to False.
+
+        Returns:
+            t.Union[discord.Embed, discord.File]: An embed or file containing the user's profile
+        """
         guild = member.guild
         conf = self.db.get_conf(guild)
         profile = conf.get_profile(member)
@@ -155,6 +168,7 @@ class ProfileFormatting(MixinMeta):
             "stat_color": utils.string_to_rgb(profile.statcolor) if profile.statcolor else None,
             "level_bar_color": utils.string_to_rgb(profile.barcolor) if profile.barcolor else None,
             "render_gif": self.db.render_gifs,
+            "reraise": reraise,
         }
         if pdata:
             emoji_bytes = await utils.get_content_from_url(pdata.emoji_url)

@@ -181,7 +181,7 @@ function_wizard.py
 dbtestnew/
 locallm/
 llm/
-scratches/
+scratches/*
 heist/
 levelup/data/tests/
 levelup/data/stock/rs-assets/
