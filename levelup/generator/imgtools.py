@@ -17,8 +17,8 @@ DEFAULT_FONT = DEFAULT_FONTS / "BebasNeue.ttf"
 STOCK = ASSETS / "stock"
 STAR = Image.open(STOCK / "star.webp")
 DEFAULT_PFP = Image.open(STOCK / "defaultpfp.webp")
-RS_TEMPLATE = Image.open(STOCK / "runescapeui.webp")
-RS_TEMPLATE_BALANCE = Image.open(STOCK / "runescapeui2.webp")
+RS_TEMPLATE = Image.open(STOCK / "runescapeui_nogold.webp")
+RS_TEMPLATE_BALANCE = Image.open(STOCK / "runescapeui_withgold.webp")
 STATUS = {
     "online": Image.open(STOCK / "online.webp"),
     "offline": Image.open(STOCK / "offline.webp"),
@@ -29,6 +29,42 @@ STATUS = {
 
 log = logging.getLogger("red.vrt.levelup.imagetools")
 _ = Translator("LevelUp", __file__)
+
+
+def abbreviate_number(number: int) -> str:
+    """Abbreviate a number"""
+    abbreviations = [(1_000_000_000, "B"), (1_000_000, "M"), (1_000, "K")]
+    for num, abbrev in abbreviations:
+        if number >= num:
+            return f"{number // num}{abbrev}"
+    return str(number)
+
+
+def abbreviate_time(delta: int, short: bool = False) -> str:
+    """Format time in seconds into an extra short human readable string"""
+    s = int(delta)
+    m, s = divmod(delta, 60)
+    h, m = divmod(m, 60)
+    d, h = divmod(h, 24)
+    y, d = divmod(d, 365)
+
+    if not any([s, m, h, d, y]):
+        return _("None")
+    if not any([m, h, d, y]):
+        return f"{int(s)}s"
+    if not any([h, d, y]):
+        return f"{int(m)}m"
+    if not any([d, y]):
+        if short:
+            return f"{int(h)}h"
+        return f"{int(h)}h{int(m)}m"
+    if not y:
+        if short:
+            return f"{int(d)}d"
+        return f"{int(d)}d{int(h)}h"
+    if short:
+        return f"{int(y)}y"
+    return f"{int(y)}y{int(d)}d"
 
 
 def make_circle_outline(thickness: int, color: tuple) -> Image.Image:

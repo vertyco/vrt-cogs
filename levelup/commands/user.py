@@ -156,7 +156,7 @@ class User(MixinMeta):
             profile = conf.get_profile(ctx.author)
 
             desc = _(
-                "`Profile Type:   `{}\n"
+                "`Profile Style:  `{}\n"
                 "`Blur:           `{}\n"
                 "`Name Color:     `{}\n"
                 "`Stat Color:     `{}\n"
@@ -164,7 +164,7 @@ class User(MixinMeta):
                 "`Font:           `{}\n"
                 "`Background:     `{}\n"
             ).format(
-                const.PROFILE_TYPES[profile.format].capitalize(),
+                profile.style,
                 _("Enabled") if profile.blur else _("Disabled"),
                 profile.namecolor,
                 profile.statcolor,
@@ -363,29 +363,29 @@ class User(MixinMeta):
             )
             await ctx.send(txt, file=file)
 
-    @set_profile.command(name="type")
-    async def toggle_profile_type(self, ctx: commands.Context, profile_type: int):
+    @set_profile.command(name="style")
+    async def toggle_profile_style(self, ctx: commands.Context, style: t.Literal["default", "runescape"]):
         """
-        Set your profile image type (1=full/2=slim)
+        Set your profile image style
 
-        Full size includes your balance, role icon and prestige icon
-        Slim is a smaller slimmed down version
+        - `default` is the default profile style, very customizable
+        - `runescape` is a runescape style profile, less customizable but more nostalgic
+        - (WIP) - more to come
+
         """
-        if profile_type not in const.PROFILE_TYPES:
-            return await ctx.send(_("Invalid profile type!"))
+        if style not in const.PROFILE_TYPES:
+            txt = _("That is not a valid profile style, please choose from the following: {}").format(
+                humanize_list(const.PROFILE_TYPES)
+            )
         conf = self.db.get_conf(ctx.guild)
         if conf.use_embeds:
             txt = _("Image profiles are disabled here, this setting has no effect!")
             return await ctx.send(txt)
 
         profile = conf.get_profile(ctx.author)
-        profile.format = profile_type
+        profile.style = style
         self.save()
-        await ctx.send(
-            _("Your profile type has been set to {}").format(
-                const.PROFILE_TYPES[profile_type].capitalize(),
-            )
-        )
+        await ctx.send(_("Your profile type has been set to {}").format(style.capitalize()))
 
     @set_profile.command(name="namecolor", aliases=["name"])
     @commands.bot_has_permissions(embed_links=True)
@@ -400,6 +400,8 @@ class User(MixinMeta):
         """
         conf = self.db.get_conf(ctx.guild)
         profile = conf.get_profile(ctx.author)
+        if profile.style in const.STATIC_FONT_STYLES:
+            return await ctx.send(_("You cannot change your name color with the current profile style!"))
         if hex_color == "default":
             profile.namecolor = None
             self.save()
@@ -458,6 +460,8 @@ class User(MixinMeta):
         """
         conf = self.db.get_conf(ctx.guild)
         profile = conf.get_profile(ctx.author)
+        if profile.style in const.STATIC_FONT_STYLES:
+            return await ctx.send(_("You cannot change your name color with the current profile style!"))
         if hex_color == "default":
             profile.barcolor = None
             self.save()
@@ -504,6 +508,9 @@ class User(MixinMeta):
             txt = _("Image profiles are disabled here, this setting has no effect!")
             return await ctx.send(txt)
         profile = conf.get_profile(ctx.author)
+        if profile.style in const.STATIC_FONT_STYLES:
+            return await ctx.send(_("You cannot change your name color with the current profile style!"))
+
         attachments = utils.get_attachments(ctx)
 
         # If image url is given, run some checks
@@ -546,6 +553,8 @@ class User(MixinMeta):
             txt = _("Image profiles are disabled here, this setting has no effect!")
             return await ctx.send(txt)
         profile = conf.get_profile(ctx.author)
+        if profile.style in const.STATIC_FONT_STYLES:
+            return await ctx.send(_("You cannot change your name color with the current profile style!"))
 
         if font_name == "default":
             profile.font = "default"
@@ -572,6 +581,8 @@ class User(MixinMeta):
             txt = _("Image profiles are disabled here, this setting has no effect!")
             return await ctx.send(txt)
         profile = conf.get_profile(ctx.author)
+        if profile.style in const.STATIC_FONT_STYLES:
+            return await ctx.send(_("You cannot change your name color with the current profile style!"))
         profile.blur = not profile.blur
         self.save()
         txt = _("Your profile blur has been set to {}").format(_("Enabled") if profile.blur else _("Disabled"))

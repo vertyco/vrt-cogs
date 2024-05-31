@@ -12,7 +12,7 @@ from redbot.core.utils.chat_formatting import box, humanize_number
 from ..abc import MixinMeta
 from ..common import formatter, utils
 from ..common.models import Profile
-from ..generator import fullprofile
+from ..generator import fullprofile, runescape
 
 log = logging.getLogger("red.vrt.levelup.api.profile")
 _ = Translator("LevelUp", __file__)
@@ -142,7 +142,7 @@ class ProfileFormatting(MixinMeta):
             "status": str(member.status).strip(),
             "level": profile.level,
             "messages": profile.messages,
-            "voicetime": utils.humanize_delta(profile.voice),
+            "voicetime": profile.voice,
             "stars": profile.stars,
             "prestige": profile.prestige,
             "previous_xp": last_level_xp,
@@ -171,8 +171,13 @@ class ProfileFormatting(MixinMeta):
             elif (self.custom_fonts / profile.font).exists():
                 kwargs["font_path"] = str(self.custom_fonts / profile.font)
 
+        funcs = {
+            "default": fullprofile.generate_full_profile,
+            "runescape": runescape.generate_runescape_profile,
+        }
+
         def _run() -> discord.File:
-            img_bytes, animated = fullprofile.generate_full_profile(**kwargs)
+            img_bytes, animated = funcs[profile.style](**kwargs)
             ext = "gif" if animated else "webp"
             return discord.File(BytesIO(img_bytes), filename=f"profile.{ext}")
 
