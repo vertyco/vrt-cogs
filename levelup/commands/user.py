@@ -77,6 +77,13 @@ class User(MixinMeta):
     @commands.guild_only()
     async def profile(self, ctx: commands.Context, *, user: discord.Member = None):
         """View User Profile"""
+        conf = self.db.get_conf(ctx.guild)
+        if not conf.enabled:
+            txt = _("Leveling is disabled in this server!")
+            if self.bot.is_admin(ctx.author):
+                txt += _("\nYou can enable it with `{}`").format(f"{ctx.clean_prefix}lset toggle")
+            return await ctx.send(txt)
+
         if user is None:
             user = ctx.author
 
