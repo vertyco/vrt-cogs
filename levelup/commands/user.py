@@ -23,7 +23,7 @@ async def view_profile_context(interaction: discord.Interaction, member: discord
     """View a user's profile"""
     await interaction.response.defer(ephemeral=True)
     bot: Red = interaction.client
-    result = await bot.get_cog("LevelUp").get_user_profile(member)
+    result = await bot.get_cog("LevelUp").get_user_profile_cached(member)
     if isinstance(result, discord.Embed):
         await interaction.followup.send(embed=result, ephemeral=True)
     else:
@@ -68,7 +68,7 @@ class User(MixinMeta):
 
         if ctx.interaction is None:
             async with ctx.typing():
-                result = await self.get_user_profile(user)
+                result = await self.get_user_profile_cached(user)
                 conf = self.db.get_conf(ctx.guild)
                 if isinstance(result, discord.Embed):
                     try:
@@ -83,7 +83,7 @@ class User(MixinMeta):
                         await ctx.send(file=result)
         else:
             await ctx.defer(ephemeral=True)
-            result = await self.get_user_profile(user)
+            result = await self.get_user_profile_cached(user)
             if isinstance(result, discord.Embed):
                 return await ctx.send(embed=result, ephemeral=True)
             else:
@@ -558,7 +558,7 @@ class User(MixinMeta):
             # TODO: Validate the image by running it through the profile generator
             profile.background = attachments[0].url
             try:
-                await self.get_user_profile(ctx.author)
+                await self.get_user_profile(ctx.author, reraise=True)
             except Exception as e:
                 profile.background = "default"
                 return await ctx.send(_("That image is not a valid profile background!\n{}").format(str(e)))

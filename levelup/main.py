@@ -53,6 +53,7 @@ class LevelUp(
         self.db: DB = DB()
         self.lastmsg: t.Dict[int, t.Dict[int, float]] = {}  # GuildID: {UserID: LastMessageTime}
         self.in_voice: t.Dict[int, t.Dict[int, float]] = {}  # GuildID: {UserID: TimeJoined}
+        self.profiles: t.Dict[int, t.Dict[int, t.Tuple[str, bytes]]] = {}  # GuildID: {UserID: (last_used, bytes)}
 
         # Root Paths
         self.cog_path = cog_data_path(self)
@@ -87,7 +88,6 @@ class LevelUp(
             except ValidationError as e:
                 log.error("Failed to load config", exc_info=e)
                 return
-
         elif self.old_settings_file.exists():
             raw_settings = self.old_settings_file.read_text()
             settings = orjson.loads(raw_settings)

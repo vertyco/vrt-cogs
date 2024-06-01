@@ -3,6 +3,7 @@ import logging
 import random
 import typing as t
 from io import BytesIO
+from time import perf_counter
 
 import discord
 from redbot.core import bank
@@ -196,3 +197,17 @@ class ProfileFormatting(MixinMeta):
 
         file = await asyncio.to_thread(_run)
         return file
+
+    async def get_user_profile_cached(self, member: discord.Member) -> discord.File:
+        if not self.db.cache_seconds:
+            return await self.get_user_profile(member)
+        now = perf_counter()
+        last_used, imgbytes = self.profiles.setdefault(member.guild.id, {}).get(member.id)
+        if last_used and now - last_used < self.db.cache_seconds:
+            return discord.File(BytesIO(imgbytes), filename="profile.webp")
+        file = await self.get_user_profile(member)
+        if not isinstance(file, discord.File):
+            return file
+        filebytes = await file.fp.read()
+        self.profiles[member.guild.id][member.id] = (now, filebytes)
+        return discord.File(BytesIO(filebytes), filename="profile.webp")

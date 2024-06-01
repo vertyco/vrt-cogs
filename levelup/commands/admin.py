@@ -1,5 +1,6 @@
 import asyncio
 import typing as t
+from io import BytesIO
 from time import perf_counter
 
 import discord
@@ -391,31 +392,33 @@ class Admin(MixinMeta):
         Test the level algorithm
         View the first 20 levels using the current algorithm to test experience curve
         """
-        conf = self.db.get_conf(ctx.guild)
-        txt, file = await asyncio.to_thread(
-            utils.plot_levels,
-            base=conf.algorithm.base,
-            exponent=conf.algorithm.exp,
-            cooldown=conf.cooldown,
-            xp_range=conf.xp,
-        )
-        img = f"attachment://{file.filename if file else 'levels.png'}"
-        example = _(
-            "XP required for a level = Base * Level^ᵉˣᵖ\n\n"
-            "Approx time is the time it would take for a user to reach a level with randomized breaks"
-        )
-        desc = _("`Base Multiplier:  `") + f"{conf.algorithm.base}\n"
-        desc += _("`Exp Multiplier:   `") + f"{conf.algorithm.exp}\n"
-        desc += _("`Experience Range: `") + f"{conf.xp}\n"
-        desc += _("`Message Cooldown: `") + f"{conf.cooldown}\n"
-        desc += f"{box(example)}\n{box(txt, lang='python')}"
-        embed = discord.Embed(
-            title=_("Leveling Algorithm"),
-            description=desc,
-            color=await self.bot.get_embed_color(ctx),
-        )
-        embed.set_image(url=img)
-        await ctx.send(file=file, embed=embed)
+        async with ctx.typing():
+            conf = self.db.get_conf(ctx.guild)
+            txt, filebytes = await asyncio.to_thread(
+                utils.plot_levels,
+                base=conf.algorithm.base,
+                exponent=conf.algorithm.exp,
+                cooldown=conf.cooldown,
+                xp_range=conf.xp,
+            )
+            file = discord.File(BytesIO(filebytes), filename="levels.png")
+            img = "attachment://levels.png"
+            example = _(
+                "XP required for a level = Base * Level^ᵉˣᵖ\n\n"
+                "Approx time is the time it would take for a user to reach a level with randomized breaks"
+            )
+            desc = _("`Base Multiplier:  `") + f"{conf.algorithm.base}\n"
+            desc += _("`Exp Multiplier:   `") + f"{conf.algorithm.exp}\n"
+            desc += _("`Experience Range: `") + f"{conf.xp}\n"
+            desc += _("`Message Cooldown: `") + f"{conf.cooldown}\n"
+            desc += f"{box(example)}\n{box(txt, lang='python')}"
+            embed = discord.Embed(
+                title=_("Leveling Algorithm"),
+                description=desc,
+                color=await self.bot.get_embed_color(ctx),
+            )
+            embed.set_image(url=img)
+            await ctx.send(file=file, embed=embed)
 
     @levelset.command(name="setlevel")
     async def set_level(self, ctx: commands.Context, user: discord.Member, level: int):
