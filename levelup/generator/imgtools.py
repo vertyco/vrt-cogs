@@ -81,14 +81,17 @@ def make_circle_outline(thickness: int, color: tuple) -> Image.Image:
     return img
 
 
-def make_profile_circle(pfp: Image.Image) -> Image.Image:
+def make_profile_circle(
+    pfp: Image.Image,
+    method: Image.Resampling = Image.Resampling.LANCZOS,
+) -> Image.Image:
     """Crop an image into a circle"""
     # Create a mask at 4x size (So we can scale down to smooth the edges later)
     mask = Image.new("L", (pfp.width * 4, pfp.height * 4), 0)
     draw = ImageDraw.Draw(mask)
     draw.ellipse((0, 0, mask.width, mask.height), fill=255)
     # Resize the mask to the image size
-    mask = mask.resize(pfp.size, Image.Resampling.LANCZOS)
+    mask = mask.resize(pfp.size, method)
     # Apply the mask
     pfp.putalpha(mask)
     return pfp

@@ -365,7 +365,7 @@ def generate_full_profile(
             # Resize the profile image for each frame
             pfp_frame = pfp_frame.resize(desired_pfp_size, Image.Resampling.NEAREST)
             # Crop the profile image into a circle
-            pfp_frame = imgtools.make_profile_circle(pfp_frame)
+            pfp_frame = imgtools.make_profile_circle(pfp_frame, method=Image.Resampling.NEAREST)
             # Paste items onto the card
             card_frame.paste(stats, (0, 0), stats)
             card_frame.paste(pfp_frame, (circle_x, circle_y), pfp_frame)
