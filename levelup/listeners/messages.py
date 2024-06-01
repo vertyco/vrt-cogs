@@ -57,8 +57,10 @@ class MessageListener(MixinMeta):
             addxp = True
         elif now - last_messages[user_id] > conf.cooldown:
             addxp = True
+
         if not addxp:
             return
+
         self.lastmsg[message.guild.id][user_id] = now
 
         xp_to_add = random.randint(conf.xp[0], conf.xp[1])
@@ -73,9 +75,15 @@ class MessageListener(MixinMeta):
         for role_id, (bonus_min, bonus_max) in conf.rolebonus.msg.items():
             if role_id in role_ids:
                 xp_to_add += random.randint(bonus_min, bonus_max)
+        # Add the xp to the role groups
+        for role_id in role_ids:
+            if role_id in conf.role_groups:
+                conf.role_groups[role_id] += xp_to_add
+        # Add the xp to the user's profile
         profile.xp += xp_to_add
         if weekly:
             weekly.xp += xp_to_add
+        # Check for levelups
         await self.check_levelups(
             guild=message.guild,
             member=message.author,

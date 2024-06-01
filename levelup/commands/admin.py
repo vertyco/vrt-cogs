@@ -142,6 +142,10 @@ class Admin(MixinMeta):
             embed.add_field(name=_("LevelUp Message"), value=msg, inline=False)
         if msg_role := conf.role_awarded_msg:
             embed.add_field(name=_("LevelUp Role Message"), value=msg_role, inline=False)
+        if roles := conf.role_groups:
+            joined = ", ".join([f"<@&{role_id}>" for role_id in roles])
+            txt = _("The following roles gain exp as a group:\n{}").format(joined)
+            embed.add_field(name=_("Role Exp Groups"), value=txt, inline=False)
         if ctx.author.id not in self.bot.owner_ids:
             txt = _("➣ Profile Cache Time\n")
             if self.db.cache_seconds:
@@ -168,6 +172,29 @@ class Admin(MixinMeta):
         conf.enabled = not conf.enabled
         self.save()
         await ctx.send(_("LevelUp has been {}").format(status))
+
+    @levelset.command(name="rolegroup")
+    async def add_remove_role_group(self, ctx: commands.Context, role: t.Union[discord.Role, int]):
+        """
+        Add or remove a role to the role group
+
+        These roles gain their own experience points as a group
+        When a member gains xp, any roles they have in this group will also gain xp
+        """
+        conf = self.db.get_conf(ctx.guild)
+        role_id = role if isinstance(role, int) else role.id
+        if role_id in conf.role_groups:
+            del conf.role_groups[role_id]
+            txt = _("The role {} will no longer gain experience points.").format(f"<@&{role_id}>")
+        else:
+            if not ctx.guild.get_role(role_id):
+                return await ctx.send(_("Role not found!"))
+            conf.role_groups[role_id] = 0
+            txt = _("The role {} will now gain expecience points from all members that have it.").format(
+                f"<@&{role_id}>"
+            )
+        self.save()
+        await ctx.send(txt)
 
     @levelset.command(name="addxp")
     async def add_xp(

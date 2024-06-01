@@ -200,6 +200,7 @@ class GuildSettings(Base):
     enabled: bool = False  # Toggle leveling on/off
     algorithm: Algorithm = Algorithm()
     levelroles: t.Dict[int, int] = {}  # Level: Role_ID
+    role_groups: t.Dict[int, float] = {}  # Role_ID: Exp
     use_embeds: bool = True  # Use Embeds instead of generated images for leveling
     showbal: bool = False  # Show economy balance
     autoremove: bool = False  # Remove previous role on level up

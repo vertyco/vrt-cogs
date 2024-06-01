@@ -54,6 +54,40 @@ def get_user_position(conf: GuildSettings, lbtype: t.Literal["lb", "weekly"], ta
     return {"position": position, "total": total, "percent": percent}
 
 
+def get_role_leaderboard(rolegroups: t.Dict[int, float], color: discord.Color) -> t.List[discord.Embed]:
+    """Format and return the role leaderboard
+
+    Args:
+        rolegroups (t.Dict[int, float]): The role leaderboard
+
+    Returns:
+        t.List[discord.Embed]: A list of embeds
+    """
+    embeds = []
+    count = len(rolegroups)
+    pages = math.ceil(count / 10)
+    sorted_roles = sorted(rolegroups.items(), key=lambda x: x[1], reverse=True)
+    start = 0
+    stop = 10
+    for idx in range(pages):
+        stop = min(count, stop)
+        buffer = StringIO()
+        for i, (role_id, xp) in enumerate(sorted_roles[start:stop], start=start):
+            buffer.write(f"**{i + 1}.** <@&{role_id}> `{humanize_number(int(xp))}`xp\n")
+
+        embed = discord.Embed(
+            title=_("Role Leaderboard"),
+            description=buffer.getvalue(),
+            color=color,
+        ).set_footer(text=_("Page {}").format(f"{idx + 1}/{pages}"))
+
+        embeds.append(embed)
+        start += 10
+        stop += 10
+
+    return embeds
+
+
 def get_leaderboard(
     bot: Red,
     guild: discord.Guild,
@@ -246,7 +280,7 @@ def get_leaderboard(
             title=title,
             description=desc + buffer.getvalue(),
             color=color,
-        ).set_footer(text=_("Pages {}").format(f"{idx + 1}/{pages}{you}"), icon_url=guild.icon)
+        ).set_footer(text=_("Page {}").format(f"{idx + 1}/{pages}{you}"), icon_url=guild.icon)
 
         embeds.append(embed)
         start += 10
