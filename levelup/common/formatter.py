@@ -95,8 +95,8 @@ def get_leaderboard(
         title = _("GLobal LevelUp ")
         # Add up all the guilds
         lb: t.Dict[int, Profile] = {}
-        for guild_id in db.guilds.keys():
-            guild_conf: GuildSettings = db.guilds[guild_id]
+        for guild_id in db.configs.keys():
+            guild_conf: GuildSettings = db.configs[guild_id]
             for user_id in guild_conf.users.keys():
                 profile: Profile = guild_conf.users[user_id]
                 if user_id not in lb:
