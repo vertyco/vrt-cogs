@@ -178,7 +178,8 @@ def get_day_name(day: int) -> str:
 
 @cached(ttl=60 * 60 * 24)  # 24 hours
 async def get_content_from_url(url: str) -> t.Optional[bytes]:
-    async with aiohttp.ClientSession() as session:
+    headers = {"User-Agent": "Mozilla/5.0"}
+    async with aiohttp.ClientSession(headers=headers) as session:
         async with session.get(url) as resp:
             return await resp.content.read()
 
@@ -207,7 +208,7 @@ async def confirm_msg(ctx: t.Union[commands.Context, discord.Interaction]) -> t.
 )
 async def fetch_amari_payload(guild_id: int, page: int, key: str):
     url = f"https://amaribot.com/api/v1/guild/leaderboard/{guild_id}?page={page}&limit=1000"
-    headers = {"Accept": "application/json", "Authorization": key}
+    headers = {"Accept": "application/json", "Authorization": key, "User-Agent": "Mozilla/5.0"}
     timeout = aiohttp.ClientTimeout(total=60)
     async with aiohttp.ClientSession(timeout=timeout) as session:
         async with session.get(url, headers=headers) as res:
@@ -228,7 +229,7 @@ async def fetch_polaris_payload(guild_id: int, page: int):
     url = f"https://gdcolon.com/polaris/api/leaderboard/{guild_id}?page={page}"
     timeout = aiohttp.ClientTimeout(total=60)
     async with aiohttp.ClientSession(timeout=timeout) as session:
-        async with session.get(url, headers={"Accept": "application/json"}) as res:
+        async with session.get(url, headers={"Accept": "application/json", "User-Agent": "Mozilla/5.0"}) as res:
             status = res.status
             if status == 429:
                 log.warning("polaris import is being rate limited!")
@@ -246,7 +247,7 @@ async def fetch_mee6_payload(guild_id: int, page: int):
     url = f"https://mee6.xyz/api/plugins/levels/leaderboard/{guild_id}?page={page}&limit=1000"
     timeout = aiohttp.ClientTimeout(total=60)
     async with aiohttp.ClientSession(timeout=timeout) as session:
-        async with session.get(url, headers={"Accept": "application/json"}) as res:
+        async with session.get(url, headers={"Accept": "application/json", "User-Agent": "Mozilla/5.0"}) as res:
             status = res.status
             if status == 429:
                 log.warning("mee6 import is being rate limited!")
