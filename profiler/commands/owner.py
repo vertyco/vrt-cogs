@@ -122,6 +122,15 @@ class Owner(MixinMeta):
         if cleaned:
             await self.save()
 
+    @profiler.command(name="clear")
+    async def clear_metrics(self, ctx: commands.Context):
+        """
+        Clear all saved metrics
+        """
+        self.db.stats.clear()
+        await self.save()
+        await ctx.send("All metrics have been cleared")
+
     @profiler.command(name="save")
     async def save_toggle(self, ctx: commands.Context):
         """
