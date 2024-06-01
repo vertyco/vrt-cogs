@@ -6,11 +6,13 @@ import random
 import sys
 import typing as t
 from datetime import datetime, timedelta
-from io import BytesIO, StringIO
+from functools import lru_cache
+from io import StringIO
 
 import aiohttp
 import discord
 import plotly.graph_objects as go
+from aiocache import cached
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.predicates import MessagePredicate
@@ -175,6 +177,7 @@ def get_day_name(day: int) -> str:
     return daymap[day]
 
 
+@cached(ttl=60 * 60 * 24)  # 24 hours
 async def get_content_from_url(url: str) -> t.Optional[bytes]:
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as resp:
@@ -278,12 +281,10 @@ def time_to_level(
     return time_to_reach_level
 
 
+@lru_cache(maxsize=30)
 def plot_levels(
-    base: int,
-    exponent: float,
-    cooldown: int,
-    xp_range: t.Tuple[int, int],
-) -> t.Tuple[str, t.Optional[discord.File]]:
+    base: int, exponent: float, cooldown: int, xp_range: t.Tuple[int, int]
+) -> t.Tuple[str, t.Optional[bytes]]:
     buffer = StringIO()
     x, y = [], []
     for level in range(1, 21):
@@ -293,7 +294,6 @@ def plot_levels(
         buffer.write(_("• lvl {}, {} xp, {}\n").format(level, xp_required, time))
         x.append(level)
         y.append(xp_required)
-
     try:
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=x, y=y, mode="lines", name="Total"))
@@ -315,13 +315,8 @@ def plot_levels(
             paper_bgcolor="black",  # Set the paper color to black
             font=dict(color="white"),  # Set the font color to white
         )
-        try:
-            img_bytes = fig.to_image(format="WEBP")
-            ext = "webp"
-        except KeyError:
-            img_bytes = fig.to_image(format="PNG")
-            ext = "png"
-        return buffer.getvalue(), discord.File(BytesIO(img_bytes), filename=f"levels.{ext}")
+        img_bytes = fig.to_image(format="PNG")
+        return buffer.getvalue(), img_bytes
     except Exception as e:
         log.error("Failed to plot levels", exc_info=e)
         return buffer.getvalue(), None

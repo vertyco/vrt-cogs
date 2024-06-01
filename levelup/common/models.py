@@ -181,10 +181,6 @@ class Emojis(Base):
         if not hasattr(self, name):
             raise AttributeError(f"Emoji {name} not found")
         emoji = getattr(self, name)
-        # if isinstance(emoji, str) and len(emoji) > 100:
-        #     log.error(f"Emoji {name} is super long: {emoji}")
-        #     emoji_obj = Emojis().dump(False)[name]
-        #     setattr(self, name, emoji_obj)
         if isinstance(emoji, str) and emoji.isdigit():
             emoji_obj = bot.get_emoji(int(emoji))
         elif isinstance(emoji, int):
@@ -267,7 +263,7 @@ class DB(Base):
     render_gifs: bool = False
     migrations: t.List[str] = []
 
-    def get_conf(self, guild: discord.Guild | int) -> GuildSettings:
+    def get_conf(self, guild: t.Union[discord.Guild, int]) -> GuildSettings:
         gid = guild if isinstance(guild, int) else guild.id
         return self.configs.setdefault(gid, GuildSettings())
 
