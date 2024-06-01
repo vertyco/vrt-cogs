@@ -92,7 +92,7 @@ def get_leaderboard(
         lb = db.get_conf(guild).users_weekly
         weekly = db.get_conf(guild).weeklysettings
     elif lbtype == "lb" and is_global:
-        title = _("GLobal LevelUp ")
+        title = _("Global LevelUp ")
         # Add up all the guilds
         lb: t.Dict[int, Profile] = {}
         for guild_id in db.configs.keys():
