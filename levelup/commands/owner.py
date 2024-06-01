@@ -63,6 +63,17 @@ class Owner(MixinMeta):
         )
         await ctx.send(embed=embed)
 
+    @lvlowner.command(name="rendergifs", aliases=["rendergif", "gif"])
+    async def toggle_gif_rendering(self, ctx: commands.Context) -> None:
+        """Toggle rendering of GIFs for animated profiles"""
+        if self.db.render_gifs:
+            self.db.render_gifs = False
+            await ctx.send(_("GIF rendering disabled."))
+        else:
+            self.db.render_gifs = True
+            await ctx.send(_("GIF rendering enabled."))
+        self.save()
+
     @lvlowner.command(name="ignore")
     async def ignore_server(self, ctx: commands.Context, guild_id: int) -> None:
         """Add/Remove a server from the ignore list"""
