@@ -63,11 +63,12 @@ def get_role_leaderboard(rolegroups: t.Dict[int, float], color: discord.Color) -
     Returns:
         t.List[discord.Embed]: A list of embeds
     """
-    embeds = []
-    count = len(rolegroups)
-    pages = math.ceil(count / 10)
     sorted_roles = sorted(rolegroups.items(), key=lambda x: x[1], reverse=True)
     filtered_roles = [x for x in sorted_roles if x[1] > 0]
+
+    embeds = []
+    count = len(filtered_roles)
+    pages = math.ceil(count / 10)
     start = 0
     stop = 10
     for idx in range(pages):
