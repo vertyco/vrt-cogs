@@ -53,7 +53,7 @@ class LevelUp(
         self.db: DB = DB()
         self.lastmsg: t.Dict[int, t.Dict[int, float]] = {}  # GuildID: {UserID: LastMessageTime}
         self.in_voice: t.Dict[int, t.Dict[int, float]] = {}  # GuildID: {UserID: TimeJoined}
-        self.profiles: t.Dict[int, t.Dict[int, t.Tuple[str, bytes]]] = {}  # GuildID: {UserID: (last_used, bytes)}
+        self.profile_cache: t.Dict[int, t.Dict[int, t.Tuple[str, bytes]]] = {}  # GuildID: {UserID: (last_used, bytes)}
 
         # Root Paths
         self.cog_path = cog_data_path(self)

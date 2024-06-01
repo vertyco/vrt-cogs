@@ -23,7 +23,7 @@ class MixinMeta(ABC):
         self.db: DB
         self.lastmsg: t.Dict[int, t.Dict[int, float]]
         self.in_voice: t.Dict[int, t.Dict[int, float]]
-        self.profiles: t.Dict[int, t.Dict[int, t.Tuple[str, bytes]]]
+        self.profile_cache: t.Dict[int, t.Dict[int, t.Tuple[str, bytes]]]
 
         self.cog_path: Path
         self.bundled_path: Path
