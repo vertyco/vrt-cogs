@@ -129,6 +129,10 @@ def generate_runescape_profile(
     rank_text = f"#{imgtools.abbreviate_number(position)}"
     rank_size = 20
     rank_font = ImageFont.truetype(str(font_path), rank_size)
+    lb, rb = 2, 32
+    while rank_font.getlength(rank_text) > rb - lb:
+        rank_size -= 1
+        rank_font = ImageFont.truetype(str(font_path), rank_size)
     draw.text(
         xy=(17, 93),
         text=rank_text,
@@ -199,4 +203,5 @@ if __name__ == "__main__":
         username="vertyco",
         debug=True,
         status="dnd",
+        position=100000,
     )

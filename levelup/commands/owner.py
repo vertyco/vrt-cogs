@@ -28,6 +28,9 @@ class Owner(MixinMeta):
         """View Global LevelUp Settings"""
         embed = discord.Embed(color=await self.bot.get_embed_color(ctx))
         size_bytes = utils.deep_getsizeof(self.db)
+        size_bytes += utils.deep_getsizeof(self.lastmsg)
+        size_bytes += utils.deep_getsizeof(self.in_voice)
+        size_bytes += utils.deep_getsizeof(self.profile_cache)
         embed.add_field(
             name=_("Global Settings"),
             value=_("`Profile Cache Time: `{}\n`Cache Size:         `{}\n").format(

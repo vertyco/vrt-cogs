@@ -111,6 +111,10 @@ class VoiceListener(MixinMeta):
             if addxp:
                 weekly.xp += xp_to_add
 
+        for role_id in role_ids:
+            if role_id in conf.role_groups:
+                conf.role_groups[role_id] += xp_to_add
+
         self.save()
         log.debug(f"Added {round(xp_to_add, 2)} XP to {member.name} in {member.guild}")
         await self.check_levelups(member.guild, member, profile, conf, channel=channel)

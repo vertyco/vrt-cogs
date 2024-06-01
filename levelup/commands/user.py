@@ -59,6 +59,20 @@ class User(MixinMeta):
             return await ctx.send(pages)
         await DynamicMenu(ctx.author, pages, ctx.channel).refresh()
 
+    @commands.command(name="roletop")
+    @commands.guild_only()
+    async def role_group_leaderboard(self, ctx: commands.Context):
+        """View the leaderboard for roles"""
+        conf = self.db.get_conf(ctx.guild)
+        if not conf.role_groups:
+            return await ctx.send(_("Role groups have not been configured in this server yet!"))
+        pages = await asyncio.to_thread(
+            formatter.get_role_leaderboard,
+            rolegroups=conf.role_groups,
+            color=await self.bot.get_embed_color(ctx),
+        )
+        await DynamicMenu(ctx.author, pages, ctx.channel).refresh()
+
     @commands.hybrid_command(name="profile", aliases=["pf"])
     @commands.guild_only()
     async def profile(self, ctx: commands.Context, *, user: discord.Member = None):
