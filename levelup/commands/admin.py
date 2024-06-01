@@ -179,7 +179,7 @@ class Admin(MixinMeta):
         Add or remove a role to the role group
 
         These roles gain their own experience points as a group
-        When a member gains xp, any roles they have in this group will also gain xp
+        When a member gains xp while having this role, the xp they earn is also added to the role group
         """
         conf = self.db.get_conf(ctx.guild)
         role_id = role if isinstance(role, int) else role.id
