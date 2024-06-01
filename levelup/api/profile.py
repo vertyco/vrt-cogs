@@ -198,11 +198,20 @@ class ProfileFormatting(MixinMeta):
         file = await asyncio.to_thread(_run)
         return file
 
-    async def get_user_profile_cached(self, member: discord.Member) -> discord.File:
+    async def get_user_profile_cached(self, member: discord.Member) -> t.Union[discord.File, discord.Embed]:
         if not self.db.cache_seconds:
             return await self.get_user_profile(member)
         now = perf_counter()
-        last_used, imgbytes = self.profiles.setdefault(member.guild.id, {}).get(member.id)
+        cachedata = self.profiles.setdefault(member.guild.id, {}).get(member.id)
+        if cachedata is None:
+            file = await self.get_user_profile(member)
+            if not isinstance(file, discord.File):
+                return file
+            filebytes = await file.fp.read()
+            self.profiles[member.guild.id][member.id] = (now, filebytes)
+            return discord.File(BytesIO(filebytes), filename="profile.webp")
+
+        last_used, imgbytes = cachedata
         if last_used and now - last_used < self.db.cache_seconds:
             return discord.File(BytesIO(imgbytes), filename="profile.webp")
         file = await self.get_user_profile(member)
