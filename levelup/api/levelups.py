@@ -149,7 +149,8 @@ class LevelUps(MixinMeta):
             highest_role_id = 0
             if valid_levels:
                 highest_role_id = valid_levels[max(valid_levels)]
-                to_add.add(highest_role_id)
+                if highest_role_id not in user_role_ids:
+                    to_add.add(highest_role_id)
 
             for role_id in conf.levelroles.values():
                 if role_id != highest_role_id and role_id in user_role_ids:
@@ -158,7 +159,8 @@ class LevelUps(MixinMeta):
             # Ensure user has all roles up to their level
             for level, role_id in conf.levelroles.items():
                 if level <= profile.level:
-                    to_add.add(role_id)
+                    if role_id not in user_role_ids:
+                        to_add.add(role_id)
                 elif role_id in user_role_ids:
                     to_remove.add(role_id)
 

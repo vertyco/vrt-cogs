@@ -67,12 +67,13 @@ def get_role_leaderboard(rolegroups: t.Dict[int, float], color: discord.Color) -
     count = len(rolegroups)
     pages = math.ceil(count / 10)
     sorted_roles = sorted(rolegroups.items(), key=lambda x: x[1], reverse=True)
+    filtered_roles = [x for x in sorted_roles if x[1] > 0]
     start = 0
     stop = 10
     for idx in range(pages):
         stop = min(count, stop)
         buffer = StringIO()
-        for i, (role_id, xp) in enumerate(sorted_roles[start:stop], start=start):
+        for i, (role_id, xp) in enumerate(filtered_roles[start:stop], start=start):
             buffer.write(f"**{i + 1}.** <@&{role_id}> `{humanize_number(int(xp))}`xp\n")
 
         embed = discord.Embed(
