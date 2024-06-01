@@ -207,7 +207,7 @@ class ProfileFormatting(MixinMeta):
             file = await self.get_user_profile(member)
             if not isinstance(file, discord.File):
                 return file
-            filebytes = await file.fp.read()
+            filebytes = file.fp.read()
             self.profiles[member.guild.id][member.id] = (now, filebytes)
             return discord.File(BytesIO(filebytes), filename="profile.webp")
 
@@ -217,6 +217,6 @@ class ProfileFormatting(MixinMeta):
         file = await self.get_user_profile(member)
         if not isinstance(file, discord.File):
             return file
-        filebytes = await file.fp.read()
+        filebytes = file.fp.read()
         self.profiles[member.guild.id][member.id] = (now, filebytes)
         return discord.File(BytesIO(filebytes), filename="profile.webp")
