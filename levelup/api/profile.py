@@ -202,21 +202,22 @@ class ProfileFormatting(MixinMeta):
         if not self.db.cache_seconds:
             return await self.get_user_profile(member)
         now = perf_counter()
-        cachedata = self.profiles.setdefault(member.guild.id, {}).get(member.id)
+        cachedata = self.profile_cache.setdefault(member.guild.id, {}).get(member.id)
         if cachedata is None:
             file = await self.get_user_profile(member)
             if not isinstance(file, discord.File):
                 return file
             filebytes = file.fp.read()
-            self.profiles[member.guild.id][member.id] = (now, filebytes)
+            self.profile_cache[member.guild.id][member.id] = (now, filebytes)
             return discord.File(BytesIO(filebytes), filename="profile.webp")
 
         last_used, imgbytes = cachedata
         if last_used and now - last_used < self.db.cache_seconds:
             return discord.File(BytesIO(imgbytes), filename="profile.webp")
+
         file = await self.get_user_profile(member)
         if not isinstance(file, discord.File):
             return file
         filebytes = file.fp.read()
-        self.profiles[member.guild.id][member.id] = (now, filebytes)
+        self.profile_cache[member.guild.id][member.id] = (now, filebytes)
         return discord.File(BytesIO(filebytes), filename="profile.webp")

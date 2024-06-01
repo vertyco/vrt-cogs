@@ -27,6 +27,8 @@ def get_user_position(conf: GuildSettings, lbtype: t.Literal["lb", "weekly"], ta
     """
     if lbtype == "weekly":
         lb: t.Dict[int, ProfileWeekly] = conf.users_weekly
+    elif not conf.prestigedata:
+        lb: t.Dict[int, Profile] = conf.users
     else:
         lb: t.Dict[int, Profile] = {}
         for user_id in list(conf.users.keys()):
