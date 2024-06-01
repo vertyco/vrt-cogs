@@ -116,22 +116,22 @@ def get_leaderboard(
         lb = db.get_conf(guild).users.copy()
 
     if "v" in stat:
-        title = _("Voice Leaderboard")
+        title += _("Voice Leaderboard")
         key = "voice"
         emoji = conf.emojis.get("mic", bot)
         statname = _("Voicetime")
     elif "m" in stat:
-        title = _("Message Leaderboard")
+        title += _("Message Leaderboard")
         key = "messages"
         emoji = conf.emojis.get("chat", bot)
         statname = _("Messages")
     elif "s" in stat:
-        title = _("Star Leaderboard")
+        title += _("Star Leaderboard")
         key = "stars"
         emoji = conf.emojis.get("star", bot)
         statname = _("Stars")
     else:
-        title = _("Exp Leaderboard")
+        title += _("Exp Leaderboard")
         key = "xp"
         emoji = conf.emojis.get("bulb", bot)
         statname = _("Experience")
