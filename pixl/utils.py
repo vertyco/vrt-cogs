@@ -20,8 +20,9 @@ dpy2 = True if version_info >= VersionInfo.from_str("3.5.0") else False
 
 @cached(ttl=240)
 async def get_content_from_url(url: str, timeout: Optional[int] = 60) -> Optional[bytes]:
+    headers = {"User-Agent": "Mozilla/5.0"}
     try:
-        async with ClientSession(timeout=ClientTimeout(total=timeout)) as session:
+        async with ClientSession(timeout=ClientTimeout(total=timeout), headers=headers) as session:
             async with session.get(url) as res:
                 return await res.read()
     except Exception as e:
@@ -53,9 +54,7 @@ async def listener(ctx: commands.Context, data: dict):
         res: discord.Message = done.pop().result()
         if not res.content.strip():
             continue
-        data["responses"].append(
-            (res.author, res.content.strip().lower(), datetime.now().timestamp())
-        )
+        data["responses"].append((res.author, res.content.strip().lower(), datetime.now().timestamp()))
         data["participants"].add(res.author)
 
 
@@ -98,11 +97,7 @@ class PixlGrids:
         if any(end_conditions):
             self.data["in_progress"] = False
             raise StopAsyncIteration
-        pop = (
-            self.amount_to_reveal
-            if self.amount_to_reveal <= len(self.to_chop)
-            else len(self.to_chop)
-        )
+        pop = self.amount_to_reveal if self.amount_to_reveal <= len(self.to_chop) else len(self.to_chop)
         for _ in range(pop):
             bbox = self.to_chop.pop(random.randrange(len(self.to_chop)))
             cropped = await exe(self.image.crop, bbox)
