@@ -127,6 +127,18 @@ class LevelUps(MixinMeta):
             with suppress(discord.HTTPException):
                 await log_channel.send(msg_txt, file=file)
 
+        payload = {
+            "guild": guild,  # discord.Guild
+            "member": member,  # discord.Member
+            "message": message,  # Optional[discord.Message] = None
+            "channel": channel,  # Optional[TextChannel | VoiceChannel | Thread | ForumChannel] = None
+            "banner_bytes": banner,  # bytes - the user's profile banner
+            "avatar_bytes": avatar,  # bytes - the user's display avatar
+            "profile_bytes": filebytes,  # bytes - the generated profile image
+            "new_level": profile.level,  # int
+        }
+        self.bot.dispatch("member_levelup", **payload)
+
     async def ensure_roles(
         self, member: discord.Member, conf: GuildSettings
     ) -> t.Tuple[t.List[discord.Role], t.List[discord.Role]]:
