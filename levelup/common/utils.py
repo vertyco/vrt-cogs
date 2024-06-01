@@ -6,7 +6,6 @@ import random
 import sys
 import typing as t
 from datetime import datetime, timedelta
-from functools import lru_cache
 from io import StringIO
 
 import aiohttp
@@ -281,7 +280,6 @@ def time_to_level(
     return time_to_reach_level
 
 
-@lru_cache(maxsize=30)
 def plot_levels(
     base: int, exponent: float, cooldown: int, xp_range: t.Tuple[int, int]
 ) -> t.Tuple[str, t.Optional[bytes]]:
