@@ -1,39 +1,27 @@
 """
 Generate a full profile image with customizable parameters.
-If the avatar is animated and not the background, the avatar will be rendered as a gif.
-If the background is animated and not the avatar, the background will be rendered as a gif.
-If both are animated, the avatar will be rendered as a gif and the background will be rendered as a static image.
-To optimize performance, the profile will be generated in 3 layers, the background, the avatar, and the stats.
-The stats layer will be generated as a separate image and then pasted onto the background.
 
 Args:
-    background (t.Optional[bytes], optional): The background image as bytes. Defaults to None.
-    avatar (t.Optional[bytes], optional): The avatar image as bytes. Defaults to None.
-    username (t.Optional[str], optional): The username. Defaults to "Spartan117".
+    avatar_bytes (t.Optional[bytes], optional): The avatar image as bytes. Defaults to None.
     status (t.Optional[str], optional): The status. Defaults to "online".
     level (t.Optional[int], optional): The level. Defaults to 1.
     messages (t.Optional[int], optional): The number of messages. Defaults to 0.
-    voicetime (t.Optional[str], optional): The voicetime. Defaults to "None".
-    stars (t.Optional[int], optional): The number of stars. Defaults to 0.
+    voicetime (t.Optional[int], optional): The voicetime. Defaults to 3600.
     prestige (t.Optional[int], optional): The prestige level. Defaults to 0.
     prestige_emoji (t.Optional[bytes], optional): The prestige emoji as bytes. Defaults to None.
     balance (t.Optional[int], optional): The balance. Defaults to 0.
-    currency_name (t.Optional[str], optional): The name of the currency. Defaults to "Credits".
     previous_xp (t.Optional[int], optional): The previous XP. Defaults to 0.
-    current_xp (t.Optional[int], optional): The current XP. Defaults to 0.
-    next_xp (t.Optional[int], optional): The next XP. Defaults to 0.
-    position (t.Optional[int], optional): The position. Defaults to 0.
+    current_xp (t.Optional[int], optional): The current XP. Defaults to 4.
+    next_xp (t.Optional[int], optional): The next XP. Defaults to 10.
+    position (t.Optional[int], optional): The position. Defaults to 1.
     role_icon (t.Optional[bytes], optional): The role icon as bytes. Defaults to None.
-    blur (t.Optional[bool], optional): Whether to blur the box behind the stats. Defaults to False.
-    user_color (t.Optional[t.Tuple[int, int, int]], optional): The color for the user. Defaults to None.
-    base_color (t.Optional[t.Tuple[int, int, int]], optional): The base color. Defaults to None.
-    stat_color (t.Optional[t.Tuple[int, int, int]], optional): The color for the stats. Defaults to None.
-    level_bar_color (t.Optional[t.Tuple[int, int, int]], optional): The color for the level bar. Defaults to None.
-    render_gif (t.Optional[bool], optional): Whether to render as gif if profile or background is one. Defaults to False.
-    debug (t.Optional[bool], optional): Whether to raise any errors rather than suppressing. Defaults to False.
+    base_color (t.Optional[t.Tuple[int, int, int]], optional): The base color. Defaults to (255, 255, 255).
+    stat_color (t.Optional[t.Tuple[int, int, int]], optional): The color for the stats. Defaults to (0, 255, 68).
+    render_gif (t.Optional[bool], optional): Whether to render as gif. Defaults to False.
+    debug (t.Optional[bool], optional): Whether to show the generated image. Defaults to False.
 
 Returns:
-    t.Tuple[bytes, bool]: The generated full profile image as bytes, and whether the image is animated.
+    bytes: The generated full profile image as bytes.
 """
 
 import logging
@@ -59,7 +47,6 @@ def generate_runescape_profile(
     messages: t.Optional[int] = 0,
     voicetime: t.Optional[int] = 3600,
     prestige: t.Optional[int] = 0,
-    prestige_emoji: t.Optional[bytes] = None,
     balance: t.Optional[int] = 0,
     previous_xp: t.Optional[int] = 0,
     current_xp: t.Optional[int] = 4,
@@ -84,21 +71,14 @@ def generate_runescape_profile(
     card = Image.new("RGBA", profile_size, (0, 0, 0, 0))
     # Template also at 219 x 192
     template = imgtools.RS_TEMPLATE_BALANCE if balance else imgtools.RS_TEMPLATE
-
-    # Paste profile circle at 75, 50
-    if pfp.mode != "RGBA":
-        pfp = pfp.convert("RGBA")
-    pfp = imgtools.make_profile_circle(pfp)
-    pfp = pfp.resize((145, 145), Image.Resampling.LANCZOS)
     # Place status icon
     status_icon = imgtools.STATUS[status].resize((25, 25), Image.Resampling.LANCZOS)
     card.paste(status_icon, (197, -2), status_icon)
-    # Place pfp
-    card.paste(pfp, (65, 9), pfp)
-    # Place template on top
-    card.paste(template, (0, 0), template)
+    if role_icon:
+        # Place role icon
+        role_icon = Image.open(BytesIO(role_icon)).resize((25, 25), Image.Resampling.LANCZOS)
 
-    draw = ImageDraw.Draw(card)
+    draw = ImageDraw.Draw(template)
     # Draw stats
     font_path = imgtools.ASSETS / "fonts" / "Runescape.ttf"
     # Draw balance
@@ -113,6 +93,20 @@ def generate_runescape_profile(
             fill=stat_color,
             anchor="mm",
         )
+    # Draw prestige
+    if prestige:
+        prestige_text = f"{imgtools.abbreviate_number(prestige)}"
+        prestige_size = 35
+        prestige_font = ImageFont.truetype(str(font_path), prestige_size)
+        draw.text(
+            xy=(197, 149),
+            text=prestige_text,
+            font=prestige_font,
+            fill=stat_color,
+            anchor="mm",
+            stroke_width=1,
+        )
+
     # Draw level
     level_text = f"{imgtools.abbreviate_number(level)}"
     level_size = 20
@@ -183,8 +177,47 @@ def generate_runescape_profile(
         align="center",
         anchor="mm",
     )
+    # ---------------- Start finalizing the image ----------------
+    if pfp_animated and render_gif:
+        avd_duration = imgtools.get_avg_duration(pfp)
+        frames: t.List[Image.Image] = []
+        for frame in range(pfp.n_frames):
+            pfp.seek(frame)
+            # Prep each frame
+            card_frame = card.copy()
+            pfp_frame = pfp.copy()
+            if pfp_frame.mode != "RGBA":
+                pfp_frame = pfp_frame.convert("RGBA")
+            pfp_frame = pfp_frame.resize((145, 145), Image.Resampling.NEAREST)
+            pfp_frame = imgtools.make_profile_circle(pfp_frame, Image.Resampling.NEAREST)
+            # Place the pfp
+            card_frame.paste(pfp_frame, (65, 9), pfp_frame)
+            # Place the template
+            card_frame.paste(template, (0, 0), template)
+            frames.append(card_frame)
 
-    # Finalize image
+        buffer = BytesIO()
+        frames[0].save(
+            buffer,
+            format="GIF",
+            save_all=True,
+            append_images=frames[1:],
+            duration=avd_duration,
+            loop=0,
+        )
+        buffer.seek(0)
+        if debug:
+            Image.open(buffer).show()
+        return buffer.getvalue(), True
+
+    # Place the pfp
+    if pfp.mode != "RGBA":
+        pfp = pfp.convert("RGBA")
+    pfp = pfp.resize((145, 145), Image.Resampling.LANCZOS)
+    pfp = imgtools.make_profile_circle(pfp)
+    card.paste(pfp, (65, 9), pfp)
+    # Place the template
+    card.paste(template, (0, 0), template)
     if debug:
         card.show()
     buffer = BytesIO()
@@ -198,10 +231,16 @@ if __name__ == "__main__":
     test_avatar = (imgtools.ASSETS / "tests" / "tree.gif").read_bytes()
     test_icon = (imgtools.ASSETS / "tests" / "icon.png").read_bytes()
     font_path = imgtools.ASSETS / "fonts" / "Runescape.ttf"
-    generate_runescape_profile(
+    res, animated = generate_runescape_profile(
         avatar_bytes=test_avatar,
+        prestige=2,
         username="vertyco",
         debug=True,
+        balance=1000000,
         status="dnd",
         position=100000,
+        render_gif=True,
+        role_icon=test_icon,
     )
+    result_path = imgtools.ASSETS / "tests" / "result.gif"
+    result_path.write_bytes(res)
