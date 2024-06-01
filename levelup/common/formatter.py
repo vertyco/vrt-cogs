@@ -206,7 +206,7 @@ def get_leaderboard(
             "stats": [],
         }
         for idx, (user_id, stats) in enumerate(sorted_users):
-            user_obj = guild.get_member(user_id)
+            user_obj = bot.get_user(user_id) if is_global else guild.get_member(user_id)
             user = (user_obj.display_name if use_displayname else user_obj.name) if user_obj else user_id
             place = idx + 1
             if key == "voice":
@@ -230,7 +230,7 @@ def get_leaderboard(
         buffer = StringIO()
         for i in range(start, stop):
             user_id, stats = sorted_users[i]
-            user_obj = guild.get_member(user_id)
+            user_obj = bot.get_user(user_id) if is_global else guild.get_member(user_id)
             name = (user_obj.display_name if use_displayname else user_obj.name) if user_obj else user_id
             place = i + 1
             if key == "voice":
