@@ -429,12 +429,18 @@ class Admin(MixinMeta):
         • `user` - The user to set the level for
         • `level` - The level to set the user to
         """
-        conf = self.db.get_conf(ctx.guild)
-        profile = conf.get_profile(user)
-        profile.level = level
-        profile.xp = conf.algorithm.get_xp(level)
-        self.save()
-        await ctx.send(_("{}'s level has been set to {}").format(user.name, level))
+        async with ctx.typing():
+            conf = self.db.get_conf(ctx.guild)
+            profile = conf.get_profile(user)
+            profile.level = level
+            profile.xp = conf.algorithm.get_xp(level)
+            self.save()
+            added, removed = await self.ensure_roles(user, conf)
+            if added or removed:
+                txt = _("{}'s level has been set to {} and their roles have been updated").format(user.name, level)
+            else:
+                txt = _("{}'s level has been set to {}").format(user.name, level)
+            await ctx.send(txt)
 
     @levelset.command(name="setprestige")
     async def set_user_prestige(self, ctx: commands.Context, user: discord.Member, prestige: int):
