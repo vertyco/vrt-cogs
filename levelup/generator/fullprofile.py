@@ -492,10 +492,14 @@ def generate_full_profile(
     for frame_num in range(max_frame_count):
         time = frame_num * combined_duration
 
+        # Calculate the frame index for both the card and pfp
         card_frame_index = (time // card_duration) % card.n_frames
         pfp_frame_index = (time // pfp_duration) % pfp.n_frames
 
+        # Get the frames for the card and pfp
         card_frame = ImageSequence.Iterator(card)[card_frame_index]
+        pfp_frame = ImageSequence.Iterator(pfp)[pfp_frame_index]
+
         card_frame = imgtools.fit_aspect_ratio(card_frame, desired_card_size, preserve=True)
         card_frame = card.copy().resize(desired_card_size, Image.Resampling.NEAREST)
 
@@ -506,8 +510,6 @@ def generate_full_profile(
             blur_section = imgtools.blur_section(card_frame, (blur_edge, 0, card_frame.width, card_frame.height))
             # Paste onto the stats
             card_frame.paste(blur_section, (blur_edge, 0), blur_section)
-
-        pfp_frame = ImageSequence.Iterator(pfp)[pfp_frame_index]
         if pfp_frame.mode != "RGBA":
             pfp_frame = pfp_frame.convert("RGBA")
 
