@@ -458,12 +458,20 @@ def generate_full_profile(
     pfp_duration = imgtools.get_avg_duration(pfp)  # example: 50ms
     card_duration = imgtools.get_avg_duration(card)  # example: 100ms
     log.debug(f"PFP duration: {pfp_duration}ms, Card duration: {card_duration}ms")
-    # Round each duration to the nearest 15ms
-    pfp_duration = round(pfp_duration / 15) * 15
-    card_duration = round(card_duration / 15) * 15
+    # Figure out how to round the durations
+    # Favor the card's duration time over the pfp
+    # Round both durations to the nearest X ms based on what will get the closest to the LCM
+    pfp_duration = round(card_duration, -1)  # Round to the nearest 10ms
+    card_duration = round(card_duration, -1)  # Round to the nearest 10ms
+
     log.debug(f"Modified PFP duration: {pfp_duration}ms, Card duration: {card_duration}ms")
     combined_duration = math.lcm(pfp_duration, card_duration)  # example: 100ms would be the LCM of 50 and 100
     log.debug(f"Combined duration: {combined_duration}ms")
+    # The combined duration should be no more than 20% offset from the image with the highest duration
+    max_duration = max(pfp_duration, card_duration)
+    if combined_duration > max_duration * 1.2:
+        log.debug(f"Combined duration is more than 20% offset from the max duration ({max_duration}ms)")
+        combined_duration = max_duration
 
     # total_pfp_duration = pfp.n_frames * pfp_duration  # example: 2250ms
     # total_card_duration = card.n_frames * card_duration  # example: 3300ms

@@ -109,6 +109,7 @@ class LevelUp(
 
         self.custom_fonts.mkdir(exist_ok=True)
         self.custom_backgrounds.mkdir(exist_ok=True)
+        logging.getLogger("PIL").setLevel(logging.WARNING)
 
     def save(self) -> None:
         async def _save():
