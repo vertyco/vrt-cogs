@@ -9,6 +9,7 @@ import discord
 from redbot.core.i18n import Translator
 
 from ..abc import MixinMeta
+from ..common import utils
 from ..common.models import GuildSettings, Profile
 from ..generator import levelalert
 
@@ -107,12 +108,16 @@ class LevelUps(MixinMeta):
             elif (self.custom_fonts / profile.font).exists():
                 font = str(self.custom_fonts / profile.font)
 
+        color = utils.string_to_rgb(profile.statcolor) if profile.statcolor else member.color.to_rgb()
+        if color == (0, 0, 0):
+            color = utils.string_to_rgb(profile.namecolor) if profile.namecolor else None
+
         def _run() -> bytes:
             img_bytes = levelalert.generate_level_img(
                 background=banner,
                 avatar=avatar,
                 level=profile.level,
-                color=member.color.to_rgb(),
+                color=color,
                 font_path=font,
             )
             return img_bytes
