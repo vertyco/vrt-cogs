@@ -4,7 +4,7 @@
 </form>
 <br/>
 <div class="d-flex justify-content-between">
-    <h5>{{ total|markdown }}</h5>
+    <h5 class="me-auto">{{ total|markdown }}</h5>
     <div class="dropdown">
         <a class="btn btn-secondary" role="button" id="sort_by_dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             Sort by <i class="ni ni-bold-down"></i>
@@ -16,6 +16,11 @@
             <a class="dropdown-item" href="{{ url_for_query(stat='stars') }}">{% if stat == "stars" %}<i class="ni ni-check-bold me-2" style="vertical-align: -1.5px;"></i>{% endif %}Stars</a>
         </div>
     </div>
+    {% if position_url %}
+        <a href="{{ position_url }}" class="btn bg-gradient-{{ variables["meta"]["color"] }}" style="margin-left: 5px;">
+            Go to my position
+        </a>
+    {% endif %}
 </div>
 <div id="users-container" class="table-responsive p-0">
     <table class="table align-items-center mb-0">
