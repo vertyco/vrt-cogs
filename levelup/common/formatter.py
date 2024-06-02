@@ -101,6 +101,7 @@ def get_leaderboard(
     use_displayname: bool = True,
     dashboard: bool = False,
     color: discord.Color = discord.Color.random(),
+    query: str = None,
 ) -> t.Union[t.List[discord.Embed], t.Dict[str, t.Any], str]:
     """Format and return the leaderboard
 
@@ -120,6 +121,7 @@ def get_leaderboard(
         t.Union[t.List[discord.Embed], t.Dict[str, t.Any], str]: If called from dashboard returns a dict, else returns a list of embeds or a string
     """
     stat = stat.lower()
+    color = member.color if member else color
     conf = db.get_conf(guild)
     lb: t.Dict[int, t.Union[Profile, ProfileWeekly]]
     weekly: WeeklySettings = None
@@ -244,6 +246,8 @@ def get_leaderboard(
         for idx, (user_id, stats) in enumerate(sorted_users):
             user_obj = bot.get_user(user_id) if is_global else guild.get_member(user_id)
             user = (user_obj.display_name if use_displayname else user_obj.name) if user_obj else user_id
+            if query and query.lower() not in str(user).lower():
+                continue
             place = idx + 1
             if key == "voice":
                 stat = utils.humanize_delta(getattr(stats, key))
