@@ -178,7 +178,7 @@ def get_day_name(day: int) -> str:
 
 @cached(ttl=60 * 60 * 24)  # 24 hours
 async def get_content_from_url(url: str) -> t.Optional[bytes]:
-    headers = {"User-Agent": "Mozilla/5.0"}
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:126.0) Gecko/20100101 Firefox/126.0"}
     async with aiohttp.ClientSession(headers=headers) as session:
         async with session.get(url) as resp:
             return await resp.content.read()
