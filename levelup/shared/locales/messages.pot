@@ -1,0 +1,148 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2024-06-02 17:32-0400\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+
+#: levelup\shared\__init__.py:8
+#, docstring
+msgid ""
+"\n"
+"    Subclass all shared classes\n"
+"\n"
+"    This includes classes with functions available to other cogs\n"
+"    "
+msgstr ""
+
+#: levelup\shared\levelups.py:59
+msgid "You just reached level {} in {} and obtained the {} role!"
+msgstr ""
+
+#: levelup\shared\levelups.py:65
+msgid "{} just reached level {} and obtained the {} role!"
+msgstr ""
+
+#: levelup\shared\levelups.py:73
+msgid "You just reached level {} in {}!"
+msgstr ""
+
+#: levelup\shared\levelups.py:77
+msgid "{} just reached level {}!"
+msgstr ""
+
+#: levelup\shared\levelups.py:147
+#, docstring
+msgid ""
+"Ensure a user has the correct level roles based on their level and the "
+"guild's settings"
+msgstr ""
+
+#: levelup\shared\profile.py:24
+#, docstring
+msgid ""
+"Get a background for a user's profile in the following priority:\n"
+"        - Custom background selected by user\n"
+"        - Banner of user's Discord profile\n"
+"        - Random background\n"
+"        "
+msgstr ""
+
+#: levelup\shared\profile.py:64
+#, docstring
+msgid ""
+"Get a user's profile as an embed or file\n"
+"        If embed profiles are disabled, a file will be returned, otherwise an embed will be returned\n"
+"\n"
+"        Args:\n"
+"            member (discord.Member): The member to get the profile for\n"
+"            reraise (bool, optional): Fetching profiles will normally catch almost all exceptions and try to\n"
+"            handle them silently, this will make them throw an exception. Defaults to False.\n"
+"\n"
+"        Returns:\n"
+"            t.Union[discord.Embed, discord.File]: An embed or file containing the user's profile\n"
+"        "
+msgstr ""
+
+#: levelup\shared\profile.py:115
+msgid "Level {}\n"
+msgstr ""
+
+#: levelup\shared\profile.py:117
+msgid "Prestige {}\n"
+msgstr ""
+
+#: levelup\shared\profile.py:120
+msgid " stars\n"
+msgstr ""
+
+#: levelup\shared\profile.py:121
+msgid " messages sent\n"
+msgstr ""
+
+#: levelup\shared\profile.py:122
+msgid " in voice\n"
+msgstr ""
+
+#: levelup\shared\profile.py:124
+msgid " Exp ({} total)\n"
+msgstr ""
+
+#: levelup\shared\profile.py:138
+msgid "{}'s Profile"
+msgstr ""
+
+#: levelup\shared\profile.py:142
+msgid "Rank {}, with {}% of the total server Exp"
+msgstr ""
+
+#: levelup\shared\profile.py:147
+msgid "Progress"
+msgstr ""
+
+#: levelup\shared\weeklyreset.py:20
+#, docstring
+msgid "Announce and reset weekly stats"
+msgstr ""
+
+#: levelup\shared\weeklyreset.py:24
+msgid "There are no users in the weekly data yet"
+msgstr ""
+
+#: levelup\shared\weeklyreset.py:35
+msgid "There are no users with XP in the weekly data yet"
+msgstr ""
+
+#: levelup\shared\weeklyreset.py:57
+msgid "Top Weekly Exp Earners"
+msgstr ""
+
+#: levelup\shared\weeklyreset.py:58
+msgid ""
+"`Total Exp:       `{}\n"
+"`Total Messages:  `{}\n"
+"`Total Stars:     `{}\n"
+"`Total Voicetime: `{}"
+msgstr ""
+
+#: levelup\shared\weeklyreset.py:73
+msgid ""
+"`Experience: `{}\n"
+"`Messages:   `{}\n"
+"`Stars:      `{}\n"
+"`Voicetime:  `{}"
+msgstr ""
+
+#: levelup\shared\weeklyreset.py:101
+msgid "Weekly winner role removal"
+msgstr ""
+
+#: levelup\shared\weeklyreset.py:108
+msgid "Weekly winner role addition"
+msgstr ""

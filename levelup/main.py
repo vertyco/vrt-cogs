@@ -24,6 +24,9 @@ log = logging.getLogger("red.vrt.levelup")
 _ = Translator("LevelUp", __file__)
 RequestType = t.Literal["discord_deleted_user", "owner", "user", "user_strict"]
 
+# Generate translations
+# redgettext -D -r levelup/ --command-docstring
+
 
 @cog_i18n(_)
 class LevelUp(
