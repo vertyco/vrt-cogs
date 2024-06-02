@@ -1,10 +1,12 @@
 import asyncio
+import base64
 import logging
 import random
 import typing as t
 from io import BytesIO
 from time import perf_counter
 
+import aiohttp
 import discord
 from redbot.core import bank
 from redbot.core.i18n import Translator
@@ -185,6 +187,46 @@ class ProfileFormatting(MixinMeta):
             elif (self.custom_fonts / profile.font).exists():
                 kwargs["font_path"] = str(self.custom_fonts / profile.font)
 
+        endpoints = {
+            "default": "fullprofile",
+            "runescape": "runescape",
+        }
+        payload = aiohttp.FormData()
+        if self.db.external_api_url or (self.db.internal_api_port and self.api_proc):
+            payload = aiohttp.FormData()
+            for key, value in kwargs.items():
+                if value is None:
+                    continue
+                if isinstance(value, bytes):
+                    payload.add_field(key, value, filename="data")
+                else:
+                    payload.add_field(key, str(value))
+
+        if external_url := self.db.external_api_url:
+            url = f"{external_url}/{endpoints[profile.style]}"
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, data=payload) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        img_b64, animated = data["b64"], data["animated"]
+                        img_bytes = base64.b64decode(img_b64)
+                        ext = "gif" if animated else "webp"
+                        return discord.File(BytesIO(img_bytes), filename=f"profile.{ext}")
+                    log.error(f"Failed to fetch profile from external API: {response.status}")
+
+        if self.db.internal_api_port and self.api_proc:
+            url = f"http://localhost:{self.db.internal_api_port}/{endpoints[profile.style]}"
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, data=payload) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        img_b64, animated = data["b64"], data["animated"]
+                        img_bytes = base64.b64decode(img_b64)
+                        ext = "gif" if animated else "webp"
+                        return discord.File(BytesIO(img_bytes), filename=f"profile.{ext}")
+                    log.error(f"Failed to fetch profile from internal API: {response.status}")
+
+        # By default we'll use the bundled generator
         funcs = {
             "default": fullprofile.generate_full_profile,
             "runescape": runescape.generate_runescape_profile,

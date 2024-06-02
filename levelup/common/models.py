@@ -264,6 +264,8 @@ class DB(Base):
     render_gifs: bool = False
     force_embeds: bool = False  # Globally force embeds for leveling
     migrations: t.List[str] = []
+    internal_api_port: int = 0  # If specified, starts internal api subprocess
+    external_api_url: str = ""  # If specified, overrides internal api
 
     def get_conf(self, guild: t.Union[discord.Guild, int]) -> GuildSettings:
         gid = guild if isinstance(guild, int) else guild.id

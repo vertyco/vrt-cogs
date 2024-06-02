@@ -83,7 +83,7 @@ class User(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         if not conf.enabled:
             txt = _("Leveling is disabled in this server!")
-            if self.bot.is_admin(ctx.author):
+            if await self.bot.is_admin(ctx.author):
                 txt += _("\nYou can enable it with `{}`").format(f"{ctx.clean_prefix}lset toggle")
             return await ctx.send(txt)
 

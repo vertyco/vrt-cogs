@@ -1,3 +1,5 @@
+import asyncio
+import multiprocessing as mp
 import typing as t
 from abc import ABC, ABCMeta, abstractmethod
 from pathlib import Path
@@ -43,8 +45,15 @@ class MixinMeta(ABC):
         # Tenor
         self.tenor: TenorAPI
 
+        # Internal API
+        self.api_proc: t.Union[asyncio.subprocess.Process, mp.Process]
+
     @abstractmethod
     def save(self) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def start_api(self) -> bool:
         raise NotImplementedError
 
     @abstractmethod

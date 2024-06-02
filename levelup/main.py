@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import multiprocessing as mp
 import typing as t
 from time import perf_counter
 
@@ -16,6 +17,7 @@ from .commands import Commands
 from .commands.user import view_profile_context
 from .common.models import DB, run_migrations
 from .dashboard.integration import DashboardIntegration
+from .generator import api
 from .generator.trustytenor.converter import TenorAPI
 from .listeners import Listeners
 from .shared import SharedFunctions
@@ -81,12 +83,17 @@ class LevelUp(
         # Tenor API
         self.tenor: TenorAPI = None
 
+        # Imgen API
+        self.api_proc: t.Union[asyncio.subprocess.Process, mp.Process] = None
+
     async def cog_load(self) -> None:
         self.bot.tree.add_command(view_profile_context)
         asyncio.create_task(self.initialize())
 
     async def cog_unload(self) -> None:
         self.bot.tree.remove_command(view_profile_context)
+        if self.api_proc:
+            api.kill(self.api_proc)
 
     async def initialize(self) -> None:
         await self.bot.wait_until_red_ready()
@@ -110,8 +117,6 @@ class LevelUp(
                     log.error("Failed to migrate old settings.json", exc_info=e)
                     return
 
-            # Delete the old file
-            # self.old_settings_file.unlink()
         log.info("Initializing voice states")
         voice_initialized = await self.initialize_voice_states()
         log.info(f"Config loaded, initialized {voice_initialized} voice states")
@@ -120,6 +125,19 @@ class LevelUp(
         self.custom_backgrounds.mkdir(exist_ok=True)
         logging.getLogger("PIL").setLevel(logging.WARNING)
         await self.load_tenor()
+        if self.db.internal_api_port and not self.db.external_api_url:
+            await self.start_api()
+
+    async def start_api(self) -> bool:
+        try:
+            log_dir = self.cog_path / "APILogs"
+            log_dir.mkdir(exist_ok=True, parents=True)
+            self.api_proc = await api.run(log_dir=log_dir)
+            log.debug(f"API Process started: {self.api_proc}")
+            return True
+        except Exception as e:
+            log.error("Failed to start internal API", exc_info=e)
+            return False
 
     async def load_tenor(self) -> None:
         tokens = await self.bot.get_shared_api_tokens("tenor")

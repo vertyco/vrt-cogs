@@ -19,10 +19,15 @@
     "aiocache",
     "colorgram.py",
     "emoji",
+    "fastapi",
     "msgpack",
+    "plotly",
     "pydantic",
+    "python-multipart",
+    "psutil",
     "tenacity",
-    "ujson"
+    "ujson",
+    "uvicorn"
   ],
   "short": "Discord leveling system",
   "tags": [

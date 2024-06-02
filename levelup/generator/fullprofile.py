@@ -93,6 +93,7 @@ def generate_full_profile(
     render_gif: t.Optional[bool] = False,
     debug: t.Optional[bool] = False,
     reraise: t.Optional[bool] = False,
+    **kwargs,
 ) -> t.Tuple[bytes, bool]:
     user_color = user_color or base_color
     stat_color = stat_color or base_color
