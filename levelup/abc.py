@@ -7,6 +7,7 @@ from discord.ext.commands.cog import CogMeta
 from redbot.core.bot import Red
 
 from .common.models import DB, GuildSettings, Profile
+from .generator.trustytenor.converter import TenorAPI
 
 
 class CompositeMetaClass(CogMeta, ABCMeta):
@@ -34,6 +35,13 @@ class MixinMeta(ABC):
         self.stock: Path
         self.fonts: Path
         self.backgrounds: Path
+
+        # Save state
+        self.saving = False
+        self.last_save: float
+
+        # Tenor
+        self.tenor: TenorAPI
 
     @abstractmethod
     def save(self) -> None:
