@@ -179,7 +179,7 @@ def format_backgrounds(filepaths: t.List[str]) -> Image.Image:
             continue
         try:
             img = Image.open(path)
-            img = fit_aspect_ratio(img)
+            img = fit_aspect_ratio(img, (1050, 450))
             # Resize so all images are the same width
             new_w, new_h = 1000, int(img.height / img.width * 1000)
             img = img.resize((new_w, new_h), Image.Resampling.NEAREST)
@@ -279,8 +279,8 @@ def calc_aspect_ratio(width: int, height: int) -> t.Tuple[int, int]:
 
 
 def fit_aspect_ratio(
-    image: Image,
-    aspect_ratio: t.Tuple[int, int] = (21, 9),
+    image: Image.Image,
+    desired_size: t.Tuple[int, int],  # (1050, 450)
     preserve: bool = False,
 ) -> Image.Image:
     """
@@ -296,41 +296,33 @@ def fit_aspect_ratio(
     Returns:
         Image
     """
-    width, height = image.size
-    new_aspect_x, new_aspect_y = aspect_ratio
+    # If the image is already the correct size, return it
+    if image.size == desired_size:
+        return image
 
     if preserve:
         # Rather than cropping, add transparent space
-        if width / new_aspect_x < height / new_aspect_y:
-            # Image is too tall, add space to left and right
-            new_width = int(height * new_aspect_x / new_aspect_y)
-            left_bound = (new_width - width) // 2
-            right_bound = left_bound + width
-            new_image = Image.new("RGBA", (new_width, height), (0, 0, 0, 0))
-            new_image.paste(image, (left_bound, 0))
-            return new_image
-        else:
-            # Image is too wide, add space to top and bottom
-            new_height = int(width * new_aspect_y / new_aspect_x)
-            upper_bound = (new_height - height) // 2
-            lower_bound = upper_bound + height
-            new_image = Image.new("RGBA", (width, new_height), (0, 0, 0, 0))
-            new_image.paste(image, (0, upper_bound))
-            return new_image
-
-    # We need to chop off either the top and bottom or the sides
-    if width / new_aspect_x < height / new_aspect_y:
-        # Image is too tall, chop off the top and bottom evenly
-        new_height = int(width * new_aspect_y / new_aspect_x)
-        upper_bound = (height - new_height) // 2
-        lower_bound = upper_bound + new_height
-        return image.crop((0, upper_bound, width, lower_bound))
+        new = Image.new("RGBA", desired_size, (0, 0, 0, 0))
+        x = (desired_size[0] - image.width) // 2
+        y = (desired_size[1] - image.height) // 2
+        new.paste(image, (x, y))
+        return new
     else:
-        # Image is too wide, chop off the sides evenly
-        new_width = int(height * new_aspect_x / new_aspect_y)
-        left_bound = (width - new_width) // 2
-        right_bound = left_bound + new_width
-        return image.crop((left_bound, 0, right_bound, height))
+        # Crop the image to fit the aspect ratio
+        aspect_ratio = calc_aspect_ratio(*desired_size)
+        if image.width / image.height > aspect_ratio[0] / aspect_ratio[1]:
+            # Image is wider than desired aspect ratio
+            new_width = image.height * aspect_ratio[0] // aspect_ratio[1]
+            x = (image.width - new_width) // 2
+            y = 0
+            image = image.crop((x, y, x + new_width, image.height))
+        else:
+            # Image is taller than desired aspect ratio
+            new_height = image.width * aspect_ratio[1] // aspect_ratio[0]
+            x = 0
+            y = (image.height - new_height) // 2
+            image = image.crop((x, y, image.width, y + new_height))
+        return image.resize(desired_size, Image.Resampling.LANCZOS)
 
 
 def get_random_background() -> Image.Image:
