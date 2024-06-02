@@ -41,7 +41,7 @@
 <script>
     function submitSearch(event) {
         event.preventDefault();
-        let input = document.getElementById("guild-search");
+        let input = document.getElementById("member-search");
         let query = input.value.trim();
         if (query) {
             window.location.href = '{{ url_for_query(query="QUERY") }}'.replace("QUERY", encodeURIComponent(query));
