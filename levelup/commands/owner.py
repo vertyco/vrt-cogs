@@ -8,7 +8,7 @@ from redbot.core.i18n import Translator, cog_i18n
 
 from ..abc import MixinMeta
 from ..common import utils
-from ..generator import imgtools, levelalert
+from ..generator import api, imgtools, levelalert
 
 _ = Translator("LevelUp", __file__)
 
@@ -18,13 +18,13 @@ class Owner(MixinMeta):
     @commands.group(name="levelowner", aliases=["lvlowner"])
     @commands.guild_only()
     @commands.is_owner()
-    async def lvlowner(self, ctx: commands.Context) -> None:
+    async def lvlowner(self, ctx: commands.Context):
         """Owner Only LevelUp Settings"""
         pass
 
     @lvlowner.command(name="view")
     @commands.bot_has_permissions(embed_links=True)
-    async def lvlowner_view(self, ctx: commands.Context) -> None:
+    async def lvlowner_view(self, ctx: commands.Context):
         """View Global LevelUp Settings"""
         embed = discord.Embed(color=await self.bot.get_embed_color(ctx))
         size_bytes = utils.deep_getsizeof(self.db)
@@ -70,7 +70,6 @@ class Owner(MixinMeta):
             value=txt,
             inline=False,
         )
-
         ignored_servers = StringIO()
         for guild_id in self.db.ignored_guilds:
             guild = self.bot.get_guild(guild_id)
@@ -78,6 +77,23 @@ class Owner(MixinMeta):
                 ignored_servers.write(f"{guild_id} ({guild.name})\n")
             else:
                 ignored_servers.write(_("{} (Bot not in server)\n").format(guild_id))
+
+        # Imgen API section
+        txt = _(
+            "*If an internal API port is specified, the bot will spin up subprocesses to handle image generation.*\n"
+            "- **Internal API Port:** {}\n"
+            "*If an external API URL is specified, the bot will use that URL for image generation.*\n"
+            "- **External API URL:** {}\n"
+        ).format(
+            self.db.internal_api_port or _("Not Using"),
+            self.db.external_api_url or _("Not Using"),
+        )
+        embed.add_field(
+            name=_("API Settings"),
+            value=txt,
+            inline=False,
+        )
+
         embed.add_field(
             name=_("Ignored Servers"),
             value=ignored_servers.getvalue() or _("None"),
@@ -85,8 +101,51 @@ class Owner(MixinMeta):
         )
         await ctx.send(embed=embed)
 
+    @lvlowner.command(name="internalapi")
+    async def set_internal_api(self, ctx: commands.Context, port: int):
+        """Set the internal API port for image generation
+
+        Set to 0 to disable the internal API
+
+        **Notes**
+        - This will spin up subprocesses to handle image generation.
+        - If the API fails, the cog will fall back to the default image generation method.
+        """
+        self.db.internal_api_port = port
+        if port:
+            await ctx.send(_("Internal API port set to {}, Spinning up workers").format(port))
+            if not self.api_proc:
+                await self.start_api()
+        else:
+            await ctx.send(_("Internal API disabled, shutting down workers."))
+            if self.api_proc:
+                api.kill(self.api_proc)
+        self.save()
+
+    @lvlowner.command(name="externalapi")
+    async def set_external_api(self, ctx: commands.Context, url: str):
+        """
+        Set the external API URL for image generation
+
+        Set to an `none` to disable the external API
+
+        **Notes**
+        - If the API fails, the cog will fall back to the default image generation method.
+        """
+        if url == "none":
+            txt = _("External API disabled")
+            self.db.external_api_url = None
+            self.save()
+            return await ctx.send(txt)
+        if not url.startswith("http"):
+            return await ctx.send(_("Invalid URL"))
+
+        self.db.external_api_url = url
+        await ctx.send(_("External API URL set to `{}`").format(url))
+        self.save()
+
     @lvlowner.command(name="rendergifs", aliases=["rendergif", "gif"])
-    async def toggle_gif_rendering(self, ctx: commands.Context) -> None:
+    async def toggle_gif_rendering(self, ctx: commands.Context):
         """Toggle rendering of GIFs for animated profiles"""
         if self.db.render_gifs:
             self.db.render_gifs = False
@@ -108,7 +167,7 @@ class Owner(MixinMeta):
         self.save()
 
     @lvlowner.command(name="ignore")
-    async def ignore_server(self, ctx: commands.Context, guild_id: int) -> None:
+    async def ignore_server(self, ctx: commands.Context, guild_id: int):
         """Add/Remove a server from the ignore list"""
         if guild_id in self.db.ignored_guilds:
             self.db.ignored_guilds.remove(guild_id)
@@ -119,7 +178,7 @@ class Owner(MixinMeta):
         self.save()
 
     @lvlowner.command(name="cache")
-    async def set_cache(self, ctx: commands.Context, seconds: int) -> None:
+    async def set_cache(self, ctx: commands.Context, seconds: int):
         """Set the cache time for user profiles"""
         self.db.cache_seconds = seconds
         await ctx.send(_("Cache time set to {} seconds.").format(seconds))
