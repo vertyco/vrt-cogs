@@ -49,7 +49,7 @@ class DashboardIntegration(MixinMeta):
                     "error_message": _("There is no data for the weekly leaderboard yet, please chat a bit first."),
                 }
 
-        source_path = Path(__file__).parent / "templates" / "leaderboard.html"
+        source_path = Path(__file__).parent / "templates" / "leaderboard.django"
         payload: dict = await asyncio.to_thread(
             formatter.get_leaderboard,
             bot=self.bot,
