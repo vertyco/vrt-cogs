@@ -77,7 +77,7 @@ class LevelUps(MixinMeta):
                     member.mention if conf.notifymention else member.display_name, profile.level
                 )
 
-        if conf.use_embeds:
+        if conf.use_embeds or self.db.force_embeds:
             if conf.notifydm:
                 embed = discord.Embed(
                     description=dm_txt,

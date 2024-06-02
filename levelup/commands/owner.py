@@ -33,7 +33,7 @@ class Owner(MixinMeta):
         size_bytes += utils.deep_getsizeof(self.profile_cache)
         embed.add_field(
             name=_("Global Settings"),
-            value=_("`Profile Cache Time: `{}\n`Cache Size:         `{}\n").format(
+            value=_("`Profile Cache Time: `{}\n" "`Cache Size:         `{}\n").format(
                 utils.humanize_delta(self.db.cache_seconds),
                 utils.humanize_size(size_bytes),
             ),
@@ -48,7 +48,15 @@ class Owner(MixinMeta):
             value=txt,
             inline=False,
         )
-
+        if self.db.force_embeds:
+            txt = _("Profile embeds are enforced for all servers")
+        else:
+            txt = _("Profile embeds are optional for all servers")
+        embed.add_field(
+            name=_("Profile Embed Enforcement"),
+            value=txt,
+            inline=False,
+        )
         ignored_servers = StringIO()
         for guild_id in self.db.ignored_guilds:
             guild = self.bot.get_guild(guild_id)
@@ -72,6 +80,17 @@ class Owner(MixinMeta):
         else:
             self.db.render_gifs = True
             await ctx.send(_("GIF rendering enabled."))
+        self.save()
+
+    @lvlowner.command(name="forceembeds", aliases=["forceembed"])
+    async def toggle_force_embeds(self, ctx: commands.Context):
+        """Toggle enforcing profile embeds"""
+        if self.db.force_embeds:
+            self.db.force_embeds = False
+            await ctx.send(_("Profile embeds are now optional for other servers."))
+        else:
+            self.db.force_embeds = True
+            await ctx.send(_("Profile embeds are now enforced on all servers."))
         self.save()
 
     @lvlowner.command(name="ignore")
