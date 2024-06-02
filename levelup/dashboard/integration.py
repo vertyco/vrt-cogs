@@ -92,7 +92,7 @@ class DashboardIntegration(MixinMeta):
         self, user: discord.User, guild: discord.Guild, stat: str = None, query: t.Optional[str] = None, **kwargs
     ) -> t.Dict[str, t.Any]:
         stat = stat if stat is not None and stat in {"exp", "messages", "voice", "stars"} else "exp"
-        return await self.get_dashboard_leaderboard(user, guild, "normal", stat, **kwargs)
+        return await self.get_dashboard_leaderboard(user, guild, "normal", stat, query, **kwargs)
 
     @dashboard_page(name="weekly", description="Display the guild weekly leaderboard.")
     async def weekly_page(
