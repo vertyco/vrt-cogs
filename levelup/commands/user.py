@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import typing as t
 from io import BytesIO
 from pathlib import Path
@@ -13,9 +14,11 @@ from redbot.core.utils.chat_formatting import humanize_list
 from ..abc import MixinMeta
 from ..common import const, formatter, utils
 from ..generator import imgtools
+from ..generator.trustytenor.converter import sanitize_url
 from ..views.dynamic_menu import DynamicMenu
 
 _ = Translator("LevelUp", __file__)
+log = logging.getLogger("red.vrt.levelup.commands.user")
 
 
 @app_commands.context_menu(name="View Profile")
@@ -533,7 +536,7 @@ class User(MixinMeta):
 
     @set_profile.command(name="background", aliases=["bg"])
     @commands.bot_has_permissions(embed_links=True)
-    async def set_user_background(self, ctx: commands.Context, image_url: t.Union[str, None] = None):
+    async def set_user_background(self, ctx: commands.Context, url: t.Optional[str] = None):
         """
         Set a background for your profile
 
@@ -564,10 +567,20 @@ class User(MixinMeta):
         if profile.style in const.STATIC_FONT_STYLES:
             return await ctx.send(_("You cannot change your name color with the current profile style!"))
 
+        if url and url == "random":
+            profile.background = "random"
+            self.save()
+            return await ctx.send(_("Your profile background has been set to random!"))
+        if url and url == "default":
+            profile.background = "default"
+            self.save()
+            return await ctx.send(_("Your profile background has been set to default!"))
+
         attachments = utils.get_attachments(ctx)
+        # urls = await ImageFinder().search_for_images(ctx)
 
         # If image url is given, run some checks
-        if not image_url and not attachments:
+        if not url and not attachments:
             if profile.background == "default":
                 return await ctx.send(_("You must provide a url, filename, or attach a file"))
             else:
@@ -575,8 +588,7 @@ class User(MixinMeta):
                 self.save()
                 return await ctx.send(_("Your background has been reset to default!"))
 
-        if image_url is None:
-            # TODO: Validate the image by running it through the profile generator
+        if url is None:
             profile.background = attachments[0].url
             try:
                 await self.get_user_profile(ctx.author, reraise=True)
@@ -586,8 +598,10 @@ class User(MixinMeta):
             self.save()
             return await ctx.send(_("Your profile background has been set!"))
 
-        if image_url.startswith("http"):
-            profile.background = image_url
+        if url.startswith("http"):
+            log.debug("Sanitizing link")
+            url = await sanitize_url(url, ctx)
+            profile.background = url
             try:
                 await self.get_user_profile(ctx.author, reraise=True)
             except Exception as e:
@@ -596,19 +610,10 @@ class User(MixinMeta):
             self.save()
             return await ctx.send(_("Your profile background has been set!"))
 
-        if image_url == "random":
-            profile.background = "random"
-            self.save()
-            return await ctx.send(_("Your profile background has been set to random!"))
-        if image_url == "default":
-            profile.background = "default"
-            self.save()
-            return await ctx.send(_("Your profile background has been set to default!"))
-
         # Check if the user provided a filename
         backgrounds = list(self.backgrounds.iterdir()) + list(self.custom_backgrounds.iterdir())
         for path in backgrounds:
-            if image_url.lower() in path.name.lower():
+            if url.lower() in path.name.lower():
                 break
         else:
             return await ctx.send(_("No background found with that name!"))
