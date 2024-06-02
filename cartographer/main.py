@@ -38,10 +38,12 @@ class Cartographer(commands.Cog):
     - If there are multiple roles, channels, categories, or forums with the same name, only 1 of each will be restored.
      - This is because object IDs cannot be restored so the bot relies on the name of the object.
     - When restoring, some roles may not be fully restored (such as order) if they were higher than the bot's role.
+    - Serializing and deserializing objects can be slow, especially for large servers.
+    - Restoring servers is a messy job, this cog does its best to restore everything but it's not perfect.
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.2.0"
+    __version__ = "0.2.1"
 
     def __init__(self, bot: Red):
         super().__init__()
