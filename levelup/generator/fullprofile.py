@@ -473,14 +473,17 @@ def generate_full_profile(
         log.debug(f"Combined duration is more than 20% offset from the max duration ({max_duration}ms)")
         combined_duration = max_duration
 
-    # total_pfp_duration = pfp.n_frames * pfp_duration  # example: 2250ms
-    # total_card_duration = card.n_frames * card_duration  # example: 3300ms
+    total_pfp_duration = pfp.n_frames * pfp_duration  # example: 2250ms
+    total_card_duration = card.n_frames * card_duration  # example: 3300ms
     # Total duration for the combined animation cycle (LCM of 2250 and 3300)
-    # total_duration = math.lcm(total_pfp_duration, total_card_duration)  # example: 9900ms
-    # num_combined_frames = total_duration // combined_duration
+    total_duration = math.lcm(total_pfp_duration, total_card_duration)  # example: 9900ms
+    num_combined_frames = total_duration // combined_duration
 
+    # The maximum frame count should be no more than 20% offset from the image with the highest frame count to avoid filesize bloat
+    max_frame_count = max(pfp.n_frames, card.n_frames) * 1.2
+    max_frame_count = min(round(max_frame_count), num_combined_frames)
+    log.debug(f"Max frame count: {max_frame_count}")
     # Create a list to store the combined frames
-    max_frame_count = max(pfp.n_frames, card.n_frames)
     combined_frames = []
     for frame_num in range(max_frame_count):
         time = frame_num * combined_duration
