@@ -1,0 +1,156 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2024-06-02 17:32-0400\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+
+#: levelup\generator\fullprofile.py:182
+msgid "(Prestige {})"
+msgstr ""
+
+#: levelup\generator\fullprofile.py:219
+msgid "Rank: {}"
+msgstr ""
+
+#: levelup\generator\fullprofile.py:235
+msgid "Level: {}"
+msgstr ""
+
+#: levelup\generator\fullprofile.py:251
+msgid "Messages: {}"
+msgstr ""
+
+#: levelup\generator\fullprofile.py:267
+msgid "Voice: {}"
+msgstr ""
+
+#: levelup\generator\fullprofile.py:284
+msgid "Balance: {}"
+msgstr ""
+
+#: levelup\generator\fullprofile.py:303
+msgid "Exp: {} ({} total)"
+msgstr ""
+
+#: levelup\generator\imgtools.py:36
+#, docstring
+msgid "Abbreviate a number"
+msgstr ""
+
+#: levelup\generator\imgtools.py:45
+#, docstring
+msgid "Format time in seconds into an extra short human readable string"
+msgstr ""
+
+#: levelup\generator\imgtools.py:53
+msgid "None"
+msgstr ""
+
+#: levelup\generator\imgtools.py:76
+#, docstring
+msgid "Make a transparent circle"
+msgstr ""
+
+#: levelup\generator\imgtools.py:88
+#, docstring
+msgid "Crop an image into a circle"
+msgstr ""
+
+#: levelup\generator\imgtools.py:101
+#, docstring
+msgid "Round the edges of an image"
+msgstr ""
+
+#: levelup\generator\imgtools.py:111
+#, docstring
+msgid "Blur a section of an image"
+msgstr ""
+
+#: levelup\generator\imgtools.py:126
+#, docstring
+msgid "Make a pretty rounded progress bar."
+msgstr ""
+
+#: levelup\generator\imgtools.py:158
+#, docstring
+msgid "Format fonts into an image"
+msgstr ""
+
+#: levelup\generator\imgtools.py:172
+#, docstring
+msgid "Format backgrounds into an image"
+msgstr ""
+
+#: levelup\generator\imgtools.py:219
+#, docstring
+msgid "Merge two images vertically"
+msgstr ""
+
+#: levelup\generator\imgtools.py:227
+#, docstring
+msgid "Merge two images horizontally"
+msgstr ""
+
+#: levelup\generator\imgtools.py:238
+#, docstring
+msgid "Extract colors from an image using colorgram.py"
+msgstr ""
+
+#: levelup\generator\imgtools.py:250
+#, docstring
+msgid "Calculate the Euclidean distance between two RGB colors"
+msgstr ""
+
+#: levelup\generator\imgtools.py:263
+#, docstring
+msgid "Invert an RGB color tuple"
+msgstr ""
+
+#: levelup\generator\imgtools.py:268
+#, docstring
+msgid "Generate a random RGB color tuple"
+msgstr ""
+
+#: levelup\generator\imgtools.py:276
+#, docstring
+msgid "Calculate the aspect ratio of an image"
+msgstr ""
+
+#: levelup\generator\imgtools.py:286
+#, docstring
+msgid ""
+"\n"
+"    Crop image to fit aspect ratio\n"
+"\n"
+"    We will either need to chop off the sides or chop off the top and bottom (or add transparent space)\n"
+"\n"
+"    Args:\n"
+"        image (Image): Image to fit\n"
+"        aspect_ratio (t.Tuple[int, int], optional): Fit the image to the aspect ratio. Defaults to (21, 9).\n"
+"        preserve (bool, optional): Rather than cropping, add transparent space. Defaults to False.\n"
+"\n"
+"    Returns:\n"
+"        Image\n"
+"    "
+msgstr ""
+
+#: levelup\generator\imgtools.py:329
+#, docstring
+msgid "Get a random background image"
+msgstr ""
+
+#: levelup\generator\imgtools.py:337
+#, docstring
+msgid "Get the average duration of a GIF"
+msgstr ""
+
+#: levelup\generator\levelalert.py:56
+msgid "Level {}"
+msgstr ""
