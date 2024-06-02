@@ -4,7 +4,7 @@ from .profile import ProfileFormatting
 from .weeklyreset import WeeklyReset
 
 
-class API(LevelUps, ProfileFormatting, WeeklyReset, metaclass=CompositeMetaClass):
+class SharedFunctions(LevelUps, ProfileFormatting, WeeklyReset, metaclass=CompositeMetaClass):
     """
     Subclass all shared classes
 

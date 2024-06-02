@@ -38,6 +38,7 @@ Returns:
 """
 
 import logging
+import math
 import typing as t
 from io import BytesIO
 from pathlib import Path
@@ -48,6 +49,7 @@ from PIL import (
     ImageEnhance,
     ImageFilter,
     ImageFont,
+    ImageSequence,
     UnidentifiedImageError,
 )
 from redbot.core.i18n import Translator
@@ -114,22 +116,13 @@ def generate_full_profile(
         pfp = imgtools.DEFAULT_PFP
 
     pfp_animated = getattr(pfp, "is_animated", False)
-    log.debug(f"PFP animated: {pfp_animated}")
-
-    # This will stop the image from being animated
-    if card.mode != "RGBA":
-        log.debug(f"Converting card mode '{card.mode}' to RGBA")
-        card = card.convert("RGBA")
+    # pfp_animated = False
+    bg_animated = getattr(card, "is_animated", False)
+    log.debug(f"PFP animated: {pfp_animated}, BG animated: {bg_animated}")
 
     # Ensure the card is the correct size and aspect ratio
     desired_card_size = (1050, 450)
     aspect_ratio = imgtools.calc_aspect_ratio(*desired_card_size)
-    card = imgtools.fit_aspect_ratio(card, aspect_ratio)
-    card = card.resize(desired_card_size, Image.Resampling.LANCZOS)
-    # Round edges of the card if its not animated
-    if not pfp_animated or not render_gif:
-        card = imgtools.round_image_corners(card, 45)
-
     # Setup
     default_fill = (0, 0, 0)  # Default fill color for text
     stroke_width = 2  # Width of the stroke around text
@@ -152,21 +145,8 @@ def generate_full_profile(
     star_icon_x = 850  # Left bound of star icon
     star_icon_y = 35  # Top bound of star icon
 
-    # Create a new transparent layer for the stat text
+    # Establish layer for all text and accents
     stats = Image.new("RGBA", desired_card_size, (0, 0, 0, 0))
-    # Add blur to the stats box
-    if blur:
-        # Apply gaussian blur to the card to create a blur effect for the stats box area
-        blurred = card.filter(ImageFilter.GaussianBlur(3))
-        blur_box = blurred.crop((blur_edge, 0, card.width, card.height))
-        # Darken the image
-        blur_box = ImageEnhance.Brightness(blur_box).enhance(0.6)
-        # Paste onto the stats
-        stats.paste(blur_box, (blur_edge, 0), blur_box)
-    else:
-        # Apply semi-transparent grey box to the stats area
-        box = Image.new("RGBA", (card.width - blur_edge, card.height), (0, 0, 0, 150))
-        stats.paste(box, (blur_edge, 0), box)
 
     # Setup progress bar
     progress = (current_xp - previous_xp) / (next_xp - previous_xp)
@@ -348,10 +328,47 @@ def generate_full_profile(
     if role_icon:
         role_icon_img = Image.open(BytesIO(role_icon)).resize((70, 70), Image.Resampling.LANCZOS)
         stats.paste(role_icon_img, (10, 10), role_icon_img)
+
     # ---------------- Start finalizing the image ----------------
     # Resize the profile image
     desired_pfp_size = (330, 330)
-    if pfp_animated and render_gif:
+    if not render_gif or (not pfp_animated and not bg_animated):
+        if card.mode != "RGBA":
+            log.debug(f"Converting card mode '{card.mode}' to RGBA")
+            card = card.convert("RGBA")
+        if pfp.mode != "RGBA":
+            log.debug(f"Converting pfp mode '{pfp.mode}' to RGBA")
+            pfp = pfp.convert("RGBA")
+        card = imgtools.fit_aspect_ratio(card, aspect_ratio)
+        card = card.resize(desired_card_size, Image.Resampling.LANCZOS)
+        if blur:
+            blur_section = imgtools.blur_section(card, (blur_edge, 0, card.width, card.height))
+            # Paste onto the stats
+            card.paste(blur_section, (blur_edge, 0), blur_section)
+        card = imgtools.round_image_corners(card, 45)
+        pfp = pfp.resize(desired_pfp_size, Image.Resampling.LANCZOS)
+        # Crop the profile image into a circle
+        pfp = imgtools.make_profile_circle(pfp)
+        # Paste the items onto the card
+        card.paste(stats, (0, 0), stats)
+        card.paste(pfp, (circle_x, circle_y), pfp)
+        if debug:
+            card.show()
+        buffer = BytesIO()
+        card.save(buffer, format="WEBP")
+        card.close()
+        return buffer.getvalue(), False
+
+    if pfp_animated and not bg_animated:
+        if card.mode != "RGBA":
+            log.debug(f"Converting card mode '{card.mode}' to RGBA")
+            card = card.convert("RGBA")
+        card = imgtools.fit_aspect_ratio(card, aspect_ratio)
+        card = card.resize(desired_card_size, Image.Resampling.LANCZOS)
+        if blur:
+            blur_section = imgtools.blur_section(card, (blur_edge, 0, card.width, card.height))
+            # Paste onto the stats
+            card.paste(blur_section, (blur_edge, 0), blur_section)
         avg_duration = imgtools.get_avg_duration(pfp)
         log.debug(f"Rendering pfp as gif with avg duration of {avg_duration}ms")
         frames: t.List[Image.Image] = []
@@ -385,29 +402,126 @@ def generate_full_profile(
         if debug:
             Image.open(buffer).show()
         return buffer.getvalue(), True
+    elif bg_animated and not pfp_animated:
+        avg_duration = imgtools.get_avg_duration(card)
+        log.debug(f"Rendering card as gif with avg duration of {avg_duration}ms")
+        frames: t.List[Image.Image] = []
 
-    else:
         if pfp.mode != "RGBA":
             log.debug(f"Converting pfp mode '{pfp.mode}' to RGBA")
             pfp = pfp.convert("RGBA")
         pfp = pfp.resize(desired_pfp_size, Image.Resampling.LANCZOS)
         # Crop the profile image into a circle
         pfp = imgtools.make_profile_circle(pfp)
+        for frame in range(card.n_frames):
+            card.seek(frame)
+            # Prepare copies of the card and stats
+            card_frame = card.copy()
+            card_frame = imgtools.fit_aspect_ratio(card_frame, aspect_ratio)
+            card_frame = card.copy().resize(desired_card_size, Image.Resampling.NEAREST)
 
-        # Paste the items onto the card
-        card.paste(stats, (0, 0), stats)
-        card.paste(pfp, (circle_x, circle_y), pfp)
-        if debug:
-            card.show()
+            if card_frame.mode != "RGBA":
+                card_frame = card_frame.convert("RGBA")
+
+            # Paste items onto the card
+            if blur:
+                blurred = card_frame.filter(ImageFilter.GaussianBlur(3))
+                blur_box = blurred.crop((blur_edge, 0, card_frame.width, card_frame.height))
+                # Darken the image
+                blur_box = ImageEnhance.Brightness(blur_box).enhance(0.6)
+                # Paste onto the stats
+                card_frame.paste(blur_box, (blur_edge, 0), blur_box)
+
+            card_frame.paste(pfp, (circle_x, circle_y), pfp)
+            card_frame.paste(stats, (0, 0), stats)
+
+            frames.append(card_frame)
+
         buffer = BytesIO()
-        card.save(buffer, format="WEBP")
-        card.close()
-        return buffer.getvalue(), False
+        frames[0].save(
+            buffer,
+            format="GIF",
+            save_all=True,
+            append_images=frames[1:],
+            duration=avg_duration,
+            loop=0,
+            optimize=True,
+        )
+        buffer.seek(0)
+        if debug:
+            Image.open(buffer).show()
+        return buffer.getvalue(), True
+
+    # If we're here, both the avatar and background are gifs
+    # Figure out how to merge the two frame counts and durations together
+    # Calculate frame durations based on the LCM
+    pfp_duration = imgtools.get_avg_duration(pfp)  # example: 50ms
+    card_duration = imgtools.get_avg_duration(card)  # example: 100ms
+    log.debug(f"PFP duration: {pfp_duration}ms, Card duration: {card_duration}ms")
+    combined_duration = math.lcm(pfp_duration, card_duration)  # example: 100ms would be the LCM of 50 and 100
+
+    # total_pfp_duration = pfp.n_frames * pfp_duration  # example: 2250ms
+    # total_card_duration = card.n_frames * card_duration  # example: 3300ms
+    # Total duration for the combined animation cycle (LCM of 2250 and 3300)
+    # total_duration = math.lcm(total_pfp_duration, total_card_duration)  # example: 9900ms
+    # num_combined_frames = total_duration // combined_duration
+
+    # Create a list to store the combined frames
+    max_frame_count = max(pfp.n_frames, card.n_frames)
+    combined_frames = []
+    for frame_num in range(max_frame_count):
+        time = frame_num * combined_duration
+
+        card_frame_index = (time // card_duration) % card.n_frames
+        pfp_frame_index = (time // pfp_duration) % pfp.n_frames
+
+        card_frame = ImageSequence.Iterator(card)[card_frame_index]
+        card_frame = imgtools.fit_aspect_ratio(card_frame, aspect_ratio)
+        card_frame = card.copy().resize(desired_card_size, Image.Resampling.NEAREST)
+
+        if card_frame.mode != "RGBA":
+            card_frame = card_frame.convert("RGBA")
+
+        if blur:
+            blur_section = imgtools.blur_section(card_frame, (blur_edge, 0, card_frame.width, card_frame.height))
+            # Paste onto the stats
+            card_frame.paste(blur_section, (blur_edge, 0), blur_section)
+
+        pfp_frame = ImageSequence.Iterator(pfp)[pfp_frame_index]
+        if pfp_frame.mode != "RGBA":
+            pfp_frame = pfp_frame.convert("RGBA")
+
+        pfp_frame = pfp_frame.resize(desired_pfp_size, Image.Resampling.NEAREST)
+        pfp_frame = imgtools.make_profile_circle(pfp_frame, method=Image.Resampling.NEAREST)
+
+        card_frame.paste(pfp_frame, (circle_x, circle_y), pfp_frame)
+        card_frame.paste(stats, (0, 0), stats)
+
+        combined_frames.append((card_frame, combined_duration))
+
+    buffer = BytesIO()
+    combined_frames[0][0].save(
+        buffer,
+        format="GIF",
+        save_all=True,
+        append_images=[frame for frame, duration in combined_frames[1:]],
+        loop=0,
+        duration=combined_duration,
+        quality=75,
+        optimize=True,
+    )
+    buffer.seek(0)
+
+    if debug:
+        Image.open(buffer).show()
+
+    return buffer.getvalue(), True
 
 
 if __name__ == "__main__":
     # Setup console logging
     logging.basicConfig(level=logging.DEBUG)
+    logging.getLogger("PIL").setLevel(logging.INFO)
 
     test_banner = (imgtools.ASSETS / "tests" / "banner.gif").read_bytes()
     test_avatar = (imgtools.ASSETS / "tests" / "tree.gif").read_bytes()
@@ -432,7 +546,7 @@ if __name__ == "__main__":
         role_icon=test_icon,
         blur=True,
         font_path=font_path,
-        render_gif=False,
+        render_gif=True,
         debug=True,
     )
     result_path = imgtools.ASSETS / "tests" / "result.gif"

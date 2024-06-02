@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Union
 
 import colorgram
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont, ImageSequence
 from redbot.core.i18n import Translator
 
 ASSETS = Path(__file__).parent.parent / "data"
@@ -105,6 +105,15 @@ def round_image_corners(image: Image.Image, radius: int) -> Image.Image:
     mask = mask.resize(image.size, Image.Resampling.LANCZOS)
     image.putalpha(mask)
     return image
+
+
+def blur_section(image: Image.Image, bbox: t.Tuple[int, int, int, int]) -> Image.Image:
+    """Blur a section of an image"""
+    section = image.crop(bbox)
+    section = section.filter(ImageFilter.GaussianBlur(3))
+    # Darken the image
+    section = ImageEnhance.Brightness(section).enhance(0.8)
+    return section
 
 
 def make_progress_bar(
@@ -337,11 +346,13 @@ def get_avg_duration(image: Image.Image) -> int:
     if not getattr(image, "is_animated", False):
         log.warning("Image is not animated")
         return 0
+
     try:
-        durations = []
-        for frame in range(1, image.n_frames):
-            image.seek(frame)
-            durations.append(image.info.get("duration", 0))
+        durations = [frame.info["duration"] for frame in ImageSequence.Iterator(image)]
+        # durations = []
+        # for frame in range(1, image.n_frames):
+        #     image.seek(frame)
+        #     durations.append(image.info.get("duration", 0))
         return sum(durations) // len(durations)
     except Exception as e:
         log.error("Failed to get average duration of GIF", exc_info=e)
