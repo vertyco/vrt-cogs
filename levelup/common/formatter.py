@@ -258,7 +258,7 @@ def get_leaderboard(
                         continue
                 else:
                     # User search by name
-                    if query.lower() not in user.lower():
+                    if query.lower() not in str(user).lower():
                         continue
             place = idx + 1
             if key == "voice":
