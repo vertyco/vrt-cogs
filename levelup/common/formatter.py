@@ -246,8 +246,20 @@ def get_leaderboard(
         for idx, (user_id, stats) in enumerate(sorted_users):
             user_obj = bot.get_user(user_id) if is_global else guild.get_member(user_id)
             user = (user_obj.display_name if use_displayname else user_obj.name) if user_obj else user_id
-            if query and query.lower() not in str(user).lower():
-                continue
+            if query:
+                if query.startswith("#"):
+                    # User search by position
+                    position_query = query[1:]
+                    if idx + 1 != int(position_query):
+                        continue
+                elif query.isdigit():
+                    # User search by ID or position
+                    if user_id != int(query) and idx + 1 != int(query):
+                        continue
+                else:
+                    # User search by name
+                    if query.lower() not in user.lower():
+                        continue
             place = idx + 1
             if key == "voice":
                 stat = utils.humanize_delta(getattr(stats, key))
