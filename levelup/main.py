@@ -15,6 +15,7 @@ from .commands import Commands
 from .commands.user import view_profile_context
 from .common.models import DB, run_migrations
 from .dashboard.integration import DashboardIntegration
+from .generator.trustytenor.converter import TenorAPI
 from .listeners import Listeners
 from .shared import SharedFunctions
 
@@ -72,6 +73,9 @@ class LevelUp(
         # Save State
         self.saving = False
 
+        # Tenor API
+        self.tenor: TenorAPI = None
+
     async def cog_load(self) -> None:
         self.bot.tree.add_command(view_profile_context)
         asyncio.create_task(self.initialize())
@@ -110,6 +114,23 @@ class LevelUp(
         self.custom_fonts.mkdir(exist_ok=True)
         self.custom_backgrounds.mkdir(exist_ok=True)
         logging.getLogger("PIL").setLevel(logging.WARNING)
+        await self.load_tenor()
+
+    async def load_tenor(self) -> None:
+        tokens = await self.bot.get_shared_api_tokens("tenor")
+        if "api_key" in tokens:
+            log.debug("Tenor API token loaded")
+            self.tenor = TenorAPI(tokens["api_key"], str(self.bot.user))
+
+    async def on_red_api_tokens_update(self, service_name: str, api_tokens: t.Dict[str, str]) -> None:
+        if service_name != "tenor":
+            return
+        if "api_key" in api_tokens:
+            if self.tenor is not None:
+                self.tenor._token = api_tokens["api_key"]
+                return
+            log.debug("Tenor API token updated")
+            self.tenor = TenorAPI(api_tokens["api_key"], str(self.bot.user))
 
     def save(self) -> None:
         async def _save():

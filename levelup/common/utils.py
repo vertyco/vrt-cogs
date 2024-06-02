@@ -3,6 +3,7 @@ import json
 import logging
 import math
 import random
+import re
 import sys
 import typing as t
 from datetime import datetime, timedelta
@@ -26,6 +27,19 @@ from .const import COLORS
 
 _ = Translator("LevelUp", __file__)
 log = logging.getLogger("red.vrt.levelup.formatter")
+
+
+IMAGE_LINKS: t.Pattern = re.compile(
+    r"(https?:\/\/[^\"\'\s]*\.(?P<extension>png|jpg|jpeg|gif)"
+    r"(?P<extras>\?(?:ex=(?P<expires>\w+)&)(?:is=(?P<issued>\w+)&)(?:hm=(?P<token>\w+)&))?)",  # Discord CDN info
+    flags=re.I,
+)
+TENOR_REGEX: t.Pattern[str] = re.compile(r"https:\/\/tenor\.com\/view\/(?P<image_slug>[a-zA-Z0-9-]+-(?P<image_id>\d+))")
+EMOJI_REGEX: t.Pattern = re.compile(r"(<(?P<animated>a)?:[a-zA-Z0-9\_]+:([0-9]+)>)")
+MENTION_REGEX: t.Pattern = re.compile(r"<@!?([0-9]+)>")
+ID_REGEX: t.Pattern = re.compile(r"[0-9]{17,}")
+
+VALID_CONTENT_TYPES = ("image/png", "image/jpeg", "image/jpg", "image/gif")
 
 
 def string_to_rgb(color: str) -> t.Tuple[int, int, int]:
