@@ -59,6 +59,7 @@ class DashboardIntegration(MixinMeta):
             member=guild.get_member(user.id),
             use_displayname=True,
             dashboard=True,
+            query=query,
         )
         if not payload["stats"]:
             return {
