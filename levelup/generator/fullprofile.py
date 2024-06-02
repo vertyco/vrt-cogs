@@ -457,10 +457,11 @@ def generate_full_profile(
     # Calculate frame durations based on the LCM
     pfp_duration = imgtools.get_avg_duration(pfp)  # example: 50ms
     card_duration = imgtools.get_avg_duration(card)  # example: 100ms
-    # Round each duration to the nearest 10ms
-    pfp_duration = round(pfp_duration, -1)
-    card_duration = round(card_duration, -1)
     log.debug(f"PFP duration: {pfp_duration}ms, Card duration: {card_duration}ms")
+    # Round each duration to the nearest 15ms
+    pfp_duration = round(pfp_duration / 15) * 15
+    card_duration = round(card_duration / 15) * 15
+    log.debug(f"Modified PFP duration: {pfp_duration}ms, Card duration: {card_duration}ms")
     combined_duration = math.lcm(pfp_duration, card_duration)  # example: 100ms would be the LCM of 50 and 100
     log.debug(f"Combined duration: {combined_duration}ms")
 
@@ -527,7 +528,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     logging.getLogger("PIL").setLevel(logging.INFO)
 
-    test_banner = (imgtools.ASSETS / "tests" / "banner.gif").read_bytes()
+    test_banner = (imgtools.ASSETS / "tests" / "banner3.gif").read_bytes()
     test_avatar = (imgtools.ASSETS / "tests" / "tree.gif").read_bytes()
     test_icon = (imgtools.ASSETS / "tests" / "icon.png").read_bytes()
     font_path = imgtools.ASSETS / "fonts" / "BebasNeue.ttf"
