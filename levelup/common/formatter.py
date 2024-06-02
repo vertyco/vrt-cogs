@@ -262,9 +262,9 @@ def get_leaderboard(
                         continue
             place = idx + 1
             if key == "voice":
-                stat = utils.humanize_delta(getattr(stats, key))
+                stat = utils.humanize_delta(round(getattr(stats, key)))
             else:
-                stat = utils.abbreviate_number(getattr(stats, key))
+                stat = utils.abbreviate_number(round(getattr(stats, key)))
 
                 if key == "xp" and lbtype != "weekly" and not is_global:
                     stat += f" 🎖{stats.level}"
@@ -286,9 +286,9 @@ def get_leaderboard(
             name = (user_obj.display_name if use_displayname else user_obj.name) if user_obj else user_id
             place = i + 1
             if key == "voice":
-                stat = utils.humanize_delta(getattr(stats, key))
+                stat = utils.humanize_delta(round(getattr(stats, key)))
             else:
-                stat = utils.abbreviate_number(getattr(stats, key))
+                stat = utils.abbreviate_number(round(getattr(stats, key)))
                 if key == "xp" and lbtype != "weekly" and not is_global:
                     stat += f" 🎖{stats.level}"
 
