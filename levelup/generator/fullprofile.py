@@ -283,6 +283,10 @@ def generate_full_profile(
     if balance:
         text = _("Balance: {}").format(f"{humanize_number(balance)} {currency_name}")
         font = ImageFont.truetype(font_path, 40)
+        # Ensure text doesnt pass the stat_end
+        while font.getlength(text) + stat_start > stat_end:
+            fontsize -= 1
+            font = ImageFont.truetype(font_path, fontsize)
         with Pilmoji(stats) as pilmoji:
             placement = (stat_start, stat_bottom - stat_offset * 2)
             pilmoji.text(
