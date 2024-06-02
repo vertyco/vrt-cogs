@@ -11,12 +11,12 @@ from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_list
 
 from .abc import CompositeMetaClass
-from .api import API
 from .commands import Commands
 from .commands.user import view_profile_context
 from .common.models import DB, run_migrations
 from .dashboard.integration import DashboardIntegration
 from .listeners import Listeners
+from .shared import SharedFunctions
 
 log = logging.getLogger("red.vrt.levelup")
 _ = Translator("LevelUp", __file__)
@@ -26,7 +26,7 @@ RequestType = t.Literal["discord_deleted_user", "owner", "user", "user_strict"]
 @cog_i18n(_)
 class LevelUp(
     Commands,
-    API,
+    SharedFunctions,
     DashboardIntegration,
     Listeners,
     commands.Cog,
