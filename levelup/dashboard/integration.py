@@ -48,6 +48,8 @@ class DashboardIntegration(MixinMeta):
                     "error_title": _("No Weekly stats available"),
                     "error_message": _("There is no data for the weekly leaderboard yet, please chat a bit first."),
                 }
+
+        source_path = Path(__file__).parent / "templates" / "leaderboard.html"
         payload: dict = await asyncio.to_thread(
             formatter.get_leaderboard,
             bot=self.bot,
@@ -61,14 +63,12 @@ class DashboardIntegration(MixinMeta):
             dashboard=True,
             query=query,
         )
-        if not payload["stats"]:
-            return {
-                "status": 1,
-                "error_title": _("No stats available"),
-                "error_message": _("There is no data for the leaderboard yet, please chat a bit first."),
-            }
-
-        source_path = Path(__file__).parent / "templates" / "leaderboard.html"
+        # if not payload["stats"]:
+        #     return {
+        #         "status": 1,
+        #         "error_title": _("No stats available"),
+        #         "error_message": _("There is no data for the leaderboard yet, please chat a bit first."),
+        #     }
 
         return {
             "status": 0,
