@@ -804,6 +804,16 @@ class GuildBackup(Base):
                 except discord.HTTPException as e:
                     results.write(_("\nFailed to delete forum {}: {}").format(chan.name, str(e.text)))
 
+        # Get a count of the left over roles and channels, we will need to offset the position of these
+        role_position_offset = len(guild.roles)
+        # Offset the position of each role
+        for role in self.roles:
+            role.position += role_position_offset
+
+        channel_position_offset = len(guild.channels)
+        for obj in all_objs:
+            obj.position += channel_position_offset
+
         log.info("Recreating roles")
         for role_backup in self.roles:
             try:
@@ -846,30 +856,14 @@ class GuildBackup(Base):
                 results.write(_("\nFailed to restore forum {}: {}").format(obj.name, str(e.text)))
 
         # Ensure all channel consistency
-        log.info("Syncing categories")
-        for obj in self.categories:
+        sorted_channels = sorted(all_objs, key=lambda x: x.position)
+        for obj in sorted_channels:
             try:
                 await obj.update(guild)
             except discord.HTTPException as e:
-                results.write(_("\nFailed to update category {}: {}").format(obj.name, str(e.text)))
-        log.info("Syncing text channels")
-        for obj in self.text_channels:
-            try:
-                await obj.update(guild)
-            except discord.HTTPException as e:
-                results.write(_("\nFailed to update text channel {}: {}").format(obj.name, str(e.text)))
-        log.info("Syncing voice channels")
-        for obj in self.voice_channels:
-            try:
-                await obj.update(guild)
-            except discord.HTTPException as e:
-                results.write(_("\nFailed to update voice channel {}: {}").format(obj.name, str(e.text)))
-        log.info("Syncing forum channels")
-        for obj in self.forums:
-            try:
-                await obj.update(guild)
-            except discord.HTTPException as e:
-                results.write(_("\nFailed to update forum {}: {}").format(obj.name, str(e.text)))
+                results.write(
+                    _("\nFailed to update {} channel {}: {}").format(obj.name, obj.__class__.__name__, str(e.text))
+                )
 
         for p in pagify(results.getvalue(), page_length=1900):
             await current_channel.send(p)
