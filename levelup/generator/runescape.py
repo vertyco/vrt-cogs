@@ -15,7 +15,6 @@ Args:
     next_xp (t.Optional[int], optional): The next XP. Defaults to 10.
     position (t.Optional[int], optional): The position. Defaults to 1.
     role_icon (t.Optional[bytes], optional): The role icon as bytes. Defaults to None.
-    base_color (t.Optional[t.Tuple[int, int, int]], optional): The base color. Defaults to (255, 255, 255).
     stat_color (t.Optional[t.Tuple[int, int, int]], optional): The color for the stats. Defaults to (0, 255, 68).
     render_gif (t.Optional[bool], optional): Whether to render as gif. Defaults to False.
     debug (t.Optional[bool], optional): Whether to show the generated image. Defaults to False.
@@ -53,7 +52,6 @@ def generate_runescape_profile(
     next_xp: t.Optional[int] = 10,
     position: t.Optional[int] = 1,
     role_icon: t.Optional[bytes] = None,
-    base_color: t.Optional[t.Tuple[int, int, int]] = (255, 255, 255),
     stat_color: t.Optional[t.Tuple[int, int, int]] = (0, 255, 68),  # Green
     render_gif: t.Optional[bool] = False,
     debug: t.Optional[bool] = False,
@@ -235,6 +233,7 @@ if __name__ == "__main__":
         avatar_bytes=test_avatar,
         prestige=2,
         username="vertyco",
+        level=0,
         debug=True,
         balance=1000000,
         status="dnd",
