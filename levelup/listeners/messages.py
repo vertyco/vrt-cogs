@@ -39,12 +39,19 @@ class MessageListener(MixinMeta):
             return
 
         user_id = message.author.id
+        if user_id in conf.ignoredusers:
+            # If we're specifically ignoring a user we don't want to see them anywhere
+            return
+
         profile = conf.get_profile(user_id).add_message()
         weekly = None
         if conf.weeklysettings.on:
             weekly = conf.get_weekly_profile(message.author).add_message()
-        if user_id in conf.ignoredusers:
-            return
+
+        if perf_counter() - self.last_save > 300:
+            # Save at least every 5 minutes
+            self.save()
+
         if message.channel.id in conf.ignoredchannels:
             return
         if any(role in conf.ignoredroles for role in role_ids):

@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import typing as t
+from time import perf_counter
 
 import orjson
 from pydantic import ValidationError
@@ -72,6 +73,7 @@ class LevelUp(
 
         # Save State
         self.saving = False
+        self.last_save: float = perf_counter()
 
         # Tenor API
         self.tenor: TenorAPI = None
@@ -140,6 +142,7 @@ class LevelUp(
             try:
                 self.saving = True
                 await asyncio.to_thread(self.db.to_file, self.settings_file)
+                self.last_save = perf_counter()
                 log.debug("Config saved")
             except Exception as e:
                 log.error("Failed to save config", exc_info=e)

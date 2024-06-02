@@ -90,28 +90,35 @@ class User(MixinMeta):
         if user is None:
             user = ctx.author
 
+        new_user_txt = None
+        if user.id == ctx.author.id and user.id not in conf.users:
+            # New user, tell them about how they can customize their profile
+            new_user_txt = _(
+                "Welcome to LevelUp!\nUse {} to view your profile settings and the available customization commands!"
+            ).format(f"`{ctx.clean_prefix}mypf`")
+
         if ctx.interaction is None:
             async with ctx.typing():
                 result = await self.get_user_profile_cached(user)
                 conf = self.db.get_conf(ctx.guild)
                 if isinstance(result, discord.Embed):
                     try:
-                        return await ctx.reply(embed=result, mention_author=conf.notifymention)
+                        await ctx.reply(content=new_user_txt, embed=result, mention_author=conf.notifymention)
                     except discord.HTTPException:
-                        return await ctx.send(embed=result)
+                        await ctx.send(content=new_user_txt, embed=result)
                 else:
                     try:
-                        await ctx.reply(file=result, mention_author=conf.notifymention)
+                        await ctx.reply(content=new_user_txt, file=result, mention_author=conf.notifymention)
                     except discord.HTTPException:
                         result.fp.seek(0)
-                        await ctx.send(file=result)
+                        await ctx.send(content=new_user_txt, file=result)
         else:
             await ctx.defer(ephemeral=True)
             result = await self.get_user_profile_cached(user)
             if isinstance(result, discord.Embed):
-                return await ctx.send(embed=result, ephemeral=True)
+                await ctx.send(content=new_user_txt, embed=result, ephemeral=True)
             else:
-                await ctx.send(file=result, ephemeral=True)
+                await ctx.send(content=new_user_txt, file=result, ephemeral=True)
 
     @commands.hybrid_command(name="prestige")
     @commands.guild_only()
