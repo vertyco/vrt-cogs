@@ -31,6 +31,7 @@ class DashboardIntegration(MixinMeta):
         guild: discord.Guild,
         lbtype: t.Literal["lb", "weekly"],
         stat: t.Literal["exp", "messages", "voice", "stars"] = "exp",
+        query: t.Optional[str] = None,
         **kwargs,
     ):
         conf = self.db.get_conf(guild)
@@ -81,12 +82,13 @@ class DashboardIntegration(MixinMeta):
                 "stat": stat,
                 "total": payload["description"].replace("`", ""),
                 "statname": payload["stat"],
+                "query": query,
             },
         }
 
     @dashboard_page(name="leaderboard", description="Display the guild leaderboard.")
     async def leaderboard_page(
-        self, user: discord.User, guild: discord.Guild, stat: str = None, **kwargs
+        self, user: discord.User, guild: discord.Guild, stat: str = None, query: t.Optional[str] = None, **kwargs
     ) -> t.Dict[str, t.Any]:
         stat = stat if stat is not None and stat in {"exp", "messages", "voice", "stars"} else "exp"
         return await self.get_dashboard_leaderboard(user, guild, "normal", stat, **kwargs)
