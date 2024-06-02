@@ -57,6 +57,20 @@ class Owner(MixinMeta):
             value=txt,
             inline=False,
         )
+        tokens = await self.bot.get_shared_api_tokens("tenor")
+        txt = _("*The Tenor API can be used to set gifs as profile backgrounds easier from within discord.*\n")
+        if "api_key" in tokens:
+            txt += _("Tenor API Key is set!")
+        else:
+            txt += _("Tenor API Key is not set! You can set it with {}").format(
+                f"`{ctx.clean_prefix}set api tenor api_key YOUR_KEY`"
+            )
+        embed.add_field(
+            name=_("Tenor API"),
+            value=txt,
+            inline=False,
+        )
+
         ignored_servers = StringIO()
         for guild_id in self.db.ignored_guilds:
             guild = self.bot.get_guild(guild_id)
