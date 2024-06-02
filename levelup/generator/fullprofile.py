@@ -122,7 +122,7 @@ def generate_full_profile(
 
     # Ensure the card is the correct size and aspect ratio
     desired_card_size = (1050, 450)
-    aspect_ratio = imgtools.calc_aspect_ratio(*desired_card_size)
+    # aspect_ratio = imgtools.calc_aspect_ratio(*desired_card_size)
     # Setup
     default_fill = (0, 0, 0)  # Default fill color for text
     stroke_width = 2  # Width of the stroke around text
@@ -339,7 +339,7 @@ def generate_full_profile(
         if pfp.mode != "RGBA":
             log.debug(f"Converting pfp mode '{pfp.mode}' to RGBA")
             pfp = pfp.convert("RGBA")
-        card = imgtools.fit_aspect_ratio(card, aspect_ratio)
+        card = imgtools.fit_aspect_ratio(card, desired_card_size)
         card = card.resize(desired_card_size, Image.Resampling.LANCZOS)
         if blur:
             blur_section = imgtools.blur_section(card, (blur_edge, 0, card.width, card.height))
@@ -363,7 +363,7 @@ def generate_full_profile(
         if card.mode != "RGBA":
             log.debug(f"Converting card mode '{card.mode}' to RGBA")
             card = card.convert("RGBA")
-        card = imgtools.fit_aspect_ratio(card, aspect_ratio)
+        card = imgtools.fit_aspect_ratio(card, desired_card_size)
         card = card.resize(desired_card_size, Image.Resampling.LANCZOS)
         if blur:
             blur_section = imgtools.blur_section(card, (blur_edge, 0, card.width, card.height))
@@ -417,7 +417,7 @@ def generate_full_profile(
             card.seek(frame)
             # Prepare copies of the card and stats
             card_frame = card.copy()
-            card_frame = imgtools.fit_aspect_ratio(card_frame, aspect_ratio)
+            card_frame = imgtools.fit_aspect_ratio(card_frame, desired_card_size)
             card_frame = card.copy().resize(desired_card_size, Image.Resampling.NEAREST)
 
             if card_frame.mode != "RGBA":
@@ -457,8 +457,12 @@ def generate_full_profile(
     # Calculate frame durations based on the LCM
     pfp_duration = imgtools.get_avg_duration(pfp)  # example: 50ms
     card_duration = imgtools.get_avg_duration(card)  # example: 100ms
+    # Round each duration to the nearest 10ms
+    pfp_duration = round(pfp_duration, -1)
+    card_duration = round(card_duration, -1)
     log.debug(f"PFP duration: {pfp_duration}ms, Card duration: {card_duration}ms")
     combined_duration = math.lcm(pfp_duration, card_duration)  # example: 100ms would be the LCM of 50 and 100
+    log.debug(f"Combined duration: {combined_duration}ms")
 
     # total_pfp_duration = pfp.n_frames * pfp_duration  # example: 2250ms
     # total_card_duration = card.n_frames * card_duration  # example: 3300ms
@@ -476,7 +480,7 @@ def generate_full_profile(
         pfp_frame_index = (time // pfp_duration) % pfp.n_frames
 
         card_frame = ImageSequence.Iterator(card)[card_frame_index]
-        card_frame = imgtools.fit_aspect_ratio(card_frame, aspect_ratio)
+        card_frame = imgtools.fit_aspect_ratio(card_frame, desired_card_size, preserve=True)
         card_frame = card.copy().resize(desired_card_size, Image.Resampling.NEAREST)
 
         if card_frame.mode != "RGBA":
@@ -497,14 +501,14 @@ def generate_full_profile(
         card_frame.paste(pfp_frame, (circle_x, circle_y), pfp_frame)
         card_frame.paste(stats, (0, 0), stats)
 
-        combined_frames.append((card_frame, combined_duration))
+        combined_frames.append(card_frame)
 
     buffer = BytesIO()
-    combined_frames[0][0].save(
+    combined_frames[0].save(
         buffer,
         format="GIF",
         save_all=True,
-        append_images=[frame for frame, duration in combined_frames[1:]],
+        append_images=combined_frames[1:],
         loop=0,
         duration=combined_duration,
         quality=75,

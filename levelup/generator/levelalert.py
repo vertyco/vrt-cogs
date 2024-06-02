@@ -47,8 +47,7 @@ def generate_level_img(
         pfp = Image.open(imgtools.STOCK / "defaultpfp.png")
 
     desired_card_size = (200, 70)
-    aspect_ratio = imgtools.calc_aspect_ratio(*desired_card_size)
-    card = imgtools.fit_aspect_ratio(card, aspect_ratio)
+    card = imgtools.fit_aspect_ratio(card, desired_card_size)
 
     # Shrink the font size if the text is too long
     fontsize = round(card.height / 2.5)
