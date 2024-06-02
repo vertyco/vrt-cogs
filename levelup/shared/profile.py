@@ -111,7 +111,7 @@ class ProfileFormatting(MixinMeta):
         if profile.prestige and profile.prestige in conf.prestigedata:
             pdata = conf.prestigedata[profile.prestige]
 
-        if conf.use_embeds:
+        if conf.use_embeds or self.db.force_embeds:
             txt = f"{level}｜" + _("Level {}\n").format(humanize_number(profile.level))
             if pdata:
                 txt += f"{trophy}｜" + _("Prestige {}\n").format(

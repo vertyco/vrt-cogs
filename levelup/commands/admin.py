@@ -367,6 +367,11 @@ class Admin(MixinMeta):
     async def toggle_embeds(self, ctx: commands.Context):
         """Toggle using embeds or generated pics"""
         conf = self.db.get_conf(ctx.guild)
+        if self.db.force_embeds:
+            txt = _("Profile rendering is locked to Embeds only by the bot owner!")
+            conf.use_embeds = False
+            self.save()
+            return await ctx.send(txt)
         status = _("**Images**") if conf.use_embeds else _("**Embeds**")
         conf.use_embeds = not conf.use_embeds
         self.save()

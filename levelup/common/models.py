@@ -262,6 +262,7 @@ class DB(Base):
     ignored_guilds: t.List[int] = []
     cache_seconds: int = 0
     render_gifs: bool = False
+    force_embeds: bool = False  # Globally force embeds for leveling
     migrations: t.List[str] = []
 
     def get_conf(self, guild: t.Union[discord.Guild, int]) -> GuildSettings:
@@ -330,4 +331,5 @@ def run_migrations(settings: dict[str, t.Any]) -> DB:
         migrated += 1
 
     log.warning(f"Migrated {migrated} guilds to new schema")
-    return DB.load(data)
+    db: DB = DB.load(data)
+    return db
