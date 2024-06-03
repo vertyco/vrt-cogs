@@ -159,7 +159,10 @@ async def run(
 
 
 def kill(proc: t.Union[mp.Process, asyncio.subprocess.Process]) -> None:
-    parent = psutil.Process(proc.pid)
+    try:
+        parent = psutil.Process(proc.pid)
+    except psutil.NoSuchProcess:
+        return
     for child in parent.children(recursive=True):
         child.kill()
     if IS_WINDOWS:
