@@ -183,9 +183,9 @@ class ProfileFormatting(MixinMeta):
             kwargs["role_icon"] = await role_icon.read()
         if profile.font:
             if (self.fonts / profile.font).exists():
-                kwargs["font_path"] = str(self.fonts / profile.font)
+                kwargs["font_bytes"] = (self.fonts / profile.font).read_bytes()
             elif (self.custom_fonts / profile.font).exists():
-                kwargs["font_path"] = str(self.custom_fonts / profile.font)
+                kwargs["font_bytes"] = (self.custom_fonts / profile.font).read_bytes()
 
         endpoints = {
             "default": "fullprofile",
