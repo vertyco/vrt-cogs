@@ -75,9 +75,9 @@ async def lifespan(app: FastAPI):
     root_logger.addHandler(default_rotator)
     error_logger.addHandler(default_rotator)
     access_logger.addHandler(access_rotator)
-    if not SERVICE:
-        # Get rid of the console handler
-        root_logger.removeHandler(root_logger.handlers[0])
+    # if not SERVICE:
+    #     # Get rid of the console handler
+    #     root_logger.removeHandler(root_logger.handlers[0])
 
     yield
     if PROC:
@@ -117,6 +117,11 @@ async def runescape(request: Request):
     return {"b64": encoded, "animated": animated}
 
 
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
 async def run(
     port: t.Optional[int] = None,
     log_dir: t.Optional[t.Union[Path, str]] = None,
@@ -124,17 +129,20 @@ async def run(
     if log_dir:
         global LOG_DIR
         LOG_DIR = log_dir if isinstance(log_dir, Path) else Path(log_dir)
-    log.info(f"Log directory: {LOG_DIR}")
-    log.info(f"Spinning up {DEFAULT_WORKERS} workers on port {port or 6969}")
+
+    APP_DIR = str(ROOT)
+    log.info(f"Running API from {APP_DIR}")
+    log.info(f"Log directory: {LOG_DIR} (As Service: {SERVICE})")
+    log.info(f"Spinning up {DEFAULT_WORKERS} workers on port {port or 6969} in 10s...")
+    await asyncio.sleep(10)
 
     if IS_WINDOWS:
         kwargs = {
             "workers": DEFAULT_WORKERS,
             "port": port or 6969,
-            "app_dir": str(ROOT),
+            "app_dir": APP_DIR,
             "log_config": LOGGING_CONFIG,
-            "use_colors": True,
-            "host": "0.0.0.0" if SERVICE else "localhost",
+            "use_colors": False,
         }
         proc = mp.Process(
             target=uvicorn.run,
@@ -150,8 +158,7 @@ async def run(
         f"{exe_path} -m uvicorn api:app",
         f"--workers {DEFAULT_WORKERS}",
         f"--port {port or 6969}",
-        f"--app-dir {str(ROOT)}",
-        "--log-config uvicorn.logging.LOGGING_CONFIG",
+        f"--app-dir '{APP_DIR}'",
         f"--host {'0.0.0.0' if SERVICE else 'localhost'}",  # Specify the host
     ]
     proc = await asyncio.create_subprocess_shell(" ".join(cmd))

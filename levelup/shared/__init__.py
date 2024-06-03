@@ -6,7 +6,7 @@ from .weeklyreset import WeeklyReset
 
 class SharedFunctions(LevelUps, ProfileFormatting, WeeklyReset, metaclass=CompositeMetaClass):
     """
-    Subclass all shared classes
+    Subclass all shared metaclassed parts of the cog
 
     This includes classes with functions available to other cogs
     """

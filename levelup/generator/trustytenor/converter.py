@@ -1,4 +1,5 @@
 # THANKS TRUSTY!
+# This converter/api is a modified snippet of the notsobot cog from TrustyJAID.
 # https://github.com/TrustyJAID/Trusty-cogs/blob/b2842005c88451f4670bc25f5c000ce6aed79c8c/notsobot/converter.py
 """MIT License
 
