@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import base64
 import logging
@@ -56,7 +58,7 @@ class Overwrites(Base):
     values: dict[str, bool] = {}
 
     @classmethod
-    def serialize(cls, obj: discord.TextChannel | discord.VoiceChannel | discord.CategoryChannel) -> list[t.Self]:
+    def serialize(cls, obj: discord.TextChannel | discord.VoiceChannel | discord.CategoryChannel) -> list[Overwrites]:
         overwrites = []
         for role_or_mem_obj, overwrite in obj.overwrites.items():
             obj_type = 0 if isinstance(role_or_mem_obj, discord.Role) else 1
