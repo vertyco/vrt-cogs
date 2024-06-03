@@ -146,7 +146,7 @@ async def health():
 
 
 async def run(
-    port: t.Optional[int] = None,
+    port: t.Optional[int] = 8888,
     log_dir: t.Optional[t.Union[Path, str]] = None,
 ) -> t.Union[mp.Process, asyncio.subprocess.Process]:
     if log_dir:
@@ -156,13 +156,13 @@ async def run(
     APP_DIR = str(ROOT)
     log.info(f"Running API from {APP_DIR}")
     log.info(f"Log directory: {LOG_DIR} (As Service: {SERVICE})")
-    log.info(f"Spinning up {DEFAULT_WORKERS} workers on port {port or 6969} in 5s...")
+    log.info(f"Spinning up {DEFAULT_WORKERS} workers on port {port} in 5s...")
     await asyncio.sleep(5)
 
     if IS_WINDOWS:
         kwargs = {
             "workers": DEFAULT_WORKERS,
-            "port": port or 6969,
+            "port": port,
             "app_dir": APP_DIR,
             "log_config": LOGGING_CONFIG,
             "use_colors": False,
@@ -182,7 +182,7 @@ async def run(
     cmd = [
         f"{exe_path} -m uvicorn api:app",
         f"--workers {DEFAULT_WORKERS}",
-        f"--port {port or 6969}",
+        f"--port {port}",
         f"--app-dir '{APP_DIR}'",
     ]
     if SERVICE:
