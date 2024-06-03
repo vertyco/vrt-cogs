@@ -129,10 +129,12 @@ class LevelUp(
             await self.start_api()
 
     async def start_api(self) -> bool:
+        if not self.db.internal_api_port:
+            return False
         try:
             log_dir = self.cog_path / "APILogs"
             log_dir.mkdir(exist_ok=True, parents=True)
-            self.api_proc = await api.run(log_dir=log_dir)
+            self.api_proc = await api.run(self.db.internal_api_port, log_dir=log_dir)
             log.debug(f"API Process started: {self.api_proc}")
             return True
         except Exception as e:

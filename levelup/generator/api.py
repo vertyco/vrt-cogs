@@ -88,6 +88,11 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="LevelUp API", version="0.0.1a")
 
 
+# Utility to parse color strings to tuple
+def parse_color(color_str):
+    return tuple(map(int, color_str.split(","))) if color_str else None
+
+
 def get_kwargs(form_data: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
     kwargs = {}
     for k, v in form_data.items():
@@ -97,6 +102,15 @@ def get_kwargs(form_data: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
             kwargs[k] = int(v)
         else:
             kwargs[k] = v
+
+        # Some values have the following
+        # ValueError: unknown color specifier: '(255, 255, 255)'
+        # The following kwargs need to be evaluated as tuples
+        kwargs["base_color"] = parse_color(kwargs.get("base_color"))
+        kwargs["user_color"] = parse_color(kwargs.get("user_color"))
+        kwargs["stat_color"] = parse_color(kwargs.get("stat_color"))
+        kwargs["level_bar_color"] = parse_color(kwargs.get("level_bar_color"))
+
     return kwargs
 
 
