@@ -46,7 +46,7 @@ DEFAULT_WORKERS: int = os.cpu_count() or 1
 ROOT = Path(__file__).parent
 LOG_DIR = Path.home() / "LevelUp_API_Logs"
 PROC: t.Union[mp.Process, asyncio.subprocess.Process] = None
-log = logging.getLogger("uvicorn.error")
+log = logging.getLogger("red.vrt.levelup.api")
 
 
 @asynccontextmanager
@@ -169,6 +169,7 @@ async def run(
         }
         if SERVICE:
             kwargs["host"] = "0.0.0.0"
+        log.info(f"Kwargs: {kwargs}")
         proc = mp.Process(
             target=uvicorn.run,
             args=("api:app",),
@@ -188,7 +189,9 @@ async def run(
     # if SERVICE:
     cmd.append("--host 0.0.0.0")
     cmd = " ".join(cmd)
-    proc = await asyncio.create_subprocess_shell(cmd)
+    log.info(f"Command: {cmd}")
+    proc = await asyncio.create_subprocess_exec(*cmd.split(" "))
+
     global PROC
     PROC = proc
     return proc
