@@ -185,9 +185,10 @@ async def run(
         f"--port {port}",
         f"--app-dir '{APP_DIR}'",
     ]
-    if SERVICE:
-        cmd.append("--host 0.0.0.0")
-    proc = await asyncio.create_subprocess_shell(" ".join(cmd))
+    # if SERVICE:
+    cmd.append("--host 0.0.0.0")
+    cmd = " ".join(cmd)
+    proc = await asyncio.create_subprocess_shell(cmd)
     global PROC
     PROC = proc
     return proc
