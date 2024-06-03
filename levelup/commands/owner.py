@@ -177,7 +177,11 @@ class Owner(MixinMeta):
 
     @lvlowner.command(name="forceembeds", aliases=["forceembed"])
     async def toggle_force_embeds(self, ctx: commands.Context):
-        """Toggle enforcing profile embeds"""
+        """Toggle enforcing profile embeds
+
+        If enabled, profiles will only use embeds on all servers.
+        This disables image generation globally.
+        """
         if self.db.force_embeds:
             self.db.force_embeds = False
             await ctx.send(_("Profile embeds are now optional for other servers."))
