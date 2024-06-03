@@ -89,8 +89,12 @@ app = FastAPI(title="LevelUp API", version="0.0.1a")
 
 
 # Utility to parse color strings to tuple
-def parse_color(color_str):
-    return tuple(map(int, color_str.split(","))) if color_str else None
+def parse_color(color_str: str) -> t.Union[None, t.Tuple[int, int, int]]:
+    # Convert a string like (255, 255, 255) to a tuple
+    if not color_str or not isinstance(color_str, str):
+        return None
+    color: t.Tuple[int, int, int] = tuple(map(int, color_str.strip("()").split(", ")))
+    return color
 
 
 def get_kwargs(form_data: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
@@ -98,10 +102,14 @@ def get_kwargs(form_data: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
     for k, v in form_data.items():
         if hasattr(v, "file"):
             kwargs[k] = v.file.read()
+            continue
         elif isinstance(v, str) and v.isdigit():
             kwargs[k] = int(v)
         else:
-            kwargs[k] = v
+            try:
+                kwargs[k] = int(float(v))
+            except ValueError:
+                kwargs[k] = v
 
         # Some values have the following
         # ValueError: unknown color specifier: '(255, 255, 255)'
@@ -148,8 +156,8 @@ async def run(
     APP_DIR = str(ROOT)
     log.info(f"Running API from {APP_DIR}")
     log.info(f"Log directory: {LOG_DIR} (As Service: {SERVICE})")
-    log.info(f"Spinning up {DEFAULT_WORKERS} workers on port {port or 6969} in 10s...")
-    await asyncio.sleep(10)
+    log.info(f"Spinning up {DEFAULT_WORKERS} workers on port {port or 6969} in 5s...")
+    await asyncio.sleep(5)
 
     if IS_WINDOWS:
         kwargs = {
