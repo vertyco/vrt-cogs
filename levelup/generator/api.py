@@ -166,8 +166,9 @@ async def run(
             "app_dir": APP_DIR,
             "log_config": LOGGING_CONFIG,
             "use_colors": False,
-            "host": "0.0.0.0" if SERVICE else "127.0.0.1",
         }
+        if SERVICE:
+            kwargs["host"] = "0.0.0.0"
         proc = mp.Process(
             target=uvicorn.run,
             args=("api:app",),
@@ -183,13 +184,10 @@ async def run(
         f"--workers {DEFAULT_WORKERS}",
         f"--port {port or 6969}",
         f"--app-dir '{APP_DIR}'",
-        "--host 0.0.0.0",  # Specify the host
     ]
-    proc = await asyncio.create_subprocess_shell(
-        " ".join(cmd),
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
+    if SERVICE:
+        cmd.append("--host 0.0.0.0")
+    proc = await asyncio.create_subprocess_shell(" ".join(cmd))
     global PROC
     PROC = proc
     return proc
