@@ -15,7 +15,7 @@ LATEST_LOG_RE = re.compile(r"latest(?:-part(?P<part>\d+))?\.log")
 class Logs(MixinMeta):
     @commands.command(name="logs")
     @commands.is_owner()
-    async def scroll_logs(self, ctx: commands.Context):
+    async def scroll_logs(self, ctx: commands.Context, max_pages: int = 50):
         """View the bot's logs."""
 
         def _get_logs() -> t.List[str]:
@@ -25,19 +25,18 @@ class Logs(MixinMeta):
                     logs.append(file)
             logs.sort()
             # Combine contents of all log files
-            combined = "\n".join(log.read_text(encoding="utf-8", errors="ignore").strip() for log in logs)
-
-            # The last line of the log file represents the most recent log entry
-            # We neet to split the log file up into lines and reverse them
-            # so that the most recent log entry is at the top of the page
+            combined = "\n".join(log.read_text(encoding="utf-8", errors="ignore") for log in logs)
+            combined = combined.strip() + "\n# END OF LOGS"
             combined = combined.split("\n")
             combined.reverse()
             combined = "\n".join(combined)
-
             split = [i for i in pagify(combined, page_length=1800)]
-            split.reverse()
+            split = split[:max_pages]
             pages = []
             for idx, chunk in enumerate(split):
+                chunk = chunk.split("\n")
+                chunk.reverse()
+                chunk = "\n".join(chunk)
                 foot = f"Page {idx + 1}/{len(split)}"
                 txt = f"{box(chunk, lang='python')}\n{foot}"
                 pages.append(txt)
