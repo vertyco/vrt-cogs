@@ -21,13 +21,13 @@ try:
     from fullprofile import generate_full_profile
     from runescape import generate_runescape_profile
 
-    STANDALONE = True
+    SERVICE = True
 except ImportError:
     # Running from the cog
     from .fullprofile import generate_full_profile
     from .runescape import generate_runescape_profile
 
-    STANDALONE = False
+    SERVICE = False
 
 
 datefmt = "%m/%d %I:%M:%S %p"
@@ -42,7 +42,7 @@ default_formatter = ColourizedFormatter(fmt=default, datefmt=datefmt, use_colors
 access_formatter = AccessFormatter(fmt=access, datefmt=datefmt, use_colors=False)
 
 IS_WINDOWS: bool = sys.platform.startswith("win")
-DEFAULT_WORKERS: int = 2 * (os.cpu_count() or 1) + 1
+DEFAULT_WORKERS: int = os.cpu_count() or 1
 ROOT = Path(__file__).parent
 LOG_DIR = Path.home() / "LevelUp_API_Logs"
 PROC: t.Union[mp.Process, asyncio.subprocess.Process] = None
@@ -75,7 +75,7 @@ async def lifespan(app: FastAPI):
     root_logger.addHandler(default_rotator)
     error_logger.addHandler(default_rotator)
     access_logger.addHandler(access_rotator)
-    if not STANDALONE:
+    if not SERVICE:
         # Get rid of the console handler
         root_logger.removeHandler(root_logger.handlers[0])
 
@@ -134,6 +134,7 @@ async def run(
             "app_dir": str(ROOT),
             "log_config": LOGGING_CONFIG,
             "use_colors": True,
+            "host": "0.0.0.0" if SERVICE else "localhost",
         }
         proc = mp.Process(
             target=uvicorn.run,
@@ -151,6 +152,7 @@ async def run(
         f"--port {port or 6969}",
         f"--app-dir {str(ROOT)}",
         "--log-config uvicorn.logging.LOGGING_CONFIG",
+        f"--host {'0.0.0.0' if SERVICE else 'localhost'}",  # Specify the host
     ]
     proc = await asyncio.create_subprocess_shell(" ".join(cmd))
     global PROC

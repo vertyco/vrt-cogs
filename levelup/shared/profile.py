@@ -203,28 +203,34 @@ class ProfileFormatting(MixinMeta):
                     payload.add_field(key, str(value))
 
         if external_url := self.db.external_api_url:
-            url = f"{external_url}/{endpoints[profile.style]}"
-            async with aiohttp.ClientSession() as session:
-                async with session.post(url, data=payload) as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        img_b64, animated = data["b64"], data["animated"]
-                        img_bytes = base64.b64decode(img_b64)
-                        ext = "gif" if animated else "webp"
-                        return discord.File(BytesIO(img_bytes), filename=f"profile.{ext}")
-                    log.error(f"Failed to fetch profile from external API: {response.status}")
+            try:
+                url = f"{external_url}/{endpoints[profile.style]}"
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(url, data=payload) as response:
+                        if response.status == 200:
+                            data = await response.json()
+                            img_b64, animated = data["b64"], data["animated"]
+                            img_bytes = base64.b64decode(img_b64)
+                            ext = "gif" if animated else "webp"
+                            return discord.File(BytesIO(img_bytes), filename=f"profile.{ext}")
+                        log.error(f"Failed to fetch profile from external API: {response.status}")
+            except Exception as e:
+                log.error("Failed to fetch profile from external API", exc_info=e)
 
         if self.db.internal_api_port and self.api_proc:
-            url = f"http://localhost:{self.db.internal_api_port}/{endpoints[profile.style]}"
-            async with aiohttp.ClientSession() as session:
-                async with session.post(url, data=payload) as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        img_b64, animated = data["b64"], data["animated"]
-                        img_bytes = base64.b64decode(img_b64)
-                        ext = "gif" if animated else "webp"
-                        return discord.File(BytesIO(img_bytes), filename=f"profile.{ext}")
-                    log.error(f"Failed to fetch profile from internal API: {response.status}")
+            try:
+                url = f"http://localhost:{self.db.internal_api_port}/{endpoints[profile.style]}"
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(url, data=payload) as response:
+                        if response.status == 200:
+                            data = await response.json()
+                            img_b64, animated = data["b64"], data["animated"]
+                            img_bytes = base64.b64decode(img_b64)
+                            ext = "gif" if animated else "webp"
+                            return discord.File(BytesIO(img_bytes), filename=f"profile.{ext}")
+                        log.error(f"Failed to fetch profile from internal API: {response.status}")
+            except Exception as e:
+                log.error("Failed to fetch profile from internal API", exc_info=e)
 
         # By default we'll use the bundled generator
         funcs = {

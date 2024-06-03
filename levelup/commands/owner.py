@@ -103,12 +103,19 @@ class Owner(MixinMeta):
 
     @lvlowner.command(name="internalapi")
     async def set_internal_api(self, ctx: commands.Context, port: int):
-        """Set the internal API port for image generation
+        """
+        Enable internal API for parallel image generation
+
+        Setting a port will spin up a detatched but cog-managed FastAPI server to handle image generation.
+
+        **WARNING**
+        Using the internal API will spin up subprocesses to handle image generation.
+        **This is not recommended for smaller bots to run.**
 
         Set to 0 to disable the internal API
 
         **Notes**
-        - This will spin up subprocesses to handle image generation.
+        - This will spin up a 1 worker per core on the bot's cpu.
         - If the API fails, the cog will fall back to the default image generation method.
         """
         self.db.internal_api_port = port
