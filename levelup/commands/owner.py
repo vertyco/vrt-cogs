@@ -152,6 +152,10 @@ class Owner(MixinMeta):
             txt = _("External API disabled")
             self.db.external_api_url = ""
             self.save()
+            # If interal api is set, start it up
+            if self.db.internal_api_port:
+                await self.start_api()
+                txt += _("\nInternal API started since port was set.")
             return await ctx.send(txt)
         if not url.startswith("http"):
             return await ctx.send(_("Invalid URL"))
