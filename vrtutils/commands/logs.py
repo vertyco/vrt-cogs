@@ -23,9 +23,17 @@ class Logs(MixinMeta):
             for file in (self.core / "logs").iterdir():
                 if LATEST_LOG_RE.match(file.name):
                     logs.append(file)
-            logs.sort(reverse=True)
+            logs.sort()
             # Combine contents of all log files
             combined = "\n".join(log.read_text(encoding="utf-8", errors="ignore").strip() for log in logs)
+
+            # The last line of the log file represents the most recent log entry
+            # We neet to split the log file up into lines and reverse them
+            # so that the most recent log entry is at the top of the page
+            combined = combined.split("\n")
+            combined.reverse()
+            combined = "\n".join(combined)
+
             split = [i for i in pagify(combined, page_length=1800)]
             split.reverse()
             pages = []
