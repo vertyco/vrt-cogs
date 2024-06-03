@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import math
 import os
@@ -18,13 +20,13 @@ class Base(BaseModel):
     """Custom BaseModel with additional methods for loading and saving settings safely"""
 
     @classmethod
-    def load(cls, obj: t.Dict[str, t.Any]) -> "Base":
+    def load(cls, obj: t.Dict[str, t.Any]) -> Base:
         if VERSION >= "2.0.1":
             return cls.model_validate(obj)
         return cls.parse_obj(obj)
 
     @classmethod
-    def loadjson(cls, obj: t.Union[str, bytes]) -> "Base":
+    def loadjson(cls, obj: t.Union[str, bytes]) -> Base:
         if VERSION >= "2.0.1":
             return cls.model_validate_json(obj)
         return cls.parse_raw(obj)
@@ -40,7 +42,7 @@ class Base(BaseModel):
         return self.json(indent=2, exclude_defaults=exclude_defaults)
 
     @classmethod
-    def from_file(cls, path: Path) -> "Base":
+    def from_file(cls, path: Path) -> Base:
         if not path.exists():
             raise FileNotFoundError(f"File not found: {path}")
         if not path.is_file():
@@ -97,7 +99,7 @@ class Profile(Base):
     blur: bool = True  # Blur background of stat area
     show_displayname: bool = False  # Show display name instead of username on profile
 
-    def add_message(self) -> "Profile":
+    def add_message(self) -> Profile:
         self.messages += 1
         self.last_active = datetime.now()
         return self
@@ -109,7 +111,7 @@ class ProfileWeekly(Base):
     messages: int = 0
     stars: int = 0
 
-    def add_message(self) -> "ProfileWeekly":
+    def add_message(self) -> ProfileWeekly:
         self.messages += 1
         return self
 
