@@ -109,8 +109,8 @@ class Owner(MixinMeta):
         Setting a port will spin up a detatched but cog-managed FastAPI server to handle image generation.
 
         **WARNING**
-        Using the internal API will spin up subprocesses to handle image generation.
-        **This is not recommended for smaller bots to run.**
+        Using the internal API will spin up multiple subprocesses to handle bulk image generation.
+        **Use at your own risk! This is not recommended for smaller bots to run**
 
         Set to 0 to disable the internal API
 
@@ -141,7 +141,7 @@ class Owner(MixinMeta):
         """
         if url == "none":
             txt = _("External API disabled")
-            self.db.external_api_url = None
+            self.db.external_api_url = ""
             self.save()
             return await ctx.send(txt)
         if not url.startswith("http"):
