@@ -118,10 +118,10 @@ class Owner(MixinMeta):
         - This will spin up a 1 worker per core on the bot's cpu.
         - If the API fails, the cog will fall back to the default image generation method.
         """
-        self.db.internal_api_port = port
         if port:
             if self.db.internal_api_port == port:
                 return await ctx.send(_("Internal API port already set to {}, no change.").format(port))
+            self.db.internal_api_port = port
             if self.api_proc:
                 # Changing port so stop and start the server
                 await ctx.send(_("Internal API port changed to {}, Restarting workers").format(port))
@@ -133,6 +133,7 @@ class Owner(MixinMeta):
                 if not self.api_proc:
                     await self.start_api()
         else:
+            self.db.internal_api_port = port
             await ctx.send(_("Internal API disabled, shutting down workers."))
             if self.api_proc:
                 api.kill(self.api_proc)
