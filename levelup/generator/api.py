@@ -66,15 +66,15 @@ async def lifespan(app: FastAPI):
         maxBytes=1024 * 100,  # 100 KB
     )
     root_logger = logging.getLogger("uvicorn")
-    error_logger = logging.getLogger("uvicorn.error")
-    access_logger = logging.getLogger("uvicorn.access")
+    # error_logger = logging.getLogger("uvicorn.error")
+    # access_logger = logging.getLogger("uvicorn.access")
     # Set the formatters
     default_rotator.setFormatter(default_formatter)
     access_rotator.setFormatter(access_formatter)
     # Add the handlers
     root_logger.addHandler(default_rotator)
-    error_logger.addHandler(default_rotator)
-    access_logger.addHandler(access_rotator)
+    # error_logger.addHandler(default_rotator)
+    # access_logger.addHandler(access_rotator)
     # if not SERVICE:
     #     # Get rid of the console handler
     #     root_logger.removeHandler(root_logger.handlers[0])
@@ -166,7 +166,7 @@ async def run(
             "app_dir": APP_DIR,
             "log_config": LOGGING_CONFIG,
             "use_colors": False,
-            "host": "127.0.0.1",
+            "host": "0.0.0.0" if SERVICE else "127.0.0.1",
         }
         proc = mp.Process(
             target=uvicorn.run,
@@ -183,9 +183,14 @@ async def run(
         f"--workers {DEFAULT_WORKERS}",
         f"--port {port or 6969}",
         f"--app-dir '{APP_DIR}'",
-        f"--host {'0.0.0.0' if SERVICE else '127.0.0.1'}",  # Specify the host
+        "--host 0.0.0.0",  # Specify the host
     ]
-    proc = await asyncio.create_subprocess_shell(" ".join(cmd))
+    proc = await asyncio.create_subprocess_shell(
+        " ".join(cmd),
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+        encoding="utf-8",
+    )
     global PROC
     PROC = proc
     return proc
