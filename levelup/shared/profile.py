@@ -219,9 +219,9 @@ class ProfileFormatting(MixinMeta):
 
         if self.db.internal_api_port and self.api_proc:
             try:
-                url = f"http://localhost:{self.db.internal_api_port}/{endpoints[profile.style]}"
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(url, data=payload) as response:
+                url = f"http://127.0.0.1:{self.db.internal_api_port}/{endpoints[profile.style]}"
+                async with aiohttp.ClientSession(trust_env=True) as session:
+                    async with session.post(url, data=payload, ssl=False) as response:
                         if response.status == 200:
                             data = await response.json()
                             img_b64, animated = data["b64"], data["animated"]

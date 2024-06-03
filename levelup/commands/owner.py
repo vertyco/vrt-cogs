@@ -120,9 +120,18 @@ class Owner(MixinMeta):
         """
         self.db.internal_api_port = port
         if port:
-            await ctx.send(_("Internal API port set to {}, Spinning up workers").format(port))
-            if not self.api_proc:
+            if self.db.internal_api_port == port:
+                return await ctx.send(_("Internal API port already set to {}, no change.").format(port))
+            if self.api_proc:
+                # Changing port so stop and start the server
+                await ctx.send(_("Internal API port changed to {}, Restarting workers").format(port))
+                if self.api_proc:
+                    api.kill(self.api_proc)
                 await self.start_api()
+            else:
+                await ctx.send(_("Internal API port set to {}, Spinning up workers").format(port))
+                if not self.api_proc:
+                    await self.start_api()
         else:
             await ctx.send(_("Internal API disabled, shutting down workers."))
             if self.api_proc:
