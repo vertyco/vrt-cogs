@@ -88,8 +88,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="LevelUp API", version="0.0.1a")
 
 
-async def get_kwargs(request: Request) -> t.Dict[str, t.Any]:
-    form_data = await request.form()
+def get_kwargs(form_data: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
     kwargs = {}
     for k, v in form_data.items():
         if hasattr(v, "file"):
@@ -103,7 +102,8 @@ async def get_kwargs(request: Request) -> t.Dict[str, t.Any]:
 
 @app.post("/fullprofile")
 async def fullprofile(request: Request):
-    kwargs = await get_kwargs(request)
+    form_data = await request.form()
+    kwargs = get_kwargs(form_data)
     img_bytes, animated = await asyncio.to_thread(generate_full_profile, **kwargs)
     encoded = base64.b64encode(img_bytes).decode("utf-8")
     return {"b64": encoded, "animated": animated}
@@ -111,7 +111,8 @@ async def fullprofile(request: Request):
 
 @app.post("/runescape")
 async def runescape(request: Request):
-    kwargs = await get_kwargs(request)
+    form_data = await request.form()
+    kwargs = get_kwargs(form_data)
     img_bytes, animated = await asyncio.to_thread(generate_runescape_profile, **kwargs)
     encoded = base64.b64encode(img_bytes).decode("utf-8")
     return {"b64": encoded, "animated": animated}
@@ -143,6 +144,7 @@ async def run(
             "app_dir": APP_DIR,
             "log_config": LOGGING_CONFIG,
             "use_colors": False,
+            "host": "127.0.0.1",
         }
         proc = mp.Process(
             target=uvicorn.run,
@@ -159,7 +161,7 @@ async def run(
         f"--workers {DEFAULT_WORKERS}",
         f"--port {port or 6969}",
         f"--app-dir '{APP_DIR}'",
-        f"--host {'0.0.0.0' if SERVICE else 'localhost'}",  # Specify the host
+        f"--host {'0.0.0.0' if SERVICE else '127.0.0.1'}",  # Specify the host
     ]
     proc = await asyncio.create_subprocess_shell(" ".join(cmd))
     global PROC
