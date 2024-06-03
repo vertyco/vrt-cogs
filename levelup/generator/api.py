@@ -189,7 +189,6 @@ async def run(
         " ".join(cmd),
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
-        encoding="utf-8",
     )
     global PROC
     PROC = proc
