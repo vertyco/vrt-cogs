@@ -97,6 +97,8 @@ class LevelUp(
 
     async def initialize(self) -> None:
         await self.bot.wait_until_red_ready()
+        if not hasattr(self, "__author__"):
+            return
         if self.settings_file.exists():
             log.info("Loading config")
             try:

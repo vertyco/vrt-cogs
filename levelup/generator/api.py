@@ -217,5 +217,20 @@ if __name__ == "__main__":
     Usage:
     python api.py [port] [log_dir]
     """
+    logging.basicConfig(level=logging.INFO)
+    loop = asyncio.ProactorEventLoop() if IS_WINDOWS else asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
 
-    asyncio.run(run(sys.argv[1] if len(sys.argv) > 1 else None, int(sys.argv[2]) if len(sys.argv) > 2 else None))
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8888
+    log_dir = sys.argv[2] if len(sys.argv) > 2 else None
+    try:
+        loop.create_task(run(port, log_dir))
+        loop.run_forever()
+    except KeyboardInterrupt:
+        print("CTRL+C detected")
+    except Exception as e:
+        log.error("API failed to start", exc_info=e)
+    finally:
+        log.info("Shutting down API...")
+        loop.run_until_complete(loop.shutdown_asyncgens())
+        loop.close()

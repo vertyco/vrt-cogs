@@ -56,7 +56,6 @@ class MessageListener(MixinMeta):
             return
         if any(role in conf.ignoredroles for role in role_ids):
             return
-
         now = perf_counter()
         last_messages = self.lastmsg.setdefault(message.guild.id, {})
         addxp = False

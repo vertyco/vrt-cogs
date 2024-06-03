@@ -29,7 +29,7 @@ Args:
     base_color (t.Optional[t.Tuple[int, int, int]], optional): The base color. Defaults to None.
     stat_color (t.Optional[t.Tuple[int, int, int]], optional): The color for the stats. Defaults to None.
     level_bar_color (t.Optional[t.Tuple[int, int, int]], optional): The color for the level bar. Defaults to None.
-    font_path (t.Optional[t.Union[str, Path], optional): The path to the font file. Defaults to None.
+    font_bytes (t.Optional[t.Union[str, Path], optional): The path to the font file. Defaults to None.
     render_gif (t.Optional[bool], optional): Whether to render as gif if profile or background is one. Defaults to False.
     debug (t.Optional[bool], optional): Whether to raise any errors rather than suppressing. Defaults to False.
 
@@ -89,7 +89,7 @@ def generate_full_profile(
     user_color: t.Optional[t.Tuple[int, int, int]] = None,
     stat_color: t.Optional[t.Tuple[int, int, int]] = None,
     level_bar_color: t.Optional[t.Tuple[int, int, int]] = None,
-    font_path: t.Optional[t.Union[str, Path]] = None,
+    font_bytes: t.Optional[t.Union[str, Path]] = None,
     render_gif: t.Optional[bool] = False,
     debug: t.Optional[bool] = False,
     reraise: t.Optional[bool] = False,
@@ -160,16 +160,17 @@ def generate_full_profile(
     stats.paste(level_bar, (bar_start, bar_top), level_bar)
 
     # Start drawing text
-    font_path = str(font_path) if font_path else str(imgtools.DEFAULT_FONT)
-    log.debug(f"Using font path: {font_path}")
+    if not font_bytes:
+        font_bytes = imgtools.DEFAULT_FONT.read_bytes()
+    log.debug(f"Using font path: {font_bytes}")
     draw = ImageDraw.Draw(stats)
     # ---------------- Username text ----------------
     fontsize = 60
-    font = ImageFont.truetype(font_path, fontsize)
+    font = ImageFont.truetype(font_bytes, fontsize)
     # Ensure text doesnt pass star_icon_x
     while font.getlength(username) + stat_start > star_icon_x:
         fontsize -= 1
-        font = ImageFont.truetype(font_path, fontsize)
+        font = ImageFont.truetype(font_bytes, fontsize)
     with Pilmoji(stats) as pilmoji:
         pilmoji.text(
             xy=(stat_start, name_y),
@@ -183,11 +184,11 @@ def generate_full_profile(
     if prestige:
         text = _("(Prestige {})").format(f"{humanize_number(prestige)}")
         fontsize = 40
-        font = ImageFont.truetype(font_path, fontsize)
+        font = ImageFont.truetype(font_bytes, fontsize)
         # Ensure text doesnt pass stat_end
         while font.getlength(text) + stat_start > stat_end:
             fontsize -= 1
-            font = ImageFont.truetype(font_path, fontsize)
+            font = ImageFont.truetype(font_bytes, fontsize)
         draw.text(
             xy=(stat_start, name_y + 70),
             text=text,
@@ -203,11 +204,11 @@ def generate_full_profile(
     # ---------------- Stars text ----------------
     text = humanize_number(stars)
     fontsize = 60
-    font = ImageFont.truetype(font_path, fontsize)
+    font = ImageFont.truetype(font_bytes, fontsize)
     # Ensure text doesnt pass stat_end
     while font.getlength(text) + star_text_x > stat_end:
         fontsize -= 1
-        font = ImageFont.truetype(font_path, fontsize)
+        font = ImageFont.truetype(font_bytes, fontsize)
     draw.text(
         xy=(star_text_x, star_text_y),
         text=text,
@@ -220,11 +221,11 @@ def generate_full_profile(
     # ---------------- Rank text ----------------
     text = _("Rank: {}").format(f"#{humanize_number(position)}")
     fontsize = 40
-    font = ImageFont.truetype(font_path, fontsize)
+    font = ImageFont.truetype(font_bytes, fontsize)
     # Ensure text doesnt pass stat_split point
     while font.getlength(text) + stat_start > stat_split - 5:
         fontsize -= 1
-        font = ImageFont.truetype(font_path, fontsize)
+        font = ImageFont.truetype(font_bytes, fontsize)
     draw.text(
         xy=(stat_start, stats_y),
         text=text,
@@ -236,11 +237,11 @@ def generate_full_profile(
     # ---------------- Level text ----------------
     text = _("Level: {}").format(humanize_number(level))
     fontsize = 40
-    font = ImageFont.truetype(font_path, fontsize)
+    font = ImageFont.truetype(font_bytes, fontsize)
     # Ensure text doesnt pass the stat_split point
     while font.getlength(text) + stat_start > stat_split - 5:
         fontsize -= 1
-        font = ImageFont.truetype(font_path, fontsize)
+        font = ImageFont.truetype(font_bytes, fontsize)
     draw.text(
         xy=(stat_start, stats_y + stat_offset),
         text=text,
@@ -252,11 +253,11 @@ def generate_full_profile(
     # ---------------- Messages text ----------------
     text = _("Messages: {}").format(humanize_number(messages))
     fontsize = 40
-    font = ImageFont.truetype(font_path, fontsize)
+    font = ImageFont.truetype(font_bytes, fontsize)
     # Ensure text doesnt pass the stat_end
     while font.getlength(text) + stat_split > stat_end:
         fontsize -= 1
-        font = ImageFont.truetype(font_path, fontsize)
+        font = ImageFont.truetype(font_bytes, fontsize)
     draw.text(
         xy=(stat_split, stats_y),
         text=text,
@@ -268,11 +269,11 @@ def generate_full_profile(
     # ---------------- Voice text ----------------
     text = _("Voice: {}").format(imgtools.abbreviate_time(voicetime))
     fontsize = 40
-    font = ImageFont.truetype(font_path, fontsize)
+    font = ImageFont.truetype(font_bytes, fontsize)
     # Ensure text doesnt pass the stat_end
     while font.getlength(text) + stat_split > stat_end:
         fontsize -= 1
-        font = ImageFont.truetype(font_path, fontsize)
+        font = ImageFont.truetype(font_bytes, fontsize)
     draw.text(
         xy=(stat_split, stats_y + stat_offset),
         text=text,
@@ -284,11 +285,11 @@ def generate_full_profile(
     # ---------------- Balance text ----------------
     if balance:
         text = _("Balance: {}").format(f"{humanize_number(balance)} {currency_name}")
-        font = ImageFont.truetype(font_path, 40)
+        font = ImageFont.truetype(font_bytes, 40)
         # Ensure text doesnt pass the stat_end
         while font.getlength(text) + stat_start > stat_end:
             fontsize -= 1
-            font = ImageFont.truetype(font_path, fontsize)
+            font = ImageFont.truetype(font_bytes, fontsize)
         with Pilmoji(stats) as pilmoji:
             placement = (stat_start, stat_bottom - stat_offset * 2)
             pilmoji.text(
@@ -306,11 +307,11 @@ def generate_full_profile(
         f"{humanize_number(current)}/{humanize_number(goal)}", humanize_number(current_xp)
     )
     fontsize = 40
-    font = ImageFont.truetype(font_path, fontsize)
+    font = ImageFont.truetype(font_bytes, fontsize)
     # Ensure text doesnt pass the stat_end
     while font.getlength(text) + stat_start > stat_end:
         fontsize -= 1
-        font = ImageFont.truetype(font_path, fontsize)
+        font = ImageFont.truetype(font_bytes, fontsize)
     draw.text(
         xy=(stat_start, stat_bottom - stat_offset),
         text=text,
@@ -550,7 +551,7 @@ if __name__ == "__main__":
     test_banner = (imgtools.ASSETS / "tests" / "banner3.gif").read_bytes()
     test_avatar = (imgtools.ASSETS / "tests" / "tree.gif").read_bytes()
     test_icon = (imgtools.ASSETS / "tests" / "icon.png").read_bytes()
-    font_path = imgtools.ASSETS / "fonts" / "BebasNeue.ttf"
+    font_bytes = imgtools.ASSETS / "fonts" / "BebasNeue.ttf"
     res, animated = generate_full_profile(
         background_bytes=test_banner,
         avatar_bytes=test_avatar,
@@ -569,7 +570,7 @@ if __name__ == "__main__":
         next_xp=5000,
         role_icon=test_icon,
         blur=True,
-        font_path=font_path,
+        font_bytes=font_bytes,
         render_gif=True,
         debug=True,
     )
