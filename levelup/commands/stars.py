@@ -25,9 +25,9 @@ class Stars(MixinMeta):
     async def stars(self, ctx: commands.Context, *, user: discord.Member):
         """Reward a good noodle"""
         if user and user.id == ctx.author.id:
-            return await ctx.send(_("You can't give stars to yourself!"))
+            return await ctx.send(_("You can't give stars to yourself!"), ephemeral=True)
         if user and user.bot:
-            return await ctx.send(_("You can't give stars to bots!"))
+            return await ctx.send(_("You can't give stars to bots!"), ephemeral=True)
 
         last_used = self.stars.setdefault(ctx.guild.id, {}).get(ctx.author.id)
         conf = self.db.get_conf(ctx.guild)
@@ -45,10 +45,18 @@ class Stars(MixinMeta):
             else:
                 ts = f"<t:{int(can_use_after.timestamp())}:R>"
                 txt = _("You can give more stars {}").format(ts)
-            return await ctx.send(txt)
+            return await ctx.send(txt, ephemeral=True)
 
         elif not user:
             return await ctx.send(_("You need to mention a user to give them a star!"))
+        elif last_used:
+            can_use_after = last_used + timedelta(seconds=conf.starcooldown)
+            if now < can_use_after:
+                ts = f"<t:{int(can_use_after.timestamp())}:R>"
+                return await ctx.send(
+                    _("You can give more stars {}").format(ts),
+                    ephemeral=True,
+                )
 
         self.stars[ctx.guild.id][ctx.author.id] = now
         profile = conf.get_profile(user)

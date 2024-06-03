@@ -161,6 +161,7 @@ def generate_full_profile(
 
     # Start drawing text
     font_path = str(font_path) if font_path else str(imgtools.DEFAULT_FONT)
+    log.debug(f"Using font path: {font_path}")
     draw = ImageDraw.Draw(stats)
     # ---------------- Username text ----------------
     fontsize = 60

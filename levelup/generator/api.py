@@ -149,6 +149,8 @@ async def run(
     port: t.Optional[int] = 8888,
     log_dir: t.Optional[t.Union[Path, str]] = None,
 ) -> t.Union[mp.Process, asyncio.subprocess.Process]:
+    if not port:
+        port = 8888
     if log_dir:
         global LOG_DIR
         LOG_DIR = log_dir if isinstance(log_dir, Path) else Path(log_dir)
@@ -215,4 +217,5 @@ if __name__ == "__main__":
     Usage:
     python api.py [port] [log_dir]
     """
-    proc = asyncio.run(run(sys.argv[1] if len(sys.argv) > 1 else None, int(sys.argv[2]) if len(sys.argv) > 2 else None))
+
+    asyncio.run(run(sys.argv[1] if len(sys.argv) > 1 else None, int(sys.argv[2]) if len(sys.argv) > 2 else None))
