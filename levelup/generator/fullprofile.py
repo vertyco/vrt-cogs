@@ -43,15 +43,7 @@ import typing as t
 from io import BytesIO
 from pathlib import Path
 
-from PIL import (
-    Image,
-    ImageDraw,
-    ImageEnhance,
-    ImageFilter,
-    ImageFont,
-    ImageSequence,
-    UnidentifiedImageError,
-)
+from PIL import Image, ImageDraw, ImageFont, ImageSequence, UnidentifiedImageError
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_number
 
@@ -441,12 +433,8 @@ def generate_full_profile(
 
             # Paste items onto the card
             if blur:
-                blurred = card_frame.filter(ImageFilter.GaussianBlur(3))
-                blur_box = blurred.crop((blur_edge, 0, card_frame.width, card_frame.height))
-                # Darken the image
-                blur_box = ImageEnhance.Brightness(blur_box).enhance(0.6)
-                # Paste onto the stats
-                card_frame.paste(blur_box, (blur_edge, 0), blur_box)
+                blur_section = imgtools.blur_section(card, (blur_edge, 0, card_frame.width, card_frame.height))
+                card_frame.paste(blur_section, (blur_edge, 0), blur_section)
 
             card_frame.paste(pfp, (circle_x, circle_y), pfp)
             card_frame.paste(stats, (0, 0), stats)
