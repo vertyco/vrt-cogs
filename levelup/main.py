@@ -1,10 +1,12 @@
 import asyncio
 import logging
 import multiprocessing as mp
+import sys
 import typing as t
 from time import perf_counter
 
 import orjson
+import psutil
 from pydantic import ValidationError
 from redbot.core import commands
 from redbot.core.bot import Red
@@ -25,6 +27,7 @@ from .shared import SharedFunctions
 log = logging.getLogger("red.vrt.levelup")
 _ = Translator("LevelUp", __file__)
 RequestType = t.Literal["discord_deleted_user", "owner", "user", "user_strict"]
+IS_WINDOWS: bool = sys.platform.startswith("win")
 
 # Generate translations
 # redgettext -D -r levelup/ --command-docstring
@@ -94,7 +97,15 @@ class LevelUp(
         self.bot.tree.remove_command(view_profile_context)
         if self.api_proc is not None:
             log.info("Shutting down API")
-            await asyncio.to_thread(api.kill, self.api_proc)
+            try:
+                parent = psutil.Process(self.api_proc.pid)
+            except psutil.NoSuchProcess:
+                pass
+            else:
+                for child in parent.children(recursive=True):
+                    log.debug(f"Killing child: {child.pid}")
+                    child.kill()
+            self.api_proc.terminate()
 
     async def initialize(self) -> None:
         await self.bot.wait_until_red_ready()
@@ -141,7 +152,12 @@ class LevelUp(
             log.debug(f"API Process started: {self.api_proc.pid}")
             return True
         except Exception as e:
-            log.error("Failed to start internal API", exc_info=e)
+            if str(e) == "Port already in use":
+                log.error(
+                    "Port already in use, Internal API cannot be started, either change the port or restart the bot instance."
+                )
+            else:
+                log.error("Failed to start internal API", exc_info=e)
             return False
 
     async def load_tenor(self) -> None:
