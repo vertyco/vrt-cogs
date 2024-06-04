@@ -30,11 +30,11 @@ from PIL import Image, ImageDraw, ImageFont
 from redbot.core.i18n import Translator
 
 try:
-    from . import imgtools
+    from .. import imgtools
 except ImportError:
     import imgtools
 
-log = logging.getLogger("red.vrt.levelup.generator.runescape")
+log = logging.getLogger("red.vrt.levelup.generator.styles.default")
 _ = Translator("LevelUp", __file__)
 
 

@@ -48,17 +48,17 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_number
 
 try:
-    from . import imgtools
-    from .pilmojisrc.core import Pilmoji
+    from .. import imgtools
+    from ..pilmojisrc.core import Pilmoji
 except ImportError:
     import imgtools
     from pilmojisrc.core import Pilmoji
 
-log = logging.getLogger("red.vrt.levelup.generator.fullprofile")
+log = logging.getLogger("red.vrt.levelup.generator.styles.default")
 _ = Translator("LevelUp", __file__)
 
 
-def generate_full_profile(
+def generate_default_profile(
     background_bytes: t.Optional[bytes] = None,
     avatar_bytes: t.Optional[bytes] = None,
     username: t.Optional[str] = "Spartan117",
@@ -549,7 +549,7 @@ if __name__ == "__main__":
     test_avatar = (imgtools.ASSETS / "tests" / "tree.gif").read_bytes()
     test_icon = (imgtools.ASSETS / "tests" / "icon.png").read_bytes()
     font_path = imgtools.ASSETS / "fonts" / "BebasNeue.ttf"
-    res, animated = generate_full_profile(
+    res, animated = generate_default_profile(
         background_bytes=test_banner,
         avatar_bytes=test_avatar,
         username="Vertyco",

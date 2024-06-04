@@ -19,14 +19,14 @@ from uvicorn.logging import AccessFormatter, ColourizedFormatter
 
 try:
     # Running as separate service
-    from fullprofile import generate_full_profile
-    from runescape import generate_runescape_profile
+    from levelup.generator.styles.default import generate_default_profile
+    from levelup.generator.styles.runescape import generate_runescape_profile
 
     SERVICE = True
 except ImportError:
     # Running from the cog
-    from .fullprofile import generate_full_profile
-    from .runescape import generate_runescape_profile
+    from .styles.default import generate_default_profile
+    from .styles.runescape import generate_runescape_profile
 
     SERVICE = False
 
@@ -130,7 +130,7 @@ def get_kwargs(form_data: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
 async def fullprofile(request: Request):
     form_data = await request.form()
     kwargs = get_kwargs(form_data)
-    img_bytes, animated = await asyncio.to_thread(generate_full_profile, **kwargs)
+    img_bytes, animated = await asyncio.to_thread(generate_default_profile, **kwargs)
     encoded = base64.b64encode(img_bytes).decode("utf-8")
     return {"b64": encoded, "animated": animated}
 

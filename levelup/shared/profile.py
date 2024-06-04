@@ -15,7 +15,7 @@ from redbot.core.utils.chat_formatting import box, humanize_number
 from ..abc import MixinMeta
 from ..common import formatter, utils
 from ..common.models import Profile
-from ..generator import fullprofile, runescape
+from ..generator.styles import default, runescape
 
 log = logging.getLogger("red.vrt.levelup.api.profile")
 _ = Translator("LevelUp", __file__)
@@ -234,7 +234,7 @@ class ProfileFormatting(MixinMeta):
 
         # By default we'll use the bundled generator
         funcs = {
-            "default": fullprofile.generate_full_profile,
+            "default": default.generate_default_profile,
             "runescape": runescape.generate_runescape_profile,
         }
 
