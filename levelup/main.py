@@ -92,7 +92,8 @@ class LevelUp(
 
     async def cog_unload(self) -> None:
         self.bot.tree.remove_command(view_profile_context)
-        if self.api_proc:
+        if self.api_proc is not None:
+            log.info("Shutting down API")
             api.kill(self.api_proc)
 
     async def initialize(self) -> None:
@@ -137,7 +138,7 @@ class LevelUp(
             log_dir = self.cog_path / "APILogs"
             log_dir.mkdir(exist_ok=True, parents=True)
             self.api_proc = await api.run(self.db.internal_api_port, log_dir=log_dir)
-            log.debug(f"API Process started: {self.api_proc}")
+            log.debug(f"API Process started: {self.api_proc.pid}")
             return True
         except Exception as e:
             log.error("Failed to start internal API", exc_info=e)
