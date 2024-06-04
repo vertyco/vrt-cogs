@@ -205,6 +205,10 @@ def kill(proc: t.Union[mp.Process, asyncio.subprocess.Process]) -> None:
     try:
         parent = psutil.Process(proc.pid)
     except psutil.NoSuchProcess:
+        try:
+            proc.terminate()
+        except Exception as e:
+            log.error("Failed to terminate process", exc_info=e)
         return
     for child in parent.children(recursive=True):
         child.kill()
