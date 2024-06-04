@@ -14,7 +14,6 @@ Args:
     current_xp (t.Optional[int], optional): The current XP. Defaults to 4.
     next_xp (t.Optional[int], optional): The next XP. Defaults to 10.
     position (t.Optional[int], optional): The position. Defaults to 1.
-    role_icon (t.Optional[bytes], optional): The role icon as bytes. Defaults to None.
     stat_color (t.Optional[t.Tuple[int, int, int]], optional): The color for the stats. Defaults to (0, 255, 68).
     render_gif (t.Optional[bool], optional): Whether to render as gif. Defaults to False.
     debug (t.Optional[bool], optional): Whether to show the generated image. Defaults to False.
@@ -51,7 +50,6 @@ def generate_runescape_profile(
     current_xp: t.Optional[int] = 4,
     next_xp: t.Optional[int] = 10,
     position: t.Optional[int] = 1,
-    role_icon: t.Optional[bytes] = None,
     stat_color: t.Optional[t.Tuple[int, int, int]] = (0, 255, 68),  # Green
     render_gif: t.Optional[bool] = False,
     debug: t.Optional[bool] = False,
@@ -72,9 +70,6 @@ def generate_runescape_profile(
     # Place status icon
     status_icon = imgtools.STATUS[status].resize((25, 25), Image.Resampling.LANCZOS)
     card.paste(status_icon, (197, -2), status_icon)
-    if role_icon:
-        # Place role icon
-        role_icon = Image.open(BytesIO(role_icon)).resize((25, 25), Image.Resampling.LANCZOS)
 
     draw = ImageDraw.Draw(template)
     # Draw stats

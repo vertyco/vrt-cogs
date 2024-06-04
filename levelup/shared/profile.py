@@ -149,11 +149,8 @@ class ProfileFormatting(MixinMeta):
             embed.add_field(name=_("Progress"), value=box(bar, lang="python"), inline=False)
             return embed
 
-        avatar = await member.display_avatar.read()
-        background = await self.get_profile_background(member.id, profile)
         kwargs = {
-            "background_bytes": background,
-            "avatar_bytes": avatar,
+            "avatar_bytes": await member.display_avatar.read(),
             "username": member.display_name if profile.show_displayname else member.name,
             "status": str(member.status).strip(),
             "level": profile.level,
@@ -173,19 +170,22 @@ class ProfileFormatting(MixinMeta):
             "render_gif": self.db.render_gifs,
             "reraise": reraise,
         }
-        if pdata:
-            emoji_bytes = await utils.get_content_from_url(pdata.emoji_url)
-            kwargs["prestige_emoji"] = emoji_bytes
+        if profile.style != "runescape":
+            kwargs["background_bytes"] = await self.get_profile_background(member.id, profile)
+            if pdata:
+                emoji_bytes = await utils.get_content_from_url(pdata.emoji_url)
+                kwargs["prestige_emoji"] = emoji_bytes
+            if member.top_role.icon:
+                kwargs["role_icon"] = await member.top_role.icon.read()
+            if profile.font:
+                if (self.fonts / profile.font).exists():
+                    kwargs["font_path"] = str(self.fonts / profile.font)
+                elif (self.custom_fonts / profile.font).exists():
+                    kwargs["font_path"] = str(self.custom_fonts / profile.font)
+
         if conf.showbal:
             kwargs["balance"] = await bank.get_balance(member)
             kwargs["currency_name"] = await bank.get_currency_name(guild)
-        if role_icon := member.top_role.icon:
-            kwargs["role_icon"] = await role_icon.read()
-        if profile.font:
-            if (self.fonts / profile.font).exists():
-                kwargs["font_path"] = str(self.fonts / profile.font)
-            elif (self.custom_fonts / profile.font).exists():
-                kwargs["font_path"] = str(self.custom_fonts / profile.font)
 
         endpoints = {
             "default": "fullprofile",
