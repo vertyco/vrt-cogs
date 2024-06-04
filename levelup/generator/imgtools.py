@@ -15,7 +15,6 @@ ASSETS = ROOT / "data"
 DEFAULT_BACKGROUNDS = ASSETS / "backgrounds"
 DEFAULT_FONTS = ASSETS / "fonts"
 DEFAULT_FONT = DEFAULT_FONTS / "BebasNeue.ttf"
-CUSTOM_FONTS = ROOT.parent.parent.parent / "LevelUp"
 STOCK = ASSETS / "stock"
 STAR = Image.open(STOCK / "star.webp")
 DEFAULT_PFP = Image.open(STOCK / "defaultpfp.webp")
