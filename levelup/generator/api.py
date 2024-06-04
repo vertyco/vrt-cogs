@@ -147,6 +147,32 @@ async def health():
     return {"status": "ok"}
 
 
+def port_in_use(port: int) -> bool:
+    for conn in psutil.net_connections():
+        if conn.laddr.port == port:
+            return True
+    return False
+
+
+def kill_process_on_port(port: int):
+    """
+    Find and kill the process that's using the specified port.
+    """
+    for proc in psutil.process_iter(["pid", "name"]):
+        for conn in proc.connections(kind="inet"):
+            if conn.laddr.port == port:
+                try:
+                    proc.terminate()  # Send SIGTERM signal
+                    proc.wait(timeout=3)  # Wait for the process to terminate
+                    log.warning(f"Killed process {proc.info['pid']} ({proc.info['name']}) using port {port}")
+                    return True
+                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.TimeoutExpired):
+                    log.error(f"Failed to kill process {proc.info['pid']} ({proc.info['name']})")
+
+    log.info(f"No process found using port {port}")
+    return False
+
+
 async def run(
     port: t.Optional[int] = 8888,
     log_dir: t.Optional[t.Union[Path, str]] = None,
@@ -156,6 +182,11 @@ async def run(
     if log_dir:
         global LOG_DIR
         LOG_DIR = log_dir if isinstance(log_dir, Path) else Path(log_dir)
+
+    # Check if port is being used
+    if port_in_use(port):
+        log.warning(f"Port {port} is already in use, killing process")
+        kill_process_on_port(port)
 
     APP_DIR = str(ROOT)
     log.info(f"Running API from {APP_DIR}")
