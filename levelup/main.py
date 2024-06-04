@@ -94,7 +94,7 @@ class LevelUp(
         self.bot.tree.remove_command(view_profile_context)
         if self.api_proc is not None:
             log.info("Shutting down API")
-            api.kill(self.api_proc)
+            await asyncio.to_thread(api.kill, self.api_proc)
 
     async def initialize(self) -> None:
         await self.bot.wait_until_red_ready()
