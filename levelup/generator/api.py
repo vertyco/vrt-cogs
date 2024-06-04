@@ -107,6 +107,8 @@ def get_kwargs(form_data: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
             continue
         elif isinstance(v, str) and v.isdigit():
             kwargs[k] = int(v)
+        elif isinstance(v, str) and v.lower() in ("true", "false"):
+            kwargs[k] = v.lower() == "true"
         else:
             try:
                 kwargs[k] = int(float(v))
