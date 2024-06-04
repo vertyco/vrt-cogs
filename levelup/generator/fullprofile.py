@@ -433,7 +433,7 @@ def generate_full_profile(
 
             # Paste items onto the card
             if blur:
-                blur_section = imgtools.blur_section(card, (blur_edge, 0, card_frame.width, card_frame.height))
+                blur_section = imgtools.blur_section(card_frame, (blur_edge, 0, card_frame.width, card_frame.height))
                 card_frame.paste(blur_section, (blur_edge, 0), blur_section)
 
             card_frame.paste(pfp, (circle_x, circle_y), pfp)
