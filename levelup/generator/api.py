@@ -115,13 +115,13 @@ def get_kwargs(form_data: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
             except ValueError:
                 kwargs[k] = v
 
-        # Some values have the following
-        # ValueError: unknown color specifier: '(255, 255, 255)'
-        # The following kwargs need to be evaluated as tuples
-        kwargs["base_color"] = parse_color(kwargs.get("base_color"))
-        kwargs["user_color"] = parse_color(kwargs.get("user_color"))
-        kwargs["stat_color"] = parse_color(kwargs.get("stat_color"))
-        kwargs["level_bar_color"] = parse_color(kwargs.get("level_bar_color"))
+    # Some values have the following
+    # ValueError: unknown color specifier: '(255, 255, 255)'
+    # The following kwargs need to be evaluated as tuples
+    kwargs["base_color"] = parse_color(form_data.get("base_color"))
+    kwargs["user_color"] = parse_color(form_data.get("user_color"))
+    kwargs["stat_color"] = parse_color(form_data.get("stat_color"))
+    kwargs["level_bar_color"] = parse_color(form_data.get("level_bar_color"))
 
     return kwargs
 
@@ -260,6 +260,9 @@ if __name__ == "__main__":
     Usage:
     python api.py [port] [log_dir]
     """
+    # txt = "(255, 255, 255)"
+    # print(parse_color(txt), type(parse_color(txt)))
+
     logging.basicConfig(level=logging.INFO)
     loop = asyncio.ProactorEventLoop() if IS_WINDOWS else asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
