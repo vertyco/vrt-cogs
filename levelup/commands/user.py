@@ -78,6 +78,7 @@ class User(MixinMeta):
 
     @commands.hybrid_command(name="profile", aliases=["pf"])
     @commands.guild_only()
+    @commands.cooldown(3, 10, commands.BucketType.user)
     async def profile(self, ctx: commands.Context, *, user: discord.Member = None):
         """View User Profile"""
         conf = self.db.get_conf(ctx.guild)
