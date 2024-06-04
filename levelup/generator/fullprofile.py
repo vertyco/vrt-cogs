@@ -168,11 +168,11 @@ def generate_full_profile(
     # ---------------- Username text ----------------
     fontsize = 60
     font = ImageFont.truetype(font_path, fontsize)
-    # Ensure text doesnt pass star_icon_x
-    while font.getlength(username) + stat_start > star_icon_x:
-        fontsize -= 1
-        font = ImageFont.truetype(font_path, fontsize)
     with Pilmoji(stats) as pilmoji:
+        # Ensure text doesnt pass star_icon_x
+        while pilmoji.getsize(username, font)[0] + stat_start > star_icon_x + 10:
+            fontsize -= 1
+            font = ImageFont.truetype(font_path, fontsize)
         pilmoji.text(
             xy=(stat_start, name_y),
             text=username,
@@ -287,11 +287,11 @@ def generate_full_profile(
     if balance:
         text = _("Balance: {}").format(f"{humanize_number(balance)} {currency_name}")
         font = ImageFont.truetype(font_path, 40)
-        # Ensure text doesnt pass the stat_end
-        while font.getlength(text) + stat_start > stat_end:
-            fontsize -= 1
-            font = ImageFont.truetype(font_path, fontsize)
         with Pilmoji(stats) as pilmoji:
+            # Ensure text doesnt pass the stat_end
+            while pilmoji.getsize(text, font)[0] + stat_start > stat_end:
+                fontsize -= 1
+                font = ImageFont.truetype(font_path, fontsize)
             placement = (stat_start, stat_bottom - stat_offset * 2)
             pilmoji.text(
                 xy=placement,
