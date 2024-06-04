@@ -166,8 +166,8 @@ def kill_process_on_port(port: int):
                     proc.wait(timeout=3)  # Wait for the process to terminate
                     log.warning(f"Killed process {proc.info['pid']} ({proc.info['name']}) using port {port}")
                     return True
-                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.TimeoutExpired):
-                    log.error(f"Failed to kill process {proc.info['pid']} ({proc.info['name']})")
+                except Exception as e:
+                    log.error(f"Failed to kill process {proc.info['pid']} ({proc.info['name']}): {e}")
 
     log.info(f"No process found using port {port}")
     return False
@@ -185,8 +185,7 @@ async def run(
 
     # Check if port is being used
     if port_in_use(port):
-        log.warning(f"Port {port} is already in use, killing process")
-        kill_process_on_port(port)
+        raise Exception(f"Port {port} is already in use")
 
     APP_DIR = str(ROOT)
     log.info(f"Running API from {APP_DIR}")
