@@ -188,7 +188,7 @@ async def run(
         f"{exe_path} -m uvicorn api:app",
         f"--workers {DEFAULT_WORKERS}",
         f"--port {port}",
-        f"--app-dir '{APP_DIR}'",
+        f"--app-dir {APP_DIR}",
     ]
     # if SERVICE:
     cmd.append("--host 0.0.0.0")

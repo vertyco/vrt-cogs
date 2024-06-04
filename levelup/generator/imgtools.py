@@ -10,10 +10,12 @@ import colorgram
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont, ImageSequence
 from redbot.core.i18n import Translator
 
-ASSETS = Path(__file__).parent.parent / "data"
+ROOT = Path(__file__).parent.parent
+ASSETS = ROOT / "data"
 DEFAULT_BACKGROUNDS = ASSETS / "backgrounds"
 DEFAULT_FONTS = ASSETS / "fonts"
 DEFAULT_FONT = DEFAULT_FONTS / "BebasNeue.ttf"
+CUSTOM_FONTS = ROOT.parent.parent.parent / "LevelUp"
 STOCK = ASSETS / "stock"
 STAR = Image.open(STOCK / "star.webp")
 DEFAULT_PFP = Image.open(STOCK / "defaultpfp.webp")
