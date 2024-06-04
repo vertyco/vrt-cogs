@@ -150,6 +150,12 @@ async def health():
 def port_in_use(port: int) -> bool:
     for conn in psutil.net_connections():
         if conn.laddr.port == port:
+            # Get the process name
+            try:
+                proc = psutil.Process(conn.pid)
+                print(f"Process {proc.name()} is using port {port}")
+            except psutil.NoSuchProcess:
+                continue
             return True
     return False
 
@@ -185,7 +191,7 @@ async def run(
 
     # Check if port is being used
     if port_in_use(port):
-        raise Exception(f"Port {port} is already in use")
+        raise Exception("Port already in use")
 
     APP_DIR = str(ROOT)
     log.info(f"Running API from {APP_DIR}")
@@ -242,8 +248,7 @@ def kill(proc: t.Union[mp.Process, asyncio.subprocess.Process]) -> None:
         return
     for child in parent.children(recursive=True):
         child.kill()
-    if IS_WINDOWS:
-        proc.terminate()
+    proc.terminate()
 
 
 if __name__ == "__main__":
