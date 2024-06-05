@@ -31,16 +31,86 @@ class DataAdmin(MixinMeta):
 
     @lvldata.command(name="cleanup")
     async def cleanup_data(self, ctx: commands.Context):
-        """Delete data for users no longer in the server"""
+        """Cleanup the database
+
+        Performs the following actions:
+        - Delete data for users no longer in the server
+        - Removes channels and roles that no longer exist
+        """
         conf = self.db.get_conf(ctx.guild)
+        txt = ""
         pruned = 0
         for user_id in list(conf.users.keys()):
             if not ctx.guild.get_member(user_id):
                 del conf.users[user_id]
                 pruned += 1
-        if not pruned:
-            return await ctx.send(_("No users to prune!"))
-        await ctx.send(_("Pruned {} users from the database").format(pruned))
+        if pruned:
+            txt += _("Pruned {} users from the database\n").format(pruned)
+        pruned = 0
+        for user_id in list(conf.users_weekly.keys()):
+            if not ctx.guild.get_member(user_id):
+                del conf.users_weekly[user_id]
+                pruned += 1
+        if pruned:
+            txt += _("Pruned {} users from the weekly database\n").format(pruned)
+        pruned = 0
+        for level in list(conf.levelroles.keys()):
+            if not ctx.guild.get_role(conf.levelroles[level]):
+                del conf.levelroles[level]
+                pruned += 1
+        if pruned:
+            txt += _("Pruned {} level roles from the database\n").format(pruned)
+        pruned = 0
+        for role_id in list(conf.role_groups.keys()):
+            if not ctx.guild.get_role(role_id):
+                del conf.role_groups[role_id]
+                pruned += 1
+        if pruned:
+            txt += _("Pruned {} role groups from the database\n").format(pruned)
+        pruned = 0
+        for channel_id in list(conf.ignoredchannels):
+            if not ctx.guild.get_channel(channel_id):
+                conf.ignoredchannels.remove(channel_id)
+                pruned += 1
+        if pruned:
+            txt += _("Pruned {} ignored channels from the database\n").format(pruned)
+        pruned = 0
+        for role_id in list(conf.ignoredroles):
+            if not ctx.guild.get_role(role_id):
+                conf.ignoredroles.remove(role_id)
+                pruned += 1
+        if pruned:
+            txt += _("Pruned {} ignored roles from the database\n").format(pruned)
+        pruned = 0
+        for role_id in list(conf.rolebonus.msg.keys()):
+            if not ctx.guild.get_role(role_id):
+                del conf.rolebonus.msg[role_id]
+                pruned += 1
+        if pruned:
+            txt += _("Pruned {} role bonuses from the database\n").format(pruned)
+        pruned = 0
+        for role_id in list(conf.rolebonus.voice.keys()):
+            if not ctx.guild.get_role(role_id):
+                del conf.rolebonus.voice[role_id]
+                pruned += 1
+        if pruned:
+            txt += _("Pruned {} voice role bonuses from the database\n").format(pruned)
+        pruned = 0
+        for channel_id in list(conf.channelbonus.msg.keys()):
+            if not ctx.guild.get_channel(channel_id):
+                del conf.channelbonus.msg[channel_id]
+                pruned += 1
+        if pruned:
+            txt += _("Pruned {} channel bonuses from the database\n").format(pruned)
+        pruned = 0
+        for channel_id in list(conf.channelbonus.voice.keys()):
+            if not ctx.guild.get_channel(channel_id):
+                del conf.channelbonus.voice[channel_id]
+                pruned += 1
+        if pruned:
+            txt += _("Pruned {} voice channel bonuses from the database\n").format(pruned)
+        if not txt:
+            await ctx.send(_("No data to prune!"))
         self.save()
 
     @lvldata.command(name="resetglobal")

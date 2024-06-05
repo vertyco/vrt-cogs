@@ -126,13 +126,15 @@ class Admin(MixinMeta):
             )
             embed.add_field(name=_("Message XP Bonus Channels"), value=joined, inline=False)
         if conf.ignoredroles:
-            joined = ", ".join([f"<@&{role_id}>" for role_id in conf.ignoredroles])
+            joined = ", ".join([f"<@&{role_id}>" for role_id in conf.ignoredroles if ctx.guild.get_role(role_id)])
             embed.add_field(name=_("Ignored Roles"), value=joined, inline=False)
         if conf.ignoredchannels:
-            joined = ", ".join([f"<#{channel_id}>" for channel_id in conf.ignoredchannels])
+            joined = ", ".join(
+                [f"<#{channel_id}>" for channel_id in conf.ignoredchannels if ctx.guild.get_channel(channel_id)]
+            )
             embed.add_field(name=_("Ignored Channels"), value=joined, inline=False)
         if conf.ignoredusers:
-            joined = ", ".join([f"<@{user_id}>" for user_id in conf.ignoredusers])
+            joined = ", ".join([f"<@{user_id}>" for user_id in conf.ignoredusers if ctx.guild.get_member(user_id)])
             embed.add_field(name=_("Ignored Users"), value=joined, inline=False)
         if dm_role := conf.role_awarded_dm:
             embed.add_field(name=_("LevelUp DM Role Message"), value=dm_role, inline=False)
@@ -143,7 +145,7 @@ class Admin(MixinMeta):
         if msg_role := conf.role_awarded_msg:
             embed.add_field(name=_("LevelUp Role Message"), value=msg_role, inline=False)
         if roles := conf.role_groups:
-            joined = ", ".join([f"<@&{role_id}>" for role_id in roles])
+            joined = ", ".join([f"<@&{role_id}>" for role_id in roles if ctx.guild.get_role(role_id)])
             txt = _("The following roles gain exp as a group:\n{}").format(joined)
             embed.add_field(name=_("Role Exp Groups"), value=txt, inline=False)
         if ctx.author.id not in self.bot.owner_ids:
