@@ -112,23 +112,25 @@ class LevelUps(MixinMeta):
         if color == (0, 0, 0):
             color = utils.string_to_rgb(profile.namecolor) if profile.namecolor else None
 
-        def _run() -> bytes:
-            img_bytes = levelalert.generate_level_img(
+        def _run() -> t.Tuple[bytes, bool]:
+            img_bytes, animated = levelalert.generate_level_img(
                 background=banner,
                 avatar=avatar,
                 level=profile.level,
                 color=color,
                 font_path=font,
+                render_gif=self.db.render_gifs,
             )
-            return img_bytes
+            return img_bytes, animated
 
-        filebytes = await asyncio.to_thread(_run)
+        filebytes, animated = await asyncio.to_thread(_run)
+        ext = "gif" if animated else "webp"
         if conf.notifydm:
-            file = discord.File(BytesIO(filebytes), filename="levelup.webp")
+            file = discord.File(BytesIO(filebytes), filename=f"levelup.{ext}")
             with suppress(discord.HTTPException):
                 await member.send(dm_txt, file=file)
         if log_channel:
-            file = discord.File(BytesIO(filebytes), filename="levelup.webp")
+            file = discord.File(BytesIO(filebytes), filename=f"levelup.{ext}")
             with suppress(discord.HTTPException):
                 await log_channel.send(msg_txt, file=file)
 
