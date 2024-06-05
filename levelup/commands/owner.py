@@ -219,8 +219,8 @@ class Owner(MixinMeta):
 
         def _run() -> discord.File:
             img_bytes, animated = levelalert.generate_level_img(
-                background=banner,
-                avatar=avatar,
+                background_bytes=banner,
+                avatar_bytes=avatar,
                 level=level,
                 font_path=font,
                 color=ctx.author.color.to_rgb(),

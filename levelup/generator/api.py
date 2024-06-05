@@ -19,12 +19,14 @@ from uvicorn.logging import AccessFormatter, ColourizedFormatter
 
 try:
     # Running as separate service
+    from levelup.generator.levelalert import generate_level_img
     from levelup.generator.styles.default import generate_default_profile
     from levelup.generator.styles.runescape import generate_runescape_profile
 
     SERVICE = True
 except ImportError:
     # Running from the cog
+    from .levelalert import generate_level_img
     from .styles.default import generate_default_profile
     from .styles.runescape import generate_runescape_profile
 
@@ -140,6 +142,15 @@ async def runescape(request: Request):
     form_data = await request.form()
     kwargs = get_kwargs(form_data)
     img_bytes, animated = await asyncio.to_thread(generate_runescape_profile, **kwargs)
+    encoded = base64.b64encode(img_bytes).decode("utf-8")
+    return {"b64": encoded, "animated": animated}
+
+
+@app.post("/levelalert")
+async def levelalert(request: Request):
+    form_data = await request.form()
+    kwargs = get_kwargs(form_data)
+    img_bytes, animated = await asyncio.to_thread(generate_level_img, **kwargs)
     encoded = base64.b64encode(img_bytes).decode("utf-8")
     return {"b64": encoded, "animated": animated}
 
@@ -260,8 +271,6 @@ if __name__ == "__main__":
     Usage:
     python api.py [port] [log_dir]
     """
-    # txt = "(255, 255, 255)"
-    # print(parse_color(txt), type(parse_color(txt)))
 
     logging.basicConfig(level=logging.INFO)
     loop = asyncio.ProactorEventLoop() if IS_WINDOWS else asyncio.new_event_loop()
