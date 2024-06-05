@@ -31,24 +31,25 @@ _ = Translator("LevelUp", __file__)
 
 
 def generate_level_img(
-    background: t.Optional[bytes] = None,
-    avatar: t.Optional[bytes] = None,
+    background_bytes: t.Optional[bytes] = None,
+    avatar_bytes: t.Optional[bytes] = None,
     level: t.Optional[int] = 1,
     color: t.Optional[t.Tuple[int, int, int]] = None,
     font_path: t.Optional[t.Union[str, Path]] = None,
     render_gif: t.Optional[bool] = False,
     debug: t.Optional[bool] = False,
+    **kwargs,
 ) -> t.Tuple[bytes, bool]:
-    if background:
+    if background_bytes:
         try:
-            card = Image.open(BytesIO(background))
+            card = Image.open(BytesIO(background_bytes))
         except UnidentifiedImageError as e:
             log.error("Error opening background image", exc_info=e)
             card = imgtools.get_random_background()
     else:
         card = imgtools.get_random_background()
-    if avatar:
-        pfp = Image.open(BytesIO(avatar))
+    if avatar_bytes:
+        pfp = Image.open(BytesIO(avatar_bytes))
     else:
         pfp = imgtools.DEFAULT_PFP
 
@@ -250,8 +251,8 @@ if __name__ == "__main__":
     test_banner = (imgtools.ASSETS / "tests" / "banner3.gif").read_bytes()
     test_avatar = (imgtools.ASSETS / "tests" / "tree.gif").read_bytes()
     res, animated = generate_level_img(
-        background=test_banner,
-        avatar=test_avatar,
+        background_bytes=test_banner,
+        avatar_bytes=test_avatar,
         level=10,
         debug=True,
         render_gif=True,

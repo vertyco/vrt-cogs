@@ -112,10 +112,12 @@ class LevelUps(MixinMeta):
         if color == (0, 0, 0):
             color = utils.string_to_rgb(profile.namecolor) if profile.namecolor else None
 
+        # TODO: Add API offloading support
+
         def _run() -> t.Tuple[bytes, bool]:
             img_bytes, animated = levelalert.generate_level_img(
-                background=banner,
-                avatar=avatar,
+                background_bytes=banner,
+                avatar_bytes=avatar,
                 level=profile.level,
                 color=color,
                 font_path=font,
