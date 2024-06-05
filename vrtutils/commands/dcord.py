@@ -34,17 +34,28 @@ class MessageParser:
 class Dcord(MixinMeta):
     @commands.command(aliases=["findguild"])
     @commands.is_owner()
-    async def getguildid(self, ctx: commands.Context, guild_id: int):
-        """Find a guild by ID"""
-        guild = self.bot.get_guild(guild_id)
-        if not guild:
-            try:
-                guild = await self.bot.fetch_guild(guild_id)
-            except (discord.Forbidden, discord.NotFound):
-                guild = None
+    async def getguildid(self, ctx: commands.Context, query: t.Union[int, str]):
+        """Find a guild by name or ID"""
+        if isinstance(query, int):
+            guild = self.bot.get_guild(query)
+        elif query.isdigit():
+            guild = self.bot.get_guild(int(query))
+        else:
+            guilds = {g.name.lower(): g for g in self.bot.guilds}
+            guild = guilds.get(query.lower())
         if not guild:
             return await ctx.send("Could not find that guild")
-        await ctx.send(f"That ID belongs to the guild `{guild.name}`")
+        txt = (
+            f"**Name:** {guild.name}\n"
+            f"**ID:** {guild.id}\n"
+            f"**Owner:** {guild.owner}\n"
+            f"**Members:** {guild.member_count}\n"
+            f"**Created:** <t:{int(guild.created_at.timestamp())}:F> (<t:{int(guild.created_at.timestamp())}:R>)\n"
+        )
+        # Humanize a list of all the bot's guild permissions
+        perms = [p.replace("_", " ").title() for p, v in guild.me.guild_permissions if v]
+        txt += f"**Permissions:** {', '.join(perms)}"
+        await ctx.send(txt)
 
     @commands.command(aliases=["findchannel"])
     @commands.is_owner()
