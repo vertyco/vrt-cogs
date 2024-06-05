@@ -106,8 +106,6 @@ def get_rounded_corner_mask(image: Image.Image, radius: int) -> Image.Image:
         (0, 0, mask.width, mask.height),
         fill=255,
         radius=radius * 4,
-        outline=150,
-        width=40,
     )
     mask = mask.resize(image.size, Image.Resampling.LANCZOS)
     return mask
@@ -126,6 +124,14 @@ def blur_section(image: Image.Image, bbox: t.Tuple[int, int, int, int]) -> Image
     # Darken the image
     section = ImageEnhance.Brightness(section).enhance(0.8)
     return section
+
+
+def clean_gif_frame(image: Image.Image) -> Image.Image:
+    """Clean up a GIF frame"""
+    alpha = image.getchannel("A")
+    mask = Image.eval(alpha, lambda a: 255 if a > 128 else 0)
+    image.putalpha(mask)
+    return image
 
 
 def make_progress_bar(

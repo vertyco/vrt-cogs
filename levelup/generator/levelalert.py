@@ -1,11 +1,12 @@
 """Generate LevelUp Image
 
 Args:
-    background (t.Optional[bytes], optional): The background image as bytes. Defaults to None.
-    avatar (t.Optional[bytes], optional): The avatar image as bytes. Defaults to None.
+    background_bytes (t.Optional[bytes], optional): The background image as bytes. Defaults to None.
+    avatar_bytes (t.Optional[bytes], optional): The avatar image as bytes. Defaults to None.
     level (t.Optional[int], optional): The level number. Defaults to 1.
     color (t.Optional[t.Tuple[int, int, int]], optional): The color of the level text as a tuple of RGB values. Defaults to None.
     font (t.Optional[t.Union[str, Path]], optional): The path to the font file or the name of the font. Defaults to None.
+    render_gif (t.Optional[bool], optional): Whether to render the image as a GIF. Defaults to False.
     debug (t.Optional[bool], optional): Whether to show the generated image for debugging purposes. Defaults to False.
 
 Returns:
@@ -81,7 +82,7 @@ def generate_level_img(
         font = ImageFont.truetype(font_path, fontsize)
     draw = ImageDraw.Draw(text_layer)
     draw.text(
-        xy=(placement_area_center_x, int(th / 2.1)),
+        xy=(placement_area_center_x, int(th / 2)),
         text=text,
         fill=color or imgtools.rand_rgb(),
         font=font,
@@ -128,6 +129,7 @@ def generate_level_img(
             card_frame.paste(text_layer, (0, 0), text_layer)
             card_frame.paste(pfp_frame, (0, 0), pfp_frame)
             card_frame = imgtools.round_image_corners(card_frame, card_frame.height)
+            card_frame = imgtools.clean_gif_frame(card_frame)
             frames.append(card_frame)
         buffer = BytesIO()
         frames[0].save(
@@ -159,7 +161,8 @@ def generate_level_img(
             if not card_frame.mode == "RGBA":
                 card_frame = card_frame.convert("RGBA")
             card_frame = imgtools.fit_aspect_ratio(card_frame, desired_card_size)
-            # card_frame = imgtools.round_image_corners(card_frame, card_frame.height)
+            card_frame = imgtools.round_image_corners(card_frame, card_frame.height)
+            card_frame = imgtools.clean_gif_frame(card_frame)
             card_frame.paste(text_layer, (0, 0), text_layer)
             card_frame.paste(pfp, (0, 0), pfp)
             frames.append(card_frame)
@@ -223,9 +226,10 @@ def generate_level_img(
         if not pfp_frame.mode == "RGBA":
             pfp_frame = pfp_frame.convert("RGBA")
 
+        card_frame = imgtools.round_image_corners(card_frame, card_frame.height)
+        card_frame = imgtools.clean_gif_frame(card_frame)
         card_frame.paste(text_layer, (0, 0), text_layer)
         card_frame.paste(pfp_frame, (0, 0), pfp_frame)
-        # card_frame = imgtools.round_image_corners(card_frame, card_frame.height)
         frames.append(card_frame)
     buffer = BytesIO()
     frames[0].save(
