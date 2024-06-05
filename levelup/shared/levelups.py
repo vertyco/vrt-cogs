@@ -1,10 +1,12 @@
 import asyncio
+import base64
 import logging
 import random
 import typing as t
 from contextlib import suppress
 from io import BytesIO
 
+import aiohttp
 import discord
 from redbot.core.i18n import Translator
 
@@ -113,6 +115,35 @@ class LevelUps(MixinMeta):
             color = utils.string_to_rgb(profile.namecolor) if profile.namecolor else None
 
         # TODO: Add API offloading support
+        payload = aiohttp.FormData()
+
+        file: discord.File = None
+        if external_url := self.db.external_api_url:
+            try:
+                url = f"{external_url}/levelup"
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(url, data=payload) as response:
+                        if response.status == 200:
+                            data = await response.json()
+                            img_b64, animated = data["b64"], data["animated"]
+                            img_bytes = base64.b64decode(img_b64)
+                            ext = "gif" if animated else "webp"
+                            file = discord.File(BytesIO(img_bytes), filename=f"levelup.{ext}")
+            except Exception as e:
+                log.error("Failed to fetch levelup image from external API", exc_info=e)
+        elif self.db.internal_api_port and self.api_proc:
+            try:
+                url = f"http://127.0.0.1:{self.db.internal_api_port}/levelup"
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(url, data=payload) as response:
+                        if response.status == 200:
+                            data = await response.json()
+                            img_b64, animated = data["b64"], data["animated"]
+                            img_bytes = base64.b64decode(img_b64)
+                            ext = "gif" if animated else "webp"
+                            file = discord.File(BytesIO(img_bytes), filename=f"levelup.{ext}")
+            except Exception as e:
+                log.error("Failed to fetch levelup image from internal API", exc_info=e)
 
         def _run() -> t.Tuple[bytes, bool]:
             img_bytes, animated = levelalert.generate_level_img(
@@ -125,16 +156,17 @@ class LevelUps(MixinMeta):
             )
             return img_bytes, animated
 
-        filebytes, animated = await asyncio.to_thread(_run)
-        ext = "gif" if animated else "webp"
-        if conf.notifydm:
-            file = discord.File(BytesIO(filebytes), filename=f"levelup.{ext}")
-            with suppress(discord.HTTPException):
-                await member.send(dm_txt, file=file)
-        if log_channel:
-            file = discord.File(BytesIO(filebytes), filename=f"levelup.{ext}")
-            with suppress(discord.HTTPException):
-                await log_channel.send(msg_txt, file=file)
+        if not file:
+            filebytes, animated = await asyncio.to_thread(_run)
+            ext = "gif" if animated else "webp"
+            if conf.notifydm:
+                file = discord.File(BytesIO(filebytes), filename=f"levelup.{ext}")
+                with suppress(discord.HTTPException):
+                    await member.send(dm_txt, file=file)
+            if log_channel:
+                file = discord.File(BytesIO(filebytes), filename=f"levelup.{ext}")
+                with suppress(discord.HTTPException):
+                    await log_channel.send(msg_txt, file=file)
 
         payload = {
             "guild": guild,  # discord.Guild

@@ -216,8 +216,7 @@ class ProfileFormatting(MixinMeta):
                         log.error(f"Failed to fetch profile from external API: {response.status}")
             except Exception as e:
                 log.error("Failed to fetch profile from external API", exc_info=e)
-
-        if self.db.internal_api_port and self.api_proc:
+        elif self.db.internal_api_port and self.api_proc:
             try:
                 url = f"http://127.0.0.1:{self.db.internal_api_port}/{endpoints[profile.style]}"
                 async with aiohttp.ClientSession(trust_env=True) as session:

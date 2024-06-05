@@ -146,8 +146,8 @@ async def runescape(request: Request):
     return {"b64": encoded, "animated": animated}
 
 
-@app.post("/levelalert")
-async def levelalert(request: Request):
+@app.post("/levelup")
+async def levelup(request: Request):
     form_data = await request.form()
     kwargs = get_kwargs(form_data)
     img_bytes, animated = await asyncio.to_thread(generate_level_img, **kwargs)
