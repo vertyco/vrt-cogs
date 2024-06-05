@@ -495,7 +495,7 @@ def generate_default_profile(
         card_frame = ImageSequence.Iterator(card)[card_frame_index]
         pfp_frame = ImageSequence.Iterator(pfp)[pfp_frame_index]
 
-        card_frame = imgtools.fit_aspect_ratio(card_frame, desired_card_size, preserve=True)
+        card_frame = imgtools.fit_aspect_ratio(card_frame, desired_card_size)
         if card_frame.mode != "RGBA":
             card_frame = card_frame.convert("RGBA")
 
