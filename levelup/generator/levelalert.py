@@ -13,11 +13,12 @@ Returns:
 """
 
 import logging
+import math
 import typing as t
 from io import BytesIO
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageSequence, UnidentifiedImageError
 from redbot.core.i18n import Translator
 
 try:
@@ -35,82 +36,225 @@ def generate_level_img(
     level: t.Optional[int] = 1,
     color: t.Optional[t.Tuple[int, int, int]] = None,
     font_path: t.Optional[t.Union[str, Path]] = None,
+    render_gif: t.Optional[bool] = False,
     debug: t.Optional[bool] = False,
-) -> bytes:
+) -> t.Tuple[bytes, bool]:
     if background:
-        card = Image.open(BytesIO(background))
+        try:
+            card = Image.open(BytesIO(background))
+        except UnidentifiedImageError as e:
+            log.error("Error opening background image", exc_info=e)
+            card = imgtools.get_random_background()
     else:
         card = imgtools.get_random_background()
     if avatar:
         pfp = Image.open(BytesIO(avatar))
     else:
-        pfp = Image.open(imgtools.STOCK / "defaultpfp.png")
+        pfp = imgtools.DEFAULT_PFP
+
+    pfp_animated = getattr(pfp, "is_animated", False)
+    bg_animated = getattr(card, "is_animated", False)
+    log.debug(f"PFP animated: {pfp_animated}, BG animated: {bg_animated}")
 
     desired_card_size = (200, 70)
-    card = imgtools.fit_aspect_ratio(card, desired_card_size)
+    # 3 layers: card, profile, text
 
-    # Shrink the font size if the text is too long
-    fontsize = round(card.height / 2.5)
-    font_path = str(font_path) if font_path else str(imgtools.DEFAULT_FONT)
+    # PREPARE THE TEXT LAYER
+    text_layer = Image.new("RGBA", desired_card_size, (0, 0, 0, 0))
+    tw, th = text_layer.size
+    fontsize = 30
+    font_path = font_path or imgtools.DEFAULT_FONT
+    if isinstance(font_path, str):
+        font_path = Path(font_path)
+    if not font_path.exists():  # Hosted api specified a font that doesn't exist on the server
+        if (imgtools.DEFAULT_FONTS / font_path.name).exists():
+            font_path = imgtools.DEFAULT_FONTS / font_path.name
+        else:
+            font_path = imgtools.DEFAULT_FONT
+    font_path = str(font_path)
     font = ImageFont.truetype(font_path, fontsize)
     text = _("Level {}").format(level)
-    while font.getlength(text) + int(card.height * 1.2) > card.width - (int(card.height * 1.2) - card.height):
+    placement_area_center_x = th + ((tw - th) / 2)
+    while font.getlength(text) > (tw - th) - 10:
         fontsize -= 1
         font = ImageFont.truetype(font_path, fontsize)
-
-    # Draw rounded rectangle at 4x size and scale down to crop card to
-    mask = Image.new("RGBA", ((card.size[0]), (card.size[1])), 0)
-    mask_draw = ImageDraw.Draw(mask)
-    mask_draw.rounded_rectangle(
-        (10, 0, card.width, card.height),
-        fill=(0, 0, 0),
-        width=5,
-        radius=card.height,
-    )
-
-    # Make new Image to create composite
-    composite_holder = Image.new("RGBA", card.size, (0, 0, 0, 0))
-    final = Image.composite(card, composite_holder, mask)
-
-    # Prep profile to paste
-    pfpsize = (card.height, card.height)
-    profile = pfp.convert("RGBA").resize(pfpsize, Image.Resampling.LANCZOS)
-
-    # Create mask for profile image crop
-    mask = Image.new("RGBA", ((card.size[0]), (card.size[1])), 0)
-    mask_draw = ImageDraw.Draw(mask)
-    mask_draw.ellipse((0, 0, pfpsize[0], pfpsize[1]), fill=(255, 255, 255, 255))
-
-    pfp_holder = Image.new("RGBA", card.size, (255, 255, 255, 0))
-    pfp_holder.paste(profile, (0, 0))
-    pfp_composite_holder = Image.new("RGBA", card.size, (0, 0, 0, 0))
-    pfp_composite_holder = Image.composite(pfp_holder, pfp_composite_holder, mask)
-
-    final = Image.alpha_composite(final, pfp_composite_holder)
-    # Draw
-    draw = ImageDraw.Draw(final)
-    # Filling text
-    text_x = int(final.height * 1.2)
-    text_y = int(final.height / 2)
-    textpos = (text_x, text_y)
+    draw = ImageDraw.Draw(text_layer)
     draw.text(
-        textpos,
-        text,
-        color or imgtools.rand_rgb(),
+        xy=(placement_area_center_x, int(th / 2.1)),
+        text=text,
+        fill=color or imgtools.rand_rgb(),
         font=font,
-        anchor="lm",
+        anchor="mm",
         stroke_width=3,
         stroke_fill=(0, 0, 0),
     )
-    # Finally resize the image
-    final = final.resize(desired_card_size, Image.Resampling.LANCZOS)
-    if debug:
-        final.show(title="LevelUp Image")
+    # FINALIZE IMAGE
+    if not render_gif or (not pfp_animated and not bg_animated):
+        # Render a static pfp on a static background
+        if not card.mode == "RGBA":
+            card = card.convert("RGBA")
+        if not pfp.mode == "RGBA":
+            pfp = pfp.convert("RGBA")
+        card = imgtools.fit_aspect_ratio(card, desired_card_size)
+        pfp = pfp.resize((card.height, card.height), Image.Resampling.LANCZOS)
+        pfp = imgtools.make_profile_circle(pfp)
+        card.paste(text_layer, (0, 0), text_layer)
+        card.paste(pfp, (0, 0), pfp)
+        card = imgtools.round_image_corners(card, card.height)
+        if debug:
+            card.show(title="LevelUp Image")
+        buffer = BytesIO()
+        card.save(buffer, format="WEBP")
+        card.close()
+        return buffer.getvalue(), False
+    if pfp_animated and not bg_animated:
+        # Render an animated pfp on a static background
+        if not card.mode == "RGBA":
+            card = card.convert("RGBA")
+        card = imgtools.fit_aspect_ratio(card, desired_card_size)
+        avg_duration = imgtools.get_avg_duration(pfp)
+        log.debug(f"Average frame duration: {avg_duration}")
+        frames: t.List[Image.Image] = []
+        for frame in range(pfp.n_frames):
+            pfp_frame = ImageSequence.Iterator(pfp)[frame]
+            card_frame = card.copy()
+            if not pfp_frame.mode == "RGBA":
+                pfp_frame = pfp_frame.convert("RGBA")
+
+            pfp_frame = pfp_frame.resize((card.height, card.height), Image.Resampling.LANCZOS)
+            pfp_frame = imgtools.make_profile_circle(pfp_frame)
+
+            card_frame.paste(text_layer, (0, 0), text_layer)
+            card_frame.paste(pfp_frame, (0, 0), pfp_frame)
+            card_frame = imgtools.round_image_corners(card_frame, card_frame.height)
+            frames.append(card_frame)
+        buffer = BytesIO()
+        frames[0].save(
+            buffer,
+            save_all=True,
+            append_images=frames[1:],
+            format="GIF",
+            duration=avg_duration,
+            loop=0,
+            quality=75,
+            optimize=True,
+        )
+        buffer.seek(0)
+        if debug:
+            Image.open(buffer).show()
+        return buffer.getvalue(), True
+    if bg_animated and not pfp_animated:
+        # Render a static pfp on an animated background
+        if not pfp.mode == "RGBA":
+            pfp = pfp.convert("RGBA")
+        pfp = pfp.resize((desired_card_size[1], desired_card_size[1]), Image.Resampling.LANCZOS)
+        pfp = imgtools.make_profile_circle(pfp)
+        avg_duration = imgtools.get_avg_duration(card)
+        log.debug(f"Average frame duration: {avg_duration}")
+        frames: t.List[Image.Image] = []
+        for frame in range(card.n_frames):
+            bg_frame = ImageSequence.Iterator(card)[frame]
+            card_frame = bg_frame.copy()
+            if not card_frame.mode == "RGBA":
+                card_frame = card_frame.convert("RGBA")
+            card_frame = imgtools.fit_aspect_ratio(card_frame, desired_card_size)
+            # card_frame = imgtools.round_image_corners(card_frame, card_frame.height)
+            card_frame.paste(text_layer, (0, 0), text_layer)
+            card_frame.paste(pfp, (0, 0), pfp)
+            frames.append(card_frame)
+
+        buffer = BytesIO()
+        frames[0].save(
+            buffer,
+            save_all=True,
+            append_images=frames[1:],
+            format="GIF",
+            duration=avg_duration,
+            loop=0,
+            quality=75,
+            optimize=True,
+        )
+        buffer.seek(0)
+        if debug:
+            Image.open(buffer).show()
+        return buffer.getvalue(), True
+
+    # If we're here, both the pfp and the background are animated
+    card_duration = imgtools.get_avg_duration(card)
+    pfp_duration = imgtools.get_avg_duration(pfp)
+    log.debug(f"Card duration: {card_duration}, PFP duration: {pfp_duration}")
+    # Round to the nearest 10ms
+    card_duration = round(card_duration, -1)
+    pfp_duration = round(pfp_duration, -1)
+    # Get the least common multiple of the two durations
+    combined_duration = math.lcm(card_duration, pfp_duration)
+    # Soft cap it
+    max_duration = max(card_duration, pfp_duration)
+    if combined_duration > max_duration * 1.2:
+        combined_duration = max_duration * 1.2
+
+    total_pfp_duration = pfp.n_frames * pfp_duration
+    total_card_duration = card.n_frames * card_duration
+    total_duration_lcm = math.lcm(total_pfp_duration, total_card_duration)
+
+    # Get the number of frames to render
+    num_frames = total_duration_lcm // combined_duration
+    # Also soft cap max amount of frames so we dont get a huge gif
+    max_frame_count = max(pfp.n_frames, card.n_frames) * 1.2
+    max_frame_count = min(round(max_frame_count), num_frames)
+    log.debug(f"Max frame count: {max_frame_count}")
+
+    frames: t.List[Image.Image] = []
+    for frame_num in range(max_frame_count):
+        time = frame_num * combined_duration
+
+        card_frame_index = (time // card_duration) % card.n_frames
+        pfp_frame_index = (time // pfp_duration) % pfp.n_frames
+
+        card_frame: Image.Image = ImageSequence.Iterator(card)[int(card_frame_index)]
+        pfp_frame: Image.Image = ImageSequence.Iterator(pfp)[int(pfp_frame_index)]
+
+        card_frame = imgtools.fit_aspect_ratio(card_frame, desired_card_size)
+        pfp_frame = pfp_frame.resize((card_frame.height, card_frame.height), Image.Resampling.LANCZOS)
+        pfp_frame = imgtools.make_profile_circle(pfp_frame)
+        if not card_frame.mode == "RGBA":
+            card_frame = card_frame.convert("RGBA")
+        if not pfp_frame.mode == "RGBA":
+            pfp_frame = pfp_frame.convert("RGBA")
+
+        card_frame.paste(text_layer, (0, 0), text_layer)
+        card_frame.paste(pfp_frame, (0, 0), pfp_frame)
+        # card_frame = imgtools.round_image_corners(card_frame, card_frame.height)
+        frames.append(card_frame)
     buffer = BytesIO()
-    final.save(buffer, format="WEBP")
-    final.close()
-    return buffer.getvalue()
+    frames[0].save(
+        buffer,
+        save_all=True,
+        append_images=frames[1:],
+        format="GIF",
+        duration=combined_duration,
+        loop=0,
+        quality=75,
+        optimize=True,
+    )
+    buffer.seek(0)
+    if debug:
+        Image.open(buffer).show()
+    return buffer.getvalue(), True
 
 
 if __name__ == "__main__":
-    assert isinstance(generate_level_img(debug=True), bytes)
+    # Setup console logging
+    logging.basicConfig(level=logging.DEBUG)
+    logging.getLogger("PIL").setLevel(logging.INFO)
+    test_banner = (imgtools.ASSETS / "tests" / "banner3.gif").read_bytes()
+    test_avatar = (imgtools.ASSETS / "tests" / "tree.gif").read_bytes()
+    res, animated = generate_level_img(
+        background=test_banner,
+        avatar=test_avatar,
+        level=10,
+        debug=True,
+        render_gif=True,
+    )
+    result_path = imgtools.ASSETS / "tests" / "level.gif"
+    result_path.write_bytes(res)

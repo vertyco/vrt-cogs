@@ -172,7 +172,7 @@ def generate_runescape_profile(
     )
     # ---------------- Start finalizing the image ----------------
     if pfp_animated and render_gif:
-        avd_duration = imgtools.get_avg_duration(pfp)
+        avg_duration = imgtools.get_avg_duration(pfp)
         frames: t.List[Image.Image] = []
         for frame in range(pfp.n_frames):
             pfp.seek(frame)
@@ -195,7 +195,7 @@ def generate_runescape_profile(
             format="GIF",
             save_all=True,
             append_images=frames[1:],
-            duration=avd_duration,
+            duration=avg_duration,
             loop=0,
         )
         buffer.seek(0)

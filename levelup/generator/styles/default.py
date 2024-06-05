@@ -109,7 +109,6 @@ def generate_default_profile(
         pfp = imgtools.DEFAULT_PFP
 
     pfp_animated = getattr(pfp, "is_animated", False)
-    # pfp_animated = False
     bg_animated = getattr(card, "is_animated", False)
     log.debug(f"PFP animated: {pfp_animated}, BG animated: {bg_animated}")
 
@@ -348,7 +347,6 @@ def generate_default_profile(
             log.debug(f"Converting pfp mode '{pfp.mode}' to RGBA")
             pfp = pfp.convert("RGBA")
         card = imgtools.fit_aspect_ratio(card, desired_card_size)
-        card = card.resize(desired_card_size, Image.Resampling.LANCZOS)
         if blur:
             blur_section = imgtools.blur_section(card, (blur_edge, 0, card.width, card.height))
             # Paste onto the stats
@@ -372,7 +370,6 @@ def generate_default_profile(
             log.debug(f"Converting card mode '{card.mode}' to RGBA")
             card = card.convert("RGBA")
         card = imgtools.fit_aspect_ratio(card, desired_card_size)
-        card = card.resize(desired_card_size, Image.Resampling.LANCZOS)
         if blur:
             blur_section = imgtools.blur_section(card, (blur_edge, 0, card.width, card.height))
             # Paste onto the stats
@@ -426,8 +423,6 @@ def generate_default_profile(
             # Prepare copies of the card and stats
             card_frame = card.copy()
             card_frame = imgtools.fit_aspect_ratio(card_frame, desired_card_size)
-            card_frame = card.copy().resize(desired_card_size, Image.Resampling.NEAREST)
-
             if card_frame.mode != "RGBA":
                 card_frame = card_frame.convert("RGBA")
 
@@ -501,8 +496,6 @@ def generate_default_profile(
         pfp_frame = ImageSequence.Iterator(pfp)[pfp_frame_index]
 
         card_frame = imgtools.fit_aspect_ratio(card_frame, desired_card_size, preserve=True)
-        card_frame = card.copy().resize(desired_card_size, Image.Resampling.NEAREST)
-
         if card_frame.mode != "RGBA":
             card_frame = card_frame.convert("RGBA")
 

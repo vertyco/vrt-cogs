@@ -98,12 +98,23 @@ def make_profile_circle(
     return pfp
 
 
-def round_image_corners(image: Image.Image, radius: int) -> Image.Image:
-    """Round the edges of an image"""
+def get_rounded_corner_mask(image: Image.Image, radius: int) -> Image.Image:
+    """Get a mask for rounded corners"""
     mask = Image.new("L", (image.width * 4, image.height * 4), 0)
     draw = ImageDraw.Draw(mask)
-    draw.rounded_rectangle((0, 0, mask.width, mask.height), fill=255, radius=radius * 4)
+    draw.rounded_rectangle(
+        (0, 0, mask.width, mask.height),
+        fill=255,
+        radius=radius * 4,
+        outline=150,
+        width=40,
+    )
     mask = mask.resize(image.size, Image.Resampling.LANCZOS)
+    return mask
+
+
+def round_image_corners(image: Image.Image, radius: int) -> Image.Image:
+    mask = get_rounded_corner_mask(image, radius)
     image.putalpha(mask)
     return image
 
@@ -283,6 +294,7 @@ def fit_aspect_ratio(
     image: Image.Image,
     desired_size: t.Tuple[int, int],  # (1050, 450)
     preserve: bool = False,
+    method: Image.Resampling = Image.Resampling.LANCZOS,
 ) -> Image.Image:
     """
     Crop image to fit aspect ratio
@@ -323,7 +335,7 @@ def fit_aspect_ratio(
             x = 0
             y = (image.height - new_height) // 2
             image = image.crop((x, y, image.width, y + new_height))
-        return image.resize(desired_size, Image.Resampling.LANCZOS)
+        return image.resize(desired_size, method)
 
 
 def get_random_background() -> Image.Image:
