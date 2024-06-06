@@ -98,28 +98,36 @@ class User(MixinMeta):
                 "Welcome to LevelUp!\nUse {} to view your profile settings and the available customization commands!"
             ).format(f"`{ctx.clean_prefix}mypf`")
 
-        if ctx.interaction is None:
-            async with ctx.typing():
-                result = await self.get_user_profile_cached(user)
-                conf = self.db.get_conf(ctx.guild)
-                if isinstance(result, discord.Embed):
-                    try:
-                        await ctx.reply(content=new_user_txt, embed=result, mention_author=conf.notifymention)
-                    except discord.HTTPException:
-                        await ctx.send(content=new_user_txt, embed=result)
-                else:
-                    try:
-                        await ctx.reply(content=new_user_txt, file=result, mention_author=conf.notifymention)
-                    except discord.HTTPException:
-                        result.fp.seek(0)
-                        await ctx.send(content=new_user_txt, file=result)
-        else:
-            await ctx.defer(ephemeral=True)
-            result = await self.get_user_profile_cached(user)
-            if isinstance(result, discord.Embed):
-                await ctx.send(content=new_user_txt, embed=result, ephemeral=True)
+        try:
+            if ctx.interaction is None:
+                async with ctx.typing():
+                    result = await self.get_user_profile_cached(user)
+                    conf = self.db.get_conf(ctx.guild)
+                    if isinstance(result, discord.Embed):
+                        try:
+                            await ctx.reply(content=new_user_txt, embed=result, mention_author=conf.notifymention)
+                        except discord.HTTPException:
+                            await ctx.send(content=new_user_txt, embed=result)
+                    else:  # File
+                        try:
+                            await ctx.reply(content=new_user_txt, file=result, mention_author=conf.notifymention)
+                        except discord.HTTPException:
+                            result.fp.seek(0)
+                            await ctx.send(content=new_user_txt, file=result)
             else:
-                await ctx.send(content=new_user_txt, file=result, ephemeral=True)
+                await ctx.defer(ephemeral=True)
+                result = await self.get_user_profile_cached(user)
+                if isinstance(result, discord.Embed):
+                    await ctx.send(content=new_user_txt, embed=result, ephemeral=True)
+                else:  # File
+                    await ctx.send(content=new_user_txt, file=result, ephemeral=True)
+        except Exception as e:
+            log.error("Error generating profile", exc_info=e)
+            if "Payload Too Large" in str(e):
+                txt = _("Your profile image is too large to send!")
+            else:
+                txt = _("An error occurred while generating your profile!\n{}").format(str(e))
+            await ctx.send(txt)
 
     @commands.hybrid_command(name="prestige")
     @commands.guild_only()
@@ -585,7 +593,6 @@ class User(MixinMeta):
             return await ctx.send(_("Your profile background has been set to default!"))
 
         attachments = utils.get_attachments(ctx)
-        # urls = await ImageFinder().search_for_images(ctx)
 
         # If image url is given, run some checks
         if not url and not attachments:
@@ -597,9 +604,14 @@ class User(MixinMeta):
                 return await ctx.send(_("Your background has been reset to default!"))
 
         if url is None:
+            if attachments[0].size > ctx.guild.filesize_limit:
+                return await ctx.send(_("That image is too large for this server's upload limit!"))
             profile.background = attachments[0].url
             try:
-                await self.get_user_profile(ctx.author, reraise=True)
+                file: discord.File = await self.get_user_profile(ctx.author, reraise=True)
+                if file.__sizeof__() > ctx.guild.filesize_limit:
+                    profile.background = "default"
+                    return await ctx.send(_("That image is too large for this server's upload limit!"))
             except Exception as e:
                 profile.background = "default"
                 return await ctx.send(_("That image is not a valid profile background!\n{}").format(str(e)))
@@ -611,7 +623,10 @@ class User(MixinMeta):
             url = await sanitize_url(url, ctx)
             profile.background = url
             try:
-                await self.get_user_profile(ctx.author, reraise=True)
+                file: discord.File = await self.get_user_profile(ctx.author, reraise=True)
+                if file.__sizeof__() > ctx.guild.filesize_limit:
+                    profile.background = "default"
+                    return await ctx.send(_("That image is too large for this server's upload limit!"))
             except Exception as e:
                 profile.background = "default"
                 return await ctx.send(_("That image is not a valid profile background!\n{}").format(str(e)))
