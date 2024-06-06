@@ -401,6 +401,7 @@ def generate_default_profile(
             append_images=frames[1:],
             duration=avg_duration,
             loop=0,
+            quality=75,
             optimize=True,
         )
         buffer.seek(0)
@@ -444,6 +445,7 @@ def generate_default_profile(
             append_images=frames[1:],
             duration=avg_duration,
             loop=0,
+            quality=75,
             optimize=True,
         )
         buffer.seek(0)
