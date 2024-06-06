@@ -114,8 +114,14 @@ class LevelUps(MixinMeta):
         if color == (0, 0, 0):
             color = utils.string_to_rgb(profile.namecolor) if profile.namecolor else None
 
-        # TODO: Add API offloading support
         payload = aiohttp.FormData()
+        if self.db.external_api_url or (self.db.internal_api_port and self.api_proc):
+            payload.add_field("background_bytes", banner, filename="data")
+            payload.add_field("avatar_bytes", avatar, filename="data")
+            payload.add_field("level", str(profile.level))
+            payload.add_field("color", str(color))
+            payload.add_field("font_path", font)
+            payload.add_field("render_gif", str(self.db.render_gifs))
 
         file: discord.File = None
         if external_url := self.db.external_api_url:

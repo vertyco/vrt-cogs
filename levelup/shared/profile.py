@@ -193,7 +193,6 @@ class ProfileFormatting(MixinMeta):
         }
         payload = aiohttp.FormData()
         if self.db.external_api_url or (self.db.internal_api_port and self.api_proc):
-            payload = aiohttp.FormData()
             for key, value in kwargs.items():
                 if value is None:
                     continue
