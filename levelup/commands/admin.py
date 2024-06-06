@@ -956,6 +956,7 @@ class Admin(MixinMeta):
 
     @level_roles.command(name="initialize")
     @commands.bot_has_permissions(manage_roles=True, embed_links=True)
+    @commands.cooldown(1, 240, commands.BucketType.guild)
     async def init_roles(self, ctx: commands.Context):
         """
         Initialize level roles
@@ -974,10 +975,17 @@ class Admin(MixinMeta):
         msg = await ctx.send(embed=embed)
         conf = self.db.get_conf(ctx.guild)
         async with ctx.typing():
-            for user in ctx.guild.members:
+            for idx, user in enumerate(ctx.guild.members):
                 added, removed = await self.ensure_roles(user, conf)
                 roles_added += len(added)
                 roles_removed += len(removed)
+                # Update message every 5% of the way
+                if idx % (len(ctx.guild.members) // 20) == 0:
+                    desc = _("Synchronizing level roles, this may take a while...\n{:.0%} complete").format(
+                        idx / len(ctx.guild.members)
+                    )
+                    embed.description = desc
+                    await msg.edit(embed=embed)
 
         if not roles_added and not roles_removed:
             return await msg.edit(
