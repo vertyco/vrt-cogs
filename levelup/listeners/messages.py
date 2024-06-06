@@ -1,3 +1,4 @@
+import logging
 import random
 from time import perf_counter
 
@@ -5,6 +6,8 @@ import discord
 from redbot.core import commands
 
 from ..abc import MixinMeta
+
+log = logging.getLogger("red.vrt.levelup.listeners.messages")
 
 
 class MessageListener(MixinMeta):
@@ -86,6 +89,7 @@ class MessageListener(MixinMeta):
             if role_id in conf.role_groups:
                 conf.role_groups[role_id] += xp_to_add
         # Add the xp to the user's profile
+        log.debug(f"Adding {xp_to_add} xp to {message.author.name} in {message.guild.name}")
         profile.xp += xp_to_add
         if weekly:
             weekly.xp += xp_to_add
