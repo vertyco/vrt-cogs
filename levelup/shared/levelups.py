@@ -38,14 +38,13 @@ class LevelUps(MixinMeta):
         if not calculated_level:
             # User hasnt reached level 1 yet
             return
+        log.debug(f"{member} has reached level {calculated_level} in {guild}")
         profile.level = calculated_level
         # User has reached a new level, time to log and award roles if needed
         added, __ = await self.ensure_roles(member, conf)
-        if not conf.notify:
-            return
-        log_channel = guild.get_channel(conf.notifylog) if conf.notifylog else channel
-        if not log_channel and message is not None:
-            log_channel = message.channel
+        if not channel and message is not None:
+            channel = message.channel
+        log_channel = guild.get_channel(conf.notifylog) if conf.notifylog else None
         placeholders = {
             "username": member.name,
             "displayname": member.display_name,
@@ -88,16 +87,20 @@ class LevelUps(MixinMeta):
                 ).set_thumbnail(url=member.avatar_url)
                 with suppress(discord.HTTPException):
                     await member.send(embed=embed)
-            if log_channel:
-                embed = discord.Embed(
-                    description=msg_txt,
-                    color=member.color,
-                ).set_author(name=member.display_name, icon_url=member.avatar_url)
+
+            embed = discord.Embed(
+                description=msg_txt,
+                color=member.color,
+            ).set_author(name=member.display_name, icon_url=member.avatar_url)
+            if channel and conf.notify:
                 with suppress(discord.HTTPException):
                     if conf.notifymention:
                         await log_channel.send(member.mention, embed=embed)
                     else:
                         await log_channel.send(embed=embed)
+            if log_channel:
+                with suppress(discord.HTTPException):
+                    await log_channel.send(embed=embed)
             return
 
         banner = await self.get_profile_background(member.id, profile)
