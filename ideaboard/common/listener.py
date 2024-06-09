@@ -46,6 +46,7 @@ class Listeners(MixinMeta):
 
     @commands.Cog.listener()
     async def on_message_delete(self, message: discord.Message) -> None:
+        """Check if the message deleted was a suggestions"""
         if message.guild is None:
             return
         if not message.content.startswith("Suggestion #"):
@@ -83,3 +84,25 @@ class Listeners(MixinMeta):
             log.info(f"Suggestion #{num} had its message deleted in {message.guild.name} ({message.guild.id})")
             await self.save()
             break
+
+    @commands.Cog.listener()
+    async def on_member_remove(self, member: discord.Member):
+        """Remove all votes from a user when they leave the server"""
+        if member.guild is None:
+            return
+        conf = self.db.get_conf(member.guild)
+        if member.id not in conf.profiles:
+            return
+        purged = False
+        for num, suggestion in conf.suggestions.copy().items():
+            if member.id in suggestion.upvotes:
+                conf.suggestions[num].upvotes.remove(member.id)
+                purged = True
+            if member.id in suggestion.downvotes:
+                conf.suggestions[num].downvotes.remove(member.id)
+                purged = True
+        if purged:
+            await self.save()
+            log.info(
+                f"Votes from {member.display_name} ({member.id}) were purged in {member.guild.name} ({member.guild.id})"
+            )
