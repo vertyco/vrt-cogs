@@ -350,6 +350,7 @@ class AdminBase(MixinMeta):
             color=discord.Color.blue(),
             title=_("Votes for Suggestion #{}").format(number),
             description=suggestion.content,
+            timestamp=suggestion.created,
         )
 
         upvoter_ids = suggestion.upvotes
