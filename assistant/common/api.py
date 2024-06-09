@@ -553,13 +553,14 @@ class API(MixinMeta):
     # -------------------------------------------------------
     # -------------------------------------------------------
     async def get_function_menu_embeds(self, user: discord.Member) -> List[discord.Embed]:
-        func_dump = {k: v.model_dump() for k, v in self.db.functions.items()}
+        func_dump = {k: v.model_dump(exclude_defaults=False) for k, v in self.db.functions.items()}
         registry = {"Assistant-Custom": func_dump}
         for cog_name, function_schemas in self.registry.items():
             cog = self.bot.get_cog(cog_name)
             if not cog:
                 continue
-            for function_name, function_schema in function_schemas.items():
+            for function_name, data in function_schemas.items():
+                function_schema = data["schema"]
                 function_obj = getattr(cog, function_name, None)
                 if function_obj is None:
                     continue
@@ -568,6 +569,7 @@ class API(MixinMeta):
                 registry[cog_name][function_name] = {
                     "code": inspect.getsource(function_obj),
                     "jsonschema": function_schema,
+                    "permission_level": data["permission_level"],
                 }
 
         conf = self.db.get_conf(user.guild)
@@ -577,7 +579,7 @@ class API(MixinMeta):
         page = 1
         embeds = []
         for cog_name, functions in registry.items():
-            for function_name, func in functions.items():
+            for function_name, data in functions.items():
                 embed = discord.Embed(
                     title=_("Custom Functions"),
                     description=function_name,
@@ -595,7 +597,7 @@ class API(MixinMeta):
                         value=_("This is an internal command that can only be used when interacting with a tutor"),
                         inline=False,
                     )
-                schema = json.dumps(func["jsonschema"], indent=2)
+                schema = json.dumps(data["jsonschema"], indent=2)
                 tokens = await self.count_tokens(schema, model)
 
                 schema_text = _("This function consumes `{}` input tokens each call\n").format(humanize_number(tokens))
@@ -606,15 +608,16 @@ class API(MixinMeta):
                     else:
                         schema_text += box(schema, "py")
 
-                    if len(func["code"]) > 900:
-                        code_text = box(func["code"][:900] + "...", "py")
+                    if len(data["code"]) > 900:
+                        code_text = box(data["code"][:900] + "...", "py")
                     else:
-                        code_text = box(func["code"], "py")
+                        code_text = box(data["code"], "py")
 
                 else:
-                    schema_text += box(func["jsonschema"]["description"], "json")
+                    schema_text += box(data["jsonschema"]["description"], "json")
                     code_text = box(_("Hidden..."))
 
+                embed.add_field(name=_("Permission Level"), value=data["permission_level"].capitalize(), inline=False)
                 embed.add_field(name=_("Schema"), value=schema_text, inline=False)
                 embed.add_field(name=_("Code"), value=code_text, inline=False)
 

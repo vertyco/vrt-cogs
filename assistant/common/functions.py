@@ -123,23 +123,3 @@ class AssistantFunctions(MixinMeta):
             return "You have no memories available!"
         joined = "\n".join([i for i in conf.embeddings])
         return joined
-
-    async def request_training(
-        self,
-        conf: GuildSettings,
-        guild: discord.Guild,
-        message: str,
-        *args,
-        **kwargs,
-    ):
-        if not conf.training_channel:
-            return "No training channel is set!"
-        channel = guild.get_channel(conf.training_channel)
-        if not channel:
-            return "The training channel no longer exists!"
-        roles = [guild.get_role(role) for role in conf.tutors if guild.get_role(role)]
-        pings = [role.mention for role in roles if role.mention]
-        pings = " ".join(pings) if pings else ""
-        mentions = discord.AllowedMentions(roles=True)
-        await channel.send(f"{pings}\n{message}".strip(), allowed_mentions=mentions)
-        return "Your training request has been sent!"

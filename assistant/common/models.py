@@ -18,10 +18,10 @@ class AssistantBaseModel(BaseModel):
             return super().model_validate(obj, *args, **kwargs)
         return super().parse_obj(obj, *args, **kwargs)
 
-    def model_dump(self, *args, **kwargs):
+    def model_dump(self, exclude_defaults: bool = True):
         if VERSION >= "2.0.1":
-            return super().model_dump(mode="json", exclude_defaults=True)
-        return orjson.loads(super().json(exclude_defaults=True))
+            return super().model_dump(mode="json", exclude_defaults=exclude_defaults)
+        return orjson.loads(super().json(exclude_defaults=exclude_defaults))
 
 
 class Embedding(AssistantBaseModel):
@@ -52,6 +52,7 @@ class CustomFunction(AssistantBaseModel):
 
     code: str
     jsonschema: dict
+    permission_level: str = "user"  # user, mod, admin, owner
 
     def prep(self) -> Callable:
         """Prep function for execution"""
@@ -73,7 +74,6 @@ class GuildSettings(AssistantBaseModel):
     usage: Dict[str, Usage] = {}
     blacklist: List[int] = []  # Channel/Role/User IDs
     tutors: List[int] = []  # Role or user IDs
-    training_channel: int = 0  # Model will ask for training data here
     top_n: int = 3
     min_relatedness: float = 0.78
     embed_method: str = "dynamic"  # hybrid, dynamic, static, user
@@ -349,11 +349,13 @@ class DB(AssistantBaseModel):
         key = f"{member_id}-{channel_id}-{guild_id}"
         return self.conversations.setdefault(key, Conversation())
 
-    def prep_functions(
+    async def prep_functions(
         self,
         bot: Red,
         conf: GuildSettings,
         registry: Dict[str, Dict[str, dict]],
+        member: discord.Member = None,
+        showall: bool = False,
     ) -> Tuple[List[dict], Dict[str, Callable]]:
         """Prep custom and registry functions for use with the API
 
@@ -365,12 +367,36 @@ class DB(AssistantBaseModel):
         Returns:
             Tuple[List[dict], Dict[str, Callable]]: List of json function schemas and a dict mapping to their callables
         """
+
+        async def can_use(perm_level: str) -> bool:
+            if perm_level == "user":
+                return True
+            if member is None:
+                return False
+            if perm_level == "mod":
+                perms = [
+                    member.guild_permissions.manage_messages,
+                    await bot.is_mod(member),
+                ]
+                return any(perms)
+            if perm_level == "admin":
+                perms = [
+                    member.guild_permissions.administrator,
+                    await bot.is_admin(member),
+                ]
+                return any(perms)
+            if perm_level == "owner":
+                return await bot.is_owner(member)
+            return False
+
         function_calls = []
         function_map = {}
 
         # Prep bot owner functions first
         for function_name, func in self.functions.items():
             if func.jsonschema["name"] in conf.disabled_functions:
+                continue
+            if not await can_use(func.permission_level) and not showall:
                 continue
             function_calls.append(func.jsonschema)
             function_map[function_name] = func.prep()
@@ -380,7 +406,7 @@ class DB(AssistantBaseModel):
             cog = bot.get_cog(cog_name)
             if not cog:
                 continue
-            for function_name, function_schema in function_schemas.items():
+            for function_name, data in function_schemas.items():
                 if function_name in conf.disabled_functions:
                     continue
                 if function_name in function_map:
@@ -388,7 +414,9 @@ class DB(AssistantBaseModel):
                 function_obj = getattr(cog, function_name, None)
                 if function_obj is None:
                     continue
-                function_calls.append(function_schema)
+                if not await can_use(data["permission_level"]) and not showall:
+                    continue
+                function_calls.append(data["schema"])
                 function_map[function_name] = function_obj
 
         return function_calls, function_map

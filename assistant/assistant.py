@@ -2,7 +2,7 @@ import asyncio
 import logging
 from multiprocessing.pool import Pool
 from time import perf_counter
-from typing import Callable, Dict, List, Optional, Union
+from typing import Callable, Dict, List, Literal, Optional, Union
 
 import discord
 from discord.ext import tasks
@@ -14,13 +14,7 @@ from .abc import CompositeMetaClass
 from .commands import AssistantCommands
 from .common.api import API
 from .common.chat import ChatHandler
-from .common.constants import (
-    CREATE_MEMORY,
-    EDIT_MEMORY,
-    LIST_MEMORIES,
-    REQUEST_TRAINING,
-    SEARCH_MEMORIES,
-)
+from .common.constants import CREATE_MEMORY, EDIT_MEMORY, LIST_MEMORIES, SEARCH_MEMORIES
 from .common.functions import AssistantFunctions
 from .common.models import DB, Embedding, EmbeddingEntryExists, NoAPIKey
 from .common.utils import json_schema_invalid
@@ -53,7 +47,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "6.2.29"
+    __version__ = "6.3.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -73,7 +67,7 @@ class Assistant(
         self.db: DB = DB()
         self.mp_pool = Pool()
 
-        # {cog_name: {function_name: {function_json_schema}}}
+        # {cog_name: {function_name: {"permission_level": "user", "schema": function_json_schema}}}
         self.registry: Dict[str, Dict[str, dict]] = {}
 
         self.saving = False
@@ -107,7 +101,6 @@ class Assistant(
         await self.register_function(self.qualified_name, SEARCH_MEMORIES)
         await self.register_function(self.qualified_name, EDIT_MEMORY)
         await self.register_function(self.qualified_name, LIST_MEMORIES)
-        await self.register_function(self.qualified_name, REQUEST_TRAINING)
 
         logging.getLogger("openai").setLevel(logging.WARNING)
         logging.getLogger("aiocache").setLevel(logging.WARNING)
@@ -317,12 +310,18 @@ class Assistant(
         for schema in schemas:
             await self.register_function(cog_name, schema)
 
-    async def register_function(self, cog_name: str, schema: dict) -> bool:
+    async def register_function(
+        self,
+        cog_name: str,
+        schema: dict,
+        permission_level: Literal["user", "mod", "admin", "owner"] = "user",
+    ) -> bool:
         """Allow 3rd party cogs to register their functions for the model to use
 
         Args:
             cog_name (str): the name of the cog registering the function
             schema (dict): JSON schema representation of the command (see https://json-schema.org/understanding-json-schema/)
+            permission_level (str): the permission level required to call the function (user, mod, admin, owner)
 
         Returns:
             bool: True if function was successfully registered
@@ -362,7 +361,7 @@ class Assistant(
             self.registry[cog_name] = {}
 
         log.info(f"The {cog_name} cog registered a function object: {function_name}")
-        self.registry[cog_name][function_name] = schema
+        self.registry[cog_name][function_name] = {"permission_level": permission_level, "schema": schema}
         return True
 
     async def unregister_function(self, cog_name: str, function_name: str) -> None:

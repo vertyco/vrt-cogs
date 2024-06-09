@@ -247,7 +247,7 @@ class ChatHandler(MixinMeta):
 
         if conf.use_function_calls and extend_function_calls:
             # Prepare registry and custom functions
-            prepped_function_calls, prepped_function_map = self.db.prep_functions(
+            prepped_function_calls, prepped_function_map = await self.db.prep_functions(
                 bot=self.bot, conf=conf, registry=self.registry
             )
             functions.extend(prepped_function_calls)
@@ -355,11 +355,6 @@ class ChatHandler(MixinMeta):
         if "list_memories" in function_map and not conf.embeddings:
             function_calls = [i for i in function_calls if i["name"] != "list_memories"]
             del function_map["list_memories"]
-
-        # Remove request_training if no training channel is set
-        if "request_training" in function_map and not conf.training_channel:
-            function_calls = [i for i in function_calls if i["name"] != "request_training"]
-            del function_map["request_training"]
 
         max_tokens = self.get_max_tokens(conf, author)
         messages = await self.prepare_messages(

@@ -396,30 +396,42 @@ class EmbeddingMenu(discord.ui.View):
 
 
 class CodeModal(discord.ui.Modal):
-    def __init__(self, schema: str, code: str):
+    def __init__(self, schema: str, code: str, permission_level: str = None):
         super().__init__(title=_("Function Edit"), timeout=None)
 
         self.schema = ""
         self.code = ""
+        self.permission_level = ""
 
         self.schema_field = discord.ui.TextInput(
             label=_("JSON Schema"),
             style=discord.TextStyle.paragraph,
             default=schema,
-            required=True,
         )
         self.add_item(self.schema_field)
         self.code_field = discord.ui.TextInput(
             label=_("Code"),
             style=discord.TextStyle.paragraph,
             default=code,
-            required=True,
         )
         self.add_item(self.code_field)
+        self.perm_field = discord.ui.TextInput(
+            label=_("Permission Level"),
+            placeholder=_("User, Mod, Admin, or Owner"),
+            style=discord.TextStyle.short,
+            default=permission_level,
+        )
+        self.add_item(self.perm_field)
 
     async def on_submit(self, interaction: discord.Interaction):
         self.schema = self.schema_field.value
         self.code = self.code_field.value
+        if self.perm_field.value.lower() not in ("user", "mod", "admin", "owner"):
+            return await interaction.response.send_message(
+                _("Invalid permission level, must be one of `User`, `Mod`, `Admin`, or `Owner`"),
+                ephemeral=True,
+            )
+        self.permission_level = self.perm_field.value.lower()
         await interaction.response.defer()
         self.stop()
 
@@ -613,9 +625,9 @@ class CodeMenu(discord.ui.View):
             else:
                 text = message.content
             if extracted := extract_code_blocks(text):
-                schema = json5.loads(extracted[0].strip())
+                schema: dict = json5.loads(extracted[0].strip())
             else:
-                schema = json5.loads(text.strip())
+                schema: dict = json5.loads(text.strip())
         except Exception as e:
             return await interaction.followup.send(_("SchemaError\n{}").format(box(str(e), "py")))
         if not schema:
@@ -683,14 +695,14 @@ class CodeMenu(discord.ui.View):
                 ephemeral=True,
             )
 
-        modal = CodeModal(json.dumps(entry.jsonschema, indent=2), entry.code)
+        modal = CodeModal(json.dumps(entry.jsonschema, indent=2), entry.code, entry.permission_level)
         await interaction.response.send_modal(modal)
         await modal.wait()
         if not modal.schema or not modal.code:
             return
         text = modal.schema
         try:
-            schema = json5.loads(text.strip())
+            schema: dict = json5.loads(text.strip())
         except Exception as e:
             return await interaction.followup.send(_("SchemaError\n{}").format(box(str(e), "py")), ephemeral=True)
         if not schema:
@@ -711,6 +723,7 @@ class CodeMenu(discord.ui.View):
         else:
             self.db.functions[function_name].code = code
             self.db.functions[function_name].jsonschema = schema
+            self.db.functions[function_name].permission_level = modal.permission_level
         await interaction.followup.send(_("`{}` function updated!").format(function_name), ephemeral=True)
         await self.get_pages()
         await self.message.edit(embed=self.pages[self.page], view=self)
