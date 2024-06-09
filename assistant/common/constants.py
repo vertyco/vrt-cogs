@@ -201,17 +201,3 @@ LIST_MEMORIES = {
         "properties": {},
     },
 }
-REQUEST_TRAINING = {
-    "name": "request_training",
-    "description": "Notify staff that you require additional training data for a topic.",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "message": {
-                "type": "string",
-                "description": "The thing you want to be trained on. Include as much context as possible from the current conversation.",
-            },
-        },
-        "required": ["message"],
-    },
-}
