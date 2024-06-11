@@ -46,7 +46,7 @@ class WeeklyReset(MixinMeta):
         for stats in valid_users.values():
             total_xp += stats.xp
             total_messages += stats.messages
-            total_voicetime += stats.voicetime
+            total_voicetime += stats.voice
             total_stars += stats.stars
         total_xp = humanize_number(int(total_xp))
         total_messages = humanize_number(total_messages)
@@ -54,13 +54,27 @@ class WeeklyReset(MixinMeta):
         total_stars = humanize_number(total_stars)
 
         embed = discord.Embed(
-            title=_("Top Weekly Exp Earners"),
             description=_(
-                "`Total Exp:       `{}\n" "`Total Messages:  `{}\n" "`Total Stars:     `{}\n" "`Total Voicetime: `{}"
-            ).format(total_xp, total_messages, total_stars, total_voicetime),
+                "`Total Exp:       `{}\n"
+                "`Total Messages:  `{}\n"
+                "`Total Stars:     `{}\n"
+                "`Total Voicetime: `{}\n"
+                "`Next Reset:      `{}"
+            ).format(
+                total_xp,
+                total_messages,
+                total_stars,
+                total_voicetime,
+                f"<t:{conf.weeklysettings.next_reset}:R>",
+            ),
             color=await self.bot.get_embed_color(channel or ctx),
         )
+        embed.set_author(
+            name=_("Top Weekly Exp Earners"),
+            icon_url=guild.icon,
+        )
         embed.set_thumbnail(url=guild.icon)
+        place_emojis = ["🥇", "🥈", "🥉"]
         sorted_users = sorted(valid_users.items(), key=lambda x: x[1].xp, reverse=True)
         top_user_ids = []
         for idx, (user, stats) in enumerate(sorted_users):
@@ -68,14 +82,16 @@ class WeeklyReset(MixinMeta):
             if place > conf.weeklysettings.count:
                 break
             top_user_ids.append(user.id)
+            position = place_emojis[idx] if idx < 3 else f"#{place}."
             embed.add_field(
-                name=f"#{place}. {user.display_name}",
+                name=f"{position} {user.display_name}",
                 value=_("`Experience: `{}\n" "`Messages:   `{}\n" "`Stars:      `{}\n" "`Voicetime:  `{}").format(
                     humanize_number(round(stats.xp)),
                     humanize_number(stats.messages),
                     humanize_number(stats.stars),
-                    utils.humanize_delta(round(stats.voicetime)),
+                    utils.humanize_delta(round(stats.voice)),
                 ),
+                inline=False,
             )
         if ctx:
             with suppress(discord.HTTPException):
@@ -97,15 +113,23 @@ class WeeklyReset(MixinMeta):
                 for last in last_winners:
                     if last in winners or role not in last.roles:
                         continue
-                    with suppress(discord.HTTPException):
+                    try:
                         await last.remove_roles(role, reason=_("Weekly winner role removal"))
+                    except discord.Forbidden:
+                        log.warning(f"Missing permissions to apply role {role} to {last}")
+                    except discord.HTTPException:
+                        pass
 
             for winner in winners:
                 if winner in last_winners or role in winner.roles:
                     # No need to add the role again
                     continue
-                with suppress(discord.HTTPException):
+                try:
                     await winner.add_roles(role, reason=_("Weekly winner role addition"))
+                except discord.Forbidden:
+                    log.warning(f"Missing permissions to apply role {role} to {winner}")
+                except discord.HTTPException:
+                    pass
 
         conf.weeklysettings.last_winners = [user.id for user in winners]
         if bonus := conf.weeklysettings.bonus:
