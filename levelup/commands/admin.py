@@ -1195,8 +1195,8 @@ class Admin(MixinMeta):
         For example each time you prestige, you keep the previous prestige roles
         """
         conf = self.db.get_conf(ctx.guild)
-        status = _("**Disabled**") if conf.stackroles else _("**Enabled**")
-        conf.stackroles = not conf.stackroles
+        status = _("**Disabled**") if conf.stackprestigeroles else _("**Enabled**")
+        conf.stackprestigeroles = not conf.stackprestigeroles
         self.save()
         await ctx.send(_("Stacking roles on prestige has been {}").format(status))
 

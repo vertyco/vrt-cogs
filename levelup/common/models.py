@@ -329,6 +329,8 @@ def run_migrations(settings: dict[str, t.Any]) -> DB:
             conf["ignore_deafened"] = conf["deafened"]
         if conf.get("invisible") is not None:
             conf["ignore_invisible"] = conf["invisible"]
+        if conf.get("length") is not None:
+            conf["min_length"] = conf["length"]
         migrated += 1
 
     log.warning(f"Migrated {migrated} guilds to new schema")
