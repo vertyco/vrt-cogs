@@ -23,6 +23,7 @@ from .generator import api
 from .generator.trustytenor.converter import TenorAPI
 from .listeners import Listeners
 from .shared import SharedFunctions
+from .tasks import Tasks
 
 log = logging.getLogger("red.vrt.levelup")
 _ = Translator("LevelUp", __file__)
@@ -39,6 +40,7 @@ class LevelUp(
     SharedFunctions,
     DashboardIntegration,
     Listeners,
+    Tasks,
     commands.Cog,
     metaclass=CompositeMetaClass,
 ):
@@ -95,6 +97,7 @@ class LevelUp(
 
     async def cog_unload(self) -> None:
         self.bot.tree.remove_command(view_profile_context)
+        self.stop_levelup_tasks()
         if self.api_proc is not None:
             log.info("Shutting down API")
             try:
@@ -131,10 +134,11 @@ class LevelUp(
                     log.error("Failed to migrate old settings.json", exc_info=e)
                     return
 
-        log.info("Initializing voice states")
-        voice_initialized = await self.initialize_voice_states()
-        log.info(f"Config loaded, initialized {voice_initialized} voice states")
+        log.info("Config initialized")
+        if voice_initialized := await self.initialize_voice_states():
+            log.info(f"Initialized {voice_initialized} voice states")
 
+        self.start_levelup_tasks()
         self.custom_fonts.mkdir(exist_ok=True)
         self.custom_backgrounds.mkdir(exist_ok=True)
         logging.getLogger("PIL").setLevel(logging.WARNING)

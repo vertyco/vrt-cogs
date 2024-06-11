@@ -6,6 +6,7 @@ from pathlib import Path
 
 import discord
 from discord.ext.commands.cog import CogMeta
+from redbot.core import commands
 from redbot.core.bot import Red
 
 from .common.models import DB, GuildSettings, Profile
@@ -92,4 +93,8 @@ class MixinMeta(ABC):
     async def get_user_profile(
         self, member: discord.Member, reraise: bool = False
     ) -> t.Union[discord.Embed, discord.File]:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def reset_weekly(self, guild: discord.Guild, ctx: commands.Context = None) -> None:
         raise NotImplementedError

@@ -11,12 +11,12 @@ from ..abc import MixinMeta
 from ..common import utils
 from ..common.models import ProfileWeekly
 
-log = logging.getLogger("red.vrt.levelup.api.weeklyreset")
+log = logging.getLogger("red.vrt.levelup.shared.weeklyreset")
 _ = Translator("LevelUp", __file__)
 
 
 class WeeklyReset(MixinMeta):
-    async def reset_weekly(self, guild: discord.Guild, ctx: commands.Context = None):
+    async def reset_weekly(self, guild: discord.Guild, ctx: commands.Context = None) -> None:
         """Announce and reset weekly stats"""
         conf = self.db.get_conf(guild)
         if not conf.users_weekly:

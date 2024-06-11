@@ -185,12 +185,13 @@ class Weekly(MixinMeta):
 
     @weeklyset.command(name="reset")
     @commands.bot_has_permissions(embed_links=True)
-    async def reset_weekly(self, ctx: commands.Context, yes_or_no: bool):
+    async def reset_weekly_data(self, ctx: commands.Context, yes_or_no: bool):
         """Reset the weekly leaderboard manually and announce winners"""
         if not yes_or_no:
             return await ctx.send(_("Not resetting weekly stats"))
         async with ctx.typing():
             await self.reset_weekly(ctx.guild, ctx)
+            await ctx.tick()
 
     @weeklyset.command(name="role")
     async def weeklyset_role(self, ctx: commands.Context, *, role: discord.Role):

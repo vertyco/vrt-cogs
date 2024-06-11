@@ -17,7 +17,7 @@ from ..common import formatter, utils
 from ..common.models import Profile
 from ..generator.styles import default, runescape
 
-log = logging.getLogger("red.vrt.levelup.api.profile")
+log = logging.getLogger("red.vrt.levelup.shared.profile")
 _ = Translator("LevelUp", __file__)
 
 

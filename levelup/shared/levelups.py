@@ -15,7 +15,7 @@ from ..common import utils
 from ..common.models import GuildSettings, Profile
 from ..generator import levelalert
 
-log = logging.getLogger("red.vrt.levelup.api.levelups")
+log = logging.getLogger("red.vrt.levelup.shared.levelups")
 _ = Translator("LevelUp", __file__)
 
 
