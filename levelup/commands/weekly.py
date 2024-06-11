@@ -215,8 +215,14 @@ class Weekly(MixinMeta):
 
     @weeklyset.command(name="winners")
     async def weeklyset_winners(self, ctx: commands.Context, count: int):
-        """Set number of winners to display"""
+        """
+        Set number of winners to display
+
+        Due to Discord limitations with max embed field count, the maximum number of winners is 25
+        """
         conf = self.db.get_conf(ctx.guild)
+        if count < 1 or count > 25:
+            return await ctx.send(_("Number of winners must be between 1 and 25"))
         conf.weeklysettings.count = count
         await ctx.send(_("Number of winners to display set to {}").format(count))
         self.save()
