@@ -22,8 +22,36 @@ _ = Translator("LevelUp", __file__)
 
 
 class ProfileFormatting(MixinMeta):
+    async def add_xp(self, member: discord.Member, xp: int) -> None:
+        """Add XP to a user and check for level ups"""
+        if not isinstance(member, discord.Member):
+            raise TypeError("member must be a discord.Member")
+        conf = self.db.get_conf(member.guild)
+        profile = conf.get_profile(member)
+        profile.xp += xp
+        self.save()
+
+    async def set_xp(self, member: discord.Member, xp: int) -> None:
+        """Set a user's XP and check for level ups"""
+        if not isinstance(member, discord.Member):
+            raise TypeError("member must be a discord.Member")
+        conf = self.db.get_conf(member.guild)
+        profile = conf.get_profile(member)
+        profile.xp = xp
+        self.save()
+
+    async def remove_xp(self, member: discord.Member, xp: int) -> None:
+        """Remove XP from a user and check for level ups"""
+        if not isinstance(member, discord.Member):
+            raise TypeError("member must be a discord.Member")
+        conf = self.db.get_conf(member.guild)
+        profile = conf.get_profile(member)
+        profile.xp -= xp
+        self.save()
+
     async def get_profile_background(self, user_id: int, profile: Profile) -> bytes:
-        """Get a background for a user's profile in the following priority:
+        """
+        Get a background for a user's profile in the following priority:
         - Custom background selected by user
         - Banner of user's Discord profile
         - Random background
@@ -56,6 +84,14 @@ class ProfileFormatting(MixinMeta):
         return random.choice(valid).read_bytes()
 
     async def get_banner(self, user_id: int) -> t.Optional[str]:
+        """Fetch a user's banner from Discord's API
+
+        Args:
+            user_id (int): The ID of the user
+
+        Returns:
+            t.Optional[str]: The URL of the user's banner image, or None if no banner is found
+        """
         req = await self.bot.http.request(discord.http.Route("GET", "/users/{uid}", uid=user_id))
         if banner_id := req.get("banner"):
             return f"https://cdn.discordapp.com/banners/{user_id}/{banner_id}?size=1024"
@@ -63,7 +99,8 @@ class ProfileFormatting(MixinMeta):
     async def get_user_profile(
         self, member: discord.Member, reraise: bool = False
     ) -> t.Union[discord.Embed, discord.File]:
-        """Get a user's profile as an embed or file
+        """
+        Get a user's profile as an embed or file
         If embed profiles are disabled, a file will be returned, otherwise an embed will be returned
 
         Args:
@@ -245,6 +282,7 @@ class ProfileFormatting(MixinMeta):
         return file
 
     async def get_user_profile_cached(self, member: discord.Member) -> t.Union[discord.File, discord.Embed]:
+        """Cached version of get_user_profile"""
         if not self.db.cache_seconds:
             return await self.get_user_profile(member)
         now = perf_counter()

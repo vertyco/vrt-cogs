@@ -199,7 +199,7 @@ class Admin(MixinMeta):
         await ctx.send(txt)
 
     @levelset.command(name="addxp")
-    async def add_xp(
+    async def add_xp_to_user(
         self,
         ctx: commands.Context,
         user_or_role: t.Union[discord.Member, discord.Role],
@@ -225,7 +225,7 @@ class Admin(MixinMeta):
         self.save()
 
     @levelset.command(name="removexp")
-    async def remove_xp(
+    async def remove_xp_from_user(
         self,
         ctx: commands.Context,
         user_or_role: t.Union[discord.Member, discord.Role],
