@@ -31,6 +31,19 @@ class LevelUps(MixinMeta):
             t.Union[discord.TextChannel, discord.VoiceChannel, discord.Thread, discord.ForumChannel]
         ] = None,
     ):
+        """Check if a user has leveled up and award roles if needed
+
+        Args:
+            guild (discord.Guild): The guild where the leveling up occurred.
+            member (discord.Member): The member who leveled up.
+            profile (Profile): The profile of the member.
+            conf (GuildSettings): The guild settings.
+            message (t.Optional[discord.Message], optional): The message that triggered the leveling up. Defaults to None.
+            channel (t.Optional[t.Union[discord.TextChannel, discord.VoiceChannel, discord.Thread, discord.ForumChannel]], optional): The channel where the leveling up occurred. Defaults to None.
+
+        Returns:
+            Tuple[List[discord.Role], List[discord.Role]]: A tuple containing two lists of roles - the roles that were added and the roles that were removed.
+        """
         calculated_level = conf.algorithm.get_level(profile.xp)
         if calculated_level == profile.level:
             # No action needed, user hasn't leveled up

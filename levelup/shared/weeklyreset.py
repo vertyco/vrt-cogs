@@ -17,7 +17,14 @@ _ = Translator("LevelUp", __file__)
 
 class WeeklyReset(MixinMeta):
     async def reset_weekly(self, guild: discord.Guild, ctx: commands.Context = None) -> None:
-        """Announce and reset weekly stats"""
+        """Announce and reset weekly stats
+
+        Args:
+            guild (discord.Guild): The guild where the weekly stats are being reset.
+            ctx (commands.Context, optional): Sends the announcement embed in the current channel. Defaults to None.
+        """
+        if ctx:
+            await ctx.send(_("Weekly stats have been reset."))
         conf = self.db.get_conf(guild)
         if not conf.users_weekly:
             if ctx:
