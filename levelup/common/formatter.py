@@ -201,30 +201,19 @@ def get_leaderboard(
         if dashboard:
             if weekly.last_reset:
                 ts = datetime.fromtimestamp(weekly.last_reset).strftime("%m/%d/%Y @ %I:%M:%S %p")
-                if dashboard:
-                    desc += _("➣ Last Reset: {}\n").format(ts)
-                else:
-                    desc += _("➣ **Last Reset:** {}\n").format(ts)
-
+                desc += _("➣ Last Reset: {}\n").format(ts)
             if weekly.autoreset:
                 ts = datetime.fromtimestamp(weekly.next_reset).strftime("%m/%d/%Y @ %I:%M:%S %p")
                 delta = utils.humanize_delta(weekly.next_reset - int(datetime.now().timestamp()))
-                if dashboard:
-                    desc += _("➣ Next Reset: {} ({})\n").format(ts, delta)
-                else:
-                    desc += _("➣ **Next Reset:** ({})\n").format(ts, delta)
+                desc += _("➣ Next Reset: {} ({})\n").format(ts, delta)
         else:
             if weekly.last_reset:
-                if dashboard:
-                    desc += _("➣ Last Reset: {}\n").format(f"<t:{weekly.last_reset}:d>")
-                else:
-                    desc += _("➣ **Last Reset:** {}\n").format(f"<t:{weekly.last_reset}:d>")
+                ts = weekly.last_reset
+                desc += _("➣ **Last Reset:** {}\n").format(f"<t:{ts}:d> (<t:{ts}:R>)")
             if weekly.autoreset:
                 ts = weekly.next_reset
-                if dashboard:
-                    desc += _("➣ Next Reset: {} ({})\n").format(f"<t:{ts}:d> (<t:{ts}:R>)")
-                else:
-                    desc += _("➣ **Next Reset:** {}\n").format(f"<t:{ts}:d> (<t:{ts}:R>)")
+                desc += _("➣ **Next Reset:** {}\n").format(f"<t:{ts}:d> (<t:{ts}:R>)")
+
         desc += "\n"
     else:
         if dashboard:
