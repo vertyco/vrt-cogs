@@ -23,7 +23,7 @@ log = logging.getLogger("red.vrt.levelup.commands.data")
 
 @cog_i18n(_)
 class DataAdmin(MixinMeta):
-    @commands.group(name="leveldata", aliases=["lvldata"])
+    @commands.group(name="leveldata", aliases=["lvldata", "ldata"])
     @commands.guild_only()
     @commands.admin_or_permissions(manage_guild=True)
     async def lvldata(self, ctx: commands.Context):
@@ -157,7 +157,7 @@ class DataAdmin(MixinMeta):
     @commands.bot_has_permissions(attach_files=True)
     async def backup_cog(self, ctx: commands.Context):
         """Backup the cog's data"""
-        dump = self.db.dumpjson()
+        dump = self.db.dumpjson(pretty=True)
         now = datetime.now().strftime("%m-%d-%Y-%H-%M-%S")
         filename = f"levelup_backup_{now}.json"
         file = text_to_file(dump, filename=filename)
@@ -167,7 +167,7 @@ class DataAdmin(MixinMeta):
     async def backup_server(self, ctx: commands.Context):
         """Backup this server's data"""
         conf = self.db.get_conf(ctx.guild)
-        dump = conf.dumpjson()
+        dump = conf.dumpjson(pretty=True)
         now = datetime.now().strftime("%m-%d-%Y-%H-%M-%S")
         filename = f"levelup_backup_{ctx.guild.id}_{now}.json"
         file = text_to_file(dump, filename=filename)

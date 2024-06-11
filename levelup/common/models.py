@@ -36,10 +36,13 @@ class Base(BaseModel):
             return super().model_dump(mode="json", exclude_defaults=exclued_defaults)
         return orjson.loads(self.json(exclude_defaults=exclued_defaults))
 
-    def dumpjson(self, exclude_defaults: bool = True) -> str:
+    def dumpjson(self, exclude_defaults: bool = True, pretty: bool = False) -> str:
+        kwargs = {"exclude_defaults": exclude_defaults}
+        if pretty:
+            kwargs["indent"] = 2
         if VERSION >= "2.0.1":
-            return self.model_dump_json(indent=2, exclude_defaults=exclude_defaults)
-        return self.json(indent=2, exclude_defaults=exclude_defaults)
+            return self.model_dump_json(**kwargs)
+        return self.json(**kwargs)
 
     @classmethod
     def from_file(cls, path: Path) -> Base:
