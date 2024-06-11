@@ -65,12 +65,8 @@ class Base(BaseModel):
             os.fsync(fs.fileno())  # but that needs to happen prior to this line
 
         tmp_path.replace(path)
-        try:
-            flag = os.O_DIRECTORY
-        except AttributeError:
-            pass
-        else:
-            fd = os.open(path.parent, flag)
+        if hasattr(os, "O_DIRECTORY"):
+            fd = os.open(path.parent, os.O_DIRECTORY)
             try:
                 os.fsync(fd)
             finally:
@@ -268,6 +264,7 @@ class DB(Base):
     migrations: t.List[str] = []
     internal_api_port: int = 0  # If specified, starts internal api subprocess
     external_api_url: str = ""  # If specified, overrides internal api
+    auto_cleanup: bool = False  # If True, will clean up configs of old guilds
 
     def get_conf(self, guild: t.Union[discord.Guild, int]) -> GuildSettings:
         gid = guild if isinstance(guild, int) else guild.id

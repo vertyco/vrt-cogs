@@ -10,7 +10,7 @@ from redbot.core.utils.chat_formatting import box, humanize_number, humanize_tim
 
 from ..abc import MixinMeta
 from ..common import const, utils
-from ..common.models import Emojis
+from ..common.models import Emojis, Prestige
 
 _ = Translator("LevelUp", __file__)
 
@@ -616,7 +616,7 @@ class Admin(MixinMeta):
         self.save()
         await ctx.send(txt)
 
-    @levelset.group(name="levelalerts", aliases=["lvlalerts"])
+    @levelset.group(name="alerts", aliases=["lvlalerts", "levelalerts"])
     async def set_levelup_alerts(self, ctx: commands.Context):
         """Level up alert messages
 
@@ -1170,3 +1170,75 @@ class Admin(MixinMeta):
         conf.voice_xp = voice_xp
         self.save()
         await ctx.send(_("Voice XP has been set to {} per minute").format(voice_xp))
+
+    @levelset.group(name="prestige")
+    async def prestige_group(self, ctx: commands.Context):
+        """Prestige settings"""
+
+    @prestige_group.command(name="level")
+    async def prestige_level(self, ctx: commands.Context, level: int):
+        """
+        Set the level required to prestige
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if level < 0:
+            return await ctx.send(_("Level cannot be negative"))
+        conf.prestigelevel = level
+        self.save()
+        await ctx.send(_("Prestige level has been set to {}").format(level))
+
+    @prestige_group.command(name="stack")
+    async def toggle_stack_roles(self, ctx: commands.Context):
+        """
+        Toggle stacking roles on prestige
+
+        For example each time you prestige, you keep the previous prestige roles
+        """
+        conf = self.db.get_conf(ctx.guild)
+        status = _("**Disabled**") if conf.stackroles else _("**Enabled**")
+        conf.stackroles = not conf.stackroles
+        self.save()
+        await ctx.send(_("Stacking roles on prestige has been {}").format(status))
+
+    @prestige_group.command(name="add")
+    @commands.bot_has_guild_permissions(manage_roles=True)
+    async def add_prestige_level(
+        self,
+        ctx: commands.Context,
+        prestige: int,
+        role: discord.Role,
+        emoji: t.Union[discord.Emoji, discord.PartialEmoji, str],
+    ):
+        """
+        Add a role to a prestige level
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if prestige not in conf.prestigedata:
+            return await ctx.send(_("That prestige level does not exist!"))
+        if role >= ctx.guild.me.top_role:
+            return await ctx.send(_("I cannot assign roles higher than my top role!"))
+        if role >= ctx.author.top_role:
+            return await ctx.send(_("You cannot assign roles higher than your top role!"))
+        if prestige in conf.prestigedata:
+            return await ctx.send(_("This prestige level has already been set!"))
+        url = utils.get_twemoji(emoji) if isinstance(emoji, str) else emoji.url
+        prestige = Prestige(
+            role=role.id,
+            emoji_string=str(emoji),
+            emoji_url=url,
+        )
+        conf.prestigedata[prestige] = prestige
+        self.save()
+        await ctx.send(_("Role and emoji have been set for prestige level {}").format(prestige))
+
+    @prestige_group.command(name="remove", aliases=["rem", "del"])
+    async def remove_prestige_level(self, ctx: commands.Context, prestige: int):
+        """
+        Remove a prestige level
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if prestige not in conf.prestigedata:
+            return await ctx.send(_("That prestige level does not exist!"))
+        del conf.prestigedata[prestige]
+        self.save()
+        await ctx.send(_("Prestige level {} has been removed").format(prestige))

@@ -93,13 +93,29 @@ class Owner(MixinMeta):
             value=txt,
             inline=False,
         )
-
+        status = _("Enabled") if self.db.auto_cleanup else _("Disabled")
+        embed.add_field(
+            name=_("Auto-Cleanup ({})").format(status),
+            value=_("The bot will auto-clean configs of guilds that the bot is no longer in."),
+            inline=False,
+        )
         embed.add_field(
             name=_("Ignored Servers"),
             value=ignored_servers.getvalue() or _("None"),
             inline=False,
         )
         await ctx.send(embed=embed)
+
+    @lvlowner.command(name="autoclean")
+    async def toggle_auto_cleanup(self, ctx: commands.Context):
+        """Toggle auto-cleanup of guild configs"""
+        if self.db.auto_cleanup:
+            self.db.auto_cleanup = False
+            await ctx.send(_("Auto-Cleanup disabled."))
+        else:
+            self.db.auto_cleanup = True
+            await ctx.send(_("Auto-Cleanup enabled."))
+        self.save()
 
     @lvlowner.command(name="internalapi")
     async def set_internal_api(self, ctx: commands.Context, port: int):
