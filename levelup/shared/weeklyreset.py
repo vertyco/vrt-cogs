@@ -100,12 +100,14 @@ class WeeklyReset(MixinMeta):
                 ),
                 inline=False,
             )
+
         if ctx:
             with suppress(discord.HTTPException):
                 await ctx.send(embed=embed)
-        elif channel:
+        if channel:
+            mentions = ", ".join(f"<@{uid}>" for uid in top_user_ids)
             with suppress(discord.HTTPException):
-                await channel.send(embed=embed)
+                await channel.send(mentions, embed=embed)
 
         top = sorted_users[: conf.weeklysettings.count]
         if conf.weeklysettings.role_all:
