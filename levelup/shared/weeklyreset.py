@@ -143,7 +143,8 @@ class WeeklyReset(MixinMeta):
                 except discord.HTTPException:
                     pass
 
-        conf.weeklysettings.last_winners = [user.id for user in winners]
+        conf.weeklysettings.last_winners = [user[0].id for user in top]
+
         if bonus := conf.weeklysettings.bonus:
             for uid in winners:
                 profile = conf.get_profile(uid)
