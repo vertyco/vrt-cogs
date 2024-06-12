@@ -56,7 +56,7 @@ class Weekly(MixinMeta):
             return await ctx.send(_("There is no recorded weekly embed saved"))
         embed = discord.Embed.from_dict(conf.weeklysettings.last_embed)
         embed.title = _("Last Weekly Leaderboard")
-        new_desc = _("{}\n`Last Reset:     `{}").format(embed.description, f"<t:{conf.weeklysettings.last_reset}:R>")
+        new_desc = _("{}\n`Last Reset:      `{}").format(embed.description, f"<t:{conf.weeklysettings.last_reset}:R>")
         embed.description = new_desc
         await ctx.send(embed=embed)
 
