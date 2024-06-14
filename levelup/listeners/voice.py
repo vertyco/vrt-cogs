@@ -36,7 +36,7 @@ class VoiceListener(MixinMeta):
     ) -> None:
         in_voice = self.in_voice.setdefault(member.guild.id, {})
         if not before.channel and not after.channel:
-            log.error(f"User {member.name} left a voice channel without joining another one in {member.guild}")
+            # False voice state update
             if member.id in in_voice:
                 self.in_voice[member.guild.id].pop(member.id)
             return

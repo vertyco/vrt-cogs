@@ -10,7 +10,7 @@ from redbot.core import commands
 from redbot.core.bot import Red
 
 from .common.models import DB, GuildSettings, Profile
-from .generator.trustytenor.converter import TenorAPI
+from .generator.tenor.converter import TenorAPI
 
 
 class CompositeMetaClass(CogMeta, ABCMeta):

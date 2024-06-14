@@ -20,7 +20,7 @@ from .commands.user import view_profile_context
 from .common.models import DB, run_migrations
 from .dashboard.integration import DashboardIntegration
 from .generator import api
-from .generator.trustytenor.converter import TenorAPI
+from .generator.tenor.converter import TenorAPI
 from .listeners import Listeners
 from .shared import SharedFunctions
 from .tasks import Tasks
