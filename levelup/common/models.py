@@ -87,6 +87,7 @@ class Profile(Base):
         default_factory=datetime.now,
         description="Last time the user was active in the guild (message sent or voice activity)",
     )
+    show_tutorial: bool = True  # Init with True, show tutorial on first command usage
 
     # For image profiles
     style: str = "default"  # Can be default, runescape... (WIP)

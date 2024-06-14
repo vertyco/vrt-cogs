@@ -980,8 +980,8 @@ class Admin(MixinMeta):
                 added, removed = await self.ensure_roles(user, conf)
                 roles_added += len(added)
                 roles_removed += len(removed)
-                # Update message every 2% of the way
-                if idx % (len(ctx.guild.members) // 50) == 0 and perf_counter() - last_update > 5:
+                # Update message every 5% of the way
+                if idx % (len(ctx.guild.members) // 20) == 0 and perf_counter() - last_update > 5:
                     desc = _("Synchronizing level roles, this may take a while...\n{:.0%} complete").format(
                         idx / len(ctx.guild.members)
                     )
