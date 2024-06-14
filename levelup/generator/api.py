@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import logging
+import logging.config
 import multiprocessing as mp
 import os
 import sys
@@ -45,13 +46,25 @@ access_formatter = AccessFormatter(fmt=access, datefmt=datefmt, use_colors=False
 IS_WINDOWS: bool = sys.platform.startswith("win")
 DEFAULT_WORKERS: int = os.cpu_count() or 1
 ROOT = Path(__file__).parent
-LOG_DIR = Path.home() / "LevelUp_API_Logs"
+LOG_DIR = Path.home() / "levelup-api-logs"
 PROC: t.Union[mp.Process, asyncio.subprocess.Process] = None
 log = logging.getLogger("red.vrt.levelup.api")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    if SERVICE:
+        LOGGING_CONFIG["handlers"]["file"] = {
+            "class": "logging.handlers.RotatingFileHandler",
+            "formatter": "default",
+            "filename": str(LOG_DIR / "api.log"),
+            "maxBytes": 51200,
+            "backupCount": 2,
+            "level": "INFO",
+        }
+        LOGGING_CONFIG["loggers"]["uvicorn"]["handlers"] = ["default", "file"]
+        logging.config.dictConfig(LOGGING_CONFIG)
+        log.info("API running as service")
     yield
     if PROC:
         log.info("Shutting down API")
