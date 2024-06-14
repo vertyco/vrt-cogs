@@ -53,6 +53,7 @@ log = logging.getLogger("red.vrt.levelup.api")
 
 
 if SERVICE:
+    LOG_DIR.mkdir(exist_ok=True, parents=True)
     filehandler = RotatingFileHandler(str(LOG_DIR / "api.log"), maxBytes=51200, backupCount=2)
     filehandler.setFormatter(default_formatter)
     streamhandler = logging.StreamHandler()
