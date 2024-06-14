@@ -16,19 +16,19 @@ from uvicorn.config import LOGGING_CONFIG
 from uvicorn.logging import AccessFormatter, ColourizedFormatter
 
 try:
-    # Running as separate service
-    from levelalert import generate_level_img
-    from styles.default import generate_default_profile
-    from styles.runescape import generate_runescape_profile
-
-    SERVICE = True
-except ImportError:
     # Running from the cog
     from .levelalert import generate_level_img
     from .styles.default import generate_default_profile
     from .styles.runescape import generate_runescape_profile
 
     SERVICE = False
+except ImportError:
+    # Running as separate service
+    from levelalert import generate_level_img
+    from styles.default import generate_default_profile
+    from styles.runescape import generate_runescape_profile
+
+    SERVICE = True
 
 
 datefmt = "%m/%d %I:%M:%S %p"
