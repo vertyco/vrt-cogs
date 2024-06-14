@@ -197,8 +197,9 @@ class User(MixinMeta):
         embed = discord.Embed(description=txt, color=await self.bot.get_embed_color(ctx))
         await ctx.send(embed=embed)
 
-    @commands.hybrid_group(name="setprofile", aliases=["myprofile", "mypf", "pfset"])
-    @app_commands.describe("View/Change your profile settings")
+    @commands.hybrid_group(
+        name="setprofile", aliases=["myprofile", "mypf", "pfset"], description="View/Change your profile settings"
+    )
     @commands.guild_only()
     async def set_profile(self, ctx: commands.Context):
         """Customize your profile"""
