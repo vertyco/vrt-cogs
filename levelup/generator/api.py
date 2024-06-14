@@ -49,7 +49,6 @@ DEFAULT_WORKERS: int = os.cpu_count() or 1
 ROOT = Path(__file__).parent
 LOG_DIR = Path.home() / "levelup-api-logs"
 PROC: t.Union[mp.Process, asyncio.subprocess.Process] = None
-log = logging.getLogger("red.vrt.levelup.api")
 
 
 if SERVICE:
@@ -58,12 +57,11 @@ if SERVICE:
     filehandler.setFormatter(default_formatter)
     streamhandler = logging.StreamHandler()
     streamhandler.setFormatter(default_formatter)
-    loggers = ["uvicorn", "uvicorn.error", "uvicorn.access", *logging.root.manager.loggerDict.keys()]
-    for logger in loggers:
-        logger = logging.getLogger(logger)
-        logger.handlers = [filehandler, streamhandler]
-
+    log = logging.getLogger("uvicorn")
+    log.handlers = [filehandler, streamhandler]
     log.info("API running as service")
+else:
+    log = logging.getLogger("red.vrt.levelup.api")
 
 
 @asynccontextmanager
