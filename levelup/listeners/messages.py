@@ -1,5 +1,6 @@
 import logging
 import random
+import typing as t
 from time import perf_counter
 
 import discord
@@ -13,7 +14,11 @@ log = logging.getLogger("red.vrt.levelup.listeners.messages")
 class MessageListener(MixinMeta):
     @commands.Cog.listener()
     async def on_ark_chat_message(
-        self, guild: discord.Guild, user_id: int, message: str, chatchannel: discord.TextChannel
+        self,
+        guild: discord.Guild,
+        user_id: int,
+        message: str,
+        chatchannel: t.Union[discord.TextChannel, None] = None,
     ):
         if guild.id in self.db.ignored_guilds:
             return
