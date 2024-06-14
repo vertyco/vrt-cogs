@@ -14,7 +14,7 @@ from redbot.core.utils.chat_formatting import humanize_list
 from ..abc import MixinMeta
 from ..common import const, formatter, utils
 from ..generator import imgtools
-from ..generator.trustytenor.converter import sanitize_url
+from ..generator.tenor.converter import sanitize_url
 from ..views.dynamic_menu import DynamicMenu
 
 _ = Translator("LevelUp", __file__)

@@ -6,8 +6,6 @@ import os
 import sys
 import typing as t
 from contextlib import asynccontextmanager
-
-# from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 import psutil
@@ -54,35 +52,6 @@ log = logging.getLogger("red.vrt.levelup.api")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # LOG_DIR.mkdir(exist_ok=True, parents=True)
-    # proc_num = os.getpid()
-    # default_filename = LOG_DIR / f"levelup-api-{proc_num}.log"
-    # access_filename = LOG_DIR / f"levelup-api-access-{proc_num}.log"
-    # default_rotator = RotatingFileHandler(
-    #     filename=str(default_filename),
-    #     mode="a",
-    #     maxBytes=1024 * 100,  # 100 KB
-    # )
-    # access_rotator = RotatingFileHandler(
-    #     filename=str(access_filename),
-    #     mode="a",
-    #     maxBytes=1024 * 100,  # 100 KB
-    # )
-    # root_logger = logging.getLogger("uvicorn")
-    # # error_logger = logging.getLogger("uvicorn.error")
-    # # access_logger = logging.getLogger("uvicorn.access")
-    # # Set the formatters
-    # default_rotator.setFormatter(default_formatter)
-    # access_rotator.setFormatter(access_formatter)
-    # # Add the handlers
-    # root_logger.addHandler(default_rotator)
-
-    # error_logger.addHandler(default_rotator)
-    # access_logger.addHandler(access_rotator)
-    # if not SERVICE:
-    #     # Get rid of the console handler
-    #     root_logger.removeHandler(root_logger.handlers[0])
-
     yield
     if PROC:
         log.info("Shutting down API")
