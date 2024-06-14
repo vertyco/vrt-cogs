@@ -17,9 +17,9 @@ from uvicorn.logging import AccessFormatter, ColourizedFormatter
 
 try:
     # Running as separate service
-    from levelup.generator.levelalert import generate_level_img
-    from levelup.generator.styles.default import generate_default_profile
-    from levelup.generator.styles.runescape import generate_runescape_profile
+    from levelalert import generate_level_img
+    from styles.default import generate_default_profile
+    from styles.runescape import generate_runescape_profile
 
     SERVICE = True
 except ImportError:
