@@ -5,6 +5,7 @@ import typing as t
 import unicodedata
 
 import discord
+from rapidfuzz import fuzz
 from redbot.core import commands
 from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import pagify, text_to_file
@@ -32,6 +33,18 @@ class MessageParser:
 
 
 class Dcord(MixinMeta):
+    @commands.command()
+    async def closestuser(self, ctx: commands.Context, *, query: str):
+        """Find the closest fuzzy match for a user"""
+        query = query.lower()
+        matches: t.List[t.Tuple[int, discord.User]] = []
+        for user in ctx.guild.members:
+            matches.append((fuzz.ratio(query, user.name.lower()), user))
+            matches.append((fuzz.ratio(query, user.display_name.lower()), user))
+        matches = sorted(matches, key=lambda x: x[0], reverse=True)
+        user = matches[0][1]
+        await ctx.send(f"Closest match: {user.name} ({user.id}) with a score of {matches[0][0]:.2f}")
+
     @commands.command(aliases=["findguild"])
     @commands.is_owner()
     async def getguildid(self, ctx: commands.Context, query: t.Union[int, str]):
