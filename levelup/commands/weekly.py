@@ -83,6 +83,7 @@ class Weekly(MixinMeta):
             value=_(
                 "`Winner Count:   `{}\n"
                 "`Channel:        `{}\n"
+                "`Ping Winners:   `{}\n"
                 "`Role:           `{}\n"
                 "`RoleAllWinners: `{}\n"
                 "`Auto Remove:    `{}\n"
@@ -90,6 +91,7 @@ class Weekly(MixinMeta):
             ).format(
                 conf.weeklysettings.count,
                 f"<#{conf.weeklysettings.channel}>" if conf.weeklysettings.channel else _("None"),
+                conf.weeklysettings.ping_winners,
                 f"<@&{conf.weeklysettings.role}>" if conf.weeklysettings.role else _("None"),
                 conf.weeklysettings.role_all,
                 conf.weeklysettings.remove,
@@ -121,6 +123,18 @@ class Weekly(MixinMeta):
             ),
         )
         await ctx.send(embed=embed)
+
+    @weeklyset.command(name="ping")
+    async def weeklyset_ping(self, ctx: commands.Context):
+        """Toggle whether to ping winners in announcement"""
+        conf = self.db.get_conf(ctx.guild)
+        if conf.weeklysettings.ping_winners:
+            conf.weeklysettings.ping_winners = False
+            await ctx.send(_("Winners will no longer be pinged in announcements"))
+        else:
+            conf.weeklysettings.ping_winners = True
+            await ctx.send(_("Winners will now be pinged in announcements"))
+        self.save()
 
     @weeklyset.command(name="autoremove")
     async def weeklyset_autoremove(self, ctx: commands.Context):
