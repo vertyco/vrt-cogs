@@ -104,10 +104,10 @@ class WeeklyReset(MixinMeta):
         if ctx:
             with suppress(discord.HTTPException):
                 await ctx.send(embed=embed)
-        elif channel:
+        if channel and getattr(ctx, "channel", channel).id != channel.id:
             mentions = ", ".join(f"<@{uid}>" for uid in top_user_ids)
             with suppress(discord.HTTPException):
-                if conf.notifymention:
+                if conf.weeklysettings.ping_winners:
                     await channel.send(mentions, embed=embed)
                 else:
                     await channel.send(embed=embed)

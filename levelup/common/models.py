@@ -129,6 +129,7 @@ class WeeklySettings(Base):
     remove: bool = True  # Whether to remove the role from the previous winner when a new one is announced
     bonus: int = 0  # Bonus exp to award the top X winners
     last_embed: t.Dict[str, t.Any] = {}  # Dict repr of last winner embed
+    ping_winners: bool = False  # Mention the winners in the announcement
 
     @property
     def next_reset(self) -> int:
