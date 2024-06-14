@@ -91,12 +91,15 @@ class User(MixinMeta):
         if user is None:
             user = ctx.author
 
+        profile = conf.get_profile(user)
         new_user_txt = None
-        if user.id == ctx.author.id and user.id not in conf.users:
+        if user.id == ctx.author.id and profile.show_tutorial:
             # New user, tell them about how they can customize their profile
             new_user_txt = _(
                 "Welcome to LevelUp!\nUse {} to view your profile settings and the available customization commands!"
             ).format(f"`{ctx.clean_prefix}mypf`")
+            profile.show_tutorial = False
+            self.save()
 
         try:
             if ctx.interaction is None:
@@ -195,54 +198,57 @@ class User(MixinMeta):
         await ctx.send(embed=embed)
 
     @commands.hybrid_group(name="setprofile", aliases=["myprofile", "mypf", "pfset"])
+    @app_commands.describe("View/Change your profile settings")
     @commands.guild_only()
     async def set_profile(self, ctx: commands.Context):
         """Customize your profile"""
-        if ctx.invoked_subcommand is None:
-            conf = self.db.get_conf(ctx.guild)
-            profile = conf.get_profile(ctx.author)
 
-            desc = _(
-                "`Profile Style:   `{}\n"
-                "`Show Nickname:   `{}\n"
-                "`Blur:            `{}\n"
-                "`Name Color:      `{}\n"
-                "`Stat Color:      `{}\n"
-                "`LevelBar Color:  `{}\n"
-                "`Font:            `{}\n"
-                "`Background:      `{}\n"
-            ).format(
-                profile.style,
-                profile.show_displayname,
-                _("Enabled") if profile.blur else _("Disabled"),
-                profile.namecolor,
-                profile.statcolor,
-                profile.barcolor,
-                profile.font,
-                profile.background,
-            )
-            embed = discord.Embed(
-                title=_("Your Profile Settings"),
-                description=desc,
-                color=await self.bot.get_embed_color(ctx),
-            )
-            bg = profile.background
-            file = None
-            if bg.startswith("http"):
-                embed.set_image(url=bg)
-            elif bg not in ("default", "random"):
-                available = list(self.backgrounds.iterdir()) + list(self.custom_backgrounds.iterdir())
-                for path in available:
-                    if bg.lower() in path.name.lower():
-                        embed.set_image(url=f"attachment://{path.name}")
-                        file = discord.File(str(path), filename=path.name)
-                        break
-            if ctx.channel.permissions_for(ctx.me).attach_files:
-                await ctx.send(embed=embed, file=file)
-            elif ctx.channel.permissions_for(ctx.me).embed_links:
-                await ctx.send(embed=embed)
-            else:
-                await ctx.send(embed.description)
+    @set_profile.command(name="view")
+    async def view_profile_settings(self, ctx: commands.Context):
+        """View your profile settings"""
+        conf = self.db.get_conf(ctx.guild)
+        profile = conf.get_profile(ctx.author)
+        desc = _(
+            "`Profile Style:   `{}\n"
+            "`Show Nickname:   `{}\n"
+            "`Blur:            `{}\n"
+            "`Name Color:      `{}\n"
+            "`Stat Color:      `{}\n"
+            "`LevelBar Color:  `{}\n"
+            "`Font:            `{}\n"
+            "`Background:      `{}\n"
+        ).format(
+            profile.style,
+            profile.show_displayname,
+            _("Enabled") if profile.blur else _("Disabled"),
+            profile.namecolor,
+            profile.statcolor,
+            profile.barcolor,
+            profile.font,
+            profile.background,
+        )
+        embed = discord.Embed(
+            title=_("Your Profile Settings"),
+            description=desc,
+            color=await self.bot.get_embed_color(ctx),
+        )
+        bg = profile.background
+        file = None
+        if bg.startswith("http"):
+            embed.set_image(url=bg)
+        elif bg not in ("default", "random"):
+            available = list(self.backgrounds.iterdir()) + list(self.custom_backgrounds.iterdir())
+            for path in available:
+                if bg.lower() in path.name.lower():
+                    embed.set_image(url=f"attachment://{path.name}")
+                    file = discord.File(str(path), filename=path.name)
+                    break
+        if ctx.channel.permissions_for(ctx.me).attach_files:
+            await ctx.send(embed=embed, file=file)
+        elif ctx.channel.permissions_for(ctx.me).embed_links:
+            await ctx.send(embed=embed)
+        else:
+            await ctx.send(embed.description)
 
     @set_profile.command(name="bgpath")
     @commands.is_owner()
@@ -452,7 +458,7 @@ class User(MixinMeta):
 
     @set_profile.command(name="namecolor", aliases=["name"])
     @commands.bot_has_permissions(embed_links=True, attach_files=True)
-    async def set_name_color(self, ctx: commands.Context, hex_color: str):
+    async def set_name_color(self, ctx: commands.Context, color: str):
         """
         Set a hex color for your username
 
@@ -465,12 +471,12 @@ class User(MixinMeta):
         profile = conf.get_profile(ctx.author)
         if profile.style in const.STATIC_FONT_STYLES:
             return await ctx.send(_("You cannot change your name color with the current profile style!"))
-        if hex_color == "default":
+        if color == "default":
             profile.namecolor = None
             self.save()
             return await ctx.send(_("Your name color has been set to random!"))
         try:
-            rgb = utils.string_to_rgb(hex_color)
+            rgb = utils.string_to_rgb(color)
         except ValueError:
             file = discord.File(imgtools.COLORTABLE)
             return await ctx.send(
@@ -480,13 +486,13 @@ class User(MixinMeta):
             description=_("Name color updated! This is the color you chose."),
             color=discord.Color.from_rgb(*rgb),
         )
-        profile.namecolor = hex_color
+        profile.namecolor = color
         self.save()
         await ctx.send(embed=embed)
 
     @set_profile.command(name="statcolor", aliases=["stat"])
     @commands.bot_has_permissions(embed_links=True, attach_files=True)
-    async def set_stat_color(self, ctx: commands.Context, hex_color: str):
+    async def set_stat_color(self, ctx: commands.Context, color: str):
         """
         Set a hex color for your server stats
 
@@ -497,12 +503,12 @@ class User(MixinMeta):
         """
         conf = self.db.get_conf(ctx.guild)
         profile = conf.get_profile(ctx.author)
-        if hex_color == "default":
+        if color == "default":
             profile.statcolor = None
             self.save()
             return await ctx.send(_("Your stat color has been set to random!"))
         try:
-            rgb = utils.string_to_rgb(hex_color)
+            rgb = utils.string_to_rgb(color)
         except ValueError:
             file = discord.File(imgtools.COLORTABLE)
             return await ctx.send(
@@ -512,13 +518,13 @@ class User(MixinMeta):
             description=_("Stat color updated! This is the color you chose."),
             color=discord.Color.from_rgb(*rgb),
         )
-        profile.statcolor = hex_color
+        profile.statcolor = color
         self.save()
         await ctx.send(embed=embed)
 
     @set_profile.command(name="barcolor", aliases=["levelbar", "lvlbar", "bar"])
     @commands.bot_has_permissions(embed_links=True, attach_files=True)
-    async def set_levelbar_color(self, ctx: commands.Context, hex_color: str):
+    async def set_levelbar_color(self, ctx: commands.Context, color: str):
         """
         Set a hex color for your level bar
 
@@ -531,12 +537,12 @@ class User(MixinMeta):
         profile = conf.get_profile(ctx.author)
         if profile.style in const.STATIC_FONT_STYLES:
             return await ctx.send(_("You cannot change your name color with the current profile style!"))
-        if hex_color == "default":
+        if color == "default":
             profile.barcolor = None
             self.save()
             return await ctx.send(_("Your level bar color has been set to random!"))
         try:
-            rgb = utils.string_to_rgb(hex_color)
+            rgb = utils.string_to_rgb(color)
         except ValueError:
             file = discord.File(imgtools.COLORTABLE)
             return await ctx.send(
@@ -546,7 +552,7 @@ class User(MixinMeta):
             description=_("Level bar color updated! This is the color you chose."),
             color=discord.Color.from_rgb(*rgb),
         )
-        profile.barcolor = hex_color
+        profile.barcolor = color
         self.save()
         await ctx.send(embed=embed)
 
