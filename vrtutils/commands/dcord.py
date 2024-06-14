@@ -3,6 +3,7 @@ import math
 import string
 import typing as t
 import unicodedata
+from io import StringIO
 
 import discord
 from rapidfuzz import fuzz
@@ -42,8 +43,12 @@ class Dcord(MixinMeta):
             matches.append((fuzz.ratio(query, user.name.lower()), user))
             matches.append((fuzz.ratio(query, user.display_name.lower()), user))
         matches = sorted(matches, key=lambda x: x[0], reverse=True)
-        user = matches[0][1]
-        await ctx.send(f"Closest match: {user.name} ({user.id}) with a score of {matches[0][0]:.2f}")
+        # Get the top 5 matches
+        matches = matches[:5]
+        buffer = StringIO()
+        for score, user in matches:
+            buffer.write(f"- {user.name} ({user.id}) - {score:.2f}% match\n")
+        await ctx.send(f"Closest matches for `{query}`:\n{buffer.getvalue()}")
 
     @commands.command(aliases=["findguild"])
     @commands.is_owner()
