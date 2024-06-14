@@ -89,10 +89,14 @@ def get_kwargs(form_data: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
     # Some values have the following
     # ValueError: unknown color specifier: '(255, 255, 255)'
     # The following kwargs need to be evaluated as tuples
-    kwargs["base_color"] = parse_color(form_data.get("base_color"))
-    kwargs["user_color"] = parse_color(form_data.get("user_color"))
-    kwargs["stat_color"] = parse_color(form_data.get("stat_color"))
-    kwargs["level_bar_color"] = parse_color(form_data.get("level_bar_color"))
+    if form_data.get("base_color") is not None:
+        kwargs["base_color"] = parse_color(form_data.get("base_color"))
+    if form_data.get("user_color") is not None:
+        kwargs["user_color"] = parse_color(form_data.get("user_color"))
+    if form_data.get("stat_color") is not None:
+        kwargs["stat_color"] = parse_color(form_data.get("stat_color"))
+    if form_data.get("level_bar_color") is not None:
+        kwargs["level_bar_color"] = parse_color(form_data.get("level_bar_color"))
 
     return kwargs
 

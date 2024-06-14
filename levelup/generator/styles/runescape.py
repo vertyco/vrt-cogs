@@ -27,7 +27,6 @@ import typing as t
 from io import BytesIO
 
 from PIL import Image, ImageDraw, ImageFont
-from redbot.core.i18n import Translator
 
 try:
     from .. import imgtools
@@ -35,7 +34,6 @@ except ImportError:
     import imgtools
 
 log = logging.getLogger("red.vrt.levelup.generator.styles.default")
-_ = Translator("LevelUp", __file__)
 
 
 def generate_runescape_profile(
