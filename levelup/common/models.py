@@ -133,8 +133,18 @@ class WeeklySettings(Base):
     @property
     def next_reset(self) -> int:
         now = datetime.now()
-        reset = now + timedelta((self.reset_day - now.weekday()) % 7)
-        return int(reset.replace(hour=self.reset_hour, minute=0, second=0).timestamp())
+        current_weekday = now.weekday()
+
+        # Calculate how many days until the next reset day
+        days_until_reset = (self.reset_day - current_weekday + 7) % 7
+
+        if days_until_reset == 0 and now.hour >= self.reset_hour:
+            days_until_reset = 7
+
+        next_reset_time = (now + timedelta(days=days_until_reset)).replace(
+            hour=self.reset_hour, minute=0, second=0, microsecond=0
+        )
+        return int(next_reset_time.timestamp())
 
     def refresh(self):
         self.last_reset = int(datetime.now().timestamp())
