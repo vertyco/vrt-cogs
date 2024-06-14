@@ -488,7 +488,7 @@ class Admin(MixinMeta):
             return await ctx.send(_("User has not been registered yet!"))
         if not conf.prestigedata:
             return await ctx.send(_("Prestige levels have not been set!"))
-        if prestige not in conf.prestigedata:
+        if prestige and prestige not in conf.prestigedata:
             return await ctx.send(_("That prestige level does not exist!"))
         profile = conf.get_profile(user)
         profile.prestige = prestige
@@ -1213,8 +1213,6 @@ class Admin(MixinMeta):
         Add a role to a prestige level
         """
         conf = self.db.get_conf(ctx.guild)
-        if prestige not in conf.prestigedata:
-            return await ctx.send(_("That prestige level does not exist!"))
         if role >= ctx.guild.me.top_role:
             return await ctx.send(_("I cannot assign roles higher than my top role!"))
         if role >= ctx.author.top_role:
@@ -1222,12 +1220,12 @@ class Admin(MixinMeta):
         if prestige in conf.prestigedata:
             return await ctx.send(_("This prestige level has already been set!"))
         url = utils.get_twemoji(emoji) if isinstance(emoji, str) else emoji.url
-        prestige = Prestige(
+        prestige_obj = Prestige(
             role=role.id,
             emoji_string=str(emoji),
             emoji_url=url,
         )
-        conf.prestigedata[prestige] = prestige
+        conf.prestigedata[prestige] = prestige_obj
         self.save()
         await ctx.send(_("Role and emoji have been set for prestige level {}").format(prestige))
 

@@ -140,14 +140,15 @@ def getsize(text: str, font: FontT = None, *, spacing: int = 4, emoji_scale_fact
             if node.type is not NodeType.text:
                 width = int(emoji_scale_factor * font.size)
             else:
-                try:
-                    width, _ = font.getsize(content)
-                except AttributeError:
-                    width = int(font.getlength(content))
+                width = int(font.getlength(content))
+                # try:
+                #     width, _ = font.getsize(content)
+                # except AttributeError:
+                #     width = int(font.getlength(content))
 
             this_x += width
 
-        y += spacing + font.size
+        y += spacing + int(font.size)
 
         if this_x > x:
             x = this_x
