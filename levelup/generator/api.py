@@ -14,7 +14,6 @@ import uvicorn
 import uvicorn.config
 from fastapi import FastAPI, Request
 from uvicorn.config import LOGGING_CONFIG
-from uvicorn.logging import AccessFormatter, ColourizedFormatter
 
 try:
     # Running from the cog
@@ -40,9 +39,6 @@ LOGGING_CONFIG["formatters"]["access"]["datefmt"] = datefmt
 LOGGING_CONFIG["formatters"]["default"]["fmt"] = default
 LOGGING_CONFIG["formatters"]["default"]["datefmt"] = datefmt
 
-default_formatter = ColourizedFormatter(fmt=default, datefmt=datefmt, use_colors=False)
-access_formatter = AccessFormatter(fmt=access, datefmt=datefmt, use_colors=False)
-
 IS_WINDOWS: bool = sys.platform.startswith("win")
 DEFAULT_WORKERS: int = os.cpu_count() or 1
 ROOT = Path(__file__).parent
@@ -51,20 +47,22 @@ PROC: t.Union[mp.Process, asyncio.subprocess.Process] = None
 log = logging.getLogger("red.vrt.levelup.api")
 
 
+if SERVICE:
+    LOGGING_CONFIG["handlers"]["file"] = {
+        "class": "logging.handlers.RotatingFileHandler",
+        "formatter": "default",
+        "filename": str(LOG_DIR / "api.log"),
+        "maxBytes": 51200,
+        "backupCount": 2,
+        "level": "INFO",
+    }
+    LOGGING_CONFIG["loggers"]["uvicorn"]["handlers"] = ["default", "file"]
+    logging.config.dictConfig(LOGGING_CONFIG)
+    log.info("API running as service")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if SERVICE:
-        LOGGING_CONFIG["handlers"]["file"] = {
-            "class": "logging.handlers.RotatingFileHandler",
-            "formatter": "default",
-            "filename": str(LOG_DIR / "api.log"),
-            "maxBytes": 51200,
-            "backupCount": 2,
-            "level": "INFO",
-        }
-        LOGGING_CONFIG["loggers"]["uvicorn"]["handlers"] = ["default", "file"]
-        logging.config.dictConfig(LOGGING_CONFIG)
-        log.info("API running as service")
     yield
     if PROC:
         log.info("Shutting down API")
