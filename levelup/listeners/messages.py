@@ -12,6 +12,56 @@ log = logging.getLogger("red.vrt.levelup.listeners.messages")
 
 class MessageListener(MixinMeta):
     @commands.Cog.listener()
+    async def on_ark_chat_message(
+        self, guild: discord.Guild, user_id: int, message: str, chatchannel: discord.TextChannel
+    ):
+        if guild.id in self.db.ignored_guilds:
+            return
+        if await self.bot.cog_disabled_in_guild(self, guild):
+            return
+        user = guild.get_member(user_id)
+        if not user:
+            return
+        conf = self.db.get_conf(guild)
+        if not conf.enabled:
+            return
+        if user_id in conf.ignoredusers:
+            return
+        profile = conf.get_profile(user_id).add_message()
+        weekly = None
+        if conf.weeklysettings.on:
+            weekly = conf.get_weekly_profile(user).add_message()
+
+        now = perf_counter()
+        last_messages = self.lastmsg.setdefault(guild.id, {})
+        addxp = False
+        if len(message) > conf.min_length:
+            if user_id not in last_messages:
+                addxp = True
+            elif now - last_messages[user_id] > conf.cooldown:
+                addxp = True
+
+        if not addxp:
+            return
+
+        self.lastmsg[guild.id][user_id] = now
+        xp_to_add = random.randint(conf.xp[0], conf.xp[1])
+        # Add the xp to the user's profile
+        log.debug(f"Adding {xp_to_add} xp to {user.name} in {guild.name}")
+        profile.xp += xp_to_add
+        if weekly:
+            weekly.xp += xp_to_add
+        # Check for levelups
+        await self.check_levelups(
+            guild=guild,
+            member=user,
+            profile=profile,
+            conf=conf,
+            message=None,
+            channel=chatchannel,
+        )
+
+    @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         # If message object is None for some reason
         if not message:
@@ -62,10 +112,11 @@ class MessageListener(MixinMeta):
         now = perf_counter()
         last_messages = self.lastmsg.setdefault(message.guild.id, {})
         addxp = False
-        if user_id not in last_messages:
-            addxp = True
-        elif now - last_messages[user_id] > conf.cooldown:
-            addxp = True
+        if len(message.content) > conf.min_length:
+            if user_id not in last_messages:
+                addxp = True
+            elif now - last_messages[user_id] > conf.cooldown:
+                addxp = True
 
         if not addxp:
             return
