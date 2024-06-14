@@ -19,6 +19,7 @@ class MessageListener(MixinMeta):
         user_id: int,
         message: str,
         chatchannel: t.Union[discord.TextChannel, None] = None,
+        **kwargs,
     ):
         if guild.id in self.db.ignored_guilds:
             return
