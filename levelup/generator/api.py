@@ -59,6 +59,7 @@ if SERVICE:
     streamhandler.setFormatter(default_formatter)
     log = logging.getLogger("uvicorn")
     log.handlers = [filehandler, streamhandler]
+    logging.getLogger("uvicorn.access").handlers = [filehandler, streamhandler]
     log.info("API running as service")
 else:
     log = logging.getLogger("red.vrt.levelup.api")
