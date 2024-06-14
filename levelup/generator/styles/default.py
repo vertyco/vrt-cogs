@@ -169,7 +169,7 @@ def generate_default_profile(
     font = ImageFont.truetype(font_path, fontsize)
     with Pilmoji(stats) as pilmoji:
         # Ensure text doesnt pass star_icon_x
-        while pilmoji.getsize(username, font)[0] + stat_start > star_icon_x + 10:
+        while pilmoji.getsize(username, font)[0] + stat_start > star_icon_x - 10:
             fontsize -= 1
             font = ImageFont.truetype(font_path, fontsize)
         pilmoji.text(
