@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2024-06-02 17:32-0400\n"
+"POT-Creation-Date: 2024-06-14 09:49-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -43,7 +43,7 @@ msgstr ""
 msgid "Role Leaderboard"
 msgstr ""
 
-#: levelup\common\formatter.py:84 levelup\common\formatter.py:301
+#: levelup\common\formatter.py:84 levelup\common\formatter.py:290
 msgid "Page {}"
 msgstr ""
 
@@ -133,54 +133,50 @@ msgstr ""
 msgid "➣ **Total {}:** {}\n"
 msgstr ""
 
-#: levelup\common\formatter.py:205 levelup\common\formatter.py:219
+#: levelup\common\formatter.py:204
 msgid "➣ Last Reset: {}\n"
 msgstr ""
 
-#: levelup\common\formatter.py:207 levelup\common\formatter.py:221
-msgid "➣ **Last Reset:** {}\n"
-msgstr ""
-
-#: levelup\common\formatter.py:213 levelup\common\formatter.py:225
+#: levelup\common\formatter.py:208
 msgid "➣ Next Reset: {} ({})\n"
 msgstr ""
 
-#: levelup\common\formatter.py:215
-msgid "➣ **Next Reset:** ({})\n"
+#: levelup\common\formatter.py:212
+msgid "➣ **Last Reset:** {}\n"
 msgstr ""
 
-#: levelup\common\formatter.py:227
+#: levelup\common\formatter.py:215
 msgid "➣ **Next Reset:** {}\n"
 msgstr ""
 
-#: levelup\common\formatter.py:231
+#: levelup\common\formatter.py:220
 msgid "Total {}: {}\n"
 msgstr ""
 
-#: levelup\common\formatter.py:233
+#: levelup\common\formatter.py:222
 msgid ""
 "**Total {}:** {}\n"
 "\n"
 msgstr ""
 
-#: levelup\common\models.py:18
+#: levelup\common\models.py:20
 #, docstring
 msgid ""
 "Custom BaseModel with additional methods for loading and saving settings "
 "safely"
 msgstr ""
 
-#: levelup\common\models.py:163
+#: levelup\common\models.py:164
 #, docstring
 msgid "Calculate the level that corresponds to the given XP amount"
 msgstr ""
 
-#: levelup\common\models.py:167
+#: levelup\common\models.py:168
 #, docstring
 msgid "Calculate XP required to reach specified level"
 msgstr ""
 
-#: levelup\common\models.py:274
+#: levelup\common\models.py:278
 #, docstring
 msgid "Sanitize old config data to be validated by the new schema"
 msgstr ""

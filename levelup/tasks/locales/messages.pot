@@ -11,7 +11,12 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: redgettext 3.4.2\n"
 
-#: levelup\listeners\__init__.py:13
+#: levelup\tasks\__init__.py:6
 #, docstring
-msgid "Subclass all listener classes"
+msgid ""
+"\n"
+"    Subclass all shared metaclassed parts of the cog\n"
+"\n"
+"    This includes all task loops for LevelUp\n"
+"    "
 msgstr ""
