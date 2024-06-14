@@ -166,31 +166,31 @@ class User(MixinMeta):
         profile.prestige = next_prestige
         self.save()
 
-        txt = _("You have reached Prestige {}!\n").format(next_prestige)
+        txt = _("You have reached Prestige {}!\n").format(f"**{next_prestige}**")
 
         if conf.stackprestigeroles and role:
             # Just add the new role to the user
             if role not in ctx.author.roles:
                 try:
                     await ctx.author.add_roles(role, reason=_("Prestige Level"))
-                    txt += _("You have been given the {} role!").format(role.mention)
+                    txt += _("- {} role added!").format(role.mention)
                 except discord.HTTPException:
-                    txt += _("I was unable to give you the {} role!").format(role.mention)
+                    txt += _("- I was unable to give you the {} role!").format(role.mention)
         elif not conf.stackprestigeroles:
             # Remove all roles and give the new one if it exists
             to_remove = [r for r in ctx.author.roles if r.id in conf.levelroles.values() and r != role]
             to_add = [role] if role not in ctx.author.roles else []
             try:
                 await ctx.author.add_roles(*to_add, reason=_("Prestige Level"))
-                txt += _("You have been given the {} role!").format(role.mention)
+                txt += _("- {} role added!").format(role.mention)
             except discord.HTTPException:
-                txt += _("I was unable to give you the {} role!").format(role.mention)
+                txt += _("- I was unable to give you the {} role!").format(role.mention)
             if to_remove:
                 try:
                     await ctx.author.remove_roles(*to_remove, reason=_("Prestige Level"))
-                    txt += _("\nI have removed your old prestige roles")
+                    txt += _("\n- I have removed your old prestige roles")
                 except discord.HTTPException:
-                    txt += _("\nI was unable to remove your old prestige roles")
+                    txt += _("\n- I was unable to remove your old prestige roles")
         embed = discord.Embed(description=txt, color=await self.bot.get_embed_color(ctx))
         await ctx.send(embed=embed)
 

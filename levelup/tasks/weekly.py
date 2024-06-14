@@ -29,6 +29,9 @@ class WeeklyTask(MixinMeta):
                 continue
             if conf.weeklysettings.next_reset > now:
                 continue
+            # Skip if stats were wiped within the last 12 hours
+            if now - conf.weeklysettings.last_reset < 43200:
+                continue
             log.info(f"Resetting weekly stats for {guild}")
             await self.reset_weekly(guild)
 
