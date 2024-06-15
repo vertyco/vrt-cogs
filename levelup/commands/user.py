@@ -98,8 +98,10 @@ class User(MixinMeta):
         if user.id == ctx.author.id and profile.show_tutorial:
             # New user, tell them about how they can customize their profile
             new_user_txt = _(
-                "Welcome to LevelUp!\nUse {} to view your profile settings and the available customization commands!"
-            ).format(f"`{ctx.clean_prefix}setprofile`")
+                "Welcome to LevelUp!\n"
+                "Use {} to view your profile settings and the available customization commands!\n"
+                "*You can use {} to view your profile settings at any time*"
+            ).format(f"`{ctx.clean_prefix}setprofile`", f"`{ctx.clean_prefix}setprofile view`")
             profile.show_tutorial = False
             self.save()
 
@@ -201,9 +203,7 @@ class User(MixinMeta):
         embed = discord.Embed(description=txt, color=await self.bot.get_embed_color(ctx))
         await ctx.send(embed=embed)
 
-    @commands.hybrid_group(
-        name="setprofile", aliases=["myprofile", "mypf", "pfset"], description="View/Change your profile settings"
-    )
+    @commands.hybrid_group(name="setprofile", aliases=["myprofile", "mypf", "pfset"])
     @commands.guild_only()
     async def set_profile(self, ctx: commands.Context):
         """Customize your profile"""
@@ -258,10 +258,10 @@ class User(MixinMeta):
     @set_profile.command(name="bgpath")
     @commands.is_owner()
     async def get_bg_path(self, ctx: commands.Context):
-        """Get folder path for this cog's backgrounds"""
+        """Get the folder paths for this cog's backgrounds"""
         txt = ""
-        txt += _("- Defaults: {}\n").format(self.backgrounds)
-        txt += _("- Custom: {}\n").format(self.custom_backgrounds)
+        txt += _("- Defaults: `{}`\n").format(self.backgrounds)
+        txt += _("- Custom: `{}`\n").format(self.custom_backgrounds)
         await ctx.send(txt)
 
     @set_profile.command(name="addbackground")
@@ -322,7 +322,7 @@ class User(MixinMeta):
     @set_profile.command(name="fontpath")
     @commands.is_owner()
     async def get_font_path(self, ctx: commands.Context):
-        """Get folder path for this cog's fonts"""
+        """Get folder paths for this cog's fonts"""
         txt = ""
         txt += _("- Defaults: {}\n").format(self.fonts)
         txt += _("- Custom: {}\n").format(self.custom_fonts)
@@ -405,7 +405,7 @@ class User(MixinMeta):
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.bot_has_permissions(attach_files=True)
     async def view_fonts(self, ctx: commands.Context):
-        """View available fonts to use"""
+        """View the available fonts you can use"""
         paths = list(self.fonts.iterdir()) + list(self.custom_fonts.iterdir())
         paths = [str(x) for x in paths]
 
@@ -449,7 +449,7 @@ class User(MixinMeta):
 
     @set_profile.command(name="shownick")
     async def toggle_show_nickname(self, ctx: commands.Context):
-        """Toggle showing your nickname in your profile"""
+        """Toggle whether your nickname or username is shown in your profile"""
         conf = self.db.get_conf(ctx.guild)
         profile = conf.get_profile(ctx.author)
         profile.show_displayname = not profile.show_displayname
@@ -466,12 +466,11 @@ class User(MixinMeta):
     @app_commands.describe(color="Name of color, hex or integer value")
     async def set_name_color(self, ctx: commands.Context, *, color: str):
         """
-        Set a hex color for your username
+        Set a color for your username
 
-        Here is a link to google's color picker:
-        **[Hex Color Picker](https://htmlcolorcodes.com/)**
+        For a specific color, try **[Google's hex color picker](https://htmlcolorcodes.com/)**
 
-        Set to `default` to randomize your name color each time you run the command
+        Set to `default` to randomize the color each time your profile is generated
         """
         conf = self.db.get_conf(ctx.guild)
         profile = conf.get_profile(ctx.author)
@@ -500,12 +499,11 @@ class User(MixinMeta):
     @commands.bot_has_permissions(embed_links=True, attach_files=True)
     async def set_stat_color(self, ctx: commands.Context, *, color: str):
         """
-        Set a hex color for your server stats
+        Set a color for your server stats
 
-        Here is a link to google's color picker:
-        **[Hex Color Picker](https://htmlcolorcodes.com/)**
+        For a specific color, try **[Google's hex color picker](https://htmlcolorcodes.com/)**
 
-        Set to `default` to randomize your name color each time you run the command
+        Set to `default` to randomize the color each time your profile is generated
         """
         conf = self.db.get_conf(ctx.guild)
         profile = conf.get_profile(ctx.author)
@@ -532,12 +530,11 @@ class User(MixinMeta):
     @commands.bot_has_permissions(embed_links=True, attach_files=True)
     async def set_levelbar_color(self, ctx: commands.Context, *, color: str):
         """
-        Set a hex color for your level bar
+        Set a color for your level bar
 
-        Here is a link to google's color picker:
-        **[Hex Color Picker](https://htmlcolorcodes.com/)**
+        For a specific color, try **[Google's hex color picker](https://htmlcolorcodes.com/)**
 
-        Set to `default` to randomize your name color each time you run the command
+        Set to `default` to randomize the color each time your profile is generated
         """
         conf = self.db.get_conf(ctx.guild)
         profile = conf.get_profile(ctx.author)
@@ -589,8 +586,8 @@ class User(MixinMeta):
         This will override your profile banner as the background
 
         **WARNING**
-        Profile backgrounds are wide landscapes (1050 by 450 pixels) with an aspect ratio of 21:9
-        Using portrait images will be cropped.
+        The default profile style is wide (1050 by 450 pixels) with an aspect ratio of 21:9.
+        Portrait images will be cropped.
 
         Tip: Googling "dual monitor backgrounds" gives good results for the right images
 
@@ -601,7 +598,7 @@ class User(MixinMeta):
         [teahub](https://www.teahub.io/searchw/dual-monitor/)
 
         **Additional Options**
-         - Leave image_url blank to reset back to using your profile banner (or random if you don't have one)
+         - Leave `url` blank or specify `default` to reset back to using your profile banner (or random if you don't have one)
          - `random` will randomly select from a pool of default backgrounds each time
          - `filename` run `[p]mypf backgrounds` to view default options you can use by including their filename
         """

@@ -90,7 +90,7 @@ class Profile(Base):
     )
     show_tutorial: bool = True  # Init with True, show tutorial on first command usage
 
-    # For image profiles
+    # Profile customization
     style: str = "default"  # Can be default, runescape... (WIP)
     background: str = "default"  # Can be default, random, filename, or URL
     namecolor: t.Union[str, None] = None  # Hex color
@@ -104,6 +104,19 @@ class Profile(Base):
         self.messages += 1
         self.last_active = datetime.now()
         return self
+
+    def all_default(self) -> bool:
+        defaults = [
+            self.style == self.__annotations__["style"].default,
+            self.background == self.__annotations__["background"].default,
+            self.namecolor == self.__annotations__["namecolor"].default,
+            self.statcolor == self.__annotations__["statcolor"].default,
+            self.barcolor == self.__annotations__["barcolor"].default,
+            self.font == self.__annotations__["font"].default,
+            self.blur == self.__annotations__["blur"].default,
+            self.show_displayname == self.__annotations__["show_displayname"].default,
+        ]
+        return all(defaults)
 
 
 class ProfileWeekly(Base):
