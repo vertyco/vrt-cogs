@@ -37,6 +37,12 @@ async def view_profile_context(interaction: discord.Interaction, member: discord
 
 @cog_i18n(_)
 class User(MixinMeta):
+    @commands.command(name="ptest")
+    async def ptest(self, ctx):
+        conf = self.db.get_conf(ctx.guild)
+        profile = conf.get_profile(ctx.author)
+        await ctx.send(f"Default: {profile.all_default}")
+
     @commands.hybrid_command(name="leveltop", aliases=["lvltop", "topstats", "membertop", "topranks"])
     @commands.guild_only()
     async def leveltop(
