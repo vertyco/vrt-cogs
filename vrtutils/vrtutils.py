@@ -12,7 +12,7 @@ log = logging.getLogger("red.vrt.vrtutils")
 
 class VrtUtils(Utils, commands.Cog, metaclass=CompositeMetaClass):
     """
-    A collection of utility commands for getting info about various things.
+    A collection of stateless utility commands for getting info about various things.
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
