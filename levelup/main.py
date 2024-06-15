@@ -7,7 +7,6 @@ from time import perf_counter
 
 import orjson
 import psutil
-from pydantic import ValidationError
 from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.data_manager import bundled_data_path, cog_data_path
@@ -84,6 +83,7 @@ class LevelUp(
         # Save State
         self.save_lock = asyncio.Lock()
         self.last_save: float = perf_counter()
+        self.initialized: bool = False
 
         # Tenor API
         self.tenor: TenorAPI = None
@@ -111,6 +111,10 @@ class LevelUp(
             self.api_proc.terminate()
 
     def save(self) -> None:
+        if not self.initialized:
+            # Do not save if not initialized, we don't want to overwrite the config with default data
+            return
+
         async def _save():
             try:
                 async with self.save_lock:
@@ -130,9 +134,25 @@ class LevelUp(
             log.info("Loading config")
             try:
                 self.db = await asyncio.to_thread(DB.from_file, self.settings_file)
-            except ValidationError as e:
-                log.error("Failed to load config", exc_info=e)
-                return
+            except Exception as e:
+                log.error("Failed to load config, trying to load from backup files", exc_info=e)
+                # Try to load from the 3 .bak files
+                for i in range(1, 4):
+                    backup_file = self.settings_file.with_suffix(f".bak{i}")
+                    if not backup_file.exists():
+                        log.error("No suitable backups found!")
+                        return
+                    try:
+                        self.db = await asyncio.to_thread(DB.from_file, backup_file)
+                        log.warning(f"Loaded from backup file: {backup_file}")
+                        self.save()
+                        break
+                    except UnicodeDecodeError:
+                        log.error(f"Failed to load from backup file: {backup_file}")
+                else:
+                    log.error("Failed to load from backup files")
+                    return
+
         elif self.old_settings_file.exists():
             raw_settings = self.old_settings_file.read_text()
             settings = orjson.loads(raw_settings)
@@ -147,6 +167,7 @@ class LevelUp(
                     return
 
         log.info("Config initialized")
+        self.initialized = True
         if voice_initialized := await self.initialize_voice_states():
             log.info(f"Initialized {voice_initialized} voice states")
 

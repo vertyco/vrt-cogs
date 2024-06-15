@@ -52,14 +52,33 @@ class Base(BaseModel):
             raise IsADirectoryError(f"Path is not a file: {path}")
         if VERSION >= "2.0.1":
             text = path.read_text()
-            return cls.model_validate_json(text)
-        return cls.parse_file(path)
+            try:
+                return cls.model_validate_json(text)
+            except UnicodeDecodeError as e:
+                log.warning(f"Failed to load {path}, attempting to load via json5")
+                try:
+                    import json5
+
+                    data = json5.loads(text)
+                    return cls.model_validate(data)
+                except ImportError:
+                    log.error("Failed to load via json5")
+                    raise e
+        try:
+            return cls.parse_file(path)
+        except UnicodeDecodeError as e:
+            log.warning(f"Failed to load {path}, attempting to load via json5")
+            try:
+                import json5
+
+                data = json5.loads(path.read_text())
+                return cls.parse_obj(data)
+            except ImportError:
+                log.error("Failed to load via json5")
+                raise e
 
     def to_file(self, path: Path) -> None:
-        if VERSION >= "2.0.1":
-            dump = self.model_dump_json(indent=2, exclude_defaults=True)
-        else:
-            dump = self.json(exclude_defaults=True)
+        dump = self.dumpjson(exclude_defaults=True, pretty=True)
         # We want to write the file as safely as possible
         # https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/core/_drivers/json.py#L224
         tmp_path = path.parent / f"{path.stem}-{round(perf_counter())}.tmp"
@@ -68,7 +87,23 @@ class Base(BaseModel):
             fs.flush()  # This does get closed on context exit, ...
             os.fsync(fs.fileno())  # but that needs to happen prior to this line
 
+        # Rolling backups: maintain 3 old versions of the file
+        for i in range(3, 0, -1):
+            backup_path = path.with_suffix(f".bak{i}")
+            new_backup_path = path.with_suffix(f".bak{i+1}")
+            if backup_path.exists():
+                if i == 3:
+                    backup_path.unlink()  # Remove the oldest backup
+                else:
+                    backup_path.replace(new_backup_path)  # Shift the backups
+
+        # Backup the latest version
+        path.replace(path.with_suffix(".bak1"))
+
+        # Replace the original file with the new content
         tmp_path.replace(path)
+
+        # Ensure directory fsync for better durability
         if hasattr(os, "O_DIRECTORY"):
             fd = os.open(path.parent, os.O_DIRECTORY)
             try:
