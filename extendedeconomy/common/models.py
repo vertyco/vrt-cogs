@@ -123,6 +123,7 @@ class GuildSettings(Base):
     # Unique to GuildSettings (local bank only)
     stack_paydays: bool = False
     auto_claim_roles: t.List[int] = []  # Role IDs that auto claim paydays
+    role_bonuses: t.Dict[int, float] = {}  # Role ID: bonus multiplier
 
 
 class DB(Base):

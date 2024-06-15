@@ -137,6 +137,10 @@ def format_settings(
         txt += _("`Stack Paydays:       `{}\n").format(conf.stack_paydays)
         autoclaim = [f"<@&{r}>" for r in conf.auto_claim_roles]
         txt += _("`Auto Claim Roles:    `{}\n").format(", ".join(autoclaim) or not_set)
+        if conf.role_bonuses:
+            txt += _("`Role Bonuses:        `{}\n").format(
+                "\n".join(f"<@&{r}>: {b}" for r, b in conf.role_bonuses.items())
+            )
     txt += _("`Auto Claim Channel:  `{}\n").format(f"<#{conf.logs.auto_claim}>" if conf.logs.auto_claim else not_set)
     if isinstance(conf, DB):
         footer = _("Showing settings for global bank")

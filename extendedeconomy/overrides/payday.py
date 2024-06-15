@@ -8,7 +8,7 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_number
 
 from ..abc import MixinMeta
-from ..common.models import PaydayClaimInformation
+from ..common.models import GuildSettings, PaydayClaimInformation
 
 log = logging.getLogger("red.vrt.extendedeconomy.overrides.payday")
 _ = Translator("ExtendedEconomy", __file__)
@@ -84,13 +84,18 @@ class PaydayOverride(MixinMeta):
             next_payday = await cog.config.member(author).next_payday() + await cog.config.guild(guild).PAYDAY_TIME()
             if cur_time >= next_payday:
                 credit_amount = await cog.config.guild(guild).PAYDAY_CREDITS()
-                conf = self.bot.get_cog("ExtendedEconomy").db.get_conf(guild)
+                conf: GuildSettings = self.bot.get_cog("ExtendedEconomy").db.get_conf(guild)
                 for role in author.roles:
                     role_credits = await cog.config.role(role).PAYDAY_CREDITS()
                     if conf.stack_paydays:
                         credit_amount += role_credits
                     elif role_credits > credit_amount:
                         credit_amount = role_credits
+
+                if conf.role_bonuses and any(role.id in conf.role_bonuses for role in author.roles):
+                    # Get the highest bonus multiplier that the user has
+                    highest_bonus = max(conf.role_bonuses.get(role.id, 0) for role in author.roles)
+                    credit_amount += round(credit_amount * highest_bonus)
 
                 try:
                     new_balance = await bank.deposit_credits(author, credit_amount)
