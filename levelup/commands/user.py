@@ -99,7 +99,7 @@ class User(MixinMeta):
             # New user, tell them about how they can customize their profile
             new_user_txt = _(
                 "Welcome to LevelUp!\nUse {} to view your profile settings and the available customization commands!"
-            ).format(f"`{ctx.clean_prefix}mypf`")
+            ).format(f"`{ctx.clean_prefix}setprofile`")
             profile.show_tutorial = False
             self.save()
 
