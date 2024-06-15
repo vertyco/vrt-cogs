@@ -79,6 +79,37 @@ class Admin(MixinMeta):
         await ctx.send(txt)
         await self.save()
 
+    @extendedeconomy.command(name="rolebonus")
+    async def role_bonus(self, ctx: commands.Context, role: discord.Role, bonus: float):
+        """
+        Add/Remove Payday role bonuses
+
+        Example: `[p]ecoset rolebonus @role 0.1` - Adds a 10% bonus to the user's payday if they have the role.
+
+        To remove a bonus, set the bonus to 0.
+        """
+        is_global = await bank.is_global()
+        if is_global:
+            return await ctx.send(_("This setting is not available when global bank is enabled."))
+        if bonus <= 0:
+            if role.id in self.db.role_bonuses:
+                del self.db.role_bonuses[role.id]
+                txt = _("Role bonus removed.")
+                await self.save()
+            else:
+                txt = _("That role does not have a bonus.")
+            return await ctx.send(txt)
+        if role.id in self.db.role_bonuses:
+            current = self.db.role_bonuses[role.id]
+            if current == bonus:
+                return await ctx.send(_("That role already has that bonus."))
+            txt = _("Role bonus updated.")
+        else:
+            txt = _("Role bonus added.")
+        self.db.role_bonuses[role.id] = bonus
+        await ctx.send(txt)
+        await self.save()
+
     @extendedeconomy.command(name="autopayday")
     async def autopayday(self, ctx: commands.Context):
         """Toggle whether paydays are claimed automatically (Global bank)"""
