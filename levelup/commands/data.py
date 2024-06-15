@@ -159,17 +159,20 @@ class DataAdmin(MixinMeta):
         """Backup the cog's data"""
         dump = self.db.dumpjson(pretty=True)
         now = datetime.now().strftime("%m-%d-%Y-%H-%M-%S")
-        filename = f"levelup_backup_{now}.json"
+        filename = f"LevelUp {now}.json"
         file = text_to_file(dump, filename=filename)
         await ctx.send(file=file)
 
     @lvldata.command(name="backup")
     async def backup_server(self, ctx: commands.Context):
         """Backup this server's data"""
+        server_name = ctx.guild.name
+        # Make sure the server name is safe for a filename
+        server_name = "".join([c for c in server_name if c.isalnum() or c in " -_"])
         conf = self.db.get_conf(ctx.guild)
         dump = conf.dumpjson(pretty=True)
         now = datetime.now().strftime("%m-%d-%Y-%H-%M-%S")
-        filename = f"levelup_backup_{ctx.guild.id}_{now}.json"
+        filename = f"LevelUp {server_name} {now}.json"
         file = text_to_file(dump, filename=filename)
         await ctx.send(file=file)
 
