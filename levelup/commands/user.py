@@ -464,7 +464,7 @@ class User(MixinMeta):
     @set_profile.command(name="namecolor", aliases=["name"])
     @commands.bot_has_permissions(embed_links=True, attach_files=True)
     @app_commands.describe(color="Name of color, hex or integer value")
-    async def set_name_color(self, ctx: commands.Context, color: str):
+    async def set_name_color(self, ctx: commands.Context, *, color: str):
         """
         Set a hex color for your username
 
@@ -498,7 +498,7 @@ class User(MixinMeta):
 
     @set_profile.command(name="statcolor", aliases=["stat"])
     @commands.bot_has_permissions(embed_links=True, attach_files=True)
-    async def set_stat_color(self, ctx: commands.Context, color: str):
+    async def set_stat_color(self, ctx: commands.Context, *, color: str):
         """
         Set a hex color for your server stats
 
@@ -530,7 +530,7 @@ class User(MixinMeta):
 
     @set_profile.command(name="barcolor", aliases=["levelbar", "lvlbar", "bar"])
     @commands.bot_has_permissions(embed_links=True, attach_files=True)
-    async def set_levelbar_color(self, ctx: commands.Context, color: str):
+    async def set_levelbar_color(self, ctx: commands.Context, *, color: str):
         """
         Set a hex color for your level bar
 
