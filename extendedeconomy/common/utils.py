@@ -127,6 +127,8 @@ def format_settings(
         f"<#{conf.logs.payday_claim}>" if conf.logs.payday_claim else not_set,
     )
 
+    txt += _("`Auto Claim Channel:  `{}\n").format(f"<#{conf.logs.auto_claim}>" if conf.logs.auto_claim else not_set)
+
     if is_global:
         txt += _("`Set Global:          `{}\n").format(
             f"<#{conf.logs.set_global}>" if conf.logs.set_global else not_set
@@ -141,7 +143,6 @@ def format_settings(
             txt += _("`Role Bonuses:        `{}\n").format(
                 "\n".join(f"<@&{r}>: {b}" for r, b in conf.role_bonuses.items())
             )
-    txt += _("`Auto Claim Channel:  `{}\n").format(f"<#{conf.logs.auto_claim}>" if conf.logs.auto_claim else not_set)
     if isinstance(conf, DB):
         footer = _("Showing settings for global bank")
     else:
