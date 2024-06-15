@@ -82,7 +82,7 @@ class LevelUp(
         self.backgrounds = self.bundled_path / "backgrounds"
 
         # Save State
-        self.saving = False
+        self.save_lock = asyncio.Lock()
         self.last_save: float = perf_counter()
 
         # Tenor API
@@ -109,6 +109,18 @@ class LevelUp(
                     log.debug(f"Killing child: {child.pid}")
                     child.kill()
             self.api_proc.terminate()
+
+    def save(self) -> None:
+        async def _save():
+            try:
+                async with self.save_lock:
+                    await asyncio.to_thread(self.db.to_file, self.settings_file)
+                    self.last_save = perf_counter()
+                    log.debug("Config saved")
+            except Exception as e:
+                log.error("Failed to save config", exc_info=e)
+
+        asyncio.create_task(_save())
 
     async def initialize(self) -> None:
         await self.bot.wait_until_red_ready()
@@ -179,23 +191,6 @@ class LevelUp(
                 return
             log.debug("Tenor API token updated")
             self.tenor = TenorAPI(api_tokens["api_key"], str(self.bot.user))
-
-    def save(self) -> None:
-        async def _save():
-            if self.saving:
-                log.debug("Already saving")
-                return
-            try:
-                self.saving = True
-                await asyncio.to_thread(self.db.to_file, self.settings_file)
-                self.last_save = perf_counter()
-                log.debug("Config saved")
-            except Exception as e:
-                log.error("Failed to save config", exc_info=e)
-            finally:
-                self.saving = False
-
-        asyncio.create_task(_save())
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)

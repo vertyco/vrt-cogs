@@ -199,6 +199,8 @@ def generate_default_profile(
         )
         if prestige_emoji:
             prestige_icon = Image.open(BytesIO(prestige_emoji)).resize((50, 50), Image.Resampling.LANCZOS)
+            if prestige_icon.mode != "RGBA":
+                prestige_icon = prestige_icon.convert("RGBA")
             placement = (round(stat_start + font.getlength(text) + 10), name_y + 65)
             stats.paste(prestige_icon, placement, prestige_icon)
     # ---------------- Stars text ----------------

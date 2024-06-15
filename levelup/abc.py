@@ -40,7 +40,6 @@ class MixinMeta(ABC):
         self.backgrounds: Path
 
         # Save state
-        self.saving = False
         self.last_save: float
 
         # Tenor
