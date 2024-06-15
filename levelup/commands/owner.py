@@ -96,7 +96,7 @@ class Owner(MixinMeta):
         status = _("Enabled") if self.db.auto_cleanup else _("Disabled")
         embed.add_field(
             name=_("Auto-Cleanup ({})").format(status),
-            value=_("The bot will auto-clean configs of guilds that the bot is no longer in."),
+            value=_("If enabled, the bot will auto-purge configs of guilds that the bot is no longer in."),
             inline=False,
         )
         embed.add_field(
@@ -124,9 +124,10 @@ class Owner(MixinMeta):
 
         Setting a port will spin up a detatched but cog-managed FastAPI server to handle image generation.
 
-        **WARNING**
+        **USE AT YOUR OWN RISK!!!**
         Using the internal API will spin up multiple subprocesses to handle bulk image generation.
-        **Use at your own risk! This is not recommended for smaller bots to run**
+        If your bot crashes, the API subprocess will not be killed and will need to be manually terminated!
+        It is HIGHLY reccommended to host the api separately!
 
         Set to 0 to disable the internal API
 

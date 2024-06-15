@@ -113,6 +113,7 @@ class LevelUp(
     def save(self) -> None:
         if not self.initialized:
             # Do not save if not initialized, we don't want to overwrite the config with default data
+            log.error("Config not initialized, not saving!")
             return
 
         async def _save():
