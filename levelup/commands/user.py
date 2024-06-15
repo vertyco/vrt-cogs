@@ -494,7 +494,7 @@ class User(MixinMeta):
                 _("That is an invalid color, please use a valid name, integer, or hex color."), file=file
             )
         embed = discord.Embed(
-            description=_("Name color updated! This is the color you chose."),
+            description=_("Name color has been updated to {}!").format(f"`{color}`"),
             color=discord.Color.from_rgb(*rgb),
         )
         profile.namecolor = color
@@ -525,7 +525,7 @@ class User(MixinMeta):
                 _("That is an invalid color, please use a valid name, integer, or hex color."), file=file
             )
         embed = discord.Embed(
-            description=_("Stat color updated! This is the color you chose."),
+            description=_("Stat color has been updated to {}!").format(f"`{color}`"),
             color=discord.Color.from_rgb(*rgb),
         )
         profile.statcolor = color
@@ -558,7 +558,7 @@ class User(MixinMeta):
                 _("That is an invalid color, please use a valid name, integer, or hex color."), file=file
             )
         embed = discord.Embed(
-            description=_("Level bar color updated! This is the color you chose."),
+            description=_("Level bar color has been updated to {}!").format(f"`{color}`"),
             color=discord.Color.from_rgb(*rgb),
         )
         profile.barcolor = color
