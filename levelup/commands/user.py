@@ -5,7 +5,9 @@ from io import BytesIO
 from pathlib import Path
 
 import discord
+from aiocache import cached
 from discord import app_commands
+from discord.app_commands import Choice
 from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
@@ -461,6 +463,7 @@ class User(MixinMeta):
 
     @set_profile.command(name="namecolor", aliases=["name"])
     @commands.bot_has_permissions(embed_links=True, attach_files=True)
+    @app_commands.describe(color="Name of color, hex or integer value")
     async def set_name_color(self, ctx: commands.Context, color: str):
         """
         Set a hex color for your username
@@ -558,6 +561,24 @@ class User(MixinMeta):
         profile.barcolor = color
         self.save()
         await ctx.send(embed=embed)
+
+    @set_levelbar_color.autocomplete("color")
+    @set_stat_color.autocomplete("color")
+    @set_name_color.autocomplete("color")
+    async def set_name_color_autocomplete(self, interaction: discord.Interaction, current: str) -> t.List[Choice]:
+        choices = await self.get_color_choices_cached(current)
+        return choices
+
+    @cached(ttl=600)
+    async def get_color_choices_cached(self, current: str) -> t.List[Choice]:
+        current = current.lower()
+        choices: t.List[Choice] = []
+        for color in const.COLORS:
+            if current in color.lower() or not current:
+                choices.append(Choice(name=color, value=color))
+                if len(choices) >= 25:
+                    break
+        return choices
 
     @set_profile.command(name="background", aliases=["bg"])
     @commands.bot_has_permissions(embed_links=True)
@@ -685,6 +706,17 @@ class User(MixinMeta):
         self.save()
         txt = _("Your font has been set to {}").format(f"`{path.name}`")
         await ctx.send(txt)
+
+    @set_user_font.auto_complete("font_name")
+    async def set_user_font_autocomplete(self, interaction: discord.Interaction, current: str) -> t.List[Choice]:
+        choices = []
+        current = current.lower()
+        for path in list(self.fonts.iterdir()) + list(self.custom_fonts.iterdir()):
+            if current in path.name.lower() or not current:
+                choices.append(Choice(name=path.stem, value=path.stem))
+                if len(choices) >= 25:
+                    break
+        return choices
 
     @set_profile.command(name="blur")
     async def set_user_blur(self, ctx: commands.Context):
