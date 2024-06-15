@@ -51,7 +51,8 @@ class Base(BaseModel):
         if not path.is_file():
             raise IsADirectoryError(f"Path is not a file: {path}")
         if VERSION >= "2.0.1":
-            return cls.model_validate_json(path.read_text())
+            text = path.read_text()
+            return cls.model_validate_json(text)
         return cls.parse_file(path)
 
     def to_file(self, path: Path) -> None:

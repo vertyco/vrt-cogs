@@ -158,6 +158,8 @@ class User(MixinMeta):
 
         pdata = conf.prestigedata[next_prestige]
         role = ctx.guild.get_role(pdata.role)
+        if not role:
+            return await ctx.send(_("The prestige role for this level no longer exists, please contact an admin!"))
 
         current_xp = int(profile.xp)
         xp_at_prestige = conf.algorithm.get_xp(conf.prestigelevel)
@@ -170,24 +172,24 @@ class User(MixinMeta):
         self.save()
 
         txt = _("You have reached Prestige {}!\n").format(f"**{next_prestige}**")
-
-        if conf.stackprestigeroles and role:
+        user_role_ids = [r.id for r in ctx.author.roles]
+        if conf.stackprestigeroles and role.id not in user_role_ids:
             # Just add the new role to the user
-            if role not in ctx.author.roles:
-                try:
-                    await ctx.author.add_roles(role, reason=_("Prestige Level"))
-                    txt += _("- {} role added!").format(role.mention)
-                except discord.HTTPException:
-                    txt += _("- I was unable to give you the {} role!").format(role.mention)
-        elif not conf.stackprestigeroles:
-            # Remove all roles and give the new one if it exists
-            to_remove = [r for r in ctx.author.roles if r.id in conf.levelroles.values() and r != role]
-            to_add = [role] if role not in ctx.author.roles else []
             try:
-                await ctx.author.add_roles(*to_add, reason=_("Prestige Level"))
+                await ctx.author.add_roles(role, reason=_("Prestige Level"))
                 txt += _("- {} role added!").format(role.mention)
             except discord.HTTPException:
                 txt += _("- I was unable to give you the {} role!").format(role.mention)
+        elif not conf.stackprestigeroles:
+            # Remove all roles and give the new one if it exists
+            to_remove = [r for r in ctx.author.roles if r.id in conf.levelroles.values() and r.id != role.id]
+            to_add = [role] if role.id not in user_role_ids else []
+            if to_add:
+                try:
+                    await ctx.author.add_roles(*to_add, reason=_("Prestige Level"))
+                    txt += _("- {} role added!").format(role.mention)
+                except discord.HTTPException:
+                    txt += _("- I was unable to give you the {} role!").format(role.mention)
             if to_remove:
                 try:
                     await ctx.author.remove_roles(*to_remove, reason=_("Prestige Level"))
