@@ -91,22 +91,23 @@ class Admin(MixinMeta):
         is_global = await bank.is_global()
         if is_global:
             return await ctx.send(_("This setting is not available when global bank is enabled."))
+        conf = self.db.get_conf(ctx.guild)
         if bonus <= 0:
-            if role.id in self.db.role_bonuses:
-                del self.db.role_bonuses[role.id]
+            if role.id in conf.role_bonuses:
+                del conf.role_bonuses[role.id]
                 txt = _("Role bonus removed.")
                 await self.save()
             else:
                 txt = _("That role does not have a bonus.")
             return await ctx.send(txt)
-        if role.id in self.db.role_bonuses:
-            current = self.db.role_bonuses[role.id]
+        if role.id in conf.role_bonuses:
+            current = conf.role_bonuses[role.id]
             if current == bonus:
                 return await ctx.send(_("That role already has that bonus."))
             txt = _("Role bonus updated.")
         else:
             txt = _("Role bonus added.")
-        self.db.role_bonuses[role.id] = bonus
+        conf.role_bonuses[role.id] = bonus
         await ctx.send(txt)
         await self.save()
 
