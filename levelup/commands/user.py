@@ -707,7 +707,7 @@ class User(MixinMeta):
         txt = _("Your font has been set to {}").format(f"`{path.name}`")
         await ctx.send(txt)
 
-    @set_user_font.auto_complete("font_name")
+    @set_user_font.autocomplete("font_name")
     async def set_user_font_autocomplete(self, interaction: discord.Interaction, current: str) -> t.List[Choice]:
         choices = []
         current = current.lower()
