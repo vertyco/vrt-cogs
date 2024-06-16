@@ -187,7 +187,8 @@ class VoteView(discord.ui.View):
 
         if conf.show_vote_counts:
             self.update_labels()
-            await interaction.message.edit(view=self)
+            with suppress(discord.HTTPException):
+                await interaction.message.edit(view=self)
 
         await self.cog.save()
 
@@ -224,6 +225,7 @@ class VoteView(discord.ui.View):
 
         if conf.show_vote_counts:
             self.update_labels()
-            await interaction.message.edit(view=self)
+            with suppress(discord.HTTPException):
+                await interaction.message.edit(view=self)
 
         await self.cog.save()
