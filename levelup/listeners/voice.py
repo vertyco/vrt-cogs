@@ -84,7 +84,7 @@ class VoiceListener(MixinMeta):
         # If we're here, user left VC
         joined = in_voice.pop(member.id, None)
         if not joined:
-            log.error(f"User {member.name} left a voice channel but wasn't in the cache in {member.guild}")
+            # Maybe cog was loaded while user was already in VC?
             return
 
         time_spent = perf_counter() - joined
