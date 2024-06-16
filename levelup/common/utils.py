@@ -42,12 +42,19 @@ ID_REGEX: t.Pattern = re.compile(r"[0-9]{17,}")
 VALID_CONTENT_TYPES = ("image/png", "image/jpeg", "image/jpg", "image/gif")
 
 
-def string_to_rgb(color: str) -> t.Tuple[int, int, int]:
+def string_to_rgb(color: str, as_discord_color: bool = False) -> t.Union[t.Tuple[int, int, int], discord.Color]:
+    if not color:
+        # Return white
+        if as_discord_color:
+            return discord.Color.from_rgb(255, 255, 255)
+        return 255, 255, 255
     if color.isdigit():
         color = int(color)
         r = color & 255
         g = (color >> 8) & 255
         b = (color >> 16) & 255
+        if as_discord_color:
+            return discord.Color.from_rgb(r, g, b)
         return r, g, b
     elif color in COLORS:
         color = COLORS[color]
@@ -55,6 +62,8 @@ def string_to_rgb(color: str) -> t.Tuple[int, int, int]:
     r = int(color[:2], 16)
     g = int(color[2:4], 16)
     b = int(color[4:], 16)
+    if as_discord_color:
+        return discord.Color.from_rgb(r, g, b)
     return r, g, b
 
 

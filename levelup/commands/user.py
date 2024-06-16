@@ -215,6 +215,7 @@ class User(MixinMeta):
         """Customize your profile"""
 
     @set_profile.command(name="view")
+    @commands.bot_has_permissions(embed_links=True)
     async def view_profile_settings(self, ctx: commands.Context):
         """View your profile settings"""
         conf = self.db.get_conf(ctx.guild)
@@ -223,19 +224,13 @@ class User(MixinMeta):
             "`Profile Style:   `{}\n"
             "`Show Nickname:   `{}\n"
             "`Blur:            `{}\n"
-            "`Name Color:      `{}\n"
-            "`Stat Color:      `{}\n"
-            "`LevelBar Color:  `{}\n"
             "`Font:            `{}\n"
             "`Background:      `{}\n"
         ).format(
-            profile.style,
+            profile.style.title(),
             profile.show_displayname,
             _("Enabled") if profile.blur else _("Disabled"),
-            profile.namecolor,
-            profile.statcolor,
-            profile.barcolor,
-            profile.font,
+            str(profile.font).title(),
             profile.background,
         )
         embed = discord.Embed(
@@ -254,12 +249,24 @@ class User(MixinMeta):
                     embed.set_image(url=f"attachment://{path.name}")
                     file = discord.File(str(path), filename=path.name)
                     break
+        embeds = [
+            embed,
+            discord.Embed(
+                description=_("Name color: {}").format(f"**{str(profile.namecolor).title()}**"),
+                color=utils.string_to_rgb(profile.namecolor, as_discord_color=True),
+            ),
+            discord.Embed(
+                description=_("Stat color: {}").format(f"**{str(profile.statcolor).title()}**"),
+                color=utils.string_to_rgb(profile.statcolor, as_discord_color=True),
+            ),
+            discord.Embed(
+                description=_("Level bar color: {}").format(f"**{str(profile.barcolor).title()}**"),
+                color=utils.string_to_rgb(profile.barcolor, as_discord_color=True),
+            ),
+        ]
         if ctx.channel.permissions_for(ctx.me).attach_files:
-            await ctx.send(embed=embed, file=file)
-        elif ctx.channel.permissions_for(ctx.me).embed_links:
-            await ctx.send(embed=embed)
-        else:
-            await ctx.send(embed.description)
+            return await ctx.send(embeds=embeds, file=file, ephemeral=True)
+        await ctx.send(embeds=embeds, ephemeral=True)
 
     @set_profile.command(name="bgpath")
     @commands.is_owner()
