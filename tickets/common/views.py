@@ -83,7 +83,8 @@ class Confirm(View):
         if not await self.interaction_check(interaction):
             return
         self.value = True
-        await interaction.response.defer()
+        with contextlib.suppress(discord.NotFound):
+            await interaction.response.defer()
         self.stop()
 
     @discord.ui.button(label="No", style=ButtonStyle.red)
@@ -91,7 +92,8 @@ class Confirm(View):
         if not await self.interaction_check(interaction):
             return
         self.value = False
-        await interaction.response.defer()
+        with contextlib.suppress(discord.NotFound):
+            await interaction.response.defer()
         self.stop()
 
 
@@ -136,7 +138,8 @@ class CloseReasonModal(Modal):
 
     async def on_submit(self, interaction: Interaction):
         self.reason = self.field.value
-        await interaction.response.defer()
+        with contextlib.suppress(discord.NotFound):
+            await interaction.response.defer()
         self.stop()
 
 
@@ -234,7 +237,8 @@ class TicketModal(Modal):
     async def on_submit(self, interaction: discord.Interaction):
         for k, v in self.inputs.items():
             self.fields[k] = {"question": v.label, "answer": v.value}
-        await interaction.response.defer()
+        with contextlib.suppress(discord.NotFound):
+            await interaction.response.defer()
         self.stop()
 
 
