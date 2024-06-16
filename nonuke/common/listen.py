@@ -43,7 +43,7 @@ class Listen(MixinMeta):
             action not in valid_actions,
             not conf.enabled,
             entry.user_id in conf.whitelist,
-            conf.ignore_bots and entry.user.bot,
+            conf.ignore_bots and (entry.user and entry.user.bot),
         ]
         if any(ignore):
             return
