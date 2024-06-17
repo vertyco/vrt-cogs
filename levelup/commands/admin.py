@@ -954,7 +954,7 @@ class Admin(MixinMeta):
         self.save()
         await ctx.send(_("The role associated with level {} has been removed").format(level))
 
-    @level_roles.command(name="initialize")
+    @level_roles.command(name="initialize", aliases=["init"])
     @commands.bot_has_permissions(manage_roles=True, embed_links=True)
     @commands.cooldown(1, 240, commands.BucketType.guild)
     async def init_roles(self, ctx: commands.Context):

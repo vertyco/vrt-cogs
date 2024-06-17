@@ -131,8 +131,10 @@ class WeeklyReset(MixinMeta):
 
         role = guild.get_role(conf.weeklysettings.role) if conf.weeklysettings.role else None
         if role and perms:
-            last_winners = [guild.get_member(uid) for uid in conf.weeklysettings.last_winners if guild.get_member(uid)]
             if conf.weeklysettings.remove:
+                last_winners = [
+                    guild.get_member(uid) for uid in conf.weeklysettings.last_winners if guild.get_member(uid)
+                ]
                 for user in last_winners:
                     role_ids = [role.id for role in user.roles]
                     if user.id in top_ids or role.id not in role_ids:

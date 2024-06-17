@@ -257,11 +257,12 @@ class LevelUps(MixinMeta):
 
         if conf.weeklysettings.role:
             role = member.guild.get_role(conf.weeklysettings.role)
-            if role and member.id in conf.weeklysettings.last_winners and role.id not in user_role_ids:
-                to_add.add(role.id)
-            elif role and role.id in user_role_ids:
-                # User isnt in last winners list anymore
-                to_remove.add(role.id)
+            if role:
+                if member.id in conf.weeklysettings.last_winners and role.id not in user_role_ids:
+                    to_add.add(role.id)
+                elif member.id not in conf.weeklysettings.last_winners and role.id in user_role_ids:
+                    # User isnt in last winners list anymore
+                    to_remove.add(role.id)
 
         add_roles: t.List[discord.Role] = []
         remove_roles: t.List[discord.Role] = []
