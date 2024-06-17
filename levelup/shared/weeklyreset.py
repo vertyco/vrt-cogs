@@ -23,21 +23,24 @@ class WeeklyReset(MixinMeta):
             guild (discord.Guild): The guild where the weekly stats are being reset.
             ctx (commands.Context, optional): Sends the announcement embed in the current channel. Defaults to None.
         """
-        if ctx:
-            await ctx.send(_("Weekly stats have been reset."))
+        log.warning(f"Resetting weekly stats for {guild.name}")
         conf = self.db.get_conf(guild)
         if not conf.users_weekly:
+            log.info("No users in the weekly data")
             if ctx:
                 await ctx.send(_("There are no users in the weekly data yet"))
             conf.weeklysettings.refresh()
             self.save()
             return
+
         valid_users: t.Dict[discord.Member, ProfileWeekly] = {}
         for user_id, stats in conf.users_weekly.items():
             user = guild.get_member(user_id)
             if user and stats.xp > 0:
                 valid_users[user] = stats
+
         if not valid_users:
+            log.info("No users with XP in the weekly data")
             if ctx:
                 await ctx.send(_("There are no users with XP in the weekly data yet"))
             conf.weeklysettings.refresh()
@@ -104,6 +107,7 @@ class WeeklyReset(MixinMeta):
         if ctx:
             with suppress(discord.HTTPException):
                 await ctx.send(embed=embed)
+
         if channel and getattr(ctx, "channel", channel).id != channel.id:
             mentions = ", ".join(f"<@{uid}>" for uid in top_user_ids)
             with suppress(discord.HTTPException):
@@ -112,29 +116,39 @@ class WeeklyReset(MixinMeta):
                 else:
                     await channel.send(embed=embed)
 
-        top = sorted_users[: conf.weeklysettings.count]
+        top: t.List[t.Tuple[discord.Member, ProfileWeekly]] = sorted_users[: conf.weeklysettings.count]
+        top_ids = [user[0].id for user in top]
         if conf.weeklysettings.role_all:
             winners = [user[0] for user in top]
         else:
             winners = [top[0][0]]
 
+        perms = guild.me.guild_permissions.manage_roles
+        if not perms:
+            log.warning("Missing permissions to manage roles")
+            if ctx:
+                await ctx.send(_("Missing permissions to manage roles"))
+
         role = guild.get_role(conf.weeklysettings.role) if conf.weeklysettings.role else None
-        if role:
+        if role and perms:
             last_winners = [guild.get_member(uid) for uid in conf.weeklysettings.last_winners if guild.get_member(uid)]
             if conf.weeklysettings.remove:
-                for last in last_winners:
-                    if last in winners or role not in last.roles:
+                for user in last_winners:
+                    role_ids = [role.id for role in user.roles]
+                    if user.id in top_ids or role.id not in role_ids:
+                        # User must have won this week too or doesnt have the role anyway
                         continue
                     try:
-                        await last.remove_roles(role, reason=_("Weekly winner role removal"))
+                        await user.remove_roles(role, reason=_("Weekly winner role removal"))
                     except discord.Forbidden:
-                        log.warning(f"Missing permissions to apply role {role} to {last}")
+                        log.warning(f"Missing permissions to apply role {role} to {user.name}")
                     except discord.HTTPException:
                         pass
 
             for winner in winners:
-                if winner in last_winners or role in winner.roles:
-                    # No need to add the role again
+                role_ids = [role.id for role in winner.roles]
+                if role.id in role_ids:
+                    # User already has the role
                     continue
                 try:
                     await winner.add_roles(role, reason=_("Weekly winner role addition"))
@@ -146,11 +160,14 @@ class WeeklyReset(MixinMeta):
         conf.weeklysettings.last_winners = [user[0].id for user in top]
 
         if bonus := conf.weeklysettings.bonus:
-            for uid in winners:
-                profile = conf.get_profile(uid)
+            for i in top:
+                profile = conf.get_profile(i[0])
                 profile.xp += bonus
 
         conf.weeklysettings.refresh()
         conf.users_weekly.clear()
         conf.weeklysettings.last_embed = embed.to_dict()
         self.save()
+        if ctx:
+            await ctx.send(_("Weekly stats have been reset."))
+        log.info(f"Reset weekly stats for {guild.name}")
