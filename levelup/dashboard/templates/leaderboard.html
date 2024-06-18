@@ -1,0 +1,59 @@
+<form action="#" onsubmit="submitSearch(event);" class="input-group">
+    <span class="input-group-text text-body"><i class="fas fa-search" aria-hidden="true"></i></span>
+    <input id="member-search" type="text" class="form-control" placeholder="{{ _("Search for a user...") }}" value="{% if query %}{{ query }}{% endif %}" />
+</form>
+<br/>
+<div class="d-flex justify-content-between">
+    <h5 class="me-auto">{{ total|markdown }}</h5>
+    <div class="dropdown">
+        <a class="btn btn-secondary" role="button" id="sort_by_dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Sort by <i class="ni ni-bold-down"></i>
+        </a>
+        <div class="dropdown-menu" aria-labelledby="sort_by_dropdown">
+            <a class="dropdown-item" href="{{ url_for_query(stat=None) }}">{% if stat == "exp" %}<i class="ni ni-check-bold me-2" style="vertical-align: -1.5px;"></i>{% endif %}Exp</a>
+            <a class="dropdown-item" href="{{ url_for_query(stat='messages') }}">{% if stat == "messages" %}<i class="ni ni-check-bold me-2" style="vertical-align: -1.5px;"></i>{% endif %}Messages</a>
+            <a class="dropdown-item" href="{{ url_for_query(stat='voice') }}">{% if stat == "voice" %}<i class="ni ni-check-bold me-2" style="vertical-align: -1.5px;"></i>{% endif %}Voice</a>
+            <a class="dropdown-item" href="{{ url_for_query(stat='stars') }}">{% if stat == "stars" %}<i class="ni ni-check-bold me-2" style="vertical-align: -1.5px;"></i>{% endif %}Stars</a>
+        </div>
+    </div>
+    {% if position_url %}
+        <a href="{{ position_url }}" class="btn bg-gradient-{{ variables["meta"]["color"] }}" style="margin-left: 5px;">
+            Go to my position
+        </a>
+    {% endif %}
+</div>
+<div id="users-container" class="table-responsive p-0">
+    <table class="table align-items-center mb-0">
+        <thead>
+            <tr>
+                <td class="medium"><b>#</b></td>
+                <td class="large"><b>Name:</b></th>
+                <td class="medium"><b>{{ statname }}:</b></td>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+                <tr {% if user.id == current_user.id %} class="text-{{ variables['meta']['color'] }}"{% endif %}>
+                    <td class="medium">{{ user.position }}</td>
+                    <td class="large" title="{{ user.id }}">{{ user.name }}</td>
+                    <td class="medium">{{ user.stat }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+
+
+<script>
+    function submitSearch(event) {
+        event.preventDefault();
+        let input = document.getElementById("member-search");
+        let query = input.value.trim();
+        if (query) {
+            window.location.href = '{{ url_for_query(query="QUERY") }}'.replace("QUERY", encodeURIComponent(query));
+        } else {
+            window.location.href = "{{ url_for_query(query=None) }}";
+        }
+    }
+</script>

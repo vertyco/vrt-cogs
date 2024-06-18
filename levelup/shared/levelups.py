@@ -1,0 +1,296 @@
+import asyncio
+import base64
+import logging
+import random
+import typing as t
+from contextlib import suppress
+from io import BytesIO
+
+import aiohttp
+import discord
+from redbot.core.i18n import Translator
+
+from ..abc import MixinMeta
+from ..common import utils
+from ..common.models import GuildSettings, Profile
+from ..generator import levelalert
+
+log = logging.getLogger("red.vrt.levelup.shared.levelups")
+_ = Translator("LevelUp", __file__)
+
+
+class LevelUps(MixinMeta):
+    async def check_levelups(
+        self,
+        guild: discord.Guild,
+        member: discord.Member,
+        profile: Profile,
+        conf: GuildSettings,
+        message: t.Optional[discord.Message] = None,
+        channel: t.Optional[
+            t.Union[discord.TextChannel, discord.VoiceChannel, discord.Thread, discord.ForumChannel]
+        ] = None,
+    ):
+        """Check if a user has leveled up and award roles if needed
+
+        Args:
+            guild (discord.Guild): The guild where the leveling up occurred.
+            member (discord.Member): The member who leveled up.
+            profile (Profile): The profile of the member.
+            conf (GuildSettings): The guild settings.
+            message (t.Optional[discord.Message], optional): The message that triggered the leveling up. Defaults to None.
+            channel (t.Optional[t.Union[discord.TextChannel, discord.VoiceChannel, discord.Thread, discord.ForumChannel]], optional): The channel where the leveling up occurred. Defaults to None.
+
+        Returns:
+            Tuple[List[discord.Role], List[discord.Role]]: A tuple containing two lists of roles - the roles that were added and the roles that were removed.
+        """
+        calculated_level = conf.algorithm.get_level(profile.xp)
+        if calculated_level == profile.level:
+            # No action needed, user hasn't leveled up
+            return
+        if not calculated_level:
+            # User hasnt reached level 1 yet
+            return
+        log.debug(f"{member} has reached level {calculated_level} in {guild}")
+        profile.level = calculated_level
+        # User has reached a new level, time to log and award roles if needed
+        added, __ = await self.ensure_roles(member, conf)
+        if not channel and message is not None:
+            channel = message.channel
+        log_channel = guild.get_channel(conf.notifylog) if conf.notifylog else None
+        placeholders = {
+            "username": member.name,
+            "displayname": member.display_name,
+            "mention": member.mention,
+            "level": profile.level,
+            "role": added[0] if added else None,
+            "server": guild.name,
+        }
+        if added:
+            if dm_txt_raw := conf.role_awarded_dm:
+                dm_txt = dm_txt_raw.format(**placeholders)
+            else:
+                dm_txt = _("You just reached level {} in {} and obtained the {} role!").format(
+                    profile.level, guild.name, added[0].name
+                )
+            if msg_txt_raw := conf.role_awarded_msg:
+                msg_txt = msg_txt_raw.format(**placeholders)
+            else:
+                msg_txt = _("{} just reached level {} and obtained the {} role!").format(
+                    member.mention, profile.level, added[0].name
+                )
+        else:
+            placeholders.pop("role")
+            if dm_txt_raw := conf.levelup_dm:
+                dm_txt = dm_txt_raw.format(**placeholders)
+            else:
+                dm_txt = _("You just reached level {} in {}!").format(profile.level, guild.name)
+            if msg_txt_raw := conf.levelup_msg:
+                msg_txt = msg_txt_raw.format(**placeholders)
+            else:
+                msg_txt = _("{} just reached level {}!").format(
+                    member.mention if conf.notifymention else member.display_name, profile.level
+                )
+
+        if conf.use_embeds or self.db.force_embeds:
+            if conf.notifydm:
+                embed = discord.Embed(
+                    description=dm_txt,
+                    color=member.color,
+                ).set_thumbnail(url=member.avatar_url)
+                with suppress(discord.HTTPException):
+                    await member.send(embed=embed)
+
+            embed = discord.Embed(
+                description=msg_txt,
+                color=member.color,
+            ).set_author(name=member.display_name, icon_url=member.avatar_url)
+            if channel and conf.notify:
+                with suppress(discord.HTTPException):
+                    if conf.notifymention:
+                        await log_channel.send(member.mention, embed=embed)
+                    else:
+                        await log_channel.send(embed=embed)
+            if log_channel:
+                with suppress(discord.HTTPException):
+                    await log_channel.send(embed=embed)
+            return
+
+        banner = await self.get_profile_background(member.id, profile)
+        avatar = await member.display_avatar.read()
+        fonts = list(self.fonts.glob("*.ttf")) + list(self.custom_fonts.iterdir())
+        font = str(random.choice(fonts))
+        if profile.font:
+            if (self.fonts / profile.font).exists():
+                font = str(self.fonts / profile.font)
+            elif (self.custom_fonts / profile.font).exists():
+                font = str(self.custom_fonts / profile.font)
+
+        color = utils.string_to_rgb(profile.statcolor) if profile.statcolor else member.color.to_rgb()
+        if color == (0, 0, 0):
+            color = utils.string_to_rgb(profile.namecolor) if profile.namecolor else None
+
+        payload = aiohttp.FormData()
+        if self.db.external_api_url or (self.db.internal_api_port and self.api_proc):
+            payload.add_field("background_bytes", banner, filename="data")
+            payload.add_field("avatar_bytes", avatar, filename="data")
+            payload.add_field("level", str(profile.level))
+            payload.add_field("color", str(color))
+            payload.add_field("font_path", font)
+            payload.add_field("render_gif", str(self.db.render_gifs))
+
+        file: discord.File = None
+        if external_url := self.db.external_api_url:
+            try:
+                url = f"{external_url}/levelup"
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(url, data=payload) as response:
+                        if response.status == 200:
+                            data = await response.json()
+                            img_b64, animated = data["b64"], data["animated"]
+                            img_bytes = base64.b64decode(img_b64)
+                            ext = "gif" if animated else "webp"
+                            file = discord.File(BytesIO(img_bytes), filename=f"levelup.{ext}")
+            except Exception as e:
+                log.error("Failed to fetch levelup image from external API", exc_info=e)
+        elif self.db.internal_api_port and self.api_proc:
+            try:
+                url = f"http://127.0.0.1:{self.db.internal_api_port}/levelup"
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(url, data=payload) as response:
+                        if response.status == 200:
+                            data = await response.json()
+                            img_b64, animated = data["b64"], data["animated"]
+                            img_bytes = base64.b64decode(img_b64)
+                            ext = "gif" if animated else "webp"
+                            file = discord.File(BytesIO(img_bytes), filename=f"levelup.{ext}")
+            except Exception as e:
+                log.error("Failed to fetch levelup image from internal API", exc_info=e)
+
+        def _run() -> t.Tuple[bytes, bool]:
+            img_bytes, animated = levelalert.generate_level_img(
+                background_bytes=banner,
+                avatar_bytes=avatar,
+                level=profile.level,
+                color=color,
+                font_path=font,
+                render_gif=self.db.render_gifs,
+            )
+            return img_bytes, animated
+
+        if not file:
+            filebytes, animated = await asyncio.to_thread(_run)
+            ext = "gif" if animated else "webp"
+            if conf.notifydm:
+                file = discord.File(BytesIO(filebytes), filename=f"levelup.{ext}")
+                with suppress(discord.HTTPException):
+                    await member.send(dm_txt, file=file)
+            if log_channel:
+                file = discord.File(BytesIO(filebytes), filename=f"levelup.{ext}")
+                with suppress(discord.HTTPException):
+                    await log_channel.send(msg_txt, file=file)
+
+        payload = {
+            "guild": guild,  # discord.Guild
+            "member": member,  # discord.Member
+            "message": message,  # Optional[discord.Message] = None
+            "channel": channel,  # Optional[TextChannel | VoiceChannel | Thread | ForumChannel] = None
+            "new_level": profile.level,  # int
+        }
+        self.bot.dispatch("member_levelup", **payload)
+
+    async def ensure_roles(
+        self, member: discord.Member, conf: GuildSettings
+    ) -> t.Tuple[t.List[discord.Role], t.List[discord.Role]]:
+        """Ensure a user has the correct level roles based on their level and the guild's settings"""
+        if not conf.levelroles:
+            return [], []
+        if not member.guild.me.guild_permissions.manage_roles:
+            return [], []
+        if member.id not in conf.users:
+            return [], []
+        conf.levelroles = dict(sorted(conf.levelroles.items(), key=lambda x: x[0], reverse=True))
+        to_add = set()
+        to_remove = set()
+        user_roles = member.roles
+        user_role_ids = [role.id for role in user_roles]
+        profile = conf.get_profile(member)
+        valid_levels = {k: v for k, v in conf.levelroles.items() if k <= profile.level}
+        if conf.autoremove:
+            # Add highest level role and remove the rest
+            highest_role_id = 0
+            if valid_levels:
+                highest_role_id = valid_levels[max(valid_levels)]
+                if highest_role_id not in user_role_ids:
+                    to_add.add(highest_role_id)
+
+            for role_id in conf.levelroles.values():
+                if role_id != highest_role_id and role_id in user_role_ids:
+                    to_remove.add(role_id)
+        else:
+            # Ensure user has all roles up to their level
+            for level, role_id in conf.levelroles.items():
+                if level <= profile.level:
+                    if role_id not in user_role_ids:
+                        to_add.add(role_id)
+                elif role_id in user_role_ids:
+                    to_remove.add(role_id)
+
+        if profile.prestige and conf.prestigedata:
+            # Assign prestige roles
+            if conf.stackprestigeroles:
+                for prestige_level, pdata in conf.prestigedata.items():
+                    if profile.prestige < prestige_level:
+                        continue
+                    if pdata.role in user_role_ids:
+                        continue
+                    to_add.add(pdata.role)
+            else:
+                # Remove all prestige roles except the highest
+                for prestige_level, pdata in conf.prestigedata.items():
+                    if prestige_level == profile.prestige:
+                        if pdata.role not in user_role_ids:
+                            to_add.add(pdata.role)
+                        continue
+                    if pdata.role in user_role_ids:
+                        to_remove.add(pdata.role)
+
+        if conf.weeklysettings.role:
+            role = member.guild.get_role(conf.weeklysettings.role)
+            if role:
+                if member.id in conf.weeklysettings.last_winners and role.id not in user_role_ids:
+                    to_add.add(role.id)
+                elif member.id not in conf.weeklysettings.last_winners and role.id in user_role_ids:
+                    # User isnt in last winners list anymore
+                    to_remove.add(role.id)
+
+        add_roles: t.List[discord.Role] = []
+        remove_roles: t.List[discord.Role] = []
+        bad_roles = set()  # Roles that the bot can't manage or cant find
+        for role_id in to_add:
+            role = member.guild.get_role(role_id)
+            if role and role.position < member.guild.me.top_role.position:
+                add_roles.append(role)
+            else:
+                bad_roles.add(role_id)
+        for role_id in to_remove:
+            role = member.guild.get_role(role_id)
+            if role and role.position < member.guild.me.top_role.position:
+                remove_roles.append(role)
+            else:
+                bad_roles.add(role_id)
+
+        if bad_roles:
+            conf.levelroles = {k: v for k, v in conf.levelroles.items() if v not in bad_roles}
+            self.save()
+
+        try:
+            if add_roles:
+                await member.add_roles(*add_roles, reason="Level up")
+            if remove_roles:
+                await member.remove_roles(*remove_roles, reason="Level up")
+        except discord.HTTPException:
+            log.warning(f"Failed to add/remove roles for {member}")
+            add_roles = []
+            remove_roles = []
+        return add_roles, remove_roles
