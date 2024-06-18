@@ -33,6 +33,7 @@ class Admin(MixinMeta):
             "**Main**\n"
             "`System Enabled:   `{}\n"
             "`Profile Type:     `{}\n"
+            "`Style Override:   `{}\n"
             "`Include Balance:  `{}\n"
             "**Messages**\n"
             "`Message XP:       `{}\n"
@@ -56,8 +57,9 @@ class Admin(MixinMeta):
             "`Mention User:     `{}\n"
             "`AutoRemove Roles: `{}\n"
         ).format(
-            _("Yes") if conf.enabled else _("No"),
+            _("Yes") if conf.enabled else _("NO!⚠️"),
             _("Embeds") if conf.use_embeds else _("Images"),
+            str(conf.style_override).title(),
             _("Yes") if conf.showbal else _("No"),
             f"{conf.xp[0]} - {conf.xp[1]}",
             conf.min_length,
@@ -165,6 +167,28 @@ class Admin(MixinMeta):
                 inline=False,
             )
         await ctx.send(embed=embed)
+
+    @levelset.command(name="forcestyle")
+    async def force_profile_style(self, ctx: commands.Context, style: t.Literal["default", "runescape", "none"]):
+        """
+        Force a profile style for all users
+
+        Specify `none` to disable the forced style
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if conf.use_embeds:
+            return await ctx.send(
+                _("LevelUp is using embeds, use the {} command to toggle between embed and image profiles.").format(
+                    f"`{ctx.clean_prefix}levelset embeds`"
+                )
+            )
+        if style == "none":
+            conf.style_override = None
+            self.save()
+            return await ctx.send(_("Style override has been **disabled**!"))
+        conf.style_override = style
+        self.save()
+        await ctx.send(_("Style override has been set to **{}**").format(style))
 
     @levelset.command(name="toggle")
     async def toggle_levelup(self, ctx: commands.Context):
