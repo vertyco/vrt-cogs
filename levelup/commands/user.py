@@ -233,11 +233,13 @@ class User(MixinMeta):
             )
         else:
             desc = _("`Show Nickname:   `{}\n").format(profile.show_displayname)
-
+        color = ctx.author.color
+        if color == discord.Color.default():
+            color = await self.bot.get_embed_color(ctx)
         embed = discord.Embed(
             title=_("Your Profile Settings"),
             description=desc,
-            color=await self.bot.get_embed_color(ctx),
+            color=color,
         )
         bg = profile.background
         file = None
