@@ -78,7 +78,7 @@ class Base(BaseModel):
                 raise e
 
     def to_file(self, path: Path) -> None:
-        dump = self.dumpjson(exclude_defaults=True, pretty=True)
+        dump = self.dumpjson(exclude_defaults=True, pretty=False)
         # We want to write the file as safely as possible
         # https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/core/_drivers/json.py#L224
         tmp_path = path.parent / f"{path.stem}-{round(perf_counter())}.tmp"
