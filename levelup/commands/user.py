@@ -700,6 +700,13 @@ class User(MixinMeta):
             return await ctx.send(txt)
 
         if url.startswith("http"):
+            if self.tenor is None and await self.bot.is_owner(ctx.author):
+                txt = _(
+                    "Set a Tenor API key to allow setting backgrounds from Discord's GIF links!\n"
+                    "[Click here to get one](https://developers.google.com/tenor/guides/quickstart)\n"
+                    "Then set it with `[p]set api tenor api_key <your_key>`"
+                )
+                await ctx.send(txt)
             log.debug("Sanitizing link")
             url = await sanitize_url(url, ctx)
             profile.background = url
