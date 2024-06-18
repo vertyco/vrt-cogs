@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2024-06-14 09:49-0400\n"
+"POT-Creation-Date: 2024-06-18 16:29-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -21,7 +21,7 @@ msgstr ""
 msgid "Type hinting"
 msgstr ""
 
-#: levelup\main.py:47
+#: levelup\main.py:68
 #, docstring
 msgid ""
 "\n"
@@ -29,4 +29,11 @@ msgid ""
 "\n"
 "    Earn experience by chatting in text and voice channels, compare levels with your friends, customize your profile and view various leaderboards!\n"
 "    "
+msgstr ""
+
+#: levelup\main.py:196
+msgid ""
+"LevelUp has successfully migrated to v4!\n"
+"Leveling is now disabled by default and must be toggled on in each server via `[p]lset toggle`.\n"
+"[View the changelog](https://github.com/vertyco/vrt-cogs/blob/main/levelup/CHANGELOG.md) for more information."
 msgstr ""

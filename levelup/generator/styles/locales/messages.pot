@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2024-06-14 09:49-0400\n"
+"POT-Creation-Date: 2024-06-18 16:29-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,26 +15,26 @@ msgstr ""
 msgid "(Prestige {})"
 msgstr ""
 
-#: levelup\generator\styles\default.py:222
+#: levelup\generator\styles\default.py:224
 msgid "Rank: {}"
 msgstr ""
 
-#: levelup\generator\styles\default.py:238
+#: levelup\generator\styles\default.py:240
 msgid "Level: {}"
 msgstr ""
 
-#: levelup\generator\styles\default.py:254
+#: levelup\generator\styles\default.py:256
 msgid "Messages: {}"
 msgstr ""
 
-#: levelup\generator\styles\default.py:270
+#: levelup\generator\styles\default.py:272
 msgid "Voice: {}"
 msgstr ""
 
-#: levelup\generator\styles\default.py:287
+#: levelup\generator\styles\default.py:289
 msgid "Balance: {}"
 msgstr ""
 
-#: levelup\generator\styles\default.py:306
+#: levelup\generator\styles\default.py:308
 msgid "Exp: {} ({} total)"
 msgstr ""
