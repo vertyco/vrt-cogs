@@ -93,29 +93,29 @@ class Base(BaseModel):
             fs.flush()  # This does get closed on context exit, ...
             os.fsync(fs.fileno())  # but that needs to happen prior to this line
 
-        if max_backups > 0:
-            # Check the age of the most recent backup
-            backup1_path = path.with_suffix(".bak1")
-            backup_time_threshold = timedelta(seconds=interval)
-            create_new_backup = True
-            if backup1_path.exists():
-                backup1_mtime = datetime.fromtimestamp(backup1_path.stat().st_mtime)
-                delta = datetime.now() - backup1_mtime
-                if delta < backup_time_threshold:
-                    create_new_backup = False
-            if create_new_backup:
-                log.info("Creating backup of the config")
-                # Rolling backups: maintain <max_backups> old versions of the file
-                for i in range(max_backups, 0, -1):
-                    backup_path = path.with_suffix(f".bak{i}")
-                    new_backup_path = path.with_suffix(f".bak{i+1}")
-                    if backup_path.exists():
-                        if i == max_backups:
-                            backup_path.unlink()  # Remove the oldest backup
-                        else:
-                            backup_path.replace(new_backup_path)  # Shift the backups
-                # Backup the latest version
-                path.replace(backup1_path)
+        # if max_backups > 0:
+        #     # Check the age of the most recent backup
+        #     backup1_path = path.with_suffix(".bak1")
+        #     backup_time_threshold = timedelta(seconds=interval)
+        #     create_new_backup = True
+        #     if backup1_path.exists():
+        #         backup1_mtime = datetime.fromtimestamp(backup1_path.stat().st_mtime)
+        #         delta = datetime.now() - backup1_mtime
+        #         if delta < backup_time_threshold:
+        #             create_new_backup = False
+        #     if create_new_backup:
+        #         log.info("Creating backup of the config")
+        #         # Rolling backups: maintain <max_backups> old versions of the file
+        #         for i in range(max_backups, 0, -1):
+        #             backup_path = path.with_suffix(f".bak{i}")
+        #             new_backup_path = path.with_suffix(f".bak{i+1}")
+        #             if backup_path.exists():
+        #                 if i == max_backups:
+        #                     backup_path.unlink()  # Remove the oldest backup
+        #                 else:
+        #                     backup_path.replace(new_backup_path)  # Shift the backups
+        #         # Backup the latest version
+        #         path.replace(backup1_path)
 
         # Replace the original file with the new content
         tmp_path.replace(path)

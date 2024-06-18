@@ -74,7 +74,7 @@ class LevelUp(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "4.0.1"
+    __version__ = "4.0.2"
     __contributors__ = [
         "[aikaterna](https://github.com/aikaterna/aikaterna-cogs)",
         "[AAA3A](https://github.com/AAA3A-AAA3A/AAA3A-cogs)",
@@ -146,6 +146,7 @@ class LevelUp(
         async def _save():
             try:
                 async with self.save_lock:
+                    log.debug("Saving config")
                     await asyncio.to_thread(
                         self.db.to_file,
                         path=self.settings_file,
