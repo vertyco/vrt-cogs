@@ -595,7 +595,7 @@ class User(MixinMeta):
         choices = await self.get_color_choices_cached(current)
         return choices
 
-    @cached(ttl=600)
+    @cached(ttl=120)
     async def get_color_choices_cached(self, current: str) -> t.List[Choice]:
         current = current.lower()
         choices: t.List[Choice] = []
