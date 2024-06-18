@@ -2,7 +2,7 @@
 
 ## Release Highlights
 
-- Complete rework of the cog to be more performant, user friendly, and easier to maintain
+- Complete rewrite of the cog to be more performant, user friendly, and easier to maintain
 - Moved away from Red's `Config` driver to a custom Pydantic based configuration system
 - Total rework of how voice time is tracked (way more efficient)
 - Documented functions for other 3rd party cogs to use (WIP)
@@ -21,5 +21,5 @@
 - Setting colors now support a ton of names instead of just hex codes
 - Backing up the cog now prettyfies the JSON output with indentation
 - The new config system keeps 3 backups of itself at all times
-- Setting profile backgrounds now supports Discord tenor links directly
+- Setting profile backgrounds now supports Discord [Tenor](https://developers.google.com/tenor/guides/quickstart) links directly (Must set api key with `[p]set api tenor api_key <key>`)
 - Added command to set server-wide profile style override
