@@ -251,6 +251,15 @@ class User(MixinMeta):
                         embed.set_image(url=f"attachment://{path.name}")
                         file = discord.File(str(path), filename=path.name)
                         break
+
+        if self.db.cache_seconds:
+            embed.add_field(
+                name=_("Cache Time"),
+                value=_("Profile images are cached for {} seconds, this is configured by the bot owner.").format(
+                    self.db.cache_seconds
+                ),
+            )
+
         embeds = [embed]
         if not conf.use_embeds:
             embeds += [
@@ -639,14 +648,24 @@ class User(MixinMeta):
         if profile.style in const.STATIC_FONT_STYLES:
             return await ctx.send(_("You cannot change your name color with the current profile style!"))
 
+        cached_txt = _("\n\nProfile images are cached for {} seconds so you may not see the change immediately").format(
+            self.db.cache_seconds
+        )
+
         if url and url == "random":
             profile.background = "random"
             self.save()
-            return await ctx.send(_("Your profile background has been set to random!"))
+            txt = _("Your profile background has been set to random!")
+            if self.db.cache_seconds:
+                txt += cached_txt
+            return await ctx.send(txt)
         if url and url == "default":
             profile.background = "default"
             self.save()
-            return await ctx.send(_("Your profile background has been set to default!"))
+            txt = _("Your profile background has been set to default!")
+            if self.db.cache_seconds:
+                txt += cached_txt
+            return await ctx.send(txt)
 
         attachments = utils.get_attachments(ctx)
 
@@ -657,7 +676,10 @@ class User(MixinMeta):
             else:
                 profile.background = "default"
                 self.save()
-                return await ctx.send(_("Your background has been reset to default!"))
+                txt = _("Your background has been reset to default!")
+                if self.db.cache_seconds:
+                    txt += cached_txt
+                return await ctx.send(txt)
 
         if url is None:
             if attachments[0].size > ctx.guild.filesize_limit:
@@ -672,7 +694,10 @@ class User(MixinMeta):
                 profile.background = "default"
                 return await ctx.send(_("That image is not a valid profile background!\n{}").format(str(e)))
             self.save()
-            return await ctx.send(_("Your profile background has been set!"))
+            txt = _("Your profile background has been set!")
+            if self.db.cache_seconds:
+                txt += cached_txt
+            return await ctx.send(txt)
 
         if url.startswith("http"):
             log.debug("Sanitizing link")
@@ -687,7 +712,10 @@ class User(MixinMeta):
                 profile.background = "default"
                 return await ctx.send(_("That image is not a valid profile background!\n{}").format(str(e)))
             self.save()
-            return await ctx.send(_("Your profile background has been set!"))
+            txt = _("Your profile background has been set!")
+            if self.db.cache_seconds:
+                txt += cached_txt
+            return await ctx.send(txt)
 
         # Check if the user provided a filename
         backgrounds = list(self.backgrounds.iterdir()) + list(self.custom_backgrounds.iterdir())
@@ -700,6 +728,8 @@ class User(MixinMeta):
         profile.background = path.stem
         self.save()
         txt = _("Your profile background has been set to {}").format(f"`{path.name}`")
+        if self.db.cache_seconds:
+            txt += cached_txt
         await ctx.send(txt, file=file)
 
     @set_profile.command(name="font")

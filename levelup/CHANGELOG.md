@@ -5,8 +5,8 @@
 - Complete rework of the cog to be more performant, user friendly, and easier to maintain
 - Moved away from Red's `Config` driver to a custom Pydantic based configuration system
 - Total rework of how voice time is tracked (way more efficient)
-- Documented functions for other 3rd party cogs to use
-- Optional external API for image generation offloading
+- Documented functions for other 3rd party cogs to use (WIP)
+- Optional external API framework for image generation offloading
 
 ## New Features
 
