@@ -64,7 +64,8 @@ def generate_runescape_profile(
     # Create blank transparent image at 219 x 192 to put everything on
     card = Image.new("RGBA", profile_size, (0, 0, 0, 0))
     # Template also at 219 x 192
-    template = imgtools.RS_TEMPLATE_BALANCE.copy() if balance else imgtools.RS_TEMPLATE.copy()
+    template_path = imgtools.RS_TEMPLATE_BALANCE if balance else imgtools.RS_TEMPLATE
+    template = Image.open(str(template_path))
     # Place status icon
     status_icon = imgtools.STATUS[status].resize((25, 25), Image.Resampling.LANCZOS)
     card.paste(status_icon, (197, -2), status_icon)

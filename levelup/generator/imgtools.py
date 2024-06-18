@@ -18,8 +18,8 @@ DEFAULT_FONT = DEFAULT_FONTS / "BebasNeue.ttf"
 STOCK = ASSETS / "stock"
 STAR = Image.open(STOCK / "star.webp")
 DEFAULT_PFP = Image.open(STOCK / "defaultpfp.webp")
-RS_TEMPLATE = Image.open(STOCK / "runescapeui_nogold.webp")
-RS_TEMPLATE_BALANCE = Image.open(STOCK / "runescapeui_withgold.webp")
+RS_TEMPLATE_PATH = STOCK / "runescapeui_nogold.webp"
+RS_TEMPLATE_BALANCE_PATH = STOCK / "runescapeui_withgold.webp"
 COLORTABLE = STOCK / "colortable.webp"
 STATUS = {
     "online": Image.open(STOCK / "online.webp"),
