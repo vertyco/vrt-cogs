@@ -104,7 +104,43 @@ class Owner(MixinMeta):
             value=ignored_servers.getvalue() or _("None"),
             inline=False,
         )
+        status = _("**Disabled**") if not self.db.max_backups else f"**{self.db.max_backups}**"
+        interval = (
+            _("**Disabled**") if not self.db.backup_interval else f"**{utils.humanize_delta(self.db.backup_interval)}**"
+        )
+        embed.add_field(
+            name=_("Smart-Checkpoints"),
+            value=_(
+                "Smart Checkpoints keep a rotating backup of the bot's data.\n"
+                "In the event of corruption or data loss, the bot will attempt to restore from the latest backups.\n"
+                "Max Backups: {}\n"
+                "Backup Interval: {}\n"
+            ).format(status, interval),
+        )
         await ctx.send(embed=embed)
+
+    @lvlowner.command(name="maxbackups")
+    async def set_max_backups(self, ctx: commands.Context, backups: int):
+        """Set the maximum number of backups to keep"""
+        if backups < 0:
+            return await ctx.send(_("Invalid number of backups."))
+        self.db.max_backups = backups
+        if backups:
+            await ctx.send(_("Max backups set to {}").format(backups))
+        else:
+            await ctx.send(_("Smart Checkpoints disabled."))
+        self.save()
+
+    @lvlowner.command(name="backupinterval")
+    async def set_backup_interval(self, ctx: commands.Context, interval: int):
+        """Set the interval for backups"""
+        if interval < 0:
+            return await ctx.send(_("Invalid interval."))
+        self.db.backup_interval = interval
+        if interval:
+            await ctx.send(_("Backup interval set to {}").format(utils.humanize_delta(interval)))
+        else:
+            await ctx.send(_("Smart Checkpoints **disabled.**"))
 
     @lvlowner.command(name="autoclean")
     async def toggle_auto_cleanup(self, ctx: commands.Context):

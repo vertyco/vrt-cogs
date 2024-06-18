@@ -77,7 +77,13 @@ class Base(BaseModel):
                 log.error("Failed to load via json5")
                 raise e
 
-    def to_file(self, path: Path, pretty: bool = False) -> None:
+    def to_file(
+        self,
+        path: Path,
+        pretty: bool = False,
+        max_backups: int = 3,
+        interval: int = 3600,
+    ) -> None:
         dump = self.dumpjson(exclude_defaults=True, pretty=pretty)
         # We want to write the file as safely as possible
         # https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/core/_drivers/json.py#L224
@@ -87,18 +93,29 @@ class Base(BaseModel):
             fs.flush()  # This does get closed on context exit, ...
             os.fsync(fs.fileno())  # but that needs to happen prior to this line
 
-        # Rolling backups: maintain 3 old versions of the file
-        for i in range(3, 0, -1):
-            backup_path = path.with_suffix(f".bak{i}")
-            new_backup_path = path.with_suffix(f".bak{i+1}")
-            if backup_path.exists():
-                if i == 3:
-                    backup_path.unlink()  # Remove the oldest backup
-                else:
-                    backup_path.replace(new_backup_path)  # Shift the backups
-
-        # Backup the latest version
-        path.replace(path.with_suffix(".bak1"))
+        if max_backups > 0:
+            # Check the age of the most recent backup
+            backup1_path = path.with_suffix(".bak1")
+            backup_time_threshold = timedelta(seconds=interval)
+            create_new_backup = True
+            if backup1_path.exists():
+                backup1_mtime = datetime.fromtimestamp(backup1_path.stat().st_mtime)
+                delta = datetime.now() - backup1_mtime
+                if delta < backup_time_threshold:
+                    create_new_backup = False
+            if create_new_backup:
+                log.info("Creating backup of the config")
+                # Rolling backups: maintain <max_backups> old versions of the file
+                for i in range(max_backups, 0, -1):
+                    backup_path = path.with_suffix(f".bak{i}")
+                    new_backup_path = path.with_suffix(f".bak{i+1}")
+                    if backup_path.exists():
+                        if i == max_backups:
+                            backup_path.unlink()  # Remove the oldest backup
+                        else:
+                            backup_path.replace(new_backup_path)  # Shift the backups
+                # Backup the latest version
+                path.replace(backup1_path)
 
         # Replace the original file with the new content
         tmp_path.replace(path)
@@ -330,6 +347,8 @@ class DB(Base):
     internal_api_port: int = 0  # If specified, starts internal api subprocess
     external_api_url: str = ""  # If specified, overrides internal api
     auto_cleanup: bool = False  # If True, will clean up configs of old guilds
+    max_backups: int = 3  # Number of backups to keep
+    backup_interval: int = 3600  # Interval in seconds to create backups
 
     def get_conf(self, guild: t.Union[discord.Guild, int]) -> GuildSettings:
         gid = guild if isinstance(guild, int) else guild.id

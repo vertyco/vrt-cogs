@@ -122,7 +122,12 @@ class LevelUp(
         async def _save():
             try:
                 async with self.save_lock:
-                    await asyncio.to_thread(self.db.to_file, self.settings_file)
+                    await asyncio.to_thread(
+                        self.db.to_file,
+                        path=self.settings_file,
+                        max_backups=self.db.max_backups,
+                        interval=self.db.backup_interval,
+                    )
                     self.last_save = perf_counter()
                     log.debug("Config saved")
             except Exception as e:
@@ -140,23 +145,22 @@ class LevelUp(
                 self.db = await asyncio.to_thread(DB.from_file, self.settings_file)
             except Exception as e:
                 log.error("Failed to load config, trying to load from backup files", exc_info=e)
-                # Try to load from the 3 .bak files
-                for i in range(1, 4):
-                    backup_file = self.settings_file.with_suffix(f".bak{i}")
-                    if not backup_file.exists():
-                        log.error("No suitable backups found!")
-                        return
-                    try:
-                        self.db = await asyncio.to_thread(DB.from_file, backup_file)
-                        log.warning(f"Loaded from backup file: {backup_file}")
-                        self.save()
-                        break
-                    except UnicodeDecodeError:
-                        log.error(f"Failed to load from backup file: {backup_file}")
+                # Try to load from one of the .bak files (i.e. settings.bak1, settings.bak2, settings.bak3)
+                checkpoints = list(self.settings_file.parent.glob(f"{self.settings_file.stem}.bak*"))
+                if checkpoints:
+                    # Sort by newest first
+                    checkpoints.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+                    for backup_file in checkpoints:
+                        try:
+                            self.db = await asyncio.to_thread(DB.from_file, backup_file)
+                            log.warning(f"Loaded from backup file: {backup_file}")
+                            self.save()
+                            break
+                        except UnicodeDecodeError:
+                            log.error(f"Failed to load from backup file: {backup_file}")
                 else:
-                    log.error("Failed to load from backup files")
+                    log.error("No backups found! Failed to load config!")
                     return
-
         elif self.old_settings_file.exists():
             raw_settings = self.old_settings_file.read_text()
             settings = orjson.loads(raw_settings)
@@ -166,6 +170,12 @@ class LevelUp(
                     self.db = await asyncio.to_thread(run_migrations, settings)
                     log.warning("Migration complete!")
                     self.save()
+                    await self.bot.send_to_owners(
+                        _(
+                            "LevelUp has successfully migrated to v4!\n"
+                            "Leveling is now disabled by default and must be toggled on in each server via `[p]lset toggle`."
+                        )
+                    )
                 except Exception as e:
                     log.error("Failed to migrate old settings.json", exc_info=e)
                     return
