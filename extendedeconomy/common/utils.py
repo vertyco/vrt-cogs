@@ -68,7 +68,7 @@ def has_cost_check(command: CTYPES):
     return False
 
 
-async def confirm_msg(ctx: t.Union[commands.Context, discord.Interaction]):
+async def confirm_msg(ctx: t.Union[commands.Context, discord.Interaction]) -> t.Union[bool, None]:
     """Wait for user to respond yes or no"""
     if isinstance(ctx, discord.Interaction):
         pred = MessagePredicate.yes_or_no(channel=ctx.channel, user=ctx.user)
