@@ -141,17 +141,18 @@ class Profile(Base):
         return self
 
     def all_default(self) -> bool:
-        defaults = [
-            self.style == self.__annotations__["style"].default,
-            self.background == self.__annotations__["background"].default,
-            self.namecolor == self.__annotations__["namecolor"].default,
-            self.statcolor == self.__annotations__["statcolor"].default,
-            self.barcolor == self.__annotations__["barcolor"].default,
-            self.font == self.__annotations__["font"].default,
-            self.blur == self.__annotations__["blur"].default,
-            self.show_displayname == self.__annotations__["show_displayname"].default,
+        # Check if all settings under the Profile customization section are default
+        checks = [
+            self.style == "default",
+            self.background == "default",
+            self.namecolor is None,
+            self.statcolor is None,
+            self.barcolor is None,
+            self.font is None,
+            self.blur,
+            not self.show_displayname,
         ]
-        return all(defaults)
+        return all(checks)
 
 
 class ProfileWeekly(Base):
@@ -325,7 +326,6 @@ class DB(Base):
     cache_seconds: int = 0
     render_gifs: bool = False
     force_embeds: bool = False  # Globally force embeds for leveling
-    migrations: t.List[str] = []
     internal_api_port: int = 0  # If specified, starts internal api subprocess
     external_api_url: str = ""  # If specified, overrides internal api
     auto_cleanup: bool = False  # If True, will clean up configs of old guilds
