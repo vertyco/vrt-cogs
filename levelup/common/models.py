@@ -324,8 +324,8 @@ class GuildSettings(Base):
 class DB(Base):
     configs: dict[int, GuildSettings] = {}
     ignored_guilds: t.List[int] = []
-    cache_seconds: int = 0
-    render_gifs: bool = False
+    cache_seconds: int = 0  # How long generated profile images should be cached, 0 to disable
+    render_gifs: bool = False  # Whether to render profiles as gifs
     force_embeds: bool = False  # Globally force embeds for leveling
     internal_api_port: int = 0  # If specified, starts internal api subprocess
     external_api_url: str = ""  # If specified, overrides internal api
