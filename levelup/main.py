@@ -84,6 +84,7 @@ class LevelUp(
         self.save_lock = asyncio.Lock()
         self.last_save: float = perf_counter()
         self.initialized: bool = False
+        self.save_tasks: t.List[asyncio.Task] = []
 
         # Tenor API
         self.tenor: TenorAPI = None
@@ -98,6 +99,8 @@ class LevelUp(
     async def cog_unload(self) -> None:
         self.bot.tree.remove_command(view_profile_context)
         self.stop_levelup_tasks()
+        for task in self.save_tasks:
+            task.cancel()
         if self.api_proc is not None:
             log.info("Shutting down API")
             try:
@@ -125,7 +128,7 @@ class LevelUp(
             except Exception as e:
                 log.error("Failed to save config", exc_info=e)
 
-        asyncio.create_task(_save())
+        self.save_tasks.append(asyncio.create_task(_save()))
 
     async def initialize(self) -> None:
         await self.bot.wait_until_red_ready()
