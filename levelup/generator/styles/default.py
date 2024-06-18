@@ -376,6 +376,9 @@ def generate_default_profile(
             blur_section = imgtools.blur_section(card, (blur_edge, 0, card.width, card.height))
             # Paste onto the stats
             card.paste(blur_section, (blur_edge, 0), blur_section)
+
+        card.paste(stats, (0, 0), stats)
+
         avg_duration = imgtools.get_avg_duration(pfp)
         log.debug(f"Rendering pfp as gif with avg duration of {avg_duration}ms")
         frames: t.List[Image.Image] = []
@@ -390,8 +393,7 @@ def generate_default_profile(
             pfp_frame = pfp_frame.resize(desired_pfp_size, Image.Resampling.NEAREST)
             # Crop the profile image into a circle
             pfp_frame = imgtools.make_profile_circle(pfp_frame, method=Image.Resampling.NEAREST)
-            # Paste items onto the card
-            card_frame.paste(stats, (0, 0), stats)
+            # Paste the profile image onto the card
             card_frame.paste(pfp_frame, (circle_x, circle_y), pfp_frame)
             frames.append(card_frame)
 
