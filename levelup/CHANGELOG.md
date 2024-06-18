@@ -5,8 +5,8 @@
 - Complete rewrite of the cog to be more performant, user friendly, and easier to maintain
 - Moved away from Red's `Config` driver to a custom Pydantic based configuration system
 - Total rework of how voice time is tracked (way more efficient)
-- Documented functions for other 3rd party cogs to use (WIP)
-- Optional external API framework for image generation offloading
+- [Documented functions](https://github.com/vertyco/vrt-cogs/tree/main/levelup/shared) for other 3rd party cogs to use (WIP)
+- Optional external [API framework](https://github.com/vertyco/vrt-cogs/blob/main/levelup/generator/README.md) for image generation offloading
 
 ## New Features
 

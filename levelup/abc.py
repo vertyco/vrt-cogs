@@ -57,6 +57,11 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    async def initialize_voice_states(self) -> int:
+        raise NotImplementedError
+
+    # -------------------------- levelups.py --------------------------
+    @abstractmethod
     async def check_levelups(
         self,
         guild: discord.Guild,
@@ -67,25 +72,41 @@ class MixinMeta(ABC):
         channel: t.Optional[
             t.Union[discord.TextChannel, discord.VoiceChannel, discord.Thread, discord.ForumChannel]
         ] = None,
-    ):
-        raise NotImplementedError
-
-    @abstractmethod
-    async def initialize_voice_states(self) -> int:
+    ) -> bool:
         raise NotImplementedError
 
     @abstractmethod
     async def ensure_roles(
-        self, member: discord.Member, conf: GuildSettings
+        self,
+        member: discord.Member,
+        conf: t.Optional[GuildSettings] = None,
     ) -> t.Tuple[t.List[discord.Role], t.List[discord.Role]]:
         raise NotImplementedError
 
+    # -------------------------- weeklyreset.py --------------------------
     @abstractmethod
-    async def get_banner(self, user_id: int) -> t.Optional[str]:
+    async def reset_weekly(self, guild: discord.Guild, ctx: commands.Context = None) -> None:
+        raise NotImplementedError
+
+    # -------------------------- profile.py --------------------------
+    @abstractmethod
+    async def add_xp(self, member: discord.Member, xp: int) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def set_xp(self, member: discord.Member, xp: int) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def remove_xp(self, member: discord.Member, xp: int) -> None:
         raise NotImplementedError
 
     @abstractmethod
     async def get_profile_background(self, user_id: int, profile: Profile) -> bytes:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def get_banner(self, user_id: int) -> t.Optional[str]:
         raise NotImplementedError
 
     @abstractmethod
@@ -95,5 +116,5 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def reset_weekly(self, guild: discord.Guild, ctx: commands.Context = None) -> None:
+    async def get_user_profile_cached(self, member: discord.Member) -> t.Union[discord.File, discord.Embed]:
         raise NotImplementedError
