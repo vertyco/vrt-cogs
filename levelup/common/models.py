@@ -267,6 +267,7 @@ class GuildSettings(Base):
     use_embeds: bool = True  # Use Embeds instead of generated images for leveling
     showbal: bool = False  # Show economy balance
     autoremove: bool = False  # Remove previous role on level up
+    style_override: t.Union[str, None] = None  # Override the profile style for this guild
 
     # Messages
     xp: t.List[int] = [3, 6]  # Min/Max XP per message

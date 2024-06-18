@@ -207,7 +207,9 @@ class ProfileFormatting(MixinMeta):
             "render_gif": self.db.render_gifs,
             "reraise": reraise,
         }
-        if profile.style != "runescape":
+
+        profile_style = conf.style_override or profile.style
+        if profile_style != "runescape":
             kwargs["background_bytes"] = await self.get_profile_background(member.id, profile)
             if pdata:
                 emoji_bytes = await utils.get_content_from_url(pdata.emoji_url)
@@ -240,7 +242,7 @@ class ProfileFormatting(MixinMeta):
 
         if external_url := self.db.external_api_url:
             try:
-                url = f"{external_url}/{endpoints[profile.style]}"
+                url = f"{external_url}/{endpoints[profile_style]}"
                 async with aiohttp.ClientSession() as session:
                     async with session.post(url, data=payload) as response:
                         if response.status == 200:
@@ -254,7 +256,7 @@ class ProfileFormatting(MixinMeta):
                 log.error("Failed to fetch profile from external API", exc_info=e)
         elif self.db.internal_api_port and self.api_proc:
             try:
-                url = f"http://127.0.0.1:{self.db.internal_api_port}/{endpoints[profile.style]}"
+                url = f"http://127.0.0.1:{self.db.internal_api_port}/{endpoints[profile_style]}"
                 async with aiohttp.ClientSession(trust_env=True) as session:
                     async with session.post(url, data=payload, ssl=False) as response:
                         if response.status == 200:
@@ -274,7 +276,7 @@ class ProfileFormatting(MixinMeta):
         }
 
         def _run() -> discord.File:
-            img_bytes, animated = funcs[profile.style](**kwargs)
+            img_bytes, animated = funcs[profile_style](**kwargs)
             ext = "gif" if animated else "webp"
             return discord.File(BytesIO(img_bytes), filename=f"profile.{ext}")
 
