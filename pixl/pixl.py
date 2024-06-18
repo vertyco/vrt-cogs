@@ -32,7 +32,7 @@ if dpy2:
 
     from .menu import DEFAULT_CONTROLS, MenuView, menu
 else:
-    from dislash import Interaction, InteractionClient
+    from dislash import Interaction, InteractionClient  # type: ignore
 
     from .dmenu import DEFAULT_CONTROLS, MenuView, menu
 
