@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2024-06-14 09:49-0400\n"
+"POT-Creation-Date: 2024-06-18 16:29-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -154,7 +154,7 @@ msgstr ""
 msgid "Progress"
 msgstr ""
 
-#: levelup\shared\profile.py:285
+#: levelup\shared\profile.py:287
 #, docstring
 msgid "Cached version of get_user_profile"
 msgstr ""
@@ -170,19 +170,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup\shared\weeklyreset.py:27
-msgid "Weekly stats have been reset."
-msgstr ""
-
 #: levelup\shared\weeklyreset.py:31
 msgid "There are no users in the weekly data yet"
 msgstr ""
 
-#: levelup\shared\weeklyreset.py:42
+#: levelup\shared\weeklyreset.py:45
 msgid "There are no users with XP in the weekly data yet"
 msgstr ""
 
-#: levelup\shared\weeklyreset.py:64
+#: levelup\shared\weeklyreset.py:67
 msgid ""
 "`Total Exp:       `{}\n"
 "`Total Messages:  `{}\n"
@@ -191,11 +187,11 @@ msgid ""
 "`Next Reset:      `{}"
 msgstr ""
 
-#: levelup\shared\weeklyreset.py:80
+#: levelup\shared\weeklyreset.py:83
 msgid "Top Weekly Exp Earners"
 msgstr ""
 
-#: levelup\shared\weeklyreset.py:95
+#: levelup\shared\weeklyreset.py:98
 msgid ""
 "`Experience: `{}\n"
 "`Messages:   `{}\n"
@@ -203,10 +199,18 @@ msgid ""
 "`Voicetime:  `{}"
 msgstr ""
 
-#: levelup\shared\weeklyreset.py:129
+#: levelup\shared\weeklyreset.py:130
+msgid "Missing permissions to manage roles"
+msgstr ""
+
+#: levelup\shared\weeklyreset.py:144
 msgid "Weekly winner role removal"
 msgstr ""
 
-#: levelup\shared\weeklyreset.py:140
+#: levelup\shared\weeklyreset.py:156
 msgid "Weekly winner role addition"
+msgstr ""
+
+#: levelup\shared\weeklyreset.py:174
+msgid "Weekly stats have been reset."
 msgstr ""
