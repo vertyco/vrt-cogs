@@ -116,4 +116,6 @@ async def sanitize_url(url: str, ctx: commands.Context) -> str:
                 return post.media_formats["gif"].url
     except TenorError as e:
         log.error("Error getting tenor image information. %s", e)
+    except Exception as e:
+        log.error("Unknown Error getting tenor image information. %s", e)
     return url
