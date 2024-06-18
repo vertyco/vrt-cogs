@@ -30,7 +30,7 @@ class LevelUps(MixinMeta):
         channel: t.Optional[
             t.Union[discord.TextChannel, discord.VoiceChannel, discord.Thread, discord.ForumChannel]
         ] = None,
-    ):
+    ) -> bool:
         """Check if a user has leveled up and award roles if needed
 
         Args:
@@ -42,15 +42,15 @@ class LevelUps(MixinMeta):
             channel (t.Optional[t.Union[discord.TextChannel, discord.VoiceChannel, discord.Thread, discord.ForumChannel]], optional): The channel where the leveling up occurred. Defaults to None.
 
         Returns:
-            Tuple[List[discord.Role], List[discord.Role]]: A tuple containing two lists of roles - the roles that were added and the roles that were removed.
+            bool: True if the user leveled up, False otherwise.
         """
         calculated_level = conf.algorithm.get_level(profile.xp)
         if calculated_level == profile.level:
             # No action needed, user hasn't leveled up
-            return
+            return False
         if not calculated_level:
             # User hasnt reached level 1 yet
-            return
+            return False
         log.debug(f"{member} has reached level {calculated_level} in {guild}")
         profile.level = calculated_level
         # User has reached a new level, time to log and award roles if needed
@@ -114,7 +114,7 @@ class LevelUps(MixinMeta):
             if log_channel:
                 with suppress(discord.HTTPException):
                     await log_channel.send(embed=embed)
-            return
+            return False
 
         banner = await self.get_profile_background(member.id, profile)
         avatar = await member.display_avatar.read()
@@ -198,11 +198,16 @@ class LevelUps(MixinMeta):
             "new_level": profile.level,  # int
         }
         self.bot.dispatch("member_levelup", **payload)
+        return True
 
     async def ensure_roles(
-        self, member: discord.Member, conf: GuildSettings
+        self,
+        member: discord.Member,
+        conf: t.Optional[GuildSettings] = None,
     ) -> t.Tuple[t.List[discord.Role], t.List[discord.Role]]:
         """Ensure a user has the correct level roles based on their level and the guild's settings"""
+        if conf is None:
+            conf = self.db.get_conf(member.guild)
         if not conf.levelroles:
             return [], []
         if not member.guild.me.guild_permissions.manage_roles:
