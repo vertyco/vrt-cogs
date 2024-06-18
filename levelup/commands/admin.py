@@ -1193,7 +1193,7 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         if voice_xp < 0:
             return await ctx.send(_("XP values cannot be negative"))
-        conf.voice_xp = voice_xp
+        conf.voicexp = voice_xp
         self.save()
         await ctx.send(_("Voice XP has been set to {} per minute").format(voice_xp))
 
