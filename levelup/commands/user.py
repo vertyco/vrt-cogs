@@ -37,12 +37,6 @@ async def view_profile_context(interaction: discord.Interaction, member: discord
 
 @cog_i18n(_)
 class User(MixinMeta):
-    @commands.command(name="ptest")
-    async def ptest(self, ctx):
-        conf = self.db.get_conf(ctx.guild)
-        profile = conf.get_profile(ctx.author)
-        await ctx.send(f"Default: {profile.all_default}")
-
     @commands.hybrid_command(name="leveltop", aliases=["lvltop", "topstats", "membertop", "topranks"])
     @commands.guild_only()
     async def leveltop(
@@ -223,19 +217,23 @@ class User(MixinMeta):
         """View your profile settings"""
         conf = self.db.get_conf(ctx.guild)
         profile = conf.get_profile(ctx.author)
-        desc = _(
-            "`Profile Style:   `{}\n"
-            "`Show Nickname:   `{}\n"
-            "`Blur:            `{}\n"
-            "`Font:            `{}\n"
-            "`Background:      `{}\n"
-        ).format(
-            profile.style.title(),
-            profile.show_displayname,
-            _("Enabled") if profile.blur else _("Disabled"),
-            str(profile.font).title(),
-            profile.background,
-        )
+        if not conf.use_embeds:
+            desc = _(
+                "`Profile Style:   `{}\n"
+                "`Show Nickname:   `{}\n"
+                "`Blur:            `{}\n"
+                "`Font:            `{}\n"
+                "`Background:      `{}\n"
+            ).format(
+                profile.style.title(),
+                profile.show_displayname,
+                _("Enabled") if profile.blur else _("Disabled"),
+                str(profile.font).title(),
+                profile.background,
+            )
+        else:
+            desc = _("`Show Nickname:   `{}\n").format(profile.show_displayname)
+
         embed = discord.Embed(
             title=_("Your Profile Settings"),
             description=desc,
@@ -243,30 +241,32 @@ class User(MixinMeta):
         )
         bg = profile.background
         file = None
-        if bg.startswith("http"):
-            embed.set_image(url=bg)
-        elif bg not in ("default", "random"):
-            available = list(self.backgrounds.iterdir()) + list(self.custom_backgrounds.iterdir())
-            for path in available:
-                if bg.lower() in path.name.lower():
-                    embed.set_image(url=f"attachment://{path.name}")
-                    file = discord.File(str(path), filename=path.name)
-                    break
-        embeds = [
-            embed,
-            discord.Embed(
-                description=_("Name color: {}").format(f"**{str(profile.namecolor).title()}**"),
-                color=utils.string_to_rgb(profile.namecolor, as_discord_color=True),
-            ),
-            discord.Embed(
-                description=_("Stat color: {}").format(f"**{str(profile.statcolor).title()}**"),
-                color=utils.string_to_rgb(profile.statcolor, as_discord_color=True),
-            ),
-            discord.Embed(
-                description=_("Level bar color: {}").format(f"**{str(profile.barcolor).title()}**"),
-                color=utils.string_to_rgb(profile.barcolor, as_discord_color=True),
-            ),
-        ]
+        if not conf.use_embeds:
+            if bg.startswith("http"):
+                embed.set_image(url=bg)
+            elif bg not in ("default", "random"):
+                available = list(self.backgrounds.iterdir()) + list(self.custom_backgrounds.iterdir())
+                for path in available:
+                    if bg.lower() in path.name.lower():
+                        embed.set_image(url=f"attachment://{path.name}")
+                        file = discord.File(str(path), filename=path.name)
+                        break
+        embeds = [embed]
+        if not conf.use_embeds:
+            embeds += [
+                discord.Embed(
+                    description=_("Name color: {}").format(f"**{str(profile.namecolor).title()}**"),
+                    color=utils.string_to_rgb(profile.namecolor, as_discord_color=True),
+                ),
+                discord.Embed(
+                    description=_("Stat color: {}").format(f"**{str(profile.statcolor).title()}**"),
+                    color=utils.string_to_rgb(profile.statcolor, as_discord_color=True),
+                ),
+                discord.Embed(
+                    description=_("Level bar color: {}").format(f"**{str(profile.barcolor).title()}**"),
+                    color=utils.string_to_rgb(profile.barcolor, as_discord_color=True),
+                ),
+            ]
         if ctx.channel.permissions_for(ctx.me).attach_files:
             return await ctx.send(embeds=embeds, file=file, ephemeral=True)
         await ctx.send(embeds=embeds, ephemeral=True)
@@ -400,6 +400,10 @@ class User(MixinMeta):
     @commands.bot_has_permissions(attach_files=True)
     async def view_all_backgrounds(self, ctx: commands.Context):
         """View the all available backgrounds"""
+        conf = self.db.get_conf(ctx.guild)
+        if conf.use_embeds:
+            return await ctx.send(_("Image profiles are disabled here, this setting has no effect!"))
+
         paths = list(self.backgrounds.iterdir()) + list(self.custom_backgrounds.iterdir())
         paths = [str(x) for x in paths]
 
@@ -422,6 +426,9 @@ class User(MixinMeta):
     @commands.bot_has_permissions(attach_files=True)
     async def view_fonts(self, ctx: commands.Context):
         """View the available fonts you can use"""
+        conf = self.db.get_conf(ctx.guild)
+        if conf.use_embeds:
+            return await ctx.send(_("Image profiles are disabled here, this setting has no effect!"))
         paths = list(self.fonts.iterdir()) + list(self.custom_fonts.iterdir())
         paths = [str(x) for x in paths]
 
@@ -449,13 +456,13 @@ class User(MixinMeta):
         - (WIP) - more to come
 
         """
+        conf = self.db.get_conf(ctx.guild)
+        if conf.use_embeds:
+            return await ctx.send(_("Image profiles are disabled here, this setting has no effect!"))
         if style not in const.PROFILE_TYPES:
             txt = _("That is not a valid profile style, please choose from the following: {}").format(
                 humanize_list(const.PROFILE_TYPES)
             )
-        conf = self.db.get_conf(ctx.guild)
-        if conf.use_embeds:
-            txt = _("Image profiles are disabled here, this setting has no effect!")
             return await ctx.send(txt)
 
         profile = conf.get_profile(ctx.author)
@@ -489,6 +496,8 @@ class User(MixinMeta):
         Set to `default` to randomize the color each time your profile is generated
         """
         conf = self.db.get_conf(ctx.guild)
+        if conf.use_embeds:
+            return await ctx.send(_("Image profiles are disabled here, this setting has no effect!"))
         profile = conf.get_profile(ctx.author)
         if profile.style in const.STATIC_FONT_STYLES:
             return await ctx.send(_("You cannot change your name color with the current profile style!"))
@@ -522,6 +531,8 @@ class User(MixinMeta):
         Set to `default` to randomize the color each time your profile is generated
         """
         conf = self.db.get_conf(ctx.guild)
+        if conf.use_embeds:
+            return await ctx.send(_("Image profiles are disabled here, this setting has no effect!"))
         profile = conf.get_profile(ctx.author)
         if color == "default":
             profile.statcolor = None
@@ -553,6 +564,8 @@ class User(MixinMeta):
         Set to `default` to randomize the color each time your profile is generated
         """
         conf = self.db.get_conf(ctx.guild)
+        if conf.use_embeds:
+            return await ctx.send(_("Image profiles are disabled here, this setting has no effect!"))
         profile = conf.get_profile(ctx.author)
         if profile.style in const.STATIC_FONT_STYLES:
             return await ctx.send(_("You cannot change your name color with the current profile style!"))

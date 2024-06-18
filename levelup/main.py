@@ -201,7 +201,7 @@ class LevelUp(
     async def load_tenor(self) -> None:
         tokens = await self.bot.get_shared_api_tokens("tenor")
         if "api_key" in tokens:
-            log.debug("Tenor API token loaded")
+            log.debug("Tenor API key loaded")
             self.tenor = TenorAPI(tokens["api_key"], str(self.bot.user))
 
     async def on_red_api_tokens_update(self, service_name: str, api_tokens: t.Dict[str, str]) -> None:
@@ -211,7 +211,7 @@ class LevelUp(
             if self.tenor is not None:
                 self.tenor._token = api_tokens["api_key"]
                 return
-            log.debug("Tenor API token updated")
+            log.debug("Tenor API key updated")
             self.tenor = TenorAPI(api_tokens["api_key"], str(self.bot.user))
 
     def format_help_for_context(self, ctx):
