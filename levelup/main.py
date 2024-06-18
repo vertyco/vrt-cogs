@@ -25,8 +25,10 @@ import logging
 import multiprocessing as mp
 import sys
 import typing as t
+from contextlib import suppress
 from time import perf_counter
 
+import discord
 import orjson
 import psutil
 from redbot.core import commands
@@ -72,7 +74,7 @@ class LevelUp(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "4.0.0"
+    __version__ = "4.0.1"
     __contributors__ = [
         "[aikaterna](https://github.com/aikaterna/aikaterna-cogs)",
         "[AAA3A](https://github.com/AAA3A-AAA3A/AAA3A-cogs)",
@@ -192,13 +194,14 @@ class LevelUp(
                     self.db = await asyncio.to_thread(run_migrations, settings)
                     log.warning("Migration complete!")
                     self.save()
-                    await self.bot.send_to_owners(
-                        _(
-                            "LevelUp has successfully migrated to v4!\n"
-                            "Leveling is now disabled by default and must be toggled on in each server via `[p]lset toggle`.\n"
-                            "[View the changelog](https://github.com/vertyco/vrt-cogs/blob/main/levelup/CHANGELOG.md) for more information."
+                    with suppress(discord.HTTPException):
+                        await self.bot.send_to_owners(
+                            _(
+                                "LevelUp has successfully migrated to v4!\n"
+                                "Leveling is now disabled by default and must be toggled on in each server via `[p]lset toggle`.\n"
+                                "[View the changelog](https://github.com/vertyco/vrt-cogs/blob/main/levelup/CHANGELOG.md) for more information."
+                            )
                         )
-                    )
                 except Exception as e:
                     log.error("Failed to migrate old settings.json", exc_info=e)
                     return
