@@ -74,7 +74,7 @@ class LevelUp(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "4.0.3"
+    __version__ = "4.0.4"
     __contributors__ = [
         "[aikaterna](https://github.com/aikaterna/aikaterna-cogs)",
         "[AAA3A](https://github.com/AAA3A-AAA3A/AAA3A-cogs)",
@@ -164,6 +164,7 @@ class LevelUp(
         await self.bot.wait_until_red_ready()
         if not hasattr(self, "__author__"):
             return
+        migrated = False
         if self.settings_file.exists():
             log.info("Loading config")
             try:
@@ -194,7 +195,7 @@ class LevelUp(
                 try:
                     self.db = await asyncio.to_thread(run_migrations, settings)
                     log.warning("Migration complete!")
-                    self.save()
+                    migrated = True
                     with suppress(discord.HTTPException):
                         await self.bot.send_to_owners(
                             _(
@@ -209,6 +210,10 @@ class LevelUp(
 
         log.info("Config initialized")
         self.initialized = True
+
+        if migrated:
+            self.save()
+
         if voice_initialized := await self.initialize_voice_states():
             log.info(f"Initialized {voice_initialized} voice states")
 
