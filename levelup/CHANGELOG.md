@@ -22,3 +22,4 @@
 - Backing up the cog now prettyfies the JSON output with indentation
 - The new config system keeps 3 backups of itself at all times
 - Setting profile backgrounds now supports Discord tenor links directly
+- Added command to set server-wide profile style override
