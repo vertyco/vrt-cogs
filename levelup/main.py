@@ -75,7 +75,7 @@ class LevelUp(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "4.0.6"
+    __version__ = "4.0.7"
     __contributors__ = [
         "[aikaterna](https://github.com/aikaterna/aikaterna-cogs)",
         "[AAA3A](https://github.com/AAA3A-AAA3A/AAA3A-cogs)",
@@ -106,7 +106,7 @@ class LevelUp(
         self.backgrounds = self.bundled_path / "backgrounds"
 
         # Save State
-        self.save_lock = asyncio.Lock()
+        self.saving = False
         self.last_save: float = perf_counter()
         self.initialized: bool = False
         self.save_tasks: t.List[asyncio.Task] = []
@@ -139,6 +139,8 @@ class LevelUp(
             self.api_proc.terminate()
 
     def save(self) -> None:
+        if self.saving:
+            return
         if not self.initialized:
             # Do not save if not initialized, we don't want to overwrite the config with default data
             log.error("Config not initialized, not saving!")
@@ -146,18 +148,20 @@ class LevelUp(
 
         async def _save():
             try:
-                async with self.save_lock:
-                    log.debug("Saving config")
-                    await asyncio.to_thread(
-                        self.db.to_file,
-                        path=self.settings_file,
-                        max_backups=self.db.max_backups,
-                        interval=self.db.backup_interval,
-                    )
-                    self.last_save = perf_counter()
-                    log.debug("Config saved")
+                self.saving = True
+                log.debug("Saving config")
+                await asyncio.to_thread(
+                    self.db.to_file,
+                    path=self.settings_file,
+                    max_backups=self.db.max_backups,
+                    interval=self.db.backup_interval,
+                )
+                self.last_save = perf_counter()
+                log.debug("Config saved")
             except Exception as e:
                 log.error("Failed to save config", exc_info=e)
+            finally:
+                self.saving = False
 
         self.save_tasks.append(asyncio.create_task(_save()))
 
