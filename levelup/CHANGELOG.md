@@ -1,4 +1,4 @@
-# 4.0.0 (2024-06-17)
+# [4.0.0](https://github.com/vertyco/vrt-cogs/commit/60c7eedb14c770304f1e29449456596eb5949426) (2024-06-18)
 
 ## Release Highlights
 
