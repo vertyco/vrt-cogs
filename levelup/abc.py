@@ -85,20 +85,20 @@ class MixinMeta(ABC):
 
     # -------------------------- weeklyreset.py --------------------------
     @abstractmethod
-    async def reset_weekly(self, guild: discord.Guild, ctx: commands.Context = None) -> None:
+    async def reset_weekly(self, guild: discord.Guild, ctx: commands.Context = None) -> bool:
         raise NotImplementedError
 
     # -------------------------- profile.py --------------------------
     @abstractmethod
-    async def add_xp(self, member: discord.Member, xp: int) -> None:
+    async def add_xp(self, member: discord.Member, xp: int) -> int:
         raise NotImplementedError
 
     @abstractmethod
-    async def set_xp(self, member: discord.Member, xp: int) -> None:
+    async def set_xp(self, member: discord.Member, xp: int) -> int:
         raise NotImplementedError
 
     @abstractmethod
-    async def remove_xp(self, member: discord.Member, xp: int) -> None:
+    async def remove_xp(self, member: discord.Member, xp: int) -> int:
         raise NotImplementedError
 
     @abstractmethod

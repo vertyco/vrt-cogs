@@ -22,7 +22,7 @@ _ = Translator("LevelUp", __file__)
 
 
 class ProfileFormatting(MixinMeta):
-    async def add_xp(self, member: discord.Member, xp: int) -> None:
+    async def add_xp(self, member: discord.Member, xp: int) -> int:
         """Add XP to a user and check for level ups"""
         if not isinstance(member, discord.Member):
             raise TypeError("member must be a discord.Member")
@@ -30,8 +30,9 @@ class ProfileFormatting(MixinMeta):
         profile = conf.get_profile(member)
         profile.xp += xp
         self.save()
+        return int(profile.xp)
 
-    async def set_xp(self, member: discord.Member, xp: int) -> None:
+    async def set_xp(self, member: discord.Member, xp: int) -> int:
         """Set a user's XP and check for level ups"""
         if not isinstance(member, discord.Member):
             raise TypeError("member must be a discord.Member")
@@ -39,8 +40,9 @@ class ProfileFormatting(MixinMeta):
         profile = conf.get_profile(member)
         profile.xp = xp
         self.save()
+        return int(profile.xp)
 
-    async def remove_xp(self, member: discord.Member, xp: int) -> None:
+    async def remove_xp(self, member: discord.Member, xp: int) -> int:
         """Remove XP from a user and check for level ups"""
         if not isinstance(member, discord.Member):
             raise TypeError("member must be a discord.Member")
@@ -48,6 +50,7 @@ class ProfileFormatting(MixinMeta):
         profile = conf.get_profile(member)
         profile.xp -= xp
         self.save()
+        return int(profile.xp)
 
     async def get_profile_background(self, user_id: int, profile: Profile) -> bytes:
         """
@@ -211,7 +214,7 @@ class ProfileFormatting(MixinMeta):
         profile_style = conf.style_override or profile.style
         if profile_style != "runescape":
             kwargs["background_bytes"] = await self.get_profile_background(member.id, profile)
-            if pdata:
+            if pdata and pdata.emoji_url:
                 emoji_bytes = await utils.get_content_from_url(pdata.emoji_url)
                 kwargs["prestige_emoji"] = emoji_bytes
             if member.top_role.icon:

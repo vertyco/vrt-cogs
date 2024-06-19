@@ -16,12 +16,15 @@ _ = Translator("LevelUp", __file__)
 
 
 class WeeklyReset(MixinMeta):
-    async def reset_weekly(self, guild: discord.Guild, ctx: commands.Context = None) -> None:
+    async def reset_weekly(self, guild: discord.Guild, ctx: commands.Context = None) -> bool:
         """Announce and reset weekly stats
 
         Args:
             guild (discord.Guild): The guild where the weekly stats are being reset.
             ctx (commands.Context, optional): Sends the announcement embed in the current channel. Defaults to None.
+
+        Returns:
+            bool: True if the weekly stats were reset, False otherwise.
         """
         log.warning(f"Resetting weekly stats for {guild.name}")
         conf = self.db.get_conf(guild)
@@ -31,7 +34,7 @@ class WeeklyReset(MixinMeta):
                 await ctx.send(_("There are no users in the weekly data yet"))
             conf.weeklysettings.refresh()
             self.save()
-            return
+            return False
 
         valid_users: t.Dict[discord.Member, ProfileWeekly] = {}
         for user_id, stats in conf.users_weekly.items():
@@ -45,7 +48,7 @@ class WeeklyReset(MixinMeta):
                 await ctx.send(_("There are no users with XP in the weekly data yet"))
             conf.weeklysettings.refresh()
             self.save()
-            return
+            return False
 
         channel = guild.get_channel(conf.weeklysettings.channel) if conf.weeklysettings.channel else None
 
@@ -173,3 +176,4 @@ class WeeklyReset(MixinMeta):
         if ctx:
             await ctx.send(_("Weekly stats have been reset."))
         log.info(f"Reset weekly stats for {guild.name}")
+        return True

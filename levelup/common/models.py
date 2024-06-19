@@ -13,6 +13,8 @@ import orjson
 from pydantic import VERSION, BaseModel, Field
 from redbot.core.bot import Red
 
+from .utils import get_twemoji
+
 log = logging.getLogger("red.vrt.levelup.models")
 
 
@@ -222,7 +224,7 @@ class WeeklySettings(Base):
 class Prestige(Base):
     role: int
     emoji_string: str
-    emoji_url: str
+    emoji_url: t.Union[str, None] = None
 
 
 class RoleBonus(Base):
@@ -373,10 +375,14 @@ def run_migrations(settings: dict[str, t.Any]) -> DB:
         # Migrate prestige data
         if "prestigedata" in conf:
             for level, pdata in conf["prestigedata"].items():
+                emoji = pdata["emoji"]["str"]
+                emoji_url = pdata["emoji"]["url"]
+                if isinstance(emoji, str) and emoji_url is None:
+                    emoji_url = get_twemoji(emoji)
                 conf["prestigedata"][level] = {
                     "role": pdata["role"],
-                    "emoji_string": pdata["emoji"]["str"],
-                    "emoji_url": pdata["emoji"]["url"],
+                    "emoji_string": emoji,
+                    "emoji_url": emoji_url,
                 }
         # Migrate profiles
         if "users" in conf:
@@ -415,6 +421,7 @@ def run_migrations(settings: dict[str, t.Any]) -> DB:
             conf["ignore_invisible"] = conf["invisible"]
         if conf.get("length") is not None:
             conf["min_length"] = conf["length"]
+
         migrated += 1
 
     log.warning(f"Migrated {migrated} guilds to new schema")
