@@ -4,6 +4,7 @@ import logging
 import math
 import os
 import typing as t
+from contextlib import suppress
 from datetime import datetime, timedelta
 from pathlib import Path
 from time import perf_counter
@@ -378,7 +379,8 @@ def run_migrations(settings: dict[str, t.Any]) -> DB:
                 emoji = pdata["emoji"]["str"]
                 emoji_url = pdata["emoji"]["url"]
                 if isinstance(emoji, str) and emoji_url is None:
-                    emoji_url = get_twemoji(emoji)
+                    with suppress(TypeError, ValueError):
+                        emoji_url = get_twemoji(emoji)
                 conf["prestigedata"][level] = {
                     "role": pdata["role"],
                     "emoji_string": emoji,
