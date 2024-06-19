@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from contextlib import suppress
 from datetime import datetime
@@ -51,12 +52,14 @@ class VoteView(discord.ui.View):
                 self.downvote.label = None
 
     async def respond(self, interaction: discord.Interaction, text: str):
-        try:
+        with suppress(discord.HTTPException):
             if msg := await interaction.followup.send(text, ephemeral=True):
                 with suppress(discord.HTTPException):
                     await msg.delete(delay=60)
-        except discord.HTTPException:
-            pass
+
+    async def refresh(self):
+        with suppress(discord.HTTPException):
+            await self.message.edit(view=self)
 
     async def check(self, interaction: discord.Interaction) -> bool:
         """Return True if the user can vote"""
@@ -187,8 +190,7 @@ class VoteView(discord.ui.View):
 
         if conf.show_vote_counts:
             self.update_labels()
-            with suppress(discord.HTTPException):
-                await interaction.message.edit(view=self)
+            asyncio.create_task(self.refresh())
 
         await self.cog.save()
 
@@ -225,7 +227,6 @@ class VoteView(discord.ui.View):
 
         if conf.show_vote_counts:
             self.update_labels()
-            with suppress(discord.HTTPException):
-                await interaction.message.edit(view=self)
+            asyncio.create_task(self.refresh())
 
         await self.cog.save()
