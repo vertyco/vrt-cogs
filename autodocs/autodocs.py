@@ -171,7 +171,7 @@ class AutoDocs(commands.Cog):
                 buffer = BytesIO()
                 folder_name = _("AllCogDocs")
                 with ZipFile(buffer, "w", compression=ZIP_DEFLATED, compresslevel=9) as arc:
-                    arc.mkdir(folder_name, mode=755)
+                    arc.writestr(f"{folder_name}/", '')  # Create the folder in the ZIP file
                     for cog in self.bot.cogs:
                         cog = self.bot.get_cog(cog)
                         if cog.qualified_name in IGNORE:
