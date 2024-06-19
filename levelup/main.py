@@ -31,11 +31,12 @@ from time import perf_counter
 import discord
 import orjson
 import psutil
+from pydantic import ValidationError
 from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.data_manager import bundled_data_path, cog_data_path
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import humanize_list
+from redbot.core.utils.chat_formatting import box, humanize_list
 
 from .abc import CompositeMetaClass
 from .commands import Commands
@@ -74,7 +75,7 @@ class LevelUp(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "4.0.5"
+    __version__ = "4.0.6"
     __contributors__ = [
         "[aikaterna](https://github.com/aikaterna/aikaterna-cogs)",
         "[AAA3A](https://github.com/AAA3A-AAA3A/AAA3A-cogs)",
@@ -204,6 +205,13 @@ class LevelUp(
                                 "[View the changelog](https://github.com/vertyco/vrt-cogs/blob/main/levelup/CHANGELOG.md) for more information."
                             )
                         )
+                except ValidationError as e:
+                    log.error("Failed to migrate old settings.json", exc_info=e)
+                    with suppress(discord.HTTPException):
+                        await self.bot.send_to_owners(
+                            _("LevelUp has failed to migrate to v4!\nSend this to vertyco:\n{}").format(box(str(e)))
+                        )
+                    return
                 except Exception as e:
                     log.error("Failed to migrate old settings.json", exc_info=e)
                     return

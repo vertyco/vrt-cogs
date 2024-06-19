@@ -7,6 +7,7 @@
 - Total rework of how voice time is tracked (way more efficient)
 - [Documented functions](https://github.com/vertyco/vrt-cogs/tree/main/levelup/shared) for other 3rd party cogs to use (WIP)
 - Optional external [API framework](https://github.com/vertyco/vrt-cogs/blob/main/levelup/generator/README.md) for image generation offloading
+- Removed `[p]lvlset admin` group and split into two separate groups: `[p]lvldata` for backups and data related commands and `[p]lvlowner` for owner only commands
 
 ## New Features
 
