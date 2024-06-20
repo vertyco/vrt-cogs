@@ -423,6 +423,10 @@ def run_migrations(settings: dict[str, t.Any]) -> DB:
             conf["ignore_invisible"] = conf["invisible"]
         if conf.get("length") is not None:
             conf["min_length"] = conf["length"]
+        conf["algorithm"] = {
+            "base": conf.get("base", 100),
+            "exp": conf.get("exp", 2.0),
+        }
 
         migrated += 1
 
