@@ -413,12 +413,17 @@ class DB(AssistantBaseModel):
                     continue
                 function_obj = getattr(cog, function_name, None)
                 if function_obj is None:
+                    log.error(f"{cog_name} doesnt have a function called {function_name}!")
                     continue
                 if not await can_use(data["permission_level"]) and not showall:
+                    log.debug(
+                        f"{member.name} cannot use {function_name} with {data['permission_level']} permission level."
+                    )
                     continue
                 function_calls.append(data["schema"])
                 function_map[function_name] = function_obj
 
+        log.debug(f"Prepped: {function_map.keys()}")
         return function_calls, function_map
 
 

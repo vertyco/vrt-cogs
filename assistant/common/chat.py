@@ -248,7 +248,7 @@ class ChatHandler(MixinMeta):
         if conf.use_function_calls and extend_function_calls:
             # Prepare registry and custom functions
             prepped_function_calls, prepped_function_map = await self.db.prep_functions(
-                bot=self.bot, conf=conf, registry=self.registry
+                bot=self.bot, conf=conf, registry=self.registry, member=author
             )
             functions.extend(prepped_function_calls)
             mapping.update(prepped_function_map)
