@@ -35,6 +35,17 @@ class MessageParser:
 
 class Dcord(MixinMeta):
     @commands.command()
+    @commands.is_owner()
+    async def ownerof(self, ctx: commands.Context, user_id: int):
+        """Get a list of servers that the specified user owns"""
+        owned = [g for g in self.bot.guilds if g.owner_id == user_id]
+        if not owned:
+            return await ctx.send("This user does not own any servers")
+        txt = "\n".join([f"{g.name} - {g.id}" for g in owned])
+        for p in pagify(txt, page_length=1800):
+            await ctx.send(p)
+
+    @commands.command()
     async def closestuser(self, ctx: commands.Context, *, query: str):
         """Find the closest fuzzy match for a user"""
         query = query.lower()
