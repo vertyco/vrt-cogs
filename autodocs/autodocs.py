@@ -29,7 +29,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.0.0"
+    __version__ = "1.0.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -171,7 +171,10 @@ class AutoDocs(commands.Cog):
                 buffer = BytesIO()
                 folder_name = _("AllCogDocs")
                 with ZipFile(buffer, "w", compression=ZIP_DEFLATED, compresslevel=9) as arc:
-                    arc.mkdir(folder_name, mode=755)
+                    try:
+                        arc.mkdir(folder_name, mode=755)
+                    except AttributeError:
+                        arc.writestr(f"{folder_name}/", "")
                     for cog in self.bot.cogs:
                         cog = self.bot.get_cog(cog)
                         if cog.qualified_name in IGNORE:
