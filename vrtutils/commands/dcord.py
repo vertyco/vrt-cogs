@@ -34,9 +34,9 @@ class MessageParser:
 
 
 class Dcord(MixinMeta):
-    @commands.command(name="isownerof", aliases=["ownerof"])
+    @commands.command(aliases=["ownerof"])
     @commands.is_owner()
-    async def is_owner_of(self, ctx: commands.Context, user_id: int):
+    async def isownerof(self, ctx: commands.Context, user_id: int):
         """Get a list of servers the specified user is the owner of"""
         owner_of = ""
         for guild in self.bot.guilds:
@@ -79,7 +79,7 @@ class Dcord(MixinMeta):
         txt = (
             f"**Name:** {guild.name}\n"
             f"**ID:** {guild.id}\n"
-            f"**Owner:** {guild.owner}\n"
+            f"**Owner:** {guild.owner} ({guild.owner_id})\n"
             f"**Members:** {guild.member_count}\n"
             f"**Created:** <t:{int(guild.created_at.timestamp())}:F> (<t:{int(guild.created_at.timestamp())}:R>)\n"
         )
