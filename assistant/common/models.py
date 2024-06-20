@@ -69,6 +69,7 @@ class Usage(AssistantBaseModel):
 class GuildSettings(AssistantBaseModel):
     system_prompt: str = "You are a discord bot named {botname}, and are chatting with {username}."
     prompt: str = ""
+    channel_prompts: Dict[int, str] = {}
     allow_sys_prompt_override: bool = False  # Per convo system prompt
     embeddings: Dict[str, Embedding] = {}
     usage: Dict[str, Usage] = {}

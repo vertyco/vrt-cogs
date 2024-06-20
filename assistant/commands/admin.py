@@ -24,6 +24,7 @@ from redbot.core.utils.chat_formatting import (
     humanize_list,
     humanize_number,
     pagify,
+    text_to_file,
 )
 
 from ..abc import MixinMeta
@@ -109,6 +110,13 @@ class Admin(MixinMeta):
             val = _("System prompt override is **Disabled**, users cannot set a personal system prompt per convo.")
         val += _("\n*This will be restricted to mods if collaborative conversations are enabled!*")
         embed.add_field(name=_("System Prompt Overriding"), value=val, inline=False)
+
+        if conf.channel_prompts:
+            embed.add_field(
+                name=_("Channel Prompt Overrides"),
+                value=humanize_list([f"<#{i}>" for i in conf.channel_prompts]),
+                inline=False,
+            )
 
         types = set(len(i.embedding) for i in conf.embeddings.values())
 
@@ -493,6 +501,63 @@ class Admin(MixinMeta):
             conf.prompt = prompt.strip()
             await ctx.send(_("Initial prompt has been set!"))
 
+        await self.save_conf()
+
+    @assistant.command(name="channelpromptshow")
+    @commands.has_permissions(attach_files=True)
+    async def show_channel_prompt(self, ctx: commands.Context, channel: discord.TextChannel = None):
+        """Show the channel specific system prompt"""
+        conf = self.db.get_conf(ctx.guild)
+        if not channel:
+            channel = ctx.channel
+        if channel.id not in conf.channel_prompts:
+            return await ctx.send(_("No channel prompt set for {}").format(channel.mention))
+        file = text_to_file(conf.channel_prompts[channel.id], f"{channel.name}_prompt.txt")
+        await ctx.send(file=file)
+
+    @assistant.command(name="channelprompt")
+    async def set_channel_prompt(
+        self, ctx: commands.Context, channel: discord.TextChannel, *, system_prompt: str = None
+    ):
+        """Set a channel specific system prompt"""
+        conf = self.db.get_conf(ctx.guild)
+        attachments = get_attachments(ctx.message)
+        if attachments:
+            try:
+                system_prompt = (await attachments[0].read()).decode()
+            except Exception as e:
+                txt = _("Failed to read `{}`, bot owner can use `{}` for more information").format(
+                    attachments[0].filename, f"{ctx.clean_prefix}traceback"
+                )
+                await ctx.send(txt)
+                log.error("Failed to parse initial prompt", exc_info=e)
+                self.bot._last_exception = traceback.format_exc()
+                return
+        if system_prompt is None:
+            if channel.id in conf.channel_prompts:
+                del conf.channel_prompts[channel.id]
+                await ctx.send(_("Channel prompt has been removed!"))
+                await self.save_conf()
+            else:
+                await ctx.send(_("No channel prompt set for this channel!"))
+            return
+        model = conf.get_user_model(ctx.author)
+        ptokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
+        stokens = await self.count_tokens(system_prompt, model) if system_prompt else 0
+        combined = ptokens + stokens
+        max_tokens = round(conf.max_tokens * 0.9)
+        if combined >= max_tokens:
+            return await ctx.send(
+                _(
+                    "Your system and initial prompt combined will use {} tokens!\n"
+                    "Write a prompt combination using {} tokens or less to leave 10% of your configured max tokens for your response."
+                ).format(humanize_number(combined), humanize_number(max_tokens))
+            )
+        if channel.id in conf.channel_prompts:
+            await ctx.send(_("Channel prompt has been overwritten!"))
+        else:
+            await ctx.send(_("Channel prompt has been set!"))
+        conf.channel_prompts[channel.id] = system_prompt
         await self.save_conf()
 
     @assistant.command(name="system", aliases=["sys"])
