@@ -97,14 +97,14 @@ class LevelUps(MixinMeta):
                 embed = discord.Embed(
                     description=dm_txt,
                     color=member.color,
-                ).set_thumbnail(url=member.avatar_url)
+                ).set_thumbnail(url=member.display_avatar)
                 with suppress(discord.HTTPException):
                     await member.send(embed=embed)
 
             embed = discord.Embed(
                 description=msg_txt,
                 color=member.color,
-            ).set_author(name=member.display_name, icon_url=member.avatar_url)
+            ).set_author(name=member.display_name, icon_url=member.display_avatar)
             if channel and conf.notify:
                 with suppress(discord.HTTPException):
                     if conf.notifymention:
