@@ -34,15 +34,17 @@ class MessageParser:
 
 
 class Dcord(MixinMeta):
-    @commands.command()
+    @commands.command(name="isownerof", aliases=["ownerof"])
     @commands.is_owner()
-    async def ownerof(self, ctx: commands.Context, user_id: int):
-        """Get a list of servers that the specified user owns"""
-        owned = [g for g in self.bot.guilds if g.owner_id == user_id]
-        if not owned:
-            return await ctx.send("This user does not own any servers")
-        txt = "\n".join([f"{g.name} - {g.id}" for g in owned])
-        for p in pagify(txt, page_length=1800):
+    async def is_owner_of(self, ctx: commands.Context, user_id: int):
+        """Get a list of servers the specified user is the owner of"""
+        owner_of = ""
+        for guild in self.bot.guilds:
+            if guild.owner_id == user_id:
+                owner_of += f"- {guild.name} ({guild.id})\n"
+        if not owner_of:
+            return await ctx.send("That user is not the owner of any servers I am in.")
+        for p in pagify(owner_of):
             await ctx.send(p)
 
     @commands.command()
