@@ -112,9 +112,13 @@ class Admin(MixinMeta):
         embed.add_field(name=_("System Prompt Overriding"), value=val, inline=False)
 
         if conf.channel_prompts:
+            valid = [i for i in conf.channel_prompts if ctx.guild.get_channel(i)]
+            if len(valid) != len(conf.channel_prompts):
+                conf.channel_prompts = {i: conf.channel_prompts[i] for i in valid}
+                await self.save_conf()
             embed.add_field(
                 name=_("Channel Prompt Overrides"),
-                value=humanize_list([f"<#{i}>" for i in conf.channel_prompts]),
+                value=humanize_list([f"<#{i}>" for i in valid]),
                 inline=False,
             )
 
@@ -517,9 +521,11 @@ class Admin(MixinMeta):
 
     @assistant.command(name="channelprompt")
     async def set_channel_prompt(
-        self, ctx: commands.Context, channel: discord.TextChannel, *, system_prompt: str = None
+        self, ctx: commands.Context, channel: discord.TextChannel = None, *, system_prompt: str = None
     ):
         """Set a channel specific system prompt"""
+        if channel is None:
+            channel = ctx.channel
         conf = self.db.get_conf(ctx.guild)
         attachments = get_attachments(ctx.message)
         if attachments:
@@ -536,10 +542,10 @@ class Admin(MixinMeta):
         if system_prompt is None:
             if channel.id in conf.channel_prompts:
                 del conf.channel_prompts[channel.id]
-                await ctx.send(_("Channel prompt has been removed!"))
+                await ctx.send(_("Channel prompt has been removed from {}!").format(channel.mention))
                 await self.save_conf()
             else:
-                await ctx.send(_("No channel prompt set for this channel!"))
+                await ctx.send(_("No channel prompt set for {}!").format(channel.mention))
             return
         model = conf.get_user_model(ctx.author)
         ptokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
@@ -554,9 +560,9 @@ class Admin(MixinMeta):
                 ).format(humanize_number(combined), humanize_number(max_tokens))
             )
         if channel.id in conf.channel_prompts:
-            await ctx.send(_("Channel prompt has been overwritten!"))
+            await ctx.send(_("Channel prompt has been overwritten to {}!").format(channel.mention))
         else:
-            await ctx.send(_("Channel prompt has been set!"))
+            await ctx.send(_("Channel prompt has been set to {}!").format(channel.mention))
         conf.channel_prompts[channel.id] = system_prompt
         await self.save_conf()
 
