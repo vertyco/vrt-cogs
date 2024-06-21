@@ -1,0 +1,161 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2024-02-08 18:30-0500\n"
+"PO-Revision-Date: 2024-06-21 14:22\n"
+"Last-Translator: \n"
+"Language-Team: Russian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=4; plural=((n%10==1 && n%100!=11) ? 0 : ((n%10 >= 2 && n%10 <=4 && (n%100 < 12 || n%100 > 14)) ? 1 : ((n%10 == 0 || (n%10 >= 5 && n%10 <=9)) || (n%100 >= 11 && n%100 <= 14)) ? 2 : 3));\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: ru\n"
+"X-Crowdin-File: /main/cartographer/locales/messages.pot\n"
+"X-Crowdin-File-ID: 80\n"
+"Language: ru_RU\n"
+
+#: main.py:26
+#, docstring
+msgid "\n"
+"    Backup & Restore tools for Discord servers.\n\n"
+"    This cog can backup & restore the following:\n"
+"    - Categories (permissions/order)\n"
+"    - Text channels (permissions/order)\n"
+"    - Voice channels (permissions/order)\n"
+"    - Forum channels  (permissions/order)[Not forum posts]\n"
+"    - Roles (permissions and what members they're assigned to)\n\n"
+"    **Caveats**\n"
+"    Note the following\n"
+"    - If there are multiple roles, channels, categories, or forums with the same name, only 1 of each will be restored.\n"
+"     - This is because object IDs cannot be restored so the bot relies on the name of the object.\n"
+"    - When restoring, some roles may not be fully restored (such as order) if they were higher than the bot's role.\n"
+"    "
+msgstr ""
+
+#: main.py:82
+msgid "Version: {}\n"
+"Author: {}"
+msgstr ""
+
+#: main.py:86
+#, docstring
+msgid "No data to delete"
+msgstr ""
+
+#: main.py:119
+#, docstring
+msgid "Open the Backup/Restore menu"
+msgstr ""
+
+#: main.py:121 main.py:144 main.py:166
+msgid "This server is in the ingored list!"
+msgstr ""
+
+#: main.py:124 main.py:147 main.py:169
+msgid "This server is not in the allowed list!"
+msgstr ""
+
+#: main.py:138
+#, docstring
+msgid "Backup & Restore Tools"
+msgstr ""
+
+#: main.py:142
+#, docstring
+msgid "Create a backup of this server"
+msgstr ""
+
+#: main.py:153
+msgid "A backup has been created!"
+msgstr ""
+
+#: main.py:159
+#, docstring
+msgid "\n"
+"        Restore the latest backup for this server\n\n"
+"        **Arguments**\n"
+"        - delete_existing: if True, deletes existing channels/roles that aren't part of the backup.\n"
+"        "
+msgstr ""
+
+#: main.py:175
+msgid "There are no backups for this guild!"
+msgstr ""
+
+#: main.py:178
+msgid "Server restore is complete!"
+msgstr ""
+
+#: main.py:183
+#, docstring
+msgid "View current global settings"
+msgstr ""
+
+#: main.py:185 main.py:186
+msgid "None Set"
+msgstr ""
+
+#: main.py:187
+msgid "### Global Settings\n"
+"- Global backups: {}\n"
+"- Max backups per server: {}\n"
+"- Allow auto-backups: {}\n"
+"- Ignored servers: {}\n"
+"- Allowed servers: {}\n"
+msgstr ""
+
+#: main.py:206
+#, docstring
+msgid "Enable/Disable allowing auto backups"
+msgstr ""
+
+#: main.py:209
+msgid "Auto backups have been **Disabled**"
+msgstr ""
+
+#: main.py:212
+msgid "Auto backups have been **Enabled**"
+msgstr ""
+
+#: main.py:219
+#, docstring
+msgid "Set the max amount of backups a server can have"
+msgstr ""
+
+#: main.py:222
+msgid "Max backups set to 0, Cartographer has been **Disabled**"
+msgstr ""
+
+#: main.py:224
+msgid "Max backup count has been set"
+msgstr ""
+
+#: main.py:231
+#, docstring
+msgid "Add/Remove a server from the ignore list"
+msgstr ""
+
+#: main.py:234
+msgid "Server removed from the ignore list"
+msgstr ""
+
+#: main.py:237
+msgid "Server added to the ignore list"
+msgstr ""
+
+#: main.py:244
+#, docstring
+msgid "Add/Remove a server from the allow list"
+msgstr ""
+
+#: main.py:247
+msgid "Server removed from the allow list"
+msgstr ""
+
+#: main.py:250
+msgid "Server added to the allow list"
+msgstr ""
+
