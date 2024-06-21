@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2024-01-04 12:10-0500\n"
-"PO-Revision-Date: 2024-01-04 18:10\n"
+"POT-Creation-Date: 2024-02-08 18:30-0500\n"
+"PO-Revision-Date: 2024-06-18 20:59\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -17,7 +17,7 @@ msgstr ""
 "X-Crowdin-File-ID: 110\n"
 "Language: tr_TR\n"
 
-#: main.py:28
+#: main.py:29
 #, docstring
 msgid "\n"
 "    Economy decay!\n\n"
@@ -27,16 +27,16 @@ msgid "\n"
 "    "
 msgstr ""
 
-#: main.py:172
+#: main.py:157
 msgid "Bank Decay Cycle"
 msgstr ""
 
-#: main.py:174
+#: main.py:159
 msgid "- User Balances Decayed: {}\n"
 "- Total Amount Decayed: {}"
 msgstr ""
 
-#: main.py:179
+#: main.py:164
 msgid "No user balances were decayed during this cycle."
 msgstr ""
 

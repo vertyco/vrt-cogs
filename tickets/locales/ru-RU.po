@@ -1,0 +1,44 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2024-02-08 18:31-0500\n"
+"PO-Revision-Date: 2024-06-21 16:04\n"
+"Last-Translator: \n"
+"Language-Team: Russian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=4; plural=((n%10==1 && n%100!=11) ? 0 : ((n%10 >= 2 && n%10 <=4 && (n%100 < 12 || n%100 > 14)) ? 1 : ((n%10 == 0 || (n%10 >= 5 && n%10 <=9)) || (n%100 >= 11 && n%100 <= 14)) ? 2 : 3));\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: ru\n"
+"X-Crowdin-File: /main/tickets/locales/messages.pot\n"
+"X-Crowdin-File-ID: 13\n"
+"Language: ru_RU\n"
+
+#: tickets.py:32
+#, docstring
+msgid "\n"
+"    Support ticket system with multi-panel functionality\n"
+"    "
+msgstr "\n"
+"Система обратной связи посредством тикетов, с мультифункциональной панелью    "
+
+#: tickets.py:45
+#, docstring
+msgid "No data to delete"
+msgstr "Нет данных для удаления"
+
+#: tickets.py:274
+msgid "If you do not respond to this ticket within the next 20 minutes it will be closed automatically."
+msgstr "Если Вы не ответите на этот тикет в течение 20 минут, он будет закрыт автоматически."
+
+#: tickets.py:291
+msgid "(Auto-Close) Opened ticket with no response for "
+msgstr ""
+
+#: tickets.py:338
+msgid "User left guild(Auto-Close)"
+msgstr "[Автозакрытие] Участник покинул сервер."
+
