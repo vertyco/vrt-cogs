@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2024-06-18 16:29-0400\n"
-"PO-Revision-Date: 2024-06-21 14:22\n"
+"PO-Revision-Date: 2024-06-21 16:04\n"
 "Last-Translator: \n"
 "Language-Team: Russian\n"
 "MIME-Version: 1.0\n"
@@ -25,12 +25,12 @@ msgstr ""
 #: levelup\commands\admin.py:24
 #, docstring
 msgid "Configure LevelUp Settings"
-msgstr ""
+msgstr "Конфигурация LevelUp"
 
 #: levelup\commands\admin.py:30
 #, docstring
 msgid "View all LevelUP settings"
-msgstr ""
+msgstr "Просмотреть все настройки LevelUp"
 
 #: levelup\commands\admin.py:32
 msgid "**Main**\n"
