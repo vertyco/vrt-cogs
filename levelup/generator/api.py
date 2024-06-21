@@ -120,6 +120,7 @@ def get_kwargs(form_data: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
 async def fullprofile(request: Request):
     form_data = await request.form()
     kwargs = get_kwargs(form_data)
+    log.info(f"Generating full profile for {kwargs['username']}")
     img_bytes, animated = await asyncio.to_thread(generate_default_profile, **kwargs)
     encoded = base64.b64encode(img_bytes).decode("utf-8")
     return {"b64": encoded, "animated": animated}
@@ -129,6 +130,7 @@ async def fullprofile(request: Request):
 async def runescape(request: Request):
     form_data = await request.form()
     kwargs = get_kwargs(form_data)
+    log.info(f"Generating runescape profile for {kwargs['username']}")
     img_bytes, animated = await asyncio.to_thread(generate_runescape_profile, **kwargs)
     encoded = base64.b64encode(img_bytes).decode("utf-8")
     return {"b64": encoded, "animated": animated}
@@ -138,6 +140,7 @@ async def runescape(request: Request):
 async def levelup(request: Request):
     form_data = await request.form()
     kwargs = get_kwargs(form_data)
+    log.info("Generating levelup image")
     img_bytes, animated = await asyncio.to_thread(generate_level_img, **kwargs)
     encoded = base64.b64encode(img_bytes).decode("utf-8")
     return {"b64": encoded, "animated": animated}
