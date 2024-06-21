@@ -1,0 +1,296 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2024-02-08 18:29-0500\n"
+"PO-Revision-Date: 2024-06-21 14:22\n"
+"Last-Translator: \n"
+"Language-Team: Russian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=4; plural=((n%10==1 && n%100!=11) ? 0 : ((n%10 >= 2 && n%10 <=4 && (n%100 < 12 || n%100 > 14)) ? 1 : ((n%10 == 0 || (n%10 >= 5 && n%10 <=9)) || (n%100 >= 11 && n%100 <= 14)) ? 2 : 3));\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: ru\n"
+"X-Crowdin-File: /main/assistant/common/locales/messages.pot\n"
+"X-Crowdin-File-ID: 55\n"
+"Language: ru_RU\n"
+
+#: common\api.py:41
+msgid "Failed to fetch: {}"
+msgstr ""
+
+#: common\api.py:189
+#, docstring
+msgid "Get token list from text"
+msgstr ""
+
+#: common\api.py:217
+msgid "There are no API keys set!\n"
+msgstr ""
+
+#: common\api.py:219
+msgid "- Set your OpenAI key with `{}`\n"
+msgstr ""
+
+#: common\api.py:225
+#, docstring
+msgid "Update embeds to match current dimensions\n\n"
+"        Takes a sample using current embed method, the updates the rest to match dimensions\n"
+"        "
+msgstr ""
+
+#: common\api.py:265
+#, docstring
+msgid "Get text from token list"
+msgstr ""
+
+#: common\api.py:291
+#, docstring
+msgid "\n"
+"        Iteratively degrade a conversation payload in-place to fit within the max token limit, prioritizing more recent messages and critical context.\n\n"
+"        Order of importance:\n"
+"        - System messages\n"
+"        - Function calls available to model\n"
+"        - Most recent user message\n"
+"        - Most recent assistant message\n"
+"        - Most recent function/tool message\n\n"
+"        System messages are always ignored.\n\n"
+"        Args:\n"
+"            messages (List[dict]): message entries sent to the api\n"
+"            function_list (List[dict]): list of json function schemas for the model\n"
+"            conf: (GuildSettings): current settings\n\n"
+"        Returns:\n"
+"            bool: whether the conversation was degraded\n"
+"        "
+msgstr ""
+
+#: common\api.py:467
+#, docstring
+msgid "Pagify a long string by tokens rather than characters"
+msgstr ""
+
+#: common\api.py:524
+msgid "Custom Functions"
+msgstr ""
+
+#: common\api.py:530
+msgid "3rd Party"
+msgstr ""
+
+#: common\api.py:531
+msgid "This function is managed by the `{}` cog"
+msgstr ""
+
+#: common\api.py:536
+msgid "Internal Function"
+msgstr ""
+
+#: common\api.py:537
+msgid "This is an internal command that can only be used when interacting with a tutor"
+msgstr ""
+
+#: common\api.py:543
+msgid "This function consumes `{}` input tokens each call\n"
+msgstr ""
+
+#: common\api.py:558
+msgid "Hidden..."
+msgstr ""
+
+#: common\api.py:560
+msgid "Schema"
+msgstr ""
+
+#: common\api.py:561
+msgid "Code"
+msgstr ""
+
+#: common\api.py:563 common\api.py:586
+msgid "Page {}/{}"
+msgstr ""
+
+#: common\api.py:570
+msgid "No custom code has been added yet!"
+msgstr ""
+
+#: common\api.py:585
+msgid "Embeddings"
+msgstr ""
+
+#: common\api.py:596
+msgid "`Created:    `{}\n"
+"`Modified:   `{}\n"
+"`Tokens:     `{}\n"
+"`Dimensions: `{}\n"
+"`AI Created: `{}\n"
+"`Model:      `{}\n"
+msgstr ""
+
+#: common\api.py:623
+msgid "No embeddings have been added!"
+msgstr ""
+
+#: common\chat.py:145
+msgid "No message history!"
+msgstr ""
+
+#: common\chat.py:158
+msgid "The server had an error processing your request! Please try again later."
+msgstr ""
+
+#: common\chat.py:160
+msgid "Failed to communicate with API!"
+msgstr ""
+
+#: common\chat.py:164
+msgid "Invalid API key, please set a new valid key!"
+msgstr ""
+
+#: common\chat.py:166
+msgid "Uh oh, looks like my API key is invalid!"
+msgstr ""
+
+#: common\chat.py:176
+msgid "Uh oh, something went wrong! Bot owner can use `{}` to view the error."
+msgstr ""
+
+#: common\chat.py:179
+msgid "API Status: {}"
+msgstr ""
+
+#: common\chat.py:212
+msgid "No results found"
+msgstr ""
+
+#: common\chat.py:234
+#, docstring
+msgid "Call the API asynchronously"
+msgstr ""
+
+#: common\chat.py:317
+msgid "None"
+msgstr ""
+
+#: common\chat.py:396
+msgid "Request timed out, please try again."
+msgstr ""
+
+#: common\chat.py:558
+msgid "Response failed due to invalid regex, check logs for more info."
+msgstr ""
+
+#: common\chat.py:591
+#, docstring
+msgid "Prepare content for calling the GPT API\n\n"
+"        Args:\n"
+"            message (str): question or chat message\n"
+"            guild (discord.Guild): guild associated with the chat\n"
+"            conf (GuildSettings): config data\n"
+"            conversation (Conversation): user's conversation object for chat history\n"
+"            author (Optional[discord.Member]): user chatting with the bot\n"
+"            channel (Optional[Union[discord.TextChannel, discord.Thread, discord.ForumChannel]]): channel for context\n"
+"            query_embedding List[float]: message embedding weights\n\n"
+"        Returns:\n"
+"            List[dict]: list of messages prepped for api\n"
+"        "
+msgstr ""
+
+#: common\chat.py:609
+#, docstring
+msgid "Instead of format(**params) possibly giving a KeyError if prompt has code in it"
+msgstr ""
+
+#: common\chat.py:670
+msgid "\n"
+"Missing 'attach files' permissions!"
+msgstr ""
+
+#: common\utils.py:22
+#, docstring
+msgid "\n"
+"    Cleans the function name to ensure it only contains alphanumeric characters,\n"
+"    underscores, or dashes and is not longer than 64 characters.\n\n"
+"    Args:\n"
+"        name (str): The original function name to clean.\n\n"
+"    Returns:\n"
+"        str: The cleaned function name.\n"
+"    "
+msgstr ""
+
+#: common\utils.py:42
+#, docstring
+msgid "Get all attachments from context"
+msgstr ""
+
+#: common\utils.py:63
+msgid "Canceled"
+msgstr ""
+
+#: common\utils.py:76
+msgid "You have been blacklisted from using this command!"
+msgstr ""
+
+#: common\utils.py:80
+msgid "You have a blacklisted role and cannot use this command!"
+msgstr ""
+
+#: common\utils.py:84
+msgid "You cannot use that command in this channel!"
+msgstr ""
+
+#: common\utils.py:88
+msgid "You cannot use that command in any channels under this category"
+msgstr ""
+
+#: common\utils.py:123 common\utils.py:124
+msgid "[Code Removed]"
+msgstr ""
+
+#: common\utils.py:200
+#, docstring
+msgid "Make sure that if a conversation payload contains images that the model supports vision"
+msgstr ""
+
+#: common\utils.py:220
+#, docstring
+msgid "\n"
+"    Ensure all tool calls satisfy schema requirements, modifying the messages payload in-place.\n\n"
+"    The \"messages\" param is a list of message payloads.\n\n"
+"    ## Schema\n"
+"    - Messages with they key \"tool_calls\" are calling a tool or tools.\n"
+"    - The \"tool_calls\" value is a list of tool call dicts, each containing an \"id\" key that maps to a tool response\n"
+"    - Messages with the role \"tool\" are tool call responses, each with a \"tool_call_id\" key that corresponds to a tool call \"id\"\n"
+"    - More than one message can contain the same tool call id within the same conversation payload, which is a pain in the ass\n\n"
+"    ## Tool Call Message Payload Example\n"
+"    {\n"
+"        \"content\": None,\n"
+"        \"role\": \"assistant\",\n"
+"        \"tool_calls\": [\n"
+"            {\n"
+"                \"id\": \"call_HRdAUGb9xMM0jfqF2MajDMrA\",\n"
+"                \"type\": \"function\",\n"
+"                \"function\": {\n"
+"                    \"arguments\": {},\n"
+"                    \"name\": \"function_name\",\n"
+"                }\n"
+"            }\n"
+"        ]\n"
+"    }\n\n"
+"    ## Tool Response Message Payload Example\n"
+"    {\n"
+"        \"role\": \"tool\",\n"
+"        \"name\": \"function_name\",\n"
+"        \"content\": \"The results of the function in text\",\n"
+"        \"tool_call_id\": \"call_HRdAUGb9xMM0jfqF2MajDMrA\",\n"
+"    }\n\n"
+"    ## Rules\n"
+"    - A message payload can contain multiple tool calls, each with their own id\n"
+"    - A message with tool_calls must be followed up with messages containing the role \"tool\" with the corresponding \"tool_call_id\"\n"
+"    - All messages with \"tool_calls\" must be followed by messages with the tool responses\n"
+"    - All tool call responses must have a preceeding tool call.\n\n"
+"    Returns: boolean, True if any tool calls or responses were purged.\n"
+"    "
+msgstr ""
+

@@ -1,0 +1,24 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2024-06-18 16:29-0400\n"
+"PO-Revision-Date: 2024-06-18 20:58\n"
+"Last-Translator: \n"
+"Language-Team: German\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: de\n"
+"X-Crowdin-File: /main/levelup/listeners/locales/messages.pot\n"
+"X-Crowdin-File-ID: 170\n"
+"Language: de_DE\n"
+
+#: levelup\listeners\__init__.py:13
+#, docstring
+msgid "Subclass all listener classes"
+msgstr ""
+
