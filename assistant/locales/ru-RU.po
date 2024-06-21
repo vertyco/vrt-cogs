@@ -1,0 +1,202 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2024-02-08 18:29-0500\n"
+"PO-Revision-Date: 2024-06-21 14:22\n"
+"Last-Translator: \n"
+"Language-Team: Russian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=4; plural=((n%10==1 && n%100!=11) ? 0 : ((n%10 >= 2 && n%10 <=4 && (n%100 < 12 || n%100 > 14)) ? 1 : ((n%10 == 0 || (n%10 >= 5 && n%10 <=9)) || (n%100 >= 11 && n%100 <= 14)) ? 2 : 3));\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: ru\n"
+"X-Crowdin-File: /main/assistant/locales/messages.pot\n"
+"X-Crowdin-File-ID: 57\n"
+"Language: ru_RU\n"
+
+#: views.py:33
+msgid "Set OpenAI Key"
+msgstr ""
+
+#: views.py:35
+msgid "Enter your OpenAI Key below"
+msgstr ""
+
+#: views.py:56 views.py:142 views.py:462
+msgid "This isn't your menu!"
+msgstr ""
+
+#: views.py:77
+msgid "Entry name"
+msgstr ""
+
+#: views.py:85
+msgid "Training context"
+msgstr ""
+
+#: views.py:104
+msgid "Search Query"
+msgstr ""
+
+#: views.py:192
+msgid "Failed to process embedding `{}`\n"
+"Content: ```\n"
+"{}\n"
+"```"
+msgstr ""
+
+#: views.py:194
+msgid "An embedding with the name `{}` already exists!"
+msgstr ""
+
+#: views.py:199
+msgid "Your embedding labeled `{}` has been processed!"
+msgstr ""
+
+#: views.py:211
+msgid "No embeddings to inspect!"
+msgstr ""
+
+#: views.py:232
+msgid "No embeddings to edit!"
+msgstr ""
+
+#: views.py:243
+msgid "Failed to edit that embedding, please try again later"
+msgstr ""
+
+#: views.py:253
+msgid "Your embedding has been modified!"
+msgstr ""
+
+#: views.py:294
+msgid "Add an embedding"
+msgstr ""
+
+#: views.py:300
+msgid "Your embedding is processing and will appear when ready!"
+msgstr ""
+
+#: views.py:316
+msgid "No embeddings to delete!"
+msgstr ""
+
+#: views.py:318
+msgid "Deleted `{}` embedding."
+msgstr ""
+
+#: views.py:344
+msgid "No embeddings to search!"
+msgstr ""
+
+#: views.py:345
+msgid "Search for an embedding"
+msgstr ""
+
+#: views.py:370
+msgid "Search result: **{}**"
+msgstr ""
+
+#: views.py:400
+msgid "Function Edit"
+msgstr ""
+
+#: views.py:406
+msgid "JSON Schema"
+msgstr ""
+
+#: views.py:413
+msgid "Code"
+msgstr ""
+
+#: views.py:570
+msgid "No code to inspect!"
+msgstr ""
+
+#: views.py:594
+msgid "Here are your custom functions"
+msgstr ""
+
+#: views.py:599
+msgid "Reply to this message with the json schema for your function\n"
+"- [Example Functions](https://github.com/vertyco/vrt-cogs/tree/main/assistant/example-funcs)"
+msgstr ""
+
+#: views.py:620 views.py:695
+msgid "SchemaError\n"
+"{}"
+msgstr ""
+
+#: views.py:622 views.py:697
+msgid "Empty schema!"
+msgstr ""
+
+#: views.py:625 views.py:700
+msgid "Invalid schema!\n"
+"**Missing**\n"
+"{}"
+msgstr ""
+
+#: views.py:629
+msgid "Reply to this message with the custom code"
+msgstr ""
+
+#: views.py:644 views.py:706
+msgid "Invalid function"
+msgstr ""
+
+#: views.py:648
+msgid "`{}` has been overwritten!"
+msgstr ""
+
+#: views.py:650
+msgid "`{}` has been created!"
+msgstr ""
+
+#: views.py:661
+msgid "No code to edit!"
+msgstr ""
+
+#: views.py:669 views.py:729
+msgid "Could not find function!"
+msgstr ""
+
+#: views.py:671
+msgid "This function is managed by the `{}` cog and cannot be edited"
+msgstr ""
+
+#: views.py:677
+msgid "The json schema for this function is too long, you'll need to re-upload it to modify"
+msgstr ""
+
+#: views.py:682
+msgid "The code for this function is too long, you'll need to re-upload it to modify"
+msgstr ""
+
+#: views.py:714
+msgid "`{}` function updated!"
+msgstr ""
+
+#: views.py:722
+msgid "No code to delete!"
+msgstr ""
+
+#: views.py:731
+msgid "This function is managed by the `{}` cog and cannot be deleted"
+msgstr ""
+
+#: views.py:738
+msgid "`{}` has been deleted!"
+msgstr ""
+
+#: views.py:745
+msgid "No code to toggle!"
+msgstr ""
+
+#: views.py:758
+msgid "Search for a function"
+msgstr ""
+
