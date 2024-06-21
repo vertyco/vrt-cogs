@@ -1,0 +1,307 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2024-01-04 12:10-0500\n"
+"PO-Revision-Date: 2024-06-21 14:22\n"
+"Last-Translator: \n"
+"Language-Team: Russian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=4; plural=((n%10==1 && n%100!=11) ? 0 : ((n%10 >= 2 && n%10 <=4 && (n%100 < 12 || n%100 > 14)) ? 1 : ((n%10 == 0 || (n%10 >= 5 && n%10 <=9)) || (n%100 >= 11 && n%100 <= 14)) ? 2 : 3));\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: ru\n"
+"X-Crowdin-File: /main/bankdecay/commands/locales/messages.pot\n"
+"X-Crowdin-File-ID: 108\n"
+"Language: ru_RU\n"
+
+#: commands\admin.py:23
+#, docstring
+msgid "\n"
+"        Setup economy credit decay for your server\n"
+"        "
+msgstr ""
+
+#: commands\admin.py:31
+#, docstring
+msgid "View Bank Decay Settings"
+msgstr ""
+
+#: commands\admin.py:48
+msgid "Not Set"
+msgstr ""
+
+#: commands\admin.py:53
+msgid "`Decay Enabled: `{}\n"
+"`Inactive Days: `{}\n"
+"`Percent Decay: `{}\n"
+"`Saved Users:   `{}\n"
+"`Active Users:  `{}\n"
+"`Expired Users: `{}\n"
+"`Stale Users:   `{}\n"
+"`Total Decayed: `{}\n"
+"`Log Channel:   `{}\n"
+msgstr ""
+
+#: commands\admin.py:75
+msgid "`Next Runtime:  `{}\n"
+msgstr ""
+
+#: commands\admin.py:78
+msgid "**Ignored Roles**\n"
+msgstr ""
+
+#: commands\admin.py:80
+msgid "BankDecay Settings"
+msgstr ""
+
+#: commands\admin.py:88
+#, docstring
+msgid "\n"
+"        Toggle the bank decay feature on or off.\n"
+"        "
+msgstr ""
+
+#: commands\admin.py:92 commands\admin.py:144 commands\admin.py:186
+#: commands\admin.py:213 commands\admin.py:249 commands\admin.py:318
+#: commands\admin.py:350
+msgid "This command is not available when using global bank."
+msgstr ""
+
+#: commands\admin.py:96
+msgid "Bank decay has been {}."
+msgstr ""
+
+#: commands\admin.py:96
+msgid "enabled"
+msgstr ""
+
+#: commands\admin.py:96
+msgid "disabled"
+msgstr ""
+
+#: commands\admin.py:101
+#, docstring
+msgid "\n"
+"        Set the number of inactive days before decay starts.\n"
+"        "
+msgstr ""
+
+#: commands\admin.py:105
+msgid "Inactive days cannot be negative."
+msgstr ""
+
+#: commands\admin.py:109
+msgid "Inactive days set to {}."
+msgstr ""
+
+#: commands\admin.py:114
+#, docstring
+msgid "\n"
+"        Set the percentage of decay that occurs after the inactive period.\n\n"
+"        **Example**\n"
+"        If decay is 5%, then after the set days of inactivity they will lose 5% of their balance every day.\n"
+"        "
+msgstr ""
+
+#: commands\admin.py:121
+msgid "Percent decay must be between 0 and 1."
+msgstr ""
+
+#: commands\admin.py:125
+msgid "Percent decay set to {}%."
+msgstr ""
+
+#: commands\admin.py:130
+#, docstring
+msgid "\n"
+"        Reset the total amount decayed to zero.\n"
+"        "
+msgstr ""
+
+#: commands\admin.py:135
+msgid "Total decayed amount has been reset to 0."
+msgstr ""
+
+#: commands\admin.py:140
+#, docstring
+msgid "\n"
+"        Run a decay cycle on this server right now\n"
+"        "
+msgstr ""
+
+#: commands\admin.py:148
+msgid "The decay system is currently disabled!"
+msgstr ""
+
+#: commands\admin.py:155
+msgid "There were no users affected by the decay cycle"
+msgstr ""
+
+#: commands\admin.py:157 commands\admin.py:194
+msgid "account"
+msgstr ""
+
+#: commands\admin.py:157 commands\admin.py:194
+msgid "accounts"
+msgstr ""
+
+#: commands\admin.py:158
+msgid "Are you sure you want to decay {} for a total of {}?"
+msgstr ""
+
+#: commands\admin.py:166
+msgid "Decay cycle cancelled"
+msgstr ""
+
+#: commands\admin.py:168 commands\admin.py:171
+msgid "Decaying user accounts, one moment..."
+msgstr ""
+
+#: commands\admin.py:176
+msgid "User accounts have been decayed!\n"
+"- Users Affected: {}\n"
+"- Total {} Decayed: {}"
+msgstr ""
+
+#: commands\admin.py:184
+#, docstring
+msgid "Get a list of users who are currently expired and how much they will lose if decayed"
+msgstr ""
+
+#: commands\admin.py:191
+msgid "There were no users that would be affected by the decay cycle"
+msgstr ""
+
+#: commands\admin.py:195
+msgid "This would decay {} for a total of {}"
+msgstr ""
+
+#: commands\admin.py:209
+#, docstring
+msgid "\n"
+"        Remove users from the config that are no longer in the server or have no balance\n"
+"        "
+msgstr ""
+
+#: commands\admin.py:217
+msgid "Not removing users from the config"
+msgstr ""
+
+#: commands\admin.py:232
+msgid "No users were removed from the config."
+msgstr ""
+
+#: commands\admin.py:235
+msgid "user"
+msgstr ""
+
+#: commands\admin.py:235
+msgid "users"
+msgstr ""
+
+#: commands\admin.py:236
+msgid "Removed {} from the config."
+msgstr ""
+
+#: commands\admin.py:242
+#, docstring
+msgid "\n"
+"        Initialize the server and add every member to the config.\n\n"
+"        **Arguments**\n"
+"        - as_expired: (t/f) if True, initialize users as already expired\n"
+"        "
+msgstr ""
+
+#: commands\admin.py:265
+msgid "member"
+msgstr ""
+
+#: commands\admin.py:265
+msgid "members"
+msgstr ""
+
+#: commands\admin.py:266
+msgid "Server initialized! {} added to the config."
+msgstr ""
+
+#: commands\admin.py:271
+#, docstring
+msgid "\n"
+"        Check when a user was last active (if at all)\n"
+"        "
+msgstr ""
+
+#: commands\admin.py:277
+msgid "This user is not in the config yet!"
+msgstr ""
+
+#: commands\admin.py:280
+msgid "User was last seen {}"
+msgstr ""
+
+#: commands\admin.py:285
+#, docstring
+msgid "\n"
+"        Add/Remove a role from the ignore list\n\n"
+"        Users with an ignored role will not have their balance decay\n"
+"        "
+msgstr ""
+
+#: commands\admin.py:293
+msgid "Role removed from the ignore list."
+msgstr ""
+
+#: commands\admin.py:296
+msgid "Role added to the ignore list."
+msgstr ""
+
+#: commands\admin.py:302
+#, docstring
+msgid "\n"
+"        Set the log channel, each time the decay cycle runs this will be updated\n"
+"        "
+msgstr ""
+
+#: commands\admin.py:307
+msgid "Log channel has been set!"
+msgstr ""
+
+#: commands\admin.py:312
+#, docstring
+msgid "\n"
+"        Add a percentage to all member balances.\n\n"
+"        Accidentally decayed too many credits? Bulk add to every user's balance in the server based on a percentage of their current balance.\n"
+"        "
+msgstr ""
+
+#: commands\admin.py:322
+msgid "Not adding credits to users"
+msgstr ""
+
+#: commands\admin.py:326 commands\admin.py:358
+msgid "Percent must be greater than 1!"
+msgstr ""
+
+#: commands\admin.py:340
+msgid "Credits added: {}"
+msgstr ""
+
+#: commands\admin.py:344
+#, docstring
+msgid "\n"
+"        Remove a percentage from all member balances.\n\n"
+"        Accidentally refunded too many credits with bulkaddpercent? Bulk remove from every user's balance in the server based on a percentage of their current balance.\n"
+"        "
+msgstr ""
+
+#: commands\admin.py:354
+msgid "Not removing credits from users"
+msgstr ""
+
+#: commands\admin.py:372
+msgid "Credits removed: {}"
+msgstr ""
+
