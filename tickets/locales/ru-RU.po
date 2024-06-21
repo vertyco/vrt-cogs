@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2024-02-08 18:31-0500\n"
-"PO-Revision-Date: 2024-06-21 14:22\n"
+"PO-Revision-Date: 2024-06-21 16:04\n"
 "Last-Translator: \n"
 "Language-Team: Russian\n"
 "MIME-Version: 1.0\n"
@@ -22,16 +22,17 @@ msgstr ""
 msgid "\n"
 "    Support ticket system with multi-panel functionality\n"
 "    "
-msgstr ""
+msgstr "\n"
+"Система обратной связи посредством тикетов, с мультифункциональной панелью    "
 
 #: tickets.py:45
 #, docstring
 msgid "No data to delete"
-msgstr ""
+msgstr "Нет данных для удаления"
 
 #: tickets.py:274
 msgid "If you do not respond to this ticket within the next 20 minutes it will be closed automatically."
-msgstr ""
+msgstr "Если Вы не ответите на этот тикет в течение 20 минут, он будет закрыт автоматически."
 
 #: tickets.py:291
 msgid "(Auto-Close) Opened ticket with no response for "
@@ -39,5 +40,5 @@ msgstr ""
 
 #: tickets.py:338
 msgid "User left guild(Auto-Close)"
-msgstr ""
+msgstr "[Автозакрытие] Участник покинул сервер."
 
