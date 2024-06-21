@@ -394,7 +394,7 @@ def run_migrations(settings: dict[str, t.Any]) -> DB:
                 profile["statcolor"] = colors.get("stat")
                 profile["barcolor"] = colors.get("bar")
 
-                if not profile["background"]:
+                if not profile.get("background"):
                     profile["background"] = "default"
 
         conf["role_awarded_dm"] = conf.get("lvlup_dm_role", "") or ""
