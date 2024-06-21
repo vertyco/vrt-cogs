@@ -1,0 +1,47 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2024-02-08 18:30-0500\n"
+"PO-Revision-Date: 2024-06-21 14:22\n"
+"Last-Translator: \n"
+"Language-Team: Russian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=4; plural=((n%10==1 && n%100!=11) ? 0 : ((n%10 >= 2 && n%10 <=4 && (n%100 < 12 || n%100 > 14)) ? 1 : ((n%10 == 0 || (n%10 >= 5 && n%10 <=9)) || (n%100 >= 11 && n%100 <= 14)) ? 2 : 3));\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: ru\n"
+"X-Crowdin-File: /main/bankdecay/locales/messages.pot\n"
+"X-Crowdin-File-ID: 110\n"
+"Language: ru_RU\n"
+
+#: main.py:29
+#, docstring
+msgid "\n"
+"    Economy decay!\n\n"
+"    Periodically reduces users' red currency based on inactivity, encouraging engagement.\n"
+"    Server admins can configure decay parameters, view settings, and manually trigger decay cycles.\n"
+"    User activity is tracked via messages and reactions.\n"
+"    "
+msgstr ""
+
+#: main.py:157
+msgid "Bank Decay Cycle"
+msgstr ""
+
+#: main.py:159
+msgid "- User Balances Decayed: {}\n"
+"- Total Amount Decayed: {}"
+msgstr ""
+
+#: main.py:164
+msgid "No user balances were decayed during this cycle."
+msgstr ""
+
+#: main.py:214
+#, docstring
+msgid "No data to delete"
+msgstr ""
+
