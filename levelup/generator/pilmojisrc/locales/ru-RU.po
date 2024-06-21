@@ -1,0 +1,315 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2024-06-18 16:29-0400\n"
+"PO-Revision-Date: 2024-06-21 14:22\n"
+"Last-Translator: \n"
+"Language-Team: Russian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=4; plural=((n%10==1 && n%100!=11) ? 0 : ((n%10 >= 2 && n%10 <=4 && (n%100 < 12 || n%100 > 14)) ? 1 : ((n%10 == 0 || (n%10 >= 5 && n%10 <=9)) || (n%100 >= 11 && n%100 <= 14)) ? 2 : 3));\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: ru\n"
+"X-Crowdin-File: /main/levelup/generator/pilmojisrc/locales/messages.pot\n"
+"X-Crowdin-File-ID: 168\n"
+"Language: ru_RU\n"
+
+#: levelup\generator\pilmojisrc\core.py:33
+#, docstring
+msgid "The main emoji rendering interface.\n\n"
+"    .. note::\n"
+"        This should be used in a context manager.\n\n"
+"    Parameters\n"
+"    ----------\n"
+"    image: :class:`PIL.Image.Image`\n"
+"        The Pillow image to render on.\n"
+"    source: Union[:class:`~.BaseSource`, Type[:class:`~.BaseSource`]]\n"
+"        The emoji image source to use.\n"
+"        This defaults to :class:`~.TwitterEmojiSource`.\n"
+"    cache: bool\n"
+"        Whether or not to cache emojis given from source.\n"
+"        Enabling this is recommended and by default.\n"
+"    draw: :class:`PIL.ImageDraw.ImageDraw`\n"
+"        The drawing instance to use. If left unfilled,\n"
+"        a new drawing instance will be created.\n"
+"    render_discord_emoji: bool\n"
+"        Whether or not to render Discord emoji. Defaults to `True`\n"
+"    emoji_scale_factor: float\n"
+"        The default rescaling factor for emojis. Defaults to `1`\n"
+"    emoji_position_offset: Tuple[int, int]\n"
+"        A 2-tuple representing the x and y offset for emojis when rendering,\n"
+"        respectively. Defaults to `(0, 0)`\n"
+"    "
+msgstr ""
+
+#: levelup\generator\pilmojisrc\core.py:99
+#, docstring
+msgid "Re-opens this renderer if it has been closed.\n"
+"        This should rarely be called.\n\n"
+"        Raises\n"
+"        ------\n"
+"        ValueError\n"
+"            The renderer is already open.\n"
+"        "
+msgstr ""
+
+#: levelup\generator\pilmojisrc\core.py:119
+#, docstring
+msgid "Safely closes this renderer.\n\n"
+"        .. note::\n"
+"            If you are using a context manager, this should not be called.\n\n"
+"        Raises\n"
+"        ------\n"
+"        ValueError\n"
+"            The renderer has already been closed.\n"
+"        "
+msgstr ""
+
+#: levelup\generator\pilmojisrc\core.py:192
+#, docstring
+msgid "Return the width and height of the text when rendered.\n"
+"        This method supports multiline text.\n\n"
+"        Parameters\n"
+"        ----------\n"
+"        text: str\n"
+"            The text to use.\n"
+"        font\n"
+"            The font of the text.\n"
+"        spacing: int\n"
+"            The spacing between lines, in pixels.\n"
+"            Defaults to `4`.\n"
+"        emoji_scalee_factor: float\n"
+"            The rescaling factor for emojis.\n"
+"            Defaults to the factor given in the class constructor, or `1`.\n"
+"        "
+msgstr ""
+
+#: levelup\generator\pilmojisrc\core.py:233
+#, docstring
+msgid "Draws the string at the given position, with emoji rendering support.\n"
+"        This method supports multiline text.\n\n"
+"        .. note::\n"
+"            Some parameters have not been implemented yet.\n\n"
+"        .. note::\n"
+"            The signature of this function is a superset of the signature of Pillow's `ImageDraw.text`.\n\n"
+"        .. note::\n"
+"            Not all parameters are listed here.\n\n"
+"        Parameters\n"
+"        ----------\n"
+"        xy: Tuple[int, int]\n"
+"            The position to render the text at.\n"
+"        text: str\n"
+"            The text to render.\n"
+"        fill\n"
+"            The fill color of the text.\n"
+"        font\n"
+"            The font to render the text with.\n"
+"        spacing: int\n"
+"            How many pixels there should be between lines. Defaults to `4`\n"
+"        emoji_scale_factor: float\n"
+"            The rescaling factor for emojis. This can be used for fine adjustments.\n"
+"            Defaults to the factor given in the class constructor, or `1`.\n"
+"        emoji_position_offset: Tuple[int, int]\n"
+"            The emoji position offset for emojis. This can be used for fine adjustments.\n"
+"            Defaults to the offset given in the class constructor, or `(0, 0)`.\n"
+"        "
+msgstr ""
+
+#: levelup\generator\pilmojisrc\helpers.py:33
+#, docstring
+msgid "|enum|\n\n"
+"    Represents the type of a :class:`~.Node`.\n\n"
+"    Attributes\n"
+"    ----------\n"
+"    text\n"
+"        This node is a raw text node.\n"
+"    emoji\n"
+"        This node is a unicode emoji.\n"
+"    discord_emoji\n"
+"        This node is a Discord emoji.\n"
+"    "
+msgstr ""
+
+#: levelup\generator\pilmojisrc\helpers.py:53
+#, docstring
+msgid "Represents a parsed node inside of a string.\n\n"
+"    Attributes\n"
+"    ----------\n"
+"    type: :class:`~.NodeType`\n"
+"        The type of this node.\n"
+"    content: str\n"
+"        The contents of this node.\n"
+"    "
+msgstr ""
+
+#: levelup\generator\pilmojisrc\helpers.py:92
+#, docstring
+msgid "Parses a string of text into :class:`~.Node`s.\n\n"
+"    This method will return a nested list, each element of the list\n"
+"    being a list of :class:`~.Node`s and representing a line in the string.\n\n"
+"    The string ``'Hello\n"
+"world'`` would return something similar to\n"
+"    ``[[Node('Hello')], [Node('world')]]``.\n\n"
+"    Parameters\n"
+"    ----------\n"
+"    text: str\n"
+"        The text to parse into nodes.\n\n"
+"    Returns\n"
+"    -------\n"
+"    List[List[:class:`~.Node`]]\n"
+"    "
+msgstr ""
+
+#: levelup\generator\pilmojisrc\helpers.py:113
+#, docstring
+msgid "Return the width and height of the text when rendered.\n"
+"    This method supports multiline text.\n\n"
+"    Parameters\n"
+"    ----------\n"
+"    text: str\n"
+"        The text to use.\n"
+"    font\n"
+"        The font of the text.\n"
+"    spacing: int\n"
+"        The spacing between lines, in pixels.\n"
+"        Defaults to `4`.\n"
+"    emoji_scale_factor: float\n"
+"        The rescaling factor for emojis.\n"
+"        Defaults to `1`.\n"
+"    "
+msgstr ""
+
+#: levelup\generator\pilmojisrc\source.py:41
+#, docstring
+msgid "The base class for an emoji image source."
+msgstr ""
+
+#: levelup\generator\pilmojisrc\source.py:45
+#, docstring
+msgid "Retrieves a :class:`io.BytesIO` stream for the image of the given emoji.\n\n"
+"        Parameters\n"
+"        ----------\n"
+"        emoji: str\n"
+"            The emoji to retrieve.\n\n"
+"        Returns\n"
+"        -------\n"
+"        :class:`io.BytesIO`\n"
+"            A bytes stream of the emoji.\n"
+"        None\n"
+"            An image for the emoji could not be found.\n"
+"        "
+msgstr ""
+
+#: levelup\generator\pilmojisrc\source.py:63
+#, docstring
+msgid "Retrieves a :class:`io.BytesIO` stream for the image of the given Discord emoji.\n\n"
+"        Parameters\n"
+"        ----------\n"
+"        id: int\n"
+"            The snowflake ID of the Discord emoji.\n\n"
+"        Returns\n"
+"        -------\n"
+"        :class:`io.BytesIO`\n"
+"            A bytes stream of the emoji.\n"
+"        None\n"
+"            An image for the emoji could not be found.\n"
+"        "
+msgstr ""
+
+#: levelup\generator\pilmojisrc\source.py:84
+#, docstring
+msgid "Represents an HTTP-based source."
+msgstr ""
+
+#: levelup\generator\pilmojisrc\source.py:95
+#, docstring
+msgid "Makes a GET request to the given URL.\n\n"
+"        If the `requests` library is installed, it will be used.\n"
+"        If it is not installed, :meth:`urllib.request.urlopen` will be used instead.\n\n"
+"        Parameters\n"
+"        ----------\n"
+"        url: str\n"
+"            The URL to request from.\n\n"
+"        Returns\n"
+"        -------\n"
+"        bytes\n\n"
+"        Raises\n"
+"        ------\n"
+"        Union[:class:`requests.HTTPError`, :class:`urllib.error.HTTPError`]\n"
+"            There was an error requesting from the URL.\n"
+"        "
+msgstr ""
+
+#: levelup\generator\pilmojisrc\source.py:133
+#, docstring
+msgid "A mixin that adds Discord emoji functionality to another source."
+msgstr ""
+
+#: levelup\generator\pilmojisrc\source.py:152
+#, docstring
+msgid "A base source that fetches emojis from https://emojicdn.elk.sh/."
+msgstr ""
+
+#: levelup\generator\pilmojisrc\source.py:176
+#, docstring
+msgid "A source that uses Twitter-style emojis. These are also the ones used in Discord."
+msgstr ""
+
+#: levelup\generator\pilmojisrc\source.py:182
+#, docstring
+msgid "A source that uses Apple emojis."
+msgstr ""
+
+#: levelup\generator\pilmojisrc\source.py:188
+#, docstring
+msgid "A source that uses Google emojis."
+msgstr ""
+
+#: levelup\generator\pilmojisrc\source.py:194
+#, docstring
+msgid "A source that uses Microsoft emojis."
+msgstr ""
+
+#: levelup\generator\pilmojisrc\source.py:200
+#, docstring
+msgid "A source that uses Samsung emojis."
+msgstr ""
+
+#: levelup\generator\pilmojisrc\source.py:206
+#, docstring
+msgid "A source that uses WhatsApp emojis."
+msgstr ""
+
+#: levelup\generator\pilmojisrc\source.py:212
+#, docstring
+msgid "A source that uses Facebook emojis."
+msgstr ""
+
+#: levelup\generator\pilmojisrc\source.py:218
+#, docstring
+msgid "A source that uses Facebook Messenger's emojis."
+msgstr ""
+
+#: levelup\generator\pilmojisrc\source.py:224
+#, docstring
+msgid "A source that uses JoyPixels' emojis."
+msgstr ""
+
+#: levelup\generator\pilmojisrc\source.py:230
+#, docstring
+msgid "A source that uses Openmoji emojis."
+msgstr ""
+
+#: levelup\generator\pilmojisrc\source.py:236
+#, docstring
+msgid "A source that uses Emojidex emojis."
+msgstr ""
+
+#: levelup\generator\pilmojisrc\source.py:242
+#, docstring
+msgid "A source that uses Mozilla's emojis."
+msgstr ""
+

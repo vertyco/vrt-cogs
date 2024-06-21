@@ -1,0 +1,27 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2024-06-18 16:29-0400\n"
+"PO-Revision-Date: 2024-06-18 20:59\n"
+"Last-Translator: \n"
+"Language-Team: Turkish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: tr\n"
+"X-Crowdin-File: /main/levelup/tasks/locales/messages.pot\n"
+"X-Crowdin-File-ID: 188\n"
+"Language: tr_TR\n"
+
+#: levelup\tasks\__init__.py:6
+#, docstring
+msgid "\n"
+"    Subclass all shared metaclassed parts of the cog\n\n"
+"    This includes all task loops for LevelUp\n"
+"    "
+msgstr ""
+
