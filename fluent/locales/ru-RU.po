@@ -1,0 +1,138 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2024-02-08 18:30-0500\n"
+"PO-Revision-Date: 2024-06-21 14:22\n"
+"Last-Translator: \n"
+"Language-Team: Russian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=4; plural=((n%10==1 && n%100!=11) ? 0 : ((n%10 >= 2 && n%10 <=4 && (n%100 < 12 || n%100 > 14)) ? 1 : ((n%10 == 0 || (n%10 >= 5 && n%10 <=9)) || (n%100 >= 11 && n%100 <= 14)) ? 2 : 3));\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: ru\n"
+"X-Crowdin-File: /main/fluent/locales/messages.pot\n"
+"X-Crowdin-File-ID: 63\n"
+"Language: ru_RU\n"
+
+#: fluent.py:22
+#, docstring
+msgid "\n"
+"    Seamless translation between two languages in one channel. Or manual translation to various languages.\n\n"
+"    Fluent uses google translate by default, with [Flowery](https://flowery.pw/) as a fallback.\n\n"
+"    Fluent also supports the [Deepl](https://www.deepl.com/pro#developer) tranlsation api.\n"
+"    1. Register your free Deepl account **[Here](https://www.deepl.com/pro#developer)**.\n"
+"    2. Obtain your API key **[Here](https://www.deepl.com/account/summary)**.\n"
+"    3. Set your API key with:\n"
+"    `[p]set api deepl key YOUR_KEY_HERE`\n\n"
+"    If a deepl key is set, it will use that before falling back to google translate and then flowery.\n"
+"    "
+msgstr ""
+
+#: fluent.py:41
+msgid "{}\n"
+"Cog Version: {}\n"
+"Author: {}"
+msgstr ""
+
+#: fluent.py:44
+#, docstring
+msgid "No data to delete"
+msgstr ""
+
+#: fluent.py:67
+#, docstring
+msgid "Translate a message"
+msgstr ""
+
+#: fluent.py:71
+msgid "The target language `{}` was not found."
+msgstr ""
+
+#: fluent.py:80
+msgid "Could not find any content to translate!"
+msgstr ""
+
+#: fluent.py:86
+msgid "An error occured while translating, Check logs for more info."
+msgstr ""
+
+#: fluent.py:93
+msgid "❌ Translation failed."
+msgstr ""
+
+#: fluent.py:118
+#, docstring
+msgid "Base command"
+msgstr ""
+
+#: fluent.py:136
+#, docstring
+msgid "\n"
+"        Add a channel and languages to translate between\n\n"
+"        Tip: Language 1 is the first to be converted. For example, if you expect most of the conversation to be\n"
+"        in english, then make english language 2 to use less api calls.\n"
+"        "
+msgstr ""
+
+#: fluent.py:146
+msgid "You can't use the same language for both parameters. {} to {} is still {}..."
+msgstr ""
+
+#: fluent.py:156
+msgid "Both of those languages are invalid."
+msgstr ""
+
+#: fluent.py:159
+msgid "Language 1 is invalid."
+msgstr ""
+
+#: fluent.py:162
+msgid "Language 2 is invalid."
+msgstr ""
+
+#: fluent.py:168
+msgid "❌ {} is already a fluent channel."
+msgstr ""
+
+#: fluent.py:172
+msgid "✅ Fluent channel has been set!"
+msgstr ""
+
+#: fluent.py:188
+#, docstring
+msgid "Remove a channel from Fluent"
+msgstr ""
+
+#: fluent.py:196
+msgid "✅ Fluent channel has been deleted!"
+msgstr ""
+
+#: fluent.py:198
+msgid "❌ {} isn't a fluent channel!"
+msgstr ""
+
+#: fluent.py:202
+#, docstring
+msgid "View all fluent channels"
+msgstr ""
+
+#: fluent.py:214
+msgid "There are no fluent channels at this time."
+msgstr ""
+
+#: fluent.py:215
+msgid "**Fluent Settings**\n"
+"{}"
+msgstr ""
+
+#: fluent.py:273
+msgid "Unable to finish translation, perhaps the API is down."
+msgstr ""
+
+#: fluent.py:315
+msgid "Invalid target language"
+msgstr ""
+
