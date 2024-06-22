@@ -277,15 +277,6 @@ class AdminBase(MixinMeta):
 
         await self.save()
 
-    @reject_suggestion.autocomplete("number")
-    @approve_suggestion.autocomplete("number")
-    async def suggest_autocomplete(self, interaction: discord.Interaction, current: str):
-        conf = self.db.get_conf(interaction.guild)
-        opened = [str(i) for i in conf.suggestions]
-        if current:
-            return [app_commands.Choice(name=i, value=i) for i in opened if i.startswith(current)][:25]
-        return [app_commands.Choice(name=i, value=i) for i in opened][:25]
-
     @commands.hybrid_command(
         name="viewvotes",
         description=_("View the current upvoters and downvoters of a suggestion."),
@@ -400,3 +391,13 @@ class AdminBase(MixinMeta):
             embed.set_footer(text=_("Suggested by {} [No longer in server]").format(f"{user.name} ({user.id})"))
 
         await ctx.send(embed=embed, file=file)
+
+    @reject_suggestion.autocomplete("number")
+    @approve_suggestion.autocomplete("number")
+    @view_votes.autocomplete("number")
+    async def suggest_autocomplete(self, interaction: discord.Interaction, current: str):
+        conf = self.db.get_conf(interaction.guild)
+        opened = [str(i) for i in conf.suggestions]
+        if current:
+            return [app_commands.Choice(name=i, value=i) for i in opened if i.startswith(current)][:25]
+        return [app_commands.Choice(name=i, value=i) for i in opened][:25]
