@@ -4,6 +4,7 @@ from io import BytesIO
 
 import discord
 from rapidfuzz import fuzz
+from redbot.core import commands
 
 
 class SearchModal(discord.ui.Modal):
@@ -22,23 +23,22 @@ class SearchModal(discord.ui.Modal):
 class DynamicMenu(discord.ui.View):
     def __init__(
         self,
-        author: t.Union[discord.Member, discord.User],
+        ctx: commands.Context,
         pages: t.List[t.Union[discord.Embed, str]],
-        channel: t.Union[discord.TextChannel, discord.Thread, discord.ForumChannel, discord.DMChannel],
         message: t.Union[discord.Message, discord.InteractionMessage, None] = None,
         page: int = 0,
         timeout: t.Union[int, float, None] = 300,
         image_bytes: bytes = None,
     ):
         super().__init__(timeout=timeout)
-        self.author = author
+        self.ctx = ctx
+        self.author = ctx.author
+        self.channel = ctx.channel
+        self.guild = ctx.guild
         self.pages = self.check_pages(pages)
-        self.channel = channel
         self.message = message
         self.page = page
         self.image_bytes = image_bytes
-
-        self.guild = author.guild or channel.guild
         self.page_count = len(pages)
 
     def check_pages(self, pages: t.List[t.Union[discord.Embed, str]]):
@@ -69,6 +69,7 @@ class DynamicMenu(discord.ui.View):
         if self.message:
             with suppress(discord.NotFound, discord.Forbidden, discord.HTTPException):
                 await self.message.edit(view=None)
+        await self.ctx.tick()
 
     async def refresh(self):
         self.clear_items()
@@ -107,9 +108,9 @@ class DynamicMenu(discord.ui.View):
             except discord.HTTPException:
                 kwargs.pop("attachments", None)
                 kwargs["file"] = file
-                self.message = await self.channel.send(**kwargs)
+                self.message = await self.ctx.send(**kwargs)
         else:
-            self.message = await self.channel.send(**kwargs)
+            self.message = await self.ctx.send(**kwargs)
         return self
 
     @discord.ui.button(
@@ -147,6 +148,7 @@ class DynamicMenu(discord.ui.View):
         if self.message:
             with suppress(discord.NotFound):
                 await self.message.delete()
+        await self.ctx.tick()
         self.stop()
 
     @discord.ui.button(
