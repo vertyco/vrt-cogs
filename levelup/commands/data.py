@@ -190,7 +190,7 @@ class DataAdmin(MixinMeta):
         except ValidationError as e:
             pages = [f"Errors\n{box(i, lang='json')}" for i in pagify(e.json(indent=2), page_length=1900)]
             await ctx.send(_("Failed to restore data!"))
-            await DynamicMenu(ctx.author, pages, ctx.channel).refresh()
+            await DynamicMenu(ctx, pages).refresh()
             return
         self.db.configs[ctx.guild.id] = conf
         self.save()
@@ -211,7 +211,7 @@ class DataAdmin(MixinMeta):
         except ValidationError as e:
             pages = [f"Errors\n{box(i, lang='json')}" for i in pagify(e.json(indent=2), page_length=1900)]
             await ctx.send(_("Failed to restore data!"))
-            await DynamicMenu(ctx.author, pages, ctx.channel).refresh()
+            await DynamicMenu(ctx, pages).refresh()
             return
         self.save()
         await ctx.send(_("Cog data restored!"))

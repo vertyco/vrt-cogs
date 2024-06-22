@@ -42,10 +42,7 @@ class Weekly(MixinMeta):
         )
         if isinstance(pages, str):
             return await ctx.send(pages)
-        view = DynamicMenu(ctx.author, pages, ctx.channel)
-        await view.refresh()
-        await view.wait()
-        await ctx.tick()
+        await DynamicMenu(ctx, pages).refresh()
 
     @commands.command(name="lastweekly")
     @commands.guild_only()

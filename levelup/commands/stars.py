@@ -92,10 +92,7 @@ class Stars(MixinMeta):
         )
         if isinstance(pages, str):
             return await ctx.send(pages)
-        view = DynamicMenu(ctx.author, pages, ctx.channel)
-        await view.refresh()
-        await view.wait()
-        await ctx.tick()
+        await DynamicMenu(ctx, pages).refresh()
 
     @commands.group(name="starset")
     @commands.guild_only()
