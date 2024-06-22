@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2024-02-08 18:30-0500\n"
-"PO-Revision-Date: 2024-02-08 23:50\n"
+"POT-Creation-Date: 2024-06-22 17:56-0400\n"
+"PO-Revision-Date: 2024-06-22 23:13\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -17,7 +17,28 @@ msgstr ""
 "X-Crowdin-File-ID: 63\n"
 "Language: es_ES\n"
 
-#: fluent.py:22
+#: fluent\fluent.py:22 fluent\fluent.py:115
+#, docstring
+msgid "Translate a message"
+msgstr "Traducir un mensaje"
+
+#: fluent\fluent.py:24
+msgid "❌ No content to translate."
+msgstr ""
+
+#: fluent\fluent.py:31 fluent\fluent.py:141
+msgid "❌ Translation failed."
+msgstr "❌ Traducción fallida."
+
+#: fluent\fluent.py:34
+msgid "❌ The detected language is the same as the target language."
+msgstr ""
+
+#: fluent\fluent.py:37
+msgid "❌ Translated content matches the source."
+msgstr ""
+
+#: fluent\fluent.py:48
 #, docstring
 msgid "\n"
 "    Seamless translation between two languages in one channel. Or manual translation to various languages.\n\n"
@@ -31,7 +52,7 @@ msgid "\n"
 "    "
 msgstr ""
 
-#: fluent.py:41
+#: fluent\fluent.py:67
 msgid "{}\n"
 "Cog Version: {}\n"
 "Author: {}"
@@ -39,38 +60,46 @@ msgstr "{}\n"
 "Versión Cog: {}\n"
 "Autor: {}"
 
-#: fluent.py:44
+#: fluent\fluent.py:70
 #, docstring
 msgid "No data to delete"
 msgstr "No hay datos que borrar"
 
-#: fluent.py:67
+#: fluent\fluent.py:91
 #, docstring
-msgid "Translate a message"
-msgstr "Traducir un mensaje"
+msgid "Get the translation of a message\n\n"
+"        Args:\n"
+"            msg (str): the message to be translated\n"
+"            dest (str): the target language\n"
+"            force (bool, optional): If False, force res back to None if result is same as source text. Defaults to False.\n\n"
+"        Returns:\n"
+"            t.Optional[Result]: Result object containing source/target lang and translated text\n"
+"        "
+msgstr ""
 
-#: fluent.py:71
+#: fluent\fluent.py:107
+#, docstring
+msgid "Check the current server's locale"
+msgstr ""
+
+#: fluent\fluent.py:119
 msgid "The target language `{}` was not found."
 msgstr "El idioma de destino `{}` no fue encontrado."
 
-#: fluent.py:80
+#: fluent\fluent.py:128
 msgid "Could not find any content to translate!"
 msgstr "No pude encontrar ningún contenido para traducir!"
 
-#: fluent.py:86
+#: fluent\fluent.py:134
 msgid "An error occured while translating, Check logs for more info."
 msgstr "Se ha producido un error al traducir, compruebe los registros para obtener más información."
 
-#: fluent.py:93
-msgid "❌ Translation failed."
-msgstr "❌ Traducción fallida."
-
-#: fluent.py:118
+#: fluent\fluent.py:166
 #, docstring
 msgid "Base command"
 msgstr "Comando base"
 
-#: fluent.py:136
+#: fluent\fluent.py:184
 #, docstring
 msgid "\n"
 "        Add a channel and languages to translate between\n\n"
@@ -80,63 +109,63 @@ msgid "\n"
 msgstr "         Añadir un canal e idiomas entre los que traducir\n"
 "         Consejo: El idioma 1 es el primero en ser convertido. Por ejemplo, si esperas que la mayor parte de la conversación sea         en inglés, entonces haz del inglés el idioma 2 para usar menos llamadas a la API.                 "
 
-#: fluent.py:146
+#: fluent\fluent.py:194
 msgid "You can't use the same language for both parameters. {} to {} is still {}..."
 msgstr ""
 
-#: fluent.py:156
+#: fluent\fluent.py:204
 msgid "Both of those languages are invalid."
 msgstr "Ambos idiomas no son válidos."
 
-#: fluent.py:159
+#: fluent\fluent.py:207
 msgid "Language 1 is invalid."
 msgstr "El idioma 1 no es válido."
 
-#: fluent.py:162
+#: fluent\fluent.py:210
 msgid "Language 2 is invalid."
 msgstr "La lengua 2 no es válida."
 
-#: fluent.py:168
+#: fluent\fluent.py:216
 msgid "❌ {} is already a fluent channel."
 msgstr "❌ {} ya es un canal fluido."
 
-#: fluent.py:172
+#: fluent\fluent.py:220
 msgid "✅ Fluent channel has been set!"
 msgstr "✅ ¡Canal fluido ha sido configurado!"
 
-#: fluent.py:188
+#: fluent\fluent.py:236
 #, docstring
 msgid "Remove a channel from Fluent"
 msgstr "Eliminar un canal de Fluent"
 
-#: fluent.py:196
+#: fluent\fluent.py:244
 msgid "✅ Fluent channel has been deleted!"
 msgstr "✅ ¡El canal Fluent ha sido eliminado!"
 
-#: fluent.py:198
+#: fluent\fluent.py:246
 msgid "❌ {} isn't a fluent channel!"
 msgstr "❌ {} ¡no es un canal fluido!"
 
-#: fluent.py:202
+#: fluent\fluent.py:250
 #, docstring
 msgid "View all fluent channels"
 msgstr "Ver todos los canales fluidos"
 
-#: fluent.py:214
+#: fluent\fluent.py:262
 msgid "There are no fluent channels at this time."
 msgstr "En este momento no hay canales fluidos."
 
-#: fluent.py:215
+#: fluent\fluent.py:263
 msgid "**Fluent Settings**\n"
 "{}"
 msgstr "**Configuración fluida**\n"
 "{}"
 
-#: fluent.py:273
+#: fluent\fluent.py:321
 msgid "Unable to finish translation, perhaps the API is down."
 msgstr "No se ha podido terminar la traducción, quizás la API no funciona."
 
-#: fluent.py:315
+#: fluent\fluent.py:363
 msgid "Invalid target language"
 msgstr "Lengua de destino no válida"
 
