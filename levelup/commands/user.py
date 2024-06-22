@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import typing as t
+from contextlib import suppress
 from io import BytesIO
 from pathlib import Path
 
@@ -26,13 +27,21 @@ log = logging.getLogger("red.vrt.levelup.commands.user")
 @app_commands.context_menu(name="View Profile")
 async def view_profile_context(interaction: discord.Interaction, member: discord.Member):
     """View a user's profile"""
-    await interaction.response.defer(ephemeral=True)
+    with suppress(discord.HTTPException):
+        await interaction.response.defer(ephemeral=True)
     bot: Red = interaction.client
     result = await bot.get_cog("LevelUp").get_user_profile_cached(member)
-    if isinstance(result, discord.Embed):
-        await interaction.followup.send(embed=result, ephemeral=True)
-    else:
-        await interaction.followup.send(file=result, ephemeral=True)
+    try:
+        if isinstance(result, discord.Embed):
+            await interaction.followup.send(embed=result, ephemeral=True)
+        else:
+            await interaction.followup.send(file=result, ephemeral=True)
+    except discord.HTTPException:
+        if isinstance(result, discord.Embed):
+            await interaction.channel.send(embed=result)
+        else:
+            result.fp.seek(0)
+            await interaction.channel.send(file=result)
 
 
 @cog_i18n(_)
