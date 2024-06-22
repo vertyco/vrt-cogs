@@ -45,7 +45,7 @@ class TranslateManager:
             text (str): the text to be translated
             target_lang (str): the target language
             formality (t.Optional[str], optional): whether the translation should be formal. Defaults to None.
-            force (bool, optional): Force res back to None if result is same as source text. Defaults to False.
+            force (bool, optional): If False, force res back to None if result is same as source text. Defaults to False.
 
         Returns:
             t.Optional[Result]: Result object containing source/target lang and translated text
