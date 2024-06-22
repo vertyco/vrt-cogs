@@ -292,15 +292,15 @@ class AdminBase(MixinMeta):
             txt = _("No approvers have been set! Use the {} command to add one.").format(
                 f"`{ctx.clean_prefix}ideaset approverole @role`"
             )
-            return await ctx.send(txt)
+            return await ctx.send(txt, ephemeral=True)
 
         if not any(role in [role.id for role in ctx.author.roles] for role in conf.approvers):
             txt = _("You do not have the required roles to inspect suggestions.")
-            return await ctx.send(txt)
+            return await ctx.send(txt, ephemeral=True)
 
         suggestion = conf.suggestions.get(number)
         if not suggestion:
-            await ctx.send(_("That suggestion does not exist!"))
+            await ctx.send(_("That suggestion does not exist!"), ephemeral=True)
             return
 
         pending = ctx.guild.get_channel(conf.pending)
@@ -390,7 +390,7 @@ class AdminBase(MixinMeta):
             user = await self.bot.fetch_user(suggestion.author_id)
             embed.set_footer(text=_("Suggested by {} [No longer in server]").format(f"{user.name} ({user.id})"))
 
-        await ctx.send(embed=embed, file=file)
+        await ctx.send(embed=embed, file=file, ephemeral=True)
 
     @reject_suggestion.autocomplete("number")
     @approve_suggestion.autocomplete("number")
