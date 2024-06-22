@@ -2,6 +2,7 @@ import asyncio
 import logging
 from datetime import datetime
 
+import discord
 from discord.ext import tasks
 from redbot.core.i18n import Translator
 
@@ -10,9 +11,13 @@ from ..abc import MixinMeta
 log = logging.getLogger("red.vrt.levelup.tasks.weekly")
 _ = Translator("LevelUp", __file__)
 
+loop_kwargs = {"minutes": 5}
+if discord.version_info >= (2, 4, 0):
+    loop_kwargs["name"] = "LevelUp.weekly_reset_check"
+
 
 class WeeklyTask(MixinMeta):
-    @tasks.loop(minutes=5)
+    @tasks.loop(**loop_kwargs)
     async def weekly_reset_check(self):
         now = datetime.now().timestamp()
         guild_ids = list(self.db.configs.keys())

@@ -7,7 +7,7 @@ import typing as t
 from contextlib import suppress
 from datetime import datetime, timedelta
 from pathlib import Path
-from time import perf_counter
+from uuid import uuid4
 
 import discord
 import orjson
@@ -90,7 +90,7 @@ class Base(BaseModel):
         dump = self.dumpjson(exclude_defaults=True, pretty=pretty)
         # We want to write the file as safely as possible
         # https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/core/_drivers/json.py#L224
-        tmp_path = path.parent / f"{path.stem}-{round(perf_counter())}.tmp"
+        tmp_path = path.parent / f"{path.stem}-{uuid4().fields[0]}.tmp"
         with tmp_path.open(encoding="utf-8", mode="w") as fs:
             fs.write(dump)
             fs.flush()  # This does get closed on context exit, ...
@@ -121,7 +121,10 @@ class Base(BaseModel):
                 path.replace(backup1_path)
 
         # Replace the original file with the new content
-        tmp_path.replace(path)
+        try:
+            tmp_path.replace(path)
+        except FileNotFoundError as e:
+            log.error(f"Failed to rename {tmp_path} to {path}", exc_info=e)
 
         # Ensure directory fsync for better durability
         if hasattr(os, "O_DIRECTORY"):
