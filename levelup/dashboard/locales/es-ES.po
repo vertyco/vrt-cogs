@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2024-06-18 16:29-0400\n"
-"PO-Revision-Date: 2024-06-18 20:58\n"
+"PO-Revision-Date: 2024-06-23 01:45\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -19,17 +19,17 @@ msgstr ""
 
 #: levelup\dashboard\integration.py:42
 msgid "Weekly stats disabled"
-msgstr ""
+msgstr "Estadísticas semanales desactivadas"
 
 #: levelup\dashboard\integration.py:43
 msgid "Weekly stats are disabled for this guild."
-msgstr ""
+msgstr "Las estadísticas semanales están desactivadas para este gremio."
 
 #: levelup\dashboard\integration.py:48
 msgid "No Weekly stats available"
-msgstr ""
+msgstr "No hay estadísticas semanales disponibles"
 
 #: levelup\dashboard\integration.py:49
 msgid "There is no data for the weekly leaderboard yet, please chat a bit first."
-msgstr ""
+msgstr "Todavía no hay datos para la clasificación semanal, por favor, chatea un poco antes."
 
