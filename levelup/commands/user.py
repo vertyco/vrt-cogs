@@ -263,7 +263,7 @@ class User(MixinMeta):
         if self.db.cache_seconds:
             embed.add_field(
                 name=_("Cache Time"),
-                value=_("Profile images are cached for {} seconds, this is configured by the bot owner.").format(
+                value=_("Profiles are cached for {} seconds, this is configured by the bot owner.").format(
                     self.db.cache_seconds
                 ),
             )
@@ -656,7 +656,7 @@ class User(MixinMeta):
         if profile.style in const.STATIC_FONT_STYLES:
             return await ctx.send(_("You cannot change your name color with the current profile style!"))
 
-        cached_txt = _("\n\nProfile images are cached for {} seconds so you may not see the change immediately").format(
+        cached_txt = _("\n\nProfiles are cached for {} seconds so you may not see the change immediately").format(
             self.db.cache_seconds
         )
 
