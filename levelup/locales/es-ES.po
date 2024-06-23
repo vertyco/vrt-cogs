@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2024-06-18 16:29-0400\n"
-"PO-Revision-Date: 2024-06-18 20:58\n"
+"PO-Revision-Date: 2024-06-23 01:45\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -20,12 +20,12 @@ msgstr ""
 #: levelup\abc.py:17
 #, docstring
 msgid "Type detection"
-msgstr ""
+msgstr "Detección de tipo"
 
 #: levelup\abc.py:21
 #, docstring
 msgid "Type hinting"
-msgstr ""
+msgstr "Inferencia de tipos"
 
 #: levelup\main.py:68
 #, docstring
@@ -33,11 +33,16 @@ msgid "\n"
 "    Your friendly neighborhood leveling system\n\n"
 "    Earn experience by chatting in text and voice channels, compare levels with your friends, customize your profile and view various leaderboards!\n"
 "    "
-msgstr ""
+msgstr "\n"
+"    El sistema de nivelación amigable de tu vecindario\n\n"
+"    Gana experiencia chateando en canales de texto y voz, compara niveles con tus amigos, personaliza tu perfil y visualiza varias tablas de clasificación!\n"
+"    "
 
 #: levelup\main.py:196
 msgid "LevelUp has successfully migrated to v4!\n"
 "Leveling is now disabled by default and must be toggled on in each server via `[p]lset toggle`.\n"
 "[View the changelog](https://github.com/vertyco/vrt-cogs/blob/main/levelup/CHANGELOG.md) for more information."
-msgstr ""
+msgstr "¡LevelUp se ha migrado exitosamente a la v4!\n"
+"El nivelado está ahora desactivado por defecto y debe activarse en cada servidor mediante `[p]lset toggle`.\n"
+"[Ver el registro de cambios](https://github.com/vertyco/vrt-cogs/blob/main/levelup/CHANGELOG.md) para más información."
 
