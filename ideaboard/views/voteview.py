@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from contextlib import suppress
 from datetime import datetime
@@ -190,7 +189,7 @@ class VoteView(discord.ui.View):
 
         if conf.show_vote_counts:
             self.update_labels()
-            asyncio.create_task(self.refresh())
+            await self.refresh()
 
         await self.cog.save()
 
@@ -227,6 +226,6 @@ class VoteView(discord.ui.View):
 
         if conf.show_vote_counts:
             self.update_labels()
-            asyncio.create_task(self.refresh())
+            await self.refresh()
 
         await self.cog.save()
