@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import typing as t
 from datetime import datetime
 
 import discord
@@ -21,6 +22,7 @@ class WeeklyTask(MixinMeta):
     async def weekly_reset_check(self):
         now = datetime.now().timestamp()
         guild_ids = list(self.db.configs.keys())
+        jobs: t.List[asyncio.Task] = []
         for guild_id in guild_ids:
             guild = self.bot.get_guild(guild_id)
             if not guild:
@@ -32,13 +34,18 @@ class WeeklyTask(MixinMeta):
                 continue
             if not conf.weeklysettings.autoreset:
                 continue
-            if conf.weeklysettings.next_reset > now:
+            last_reset = conf.weeklysettings.last_reset
+            next_reset = conf.weeklysettings.next_reset
+            # Skip if stats were wiped less than an hour ago
+            if now - last_reset < 3600:
                 continue
-            # Skip if stats were wiped within the last 12 hours
-            if now - conf.weeklysettings.last_reset < 43200:
+            # If we're within 6 minutes of the reset time, reset now
+            if next_reset - now > 360:
                 continue
-            log.info(f"Resetting weekly stats for {guild}")
-            await self.reset_weekly(guild)
+            jobs.append(self.reset_weekly(guild))
+
+        if jobs:
+            await asyncio.gather(*jobs)
 
     @weekly_reset_check.before_loop
     async def before_weekly_reset_check(self):
