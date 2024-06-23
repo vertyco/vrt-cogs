@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2024-02-08 18:30-0500\n"
-"PO-Revision-Date: 2024-02-08 23:51\n"
+"POT-Creation-Date: 2024-06-22 17:56-0400\n"
+"PO-Revision-Date: 2024-06-22 23:13\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -17,7 +17,28 @@ msgstr ""
 "X-Crowdin-File-ID: 63\n"
 "Language: hr_HR\n"
 
-#: fluent.py:22
+#: fluent\fluent.py:22 fluent\fluent.py:115
+#, docstring
+msgid "Translate a message"
+msgstr ""
+
+#: fluent\fluent.py:24
+msgid "❌ No content to translate."
+msgstr ""
+
+#: fluent\fluent.py:31 fluent\fluent.py:141
+msgid "❌ Translation failed."
+msgstr ""
+
+#: fluent\fluent.py:34
+msgid "❌ The detected language is the same as the target language."
+msgstr ""
+
+#: fluent\fluent.py:37
+msgid "❌ Translated content matches the source."
+msgstr ""
+
+#: fluent\fluent.py:48
 #, docstring
 msgid "\n"
 "    Seamless translation between two languages in one channel. Or manual translation to various languages.\n\n"
@@ -31,44 +52,52 @@ msgid "\n"
 "    "
 msgstr ""
 
-#: fluent.py:41
+#: fluent\fluent.py:67
 msgid "{}\n"
 "Cog Version: {}\n"
 "Author: {}"
 msgstr ""
 
-#: fluent.py:44
+#: fluent\fluent.py:70
 #, docstring
 msgid "No data to delete"
 msgstr ""
 
-#: fluent.py:67
+#: fluent\fluent.py:91
 #, docstring
-msgid "Translate a message"
+msgid "Get the translation of a message\n\n"
+"        Args:\n"
+"            msg (str): the message to be translated\n"
+"            dest (str): the target language\n"
+"            force (bool, optional): If False, force res back to None if result is same as source text. Defaults to False.\n\n"
+"        Returns:\n"
+"            t.Optional[Result]: Result object containing source/target lang and translated text\n"
+"        "
 msgstr ""
 
-#: fluent.py:71
+#: fluent\fluent.py:107
+#, docstring
+msgid "Check the current server's locale"
+msgstr ""
+
+#: fluent\fluent.py:119
 msgid "The target language `{}` was not found."
 msgstr ""
 
-#: fluent.py:80
+#: fluent\fluent.py:128
 msgid "Could not find any content to translate!"
 msgstr ""
 
-#: fluent.py:86
+#: fluent\fluent.py:134
 msgid "An error occured while translating, Check logs for more info."
 msgstr ""
 
-#: fluent.py:93
-msgid "❌ Translation failed."
-msgstr ""
-
-#: fluent.py:118
+#: fluent\fluent.py:166
 #, docstring
 msgid "Base command"
 msgstr ""
 
-#: fluent.py:136
+#: fluent\fluent.py:184
 #, docstring
 msgid "\n"
 "        Add a channel and languages to translate between\n\n"
@@ -77,62 +106,62 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: fluent.py:146
+#: fluent\fluent.py:194
 msgid "You can't use the same language for both parameters. {} to {} is still {}..."
 msgstr ""
 
-#: fluent.py:156
+#: fluent\fluent.py:204
 msgid "Both of those languages are invalid."
 msgstr ""
 
-#: fluent.py:159
+#: fluent\fluent.py:207
 msgid "Language 1 is invalid."
 msgstr ""
 
-#: fluent.py:162
+#: fluent\fluent.py:210
 msgid "Language 2 is invalid."
 msgstr ""
 
-#: fluent.py:168
+#: fluent\fluent.py:216
 msgid "❌ {} is already a fluent channel."
 msgstr ""
 
-#: fluent.py:172
+#: fluent\fluent.py:220
 msgid "✅ Fluent channel has been set!"
 msgstr ""
 
-#: fluent.py:188
+#: fluent\fluent.py:236
 #, docstring
 msgid "Remove a channel from Fluent"
 msgstr ""
 
-#: fluent.py:196
+#: fluent\fluent.py:244
 msgid "✅ Fluent channel has been deleted!"
 msgstr ""
 
-#: fluent.py:198
+#: fluent\fluent.py:246
 msgid "❌ {} isn't a fluent channel!"
 msgstr ""
 
-#: fluent.py:202
+#: fluent\fluent.py:250
 #, docstring
 msgid "View all fluent channels"
 msgstr ""
 
-#: fluent.py:214
+#: fluent\fluent.py:262
 msgid "There are no fluent channels at this time."
 msgstr ""
 
-#: fluent.py:215
+#: fluent\fluent.py:263
 msgid "**Fluent Settings**\n"
 "{}"
 msgstr ""
 
-#: fluent.py:273
+#: fluent\fluent.py:321
 msgid "Unable to finish translation, perhaps the API is down."
 msgstr ""
 
-#: fluent.py:315
+#: fluent\fluent.py:363
 msgid "Invalid target language"
 msgstr ""
 
