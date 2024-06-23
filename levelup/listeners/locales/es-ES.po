@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2024-06-18 16:29-0400\n"
-"PO-Revision-Date: 2024-06-18 20:58\n"
+"PO-Revision-Date: 2024-06-23 01:45\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -20,5 +20,5 @@ msgstr ""
 #: levelup\listeners\__init__.py:13
 #, docstring
 msgid "Subclass all listener classes"
-msgstr ""
+msgstr "Subclase todas las clases de escuchadores"
 
