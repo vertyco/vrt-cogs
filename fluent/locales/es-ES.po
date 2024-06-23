@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2024-06-22 17:56-0400\n"
-"PO-Revision-Date: 2024-06-22 23:13\n"
+"PO-Revision-Date: 2024-06-23 01:44\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -24,7 +24,7 @@ msgstr "Traducir un mensaje"
 
 #: fluent\fluent.py:24
 msgid "❌ No content to translate."
-msgstr ""
+msgstr "❌ No hay contenido para traducir."
 
 #: fluent\fluent.py:31 fluent\fluent.py:141
 msgid "❌ Translation failed."
@@ -32,11 +32,11 @@ msgstr "❌ Traducción fallida."
 
 #: fluent\fluent.py:34
 msgid "❌ The detected language is the same as the target language."
-msgstr ""
+msgstr "❌ El idioma detectado es el mismo que el idioma de destino."
 
 #: fluent\fluent.py:37
 msgid "❌ Translated content matches the source."
-msgstr ""
+msgstr "❌ El contenido traducido coincide con la fuente."
 
 #: fluent\fluent.py:48
 #, docstring
@@ -50,7 +50,16 @@ msgid "\n"
 "    `[p]set api deepl key YOUR_KEY_HERE`\n\n"
 "    If a deepl key is set, it will use that before falling back to google translate and then flowery.\n"
 "    "
-msgstr ""
+msgstr "\n"
+"    Traducción sin fisuras entre dos idiomas en un canal. O traducción manual a varios idiomas.\n\n"
+"    Fluent utiliza Google Translate por defecto, con [Flowery](https://flowery.pw/) como alternativa.\n\n"
+"    Fluent también soporta la API de traducción de [Deepl](https://www.deepl.com/pro#developer).\n"
+"    1. Registra tu cuenta gratuita de Deepl **[Aquí](https://www.deepl.com/pro#developer)**.\n"
+"    2. Obtén tu clave de API **[Aquí](https://www.deepl.com/account/summary)**.\n"
+"    3. Configura tu clave de API con:\n"
+"    `[p]set api deepl key YOUR_KEY_HERE`\n\n"
+"    Si se establece una clave de deepl, se utilizará esta antes de recurrir a Google Translate y luego a Flowery.\n"
+"    "
 
 #: fluent\fluent.py:67
 msgid "{}\n"
@@ -75,12 +84,19 @@ msgid "Get the translation of a message\n\n"
 "        Returns:\n"
 "            t.Optional[Result]: Result object containing source/target lang and translated text\n"
 "        "
-msgstr ""
+msgstr "Obtener la traducción de un mensaje\n\n"
+"        Argumentos:\n"
+"            msg (str): el mensaje a traducir\n"
+"            dest (str): el idioma de destino\n"
+"            force (bool, opcional): Si False, forzar el resultado a None si el resultado es el mismo que el texto de origen. Por defecto es False.\n\n"
+"        Retorna:\n"
+"            t.Optional[Resultado]: Objeto de resultado que contiene el idioma de origen/destino y el texto traducido\n"
+"        "
 
 #: fluent\fluent.py:107
 #, docstring
 msgid "Check the current server's locale"
-msgstr ""
+msgstr "Verificar la configuración regional del servidor actual"
 
 #: fluent\fluent.py:119
 msgid "The target language `{}` was not found."
@@ -111,7 +127,7 @@ msgstr "         Añadir un canal e idiomas entre los que traducir\n"
 
 #: fluent\fluent.py:194
 msgid "You can't use the same language for both parameters. {} to {} is still {}..."
-msgstr ""
+msgstr "No puedes usar el mismo idioma para ambos parámetros. {} a {} sigue siendo {}..."
 
 #: fluent\fluent.py:204
 msgid "Both of those languages are invalid."
