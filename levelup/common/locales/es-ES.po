@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2024-06-18 16:29-0400\n"
-"PO-Revision-Date: 2024-06-18 20:58\n"
+"PO-Revision-Date: 2024-06-23 01:44\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -27,7 +27,14 @@ msgid "Get the position of a user in the leaderboard\n\n"
 "    Returns:\n"
 "        int: The user's position\n"
 "    "
-msgstr ""
+msgstr "Obtener la posición de un usuario en la tabla de líderes\n\n"
+"    Args:\n"
+"        lb (t.Dict[int, t.Union[Profile, ProfileWeekly]]): La tabla de líderes\n"
+"        target_user (int): La ID del usuario\n"
+"        key (str): La clave para ordenar\n\n"
+"    Returns:\n"
+"        int: La posición del usuario\n"
+"    "
 
 #: levelup\common\formatter.py:58
 #, docstring
@@ -37,15 +44,20 @@ msgid "Format and return the role leaderboard\n\n"
 "    Returns:\n"
 "        t.List[discord.Embed]: A list of embeds\n"
 "    "
-msgstr ""
+msgstr "Formatear y devolver la tabla de líderes de roles\n\n"
+"    Args:\n"
+"        rolegroups (t.Dict[int, float]): La tabla de líderes de roles\n\n"
+"    Returns:\n"
+"        t.List[discord.Embed]: Una lista de embeds\n"
+"    "
 
 #: levelup\common\formatter.py:81
 msgid "Role Leaderboard"
-msgstr ""
+msgstr "Clasificación de Roles"
 
 #: levelup\common\formatter.py:84 levelup\common\formatter.py:290
 msgid "Page {}"
-msgstr ""
+msgstr "Página {}"
 
 #: levelup\common\formatter.py:106
 #, docstring
@@ -64,212 +76,226 @@ msgid "Format and return the leaderboard\n\n"
 "    Returns:\n"
 "        t.Union[t.List[discord.Embed], t.Dict[str, t.Any], str]: If called from dashboard returns a dict, else returns a list of embeds or a string\n"
 "    "
-msgstr ""
+msgstr "Formatear y devolver la tabla de líderes\n\n"
+"    Args:\n"
+"        bot (Red)\n"
+"        guild (discord.Guild)\n"
+"        db (DB)\n"
+"        stat (str): La estadística a mostrar (xp, mensajes, voz, estrellas)\n"
+"        lbtype (str): El tipo de tabla de líderes (semanal, lb)\n"
+"        is_global (bool): Si se deben mostrar estadísticas globales\n"
+"        member (discord.Member, optional): La persona que ejecuta el comando. Por defecto es None.\n"
+"        use_displayname (bool, optional): Si es falso, usa el nombre de usuario. Por defecto es True.\n"
+"        dashboard (bool, optional): Verdadero cuando es llamado por la integración del dashboard. Por defecto es falso.\n"
+"        color (discord.Color, optional): Por defecto es discord.Color.random().\n\n"
+"    Returns:\n"
+"        t.Union[t.List[discord.Embed], t.Dict[str, t.Any], str]: Si se llama desde el dashboard devuelve un diccionario, de lo contrario devuelve una lista de embeds o una cadena\n"
+"    "
 
 #: levelup\common\formatter.py:129
 msgid "Weekly "
-msgstr ""
+msgstr "Semanal "
 
 #: levelup\common\formatter.py:133
 msgid "Global LevelUp "
-msgstr ""
+msgstr "Global LevelUp "
 
 #: levelup\common\formatter.py:153
 msgid "LevelUp "
-msgstr ""
+msgstr "LevelUp "
 
 #: levelup\common\formatter.py:157
 msgid "Voice Leaderboard"
-msgstr ""
+msgstr "Clasificación por voz"
 
 #: levelup\common\formatter.py:160
 msgid "Voicetime"
-msgstr ""
+msgstr "Tiempo de voz"
 
 #: levelup\common\formatter.py:162
 msgid "Message Leaderboard"
-msgstr ""
+msgstr "Clasificación de Mensajes"
 
 #: levelup\common\formatter.py:165
 msgid "Messages"
-msgstr ""
+msgstr "Mensajes"
 
 #: levelup\common\formatter.py:167
 msgid "Star Leaderboard"
-msgstr ""
+msgstr "Clasificación por estrellas"
 
 #: levelup\common\formatter.py:170
 msgid "Stars"
-msgstr ""
+msgstr "Estrellas"
 
 #: levelup\common\formatter.py:172
 msgid "Exp Leaderboard"
-msgstr ""
+msgstr "Clasificación Exp"
 
 #: levelup\common\formatter.py:175
 msgid "Experience"
-msgstr ""
+msgstr "Experiencia"
 
 #: levelup\common\formatter.py:179
 msgid "There is no data for the {} leaderboard yet"
-msgstr ""
+msgstr "No hay datos para la tabla de líderes de {} aún"
 
 #: levelup\common\formatter.py:180
 msgid "weekly {}"
-msgstr ""
+msgstr "semanal {}"
 
 #: levelup\common\formatter.py:191
 msgid " | You: {}"
-msgstr ""
+msgstr " | Tú: {}"
 
 #: levelup\common\formatter.py:198
 msgid "➣ Total {}: {}\n"
-msgstr ""
+msgstr "➣ Total {}: {}\n"
 
 #: levelup\common\formatter.py:200
 msgid "➣ **Total {}:** {}\n"
-msgstr ""
+msgstr "➣ **Total {}:** {}\n"
 
 #: levelup\common\formatter.py:204
 msgid "➣ Last Reset: {}\n"
-msgstr ""
+msgstr "➣ Último reinicio: {}\n"
 
 #: levelup\common\formatter.py:208
 msgid "➣ Next Reset: {} ({})\n"
-msgstr ""
+msgstr "➣ Próximo reinicio: {} ({})\n"
 
 #: levelup\common\formatter.py:212
 msgid "➣ **Last Reset:** {}\n"
-msgstr ""
+msgstr "➣ **Último reinicio:** {}\n"
 
 #: levelup\common\formatter.py:215
 msgid "➣ **Next Reset:** {}\n"
-msgstr ""
+msgstr "➣ **Próximo reinicio:** {}\n"
 
 #: levelup\common\formatter.py:220
 msgid "Total {}: {}\n"
-msgstr ""
+msgstr "Total {}: {}\n"
 
 #: levelup\common\formatter.py:222
 msgid "**Total {}:** {}\n\n"
-msgstr ""
+msgstr "**Total {}:** {}\n\n"
 
 #: levelup\common\models.py:20
 #, docstring
 msgid "Custom BaseModel with additional methods for loading and saving settings safely"
-msgstr ""
+msgstr "Modelo base personalizado con métodos adicionales para cargar y guardar configuraciones de manera segura"
 
 #: levelup\common\models.py:243
 #, docstring
 msgid "Calculate the level that corresponds to the given XP amount"
-msgstr ""
+msgstr "Calcular el nivel que corresponde a la cantidad de XP dada"
 
 #: levelup\common\models.py:247
 #, docstring
 msgid "Calculate XP required to reach specified level"
-msgstr ""
+msgstr "Calcular el XP requerido para alcanzar el nivel especificado"
 
 #: levelup\common\models.py:359
 #, docstring
 msgid "Sanitize old config data to be validated by the new schema"
-msgstr ""
+msgstr "Sanear datos de configuración antiguos para ser validados por el nuevo esquema"
 
 #: levelup\common\utils.py:83
 #, docstring
 msgid "Format time in seconds into a human readable string"
-msgstr ""
+msgstr "Formatear el tiempo en segundos en una cadena legible por humanos"
 
 #: levelup\common\utils.py:91
 msgid "None"
-msgstr ""
+msgstr "Ninguno"
 
 #: levelup\common\utils.py:94
 msgid " second"
-msgstr ""
+msgstr " segundo"
 
 #: levelup\common\utils.py:96
 msgid " seconds"
-msgstr ""
+msgstr " segundos"
 
 #: levelup\common\utils.py:99
 msgid " minute"
-msgstr ""
+msgstr " minuto"
 
 #: levelup\common\utils.py:101
 msgid " minutes"
-msgstr ""
+msgstr " minutos"
 
 #: levelup\common\utils.py:112
 #, docstring
 msgid "Fetch the url of unicode emojis from Twemoji CDN"
-msgstr ""
+msgstr "Obtener la url de los emojis unicode desde Twemoji CDN"
 
 #: levelup\common\utils.py:130
 #, docstring
 msgid "Get all attachments from context"
-msgstr ""
+msgstr "Obtener todos los archivos adjuntos del contexto"
 
 #: levelup\common\utils.py:145
 #, docstring
 msgid "Recursively finds the size of an object in memory"
-msgstr ""
+msgstr "Encuentra recursivamente el tamaño de un objeto en memoria"
 
 #: levelup\common\utils.py:191
 msgid "Monday"
-msgstr ""
+msgstr "Lunes"
 
 #: levelup\common\utils.py:192
 msgid "Tuesday"
-msgstr ""
+msgstr "Martes"
 
 #: levelup\common\utils.py:193
 msgid "Wednesday"
-msgstr ""
+msgstr "Miércoles"
 
 #: levelup\common\utils.py:194
 msgid "Thursday"
-msgstr ""
+msgstr "Jueves"
 
 #: levelup\common\utils.py:195
 msgid "Friday"
-msgstr ""
+msgstr "Viernes"
 
 #: levelup\common\utils.py:196
 msgid "Saturday"
-msgstr ""
+msgstr "Sábado"
 
 #: levelup\common\utils.py:197
 msgid "Sunday"
-msgstr ""
+msgstr "Domingo"
 
 #: levelup\common\utils.py:211
 #, docstring
 msgid "Wait for user to respond yes or no"
-msgstr ""
+msgstr "Esperar a que el usuario responda sí o no"
 
 #: levelup\common\utils.py:282
 #, docstring
 msgid "Get a level that would be achieved from the amount of XP"
-msgstr ""
+msgstr "Obtener un nivel que se lograría con la cantidad de XP"
 
 #: levelup\common\utils.py:287
 #, docstring
 msgid "Get how much XP is needed to reach a level"
-msgstr ""
+msgstr "Obtener cuánta XP se necesita para alcanzar un nivel"
 
 #: levelup\common\utils.py:316
 msgid "• lvl {}, {} xp, {}\n"
-msgstr ""
+msgstr "• lvl {}, {} xp, {}\n"
 
 #: levelup\common\utils.py:324
 msgid "XP Curve"
-msgstr ""
+msgstr "Curva XP"
 
 #: levelup\common\utils.py:330
 msgid "Level"
-msgstr ""
+msgstr "Nivel"
 
 #: levelup\common\utils.py:331
 msgid "Experience Required"
-msgstr ""
+msgstr "Experiencia necesaria"
 

@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2024-02-08 18:29-0500\n"
-"PO-Revision-Date: 2024-02-08 23:50\n"
+"PO-Revision-Date: 2024-06-23 01:44\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -203,5 +203,5 @@ msgstr "¡No hay código para alternar!"
 
 #: views.py:758
 msgid "Search for a function"
-msgstr ""
+msgstr "Buscar una función"
 

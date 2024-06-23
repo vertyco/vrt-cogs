@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2024-02-08 18:30-0500\n"
-"PO-Revision-Date: 2024-02-08 23:50\n"
+"PO-Revision-Date: 2024-06-23 01:44\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -51,7 +51,8 @@ msgstr "\n"
 #: main.py:82
 msgid "Version: {}\n"
 "Author: {}"
-msgstr ""
+msgstr "Versión: {}\n"
+"Autor: {}"
 
 #: main.py:86
 #, docstring
@@ -113,7 +114,7 @@ msgstr "Ver la configuración global actual"
 
 #: main.py:185 main.py:186
 msgid "None Set"
-msgstr ""
+msgstr "Ninguno"
 
 #: main.py:187
 msgid "### Global Settings\n"
@@ -122,7 +123,12 @@ msgid "### Global Settings\n"
 "- Allow auto-backups: {}\n"
 "- Ignored servers: {}\n"
 "- Allowed servers: {}\n"
-msgstr ""
+msgstr "### Configuración Global\n"
+"- Copias de seguridad globales: {}\n"
+"- Máximo de copias de seguridad por servidor: {}\n"
+"- Permitir copias de seguridad automáticas: {}\n"
+"- Servidores ignorados: {}\n"
+"- Servidores permitidos: {}\n"
 
 #: main.py:206
 #, docstring
