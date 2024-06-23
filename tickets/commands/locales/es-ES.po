@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2024-02-08 18:31-0500\n"
-"PO-Revision-Date: 2024-02-08 23:50\n"
+"PO-Revision-Date: 2024-06-23 01:44\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -307,15 +307,18 @@ msgid "\n"
 "        Toggle a panel on/off\n\n"
 "        Disabled panels will still show the button but it will be disabled\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        Alternar un panel encendido/apagado\n\n"
+"        Los paneles desactivados seguirán mostrando el botón pero estará desactivado\n"
+"        "
 
 #: commands\admin.py:253
 msgid "Panel **Enabled**"
-msgstr ""
+msgstr "Panel **Activado**"
 
 #: commands\admin.py:256
 msgid "Panel **Disabled**"
-msgstr ""
+msgstr "Panel **Desactivado**"
 
 #: commands\admin.py:263
 #, docstring
@@ -445,11 +448,11 @@ msgstr "¡Se ha eliminado el campo para el panel {}!"
 
 #: commands\admin.py:414
 msgid "The most fields a modal can have is 5!"
-msgstr ""
+msgstr "¡El máximo de campos que un modal puede tener es 5!"
 
 #: commands\admin.py:430
 msgid "Modal field addition cancelled"
-msgstr ""
+msgstr "Se ha cancelado la adición del campo modal"
 
 #: commands\admin.py:432
 msgid "type 'cancel' to cancel at any time"
@@ -645,7 +648,7 @@ msgstr "para crear uno."
 
 #: commands\admin.py:786
 msgid "Valid panels are: "
-msgstr ""
+msgstr "Los paneles válidos son: "
 
 #: commands\admin.py:790
 msgid "This panel does not have any messages added!"
@@ -684,7 +687,7 @@ msgstr "(antiguo)\n"
 
 #: commands\admin.py:860
 msgid "`Disabled:       `"
-msgstr ""
+msgstr "`Desactivado:       `"
 
 #: commands\admin.py:861
 msgid "`Category:       `"
@@ -753,7 +756,7 @@ msgstr "`Razón Modal: `"
 
 #: commands\admin.py:877
 msgid "`Max Claims:     `"
-msgstr ""
+msgstr "`Máx Reclamaciones:     `"
 
 #: commands\admin.py:885
 msgid "Panel Roles(Mention)"
@@ -794,11 +797,11 @@ msgstr "Discapacitado"
 
 #: commands\admin.py:925
 msgid "Detailed"
-msgstr ""
+msgstr "Detallado"
 
 #: commands\admin.py:925
 msgid "Simple"
-msgstr ""
+msgstr "Simple"
 
 #: commands\admin.py:927
 msgid "`Max Tickets:      `"
@@ -1037,7 +1040,17 @@ msgid "\n"
 "        - 168 hours (1 week)\n"
 "        Tickets will default to the closest value you select.\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        Cerrar el ticket automáticamente si el creador no dice nada después de X horas de abrirlo\n\n"
+"        Establecer en 0 para deshabilitar esto\n\n"
+"        Si usas tickets de hilo, esto se traduce a la configuración de \"Ocultar después de la inactividad\" del hilo.\n"
+"        Tus opciones son:\n"
+"        - 1 hora\n"
+"        - 24 horas (1 día)\n"
+"        - 72 horas (3 días)\n"
+"        - 168 horas (1 semana)\n"
+"        Los tickets se ajustarán al valor más cercano que seleccione.\n"
+"        "
 
 #: commands\admin.py:1203
 #, docstring
@@ -1183,15 +1196,18 @@ msgid "\n"
 "        (Toggle) Interactive transcripts\n\n"
 "        Transcripts will be an interactive html file to visualize the conversation from your browser.\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        (Alternar) Transcripciones interactivas\n\n"
+"        Las transcripciones serán un archivo html interactivo para visualizar la conversación desde su navegador.\n"
+"        "
 
 #: commands\admin.py:1338
 msgid "Transcripts of closed tickets will no longer be interactive"
-msgstr ""
+msgstr "Las transcripciones de tickets cerrados ya no serán interactivas"
 
 #: commands\admin.py:1341
 msgid "Transcripts of closed tickets will now be interactive"
-msgstr ""
+msgstr "Las transcripciones de tickets cerrados ahora serán interactivas"
 
 #: commands\admin.py:1350
 #, docstring
@@ -1286,7 +1302,7 @@ msgstr "No tienes permisos para agregar usuarios a este ticket"
 
 #: commands\base.py:62
 msgid "Failed to add user to ticket: {}"
-msgstr ""
+msgstr "Error al añadir usuario al ticket: {}"
 
 #: commands\base.py:64
 msgid "has been added to this ticket!"
@@ -1303,11 +1319,11 @@ msgstr "No tienes permisos para cambiar el nombre de este ticket"
 
 #: commands\base.py:97
 msgid "I no longer have permission to edit this channel"
-msgstr ""
+msgstr "Ya no tengo permiso para editar este canal"
 
 #: commands\base.py:100
 msgid "Renaming channel to {}"
-msgstr ""
+msgstr "Renombrando canal a {}"
 
 #: commands\base.py:115
 #, docstring

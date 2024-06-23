@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2024-02-08 18:30-0500\n"
-"PO-Revision-Date: 2024-06-18 20:58\n"
+"PO-Revision-Date: 2024-06-23 01:44\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -25,23 +25,29 @@ msgid "\n"
 "    Server admins can configure decay parameters, view settings, and manually trigger decay cycles.\n"
 "    User activity is tracked via messages and reactions.\n"
 "    "
-msgstr ""
+msgstr "\n"
+"    ¡Degradación de la economía!\n\n"
+"    Reduce periódicamente la moneda roja de los usuarios basada en la inactividad, fomentando la participación.\n"
+"    Los administradores del servidor pueden configurar parámetros de degradación, ver configuraciones y activar manualmente ciclos de degradación.\n"
+"    La actividad de los usuarios se rastrea a través de mensajes y reacciones.\n"
+"    "
 
 #: main.py:157
 msgid "Bank Decay Cycle"
-msgstr ""
+msgstr "Ciclo de Degradación Bancaria"
 
 #: main.py:159
 msgid "- User Balances Decayed: {}\n"
 "- Total Amount Decayed: {}"
-msgstr ""
+msgstr "- Saldos de Usuarios Degradados: {}\n"
+"- Cantidad Total Degradada: {}"
 
 #: main.py:164
 msgid "No user balances were decayed during this cycle."
-msgstr ""
+msgstr "No se degradaron saldos de usuarios durante este ciclo."
 
 #: main.py:214
 #, docstring
 msgid "No data to delete"
-msgstr ""
+msgstr "No hay datos que borrar"
 

@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2024-06-18 16:29-0400\n"
-"PO-Revision-Date: 2024-06-18 20:58\n"
+"PO-Revision-Date: 2024-06-23 01:45\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -22,96 +22,98 @@ msgstr ""
 msgid "\n"
 "    Find and kill the process that's using the specified port.\n"
 "    "
-msgstr ""
+msgstr "\n"
+"    Encuentra y mata el proceso que está utilizando el puerto especificado.\n"
+"    "
 
 #: levelup\generator\imgtools.py:37
 #, docstring
 msgid "Abbreviate a number"
-msgstr ""
+msgstr "Abreviar un número"
 
 #: levelup\generator\imgtools.py:46
 #, docstring
 msgid "Format time in seconds into an extra short human readable string"
-msgstr ""
+msgstr "Formatear el tiempo en segundos en una cadena de texto extra corta y legible por humanos"
 
 #: levelup\generator\imgtools.py:54
 msgid "None"
-msgstr ""
+msgstr "Ninguno"
 
 #: levelup\generator\imgtools.py:77
 #, docstring
 msgid "Make a transparent circle"
-msgstr ""
+msgstr "Hacer un círculo transparente"
 
 #: levelup\generator\imgtools.py:89
 #, docstring
 msgid "Crop an image into a circle"
-msgstr ""
+msgstr "Recortar una imagen en un círculo"
 
 #: levelup\generator\imgtools.py:102
 #, docstring
 msgid "Get a mask for rounded corners"
-msgstr ""
+msgstr "Obtener una máscara para esquinas redondeadas"
 
 #: levelup\generator\imgtools.py:121
 #, docstring
 msgid "Blur a section of an image"
-msgstr ""
+msgstr "Desenfocar una sección de una imagen"
 
 #: levelup\generator\imgtools.py:130
 #, docstring
 msgid "Clean up a GIF frame"
-msgstr ""
+msgstr "Limpiar un cuadro de GIF"
 
 #: levelup\generator\imgtools.py:144
 #, docstring
 msgid "Make a pretty rounded progress bar."
-msgstr ""
+msgstr "Hacer una barra de progreso redondeada y bonita."
 
 #: levelup\generator\imgtools.py:176
 #, docstring
 msgid "Format fonts into an image"
-msgstr ""
+msgstr "Formatear fuentes en una imagen"
 
 #: levelup\generator\imgtools.py:190
 #, docstring
 msgid "Format backgrounds into an image"
-msgstr ""
+msgstr "Formatear fondos en una imagen"
 
 #: levelup\generator\imgtools.py:237
 #, docstring
 msgid "Merge two images vertically"
-msgstr ""
+msgstr "Unir dos imágenes verticalmente"
 
 #: levelup\generator\imgtools.py:245
 #, docstring
 msgid "Merge two images horizontally"
-msgstr ""
+msgstr "Unir dos imágenes horizontalmente"
 
 #: levelup\generator\imgtools.py:256
 #, docstring
 msgid "Extract colors from an image using colorgram.py"
-msgstr ""
+msgstr "Extraer colores de una imagen usando colorgram.py"
 
 #: levelup\generator\imgtools.py:268
 #, docstring
 msgid "Calculate the Euclidean distance between two RGB colors"
-msgstr ""
+msgstr "Calcular la distancia euclidiana entre dos colores RGB"
 
 #: levelup\generator\imgtools.py:281
 #, docstring
 msgid "Invert an RGB color tuple"
-msgstr ""
+msgstr "Invertir una tupla de color RGB"
 
 #: levelup\generator\imgtools.py:286
 #, docstring
 msgid "Generate a random RGB color tuple"
-msgstr ""
+msgstr "Generar una tupla de color RGB aleatoria"
 
 #: levelup\generator\imgtools.py:294
 #, docstring
 msgid "Calculate the aspect ratio of an image"
-msgstr ""
+msgstr "Calcular la relación de aspecto de una imagen"
 
 #: levelup\generator\imgtools.py:305
 #, docstring
@@ -125,19 +127,28 @@ msgid "\n"
 "    Returns:\n"
 "        Image\n"
 "    "
-msgstr ""
+msgstr "\n"
+"    Recortar imagen para ajustar la relación de aspecto\n\n"
+"    Tendremos que cortar los lados o cortar la parte superior e inferior (o agregar espacio transparente)\n\n"
+"    Args:\n"
+"        imagen (Imagen): Imagen a ajustar\n"
+"        relación_de_aspecto (t.Tuple[int, int], opcional): Ajustar la imagen a la relación de aspecto. Predeterminado es (21, 9).\n"
+"        preservar (bool, opcional): En lugar de recortar, agregar espacio transparente. Predeterminado es False.\n\n"
+"    Returns:\n"
+"        Imagen\n"
+"    "
 
 #: levelup\generator\imgtools.py:348
 #, docstring
 msgid "Get a random background image"
-msgstr ""
+msgstr "Obtener una imagen de fondo aleatoria"
 
 #: levelup\generator\imgtools.py:356
 #, docstring
 msgid "Get the average duration of a GIF"
-msgstr ""
+msgstr "Obtener la duración promedio de un GIF"
 
 #: levelup\generator\levelalert.py:78
 msgid "Level {}"
-msgstr ""
+msgstr "Nivel {}"
 

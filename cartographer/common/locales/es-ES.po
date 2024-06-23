@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2023-10-16 17:37-0400\n"
-"PO-Revision-Date: 2023-10-17 14:22\n"
+"PO-Revision-Date: 2024-06-23 01:44\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -31,7 +31,19 @@ msgid "`Created:        `{}\n"
 "`Text Channels:  `{}\n"
 "`Voice Channels: `{}\n"
 "`Forums:         `{}\n"
-msgstr ""
+msgstr "`Creado:        `{}\n"
+"`Nombre:           `{}\n"
+"`Canal AFK:    `{}\n"
+"`Tiempo de espera AFK:    `{}\n"
+"`Verificación:   `{}\n"
+"`Notificaciones:  `{}\n"
+"`Idioma:         `{}\n"
+"`Conteo de roles:     `{}\n"
+"`Miembros guardados:  `{}\n"
+"`Categorías:     `{}\n"
+"`Canales de texto:  `{}\n"
+"`Canales de voz: `{}\n"
+"`Foros:         `{}\n"
 
 #: common\formatting.py:45
 msgid "Controls"
@@ -56,15 +68,16 @@ msgstr "Ajustes"
 #: common\formatting.py:54
 msgid "- Auto Backup Interval Hours: {}\n"
 "- Last Backup: {}"
-msgstr ""
+msgstr "- Intervalo de respaldo automático en horas: {}\n"
+"- Última copia de seguridad: {}"
 
 #: common\formatting.py:57
 msgid "Cartographer Backups for {}"
-msgstr ""
+msgstr "Copias de seguridad del cartógrafo para {}"
 
 #: common\formatting.py:64
 msgid "Page {}"
-msgstr ""
+msgstr "Página {}"
 
 #: common\formatting.py:67
 msgid "There are no backups for this server yet!"
@@ -124,7 +137,7 @@ msgstr "¡Este no es tu menú!"
 
 #: common\views.py:129
 msgid "Backing up {}!"
-msgstr ""
+msgstr "¡Haciendo una copia de seguridad de {}!"
 
 #: common\views.py:133
 msgid "Backup created!"
@@ -224,7 +237,7 @@ msgstr "Horas entre copias de seguridad"
 
 #: common\views.py:234
 msgid "Auto-backup interval hours has been set to {}"
-msgstr ""
+msgstr "El intervalo de horas para la copia de seguridad automática se ha establecido en {}"
 
 #: common\views.py:246
 msgid "No backups to delete!"

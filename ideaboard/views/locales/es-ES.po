@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2024-02-08 18:30-0500\n"
-"PO-Revision-Date: 2024-02-08 23:50\n"
+"PO-Revision-Date: 2024-06-23 01:44\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -20,69 +20,69 @@ msgstr ""
 #: views\voteview.py:53
 #, docstring
 msgid "Return True if the user can vote"
-msgstr ""
+msgstr "Devuelve True si el usuario puede votar"
 
 #: views\voteview.py:57
 msgid "This suggestion no longer exists in the config!"
-msgstr ""
+msgstr "¡Esta sugerencia ya no existe en la configuración!"
 
 #: views\voteview.py:68
 msgid "You are blacklisted from voting."
-msgstr ""
+msgstr "Se te ha prohibido votar."
 
 #: views\voteview.py:71
 msgid "You have a blacklisted role and cannot vote."
-msgstr ""
+msgstr "Tienes un rol en la lista negra y no puedes votar."
 
 #: views\voteview.py:76
 msgid "You do not have the required roles to vote."
-msgstr ""
+msgstr "No tienes los roles necesarios para votar."
 
 #: views\voteview.py:84
 msgid "Your account is too young to vote. You must wait {age} more hours."
-msgstr ""
+msgstr "Tu cuenta es demasiado nueva para votar. Debes esperar {age} horas más."
 
 #: views\voteview.py:96
 msgid "You must wait {age} more hours before you can vote."
-msgstr ""
+msgstr "Debes esperar {age} horas más antes de poder votar."
 
 #: views\voteview.py:112
 msgid "You must be level {level} to vote."
-msgstr ""
+msgstr "Debes ser nivel {level} para votar."
 
 #: views\voteview.py:126
 msgid "Your in-game profile must be registered in order to vote on suggestions.\n"
-msgstr ""
+msgstr "Tu perfil en el juego debe estar registrado para votar en las sugerencias.\n"
 
 #: views\voteview.py:127
 msgid "Use the {} command to link your discord account."
-msgstr ""
+msgstr "Usa el comando {} para vincular tu cuenta de discord."
 
 #: views\voteview.py:133
 msgid "You must have at least {hours} hours of playtime to vote."
-msgstr ""
+msgstr "Debes tener al menos {hours} horas de tiempo de juego para votar."
 
 #: views\voteview.py:156
 msgid "You have switched your downvote to an upvote."
-msgstr ""
+msgstr "Has cambiado tu voto negativo a positivo."
 
 #: views\voteview.py:162
 msgid "You have removed your upvote."
-msgstr ""
+msgstr "Has eliminado tu voto positivo."
 
 #: views\voteview.py:166
 msgid "You have upvoted this suggestion."
-msgstr ""
+msgstr "Has votado positivamente esta sugerencia."
 
 #: views\voteview.py:190
 msgid "You have switched your upvote to a downvote."
-msgstr ""
+msgstr "Has cambiado tu voto positivo a negativo."
 
 #: views\voteview.py:196
 msgid "You have removed your downvote."
-msgstr ""
+msgstr "Has eliminado tu voto negativo."
 
 #: views\voteview.py:200
 msgid "You have downvoted this suggestion."
-msgstr ""
+msgstr "Has votado negativamente esta sugerencia."
 
