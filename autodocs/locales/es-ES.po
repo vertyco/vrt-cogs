@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2024-02-08 18:30-0500\n"
-"PO-Revision-Date: 2024-02-08 23:50\n"
+"PO-Revision-Date: 2024-06-23 01:44\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -89,7 +89,7 @@ msgstr "incluye un archivo csv con cada comando aislado en una fila"
 
 #: autodocs.py:129
 msgid "Hide commands below specified privilege level (user, mod, admin, guildowner, botowner)"
-msgstr ""
+msgstr "Ocultar comandos por debajo del nivel de privilegio especificado (usuario, mod, admin, guildowner, botowner)"
 
 #: autodocs.py:145
 #, docstring
@@ -138,7 +138,7 @@ msgstr "¡Aquí están tus documentos para {}!"
 #: autodocs.py:309
 #, docstring
 msgid "Registers a command with Assistant enabling it to access to command docs"
-msgstr ""
+msgstr "Registra un comando con el Asistente permitiéndole acceder a la documentación del comando"
 
 #: converters.py:64
 msgid "A single word, if not using slash and multiple words are necessary use a quote e.g \"Hello world\"."
