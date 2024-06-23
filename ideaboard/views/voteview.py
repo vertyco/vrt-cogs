@@ -56,10 +56,6 @@ class VoteView(discord.ui.View):
                 with suppress(discord.HTTPException):
                     await msg.delete(delay=60)
 
-    async def refresh(self):
-        with suppress(discord.HTTPException):
-            await self.message.edit(view=self)
-
     async def check(self, interaction: discord.Interaction) -> bool:
         """Return True if the user can vote"""
         conf = self.cog.db.get_conf(self.guild)
@@ -189,7 +185,8 @@ class VoteView(discord.ui.View):
 
         if conf.show_vote_counts:
             self.update_labels()
-            await self.refresh()
+            with suppress(discord.HTTPException):
+                await interaction.message.edit(view=self)
 
         await self.cog.save()
 
@@ -226,6 +223,7 @@ class VoteView(discord.ui.View):
 
         if conf.show_vote_counts:
             self.update_labels()
-            await self.refresh()
+            with suppress(discord.HTTPException):
+                await interaction.message.edit(view=self)
 
         await self.cog.save()
