@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2024-02-08 18:29-0500\n"
-"PO-Revision-Date: 2024-02-08 23:50\n"
+"PO-Revision-Date: 2024-06-23 01:44\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -19,7 +19,7 @@ msgstr ""
 
 #: common\api.py:41
 msgid "Failed to fetch: {}"
-msgstr ""
+msgstr "Error al obtener: {}"
 
 #: common\api.py:189
 #, docstring
@@ -65,7 +65,22 @@ msgid "\n"
 "        Returns:\n"
 "            bool: whether the conversation was degraded\n"
 "        "
-msgstr ""
+msgstr "\n"
+"        Degradar iterativamente una carga de conversación in situ para ajustarla dentro del límite máximo de tokens, priorizando los mensajes más recientes y el contexto crítico.\n\n"
+"        Orden de importancia:\n"
+"        - Mensajes del sistema\n"
+"        - Llamadas a funciones disponibles para el modelo\n"
+"        - Mensaje de usuario más reciente\n"
+"        - Mensaje del asistente más reciente\n"
+"        - Mensaje de función/herramienta más reciente\n\n"
+"        Los mensajes del sistema siempre se ignoran.\n\n"
+"        Args:\n"
+"            mensajes (List[dict]): entradas de mensajes enviados a la API\n"
+"            function_list (List[dict]): lista de esquemas de funciones JSON para el modelo\n"
+"            conf: (GuildSettings): configuración actual\n\n"
+"        Devuelve:\n"
+"            bool: si la conversación fue degradada\n"
+"        "
 
 #: common\api.py:467
 #, docstring
@@ -127,7 +142,12 @@ msgid "`Created:    `{}\n"
 "`Dimensions: `{}\n"
 "`AI Created: `{}\n"
 "`Model:      `{}\n"
-msgstr ""
+msgstr "`Creado:    `{}\n"
+"`Modificado:   `{}\n"
+"`Tokens:     `{}\n"
+"`Dimensiones: `{}\n"
+"`AI Creado: `{}\n"
+"`Modelo:      `{}\n"
 
 #: common\api.py:623
 msgid "No embeddings have been added!"
@@ -139,11 +159,11 @@ msgstr "¡Sin historial de mensajes!"
 
 #: common\chat.py:158
 msgid "The server had an error processing your request! Please try again later."
-msgstr ""
+msgstr "¡El servidor tuvo un error al procesar su solicitud! Por favor, inténtelo más tarde."
 
 #: common\chat.py:160
 msgid "Failed to communicate with API!"
-msgstr ""
+msgstr "¡No se ha podido comunicar con la API!"
 
 #: common\chat.py:164
 msgid "Invalid API key, please set a new valid key!"
@@ -159,7 +179,7 @@ msgstr "Uh oh, ¡algo salió mal! El propietario del bot puede usar `{}` para ve
 
 #: common\chat.py:179
 msgid "API Status: {}"
-msgstr ""
+msgstr "Estado de la API: {}"
 
 #: common\chat.py:212
 msgid "No results found"
@@ -172,11 +192,11 @@ msgstr "Llamar a la API de forma asíncrona"
 
 #: common\chat.py:317
 msgid "None"
-msgstr ""
+msgstr "Ninguno"
 
 #: common\chat.py:396
 msgid "Request timed out, please try again."
-msgstr ""
+msgstr "Tiempo de espera agotado, por favor intente de nuevo."
 
 #: common\chat.py:558
 msgid "Response failed due to invalid regex, check logs for more info."
@@ -229,7 +249,14 @@ msgid "\n"
 "    Returns:\n"
 "        str: The cleaned function name.\n"
 "    "
-msgstr ""
+msgstr "\n"
+"    Limpia el nombre de la función para asegurar que solo contiene caracteres alfanuméricos,\n"
+"    guiones bajos o guiones y no tiene más de 64 caracteres.\n\n"
+"    Args:\n"
+"        nombre (str): El nombre original de la función a limpiar.\n\n"
+"    Devuelve:\n"
+"        str: El nombre de la función limpiado.\n"
+"    "
 
 #: common\utils.py:42
 #, docstring
@@ -263,7 +290,7 @@ msgstr "[Código eliminado]"
 #: common\utils.py:200
 #, docstring
 msgid "Make sure that if a conversation payload contains images that the model supports vision"
-msgstr ""
+msgstr "Asegúrese de que si una carga de conversación contiene imágenes, el modelo sea compatible con la visión"
 
 #: common\utils.py:220
 #, docstring
@@ -304,5 +331,41 @@ msgid "\n"
 "    - All tool call responses must have a preceeding tool call.\n\n"
 "    Returns: boolean, True if any tool calls or responses were purged.\n"
 "    "
-msgstr ""
+msgstr "\n"
+"    Asegúrese de que todas las llamadas a herramientas satisfacen los requisitos del esquema, modificando la carga de mensajes in situ.\n\n"
+"    El parámetro \"mensajes\" es una lista de cargas de mensajes.\n\n"
+"    ## Esquema\n"
+"    - Los mensajes con la clave \"tool_calls\" están llamando a una herramienta o herramientas.\n"
+"    - El valor \"tool_calls\" es una lista de diccionarios de llamadas a herramientas, cada uno con una clave \"id\" que se asigna a una respuesta de herramienta\n"
+"    - Los mensajes con el rol \"tool\" son respuestas de llamadas a herramientas, cada uno con una clave \"tool_call_id\" que corresponde a una \"id\" de llamada a herramienta\n"
+"    - Más de un mensaje puede contener la misma id de llamada a herramienta dentro de la misma carga de conversación, lo cual es un dolor de cabeza\n\n"
+"    ## Ejemplo de carga de mensaje de llamada a herramienta\n"
+"    {\n"
+"        \"content\": Ninguno,\n"
+"        \"role\": \"assistant\",\n"
+"        \"tool_calls\": [\n"
+"            {\n"
+"                \"id\": \"call_HRdAUGb9xMM0jfqF2MajDMrA\",\n"
+"                \"type\": \"function\",\n"
+"                \"function\": {\n"
+"                    \"arguments\": {},\n"
+"                    \"name\": \"function_name\",\n"
+"                }\n"
+"            }\n"
+"        ]\n"
+"    }\n\n"
+"    ## Ejemplo de carga de mensaje de respuesta a herramienta\n"
+"    {\n"
+"        \"role\": \"tool\",\n"
+"        \"name\": \"function_name\",\n"
+"        \"content\": \"Los resultados de la función en texto\",\n"
+"        \"tool_call_id\": \"call_HRdAUGb9xMM0jfqF2MajDMrA\",\n"
+"    }\n\n"
+"    ## Reglas\n"
+"    - Una carga de mensaje puede contener múltiples llamadas a herramientas, cada una con su propia id\n"
+"    - Un mensaje con tool_calls debe ser seguido por mensajes que contienen el rol \"tool\" con el correspondiente \"tool_call_id\"\n"
+"    - Todos los mensajes con \"tool_calls\" deben ser seguidos por mensajes con las respuestas de herramientas\n"
+"    - Todas las respuestas de llamadas a herramientas deben tener una llamada a herramienta previa.\n\n"
+"    Devuelve: booleano, True si se purgó alguna llamada o respuesta de herramienta.\n"
+"    "
 
