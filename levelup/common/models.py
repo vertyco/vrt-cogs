@@ -193,7 +193,7 @@ class WeeklySettings(Base):
     on: bool = False  # Weekly stats are being tracked for this guild or not
     autoreset: bool = False  # Whether to auto reset once a week or require manual reset
     reset_hour: int = 0  # 0 - 23 hour (Server's system time)
-    reset_day: int = 0  # 0 = sun, 1 = mon, 2 = tues, 3 = wed, 4 = thur, 5 = fri, 6 = sat
+    reset_day: int = 0  # 0 = mon, 1 = tues, 2 = wed, 3 = thur, 4 = fri, 5 = sat, 6 = sun
     last_reset: int = 0  # Timestamp of when weekly was last reset
     count: int = 3  # How many users to show in weekly winners
     channel: int = 0  # Announce the weekly winners (top 3 by default)
