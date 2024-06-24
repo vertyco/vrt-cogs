@@ -148,7 +148,15 @@ def get_leaderboard(
                 if "xp" in stat and profile.prestige and guild_conf.prestigelevel:
                     lb[user_id].xp += profile.prestige * guild_conf.algorithm.get_xp(guild_conf.prestigelevel)
                     lb[user_id].level += profile.prestige * guild_conf.prestigelevel
-
+    elif "xp" in stat and conf.prestigelevel and conf.prestigedata:
+        title = _("LevelUp ")
+        lb = {}
+        for user_id in conf.users.keys():
+            profile: Profile = conf.users[user_id]
+            lb[user_id] = profile.model_copy() if hasattr(profile, "model_copy") else profile.copy()
+            if profile.prestige:
+                lb[user_id].xp += profile.prestige * conf.algorithm.get_xp(conf.prestigelevel)
+                lb[user_id].level += profile.prestige * conf.prestigelevel
     else:
         title = _("LevelUp ")
         lb = db.get_conf(guild).users.copy()
