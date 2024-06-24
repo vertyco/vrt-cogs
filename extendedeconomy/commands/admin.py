@@ -391,8 +391,8 @@ class Admin(MixinMeta):
             msg = await ctx.send(overwrite_warning, view=view)
             await view.wait()
             if not view.value:
-                return await msg.edit(content=_("Not adding cost."))
-            await msg.edit(content=_("{} cost updated.", view=None).format(command))
+                return await msg.edit(content=_("Not adding cost."), view=None)
+            await msg.edit(content=_("{} cost updated.").format(command), view=None)
         else:
             await ctx.send(_("{} cost added.").format(command))
 
