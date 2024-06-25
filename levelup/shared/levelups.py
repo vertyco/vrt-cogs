@@ -57,6 +57,7 @@ class LevelUps(MixinMeta):
         added, __ = await self.ensure_roles(member, conf)
         if not channel and message is not None:
             channel = message.channel
+
         log_channel = guild.get_channel(conf.notifylog) if conf.notifylog else None
         placeholders = {
             "username": member.name,
@@ -111,7 +112,9 @@ class LevelUps(MixinMeta):
                         await log_channel.send(member.mention, embed=embed)
                     else:
                         await log_channel.send(embed=embed)
-            if log_channel:
+
+            current_channel_id = channel.id if channel else 0
+            if log_channel and log_channel.id != current_channel_id:
                 with suppress(discord.HTTPException):
                     await log_channel.send(embed=embed)
             return False
