@@ -319,6 +319,7 @@ class GuildSettings(Base):
     prestigelevel: int = 0  # Level required to prestige, 0 is disabled
     prestigedata: t.Dict[int, Prestige] = {}  # Level: Prestige
     stackprestigeroles: bool = True  # Toggle whether to stack prestige roles
+    keep_level_roles: bool = False  # Keep level roles after prestiging
 
     # Alerts
     notify: bool = False  # Toggle whether to notify member of levelups if notify log channel is not set
