@@ -1209,8 +1209,8 @@ class Admin(MixinMeta):
     async def toggle_keep_roles(self, ctx: commands.Context):
         """Keep level roles after prestiging"""
         conf = self.db.get_conf(ctx.guild)
-        status = _("**Disabled**") if conf.keeproles else _("**Enabled**")
-        conf.keeproles = not conf.keeproles
+        status = _("**Disabled**") if conf.keep_level_roles else _("**Enabled**")
+        conf.keep_level_roles = not conf.keep_level_roles
         self.save()
         await ctx.send(_("Keeping roles after prestiging has been {}").format(status))
 
