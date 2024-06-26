@@ -223,7 +223,15 @@ class LevelUps(MixinMeta):
         user_roles = member.roles
         user_role_ids = [role.id for role in user_roles]
         profile = conf.get_profile(member)
-        valid_levels = {k: v for k, v in conf.levelroles.items() if k <= profile.level}
+
+        using_prestige = all([profile.prestige, conf.prestigelevel, conf.prestigedata, conf.keep_level_roles])
+
+        if using_prestige:
+            # User has prestiges and thus must meet the requirements for any level role inherently
+            valid_levels = {k: v for k, v in conf.levelroles.items()}
+        else:
+            valid_levels = {k: v for k, v in conf.levelroles.items() if k <= profile.level}
+
         if conf.autoremove:
             # Add highest level role and remove the rest
             highest_role_id = 0
@@ -238,7 +246,7 @@ class LevelUps(MixinMeta):
         else:
             # Ensure user has all roles up to their level
             for level, role_id in conf.levelroles.items():
-                if level <= profile.level:
+                if level <= profile.level or using_prestige:
                     if role_id not in user_role_ids:
                         to_add.add(role_id)
                 elif role_id in user_role_ids:

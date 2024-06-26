@@ -94,6 +94,10 @@ class Admin(MixinMeta):
                 _("**Stack**") if conf.stackprestigeroles else _("**Not Stack**")
             )
             req = _("➣ Requires reaching level {} to activate").format(conf.prestigelevel)
+            if conf.keep_level_roles:
+                req += _("\n➣ Level roles will be kept after prestiging")
+            else:
+                req += _("\n➣ Level roles will be reset after prestiging")
             joined = "\n".join(
                 _("• Prestige {}: {}").format(level, f"<@&{prestige.role}>")
                 for level, prestige in conf.prestigedata.items()
@@ -1200,6 +1204,15 @@ class Admin(MixinMeta):
     @levelset.group(name="prestige")
     async def prestige_group(self, ctx: commands.Context):
         """Prestige settings"""
+
+    @prestige_group.command(name="keeproles")
+    async def toggle_keep_roles(self, ctx: commands.Context):
+        """Keep level roles after prestiging"""
+        conf = self.db.get_conf(ctx.guild)
+        status = _("**Disabled**") if conf.keeproles else _("**Enabled**")
+        conf.keeproles = not conf.keeproles
+        self.save()
+        await ctx.send(_("Keeping roles after prestiging has been {}").format(status))
 
     @prestige_group.command(name="level")
     async def prestige_level(self, ctx: commands.Context, level: int):
