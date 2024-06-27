@@ -29,7 +29,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.0.1"
+    __version__ = "1.0.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -133,6 +133,7 @@ class AutoDocs(commands.Cog):
     )
     @commands.is_owner()
     @commands.bot_has_permissions(attach_files=True)
+    @commands.guild_only()
     async def makedocs(
         self,
         ctx: commands.Context,
