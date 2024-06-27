@@ -55,9 +55,7 @@ class LevelUps(MixinMeta):
         profile.level = calculated_level
         # User has reached a new level, time to log and award roles if needed
         added, __ = await self.ensure_roles(member, conf)
-        if not channel and message is not None:
-            channel = message.channel
-
+        current_channel = channel or message.channel if message else None
         log_channel = guild.get_channel(conf.notifylog) if conf.notifylog else None
         placeholders = {
             "username": member.name,
@@ -106,14 +104,14 @@ class LevelUps(MixinMeta):
                 description=msg_txt,
                 color=member.color,
             ).set_author(name=member.display_name, icon_url=member.display_avatar)
-            if channel and conf.notify:
+            if current_channel and conf.notify:
                 with suppress(discord.HTTPException):
                     if conf.notifymention:
-                        await log_channel.send(member.mention, embed=embed)
+                        await current_channel.send(member.mention, embed=embed)
                     else:
-                        await log_channel.send(embed=embed)
+                        await current_channel.send(embed=embed)
 
-            current_channel_id = channel.id if channel else 0
+            current_channel_id = current_channel.id if current_channel else 0
             if log_channel and log_channel.id != current_channel_id:
                 with suppress(discord.HTTPException):
                     await log_channel.send(embed=embed)
