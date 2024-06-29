@@ -11,6 +11,7 @@ import discord
 import httpx
 import xmltojson
 from discord.ext import tasks
+from pydantic import VERSION
 from redbot.core import Config, commands
 from redbot.core.utils.chat_formatting import box
 from xbox.webapi.api.client import XboxLiveClient
@@ -35,6 +36,7 @@ from .formatter import (
 REDIRECT_URI = "http://localhost/auth/callback"
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
 log = logging.getLogger("red.vrt.xtools")
+V2 = VERSION >= "2.0.0"
 
 
 class XTools(commands.Cog):
@@ -43,7 +45,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "3.11.1"
+    __version__ = "3.11.2"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -136,7 +138,8 @@ class XTools(commands.Cog):
                         f"Bot owner will need to re-authorize their tokens with `{ctx.clean_prefix}apiset auth`"
                     )
                 return None
-        await self.config.tokens.set(json.loads(auth_mgr.oauth.json()))
+        dump = auth_mgr.oauth.model_dump(mode="json") if V2 else json.loads(auth_mgr.oauth.json())
+        await self.config.tokens.set(dump)
         xbl_client = XboxLiveClient(auth_mgr)
         return xbl_client
 
@@ -174,7 +177,8 @@ class XTools(commands.Cog):
             auth_mgr = AuthenticationManager(session, client_id, client_secret, REDIRECT_URI)
             try:
                 await auth_mgr.request_tokens(code)
-                await self.config.tokens.set(json.loads(auth_mgr.oauth.json()))
+                dump = auth_mgr.oauth.model_dump(mode="json") if V2 else json.loads(auth_mgr.oauth.json())
+                await self.config.tokens.set(dump)
             except Exception as e:
                 if "Bad Request" in str(e):
                     return await author.send(
@@ -196,7 +200,8 @@ class XTools(commands.Cog):
         auth_mgr = AuthenticationManager(session, client_id, client_secret, REDIRECT_URI)
         auth_mgr.oauth = OAuth2TokenResponse.parse_raw(json.dumps(tokens))
         await auth_mgr.refresh_tokens()
-        await self.config.tokens.set(json.loads(auth_mgr.oauth.json()))
+        dump = auth_mgr.oauth.model_dump(mode="json") if V2 else json.loads(auth_mgr.oauth.json())
+        await self.config.tokens.set(dump)
         token = auth_mgr.xsts_token.authorization_header_value
         return token
 
@@ -333,7 +338,8 @@ class XTools(commands.Cog):
                 if not xbl_client:
                     return
                 try:
-                    profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
+                    pdata = await xbl_client.profile.get_profile_by_gamertag(gamertag)
+                    profile_data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
                 except aiohttp.ClientResponseError:
                     return await ctx.send("Invalid Gamertag. Try again.")
                 # Format json data
@@ -355,7 +361,8 @@ class XTools(commands.Cog):
             if not xbl_client:
                 return
             try:
-                profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
+                pdata = await xbl_client.profile.get_profile_by_gamertag(gamertag)
+                profile_data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
             except aiohttp.ClientResponseError:
                 return await ctx.send("Invalid Gamertag. Try again.")
             _, xuid, _, _, _, _, _, _, _ = profile(profile_data)
@@ -369,7 +376,8 @@ class XTools(commands.Cog):
             if not xbl_client:
                 return
             try:
-                profile_data = json.loads((await xbl_client.profile.get_profile_by_xuid(xuid)).json())
+                pdata = await xbl_client.profile.get_profile_by_xuid(xuid)
+                profile_data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
             except aiohttp.ClientResponseError:
                 return await ctx.send("Invalid XUID. Try again.")
             gt, _, _, _, _, _, _, _, _ = profile(profile_data)
@@ -392,12 +400,14 @@ class XTools(commands.Cog):
             embed.set_thumbnail(url=LOADING)
             msg = await ctx.send(embed=embed)
             try:
-                profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
+                pdata = await xbl_client.profile.get_profile_by_gamertag(gamertag)
+                profile_data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
             except aiohttp.ClientResponseError:
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
             _, xuid, _, _, _, _, _, _, _ = profile(profile_data)
-            friends_data = json.loads((await xbl_client.people.get_friends_summary_by_gamertag(gamertag)).json())
+            friends = await xbl_client.people.get_friends_summary_by_gamertag(gamertag)
+            friends_data = friends.model_dump(mode="json") if V2 else json.loads(friends.json())
 
             # Manually get presence and activity info since xbox webapi method is outdated
             token = await self.get_token(session)
@@ -442,15 +452,15 @@ class XTools(commands.Cog):
             embed.set_thumbnail(url=LOADING)
             msg = await ctx.send(embed=embed)
             try:
-                profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
+                pdata = await xbl_client.profile.get_profile_by_gamertag(gamertag)
+                profile_data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
             except aiohttp.ClientResponseError:
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
             _, xuid, _, _, _, _, _, _, _ = profile(profile_data)
             try:
-                data = json.loads(
-                    (await xbl_client.screenshots.get_saved_screenshots_by_xuid(xuid=xuid, max_items=10000)).json()
-                )
+                ss = await xbl_client.screenshots.get_saved_screenshots_by_xuid(xuid=xuid, max_items=10000)
+                data = ss.model_dump(mode="json") if V2 else json.loads(ss.json())
             except aiohttp.ClientResponseError as e:
                 if e.message == "Forbidden":
                     embed = discord.Embed(
@@ -489,7 +499,8 @@ class XTools(commands.Cog):
             embed.set_thumbnail(url=LOADING)
             msg = await ctx.send(embed=embed)
             try:
-                profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
+                pdata = await xbl_client.profile.get_profile_by_gamertag(gamertag)
+                profile_data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
             except aiohttp.ClientResponseError:
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
@@ -587,11 +598,10 @@ class XTools(commands.Cog):
             url, header, payload = stats_api_format(token, title_id, xuid)
             async with self.session.post(url=url, headers=header, data=payload) as res:
                 game_stats = await res.json(content_type=None)
-
-            title_info = json.loads((await xbl_client.titlehub.get_title_info(title_id)).json())
-            achievement_data = json.loads(
-                (await xbl_client.achievements.get_achievements_xboxone_gameprogress(xuid, title_id)).json()
-            )
+            title = await xbl_client.titlehub.get_title_info(title_id)
+            title_info = title.model_dump(mode="json") if V2 else json.loads(title.json())
+            achievements = await xbl_client.achievements.get_achievements_xboxone_gameprogress(xuid, title_id)
+            achievement_data = achievements.model_dump(mode="json") if V2 else json.loads(achievements.json())
             data = {
                 "stats": game_stats,
                 "info": title_info,
@@ -621,7 +631,8 @@ class XTools(commands.Cog):
                 embed.set_thumbnail(url=LOADING)
                 msg = await ctx.send(embed=embed)
                 try:
-                    profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
+                    pdata = await xbl_client.profile.get_profile_by_gamertag(gamertag)
+                    profile_data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
                 except aiohttp.ClientResponseError:
                     embed = discord.Embed(description="Invalid Gamertag. Try again.")
                     return await msg.edit(embed=embed)
@@ -633,7 +644,8 @@ class XTools(commands.Cog):
                     return await msg.edit(embed=embed)
                 gt, xuid, _, _, _, _, _, _, _ = profile(profile_data)
                 try:
-                    friend_data = json.loads((await xbl_client.people.get_friends_by_xuid(xuid)).json())
+                    friends = await xbl_client.people.get_friends_by_xuid(xuid)
+                    friend_data = friends.model_dump(mode="json") if V2 else json.loads(friends.json())
                 except aiohttp.ClientResponseError as e:
                     if e.status == 403:
                         return await msg.edit(embed=None, content="This persons friends list is private!")
@@ -726,13 +738,15 @@ class XTools(commands.Cog):
             embed.set_thumbnail(url=LOADING)
             msg = await ctx.send(embed=embed)
             try:
-                profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
+                pdata = await xbl_client.profile.get_profile_by_gamertag(gamertag)
+                profile_data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
             except aiohttp.ClientResponseError:
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
             gt, xuid, _, _, _, _, _, _, _ = profile(profile_data)
             try:
-                data = json.loads((await xbl_client.gameclips.get_saved_clips_by_xuid(xuid)).json())
+                clips = await xbl_client.gameclips.get_saved_clips_by_xuid(xuid)
+                data = clips.model_dump(mode="json") if V2 else json.loads(clips.json())
             except Exception as e:
                 if "Forbidden" in str(e):
                     embed = discord.Embed(
@@ -785,7 +799,8 @@ class XTools(commands.Cog):
                     xbl_client = await self.auth_manager(session, ctx)
                     if not xbl_client:
                         return
-                    game_data = json.loads((await xbl_client.catalog.get_products(game_ids)).json())
+                    game = await xbl_client.catalog.get_products(game_ids)
+                    game_data = game.model_dump(mode="json") if V2 else json.loads(game.json())
                     products = game_data["products"]
                     pages = gwg_embeds(products)
                     return await menu(ctx, pages, DEFAULT_CONTROLS)
@@ -806,7 +821,8 @@ class XTools(commands.Cog):
             embed.set_thumbnail(url=LOADING)
             msg = await ctx.send(embed=embed)
             try:
-                profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
+                pdata = await xbl_client.profile.get_profile_by_gamertag(gamertag)
+                profile_data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
             except aiohttp.ClientResponseError:
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
@@ -946,12 +962,14 @@ class XTools(commands.Cog):
                 return "Could not communicate with XSAPI"
 
             try:
-                profile_data = json.loads((await xbl_client.profile.get_profile_by_gamertag(gamertag)).json())
+                pdata = await xbl_client.profile.get_profile_by_gamertag(gamertag)
+                profile_data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
             except aiohttp.ClientResponseError:
                 return "Invalid Gamertag. Try again."
 
             _, xuid, _, _, _, _, _, _, _ = profile(profile_data)
-            friends_data = json.loads((await xbl_client.people.get_friends_summary_by_gamertag(gamertag)).json())
+            friends = await xbl_client.people.get_friends_summary_by_gamertag(gamertag)
+            friends_data = friends.model_dump(mode="json") if V2 else json.loads(friends.json())
 
             # Manually get presence and activity info since xbox webapi method is outdated
             token = await self.get_token(session)
