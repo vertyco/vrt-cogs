@@ -43,7 +43,7 @@ class Admin(MixinMeta):
             "**Voice**\n"
             "`Voice XP:         `{} per minute\n"
             "`Ignore Muted:     `{}\n"
-            "`Inore Solo:       `{}\n"
+            "`Ignore Solo:       `{}\n"
             "`Ignore Deafened:  `{}\n"
             "`Ignore Invisible: `{}\n"
             "**Level Algorithm**\n"
