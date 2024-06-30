@@ -132,21 +132,22 @@ class VoteView(discord.ui.View):
             if conf.min_playtime_to_vote and self.bot.get_cog("ArkTools"):
                 try:
                     arktools = self.bot.get_cog("ArkTools")
-                    player = await arktools.db_utils.search_player_cached(self.guild, interaction.user)
-                    if not player:
-                        prefixes = await self.bot.get_valid_prefixes()
-                        prefix = prefixes[0]
-                        txt = _("Your in-game profile must be registered in order to vote on suggestions.\n")
-                        txt += _("Use the {} command to link your discord account.").format(f"`{prefix}register`")
-                        await self.respond(interaction, txt)
-                        return False
-                    playtime_hours = player.total_playtime / 3600
-                    if playtime_hours < conf.min_playtime_to_vote:
-                        txt = _("You must have at least {} hours of playtime to vote.").format(
-                            conf.min_playtime_to_vote
-                        )
-                        await self.respond(interaction, txt)
-                        return False
+                    if arktools.db:
+                        player = await arktools.db_utils.search_player_cached(self.guild, interaction.user)
+                        if not player:
+                            prefixes = await self.bot.get_valid_prefixes()
+                            prefix = prefixes[0]
+                            txt = _("Your in-game profile must be registered in order to vote on suggestions.\n")
+                            txt += _("Use the {} command to link your discord account.").format(f"`{prefix}register`")
+                            await self.respond(interaction, txt)
+                            return False
+                        playtime_hours = player.total_playtime / 3600
+                        if playtime_hours < conf.min_playtime_to_vote:
+                            txt = _("You must have at least {} hours of playtime to vote.").format(
+                                conf.min_playtime_to_vote
+                            )
+                            await self.respond(interaction, txt)
+                            return False
                 except Exception as e:
                     log.exception("Error checking ArkTools requirement", exc_info=e)
 
