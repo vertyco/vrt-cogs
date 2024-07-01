@@ -181,9 +181,13 @@ If a file has no extension it will still try to read it only if it can be decode
         )
         embed.set_footer(text=_("Token limit is a soft cap and excess is trimmed before sending to the api"))
         await ctx.send(embed=embed)
-        if conversation.system_prompt_override:
-            file = text_to_file(conversation.system_prompt_override)
-            await ctx.send(_("System prompt override for this conversation"), file=file)
+        if await self.bot.is_mod(ctx.author):
+            if conversation.system_prompt_override:
+                file = text_to_file(conversation.system_prompt_override)
+                await ctx.send(_("System prompt override for this conversation"), file=file)
+            elif ctx.channel.id in conf.channel_prompts:
+                file = text_to_file(conf.channel_prompts[ctx.channel.id])
+                await ctx.send(_("System prompt override for this channel"), file=file)
 
     @commands.command(name="convoclear", aliases=["clearconvo"])
     @commands.guild_only()
