@@ -26,6 +26,8 @@ class WeeklyReset(MixinMeta):
         Returns:
             bool: True if the weekly stats were reset, False otherwise.
         """
+        if guild.id == 625757527765811240:
+            await guild.owner.send("Resetting weekly stats!")
         log.warning(f"Resetting weekly stats for {guild.name}")
         conf = self.db.get_conf(guild)
         if not conf.users_weekly:
@@ -111,7 +113,8 @@ class WeeklyReset(MixinMeta):
             with suppress(discord.HTTPException):
                 await ctx.send(embed=embed)
 
-        if channel and getattr(ctx, "channel", channel).id != channel.id:
+        command_channel_id = ctx.channel.id if ctx else 0
+        if channel and command_channel_id != channel.id:
             mentions = ", ".join(f"<@{uid}>" for uid in top_user_ids)
             with suppress(discord.HTTPException):
                 if conf.weeklysettings.ping_winners:
@@ -122,9 +125,9 @@ class WeeklyReset(MixinMeta):
         top: t.List[t.Tuple[discord.Member, ProfileWeekly]] = sorted_users[: conf.weeklysettings.count]
         top_ids = [user[0].id for user in top]
         if conf.weeklysettings.role_all:
-            winners = [user[0] for user in top]
+            winners: list[discord.Member] = [user[0] for user in top]
         else:
-            winners = [top[0][0]]
+            winners: list[discord.Member] = [top[0][0]]
 
         perms = guild.me.guild_permissions.manage_roles
         if not perms:
@@ -135,20 +138,18 @@ class WeeklyReset(MixinMeta):
         role = guild.get_role(conf.weeklysettings.role) if conf.weeklysettings.role else None
         if role and perms:
             if conf.weeklysettings.remove:
-                last_winners = [
-                    guild.get_member(uid) for uid in conf.weeklysettings.last_winners if guild.get_member(uid)
-                ]
-                for user in last_winners:
-                    role_ids = [role.id for role in user.roles]
-                    if user.id in top_ids or role.id not in role_ids:
-                        # User must have won this week too or doesnt have the role anyway
+                for user_id in conf.weeklysettings.last_winners:
+                    user = guild.get_member(user_id)
+                    if not user:
                         continue
-                    try:
-                        await user.remove_roles(role, reason=_("Weekly winner role removal"))
-                    except discord.Forbidden:
-                        log.warning(f"Missing permissions to apply role {role} to {user.name}")
-                    except discord.HTTPException:
-                        pass
+                    user_roles = [role.id for role in user.roles]
+                    if role.id in user_roles and user.id not in top_ids:
+                        try:
+                            await user.remove_roles(role, reason=_("Weekly winner role removal"))
+                        except discord.Forbidden:
+                            log.warning(f"Missing permissions to apply role {role} to {user.name}")
+                        except discord.HTTPException:
+                            pass
 
             for winner in winners:
                 role_ids = [role.id for role in winner.roles]
