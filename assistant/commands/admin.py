@@ -560,9 +560,9 @@ class Admin(MixinMeta):
                 ).format(humanize_number(combined), humanize_number(max_tokens))
             )
         if channel.id in conf.channel_prompts:
-            await ctx.send(_("Channel prompt has been overwritten to {}!").format(channel.mention))
+            await ctx.send(_("Channel prompt has been overwritten for {}!").format(channel.mention))
         else:
-            await ctx.send(_("Channel prompt has been set to {}!").format(channel.mention))
+            await ctx.send(_("Channel prompt has been set for {}!").format(channel.mention))
         conf.channel_prompts[channel.id] = system_prompt
         await self.save_conf()
 
