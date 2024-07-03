@@ -8,7 +8,7 @@ DEFAULT_GUILD = {
     "overview_msg": 0,  # Message id of the overview info
     "overview_mention": False,  # Whether the channel names are displayed or the name
     # Ticket data
-    "opened": {},  # All opened tickets
+    "opened": {},  # All opened tickets {user_id: {channel_id: panel_data_dict}}
     "panels": {},  # All ticket panels
     # Toggles
     "dm": False,  # Whether to DM the user when their ticket is closed
@@ -58,4 +58,15 @@ MODAL_SCHEMA = {
     "min_length": None,  # (Optional)
     "max_length": None,  # (Optional)
     "answer": None,  # (Optional)
+}
+OPENED_TICKET_SCHEMA = {
+    "panel": str,
+    "opened": "datetime",
+    "pfp": "url or None",
+    "logmsg": "message ID or None",
+    "answers": {"question": "answer"},
+    "has_response": bool,
+    "message_id": "Message ID of first message in the ticket sent from the bot",
+    "max_claims": int,
+    "overview_msg": "Ticket overview message ID (Optional)",
 }
