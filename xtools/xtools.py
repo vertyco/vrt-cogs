@@ -45,7 +45,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "3.11.2"
+    __version__ = "3.11.3"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -340,7 +340,7 @@ class XTools(commands.Cog):
                 try:
                     pdata = await xbl_client.profile.get_profile_by_gamertag(gamertag)
                     profile_data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
-                except aiohttp.ClientResponseError:
+                except (aiohttp.ClientResponseError, httpx.HTTPStatusError):
                     return await ctx.send("Invalid Gamertag. Try again.")
                 # Format json data
                 gt, xuid, _, _, _, _, _, _, _ = profile(profile_data)
@@ -363,7 +363,7 @@ class XTools(commands.Cog):
             try:
                 pdata = await xbl_client.profile.get_profile_by_gamertag(gamertag)
                 profile_data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
-            except aiohttp.ClientResponseError:
+            except (aiohttp.ClientResponseError, httpx.HTTPStatusError):
                 return await ctx.send("Invalid Gamertag. Try again.")
             _, xuid, _, _, _, _, _, _, _ = profile(profile_data)
             return await ctx.send(f"`{xuid}`")
@@ -378,7 +378,7 @@ class XTools(commands.Cog):
             try:
                 pdata = await xbl_client.profile.get_profile_by_xuid(xuid)
                 profile_data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
-            except aiohttp.ClientResponseError:
+            except (aiohttp.ClientResponseError, httpx.HTTPStatusError):
                 return await ctx.send("Invalid XUID. Try again.")
             gt, _, _, _, _, _, _, _, _ = profile(profile_data)
             return await ctx.send(f"`{gt}`")
@@ -402,7 +402,7 @@ class XTools(commands.Cog):
             try:
                 pdata = await xbl_client.profile.get_profile_by_gamertag(gamertag)
                 profile_data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
-            except aiohttp.ClientResponseError:
+            except (aiohttp.ClientResponseError, httpx.HTTPStatusError):
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
             _, xuid, _, _, _, _, _, _, _ = profile(profile_data)
@@ -454,7 +454,7 @@ class XTools(commands.Cog):
             try:
                 pdata = await xbl_client.profile.get_profile_by_gamertag(gamertag)
                 profile_data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
-            except aiohttp.ClientResponseError:
+            except (aiohttp.ClientResponseError, httpx.HTTPStatusError):
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
             _, xuid, _, _, _, _, _, _, _ = profile(profile_data)
@@ -501,7 +501,7 @@ class XTools(commands.Cog):
             try:
                 pdata = await xbl_client.profile.get_profile_by_gamertag(gamertag)
                 profile_data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
-            except aiohttp.ClientResponseError:
+            except (aiohttp.ClientResponseError, httpx.HTTPStatusError):
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
             gt, xuid, _, _, _, _, _, _, _ = profile(profile_data)
@@ -633,7 +633,7 @@ class XTools(commands.Cog):
                 try:
                     pdata = await xbl_client.profile.get_profile_by_gamertag(gamertag)
                     profile_data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
-                except aiohttp.ClientResponseError:
+                except (aiohttp.ClientResponseError, httpx.HTTPStatusError):
                     embed = discord.Embed(description="Invalid Gamertag. Try again.")
                     return await msg.edit(embed=embed)
                 except Exception as e:
@@ -740,7 +740,7 @@ class XTools(commands.Cog):
             try:
                 pdata = await xbl_client.profile.get_profile_by_gamertag(gamertag)
                 profile_data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
-            except aiohttp.ClientResponseError:
+            except (aiohttp.ClientResponseError, httpx.HTTPStatusError):
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
             gt, xuid, _, _, _, _, _, _, _ = profile(profile_data)
@@ -823,7 +823,7 @@ class XTools(commands.Cog):
             try:
                 pdata = await xbl_client.profile.get_profile_by_gamertag(gamertag)
                 profile_data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
-            except aiohttp.ClientResponseError:
+            except (aiohttp.ClientResponseError, httpx.HTTPStatusError):
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
             except httpx.HTTPStatusError as e:
@@ -964,7 +964,7 @@ class XTools(commands.Cog):
             try:
                 pdata = await xbl_client.profile.get_profile_by_gamertag(gamertag)
                 profile_data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
-            except aiohttp.ClientResponseError:
+            except (aiohttp.ClientResponseError, httpx.HTTPStatusError):
                 return "Invalid Gamertag. Try again."
 
             _, xuid, _, _, _, _, _, _, _ = profile(profile_data)
