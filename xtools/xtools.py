@@ -45,7 +45,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "3.11.3"
+    __version__ = "3.11.4"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -825,12 +825,6 @@ class XTools(commands.Cog):
                 profile_data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
             except (aiohttp.ClientResponseError, httpx.HTTPStatusError):
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
-                return await msg.edit(embed=embed)
-            except httpx.HTTPStatusError as e:
-                if e.response.status_code == 404:
-                    embed = discord.Embed(description="Invalid Gamertag. Try again.")
-                    return await msg.edit(embed=embed)
-                embed = discord.Embed(description=f"Failed to gather data!\nError: {box(str(e), 'py')}")
                 return await msg.edit(embed=embed)
             gt, xuid, _, _, _, _, _, _, _ = profile(profile_data)
 
