@@ -32,7 +32,7 @@ class BankEvents(PaydayOverride, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "2.2.0"
+    __version__ = "2.2.1"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -44,6 +44,8 @@ class BankEvents(PaydayOverride, commands.Cog, metaclass=CompositeMetaClass):
         self.wipe_bank_coro = None
         self.bank_prune_coro = None
         self.set_global_coro = None
+        self.is_global_coro = None
+        # Original commands
         self.payday_callback = None
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
@@ -68,7 +70,7 @@ class BankEvents(PaydayOverride, commands.Cog, metaclass=CompositeMetaClass):
         self.wipe_bank_coro = bank.wipe_bank
         self.bank_prune_coro = bank.bank_prune
         self.set_global_coro = bank.set_global
-        self.is_gobal_coro = bank.is_global
+        self.is_global_coro = bank.is_global
 
         # Wrap methods
         setattr(bank, "set_balance", custombank.set_balance)
@@ -96,8 +98,8 @@ class BankEvents(PaydayOverride, commands.Cog, metaclass=CompositeMetaClass):
             setattr(bank, "bank_prune", self.bank_prune_coro)
         if self.set_global_coro is not None:
             setattr(bank, "set_global", self.set_global_coro)
-        if self.is_gobal_coro is not None:
-            setattr(bank, "is_global", self.is_gobal_coro)
+        if self.is_global_coro is not None:
+            setattr(bank, "is_global", self.is_global_coro)
 
         payday: commands.Command = self.bot.get_command("payday")
         if payday and self.payday_callback:
