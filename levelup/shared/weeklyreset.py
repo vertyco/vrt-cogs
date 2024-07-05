@@ -1,6 +1,7 @@
 import logging
 import typing as t
 from contextlib import suppress
+from datetime import timedelta
 
 import discord
 from redbot.core import commands
@@ -68,6 +69,8 @@ class WeeklyReset(MixinMeta):
         total_voicetime = utils.humanize_delta(total_voicetime)
         total_stars = humanize_number(total_stars)
 
+        next_reset = int(conf.weeklysettings.next_reset + timedelta(days=7).total_seconds())
+
         embed = discord.Embed(
             description=_(
                 "`Total Exp:       `{}\n"
@@ -80,7 +83,7 @@ class WeeklyReset(MixinMeta):
                 total_messages,
                 total_stars,
                 total_voicetime,
-                f"<t:{conf.weeklysettings.next_reset}:R>",
+                f"<t:{next_reset}:R>",
             ),
             color=await self.bot.get_embed_color(channel or ctx),
         )
