@@ -396,8 +396,50 @@ class AdminBase(MixinMeta):
 
         await ctx.send(embed=embed, file=file, ephemeral=True)
 
+    @commands.hybrid_command(
+        name="refresh",
+        description=_("Refresh the buttons on a suggestion if it gets stuck."),
+    )
+    @app_commands.describe(number=_("Suggestion number to view votes for"))
+    @commands.guild_only()
+    @commands.bot_has_permissions(attach_files=True, embed_links=True)
+    async def refresh_suggestion(self, ctx: commands.Context, number: int):
+        """Refresh the buttons on a suggestion if it gets stuck."""
+        conf = self.db.get_conf(ctx.guild)
+
+        if not conf.approvers:
+            txt = _("No approvers have been set! Use the {} command to add one.").format(
+                f"`{ctx.clean_prefix}ideaset approverole @role`"
+            )
+            return await ctx.send(txt, ephemeral=True)
+
+        if not any(role in [role.id for role in ctx.author.roles] for role in conf.approvers):
+            txt = _("You do not have the required roles to refresh suggestions.")
+            return await ctx.send(txt, ephemeral=True)
+
+        suggestion = conf.suggestions.get(number)
+        if not suggestion:
+            await ctx.send(_("That suggestion does not exist!"), ephemeral=True)
+            return
+
+        pending = ctx.guild.get_channel(conf.pending)
+        if not pending:
+            txt = _("The pending suggestions channel no longer exists!")
+            return await ctx.send(txt, ephemeral=True)
+
+        try:
+            message = await pending.fetch_message(suggestion.message_id)
+        except discord.HTTPException:
+            txt = _("I cannot find the message associated with this suggestion.")
+            return await ctx.send(txt, ephemeral=True)
+
+        view = VoteView(self, ctx.guild, number, suggestion.id)
+        await message.edit(view=view)
+        await ctx.send(_("Suggestion #{} has been refreshed.").format(number), ephemeral=True)
+
     @reject_suggestion.autocomplete("number")
     @approve_suggestion.autocomplete("number")
+    @refresh_suggestion.autocomplete("number")
     @view_votes.autocomplete("number")
     async def suggest_autocomplete(self, interaction: discord.Interaction, current: str):
         conf = self.db.get_conf(interaction.guild)
