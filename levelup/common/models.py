@@ -211,7 +211,7 @@ class WeeklySettings(Base):
         current_weekday = now.weekday()
 
         # Calculate how many days until the next reset day
-        days_until_reset = (self.reset_day - current_weekday + 7) % 7
+        days_until_reset: int = (self.reset_day - current_weekday + 7) % 7
 
         if days_until_reset == 0 and now.hour >= self.reset_hour:
             days_until_reset = 7
@@ -219,6 +219,14 @@ class WeeklySettings(Base):
         next_reset_time = (now + timedelta(days=days_until_reset)).replace(
             hour=self.reset_hour, minute=0, second=0, microsecond=0
         )
+        # Round to the nearest 5 minutes
+        minutes: int = (now.minute // 5) * 5
+        next_reset_time = next_reset_time.replace(minute=minutes)
+
+        # Check if the next reset is less than 5 minutes away
+        if (next_reset_time - now).total_seconds() < 300:
+            next_reset_time += timedelta(weeks=1)
+
         return int(next_reset_time.timestamp())
 
     def refresh(self):
