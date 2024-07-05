@@ -2,6 +2,7 @@ import logging
 import typing as t
 from contextlib import suppress
 from datetime import timedelta
+from io import StringIO
 
 import discord
 from redbot.core import commands
@@ -101,16 +102,14 @@ class WeeklyReset(MixinMeta):
                 break
             top_user_ids.append(user.id)
             position = place_emojis[idx] if idx < 3 else f"#{place}."
-            embed.add_field(
-                name=f"{position} {user.display_name}",
-                value=_("`Experience: `{}\n" "`Messages:   `{}\n" "`Stars:      `{}\n" "`Voicetime:  `{}").format(
-                    humanize_number(round(stats.xp)),
-                    humanize_number(stats.messages),
-                    humanize_number(stats.stars),
-                    utils.humanize_delta(round(stats.voice)),
-                ),
-                inline=False,
-            )
+            tmp = StringIO()
+            tmp.write(_("`Experience: `{}\n").format(humanize_number(round(stats.xp))))
+            tmp.write(_("`Messages:   `{}\n").format(humanize_number(stats.messages)))
+            if stats.stars:
+                tmp.write(_("`Stars:      `{}\n").format(humanize_number(stats.stars)))
+            if round(stats.voice):
+                tmp.write(_("`Voicetime:  `{}\n").format(utils.humanize_delta(round(stats.voice))))
+            embed.add_field(name=f"{position} {user.display_name}", value=tmp.getvalue(), inline=False)
 
         if ctx:
             with suppress(discord.HTTPException):
