@@ -20,7 +20,7 @@ class IdeaBoard(Commands, Listeners, commands.Cog, metaclass=CompositeMetaClass)
     """Share Ideas and Suggestions"""
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.6.14"
+    __version__ = "0.6.15"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -78,8 +78,7 @@ class IdeaBoard(Commands, Listeners, commands.Cog, metaclass=CompositeMetaClass)
             return
         try:
             self.saving = True
-            dump = await asyncio.to_thread(self.db.dump)
-            await self.config.db.set(dump)
+            await self.config.db.set(self.db.dump())
         except Exception as e:
             log.exception("Failed to save config", exc_info=e)
         finally:
