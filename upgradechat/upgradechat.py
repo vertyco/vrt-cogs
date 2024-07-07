@@ -24,7 +24,7 @@ class UpgradeChat(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.2.1"
+    __version__ = "0.2.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -248,6 +248,7 @@ class UpgradeChat(commands.Cog):
     @commands.command()
     @commands.guild_only()
     @commands.cooldown(1, 60, BucketType.user)
+    @commands.bot_has_permissions(embed_links=True, view_channel=True, send_messages=True)
     async def claim(self, ctx: commands.Context):
         """Claim your Upgrade.Chat purchases!"""
         uid = ctx.author.id
