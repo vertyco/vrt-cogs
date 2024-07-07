@@ -1,3 +1,4 @@
+import calendar
 import logging
 import typing as t
 
@@ -43,6 +44,25 @@ class Admin(MixinMeta):
             return await ctx.send(_("You must be a bot owner to view these settings when global bank is enabled."))
         view = CostMenu(ctx, self, is_global, self.cost_check)
         await view.refresh()
+
+    @extendedeconomy.command(name="resetcooldown")
+    async def reset_payday_cooldown(self, ctx: commands.Context, *, member: discord.Member):
+        """Reset the payday cooldown for a user"""
+        cog = self.bot.get_cog("Economy")
+        if not cog:
+            return await ctx.send(_("Economy cog is not loaded."))
+        if await bank.is_global() and ctx.author.id not in self.bot.owner_ids:
+            return await ctx.send(_("You must be a bot owner to reset cooldowns when global bank is enabled!"))
+        cur_time = calendar.timegm(ctx.message.created_at.utctimetuple())
+        if await bank.is_global():
+            payday_time = await cog.config.PAYDAY_TIME()
+            new_time = int(cur_time - payday_time)
+            await cog.config.user(member).next_payday.set(new_time)
+        else:
+            payday_time = await cog.config.guild(ctx.guild).PAYDAY_TIME()
+            new_time = int(cur_time - payday_time)
+            await cog.config.member(member).next_payday.set(new_time)
+        await ctx.send(_("Payday cooldown reset for **{}**.").format(member.display_name))
 
     @extendedeconomy.command(name="stackpaydays", aliases=["stackpayday"])
     async def stack_paydays(self, ctx: commands.Context):
