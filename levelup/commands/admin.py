@@ -664,11 +664,13 @@ class Admin(MixinMeta):
     async def view_levelup_alerts(self, ctx: commands.Context):
         """View the current level up alert messages"""
         conf = self.db.get_conf(ctx.guild)
-        embed = discord.Embed(color=await self.bot.get_embed_color(ctx))
-        embed.add_field(name=_("LevelUp DM"), value=conf.levelup_dm, inline=False)
-        embed.add_field(name=_("LevelUp DM Role"), value=conf.role_awarded_dm, inline=False)
-        embed.add_field(name=_("LevelUp Message"), value=conf.levelup_msg, inline=False)
-        embed.add_field(name=_("LevelUp Role Message"), value=conf.role_awarded_msg, inline=False)
+        color = await self.bot.get_embed_color(ctx)
+        desc = _("Current LevelUp alert settings")
+        embed = discord.Embed(description=desc, color=color)
+        embed.add_field(name=_("LevelUp DM"), value=str(conf.levelup_dm), inline=False)
+        embed.add_field(name=_("LevelUp DM Role"), value=str(conf.role_awarded_dm), inline=False)
+        embed.add_field(name=_("LevelUp Message"), value=str(conf.levelup_msg), inline=False)
+        embed.add_field(name=_("LevelUp Role Message"), value=str(conf.role_awarded_msg), inline=False)
         await ctx.send(embed=embed)
 
     @set_levelup_alerts.command(name="dm")
