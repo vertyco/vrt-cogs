@@ -132,10 +132,14 @@ class MessageListener(MixinMeta):
         xp_to_add = random.randint(conf.xp[0], conf.xp[1])
         # Add channel bonus if it exists
         channel_bonuses = conf.channelbonus.msg
+        category = None
         if isinstance(message.channel, discord.Thread):
-            cat_id = getattr(message.channel.parent.category, "id", 0)
+            parent = message.channel.parent
+            if parent:
+                category = parent.category
         else:
-            cat_id = getattr(message.channel.category, "id", 0)
+            category = message.channel.category
+        cat_id = category.id if category else 0
 
         if message.channel.id in channel_bonuses:
             xp_to_add += random.randint(*channel_bonuses[message.channel.id])
