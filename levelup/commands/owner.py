@@ -144,7 +144,7 @@ class Owner(MixinMeta):
 
     @lvlowner.command(name="autoclean")
     async def toggle_auto_cleanup(self, ctx: commands.Context):
-        """Toggle auto-cleanup of guild configs"""
+        """Toggle purging of config data for guilds the bot is no longer in"""
         if self.db.auto_cleanup:
             self.db.auto_cleanup = False
             await ctx.send(_("Auto-Cleanup disabled."))
