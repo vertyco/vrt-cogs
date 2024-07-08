@@ -151,6 +151,11 @@ class Owner(MixinMeta):
         else:
             self.db.auto_cleanup = True
             await ctx.send(_("Auto-Cleanup enabled."))
+            bad_keys = [i for i in self.db.configs if not self.bot.get_guild(i)]
+            for key in bad_keys:
+                del self.db.configs[key]
+            if bad_keys:
+                await ctx.send(_("Purged {} guilds from the database.").format(len(bad_keys)))
         self.save()
 
     @lvlowner.command(name="internalapi")
