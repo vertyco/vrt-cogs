@@ -1,6 +1,7 @@
 import asyncio
 import json
 import typing as t
+from io import StringIO
 
 import discord
 from aiocache import cached
@@ -97,57 +98,69 @@ async def confirm_msg_reaction(message: discord.Message, author: t.Union[discord
 
 
 def format_settings(
-    conf: t.Union[DB, GuildSettings], is_global: bool, owner: bool, delay: t.Union[int, None]
+    db: DB,
+    conf: GuildSettings,
+    is_global: bool,
+    owner: bool,
+    delay: t.Union[int, None],
 ) -> discord.Embed:
     not_set = _("Not Set")
-    del_after = _("`Delete After:        `{}\n").format(humanize_timedelta(seconds=delay) if delay else _("Disabled"))
-    txt = _(
-        "# Extended Economy Settings\n"
-        "`Transfer Tax:        `{}\n"
-        "`Command Costs:       `{}\n"
-        "`Global Bank:         `{}\n"
-        "{}"
+    txt = StringIO()
+    txt.write(_("# Extended Economy Settings\n"))
+    tax = f"{round(conf.transfer_tax * 100, 2)}%" if conf.transfer_tax else _("None")
+    txt.write(_("`Transfer Tax:      `{}\n").format(tax))
+    costs = len(db.command_costs) if is_global else len(conf.command_costs)
+    txt.write(_("`Command Costs:     `{}\n").format(costs or _("None")))
+    txt.write(_("`Global Bank:       `{}\n").format(is_global))
+    # If owner
+    txt.write(
+        _("`Delete After:      `{}\n").format(humanize_timedelta(seconds=delay) if delay else _("Disabled"))
+        if owner
+        else ""
+    )
+    # If global
+    txt.write(
+        _("`Set Global:        `{}\n").format(f"<#{db.logs.set_global}>" if db.logs.set_global else not_set)
+        if is_global
+        else ""
+    )
+    # If not global
+    txt.write(_("`Stack Roles:       `{}\n").format(conf.stack_paydays) if not is_global else "")
+    if not is_global:
+        bonuses = ", ".join([f"<@&{r}>" for r in conf.role_bonuses]) if conf.role_bonuses else _("None")
+        txt.write(_("`Role Bonuses:      `{}\n").format(bonuses) if not is_global else "")
+    txt.write(_("`Payday Autoclaim:  `{}\n").format(db.auto_payday_claim))
+    if not is_global:
+        autoclaim_channel = f"<#{conf.logs.auto_claim}>" if conf.logs.auto_claim else not_set
+        txt.write(_("`Autoclaim Channel: `{}\n").format(autoclaim_channel))
+        roles = ", ".join([f"<@&{r}>" for r in conf.auto_claim_roles]) if conf.auto_claim_roles else _("None")
+        txt.write(_("`Autoclaim Roles:   `{}\n").format(roles))
+
+    logs = _(
         "## Event Log Channels\n"
         "`Default Log Channel: `{}\n"
         "`Set Balance:         `{}\n"
         "`Transfer Credits:    `{}\n"
         "`Bank Wipe:           `{}\n"
         "`Prune Accounts:      `{}\n"
-        "`Payday Claim:        `{}\n"
     ).format(
-        f"{round(conf.transfer_tax * 100, 2)}%" if conf.transfer_tax else _("None"),
-        len(conf.command_costs) or _("None"),
-        is_global,
-        del_after if owner else "",
         f"<#{conf.logs.default_log_channel}>" if conf.logs.default_log_channel else not_set,
         f"<#{conf.logs.set_balance}>" if conf.logs.set_balance else not_set,
         f"<#{conf.logs.transfer_credits}>" if conf.logs.transfer_credits else not_set,
         f"<#{conf.logs.bank_wipe}>" if conf.logs.bank_wipe else not_set,
         f"<#{conf.logs.prune}>" if conf.logs.prune else not_set,
-        f"<#{conf.logs.payday_claim}>" if conf.logs.payday_claim else not_set,
     )
-
-    txt += _("`Auto Claim Channel:  `{}\n").format(f"<#{conf.logs.auto_claim}>" if conf.logs.auto_claim else not_set)
-
-    if is_global:
-        txt += _("`Set Global:          `{}\n").format(
-            f"<#{conf.logs.set_global}>" if conf.logs.set_global else not_set
+    txt.write(logs)
+    if not is_global and db.auto_payday_claim:
+        txt.write(
+            _("`Payday AutoClaim:    `{}\n").format(f"<#{db.logs.auto_claim}>" if db.logs.auto_claim else not_set)
         )
-        txt += _("`Auto Paydays:        `{}\n").format(conf.auto_payday_claim)
-        txt += _("`Disable AutoPayday:  `{}\n").format(conf.auto_payday_disabled)
-    else:
-        txt += _("`Stack Paydays:       `{}\n").format(conf.stack_paydays)
-        autoclaim = [f"<@&{r}>" for r in conf.auto_claim_roles]
-        txt += _("`Auto Claim Roles:    `{}\n").format(", ".join(autoclaim) or not_set)
-        if conf.role_bonuses:
-            txt += _("`Role Bonuses:        `{}\n").format(
-                "\n".join(f"<@&{r}>: {b}" for r, b in conf.role_bonuses.items())
-            )
+
     if isinstance(conf, DB):
         footer = _("Showing settings for global bank")
     else:
         footer = _("Showing settings for this server")
-    embed = discord.Embed(description=txt, color=discord.Color.green())
+    embed = discord.Embed(description=txt.getvalue(), color=discord.Color.green())
     embed.set_footer(text=footer)
     return embed
 

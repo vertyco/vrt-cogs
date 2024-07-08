@@ -33,7 +33,7 @@ class ExtendedEconomy(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.3.4b"
+    __version__ = "0.3.5b"
 
     def __init__(self, bot: Red):
         super().__init__()

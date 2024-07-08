@@ -134,9 +134,7 @@ class DB(Base):
     command_costs: t.Dict[str, CommandCost] = {}
     transfer_tax: float = 0.0
 
-    auto_payday_disabled: bool = False
-
-    auto_payday_claim: bool = False  # Unique to DB (global bank only)
+    auto_payday_claim: bool = False  # If True, guilds that set auto_claim_roles will auto claim paydays
 
     # Allow prices per guild when global bank is enabled
     # per_guild_override: bool = False
