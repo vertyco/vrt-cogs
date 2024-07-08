@@ -110,7 +110,7 @@ class Tasks(MixinMeta):
                         continue
                     accounts[uid]["balance"] = min(max_bal, accounts[uid]["balance"] + to_give)
                     ecousers[uid]["next_payday"] = cur_time
-                    updated.append((f"{member.name} ({member.id}): {humanize_number(payday_credits)}\n", to_give))
+                    updated.append((f"{member.name} ({member.id}): {humanize_number(to_give)}\n", to_give))
 
                 if updated:
                     await bankgroup.set(accounts)
