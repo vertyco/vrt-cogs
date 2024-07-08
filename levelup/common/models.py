@@ -107,7 +107,7 @@ class Base(BaseModel):
                 if delta < backup_time_threshold:
                     create_new_backup = False
             if create_new_backup:
-                log.info("Creating backup of the config")
+                log.info("Creating checkpoint")
                 # Rolling backups: maintain <max_backups> old versions of the file
                 for i in range(max_backups, 0, -1):
                     backup_path = path.with_suffix(f".bak{i}")
