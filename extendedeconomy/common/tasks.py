@@ -83,7 +83,7 @@ class Tasks(MixinMeta):
                 max_bal = await bank.get_max_balance(guild)
                 payday_time = await eco_conf.guild(guild).PAYDAY_TIME()
                 payday_credits = await eco_conf.guild(guild).PAYDAY_CREDITS()
-                payday_roles: t.Dict[str, int] = await eco_conf.all_roles()
+                payday_roles: t.Dict[int, dict] = await eco_conf.all_roles()
 
                 updated = []
                 for member in guild.members:
@@ -99,11 +99,13 @@ class Tasks(MixinMeta):
                     to_give = payday_credits
                     can_autoclaim = False
                     for role in member.roles:
-                        role_credits = payday_roles.get(str(role.id), 0)
+                        if role.id not in payday_roles:
+                            continue
+                        role_credits = payday_roles[role.id]["PAYDAY_CREDITS"]
                         if conf.stack_paydays:
                             to_give += role_credits
                         elif role_credits > to_give:
-                            to_give = payday_roles[str(role.id)]
+                            to_give = role_credits
                         if role.id in conf.auto_claim_roles:
                             can_autoclaim = True
                     if not can_autoclaim:
