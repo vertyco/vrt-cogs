@@ -235,13 +235,20 @@ class CostMenu(discord.ui.View):
             self.message = await self.ctx.send(embed=page, view=self)
 
     def get_pages(self):
-        conf = self.db if self.global_bank else self.db.get_conf(self.ctx.guild)
+        guildconf = self.db.get_conf(self.ctx.guild)
+        conf = self.db if self.global_bank else guildconf
         itemized: t.List[t.Tuple[str, CommandCost]] = list(conf.command_costs.items())
         itemized.sort(key=lambda x: x[0])
         start, stop = 0, PER_PAGE
         pages = []
         page_count = math.ceil(len(conf.command_costs) / PER_PAGE)
-        base_embed = format_settings(conf, self.global_bank, self.author.id in self.bot.owner_ids, self.db.delete_after)
+        base_embed = format_settings(
+            self.db,
+            guildconf,
+            self.global_bank,
+            self.author.id in self.bot.owner_ids,
+            self.db.delete_after,
+        )
         for p in range(page_count):
             embed = base_embed.copy()
             embed.set_footer(text=_("Page {}/{}").format(p + 1, page_count))

@@ -85,9 +85,10 @@ class Admin(MixinMeta):
         is_global = await bank.is_global()
         if is_global:
             txt = _("This setting is not available when global bank is enabled.")
-            txt += _("\nUse {} to allow auto-claiming for for all users.").format(
-                f"`{ctx.clean_prefix}ecoset autopayday`"
-            )
+            if ctx.author.id in self.bot.owner_ids:
+                txt += _("\nUse {} to allow auto-claiming for for all users.").format(
+                    f"`{ctx.clean_prefix}ecoset autopayday`"
+                )
             return await ctx.send(txt)
         conf = self.db.get_conf(ctx.guild)
         if role.id in conf.auto_claim_roles:
@@ -132,32 +133,18 @@ class Admin(MixinMeta):
         await self.save()
 
     @extendedeconomy.command(name="autopayday")
+    @commands.is_owner()
     async def autopayday(self, ctx: commands.Context):
         """Toggle whether paydays are claimed automatically (Global bank)"""
         is_global = await bank.is_global()
-        if not is_global:
-            txt = _("This setting is only available when global bank is enabled.")
-            txt += _("\nUse {} to allow auto-claiming for certain roles.").format(
-                f"`{ctx.clean_prefix}ecoset autopaydayrole`"
-            )
-            return await ctx.send(txt)
         self.db.auto_payday_claim = not self.db.auto_payday_claim
         if self.db.auto_payday_claim:
-            txt = _("Paydays will now be claimed automatically.")
+            if is_global:
+                txt = _("Paydays will now be claimed automatically for all users.")
+            else:
+                txt = _("Paydays will now be claimed automatically for set roles.")
         else:
             txt = _("Paydays will no longer be claimed automatically.")
-        await ctx.send(txt)
-        await self.save()
-
-    @extendedeconomy.command(name="disableautopayday")
-    @commands.is_owner()
-    async def disable_autopayday(self, ctx: commands.Context):
-        """(Owner Only) Toggle auto payday claim globally"""
-        self.db.auto_payday_disabled = not self.db.auto_payday_disabled
-        if self.db.auto_payday_disabled:
-            txt = _("Paydays can now be claimed automatically when set by guild or owner.")
-        else:
-            txt = _("Servers can no longer claim paydays automatically whether the bank is global or not.")
         await ctx.send(txt)
         await self.save()
 
@@ -165,10 +152,8 @@ class Admin(MixinMeta):
     async def auto_claim_channel(self, ctx: commands.Context, *, channel: t.Optional[discord.TextChannel] = None):
         """Set the auto claim channel"""
         is_global = await bank.is_global()
-        if is_global and ctx.author.id not in self.bot.owner_ids:
-            return await ctx.send(
-                _("You must be a bot owner to set the auto-claim channel when global bank is enabled.")
-            )
+        if is_global:
+            return await ctx.send(_("There is no auto claim channel when global bank is enabled!"))
         txt = _("Auto claim channel set to {}").format(channel.mention) if channel else _("Auto claim channel removed.")
         if is_global:
             self.db.logs.auto_claim = channel.id if channel else 0

@@ -19,15 +19,13 @@ _ = Translator("ExtendedEconomy", __file__)
 class Tasks(MixinMeta):
     @tasks.loop(seconds=60)
     async def auto_paydays(self):
-        if self.db.auto_payday_disabled:
+        if not self.db.auto_payday_claim:
             return
         cog = self.bot.get_cog("Economy")
         if cog is None:
             return
         eco_conf: Config = cog.config
         is_global = await bank.is_global()
-        if is_global and not self.db.auto_payday_claim:
-            return
         cur_time = calendar.timegm(datetime.now(tz=timezone.utc).utctimetuple())
         if is_global:
             bankgroup = bank._config._get_base_group(bank._config.USER)
@@ -112,9 +110,7 @@ class Tasks(MixinMeta):
                         continue
                     accounts[uid]["balance"] = min(max_bal, accounts[uid]["balance"] + to_give)
                     ecousers[uid]["next_payday"] = cur_time
-                    updated.append(
-                        (f"{member.name} ({member.id}): {humanize_number(payday_credits)}\n", payday_credits)
-                    )
+                    updated.append((f"{member.name} ({member.id}): {humanize_number(payday_credits)}\n", to_give))
 
                 if updated:
                     await bankgroup.set(accounts)
