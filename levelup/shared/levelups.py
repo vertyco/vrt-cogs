@@ -104,6 +104,7 @@ class LevelUps(MixinMeta):
                 description=msg_txt,
                 color=member.color,
             ).set_author(name=member.display_name, icon_url=member.display_avatar)
+
             if current_channel and conf.notify:
                 with suppress(discord.HTTPException):
                     if conf.notifymention:
@@ -114,7 +115,11 @@ class LevelUps(MixinMeta):
             current_channel_id = current_channel.id if current_channel else 0
             if log_channel and log_channel.id != current_channel_id:
                 with suppress(discord.HTTPException):
-                    await log_channel.send(embed=embed)
+                    if not conf.notify and conf.notifymention:
+                        # Notify is off but mention is on, so mention the user in logs instead
+                        await log_channel.send(member.mention, embed=embed)
+                    else:
+                        await log_channel.send(embed=embed)
             return False
 
         banner = await self.get_profile_background(member.id, profile)

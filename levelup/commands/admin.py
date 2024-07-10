@@ -416,13 +416,15 @@ class Admin(MixinMeta):
         """
         Set LevelUP message channel
 
-        Set a channel for all level up messages to send to
+        Set a channel for all level up messages to send to.
+
+        If level notify is off and mention is on, the bot will mention the user in the channel
         """
         conf = self.db.get_conf(ctx.guild)
         if not channel and not conf.notifylog:
             return await ctx.send_help()
         if not channel and conf.notifylog:
-            conf.notifylog = None
+            conf.notifylog = 0
             self.save()
             return await ctx.send(_("LevelUp messages will no longer be sent to a specific channel"))
         conf.notifylog = channel.id
@@ -431,7 +433,11 @@ class Admin(MixinMeta):
 
     @levelset.command(name="levelnotify")
     async def toggle_levelup_notifications(self, ctx: commands.Context):
-        """Toggle the level up message when a user levels up"""
+        """
+        Toggle levelup notifications in the users channel
+
+        Send a message in the channel a user is typing in when they level up
+        """
         conf = self.db.get_conf(ctx.guild)
         status = _("**Disabled**") if conf.notify else _("**Enabled**")
         conf.notify = not conf.notify
@@ -440,7 +446,11 @@ class Admin(MixinMeta):
 
     @levelset.command(name="mention")
     async def toggle_mention(self, ctx: commands.Context):
-        """Toggle whether to mention the user in the level up message"""
+        """
+        Toggle whether to mention the user in the level up message
+
+        If level notify is on AND a log channel is set, the user will only be mentioned in the channel they are in.
+        """
         conf = self.db.get_conf(ctx.guild)
         status = _("**Disabled**") if conf.notifymention else _("**Enabled**")
         conf.notifymention = not conf.notifymention
