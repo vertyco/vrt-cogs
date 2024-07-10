@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2024-06-18 16:29-0400\n"
+"POT-Creation-Date: 2024-07-10 18:39-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -35,27 +35,27 @@ msgid ""
 "            channel (t.Optional[t.Union[discord.TextChannel, discord.VoiceChannel, discord.Thread, discord.ForumChannel]], optional): The channel where the leveling up occurred. Defaults to None.\n"
 "\n"
 "        Returns:\n"
-"            Tuple[List[discord.Role], List[discord.Role]]: A tuple containing two lists of roles - the roles that were added and the roles that were removed.\n"
+"            bool: True if the user leveled up, False otherwise.\n"
 "        "
 msgstr ""
 
-#: levelup\shared\levelups.py:73
+#: levelup\shared\levelups.py:72
 msgid "You just reached level {} in {} and obtained the {} role!"
 msgstr ""
 
-#: levelup\shared\levelups.py:79
+#: levelup\shared\levelups.py:78
 msgid "{} just reached level {} and obtained the {} role!"
 msgstr ""
 
-#: levelup\shared\levelups.py:87
+#: levelup\shared\levelups.py:86
 msgid "You just reached level {} in {}!"
 msgstr ""
 
-#: levelup\shared\levelups.py:91
+#: levelup\shared\levelups.py:90
 msgid "{} just reached level {}!"
 msgstr ""
 
-#: levelup\shared\levelups.py:205
+#: levelup\shared\levelups.py:214
 #, docstring
 msgid ""
 "Ensure a user has the correct level roles based on their level and the "
@@ -67,17 +67,17 @@ msgstr ""
 msgid "Add XP to a user and check for level ups"
 msgstr ""
 
-#: levelup\shared\profile.py:35
+#: levelup\shared\profile.py:36
 #, docstring
 msgid "Set a user's XP and check for level ups"
 msgstr ""
 
-#: levelup\shared\profile.py:44
+#: levelup\shared\profile.py:46
 #, docstring
 msgid "Remove XP from a user and check for level ups"
 msgstr ""
 
-#: levelup\shared\profile.py:53
+#: levelup\shared\profile.py:56
 #, docstring
 msgid ""
 "\n"
@@ -88,7 +88,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup\shared\profile.py:87
+#: levelup\shared\profile.py:90
 #, docstring
 msgid ""
 "Fetch a user's banner from Discord's API\n"
@@ -101,7 +101,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup\shared\profile.py:102
+#: levelup\shared\profile.py:105
 #, docstring
 msgid ""
 "\n"
@@ -118,48 +118,48 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup\shared\profile.py:154
+#: levelup\shared\profile.py:157
 msgid "Level {}\n"
 msgstr ""
 
-#: levelup\shared\profile.py:156
+#: levelup\shared\profile.py:159
 msgid "Prestige {}\n"
 msgstr ""
 
-#: levelup\shared\profile.py:159
+#: levelup\shared\profile.py:162
 msgid " stars\n"
 msgstr ""
 
-#: levelup\shared\profile.py:160
+#: levelup\shared\profile.py:163
 msgid " messages sent\n"
 msgstr ""
 
-#: levelup\shared\profile.py:161
+#: levelup\shared\profile.py:164
 msgid " in voice\n"
 msgstr ""
 
-#: levelup\shared\profile.py:163
+#: levelup\shared\profile.py:166
 msgid " Exp ({} total)\n"
 msgstr ""
 
-#: levelup\shared\profile.py:177
+#: levelup\shared\profile.py:180
 msgid "{}'s Profile"
 msgstr ""
 
-#: levelup\shared\profile.py:181
+#: levelup\shared\profile.py:184
 msgid "Rank {}, with {}% of the total server Exp"
 msgstr ""
 
-#: levelup\shared\profile.py:186
+#: levelup\shared\profile.py:189
 msgid "Progress"
 msgstr ""
 
-#: levelup\shared\profile.py:287
+#: levelup\shared\profile.py:290
 #, docstring
 msgid "Cached version of get_user_profile"
 msgstr ""
 
-#: levelup\shared\weeklyreset.py:20
+#: levelup\shared\weeklyreset.py:22
 #, docstring
 msgid ""
 "Announce and reset weekly stats\n"
@@ -167,18 +167,21 @@ msgid ""
 "        Args:\n"
 "            guild (discord.Guild): The guild where the weekly stats are being reset.\n"
 "            ctx (commands.Context, optional): Sends the announcement embed in the current channel. Defaults to None.\n"
+"\n"
+"        Returns:\n"
+"            bool: True if the weekly stats were reset, False otherwise.\n"
 "        "
 msgstr ""
 
-#: levelup\shared\weeklyreset.py:31
+#: levelup\shared\weeklyreset.py:38
 msgid "There are no users in the weekly data yet"
 msgstr ""
 
-#: levelup\shared\weeklyreset.py:45
+#: levelup\shared\weeklyreset.py:52
 msgid "There are no users with XP in the weekly data yet"
 msgstr ""
 
-#: levelup\shared\weeklyreset.py:67
+#: levelup\shared\weeklyreset.py:76
 msgid ""
 "`Total Exp:       `{}\n"
 "`Total Messages:  `{}\n"
@@ -187,30 +190,38 @@ msgid ""
 "`Next Reset:      `{}"
 msgstr ""
 
-#: levelup\shared\weeklyreset.py:83
+#: levelup\shared\weeklyreset.py:92
 msgid "Top Weekly Exp Earners"
 msgstr ""
 
-#: levelup\shared\weeklyreset.py:98
-msgid ""
-"`Experience: `{}\n"
-"`Messages:   `{}\n"
-"`Stars:      `{}\n"
-"`Voicetime:  `{}"
+#: levelup\shared\weeklyreset.py:106
+msgid "`Experience: `{}\n"
 msgstr ""
 
-#: levelup\shared\weeklyreset.py:130
+#: levelup\shared\weeklyreset.py:107
+msgid "`Messages:   `{}\n"
+msgstr ""
+
+#: levelup\shared\weeklyreset.py:109
+msgid "`Stars:      `{}\n"
+msgstr ""
+
+#: levelup\shared\weeklyreset.py:111
+msgid "`Voicetime:  `{}\n"
+msgstr ""
+
+#: levelup\shared\weeklyreset.py:138
 msgid "Missing permissions to manage roles"
 msgstr ""
 
-#: levelup\shared\weeklyreset.py:144
+#: levelup\shared\weeklyreset.py:150
 msgid "Weekly winner role removal"
 msgstr ""
 
-#: levelup\shared\weeklyreset.py:156
+#: levelup\shared\weeklyreset.py:162
 msgid "Weekly winner role addition"
 msgstr ""
 
-#: levelup\shared\weeklyreset.py:174
+#: levelup\shared\weeklyreset.py:180
 msgid "Weekly stats have been reset."
 msgstr ""

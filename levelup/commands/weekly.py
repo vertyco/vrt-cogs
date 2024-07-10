@@ -178,7 +178,15 @@ class Weekly(MixinMeta):
 
     @weeklyset.command(name="day")
     async def weeklyset_day(self, ctx: commands.Context, day: int):
-        """Set day for weekly stats reset"""
+        """Set day for weekly stats reset
+        0 = Monday
+        1 = Tuesday
+        2 = Wednesday
+        3 = Thursday
+        4 = Friday
+        5 = Saturday
+        6 = Sunday
+        """
         conf = self.db.get_conf(ctx.guild)
         if day < 0 or day > 6:
             return await ctx.send(_("Day must be between 0 and 6"))
