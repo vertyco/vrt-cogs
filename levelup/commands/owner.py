@@ -8,7 +8,7 @@ from redbot.core.i18n import Translator, cog_i18n
 
 from ..abc import MixinMeta
 from ..common import utils
-from ..generator import api, imgtools, levelalert
+from ..generator import imgtools, levelalert
 
 _ = Translator("LevelUp", __file__)
 
@@ -164,6 +164,7 @@ class Owner(MixinMeta):
         Enable internal API for parallel image generation
 
         Setting a port will spin up a detatched but cog-managed FastAPI server to handle image generation.
+        The process ID will be attached to the bot object and persist through reloads.
 
         **USE AT YOUR OWN RISK!!!**
         Using the internal API will spin up multiple subprocesses to handle bulk image generation.
@@ -183,18 +184,15 @@ class Owner(MixinMeta):
             if self.api_proc:
                 # Changing port so stop and start the server
                 await ctx.send(_("Internal API port changed to {}, Restarting workers").format(port))
-                if self.api_proc:
-                    api.kill(self.api_proc)
+                await self.stop_api()
                 await self.start_api()
             else:
                 await ctx.send(_("Internal API port set to {}, Spinning up workers").format(port))
-                if not self.api_proc:
-                    await self.start_api()
+                await self.start_api()
         else:
             self.db.internal_api_port = port
             await ctx.send(_("Internal API disabled, shutting down workers."))
-            if self.api_proc:
-                api.kill(self.api_proc)
+            await self.stop_api()
         self.save()
 
     @lvlowner.command(name="externalapi")

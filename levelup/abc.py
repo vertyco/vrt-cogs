@@ -57,6 +57,10 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    async def stop_api(self) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
     async def initialize_voice_states(self) -> int:
         raise NotImplementedError
 

@@ -75,7 +75,7 @@ class LevelUp(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "4.0.31"
+    __version__ = "4.0.32"
     __contributors__ = [
         "[aikaterna](https://github.com/aikaterna/aikaterna-cogs)",
         "[AAA3A](https://github.com/AAA3A-AAA3A/AAA3A-cogs)",
@@ -109,34 +109,62 @@ class LevelUp(
         self.io_lock = asyncio.Lock()
         self.last_save: float = perf_counter()
         self.initialized: bool = False
-        self.save_tasks: t.List[asyncio.Task] = []
 
         # Tenor API
         self.tenor: TenorAPI = None
 
         # Internal Profile Generator API
-        self.api_proc: t.Union[asyncio.subprocess.Process, mp.Process] = None
+        self.api_proc: t.Union[asyncio.subprocess.Process, mp.Process, None] = None
 
     async def cog_load(self) -> None:
+        if hasattr(self.bot, "_levelup_internal_api"):
+            self.api_proc = self.bot._levelup_internal_api
+        else:
+            self.bot._levelup_internal_api = None
         self.bot.tree.add_command(view_profile_context)
         asyncio.create_task(self.initialize())
 
     async def cog_unload(self) -> None:
         self.bot.tree.remove_command(view_profile_context)
         self.stop_levelup_tasks()
-        for task in self.save_tasks:
-            task.cancel()
+
+    async def start_api(self) -> bool:
+        if not self.db.internal_api_port:
+            return False
         if self.api_proc is not None:
-            log.info("Shutting down API")
-            try:
-                parent = psutil.Process(self.api_proc.pid)
-            except psutil.NoSuchProcess:
-                pass
+            return False
+        try:
+            log_dir = self.cog_path / "APILogs"
+            log_dir.mkdir(exist_ok=True, parents=True)
+            proc = await api.run(self.db.internal_api_port, log_dir=log_dir)
+            self.api_proc = proc
+            self.bot._levelup_internal_api = proc
+            log.debug(f"API Process started: {proc.pid}")
+            return True
+        except Exception as e:
+            if "Port already in use" in str(e):
+                log.error(
+                    "Port already in use, Internal API cannot be started, either change the port or restart the bot instance."
+                )
             else:
-                for child in parent.children(recursive=True):
-                    log.debug(f"Killing child: {child.pid}")
-                    child.kill()
-            self.api_proc.terminate()
+                log.error("Failed to start internal API", exc_info=e)
+            return False
+
+    async def stop_api(self) -> bool:
+        proc: t.Union[asyncio.subprocess.Process, mp.Process, None] = self.api_proc
+        self.api_proc = None
+        self.bot._levelup_internal_api = None
+        if proc is None:
+            return False
+        try:
+            parent = psutil.Process(proc.pid)
+        except psutil.NoSuchProcess:
+            return False
+        for child in parent.children(recursive=True):
+            log.info(f"Killing child: {child.pid}")
+            child.kill()
+        proc.terminate()
+        return True
 
     def save(self) -> None:
         async def _save():
@@ -161,7 +189,7 @@ class LevelUp(
             except Exception as e:
                 log.error("Failed to save config", exc_info=e)
 
-        self.save_tasks.append(asyncio.create_task(_save()))
+        asyncio.create_task(_save())
 
     async def initialize(self) -> None:
         await self.bot.wait_until_red_ready()
@@ -234,24 +262,6 @@ class LevelUp(
         await self.load_tenor()
         if self.db.internal_api_port and not self.db.external_api_url:
             await self.start_api()
-
-    async def start_api(self) -> bool:
-        if not self.db.internal_api_port:
-            return False
-        try:
-            log_dir = self.cog_path / "APILogs"
-            log_dir.mkdir(exist_ok=True, parents=True)
-            self.api_proc = await api.run(self.db.internal_api_port, log_dir=log_dir)
-            log.debug(f"API Process started: {self.api_proc.pid}")
-            return True
-        except Exception as e:
-            if str(e) == "Port already in use":
-                log.error(
-                    "Port already in use, Internal API cannot be started, either change the port or restart the bot instance."
-                )
-            else:
-                log.error("Failed to start internal API", exc_info=e)
-            return False
 
     async def load_tenor(self) -> None:
         tokens = await self.bot.get_shared_api_tokens("tenor")
