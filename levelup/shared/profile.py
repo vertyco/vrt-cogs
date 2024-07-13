@@ -52,7 +52,9 @@ class ProfileFormatting(MixinMeta):
         self.save()
         return int(profile.xp)
 
-    async def get_profile_background(self, user_id: int, profile: Profile) -> bytes:
+    async def get_profile_background(
+        self, user_id: int, profile: Profile, try_return_url: bool = False
+    ) -> t.Union[bytes, str]:
         """
         Get a background for a user's profile in the following priority:
         - Custom background selected by user
@@ -61,10 +63,14 @@ class ProfileFormatting(MixinMeta):
         """
         if profile.background == "default":
             if banner_url := await self.get_banner(user_id):
+                if try_return_url:
+                    return banner_url
                 if banner_bytes := await utils.get_content_from_url(banner_url):
                     return banner_bytes
 
         if profile.background.lower().startswith("http"):
+            if try_return_url:
+                return profile.background
             if content := await utils.get_content_from_url(profile.background):
                 return content
 
@@ -81,6 +87,8 @@ class ProfileFormatting(MixinMeta):
         # Try banner first if not default
         if profile.background != "default":
             if banner_url := await self.get_banner(user_id):
+                if try_return_url:
+                    return banner_url
                 if banner_bytes := await utils.get_content_from_url(banner_url):
                     return banner_bytes
 
@@ -190,7 +198,6 @@ class ProfileFormatting(MixinMeta):
             return embed
 
         kwargs = {
-            "avatar_bytes": await member.display_avatar.read(),
             "username": member.display_name if profile.show_displayname else member.name,
             "status": str(member.status).strip(),
             "level": profile.level,
@@ -212,18 +219,30 @@ class ProfileFormatting(MixinMeta):
         }
 
         profile_style = conf.style_override or profile.style
-        if profile_style != "runescape":
-            kwargs["background_bytes"] = await self.get_profile_background(member.id, profile)
-            if pdata and pdata.emoji_url:
-                emoji_bytes = await utils.get_content_from_url(pdata.emoji_url)
-                kwargs["prestige_emoji"] = emoji_bytes
-            if member.top_role.icon:
-                kwargs["role_icon"] = await member.top_role.icon.read()
-            if profile.font:
-                if (self.fonts / profile.font).exists():
-                    kwargs["font_path"] = str(self.fonts / profile.font)
-                elif (self.custom_fonts / profile.font).exists():
-                    kwargs["font_path"] = str(self.custom_fonts / profile.font)
+        if self.db.external_api_url or (self.db.internal_api_port and self.api_proc):
+            # We'll use the external/internal API, try to get URLs instead for faster http requests
+            kwargs["avatar_bytes"] = member.display_avatar.url
+            if profile_style != "runescape":
+                kwargs["background_bytes"] = await self.get_profile_background(member.id, profile, try_return_url=True)
+                if pdata and pdata.emoji_url:
+                    kwargs["prestige_emoji"] = pdata.emoji_url
+                if member.top_role.icon:
+                    kwargs["role_icon"] = member.top_role.icon.url
+        else:
+            kwargs["avatar_bytes"] = await member.display_avatar.read()
+            if profile_style != "runescape":
+                kwargs["background_bytes"] = await self.get_profile_background(member.id, profile)
+                if pdata and pdata.emoji_url:
+                    emoji_bytes = await utils.get_content_from_url(pdata.emoji_url)
+                    kwargs["prestige_emoji"] = emoji_bytes
+                if member.top_role.icon:
+                    kwargs["role_icon"] = await member.top_role.icon.read()
+
+        if profile.font:
+            if (self.fonts / profile.font).exists():
+                kwargs["font_path"] = str(self.fonts / profile.font)
+            elif (self.custom_fonts / profile.font).exists():
+                kwargs["font_path"] = str(self.custom_fonts / profile.font)
 
         if conf.showbal:
             kwargs["balance"] = await bank.get_balance(member)

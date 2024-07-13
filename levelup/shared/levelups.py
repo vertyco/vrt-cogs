@@ -122,8 +122,6 @@ class LevelUps(MixinMeta):
                         await log_channel.send(embed=embed)
             return False
 
-        banner = await self.get_profile_background(member.id, profile)
-        avatar = await member.display_avatar.read()
         fonts = list(self.fonts.glob("*.ttf")) + list(self.custom_fonts.iterdir())
         font = str(random.choice(fonts))
         if profile.font:
@@ -138,14 +136,23 @@ class LevelUps(MixinMeta):
 
         payload = aiohttp.FormData()
         if self.db.external_api_url or (self.db.internal_api_port and self.api_proc):
-            payload.add_field("background_bytes", banner, filename="data")
-            payload.add_field("avatar_bytes", avatar, filename="data")
+            banner = await self.get_profile_background(member.id, profile, try_return_url=True)
+            avatar = member.display_avatar.url
+
+            # payload.add_field("background_bytes", banner, filename="data")
+            # payload.add_field("avatar_bytes", avatar, filename="data")
+            payload.add_field("background_bytes", banner)
+            payload.add_field("avatar_bytes", avatar)
             payload.add_field("level", str(profile.level))
             payload.add_field("color", str(color))
             payload.add_field("font_path", font)
             payload.add_field("render_gif", str(self.db.render_gifs))
 
-        file: discord.File = None
+        else:
+            avatar = await member.display_avatar.read()
+            banner = await self.get_profile_background(member.id, profile)
+
+        file: t.Union[discord.File, None] = None
         if external_url := self.db.external_api_url:
             try:
                 url = f"{external_url}/levelup"

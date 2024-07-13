@@ -27,7 +27,8 @@
     "psutil",
     "tenacity",
     "ujson",
-    "uvicorn"
+    "uvicorn",
+    "requests"
   ],
   "short": "Discord leveling system",
   "tags": [

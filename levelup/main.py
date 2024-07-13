@@ -75,7 +75,7 @@ class LevelUp(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "4.0.334"
+    __version__ = "4.0.35"
     __contributors__ = [
         "[aikaterna](https://github.com/aikaterna/aikaterna-cogs)",
         "[AAA3A](https://github.com/AAA3A-AAA3A/AAA3A-cogs)",
@@ -161,9 +161,10 @@ class LevelUp(
         except psutil.NoSuchProcess:
             return False
         for child in parent.children(recursive=True):
-            log.info(f"Killing child: {child.pid}")
+            log.info(f"Killing child process: {child.pid}")
             child.kill()
         proc.terminate()
+        log.info(f"Terminated process: {proc.pid}, API is now stopped")
         return True
 
     def save(self) -> None:

@@ -59,37 +59,53 @@ _ = Translator("LevelUp", __file__)
 
 
 def generate_default_profile(
-    background_bytes: t.Optional[bytes] = None,
-    avatar_bytes: t.Optional[bytes] = None,
-    username: t.Optional[str] = "Spartan117",
-    status: t.Optional[str] = "online",
-    level: t.Optional[int] = 3,
-    messages: t.Optional[int] = 420,
-    voicetime: t.Optional[int] = 3600,
-    stars: t.Optional[int] = 69,
-    prestige: t.Optional[int] = 0,
-    prestige_emoji: t.Optional[bytes] = None,
-    balance: t.Optional[int] = 0,
-    currency_name: t.Optional[str] = "Credits",
-    previous_xp: t.Optional[int] = 100,
-    current_xp: t.Optional[int] = 125,
-    next_xp: t.Optional[int] = 200,
-    position: t.Optional[int] = 3,
-    role_icon: t.Optional[bytes] = None,
-    blur: t.Optional[bool] = False,
-    base_color: t.Optional[t.Tuple[int, int, int]] = (255, 255, 255),
+    background_bytes: t.Optional[t.Union[bytes, str]] = None,
+    avatar_bytes: t.Optional[t.Union[bytes, str]] = None,
+    username: str = "Spartan117",
+    status: str = "online",
+    level: int = 3,
+    messages: int = 420,
+    voicetime: int = 3600,
+    stars: int = 69,
+    prestige: int = 0,
+    prestige_emoji: t.Optional[t.Union[bytes, str]] = None,
+    balance: int = 0,
+    currency_name: str = "Credits",
+    previous_xp: int = 100,
+    current_xp: int = 125,
+    next_xp: int = 200,
+    position: int = 3,
+    role_icon: t.Optional[t.Union[bytes, str]] = None,
+    blur: bool = False,
+    base_color: t.Tuple[int, int, int] = (255, 255, 255),
     user_color: t.Optional[t.Tuple[int, int, int]] = None,
     stat_color: t.Optional[t.Tuple[int, int, int]] = None,
     level_bar_color: t.Optional[t.Tuple[int, int, int]] = None,
     font_path: t.Optional[t.Union[str, Path]] = None,
-    render_gif: t.Optional[bool] = False,
-    debug: t.Optional[bool] = False,
-    reraise: t.Optional[bool] = False,
+    render_gif: bool = False,
+    debug: bool = False,
+    reraise: bool = False,
     **kwargs,
 ) -> t.Tuple[bytes, bool]:
     user_color = user_color or base_color
     stat_color = stat_color or base_color
     level_bar_color = level_bar_color or base_color
+
+    if isinstance(background_bytes, str) and background_bytes.startswith("http"):
+        log.debug("Background image is a URL, attempting to download")
+        background_bytes = imgtools.download_image(background_bytes)
+
+    if isinstance(avatar_bytes, str) and avatar_bytes.startswith("http"):
+        log.debug("Avatar image is a URL, attempting to download")
+        avatar_bytes = imgtools.download_image(avatar_bytes)
+
+    if isinstance(prestige_emoji, str) and prestige_emoji.startswith("http"):
+        log.debug("Prestige emoji is a URL, attempting to download")
+        prestige_emoji = imgtools.download_image(prestige_emoji)
+
+    if isinstance(role_icon, str) and role_icon.startswith("http"):
+        log.debug("Role icon is a URL, attempting to download")
+        role_icon = imgtools.download_image(role_icon)
 
     if background_bytes:
         try:
