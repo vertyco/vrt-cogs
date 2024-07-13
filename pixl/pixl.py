@@ -38,10 +38,17 @@ else:
 
 
 class Pixl(commands.Cog):
-    """Guess pictures for points"""
+    """
+    Guess pictures for points
+
+    Pixl is an image guessing game that reveals parts of an image over time while users race to guess the correct answer first.
+
+    **Images are split up into 192 blocks and slowly revealed over time.**
+    The score of the game is based on how many blocks are left when the image is guessed.
+    """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.3.5"
+    __version__ = "0.3.6"
 
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -316,6 +323,10 @@ class Pixl(commands.Cog):
             f"`Show Answer:    `{conf['show_answer']}\n"
             f"Delay between blocks is {await self.config.delay()} seconds"
         )
+        # If the timeout is faster than the amount of blocks could be revealed at that delay, calculate how many blocks would be left at game end
+        if conf["time_limit"] < (conf["blocks_to_reveal"] * await self.config.delay()):
+            blocks = conf["blocks_to_reveal"] - (conf["time_limit"] // await self.config.delay())
+            desc += f"\n`Blocks Remaining: `{blocks} at game timeout"
         embed = discord.Embed(title="Pixl Settings", description=desc, color=ctx.author.color)
         global_images = await self.config.images()
         guild_images = conf["images"]

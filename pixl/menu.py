@@ -1,6 +1,7 @@
 """
 This is a red-like recursive menu for dpy2
 """
+
 import asyncio
 import functools
 from typing import List, Optional
@@ -99,7 +100,7 @@ class MenuView(View):
         pages: List[discord.Embed],
         controls: dict,
         message: Optional[discord.Message] = None,
-        page: Optional[int] = 0,
+        page: int = 0,
         timeout: Optional[float] = 60.0,
     ):
         super().__init__(timeout=timeout)
