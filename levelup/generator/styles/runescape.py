@@ -38,25 +38,30 @@ log = logging.getLogger("red.vrt.levelup.generator.styles.default")
 
 def generate_runescape_profile(
     avatar_bytes: t.Optional[bytes] = None,
-    status: t.Optional[str] = "online",
-    level: t.Optional[int] = 1,
-    messages: t.Optional[int] = 0,
-    voicetime: t.Optional[int] = 3600,
-    prestige: t.Optional[int] = 0,
-    balance: t.Optional[int] = 0,
-    previous_xp: t.Optional[int] = 0,
-    current_xp: t.Optional[int] = 4,
-    next_xp: t.Optional[int] = 10,
-    position: t.Optional[int] = 1,
-    stat_color: t.Optional[t.Tuple[int, int, int]] = (0, 255, 68),  # Green
-    render_gif: t.Optional[bool] = False,
-    debug: t.Optional[bool] = False,
+    status: str = "online",
+    level: int = 1,
+    messages: int = 0,
+    voicetime: int = 3600,
+    prestige: int = 0,
+    balance: int = 0,
+    previous_xp: int = 0,
+    current_xp: int = 4,
+    next_xp: int = 10,
+    position: int = 1,
+    stat_color: t.Tuple[int, int, int] = (0, 255, 68),  # Green
+    render_gif: bool = False,
+    debug: bool = False,
     **kwargs,
 ):
+    if isinstance(avatar_bytes, str) and avatar_bytes.startswith("http"):
+        log.debug("Avatar image is a URL, attempting to download")
+        avatar_bytes = imgtools.download_image(avatar_bytes)
+
     if avatar_bytes:
         pfp = Image.open(BytesIO(avatar_bytes))
     else:
         pfp = imgtools.DEFAULT_PFP
+
     pfp_animated = getattr(pfp, "is_animated", False)
     log.debug(f"PFP animated: {pfp_animated}")
 

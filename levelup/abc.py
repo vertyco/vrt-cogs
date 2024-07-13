@@ -106,7 +106,9 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_profile_background(self, user_id: int, profile: Profile) -> bytes:
+    async def get_profile_background(
+        self, user_id: int, profile: Profile, try_return_url: bool = False
+    ) -> t.Union[bytes, str]:
         raise NotImplementedError
 
     @abstractmethod

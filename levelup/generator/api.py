@@ -112,6 +112,8 @@ def get_kwargs(form_data: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
         kwargs["stat_color"] = parse_color(form_data.get("stat_color"))
     if form_data.get("level_bar_color") is not None:
         kwargs["level_bar_color"] = parse_color(form_data.get("level_bar_color"))
+    if form_data.get("color") is not None:
+        kwargs["color"] = parse_color(form_data.get("color"))
 
     return kwargs
 

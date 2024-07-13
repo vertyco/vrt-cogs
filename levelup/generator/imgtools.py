@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Union
 
 import colorgram
+import requests
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont, ImageSequence
 from redbot.core.i18n import Translator
 
@@ -31,6 +32,23 @@ STATUS = {
 
 log = logging.getLogger("red.vrt.levelup.imagetools")
 _ = Translator("LevelUp", __file__)
+
+
+def download_image(url: str) -> t.Union[bytes, None]:
+    """Get an image from a URL"""
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:126.0) Gecko/20100101 Firefox/126.0"}
+    try:
+        response = requests.get(url, headers=headers)
+        if response.status_code == 404:
+            return None
+        response.raise_for_status()
+        return response.content
+    except requests.HTTPError as e:
+        log.warning(f"Failed to download image URL: {url}\n{e}")
+        return None
+    except Exception as e:
+        log.error(f"Failed to download image URL: {url}", exc_info=e)
+        return None
 
 
 def abbreviate_number(number: int) -> str:

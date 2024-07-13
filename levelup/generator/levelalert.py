@@ -32,15 +32,23 @@ _ = Translator("LevelUp", __file__)
 
 
 def generate_level_img(
-    background_bytes: t.Optional[bytes] = None,
-    avatar_bytes: t.Optional[bytes] = None,
-    level: t.Optional[int] = 1,
+    background_bytes: t.Optional[t.Union[bytes, str]] = None,
+    avatar_bytes: t.Optional[t.Union[bytes, str]] = None,
+    level: int = 1,
     color: t.Optional[t.Tuple[int, int, int]] = None,
     font_path: t.Optional[t.Union[str, Path]] = None,
-    render_gif: t.Optional[bool] = False,
-    debug: t.Optional[bool] = False,
+    render_gif: bool = False,
+    debug: bool = False,
     **kwargs,
 ) -> t.Tuple[bytes, bool]:
+    if isinstance(background_bytes, str) and background_bytes.startswith("http"):
+        log.debug("Background image is a URL, attempting to download")
+        background_bytes = imgtools.download_image(background_bytes)
+
+    if isinstance(avatar_bytes, str) and avatar_bytes.startswith("http"):
+        log.debug("Avatar image is a URL, attempting to download")
+        avatar_bytes = imgtools.download_image(avatar_bytes)
+
     if background_bytes:
         try:
             card = Image.open(BytesIO(background_bytes))
