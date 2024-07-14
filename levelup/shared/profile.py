@@ -248,6 +248,17 @@ class ProfileFormatting(MixinMeta):
             kwargs["balance"] = await bank.get_balance(member)
             kwargs["currency_name"] = await bank.get_currency_name(guild)
 
+        if background_bytes := kwargs.get("background_bytes"):
+            # Sometimes discord's CDN returns b'This content is no longer available.'
+            # If this occurs we'll reset the background to default
+            if background_bytes.startswith(b"This content is no longer available."):
+                profile.background = "default"
+                self.save()
+                log.warning(
+                    f"User {member.name} ({member.id}) has a background that no longer exists! Resetting to default"
+                )
+                return await self.get_user_profile(member, reraise=reraise)
+
         endpoints = {
             "default": "fullprofile",
             "runescape": "runescape",
