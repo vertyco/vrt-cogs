@@ -257,7 +257,7 @@ class ProfileFormatting(MixinMeta):
                 log.warning(
                     f"User {member.name} ({member.id}) has a background that no longer exists! Resetting to default"
                 )
-                return await self.get_user_profile(member, reraise=reraise)
+                kwargs["background_bytes"] = await self.get_profile_background(member.id, profile)
 
         endpoints = {
             "default": "fullprofile",
