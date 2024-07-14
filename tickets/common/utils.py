@@ -407,6 +407,9 @@ async def prune_invalid_tickets(
                 if uid not in opened:
                     # User was already removed
                     continue
+                if cid not in opened[uid]:
+                    # Ticket was already removed
+                    continue
                 del opened[uid][cid]
 
     grammar = _("ticket") if count == 1 else _("tickets")
