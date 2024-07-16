@@ -120,99 +120,99 @@ class LevelUps(MixinMeta):
                         await log_channel.send(member.mention, embed=embed)
                     else:
                         await log_channel.send(embed=embed)
-            return False
-
-        fonts = list(self.fonts.glob("*.ttf")) + list(self.custom_fonts.iterdir())
-        font = str(random.choice(fonts))
-        if profile.font:
-            if (self.fonts / profile.font).exists():
-                font = str(self.fonts / profile.font)
-            elif (self.custom_fonts / profile.font).exists():
-                font = str(self.custom_fonts / profile.font)
-
-        color = utils.string_to_rgb(profile.statcolor) if profile.statcolor else member.color.to_rgb()
-        if color == (0, 0, 0):
-            color = utils.string_to_rgb(profile.namecolor) if profile.namecolor else None
-
-        payload = aiohttp.FormData()
-        if self.db.external_api_url or (self.db.internal_api_port and self.api_proc):
-            banner = await self.get_profile_background(member.id, profile, try_return_url=True)
-            avatar = member.display_avatar.url
-
-            # payload.add_field("background_bytes", banner, filename="data")
-            # payload.add_field("avatar_bytes", avatar, filename="data")
-            payload.add_field("background_bytes", banner)
-            payload.add_field("avatar_bytes", avatar)
-            payload.add_field("level", str(profile.level))
-            payload.add_field("color", str(color))
-            payload.add_field("font_path", font)
-            payload.add_field("render_gif", str(self.db.render_gifs))
 
         else:
-            avatar = await member.display_avatar.read()
-            banner = await self.get_profile_background(member.id, profile)
+            fonts = list(self.fonts.glob("*.ttf")) + list(self.custom_fonts.iterdir())
+            font = str(random.choice(fonts))
+            if profile.font:
+                if (self.fonts / profile.font).exists():
+                    font = str(self.fonts / profile.font)
+                elif (self.custom_fonts / profile.font).exists():
+                    font = str(self.custom_fonts / profile.font)
 
-        img_bytes, animated = None, None
-        if external_url := self.db.external_api_url:
-            try:
-                url = f"{external_url}/levelup"
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(url, data=payload) as response:
-                        if response.status == 200:
-                            data = await response.json()
-                            img_b64, animated = data["b64"], data["animated"]
-                            img_bytes = base64.b64decode(img_b64)
-            except Exception as e:
-                log.error("Failed to fetch levelup image from external API", exc_info=e)
-        elif self.db.internal_api_port and self.api_proc:
-            try:
-                url = f"http://127.0.0.1:{self.db.internal_api_port}/levelup"
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(url, data=payload) as response:
-                        if response.status == 200:
-                            data = await response.json()
-                            img_b64, animated = data["b64"], data["animated"]
-                            img_bytes = base64.b64decode(img_b64)
-            except Exception as e:
-                log.error("Failed to fetch levelup image from internal API", exc_info=e)
+            color = utils.string_to_rgb(profile.statcolor) if profile.statcolor else member.color.to_rgb()
+            if color == (0, 0, 0):
+                color = utils.string_to_rgb(profile.namecolor) if profile.namecolor else None
 
-        def _run() -> t.Tuple[bytes, bool]:
-            img_bytes, animated = levelalert.generate_level_img(
-                background_bytes=banner,
-                avatar_bytes=avatar,
-                level=profile.level,
-                color=color,
-                font_path=font,
-                render_gif=self.db.render_gifs,
-            )
-            return img_bytes, animated
+            payload = aiohttp.FormData()
+            if self.db.external_api_url or (self.db.internal_api_port and self.api_proc):
+                banner = await self.get_profile_background(member.id, profile, try_return_url=True)
+                avatar = member.display_avatar.url
 
-        if not img_bytes:
-            img_bytes, animated = await asyncio.to_thread(_run)
+                # payload.add_field("background_bytes", banner, filename="data")
+                # payload.add_field("avatar_bytes", avatar, filename="data")
+                payload.add_field("background_bytes", banner)
+                payload.add_field("avatar_bytes", avatar)
+                payload.add_field("level", str(profile.level))
+                payload.add_field("color", str(color))
+                payload.add_field("font_path", font)
+                payload.add_field("render_gif", str(self.db.render_gifs))
 
-        ext = "gif" if animated else "webp"
-        if conf.notifydm:
-            file = discord.File(BytesIO(img_bytes), filename=f"levelup.{ext}")
-            with suppress(discord.HTTPException):
-                await member.send(dm_txt, file=file)
+            else:
+                avatar = await member.display_avatar.read()
+                banner = await self.get_profile_background(member.id, profile)
 
-        if current_channel and conf.notify:
-            file = discord.File(BytesIO(img_bytes), filename=f"levelup.{ext}")
-            with suppress(discord.HTTPException):
-                if conf.notifymention:
-                    await current_channel.send(member.mention, file=file)
-                else:
-                    await current_channel.send(dm_txt, file=file)
+            img_bytes, animated = None, None
+            if external_url := self.db.external_api_url:
+                try:
+                    url = f"{external_url}/levelup"
+                    async with aiohttp.ClientSession() as session:
+                        async with session.post(url, data=payload) as response:
+                            if response.status == 200:
+                                data = await response.json()
+                                img_b64, animated = data["b64"], data["animated"]
+                                img_bytes = base64.b64decode(img_b64)
+                except Exception as e:
+                    log.error("Failed to fetch levelup image from external API", exc_info=e)
+            elif self.db.internal_api_port and self.api_proc:
+                try:
+                    url = f"http://127.0.0.1:{self.db.internal_api_port}/levelup"
+                    async with aiohttp.ClientSession() as session:
+                        async with session.post(url, data=payload) as response:
+                            if response.status == 200:
+                                data = await response.json()
+                                img_b64, animated = data["b64"], data["animated"]
+                                img_bytes = base64.b64decode(img_b64)
+                except Exception as e:
+                    log.error("Failed to fetch levelup image from internal API", exc_info=e)
 
-        current_channel_id = current_channel.id if current_channel else 0
-        if log_channel and log_channel.id != current_channel_id:
-            file = discord.File(BytesIO(img_bytes), filename=f"levelup.{ext}")
-            with suppress(discord.HTTPException):
-                if not conf.notify and conf.notifymention:
-                    # Notify is off but mention is on, so mention the user in logs instead
-                    await log_channel.send(member.mention, file=file)
-                else:
-                    await log_channel.send(msg_txt, file=file)
+            def _run() -> t.Tuple[bytes, bool]:
+                img_bytes, animated = levelalert.generate_level_img(
+                    background_bytes=banner,
+                    avatar_bytes=avatar,
+                    level=profile.level,
+                    color=color,
+                    font_path=font,
+                    render_gif=self.db.render_gifs,
+                )
+                return img_bytes, animated
+
+            if not img_bytes:
+                img_bytes, animated = await asyncio.to_thread(_run)
+
+            ext = "gif" if animated else "webp"
+            if conf.notifydm:
+                file = discord.File(BytesIO(img_bytes), filename=f"levelup.{ext}")
+                with suppress(discord.HTTPException):
+                    await member.send(dm_txt, file=file)
+
+            if current_channel and conf.notify:
+                file = discord.File(BytesIO(img_bytes), filename=f"levelup.{ext}")
+                with suppress(discord.HTTPException):
+                    if conf.notifymention:
+                        await current_channel.send(member.mention, file=file)
+                    else:
+                        await current_channel.send(dm_txt, file=file)
+
+            current_channel_id = current_channel.id if current_channel else 0
+            if log_channel and log_channel.id != current_channel_id:
+                file = discord.File(BytesIO(img_bytes), filename=f"levelup.{ext}")
+                with suppress(discord.HTTPException):
+                    if not conf.notify and conf.notifymention:
+                        # Notify is off but mention is on, so mention the user in logs instead
+                        await log_channel.send(member.mention, file=file)
+                    else:
+                        await log_channel.send(msg_txt, file=file)
 
         payload = {
             "guild": guild,  # discord.Guild
