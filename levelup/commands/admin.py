@@ -31,19 +31,19 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         txt = _(
             "**Main**\n"
-            "`System Enabled:   `{}\n"
-            "`Profile Type:     `{}\n"
-            "`Style Override:   `{}\n"
-            "`Include Balance:  `{}\n"
+            "`System Enabled:  `{}\n"
+            "`Profile Type:    `{}\n"
+            "`Style Override:  `{}\n"
+            "`Include Balance: `{}\n"
             "**Messages**\n"
-            "`Message XP:       `{}\n"
-            "`Min Msg Length:   `{}\n"
-            "`Cooldown:         `{}\n"
-            "`Command XP:       `{}\n"
+            "`Message XP:     `{}\n"
+            "`Min Msg Length: `{}\n"
+            "`Cooldown:       `{}\n"
+            "`Command XP:     `{}\n"
             "**Voice**\n"
             "`Voice XP:         `{} per minute\n"
             "`Ignore Muted:     `{}\n"
-            "`Ignore Solo:       `{}\n"
+            "`Ignore Solo:      `{}\n"
             "`Ignore Deafened:  `{}\n"
             "`Ignore Invisible: `{}\n"
             "**Level Algorithm**\n"
@@ -51,11 +51,16 @@ class Admin(MixinMeta):
             "`Exp Multiplier:   `{}\n"
             "`Equation:         `{}\n"
             "**LevelUps**\n"
-            "`Notify On Level:  `{}\n"
-            "`Notify in DMs:    `{}\n"
-            "`Notify Channel:   `{}\n"
-            "`Mention User:     `{}\n"
-            "`AutoRemove Roles: `{}\n"
+            "`Notify In Channel: `{}\n"
+            "• Send levelup message in the channel the user is typing in\n"
+            "`Notify in DMs:     `{}\n"
+            "• Send levelup message in DMs\n"
+            "`Notify Channel:    `{}\n"
+            "• Log channel for levelup messages\n"
+            "`Mention User:      `{}\n"
+            "• This will mention the user in the levelup message\n"
+            "`AutoRemove Roles:  `{}\n"
+            "• Remove the previous level role when a user levels up\n"
         ).format(
             _("Yes") if conf.enabled else _("NO!⚠️"),
             _("Embeds") if conf.use_embeds else _("Images"),
@@ -411,10 +416,10 @@ class Admin(MixinMeta):
     async def set_level_channel(
         self,
         ctx: commands.Context,
-        channel: discord.TextChannel = None,
+        channel: t.Union[discord.TextChannel, None] = None,
     ):
         """
-        Set LevelUP message channel
+        Set LevelUp log channel
 
         Set a channel for all level up messages to send to.
 
@@ -434,7 +439,7 @@ class Admin(MixinMeta):
     @levelset.command(name="levelnotify")
     async def toggle_levelup_notifications(self, ctx: commands.Context):
         """
-        Toggle levelup notifications in the users channel
+        Send levelup message in the channel the user is typing in
 
         Send a message in the channel a user is typing in when they level up
         """
@@ -675,7 +680,7 @@ class Admin(MixinMeta):
         """View the current level up alert messages"""
         conf = self.db.get_conf(ctx.guild)
         color = await self.bot.get_embed_color(ctx)
-        desc = _("Current LevelUp alert settings")
+        desc = _("Current LevelUp Alert Messages\n-# None means the default will be used")
         embed = discord.Embed(description=desc, color=color)
         embed.add_field(name=_("LevelUp DM"), value=str(conf.levelup_dm or None), inline=False)
         embed.add_field(name=_("LevelUp DM Role"), value=str(conf.role_awarded_dm or None), inline=False)
