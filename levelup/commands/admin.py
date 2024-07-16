@@ -659,7 +659,7 @@ class Admin(MixinMeta):
         self.save()
         await ctx.send(txt)
 
-    @levelset.group(name="alerts", aliases=["lvlalerts", "levelalerts"])
+    @levelset.group(name="levelupmessages", aliases=["lvlalerts", "levelalerts", "lvlmessages", "lvlmsg"])
     async def set_levelup_alerts(self, ctx: commands.Context):
         """Level up alert messages
 
