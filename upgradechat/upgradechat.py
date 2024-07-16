@@ -24,7 +24,7 @@ class UpgradeChat(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.2.2"
+    __version__ = "0.2.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -164,13 +164,18 @@ class UpgradeChat(commands.Cog):
         """View user purchase history"""
         users = await self.config.guild(ctx.guild).users()
 
+        if member is not None:
+            uid = member.id if isinstance(member, discord.Member) else member
+            if str(uid) not in users:
+                return await ctx.send("User has no purchases saved!")
+
         embeds = []
         page = 0
         pages = len(list(users.keys()))
         for index, user_id in enumerate(users.keys()):
             purchases = users[user_id]
             user = ctx.guild.get_member(int(user_id))
-            if member:
+            if member is not None:
                 if isinstance(member, int):
                     uid = member
                 else:
