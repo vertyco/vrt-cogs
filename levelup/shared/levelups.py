@@ -152,7 +152,7 @@ class LevelUps(MixinMeta):
             avatar = await member.display_avatar.read()
             banner = await self.get_profile_background(member.id, profile)
 
-        file: t.Union[discord.File, None] = None
+        img_bytes, animated = None, None
         if external_url := self.db.external_api_url:
             try:
                 url = f"{external_url}/levelup"
@@ -162,8 +162,6 @@ class LevelUps(MixinMeta):
                             data = await response.json()
                             img_b64, animated = data["b64"], data["animated"]
                             img_bytes = base64.b64decode(img_b64)
-                            ext = "gif" if animated else "webp"
-                            file = discord.File(BytesIO(img_bytes), filename=f"levelup.{ext}")
             except Exception as e:
                 log.error("Failed to fetch levelup image from external API", exc_info=e)
         elif self.db.internal_api_port and self.api_proc:
@@ -175,8 +173,6 @@ class LevelUps(MixinMeta):
                             data = await response.json()
                             img_b64, animated = data["b64"], data["animated"]
                             img_bytes = base64.b64decode(img_b64)
-                            ext = "gif" if animated else "webp"
-                            file = discord.File(BytesIO(img_bytes), filename=f"levelup.{ext}")
             except Exception as e:
                 log.error("Failed to fetch levelup image from internal API", exc_info=e)
 
@@ -191,16 +187,31 @@ class LevelUps(MixinMeta):
             )
             return img_bytes, animated
 
-        if not file:
-            filebytes, animated = await asyncio.to_thread(_run)
-            ext = "gif" if animated else "webp"
-            if conf.notifydm:
-                file = discord.File(BytesIO(filebytes), filename=f"levelup.{ext}")
-                with suppress(discord.HTTPException):
-                    await member.send(dm_txt, file=file)
-            if log_channel:
-                file = discord.File(BytesIO(filebytes), filename=f"levelup.{ext}")
-                with suppress(discord.HTTPException):
+        if not img_bytes:
+            img_bytes, animated = await asyncio.to_thread(_run)
+
+        ext = "gif" if animated else "webp"
+        if conf.notifydm:
+            file = discord.File(BytesIO(img_bytes), filename=f"levelup.{ext}")
+            with suppress(discord.HTTPException):
+                await member.send(dm_txt, file=file)
+
+        if current_channel and conf.notify:
+            file = discord.File(BytesIO(img_bytes), filename=f"levelup.{ext}")
+            with suppress(discord.HTTPException):
+                if conf.notifymention:
+                    await current_channel.send(member.mention, file=file)
+                else:
+                    await current_channel.send(dm_txt, file=file)
+
+        current_channel_id = current_channel.id if current_channel else 0
+        if log_channel and log_channel.id != current_channel_id:
+            file = discord.File(BytesIO(img_bytes), filename=f"levelup.{ext}")
+            with suppress(discord.HTTPException):
+                if not conf.notify and conf.notifymention:
+                    # Notify is off but mention is on, so mention the user in logs instead
+                    await log_channel.send(member.mention, file=file)
+                else:
                     await log_channel.send(msg_txt, file=file)
 
         payload = {
