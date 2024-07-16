@@ -684,11 +684,11 @@ class Admin(MixinMeta):
         embed = discord.Embed(description=desc, color=color)
         value = _("-# When a user levels up\n{}").format(str(conf.levelup_dm or None))
         embed.add_field(name=_("LevelUp DM"), value=value, inline=False)
-        value = _("-# When a user levels up and recieves a role\n{}").format(str(conf.role_awarded_dm or None))
+        value = _("-# When a user levels up and receives a role\n{}").format(str(conf.role_awarded_dm or None))
         embed.add_field(name=_("LevelUp DM Role"), value=value, inline=False)
         value = _("-# When a user levels up\n{}").format(str(conf.levelup_msg or None))
         embed.add_field(name=_("LevelUp Message"), value=value, inline=False)
-        value = _("-# When a user levels up and recieves a role\n{}").format(str(conf.role_awarded_msg or None))
+        value = _("-# When a user levels up and receives a role\n{}").format(str(conf.role_awarded_msg or None))
         embed.add_field(name=_("LevelUp Role Message"), value=value, inline=False)
         await ctx.send(embed=embed)
 
