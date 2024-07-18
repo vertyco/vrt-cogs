@@ -182,7 +182,14 @@ def get_leaderboard(
         emoji = conf.emojis.get("bulb", bot)
         statname = _("Experience")
 
-    filtered_users: t.Dict[int, t.Union[Profile, ProfileWeekly]] = {k: v for k, v in lb.items() if getattr(v, key) > 0}
+    if is_global:
+        valid_users: t.Dict[int, t.Union[Profile, ProfileWeekly]] = {k: v for k, v in lb.items() if bot.get_user(k)}
+    else:
+        valid_users: t.Dict[int, t.Union[Profile, ProfileWeekly]] = {k: v for k, v in lb.items() if guild.get_member(k)}
+
+    filtered_users: t.Dict[int, t.Union[Profile, ProfileWeekly]] = {
+        k: v for k, v in valid_users.items() if getattr(v, key) > 0
+    }
     if not filtered_users and not dashboard:
         txt = _("There is no data for the {} leaderboard yet").format(
             _("weekly {}").format(statname) if lbtype == "weekly" else statname
