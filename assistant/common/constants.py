@@ -16,6 +16,8 @@ MODELS = {
     "gpt-4-turbo-2024-04-09": 128000,
     "gpt-4o": 128000,
     "gpt-4o-2024-05-13": 128000,
+    "gpt-4o-mini": 128000,
+    "gpt-4o-mini-2024-07-18": 128000,
 }
 PRICES = {
     "gpt-3.5-turbo": [0.001, 0.0015],
@@ -42,6 +44,8 @@ PRICES = {
     "gpt-4-32k-0301": [0.06, 0.12],
     "gpt-4o": [0.005, 0.015],
     "gpt-4o-2024-05-13": [0.005, 0.015],
+    "gpt-4o-mini": [0.00015, 0.0006],
+    "gpt-4o-mini-2024-07-18": [0.00015, 0.0006],
     "text-ada-001": [0.0004, 0.0016],
     "text-babbage-001": [0.0006, 0.0024],
     "text-curie-001": [0.003, 0.012],
@@ -64,6 +68,8 @@ SUPPORTS_SEED = [
     "gpt-4-turbo-2024-04-09",
     "gpt-4o",
     "gpt-4o-2024-05-13",
+    "gpt-4o-mini",
+    "gpt-4o-mini-2024-07-18",
 ]
 SUPPORTS_VISION = [
     "gpt-4-vision-preview",
@@ -71,6 +77,8 @@ SUPPORTS_VISION = [
     "gpt-4-turbo-2024-04-09",
     "gpt-4o",
     "gpt-4o-2024-05-13",
+    "gpt-4o-mini",
+    "gpt-4o-mini-2024-07-18",
 ]
 SUPPORTS_TOOLS = [
     "gpt-3.5-turbo-1106",
@@ -80,6 +88,8 @@ SUPPORTS_TOOLS = [
     "gpt-4-turbo-preview",
     "gpt-4o",
     "gpt-4o-2024-05-13",
+    "gpt-4o-mini",
+    "gpt-4o-mini-2024-07-18",
 ]
 READ_EXTENSIONS = [
     ".txt",
