@@ -27,7 +27,7 @@ log = logging.getLogger("red.vrt.assistant.calls")
             openai.InternalServerError,
         ]
     ),
-    wait=wait_random_exponential(min=5, max=30),
+    wait=wait_random_exponential(min=1, max=30),
     stop=stop_after_attempt(5),
     reraise=True,
 )
