@@ -83,7 +83,10 @@ class CustomCmdFmt:
         self.hashes: str = len(self.name.split(" ")) * "#"
 
         if self.is_slash:
-            self.options = cmd.to_dict()["options"]
+            try:
+                self.options = cmd.to_dict()["options"]
+            except TypeError:
+                self.options = cmd.to_dict(self.bot.tree)["options"]
             self.desc: str = cmd.description
         else:
             try:
