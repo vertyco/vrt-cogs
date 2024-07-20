@@ -156,9 +156,6 @@ class ChatHandler(MixinMeta):
                 )
             except openai.InternalServerError as e:
                 if e.body and isinstance(e.body, dict):
-                    if msg := e.body.get("error", {}).get("message"):
-                        log.warning("InternalServerError [error][message]", exc_info=e)
-                        reply = _("Internal Server Error({}): {}").format(e.status_code, msg)
                     if msg := e.body.get("message"):
                         log.warning("InternalServerError [message]", exc_info=e)
                         reply = _("Internal Server Error({}): {}").format(e.status_code, msg)
