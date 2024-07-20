@@ -22,7 +22,7 @@ class Listeners(MixinMeta):
         self.payloads: t.Dict[int, t.List[discord.Embed]] = {}
 
     @commands.Cog.listener()
-    async def on_command_error(self, ctx: commands.Context, error: Exception):
+    async def on_command_error(self, ctx: commands.Context, error: Exception, *args, **kwargs):
         if not ctx.command:
             return
         # log.debug(f"Command error in '{ctx.command.qualified_name}' for {ctx.author.name}:({type(error)}) {error}")
