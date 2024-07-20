@@ -200,7 +200,7 @@ class DynamicMenu(discord.ui.View):
                     self.page = i
                     return await self.refresh()
                 titlematch = fuzz.ratio(modal.query.lower(), page.title.lower())
-                if titlematch > 95:
+                if titlematch > 90:
                     self.page = i
                     return await self.refresh()
                 if modal.query.lower() in page.description.lower():
