@@ -129,14 +129,14 @@ class Crafter(commands.Cog):
 
     @craft.autocomplete("item")
     async def craft_autocomplete(self, interaction: discord.Interaction, current: str) -> t.List[app_commands.Choice]:
-        choices = []
-        for item in self.items.values():
-            if current and current.lower() not in item.name.lower():
-                continue
-            choices.append(app_commands.Choice(name=item.name, value=item.name))
-            if len(choices) >= 25:
-                break
-        return choices
+        if not current:
+            return [app_commands.Choice(name=item.name, value=item.name) for item in self.items.values()][:25]
+        choices = [
+            app_commands.Choice(name=item.name, value=item.name)
+            for item in self.items.values()
+            if current.lower() in item.name.lower()
+        ]
+        return choices[:25]
 
     async def get_crafting_info(self, item_name: str, **kwargs):
         item_name = item_name.lower()
