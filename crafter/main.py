@@ -27,6 +27,8 @@ class Item:
     class_name: str
     blueprint_path: str
     ingredients: t.Dict[str, int]
+    crafting_yields: int
+    crafted_in: t.List[str]
 
 
 def get_item_breakdown(
@@ -76,7 +78,7 @@ class Crafter(commands.Cog):
     """Get crafting information for Ark items"""
 
     __author__ = "vertyco"
-    __version__ = "0.0.6"
+    __version__ = "1.0.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -107,6 +109,8 @@ class Crafter(commands.Cog):
             f"`Weight:     `{item.weight}\n"
             f"`Category:   `{item.category}\n"
             f"`Class Name: `[{item.class_name}]({item.link})\n"
+            f"`Crafted In: `{', '.join(item.crafted_in) if item.crafted_in else '?'}\n"
+            f"`Yields:     `{item.crafting_yields}\n"
         )
         embed = discord.Embed(description=desc, color=await self.bot.get_embed_color(ctx))
         embed.set_author(name=item.name, icon_url=item.img_small, url=item.link)
@@ -120,6 +124,7 @@ class Crafter(commands.Cog):
             #   └── 1 x Charcoal
             breakdown = await self.bot.loop.run_in_executor(None, get_item_breakdown, item, self.items)
             embed.add_field(name="Ingredients", value=box(breakdown, lang="python"), inline=False)
+        embed.add_field(name="Blueprint Path", value=box(item.blueprint_path), inline=False)
         await ctx.send(embed=embed, ephemeral=True)
 
     @craft.autocomplete("item")
