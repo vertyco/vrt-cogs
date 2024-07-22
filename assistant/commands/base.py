@@ -181,7 +181,7 @@ If a file has no extension it will still try to read it only if it can be decode
         )
         embed.set_footer(text=_("Token limit is a soft cap and excess is trimmed before sending to the api"))
         await ctx.send(embed=embed)
-        if await self.bot.is_mod(ctx.author):
+        if await self.bot.is_mod(ctx.author) or ctx.author.id in self.bot.owner_ids or not conf.collab_convos:
             if conversation.system_prompt_override:
                 file = text_to_file(conversation.system_prompt_override)
                 await ctx.send(_("System prompt override for this conversation"), file=file)
