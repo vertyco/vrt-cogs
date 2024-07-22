@@ -71,7 +71,11 @@ class Listeners(MixinMeta):
 
     async def log_event(self, event: str, payload: t.NamedTuple):
         is_global = await bank.is_global()
-        guild = payload.member.guild if event == "payday_claim" else getattr(payload, "guild", None)
+        guild = (
+            payload.member.guild
+            if event == "payday_claim" and isinstance(payload.member, discord.Member)
+            else getattr(payload, "guild", None)
+        )
         if not is_global and not guild:
             log.error(f"Guild is None for non-global bank event: {event}\n{payload}")
             return
