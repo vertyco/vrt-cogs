@@ -123,7 +123,7 @@ class Listeners(MixinMeta):
             embed.add_field(name=_("Old Balance"), value=humanize_number(payload.old_balance))
             embed.add_field(name=_("New Balance"), value=humanize_number(payload.new_balance))
             if is_global:
-                embed.add_field(name=_("Guild"), value=payload.member.guild.name)
+                embed.add_field(name=_("Guild"), value=guild.name if guild else _("Unknown"))
             else:
                 embed.add_field(name=_("Channel"), value=payload.channel.mention)
                 if message := getattr(payload, "message", None):
