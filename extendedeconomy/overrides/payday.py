@@ -20,7 +20,7 @@ class PaydayOverride(MixinMeta):
     async def _extendedeconomy_payday_override(self, ctx: commands.Context):
         cog = self.bot.get_cog("Economy")
         if cog is None:
-            raise commands.ExtensionError("Economy cog is not loaded.")
+            raise commands.ExtensionError("Economy cog is not loaded.", name="Economy")
 
         author = ctx.author
         guild = ctx.guild
