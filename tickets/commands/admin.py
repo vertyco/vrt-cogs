@@ -751,7 +751,6 @@ class AdminCommands(MixinMeta):
             description=_("Would you like this ticket embed to have a footer?"),
             color=color,
         )
-        em.set_footer(text=foot)
         await msg.edit(embed=em)
         yes = await confirm(ctx, msg)
         if yes is None:
@@ -1425,6 +1424,9 @@ class AdminCommands(MixinMeta):
             # Message was deleted. Just cancel.
             return
         yes = await confirm(ctx, msg)
+        if yes is None:
+            return
+
         if yes:
             em = Embed(description=_("Enter a url for the thumbnail"), color=color)
             em.set_footer(text=foot)
