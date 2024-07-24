@@ -311,6 +311,10 @@ class GuildSettings(Base):
     rolebonus: RoleBonus = RoleBonus()
     channelbonus: ChannelBonus = ChannelBonus()
 
+    # Allowed
+    allowedchannels: t.List[int] = []  # Only channels that gain XP if not empty
+    allowedroles: t.List[int] = []  # Only roles that gain XP if not empty
+
     # Ignored
     ignoredchannels: t.List[int] = []  # Channels that dont gain XP
     ignoredroles: t.List[int] = []  # Roles that dont gain XP

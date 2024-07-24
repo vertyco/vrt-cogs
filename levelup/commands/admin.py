@@ -136,6 +136,14 @@ class Admin(MixinMeta):
                 for channel_id, xp_range in conf.channelbonus.msg.items()
             )
             embed.add_field(name=_("Message XP Bonus Channels"), value=joined, inline=False)
+        if conf.allowedroles:
+            joined = ", ".join([f"<@&{role_id}>" for role_id in conf.allowedroles if ctx.guild.get_role(role_id)])
+            embed.add_field(name=_("Allowed Roles"), value=joined, inline=False)
+        if conf.allowedchannels:
+            joined = ", ".join(
+                [f"<#{channel_id}>" for channel_id in conf.allowedchannels if ctx.guild.get_channel(channel_id)]
+            )
+            embed.add_field(name=_("Allowed Channels"), value=joined, inline=False)
         if conf.ignoredroles:
             joined = ", ".join([f"<@&{role_id}>" for role_id in conf.ignoredroles if ctx.guild.get_role(role_id)])
             embed.add_field(name=_("Ignored Roles"), value=joined, inline=False)
@@ -585,6 +593,57 @@ class Admin(MixinMeta):
             await ctx.send(_("Star mentions will not be auto-deleted"))
         self.save()
 
+    @levelset.group(name="allowed")
+    async def allowed(self, ctx: commands.Context):
+        """Base command for all allowed lists"""
+        pass
+
+    @allowed.command(name="channel")
+    async def allowed_channel(
+        self,
+        ctx: commands.Context,
+        *,
+        channel: t.Union[discord.TextChannel, discord.VoiceChannel, discord.CategoryChannel, discord.ForumChannel],
+    ):
+        """
+        Add/Remove a channel in the allowed list
+        If the allow list is not empty, only channels in the list will gain XP
+
+        Use the command with a channel already in the allowed list to remove it
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if channel.id in conf.allowedchannels:
+            conf.allowedchannels.remove(channel.id)
+            txt = _("Channel {} has been removed from the allowed list").format(channel.mention)
+        else:
+            conf.allowedchannels.append(channel.id)
+            txt = _("Channel {} has been added to the allowed list").format(channel.mention)
+        self.save()
+        await ctx.send(txt)
+
+    @allowed.command(name="role")
+    async def allowed_role(
+        self,
+        ctx: commands.Context,
+        *,
+        role: discord.Role,
+    ):
+        """
+        Add/Remove a role in the allowed list
+        If the allow list is not empty, only roles in the list will gain XP
+
+        Use the command with a role already in the allowed list to remove it
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if role.id in conf.allowedroles:
+            conf.allowedroles.remove(role.id)
+            txt = _("Role {} has been removed from the allowed list").format(role.mention)
+        else:
+            conf.allowedroles.append(role.id)
+            txt = _("Role {} has been added to the allowed list").format(role.mention)
+        self.save()
+        await ctx.send(txt)
+
     @levelset.group(name="ignore")
     async def ignore(self, ctx: commands.Context):
         """Base command for all ignore lists"""
@@ -595,7 +654,7 @@ class Admin(MixinMeta):
         self,
         ctx: commands.Context,
         *,
-        channel: t.Union[discord.TextChannel, discord.VoiceChannel, discord.CategoryChannel],
+        channel: t.Union[discord.TextChannel, discord.VoiceChannel, discord.CategoryChannel, discord.ForumChannel],
     ):
         """
         Add/Remove a channel in the ignore list

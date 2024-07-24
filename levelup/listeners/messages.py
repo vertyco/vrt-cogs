@@ -55,6 +55,23 @@ class MessageListener(MixinMeta):
             # Save at least every 5 minutes
             self.save()
 
+        if conf.allowedchannels:
+            # Make sure the channel is allowed
+            if message.channel.id not in conf.allowedchannels:
+                # See if its category or parent channel is allowed then
+                if isinstance(message.channel, (discord.Thread, discord.ForumChannel)):
+                    channel_id = message.channel.parent_id
+                    if channel_id not in conf.allowedchannels:
+                        # Mabe the parent channel's category is allowed?
+                        category_id = message.channel.parent.category_id
+                        if category_id not in conf.allowedchannels:
+                            # Nope, not allowed
+                            return
+                else:
+                    channel_id = message.channel.category_id
+                    if channel_id and channel_id not in conf.allowedchannels:
+                        return
+
         if message.channel.id in conf.ignoredchannels:
             return
         if (
@@ -70,6 +87,11 @@ class MessageListener(MixinMeta):
             return
         elif message.channel.category_id and message.channel.category_id in conf.ignoredchannels:
             return
+
+        if conf.allowedroles:
+            # Make sure the user has at least one allowed role
+            if not any(role in conf.allowedroles for role in role_ids):
+                return
 
         if any(role in conf.ignoredroles for role in role_ids):
             return
