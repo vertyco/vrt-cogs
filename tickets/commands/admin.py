@@ -1398,7 +1398,6 @@ class AdminCommands(MixinMeta):
             description=_("Would you like this embed to have a footer?"),
             color=color,
         )
-        em.set_footer(text=foot)
         msg = await ctx.send(embed=em)
         yes = await confirm(ctx, msg)
         if yes:
@@ -1417,7 +1416,6 @@ class AdminCommands(MixinMeta):
             description=_("Would you like this embed to have a thumbnail?"),
             color=color,
         )
-        em.set_footer(text=foot)
         try:
             await msg.edit(embed=em)
         except discord.NotFound:
@@ -1443,7 +1441,6 @@ class AdminCommands(MixinMeta):
             description=_("Would you like this embed to have an image?"),
             color=color,
         )
-        em.set_footer(text=foot)
         await msg.edit(embed=em)
         yes = await confirm(ctx, msg)
         if yes:
