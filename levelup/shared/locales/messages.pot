@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2024-07-10 18:39-0400\n"
+"POT-Creation-Date: 2024-07-24 17:08-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -55,7 +55,7 @@ msgstr ""
 msgid "{} just reached level {}!"
 msgstr ""
 
-#: levelup\shared\levelups.py:214
+#: levelup\shared\levelups.py:232
 #, docstring
 msgid ""
 "Ensure a user has the correct level roles based on their level and the "
@@ -77,7 +77,7 @@ msgstr ""
 msgid "Remove XP from a user and check for level ups"
 msgstr ""
 
-#: levelup\shared\profile.py:56
+#: levelup\shared\profile.py:58
 #, docstring
 msgid ""
 "\n"
@@ -88,7 +88,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup\shared\profile.py:90
+#: levelup\shared\profile.py:98
 #, docstring
 msgid ""
 "Fetch a user's banner from Discord's API\n"
@@ -101,7 +101,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup\shared\profile.py:105
+#: levelup\shared\profile.py:113
 #, docstring
 msgid ""
 "\n"
@@ -118,43 +118,43 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup\shared\profile.py:157
+#: levelup\shared\profile.py:165
 msgid "Level {}\n"
 msgstr ""
 
-#: levelup\shared\profile.py:159
+#: levelup\shared\profile.py:167
 msgid "Prestige {}\n"
 msgstr ""
 
-#: levelup\shared\profile.py:162
+#: levelup\shared\profile.py:170
 msgid " stars\n"
 msgstr ""
 
-#: levelup\shared\profile.py:163
+#: levelup\shared\profile.py:171
 msgid " messages sent\n"
 msgstr ""
 
-#: levelup\shared\profile.py:164
+#: levelup\shared\profile.py:172
 msgid " in voice\n"
 msgstr ""
 
-#: levelup\shared\profile.py:166
+#: levelup\shared\profile.py:174
 msgid " Exp ({} total)\n"
 msgstr ""
 
-#: levelup\shared\profile.py:180
+#: levelup\shared\profile.py:188
 msgid "{}'s Profile"
 msgstr ""
 
-#: levelup\shared\profile.py:184
+#: levelup\shared\profile.py:192
 msgid "Rank {}, with {}% of the total server Exp"
 msgstr ""
 
-#: levelup\shared\profile.py:189
+#: levelup\shared\profile.py:197
 msgid "Progress"
 msgstr ""
 
-#: levelup\shared\profile.py:290
+#: levelup\shared\profile.py:320
 #, docstring
 msgid "Cached version of get_user_profile"
 msgstr ""

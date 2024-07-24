@@ -595,7 +595,7 @@ class Admin(MixinMeta):
         self,
         ctx: commands.Context,
         *,
-        channel: t.Union[discord.TextChannel, discord.VoiceChannel],
+        channel: t.Union[discord.TextChannel, discord.VoiceChannel, discord.CategoryChannel],
     ):
         """
         Add/Remove a channel in the ignore list
