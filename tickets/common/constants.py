@@ -19,6 +19,7 @@ DEFAULT_GUILD = {
     "detailed_transcript": False,  # Save transcript to interactive html file
     "auto_add": False,  # Auto-add support/subroles to thread tickets
     "thread_close": True,  # Whether to close/lock the thread instead of deleting it
+    "suspended_msg": None,  # If not None, user will be presented with this message when trying to open a ticket
 }
 
 TICKET_PANEL_SCHEMA = {  # "panel_name" will be the key for the schema

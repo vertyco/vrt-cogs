@@ -272,6 +272,13 @@ class SupportButton(Button):
         channel: discord.TextChannel = interaction.channel
         roles = [r.id for r in user.roles]
         conf = await self.view.config.guild(guild).all()
+        if conf["suspended_msg"]:
+            em = discord.Embed(
+                title=_("Ticket System Suspended"),
+                description=conf["suspended_msg"],
+                color=discord.Color.yellow(),
+            )
+            return await interaction.response.send_message(embed=em, ephemeral=True)
 
         for rid_uid in conf["blacklist"]:
             if rid_uid == user.id:

@@ -88,6 +88,31 @@ class AdminCommands(MixinMeta):
         await ctx.send(embed=em)
 
     @tickets.command()
+    async def suspend(self, ctx: commands.Context, *, message: Optional[str] = None):
+        """
+        Suspend the ticket system
+        If a suspension message is set, any user that tries to open a ticket will receive this message
+        """
+        suspended = await self.config.guild(ctx.guild).suspended_msg()
+        if message is None and suspended is None:
+            return await ctx.send_help()
+        if not message:
+            await self.config.guild(ctx.guild).suspended_msg.set(None)
+            return await ctx.send(_("Ticket system is no longer suspended!"))
+        if len(message) > 900:
+            return await ctx.send(_("Message is too long! Must be less than 900 characters"))
+        await self.config.guild(ctx.guild).suspended_msg.set(message)
+        embed = discord.Embed(
+            title=_("Ticket System Suspended"),
+            description=message,
+            color=discord.Color.yellow(),
+        )
+        await ctx.send(
+            _("Ticket system is now suspended! Users trying to open a ticket will be met with this message"),
+            embed=embed,
+        )
+
+    @tickets.command()
     async def addpanel(self, ctx: commands.Context, panel_name: str):
         """Add a support ticket panel"""
         panel_name = panel_name.lower()
@@ -973,6 +998,14 @@ class AdminCommands(MixinMeta):
                 str(conf["auto_add"])
             ),
         )
+        if conf["suspended_msg"]:
+            embed.add_field(
+                name=_("Suspended Message"),
+                value=_("Tickets are currently suspended, users will be met with the following message\n{}").format(
+                    box(conf["suspended_msg"])
+                ),
+                inline=False,
+            )
         await ctx.send(embed=embed)
 
     @tickets.command()
