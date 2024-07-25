@@ -22,7 +22,7 @@ class Stars(MixinMeta):
 
     @commands.hybrid_command(name="stars", aliases=["givestar", "addstar", "thanks"])
     @commands.guild_only()
-    async def stars(self, ctx: commands.Context, *, user: discord.Member):
+    async def stars(self, ctx: commands.Context, *, user: t.Optional[discord.Member] = None):
         """Reward a good noodle"""
         if user and user.id == ctx.author.id:
             return await ctx.send(_("You can't give stars to yourself!"), ephemeral=True)
