@@ -34,6 +34,9 @@ class VoiceListener(MixinMeta):
         before: discord.VoiceState,
         after: discord.VoiceState,
     ) -> None:
+        if member.bot:
+            return
+
         in_voice = self.in_voice.setdefault(member.guild.id, {})
         if not before.channel and not after.channel:
             # False voice state update
@@ -56,10 +59,19 @@ class VoiceListener(MixinMeta):
             addxp = False
         elif member.id in conf.ignoredusers:
             addxp = False
-        elif channel.id in conf.ignoredchannels:
-            addxp = False
         elif conf.ignore_solo and len([i for i in channel.members if not i.bot]) <= 1:
             addxp = False
+        elif channel.id in conf.ignoredchannels:
+            addxp = False
+        elif channel.category_id and channel.category_id in conf.ignoredcategories:
+            addxp = False
+        elif conf.allowedchannels:
+            if channel.id not in conf.allowedchannels:
+                if channel.category_id:
+                    if channel.category_id not in conf.allowedchannels:
+                        addxp = False
+                else:
+                    addxp = False
 
         if before.channel and after.channel:
             # User switched VC
