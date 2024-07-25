@@ -1,3 +1,17 @@
+# [4.1.1](https://github.com/vertyco/vrt-cogs/commit/60c7eedb14c770304f1e29449456596eb5949426) (2024-07-24)
+
+## Release Highlights
+
+- Allow listening to other bots
+- Allow list commands
+- Improved ignored channels
+- Various bugfixes and docstrinc improvements
+
+## New Features
+
+- Added `[p]lvlset allowlist` commands
+- Added `[p]lvlowner ignorebots` to let bots have profiles too
+
 # [4.0.0](https://github.com/vertyco/vrt-cogs/commit/60c7eedb14c770304f1e29449456596eb5949426) (2024-06-18)
 
 ## Release Highlights
