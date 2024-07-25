@@ -78,7 +78,7 @@ class Crafter(commands.Cog):
     """Get crafting information for Ark items"""
 
     __author__ = "vertyco"
-    __version__ = "1.0.0"
+    __version__ = "1.0.1"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -148,6 +148,8 @@ class Crafter(commands.Cog):
             f"`Weight:     `{item.weight}\n"
             f"`Category:   `{item.category}\n"
             f"`Class Name: `[{item.class_name}]({item.link})\n"
+            f"`Crafted In: `{', '.join(item.crafted_in) if item.crafted_in else '?'}\n"
+            f"`Yields:     `{item.crafting_yields}\n"
         )
         if item.ingredients:
             breakdown = await self.bot.loop.run_in_executor(None, get_item_breakdown, item, self.items)
