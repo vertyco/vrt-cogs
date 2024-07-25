@@ -17,7 +17,7 @@ class MessageListener(MixinMeta):
         if not message:
             return
         # If message was from a bot
-        if message.author.bot:
+        if message.author.bot and self.db.ignore_bots:
             return
         # If message wasn't sent in a guild
         if not message.guild:

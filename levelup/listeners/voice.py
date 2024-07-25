@@ -34,7 +34,7 @@ class VoiceListener(MixinMeta):
         before: discord.VoiceState,
         after: discord.VoiceState,
     ) -> None:
-        if member.bot:
+        if member.bot and self.db.ignore_bots:
             return
 
         in_voice = self.in_voice.setdefault(member.guild.id, {})
