@@ -81,6 +81,8 @@ class Functions(MixinMeta):
         """
         guild = user.guild
         conf = await self.config.guild(guild).all()
+        if conf["suspended_msg"]:
+            return f"Tickets are suspended: {conf['suspended_msg']}"
         if user.id in conf["blacklist"]:
             return "This user has been blacklisted from opening tickets!"
         if any(r.id in conf["blacklist"] for r in user.roles):
@@ -160,6 +162,9 @@ class Functions(MixinMeta):
 
         guild = user.guild
         conf = await self.config.guild(guild).all()
+        if conf["suspended_msg"]:
+            return f"Tickets are suspended: {conf['suspended_msg']}"
+
         panels = conf["panels"]
 
         # Validate the panel_name
