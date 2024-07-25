@@ -1,4 +1,4 @@
-# [4.1.1](https://github.com/vertyco/vrt-cogs/commit/60c7eedb14c770304f1e29449456596eb5949426) (2024-07-24)
+# [4.1.1](https://github.com/vertyco/vrt-cogs/commit/7b66eb14a2a885ca391c0ee783b738d11b270717) (2024-07-24)
 
 ## Release Highlights
 
