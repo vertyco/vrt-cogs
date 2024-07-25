@@ -134,10 +134,14 @@ class Owner(MixinMeta):
 
     @lvlowner.command(name="ignorebots")
     async def toggle_ignore_bots(self, ctx: commands.Context):
-        """Toggle ignoring bots for XP and profiles"""
+        """Toggle ignoring bots for XP and profiles
+
+        **USE AT YOUR OWN RISK**
+        Allowing your bot to listen to other bots is a BAD IDEA and should NEVER be enabled on public bots.
+        """
         if self.db.ignore_bots:
             self.db.ignore_bots = False
-            await ctx.send(_("Bots can now have profiles and gain XP like normal users."))
+            await ctx.send(_("Bots can now have profiles and gain XP like normal users. Proceed with caution..."))
         else:
             self.db.ignore_bots = True
             await ctx.send(_("Bots are now ignored entirely by LevelUp"))
