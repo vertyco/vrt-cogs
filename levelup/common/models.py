@@ -359,6 +359,7 @@ class DB(Base):
     internal_api_port: int = 0  # If specified, starts internal api subprocess
     external_api_url: str = ""  # If specified, overrides internal api
     auto_cleanup: bool = False  # If True, will clean up configs of old guilds
+    ignore_bots: bool = True  # Ignore bots completely
     max_backups: int = 3  # Number of backups to keep
     backup_interval: int = 3600  # Interval in seconds to create backups
 

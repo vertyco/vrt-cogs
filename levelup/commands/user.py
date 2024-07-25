@@ -27,12 +27,15 @@ log = logging.getLogger("red.vrt.levelup.commands.user")
 @app_commands.context_menu(name="View Profile")
 async def view_profile_context(interaction: discord.Interaction, member: discord.Member):
     """View a user's profile"""
-    if member.bot:
+    bot: Red = interaction.client
+    cog = bot.get_cog("LevelUp")
+    if not cog:
+        return await interaction.response.send_message(_("LevelUp is not loaded!"), ephemeral=True)
+    if member.bot and cog.db.ignore_bots:
         return await interaction.response.send_message(_("Bots cannot have profiles!"), ephemeral=True)
     with suppress(discord.HTTPException):
         await interaction.response.defer(ephemeral=True)
-    bot: Red = interaction.client
-    result = await bot.get_cog("LevelUp").get_user_profile_cached(member)
+    result = await cog.get_user_profile_cached(member)
     try:
         if isinstance(result, discord.Embed):
             await interaction.followup.send(embed=result, ephemeral=True)
@@ -104,7 +107,7 @@ class User(MixinMeta):
         if not user:
             user = ctx.author
 
-        if user.bot:
+        if user.bot and self.db.ignore_bots:
             return await ctx.send(_("Bots cannot have profiles!"))
 
         profile = conf.get_profile(user)

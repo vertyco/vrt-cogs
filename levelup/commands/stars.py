@@ -26,7 +26,7 @@ class Stars(MixinMeta):
         """Reward a good noodle"""
         if user and user.id == ctx.author.id:
             return await ctx.send(_("You can't give stars to yourself!"), ephemeral=True)
-        if user and user.bot:
+        if user and user.bot and self.db.ignore_bots:
             return await ctx.send(_("You can't give stars to bots!"), ephemeral=True)
 
         last_used = self.stars.setdefault(ctx.guild.id, {}).get(ctx.author.id)

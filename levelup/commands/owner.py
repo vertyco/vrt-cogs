@@ -26,17 +26,30 @@ class Owner(MixinMeta):
     @commands.bot_has_permissions(embed_links=True)
     async def lvlowner_view(self, ctx: commands.Context):
         """View Global LevelUp Settings"""
+
+        def _size():
+            size_bytes = utils.deep_getsizeof(self.db)
+            size_bytes += utils.deep_getsizeof(self.lastmsg)
+            size_bytes += utils.deep_getsizeof(self.in_voice)
+            size_bytes += utils.deep_getsizeof(self.profile_cache)
+
         embed = discord.Embed(color=await self.bot.get_embed_color(ctx))
-        size_bytes = utils.deep_getsizeof(self.db)
-        size_bytes += utils.deep_getsizeof(self.lastmsg)
-        size_bytes += utils.deep_getsizeof(self.in_voice)
-        size_bytes += utils.deep_getsizeof(self.profile_cache)
+        size = await asyncio.to_thread(_size)
         embed.add_field(
             name=_("Global Settings"),
             value=_("`Profile Cache Time: `{}\n" "`Cache Size:         `{}\n").format(
                 utils.humanize_delta(self.db.cache_seconds),
-                utils.humanize_size(size_bytes),
+                utils.humanize_size(size),
             ),
+            inline=False,
+        )
+        if self.db.ignore_bots:
+            txt = _("Bots are ignored for all servers and cannot gain XP or have profiles")
+        else:
+            txt = _("Bots can gain XP and have profiles")
+        embed.add_field(
+            name=_("Ignore Bots"),
+            value=txt,
             inline=False,
         )
         if self.db.render_gifs:
@@ -118,6 +131,17 @@ class Owner(MixinMeta):
             ).format(status, interval),
         )
         await ctx.send(embed=embed)
+
+    @lvlowner.command(name="ignorebots")
+    async def toggle_ignore_bots(self, ctx: commands.Context):
+        """Toggle ignoring bots for XP and profiles"""
+        if self.db.ignore_bots:
+            self.db.ignore_bots = False
+            await ctx.send(_("Bots can now have profiles and gain XP like normal users."))
+        else:
+            self.db.ignore_bots = True
+            await ctx.send(_("Bots are now ignored entirely by LevelUp"))
+        self.save()
 
     @lvlowner.command(name="maxbackups")
     async def set_max_backups(self, ctx: commands.Context, backups: int):

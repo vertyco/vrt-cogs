@@ -46,7 +46,7 @@ class DataAdmin(MixinMeta):
                 del conf.users[user_id]
                 pruned += 1
                 continue
-            if member.bot:
+            if member.bot and self.db.ignore_bots:
                 del conf.users[user_id]
                 pruned += 1
         if pruned:
