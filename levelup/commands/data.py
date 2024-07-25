@@ -41,7 +41,12 @@ class DataAdmin(MixinMeta):
         txt = ""
         pruned = 0
         for user_id in list(conf.users.keys()):
-            if not ctx.guild.get_member(user_id):
+            member = ctx.guild.get_member(user_id)
+            if not member:
+                del conf.users[user_id]
+                pruned += 1
+                continue
+            if member.bot:
                 del conf.users[user_id]
                 pruned += 1
         if pruned:

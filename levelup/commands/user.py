@@ -27,6 +27,8 @@ log = logging.getLogger("red.vrt.levelup.commands.user")
 @app_commands.context_menu(name="View Profile")
 async def view_profile_context(interaction: discord.Interaction, member: discord.Member):
     """View a user's profile"""
+    if member.bot:
+        return await interaction.response.send_message(_("Bots cannot have profiles!"), ephemeral=True)
     with suppress(discord.HTTPException):
         await interaction.response.defer(ephemeral=True)
     bot: Red = interaction.client
@@ -90,7 +92,7 @@ class User(MixinMeta):
     @commands.hybrid_command(name="profile", aliases=["pf"])
     @commands.guild_only()
     @commands.cooldown(3, 10, commands.BucketType.user)
-    async def profile(self, ctx: commands.Context, *, user: discord.Member = None):
+    async def profile(self, ctx: commands.Context, *, user: t.Optional[discord.Member] = None):
         """View User Profile"""
         conf = self.db.get_conf(ctx.guild)
         if not conf.enabled:
@@ -99,8 +101,11 @@ class User(MixinMeta):
                 txt += _("\nYou can enable it with `{}`").format(f"{ctx.clean_prefix}lset toggle")
             return await ctx.send(txt)
 
-        if user is None:
+        if not user:
             user = ctx.author
+
+        if user.bot:
+            return await ctx.send(_("Bots cannot have profiles!"))
 
         profile = conf.get_profile(user)
         new_user_txt = None
