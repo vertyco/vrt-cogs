@@ -1,8 +1,10 @@
 import asyncio
+from time import perf_counter
 
 import discord
 from redbot.core import commands
 from redbot.core.i18n import Translator
+from redbot.core.utils.chat_formatting import box, humanize_timedelta
 
 from .formatting import backup_str
 from .models import DB, GuildSettings
@@ -42,22 +44,39 @@ class IntModal(discord.ui.Modal):
 
 
 class Confirm(discord.ui.Modal):
-    def __init__(self):
+    def __init__(self, include_limits: bool = False):
         self.confirm: bool | None = None
+        self.limit: int | None = None
         super().__init__(title=_("Confirmation"), timeout=120)
+        placeholder = "(y/n)"
+        if not include_limits:
+            placeholder += " " + _("THIS CANNOT BE UNDONE!")
         self.field = discord.ui.TextInput(
             label=_("Are you SURE?"),
             style=discord.TextStyle.short,
             required=True,
-            placeholder="(y/n) " + _("THIS CANNOT BE UNDONE!"),
+            placeholder=placeholder,
         )
         self.add_item(self.field)
+
+        self.field2 = discord.ui.TextInput(
+            label=_("How many messages to backup? (0 = None)"),
+            style=discord.TextStyle.short,
+            required=True,
+            placeholder="0",
+        )
+        if include_limits:
+            self.add_item(self.field2)
 
     async def on_submit(self, interaction: discord.Interaction):
         if self.field.value.isdigit():
             bad_resp = "(y/n) " + _("response must be a string!")
             return await interaction.response.send_message(bad_resp, ephemeral=True)
+        if self.field2.value and not self.field2.value.isdigit():
+            bad_resp = _("Message backup limit must be a number!")
+            return await interaction.response.send_message(bad_resp, ephemeral=True)
         self.confirm = True if self.field.value.lower().startswith("y") else False
+        self.limit = int(self.field2.value) if self.field2.value else None
         await interaction.response.defer()
         self.stop()
 
@@ -137,12 +156,38 @@ class BackupMenu(discord.ui.View):
 
     @discord.ui.button(style=discord.ButtonStyle.success, emoji="\N{INBOX TRAY}", row=1)
     async def backup(self, interaction: discord.Interaction, button: discord.Button):
+        # Check if bot has administator permissions
+        if not self.guild.me.guild_permissions.administrator:
+            txt = _("I need administrator permissions to restore a backup in this server!")
+            return await interaction.response.send_message(txt, ephemeral=True)
+
+        modal = Confirm(include_limits=True)
+        await interaction.response.send_modal(modal)
+        await modal.wait()
+        if modal.confirm is None:
+            return
+
+        if not modal.confirm:
+            txt = _("Restore has been cancelled!")
+            return await interaction.followup.send(txt, ephemeral=True)
+
         txt = _("Backing up {}!\n-# This may take a while...").format(self.guild.name)
-        await interaction.response.send_message(txt, ephemeral=True, delete_after=30)
+        thumbnail = "https://i.imgur.com/l3p6EMX.gif"
+        embed = discord.Embed(title=_("Backup in Progress"), description=txt, color=discord.Color.blue())
+        embed.set_thumbnail(url=thumbnail)
+        message = await interaction.channel.send(embed=embed)
         self.conf = self.db.get_conf(interaction.guild)
-        await self.conf.backup(self.guild)
-        txt = _("Backup created!")
-        await interaction.followup.send(txt, ephemeral=True)
+        start = perf_counter()
+        try:
+            await self.conf.backup(self.guild, limit=modal.limit)
+        except Exception as e:
+            txt = _("An error occurred while backing up the server!\n{}").format(box(str(e)))
+            return await message.edit(content=txt, embed=None)
+
+        delta = humanize_timedelta(seconds=perf_counter() - start)
+        txt = _("Backup created in {}!").format(delta)
+        embed = discord.Embed(title=_("Backup Created"), description=txt, color=discord.Color.green())
+        await message.edit(embed=embed)
         await self.message.edit(embed=self.get_page())
 
     @discord.ui.button(style=discord.ButtonStyle.danger, emoji=e_restore, row=1)

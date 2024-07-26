@@ -107,14 +107,14 @@ class Cartographer(commands.Cog):
                 continue
             delta_hours = (now.timestamp() - settings.last_backup.timestamp()) / 3600
             if delta_hours > settings.auto_backup_interval_hours:
-                await settings.backup(guild)
+                await settings.backup(guild, limit=self.db.message_backup_limit)
                 save = True
             self.db.cleanup(guild)
 
         if save:
             await self.save()
 
-    @commands.command(name="cartographer")
+    @commands.command(name="cartographer", aliases=["carto"])
     @commands.has_permissions(administrator=True)
     @commands.bot_has_permissions(administrator=True)
     @commands.guild_only()
@@ -134,7 +134,7 @@ class Cartographer(commands.Cog):
         finally:
             await self.save()
 
-    @commands.group(name="cartographerset")
+    @commands.group(name="cartographerset", aliases=["cartoset"])
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
     async def cartographer_base(self, ctx: commands.Context):
@@ -208,12 +208,14 @@ class Cartographer(commands.Cog):
             "- Global backups: {}\n"
             "- Max backups per server: {}\n"
             "- Allow auto-backups: {}\n"
+            "- Message backup limit: {}\n"
             "- Ignored servers: {}\n"
             "- Allowed servers: {}\n"
         ).format(
             humanize_number(backups),
             self.db.max_backups_per_guild,
             self.db.allow_auto_backups,
+            self.db.message_backup_limit,
             ignored,
             allowed,
         )
@@ -230,6 +232,14 @@ class Cartographer(commands.Cog):
             self.db.allow_auto_backups = True
             txt = _("Auto backups have been **Enabled**")
         await ctx.send(txt)
+        await self.save()
+
+    @cartographer_base.command(name="messagelimit")
+    @commands.is_owner()
+    async def set_message_limit(self, ctx: commands.Context, limit: int):
+        """Set the message backup limit per channel for auto backups"""
+        self.db.message_backup_limit = limit
+        await ctx.send(_("Message backup limit has been set"))
         await self.save()
 
     @cartographer_base.command(name="maxbackups")

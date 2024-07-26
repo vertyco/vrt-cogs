@@ -16,7 +16,6 @@ _ = Translator("Cartographer", __file__)
 
 class GuildSettings(Base):
     backups: list[GuildBackup] = []
-    message_backup_limit: int = 0  # How many messages to store per channel (0 == disabled)
     auto_backup_interval_hours: int = 0
     last_backup: datetime = Field(default_factory=lambda: datetime.now().astimezone() - timedelta(days=999))
 
@@ -28,8 +27,8 @@ class GuildSettings(Base):
     def last_backup_r(self) -> str:
         return f"<t:{int(self.last_backup.timestamp())}:R>"
 
-    async def backup(self, guild: discord.Guild) -> None:
-        serialized = await GuildBackup.serialize(guild, limit=self.message_backup_limit)
+    async def backup(self, guild: discord.Guild, limit: int = 0) -> None:
+        serialized = await GuildBackup.serialize(guild, limit=limit)
         self.backups.append(serialized)
         self.last_backup = datetime.now().astimezone()
 
@@ -38,6 +37,7 @@ class DB(Base):
     configs: dict[int, GuildSettings] = {}
     max_backups_per_guild: int = 5
     allow_auto_backups: bool = False
+    message_backup_limit: int = 0  # How many messages to backup per channel
     ignored_guilds: list[int] = []
     allowed_guilds: list[int] = []
 
