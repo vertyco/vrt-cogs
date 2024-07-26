@@ -278,22 +278,47 @@ class CategoryChannel(ChannelBase):
         return category
 
 
+class FileBackup(Base):
+    filename: str
+    filebytes: str  # base64 encoded file
+
+    @classmethod
+    async def serialize(cls, attachment: discord.Attachment) -> FileBackup:
+        return cls(
+            filename=attachment.filename,
+            filebytes=base64.b64encode(await attachment.read()).decode(),
+        )
+
+    async def restore(self) -> discord.File:
+        return discord.File(BytesIO(base64.b64decode(self.filebytes)), filename=self.filename)
+
+
 class MessageBackup(Base):
     channel_id: int
     channel_name: str
     content: str | None = None
     embeds: list[dict] = []
-    attachments: list[dict] = []
+    files: list[FileBackup] = []
     username: str
     avatar_url: str
 
-    @property
-    def embed_objects(self) -> list[discord.Embed]:
+    @classmethod
+    async def serialize(cls, message: discord.Message) -> MessageBackup:
+        return cls(
+            channel_id=message.channel.id,
+            channel_name=message.channel.name,
+            content=message.content,
+            embeds=[i.to_dict() for i in message.embeds],
+            files=[await FileBackup.serialize(i) for i in message.attachments],
+            username=message.author.name,
+            avatar_url=message.author.display_avatar.url,
+        )
+
+    async def embed_objects(self) -> list[discord.Embed]:
         return [discord.Embed.from_dict(i) for i in self.embeds]
 
-    @property
-    def attachment_objects(self) -> list[discord.Attachment]:
-        return [discord.Attachment.from_dict(i) for i in self.attachments]
+    async def attachment_objects(self) -> list[discord.File]:
+        return [await i.restore() for i in self.files]
 
 
 class TextChannel(ChannelBase):
@@ -413,8 +438,8 @@ class TextChannel(ChannelBase):
                         content=message.content,
                         username=message.username,
                         avatar_url=message.avatar_url,
-                        embeds=message.embed_objects,
-                        files=message.attachment_objects,
+                        embeds=await message.embed_objects(),
+                        files=await message.attachment_objects(),
                     )
         return channel
 

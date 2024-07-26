@@ -7,6 +7,7 @@ _ = Translator("Cartographer", __file__)
 
 
 def backup_str(backup: GuildBackup) -> str:
+    total_messages = sum(len(channel.messages) for channel in backup.text_channels)
     txt = _(
         "`Created:        `{}\n"
         "`Name:           `{}\n"
@@ -18,7 +19,7 @@ def backup_str(backup: GuildBackup) -> str:
         "`Role Count:     `{}\n"
         "`Members Saved:  `{}\n"
         "`Categories:     `{}\n"
-        "`Text Channels:  `{}\n"
+        "`Text Channels:  `{} ({} messages)\n"
         "`Voice Channels: `{}\n"
         "`Forums:         `{}\n"
     ).format(
@@ -33,6 +34,7 @@ def backup_str(backup: GuildBackup) -> str:
         humanize_number(len(backup.members)),
         len(backup.categories),
         len(backup.text_channels),
+        humanize_number(total_messages),
         len(backup.voice_channels),
         len(backup.forums),
     )
