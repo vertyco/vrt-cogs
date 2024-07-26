@@ -32,6 +32,7 @@ class Owner(MixinMeta):
             size_bytes += utils.deep_getsizeof(self.lastmsg)
             size_bytes += utils.deep_getsizeof(self.in_voice)
             size_bytes += utils.deep_getsizeof(self.profile_cache)
+            return size_bytes
 
         embed = discord.Embed(color=await self.bot.get_embed_color(ctx))
         size = await asyncio.to_thread(_size)
