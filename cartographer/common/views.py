@@ -4,8 +4,9 @@ import discord
 from redbot.core import commands
 from redbot.core.i18n import Translator
 
-from .formatting import backup_menu_embeds
-from .models import DB, GuildBackup, GuildSettings
+from .formatting import backup_str
+from .models import DB, GuildSettings
+from .serializers import GuildBackup
 
 _ = Translator("Cartographer", __file__)
 
@@ -43,7 +44,6 @@ class IntModal(discord.ui.Modal):
 class Confirm(discord.ui.Modal):
     def __init__(self):
         self.confirm: bool | None = None
-        self.rem_old: bool = False
         super().__init__(title=_("Confirmation"), timeout=120)
         self.field = discord.ui.TextInput(
             label=_("Are you SURE?"),
@@ -52,20 +52,12 @@ class Confirm(discord.ui.Modal):
             placeholder="(y/n) " + _("THIS CANNOT BE UNDONE!"),
         )
         self.add_item(self.field)
-        self.field2 = discord.ui.TextInput(
-            label=_("Remove Old"),
-            style=discord.TextStyle.short,
-            required=True,
-            placeholder="(y/n) " + _("removes unsaved channels/roles"),
-        )
-        self.add_item(self.field2)
 
     async def on_submit(self, interaction: discord.Interaction):
-        bad_resp = "(y/n) " + _("response must be a string!")
-        if self.field.value.isdigit() or self.field2.value.isdigit():
+        if self.field.value.isdigit():
+            bad_resp = "(y/n) " + _("response must be a string!")
             return await interaction.response.send_message(bad_resp, ephemeral=True)
         self.confirm = True if self.field.value.lower().startswith("y") else False
-        self.rem_old = True if self.field2.value.lower().startswith("y") else False
         await interaction.response.defer()
         self.stop()
 
@@ -79,9 +71,36 @@ class BackupMenu(discord.ui.View):
         self.conf: GuildSettings = self.db.get_conf(self.guild)
 
         self.message: discord.Message = None
-        self.pages = backup_menu_embeds(self.conf, self.guild)
         self.page = 0
         self.close.label = _("Close")
+
+    def get_page(self) -> discord.Embed:
+        self.page = self.page % len(self.conf.backups) if self.conf.backups else 0
+        c_name = _("Controls")
+        controls = _(
+            "- Backup Current Server: 📥\n"
+            "- Restore Here: \N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}\n"
+            "- Switch Servers: 🔍\n"
+            "- Set AutoBackup Interval: ⌛\n"
+            "- Delete Backup: 🗑️\n"
+        )
+        s_name = _("Settings")
+        settings = _("- Auto Backup Interval Hours: {}\n- Last Backup: {}").format(
+            self.conf.auto_backup_interval_hours, f"{self.conf.last_backup_f} ({self.conf.last_backup_r})"
+        )
+        title = _("Cartographer Backups for {}").format(self.guild.name)
+        if not self.conf.backups:
+            txt = _("There are no backups for this server yet!")
+            embed = discord.Embed(title=title, description=txt, color=discord.Color.blue())
+            embed.add_field(name=s_name, value=settings, inline=False)
+            embed.add_field(name=c_name, value=controls, inline=False)
+        else:
+            txt = backup_str(self.conf.backups[self.page])
+            embed = discord.Embed(title=title, description=txt, color=discord.Color.blue())
+            embed.add_field(name=s_name, value=settings, inline=False)
+            embed.add_field(name=c_name, value=controls, inline=False)
+            embed.set_footer(text=_("Page {}").format(f"{self.page + 1}/{len(self.conf.backups)}"))
+        return embed
 
     async def interaction_check(self, interaction: discord.Interaction):
         if interaction.user.id != self.ctx.author.id:
@@ -94,70 +113,45 @@ class BackupMenu(discord.ui.View):
         return await super().on_timeout()
 
     async def start(self):
-        self.message = await self.ctx.send(embed=self.pages[self.page], view=self)
+        self.message = await self.ctx.send(embed=self.get_page(), view=self)
 
     @discord.ui.button(style=discord.ButtonStyle.secondary, emoji=e_left10)
     async def left10(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.defer()
         self.page -= 10
-        self.page %= len(self.pages)
-        await self.message.edit(embed=self.pages[self.page])
+        await interaction.response.edit_message(embed=self.get_page())
 
     @discord.ui.button(style=discord.ButtonStyle.secondary, emoji=e_left)
     async def left(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.defer()
         self.page -= 1
-        self.page %= len(self.pages)
-        await self.message.edit(embed=self.pages[self.page])
+        await interaction.response.edit_message(embed=self.get_page())
 
     @discord.ui.button(style=discord.ButtonStyle.secondary, emoji=e_right)
     async def right(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.defer()
         self.page += 1
-        self.page %= len(self.pages)
-        await self.message.edit(embed=self.pages[self.page])
+        await interaction.response.edit_message(embed=self.get_page())
 
     @discord.ui.button(style=discord.ButtonStyle.secondary, emoji=e_right10)
     async def right10(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.defer()
         self.page += 10
-        self.page %= len(self.pages)
-        await self.message.edit(embed=self.pages[self.page])
+        await interaction.response.edit_message(embed=self.get_page())
 
     @discord.ui.button(style=discord.ButtonStyle.success, emoji="\N{INBOX TRAY}", row=1)
     async def backup(self, interaction: discord.Interaction, button: discord.Button):
-        txt = _("Backing up {}!").format(self.guild.name)
+        txt = _("Backing up {}!\n-# This may take a while...").format(self.guild.name)
         await interaction.response.send_message(txt, ephemeral=True, delete_after=30)
         self.conf = self.db.get_conf(interaction.guild)
         await self.conf.backup(self.guild)
         txt = _("Backup created!")
-        backup = self.conf.backups[-1]
-        if backup.has_duplcate_roles:
-            txt += "\n" + _(
-                "- Backup contains roles with duplcate names! Only one role per unique name can be restored!"
-            )
-        if backup.has_duplcate_categories:
-            txt += "\n" + _(
-                "- Backup contains categories with duplcate names! Only one category per unique name can be restored!"
-            )
-        if backup.has_duplcate_text_channels:
-            txt += "\n" + _(
-                "- Backup contains text channels with duplcate names! Only one text channel per unique name can be restored!"
-            )
-        if backup.has_duplcate_voice_channels:
-            txt += "\n" + _(
-                "- Backup contains voice channels with duplcate names! Only one voice channel per unique name can be restored!"
-            )
-        if backup.has_duplcate_forum_channels:
-            txt += "\n" + _(
-                "- Backup contains forum channels with duplcate names! Only one forum channel per unique name can be restored!"
-            )
         await interaction.followup.send(txt, ephemeral=True)
-        self.pages = backup_menu_embeds(self.conf, self.guild)
-        await self.message.edit(embed=self.pages[self.page])
+        await self.message.edit(embed=self.get_page())
 
     @discord.ui.button(style=discord.ButtonStyle.danger, emoji=e_restore, row=1)
     async def restore(self, interaction: discord.Interaction, button: discord.Button):
+        # Check if bot has administator permissions
+        if not self.guild.me.guild_permissions.administrator:
+            txt = _("I need administrator permissions to restore a backup in this server!")
+            return await interaction.response.send_message(txt, ephemeral=True)
+
         if not self.conf.backups:
             txt = _("No backups to restore!")
             return await interaction.response.send_message(txt, ephemeral=True)
@@ -168,35 +162,18 @@ class BackupMenu(discord.ui.View):
         if modal.confirm is None:
             return
 
-        if modal.confirm:
-            self.page %= len(self.conf.backups)
-            backup: GuildBackup = self.conf.backups[self.page]
-            asyncio.create_task(backup.restore(self.guild, interaction.channel, modal.rem_old))
-            txt = _("Your backup is being restored!")
-            if backup.has_duplcate_roles:
-                txt += "\n" + _(
-                    "- Backup contains roles with duplcate names! Only one role per unique name will be restored!"
-                )
-            if backup.has_duplcate_categories:
-                txt += "\n" + _(
-                    "- Backup contains categories with duplcate names! Only one category per unique name will be restored!"
-                )
-            if backup.has_duplcate_text_channels:
-                txt += "\n" + _(
-                    "- Backup contains text channels with duplcate names! Only one text channel per unique name will be restored!"
-                )
-            if backup.has_duplcate_voice_channels:
-                txt += "\n" + _(
-                    "- Backup contains voice channels with duplcate names! Only one voice channel per unique name will be restored!"
-                )
-            if backup.has_duplcate_forum_channels:
-                txt += "\n" + _(
-                    "- Backup contains forum channels with duplcate names! Only one forum channel per unique name will be restored!"
-                )
+        if not modal.confirm:
+            txt = _("Restore has been cancelled!")
             return await interaction.followup.send(txt, ephemeral=True)
 
-        txt = _("Restore has been cancelled!")
-        return await interaction.followup.send(txt, ephemeral=True)
+        self.page %= len(self.conf.backups)
+        backup: GuildBackup = await asyncio.to_thread(self.conf.backups[self.page].model_copy, deep=True)
+
+        txt = _("Your backup is being restored!")
+        await interaction.followup.send(txt, ephemeral=True)
+
+        async with self.ctx.typing():
+            await backup.restore(self.guild, interaction.channel)
 
     @discord.ui.button(style=discord.ButtonStyle.success, emoji=e_search, row=1)
     async def switch(self, interaction: discord.Interaction, button: discord.Button):
@@ -217,9 +194,7 @@ class BackupMenu(discord.ui.View):
             txt = _("You can only switch to servers that you are an administrator of!")
             return await interaction.followup.send(txt, ephemeral=True)
         self.conf = self.db.get_conf(guild)
-        self.pages = backup_menu_embeds(self.conf, guild)
-        self.page = 0
-        await self.message.edit(embed=self.pages[self.page])
+        await self.message.edit(embed=self.get_page())
 
     @discord.ui.button(style=discord.ButtonStyle.success, emoji="\N{HOURGLASS}", row=1)
     async def interval(self, interaction: discord.Interaction, button: discord.Button):
@@ -246,9 +221,9 @@ class BackupMenu(discord.ui.View):
         if not self.conf.backups:
             txt = _("No backups to delete!")
             return await interaction.response.send_message(txt, ephemeral=True)
-        del self.conf.backups[self.page]
-        self.pages = backup_menu_embeds(self.conf, self.guild)
-        self.page %= len(self.pages)
-        await self.message.edit(embed=self.pages[self.page])
+
         txt = _("Backup deleted!")
-        return await interaction.response.send_message(txt, ephemeral=True, delete_after=30)
+        await interaction.response.send_message(txt, ephemeral=True, delete_after=30)
+
+        del self.conf.backups[self.page]
+        await self.message.edit(embed=self.get_page())

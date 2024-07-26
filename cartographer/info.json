@@ -9,7 +9,7 @@
   "min_python_version": [3, 10, 0],
   "permissions": ["administrator"],
   "required_cogs": {},
-  "requirements": ["pydantic"],
+  "requirements": ["pydantic", "tenacity"],
   "short": "Discord Server Backup/Restore",
   "tags": ["backup", "backups", "restore", "cartographer"],
   "type": "COG"

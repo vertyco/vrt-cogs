@@ -43,7 +43,7 @@ class Cartographer(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.2.2"
+    __version__ = "1.0.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -93,7 +93,8 @@ class Cartographer(commands.Cog):
             return
         now = datetime.now().astimezone()
         save = False
-        for guild_id, settings in self.db.configs.items():
+        for guild_id in list(self.db.configs.keys()):
+            settings = self.db.configs[guild_id]
             if not settings.auto_backup_interval_hours:
                 continue
             if guild_id in self.db.ignored_guilds:
@@ -139,6 +140,21 @@ class Cartographer(commands.Cog):
     async def cartographer_base(self, ctx: commands.Context):
         """Backup & Restore Tools"""
 
+    @cartographer_base.command(name="wipebackups")
+    @commands.is_owner()
+    async def wipe_all_backups(self, ctx: commands.Context, confirm: bool):
+        """
+        Wipe all backups for all servers
+
+        This action cannot be undone!
+        """
+        if not confirm:
+            return await ctx.send(_("Please confirm this action by passing `True` as an argument"))
+        for guild_id in list(self.db.configs.keys()):
+            self.db.configs[guild_id].backups.clear()
+        await self.save()
+        await ctx.send(_("All backups have been wiped!"))
+
     @cartographer_base.command(name="backup")
     async def backup_server(self, ctx: commands.Context):
         """Create a backup of this server"""
@@ -176,7 +192,8 @@ class Cartographer(commands.Cog):
             if not conf.backups:
                 txt = _("There are no backups for this guild!")
                 return await ctx.send(txt)
-            await conf.backups[-1].restore(ctx.guild, ctx.channel, delete_existing)
+            latest = await asyncio.to_thread(conf.backups[-1].model_copy, deep=True)
+            await latest.restore(ctx.guild, ctx.channel)
             await ctx.send(_("Server restore is complete!"))
 
     @cartographer_base.command(name="view")
