@@ -1,10 +1,11 @@
 import asyncio
+from contextlib import suppress
 from time import perf_counter
 
 import discord
 from redbot.core import commands
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import box, humanize_timedelta
+from redbot.core.utils.chat_formatting import box, humanize_timedelta, text_to_file
 
 from .formatting import backup_str
 from .models import DB, GuildSettings
@@ -128,7 +129,9 @@ class BackupMenu(discord.ui.View):
         return True
 
     async def on_timeout(self):
-        await self.message.edit(view=None)
+        if self.message:
+            with suppress(discord.HTTPException):
+                await self.message.edit(view=None)
         return await super().on_timeout()
 
     async def start(self):
@@ -179,13 +182,20 @@ class BackupMenu(discord.ui.View):
         self.conf = self.db.get_conf(interaction.guild)
         start = perf_counter()
         try:
-            await self.conf.backup(self.guild, limit=modal.limit)
+            await self.conf.backup(
+                self.guild,
+                limit=modal.limit,
+                backup_members=self.db.backup_members,
+                backup_roles=self.db.backup_roles,
+                backup_emojis=self.db.backup_emojis,
+                backup_stickers=self.db.backup_stickers,
+            )
         except Exception as e:
             txt = _("An error occurred while backing up the server!\n{}").format(box(str(e)))
             return await message.edit(content=txt, embed=None)
 
         delta = humanize_timedelta(seconds=perf_counter() - start)
-        txt = _("Backup created in {}!").format(delta)
+        txt = _("Backup created in {}!").format(delta if delta else _("0 seconds"))
         embed = discord.Embed(title=_("Backup Created"), description=txt, color=discord.Color.green())
         await message.edit(embed=embed)
         await self.message.edit(embed=self.get_page())
@@ -218,7 +228,10 @@ class BackupMenu(discord.ui.View):
         await interaction.followup.send(txt, ephemeral=True)
 
         async with self.ctx.typing():
-            await backup.restore(self.guild, interaction.channel)
+            results = await backup.restore(self.guild, interaction.channel)
+            if results:
+                txt = _("The following errors occurred while restoring the backup")
+                await interaction.channel.send(txt, file=text_to_file(results, "restore_results.txt"))
 
     @discord.ui.button(style=discord.ButtonStyle.success, emoji=e_search, row=1)
     async def switch(self, interaction: discord.Interaction, button: discord.Button):

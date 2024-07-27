@@ -27,8 +27,23 @@ class GuildSettings(Base):
     def last_backup_r(self) -> str:
         return f"<t:{int(self.last_backup.timestamp())}:R>"
 
-    async def backup(self, guild: discord.Guild, limit: int = 0) -> None:
-        serialized = await GuildBackup.serialize(guild, limit=limit)
+    async def backup(
+        self,
+        guild: discord.Guild,
+        limit: int = 0,
+        backup_members: bool = True,
+        backup_roles: bool = True,
+        backup_emojis: bool = True,
+        backup_stickers: bool = True,
+    ) -> None:
+        serialized = await GuildBackup.serialize(
+            guild,
+            limit=limit,
+            backup_members=backup_members,
+            backup_roles=backup_roles,
+            backup_emojis=backup_emojis,
+            backup_stickers=backup_stickers,
+        )
         self.backups.append(serialized)
         self.last_backup = datetime.now().astimezone()
 
@@ -37,7 +52,13 @@ class DB(Base):
     configs: dict[int, GuildSettings] = {}
     max_backups_per_guild: int = 5
     allow_auto_backups: bool = False
+
     message_backup_limit: int = 0  # How many messages to backup per channel
+    backup_members: bool = True
+    backup_roles: bool = True
+    backup_emojis: bool = True
+    backup_stickers: bool = True
+
     ignored_guilds: list[int] = []
     allowed_guilds: list[int] = []
 

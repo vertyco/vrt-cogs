@@ -7,8 +7,9 @@ import discord
 from discord.ext import tasks
 from redbot.core import Config, commands
 from redbot.core.bot import Red
+from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import humanize_number
+from redbot.core.utils.chat_formatting import humanize_number, text_to_file
 
 from .common.models import DB
 from .common.views import BackupMenu
@@ -50,6 +51,8 @@ class Cartographer(commands.Cog):
         self.bot = bot
         self.config = Config.get_conf(self, 117, force_registration=True)
         self.config.register_global(db={})
+
+        self.backups = cog_data_path(self) / "backups"
 
         self.db: DB = DB()
         self.saving = False
@@ -107,7 +110,14 @@ class Cartographer(commands.Cog):
                 continue
             delta_hours = (now.timestamp() - settings.last_backup.timestamp()) / 3600
             if delta_hours > settings.auto_backup_interval_hours:
-                await settings.backup(guild, limit=self.db.message_backup_limit)
+                await settings.backup(
+                    guild,
+                    limit=self.db.message_backup_limit,
+                    backup_members=self.db.backup_members,
+                    backup_roles=self.db.backup_roles,
+                    backup_emojis=self.db.backup_emojis,
+                    backup_stickers=self.db.backup_stickers,
+                )
                 save = True
             self.db.cleanup(guild)
 
@@ -156,8 +166,12 @@ class Cartographer(commands.Cog):
         await ctx.send(_("All backups have been wiped!"))
 
     @cartographer_base.command(name="backup")
-    async def backup_server(self, ctx: commands.Context):
-        """Create a backup of this server"""
+    async def backup_server(self, ctx: commands.Context, limit: int = 0):
+        """
+        Create a backup of this server
+
+        limit: How many messages to backup per channel (0 for None)
+        """
         if ctx.guild.id in self.db.ignored_guilds:
             txt = _("This server is in the ingored list!")
             return await ctx.send(txt)
@@ -167,7 +181,14 @@ class Cartographer(commands.Cog):
 
         async with ctx.typing():
             conf = self.db.get_conf(ctx.guild)
-            await conf.backup(ctx.guild)
+            await conf.backup(
+                ctx.guild,
+                limit=limit,
+                backup_members=self.db.backup_members,
+                backup_roles=self.db.backup_roles,
+                backup_emojis=self.db.backup_emojis,
+                backup_stickers=self.db.backup_stickers,
+            )
             await ctx.send(_("A backup has been created!"))
             await self.save()
 
@@ -193,8 +214,11 @@ class Cartographer(commands.Cog):
                 txt = _("There are no backups for this guild!")
                 return await ctx.send(txt)
             latest = await asyncio.to_thread(conf.backups[-1].model_copy, deep=True)
-            await latest.restore(ctx.guild, ctx.channel)
+            results = await latest.restore(ctx.guild, ctx.channel)
             await ctx.send(_("Server restore is complete!"))
+            if results:
+                txt = _("The following errors occurred while restoring the backup")
+                await ctx.send(txt, file=text_to_file(results, "restore_results.txt"))
 
     @cartographer_base.command(name="view")
     @commands.is_owner()
@@ -209,6 +233,10 @@ class Cartographer(commands.Cog):
             "- Max backups per server: {}\n"
             "- Allow auto-backups: {}\n"
             "- Message backup limit: {}\n"
+            "- Backup Members: {}\n"
+            "- Backup Roles: {}\n"
+            "- Backup Emojis: {}\n"
+            "- Backup Stickers: {}\n"
             "- Ignored servers: {}\n"
             "- Allowed servers: {}\n"
         ).format(
@@ -216,6 +244,10 @@ class Cartographer(commands.Cog):
             self.db.max_backups_per_guild,
             self.db.allow_auto_backups,
             self.db.message_backup_limit,
+            self.db.backup_members,
+            self.db.backup_roles,
+            self.db.backup_emojis,
+            self.db.backup_stickers,
             ignored,
             allowed,
         )
@@ -239,7 +271,58 @@ class Cartographer(commands.Cog):
     async def set_message_limit(self, ctx: commands.Context, limit: int):
         """Set the message backup limit per channel for auto backups"""
         self.db.message_backup_limit = limit
-        await ctx.send(_("Message backup limit has been set"))
+        if limit == 0:
+            await ctx.send(_("Message backup has been **Disabled**"))
+        else:
+            await ctx.send(_("Message backup limit has been set"))
+        await self.save()
+
+    @cartographer_base.command(name="backupmembers")
+    @commands.is_owner()
+    async def toggle_backup_members(self, ctx: commands.Context):
+        """Toggle backing up members"""
+        self.db.backup_members = not self.db.backup_members
+        if self.db.backup_members:
+            txt = _("Members will now be backed up")
+        else:
+            txt = _("Members will no longer be backed up")
+        await ctx.send(txt)
+        await self.save()
+
+    @cartographer_base.command(name="backuproles")
+    @commands.is_owner()
+    async def toggle_backup_roles(self, ctx: commands.Context):
+        """Toggle backing up roles"""
+        self.db.backup_roles = not self.db.backup_roles
+        if self.db.backup_roles:
+            txt = _("Roles will now be backed up")
+        else:
+            txt = _("Roles will no longer be backed up")
+        await ctx.send(txt)
+        await self.save()
+
+    @cartographer_base.command(name="backupemojis")
+    @commands.is_owner()
+    async def toggle_backup_emojis(self, ctx: commands.Context):
+        """Toggle backing up emojis"""
+        self.db.backup_emojis = not self.db.backup_emojis
+        if self.db.backup_emojis:
+            txt = _("Emojis will now be backed up")
+        else:
+            txt = _("Emojis will no longer be backed up")
+        await ctx.send(txt)
+        await self.save()
+
+    @cartographer_base.command(name="backupstickers")
+    @commands.is_owner()
+    async def toggle_backup_stickers(self, ctx: commands.Context):
+        """Toggle backing up stickers"""
+        self.db.backup_stickers = not self.db.backup_stickers
+        if self.db.backup_stickers:
+            txt = _("Stickers will now be backed up")
+        else:
+            txt = _("Stickers will no longer be backed up")
+        await ctx.send(txt)
         await self.save()
 
     @cartographer_base.command(name="maxbackups")
