@@ -20,6 +20,7 @@
     "costs",
     "interactive",
     "events",
+    "plotly",
     "log"
   ],
   "type": "COG"
