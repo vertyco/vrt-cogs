@@ -11,6 +11,7 @@ from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_number, text_to_file
 
+from .common.formatting import humanize_size
 from .common.models import DB
 from .common.views import BackupMenu
 
@@ -33,6 +34,9 @@ class Cartographer(commands.Cog):
     - Voice channels (permissions/order)
     - Forum channels  (permissions/order)[Not forum posts]
     - Roles (permissions and what members they're assigned to)
+    - Emojis (Very slow and rate limit heavy)
+    - Stickers (Very slow and rate limit heavy)
+    - Members (roles and nicknames)
 
     **Caveats**
     Note the following
@@ -52,7 +56,7 @@ class Cartographer(commands.Cog):
         self.config = Config.get_conf(self, 117, force_registration=True)
         self.config.register_global(db={})
 
-        self.backups = cog_data_path(self) / "backups"
+        self.root = cog_data_path(self)
 
         self.db: DB = DB()
         self.saving = False
@@ -225,8 +229,10 @@ class Cartographer(commands.Cog):
     async def view_settings(self, ctx: commands.Context):
         """View current global settings"""
         backups = sum([len(i.backups) for i in self.db.configs.values()])
-        ignored = ", ".join([str(i) for i in self.db.ignored_guilds]) if self.db.ignored_guilds else _("None Set")
-        allowed = ", ".join([str(i) for i in self.db.allowed_guilds]) if self.db.allowed_guilds else _("None Set")
+        ignored = ", ".join([f"`{i}`" for i in self.db.ignored_guilds]) if self.db.ignored_guilds else _("**None Set**")
+        allowed = ", ".join([f"`{i}`" for i in self.db.allowed_guilds]) if self.db.allowed_guilds else _("**None Set**")
+        settings = self.root / "settings.json"
+        settings_size = settings.stat().st_size
         txt = _(
             "### Global Settings\n"
             "- Global backups: {}\n"
@@ -240,14 +246,14 @@ class Cartographer(commands.Cog):
             "- Ignored servers: {}\n"
             "- Allowed servers: {}\n"
         ).format(
-            humanize_number(backups),
-            self.db.max_backups_per_guild,
-            self.db.allow_auto_backups,
-            self.db.message_backup_limit,
-            self.db.backup_members,
-            self.db.backup_roles,
-            self.db.backup_emojis,
-            self.db.backup_stickers,
+            f"**{humanize_number(backups)}** (`{humanize_size(settings_size)}`)",
+            f"**{self.db.max_backups_per_guild}**",
+            f"**{self.db.allow_auto_backups}**",
+            f"**{self.db.message_backup_limit}**",
+            f"**{self.db.backup_members}**",
+            f"**{self.db.backup_roles}**",
+            f"**{self.db.backup_emojis}**",
+            f"**{self.db.backup_stickers}**",
             ignored,
             allowed,
         )
@@ -269,7 +275,15 @@ class Cartographer(commands.Cog):
     @cartographer_base.command(name="messagelimit")
     @commands.is_owner()
     async def set_message_limit(self, ctx: commands.Context, limit: int):
-        """Set the message backup limit per channel for auto backups"""
+        """Set the message backup limit per channel for auto backups
+
+        Set to 0 to disable message backups
+
+        ⚠️**Warning**⚠️
+        Setting this to a high number can cause backups to be slow and take up a lot of space.
+        """
+        if limit < 0:
+            return await ctx.send(_("Limit must be 0 or higher"))
         self.db.message_backup_limit = limit
         if limit == 0:
             await ctx.send(_("Message backup has been **Disabled**"))
@@ -280,10 +294,15 @@ class Cartographer(commands.Cog):
     @cartographer_base.command(name="backupmembers")
     @commands.is_owner()
     async def toggle_backup_members(self, ctx: commands.Context):
-        """Toggle backing up members"""
+        """Toggle backing up members
+
+        ⚠️**Warning**⚠️
+        Restoring the roles of all members can be slow for large servers.
+        """
         self.db.backup_members = not self.db.backup_members
+        warning = _("\n⚠️**Warning**⚠️\nRestoring the roles of all members can be slow for large servers.")
         if self.db.backup_members:
-            txt = _("Members will now be backed up")
+            txt = _("Members will now be backed up") + warning
         else:
             txt = _("Members will no longer be backed up")
         await ctx.send(txt)
@@ -292,10 +311,15 @@ class Cartographer(commands.Cog):
     @cartographer_base.command(name="backuproles")
     @commands.is_owner()
     async def toggle_backup_roles(self, ctx: commands.Context):
-        """Toggle backing up roles"""
+        """Toggle backing up roles
+
+        ⚠️**Warning**⚠️
+        Any roles above the bot's role will not be restored.
+        """
         self.db.backup_roles = not self.db.backup_roles
+        warning = _("\n⚠️**Warning**⚠️\nAny roles above the bot's role will not be restored.")
         if self.db.backup_roles:
-            txt = _("Roles will now be backed up")
+            txt = _("Roles will now be backed up") + warning
         else:
             txt = _("Roles will no longer be backed up")
         await ctx.send(txt)
@@ -304,10 +328,17 @@ class Cartographer(commands.Cog):
     @cartographer_base.command(name="backupemojis")
     @commands.is_owner()
     async def toggle_backup_emojis(self, ctx: commands.Context):
-        """Toggle backing up emojis"""
+        """Toggle backing up emojis
+
+        ⚠️**Warning**⚠️
+        Restoring emojis is EXTREMELY rate-limited and can take a long time (like hours) for servers with many emojis.
+        """
         self.db.backup_emojis = not self.db.backup_emojis
+        warning = _(
+            "\n⚠️**Warning**⚠️\nRestoring emojis is EXTREMELY rate-limited and can take a long time (like hours) for servers with many emojis."
+        )
         if self.db.backup_emojis:
-            txt = _("Emojis will now be backed up")
+            txt = _("Emojis will now be backed up") + warning
         else:
             txt = _("Emojis will no longer be backed up")
         await ctx.send(txt)
@@ -316,10 +347,17 @@ class Cartographer(commands.Cog):
     @cartographer_base.command(name="backupstickers")
     @commands.is_owner()
     async def toggle_backup_stickers(self, ctx: commands.Context):
-        """Toggle backing up stickers"""
+        """Toggle backing up stickers
+
+        ⚠️**Warning**⚠️
+        Restoring stickers is EXTREMELY rate-limited and can take a long time (like hours) for servers with many stickers.
+        """
         self.db.backup_stickers = not self.db.backup_stickers
+        warning = _(
+            "\n⚠️**Warning**⚠️\nRestoring stickers is EXTREMELY rate-limited and can take a long time (like hours) for servers with many stickers."
+        )
         if self.db.backup_stickers:
-            txt = _("Stickers will now be backed up")
+            txt = _("Stickers will now be backed up") + warning
         else:
             txt = _("Stickers will no longer be backed up")
         await ctx.send(txt)

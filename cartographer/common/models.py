@@ -56,8 +56,8 @@ class DB(Base):
     message_backup_limit: int = 0  # How many messages to backup per channel
     backup_members: bool = True
     backup_roles: bool = True
-    backup_emojis: bool = True
-    backup_stickers: bool = True
+    backup_emojis: bool = False
+    backup_stickers: bool = False
 
     ignored_guilds: list[int] = []
     allowed_guilds: list[int] = []

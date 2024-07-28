@@ -50,14 +50,23 @@ class Role(Base):
     is_premium_subscriber: bool = False
     is_default: bool = False
 
+    def fuzzy_match(self, role: discord.Role) -> bool:
+        cases = [
+            self.name == role.name,
+            self.color == role.color.value,
+            self.hoist == role.hoist,
+            self.mentionable == role.mentionable,
+        ]
+        return all(cases)
+
     def is_match(self, role: discord.Role) -> bool:
         cases = [
             self.name == role.name,
             self.color == role.color.value,
             self.hoist == role.hoist,
-            self.position == role.position,
             self.permissions == role.permissions.value,
             self.mentionable == role.mentionable,
+            self.position == role.position,
         ]
         return all(cases)
 
@@ -80,53 +89,39 @@ class Role(Base):
             is_default=role.is_default(),
         )
 
-    @property
-    def leave_alone(self) -> bool:
-        skip = [
-            not self.is_assignable,
-            self.is_bot_managed,
-            self.is_default,
-            self.is_integration,
-            self.is_premium_subscriber,
-        ]
-        return any(skip)
-
     @retry(
         retry=retry_if_exception_type(aiohttp.ClientConnectionError | aiohttp.ClientOSError),
         wait=wait_random_exponential(min=1, max=3),
         stop=stop_after_attempt(5),
         reraise=False,
     )
-    async def restore(self, guild: discord.Guild) -> discord.Role:
+    async def restore(self, guild: discord.Guild, buffer: StringIO) -> discord.Role:
         supports_emojis = "ROLE_ICONS" in guild.features
         existing: discord.Role | None = guild.get_role(self.id)
-        if not existing:
-            for role in guild.roles:
-                if self.is_match(role):
-                    self.id = role.id
-                    existing = role
-                    log.info("Updating ID for role %s", self.name)
-
-        if existing:
+        position = max(1, min(self.position, guild.me.top_role.position - 1))
+        if existing and existing < guild.me.top_role:
             if self.is_match(existing):
                 # Role exists and has not changed
                 return existing
-            if self.leave_alone:
+            if existing.id == guild.default_role.id:
+                log.info("Updating default role %s", self.name)
+                await existing.edit(permissions=discord.Permissions(self.permissions))
                 return existing
+
             log.info("Updating role %s", self.name)
             role = existing
             await role.edit(
                 name=self.name,
                 color=self.color,
                 hoist=self.hoist,
-                position=self.position,
+                position=position,
                 permissions=discord.Permissions(self.permissions),
                 mentionable=self.mentionable,
                 display_icon=base64.b64decode(self.icon) if self.icon and supports_emojis else None,
                 reason=_("Restored from backup"),
             )
         else:
-            log.info("Restoring role %s", self.name)
+            log.info("Creating role %s", self.name)
             role = await guild.create_role(
                 name=self.name,
                 color=self.color,
@@ -136,16 +131,22 @@ class Role(Base):
                 display_icon=base64.b64decode(self.icon) if self.icon and supports_emojis else None,
                 reason=_("Restored from backup"),
             )
+            await role.edit(position=position)
         return role
 
 
 class Member(Base):
     id: int
+    nick: str | None = None
     roles: list[Role] = []
 
     @classmethod
     async def serialize(cls, member: discord.Member) -> Member:
-        return cls(id=member.id, roles=[await Role.serialize(i, load_icon=False) for i in member.roles])
+        return cls(
+            id=member.id,
+            nick=member.nick,
+            roles=[await Role.serialize(i, load_icon=False) for i in member.roles],
+        )
 
     @retry(
         retry=retry_if_exception_type(aiohttp.ClientConnectionError | aiohttp.ClientOSError),
@@ -157,6 +158,10 @@ class Member(Base):
         member = guild.get_member(self.id)
         if not member:
             return False
+
+        if member.nick != self.nick:
+            log.info("Updating nickname for %s", member.display_name)
+            await member.edit(nick=self.nickname, reason=_("Restored from backup"))
 
         # Update the role IDs by closest match, becaue they should be restored by now
         for role in self.roles:
@@ -198,6 +203,7 @@ class Member(Base):
 class Overwrites(Base):
     id: int  # Role or member ID
     name: str = ""  # Role or member name (for logging)
+    is_role: bool = True
     values: dict[str, bool | None] = {}
 
     @classmethod
@@ -206,24 +212,39 @@ class Overwrites(Base):
             cls(
                 id=role_mem.id,
                 name=role_mem.name,
+                type=True if isinstance(role_mem, discord.Role) else False,
                 values=perms._values,
             )
             for role_mem, perms in obj.overwrites.items()
+            if perms._values
         ]
         return overwrites
 
     def get(self, guild: discord.Guild) -> discord.Role | discord.Member | None:
-        return guild.get_member(self.id) or guild.get_role(self.id)
+        if self.is_role:
+            role = guild.get_role(self.id)
+            if role:
+                return role
+            if self.name == "@everyone":
+                return guild.default_role
+            # Match by name
+            for role in guild.roles:
+                if role.name == self.name:
+                    self.id = role.id
+                    return role
+        else:
+            return guild.get_member(self.id)
 
 
 class ChannelBase(Base):
     id: int
     name: str
-    position: int
-    overwrites: list[Overwrites]
+    position: int = 0
+    overwrites: list[Overwrites] = []
     nsfw: bool = False
 
     # v1.0.0 compatibility
+    # Category used to be a string (name) instead of an object
     if VERSION > "1.10.15":
 
         @field_validator("category", mode="before", check_fields=False)
@@ -248,8 +269,11 @@ class ChannelBase(Base):
             if obj:
                 overwrites[obj] = discord.PermissionOverwrite(**i.values)
             else:
-                log.warning("Could not find object for overwrite %s: %s", i.name or i.id, i.values)
-                buffer.write(_("Could not find object for overwrite {}: {}\n").format(i.name or i.id, i.values))
+                txt = _("Channel {} missing role or member overwrite: {} - {}\n").format(
+                    f"{self.name} ({self.id})", f"{i.name} ({i.id})", str(i.values)
+                )
+                log.warning(txt)
+                buffer.write(txt)
         return overwrites
 
     def is_match(self, channel: discord.abc.GuildChannel) -> bool:
@@ -393,7 +417,7 @@ class TextChannel(ChannelBase):
                 msg_obj = MessageBackup(
                     channel_id=message.channel.id,
                     channel_name=message.channel.name,
-                    content=message.content,
+                    content=message.content[:2000] if message.content else None,
                     embeds=[i.to_dict() for i in message.embeds],
                     attachments=[i.to_dict() for i in message.attachments],
                     username=message.author.name,
@@ -464,19 +488,28 @@ class TextChannel(ChannelBase):
                 category=await self.category.restore(guild, buffer) if self.category else None,
             )
             self.id = channel.id
+
             # Restore messages
-            if self.messages:
+            async def _restore_messages():
                 hook = await channel.create_webhook(
                     name=_("Cartographer Restore"), reason=_("Restoring messages from backup")
                 )
                 for message in self.messages:
+                    embeds = await message.embed_objects()
+                    files = await message.attachment_objects()
+                    if not any([embeds, files, message.content]):
+                        continue
                     await hook.send(
-                        content=message.content,
+                        content=message.content[:2000] if message.content else None,
                         username=message.username,
                         avatar_url=message.avatar_url,
-                        embeds=await message.embed_objects(),
-                        files=await message.attachment_objects(),
+                        embeds=embeds,
+                        files=files,
                     )
+                    await asyncio.sleep(1)
+
+            if self.messages:
+                asyncio.create_task(_restore_messages())
         return channel
 
 
@@ -485,6 +518,13 @@ class ForumTag(Base):
     name: str
     moderated: bool = False
     emoji: dict | None
+
+    def to_discord_tag(self) -> discord.ForumTag:
+        return discord.ForumTag(
+            name=self.name,
+            moderated=self.moderated,
+            emoji=discord.PartialEmoji.from_dict(self.emoji) if self.emoji else None,
+        )
 
     def is_match(self, tag: discord.ForumTag) -> bool:
         cases = [
@@ -503,26 +543,39 @@ class ForumTag(Base):
             emoji=tag.emoji.to_dict() if tag.emoji else None,
         )
 
-    @retry(
-        retry=retry_if_exception_type(aiohttp.ClientConnectionError | aiohttp.ClientOSError),
-        wait=wait_random_exponential(min=1, max=3),
-        stop=stop_after_attempt(5),
-        reraise=False,
-    )
-    async def restore(self, forum: discord.ForumChannel) -> discord.ForumTag:
+    def restore(self, forum: discord.ForumChannel) -> discord.ForumTag:
         existing = forum.get_tag(self.id)
-        if not existing:
-            for tag in forum.available_tags:
-                if self.is_match(tag):
-                    self.id = tag.id
-                    self.moderated = tag.moderated
-                    self.emoji = tag.emoji.to_dict() if tag.emoji else None
-                    return tag
-        return await forum.create_tag(
-            name=self.name,
-            emoji=discord.PartialEmoji.from_dict(self.emoji) if self.emoji else None,
-            moderated=self.moderated,
-        )
+        if existing and self.is_match(existing):
+            return existing
+        # Try matching by name
+        for existing in forum.available_tags:
+            if self.is_match(existing):
+                log.info("Updating ID for tag %s", self.name)
+                self.id = existing.id
+                return existing
+            if self.name == existing.name:
+                log.info("Updating tag %s", self.name)
+                existing.moderated = self.moderated
+                emoji = discord.PartialEmoji.from_dict(self.emoji) if self.emoji else None
+                if forum.guild.get_emoji(emoji.id):
+                    existing.emoji = emoji
+                else:
+                    for emoji in forum.guild.emojis:
+                        if emoji.name == self.name:
+                            existing.emoji = emoji
+                            break
+                return existing
+        # If we're here, the tag doesn't exist
+        log.info("Creating tag %s", self.name)
+        emoji = discord.PartialEmoji.from_dict(self.emoji) if self.emoji else None
+        if emoji and not forum.guild.get_emoji(emoji.id):
+            for existing_emoji in forum.guild.emojis:
+                if existing_emoji.name == self.name:
+                    emoji.id = existing_emoji.id
+                    break
+            else:
+                emoji = None
+        return discord.ForumTag(name=self.name, moderated=self.moderated, emoji=emoji)
 
 
 class ForumChannel(ChannelBase):
@@ -601,8 +654,29 @@ class ForumChannel(ChannelBase):
                 slowmode_delay=self.slowmode_delay,
                 default_sort_order=discord.enums.ForumOrderType(self.default_sort_order),
                 category=await self.category.restore(guild, buffer) if self.category else None,
+                available_tags=[tag.restore(existing) for tag in self.tags],
             )
         else:
+            # Since none of the tags exist yet, we need to make sure any of them that have emojis are still valid
+            valid_tags: list[discord.ForumTag] = []
+            for tag in self.tags:
+                if not tag.emoji:
+                    valid_tags.append(tag.to_discord_tag())
+                    continue
+                emoji = discord.PartialEmoji.from_dict(tag.emoji)
+                if guild.get_emoji(emoji.id):
+                    valid_tags.append(tag.to_discord_tag())
+                    continue
+                for existing_emoji in guild.emojis:
+                    if existing_emoji.name == tag.name:
+                        log.info("Updating emoji for tag %s", tag.name)
+                        tag.emoji = {
+                            "id": existing_emoji.id,
+                            "name": existing_emoji.name,
+                            "animated": existing_emoji.animated,
+                        }
+                        valid_tags.append(tag.to_discord_tag())
+                        break
             log.info("Restoring forum %s", self.name)
             forum = await guild.create_forum(
                 name=self.name,
@@ -616,11 +690,9 @@ class ForumChannel(ChannelBase):
                 default_thread_slowmode_delay=self.default_thread_slowmode_delay,
                 default_sort_order=discord.enums.ForumOrderType(self.default_sort_order),
                 category=await self.category.restore(guild, buffer) if self.category else None,
+                available_tags=valid_tags,
             )
-
             self.id = forum.id
-        for tag in self.tags:
-            await tag.restore(forum)
         return forum
 
 
@@ -639,7 +711,7 @@ class VoiceChannel(ChannelBase):
         matches = [
             self.slowmode_delay == channel.slowmode_delay,
             self.user_limit == channel.user_limit,
-            self.bitrate == channel.bitrate,
+            min(self.bitrate, channel.guild.bitrate_limit) == min(channel.bitrate, channel.guild.bitrate_limit),
             self.video_quality_mode == channel.video_quality_mode.value,
         ]
         if check_category:
@@ -656,7 +728,7 @@ class VoiceChannel(ChannelBase):
                 msg_obj = MessageBackup(
                     channel_id=message.channel.id,
                     channel_name=message.channel.name,
-                    content=message.content,
+                    content=message.content[:2000] if message.content else None,
                     embeds=[i.to_dict() for i in message.embeds],
                     attachments=[i.to_dict() for i in message.attachments],
                     username=message.author.name,
@@ -706,7 +778,7 @@ class VoiceChannel(ChannelBase):
                 "name": self.name,
                 "position": self.position,
                 "user_limit": self.user_limit,
-                "bitrate": self.bitrate,
+                "bitrate": min(self.bitrate, guild.bitrate_limit),
                 "video_quality_mode": discord.enums.VideoQualityMode(self.video_quality_mode),
                 "overwrites": self.get_overwrites(guild, buffer),
                 "category": await self.category.restore(guild, buffer) if self.category else None,
@@ -718,11 +790,12 @@ class VoiceChannel(ChannelBase):
             await channel.edit(**kwargs)
         else:
             log.info("Restoring voice channel %s", self.name)
+
             kwargs = {
                 "name": self.name,
                 "position": self.position,
                 "user_limit": self.user_limit,
-                "bitrate": self.bitrate,
+                "bitrate": min(self.bitrate, guild.bitrate_limit),
                 "video_quality_mode": discord.enums.VideoQualityMode(self.video_quality_mode),
                 "overwrites": self.get_overwrites(guild, buffer),
                 "category": await self.category.restore(guild, buffer) if self.category else None,
@@ -732,19 +805,28 @@ class VoiceChannel(ChannelBase):
                 kwargs["topic"] = self.topic
             channel = await guild.create_voice_channel(**kwargs)
             self.id = channel.id
+
             # Restore messages
-            if self.messages:
+            async def _restore_messages():
                 hook = await channel.create_webhook(
                     name=_("Cartographer Restore"), reason=_("Restoring messages from backup")
                 )
                 for message in self.messages:
+                    embeds = await message.embed_objects()
+                    files = await message.attachment_objects()
+                    if not any([embeds, files, message.content]):
+                        continue
                     await hook.send(
-                        content=message.content,
+                        content=message.content[:2000] if message.content else None,
                         username=message.username,
                         avatar_url=message.avatar_url,
-                        embeds=await message.embed_objects(),
-                        files=await message.attachment_objects(),
+                        embeds=embeds,
+                        files=files,
                     )
+                    await asyncio.sleep(1)
+
+            if self.messages:
+                asyncio.create_task(_restore_messages())
 
         return channel
 
@@ -932,7 +1014,7 @@ class GuildBackup(Base):
             else None,
             emojis=[await GuildEmojiBackup.serialize(i) for i in guild.emojis] if backup_emojis else [],
             stickers=[await GuildStickerBackup.serialize(i) for i in guild.stickers] if backup_stickers else [],
-            preferred_locale=str(guild.preferred_locale),
+            preferred_locale=guild.preferred_locale.value,
             community="COMMUNITY" in list(guild.features),
             system_channel=(await TextChannel.serialize(guild.system_channel)) if guild.system_channel else None,
             rules_channel=(await TextChannel.serialize(guild.rules_channel)) if guild.rules_channel else None,
@@ -941,9 +1023,7 @@ class GuildBackup(Base):
             else None,
             explicit_content_filter=guild.explicit_content_filter.value,
             invites_disabled=guild.invites_paused(),
-            roles=[await Role.serialize(i) for i in sorted(guild.roles) if i.is_assignable() and not i.is_default()]
-            if backup_roles
-            else [],
+            roles=[await Role.serialize(i) for i in guild.roles] if backup_roles else [],
             members=[await Member.serialize(i) for i in guild.members] if backup_members else [],
             categories=categories,
             text_channels=text_channels,
@@ -1029,13 +1109,13 @@ class GuildBackup(Base):
             update_kwargs["name"] = self.name
         if self.description != target_guild.description:
             update_kwargs["description"] = self.description
-        if target_guild.icon and (await target_guild.icon.read()) != icon:
+        if icon:
             update_kwargs["icon"] = icon
-        if target_guild.banner and (await target_guild.banner.read()) != banner:
+        if banner:
             update_kwargs["banner"] = banner
-        if target_guild.splash and (await target_guild.splash.read()) != splash:
+        if splash:
             update_kwargs["splash"] = splash
-        if target_guild.discovery_splash and (await target_guild.discovery_splash.read()) != discovery_splash:
+        if discovery_splash:
             update_kwargs["discovery_splash"] = discovery_splash
         if self.verification_level != target_guild.verification_level.value:
             update_kwargs["verification_level"] = verification
@@ -1043,8 +1123,8 @@ class GuildBackup(Base):
             update_kwargs["default_notifications"] = discord.enums.NotificationLevel(self.default_notifications)
         if self.explicit_content_filter != target_guild.explicit_content_filter.value:
             update_kwargs["explicit_content_filter"] = explicit_content_filter
-        if self.preferred_locale != target_guild.preferred_locale:
-            update_kwargs["preferred_locale"] = self.preferred_locale
+        if self.preferred_locale != target_guild.preferred_locale.value:
+            update_kwargs["preferred_locale"] = discord.Locale(self.preferred_locale)
         if self.invites_disabled != target_guild.invites_paused():
             update_kwargs["invites_disabled"] = self.invites_disabled
         if update_kwargs:
@@ -1053,93 +1133,106 @@ class GuildBackup(Base):
 
         # ---------------------------- EMOJIS ----------------------------
         await message.edit(embed=get_status_embed(1))
-        # Update the ID of emojis that closely match any of the target guild's emojis
-        for idx, emoji in enumerate(self.emojis):
-            current_emoji = target_guild.get_emoji(emoji.id)
-            if current_emoji:
-                # Exact emoji already exists
-                continue
-            for existing_emoji in target_guild.emojis:
-                if emoji.name == existing_emoji.name:
-                    self.emojis[idx].id = existing_emoji.id
-                    log.info("Updating ID for emoji %s", emoji.name)
-                    break
-        # Delete the target guild's emojis that arent in the backup and didn't have a close match
-        updated_emoji_ids = {i.id for i in self.emojis}
-        for emoji in target_guild.emojis:
-            if emoji.id in updated_emoji_ids:
-                continue
-            await emoji.delete(reason=reason)
-            log.info("Deleted emoji %s", emoji.name)
+        if self.emojis:
+            # Update the ID of emojis that closely match any of the target guild's emojis
+            for idx, emoji in enumerate(self.emojis):
+                current_emoji = target_guild.get_emoji(emoji.id)
+                if current_emoji:
+                    # Exact emoji already exists
+                    continue
+                for existing_emoji in target_guild.emojis:
+                    if emoji.name == existing_emoji.name:
+                        self.emojis[idx].id = existing_emoji.id
+                        log.info("Updating ID for emoji %s", emoji.name)
+                        break
+            # Delete the target guild's emojis that arent in the backup and didn't have a close match
+            updated_emoji_ids = {i.id for i in self.emojis}
+            for emoji in target_guild.emojis:
+                if emoji.id in updated_emoji_ids:
+                    continue
+                await emoji.delete(reason=reason)
+                log.info("Deleted emoji %s", emoji.name)
 
-        if len(self.emojis) > target_guild.emoji_limit:
-            results.write(
-                _("Backup has more emojis than the target server can hold. Some emojis will not be restored.\n")
-            )
-        for idx, emoji in enumerate(self.emojis):
-            if idx >= target_guild.emoji_limit:
-                results.write(_("Emoji '{}' not restored due to limit\n").format(emoji.name))
-                continue
-            try:
-                await emoji.restore(target_guild)
-            except discord.HTTPException as e:
-                results.write(f"Error restoring emoji {emoji.name}: {e}\n")
+            if len(self.emojis) > target_guild.emoji_limit:
+                results.write(
+                    _("Backup has more emojis than the target server can hold. Some emojis will not be restored.\n")
+                )
+            for idx, emoji in enumerate(self.emojis):
+                if idx >= target_guild.emoji_limit:
+                    results.write(_("Emoji '{}' not restored due to limit\n").format(emoji.name))
+                    continue
+                try:
+                    await emoji.restore(target_guild)
+                except discord.HTTPException as e:
+                    results.write(f"Error restoring emoji {emoji.name}: {e}\n")
 
-        # Delete stickers that arent in the backup before restoring
-        saved_sticker_ids = {i.id for i in self.stickers}
-        for sticker in target_guild.stickers:
-            if sticker.id in saved_sticker_ids:
-                continue
-            for current_sticker in self.stickers:
-                if current_sticker.is_match(sticker):
-                    current_sticker.id = sticker.id
-                    log.info("Updating ID for sticker %s", sticker.name)
-                    break
-            else:
-                await sticker.delete(reason=reason)
-                log.info("Deleted sticker %s", sticker.name)
-        if len(self.stickers) > target_guild.sticker_limit:
-            results.write(
-                _("Backup has more stickers than the target server can hold. Some stickers will not be restored.\n")
-            )
-        for idx, sticker in enumerate(self.stickers):
-            if idx >= target_guild.sticker_limit:
-                results.write(_("Sticker '{}' not restored due to limit\n").format(sticker.name))
-                continue
-            try:
-                await sticker.restore(target_guild)
-            except discord.HTTPException as e:
-                results.write(f"Error restoring sticker {sticker.name}: {e}\n")
+        # ---------------------------- STICKERS ----------------------------
+        if self.stickers:
+            # Delete stickers that arent in the backup before restoring
+            saved_sticker_ids = {i.id for i in self.stickers}
+            for sticker in target_guild.stickers:
+                if sticker.id in saved_sticker_ids:
+                    continue
+                for current_sticker in self.stickers:
+                    if current_sticker.is_match(sticker):
+                        current_sticker.id = sticker.id
+                        log.info("Updating ID for sticker %s", sticker.name)
+                        break
+                else:
+                    await sticker.delete(reason=reason)
+                    log.info("Deleted sticker %s", sticker.name)
+            if len(self.stickers) > target_guild.sticker_limit:
+                results.write(
+                    _("Backup has more stickers than the target server can hold. Some stickers will not be restored.\n")
+                )
+            for idx, sticker in enumerate(self.stickers):
+                if idx >= target_guild.sticker_limit:
+                    results.write(_("Sticker '{}' not restored due to limit\n").format(sticker.name))
+                    continue
+                try:
+                    await sticker.restore(target_guild)
+                except discord.HTTPException as e:
+                    results.write(f"Error restoring sticker {sticker.name}: {e}\n")
 
         # ---------------------------- ROLES ----------------------------
         await message.edit(embed=get_status_embed(2))
-        # - Update the ID of roles that closely match any of the target guild's roles
-        for idx, role in enumerate(self.roles):
-            current_role = target_guild.get_role(role.id)
-            if current_role:
-                # Exact role already exists
-                continue
-            for existing_role in target_guild.roles:
-                if role.is_match(existing_role):
-                    self.roles[idx].id = existing_role.id
-                    log.info("Updating ID for role %s", role.name)
-                    break
-        # - Delete the target guild's roles that arent in the backup and didn't have a close match
-        updated_role_ids = {i.id for i in self.roles}
-        for role in target_guild.roles:
-            if role.id in updated_role_ids:
-                continue
-            if role > target_guild.me.top_role:
-                # We cant delete roles above the bot's top role
-                results.write(_("Role '{}' not restored due to hierarchy\n").format(role.name))
-                continue
-            if not role.is_assignable():
-                continue
-            await role.delete(reason=reason)
-            log.info("Deleted role %s", role.name)
-        # - Restore the roles
-        for role in self.roles:
-            await role.restore(target_guild, results)
+        if self.roles:
+            # First things first, the bot can't put any roles equal to or above its top role
+            # If restoring a backup where the bot's top role isnt the highest role, we'll have to ignore them
+            top_role = target_guild.me.top_role
+            # The position of the top role must be the highest position in the guild, so we'll calculate that
+
+            # Iterate backwards through the roles to avoid index errors
+            for i in range(len(self.roles) - 1, -1, -1):
+                role = self.roles[i]
+                if target_guild.get_role(role.id):
+                    continue
+                # Role doesn't exist, we'll see if we can find a close match
+                for existing_role in target_guild.roles:
+                    if role.fuzzy_match(existing_role):
+                        self.roles[i].id = existing_role.id
+                        log.info("Updating ID for role %s", role.name)
+                        break
+
+            # Delete any roles that arent in the backup and didn't have a close match
+            updated_backup_ids = {i.id for i in self.roles}
+            for role in target_guild.roles:
+                cases = [
+                    not role.is_assignable(),
+                    role.is_bot_managed(),
+                    role.is_default(),
+                    role.is_premium_subscriber(),
+                    role >= top_role,
+                    role.id in updated_backup_ids,
+                ]
+                if any(cases):
+                    continue
+                log.info("Deleting role %s", role.name)
+                await role.delete(reason=reason)
+
+            # - Restore the roles
+            for role in sorted(self.roles, key=lambda x: x.position):
+                await role.restore(target_guild, results)
 
         # ---------------------------- CHANNELS ----------------------------
         await message.edit(embed=get_status_embed(3))
@@ -1167,9 +1260,10 @@ class GuildBackup(Base):
             if channel == ctx:
                 continue
             await channel.delete(reason=reason)
-            log.info("Deleted channel %s", channel.name)
+            log.info("Deleted %s channel %s", type(channel), channel.name)
         # - If the current channel is not in the backup, we will need to offset all channel positions by 1
         if ctx.id not in updated_channel_ids:
+            await ctx.send(_("This channel isn't part of the backup, it can be deleted after the restore is complete."))
             for channel in all_channels:
                 channel.position += 1
         # - Channels should already be sorted by position
@@ -1181,7 +1275,9 @@ class GuildBackup(Base):
         # ---------------------------- REMAINING SETTINGS ----------------------------
         await message.edit(embed=get_status_embed(4))
         # Restore AFK settings
-        afk_channel = target_guild.get_channel(self.afk_channel.id) if self.afk_channel else None
+        afk_channel: discord.VoiceChannel | None = (
+            target_guild.get_channel(self.afk_channel.id) if self.afk_channel else None
+        )
         if self.afk_channel and not afk_channel:
             for channel in target_guild.voice_channels:
                 if self.afk_channel.is_match(channel):
@@ -1189,21 +1285,27 @@ class GuildBackup(Base):
                     break
         await message.edit(embed=get_status_embed(5))
         # Restore system channel
-        system_channel = target_guild.get_channel(self.system_channel.id) if self.system_channel else None
+        system_channel: discord.TextChannel | None = (
+            target_guild.get_channel(self.system_channel.id) if self.system_channel else None
+        )
         if self.system_channel and not system_channel:
             for channel in target_guild.text_channels:
                 if self.system_channel.is_match(channel):
                     system_channel = channel
                     break
         # Restore public updates channel
-        public_updates_channel = target_guild.get_channel(self.public_updates.id) if self.public_updates else None
+        public_updates_channel: discord.TextChannel | None = (
+            target_guild.get_channel(self.public_updates.id) if self.public_updates else None
+        )
         if self.public_updates and not public_updates_channel:
             for channel in target_guild.text_channels:
                 if self.public_updates.is_match(channel):
                     public_updates_channel = channel
                     break
 
-        rules_channel = target_guild.get_channel(self.rules_channel.id) if self.rules_channel else None
+        rules_channel: discord.TextChannel | None = (
+            target_guild.get_channel(self.rules_channel.id) if self.rules_channel else None
+        )
         if self.rules_channel and not rules_channel:
             for channel in target_guild.text_channels:
                 if self.rules_channel.is_match(channel):
@@ -1212,20 +1314,20 @@ class GuildBackup(Base):
 
         await message.edit(embed=get_status_embed(6))
         update_kwargs = {}
-        if afk_channel != target_guild.afk_channel:
+        if afk_channel:
             update_kwargs["afk_channel"] = afk_channel
         if self.afk_timeout != target_guild.afk_timeout:
             update_kwargs["afk_timeout"] = self.afk_timeout
-        if system_channel != target_guild.system_channel:
+        if system_channel:
             update_kwargs["system_channel"] = system_channel
-        if public_updates_channel != target_guild.public_updates_channel:
-            update_kwargs["public_updates_channel"] = public_updates_channel
-        if rules_channel != target_guild.rules_channel:
+        if rules_channel:
             update_kwargs["rules_channel"] = rules_channel
+        if public_updates_channel:
+            update_kwargs["public_updates_channel"] = public_updates_channel
         if self.community and rules_channel and public_updates_channel:
             update_kwargs["community"] = self.community
         if update_kwargs:
-            log.info("Updating remaining server settings")
+            log.info("Updating remaining server settings %s", update_kwargs.keys())
             await target_guild.edit(reason=reason, **update_kwargs)
 
         # Now that the system channels have been restored and community settings configured, we can restore the forum channels maybe
@@ -1237,8 +1339,9 @@ class GuildBackup(Base):
         # ---------------------------- MEMBER ROLES ----------------------------
         await message.edit(embed=get_status_embed(7))
         # Finally restore member roles
-        for member in self.members:
-            await member.restore(target_guild)
+        if self.members:
+            for member in self.members:
+                await member.restore(target_guild)
 
         await message.edit(embed=get_status_embed(8))
         return results.getvalue()
