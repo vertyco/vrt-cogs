@@ -49,6 +49,6 @@ class User(MixinMeta):
             generate_pie_chart,
             labels,
             sizes,
-            _("Bank Balances"),
+            _("Bank Balances for {}").format(ctx.guild.name),
         )
         await ctx.send(file=file)
