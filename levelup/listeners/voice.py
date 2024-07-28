@@ -63,7 +63,7 @@ class VoiceListener(MixinMeta):
             addxp = False
         elif channel.id in conf.ignoredchannels:
             addxp = False
-        elif channel.category_id and channel.category_id in conf.ignoredcategories:
+        elif channel.category_id and channel.category_id in conf.ignoredchannels:
             addxp = False
         elif conf.allowedchannels:
             if channel.id not in conf.allowedchannels:
