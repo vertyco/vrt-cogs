@@ -13,9 +13,9 @@ def backup_str(backup: GuildBackup) -> str:
     total_messages = sum(len(channel.messages) for channel in backup.text_channels)
     voice_messages = sum(len(channel.messages) for channel in backup.voice_channels)
     txt = _(
+        "## {}\n"
         "`Size:           `{}\n"
         "`Created:        `{}\n"
-        "`Name:           `{}\n"
         "`AFK Channel:    `{}\n"
         "`AFK Timeout:    `{}\n"
         "`Verification:   `{}\n"
@@ -30,9 +30,9 @@ def backup_str(backup: GuildBackup) -> str:
         "`Voice Channels: `{} ({} messages)\n"
         "`Forums:         `{}\n"
     ).format(
+        backup.name,
         humanize_size(deep_getsizeof(backup)),
         f"{backup.created_fmt('f')} ({backup.created_fmt('R')})",
-        backup.name,
         backup.afk_channel.id if backup.afk_channel else None,
         backup.afk_timeout,
         backup.verification_level,

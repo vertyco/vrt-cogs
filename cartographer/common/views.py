@@ -47,7 +47,7 @@ class IntModal(discord.ui.Modal):
 class Confirm(discord.ui.Modal):
     def __init__(self, include_limits: bool = False):
         self.confirm: bool | None = None
-        self.limit: int | None = None
+        self.limit: int = 0
         super().__init__(title=_("Confirmation"), timeout=120)
         placeholder = "(y/n)"
         if not include_limits:
@@ -77,7 +77,7 @@ class Confirm(discord.ui.Modal):
             bad_resp = _("Message backup limit must be a number!")
             return await interaction.response.send_message(bad_resp, ephemeral=True)
         self.confirm = True if self.field.value.lower().startswith("y") else False
-        self.limit = int(self.field2.value) if self.field2.value else None
+        self.limit = int(self.field2.value) if self.field2.value else 0
         await interaction.response.defer()
         self.stop()
 
@@ -94,12 +94,12 @@ class BackupMenu(discord.ui.View):
         self.page = 0
         self.close.label = _("Close")
 
-    def get_page(self) -> discord.Embed:
-        self.page = self.page % len(self.conf.backups) if self.conf.backups else 0
+    async def get_page(self) -> discord.Embed:
+        title = _("Cartographer Backups")
         c_name = _("Controls")
         controls = _(
             "- Backup Current Server: 📥\n"
-            "- Restore Here: \N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}\n"
+            "- Restore Here: 🔄\n"
             "- Switch Servers: 🔍\n"
             "- Set AutoBackup Interval: ⌛\n"
             "- Delete Backup: 🗑️\n"
@@ -108,18 +108,18 @@ class BackupMenu(discord.ui.View):
         settings = _("- Auto Backup Interval Hours: {}\n- Last Backup: {}").format(
             self.conf.auto_backup_interval_hours, f"{self.conf.last_backup_f} ({self.conf.last_backup_r})"
         )
-        title = _("Cartographer Backups for {}").format(self.guild.name)
-        if not self.conf.backups:
-            txt = _("There are no backups for this server yet!")
-            embed = discord.Embed(title=title, description=txt, color=discord.Color.blue())
-            embed.add_field(name=s_name, value=settings, inline=False)
-            embed.add_field(name=c_name, value=controls, inline=False)
-        else:
-            txt = backup_str(self.conf.backups[self.page])
+        if self.conf.backups:
+            self.page = self.page % len(self.conf.backups)
+            txt = await asyncio.to_thread(backup_str, self.conf.backups[self.page])
             embed = discord.Embed(title=title, description=txt, color=discord.Color.blue())
             embed.add_field(name=s_name, value=settings, inline=False)
             embed.add_field(name=c_name, value=controls, inline=False)
             embed.set_footer(text=_("Page {}").format(f"{self.page + 1}/{len(self.conf.backups)}"))
+        else:
+            txt = _("There are no backups for this server yet!")
+            embed = discord.Embed(title=title, description=txt, color=discord.Color.blue())
+            embed.add_field(name=s_name, value=settings, inline=False)
+            embed.add_field(name=c_name, value=controls, inline=False)
         return embed
 
     async def interaction_check(self, interaction: discord.Interaction):
@@ -135,27 +135,27 @@ class BackupMenu(discord.ui.View):
         return await super().on_timeout()
 
     async def start(self):
-        self.message = await self.ctx.send(embed=self.get_page(), view=self)
+        self.message = await self.ctx.send(embed=await self.get_page(), view=self)
 
     @discord.ui.button(style=discord.ButtonStyle.secondary, emoji=e_left10)
     async def left10(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.page -= 10
-        await interaction.response.edit_message(embed=self.get_page())
+        await interaction.response.edit_message(embed=await self.get_page())
 
     @discord.ui.button(style=discord.ButtonStyle.secondary, emoji=e_left)
     async def left(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.page -= 1
-        await interaction.response.edit_message(embed=self.get_page())
+        await interaction.response.edit_message(embed=await self.get_page())
 
     @discord.ui.button(style=discord.ButtonStyle.secondary, emoji=e_right)
     async def right(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.page += 1
-        await interaction.response.edit_message(embed=self.get_page())
+        await interaction.response.edit_message(embed=await self.get_page())
 
     @discord.ui.button(style=discord.ButtonStyle.secondary, emoji=e_right10)
     async def right10(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.page += 10
-        await interaction.response.edit_message(embed=self.get_page())
+        await interaction.response.edit_message(embed=await self.get_page())
 
     @discord.ui.button(style=discord.ButtonStyle.success, emoji="\N{INBOX TRAY}", row=1)
     async def backup(self, interaction: discord.Interaction, button: discord.Button):
@@ -163,6 +163,13 @@ class BackupMenu(discord.ui.View):
         if not self.guild.me.guild_permissions.administrator:
             txt = _("I need administrator permissions to restore a backup in this server!")
             return await interaction.response.send_message(txt, ephemeral=True)
+
+        # if self.db.backup_roles and self.guild.roles:
+        #     highest_guild_role = max(self.guild.roles, key=lambda r: r.position)
+        #     highest_bot_role = max(self.guild.me.roles, key=lambda r: r.position)
+        #     if highest_guild_role >= highest_bot_role:
+        #         txt = _("I need to have the highest role in the server to backup roles!")
+        #         return await interaction.response.send_message(txt, ephemeral=True)
 
         modal = Confirm(include_limits=True)
         await interaction.response.send_modal(modal)
@@ -172,6 +179,12 @@ class BackupMenu(discord.ui.View):
 
         if not modal.confirm:
             txt = _("Restore has been cancelled!")
+            return await interaction.followup.send(txt, ephemeral=True)
+
+        if modal.limit > self.db.message_backup_limit:
+            txt = _("The maximum amount of messages that can be backed up per channel is {}!").format(
+                self.db.message_backup_limit
+            )
             return await interaction.followup.send(txt, ephemeral=True)
 
         txt = _("Backing up {}!\n-# This may take a while...").format(self.guild.name)
@@ -198,7 +211,7 @@ class BackupMenu(discord.ui.View):
         txt = _("Backup created in {}!").format(delta if delta else _("0 seconds"))
         embed = discord.Embed(title=_("Backup Created"), description=txt, color=discord.Color.green())
         await message.edit(embed=embed)
-        await self.message.edit(embed=self.get_page())
+        await self.message.edit(embed=await self.get_page())
 
     @discord.ui.button(style=discord.ButtonStyle.danger, emoji=e_restore, row=1)
     async def restore(self, interaction: discord.Interaction, button: discord.Button):
@@ -252,7 +265,7 @@ class BackupMenu(discord.ui.View):
             txt = _("You can only switch to servers that you are an administrator of!")
             return await interaction.followup.send(txt, ephemeral=True)
         self.conf = self.db.get_conf(guild)
-        await self.message.edit(embed=self.get_page())
+        await self.message.edit(embed=await self.get_page())
 
     @discord.ui.button(style=discord.ButtonStyle.success, emoji="\N{HOURGLASS}", row=1)
     async def interval(self, interaction: discord.Interaction, button: discord.Button):
@@ -284,4 +297,4 @@ class BackupMenu(discord.ui.View):
         await interaction.response.send_message(txt, ephemeral=True, delete_after=30)
 
         del self.conf.backups[self.page]
-        await self.message.edit(embed=self.get_page())
+        await self.message.edit(embed=await self.get_page())
