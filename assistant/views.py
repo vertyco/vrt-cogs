@@ -30,9 +30,9 @@ OFF_EMOJI = "\N{MOBILE PHONE OFF}"
 class APIModal(discord.ui.Modal):
     def __init__(self, key: str = None):
         self.key = key
-        super().__init__(title=_("Set OpenAI Key"), timeout=120)
+        super().__init__(title=_("Set API Key"), timeout=120)
         self.field = discord.ui.TextInput(
-            label=_("Enter your OpenAI Key below"),
+            label=_("Enter your API Key below"),
             style=discord.TextStyle.short,
             default=self.key,
             required=False,
@@ -57,7 +57,7 @@ class SetAPI(discord.ui.View):
             return False
         return True
 
-    @discord.ui.button(label="Set OpenAI Key", style=discord.ButtonStyle.primary)
+    @discord.ui.button(label="Set API Key", style=discord.ButtonStyle.primary)
     async def confirm(self, interaction: discord.Interaction, buttons: discord.ui.Button):
         modal = APIModal(key=self.key)
         await interaction.response.send_modal(modal)

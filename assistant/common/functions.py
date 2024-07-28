@@ -1,7 +1,9 @@
 import asyncio
 import json
 import logging
+from io import StringIO
 
+import aiohttp
 import discord
 from redbot.core.i18n import Translator, cog_i18n
 
@@ -14,6 +16,61 @@ _ = Translator("Assistant", __file__)
 
 @cog_i18n(_)
 class AssistantFunctions(MixinMeta):
+    async def search_internet(
+        self, guild: discord.Guild, search_query: str, search_result_amount: int = 10, *args, **kwargs
+    ):
+        if not self.db.brave_api_key:
+            return "Error: Brave API key is not set!"
+        url = "https://api.search.brave.com/res/v1/web/search"
+
+        headers = {
+            "Accept": "application/json",
+            "Accept-Encoding": "gzip",
+            "X-Subscription-Token": self.db.brave_api_key,
+        }
+        params = {
+            "q": search_query,
+            "country": str(guild.preferred_locale).split("-")[1].lower(),
+            "search_lang": str(guild.preferred_locale).split("-")[0],
+            "count": search_result_amount,
+            "safesearch": "off",
+        }
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=headers, params=params) as response:
+                if response.status != 200:
+                    return f"Error: Unable to fetch results, status code {response.status}"
+
+                data = await response.json()
+                tmp = StringIO()
+
+                web = data.get("web", {}).get("results", [])
+                if web:
+                    tmp.write("# Web Results\n")
+                    for result in web:
+                        tmp.write(
+                            f"## {result.get('title', 'N/A')}\n"
+                            f"- Description: {result.get('description', 'N/A')}\n"
+                            f"- Link: {result.get('url', 'N/A')}\n"
+                            f"- Age: {result.get('age', 'N/A')}\n"
+                            f"- Page age: {result.get('page_age', 'N/A')}\n"
+                            f"- Source: {result['profile']['long_name']}\n"
+                        )
+
+                videos = data.get("videos", {}).get("results", [])
+                if videos:
+                    tmp.write("# Video Results\n")
+                    for video in videos:
+                        tmp.write(
+                            f"## {video.get('title', 'N/A')}\n"
+                            f"- Description: {video.get('description', 'N/A')}\n"
+                            f"- URL: {video.get('url', 'N/A')}\n"
+                        )
+
+                if not tmp.getvalue():
+                    return "No results found"
+
+                return tmp.getvalue()
+
     async def create_memory(
         self,
         conf: GuildSettings,

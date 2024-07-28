@@ -353,6 +353,10 @@ class ChatHandler(MixinMeta):
             function_calls = [i for i in function_calls if i["name"] != "list_memories"]
             del function_map["list_memories"]
 
+        if "search_internet" in function_map and not self.db.brave_api_key:
+            function_calls = [i for i in function_calls if i["name"] != "search_internet"]
+            del function_map["search_internet"]
+
         max_tokens = self.get_max_tokens(conf, author)
         messages = await self.prepare_messages(
             message,

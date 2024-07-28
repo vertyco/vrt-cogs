@@ -268,6 +268,16 @@ class Admin(MixinMeta):
                 if field:
                     embed.add_field(name=_("Max Response Token Role Overrides"), value=field, inline=False)
 
+        if ctx.author.id in self.bot.owner_ids:
+            if self.db.brave_api_key:
+                value = _("Your Brave websearch API key is set!")
+            else:
+                value = _(
+                    "Enables the use of the `search_internet` function\n"
+                    "Get your API key **[Here](https://brave.com/search/api/)**\n"
+                )
+            embed.add_field(name=_("Brave Websearch API key"), value=value)
+
         embed.set_footer(text=_("Showing settings for {}").format(ctx.guild.name))
 
         files = []
@@ -409,6 +419,33 @@ class Admin(MixinMeta):
         else:
             conf.api_key = key
             await msg.edit(content=_("OpenAI key has been set!"), embed=None, view=None)
+
+        await self.save_conf()
+
+    @assistant.command(name="braveapikey", aliases=["brave"])
+    @commands.bot_has_permissions(embed_links=True)
+    @commands.is_owner()
+    async def set_brave_key(self, ctx: commands.Context):
+        """
+        Enables use of the `search_internet` function
+
+        Get your API key **[Here](https://brave.com/search/api/)**
+        """
+        view = SetAPI(ctx.author, self.db.brave_api_key)
+        txt = _("Click to set your API key\n\nTo remove your keys, enter `none`")
+        embed = discord.Embed(description=txt, color=ctx.author.color)
+        msg = await ctx.send(embed=embed, view=view)
+        await view.wait()
+        key = view.key.strip() if view.key else "none"
+
+        if key == "none" and self.db.brave_api_key:
+            self.db.brave_api_key = None
+            await msg.edit(content=_("Brave API key has been removed!"), embed=None, view=None)
+        elif key == "none" and not self.db.brave_api_key:
+            return await msg.edit(content=_("No API key was entered!"), embed=None, view=None)
+        else:
+            self.db.brave_api_key = key
+            await msg.edit(content=_("Brave API key has been set!"), embed=None, view=None)
 
         await self.save_conf()
 
