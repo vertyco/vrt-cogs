@@ -15,7 +15,7 @@ from .common.tasks import Tasks
 from .common.utils import has_cost_check
 from .overrides.payday import PaydayOverride
 
-log = logging.getLogger("red.vrt.cookiecutter")
+log = logging.getLogger("red.vrt.extendedeconomy")
 RequestType = t.Literal["discord_deleted_user", "owner", "user", "user_strict"]
 
 
