@@ -151,6 +151,25 @@ You will be given a snippet of text, your job is to create a "Memory Name" for t
 - KEEP THE NAME LESS THAN 3 WORDS AND LESS THAN 40 CHARACTERS.
 """
 
+SEARCH_INTERNET = {
+    "name": "search_internet",
+    "description": "Use this to search the internet for information, this is useful when you need to find information that is not in the memories.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "search_query": {
+                "type": "string",
+                "description": "a sentence or phrase that describes what you are looking for, this should be as specific as possible",
+            },
+            "amount": {
+                "type": "integer",
+                "description": "Max amount of search results to fetch. Defaults to 10",
+            },
+        },
+        "required": ["search_query"],
+    },
+}
+
 CREATE_MEMORY = {
     "name": "create_memory",
     "description": "Use this to remember information that you normally wouldnt have access to. Useful when someone corrects you, tells you something new, or tells you to remember something. Use the search_memories function first to ensure no duplicates are created.",
