@@ -178,12 +178,12 @@ class Member(Base):
 
         def _compute():
             for role_backup in self.roles:
-                if role_backup.leave_alone:
-                    continue
                 role = guild.get_role(role_backup.id)
                 if not role:
                     continue
                 if role >= guild.me.top_role:
+                    continue
+                if not role.is_assignable():
                     continue
                 if role not in member.roles:
                     to_add.append(role)
@@ -1254,10 +1254,14 @@ class GuildBackup(Base):
                     break
         # - Delete the target guild's channels that arent in the backup and didn't have a close match
         updated_channel_ids = {i.id for i in all_channels}
+        maybe_delete_later: list[discord.TextChannel] = []
         for channel in target_guild.channels:
             if channel.id in updated_channel_ids:
                 continue
             if channel == ctx:
+                continue
+            if channel in [target_guild.public_updates_channel, target_guild.rules_channel]:
+                maybe_delete_later.append(channel)
                 continue
             await channel.delete(reason=reason)
             log.info("Deleted %s channel %s", type(channel), channel.name)
@@ -1329,6 +1333,13 @@ class GuildBackup(Base):
         if update_kwargs:
             log.info("Updating remaining server settings %s", update_kwargs.keys())
             await target_guild.edit(reason=reason, **update_kwargs)
+
+        if maybe_delete_later:
+            for channel in maybe_delete_later:
+                try:
+                    await channel.delete(reason=reason)
+                except discord.HTTPException as e:
+                    results.write(f"Failed to delete channel {channel.name}: {e}\n")
 
         # Now that the system channels have been restored and community settings configured, we can restore the forum channels maybe
         if "COMMUNITY" in target_guild.features:

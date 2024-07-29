@@ -1,5 +1,7 @@
 import asyncio
+import logging
 from contextlib import suppress
+from pathlib import Path
 from time import perf_counter
 
 import discord
@@ -7,10 +9,11 @@ from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box, humanize_timedelta, text_to_file
 
-from .formatting import backup_str
+from .formatting import backup_str, humanize_size
 from .models import DB, GuildSettings
 from .serializers import GuildBackup
 
+log = logging.getLogger("red.vrt.cartographer.views")
 _ = Translator("Cartographer", __file__)
 
 
@@ -83,10 +86,13 @@ class Confirm(discord.ui.Modal):
 
 
 class BackupMenu(discord.ui.View):
-    def __init__(self, ctx: commands.Context, db: DB):
+    def __init__(self, ctx: commands.Context, db: DB, backup_dir: Path):
         super().__init__(timeout=600)
         self.ctx = ctx
         self.db = db
+        self.backup_dir = backup_dir
+        self.backups: list[Path] = sorted(self.backup_dir.iterdir(), key=lambda x: x.stat().st_ctime)
+
         self.guild = ctx.guild
         self.conf: GuildSettings = self.db.get_conf(self.guild)
 
@@ -103,23 +109,33 @@ class BackupMenu(discord.ui.View):
             "- Switch Servers: 🔍\n"
             "- Set AutoBackup Interval: ⌛\n"
             "- Delete Backup: 🗑️\n"
+            "- Print Details: ℹ️\n"
         )
         s_name = _("Settings")
         settings = _("- Auto Backup Interval Hours: {}\n- Last Backup: {}").format(
             self.conf.auto_backup_interval_hours, f"{self.conf.last_backup_f} ({self.conf.last_backup_r})"
         )
-        if self.conf.backups:
-            self.page = self.page % len(self.conf.backups)
-            txt = await asyncio.to_thread(backup_str, self.conf.backups[self.page])
+
+        self.backups: list[Path] = sorted(self.backup_dir.iterdir(), key=lambda x: x.stat().st_ctime)
+
+        if self.backups:
+            self.page = self.page % len(self.backups)
+            file: Path = self.backups[self.page]
+            txt = _("## {}\n" "`Size:    `{}\n" "`Created: `{}\n").format(
+                file.stem,
+                humanize_size(file.stat().st_size),
+                f"<t:{int(file.stat().st_ctime)}:f> (<t:{int(file.stat().st_ctime)}:R>)",
+            )
             embed = discord.Embed(title=title, description=txt, color=discord.Color.blue())
             embed.add_field(name=s_name, value=settings, inline=False)
             embed.add_field(name=c_name, value=controls, inline=False)
-            embed.set_footer(text=_("Page {}").format(f"{self.page + 1}/{len(self.conf.backups)}"))
+            embed.set_footer(text=_("Page {}").format(f"{self.page + 1}/{len(self.backups)}"))
         else:
             txt = _("There are no backups for this server yet!")
             embed = discord.Embed(title=title, description=txt, color=discord.Color.blue())
             embed.add_field(name=s_name, value=settings, inline=False)
             embed.add_field(name=c_name, value=controls, inline=False)
+
         return embed
 
     async def interaction_check(self, interaction: discord.Interaction):
@@ -164,13 +180,6 @@ class BackupMenu(discord.ui.View):
             txt = _("I need administrator permissions to restore a backup in this server!")
             return await interaction.response.send_message(txt, ephemeral=True)
 
-        # if self.db.backup_roles and self.guild.roles:
-        #     highest_guild_role = max(self.guild.roles, key=lambda r: r.position)
-        #     highest_bot_role = max(self.guild.me.roles, key=lambda r: r.position)
-        #     if highest_guild_role >= highest_bot_role:
-        #         txt = _("I need to have the highest role in the server to backup roles!")
-        #         return await interaction.response.send_message(txt, ephemeral=True)
-
         modal = Confirm(include_limits=True)
         await interaction.response.send_modal(modal)
         await modal.wait()
@@ -187,6 +196,13 @@ class BackupMenu(discord.ui.View):
             )
             return await interaction.followup.send(txt, ephemeral=True)
 
+        if self.db.backup_roles and self.guild.roles:
+            highest_guild_role = max(self.guild.roles, key=lambda r: r.position)
+            highest_bot_role = max(self.guild.me.roles, key=lambda r: r.position)
+            if highest_guild_role >= highest_bot_role:
+                txt = _("Warning! I need to have the highest role in the server to restore roles properly!")
+                await interaction.followup.send(txt, ephemeral=True)
+
         txt = _("Backing up {}!\n-# This may take a while...").format(self.guild.name)
         thumbnail = "https://i.imgur.com/l3p6EMX.gif"
         embed = discord.Embed(title=_("Backup in Progress"), description=txt, color=discord.Color.blue())
@@ -196,7 +212,8 @@ class BackupMenu(discord.ui.View):
         start = perf_counter()
         try:
             await self.conf.backup(
-                self.guild,
+                guild=self.guild,
+                backups_dir=self.backup_dir.parent,
                 limit=modal.limit,
                 backup_members=self.db.backup_members,
                 backup_roles=self.db.backup_roles,
@@ -204,6 +221,7 @@ class BackupMenu(discord.ui.View):
                 backup_stickers=self.db.backup_stickers,
             )
         except Exception as e:
+            log.error("An error occurred while backing up the server!", exc_info=e)
             txt = _("An error occurred while backing up the server!\n{}").format(box(str(e)))
             return await message.edit(content=txt, embed=None)
 
@@ -212,6 +230,7 @@ class BackupMenu(discord.ui.View):
         embed = discord.Embed(title=_("Backup Created"), description=txt, color=discord.Color.green())
         await message.edit(embed=embed)
         await self.message.edit(embed=await self.get_page())
+        self.db.cleanup(self.guild, self.backup_dir.parent)
 
     @discord.ui.button(style=discord.ButtonStyle.danger, emoji=e_restore, row=1)
     async def restore(self, interaction: discord.Interaction, button: discord.Button):
@@ -220,7 +239,7 @@ class BackupMenu(discord.ui.View):
             txt = _("I need administrator permissions to restore a backup in this server!")
             return await interaction.response.send_message(txt, ephemeral=True)
 
-        if not self.conf.backups:
+        if not self.backups:
             txt = _("No backups to restore!")
             return await interaction.response.send_message(txt, ephemeral=True)
 
@@ -234,8 +253,11 @@ class BackupMenu(discord.ui.View):
             txt = _("Restore has been cancelled!")
             return await interaction.followup.send(txt, ephemeral=True)
 
-        self.page %= len(self.conf.backups)
-        backup: GuildBackup = await asyncio.to_thread(self.conf.backups[self.page].model_copy, deep=True)
+        self.page %= len(self.backups)
+        backup_file = self.backups[self.page]
+        backup: GuildBackup = await asyncio.to_thread(
+            GuildBackup.model_validate_json, backup_file.read_text(encoding="utf-8")
+        )
 
         txt = _("Your backup is being restored!")
         await interaction.followup.send(txt, ephemeral=True)
@@ -264,7 +286,8 @@ class BackupMenu(discord.ui.View):
         if not guild_member.guild_permissions.administrator:
             txt = _("You can only switch to servers that you are an administrator of!")
             return await interaction.followup.send(txt, ephemeral=True)
-        self.conf = self.db.get_conf(guild)
+        self.backup_dir = self.backup_dir.parent / modal.entry
+        # self.conf = self.db.get_conf(guild)
         await self.message.edit(embed=await self.get_page())
 
     @discord.ui.button(style=discord.ButtonStyle.success, emoji="\N{HOURGLASS}", row=1)
@@ -289,12 +312,25 @@ class BackupMenu(discord.ui.View):
 
     @discord.ui.button(style=discord.ButtonStyle.danger, emoji=e_delete, row=2)
     async def delete(self, interaction: discord.Interaction, button: discord.Button):
-        if not self.conf.backups:
+        if not self.backups:
             txt = _("No backups to delete!")
             return await interaction.response.send_message(txt, ephemeral=True)
 
+        backup_file = self.backups[self.page]
+        backup_file.unlink()
+        del self.backups[self.page]
+
         txt = _("Backup deleted!")
         await interaction.response.send_message(txt, ephemeral=True, delete_after=30)
-
-        del self.conf.backups[self.page]
         await self.message.edit(embed=await self.get_page())
+
+    @discord.ui.button(style=discord.ButtonStyle.secondary, emoji="ℹ️", row=2)
+    async def print_details(self, interaction: discord.Interaction, button: discord.Button):
+        """Load the backup and show details"""
+        if not self.backups:
+            txt = _("No backups to get info for!")
+            return await interaction.response.send_message(txt, ephemeral=True)
+        await interaction.response.defer()
+        backup_file = self.backups[self.page]
+        txt = await asyncio.to_thread(backup_str, backup_file)
+        await interaction.followup.send(txt, ephemeral=True)

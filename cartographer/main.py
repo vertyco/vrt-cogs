@@ -13,6 +13,7 @@ from redbot.core.utils.chat_formatting import humanize_number, text_to_file
 
 from .common.formatting import humanize_size
 from .common.models import DB
+from .common.serializers import GuildBackup
 from .common.views import BackupMenu
 
 log = logging.getLogger("red.vrt.cartographer")
@@ -37,14 +38,7 @@ class Cartographer(commands.Cog):
     - Emojis (Very slow and rate limit heavy)
     - Stickers (Very slow and rate limit heavy)
     - Members (roles and nicknames)
-
-    **Caveats**
-    Note the following
-    - If there are multiple roles, channels, categories, or forums with the same name, only 1 of each will be restored.
-     - This is because object IDs cannot be restored so the bot relies on the name of the object.
-    - When restoring, some roles may not be fully restored (such as order) if they were higher than the bot's role.
-    - Serializing and deserializing objects can be slow, especially for large servers.
-    - Restoring servers is a messy job, this cog does its best to restore everything but it's not perfect.
+    - Messages (Optional, can be disabled)
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
@@ -57,6 +51,7 @@ class Cartographer(commands.Cog):
         self.config.register_global(db={})
 
         self.root = cog_data_path(self)
+        self.backups_dir = self.root / "backups"
 
         self.db: DB = DB()
         self.saving = False
@@ -110,7 +105,14 @@ class Cartographer(commands.Cog):
                 continue
             guild = self.bot.get_guild(guild_id)
             if not guild:
-                settings.backups.clear()
+                log.info("Removing guild %s from backups", guild_id)
+                # Delete the backups
+                del self.db.configs[guild_id]
+                path = self.backups_dir / str(guild_id)
+                if path.exists():
+                    for backup in path.iterdir():
+                        backup.unlink()
+                    path.rmdir()
                 continue
             delta_hours = (now.timestamp() - settings.last_backup.timestamp()) / 3600
             if delta_hours > settings.auto_backup_interval_hours:
@@ -123,7 +125,7 @@ class Cartographer(commands.Cog):
                     backup_stickers=self.db.backup_stickers,
                 )
                 save = True
-            self.db.cleanup(guild)
+            self.db.cleanup(guild, self.backups_dir)
 
         if save:
             await self.save()
@@ -141,7 +143,9 @@ class Cartographer(commands.Cog):
             txt = _("This server is not in the allowed list!")
             return await ctx.send(txt)
 
-        view = BackupMenu(ctx, self.db)
+        guild_backups_folder = self.backups_dir / str(ctx.guild.id)
+        guild_backups_folder.mkdir(parents=True, exist_ok=True)
+        view = BackupMenu(ctx, self.db, guild_backups_folder)
         try:
             await view.start()
             await view.wait()
@@ -164,8 +168,12 @@ class Cartographer(commands.Cog):
         """
         if not confirm:
             return await ctx.send(_("Please confirm this action by passing `True` as an argument"))
-        for guild_id in list(self.db.configs.keys()):
-            self.db.configs[guild_id].backups.clear()
+
+        for guild_backup_folder in self.backups_dir.iterdir():
+            for backup in guild_backup_folder.iterdir():
+                backup.unlink()
+            guild_backup_folder.rmdir()
+
         await self.save()
         await ctx.send(_("All backups have been wiped!"))
 
@@ -187,6 +195,7 @@ class Cartographer(commands.Cog):
             conf = self.db.get_conf(ctx.guild)
             await conf.backup(
                 ctx.guild,
+                backups_dir=self.backups_dir,
                 limit=limit,
                 backup_members=self.db.backup_members,
                 backup_roles=self.db.backup_roles,
@@ -198,12 +207,9 @@ class Cartographer(commands.Cog):
 
     @cartographer_base.command(name="restorelatest")
     @commands.bot_has_permissions(administrator=True)
-    async def restore_server_latest(self, ctx: commands.Context, delete_existing: bool = False):
+    async def restore_server_latest(self, ctx: commands.Context):
         """
         Restore the latest backup for this server
-
-        **Arguments**
-        - delete_existing: if True, deletes existing channels/roles that aren't part of the backup.
         """
         if ctx.guild.id in self.db.ignored_guilds:
             txt = _("This server is in the ingored list!")
@@ -213,12 +219,13 @@ class Cartographer(commands.Cog):
             return await ctx.send(txt)
 
         async with ctx.typing():
-            conf = self.db.get_conf(ctx.guild)
-            if not conf.backups:
+            backups = self.backups_dir / str(ctx.guild.id)
+            if not backups.exists():
                 txt = _("There are no backups for this guild!")
                 return await ctx.send(txt)
-            latest = await asyncio.to_thread(conf.backups[-1].model_copy, deep=True)
-            results = await latest.restore(ctx.guild, ctx.channel)
+            latest = sorted(backups.iterdir(), key=lambda x: x.stat().st_mtime)[-1]
+            backup = await asyncio.to_thread(GuildBackup.model_validate_json, latest.read_text(encoding="utf-8"))
+            results = await backup.restore(ctx.guild, ctx.channel)
             await ctx.send(_("Server restore is complete!"))
             if results:
                 txt = _("The following errors occurred while restoring the backup")
@@ -228,11 +235,16 @@ class Cartographer(commands.Cog):
     @commands.is_owner()
     async def view_settings(self, ctx: commands.Context):
         """View current global settings"""
-        backups = sum([len(i.backups) for i in self.db.configs.values()])
+        all_backups = 0
+        total_size = 0
+        for guild_backup_folder in self.backups_dir.iterdir():
+            all_backups += len(list(guild_backup_folder.iterdir()))
+            for backup in guild_backup_folder.iterdir():
+                total_size += backup.stat().st_size
+
         ignored = ", ".join([f"`{i}`" for i in self.db.ignored_guilds]) if self.db.ignored_guilds else _("**None Set**")
         allowed = ", ".join([f"`{i}`" for i in self.db.allowed_guilds]) if self.db.allowed_guilds else _("**None Set**")
-        settings = self.root / "settings.json"
-        settings_size = settings.stat().st_size
+
         txt = _(
             "### Global Settings\n"
             "- Global backups: {}\n"
@@ -246,7 +258,7 @@ class Cartographer(commands.Cog):
             "- Ignored servers: {}\n"
             "- Allowed servers: {}\n"
         ).format(
-            f"**{humanize_number(backups)}** (`{humanize_size(settings_size)}`)",
+            f"**{humanize_number(all_backups)}** ({humanize_size(total_size)})",
             f"**{self.db.max_backups_per_guild}**",
             f"**{self.db.allow_auto_backups}**",
             f"**{self.db.message_backup_limit}**",

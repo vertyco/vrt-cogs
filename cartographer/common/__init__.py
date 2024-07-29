@@ -14,6 +14,11 @@ class Base(BaseModel):
             return orjson.loads(super().json(*args, exclude_defaults=True, **kwargs))
         return super().dict(*args, **kwargs)
 
+    def model_dump_json(self, *args, **kwargs) -> str:
+        if VERSION >= "2.0.1":
+            return super().model_dump_json(*args, exclude_defaults=True, **kwargs)
+        return super().json(*args, exclude_defaults=True, **kwargs)
+
     @classmethod
     def model_validate(cls, obj, *args, **kwargs) -> t.Self:
         if VERSION >= "2.0.1":
