@@ -1,5 +1,6 @@
 import sys
 import typing as t
+from pathlib import Path
 
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_number
@@ -9,7 +10,8 @@ from .serializers import GuildBackup
 _ = Translator("Cartographer", __file__)
 
 
-def backup_str(backup: GuildBackup) -> str:
+def backup_str(filepath: Path) -> str:
+    backup = GuildBackup.model_validate_json(filepath.read_text(encoding="utf-8"))
     total_messages = sum(len(channel.messages) for channel in backup.text_channels)
     voice_messages = sum(len(channel.messages) for channel in backup.voice_channels)
     txt = _(
@@ -31,7 +33,7 @@ def backup_str(backup: GuildBackup) -> str:
         "`Forums:         `{}\n"
     ).format(
         backup.name,
-        humanize_size(deep_getsizeof(backup)),
+        humanize_size(filepath.stat().st_size),
         f"{backup.created_fmt('f')} ({backup.created_fmt('R')})",
         backup.afk_channel.id if backup.afk_channel else None,
         backup.afk_timeout,

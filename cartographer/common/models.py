@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import asyncio
 import logging
+import os
 from datetime import datetime, timedelta
+from pathlib import Path
 
 import discord
 from pydantic import Field
@@ -15,7 +18,6 @@ _ = Translator("Cartographer", __file__)
 
 
 class GuildSettings(Base):
-    backups: list[GuildBackup] = []
     auto_backup_interval_hours: int = 0
     last_backup: datetime = Field(default_factory=lambda: datetime.now().astimezone() - timedelta(days=999))
 
@@ -30,13 +32,14 @@ class GuildSettings(Base):
     async def backup(
         self,
         guild: discord.Guild,
+        backups_dir: Path,
         limit: int = 0,
         backup_members: bool = True,
         backup_roles: bool = True,
         backup_emojis: bool = True,
         backup_stickers: bool = True,
     ) -> None:
-        serialized = await GuildBackup.serialize(
+        backup_obj = await GuildBackup.serialize(
             guild,
             limit=limit,
             backup_members=backup_members,
@@ -44,7 +47,25 @@ class GuildSettings(Base):
             backup_emojis=backup_emojis,
             backup_stickers=backup_stickers,
         )
-        self.backups.append(serialized)
+        dump = await asyncio.to_thread(backup_obj.model_dump_json)
+        backup_dir = backups_dir / str(guild.id)
+        backup_dir.mkdir(parents=True, exist_ok=True)
+
+        # Clean the guild name to make it filename safe
+        guild_name = "".join(c for c in guild.name if c.isalnum())
+        backup_file = str(backup_dir / f"{guild_name}_{int(datetime.now().timestamp())}.json")
+        with open(backup_file, "w", encoding="utf-8") as f:
+            f.write(dump)
+            f.flush()
+            os.fsync(f.fileno())
+
+        if hasattr(os, "O_DIRECTORY"):
+            fd = os.open(backup_file.parent, os.O_DIRECTORY)
+            try:
+                os.fsync(fd)
+            finally:
+                os.close(fd)
+
         self.last_backup = datetime.now().astimezone()
 
 
@@ -66,6 +87,16 @@ class DB(Base):
         gid = guild if isinstance(guild, int) else guild.id
         return self.configs.setdefault(gid, GuildSettings())
 
-    def cleanup(self, guild: discord.Guild | int):
-        conf = self.get_conf(guild)
-        conf.backups = conf.backups[-self.max_backups_per_guild :]
+    def cleanup(self, guild: discord.Guild | int, backup_dir: Path):
+        guild_id = str(guild) if isinstance(guild, int) else str(guild.id)
+        path = backup_dir / guild_id
+        if not path.exists():
+            return
+        # Ensure there are no more than `max_backups_per_guild` backups
+        # Delete oldest backups if there are more than `max_backups_per_guild`
+        backups = sorted(path.iterdir(), key=lambda x: x.stat().st_mtime)
+        if len(backups) <= self.max_backups_per_guild:
+            return
+        for backup in backups[: -self.max_backups_per_guild]:
+            log.info("Cleaning up old backup: %s", backup)
+            backup.unlink()
