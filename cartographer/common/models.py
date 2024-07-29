@@ -53,7 +53,7 @@ class GuildSettings(Base):
 
         # Clean the guild name to make it filename safe
         guild_name = "".join(c for c in guild.name if c.isalnum())
-        backup_file = str(backup_dir / f"{guild_name}_{int(datetime.now().timestamp())}.json")
+        backup_file = backup_dir / f"{guild_name}_{int(datetime.now().timestamp())}.json"
         with open(backup_file, "w", encoding="utf-8") as f:
             f.write(dump)
             f.flush()
