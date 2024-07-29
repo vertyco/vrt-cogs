@@ -21,7 +21,7 @@ _ = Translator("Cartographer", __file__)
 RequestType = t.Literal["discord_deleted_user", "owner", "user", "user_strict"]
 
 
-# redgettext -D main.py common/formatting.py common/models.py common/views.py --command-docstring
+# redgettext -D main.py common/formatting.py common/models.py common/serializers.py common/views.py --command-docstring
 
 
 @cog_i18n(_)
