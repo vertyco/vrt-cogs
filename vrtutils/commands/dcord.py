@@ -53,8 +53,9 @@ class Dcord(MixinMeta):
         query = query.lower()
         matches: t.List[t.Tuple[int, discord.User]] = []
         for user in ctx.guild.members:
-            matches.append((fuzz.ratio(query, user.name.lower()), user))
-            matches.append((fuzz.ratio(query, user.display_name.lower()), user))
+            username = fuzz.ratio(query, user.name.lower())
+            display_name = fuzz.ratio(query, user.display_name.lower())
+            matches.append((max(username, display_name), user))
         matches = sorted(matches, key=lambda x: x[0], reverse=True)
         # Get the top 5 matches
         matches = matches[:5]

@@ -7,10 +7,13 @@ import discord
 from discord.ext import tasks
 from redbot.core import Config, commands
 from redbot.core.bot import Red
+from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import humanize_number
+from redbot.core.utils.chat_formatting import humanize_number, text_to_file
 
+from .common.formatting import humanize_size
 from .common.models import DB
+from .common.serializers import GuildBackup
 from .common.views import BackupMenu
 
 log = logging.getLogger("red.vrt.cartographer")
@@ -18,7 +21,7 @@ _ = Translator("Cartographer", __file__)
 RequestType = t.Literal["discord_deleted_user", "owner", "user", "user_strict"]
 
 
-# redgettext -D main.py common/formatting.py common/models.py common/views.py --command-docstring
+# redgettext -D main.py common/formatting.py common/models.py common/serializers.py common/views.py --command-docstring
 
 
 @cog_i18n(_)
@@ -32,24 +35,23 @@ class Cartographer(commands.Cog):
     - Voice channels (permissions/order)
     - Forum channels  (permissions/order)[Not forum posts]
     - Roles (permissions and what members they're assigned to)
-
-    **Caveats**
-    Note the following
-    - If there are multiple roles, channels, categories, or forums with the same name, only 1 of each will be restored.
-     - This is because object IDs cannot be restored so the bot relies on the name of the object.
-    - When restoring, some roles may not be fully restored (such as order) if they were higher than the bot's role.
-    - Serializing and deserializing objects can be slow, especially for large servers.
-    - Restoring servers is a messy job, this cog does its best to restore everything but it's not perfect.
+    - Emojis (Very slow and rate limit heavy)
+    - Stickers (Very slow and rate limit heavy)
+    - Members (roles and nicknames)
+    - Messages (Optional, can be disabled)
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.2.2"
+    __version__ = "1.0.0"
 
     def __init__(self, bot: Red):
         super().__init__()
         self.bot = bot
         self.config = Config.get_conf(self, 117, force_registration=True)
         self.config.register_global(db={})
+
+        self.root = cog_data_path(self)
+        self.backups_dir = self.root / "backups"
 
         self.db: DB = DB()
         self.saving = False
@@ -93,7 +95,8 @@ class Cartographer(commands.Cog):
             return
         now = datetime.now().astimezone()
         save = False
-        for guild_id, settings in self.db.configs.items():
+        for guild_id in list(self.db.configs.keys()):
+            settings = self.db.configs[guild_id]
             if not settings.auto_backup_interval_hours:
                 continue
             if guild_id in self.db.ignored_guilds:
@@ -102,18 +105,32 @@ class Cartographer(commands.Cog):
                 continue
             guild = self.bot.get_guild(guild_id)
             if not guild:
-                settings.backups.clear()
+                log.info("Removing guild %s from backups", guild_id)
+                # Delete the backups
+                del self.db.configs[guild_id]
+                path = self.backups_dir / str(guild_id)
+                if path.exists():
+                    for backup in path.iterdir():
+                        backup.unlink()
+                    path.rmdir()
                 continue
             delta_hours = (now.timestamp() - settings.last_backup.timestamp()) / 3600
             if delta_hours > settings.auto_backup_interval_hours:
-                await settings.backup(guild)
+                await settings.backup(
+                    guild,
+                    limit=self.db.message_backup_limit,
+                    backup_members=self.db.backup_members,
+                    backup_roles=self.db.backup_roles,
+                    backup_emojis=self.db.backup_emojis,
+                    backup_stickers=self.db.backup_stickers,
+                )
                 save = True
-            self.db.cleanup(guild)
+            self.db.cleanup(guild, self.backups_dir)
 
         if save:
             await self.save()
 
-    @commands.command(name="cartographer")
+    @commands.command(name="cartographer", aliases=["carto"])
     @commands.has_permissions(administrator=True)
     @commands.bot_has_permissions(administrator=True)
     @commands.guild_only()
@@ -126,22 +143,47 @@ class Cartographer(commands.Cog):
             txt = _("This server is not in the allowed list!")
             return await ctx.send(txt)
 
-        view = BackupMenu(ctx, self.db)
+        guild_backups_folder = self.backups_dir / str(ctx.guild.id)
+        guild_backups_folder.mkdir(parents=True, exist_ok=True)
+        view = BackupMenu(ctx, self.db, guild_backups_folder)
         try:
             await view.start()
             await view.wait()
         finally:
             await self.save()
 
-    @commands.group(name="cartographerset")
+    @commands.group(name="cartographerset", aliases=["cartoset"])
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
     async def cartographer_base(self, ctx: commands.Context):
         """Backup & Restore Tools"""
 
+    @cartographer_base.command(name="wipebackups")
+    @commands.is_owner()
+    async def wipe_all_backups(self, ctx: commands.Context, confirm: bool):
+        """
+        Wipe all backups for all servers
+
+        This action cannot be undone!
+        """
+        if not confirm:
+            return await ctx.send(_("Please confirm this action by passing `True` as an argument"))
+
+        for guild_backup_folder in self.backups_dir.iterdir():
+            for backup in guild_backup_folder.iterdir():
+                backup.unlink()
+            guild_backup_folder.rmdir()
+
+        await self.save()
+        await ctx.send(_("All backups have been wiped!"))
+
     @cartographer_base.command(name="backup")
-    async def backup_server(self, ctx: commands.Context):
-        """Create a backup of this server"""
+    async def backup_server(self, ctx: commands.Context, limit: int = 0):
+        """
+        Create a backup of this server
+
+        limit: How many messages to backup per channel (0 for None)
+        """
         if ctx.guild.id in self.db.ignored_guilds:
             txt = _("This server is in the ingored list!")
             return await ctx.send(txt)
@@ -151,18 +193,23 @@ class Cartographer(commands.Cog):
 
         async with ctx.typing():
             conf = self.db.get_conf(ctx.guild)
-            await conf.backup(ctx.guild)
+            await conf.backup(
+                ctx.guild,
+                backups_dir=self.backups_dir,
+                limit=limit,
+                backup_members=self.db.backup_members,
+                backup_roles=self.db.backup_roles,
+                backup_emojis=self.db.backup_emojis,
+                backup_stickers=self.db.backup_stickers,
+            )
             await ctx.send(_("A backup has been created!"))
             await self.save()
 
     @cartographer_base.command(name="restorelatest")
     @commands.bot_has_permissions(administrator=True)
-    async def restore_server_latest(self, ctx: commands.Context, delete_existing: bool = False):
+    async def restore_server_latest(self, ctx: commands.Context):
         """
         Restore the latest backup for this server
-
-        **Arguments**
-        - delete_existing: if True, deletes existing channels/roles that aren't part of the backup.
         """
         if ctx.guild.id in self.db.ignored_guilds:
             txt = _("This server is in the ingored list!")
@@ -172,31 +219,53 @@ class Cartographer(commands.Cog):
             return await ctx.send(txt)
 
         async with ctx.typing():
-            conf = self.db.get_conf(ctx.guild)
-            if not conf.backups:
+            backups = self.backups_dir / str(ctx.guild.id)
+            if not backups.exists():
                 txt = _("There are no backups for this guild!")
                 return await ctx.send(txt)
-            await conf.backups[-1].restore(ctx.guild, ctx.channel, delete_existing)
+            latest = sorted(backups.iterdir(), key=lambda x: x.stat().st_mtime)[-1]
+            backup = await asyncio.to_thread(GuildBackup.model_validate_json, latest.read_text(encoding="utf-8"))
+            results = await backup.restore(ctx.guild, ctx.channel)
             await ctx.send(_("Server restore is complete!"))
+            if results:
+                txt = _("The following errors occurred while restoring the backup")
+                await ctx.send(txt, file=text_to_file(results, "restore_results.txt"))
 
     @cartographer_base.command(name="view")
     @commands.is_owner()
     async def view_settings(self, ctx: commands.Context):
         """View current global settings"""
-        backups = sum([len(i.backups) for i in self.db.configs.values()])
-        ignored = ", ".join([str(i) for i in self.db.ignored_guilds]) if self.db.ignored_guilds else _("None Set")
-        allowed = ", ".join([str(i) for i in self.db.allowed_guilds]) if self.db.allowed_guilds else _("None Set")
+        all_backups = 0
+        total_size = 0
+        for guild_backup_folder in self.backups_dir.iterdir():
+            all_backups += len(list(guild_backup_folder.iterdir()))
+            for backup in guild_backup_folder.iterdir():
+                total_size += backup.stat().st_size
+
+        ignored = ", ".join([f"`{i}`" for i in self.db.ignored_guilds]) if self.db.ignored_guilds else _("**None Set**")
+        allowed = ", ".join([f"`{i}`" for i in self.db.allowed_guilds]) if self.db.allowed_guilds else _("**None Set**")
+
         txt = _(
             "### Global Settings\n"
             "- Global backups: {}\n"
             "- Max backups per server: {}\n"
             "- Allow auto-backups: {}\n"
+            "- Message backup limit: {}\n"
+            "- Backup Members: {}\n"
+            "- Backup Roles: {}\n"
+            "- Backup Emojis: {}\n"
+            "- Backup Stickers: {}\n"
             "- Ignored servers: {}\n"
             "- Allowed servers: {}\n"
         ).format(
-            humanize_number(backups),
-            self.db.max_backups_per_guild,
-            self.db.allow_auto_backups,
+            f"**{humanize_number(all_backups)}** ({humanize_size(total_size)})",
+            f"**{self.db.max_backups_per_guild}**",
+            f"**{self.db.allow_auto_backups}**",
+            f"**{self.db.message_backup_limit}**",
+            f"**{self.db.backup_members}**",
+            f"**{self.db.backup_roles}**",
+            f"**{self.db.backup_emojis}**",
+            f"**{self.db.backup_stickers}**",
             ignored,
             allowed,
         )
@@ -212,6 +281,97 @@ class Cartographer(commands.Cog):
         else:
             self.db.allow_auto_backups = True
             txt = _("Auto backups have been **Enabled**")
+        await ctx.send(txt)
+        await self.save()
+
+    @cartographer_base.command(name="messagelimit")
+    @commands.is_owner()
+    async def set_message_limit(self, ctx: commands.Context, limit: int):
+        """Set the message backup limit per channel for auto backups
+
+        Set to 0 to disable message backups
+
+        ⚠️**Warning**⚠️
+        Setting this to a high number can cause backups to be slow and take up a lot of space.
+        """
+        if limit < 0:
+            return await ctx.send(_("Limit must be 0 or higher"))
+        self.db.message_backup_limit = limit
+        if limit == 0:
+            await ctx.send(_("Message backup has been **Disabled**"))
+        else:
+            await ctx.send(_("Message backup limit has been set"))
+        await self.save()
+
+    @cartographer_base.command(name="backupmembers")
+    @commands.is_owner()
+    async def toggle_backup_members(self, ctx: commands.Context):
+        """Toggle backing up members
+
+        ⚠️**Warning**⚠️
+        Restoring the roles of all members can be slow for large servers.
+        """
+        self.db.backup_members = not self.db.backup_members
+        warning = _("\n⚠️**Warning**⚠️\nRestoring the roles of all members can be slow for large servers.")
+        if self.db.backup_members:
+            txt = _("Members will now be backed up") + warning
+        else:
+            txt = _("Members will no longer be backed up")
+        await ctx.send(txt)
+        await self.save()
+
+    @cartographer_base.command(name="backuproles")
+    @commands.is_owner()
+    async def toggle_backup_roles(self, ctx: commands.Context):
+        """Toggle backing up roles
+
+        ⚠️**Warning**⚠️
+        Any roles above the bot's role will not be restored.
+        """
+        self.db.backup_roles = not self.db.backup_roles
+        warning = _("\n⚠️**Warning**⚠️\nAny roles above the bot's role will not be restored.")
+        if self.db.backup_roles:
+            txt = _("Roles will now be backed up") + warning
+        else:
+            txt = _("Roles will no longer be backed up")
+        await ctx.send(txt)
+        await self.save()
+
+    @cartographer_base.command(name="backupemojis")
+    @commands.is_owner()
+    async def toggle_backup_emojis(self, ctx: commands.Context):
+        """Toggle backing up emojis
+
+        ⚠️**Warning**⚠️
+        Restoring emojis is EXTREMELY rate-limited and can take a long time (like hours) for servers with many emojis.
+        """
+        self.db.backup_emojis = not self.db.backup_emojis
+        warning = _(
+            "\n⚠️**Warning**⚠️\nRestoring emojis is EXTREMELY rate-limited and can take a long time (like hours) for servers with many emojis."
+        )
+        if self.db.backup_emojis:
+            txt = _("Emojis will now be backed up") + warning
+        else:
+            txt = _("Emojis will no longer be backed up")
+        await ctx.send(txt)
+        await self.save()
+
+    @cartographer_base.command(name="backupstickers")
+    @commands.is_owner()
+    async def toggle_backup_stickers(self, ctx: commands.Context):
+        """Toggle backing up stickers
+
+        ⚠️**Warning**⚠️
+        Restoring stickers is EXTREMELY rate-limited and can take a long time (like hours) for servers with many stickers.
+        """
+        self.db.backup_stickers = not self.db.backup_stickers
+        warning = _(
+            "\n⚠️**Warning**⚠️\nRestoring stickers is EXTREMELY rate-limited and can take a long time (like hours) for servers with many stickers."
+        )
+        if self.db.backup_stickers:
+            txt = _("Stickers will now be backed up") + warning
+        else:
+            txt = _("Stickers will no longer be backed up")
         await ctx.send(txt)
         await self.save()
 
