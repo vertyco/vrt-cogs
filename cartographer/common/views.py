@@ -112,8 +112,26 @@ class BackupMenu(discord.ui.View):
             "- Print Details: ℹ️\n"
         )
         s_name = _("Settings")
-        settings = _("- Auto Backup Interval Hours: {}\n- Last Backup: {}").format(
-            self.conf.auto_backup_interval_hours, f"{self.conf.last_backup_f} ({self.conf.last_backup_r})"
+        settings = _(
+            "- Auto Backup Interval Hours: {}\n"
+            "- Last Backup: {}\n"
+            "## Global Settings\n"
+            "-# The following settings are configured by the bot owner\n"
+            "- Max Backups Per Guild: {}\n"
+            "- Backup Message Limit: {}\n"
+            "- Backup Members: {}\n"
+            "- Backup Roles: {}\n"
+            "- Backup Emojis: {}\n"
+            "- Backup Stickers: {}\n"
+        ).format(
+            self.conf.auto_backup_interval_hours,
+            f"{self.conf.last_backup_f} ({self.conf.last_backup_r})",
+            self.db.max_backups_per_guild,
+            self.db.message_backup_limit,
+            self.db.backup_members,
+            self.db.backup_roles,
+            self.db.backup_emojis,
+            self.db.backup_stickers,
         )
 
         self.backups: list[Path] = sorted(self.backup_dir.iterdir(), key=lambda x: x.stat().st_ctime)
