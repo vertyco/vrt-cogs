@@ -27,6 +27,7 @@ def backup_str(filepath: Path) -> str:
         "`Stickers:       `{}\n"
         "`Role Count:     `{}\n"
         "`Members Saved:  `{}\n"
+        "`Bans:           `{}\n"
         "`Categories:     `{}\n"
         "`Text Channels:  `{} ({} messages)\n"
         "`Voice Channels: `{} ({} messages)\n"
@@ -44,6 +45,7 @@ def backup_str(filepath: Path) -> str:
         len(backup.stickers),
         len(backup.roles),
         humanize_number(len(backup.members)),
+        humanize_number(len(backup.bans)),
         len(backup.categories),
         len(backup.text_channels),
         humanize_number(total_messages),

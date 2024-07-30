@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2024-07-29 15:04-0400\n"
+"POT-Creation-Date: 2024-07-29 21:29-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -25,162 +25,179 @@ msgid ""
 "`Stickers:       `{}\n"
 "`Role Count:     `{}\n"
 "`Members Saved:  `{}\n"
+"`Bans:           `{}\n"
 "`Categories:     `{}\n"
 "`Text Channels:  `{} ({} messages)\n"
 "`Voice Channels: `{} ({} messages)\n"
 "`Forums:         `{}\n"
 msgstr ""
 
-#: common\formatting.py:58
+#: common\formatting.py:60
 #, docstring
 msgid "Recursively finds the size of an object in memory"
 msgstr ""
 
 #: common\serializers.py:121 common\serializers.py:132
-#: common\serializers.py:164 common\serializers.py:197
-#: common\serializers.py:199 common\serializers.py:324
-#: common\serializers.py:338 common\serializers.py:688
-#: common\serializers.py:785 common\serializers.py:802
-#: common\serializers.py:910 common\serializers.py:919
+#: common\serializers.py:164 common\serializers.py:204
+#: common\serializers.py:211 common\serializers.py:342
+#: common\serializers.py:356 common\serializers.py:706
+#: common\serializers.py:803 common\serializers.py:820
+#: common\serializers.py:928 common\serializers.py:937
 msgid "Restored from backup"
 msgstr ""
 
-#: common\serializers.py:272
+#: common\serializers.py:207
+msgid "Failed to add the following roles to {}: {} - {}\n"
+msgstr ""
+
+#: common\serializers.py:214
+msgid "Failed to remove the following roles from {}: {} - {}\n"
+msgstr ""
+
+#: common\serializers.py:290
 msgid "Channel {} missing role or member overwrite: {} - {}\n"
 msgstr ""
 
-#: common\serializers.py:288
+#: common\serializers.py:306
 #, docstring
 msgid "Just base attributes"
 msgstr ""
 
-#: common\serializers.py:495 common\serializers.py:812
-#: common\serializers.py:1077
+#: common\serializers.py:513 common\serializers.py:830
+#: common\serializers.py:1110
 msgid "Cartographer Restore"
 msgstr ""
 
-#: common\serializers.py:495 common\serializers.py:812
+#: common\serializers.py:513 common\serializers.py:830
 msgid "Restoring messages from backup"
 msgstr ""
 
-#: common\serializers.py:1036
+#: common\serializers.py:1066
 #, docstring
 msgid "Restore a guild backup to a target guild."
 msgstr ""
 
-#: common\serializers.py:1041
+#: common\serializers.py:1071
 msgid "Restoring backup"
 msgstr ""
 
-#: common\serializers.py:1045
+#: common\serializers.py:1075
 msgid "Restoring server settings"
 msgstr ""
 
-#: common\serializers.py:1046
-msgid "Step 1 of 8"
+#: common\serializers.py:1076
+msgid "Step 1 of 9"
 msgstr ""
 
-#: common\serializers.py:1048
+#: common\serializers.py:1078
 msgid "Restoring emojis and stickers"
 msgstr ""
 
-#: common\serializers.py:1049
-msgid "Step 2 of 8"
+#: common\serializers.py:1079
+msgid "Step 2 of 9"
 msgstr ""
 
-#: common\serializers.py:1051
+#: common\serializers.py:1081
 msgid "Restoring roles"
 msgstr ""
 
-#: common\serializers.py:1052
-msgid "Step 3 of 8"
+#: common\serializers.py:1082
+msgid "Step 3 of 9"
 msgstr ""
 
-#: common\serializers.py:1054
+#: common\serializers.py:1084
 msgid "Restoring channels"
 msgstr ""
 
-#: common\serializers.py:1055
-msgid "Step 4 of 8"
+#: common\serializers.py:1085
+msgid "Step 4 of 9"
 msgstr ""
 
-#: common\serializers.py:1057
+#: common\serializers.py:1087
 msgid "Restoring AFK settings"
 msgstr ""
 
-#: common\serializers.py:1058
-msgid "Step 5 of 8"
+#: common\serializers.py:1088
+msgid "Step 5 of 9"
 msgstr ""
 
-#: common\serializers.py:1060
+#: common\serializers.py:1090
 msgid "Restoring system channels"
 msgstr ""
 
-#: common\serializers.py:1061
-msgid "Step 6 of 8"
+#: common\serializers.py:1091
+msgid "Step 6 of 9"
 msgstr ""
 
-#: common\serializers.py:1063
+#: common\serializers.py:1093
 msgid "Restoring remainder of the server settings"
 msgstr ""
 
-#: common\serializers.py:1064
-msgid "Step 7 of 8"
-msgstr ""
-
-#: common\serializers.py:1066
-msgid "Restoring member roles"
-msgstr ""
-
-#: common\serializers.py:1067
-msgid "Step 8 of 8"
-msgstr ""
-
-#: common\serializers.py:1069
-msgid "Restoration complete!"
-msgstr ""
-
-#: common\serializers.py:1073
-msgid "Server restoration took {}"
+#: common\serializers.py:1094
+msgid "Step 7 of 9"
 msgstr ""
 
 #: common\serializers.py:1096
-msgid "Banner too large to restore\n"
+msgid "Restoring member roles"
+msgstr ""
+
+#: common\serializers.py:1097
+msgid "Step 8 of 9"
 msgstr ""
 
 #: common\serializers.py:1099
-msgid "Icon too large to restore\n"
+msgid "Restoring bans"
+msgstr ""
+
+#: common\serializers.py:1100
+msgid "Step 9 of 9"
 msgstr ""
 
 #: common\serializers.py:1102
+msgid "Restoration complete!"
+msgstr ""
+
+#: common\serializers.py:1106
+msgid "Server restoration took {}"
+msgstr ""
+
+#: common\serializers.py:1129
+msgid "Banner too large to restore\n"
+msgstr ""
+
+#: common\serializers.py:1132
+msgid "Icon too large to restore\n"
+msgstr ""
+
+#: common\serializers.py:1135
 msgid "Splash too large to restore\n"
 msgstr ""
 
-#: common\serializers.py:1105
+#: common\serializers.py:1138
 msgid "Discovery splash too large to restore\n"
 msgstr ""
 
-#: common\serializers.py:1158
+#: common\serializers.py:1197
 msgid ""
 "Backup has more emojis than the target server can hold. Some emojis will not"
 " be restored.\n"
 msgstr ""
 
-#: common\serializers.py:1162
+#: common\serializers.py:1201
 msgid "Emoji '{}' not restored due to limit\n"
 msgstr ""
 
-#: common\serializers.py:1186
+#: common\serializers.py:1225
 msgid ""
 "Backup has more stickers than the target server can hold. Some stickers will"
 " not be restored.\n"
 msgstr ""
 
-#: common\serializers.py:1190
+#: common\serializers.py:1229
 msgid "Sticker '{}' not restored due to limit\n"
 msgstr ""
 
-#: common\serializers.py:1270
+#: common\serializers.py:1309
 msgid ""
 "This channel isn't part of the backup, it can be deleted after the restore "
 "is complete."

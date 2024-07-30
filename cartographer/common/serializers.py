@@ -154,7 +154,7 @@ class Member(Base):
         stop=stop_after_attempt(5),
         reraise=False,
     )
-    async def restore(self, guild: discord.Guild) -> bool:
+    async def restore(self, guild: discord.Guild, buffer: StringIO) -> bool:
         member = guild.get_member(self.id)
         if not member:
             return False
@@ -185,6 +185,12 @@ class Member(Base):
                     continue
                 if not role.is_assignable():
                     continue
+                # We must ensure that the bot can actually assign the role
+                if role_backup.is_default:
+                    continue
+                if role.is_bot_managed() and member.bot:
+                    continue
+
                 if role not in member.roles:
                     to_add.append(role)
                 for current_role in member.roles:
@@ -194,9 +200,21 @@ class Member(Base):
         await asyncio.to_thread(_compute)
 
         if to_add:
-            await member.add_roles(*to_add, reason=_("Restored from backup"))
+            try:
+                await member.add_roles(*to_add, reason=_("Restored from backup"))
+            except discord.HTTPException as e:
+                buffer.write(
+                    _("Failed to add the following roles to {}: {} - {}\n").format(member.display_name, e, to_add)
+                )
         if to_remove:
-            await member.remove_roles(*to_remove, reason=_("Restored from backup"))
+            try:
+                await member.remove_roles(*to_remove, reason=_("Restored from backup"))
+            except discord.HTTPException as e:
+                buffer.write(
+                    _("Failed to remove the following roles from {}: {} - {}\n").format(
+                        member.display_name, e, to_remove
+                    )
+                )
         return True
 
 
@@ -921,6 +939,11 @@ class GuildStickerBackup(Base):
         return sticker
 
 
+class BanBackup(Base):
+    user_id: int
+    reason: str | None = None
+
+
 class GuildBackup(Base):
     created: datetime = Field(default_factory=lambda: datetime.now().astimezone(tz=timezone.utc))
 
@@ -943,6 +966,8 @@ class GuildBackup(Base):
     public_updates: TextChannel | None = None
     explicit_content_filter: int = 0
     invites_disabled: bool = False
+
+    bans: list[BanBackup] = []
 
     emojis: list[GuildEmojiBackup] = []
     stickers: list[GuildStickerBackup] = []
@@ -997,6 +1022,10 @@ class GuildBackup(Base):
                 else:
                     log.warning("Unknown channel type: %s", channel)
 
+        bans: list[BanBackup] = []
+        async for ban in guild.bans():
+            bans.append(BanBackup(user_id=ban.user.id, reason=ban.reason))
+
         return cls(
             id=guild.id,
             owner_id=guild.owner_id,
@@ -1023,6 +1052,7 @@ class GuildBackup(Base):
             else None,
             explicit_content_filter=guild.explicit_content_filter.value,
             invites_disabled=guild.invites_paused(),
+            bans=[BanBackup(user_id=i.user.id, reason=i.reason) async for i in guild.bans()],
             roles=[await Role.serialize(i) for i in guild.roles] if backup_roles else [],
             members=[await Member.serialize(i) for i in guild.members] if backup_members else [],
             categories=categories,
@@ -1043,28 +1073,31 @@ class GuildBackup(Base):
                 embed.set_thumbnail(url="https://i.imgur.com/l3p6EMX.gif")
             if stage == 0:
                 embed.description = _("Restoring server settings")
-                embed.set_footer(text=_("Step 1 of 8"))
+                embed.set_footer(text=_("Step 1 of 9"))
             elif stage == 1:
                 embed.description = _("Restoring emojis and stickers")
-                embed.set_footer(text=_("Step 2 of 8"))
+                embed.set_footer(text=_("Step 2 of 9"))
             elif stage == 2:
                 embed.description = _("Restoring roles")
-                embed.set_footer(text=_("Step 3 of 8"))
+                embed.set_footer(text=_("Step 3 of 9"))
             elif stage == 3:
                 embed.description = _("Restoring channels")
-                embed.set_footer(text=_("Step 4 of 8"))
+                embed.set_footer(text=_("Step 4 of 9"))
             elif stage == 4:
                 embed.description = _("Restoring AFK settings")
-                embed.set_footer(text=_("Step 5 of 8"))
+                embed.set_footer(text=_("Step 5 of 9"))
             elif stage == 5:
                 embed.description = _("Restoring system channels")
-                embed.set_footer(text=_("Step 6 of 8"))
+                embed.set_footer(text=_("Step 6 of 9"))
             elif stage == 6:
                 embed.description = _("Restoring remainder of the server settings")
-                embed.set_footer(text=_("Step 7 of 8"))
+                embed.set_footer(text=_("Step 7 of 9"))
             elif stage == 7:
                 embed.description = _("Restoring member roles")
-                embed.set_footer(text=_("Step 8 of 8"))
+                embed.set_footer(text=_("Step 8 of 9"))
+            elif stage == 8:
+                embed.description = _("Restoring bans")
+                embed.set_footer(text=_("Step 9 of 9"))
             else:
                 embed.description = _("Restoration complete!")
                 embed.color = discord.Color.green()
@@ -1104,6 +1137,8 @@ class GuildBackup(Base):
             discovery_splash = None
             results.write(_("Discovery splash too large to restore\n"))
 
+        log.info("Target guild is community: %s", "COMMUNITY" in target_guild.features)
+
         update_kwargs = {}
         if self.name != target_guild.name:
             update_kwargs["name"] = self.name
@@ -1127,12 +1162,16 @@ class GuildBackup(Base):
             update_kwargs["preferred_locale"] = discord.Locale(self.preferred_locale)
         if self.invites_disabled != target_guild.invites_paused():
             update_kwargs["invites_disabled"] = self.invites_disabled
+        if self.verification_level == 0 or self.explicit_content_filter == 0:
+            # We must make sure community is disabled if verification is off or explicit content filter is off otherwise it will error
+            update_kwargs["community"] = False
         if update_kwargs:
-            log.info("Updating server settings")
+            log.info("Updating server settings with kwargs: %s", update_kwargs)
             await target_guild.edit(reason=reason, **update_kwargs)
 
         # ---------------------------- EMOJIS ----------------------------
-        await message.edit(embed=get_status_embed(1))
+        if self.emojis or self.stickers:
+            await message.edit(embed=get_status_embed(1))
         if self.emojis:
             # Update the ID of emojis that closely match any of the target guild's emojis
             for idx, emoji in enumerate(self.emojis):
@@ -1195,8 +1234,8 @@ class GuildBackup(Base):
                     results.write(f"Error restoring sticker {sticker.name}: {e}\n")
 
         # ---------------------------- ROLES ----------------------------
-        await message.edit(embed=get_status_embed(2))
         if self.roles:
+            await message.edit(embed=get_status_embed(2))
             # First things first, the bot can't put any roles equal to or above its top role
             # If restoring a backup where the bot's top role isnt the highest role, we'll have to ignore them
             top_role = target_guild.me.top_role
@@ -1348,11 +1387,24 @@ class GuildBackup(Base):
                 await forum.restore(target_guild, results)
 
         # ---------------------------- MEMBER ROLES ----------------------------
-        await message.edit(embed=get_status_embed(7))
-        # Finally restore member roles
         if self.members:
+            await message.edit(embed=get_status_embed(7))
             for member in self.members:
-                await member.restore(target_guild)
+                await member.restore(target_guild, results)
 
-        await message.edit(embed=get_status_embed(8))
+        # ---------------------------- BANS ----------------------------
+        if self.bans:
+            await message.edit(embed=get_status_embed(8))
+            existing_ban_ids = [entry.user.id async for entry in target_guild.bans()]
+            for ban in self.bans:
+                if ban.user_id in existing_ban_ids:
+                    continue
+                user = discord.Object(id=ban.user_id)
+                log.info("Re-banning user %s", user.id)
+                try:
+                    await target_guild.ban(user, reason=ban.reason)
+                except discord.HTTPException as e:
+                    results.write(f"Failed to ban user {user.id}: {e}\n")
+
+        await message.edit(embed=get_status_embed(9))
         return results.getvalue()
