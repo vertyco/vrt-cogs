@@ -45,7 +45,7 @@ class Cartographer(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.1.2"
+    __version__ = "1.1.3"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -119,7 +119,7 @@ class Cartographer(commands.Cog):
                 continue
 
             delta_hours = (now.timestamp() - settings.last_backup.timestamp()) / 3600
-            if delta_hours < settings.auto_backup_interval_hours:
+            if int(delta_hours) < int(settings.auto_backup_interval_hours):
                 continue
 
             await settings.backup(
