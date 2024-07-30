@@ -30,6 +30,7 @@ class Cartographer(commands.Cog):
     Backup & Restore tools for Discord servers.
 
     This cog can backup & restore the following:
+    - Bans (including reason)
     - Categories (permissions/order)
     - Text channels (permissions/order)
     - Voice channels (permissions/order)
@@ -42,7 +43,7 @@ class Cartographer(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.0.1"
+    __version__ = "1.1.0"
 
     def __init__(self, bot: Red):
         super().__init__()
