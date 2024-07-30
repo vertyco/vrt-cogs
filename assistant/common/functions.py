@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import typing as t
 from io import StringIO
 
 import aiohttp
@@ -8,6 +9,7 @@ import discord
 from redbot.core.i18n import Translator, cog_i18n
 
 from ..abc import MixinMeta
+from ..common import calls
 from .models import EmbeddingEntryExists, GuildSettings
 
 log = logging.getLogger("red.vrt.assistant.functions")
@@ -16,6 +18,27 @@ _ = Translator("Assistant", __file__)
 
 @cog_i18n(_)
 class AssistantFunctions(MixinMeta):
+    async def generate_image(
+        self,
+        channel: discord.TextChannel,
+        conf: GuildSettings,
+        prompt: str,
+        size: t.Literal["1024x1024", "1792x1024", "1024x1792"] = "1024x1024",
+        quality: t.Literal["standard", "hd"] = "standard",
+        style: t.Literal["natural", "vivid"] = "vivid",
+        *args,
+        **kwargs,
+    ):
+        image = await calls.request_image_raw(prompt, conf.api_key, size, quality, style)
+        desc = _("-# Size: {}\n-# Quality: {}\n-# Style: {}").format(size, quality, style)
+        color = (await self.bot.get_embed_color(channel)) if channel else discord.Color.blue()
+        embed = discord.Embed(description=desc, color=color).set_image(url=image.url)
+        payload = {"embed": embed, "result_text": "Image generated!"}
+        if image.revised_prompt:
+            payload["result_text"] += f"\nRevised prompt: {image.revised_prompt}"
+
+        return payload
+
     async def search_internet(
         self, guild: discord.Guild, search_query: str, search_result_amount: int = 10, *args, **kwargs
     ):
