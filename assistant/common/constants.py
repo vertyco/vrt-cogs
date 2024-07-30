@@ -137,6 +137,7 @@ READ_EXTENSIONS = [
     ".spec",
     ".sql",
 ]
+LOADING = "https://i.imgur.com/l3p6EMX.gif"
 REACT_SUMMARY_MESSAGE = """
 You will be given a snippet of text, your job is to create a summary of the text to provide context for future conversations.
 

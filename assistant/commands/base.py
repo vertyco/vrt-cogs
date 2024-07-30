@@ -2,9 +2,11 @@ import asyncio
 import json
 import logging
 import traceback
+import typing as t
 from io import StringIO
 
 import discord
+from discord import app_commands
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import (
@@ -16,7 +18,8 @@ from redbot.core.utils.chat_formatting import (
 )
 
 from ..abc import MixinMeta
-from ..common.constants import READ_EXTENSIONS
+from ..common.calls import request_image_raw
+from ..common.constants import LOADING, READ_EXTENSIONS
 from ..common.models import Conversation
 from ..common.utils import can_use, get_attachments
 
@@ -70,6 +73,33 @@ If a file has no extension it will still try to read it only if it can be decode
         )
         embed = discord.Embed(description=txt.strip(), color=ctx.me.color)
         await ctx.send(embed=embed)
+
+    @app_commands.command(name="draw", description=_("Generate an image with Dalle-3"))
+    @app_commands.describe(prompt=_("What would you like to draw?"))
+    @app_commands.describe(size=_("The size of the image to generate"))
+    @app_commands.describe(quality=_("The quality of the image to generate"))
+    @app_commands.describe(style=_("The style of the image to generate"))
+    async def draw(
+        self,
+        interaction: discord.Interaction,
+        prompt: str,
+        size: t.Literal["1024x1024", "1792x1024", "1024x1792"] = "1024x1024",
+        quality: t.Literal["standard", "hd"] = "standard",
+        style: t.Literal["natural", "vivid"] = "vivid",
+    ):
+        conf = self.db.get_conf(interaction.guild)
+        if not conf.api_key:
+            return await interaction.response.send_message(_("The API key is not set up!"), ephemeral=True)
+        color = await self.bot.get_embed_color(interaction.channel)
+        embed = discord.Embed(description=_("Generating image..."), color=color)
+        embed.set_thumbnail(url=LOADING)
+        await interaction.response.send_message(embed=embed)
+        desc = _("-# Size: {}\n-# Quality: {}\n-# Style: {}").format(size, quality, style)
+        image = await request_image_raw(prompt, conf.api_key, size, quality, style)
+        embed = discord.Embed(description=desc, color=color).set_image(url=image.url)
+        if image.revised_prompt:
+            embed.add_field(name=_("Revised Prompt"), value=image.revised_prompt, inline=False)
+        await interaction.edit_original_response(embed=embed)
 
     @commands.command(
         name="chat",
