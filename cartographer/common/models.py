@@ -40,7 +40,7 @@ class GuildSettings(Base):
         backup_stickers: bool = True,
     ) -> None:
         backup_obj = await GuildBackup.serialize(
-            guild,
+            guild=guild,
             limit=limit,
             backup_members=backup_members,
             backup_roles=backup_roles,

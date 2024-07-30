@@ -199,7 +199,7 @@ class BackupMenu(discord.ui.View):
         if self.db.backup_roles and self.guild.roles:
             highest_guild_role = max(self.guild.roles, key=lambda r: r.position)
             highest_bot_role = max(self.guild.me.roles, key=lambda r: r.position)
-            if highest_guild_role >= highest_bot_role:
+            if highest_guild_role > highest_bot_role:
                 txt = _("Warning! I need to have the highest role in the server to restore roles properly!")
                 await interaction.followup.send(txt, ephemeral=True)
 

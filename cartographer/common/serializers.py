@@ -853,11 +853,16 @@ class GuildEmojiBackup(Base):
     id: int
     name: str
     image: str  # base64 encoded image
-    # TODO: add 'roles' attribute for list of roles that can use the emoji
+    roles: list[Role] = []
 
     @classmethod
     async def serialize(cls, emoji: discord.Emoji):
-        return cls(id=emoji.id, name=emoji.name, image=base64.b64encode(await emoji.read()).decode())
+        return cls(
+            id=emoji.id,
+            name=emoji.name,
+            image=base64.b64encode(await emoji.read()).decode(),
+            roles=[await Role.serialize(i, load_icon=False) for i in emoji.roles],
+        )
 
     @retry(
         retry=retry_if_exception_type(aiohttp.ClientConnectionError | aiohttp.ClientOSError),
@@ -865,8 +870,9 @@ class GuildEmojiBackup(Base):
         stop=stop_after_attempt(5),
         reraise=False,
     )
-    async def restore(self, guild: discord.Guild) -> discord.Emoji | None:
+    async def restore(self, guild: discord.Guild, buffer: StringIO) -> discord.Emoji | None:
         existing = guild.get_emoji(self.id)
+        roles = [await role.restore(guild, buffer) for role in self.roles]
         if not existing:
             for emoji in guild.emojis:
                 if emoji.name == self.name:
@@ -875,14 +881,19 @@ class GuildEmojiBackup(Base):
                     log.info("Updating ID for emoji %s", self.name)
                     break
         if existing:
-            if existing.name == self.name:
+            if existing.name == self.name and existing.roles == roles:
                 # Emoji exists and has not changed
                 return existing
             log.info("Updating emoji %s", self.name)
-            await existing.edit(name=self.name)
+            await existing.edit(name=self.name, roles=roles, reason=_("Restored from backup"))
         else:
             log.info("Restoring emoji %s", self.name)
-            emoji = await guild.create_custom_emoji(name=self.name, image=base64.b64decode(self.image))
+            emoji = await guild.create_custom_emoji(
+                name=self.name,
+                image=base64.b64decode(self.image),
+                roles=roles,
+                reason=_("Restored from backup"),
+            )
             self.id = emoji.id
         return emoji
 
@@ -1075,10 +1086,10 @@ class GuildBackup(Base):
                 embed.description = _("Restoring server settings")
                 embed.set_footer(text=_("Step 1 of 9"))
             elif stage == 1:
-                embed.description = _("Restoring emojis and stickers")
+                embed.description = _("Restoring roles")
                 embed.set_footer(text=_("Step 2 of 9"))
             elif stage == 2:
-                embed.description = _("Restoring roles")
+                embed.description = _("Restoring emojis and stickers")
                 embed.set_footer(text=_("Step 3 of 9"))
             elif stage == 3:
                 embed.description = _("Restoring channels")
@@ -1169,9 +1180,49 @@ class GuildBackup(Base):
             log.info("Updating server settings with kwargs: %s", update_kwargs)
             await target_guild.edit(reason=reason, **update_kwargs)
 
+        # ---------------------------- ROLES ----------------------------
+        if self.roles:
+            await message.edit(embed=get_status_embed(1))
+            # First things first, the bot can't put any roles equal to or above its top role
+            # If restoring a backup where the bot's top role isnt the highest role, we'll have to ignore them
+            top_role = target_guild.me.top_role
+            # The position of the top role must be the highest position in the guild, so we'll calculate that
+
+            # Iterate backwards through the roles to avoid index errors
+            for i in range(len(self.roles) - 1, -1, -1):
+                role = self.roles[i]
+                if target_guild.get_role(role.id):
+                    continue
+                # Role doesn't exist, we'll see if we can find a close match
+                for existing_role in target_guild.roles:
+                    if role.fuzzy_match(existing_role):
+                        self.roles[i].id = existing_role.id
+                        log.info("Updating ID for role %s", role.name)
+                        break
+
+            # Delete any roles that arent in the backup and didn't have a close match
+            updated_backup_ids = {i.id for i in self.roles}
+            for role in target_guild.roles:
+                cases = [
+                    not role.is_assignable(),
+                    role.is_bot_managed(),
+                    role.is_default(),
+                    role.is_premium_subscriber(),
+                    role >= top_role,
+                    role.id in updated_backup_ids,
+                ]
+                if any(cases):
+                    continue
+                log.info("Deleting role %s", role.name)
+                await role.delete(reason=reason)
+
+            # - Restore the roles
+            for role in sorted(self.roles, key=lambda x: x.position):
+                await role.restore(target_guild, results)
+
         # ---------------------------- EMOJIS ----------------------------
         if self.emojis or self.stickers:
-            await message.edit(embed=get_status_embed(1))
+            await message.edit(embed=get_status_embed(2))
         if self.emojis:
             # Update the ID of emojis that closely match any of the target guild's emojis
             for idx, emoji in enumerate(self.emojis):
@@ -1232,46 +1283,6 @@ class GuildBackup(Base):
                     await sticker.restore(target_guild)
                 except discord.HTTPException as e:
                     results.write(f"Error restoring sticker {sticker.name}: {e}\n")
-
-        # ---------------------------- ROLES ----------------------------
-        if self.roles:
-            await message.edit(embed=get_status_embed(2))
-            # First things first, the bot can't put any roles equal to or above its top role
-            # If restoring a backup where the bot's top role isnt the highest role, we'll have to ignore them
-            top_role = target_guild.me.top_role
-            # The position of the top role must be the highest position in the guild, so we'll calculate that
-
-            # Iterate backwards through the roles to avoid index errors
-            for i in range(len(self.roles) - 1, -1, -1):
-                role = self.roles[i]
-                if target_guild.get_role(role.id):
-                    continue
-                # Role doesn't exist, we'll see if we can find a close match
-                for existing_role in target_guild.roles:
-                    if role.fuzzy_match(existing_role):
-                        self.roles[i].id = existing_role.id
-                        log.info("Updating ID for role %s", role.name)
-                        break
-
-            # Delete any roles that arent in the backup and didn't have a close match
-            updated_backup_ids = {i.id for i in self.roles}
-            for role in target_guild.roles:
-                cases = [
-                    not role.is_assignable(),
-                    role.is_bot_managed(),
-                    role.is_default(),
-                    role.is_premium_subscriber(),
-                    role >= top_role,
-                    role.id in updated_backup_ids,
-                ]
-                if any(cases):
-                    continue
-                log.info("Deleting role %s", role.name)
-                await role.delete(reason=reason)
-
-            # - Restore the roles
-            for role in sorted(self.roles, key=lambda x: x.position):
-                await role.restore(target_guild, results)
 
         # ---------------------------- CHANNELS ----------------------------
         await message.edit(embed=get_status_embed(3))
