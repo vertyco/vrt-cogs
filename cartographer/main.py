@@ -45,7 +45,7 @@ class Cartographer(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.1.1"
+    __version__ = "1.1.2"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -124,6 +124,7 @@ class Cartographer(commands.Cog):
 
             await settings.backup(
                 guild=guild,
+                backups_dir=self.backups_dir,
                 limit=self.db.message_backup_limit,
                 backup_members=self.db.backup_members,
                 backup_roles=self.db.backup_roles,
@@ -215,7 +216,7 @@ class Cartographer(commands.Cog):
         async with ctx.typing():
             conf = self.db.get_conf(ctx.guild)
             await conf.backup(
-                ctx.guild,
+                guild=ctx.guild,
                 backups_dir=self.backups_dir,
                 limit=limit,
                 backup_members=self.db.backup_members,
