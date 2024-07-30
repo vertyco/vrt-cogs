@@ -533,17 +533,51 @@ class ChatHandler(MixinMeta):
                     func_result = f"JSONDecodeError: Failed to parse arguments for function {function_name}"
 
                 # Prep framework for alternative response types!
-                if isinstance(func_result, dict):
-                    result = func_result["content"]
-                    file = discord.File(
-                        BytesIO(func_result["file_bytes"]),
-                        filename=func_result["file_name"],
-                    )
+                if isinstance(func_result, discord.Embed):
+                    result = func_result.description or _("Result sent!")
                     try:
-                        await channel.send(file=file)
+                        await channel.send(embed=func_result)
+                    except discord.Forbidden:
+                        result = "You do not have permissions to embed links in this channel"
+                        function_calls = [i for i in function_calls if i["name"] != function_name]
+                elif isinstance(func_result, discord.File):
+                    result = "File uploaded!"
+                    try:
+                        await channel.send(file=func_result)
                     except discord.Forbidden:
                         result = "You do not have permissions to upload files in this channel"
                         function_calls = [i for i in function_calls if i["name"] != function_name]
+                elif isinstance(func_result, dict):
+                    # For complex responses
+                    result = func_result["result_text"]
+                    if "embed" in func_result:
+                        # Should be discord.Embed
+                        try:
+                            await channel.send(embed=func_result["embed"])
+                        except discord.Forbidden:
+                            result = "You do not have permissions to embed links in this channel"
+                            function_calls = [i for i in function_calls if i["name"] != function_name]
+                    if "file" in func_result:
+                        # Should be discord.File
+                        try:
+                            await channel.send(file=func_result["file"])
+                        except discord.Forbidden:
+                            result = "You do not have permissions to upload files in this channel"
+                            function_calls = [i for i in function_calls if i["name"] != function_name]
+                    if "embeds" in func_result:
+                        # Should be list of discord.Embed
+                        try:
+                            await channel.send(embeds=func_result["embeds"])
+                        except discord.Forbidden:
+                            result = "You do not have permissions to embed links in this channel"
+                            function_calls = [i for i in function_calls if i["name"] != function_name]
+                    if "files" in func_result:
+                        # Should be list of discord.File
+                        try:
+                            await channel.send(files=func_result["files"])
+                        except discord.Forbidden:
+                            result = "You do not have permissions to upload files in this channel"
+                            function_calls = [i for i in function_calls if i["name"] != function_name]
                 elif isinstance(func_result, bytes):
                     result = func_result.decode()
                 else:  # Is a string

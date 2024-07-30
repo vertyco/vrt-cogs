@@ -109,8 +109,6 @@ class GuildSettings(AssistantBaseModel):
     role_overrides: Dict[int, str] = Field(default_factory=dict, alias="model_role_overrides")
     max_time_role_override: Dict[int, int] = {}
 
-    image_tools: bool = True
-    image_size: str = "512x512"  # 256x256, 512x512, 1024x1024
     vision_detail: str = "auto"  # high, low, auto
 
     use_function_calls: bool = False

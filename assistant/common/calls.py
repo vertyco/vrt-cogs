@@ -4,7 +4,7 @@ from typing import List, Optional
 
 import httpx
 import openai
-from openai.types import CreateEmbeddingResponse
+from openai.types import CreateEmbeddingResponse, Image, ImagesResponse
 from openai.types.chat import ChatCompletion
 from sentry_sdk import add_breadcrumb
 from tenacity import (
@@ -104,3 +104,33 @@ async def request_embedding_raw(
     response: CreateEmbeddingResponse = await client.embeddings.create(input=text, model=model)
     log.debug(f"request_embedding_raw: {model} -> {response.model}")
     return response
+
+
+@retry(
+    retry=retry_if_exception_type(
+        t.Union[
+            httpx.TimeoutException,
+            httpx.ReadTimeout,
+            openai.InternalServerError,
+        ]
+    ),
+    wait=wait_random_exponential(min=5, max=30),
+    stop=stop_after_attempt(5),
+    reraise=True,
+)
+async def request_image_raw(
+    prompt: str,
+    api_key: str,
+    size: t.Literal["1024x1024", "1792x1024", "1024x1792"] = "1024x1024",
+    quality: t.Literal["standard", "hd"] = "standard",
+    style: t.Literal["natural", "vivid"] = "vivid",
+) -> Image:
+    client = openai.AsyncOpenAI(api_key=api_key)
+    response: ImagesResponse = await client.images.generate(
+        model="dall-e-3",
+        prompt=prompt,
+        size=size,
+        quality=quality,
+        style=style,
+    )
+    return response.data[0]

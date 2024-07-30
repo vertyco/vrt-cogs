@@ -83,9 +83,10 @@ SUPPORTS_VISION = [
 SUPPORTS_TOOLS = [
     "gpt-3.5-turbo-1106",
     "gpt-3.5-turbo-0125",
-    "gpt-4-1106-preview",
-    "gpt-4-0125-preview",
+    "gpt-4-turbo",
     "gpt-4-turbo-preview",
+    "gpt-4-0125-preview",
+    "gpt-4-1106-preview",
     "gpt-4o",
     "gpt-4o-2024-05-13",
     "gpt-4o-mini",
@@ -151,15 +152,45 @@ You will be given a snippet of text, your job is to create a "Memory Name" for t
 - KEEP THE NAME LESS THAN 3 WORDS AND LESS THAN 40 CHARACTERS.
 """
 
+GENERATE_IMAGE = {
+    "name": "generate_image",
+    "description": "Use this to generate an image from a text prompt.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "prompt": {
+                "type": "string",
+                "description": "A sentence or phrase that describes what you want to visualize, must be less than 1000 characters",
+            },
+            "quality": {
+                "type": "string",
+                "enum": ["standard", "hd"],
+                "description": "The quality of the image, defaults to standard",
+            },
+            "style": {
+                "type": "string",
+                "enum": ["natural", "vivid"],
+                "description": "Vivid leans toward more hyper-real and dramatic images. Natural creates more natural, less hyper-real looking images. Defaults to 'vivid'",
+            },
+            "size": {
+                "type": "string",
+                "enum": ["1024x1024", "1792x1024", "1024x1792"],
+                "description": "The size of the image, defaults to 1024x1024",
+            },
+        },
+        "required": ["prompt"],
+    },
+}
+
 SEARCH_INTERNET = {
     "name": "search_internet",
-    "description": "Use this to search the internet for information, this is useful when you need to find information that is not in the memories.",
+    "description": "Use this to search the internet for information.",
     "parameters": {
         "type": "object",
         "properties": {
             "search_query": {
                 "type": "string",
-                "description": "a sentence or phrase that describes what you are looking for, this should be as specific as possible",
+                "description": "a sentence or phrase that describes what you are looking for",
             },
             "amount": {
                 "type": "integer",

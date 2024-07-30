@@ -17,6 +17,7 @@ from .common.chat import ChatHandler
 from .common.constants import (
     CREATE_MEMORY,
     EDIT_MEMORY,
+    GENERATE_IMAGE,
     LIST_MEMORIES,
     SEARCH_INTERNET,
     SEARCH_MEMORIES,
@@ -53,7 +54,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "6.5.0"
+    __version__ = "6.6.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -103,6 +104,7 @@ class Assistant(
         await asyncio.to_thread(self._cleanup_db)
 
         # Register internal functions
+        await self.register_function(self.qualified_name, GENERATE_IMAGE)
         await self.register_function(self.qualified_name, SEARCH_INTERNET)
         await self.register_function(self.qualified_name, CREATE_MEMORY)
         await self.register_function(self.qualified_name, SEARCH_MEMORIES)
