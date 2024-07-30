@@ -33,7 +33,7 @@ class AssistantFunctions(MixinMeta):
         desc = _("-# Size: {}\n-# Quality: {}\n-# Style: {}").format(size, quality, style)
         color = (await self.bot.get_embed_color(channel)) if channel else discord.Color.blue()
         embed = discord.Embed(description=desc, color=color).set_image(url=image.url)
-        payload = {"embed": embed, "result_text": "Image generated!"}
+        payload = {"embed": embed, "result_text": "Image has been generated and sent to the user!"}
         if image.revised_prompt:
             payload["result_text"] += f"\nRevised prompt: {image.revised_prompt}"
 
