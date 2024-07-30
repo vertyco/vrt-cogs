@@ -117,10 +117,11 @@ class Cartographer(commands.Cog):
                         backup.unlink()
                     path.rmdir()
                 continue
+
             delta_hours = (now.timestamp() - settings.last_backup.timestamp()) / 3600
             if delta_hours > settings.auto_backup_interval_hours:
                 await settings.backup(
-                    guild,
+                    guild=guild,
                     limit=self.db.message_backup_limit,
                     backup_members=self.db.backup_members,
                     backup_roles=self.db.backup_roles,
@@ -128,7 +129,7 @@ class Cartographer(commands.Cog):
                     backup_stickers=self.db.backup_stickers,
                 )
                 save = True
-            self.db.cleanup(guild, self.backups_dir)
+                self.db.cleanup(guild, self.backups_dir)
 
         if save:
             await self.save()
