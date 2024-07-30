@@ -35,9 +35,9 @@ class Cartographer(commands.Cog):
     - Text channels (permissions/order)
     - Voice channels (permissions/order)
     - Forum channels  (permissions/order)[Not forum posts]
-    - Roles (permissions and what members they're assigned to)
-    - Emojis (Very slow and rate limit heavy)
-    - Stickers (Very slow and rate limit heavy)
+    - Roles (permissions/color/name/icon and what members they're assigned to)
+    - Emojis (name/roles, Very slow and rate limit heavy)
+    - Stickers (name/description, Very slow and rate limit heavy)
     - Members (roles and nicknames)
     - Messages (Optional, can be disabled)
     - Server icon/banner/splash/discovery splash/description/name
@@ -45,7 +45,7 @@ class Cartographer(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.1.0"
+    __version__ = "1.1.1"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -119,17 +119,19 @@ class Cartographer(commands.Cog):
                 continue
 
             delta_hours = (now.timestamp() - settings.last_backup.timestamp()) / 3600
-            if delta_hours > settings.auto_backup_interval_hours:
-                await settings.backup(
-                    guild=guild,
-                    limit=self.db.message_backup_limit,
-                    backup_members=self.db.backup_members,
-                    backup_roles=self.db.backup_roles,
-                    backup_emojis=self.db.backup_emojis,
-                    backup_stickers=self.db.backup_stickers,
-                )
-                save = True
-                self.db.cleanup(guild, self.backups_dir)
+            if delta_hours < settings.auto_backup_interval_hours:
+                continue
+
+            await settings.backup(
+                guild=guild,
+                limit=self.db.message_backup_limit,
+                backup_members=self.db.backup_members,
+                backup_roles=self.db.backup_roles,
+                backup_emojis=self.db.backup_emojis,
+                backup_stickers=self.db.backup_stickers,
+            )
+            save = True
+            self.db.cleanup(guild, self.backups_dir)
 
         if save:
             await self.save()
@@ -139,7 +141,22 @@ class Cartographer(commands.Cog):
     @commands.bot_has_permissions(administrator=True)
     @commands.guild_only()
     async def cartographer_menu(self, ctx: commands.Context):
-        """Open the Backup/Restore menu"""
+        """Open the Backup/Restore menu
+
+        This cog can backup & restore the following:
+        - Bans (including reason)
+        - Categories (permissions/order)
+        - Text channels (permissions/order)
+        - Voice channels (permissions/order)
+        - Forum channels  (permissions/order)[Not forum posts]
+        - Roles (permissions/color/name/icon and what members they're assigned to)
+        - Emojis (name/roles, Very slow and rate limit heavy)
+        - Stickers (name/description, Very slow and rate limit heavy)
+        - Members (roles and nicknames)
+        - Messages (Optional, can be disabled)
+        - Server icon/banner/splash/discovery splash/description/name
+        - All server verification/security settings
+        """
         if ctx.guild.id in self.db.ignored_guilds:
             txt = _("This server is in the ingored list!")
             return await ctx.send(txt)
