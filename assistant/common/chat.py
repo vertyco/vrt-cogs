@@ -532,6 +532,8 @@ class ChatHandler(MixinMeta):
                     # Help the model self-correct
                     func_result = f"JSONDecodeError: Failed to parse arguments for function {function_name}"
 
+                return_null = False
+
                 # Prep framework for alternative response types!
                 if isinstance(func_result, discord.Embed):
                     result = func_result.description or _("Result sent!")
@@ -550,6 +552,7 @@ class ChatHandler(MixinMeta):
                 elif isinstance(func_result, dict):
                     # For complex responses
                     result = func_result["result_text"]
+                    return_null = func_result.get("return_null", False)
                     if "embed" in func_result:
                         # Should be discord.Embed
                         try:
@@ -595,6 +598,9 @@ class ChatHandler(MixinMeta):
                     e["tool_call_id"] = tool_id
                 messages.append(e)
                 conversation.messages.append(e)
+
+                if return_null:
+                    return None
 
                 if message_obj and function_name in ["create_memory", "edit_memory"]:
                     try:
