@@ -40,6 +40,8 @@ class Cartographer(commands.Cog):
     - Stickers (Very slow and rate limit heavy)
     - Members (roles and nicknames)
     - Messages (Optional, can be disabled)
+    - Server icon/banner/splash/discovery splash/description/name
+    - All server verification/security settings
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
