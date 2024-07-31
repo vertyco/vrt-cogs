@@ -19,7 +19,7 @@ from redbot.core.utils.chat_formatting import (
 
 from ..abc import MixinMeta
 from ..common.calls import request_image_raw
-from ..common.constants import LOADING, READ_EXTENSIONS
+from ..common.constants import IMAGE_COSTS, LOADING, READ_EXTENSIONS
 from ..common.models import Conversation
 from ..common.utils import can_use, get_attachments
 
@@ -79,6 +79,7 @@ If a file has no extension it will still try to read it only if it can be decode
     @app_commands.describe(size=_("The size of the image to generate"))
     @app_commands.describe(quality=_("The quality of the image to generate"))
     @app_commands.describe(style=_("The style of the image to generate"))
+    @commands.guild_only()
     async def draw(
         self,
         interaction: discord.Interaction,
@@ -95,8 +96,11 @@ If a file has no extension it will still try to read it only if it can be decode
         embed.set_thumbnail(url=LOADING)
         await interaction.response.send_message(embed=embed)
         desc = _("-# Size: {}\n-# Quality: {}\n-# Style: {}").format(size, quality, style)
+        cost_key = f"{quality}{size}"
+        cost = IMAGE_COSTS.get(cost_key, 0)
         image = await request_image_raw(prompt, conf.api_key, size, quality, style)
         embed = discord.Embed(description=desc, color=color).set_image(url=image.url)
+        embed.set_footer(text=_("Cost: ${}").format(f"{cost:.2f}"))
         if image.revised_prompt:
             embed.add_field(name=_("Revised Prompt"), value=image.revised_prompt, inline=False)
         await interaction.edit_original_response(embed=embed)
