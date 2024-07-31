@@ -57,6 +57,14 @@ PRICES = {
     "text-embedding-3-small": [0.00002, 0.00002],
     "text-embedding-3-large": [0.00013, 0.00013],
 }
+IMAGE_COSTS = {
+    "standard1024x1024": 0.04,
+    "standard1792x1024": 0.08,
+    "standard1024x1792": 0.08,
+    "hd1024x1024": 0.08,
+    "hd1792x1024": 0.12,
+    "hd1024x1792": 0.12,
+}
 SUPPORTS_SEED = [
     "gpt-3.5-turbo-1106",
     "gpt-3.5-turbo-0125",

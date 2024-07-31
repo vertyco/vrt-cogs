@@ -9,7 +9,7 @@ import discord
 from redbot.core.i18n import Translator, cog_i18n
 
 from ..abc import MixinMeta
-from ..common import calls
+from ..common import calls, constants
 from .models import EmbeddingEntryExists, GuildSettings
 
 log = logging.getLogger("red.vrt.assistant.functions")
@@ -29,10 +29,16 @@ class AssistantFunctions(MixinMeta):
         *args,
         **kwargs,
     ):
+        cost_key = f"{quality}{size}"
+        cost = constants.IMAGE_COSTS.get(cost_key, 0)
         image = await calls.request_image_raw(prompt, conf.api_key, size, quality, style)
         desc = _("-# Size: {}\n-# Quality: {}\n-# Style: {}").format(size, quality, style)
         color = (await self.bot.get_embed_color(channel)) if channel else discord.Color.blue()
-        embed = discord.Embed(description=desc, color=color).set_image(url=image.url)
+        embed = (
+            discord.Embed(description=desc, color=color)
+            .set_image(url=image.url)
+            .set_footer(text=_("Cost: ${}").format(f"{cost:.2f}"))
+        )
         payload = {
             "embed": embed,
             "result_text": "Image has been generated and sent to the user!",
