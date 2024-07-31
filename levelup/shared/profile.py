@@ -251,7 +251,7 @@ class ProfileFormatting(MixinMeta):
         if background_bytes := kwargs.get("background_bytes"):
             # Sometimes discord's CDN returns b'This content is no longer available.'
             # If this occurs we'll reset the background to default
-            if "This content is no longer available." in background_bytes:
+            if "This content is no longer available." in str(background_bytes):
                 profile.background = "default"
                 self.save()
                 log.warning(
