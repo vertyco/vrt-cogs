@@ -70,7 +70,8 @@ class DynamicMenu(discord.ui.View):
             with suppress(discord.NotFound, discord.Forbidden, discord.HTTPException):
                 await self.message.edit(view=None)
 
-    async def refresh(self):
+    async def refresh(self, interaction: t.Optional[discord.Interaction] = None, followup: bool = False):
+        self.pages %= self.page_count
         self.clear_items()
         single = [self.close]
         small = [self.left] + single + [self.right]
@@ -101,7 +102,11 @@ class DynamicMenu(discord.ui.View):
         elif not self.message and file:
             kwargs["file"] = file
 
-        if self.message:
+        if interaction and followup:
+            await interaction.edit_original_response(**kwargs)
+        elif interaction:
+            await interaction.response.edit_message(**kwargs)
+        elif self.message:
             try:
                 await self.message.edit(**kwargs)
             except discord.HTTPException:
@@ -118,24 +123,16 @@ class DynamicMenu(discord.ui.View):
         row=1,
     )
     async def left10(self, interaction: discord.Interaction, button: discord.ui.Button):
-        with suppress(discord.NotFound):
-            await interaction.response.defer()
-        if self.page < 10:
-            self.page = self.page + self.page_count - 10
-        else:
-            self.page -= 10
-        await self.refresh()
+        self.pages -= 10
+        await self.refresh(interaction)
 
     @discord.ui.button(
         emoji="\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}",
         style=discord.ButtonStyle.primary,
     )
     async def left(self, interaction: discord.Interaction, button: discord.ui.Button):
-        with suppress(discord.NotFound):
-            await interaction.response.defer()
         self.page -= 1
-        self.page %= self.page_count
-        await self.refresh()
+        await self.refresh(interaction)
 
     @discord.ui.button(
         emoji="\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}",
@@ -154,11 +151,8 @@ class DynamicMenu(discord.ui.View):
         style=discord.ButtonStyle.primary,
     )
     async def right(self, interaction: discord.Interaction, button: discord.ui.Button):
-        with suppress(discord.NotFound):
-            await interaction.response.defer()
         self.page += 1
-        self.page %= self.page_count
-        await self.refresh()
+        await self.refresh(interaction)
 
     @discord.ui.button(
         emoji="\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}",
@@ -166,13 +160,8 @@ class DynamicMenu(discord.ui.View):
         row=1,
     )
     async def right10(self, interaction: discord.Interaction, button: discord.ui.Button):
-        with suppress(discord.NotFound):
-            await interaction.response.defer()
-        if self.page >= self.page_count - 10:
-            self.page = 10 - (self.page_count - self.page)
-        else:
-            self.page += 10
-        await self.refresh()
+        self.page += 10
+        await self.refresh(interaction)
 
     @discord.ui.button(
         emoji="\N{LEFT-POINTING MAGNIFYING GLASS}",
@@ -189,8 +178,7 @@ class DynamicMenu(discord.ui.View):
 
         if modal.query.isdigit():
             self.page = int(modal.query) - 1
-            self.page %= self.page_count
-            return await self.refresh()
+            return await self.refresh(followup=True)
 
         # Iterate through page content to find closest match
         matches: list[tuple[int, int]] = []
@@ -214,9 +202,11 @@ class DynamicMenu(discord.ui.View):
             if modal.query.lower() in page.lower():
                 matches.append((fuzz.ratio(modal.query.lower(), page.lower()), i))
 
+        if not matches:
+            return await interaction.followup.send("No matches found.", ephemeral=True)
+
         # Sort by title match
         best = sorted(matches, key=lambda x: x[0], reverse=True)[0][1]
 
         self.page = best
-        self.page %= self.page_count
-        await self.refresh()
+        await self.refresh(interaction, followup=True)
