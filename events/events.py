@@ -42,7 +42,7 @@ class Events(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.2.2"
+    __version__ = "0.2.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -1099,7 +1099,7 @@ class Events(commands.Cog):
                 if isinstance(reward, int):
                     val += f"`{place} place: `{humanize_number(reward)} {currency}\n"
                 else:
-                    val += f"`{place} place: `{reward}"
+                    val += f"`{place} place: `{reward}\n"
             embed.add_field(name="Rewards", value=val, inline=False)
 
         mentions = discord.AllowedMentions(roles=True, users=True)
