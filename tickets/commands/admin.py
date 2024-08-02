@@ -579,9 +579,10 @@ class AdminCommands(MixinMeta):
         yes = await confirm(ctx, msg)
         if yes is None:
             return
+        minlength = 0
         if yes:
             em = Embed(
-                description=_("Type the minimum length for this field below (less than 4000)"),
+                description=_("Type the minimum length for this field below (less than 999)"),
                 color=color,
             )
             em.set_footer(text=foot)
@@ -595,7 +596,7 @@ class AdminCommands(MixinMeta):
                     color=discord.Color.red(),
                 )
                 return await msg.edit(embed=em)
-            modal["min_length"] = min(4000, int(minlength))  # Make sure answer is between 0 and 4000
+            modal["min_length"] = min(999, int(minlength))  # Make sure answer is between 0 and 999
             await make_preview(modal, preview)
 
         # Max length
@@ -609,7 +610,7 @@ class AdminCommands(MixinMeta):
             return
         if yes:
             em = Embed(
-                description=_("Type the maximum length for this field below (up to 4000)"),
+                description=_("Type the maximum length for this field below (up to 1000)"),
                 color=color,
             )
             em.set_footer(text=foot)
@@ -623,7 +624,15 @@ class AdminCommands(MixinMeta):
                     color=discord.Color.red(),
                 )
                 return await msg.edit(embed=em)
-            modal["max_length"] = max(min(4000, int(maxlength)), 1)  # Make sure answer is between 1 and 4000
+            max_length = max(min(4000, int(maxlength)), 1)  # Make sure answer is between 1 and 1000
+            if max_length < minlength:
+                em = Embed(
+                    description=_("Max length cannot be less than the minimum length 😑"),
+                    color=discord.Color.red(),
+                )
+                return await msg.edit(embed=em)
+
+            modal["max_length"] = max_length  # Make sure answer is between 1 and 4000
             await make_preview(modal, preview)
 
         async with self.config.guild(ctx.guild).panels() as panels:
