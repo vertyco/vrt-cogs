@@ -71,7 +71,7 @@ class DynamicMenu(discord.ui.View):
                 await self.message.edit(view=None)
 
     async def refresh(self, interaction: t.Optional[discord.Interaction] = None, followup: bool = False):
-        self.pages %= self.page_count
+        self.page %= self.page_count
         self.clear_items()
         single = [self.close]
         small = [self.left] + single + [self.right]
