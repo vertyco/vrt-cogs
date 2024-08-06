@@ -20,6 +20,7 @@ _ = Translator("IdeaBoard", __file__)
 class AdminBase(MixinMeta):
     @commands.hybrid_command(name="approve", description=_("Approve a suggestion."))
     @app_commands.describe(number=_("Suggestion number"))
+    @app_commands.checks.has_permissions(manage_messages=True)
     @commands.guild_only()
     async def approve_suggestion(self, ctx: commands.Context, number: int, *, reason: str = None):
         """Approve an idea/suggestion."""
@@ -152,6 +153,7 @@ class AdminBase(MixinMeta):
 
     @commands.hybrid_command(name="reject", description=_("Reject a suggestion."))
     @app_commands.describe(number=_("Suggestion number"))
+    @app_commands.checks.has_permissions(manage_messages=True)
     @commands.guild_only()
     async def reject_suggestion(self, ctx: commands.Context, number: int, *, reason: str = None):
         """Reject an idea/suggestion."""
@@ -287,6 +289,8 @@ class AdminBase(MixinMeta):
     )
     @app_commands.describe(number=_("Suggestion number to view votes for"))
     @commands.guild_only()
+    @app_commands.checks.has_permissions(manage_messages=True)
+    @app_commands.checks.bot_has_permissions(attach_files=True, embed_links=True)
     @commands.bot_has_permissions(attach_files=True, embed_links=True)
     async def view_votes(self, ctx: commands.Context, number: int):
         """View the list of who has upvoted and who has downvoted a suggestion."""
@@ -402,6 +406,7 @@ class AdminBase(MixinMeta):
     )
     @app_commands.describe(number=_("Suggestion number to view votes for"))
     @commands.guild_only()
+    @app_commands.checks.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(attach_files=True, embed_links=True)
     async def refresh_suggestion(self, ctx: commands.Context, number: int):
         """Refresh the buttons on a suggestion if it gets stuck."""
