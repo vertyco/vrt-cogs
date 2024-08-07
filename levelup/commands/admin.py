@@ -520,7 +520,8 @@ class Admin(MixinMeta):
             profile.level = level
             profile.xp = conf.algorithm.get_xp(level)
             self.save()
-            added, removed = await self.ensure_roles(user, conf)
+            reason = _("{} set {}'s level to {}").format(ctx.author.name, user.name, level)
+            added, removed = await self.ensure_roles(user, conf, reason)
             if added or removed:
                 txt = _("{}'s level has been set to {} and their roles have been updated").format(user.name, level)
             else:
@@ -1079,9 +1080,10 @@ class Admin(MixinMeta):
         msg = await ctx.send(embed=embed)
         last_update = perf_counter()
         conf = self.db.get_conf(ctx.guild)
+        reason = _("Level role initialization")
         async with ctx.typing():
             for idx, user in enumerate(ctx.guild.members):
-                added, removed = await self.ensure_roles(user, conf)
+                added, removed = await self.ensure_roles(user, conf, reason)
                 roles_added += len(added)
                 roles_removed += len(removed)
                 # Update message every 5% of the way

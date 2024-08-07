@@ -198,7 +198,7 @@ class WeeklySettings(Base):
     count: int = 3  # How many users to show in weekly winners
     channel: int = 0  # Announce the weekly winners (top 3 by default)
     role: int = 0  # Role awarded to top member(s) for that week
-    role_all: bool = False  # If True, all winners get the role
+    role_all: bool = False  # If True, all winners get the role instead of only 1st place
     last_winners: t.List[int] = []  # IDs of last members that won if role_all is enabled
     remove: bool = True  # Whether to remove the role from the previous winner when a new one is announced
     bonus: int = 0  # Bonus exp to award the top X winners
