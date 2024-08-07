@@ -84,6 +84,7 @@ class MixinMeta(ABC):
         self,
         member: discord.Member,
         conf: t.Optional[GuildSettings] = None,
+        reason: t.Optional[str] = None,
     ) -> t.Tuple[t.List[discord.Role], t.List[discord.Role]]:
         raise NotImplementedError
 

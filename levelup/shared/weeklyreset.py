@@ -125,11 +125,13 @@ class WeeklyReset(MixinMeta):
                     await channel.send(embed=embed)
 
         top: t.List[t.Tuple[discord.Member, ProfileWeekly]] = sorted_users[: conf.weeklysettings.count]
-        top_ids = [user[0].id for user in top]
+
         if conf.weeklysettings.role_all:
             winners: list[discord.Member] = [user[0] for user in top]
         else:
             winners: list[discord.Member] = [top[0][0]]
+
+        winner_ids = [user.id for user in winners]
 
         perms = guild.me.guild_permissions.manage_roles
         if not perms:
@@ -145,7 +147,7 @@ class WeeklyReset(MixinMeta):
                     if not user:
                         continue
                     user_roles = [role.id for role in user.roles]
-                    if role.id in user_roles and user.id not in top_ids:
+                    if role.id in user_roles and user.id not in winner_ids:
                         try:
                             await user.remove_roles(role, reason=_("Weekly winner role removal"))
                         except discord.Forbidden:

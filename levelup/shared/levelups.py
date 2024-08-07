@@ -228,6 +228,7 @@ class LevelUps(MixinMeta):
         self,
         member: discord.Member,
         conf: t.Optional[GuildSettings] = None,
+        reason: t.Optional[str] = None,
     ) -> t.Tuple[t.List[discord.Role], t.List[discord.Role]]:
         """Ensure a user has the correct level roles based on their level and the guild's settings"""
         if conf is None:
@@ -238,6 +239,8 @@ class LevelUps(MixinMeta):
             return [], []
         if member.id not in conf.users:
             return [], []
+        if reason is None:
+            reason = _("Level Up")
         conf.levelroles = dict(sorted(conf.levelroles.items(), key=lambda x: x[0], reverse=True))
         to_add = set()
         to_remove = set()
@@ -292,14 +295,15 @@ class LevelUps(MixinMeta):
                     if pdata.role in user_role_ids:
                         to_remove.add(pdata.role)
 
-        if conf.weeklysettings.role:
-            role = member.guild.get_role(conf.weeklysettings.role)
-            if role:
-                if member.id in conf.weeklysettings.last_winners and role.id not in user_role_ids:
-                    to_add.add(role.id)
-                elif member.id not in conf.weeklysettings.last_winners and role.id in user_role_ids:
-                    # User isnt in last winners list anymore
-                    to_remove.add(role.id)
+        if weekly_role_id := conf.weeklysettings.role:
+            role_winners = conf.weeklysettings.last_winners
+            if not conf.weeklysettings.role_all and role_winners:
+                role_winners = [role_winners[0]]
+
+            if member.id in role_winners and weekly_role_id not in user_role_ids:
+                to_add.add(weekly_role_id)
+            elif member.id not in role_winners and weekly_role_id in user_role_ids:
+                to_remove.add(weekly_role_id)
 
         add_roles: t.List[discord.Role] = []
         remove_roles: t.List[discord.Role] = []
@@ -323,9 +327,9 @@ class LevelUps(MixinMeta):
 
         try:
             if add_roles:
-                await member.add_roles(*add_roles, reason="Level up")
+                await member.add_roles(*add_roles, reason=reason)
             if remove_roles:
-                await member.remove_roles(*remove_roles, reason="Level up")
+                await member.remove_roles(*remove_roles, reason=reason)
         except discord.HTTPException:
             log.warning(f"Failed to add/remove roles for {member}")
             add_roles = []

@@ -16,7 +16,7 @@ class MemberListener(MixinMeta):
         conf = self.db.get_conf(member.guild)
         if not conf.enabled:
             return
-        added, removed = await self.ensure_roles(member, conf)
+        added, removed = await self.ensure_roles(member, conf, "Member rejoined")
         if added:
             log.info(f"Added {len(added)} roles to {member} in {member.guild}")
         if removed:
