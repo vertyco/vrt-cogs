@@ -1,11 +1,14 @@
 import logging
+import typing as t
+from io import StringIO
 
 import discord
 from redbot.core import commands
 from redbot.core.i18n import Translator
 
 from .abc import MixinMeta
-from .common.constants import REACT_NAME_MESSAGE, REACT_SUMMARY_MESSAGE
+from .common.calls import create_memory_call
+from .common.constants import REACT_SUMMARY_MESSAGE
 from .common.utils import can_use, embed_to_content
 
 log = logging.getLogger("red.vrt.assistant.listener")
@@ -144,42 +147,49 @@ class AssistantListener(MixinMeta):
         if not any([role.id in conf.tutors for role in user.roles]) and user.id not in conf.tutors:
             return
 
-        initial_content = f"{message.author.name} said: {message.content}"
-        if message.author.bot:
-            initial_content = message.content
+        messages: t.List[discord.Message] = [message]
+
+        # Set up the message chain
+        tmp = message
+        while True:
+            if getattr(tmp, "reference", None) is not None:
+                resolved = tmp.reference.resolved
+                if resolved is None:
+                    break
+                messages.append(resolved)
+                # If the message is a reply to another message, we want to keep going up the chain
+                tmp = resolved
+
+            else:
+                break
+
+        messages.reverse()
+
+        content = StringIO()
+        for idx, msg in enumerate(messages):
+            if idx == 0:
+                content.write(f"Original message from {msg.author.name}: {msg.content}\n")
+            else:
+                content.write(f"{msg.author.name} said: {msg.content}\n")
+
+        for msg in messages:
+            content.write(f"{msg.author.name} said: {msg.content}\n")
 
         success = True
         try:
-            # Get embedding content first
             messages = [
                 {"role": "system", "content": REACT_SUMMARY_MESSAGE.strip()},
-                {"role": "user", "content": initial_content},
+                {"role": "user", "content": content.getvalue()},
             ]
-            embed_response = await self.request_response(messages=messages, conf=conf)
-            if isinstance(embed_response, str):
-                embed_response = {"role": "assistant", "content": embed_response}
+            res = await create_memory_call(messages=messages, api_key=conf.api_key)
+            if res:
+                embedding = await self.add_embedding(guild, res.memory_name, res.memory_content)
+                if embedding is None:
+                    success = False
+                else:
+                    log.info(f"Created embedding in {guild.name}\nName: {res.memory_name}\nEntry: {res.memory_content}")
             else:
-                embed_response = embed_response.model_dump()
-            messages.append(embed_response)
-            messages.append({"role": "user", "content": REACT_NAME_MESSAGE})
-
-            # Create a name for the embedding
-            messages = [
-                {"role": "system", "content": REACT_NAME_MESSAGE.strip()},
-                {"role": "user", "content": embed_response["content"]},
-            ]
-            name_response = await self.request_response(messages=messages, conf=conf)
-            if isinstance(name_response, str):
-                name_response = {"role": "assistant", "content": name_response}
-            else:
-                name_response = name_response.model_dump()
-            embedding = await self.add_embedding(guild, name_response["content"], embed_response["content"])
-            if embedding is None:
                 success = False
-            else:
-                log.info(
-                    f"Created embedding in {guild.name}\nName: {name_response['content']}\nEntry: {embed_response['content']}"
-                )
         except Exception as e:
             log.warning(f"Failed to save embed memory in {guild.name}", exc_info=e)
             success = False

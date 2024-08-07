@@ -6,6 +6,7 @@ import httpx
 import openai
 from openai.types import CreateEmbeddingResponse, Image, ImagesResponse
 from openai.types.chat import ChatCompletion
+from pydantic import BaseModel
 from sentry_sdk import add_breadcrumb
 from tenacity import (
     retry,
@@ -134,3 +135,18 @@ async def request_image_raw(
         style=style,
     )
     return response.data[0]
+
+
+class CreateMemoryResponse(BaseModel):
+    memory_name: str
+    memory_content: str
+
+
+async def create_memory_call(messages: t.List[dict], api_key: str) -> t.Union[CreateMemoryResponse, None]:
+    client = openai.AsyncOpenAI(api_key=api_key)
+    response = await client.beta.chat.completions.parse(
+        model="gpt-4o-2024-08-06",
+        messages=messages,
+        response_format=CreateMemoryResponse,
+    )
+    return response.choices[0].message.parsed

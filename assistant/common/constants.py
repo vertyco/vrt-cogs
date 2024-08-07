@@ -152,18 +152,11 @@ READ_EXTENSIONS = [
 ]
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
 REACT_SUMMARY_MESSAGE = """
-You will be given a snippet of text, your job is to create a summary of the text to provide context for future conversations.
+Ignore previous instructions. You will be given a snippet of text, your job is to create a "memory" for the given text to provide context for future conversations.
 
 # RULES
 - OUTPUT ONLY THE SUMMARY WITHOUT THE ORIGINAL TEXT OR EXTRA DIALOGUE FROM YOU.
-- KEEP THE SUMMARY SHORT AND TO THE POINT.
-"""
-REACT_NAME_MESSAGE = """
-You will be given a snippet of text, your job is to create a "Memory Name" for the given text to provide context for future conversations.
-
-# RULES
-- OUTPUT ONLY THE NAME WITHOUT THE ORIGINAL TEXT OR EXTRA DIALOGUE FROM YOU.
-- KEEP THE NAME LESS THAN 3 WORDS AND LESS THAN 40 CHARACTERS.
+- KEEP THE SUMMARY SHORT AND CONCISE.
 """
 
 GENERATE_IMAGE = {
