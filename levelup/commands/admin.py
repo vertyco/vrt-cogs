@@ -1061,37 +1061,43 @@ class Admin(MixinMeta):
     @level_roles.command(name="initialize", aliases=["init"])
     @commands.bot_has_permissions(manage_roles=True, embed_links=True)
     @commands.cooldown(1, 240, commands.BucketType.guild)
-    async def init_roles(self, ctx: commands.Context):
+    async def init_roles(self, ctx: commands.Context, target: t.Optional[discord.Member] = None):
         """
         Initialize level roles
 
         This command is for if you added level roles after users have achieved that level,
-        it will apply all necessary roles to a user according to their level and prestige
+        it will apply all necessary roles to a user according to their level and prestige.
+        If a target is provided, it will only apply roles to that user.
         """
         start = perf_counter()
         roles_added = 0
         roles_removed = 0
         embed = discord.Embed(
             description=_("Synchronizing level roles, this may take a while..."),
-            color=discord.Color.magenta(),
+            color=await ctx.embed_colour(),
         )
         embed.set_thumbnail(url=const.LOADING)
         msg = await ctx.send(embed=embed)
         last_update = perf_counter()
         conf = self.db.get_conf(ctx.guild)
         async with ctx.typing():
-            for idx, user in enumerate(ctx.guild.members):
-                added, removed = await self.ensure_roles(user, conf)
+            if target:
+                added, removed = await self.ensure_roles(target, conf)
                 roles_added += len(added)
                 roles_removed += len(removed)
-                # Update message every 5% of the way
-                if idx % (len(ctx.guild.members) // 20) == 0 and perf_counter() - last_update > 5:
-                    desc = _("Synchronizing level roles, this may take a while...\n{:.0%} complete").format(
-                        idx / len(ctx.guild.members)
-                    )
-                    embed.description = desc
-                    await msg.edit(embed=embed)
-                    last_update = perf_counter()
+            else:
+                for idx, user in enumerate(ctx.guild.members):
+                    added, removed = await self.ensure_roles(user, conf)
+                    roles_added += len(added)
+                    roles_removed += len(removed)
+                    # Update message every 5% of the way
+                    if idx % (len(ctx.guild.members) // 20) == 0 and perf_counter() - last_update > 5:
+                        desc = _("Synchronizing level roles, this may take a while...\n{:.0%} complete").format(
+                            idx / len(ctx.guild.members)
+                        )
+                        embed.description = desc
+                        await msg.edit(embed=embed)
+                        last_update = perf_counter()
 
         if not roles_added and not roles_removed:
             return await msg.edit(
