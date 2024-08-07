@@ -14,7 +14,7 @@
     "json5",
     "msgpack",
     "numpy",
-    "openai>=1.10.0",
+    "openai>=1.40.0",
     "pandas",
     "pydantic",
     "pytz",
