@@ -416,7 +416,7 @@ class Dcord(MixinMeta):
             if "200d" not in emoji_unicode:
                 emoji_unicode = list(filter(lambda c: c != "fe0f", emoji_unicode))
             emoji_unicode = "-".join(emoji_unicode)
-            return f"https://twemoji.maxcdn.com/v/latest/72x72/{emoji_unicode}.png"
+            return f"https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72/{emoji_unicode}.png"
 
         unescapable = string.ascii_letters + string.digits
         embed = discord.Embed(color=ctx.author.color)
