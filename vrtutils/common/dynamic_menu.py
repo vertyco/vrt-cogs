@@ -38,7 +38,6 @@ class DynamicMenu(discord.ui.View):
         self.page = page
         self.image_bytes = image_bytes
 
-        self.guild = author.guild or channel.guild
         self.page_count = len(pages)
 
     def check_pages(self, pages: t.List[t.Union[discord.Embed, str]]):
