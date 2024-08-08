@@ -179,7 +179,9 @@ class AdminCommands(MixinMeta):
         Run this command in the same channel as the ticket panel message
         """
         if message.author.id != self.bot.user.id:
-            return await ctx.send("I cannot add buttons to messages sent by other users!")
+            return await ctx.send(_("I cannot add buttons to messages sent by other users!"))
+        if isinstance(message.channel, (discord.Thread, discord.VoiceChannel, discord.ForumChannel)):
+            return await ctx.send(_("Channel of message must be a TEXT CHANNEL!"))
         panel_name = panel_name.lower()
         async with self.config.guild(ctx.guild).panels() as panels:
             if panel_name not in panels:
