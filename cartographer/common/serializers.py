@@ -431,17 +431,20 @@ class TextChannel(ChannelBase):
     async def serialize(cls, channel: discord.TextChannel, limit: int = 0) -> TextChannel:
         messages: list[MessageBackup] = []
         if limit:
-            async for message in channel.history(limit=limit):
-                msg_obj = MessageBackup(
-                    channel_id=message.channel.id,
-                    channel_name=message.channel.name,
-                    content=message.content[:2000] if message.content else None,
-                    embeds=[i.to_dict() for i in message.embeds],
-                    attachments=[i.to_dict() for i in message.attachments],
-                    username=message.author.name,
-                    avatar_url=message.author.display_avatar.url,
-                )
-                messages.append(msg_obj)
+            try:
+                async for message in channel.history(limit=limit):
+                    msg_obj = MessageBackup(
+                        channel_id=message.channel.id,
+                        channel_name=message.channel.name,
+                        content=message.content[:2000] if message.content else None,
+                        embeds=[i.to_dict() for i in message.embeds],
+                        attachments=[i.to_dict() for i in message.attachments],
+                        username=message.author.name,
+                        avatar_url=message.author.display_avatar.url,
+                    )
+                    messages.append(msg_obj)
+            except discord.HTTPException:
+                log.warning("Failed to fetch messages for text channel %s", channel.name)
         return cls(
             id=channel.id,
             name=channel.name,
@@ -742,17 +745,20 @@ class VoiceChannel(ChannelBase):
     async def serialize(cls, channel: VOICE, limit: int = 0) -> VoiceChannel:
         messages: list[MessageBackup] = []
         if limit:
-            async for message in channel.history(limit=limit):
-                msg_obj = MessageBackup(
-                    channel_id=message.channel.id,
-                    channel_name=message.channel.name,
-                    content=message.content[:2000] if message.content else None,
-                    embeds=[i.to_dict() for i in message.embeds],
-                    attachments=[i.to_dict() for i in message.attachments],
-                    username=message.author.name,
-                    avatar_url=message.author.display_avatar.url,
-                )
-                messages.append(msg_obj)
+            try:
+                async for message in channel.history(limit=limit):
+                    msg_obj = MessageBackup(
+                        channel_id=message.channel.id,
+                        channel_name=message.channel.name,
+                        content=message.content[:2000] if message.content else None,
+                        embeds=[i.to_dict() for i in message.embeds],
+                        attachments=[i.to_dict() for i in message.attachments],
+                        username=message.author.name,
+                        avatar_url=message.author.display_avatar.url,
+                    )
+                    messages.append(msg_obj)
+            except discord.HTTPException:
+                log.warning("Failed to fetch messages for voice channel %s", channel.name)
         kwargs = {
             "id": channel.id,
             "name": channel.name,
