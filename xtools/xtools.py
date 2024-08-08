@@ -45,7 +45,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "3.11.4"
+    __version__ = "3.11.5"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -646,6 +646,11 @@ class XTools(commands.Cog):
                 try:
                     friends = await xbl_client.people.get_friends_by_xuid(xuid)
                     friend_data = friends.model_dump(mode="json") if V2 else json.loads(friends.json())
+                except httpx.HTTPStatusError as e:
+                    if e.response.status_code == 403:
+                        return await msg.edit(embed=None, content="This persons friends list is private!")
+                    log.error("Failed to get friends list", exc_info=e)
+                    return await msg.edit(embed=None, content="Failed to fetch this person's friends list!")
                 except aiohttp.ClientResponseError as e:
                     if e.status == 403:
                         return await msg.edit(embed=None, content="This persons friends list is private!")
