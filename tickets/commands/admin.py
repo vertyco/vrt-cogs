@@ -188,10 +188,11 @@ class AdminCommands(MixinMeta):
                 return await ctx.send(_("Panel does not exist!"))
             if not panels[panel_name]["category_id"]:
                 return await ctx.send(_("Category ID must be set for this panel first!"))
-
+            current_channel = panels[panel_name]["channel_id"]
+            if current_channel and current_channel != message.channel.id:
+                return await ctx.send(_("This message is part of a different channel from the one you set!"))
             panels[panel_name]["message_id"] = message.id
-            if not panels[panel_name]["channel_id"]:
-                panels[panel_name]["channel_id"] = message.channel.id
+            panels[panel_name]["channel_id"] = message.channel.id
             await ctx.tick()
         await self.initialize(ctx.guild)
 
