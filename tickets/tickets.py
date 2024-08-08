@@ -34,7 +34,7 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "2.9.2"
+    __version__ = "2.9.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -126,13 +126,19 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
             channel_id = panel["channel_id"]
             message_id = panel["message_id"]
             if any([not category_id, not channel_id, not message_id]):
+                # Panel does not have all channels set
                 continue
 
             category = guild.get_channel(category_id)
             channel_obj = guild.get_channel(channel_id)
             if isinstance(channel_obj, discord.ForumChannel) or isinstance(channel_obj, discord.CategoryChannel):
+                log.error(f"Invalid channel type for panel {panel_name} in {guild.name}")
                 continue
             if any([not category, not channel_obj]):
+                if not category:
+                    log.error(f"Invalid category for panel {panel_name} in {guild.name}")
+                if not channel_obj:
+                    log.error(f"Invalid channel for panel {panel_name} in {guild.name}")
                 continue
 
             if message_id not in prefetched:
@@ -142,7 +148,7 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
                 except discord.NotFound:
                     continue
                 except discord.Forbidden:
-                    log.info(f"I can no longer see a set panel channel in {guild.name}")
+                    log.error(f"I can no longer see the {panel_name} panel's channel in {guild.name}")
                     continue
 
             # v1.3.10 schema update (Modals)
