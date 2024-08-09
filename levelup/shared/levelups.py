@@ -210,9 +210,14 @@ class LevelUps(MixinMeta):
                 with suppress(discord.HTTPException):
                     if not conf.notify and conf.notifymention:
                         # Notify is off but mention is on, so mention the user in logs instead
-                        await log_channel.send(member.mention, file=file)
-                    else:
                         await log_channel.send(msg_txt, file=file)
+                    else:
+                        await log_channel.send(
+                            msg_txt.replace(
+                                member.mention, member.display_name if profile.show_displayname else member.name
+                            ),
+                            file=file,
+                        )
 
         payload = {
             "guild": guild,  # discord.Guild
