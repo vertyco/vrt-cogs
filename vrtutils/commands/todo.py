@@ -26,10 +26,10 @@ class EditModal(discord.ui.Modal):
                 label="Message Content",
                 style=discord.TextStyle.paragraph,
                 placeholder="Enter the new message content here.",
-                default=message.content,
+                default=str(message.content) if message.content else None,
                 required=False,
             )
-            if self.content:
+            if message.content:
                 self.add_item(self.content_field)
         except Exception as e:
             log.error("Failed to create field for message content", exc_info=e)
@@ -63,13 +63,13 @@ class EditModal(discord.ui.Modal):
                         default=str(current) if current else None,
                         required=False,
                     )
+                    if self.extras < 5:
+                        self.add_item(field)
+                        self.content_fields[val] = field
+                        self.extras += 1
                 except Exception as e:
                     log.error(f"Failed to create field for {val}", exc_info=e)
                     continue
-                if self.extras < 5:
-                    self.add_item(field)
-                    self.content_fields[val] = field
-                    self.extras += 1
 
     def embeds(self) -> list[discord.Embed]:
         if len(self.message.embeds) == 1:
