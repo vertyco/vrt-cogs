@@ -20,6 +20,9 @@ class EditModal(discord.ui.Modal):
     def __init__(self, message: discord.Message):
         super().__init__(title="Edit Message", timeout=240)
         self.message = message
+
+        self.changed = False
+
         self.content: str | None = message.content.strip() if message.content else None
         self.content_field = discord.ui.TextInput(
             label="Message Content",
@@ -69,25 +72,33 @@ class EditModal(discord.ui.Modal):
 
     def embeds(self) -> list[discord.Embed]:
         if len(self.message.embeds) == 1:
-            embed = self.message.embeds[0]
-            for val in self.included_embed_fields:
-                if val in self.content_fields:
-                    if val == "author icon url":
-                        embed.set_author(name=embed.author.name, icon_url=self.content_fields[val].value)
-                    elif val == "author name":
-                        embed.set_author(name=self.content_fields[val].value, icon_url=embed.author.icon_url)
-                    elif val == "footer text":
-                        embed.set_footer(text=self.content_fields[val].value, icon_url=embed.footer.icon_url)
-                    elif val == "footer icon url":
-                        embed.set_footer(text=embed.footer.text, icon_url=self.content_fields[val].value)
-                    else:
-                        setattr(embed, val, self.content_fields[val].value)
+            embed = self.message.embeds[0].copy()
+            for attr in self.included_embed_fields:
+                new_value = self.content_fields[attr].value
+                if attr in self.content_fields:
+                    if attr == "author icon url" and new_value != embed.author.icon_url:
+                        embed.set_author(name=embed.author.name, icon_url=new_value)
+                        self.changed = True
+                    elif attr == "author name" and new_value != embed.author.name:
+                        embed.set_author(name=new_value, icon_url=embed.author.icon_url)
+                        self.changed = True
+                    elif attr == "footer text" and new_value != embed.footer.text:
+                        embed.set_footer(text=new_value, icon_url=embed.footer.icon_url)
+                        self.changed = True
+                    elif attr == "footer icon url" and new_value != embed.footer.icon_url:
+                        embed.set_footer(text=embed.footer.text, icon_url=new_value)
+                        self.changed = True
+                    elif new_value != getattr(embed, attr):
+                        setattr(embed, attr, new_value)
+                        self.changed = True
             return [embed]
         return self.message.embeds
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
-        self.content = self.content_field.value
+        if self.content_field.value != self.content:
+            self.content = self.content_field.value
+            self.changed = True
         self.stop()
 
 
@@ -136,12 +147,16 @@ async def mock_edit_message(interaction: discord.Interaction, message: discord.M
         return await interaction.response.send_message("Failed to send modal.", ephemeral=True)
 
     await modal.wait()
+    embeds = modal.embeds()
+
+    if not modal.changed:
+        return await interaction.followup.send("No changes detected.", ephemeral=True)
 
     if bots_own_message:
-        await message.edit(content=modal.content, embeds=modal.embeds())
+        await message.edit(content=modal.content, embeds=embeds)
     elif message.webhook_id:
         webhook = await bot.fetch_webhook(message.webhook_id)
-        await webhook.edit_message(message.id, content=modal.content, embeds=modal.embeds())
+        await webhook.edit_message(message.id, content=modal.content, embeds=embeds)
     else:
         # User is human or another bot, we'll need to mock with a webhook
         if not modal.content and not message.author.bot:
@@ -154,7 +169,7 @@ async def mock_edit_message(interaction: discord.Interaction, message: discord.M
 
         await webhook.send(
             content=modal.content,
-            embeds=modal.embeds(),
+            embeds=embeds,
             username=message.author.display_name,
             avatar_url=message.author.display_avatar.url,
             files=[await a.to_file() for a in message.attachments],
