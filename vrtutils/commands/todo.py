@@ -20,17 +20,17 @@ class EditModal(discord.ui.Modal):
     def __init__(self, message: discord.Message):
         super().__init__(title="Edit Message", timeout=240)
         self.message = message
-        self.content: str | None = message.content
+        self.content: str | None = message.content.strip() if message.content.strip() else None
         try:
             log.info(f"Creating field for message content: {message.content}")
             self.content_field = discord.ui.TextInput(
                 label="Message Content",
                 style=discord.TextStyle.paragraph,
                 placeholder="Enter the new message content here.",
-                default=str(message.content) if message.content else None,
+                default=self.content,
                 required=False,
             )
-            if message.content:
+            if self.content:
                 self.add_item(self.content_field)
         except Exception as e:
             log.error("Failed to create field for message content", exc_info=e)
