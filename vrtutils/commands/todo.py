@@ -21,19 +21,16 @@ class EditModal(discord.ui.Modal):
         super().__init__(title="Edit Message", timeout=240)
         self.message = message
         self.content: str | None = message.content.strip() if message.content.strip() else None
-        try:
-            log.info(f"Creating field for message content: {message.content}")
-            self.content_field = discord.ui.TextInput(
-                label="Message Content",
-                style=discord.TextStyle.paragraph,
-                placeholder="Enter the new message content here.",
-                default=self.content,
-                required=False,
-            )
-            if self.content:
-                self.add_item(self.content_field)
-        except Exception as e:
-            log.error("Failed to create field for message content", exc_info=e)
+        self.content_field = discord.ui.TextInput(
+            label="Message Content",
+            style=discord.TextStyle.paragraph,
+            placeholder="Enter the new message content here.",
+            default=self.content,
+            required=False,
+        )
+        if self.content:
+            log.info(f"Creating field for message content: {self.content}")
+            self.add_item(self.content_field)
 
         # For other parts of the message
         self.inputs: dict[str, str] | None = None
@@ -54,24 +51,21 @@ class EditModal(discord.ui.Modal):
                     current = embed.footer.icon_url
                 else:
                     current = getattr(embed, val)
+                current = current.strip()
                 if not current:
                     continue
-                log.info(f"Creating field for {val}: {current}")
-                try:
-                    field = discord.ui.TextInput(
-                        label=f"Embed {val}",
-                        style=discord.TextStyle.short,
-                        placeholder=f"Enter the new {val} here.",
-                        default=str(current) if current else None,
-                        required=False,
-                    )
-                    if self.extras < 5:
-                        self.add_item(field)
-                        self.content_fields[val] = field
-                        self.extras += 1
-                except Exception as e:
-                    log.error(f"Failed to create field for {val}", exc_info=e)
-                    continue
+                field = discord.ui.TextInput(
+                    label=val,
+                    style=discord.TextStyle.short,
+                    placeholder=f"Enter the new {val} here.",
+                    default=str(current) if current else None,
+                    required=False,
+                )
+                if self.extras < 5:
+                    log.info(f"Creating field for {val}: {current}")
+                    self.add_item(field)
+                    self.content_fields[val] = field
+                    self.extras += 1
 
     def embeds(self) -> list[discord.Embed]:
         if len(self.message.embeds) == 1:
