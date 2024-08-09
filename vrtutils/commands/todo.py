@@ -283,6 +283,7 @@ class ToDo(MixinMeta):
         # Skip the first 5 messages since they can likely already be seen
         async with ctx.typing():
             skipped = 0
+            first_checked = False
             async for message in ctx.channel.history(limit=None, oldest_first=False):
                 if skipped < 5:
                     skipped += 1
@@ -294,6 +295,9 @@ class ToDo(MixinMeta):
                         continue
                 # We only want to move incomplete tasks
                 if _has_reaction(message):
+                    first_checked = True
+                    continue
+                if not first_checked:
                     continue
                 # We want to move this message to the front
                 await webhook.send(
