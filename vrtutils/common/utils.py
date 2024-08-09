@@ -1,6 +1,7 @@
 import asyncio
 import subprocess
 import typing as t
+from pathlib import Path
 from sys import executable
 
 import discord
@@ -78,3 +79,13 @@ def get_bitsize(num: float) -> str:
             return "{0:.1f}{1}".format(num, unit)
         num /= 1000.0
     return "{0:.1f}{1}".format(num, "YB")
+
+
+def calculate_directory_size(path: Path) -> int:
+    total_size = 0
+
+    for file in path.rglob("*"):
+        if file.is_file():
+            total_size += file.stat().st_size
+
+    return total_size
