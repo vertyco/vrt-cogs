@@ -15,7 +15,16 @@ cross = ["❌", "\N{CROSS MARK}"]
 
 
 class EditModal(discord.ui.Modal):
-    included_embed_fields = ["title", "description", "author name", "author icon url", "footer text", "footer icon url"]
+    included_embed_fields = [
+        "title",
+        "description",
+        "author name",
+        "author icon url",
+        "footer text",
+        "footer icon url",
+        "thumbnail",
+        "image",
+    ]
 
     def __init__(self, message: discord.Message):
         super().__init__(title="Edit Message", timeout=240)
@@ -44,25 +53,55 @@ class EditModal(discord.ui.Modal):
         if len(message.embeds) == 1:
             embed = message.embeds[0]
             for val in self.included_embed_fields:
-                if val == "author name":
-                    current = embed.author.name
-                elif val == "author icon url":
-                    current = embed.author.icon_url
-                elif val == "footer text":
-                    current = embed.footer.text
-                elif val == "footer icon url":
-                    current = embed.footer.icon_url
-                else:
-                    current = getattr(embed, val)
+                match val:
+                    case "title":
+                        current = embed.title
+                        max_length = 256
+                        style = discord.TextStyle.short
+                    case "description":
+                        current = embed.description
+                        max_length = None
+                        style = discord.TextStyle.paragraph
+                        if len(current) > 4000:
+                            # We can't edit embed descriptions over 4000 characters
+                            continue
+                    case "author name":
+                        current = embed.author.name
+                        max_length = 256
+                        style = discord.TextStyle.short
+                    case "author icon url":
+                        current = embed.author.icon_url
+                        max_length = None
+                        style = discord.TextStyle.paragraph
+                    case "footer text":
+                        current = embed.footer.text
+                        max_length = 2048
+                        style = discord.TextStyle.paragraph
+                    case "footer icon url":
+                        current = embed.footer.icon_url
+                        max_length = None
+                        style = discord.TextStyle.paragraph
+                    case "thumbnail":
+                        current = embed.thumbnail.url
+                        max_length = None
+                        style = discord.TextStyle.paragraph
+                    case "image":
+                        current = embed.image.url
+                        max_length = None
+                        style = discord.TextStyle.paragraph
+                    case _:
+                        raise ValueError(f"Invalid embed field: {val}")
+
                 current = current.strip() if current else None
                 if not current:
                     continue
                 field = discord.ui.TextInput(
                     label=val,
-                    style=discord.TextStyle.paragraph,
+                    style=style,
                     placeholder=f"Enter the new {val} here.",
                     default=str(current) if current else None,
                     required=False,
+                    max_length=max_length,
                 )
                 if self.extras < 5:
                     log.info(f"Creating field for {val}: {current}")
@@ -76,7 +115,13 @@ class EditModal(discord.ui.Modal):
             for attr in self.included_embed_fields:
                 new_value = self.content_fields[attr].value
                 if attr in self.content_fields:
-                    if attr == "author icon url" and new_value != embed.author.icon_url:
+                    if attr == "title" and new_value != embed.title:
+                        embed.title = new_value
+                        self.changed = True
+                    elif attr == "description" and new_value != embed.description:
+                        embed.description = new_value
+                        self.changed = True
+                    elif attr == "author icon url" and new_value != embed.author.icon_url:
                         embed.set_author(name=embed.author.name, icon_url=new_value)
                         self.changed = True
                     elif attr == "author name" and new_value != embed.author.name:
@@ -88,8 +133,11 @@ class EditModal(discord.ui.Modal):
                     elif attr == "footer icon url" and new_value != embed.footer.icon_url:
                         embed.set_footer(text=embed.footer.text, icon_url=new_value)
                         self.changed = True
-                    elif new_value != getattr(embed, attr):
-                        setattr(embed, attr, new_value)
+                    elif attr == "thumbnail" and new_value != embed.thumbnail.url:
+                        embed.set_thumbnail(url=new_value)
+                        self.changed = True
+                    elif attr == "image" and new_value != embed.image.url:
+                        embed.set_image(url=new_value)
                         self.changed = True
             return [embed]
         return self.message.embeds
