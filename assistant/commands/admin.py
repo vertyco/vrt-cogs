@@ -74,6 +74,7 @@ class Admin(MixinMeta):
         desc = (
             _("`OpenAI Version:      `{}\n").format(openai.VERSION)
             + _("`OpenAI API Status:   `{}\n").format(status)
+            + _("`Draw Command:        `{}\n").format(_("Enabled") if conf.image_command else _("Disabled"))
             + _("`Model:               `{}\n").format(conf.model)
             + _("`Embed Model:         `{}\n").format(conf.embed_model)
             + _("`Enabled:             `{}\n").format(conf.enabled)
@@ -688,11 +689,7 @@ class Admin(MixinMeta):
     async def set_channel(
         self,
         ctx: commands.Context,
-        channel: Union[
-            discord.TextChannel,
-            discord.Thread,
-            discord.ForumChannel,
-        ] = None,
+        channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel, None] = None,
     ):
         """Set the channel for the assistant"""
         conf = self.db.get_conf(ctx.guild)
@@ -731,6 +728,18 @@ class Admin(MixinMeta):
         else:
             conf.enabled = True
             await ctx.send(_("The assistant is now **Enabled**"))
+        await self.save_conf()
+
+    @assistant.command(name="toggledraw", aliases=["drawtoggle"])
+    async def toggle_draw_command(self, ctx: commands.Context):
+        """Toggle the draw command on or off"""
+        conf = self.db.get_conf(ctx.guild)
+        if conf.image_command:
+            conf.image_command = False
+            await ctx.send(_("The draw command is now **Disabled**"))
+        else:
+            conf.image_command = True
+            await ctx.send(_("The draw command is now **Enabled**"))
         await self.save_conf()
 
     @assistant.command(name="resolution")

@@ -91,6 +91,8 @@ If a file has no extension it will still try to read it only if it can be decode
         conf = self.db.get_conf(interaction.guild)
         if not conf.api_key:
             return await interaction.response.send_message(_("The API key is not set up!"), ephemeral=True)
+        if not conf.image_command:
+            return await interaction.response.send_message(_("Image generation is disabled!"), ephemeral=True)
         color = await self.bot.get_embed_color(interaction.channel)
         embed = discord.Embed(description=_("Generating image..."), color=color)
         embed.set_thumbnail(url=LOADING)

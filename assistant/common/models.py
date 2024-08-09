@@ -94,6 +94,8 @@ class GuildSettings(AssistantBaseModel):
     embed_model: str = "text-embedding-3-small"  # Or text-embedding-3-large, text-embedding-ada-002
     collab_convos: bool = False
 
+    image_command: bool = True  # Allow image commands
+
     timezone: str = "UTC"
     temperature: float = 0.0  # 0.0 - 2.0
     frequency_penalty: float = 0.0  # -2.0 - 2.0
