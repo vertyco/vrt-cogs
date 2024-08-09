@@ -129,7 +129,10 @@ async def mock_edit_message(interaction: discord.Interaction, message: discord.M
     try:
         await interaction.response.send_modal(modal)
     except discord.HTTPException as e:
-        log.error(f"Failed to send modal for message {message.id}\n{modal.content_fields}", exc_info=e)
+        txt = ""
+        for k, v in modal.content_fields.items():
+            txt += f"{k}: {v.default}"
+        log.error(f"Failed to send modal for message {message.id}\n{txt}", exc_info=e)
         return await interaction.response.send_message("Failed to send modal.", ephemeral=True)
 
     await modal.wait()
