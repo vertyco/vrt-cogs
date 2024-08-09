@@ -29,12 +29,25 @@ class Listen(MixinMeta):
             discord.AuditLogAction.role_create,
             discord.AuditLogAction.role_delete,
             discord.AuditLogAction.role_update,
+            discord.AuditLogAction.webhook_create,
+            discord.AuditLogAction.webhook_update,
+            discord.AuditLogAction.webhook_delete,
+            discord.AuditLogAction.emoji_create,
+            discord.AuditLogAction.emoji_update,
+            discord.AuditLogAction.emoji_delete,
+            discord.AuditLogAction.sticker_create,
+            discord.AuditLogAction.sticker_update,
+            discord.AuditLogAction.sticker_delete,
+            discord.AuditLogAction.overwrite_create,
+            discord.AuditLogAction.overwrite_update,
+            discord.AuditLogAction.overwrite_delete,
             discord.AuditLogAction.kick,
             discord.AuditLogAction.ban,
             discord.AuditLogAction.unban,
+            discord.AuditLogAction.member_prune,
             discord.AuditLogAction.bot_add,
-            discord.AuditLogAction.webhook_delete,
-            discord.AuditLogAction.emoji_delete,
+            discord.AuditLogAction.member_update,
+            discord.AuditLogAction.invite_update,
         ]
 
         ignore = [
@@ -48,7 +61,7 @@ class Listen(MixinMeta):
         if any(ignore):
             return
 
-        user: discord.Member = entry.guild.get_member(entry.user_id)
+        user: discord.Member | None = entry.guild.get_member(entry.user_id)
         if not user:
             log.error(f"Could not find user {entry.user.name} in {entry.guild.name}!")
             return
@@ -106,6 +119,7 @@ class Listen(MixinMeta):
         log_desc = (
             f"**{user.name}** (`{user.id}`) has triggered NoNuke!\n"
             f"Exceeded {conf.overload} mod actions in {conf.cooldown} seconds\n"
+            f"Action that triggered the cooldown: `{entry.action.name}`\n"
         )
         if entry.guild.me.top_role <= user.top_role:
             log_desc += "- User has a higher role than me!\n"
@@ -209,6 +223,30 @@ class Listen(MixinMeta):
                 log.warning(f"Could not send Anti-Nuke log to {channel.name} in {entry.guild.name}!")
 
     @commands.Cog.listener()
+    async def on_guild_update(self, before: discord.Guild, after: discord.Guild):
+        conf = self.db.get_conf(before or after)
+        if not conf.enabled:
+            return
+        if not conf.log:
+            return
+        channel = before.get_channel(conf.log)
+        if not channel:
+            return
+        if before.vanity_url == after.vanity_url:
+            return
+        txt = f"Vanity URL changed from {before.vanity_url} to {after.vanity_url}"
+        embed = discord.Embed(
+            title="NoNuke Security Alert!",
+            description=txt,
+            color=discord.Color.red(),
+            timestamp=datetime.now(),
+        )
+        if channel.permissions_for(before.me).embed_links:
+            await channel.send(embed=embed)
+        elif channel.permissions_for(before.me).send_messages:
+            await channel.send(txt)
+
+    @commands.Cog.listener()
     async def on_guild_role_update(self, before: discord.Role, after: discord.Role):
         guild = before.guild or after.guild
         conf = self.db.get_conf(guild)
@@ -237,20 +275,21 @@ class Listen(MixinMeta):
 
         # Verify if any added permissions are dangerous and make a list of them
         dangerous_additions = [perm for perm in added_perms if perm in dangerous_perms]
+        if not dangerous_additions:
+            return
 
         # If dangerous permissions were added, send an alert message
-        if dangerous_additions:
-            alert_message = (
-                f"Dangerous permission changes detected in the {after.mention} role.\n"
-                f"The following permissions were added: {', '.join(dangerous_additions)}."
-            )
-            embed = discord.Embed(
-                title="⚠️ NoNuke Security Alert! ⚠️",
-                description=alert_message,
-                color=discord.Color.yellow(),
-                timestamp=datetime.now(),
-            )
-            if channel.permissions_for(guild.me).embed_links:
-                await channel.send(embed=embed)
-            elif channel.permissions_for(guild.me).send_messages:
-                await channel.send(alert_message)
+        alert_message = (
+            f"Dangerous permission changes detected in the {after.mention} role.\n"
+            f"The following permissions were added: {', '.join(dangerous_additions)}."
+        )
+        embed = discord.Embed(
+            title="⚠️ NoNuke Security Alert! ⚠️",
+            description=alert_message,
+            color=discord.Color.yellow(),
+            timestamp=datetime.now(),
+        )
+        if channel.permissions_for(guild.me).embed_links:
+            await channel.send(embed=embed)
+        elif channel.permissions_for(guild.me).send_messages:
+            await channel.send(alert_message)

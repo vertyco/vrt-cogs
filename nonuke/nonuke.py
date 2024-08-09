@@ -15,14 +15,16 @@ log = logging.getLogger("red.vrt.nonuke")
 
 class NoNuke(Listen, commands.Cog, metaclass=CompositeMetaClass):
     """
-    Anti-Nuke System for lazy guild owners!
+    Anti-Nuke System for lazy server owners!
 
     Monitors the following events:
-    Kicks & Bans
+    Kicks/Bans/Unbans/Prunes
     Channel Creation/Edit/Deletion
     Role Creation/Edit/Deletion
-    Emoji/Webhook Deletion
-    Member role updates
+    Emoji Creation/Edit/Deletion
+    Sticker Creation/Edit/Deletion
+    Webhook Creation/Edit/Deletion
+    Member role/nickname updates
 
     Set a cooldown(in seconds)
     Set an overload count(X events in X seconds)
@@ -30,11 +32,12 @@ class NoNuke(Listen, commands.Cog, metaclass=CompositeMetaClass):
 
     If a user or bot exceeds X mod events within X seconds, the set action will be performed.
 
-    Additionally, any dangerous permissions added to a role will be logged.
+    - Any dangerous permissions added to a role will be logged.
+    - If the vanity URL is changed, it will be logged.
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.1.6"
+    __version__ = "1.2.0"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
