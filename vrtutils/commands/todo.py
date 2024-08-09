@@ -63,7 +63,7 @@ class EditModal(discord.ui.Modal):
                         current = embed.description
                         max_length = None
                         style = discord.TextStyle.paragraph
-                        if len(current) > 4000:
+                        if current and len(current) > 4000:
                             # We can't edit embed descriptions over 4000 characters
                             continue
                     case "author name":
