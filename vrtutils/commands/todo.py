@@ -111,8 +111,10 @@ class EditModal(discord.ui.Modal):
 
     def embeds(self) -> list[discord.Embed]:
         if len(self.message.embeds) == 1:
-            embed = self.message.embeds[0].copy()
+            embed = self.message.embeds[0]
             for attr in self.included_embed_fields:
+                if attr not in self.content_fields:
+                    continue
                 new_value = self.content_fields[attr].value
                 if attr in self.content_fields:
                     if attr == "title" and new_value != embed.title:
