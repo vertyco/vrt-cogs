@@ -60,7 +60,7 @@ class EditModal(discord.ui.Modal):
                         label=f"Embed {val}",
                         style=discord.TextStyle.short,
                         placeholder=f"Enter the new {val} here.",
-                        default=current,
+                        default=str(current) if current else None,
                         required=False,
                     )
                 except Exception as e:
