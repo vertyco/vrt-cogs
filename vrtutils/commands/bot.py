@@ -582,14 +582,11 @@ class BotInfo(MixinMeta):
     async def view_cog_sizes(self, ctx: commands.Context):
         """View the storage space each cog's saved data is taking up"""
         async with ctx.typing():
-            # ignored = ["CogManager"]
             cog_mgr = self.bot._cog_mgr
             install_path: Path = await cog_mgr.install_path()
             configs = install_path.parent.parent
             sizes = {}
             for cog_dir in configs.iterdir():
-                # if cog.name in ignored:
-                #     continue
                 sizes[cog_dir.name] = await asyncio.to_thread(calculate_directory_size, cog_dir)
 
             sorted_sizes = sorted(sizes.items(), key=lambda x: x[1], reverse=True)
