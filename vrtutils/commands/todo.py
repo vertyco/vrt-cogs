@@ -1,3 +1,4 @@
+import logging
 from contextlib import suppress
 
 import discord
@@ -6,6 +7,8 @@ from redbot.core import commands
 from redbot.core.bot import Red
 
 from ..abc import MixinMeta
+
+log = logging.getLogger("red.vrt.vrtutils")
 
 checks = ["✅", "\N{WHITE HEAVY CHECK MARK}"]
 cross = ["❌", "\N{CROSS MARK}"]
@@ -18,19 +21,22 @@ class EditModal(discord.ui.Modal):
         super().__init__(title="Edit Message", timeout=240)
         self.message = message
         self.content: str | None = message.content
-        self.field = discord.ui.TextInput(
-            label="Message Content",
-            style=discord.TextStyle.paragraph,
-            placeholder="Enter the new message content here.",
-            default=message.content,
-            required=False,
-        )
-        if self.content:
-            self.add_item(self.field)
+        try:
+            self.content_field = discord.ui.TextInput(
+                label="Message Content",
+                style=discord.TextStyle.paragraph,
+                placeholder="Enter the new message content here.",
+                default=message.content,
+                required=False,
+            )
+            if self.content:
+                self.add_item(self.content_field)
+        except Exception as e:
+            log.error("Failed to create field for message content", exc_info=e)
 
         # For other parts of the message
         self.inputs: dict[str, str] | None = None
-        self.fields: dict[str, discord.ui.TextInput] = {}
+        self.content_fields: dict[str, discord.ui.TextInput] = {}
         self.extras = 0
         if self.content:
             self.extras += 1
@@ -49,42 +55,43 @@ class EditModal(discord.ui.Modal):
                     current = getattr(embed, val)
                 if not current:
                     continue
-                field = discord.ui.TextInput(
-                    label=f"Embed {val}",
-                    style=discord.TextStyle.short,
-                    placeholder=f"Enter the new {val} here.",
-                    default=current,
-                    required=False,
-                )
+                try:
+                    field = discord.ui.TextInput(
+                        label=f"Embed {val}",
+                        style=discord.TextStyle.short,
+                        placeholder=f"Enter the new {val} here.",
+                        default=current,
+                        required=False,
+                    )
+                except Exception as e:
+                    log.error(f"Failed to create field for {val}", exc_info=e)
+                    continue
                 if self.extras < 5:
                     self.add_item(field)
-                    self.fields[val] = field
+                    self.content_fields[val] = field
                     self.extras += 1
 
     def embeds(self) -> list[discord.Embed]:
         if len(self.message.embeds) == 1:
             embed = self.message.embeds[0]
             for val in self.included_embed_fields:
-                if val in self.fields:
+                if val in self.content_fields:
                     if val == "author icon url":
-                        embed.set_author(name=embed.author.name, icon_url=self.fields[val].value)
+                        embed.set_author(name=embed.author.name, icon_url=self.content_fields[val].value)
                     elif val == "author name":
-                        embed.set_author(name=self.fields[val].value, icon_url=embed.author.icon_url)
+                        embed.set_author(name=self.content_fields[val].value, icon_url=embed.author.icon_url)
                     elif val == "footer text":
-                        embed.set_footer(text=self.fields[val].value, icon_url=embed.footer.icon_url)
+                        embed.set_footer(text=self.content_fields[val].value, icon_url=embed.footer.icon_url)
                     elif val == "footer icon url":
-                        embed.set_footer(text=embed.footer.text, icon_url=self.fields[val].value)
+                        embed.set_footer(text=embed.footer.text, icon_url=self.content_fields[val].value)
                     else:
-                        setattr(embed, val, self.fields[val].value)
+                        setattr(embed, val, self.content_fields[val].value)
             return [embed]
         return self.message.embeds
 
     async def on_submit(self, interaction: discord.Interaction):
-        self.content = self.field.value
-        if self.content == self.message.content:
-            await interaction.response.send_message("No changes were made.", ephemeral=True)
-        else:
-            await interaction.response.defer(ephemeral=True)
+        await interaction.response.defer(ephemeral=True)
+        self.content = self.content_field.value
         self.stop()
 
 
@@ -152,6 +159,7 @@ async def mock_edit_message(interaction: discord.Interaction, message: discord.M
 
     with suppress(discord.HTTPException):
         await interaction.followup.send("Message edited.", ephemeral=True)
+    log.info(f"{interaction.user} edited message {message.id} in {message.guild}.")
 
 
 class ToDo(MixinMeta):
