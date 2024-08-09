@@ -56,7 +56,7 @@ class EditModal(discord.ui.Modal):
                     continue
                 field = discord.ui.TextInput(
                     label=val,
-                    style=discord.TextStyle.short,
+                    style=discord.TextStyle.paragraph,
                     placeholder=f"Enter the new {val} here.",
                     default=str(current) if current else None,
                     required=False,
@@ -131,7 +131,7 @@ async def mock_edit_message(interaction: discord.Interaction, message: discord.M
     except discord.HTTPException as e:
         txt = ""
         for k, v in modal.content_fields.items():
-            txt += f"{k}: {v.default}"
+            txt += f"{k}: {v.default}\n"
         log.error(f"Failed to send modal for message {message.id}\n{txt}", exc_info=e)
         return await interaction.response.send_message("Failed to send modal.", ephemeral=True)
 
