@@ -27,10 +27,11 @@ class EditModal(discord.ui.Modal):
     ]
 
     def __init__(self, message: discord.Message):
-        super().__init__(title="Edit Message", timeout=240)
+        super().__init__(title="Edit Message", timeout=900)
         self.message = message
 
         self.changed = False
+        self.timed_out = False
 
         self.content: str | None = message.content.strip() if message.content else None
         self.content_field = discord.ui.TextInput(
@@ -151,6 +152,11 @@ class EditModal(discord.ui.Modal):
             self.changed = True
         self.stop()
 
+    async def on_timeout(self) -> None:
+        self.timed_out = True
+        self.stop()
+        return await super().on_timeout()
+
 
 @app_commands.context_menu(name="Edit Message")
 async def mock_edit_message(interaction: discord.Interaction, message: discord.Message):
@@ -198,6 +204,9 @@ async def mock_edit_message(interaction: discord.Interaction, message: discord.M
 
     await modal.wait()
     embeds = modal.embeds()
+
+    if modal.timed_out:
+        return
 
     if not modal.changed:
         return await interaction.followup.send("No changes detected.", ephemeral=True)
