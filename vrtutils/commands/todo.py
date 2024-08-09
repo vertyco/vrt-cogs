@@ -22,6 +22,7 @@ class EditModal(discord.ui.Modal):
         self.message = message
         self.content: str | None = message.content
         try:
+            log.info(f"Creating field for message content: {message.content}")
             self.content_field = discord.ui.TextInput(
                 label="Message Content",
                 style=discord.TextStyle.paragraph,
@@ -55,6 +56,7 @@ class EditModal(discord.ui.Modal):
                     current = getattr(embed, val)
                 if not current:
                     continue
+                log.info(f"Creating field for {val}: {current}")
                 try:
                     field = discord.ui.TextInput(
                         label=f"Embed {val}",
@@ -130,7 +132,12 @@ async def mock_edit_message(interaction: discord.Interaction, message: discord.M
 
     # Throw a modal to edit the message
     modal = EditModal(message=message)
-    await interaction.response.send_modal(modal)
+    try:
+        await interaction.response.send_modal(modal)
+    except discord.HTTPException as e:
+        log.error(f"Failed to send modal for message {message.id}\n{modal.content_fields}", exc_info=e)
+        return await interaction.response.send_message("Failed to send modal.", ephemeral=True)
+
     await modal.wait()
 
     if bots_own_message:
