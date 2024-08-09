@@ -20,7 +20,7 @@ class EditModal(discord.ui.Modal):
     def __init__(self, message: discord.Message):
         super().__init__(title="Edit Message", timeout=240)
         self.message = message
-        self.content: str | None = message.content.strip() if message.content.strip() else None
+        self.content: str | None = message.content.strip() if message.content else None
         self.content_field = discord.ui.TextInput(
             label="Message Content",
             style=discord.TextStyle.paragraph,
@@ -51,7 +51,7 @@ class EditModal(discord.ui.Modal):
                     current = embed.footer.icon_url
                 else:
                     current = getattr(embed, val)
-                current = current.strip()
+                current = current.strip() if current else None
                 if not current:
                     continue
                 field = discord.ui.TextInput(
