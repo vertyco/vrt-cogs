@@ -5,6 +5,8 @@ import os
 import platform
 import sys
 import typing as t
+from io import StringIO
+from pathlib import Path
 from time import perf_counter
 
 import cpuinfo
@@ -14,6 +16,7 @@ import speedtest
 from discord import app_commands
 from redbot.cogs.downloader.converters import InstalledCog
 from redbot.core import commands, version_info
+from redbot.core._cog_manager import CogManager
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import (
     box,
@@ -26,7 +29,13 @@ from redbot.core.utils.chat_formatting import (
 from ..abc import MixinMeta
 from ..common.dpymenu import DEFAULT_CONTROLS, confirm, menu
 from ..common.dynamic_menu import DynamicMenu
-from ..common.utils import do_shell_command, get_bar, get_bitsize, get_size
+from ..common.utils import (
+    calculate_directory_size,
+    do_shell_command,
+    get_bar,
+    get_bitsize,
+    get_size,
+)
 
 
 class BotInfo(MixinMeta):
@@ -325,7 +334,7 @@ class BotInfo(MixinMeta):
 
         # -/-/-/CPU-/-/-/
         cpu_count = psutil.cpu_count()  # Int
-        cpu_perc: t.List[float] = psutil.cpu_percent(interval=3, percpu=True)
+        cpu_perc: t.List[float] = psutil.cpu_percent(interval=1, percpu=True)
         cpu_avg = round(sum(cpu_perc) / len(cpu_perc), 1)
         cpu_freq: list = psutil.cpu_freq(percpu=True)  # t.List of Objects
         if not cpu_freq:
@@ -360,14 +369,14 @@ class BotInfo(MixinMeta):
         recv = get_size(net.bytes_recv)
 
         # -/-/-/OS-/-/-/
-        ostype = "Unknown"
-        if os.name == "nt":
+        plat: t.Literal["darwin", "linux", "win32"] = sys.platform
+        if plat == "win32":
             osdat = platform.uname()
             ostype = f"{osdat.system} {osdat.release} (version {osdat.version})"
-        elif sys.platform == "darwin":
+        elif plat == "darwin":
             osdat = platform.mac_ver()
             ostype = f"Mac OS {osdat[0]} {osdat[1]}"
-        elif sys.platform == "linux":
+        elif plat == "linux":
             import distro
 
             ostype = f"{distro.name()} {distro.version()}"
@@ -567,3 +576,53 @@ class BotInfo(MixinMeta):
             await ctx.author.send("Here are the bot's API keys", file=file)
         except discord.Forbidden:
             await ctx.send("I cannot DM you, please enable DMs and try again.")
+
+    @commands.command(name="cogsizes")
+    @commands.is_owner()
+    async def view_cog_sizes(self, ctx: commands.Context):
+        """View the storage space each cog's saved data is taking up"""
+        async with ctx.typing():
+            # ignored = ["CogManager"]
+            cog_mgr = self.bot._cog_mgr
+            install_path: Path = await cog_mgr.install_path()
+            configs = install_path.parent.parent
+            sizes = {}
+            for cog_dir in configs.iterdir():
+                # if cog.name in ignored:
+                #     continue
+                sizes[cog_dir.name] = await asyncio.to_thread(calculate_directory_size, cog_dir)
+
+            sorted_sizes = sorted(sizes.items(), key=lambda x: x[1], reverse=True)
+            tmp = StringIO()
+            for cog, size in sorted_sizes:
+                loaded = " (Loaded)" if self.bot.get_cog(cog) else ""
+                tmp.write(f"{cog}: {get_size(size)}{loaded}\n")
+            pages = [box(p, lang="py") for p in pagify(tmp.getvalue(), page_length=800)]
+            pages = [f"Saved Cog Data\n{i}\nPage {idx + 1}/{len(pages)}" for idx, i in enumerate(pages)]
+            await DynamicMenu(ctx.author, pages, ctx.channel).refresh()
+
+    @commands.command(name="codesizes")
+    @commands.is_owner()
+    async def view_code_sizes(self, ctx: commands.Context):
+        """View the storage space each cog's code is taking up"""
+        async with ctx.typing():
+            cog_mgr: CogManager = ctx.bot._cog_mgr
+            install_path: Path = await cog_mgr.install_path()
+            cog_paths: list[Path] = await cog_mgr.user_defined_paths()
+            paths = [install_path] + cog_paths
+
+            sizes = {}
+            for path in paths:
+                for cog_dir in path.iterdir():
+                    if cog_dir.name.startswith((".", "_")):
+                        continue
+                    sizes[cog_dir.name] = await asyncio.to_thread(calculate_directory_size, cog_dir)
+
+            sorted_sizes = sorted(sizes.items(), key=lambda x: x[1], reverse=True)
+            tmp = StringIO()
+            for cog, size in sorted_sizes:
+                loaded = " (Loaded)" if self.bot.get_cog(cog) else ""
+                tmp.write(f"{cog}: {get_size(size)}{loaded}\n")
+            pages = [box(p, lang="py") for p in pagify(tmp.getvalue(), page_length=800)]
+            pages = [f"Codebase Sizes\n{i}\nPage {idx + 1}/{len(pages)}" for idx, i in enumerate(pages)]
+            await DynamicMenu(ctx.author, pages, ctx.channel).refresh()
