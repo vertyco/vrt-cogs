@@ -4,7 +4,7 @@ MODELS = {
     "gpt-3.5-turbo-0125": 16385,
     "gpt-3.5-turbo-16k": 16384,
     "gpt-3.5-turbo-16k-0301": 16384,
-    "gpt-3.5-turbo-16k-0613": 16384,
+    # "gpt-3.5-turbo-16k-0613": 16384 - Depricated
     "gpt-3.5-turbo-instruct": 8192,
     "gpt-4": 8192,
     "gpt-4-32k": 32768,
