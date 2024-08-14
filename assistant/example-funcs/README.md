@@ -2,13 +2,6 @@
 
 Some GPT models are trained in a way that allows us to specify certain functions available to them, and enable them to call those functions at any time.
 
-Only these models can use function calls as of now:
-
-- gpt-3.5-turbo-0613
-- gpt-3.5-turbo-16k-0613
-- gpt-4-0613
-- gpt-4-32k-0613
-
 This guide will help you understand how to integrate your cog with the Assistant.
 
 ## Prerequisites
