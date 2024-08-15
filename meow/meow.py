@@ -32,7 +32,7 @@ class Meow(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.3.0"
+    __version__ = "0.3.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -44,7 +44,7 @@ class Meow(commands.Cog):
     def __init__(self, bot):
         self.bot: Red = bot
         self.config = Config.get_conf(self, 117, True)
-        self.config.register_guild(auto_meow=True)
+        self.config.register_guild(auto_meow=False)
 
         self.cache = {}  # {guild_id: bool}
 
@@ -122,7 +122,7 @@ class Meow(commands.Cog):
             await hook.send(
                 content=message.content.replace("now", "*meow*").replace("Now", "*Meow*"),
                 username=message.author.display_name,
-                avatar_url=message.author.avatar_url,
+                avatar_url=message.author.display_avatar.url,
                 files=[await i.to_file() for i in message.attachments],
             )
             if channel.permissions_for(channel.guild.me).manage_messages:
