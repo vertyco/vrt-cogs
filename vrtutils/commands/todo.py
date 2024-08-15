@@ -10,8 +10,8 @@ from ..abc import MixinMeta
 
 log = logging.getLogger("red.vrt.vrtutils")
 
-checks = ["✅", "\N{WHITE HEAVY CHECK MARK}"]
-cross = ["❌", "\N{CROSS MARK}"]
+checks = ["✅", "\N{WHITE HEAVY CHECK MARK}", ":white_check_mark:"]
+cross = ["❌", "\N{CROSS MARK}", ":x:", ":cross_mark:"]
 
 
 class EditModal(discord.ui.Modal):
