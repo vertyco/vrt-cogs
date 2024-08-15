@@ -381,7 +381,7 @@ class BotInfo(MixinMeta):
 
             ostype = f"{distro.name()} {distro.version()}"
 
-        td = datetime.datetime.utcnow() - datetime.datetime.fromtimestamp(psutil.boot_time())
+        td = datetime.datetime.now() - datetime.datetime.fromtimestamp(psutil.boot_time())
         sys_uptime = humanize_timedelta(timedelta=td)
 
         # -/-/-/BOT-/-/-/
@@ -396,7 +396,7 @@ class BotInfo(MixinMeta):
             for __ in self.bot.get_cog(cog).walk_commands():
                 commandcount += 1
         commandcount = "{:,}".format(commandcount)
-        td = datetime.datetime.utcnow() - self.bot.uptime
+        td = datetime.datetime.now() - self.bot.uptime
         uptime = humanize_timedelta(timedelta=td)
 
         # -/-/-/LIBS-/-/-/
