@@ -1,4 +1,5 @@
 import random
+import re
 
 import discord
 from redbot.core import Config, commands
@@ -19,6 +20,8 @@ CATS = [
     "^ↀᴥↀ^",
     "(,,,)=(^.^)=(,,,)",
 ]
+# Match all messages that contain "now" including messsages that end in now or start with it
+NOW_REGEX = re.compile(r"\bnow\b", re.IGNORECASE)
 
 
 class Meow(commands.Cog):
@@ -32,7 +35,7 @@ class Meow(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.3.1"
+    __version__ = "0.3.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -97,7 +100,7 @@ class Meow(commands.Cog):
             return
         if message.author.bot:
             return
-        if " now " not in message.content:
+        if not NOW_REGEX.search(message.content):
             return
 
         if message.guild.id in self.cache:
@@ -113,6 +116,7 @@ class Meow(commands.Cog):
         if not channel.permissions_for(channel.guild.me).send_messages:
             return
 
+        replaced = NOW_REGEX.sub("*meow*", message.content)
         if channel.permissions_for(channel.guild.me).manage_webhooks:
             webhooks = await channel.webhooks()
             if webhooks:
@@ -120,7 +124,7 @@ class Meow(commands.Cog):
             else:
                 hook = await channel.create_webhook(name="Meow", reason="Auto Meow")
             await hook.send(
-                content=message.content.replace("now", "*meow*").replace("Now", "*Meow*"),
+                content=replaced,
                 username=message.author.display_name,
                 avatar_url=message.author.display_avatar.url,
                 files=[await i.to_file() for i in message.attachments],
@@ -128,4 +132,4 @@ class Meow(commands.Cog):
             if channel.permissions_for(channel.guild.me).manage_messages:
                 await message.delete()
         else:
-            await message.channel.send(message.content.replace("now", "*meow*").replace("Now", "*Meow*"))
+            await message.channel.send(replaced)
