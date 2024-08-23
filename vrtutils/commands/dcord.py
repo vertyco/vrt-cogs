@@ -175,21 +175,25 @@ class Dcord(MixinMeta):
 
     @commands.command(name="getbanner")
     @commands.bot_has_permissions(embed_links=True)
-    async def get_user_banner(self, ctx: commands.Context, user: t.Union[discord.Member, int] = None):
+    async def get_user_banner(self, ctx: commands.Context, user: t.Optional[t.Union[discord.Member, int]] = None):
         """Get a user's banner"""
         if user is None:
             user = ctx.author
+
         user_id = user if isinstance(user, int) else user.id
-        member = user if isinstance(user, discord.Member) else ctx.guild.get_member(user_id)
-        if not member:
+        if ctx.guild:
+            member = ctx.guild.get_member(user_id)
+        else:
             try:
                 member = await self.bot.get_or_fetch_user(user_id)
             except discord.NotFound:
-                pass
+                member = None
+
         req = await self.bot.http.request(discord.http.Route("GET", "/users/{uid}", uid=user_id))
         banner_id = req.get("banner")
         if not banner_id:
             return await ctx.send("This user does not have a banner")
+
         banner_url = f"https://cdn.discordapp.com/banners/{user_id}/{banner_id}?size=1024"
         embed = discord.Embed(color=await self.bot.get_embed_color(ctx))
         if member:
