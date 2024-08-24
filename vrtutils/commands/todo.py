@@ -213,7 +213,11 @@ async def mock_edit_message(interaction: discord.Interaction, message: discord.M
         return
 
     if not modal.changed:
-        return await interaction.followup.send("No changes detected.", ephemeral=True)
+        try:
+            await interaction.followup.send("No changes detected.", ephemeral=True)
+        except discord.HTTPException:
+            await interaction.channel.send("No changes detected.", delete_after=10)
+        return
 
     if bots_own_message:
         await message.edit(content=modal.content, embeds=embeds)
