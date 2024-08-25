@@ -937,14 +937,7 @@ class Admin(MixinMeta):
 
     @assistant.command(name="functioncalls", aliases=["usefunctions"])
     async def toggle_function_calls(self, ctx: commands.Context):
-        """Toggle whether GPT can call functions
-
-        Only the following models can call functions at the moment (With OpenAI key only)
-        - gpt-3.5-turbo
-        - gpt-3.5-turbo-16k
-        - gpt-4
-        - gpt-4-32k
-        """
+        """Toggle whether GPT can call functions"""
         conf = self.db.get_conf(ctx.guild)
         if conf.use_function_calls:
             conf.use_function_calls = False
