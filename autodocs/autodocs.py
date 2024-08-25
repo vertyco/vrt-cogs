@@ -29,7 +29,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.1.0"
+    __version__ = "1.1.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -58,18 +58,16 @@ class AutoDocs(commands.Cog):
         columns = [_("name"), _("text")]
         rows = []
         cog_name = cog.qualified_name
-        if include_help:
-            helptxt = _("Help")
-            docs = f"# {cog_name} {helptxt}\n\n"
-            cog_help = cog.help if cog.help else None
-            if not embedding_style and cog_help:
-                cog_help = cog_help.replace("\n", "<br/>")
-            if cog_help:
-                docs += f"{cog_help}\n\n"
-                entry_name = _("{} cog description").format(cog_name)
-                rows.append([entry_name, f"{entry_name}\n{cog_help}"])
-        else:
-            docs = ""
+
+        docs = ""
+        cog_help = cog.help.strip() if cog.help else ""
+        if not embedding_style:
+            cog_help = cog_help.replace("\n", "<br/>")
+
+        if cog_help and include_help:
+            docs = cog_help + "\n\n"
+            entry_name = _("{} cog description").format(cog_name)
+            rows.append([entry_name, f"{entry_name}\n{cog_help}"])
 
         for cmd in cog.walk_app_commands():
             c = CustomCmdFmt(
