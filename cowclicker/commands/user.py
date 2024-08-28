@@ -20,8 +20,8 @@ class User(MixinMeta):
         custom_id = str(uuid4())
         view = ClickView(self, custom_id)
         color = await self.bot.get_embed_color(ctx)
-        embed = discord.Embed(title="Cow Clicker!", color=color)
-        embed.set_image(url=const.COW_IMAGE)
+        embed = discord.Embed(color=color).set_image(url=const.COW_IMAGE)
+        embed.set_author(name="Cow Clicker!", url="https://en.wikipedia.org/wiki/Cow_Clicker")
         msg = await ctx.send(embed=embed, view=view)
         await SavedView(author_id=ctx.author.id, message_id=msg.id, custom_id=custom_id).save()
 
