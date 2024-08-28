@@ -10,7 +10,7 @@
   "permissions": [],
   "required_cogs": {},
   "requirements": ["piccolo"],
-  "short": "Cow Clicker",
+  "short": "Click the cow!",
   "tags": ["cow", "clicker", "click", "game", "games", "fun", "piccolo", "postgres", "demo"],
   "type": "COG"
 }
