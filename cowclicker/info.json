@@ -9,7 +9,7 @@
   "min_python_version": [3, 10, 0],
   "permissions": [],
   "required_cogs": {},
-  "requirements": ["piccolo"],
+  "requirements": ["piccolo>=1.0.0"],
   "short": "Click the cow!",
   "tags": ["cow", "clicker", "click", "game", "games", "fun", "piccolo", "postgres", "demo"],
   "type": "COG"

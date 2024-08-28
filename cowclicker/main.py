@@ -26,7 +26,7 @@ class CowClicker(Commands, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.0.6b"
+    __version__ = "0.0.7b"
 
     def __init__(self, bot: Red):
         super().__init__()
