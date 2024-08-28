@@ -13,7 +13,7 @@ class ChatExport(MixinMeta):
     async def export_chat(
         self,
         ctx: commands.Context,
-        channel: discord.TextChannel = None,
+        channel: discord.TextChannel = commands.CurrentChannel,
         limit: int = 50,
         tz_info: str = "UTC",
         military_time: bool = False,
@@ -21,8 +21,6 @@ class ChatExport(MixinMeta):
         """
         Export chat history to an html file
         """
-        if not channel:
-            channel = ctx.channel
 
         async with ctx.typing():
             try:

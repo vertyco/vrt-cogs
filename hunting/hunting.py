@@ -122,9 +122,7 @@ class Hunting(commands.Cog):
             return await ctx.send(bold("Please shoot something before you can brag about it."))
 
         async with ctx.typing():
-            sorted_acc: list = sorted(
-                userinfo.items(), key=lambda x: (x[1]["total"]), reverse=True
-            )[:50]
+            sorted_acc: list = sorted(userinfo.items(), key=lambda x: (x[1]["total"]), reverse=True)[:50]
 
         if not hasattr(ctx.guild, "members"):
             global_leaderboard = True
@@ -134,9 +132,7 @@ class Hunting(commands.Cog):
         header = "{score:{score_len}}{name:2}\n".format(
             score="# Birds Shot",
             score_len=score_len + 5,
-            name="Name"
-            if str(ctx.author.mobile_status) not in ["online", "idle", "dnd"]
-            else "Name",
+            name="Name" if str(ctx.author.mobile_status) not in ["online", "idle", "dnd"] else "Name",
         )
         temp_msg = header
         for account in sorted_acc:
@@ -166,9 +162,7 @@ class Hunting(commands.Cog):
                 colour=await ctx.bot.get_embed_color(location=ctx.channel),
                 description=box(title, lang="prolog") + (box(page, lang="md")),
             )
-            embed.set_footer(
-                text=f"Page {humanize_number(pages)}/{humanize_number(math.ceil(len(temp_msg) / 800))}"
-            )
+            embed.set_footer(text=f"Page {humanize_number(pages)}/{humanize_number(math.ceil(len(temp_msg) / 800))}")
             pages += 1
             page_list.append(embed)
         if len(page_list) == 1:
@@ -215,9 +209,7 @@ class Hunting(commands.Cog):
         if ctx.author.id not in self.bot.owner_ids and bank_is_global:
             return await ctx.send("Bank is global, only bot owner can set a reward range.")
         if not min_reward or not max_reward:
-            if (
-                min_reward != 0 and not max_reward
-            ):  # Maybe they want users to sometimes not get rewarded
+            if min_reward != 0 and not max_reward:  # Maybe they want users to sometimes not get rewarded
                 if bank_is_global:
                     await self.config.reward_range.set([])
                 else:
@@ -232,9 +224,7 @@ class Hunting(commands.Cog):
             await self.config.reward_range.set(reward_range)
         else:
             await self.config.guild(ctx.guild).reward_range.set(reward_range)
-        msg = (
-            f"Users can now get {min_reward} to {max_reward} {currency_name} for shooting a bird."
-        )
+        msg = f"Users can now get {min_reward} to {max_reward} {currency_name} for shooting a bird."
         await ctx.send(msg)
 
     @checks.mod_or_permissions(manage_guild=True)
@@ -277,10 +267,8 @@ class Hunting(commands.Cog):
 
     @checks.mod_or_permissions(manage_guild=True)
     @hunting.command()
-    async def start(self, ctx, channel: discord.TextChannel = None):
+    async def start(self, ctx, channel: discord.TextChannel = commands.CurrentChannel):
         """Start the hunt."""
-        if not channel:
-            channel = ctx.channel
 
         if not channel.permissions_for(ctx.guild.me).send_messages:
             return await ctx.send(bold("I can't send messages in that channel!"))
@@ -297,10 +285,8 @@ class Hunting(commands.Cog):
 
     @checks.mod_or_permissions(manage_guild=True)
     @hunting.command()
-    async def stop(self, ctx, channel: discord.TextChannel = None):
+    async def stop(self, ctx, channel: discord.TextChannel = commands.CurrentChannel):
         """Stop the hunt."""
-        if not channel:
-            channel = ctx.channel
         channel_list = await self.config.guild(ctx.guild).channels()
 
         if channel.id not in channel_list:
@@ -364,7 +350,9 @@ class Hunting(commands.Cog):
         await self.config.guild(ctx.guild).hunt_interval_minimum.set(interval_min)
         await self.config.guild(ctx.guild).hunt_interval_maximum.set(interval_max)
         await self.config.guild(ctx.guild).wait_for_bang_timeout.set(bang_timeout)
-        message += f"Timing has been set:\nMin time {interval_min}s\nMax time {interval_max}s\nBang timeout {bang_timeout}s"
+        message += (
+            f"Timing has been set:\nMin time {interval_min}s\nMax time {interval_max}s\nBang timeout {bang_timeout}s"
+        )
         await ctx.send(bold(message))
 
     @hunting.command()
@@ -434,17 +422,13 @@ class Hunting(commands.Cog):
             emoji = "\N{COLLISION SYMBOL}"
             await animal_message.add_reaction(emoji)
             try:
-                reaction, author = await self.bot.wait_for(
-                    "reaction_add", check=rcheck, timeout=timeout
-                )
+                reaction, author = await self.bot.wait_for("reaction_add", check=rcheck, timeout=timeout)
             except asyncio.TimeoutError:
                 return await channel.send(f"The {animal} got away!")
 
         bang_now = datetime.now().timestamp()
         time_for_bang = round(bang_now - now, 1)
-        bangtime = (
-            "" if not await self.config.guild(guild).bang_time() else f" in {time_for_bang}s"
-        )
+        bangtime = "" if not await self.config.guild(guild).bang_time() else f" in {time_for_bang}s"
 
         if random.randrange(0, 17) > 1:
             if conf["eagle"] and animal == "eagle":
@@ -523,6 +507,4 @@ class Hunting(commands.Cog):
 
         self.in_game.add(message.channel.id)
         self.next_bang[message.guild.id] = datetime.now().timestamp() + wait_time
-        asyncio.create_task(
-            self.do_tha_bang(message.guild, message.channel, guild_data, wait_time)
-        )
+        asyncio.create_task(self.do_tha_bang(message.guild, message.channel, guild_data, wait_time))

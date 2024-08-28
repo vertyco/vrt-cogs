@@ -375,7 +375,12 @@ If a file has no extension it will still try to read it only if it can be decode
     @commands.command(name="convoshow", aliases=["showconvo"])
     @commands.guild_only()
     @commands.guildowner()
-    async def show_convo(self, ctx: commands.Context, user: discord.Member = None, channel: discord.TextChannel = None):
+    async def show_convo(
+        self,
+        ctx: commands.Context,
+        user: t.Optional[discord.Member] = None,
+        channel: discord.TextChannel = commands.CurrentChannel,
+    ):
         """
         View the current transcript of a conversation
 
@@ -383,8 +388,6 @@ If a file has no extension it will still try to read it only if it can be decode
         """
         if not user:
             user = ctx.author
-        if not channel:
-            channel = ctx.channel
 
         conf = self.db.get_conf(ctx.guild)
         mem_id = ctx.channel.id if conf.collab_convos else user.id
