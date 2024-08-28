@@ -50,10 +50,6 @@ class ConfigModal(discord.ui.Modal):
     async def on_submit(self, interaction: discord.Interaction):
         if not self.port.value.isdigit():
             return await interaction.response.send_message("Port must be a number", ephemeral=True)
-        if not self.host.value.replace(".", "").isdigit():
-            return await interaction.response.send_message("Invalid IP address", ephemeral=True)
-        elif not self.host.value.count(".") == 3:
-            return await interaction.response.send_message("Invalid IP address", ephemeral=True)
         await interaction.response.defer()
         self.data = {
             "host": self.host.value,
