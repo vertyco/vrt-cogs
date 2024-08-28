@@ -26,16 +26,22 @@ class Admin(MixinMeta):
         config = await self.bot.get_shared_api_tokens("postgres")
         if not config:
             return await ctx.send(f"Postgres credentials not set! Use `{ctx.clean_prefix}clickerset postgres` command!")
+
+        conn = None
         try:
-            conn = await asyncpg.connect(**config)
-        except asyncpg.InvalidPasswordError:
-            return await ctx.send("Invalid password!")
-        except asyncpg.InvalidCatalogNameError:
-            return await ctx.send("Invalid database name!")
-        except asyncpg.InvalidAuthorizationSpecificationError:
-            return await ctx.send("Invalid user!")
-        # Delete the 'cowclicker' database if it exists
-        await conn.execute("DROP DATABASE IF EXISTS cowclicker")
-        await conn.close()
+            try:
+                conn = await asyncpg.connect(**config)
+            except asyncpg.InvalidPasswordError:
+                return await ctx.send("Invalid password!")
+            except asyncpg.InvalidCatalogNameError:
+                return await ctx.send("Invalid database name!")
+            except asyncpg.InvalidAuthorizationSpecificationError:
+                return await ctx.send("Invalid user!")
+
+            await conn.execute("DROP DATABASE IF EXISTS cowclicker")
+        finally:
+            if conn:
+                await conn.close()
+
         await self.initialize()
         await ctx.send("Database has been nuked and reinitialized")
