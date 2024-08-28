@@ -38,50 +38,60 @@ class User(MixinMeta):
 
     @commands.command(name="topclickers", aliases=["clicklb"])
     @ensure_db_connection()
-    async def show_top_clickers(self, ctx: commands.Context, amount: int = 10):
-        """Show the top clickers"""
-        if amount < 1:
-            return await ctx.send("Amount must be greater than 0.")
-        assert isinstance(amount, int), "Amount must be an integer."
-        total_clicks = await Click.count()
-        if not total_clicks:
-            return await ctx.send("No one has clicked yet!")
-        top_clickers: list[dict] = await Click.raw(
-            "SELECT author_id, COUNT(*) FROM click GROUP BY author_id ORDER BY COUNT(*) DESC LIMIT {}",
-            amount,
-        )
+    async def show_top_clickers(self, ctx: commands.Context, show_global: bool = False):
+        """Show the top clickers
 
-        color = await self.bot.get_embed_color(ctx)
-        embeds = []
-        pages = math.ceil(len(top_clickers) / 10)
+        **Arguments:**
+        - `show_global`: Show global top clickers instead of server top clickers.
+        """
+        async with ctx.typing():
+            if show_global:
+                top_clickers: list[dict] = await Click.raw(
+                    "SELECT author_id, COUNT(*) FROM click GROUP BY author_id ORDER BY COUNT(*) DESC"
+                )
+            else:
+                top_clickers: list[dict] = await Click.raw(
+                    "SELECT author_id, COUNT(*) FROM click WHERE author_id = ANY({}) GROUP BY author_id ORDER BY COUNT(*) DESC",
+                    [m.id for m in ctx.guild.members],
+                )
 
-        # Find the user's position before pagifying
-        foot = ""
-        for idx, click in enumerate(top_clickers):
-            if click["author_id"] == ctx.author.id:
-                foot = f" | Your position: {idx+1}"
-                break
+            if not top_clickers:
+                return await ctx.send("No one has clicked yet!")
 
-        start = 0
-        stop = 10
+            total_clicks = sum(click["count"] for click in top_clickers)
 
-        for idx in range(pages):
-            stop = min(stop, len(top_clickers))
-            buffer = StringIO()
-            buffer.write("**Total Clicks:** `{}`\n\n".format(humanize_number(total_clicks)))
-            for i in range(start, stop):
-                click = top_clickers[i]
-                member = ctx.guild.get_member(click["author_id"]) or self.bot.get_user(click["author_id"])
-                if member:
-                    buffer.write(f"**{i+1}**. {member.display_name} (`{click['count']}`)\n")
-                else:
-                    buffer.write(f"**{i+1}**. {click['author_id']} (`{click['count']}`)\n")
+            color = await self.bot.get_embed_color(ctx)
+            title = "Top Clickers (Global)" if show_global else "Top Clickers"
+            embeds = []
+            pages = math.ceil(len(top_clickers) / 10)
 
-            embed = discord.Embed(description=buffer.getvalue(), color=color)
-            embed.set_footer(text=f"Page {idx+1}/{pages}{foot}")
-            embed.set_author(name="Top Clickers", icon_url=const.COW_IMAGE)
-            start += 10
-            stop += 10
-            embeds.append(embed)
+            # Find the user's position before pagifying
+            foot = ""
+            for idx, click in enumerate(top_clickers):
+                if click["author_id"] == ctx.author.id:
+                    foot = f" | Your position: {idx+1}"
+                    break
+
+            start = 0
+            stop = 10
+
+            for idx in range(pages):
+                stop = min(stop, len(top_clickers))
+                buffer = StringIO()
+                buffer.write("**Total Clicks:** `{}`\n\n".format(humanize_number(total_clicks)))
+                for i in range(start, stop):
+                    click = top_clickers[i]
+                    member = ctx.guild.get_member(click["author_id"]) or self.bot.get_user(click["author_id"])
+                    if member:
+                        buffer.write(f"**{i+1}**. {member.display_name} (`{click['count']}`)\n")
+                    else:
+                        buffer.write(f"**{i+1}**. {click['author_id']} (`{click['count']}`)\n")
+
+                embed = discord.Embed(description=buffer.getvalue(), color=color)
+                embed.set_footer(text=f"Page {idx+1}/{pages}{foot}")
+                embed.set_author(name=title, icon_url=const.COW_IMAGE)
+                start += 10
+                stop += 10
+                embeds.append(embed)
 
         await DynamicMenu(ctx.author, embeds, ctx.channel).refresh()
