@@ -11,7 +11,15 @@ class Admin(MixinMeta):
     @commands.group(name="clickerset", aliases=["cowclicker"])
     @commands.is_owner()
     async def clickerset(self, ctx: commands.Context):
-        """Cow Clicker settings"""
+        """Cow Clicker settings
+
+        **Base Commands**
+        - `[p]click` - Start a Cow Clicker session
+        - `[p]clicks [@user=Yourself]` - Show the number of clicks you have, or another user if specified
+        - `[p]topclickers [show_global=False]` - Show the top clickers, optionally show global top clickers
+
+        Use `[p]help CowClicker` to view the cog help and version (Case sensitive)
+        """
 
     @clickerset.command(name="postgres")
     async def clickerset_postgres(self, ctx: commands.Context):
