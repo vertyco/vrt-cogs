@@ -119,6 +119,3 @@ class SetConnectionView(discord.ui.View):
 
         await self.cog.bot.set_shared_api_tokens("postgres", **modal.data)
         await interaction.edit_original_response(content="Postgres connection info set", view=None)
-        if self.cog.db:
-            await self.cog.db.close_connection_pool()
-        await self.cog.initialize()

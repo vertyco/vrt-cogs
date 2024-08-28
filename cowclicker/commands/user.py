@@ -70,7 +70,7 @@ class User(MixinMeta):
             buffer = StringIO()
             for i in range(start, stop):
                 click = top_clickers[i]
-                member = ctx.guild.get_member(click["author_id"])
+                member = ctx.guild.get_member(click["author_id"]) or self.bot.get_user(click["author_id"])
                 if member:
                     buffer.write(f"{i+1}. {member.display_name} - {click['count']}\n")
                 else:
