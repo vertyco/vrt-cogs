@@ -73,6 +73,8 @@ class SetConnectionView(discord.ui.View):
 
         self.message: discord.Message = None
 
+        self.data = None
+
     async def interaction_check(self, interaction: discord.Interaction):
         if interaction.user.id != self.ctx.author.id:
             await interaction.response.send_message("This isn't your menu!", ephemeral=True)
@@ -91,11 +93,12 @@ class SetConnectionView(discord.ui.View):
     @discord.ui.button(label="Configure", style=discord.ButtonStyle.primary)
     async def configure(self, interaction: discord.Interaction, buttons: discord.ui.Button):
         current = await self.cog.bot.get_shared_api_tokens("postgres")
-        modal = ConfigModal(current)
+        modal = ConfigModal(self.data or current)
         await interaction.response.send_modal(modal)
         await modal.wait()
         if not modal.data:
             return
+        self.data = modal.data
 
         async def _respond(txt: str):
             try:
