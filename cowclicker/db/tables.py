@@ -1,7 +1,7 @@
 import logging
 
 from discord.ext.commands.core import check
-from piccolo.columns import BigInt, Serial, Text, Timestamptz
+from piccolo.columns import BigInt, Serial, Timestamptz
 from piccolo.table import Table, sort_table_classes
 from redbot.core import commands
 
@@ -27,12 +27,4 @@ class Click(Table):
     author_id = BigInt()
 
 
-class SavedView(Table):
-    id: Serial
-    created_on = Timestamptz()
-    author_id = BigInt()
-    message_id = BigInt()
-    custom_id = Text()
-
-
-TABLES: list[Table] = sort_table_classes([Click, SavedView])
+TABLES: list[Table] = sort_table_classes([Click])
