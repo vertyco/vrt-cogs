@@ -736,7 +736,7 @@ class Admin(MixinMeta):
             )
             embed.add_field(
                 name=_("Highest Karma"),
-                value=fmt_results(highest_karma, "karma"),
+                value=fmt_results(highest_karma, "karma_str"),
                 inline=False,
             )
             return embed
