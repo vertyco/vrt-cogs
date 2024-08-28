@@ -1,6 +1,6 @@
 {
   "author": ["Vertyco"],
-  "description": "Click the cow!, a simple clicker game based on the popular Facebook game.",
+  "description": "Click the cow! A simple clicker game based on the popular [Facebook game](https://en.wikipedia.org/wiki/Cow_Clicker).\n**REQUIRES A POSTGRES INSTANCE**",
   "disabled": false,
   "end_user_data_statement": "This cog stores user IDs with each click and menu created. It does not store any other data about users.",
   "hidden": false,
