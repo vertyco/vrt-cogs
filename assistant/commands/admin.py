@@ -547,11 +547,9 @@ class Admin(MixinMeta):
 
     @assistant.command(name="channelpromptshow")
     @commands.has_permissions(attach_files=True)
-    async def show_channel_prompt(self, ctx: commands.Context, channel: discord.TextChannel = None):
+    async def show_channel_prompt(self, ctx: commands.Context, channel: discord.TextChannel = commands.CurrentChannel):
         """Show the channel specific system prompt"""
         conf = self.db.get_conf(ctx.guild)
-        if not channel:
-            channel = ctx.channel
         if channel.id not in conf.channel_prompts:
             return await ctx.send(_("No channel prompt set for {}").format(channel.mention))
         file = text_to_file(conf.channel_prompts[channel.id], f"{channel.name}_prompt.txt")
@@ -559,11 +557,13 @@ class Admin(MixinMeta):
 
     @assistant.command(name="channelprompt")
     async def set_channel_prompt(
-        self, ctx: commands.Context, channel: discord.TextChannel = None, *, system_prompt: str = None
+        self,
+        ctx: commands.Context,
+        channel: discord.TextChannel = commands.CurrentChannel,
+        *,
+        system_prompt: str = None,
     ):
         """Set a channel specific system prompt"""
-        if channel is None:
-            channel = ctx.channel
         conf = self.db.get_conf(ctx.guild)
         attachments = get_attachments(ctx.message)
         if attachments:

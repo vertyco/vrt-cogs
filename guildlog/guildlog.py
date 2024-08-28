@@ -1,4 +1,5 @@
 import logging
+import typing as t
 
 import discord
 from redbot.core import Config, commands
@@ -162,7 +163,7 @@ class GuildLog(commands.Cog):
         await ctx.send(embed=embed)
 
     @gset.command(name="channel")
-    async def set_log_channel(self, ctx, *, channel: discord.TextChannel = None):
+    async def set_log_channel(self, ctx, *, channel: t.Optional[discord.TextChannel] = None):
         """Set a channel for the bot to log guilds it leaves/joins"""
         if channel:
             await self.config.guild(ctx.guild).channel.set(str(channel.id))
