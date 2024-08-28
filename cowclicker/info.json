@@ -1,0 +1,16 @@
+{
+  "author": ["Vertyco"],
+  "description": "Click the cow!, a simple clicker game based on the popular Facebook game.",
+  "disabled": false,
+  "end_user_data_statement": "This cog stores user IDs with each click and menu created. It does not store any other data about users.",
+  "hidden": false,
+  "install_msg": "# README\nThis is a DEMO cog for integrating the Piccolo ORM library with Red, database breaking schema changes can happen at any time. It **requires** a postgres instance to connect to. After installing/loading the cog run `[p]clickerset postgres` to set the connection info.",
+  "min_bot_version": "3.5.3",
+  "min_python_version": [3, 10, 0],
+  "permissions": [],
+  "required_cogs": {},
+  "requirements": ["piccolo"],
+  "short": "Cow Clicker",
+  "tags": ["cow", "clicker", "click", "game", "games", "fun", "piccolo", "postgres", "demo"],
+  "type": "COG"
+}
