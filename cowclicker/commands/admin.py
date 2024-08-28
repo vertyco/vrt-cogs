@@ -2,7 +2,6 @@ import asyncpg
 from redbot.core import commands
 
 from ..abc import MixinMeta
-from ..db.tables import Click
 from ..views.postgres_creds import SetConnectionView
 
 
@@ -16,12 +15,6 @@ class Admin(MixinMeta):
     async def clickerset_postgres(self, ctx: commands.Context):
         """Set the Postgres connection info"""
         await SetConnectionView(self, ctx).start()
-
-    @clickerset.command(name="view")
-    async def clickerset_view(self, ctx: commands.Context):
-        """View the Postgres connection info"""
-        clicks = await Click.count()
-        await ctx.send(f"Clicks: {clicks}")
 
     @clickerset.command(name="nukedb")
     async def clickerset_nukedb(self, ctx: commands.Context, confirm: bool):

@@ -3,6 +3,7 @@ from io import StringIO
 
 import discord
 from redbot.core import commands
+from redbot.core.utils.chat_formatting import humanize_number
 
 from ..abc import MixinMeta
 from ..common import const
@@ -42,12 +43,13 @@ class User(MixinMeta):
         if amount < 1:
             return await ctx.send("Amount must be greater than 0.")
         assert isinstance(amount, int), "Amount must be an integer."
+        total_clicks = await Click.count()
+        if not total_clicks:
+            return await ctx.send("No one has clicked yet!")
         top_clickers: list[dict] = await Click.raw(
             "SELECT author_id, COUNT(*) FROM click GROUP BY author_id ORDER BY COUNT(*) DESC LIMIT {}",
             amount,
         )
-        if not top_clickers:
-            return await ctx.send("No one has clicked yet!")
 
         color = await self.bot.get_embed_color(ctx)
         embeds = []
@@ -66,6 +68,7 @@ class User(MixinMeta):
         for idx in range(pages):
             stop = min(stop, len(top_clickers))
             buffer = StringIO()
+            buffer.write("**Total Clicks:** `{}`\n\n".format(humanize_number(total_clicks)))
             for i in range(start, stop):
                 click = top_clickers[i]
                 member = ctx.guild.get_member(click["author_id"]) or self.bot.get_user(click["author_id"])
