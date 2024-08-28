@@ -247,11 +247,12 @@ class User(MixinMeta):
         embed.add_field(
             name=_("Voting Summary"),
             value=_(
+                "Karma: {}\n"
                 "Total Upvotes: {}\n"
                 "Total Downvotes: {}\n"
                 "Successful Votes (Wins): {}\n"
                 "Unsuccessful Votes (Losses): {}"
-            ).format(profile.upvotes, profile.downvotes, profile.wins, profile.losses),
+            ).format(profile.karma_str, profile.upvotes, profile.downvotes, profile.wins, profile.losses),
             inline=False,
         )
 

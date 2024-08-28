@@ -657,6 +657,8 @@ class Admin(MixinMeta):
             highest_vote_ratio = sorted(p.items(), key=upvote_ratio, reverse=True)[:amount]
             # Top X most negative users by downvote/upvote ratio
             highest_downvote_ratio = sorted(p.items(), key=downvote_ratio, reverse=True)[:amount]
+            # Top X users with the highest karma
+            highest_karma = sorted(p.items(), key=lambda x: x[1].karma, reverse=True)[:amount]
 
             embed = discord.Embed(title=_("Server Insights"), color=discord.Color.gold())
             embed.add_field(
@@ -730,6 +732,11 @@ class Admin(MixinMeta):
                     _("These users have the highest downvote to upvote ratio.\n")
                     + fmt_ratio(highest_downvote_ratio, downvote_ratio)
                 ),
+                inline=False,
+            )
+            embed.add_field(
+                name=_("Highest Karma"),
+                value=fmt_results(highest_karma, "karma"),
                 inline=False,
             )
             return embed

@@ -183,6 +183,9 @@ class VoteView(discord.ui.View):
             suggestion.upvotes.append(uid)
             profile.upvotes += 1
 
+        author_profile = conf.get_profile(suggestion.author_id)
+        author_profile.upvotes_received += 1
+
         await self.respond(interaction, txt)
 
         if conf.show_vote_counts:
@@ -220,6 +223,9 @@ class VoteView(discord.ui.View):
             txt = _("You have downvoted this suggestion.")
             suggestion.downvotes.append(uid)
             profile.downvotes += 1
+
+        author_profile = conf.get_profile(suggestion.author_id)
+        author_profile.downvotes_received += 1
 
         await self.respond(interaction, txt)
 
