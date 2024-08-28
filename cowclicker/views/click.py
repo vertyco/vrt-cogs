@@ -5,6 +5,7 @@ from contextlib import suppress
 import discord
 from redbot.core.bot import Red
 
+from ..abc import MixinMeta
 from ..db.tables import Click
 
 styles = [
@@ -48,7 +49,7 @@ class DynamicButton(
 
     async def callback(self, interaction: discord.Interaction) -> None:
         bot: Red = interaction.client
-        cog = bot.get_cog("CowClicker")
+        cog: MixinMeta | None = bot.get_cog("CowClicker")
         if not cog:
             return await interaction.response.send_message(
                 "CowClicker cog is not loaded, try again later", ephemeral=True
@@ -65,5 +66,5 @@ class DynamicButton(
         await Click(author_id=interaction.user.id).save()
         # 1 in a 100,000 chance of sending "MOO!"
         if random.randint(1, 100_000) == 1:
-            with suppress(Exception):
+            with suppress(discord.HTTPException):
                 await interaction.response.followup.send("MOO!", ephemeral=True)
