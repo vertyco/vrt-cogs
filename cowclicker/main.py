@@ -26,7 +26,7 @@ class CowClicker(Commands, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.0.5b"
+    __version__ = "0.0.6b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -62,7 +62,7 @@ class CowClicker(Commands, commands.Cog, metaclass=CompositeMetaClass):
             log.info("Closing existing database connection")
             await self.db.close_connection_pool()
         log.info("Registering database connection")
-        self.db = await engine.register_cog(self, config, TABLES)
+        self.db = await engine.register_cog(self, config, TABLES, trace=True)
         log.info("Database connection established")
 
         self.bot.add_dynamic_items(DynamicButton)
