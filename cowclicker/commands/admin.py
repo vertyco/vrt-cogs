@@ -1,7 +1,9 @@
 import asyncpg
 from redbot.core import commands
+from redbot.core.utils.chat_formatting import box, pagify
 
 from ..abc import MixinMeta
+from ..engine import engine
 from ..views.postgres_creds import SetConnectionView
 
 
@@ -45,3 +47,15 @@ class Admin(MixinMeta):
 
         await self.initialize()
         await ctx.send("Database has been nuked and reinitialized")
+
+    @clickerset.command(name="diagnose")
+    async def clickerset_diagnose(self, ctx: commands.Context):
+        """Check the database connection"""
+        config = await self.bot.get_shared_api_tokens("postgres")
+        if not config:
+            return await ctx.send(f"Postgres credentials not set! Use `{ctx.clean_prefix}clickerset postgres` command!")
+        if not self.db:
+            return await ctx.send("Database connection is not active")
+        issues = await engine.diagnose_issues(self, config)
+        for p in pagify(issues, page_length=1980):
+            await ctx.send(box(p, lang="python"))
