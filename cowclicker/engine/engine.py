@@ -215,7 +215,7 @@ async def diagnose_issues(cog_instance: commands.Cog | Path, config: dict) -> st
             cwd=str(_root(cog_instance)),
             env=_get_env(temp_config),
         ).stdout.decode()
-        return f"DIAGNOSES\n{diagnoses}\nCHECK\n{check}"
+        return f"{diagnoses}\n{check}"
 
     return await asyncio.to_thread(_exe)
 
