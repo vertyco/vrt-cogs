@@ -52,7 +52,7 @@ class User(MixinMeta):
         """
 
         async with ctx.typing():
-            query = Click.select(Click.author_id, Count(alias="count"))
+            query = Click.select(Click.author_id, Count())
             delta_obj = None
             if delta:
                 delta_obj = commands.parse_timedelta(delta, minimum=timedelta(minutes=1))
