@@ -121,4 +121,4 @@ class SetConnectionView(discord.ui.View):
         await interaction.edit_original_response(content="Postgres connection info set", view=None)
         if self.cog.db:
             await self.cog.db.close_connection_pool()
-        await self.cog.initalize()
+        await self.cog.initialize()
