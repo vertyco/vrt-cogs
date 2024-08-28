@@ -8,9 +8,9 @@ from redbot.core.bot import Red
 
 from .abc import CompositeMetaClass
 from .commands import Commands
-from .db.tables import TABLES, Click, SavedView
+from .db.tables import TABLES, Click
 from .engine import engine
-from .views.click import ClickView
+from .views.click import DynamicButton
 
 log = logging.getLogger("red.vrt.cowclicker")
 RequestType = t.Literal["discord_deleted_user", "owner", "user", "user_strict"]
@@ -41,7 +41,6 @@ class CowClicker(Commands, commands.Cog, metaclass=CompositeMetaClass):
     async def red_delete_data_for_user(self, *, requester: RequestType, user_id: int):
         if not self.db:
             return "Data not deleted, database connection is not active"
-        await SavedView.delete().where(SavedView.author_id == user_id)
         await Click.delete().where(Click.author_id == user_id)
         return f"Data for user ID {user_id} has been deleted"
 
@@ -66,9 +65,7 @@ class CowClicker(Commands, commands.Cog, metaclass=CompositeMetaClass):
         self.db = await engine.register_cog(self, config, TABLES)
         log.info("Database connection established")
 
-        for entry in await SavedView.objects():
-            view = ClickView(self, entry.custom_id)
-            self.bot.add_view(view, message_id=entry.message_id)
+        self.bot.add_dynamic_items(DynamicButton)
 
         log.info("Cog initialized")
 
@@ -77,3 +74,4 @@ class CowClicker(Commands, commands.Cog, metaclass=CompositeMetaClass):
         if service_name != "postgres":
             return
         await self.initialize()
+        self.bot.add_dynamic_items()

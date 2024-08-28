@@ -1,14 +1,13 @@
 import math
 from io import StringIO
-from uuid import uuid4
 
 import discord
 from redbot.core import commands
 
 from ..abc import MixinMeta
 from ..common import const
-from ..db.tables import Click, SavedView, ensure_db_connection
-from ..views.click import ClickView
+from ..db.tables import Click, ensure_db_connection
+from ..views.click import DynamicButton
 from ..views.dynamic_menu import DynamicMenu
 
 
@@ -17,13 +16,12 @@ class User(MixinMeta):
     @ensure_db_connection()
     async def start_click_menu(self, ctx: commands.Context):
         """Click the button!"""
-        custom_id = str(uuid4())
-        view = ClickView(self, custom_id)
+        view = discord.ui.View(timeout=None)
+        view.add_item(DynamicButton(ctx.message.id))
         color = await self.bot.get_embed_color(ctx)
         embed = discord.Embed(color=color).set_image(url=const.COW_IMAGE)
         embed.set_author(name="Cow Clicker!", url="https://en.wikipedia.org/wiki/Cow_Clicker")
-        msg = await ctx.send(embed=embed, view=view)
-        await SavedView(author_id=ctx.author.id, message_id=msg.id, custom_id=custom_id).save()
+        await ctx.send(embed=embed, view=view)
 
     @commands.command(name="clicks")
     @ensure_db_connection()
@@ -72,9 +70,9 @@ class User(MixinMeta):
                 click = top_clickers[i]
                 member = ctx.guild.get_member(click["author_id"]) or self.bot.get_user(click["author_id"])
                 if member:
-                    buffer.write(f"{i+1}. {member.display_name} - {click['count']}\n")
+                    buffer.write(f"**{i+1}**. {member.display_name} (`{click['count']}`)\n")
                 else:
-                    buffer.write(f"{i+1}. {click['author_id']} - {click['count']}\n")
+                    buffer.write(f"**{i+1}**. {click['author_id']} (`{click['count']}`)\n")
 
             embed = discord.Embed(description=buffer.getvalue(), color=color)
             embed.set_footer(text=f"Page {idx+1}/{pages}{foot}")
