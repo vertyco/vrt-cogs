@@ -11,5 +11,5 @@ class Base(BaseModel):
 
     def dump(self):
         if VERSION >= "2.0.1":
-            return super().model_dump(mode="json")
-        return orjson.loads(super().json())
+            return super().model_dump(mode="json", exclude_defaults=True)
+        return orjson.loads(super().json(exclude_defaults=True))
