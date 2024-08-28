@@ -623,8 +623,8 @@ class Admin(MixinMeta):
             buffer = StringIO()
             for i, (member, profile) in enumerate(res):
                 place = place_emojis[i] if i < 3 else f"{i+1}."
-                num = profile.karma_str if attr == "karma_str" else humanize_number(getattr(profile, attr))
-                buffer.write(f"{place} {member.mention} ({num})\n")
+                num = profile.karma_str if attr == "karma_str" else f"({humanize_number(getattr(profile, attr))})"
+                buffer.write(f"{place} {member.mention} {num}\n")
             return buffer.getvalue()
 
         def fmt_ratio(res: t.List[t.Tuple[discord.Member, Profile]], func: t.Callable) -> str:
