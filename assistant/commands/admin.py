@@ -3,6 +3,7 @@ import contextlib
 import logging
 import re
 import traceback
+import typing as t
 from datetime import datetime, timezone
 from io import BytesIO
 from typing import List, Union
@@ -561,7 +562,7 @@ class Admin(MixinMeta):
         ctx: commands.Context,
         channel: discord.TextChannel = commands.CurrentChannel,
         *,
-        system_prompt: str = None,
+        system_prompt: t.Optional[str] = None,
     ):
         """Set a channel specific system prompt"""
         conf = self.db.get_conf(ctx.guild)
