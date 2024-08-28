@@ -60,7 +60,7 @@ class User(MixinMeta):
             total_clicks = sum(click["count"] for click in top_clickers)
 
             color = await self.bot.get_embed_color(ctx)
-            title = "Top Clickers (Global)" if show_global else "Top Clickers"
+            title = "Top Clickers (Global)" if show_global else f"Top Clickers in {ctx.guild.name}"
             embeds = []
             pages = math.ceil(len(top_clickers) / 10)
 
