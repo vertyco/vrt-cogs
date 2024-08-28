@@ -23,11 +23,6 @@ class CowClicker(Commands, commands.Cog, metaclass=CompositeMetaClass):
 
     A DEMO cog for integrating the Piccolo ORM library with Red.
     Based on the [Cow Clicker](https://en.wikipedia.org/wiki/Cow_Clicker) game by Ian Bogost.
-
-    **Base Commands**
-    - `[p]click` - Start a Cow Clicker session
-    - `[p]clicks [@user=Yourself]` - Show the number of clicks you have, or another user if specified
-    - `[p]topclickers [show_global=False]` - Show the top clickers, optionally show global top clickers
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
