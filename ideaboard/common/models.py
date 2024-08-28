@@ -29,6 +29,10 @@ class Profile(Base):
     suggestions_approved: int = 0
     suggestions_denied: int = 0
 
+    # How many times other users have upvoted/downvoted the user's suggestions
+    upvotes_received: int = 0
+    downvotes_received: int = 0
+
     # How many the user has voted on
     upvotes: int = 0
     downvotes: int = 0
@@ -38,6 +42,14 @@ class Profile(Base):
     losses: int = 0
 
     last_suggestion: datetime | None = None
+
+    @property
+    def karma(self) -> int:
+        return self.upvotes_received - self.downvotes_received
+
+    @property
+    def karma_str(self) -> str:
+        return f"{self.karma} ({self.upvotes_received}↑ {self.downvotes_received}↓)"
 
 
 class GuildSettings(Base):
