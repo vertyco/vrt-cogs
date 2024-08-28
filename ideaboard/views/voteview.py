@@ -164,6 +164,7 @@ class VoteView(discord.ui.View):
         conf = self.cog.db.get_conf(self.guild)
         profile = conf.get_profile(interaction.user)
         suggestion = conf.suggestions[self.suggestion_number]
+        author_profile = conf.get_profile(suggestion.author_id)
         uid = interaction.user.id
         if uid == suggestion.author_id:
             txt = _("You cannot vote on your own suggestion.")
@@ -174,17 +175,18 @@ class VoteView(discord.ui.View):
             suggestion.downvotes.remove(uid)
             profile.upvotes += 1
             profile.downvotes -= 1
+            author_profile.upvotes_received += 1
+            author_profile.downvotes_received -= 1
         elif uid in suggestion.upvotes:
             txt = _("You have removed your upvote.")
             suggestion.upvotes.remove(uid)
             profile.upvotes -= 1
+            author_profile.upvotes_received -= 1
         else:
             txt = _("You have upvoted this suggestion.")
             suggestion.upvotes.append(uid)
             profile.upvotes += 1
-
-        author_profile = conf.get_profile(suggestion.author_id)
-        author_profile.upvotes_received += 1
+            author_profile.upvotes_received += 1
 
         await self.respond(interaction, txt)
 
@@ -205,6 +207,7 @@ class VoteView(discord.ui.View):
         conf = self.cog.db.get_conf(self.guild)
         profile = conf.get_profile(interaction.user)
         suggestion = conf.suggestions[self.suggestion_number]
+        author_profile = conf.get_profile(suggestion.author_id)
         uid = interaction.user.id
         if uid == suggestion.author_id:
             txt = _("You cannot vote on your own suggestion.")
@@ -215,17 +218,18 @@ class VoteView(discord.ui.View):
             suggestion.downvotes.append(uid)
             profile.upvotes -= 1
             profile.downvotes += 1
+            author_profile.upvotes_received -= 1
+            author_profile.downvotes_received += 1
         elif uid in suggestion.downvotes:
             txt = _("You have removed your downvote.")
             suggestion.downvotes.remove(uid)
             profile.downvotes -= 1
+            author_profile.downvotes_received -= 1
         else:
             txt = _("You have downvoted this suggestion.")
             suggestion.downvotes.append(uid)
             profile.downvotes += 1
-
-        author_profile = conf.get_profile(suggestion.author_id)
-        author_profile.downvotes_received += 1
+            author_profile.downvotes_received += 1
 
         await self.respond(interaction, txt)
 
