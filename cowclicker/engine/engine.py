@@ -13,7 +13,7 @@ from piccolo.table import Table
 
 from .errors import ConnectionTimeoutError, DirectoryError, UNCPathError
 
-log = logging.getLogger("red.vrt.whosalt.engine")
+log = logging.getLogger("red.vrt.cowclicker.engine")
 piccolo_path = Path(sys.executable).parent / "piccolo"
 
 
