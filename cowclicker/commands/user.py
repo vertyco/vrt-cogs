@@ -17,8 +17,7 @@ class User(MixinMeta):
     @ensure_db_connection()
     async def start_click_menu(self, ctx: commands.Context):
         """Click the button!"""
-        view = discord.ui.View(timeout=None)
-        view.add_item(DynamicButton(ctx.message.id))
+        view = discord.ui.View(timeout=None).add_item(DynamicButton())
         color = await self.bot.get_embed_color(ctx)
         embed = discord.Embed(color=color).set_image(url=const.COW_IMAGE)
         embed.set_author(name="Cow Clicker!", url="https://en.wikipedia.org/wiki/Cow_Clicker")

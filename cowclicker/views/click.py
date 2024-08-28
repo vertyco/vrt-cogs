@@ -17,37 +17,34 @@ styles = [
 
 class DynamicButton(
     discord.ui.DynamicItem[discord.ui.Button],
-    template=r"counter:(?P<count>[0-9]+):messageid:(?P<id>[0-9]+)",
+    template=r"CowClicker:(?P<clicks>[0-9]+)",
 ):
-    def __init__(self, messageid: int, count: int = 0) -> None:
-        self.messageid: int = messageid
-        self.count: int = count
+    def __init__(self, clicks: int = 0) -> None:
+        self.clicks: int = clicks
         super().__init__(
             discord.ui.Button(
-                label=str(count),
+                label=str(clicks),
                 style=self.style,
-                custom_id=f"counter:{count}:messageid:{messageid}",
+                custom_id=f"CowClicker:{clicks}",
                 emoji="🐄",
             )
         )
 
     @property
     def style(self) -> discord.ButtonStyle:
-        if self.count < 50:
+        if self.clicks < 50:
             return discord.ButtonStyle.secondary
-        if self.count < 100:
+        if self.clicks < 100:
             return discord.ButtonStyle.primary
-        if self.count < 500:
+        if self.clicks < 500:
             return discord.ButtonStyle.success
-        if self.count < 1000:
+        if self.clicks < 1000:
             return discord.ButtonStyle.danger
         return random.choice(styles)
 
     @classmethod
     async def from_custom_id(cls, interaction: discord.Interaction, item: discord.ui.Button, match: re.Match[str], /):
-        count = int(match["count"])
-        messageid = int(match["id"])
-        return cls(messageid, count=count)
+        return cls(int(match["clicks"]))
 
     async def callback(self, interaction: discord.Interaction) -> None:
         bot: Red = interaction.client
@@ -60,9 +57,9 @@ class DynamicButton(
             return await interaction.response.send_message(
                 "Database connection is not active, try again later", ephemeral=True
             )
-        self.count += 1
-        self.item.label = str(self.count)
-        self.custom_id = f"counter:{self.count}:messageid:{self.messageid}"
+        self.clicks += 1
+        self.item.label = str(self.clicks)
+        self.custom_id = f"CowClicker:{self.clicks}"
         self.item.style = self.style
         await interaction.response.edit_message(view=self.view)
         await Click(author_id=interaction.user.id).save()
