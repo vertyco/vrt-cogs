@@ -17,23 +17,13 @@ config = {
 
 root = Path(__file__).parent
 
-env = os.environ.copy()
-env["PICCOLO_CONF"] = os.environ.get("PICCOLO_CONF")
-env["POSTGRES_HOST"] = os.environ.get("POSTGRES_HOST")
-env["POSTGRES_PORT"] = os.environ.get("POSTGRES_PORT")
-env["POSTGRES_USER"] = os.environ.get("POSTGRES_USER")
-env["POSTGRES_PASSWORD"] = os.environ.get("POSTGRES_PASSWORD")
-env["POSTGRES_DATABASE"] = root.stem
-env["PYTHONIOENCODING"] = "utf-8"
+
+async def main():
+    created = await engine.ensure_database_exists(root, config)
+    print(f"Database created: {created}")
+    print(await engine.create_migrations(root, config, True))
+    print(await engine.run_migrations(root, config, True))
 
 
 if __name__ == "__main__":
-    created = asyncio.run(engine.ensure_database_exists(root, config))
-    if created:
-        print("Database created")
-    else:
-        print("Database already exists")
-
-    print(asyncio.run(engine.create_migrations(root, config, True)))
-
-    print(asyncio.run(engine.run_migrations(root, config, True)))
+    asyncio.run(main())
