@@ -26,7 +26,7 @@ class CowClicker(Commands, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.0.1b"
+    __version__ = "0.0.2b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -59,6 +59,10 @@ class CowClicker(Commands, commands.Cog, metaclass=CompositeMetaClass):
         if not config:
             log.warning("Postgres credentials not set! Use '[p]clickerset postgres' command!")
             return
+        if self.db:
+            log.info("Closing existing database connection")
+            await self.db.close_connection_pool()
+        log.info("Registering database connection")
         self.db = await engine.register_cog(self, config, TABLES)
         log.info("Database connection established")
 
@@ -72,3 +76,4 @@ class CowClicker(Commands, commands.Cog, metaclass=CompositeMetaClass):
     async def on_red_api_tokens_update(self, service_name: str, api_tokens: dict):
         if service_name != "postgres":
             return
+        await self.initialize()
