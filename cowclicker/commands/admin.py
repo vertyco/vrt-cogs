@@ -54,8 +54,6 @@ class Admin(MixinMeta):
         config = await self.bot.get_shared_api_tokens("postgres")
         if not config:
             return await ctx.send(f"Postgres credentials not set! Use `{ctx.clean_prefix}clickerset postgres` command!")
-        if not self.db:
-            return await ctx.send("Database connection is not active")
         issues = await engine.diagnose_issues(self, config)
         for p in pagify(issues, page_length=1980):
             await ctx.send(box(p, lang="python"))
