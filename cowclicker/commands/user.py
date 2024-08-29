@@ -20,6 +20,7 @@ from ..views.dynamic_menu import DynamicMenu
 
 class User(MixinMeta):
     @commands.hybrid_command(name="click", description="Click the cow!")
+    @commands.cooldown(1, 15, commands.BucketType.channel)
     @ensure_db_connection()
     async def start_click_menu(self, ctx: commands.Context):
         """Click the button!"""
@@ -31,19 +32,38 @@ class User(MixinMeta):
 
     @commands.command(name="clicks")
     @ensure_db_connection()
-    async def show_user_clicks(self, ctx: commands.Context, member: discord.Member | None = None):
+    async def show_user_clicks(
+        self,
+        ctx: commands.Context,
+        member: t.Optional[discord.Member] = None,
+        delta: t.Optional[str] = None,
+    ):
         """Show the number of clicks you have"""
         if member is None:
             member = ctx.author
-        count = await Click.count().where(Click.author_id == ctx.author.id)
+        query = Click.count().where(Click.author_id == member.id)
+        if delta:
+            delta_obj = commands.parse_timedelta(delta, minimum=timedelta(minutes=1))
+            query = query.where(Click.created_on > TimestamptzNow().python() - delta_obj)
+
+        count = await query
         if member.id == ctx.author.id:
-            await ctx.send(f"You have clicked {count} times!")
+            txt = f"You have clicked {count} times"
         else:
-            await ctx.send(f"{member.display_name} has clicked {count} times!")
+            txt = f"{member.display_name} has clicked {count} times"
+        if delta:
+            txt += f" over the last {humanize_timedelta(timedelta=delta_obj)}"
+
+        await ctx.send(f"{txt}!")
 
     @commands.command(name="topclickers", aliases=["clicklb"])
     @ensure_db_connection()
-    async def show_top_clickers(self, ctx: commands.Context, show_global: bool = False, delta: t.Optional[str] = None):
+    async def show_top_clickers(
+        self,
+        ctx: commands.Context,
+        show_global: bool = False,
+        delta: t.Optional[str] = None,
+    ):
         """Show the top clickers
 
         **Arguments:**

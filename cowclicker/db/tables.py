@@ -1,5 +1,7 @@
 import logging
+from contextlib import suppress
 
+import discord
 from discord.ext.commands.core import check
 from piccolo.columns import BigInt, Serial, Timestamptz
 from piccolo.table import Table, sort_table_classes
@@ -9,13 +11,15 @@ log = logging.getLogger("red.vrt.cowclicker.db.tables")
 
 
 def ensure_db_connection():
-    def predicate(ctx: commands.Context) -> bool:
+    async def predicate(ctx: commands.Context) -> bool:
         if not ctx.cog.db:
             if ctx.author.id not in ctx.bot.owner_ids:
                 txt = "Database connection is not active, try again later"
             else:
                 txt = f"Database connection is not active, configure with `{ctx.clean_prefix}clickerset postgres`"
-            raise commands.UserFeedbackCheckFailure(txt)
+            with suppress(discord.HTTPException):
+                await ctx.send(txt, ephemeral=True)
+            return False
         return True
 
     return check(predicate)
