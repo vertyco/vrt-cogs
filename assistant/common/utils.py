@@ -217,6 +217,24 @@ async def ensure_supports_vision(messages: List[dict], conf: GuildSettings, user
     return cleaned
 
 
+async def purge_images(messages: List[dict]) -> bool:
+    """Remove all images sourced from URLs from the message payload"""
+    cleaned = False
+    for idx, message in enumerate(list(messages)):
+        if isinstance(message["content"], list):
+            for iidx, obj in enumerate(message["content"]):
+                if obj["type"] != "image_url":
+                    continue
+                if "data:image/jpeg;base64" in obj["image_url"]["url"]:
+                    continue
+                messages[idx]["content"].pop(iidx)
+                cleaned = True
+            if not messages[idx]["content"]:
+                messages.pop(idx)
+                cleaned = True
+    return cleaned
+
+
 async def clean_response(response: ChatCompletionMessage) -> bool:
     """Clean the model response since its stupid and breaks itself
 
