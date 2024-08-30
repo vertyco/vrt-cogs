@@ -86,8 +86,9 @@ class AssistantFunctions(MixinMeta):
                             f"- Link: {result.get('url', 'N/A')}\n"
                             f"- Age: {result.get('age', 'N/A')}\n"
                             f"- Page age: {result.get('page_age', 'N/A')}\n"
-                            f"- Source: {result['profile']['long_name']}\n"
                         )
+                        if profile := result.get("profile"):
+                            tmp.write(f"- Source: {profile.get('long_name', 'N/A')}\n")
 
                 videos = data.get("videos", {}).get("results", [])
                 if videos:
