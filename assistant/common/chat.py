@@ -357,7 +357,6 @@ class ChatHandler(MixinMeta):
             function_calls = [i for i in function_calls if i["name"] != "search_internet"]
             del function_map["search_internet"]
 
-        max_tokens = self.get_max_tokens(conf, author)
         messages = await self.prepare_messages(
             message,
             guild,
@@ -587,7 +586,7 @@ class ChatHandler(MixinMeta):
                     result = str(func_result)
 
                 # Ensure response isnt too large
-                result = await self.cut_text_by_tokens(result, conf, max_tokens)
+                result = await self.cut_text_by_tokens(result, conf, author)
                 info = (
                     f"Called function {function_name} in {guild.name} for {author.display_name}\n"
                     f"Params: {args}\nResult: {result}"
