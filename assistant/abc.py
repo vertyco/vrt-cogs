@@ -56,7 +56,7 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def cut_text_by_tokens(self, text: str, conf: GuildSettings, max_tokens: int) -> str:
+    async def cut_text_by_tokens(self, text: str, conf: GuildSettings, user: Optional[discord.Member] = None) -> str:
         raise NotImplementedError
 
     @abstractmethod

@@ -252,7 +252,7 @@ class API(MixinMeta):
         user_max = conf.get_user_max_tokens(user)
         return min(user_max, MODELS[conf.get_user_model(user)] - 96)
 
-    async def cut_text_by_tokens(self, text: str, conf: GuildSettings, user: Optional[discord.Member]) -> str:
+    async def cut_text_by_tokens(self, text: str, conf: GuildSettings, user: Optional[discord.Member] = None) -> str:
         if not text:
             log.debug("No text to cut by tokens!")
             return text
