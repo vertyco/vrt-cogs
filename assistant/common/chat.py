@@ -39,6 +39,7 @@ from .utils import (
     extract_code_blocks_with_lang,
     get_attachments,
     get_params,
+    purge_images,
     remove_code_blocks,
 )
 
@@ -372,7 +373,11 @@ class ChatHandler(MixinMeta):
         reply = None
 
         calls = 0
+        tries = 0
         while True:
+            if tries > 2:
+                log.error("breaking after 3 tries, purge_images function must have failed")
+                break
             if calls >= conf.max_function_calls:
                 function_calls = []
 
@@ -405,6 +410,11 @@ class ChatHandler(MixinMeta):
                 reply = _("Request timed out, please try again.")
                 break
             except openai.BadRequestError as e:
+                if "Invalid image" in str(e):
+                    await purge_images(messages)
+                    tries += 1
+                    continue
+
                 if e.body and isinstance(e.body, dict):
                     if msg := e.body.get("error", {}).get("message"):
                         log.warning("BadRequestError [error][message]", exc_info=e)
