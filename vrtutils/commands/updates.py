@@ -12,6 +12,9 @@ DEPRECATION_NOTICE = (
     " You should inform maintainers of these repos about this message."
 )
 
+# Code pulled from core Downloader cog
+# https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/develop/redbot/cogs/downloader/downloader.py
+
 
 class Updates(MixinMeta):
     @commands.command(name="pull")
