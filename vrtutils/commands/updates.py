@@ -37,61 +37,64 @@ class Updates(MixinMeta):
         failed_repos = set()
         updates_available = set()
 
-        cogs_to_check, check_failed = await cog._get_cogs_to_check(repos=None, cogs=cogs)
-        failed_repos.update(check_failed)
+        async with ctx.typing():
+            cogs_to_check, check_failed = await cog._get_cogs_to_check(repos=None, cogs=cogs)
+            failed_repos.update(check_failed)
 
-        pinned_cogs = {cog for cog in cogs_to_check if cog.pinned}
-        cogs_to_check -= pinned_cogs
+            pinned_cogs = {cog for cog in cogs_to_check if cog.pinned}
+            cogs_to_check -= pinned_cogs
 
-        message = ""
-        if not cogs_to_check:
-            cogs_to_update = libs_to_update = ()
-            message += "There were no cogs to check."
-            if pinned_cogs:
-                cognames = [cog.name for cog in pinned_cogs]
-                message += (
-                    "\nThese cogs are pinned and therefore weren't checked: "
-                    if len(cognames) > 1
-                    else "\nThis cog is pinned and therefore wasn't checked: "
-                ) + humanize_list(tuple(map(inline, cognames)))
-        else:
-            cogs_to_update, libs_to_update = await cog._available_updates(cogs_to_check)
-
-            updates_available = cogs_to_update or libs_to_update
-            cogs_to_update, filter_message = cog._filter_incorrect_cogs(cogs_to_update)
-
-            if updates_available:
-                updated_cognames, message = await self._update_cogs_and_libs(
-                    ctx, cogs_to_update, current_cog_versions=cogs_to_check
-                )
+            message = ""
+            if not cogs_to_check:
+                cogs_to_update = libs_to_update = ()
+                message += "There were no cogs to check."
+                if pinned_cogs:
+                    cognames = [cog.name for cog in pinned_cogs]
+                    message += (
+                        "\nThese cogs are pinned and therefore weren't checked: "
+                        if len(cognames) > 1
+                        else "\nThis cog is pinned and therefore wasn't checked: "
+                    ) + humanize_list(tuple(map(inline, cognames)))
             else:
-                if cogs:
-                    message += "Provided cogs are already up to date."
+                cogs_to_update, libs_to_update = await cog._available_updates(cogs_to_check)
+
+                updates_available = cogs_to_update or libs_to_update
+                cogs_to_update, filter_message = cog._filter_incorrect_cogs(cogs_to_update)
+
+                if updates_available:
+                    updated_cognames, message = await self._update_cogs_and_libs(
+                        ctx, cogs_to_update, current_cog_versions=cogs_to_check
+                    )
                 else:
-                    message += "All installed cogs are already up to date."
-            if pinned_cogs:
-                cognames = [cog.name for cog in pinned_cogs]
-                message += (
-                    "\nThese cogs are pinned and therefore weren't checked: "
-                    if len(cognames) > 1
-                    else "\nThis cog is pinned and therefore wasn't checked: "
-                ) + humanize_list(tuple(map(inline, cognames)))
-            message += filter_message
+                    if cogs:
+                        message += "Provided cogs are already up to date."
+                    else:
+                        message += "All installed cogs are already up to date."
+                if pinned_cogs:
+                    cognames = [cog.name for cog in pinned_cogs]
+                    message += (
+                        "\nThese cogs are pinned and therefore weren't checked: "
+                        if len(cognames) > 1
+                        else "\nThis cog is pinned and therefore wasn't checked: "
+                    ) + humanize_list(tuple(map(inline, cognames)))
+                message += filter_message
 
-        if failed_repos:
-            message += "\n" + cog.format_failed_repos(failed_repos)
+            if failed_repos:
+                message += "\n" + cog.format_failed_repos(failed_repos)
 
-        repos_with_libs = {
-            inline(module.repo.name) for module in cogs_to_update + libs_to_update if module.repo.available_libraries
-        }
-        if repos_with_libs:
-            message += DEPRECATION_NOTICE.format(repo_list=humanize_list(list(repos_with_libs)))
+            repos_with_libs = {
+                inline(module.repo.name)
+                for module in cogs_to_update + libs_to_update
+                if module.repo.available_libraries
+            }
+            if repos_with_libs:
+                message += DEPRECATION_NOTICE.format(repo_list=humanize_list(list(repos_with_libs)))
 
-        await cog.send_pagified(ctx, message)
+            await cog.send_pagified(ctx, message)
 
-        if updates_available and updated_cognames:
-            ctx.assume_yes = True
-            await cog._ask_for_cog_reload(ctx, updated_cognames)
+            if updates_available and updated_cognames:
+                ctx.assume_yes = True
+                await cog._ask_for_cog_reload(ctx, updated_cognames)
 
     async def _update_cogs_and_libs(
         self, ctx: commands.Context, cogs_to_update: list, current_cog_versions: list
