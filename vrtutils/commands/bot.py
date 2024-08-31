@@ -14,7 +14,6 @@ import discord
 import psutil
 import speedtest
 from discord import app_commands
-from redbot.cogs.downloader.converters import InstalledCog
 from redbot.core import commands, version_info
 from redbot.core._cog_manager import CogManager
 from redbot.core.bot import Red
@@ -46,17 +45,6 @@ class BotInfo(MixinMeta):
         """
         latency = round(self.bot.latency * 1000)
         await interaction.response.send_message(f"Pong! `{latency}ms`", ephemeral=True)
-
-    @commands.command(name="pull")
-    @commands.is_owner()
-    async def update_cog(self, ctx: commands.Context, *cogs: InstalledCog):
-        """Auto update & reload cogs"""
-        cog_update_command = ctx.bot.get_command("cog update")
-        if cog_update_command is None:
-            return await ctx.send(
-                f"Make sure you first `{ctx.clean_prefix}load downloader` before you can use this command."
-            )
-        await ctx.invoke(cog_update_command, True, *cogs)
 
     @commands.command()
     @commands.is_owner()
