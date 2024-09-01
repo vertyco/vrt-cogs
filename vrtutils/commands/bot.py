@@ -9,6 +9,7 @@ from io import StringIO
 from pathlib import Path
 from time import perf_counter
 
+import aiohttp
 import cpuinfo
 import discord
 import psutil
@@ -490,16 +491,72 @@ class BotInfo(MixinMeta):
     async def botip(self, ctx: commands.Context):
         """Get the bots public IP address (in DMs)"""
         async with ctx.typing():
-            test = speedtest.Speedtest(secure=True)
+            url = "https://api.ipify.org?format=json"
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as response:
+                    data = await response.json()
+
             embed = discord.Embed(
                 title=f"{self.bot.user.name}'s public IP",
-                description=test.results.dict()["client"]["ip"],
+                description=data["ip"],
+                color=await self.bot.get_embed_color(ctx),
             )
             try:
                 await ctx.author.send(embed=embed)
                 await ctx.tick()
             except discord.Forbidden:
                 await ctx.send("Your DMs appear to be disabled, please enable them and try again.")
+
+    @commands.command()
+    @commands.is_owner()
+    async def speedtest(self, ctx: commands.Context):
+        """
+        Run a speedtest and display the results
+
+        Keep in mind that this speedtest is single threaded and may not be accurate!
+
+        Based on PhasecoreX's [netspeed](https://github.com/PhasecoreX/PCXCogs/tree/master/netspeed) cog
+        """
+
+        def _embed(results: t.Dict[str, t.Any]) -> discord.Embed:
+            measuring = "🔍 Measuring..."
+            waiting = "⌛ Waiting for results..."
+            color = discord.Color.red()
+
+            title = None
+            ping = measuring
+            download = waiting
+            upload = waiting
+
+            if results["ping"]:
+                ping = f"`{results['ping']}` ms"
+                download = measuring
+                color = discord.Color.orange()
+            if results["download"]:
+                download = f"`{results['download'] / 1_000_000:.2f}` Mbps"
+                upload = measuring
+                color = discord.Color.yellow()
+            if results["upload"]:
+                upload = f"`{results['upload'] / 1_000_000:.2f}` Mbps"
+                title = "Speedtest Results"
+                color = discord.Color.green()
+
+            embed = discord.Embed(title=title, color=color)
+            embed.add_field(name="Ping", value=ping)
+            embed.add_field(name="Download", value=download)
+            embed.add_field(name="Upload", value=upload)
+            return embed
+
+        async with ctx.typing():
+            speed_test = speedtest.Speedtest(secure=True)
+            msg = await ctx.send(embed=_embed(speed_test.results.dict()))
+            await asyncio.to_thread(speed_test.get_servers)
+            await asyncio.to_thread(speed_test.get_best_server)
+            await msg.edit(embed=_embed(speed_test.results.dict()))
+            await asyncio.to_thread(speed_test.download)
+            await msg.edit(embed=_embed(speed_test.results.dict()))
+            await asyncio.to_thread(speed_test.upload)
+            await msg.edit(embed=_embed(speed_test.results.dict()))
 
     @commands.command(name="shared")
     @commands.is_owner()
@@ -564,6 +621,28 @@ class BotInfo(MixinMeta):
             await ctx.author.send("Here are the bot's API keys", file=file)
         except discord.Forbidden:
             await ctx.send("I cannot DM you, please enable DMs and try again.")
+
+    @commands.command(name="cleantmp")
+    @commands.is_owner()
+    async def clean_tmp(self, ctx: commands.Context):
+        """Cleanup all the `.tmp` files left behind by Red's config"""
+        async with ctx.typing():
+            cog_mgr = self.bot._cog_mgr
+            install_path: Path = await cog_mgr.install_path()
+            configs = install_path.parent.parent
+            cleaned = 0
+            for cog_dir in configs.iterdir():
+                # Get all the .tmp files in the cog directory
+                tmp_files = cog_dir.glob("*.tmp")
+                for tmp_file in tmp_files:
+                    try:
+                        tmp_file.unlink(missing_ok=True)
+                        cleaned += 1
+                    except FileNotFoundError:
+                        pass
+                    except Exception as e:
+                        await ctx.send(f"Failed to delete {tmp_file}:  {e}")
+            await ctx.send(f"Cleaned up {cleaned} .tmp files")
 
     @commands.command(name="cogsizes")
     @commands.is_owner()
