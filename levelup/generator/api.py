@@ -13,6 +13,8 @@ from pathlib import Path
 import psutil
 import uvicorn
 import uvicorn.config
+from decouple import config
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from uvicorn.config import LOGGING_CONFIG
 from uvicorn.logging import AccessFormatter, ColourizedFormatter
@@ -32,6 +34,7 @@ except ImportError:
 
     SERVICE = True
 
+load_dotenv()
 
 datefmt = "%m/%d %I:%M:%S %p"
 access = "%(asctime)s - %(levelname)s %(client_addr)s - '%(request_line)s' %(status_code)s"
@@ -188,6 +191,7 @@ def kill_process_on_port(port: int):
 async def run(
     port: t.Optional[int] = 8888,
     log_dir: t.Optional[t.Union[Path, str]] = None,
+    host: t.Optional[str] = None,
 ) -> t.Union[mp.Process, asyncio.subprocess.Process]:
     if not port:
         port = 8888
@@ -213,8 +217,10 @@ async def run(
             "log_config": LOGGING_CONFIG,
             "use_colors": False,
         }
-        if SERVICE:
+        if SERVICE and not host:
             kwargs["host"] = "0.0.0.0"
+        elif host:
+            kwargs["host"] = host
         log.info(f"Kwargs: {kwargs}")
         proc = mp.Process(
             target=uvicorn.run,
@@ -232,8 +238,11 @@ async def run(
         f"--port {port}",
         f"--app-dir {APP_DIR}",
     ]
-    if SERVICE:
+    if SERVICE and not host:
         cmd.append("--host 0.0.0.0")
+    elif host:
+        cmd.append(f"--host {host}")
+
     cmd = " ".join(cmd)
     log.info(f"Command: {cmd}")
     proc = await asyncio.create_subprocess_exec(*cmd.split(" "))
@@ -262,15 +271,28 @@ if __name__ == "__main__":
     If running this script directly, spin up the API.
 
     Usage:
-    python api.py [port] [log_dir]
+    python api.py [port] [log_dir] [host]
+
+    Alternatively you can use a .env file with the following:
+    LEVELUP_PORT=8888
+    LEVELUP_LOG_DIR=/path/to/log/dir
+    LEVELUP_HOST=
     """
 
     logging.basicConfig(level=logging.INFO)
     loop = asyncio.ProactorEventLoop() if IS_WINDOWS else asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8888
-    log_dir = sys.argv[2] if len(sys.argv) > 2 else None
+    port = config("LEVELUP_PORT", default=8888, cast=int)
+    log_dir = config("LEVELUP_LOG_DIR", default=None)
+    host = config("LEVELUP_HOST", default=None)
+    if len(sys.argv) > 1:
+        port = int(sys.argv[1])
+    if len(sys.argv) > 2:
+        log_dir = sys.argv[2]
+    if len(sys.argv) > 3:
+        host = sys.argv[3]
+
     try:
         loop.create_task(run(port, log_dir))
         loop.run_forever()

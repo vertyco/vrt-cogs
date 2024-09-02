@@ -156,7 +156,6 @@ tests/
 testcog/
 /reqbackup.txt
 makereqs.py
-requirements.txt
 __pycache__/
 scratch*.py
 template/
