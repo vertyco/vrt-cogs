@@ -509,9 +509,9 @@ class BotInfo(MixinMeta):
 
     @commands.command()
     @commands.is_owner()
-    async def speedtest(self, ctx: commands.Context):
+    async def ispeed(self, ctx: commands.Context):
         """
-        Run a speedtest and display the results
+        Run an internet speed test.
 
         Keep in mind that this speedtest is single threaded and may not be accurate!
 
