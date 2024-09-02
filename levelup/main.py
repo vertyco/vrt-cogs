@@ -75,7 +75,7 @@ class LevelUp(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "4.2.7"
+    __version__ = "4.2.8"
     __contributors__ = [
         "[aikaterna](https://github.com/aikaterna/aikaterna-cogs)",
         "[AAA3A](https://github.com/AAA3A-AAA3A/AAA3A-cogs)",
@@ -136,7 +136,7 @@ class LevelUp(
         try:
             log_dir = self.cog_path / "APILogs"
             log_dir.mkdir(exist_ok=True, parents=True)
-            proc = await api.run(self.db.internal_api_port, log_dir=log_dir)
+            proc = await api.run(port=self.db.internal_api_port, log_dir=log_dir)
             self.api_proc = proc
             self.bot._levelup_internal_api = proc
             log.debug(f"API Process started: {proc.pid}")

@@ -1,0 +1,9 @@
+colorgram.py
+emoji
+fastapi
+Pillow
+psutil
+python-decouple
+python-dotenv
+Red-DiscordBot
+uvicorn

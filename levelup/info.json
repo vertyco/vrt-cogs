@@ -24,11 +24,13 @@
     "plotly",
     "pydantic",
     "python-multipart",
+    "python-decouple",
+    "python-dotenv",
     "psutil",
+    "requests",
     "tenacity",
     "ujson",
-    "uvicorn",
-    "requests"
+    "uvicorn"
   ],
   "short": "Discord leveling system",
   "tags": [
