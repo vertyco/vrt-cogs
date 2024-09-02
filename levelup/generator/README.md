@@ -49,6 +49,9 @@ Before setting up the service, you can test the API to ensure it's working:
 
 ```bash
 cd /home/ubuntu/vrt-cogs/levelup/generator
+```
+
+```bash
 uvicorn api:app --host 0.0.0.0 --port 8888 --app-dir /home/ubuntu/vrt-cogs/levelup/generator
 ```
 

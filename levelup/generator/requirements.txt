@@ -6,4 +6,5 @@ psutil
 python-decouple
 python-dotenv
 Red-DiscordBot
+requests
 uvicorn
