@@ -541,57 +541,62 @@ class Admin(MixinMeta):
         - Remove profiles of users who have left the server.
         - Remove votes from users who have left the server.
         """
-        conf = self.db.get_conf(ctx.guild)
-        users_to_remove = [uid for uid in conf.profiles if not ctx.guild.get_member(uid)]
-        for uid in users_to_remove:
-            del conf.profiles[uid]
-        results = StringIO()
-        if users_to_remove:
-            results.write(_("- Removed {} profiles of users who have left the server.\n").format(len(users_to_remove)))
-        else:
-            results.write(_("- No profiles were removed.\n"))
+        async with ctx.typing():
+            conf = self.db.get_conf(ctx.guild)
+            users_to_remove = [uid for uid in conf.profiles if not ctx.guild.get_member(uid)]
+            for uid in users_to_remove:
+                del conf.profiles[uid]
+            results = StringIO()
+            if users_to_remove:
+                results.write(
+                    _("- Removed {} profiles of users who have left the server.\n").format(len(users_to_remove))
+                )
+            else:
+                results.write(_("- No profiles were removed.\n"))
 
-        to_remove: t.Dict[int, Suggestion] = {}
-        if pending := ctx.guild.get_channel(conf.pending):
-            for num, suggestion in conf.suggestions.items():
-                try:
-                    await pending.fetch_message(suggestion.message_id)
-                    # Check if any uid in users_to_remove is in the upvotes/downvotes
-                    for uid in users_to_remove:
-                        if uid in suggestion.upvotes:
-                            suggestion.upvotes.remove(uid)
-                            results.write(_("- Removed upvote from user {} on suggestion #{}.\n").format(uid, num))
-                        if uid in suggestion.downvotes:
-                            suggestion.downvotes.remove(uid)
-                            results.write(_("- Removed downvote from user {} on suggestion #{}.\n").format(uid, num))
-                except discord.NotFound:
-                    to_remove[num] = suggestion
-                    profile = conf.get_profile(suggestion.author_id)
-                    profile.suggestions_made -= 1
-                    for uid in suggestion.upvotes:
-                        if uid in users_to_remove:
-                            continue
-                        profile = conf.get_profile(uid)
-                        profile.upvotes -= 1
-                    for uid in suggestion.downvotes:
-                        if uid in users_to_remove:
-                            continue
-                        profile = conf.get_profile(uid)
-                        profile.downvotes -= 1
+            to_remove: t.Dict[int, Suggestion] = {}
+            if pending := ctx.guild.get_channel(conf.pending):
+                for num, suggestion in conf.suggestions.items():
+                    try:
+                        await pending.fetch_message(suggestion.message_id)
+                        # Check if any uid in users_to_remove is in the upvotes/downvotes
+                        for uid in users_to_remove:
+                            if uid in suggestion.upvotes:
+                                suggestion.upvotes.remove(uid)
+                                results.write(_("- Removed upvote from user {} on suggestion #{}.\n").format(uid, num))
+                            if uid in suggestion.downvotes:
+                                suggestion.downvotes.remove(uid)
+                                results.write(
+                                    _("- Removed downvote from user {} on suggestion #{}.\n").format(uid, num)
+                                )
+                    except discord.NotFound:
+                        to_remove[num] = suggestion
+                        profile = conf.get_profile(suggestion.author_id)
+                        profile.suggestions_made -= 1
+                        for uid in suggestion.upvotes:
+                            if uid in users_to_remove:
+                                continue
+                            profile = conf.get_profile(uid)
+                            profile.upvotes -= 1
+                        for uid in suggestion.downvotes:
+                            if uid in users_to_remove:
+                                continue
+                            profile = conf.get_profile(uid)
+                            profile.downvotes -= 1
 
-        for num, suggestion in to_remove.items():
-            results.write(_("- Removed suggestion #{} as the message no longer exists.\n").format(num))
-            if thread := ctx.guild.get_channel(suggestion.thread_id):
-                try:
-                    await thread.delete()
-                except discord.HTTPException as e:
-                    results.write(
-                        _("- Failed to delete discussion thread for suggestion #{}: {}.\n").format(num, str(e))
-                    )
-            del conf.suggestions[num]
+            for num, suggestion in to_remove.items():
+                results.write(_("- Removed suggestion #{} as the message no longer exists.\n").format(num))
+                if thread := ctx.guild.get_channel(suggestion.thread_id):
+                    try:
+                        await thread.delete()
+                    except discord.HTTPException as e:
+                        results.write(
+                            _("- Failed to delete discussion thread for suggestion #{}: {}.\n").format(num, str(e))
+                        )
+                del conf.suggestions[num]
 
-        await ctx.send(results.getvalue())
-        await self.save()
+            await ctx.send(results.getvalue())
+            await self.save()
 
     @ideaset.command(name="insights")
     async def view_insights(self, ctx: commands.Context, amount: int = 3):
