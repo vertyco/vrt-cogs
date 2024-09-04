@@ -132,7 +132,7 @@ class VoteView(discord.ui.View):
             if conf.min_playtime_to_vote and self.bot.get_cog("ArkTools"):
                 try:
                     arktools = self.bot.get_cog("ArkTools")
-                    if arktools.db:
+                    if await arktools.db_check(wait=False):
                         players = await arktools.db_utils.search_players(self.guild, interaction.user)
                         if not players:
                             prefixes = await self.bot.get_valid_prefixes()
