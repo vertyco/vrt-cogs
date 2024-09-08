@@ -183,14 +183,14 @@ class DynamicMenu(discord.ui.View):
         matches: list[tuple[int, int]] = []
         for i, page in enumerate(self.pages):
             if isinstance(page, discord.Embed):
-                if modal.query.lower() == page.title.lower():
+                if page.title and modal.query.lower() == page.title.lower():
                     self.page = i
                     return await self.refresh()
                 titlematch = fuzz.ratio(modal.query.lower(), page.title.lower())
                 if titlematch > 90:
                     self.page = i
                     return await self.refresh()
-                if modal.query.lower() in page.description.lower():
+                if page.description and modal.query.lower() in page.description.lower():
                     titlematch += 50
                 elif any(modal.query.lower() in field.value.lower() for field in page.fields):
                     titlematch += 50
