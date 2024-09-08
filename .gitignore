@@ -170,8 +170,7 @@ compress.py
 backups/
 orchestrator/
 welcomer/
-cookiecutter/
-cookiecutter-simple/
+cookiecutter*/
 fishing/
 osmosis/
 botarena/
@@ -187,3 +186,5 @@ levelup/data/stock/rs-assets/
 upchat/
 petcord/
 whosalt/
+design_docs/
+idlegather/
