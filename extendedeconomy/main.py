@@ -33,7 +33,7 @@ class ExtendedEconomy(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.4.0b"
+    __version__ = "0.4.1b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -62,7 +62,6 @@ class ExtendedEconomy(
         """Nothing to get"""
 
     async def cog_load(self) -> None:
-        self.send_payloads.start()
         self.bot.before_invoke(self.cost_check)
         self.bot.before_invoke(self.transfer_tax_check)
         asyncio.create_task(self.initialize())
@@ -70,7 +69,10 @@ class ExtendedEconomy(
     async def cog_unload(self) -> None:
         self.bot.remove_before_invoke_hook(self.cost_check)
         self.bot.remove_before_invoke_hook(self.transfer_tax_check)
+
         self.send_payloads.cancel()
+        self.auto_paydays.cancel()
+
         for cmd in self.bot.tree.walk_commands():
             if isinstance(cmd, discord.app_commands.Group):
                 continue
@@ -80,13 +82,12 @@ class ExtendedEconomy(
         if payday and self.payday_callback:
             payday.callback = self.payday_callback
 
-        self.auto_paydays.cancel()
-
     async def initialize(self) -> None:
         await self.bot.wait_until_red_ready()
         data = await self.config.db()
         self.db = await asyncio.to_thread(DB.model_validate, data)
         log.info("Config loaded")
+
         for cogname, cog in self.bot.cogs.items():
             if cogname in self.checks:
                 continue
@@ -103,7 +104,9 @@ class ExtendedEconomy(
             self.payday_callback = payday.callback
             payday.callback = self._extendedeconomy_payday_override.callback
 
+        self.send_payloads.start()
         self.auto_paydays.start()
+        log.info("Initialized")
 
     async def save(self) -> None:
         if self.saving:

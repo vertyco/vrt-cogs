@@ -1,10 +1,11 @@
 import calendar
 import logging
 import typing as t
+from datetime import datetime, timezone
 
 import discord
 from discord import app_commands
-from redbot.core import bank, commands
+from redbot.core import Config, bank, commands
 from redbot.core.i18n import Translator, cog_i18n
 
 from ..abc import MixinMeta
@@ -32,6 +33,61 @@ class Admin(MixinMeta):
         Should a hybrid or text command fail due to an unhandled exception, the user will be refunded.
         """
         pass
+
+    @extendedeconomy.command(name="diagnose", hidden=True)
+    @commands.guildowner()
+    async def diagnose_issues(self, ctx: commands.Context, *, member: discord.Member):
+        """
+        Diagnose issues with the cog for a user
+        """
+        eco = self.bot.get_cog("Economy")
+        is_global = await bank.is_global()
+
+        txt = _("**Global Bank:** `{}`\n").format(is_global)
+        txt += _("**Economy Cog:** `{}`\n").format(_("Loaded") if eco else _("Not Loaded"))
+        txt += _("**Auto Paydays:** `{}`\n").format(self.db.auto_payday_claim)
+
+        conf = self.db.get_conf(ctx.guild)
+        if not is_global:
+            txt += _("**Auto Payday Roles:** {}\n").format(
+                ", ".join([f"<@&{x}>" for x in conf.auto_claim_roles]) if conf.auto_claim_roles else _("None")
+            )
+
+        cur_time = calendar.timegm(datetime.now(tz=timezone.utc).utctimetuple())
+
+        eco_conf: Config = eco.config
+        if is_global:
+            bankgroup = bank._config._get_base_group(bank._config.USER)
+            ecogroup = eco_conf._get_base_group(eco_conf.USER)
+            accounts: t.Dict[str, dict] = await bankgroup.all()
+            ecousers: t.Dict[str, dict] = await ecogroup.all()
+            # max_bal = await bank.get_max_balance()
+            payday_time = await eco_conf.PAYDAY_TIME()
+            # payday_credits = await eco_conf.PAYDAY_CREDITS()
+        else:
+            bankgroup = bank._config._get_base_group(bank._config.MEMBER, str(ctx.guild.id))
+            ecogroup = eco_conf._get_base_group(eco_conf.MEMBER, str(ctx.guild.id))
+            accounts: t.Dict[str, dict] = await bankgroup.all()
+            ecousers: t.Dict[str, dict] = await ecogroup.all()
+            # max_bal = await bank.get_max_balance(ctx.guild)
+            payday_time = await eco_conf.guild(ctx.guild).PAYDAY_TIME()
+            # payday_credits = await eco_conf.guild(ctx.guild).PAYDAY_CREDITS()
+            # payday_roles: t.Dict[int, dict] = await eco_conf.all_roles()
+
+        uid = str(member.id)
+        if uid not in accounts:
+            txt += _("- {} has not used the bank yet.\n").format(member.display_name)
+
+        if uid not in ecousers:
+            txt += _("- {} has not used the economy commands yet.\n").format(member.display_name)
+        else:
+            next_payday = ecousers[uid].get("next_payday", 0) + payday_time
+            if cur_time < next_payday:
+                time_left = next_payday - cur_time
+                txt += _("- {} has {} seconds left until their next payday.\n").format(member.display_name, time_left)
+            else:
+                txt += _("- {} is ready for their next payday.\n").format(member.display_name)
+        await ctx.send(txt)
 
     @extendedeconomy.command(name="view")
     @commands.bot_has_permissions(embed_links=True)
