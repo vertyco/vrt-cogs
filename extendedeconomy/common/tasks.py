@@ -97,17 +97,19 @@ class Tasks(MixinMeta):
                     to_give = payday_credits
                     can_autoclaim = False
                     for role in member.roles:
-                        if role.id not in payday_roles:
-                            continue
-                        role_credits = payday_roles[role.id]["PAYDAY_CREDITS"]
-                        if conf.stack_paydays:
-                            to_give += role_credits
-                        elif role_credits > to_give:
-                            to_give = role_credits
+                        if role.id in payday_roles:
+                            role_credits = payday_roles[role.id]["PAYDAY_CREDITS"]
+                            if conf.stack_paydays:
+                                to_give += role_credits
+                            elif role_credits > to_give:
+                                to_give = role_credits
+
                         if role.id in conf.auto_claim_roles:
                             can_autoclaim = True
+
                     if not can_autoclaim:
                         continue
+
                     accounts[uid]["balance"] = min(max_bal, accounts[uid]["balance"] + to_give)
                     ecousers[uid]["next_payday"] = cur_time
                     updated.append((f"{member.name} ({member.id}): {humanize_number(to_give)}\n", to_give))
