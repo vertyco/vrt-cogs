@@ -74,10 +74,10 @@ the [Red Cog Support](https://discord.gg/GET4DVk) server.
 
 # Contributing
 
-If you have any suggestions, or found any bugs, please ping me in Discord (Vertyco#0117)
+If you have any suggestions, or found any bugs, please ping me in Discord (vertyco)
 or [open an issue](https://github.com/vertyco/vrt-cogs/issues) on my repo!
 
-If you would like to contribute, please talk to me on Discord first about your ideas before opening a PR.
+If you would like to contribute, please talk to me on Discord first about your ideas before opening a PR, then follow the guidelines in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 # Translate my cogs
 
