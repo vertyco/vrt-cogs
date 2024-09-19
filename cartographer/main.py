@@ -20,10 +20,6 @@ log = logging.getLogger("red.vrt.cartographer")
 _ = Translator("Cartographer", __file__)
 RequestType = t.Literal["discord_deleted_user", "owner", "user", "user_strict"]
 
-
-# redgettext -D main.py common/formatting.py common/models.py common/serializers.py common/views.py --command-docstring
-
-
 @cog_i18n(_)
 class Cartographer(commands.Cog):
     """
@@ -34,7 +30,7 @@ class Cartographer(commands.Cog):
     - Categories (permissions/order)
     - Text channels (permissions/order)
     - Voice channels (permissions/order)
-    - Forum channels  (permissions/order)[Not forum posts]
+    - Forum channels (permissions/order)[Not forum posts]
     - Roles (permissions/color/name/icon and what members they're assigned to)
     - Emojis (name/roles, Very slow and rate limit heavy)
     - Stickers (name/description, Very slow and rate limit heavy)
@@ -45,9 +41,15 @@ class Cartographer(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.1.5"
+    __version__ = "1.1.6"
 
     def __init__(self, bot: Red):
+        """
+        Initialize the Cartographer cog.
+
+        Args:
+            bot (Red): The Red instance this cog is loaded into.
+        """
         super().__init__()
         self.bot = bot
         self.config = Config.get_conf(self, 117, force_registration=True)
@@ -60,12 +62,15 @@ class Cartographer(commands.Cog):
         self.saving = False
 
     async def cog_load(self) -> None:
+        """Initialize the cog when it is loaded."""
         asyncio.create_task(self.initialize())
 
     async def cog_unload(self) -> None:
+        """Cancel tasks when the cog is unloaded."""
         self.auto_backup.cancel()
 
     async def initialize(self) -> None:
+        """Load configuration and start auto-backup tasks."""
         await self.bot.wait_until_red_ready()
         data = await self.config.db()
         self.db = await asyncio.to_thread(DB.model_validate, data)
@@ -73,6 +78,7 @@ class Cartographer(commands.Cog):
         self.auto_backup.start()
 
     async def save(self) -> None:
+        """Save the current configuration to the database."""
         if self.saving:
             return
         try:
@@ -85,6 +91,15 @@ class Cartographer(commands.Cog):
             self.saving = False
 
     def format_help_for_context(self, ctx: commands.Context):
+        """
+        Format the help message for the context.
+
+        Args:
+            ctx (commands.Context): The command context.
+
+        Returns:
+            str: The formatted help message.
+        """
         helpcmd = super().format_help_for_context(ctx)
         txt = _("Version: {}\nAuthor: {}").format(self.__version__, self.__author__)
         return f"{helpcmd}\n\n{txt}"
@@ -94,6 +109,7 @@ class Cartographer(commands.Cog):
 
     @tasks.loop(minutes=1)
     async def auto_backup(self):
+        """Automatically back up servers at regular intervals."""
         if not self.db.allow_auto_backups:
             return
         now = datetime.now().astimezone()
@@ -142,24 +158,14 @@ class Cartographer(commands.Cog):
     @commands.bot_has_permissions(administrator=True)
     @commands.guild_only()
     async def cartographer_menu(self, ctx: commands.Context):
-        """Open the Backup/Restore menu
+        """
+        Open the Backup/Restore menu.
 
-        This cog can backup & restore the following:
-        - Bans (including reason)
-        - Categories (permissions/order)
-        - Text channels (permissions/order)
-        - Voice channels (permissions/order)
-        - Forum channels  (permissions/order)[Not forum posts]
-        - Roles (permissions/color/name/icon and what members they're assigned to)
-        - Emojis (name/roles, Very slow and rate limit heavy)
-        - Stickers (name/description, Very slow and rate limit heavy)
-        - Members (roles and nicknames)
-        - Messages (Optional, can be disabled)
-        - Server icon/banner/splash/discovery splash/description/name
-        - All server verification/security settings
+        Args:
+            ctx (commands.Context): The command context.
         """
         if ctx.guild.id in self.db.ignored_guilds:
-            txt = _("This server is in the ingored list!")
+            txt = _("This server is in the ignored list!")
             return await ctx.send(txt)
         if self.db.allowed_guilds and ctx.guild.id not in self.db.allowed_guilds:
             txt = _("This server is not in the allowed list!")
@@ -178,15 +184,23 @@ class Cartographer(commands.Cog):
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
     async def cartographer_base(self, ctx: commands.Context):
-        """Backup & Restore Tools"""
+        """
+        Base command group for Cartographer settings.
+
+        Args:
+            ctx (commands.Context): The command context.
+        """
+        pass
 
     @cartographer_base.command(name="wipebackups")
     @commands.is_owner()
     async def wipe_all_backups(self, ctx: commands.Context, confirm: bool):
         """
-        Wipe all backups for all servers
+        Wipe all backups for all servers.
 
-        This action cannot be undone!
+        Args:
+            ctx (commands.Context): The command context.
+            confirm (bool): Confirmation to proceed with wiping backups.
         """
         if not confirm:
             return await ctx.send(_("Please confirm this action by passing `True` as an argument"))
@@ -202,12 +216,14 @@ class Cartographer(commands.Cog):
     @cartographer_base.command(name="backup")
     async def backup_server(self, ctx: commands.Context, limit: int = 0):
         """
-        Create a backup of this server
+        Create a backup of this server.
 
-        limit: How many messages to backup per channel (0 for None)
+        Args:
+            ctx (commands.Context): The command context.
+            limit (int): How many messages to backup per channel (0 for none).
         """
         if ctx.guild.id in self.db.ignored_guilds:
-            txt = _("This server is in the ingored list!")
+            txt = _("This server is in the ignored list!")
             return await ctx.send(txt)
         if self.db.allowed_guilds and ctx.guild.id not in self.db.allowed_guilds:
             txt = _("This server is not in the allowed list!")
@@ -231,10 +247,13 @@ class Cartographer(commands.Cog):
     @commands.bot_has_permissions(administrator=True)
     async def restore_server_latest(self, ctx: commands.Context):
         """
-        Restore the latest backup for this server
+        Restore the latest backup for this server.
+
+        Args:
+            ctx (commands.Context): The command context.
         """
         if ctx.guild.id in self.db.ignored_guilds:
-            txt = _("This server is in the ingored list!")
+            txt = _("This server is in the ignored list!")
             return await ctx.send(txt)
         if self.db.allowed_guilds and ctx.guild.id not in self.db.allowed_guilds:
             txt = _("This server is not in the allowed list!")
@@ -256,7 +275,12 @@ class Cartographer(commands.Cog):
     @cartographer_base.command(name="view")
     @commands.is_owner()
     async def view_settings(self, ctx: commands.Context):
-        """View current global settings"""
+        """
+        View current global settings.
+
+        Args:
+            ctx (commands.Context): The command context.
+        """
         all_backups = 0
         total_size = 0
         for guild_backup_folder in self.backups_dir.iterdir():
@@ -296,7 +320,12 @@ class Cartographer(commands.Cog):
     @cartographer_base.command(name="autobackups")
     @commands.is_owner()
     async def toggle_auto_backups(self, ctx: commands.Context):
-        """Enable/Disable allowing auto backups"""
+        """
+        Enable/Disable allowing auto backups.
+
+        Args:
+            ctx (commands.Context): The command context.
+        """
         if self.db.allow_auto_backups:
             self.db.allow_auto_backups = False
             txt = _("Auto backups have been **Disabled**")
@@ -309,12 +338,12 @@ class Cartographer(commands.Cog):
     @cartographer_base.command(name="messagelimit")
     @commands.is_owner()
     async def set_message_limit(self, ctx: commands.Context, limit: int):
-        """Set the message backup limit per channel for auto backups
+        """
+        Set the message backup limit per channel for auto backups.
 
-        Set to 0 to disable message backups
-
-        ⚠️**Warning**⚠️
-        Setting this to a high number can cause backups to be slow and take up a lot of space.
+        Args:
+            ctx (commands.Context): The command context.
+            limit (int): The message limit per channel.
         """
         if limit < 0:
             return await ctx.send(_("Limit must be 0 or higher"))
@@ -328,13 +357,14 @@ class Cartographer(commands.Cog):
     @cartographer_base.command(name="backupmembers")
     @commands.is_owner()
     async def toggle_backup_members(self, ctx: commands.Context):
-        """Toggle backing up members
+        """
+        Toggle backing up members.
 
-        ⚠️**Warning**⚠️
-        Restoring the roles of all members can be slow for large servers.
+        Args:
+            ctx (commands.Context): The command context.
         """
         self.db.backup_members = not self.db.backup_members
-        warning = _("\n⚠️**Warning**⚠️\nRestoring the roles of all members can be slow for large servers.")
+        warning = _("\n**Warning**\nRestoring the roles of all members can be slow for large servers.")
         if self.db.backup_members:
             txt = _("Members will now be backed up") + warning
         else:
@@ -345,13 +375,14 @@ class Cartographer(commands.Cog):
     @cartographer_base.command(name="backuproles")
     @commands.is_owner()
     async def toggle_backup_roles(self, ctx: commands.Context):
-        """Toggle backing up roles
+        """
+        Toggle backing up roles.
 
-        ⚠️**Warning**⚠️
-        Any roles above the bot's role will not be restored.
+        Args:
+            ctx (commands.Context): The command context.
         """
         self.db.backup_roles = not self.db.backup_roles
-        warning = _("\n⚠️**Warning**⚠️\nAny roles above the bot's role will not be restored.")
+        warning = _("\n**Warning**\nAny roles above the bot's role will not be restored.")
         if self.db.backup_roles:
             txt = _("Roles will now be backed up") + warning
         else:
@@ -362,14 +393,15 @@ class Cartographer(commands.Cog):
     @cartographer_base.command(name="backupemojis")
     @commands.is_owner()
     async def toggle_backup_emojis(self, ctx: commands.Context):
-        """Toggle backing up emojis
+        """
+        Toggle backing up emojis.
 
-        ⚠️**Warning**⚠️
-        Restoring emojis is EXTREMELY rate-limited and can take a long time (like hours) for servers with many emojis.
+        Args:
+            ctx (commands.Context): The command context.
         """
         self.db.backup_emojis = not self.db.backup_emojis
         warning = _(
-            "\n⚠️**Warning**⚠️\nRestoring emojis is EXTREMELY rate-limited and can take a long time (like hours) for servers with many emojis."
+            "\n**Warning**\nRestoring emojis is EXTREMELY rate-limited and can take a long time (like hours) for servers with many emojis."
         )
         if self.db.backup_emojis:
             txt = _("Emojis will now be backed up") + warning
@@ -381,14 +413,15 @@ class Cartographer(commands.Cog):
     @cartographer_base.command(name="backupstickers")
     @commands.is_owner()
     async def toggle_backup_stickers(self, ctx: commands.Context):
-        """Toggle backing up stickers
+        """
+        Toggle backing up stickers.
 
-        ⚠️**Warning**⚠️
-        Restoring stickers is EXTREMELY rate-limited and can take a long time (like hours) for servers with many stickers.
+        Args:
+            ctx (commands.Context): The command context.
         """
         self.db.backup_stickers = not self.db.backup_stickers
         warning = _(
-            "\n⚠️**Warning**⚠️\nRestoring stickers is EXTREMELY rate-limited and can take a long time (like hours) for servers with many stickers."
+            "\n**Warning**\nRestoring stickers is EXTREMELY rate-limited and can take a long time (like hours) for servers with many stickers."
         )
         if self.db.backup_stickers:
             txt = _("Stickers will now be backed up") + warning
@@ -400,7 +433,13 @@ class Cartographer(commands.Cog):
     @cartographer_base.command(name="maxbackups")
     @commands.is_owner()
     async def set_max_backups(self, ctx: commands.Context, max_backups: int):
-        """Set the max amount of backups a server can have"""
+        """
+        Set the max amount of backups a server can have.
+
+        Args:
+            ctx (commands.Context): The command context.
+            max_backups (int): The maximum number of backups allowed per server.
+        """
         self.db.max_backups_per_guild = max_backups
         if max_backups == 0:
             txt = _("Max backups set to 0, Cartographer has been **Disabled**")
@@ -412,7 +451,13 @@ class Cartographer(commands.Cog):
     @cartographer_base.command(name="ignore")
     @commands.is_owner()
     async def ignore_list(self, ctx: commands.Context, guild: discord.Guild):
-        """Add/Remove a server from the ignore list"""
+        """
+        Add/Remove a server from the ignore list.
+
+        Args:
+            ctx (commands.Context): The command context.
+            guild (discord.Guild): The guild to add/remove from the ignore list.
+        """
         if guild.id in self.db.ignored_guilds:
             self.db.ignored_guilds.remove(guild.id)
             txt = _("Server removed from the ignore list")
@@ -425,7 +470,13 @@ class Cartographer(commands.Cog):
     @cartographer_base.command(name="allow")
     @commands.is_owner()
     async def allow_list(self, ctx: commands.Context, guild: discord.Guild):
-        """Add/Remove a server from the allow list"""
+        """
+        Add/Remove a server from the allow list.
+
+        Args:
+            ctx (commands.Context): The command context.
+            guild (discord.Guild): The guild to add/remove from the allow list.
+        """
         if guild.id in self.db.allowed_guilds:
             self.db.allowed_guilds.remove(guild.id)
             txt = _("Server removed from the allow list")
