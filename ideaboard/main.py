@@ -20,7 +20,7 @@ class IdeaBoard(Commands, Listeners, commands.Cog, metaclass=CompositeMetaClass)
     """Share Ideas and Suggestions"""
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.7.5"
+    __version__ = "0.7.6"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -31,6 +31,7 @@ class IdeaBoard(Commands, Listeners, commands.Cog, metaclass=CompositeMetaClass)
         self.db: DB = DB()
         self.saving = False
         self.views = []
+        self.initialized = False
 
     async def cog_load(self) -> None:
         asyncio.create_task(self.initialize())
@@ -73,8 +74,13 @@ class IdeaBoard(Commands, Listeners, commands.Cog, metaclass=CompositeMetaClass)
             # ideaset minplaytime
             self.bot.remove_command("ideaset minplaytime")
 
+        self.initialized = True
+
     async def save(self) -> None:
         if self.saving:
+            return
+        if not self.initialized:
+            log.error("Attempted to save before cog was initialized")
             return
         try:
             self.saving = True
