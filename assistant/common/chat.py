@@ -33,6 +33,7 @@ from .utils import (
     clean_name,
     clean_response,
     clean_responses,
+    ensure_message_compatibility,
     ensure_supports_vision,
     ensure_tool_consistency,
     extract_code_blocks,
@@ -382,6 +383,7 @@ class ChatHandler(MixinMeta):
                 function_calls = []
 
             await ensure_supports_vision(messages, conf, author)
+            await ensure_message_compatibility(messages, conf, author)
 
             # Iteratively degrade the conversation to ensure it is always under the token limit
             degraded = await self.degrade_conversation(messages, function_calls, conf, author)

@@ -15,7 +15,7 @@ from tenacity import (
     wait_random_exponential,
 )
 
-from .constants import SUPPORTS_SEED, SUPPORTS_TOOLS
+from .constants import NO_SYSTEM_MESSAGES, SUPPORTS_SEED, SUPPORTS_TOOLS
 
 log = logging.getLogger("red.vrt.assistant.calls")
 
@@ -44,18 +44,18 @@ async def request_chat_completion_raw(
     seed: int = None,
 ) -> ChatCompletion:
     client = openai.AsyncOpenAI(api_key=api_key)
-    kwargs = {
-        "model": model,
-        "messages": messages,
-        "temperature": temperature,
-        "frequency_penalty": frequency_penalty,
-        "presence_penalty": presence_penalty,
-    }
+
+    kwargs = {"model": model, "messages": messages}
+
+    if model not in NO_SYSTEM_MESSAGES:
+        kwargs["temperature"] = temperature
+        kwargs["frequency_penalty"] = frequency_penalty
+        kwargs["presence_penalty"] = presence_penalty
     if max_tokens > 0:
         kwargs["max_tokens"] = max_tokens
     if seed and model in SUPPORTS_SEED:
         kwargs["seed"] = seed
-    if functions:
+    if functions and model not in NO_SYSTEM_MESSAGES:
         if model in SUPPORTS_TOOLS:
             tools = []
             for func in functions:
