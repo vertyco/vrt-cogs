@@ -12,7 +12,7 @@ from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
 
-from .constants import SUPPORTS_VISION
+from .constants import NO_SYSTEM_MESSAGES, SUPPORTS_VISION
 from .models import GuildSettings
 
 log = logging.getLogger("red.vrt.assistant.utils")
@@ -195,6 +195,27 @@ def get_params(
         "userjointime": author.joined_at.strftime("%I:%M %p %Z") if author else "[unknown time]",
     }
     return params
+
+
+async def ensure_message_compatibility(
+    messages: List[dict], conf: GuildSettings, user: Optional[discord.Member]
+) -> bool:
+    cleaned = False
+
+    model = conf.get_user_model(user)
+    if model not in NO_SYSTEM_MESSAGES:
+        return cleaned
+
+    # Remove all system messages
+    indexes_to_purge = set()
+    for idx, message in enumerate(messages):
+        if message["role"] == "system":
+            indexes_to_purge.add(idx)
+            cleaned = True
+    if indexes_to_purge:
+        for idx in sorted(indexes_to_purge, reverse=True):
+            messages.pop(idx)
+    return cleaned
 
 
 async def ensure_supports_vision(messages: List[dict], conf: GuildSettings, user: Optional[discord.Member]) -> bool:
