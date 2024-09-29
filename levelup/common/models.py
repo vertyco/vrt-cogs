@@ -333,8 +333,8 @@ class GuildSettings(Base):
     notifymention: bool = False  # Mention the user when sending a level up message
     role_awarded_dm: str = ""  # Role awarded message in DM
     levelup_dm: str = ""  # Level up message in DM
-    role_awarded_msg: str = ""  # Role awarded message in guild
-    levelup_msg: str = ""  # Level up message in guild
+    role_awarded_msg: t.Optional[str] = ""  # Role awarded message in guild
+    levelup_msg: t.Optinal[str] = ""  # Level up message in guild
 
     # Stars
     starcooldown: int = 3600  # Cooldown in seconds for users to give each other stars

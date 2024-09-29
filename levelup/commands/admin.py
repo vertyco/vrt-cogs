@@ -843,7 +843,7 @@ class Admin(MixinMeta):
         if not message and not conf.levelup_msg:
             return await ctx.send_help()
         if not message and conf.levelup_msg:
-            conf.levelup_msg = None
+            conf.levelup_msg = ""
             self.save()
             return await ctx.send(_("LevelUp message has been removed"))
         kwargs = {
@@ -880,7 +880,7 @@ class Admin(MixinMeta):
         if not message and not conf.role_awarded_msg:
             return await ctx.send_help()
         if not message and conf.role_awarded_msg:
-            conf.role_awarded_msg = None
+            conf.role_awarded_msg = ""
             self.save()
             return await ctx.send(_("LevelUp role message has been removed"))
         kwargs = {
