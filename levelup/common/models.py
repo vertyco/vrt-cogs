@@ -334,7 +334,7 @@ class GuildSettings(Base):
     role_awarded_dm: str = ""  # Role awarded message in DM
     levelup_dm: str = ""  # Level up message in DM
     role_awarded_msg: t.Optional[str] = ""  # Role awarded message in guild
-    levelup_msg: t.Optinal[str] = ""  # Level up message in guild
+    levelup_msg: t.Optional[str] = ""  # Level up message in guild
 
     # Stars
     starcooldown: int = 3600  # Cooldown in seconds for users to give each other stars
