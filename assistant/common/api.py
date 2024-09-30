@@ -206,8 +206,12 @@ class API(MixinMeta):
         if not text:
             log.debug("No text to get token count from!")
             return 0
-        tokens = await self.get_tokens(text, model)
-        return len(tokens)
+        try:
+            tokens = await self.get_tokens(text, model)
+            return len(tokens)
+        except TypeError as e:
+            log.error(f"Failed to count tokens for: {text}", exc_info=e)
+            return 0
 
     async def can_call_llm(self, conf: GuildSettings, ctx: Optional[commands.Context] = None) -> bool:
         if not conf.api_key:
