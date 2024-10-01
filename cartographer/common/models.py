@@ -98,5 +98,5 @@ class DB(Base):
         if len(backups) <= self.max_backups_per_guild:
             return
         for backup in backups[: -self.max_backups_per_guild]:
-            log.info("Cleaning up old backup: %s", backup)
+            log.debug("Cleaning up old backup: %s", backup)
             backup.unlink()
