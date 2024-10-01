@@ -236,10 +236,10 @@ class User(MixinMeta):
 
         embed.add_field(
             name=_("Suggestion Summary"),
-            value=_("Suggestions Made: {}\nSuggestions Approved: {}\nSuggestions Denied: {}").format(
-                profile.suggestions_made,
-                profile.suggestions_approved,
-                profile.suggestions_denied,
+            value=_(
+                "Suggestions Made: {}\n" "Suggestions Approved: {}\n" "Suggestions Denied: {}\n" "Karma: {}"
+            ).format(
+                profile.suggestions_made, profile.suggestions_approved, profile.suggestions_denied, profile.karma_str
             ),
             inline=False,
         )
@@ -247,12 +247,11 @@ class User(MixinMeta):
         embed.add_field(
             name=_("Voting Summary"),
             value=_(
-                "Karma: {}\n"
                 "Total Upvotes: {}\n"
                 "Total Downvotes: {}\n"
                 "Successful Votes (Wins): {}\n"
                 "Unsuccessful Votes (Losses): {}"
-            ).format(profile.karma_str, profile.upvotes, profile.downvotes, profile.wins, profile.losses),
+            ).format(profile.upvotes, profile.downvotes, profile.wins, profile.losses),
             inline=False,
         )
 
