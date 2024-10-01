@@ -74,25 +74,22 @@ class Admin(MixinMeta):
         embed.set_author(name=_("Ideaboard Settings"), icon_url=ctx.guild.icon)
 
         name = _("Cooldowns")
-        value = _("Base: {0.base_cooldown} seconds\nRole Cooldowns: {1}").format(
-            conf, "\n".join(f"{r}: {c}s" for r, c in cooldown_roles.items()) if cooldown_roles else _("None Set")
+        value = _("Base: {} seconds\nRole Cooldowns: {}").format(
+            conf.base_cooldown,
+            "\n".join(f"{r}: {c}s" for r, c in cooldown_roles.items()) if cooldown_roles else _("None Set"),
         )
         embed.add_field(name=name, value=value, inline=False)
 
         name = _("Account Age")
-        value = _(
-            "Minimum age of account to vote or suggest\n"
-            "Vote: {0.min_account_age_to_vote} hours\n"
-            "Suggest: {0.min_account_age_to_suggest} hours"
-        ).format(conf)
+        value = _("Minimum age of account to vote or suggest\nVote: {} hours\nSuggest: {} hours").format(
+            conf.min_account_age_to_vote, conf.min_account_age_to_suggest
+        )
         embed.add_field(name=name, value=value, inline=False)
 
         name = _("Join Time")
-        value = _(
-            "Minimum time in server to vote or suggest\n"
-            "Vote: {0.min_join_time_to_vote} hours\n"
-            "Suggest: {0.min_join_time_to_suggest} hours"
-        ).format(conf)
+        value = _("Minimum time in server to vote or suggest\nVote: {} hours\nSuggest: {} hours").format(
+            conf.min_join_time_to_vote, conf.min_join_time_to_suggest
+        )
         embed.add_field(name=name, value=value, inline=False)
 
         name = _("Vote Roles")
@@ -122,19 +119,15 @@ class Admin(MixinMeta):
 
         if self.bot.get_cog("LevelUp"):
             name = _("LevelUp Integration")
-            value = _(
-                "Minimum level required to vote or make suggestions.\n"
-                "Vote: {0.min_level_to_vote}\n"
-                "Suggest: {0.min_level_to_suggest}"
-            ).format(conf)
+            value = _("Minimum level required to vote or make suggestions.\nVote: {}\nSuggest: {}").format(
+                conf.min_level_to_vote, conf.min_level_to_suggest
+            )
             embed.add_field(name=name, value=value, inline=False)
         if self.bot.get_cog("ArkTools"):
             name = _("Ark Playtime Integration")
-            value = _(
-                "Minimum playtime to vote or make suggestions\n"
-                "Vote: {0.min_playtime_to_vote} hours\n"
-                "Suggest: {0.min_playtime_to_suggest} hours"
-            ).format(conf)
+            value = _("Minimum playtime to vote or make suggestions\nVote: {} hours\nSuggest: {} hours").format(
+                conf.min_playtime_to_vote, conf.min_playtime_to_suggest
+            )
             embed.add_field(name=name, value=value, inline=False)
 
         if conf.role_blacklist:
