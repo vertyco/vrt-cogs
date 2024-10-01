@@ -955,10 +955,9 @@ class Admin(MixinMeta):
         This sets how many times the model can call functions in a row
 
         Only the following models can call functions at the moment
-        - gpt-3.5-turbo
-        - gpt-3.5-turbo-16k
-        - gpt-4
-        - gpt-4-32k
+        - gpt-4o-mini
+        - gpt-4o
+        - ect..
         """
         conf = self.db.get_conf(ctx.guild)
         recursion = max(0, recursion)
@@ -993,7 +992,9 @@ class Admin(MixinMeta):
     @assistant.command(name="maxtokens")
     async def max_tokens(self, ctx: commands.Context, max_tokens: int):
         """
-        Set the max tokens that the bot will send to the model
+        Set maximum tokens a convo can consume
+
+        Set to 0 for dynamic token usage
 
         **Tips**
         - Max tokens are a soft cap, sometimes messages can be a little over
@@ -1002,14 +1003,17 @@ class Admin(MixinMeta):
 
         Using more than the model can handle will raise exceptions.
         """
-        if max_tokens < 100:
-            return await ctx.send(_("Use at least 100 tokens"))
+        if max_tokens < 0:
+            return await ctx.send(_("Cannot be a negative number!"))
         conf = self.db.get_conf(ctx.guild)
         conf.max_tokens = max_tokens
-        txt = _(
-            "The maximum amount of tokens sent in a payload will be {}.\n"
-            "*Note that models with token limits lower than this will still be trimmed*"
-        ).format(max_tokens)
+        if max_tokens:
+            txt = _(
+                "The maximum amount of tokens sent in a payload will be {}.\n"
+                "*Note that models with token limits lower than this will still be trimmed*"
+            ).format(max_tokens)
+        else:
+            txt = _("The maximum amount of tokens sent in a payload will be dynamic")
         await ctx.send(txt)
         await self.save_conf()
 
@@ -1035,10 +1039,6 @@ class Admin(MixinMeta):
     async def set_model(self, ctx: commands.Context, model: str = None):
         """
         Set the OpenAI model to use
-
-        **NOTE**
-        Specifying a model without it's identifier (like `gpt-3.5-turbo` instead of `gpt-3.5-turbo-0125`)
-        will sometimes lose the ability to call functions in parallel for some reason, this is an OpenAI issue.
         """
         model = model.lower().strip() if model else None
         conf = self.db.get_conf(ctx.guild)

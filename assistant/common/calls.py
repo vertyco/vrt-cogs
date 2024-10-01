@@ -51,10 +51,16 @@ async def request_chat_completion_raw(
         kwargs["temperature"] = temperature
         kwargs["frequency_penalty"] = frequency_penalty
         kwargs["presence_penalty"] = presence_penalty
+
     if max_tokens > 0:
-        kwargs["max_tokens"] = max_tokens
+        if model in NO_SYSTEM_MESSAGES:
+            kwargs["max_completion_tokens"] = max_tokens
+        else:
+            kwargs["max_tokens"] = max_tokens
+
     if seed and model in SUPPORTS_SEED:
         kwargs["seed"] = seed
+
     if functions and model not in NO_SYSTEM_MESSAGES:
         if model in SUPPORTS_TOOLS:
             tools = []

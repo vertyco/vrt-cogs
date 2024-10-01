@@ -90,7 +90,7 @@ class GuildSettings(AssistantBaseModel):
     mention: bool = False
     mention_respond: bool = True
     enabled: bool = True  # Auto-reply channel
-    model: str = "gpt-3.5-turbo"
+    model: str = "gpt-4o-mini"
     embed_model: str = "text-embedding-3-small"  # Or text-embedding-3-large, text-embedding-ada-002
     collab_convos: bool = False
 
