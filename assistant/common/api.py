@@ -79,8 +79,8 @@ class API(MixinMeta):
                 response_tokens = min(response_tokens, max_response_tokens)
 
         if model not in MODELS:
-            log.error(f"This model is not longer supported: {model}. Switching to gpt-3.5-turbo")
-            model = "gpt-3.5-turbo"
+            log.error(f"This model is not longer supported: {model}. Switching to gpt-4o-mini")
+            model = "gpt-4o-mini"
             await self.save_conf()
 
         response: ChatCompletion = await request_chat_completion_raw(
@@ -122,7 +122,7 @@ class API(MixinMeta):
     # -------------------------------------------------------
     # -------------------------------------------------------
 
-    async def count_payload_tokens(self, messages: List[dict], model: str = "gpt-3.5-turbo"):
+    async def count_payload_tokens(self, messages: List[dict], model: str = "gpt-4o-mini"):
         if not messages:
             return 0
 
@@ -166,7 +166,7 @@ class API(MixinMeta):
         num_tokens += 2  # every reply is primed with <im_start>assistant
         return num_tokens
 
-    async def count_function_tokens(self, functions: List[dict], model: str = "gpt-3.5-turbo"):
+    async def count_function_tokens(self, functions: List[dict], model: str = "gpt-4o-mini"):
         def _get_encoding():
             try:
                 enc = tiktoken.encoding_for_model(model)
@@ -183,7 +183,7 @@ class API(MixinMeta):
             num_tokens += len(encoded)
         return num_tokens
 
-    async def get_tokens(self, text: str, model: str = "gpt-3.5-turbo") -> list:
+    async def get_tokens(self, text: str, model: str = "gpt-4o-mini") -> list:
         """Get token list from text"""
         if not text:
             log.debug("No text to get tokens from!")
@@ -263,7 +263,7 @@ class API(MixinMeta):
         tokens = await self.get_tokens(text, conf.get_user_model(user))
         return await self.get_text(tokens[: self.get_max_tokens(conf, user)], conf.get_user_model(user))
 
-    async def get_text(self, tokens: list, model: str = "gpt-3.5-turbo") -> str:
+    async def get_text(self, tokens: list, model: str = "gpt-4o-mini") -> str:
         """Get text from token list"""
 
         def _get_encoding():
