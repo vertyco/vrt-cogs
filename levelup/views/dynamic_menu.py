@@ -81,7 +81,7 @@ class DynamicMenu(discord.ui.View):
         for button in buttons:
             self.add_item(button)
 
-        if len(buttons) == 1:
+        if len(buttons) == 1 and isinstance(self.pages[self.page], discord.Embed):
             for embed in self.pages:
                 embed.set_footer(text=None)
 
