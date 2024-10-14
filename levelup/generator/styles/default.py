@@ -105,7 +105,9 @@ def generate_default_profile(
 
     if isinstance(role_icon, str) and role_icon.startswith("http"):
         log.debug("Role icon is a URL, attempting to download")
-        role_icon = imgtools.download_image(role_icon)
+        role_icon_bytes_or_path = imgtools.download_image(role_icon)
+    else:
+        role_icon_bytes_or_path = role_icon
 
     if background_bytes:
         try:
@@ -350,9 +352,22 @@ def generate_default_profile(
     status_icon = imgtools.STATUS[status].resize((75, 75), Image.Resampling.LANCZOS)
     stats.paste(status_icon, (circle_x + 260, circle_y + 260), status_icon)
     # Paste role icon on top left of profile circle
-    if role_icon:
-        role_icon_img = Image.open(BytesIO(role_icon)).resize((70, 70), Image.Resampling.LANCZOS)
-        stats.paste(role_icon_img, (10, 10), role_icon_img)
+    if role_icon_bytes_or_path:
+        obj = (
+            BytesIO(role_icon_bytes_or_path) if isinstance(role_icon_bytes_or_path, bytes) else role_icon_bytes_or_path
+        )
+        try:
+            role_icon_img = Image.open(obj).resize((70, 70), Image.Resampling.LANCZOS)
+            stats.paste(role_icon_img, (10, 10), role_icon_img)
+        except ValueError as e:
+            if reraise:
+                raise e
+            err = (
+                "Failed to paste role icon image"
+                if isinstance(role_icon_bytes_or_path, bytes)
+                else f"Failed to paste role icon image for {role_icon}"
+            )
+            log.error(err, exc_info=e)
 
     # ---------------- Start finalizing the image ----------------
     # Resize the profile image
