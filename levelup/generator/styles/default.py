@@ -360,9 +360,9 @@ def generate_default_profile(
             if reraise:
                 raise e
             err = (
-                "Failed to paste role icon image"
+                f"Failed to paste role icon image for {username}"
                 if isinstance(role_icon, bytes)
-                else f"Failed to paste role icon image for {role_icon}"
+                else f"Failed to paste role icon image for {username}: {role_icon}"
             )
             log.error(err, exc_info=e)
 
