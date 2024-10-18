@@ -108,7 +108,7 @@ class User(MixinMeta):
         try:
             if conf.min_playtime_to_suggest and self.bot.get_cog("ArkTools"):
                 arktools = self.bot.get_cog("ArkTools")
-                players = await arktools.db_utils.search_player(ctx.guild, ctx.author)
+                players = await arktools.db_utils.search_players(ctx.guild, ctx.author)
                 if not players:
                     txt = _("You must be registered in the ArkTools database to make suggestions.")
                     return await resp(txt)
