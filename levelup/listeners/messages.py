@@ -16,11 +16,11 @@ class MessageListener(MixinMeta):
         # If message object is None for some reason
         if not message:
             return
-        # If message was from a bot
-        if message.author.bot and self.db.ignore_bots:
-            return
         # If message wasn't sent in a guild
         if not message.guild:
+            return
+        # If message was from a bot
+        if message.author.bot and self.db.ignore_bots:
             return
         # Check if guild is in the master ignore list
         if str(message.guild.id) in self.db.ignored_guilds:
@@ -54,6 +54,11 @@ class MessageListener(MixinMeta):
         if perf_counter() - self.last_save > 300:
             # Save at least every 5 minutes
             self.save()
+
+        prefixes = await self.bot.get_valid_prefixes(guild=message.guild)
+        if not conf.command_xp and message.content.startswith(tuple(prefixes)):
+            # Don't give XP for commands
+            return
 
         if conf.allowedchannels:
             # Make sure the channel is allowed
