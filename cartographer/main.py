@@ -45,7 +45,7 @@ class Cartographer(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.1.6"
+    __version__ = "1.1.7"
 
     def __init__(self, bot: Red):
         super().__init__()
