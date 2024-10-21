@@ -66,6 +66,10 @@ class Listen(MixinMeta):
             log.error(f"Could not find user {entry.user.name} in {entry.guild.name}!")
             return
 
+        if user.id == target.id:
+            # User performed action on themselves, ignore
+            return
+
         log.debug(f"User {user.name} performed action {action} on {target} in {entry.guild.name}\nExtra: {entry.extra}")
 
         # Process cooldowns
