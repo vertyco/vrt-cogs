@@ -115,7 +115,7 @@ class BackupMenu(discord.ui.View):
         settings = _(
             "- Auto Backup Interval Hours: {}\n"
             "- Last Backup: {}\n"
-            "## Global Settings\n"
+            "**Global Settings**\n"
             "-# The following settings are configured by the bot owner\n"
             "- Max Backups Per Guild: {}\n"
             "- Backup Message Limit: {}\n"

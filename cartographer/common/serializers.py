@@ -120,6 +120,9 @@ class Role(Base):
                 display_icon=base64.b64decode(self.icon) if self.icon and supports_emojis else None,
                 reason=_("Restored from backup"),
             )
+        elif existing and existing == guild.me.top_role:
+            # Bot can't touch its own highest role
+            role = existing
         else:
             log.info("Creating role %s", self.name)
             role = await guild.create_role(
@@ -1223,7 +1226,7 @@ class GuildBackup(Base):
                 await role.delete(reason=reason)
 
             # - Restore the roles
-            for role in sorted(self.roles, key=lambda x: x.position):
+            for role in sorted(self.roles, key=lambda x: x.position, reverse=True):
                 await role.restore(target_guild, results)
 
         # ---------------------------- EMOJIS ----------------------------
