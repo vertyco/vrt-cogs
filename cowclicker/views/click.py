@@ -16,7 +16,7 @@ styles = [
 ]
 
 
-class DynamicButton(
+class CowClickComponent(
     discord.ui.DynamicItem[discord.ui.Button],
     template=r"CowClicker:(?P<clicks>[0-9]+)",
 ):

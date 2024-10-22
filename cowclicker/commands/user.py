@@ -14,7 +14,7 @@ from redbot.core.utils.chat_formatting import humanize_number, humanize_timedelt
 from ..abc import MixinMeta
 from ..common import const
 from ..db.tables import Click, ensure_db_connection
-from ..views.click import DynamicButton
+from ..views.click import CowClickComponent
 from ..views.dynamic_menu import DynamicMenu
 
 
@@ -24,7 +24,7 @@ class User(MixinMeta):
     @ensure_db_connection()
     async def start_click_menu(self, ctx: commands.Context):
         """Click the button!"""
-        view = discord.ui.View(timeout=None).add_item(DynamicButton())
+        view = discord.ui.View(timeout=None).add_item(CowClickComponent())
         color = await self.bot.get_embed_color(ctx)
         embed = discord.Embed(color=color).set_image(url=const.COW_IMAGE)
         embed.set_author(name="Cow Clicker!", url="https://en.wikipedia.org/wiki/Cow_Clicker")
