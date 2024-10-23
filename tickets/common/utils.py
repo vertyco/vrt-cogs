@@ -329,8 +329,12 @@ async def close_ticket(
     else:
         try:
             await channel.delete()
-        except Exception as e:
-            log.error("Failed to delete ticket channel", exc_info=e)
+        except discord.DiscordServerError:
+            await asyncio.sleep(3)
+            try:
+                await channel.delete()
+            except Exception as e:
+                log.error("Failed to delete ticket channel", exc_info=e)
 
     async with config.guild(guild).all() as conf:
         tickets = conf["opened"]
