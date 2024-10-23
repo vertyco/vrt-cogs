@@ -175,9 +175,24 @@ class CloseView(View):
             return
 
         conf = await self.config.guild(interaction.guild).all()
-        if not await can_close(self.bot, interaction.guild, interaction.channel, user, self.owner_id, conf):
+        txt = _("This ticket has already been closed! Please delete it manually.")
+        if str(self.owner_id) not in conf["opened"]:
+            return await interaction.response.send_message(txt, ephemeral=True)
+        if str(self.channel.id) not in conf["opened"][str(self.owner_id)]:
+            return await interaction.response.send_message(txt, ephemeral=True)
+
+        allowed = await can_close(
+            bot=self.bot,
+            guild=interaction.guild,
+            channel=interaction.channel,
+            user=user,
+            owner_id=self.owner_id,
+            conf=conf,
+        )
+        if not allowed:
             return await interaction.response.send_message(
-                _("You do not have permissions to close this ticket"), ephemeral=True
+                _("You do not have permissions to close this ticket"),
+                ephemeral=True,
             )
         panel_name = conf["opened"][str(self.owner_id)][str(self.channel.id)]["panel"]
         requires_reason = conf["panels"][panel_name].get("close_reason", True)
