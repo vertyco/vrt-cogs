@@ -139,10 +139,8 @@ class LevelUps(MixinMeta):
                 banner = await self.get_profile_background(member.id, profile, try_return_url=True)
                 avatar = member.display_avatar.url
 
-                # payload.add_field("background_bytes", banner, filename="data")
-                # payload.add_field("avatar_bytes", avatar, filename="data")
-                payload.add_field("background_bytes", banner)
-                payload.add_field("avatar_bytes", avatar)
+                payload.add_field("background_bytes", BytesIO(banner))
+                payload.add_field("avatar_bytes", BytesIO(avatar))
                 payload.add_field("level", str(profile.level))
                 payload.add_field("color", str(color))
                 payload.add_field("font_path", font)

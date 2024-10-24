@@ -17,6 +17,7 @@
   "required_cogs": {},
   "requirements": [
     "aiocache",
+    "aiohttp>=3.9.5",
     "colorgram.py",
     "emoji",
     "fastapi",
