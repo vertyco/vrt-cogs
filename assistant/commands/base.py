@@ -3,7 +3,8 @@ import json
 import logging
 import traceback
 import typing as t
-from io import StringIO
+from base64 import b64decode
+from io import BytesIO, StringIO
 
 import discord
 from discord import app_commands
@@ -101,11 +102,14 @@ If a file has no extension it will still try to read it only if it can be decode
         cost_key = f"{quality}{size}"
         cost = IMAGE_COSTS.get(cost_key, 0)
         image = await request_image_raw(prompt, conf.api_key, size, quality, style)
-        embed = discord.Embed(description=desc, color=color).set_image(url=image.url)
+        image_bytes = b64decode(image.b64_json)
+        file = discord.File(BytesIO(image_bytes), filename="image.png")
+        embed = discord.Embed(description=desc, color=color)
+        embed.set_image(url="attachment://image.png")
         embed.set_footer(text=_("Cost: ${}").format(f"{cost:.2f}"))
         if image.revised_prompt:
             embed.add_field(name=_("Revised Prompt"), value=image.revised_prompt, inline=False)
-        await interaction.edit_original_response(embed=embed)
+        await interaction.edit_original_response(embed=embed, attachments=[file])
 
     @commands.command(
         name="chat",

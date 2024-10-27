@@ -545,7 +545,6 @@ class ChatHandler(MixinMeta):
 
                 return_null = False
 
-                # Prep framework for alternative response types!
                 if isinstance(func_result, discord.Embed):
                     result = func_result.description or _("Result sent!")
                     try:
@@ -564,34 +563,34 @@ class ChatHandler(MixinMeta):
                     # For complex responses
                     result = func_result["result_text"]
                     return_null = func_result.get("return_null", False)
-                    if "embed" in func_result:
-                        # Should be discord.Embed
+                    kwargs = {}
+                    if "embed" in func_result and channel.permissions_for(guild.me).embed_links:
+                        if not isinstance(func_result["embed"], discord.Embed):
+                            raise TypeError("Embed must be a discord.Embed object")
+                        kwargs["embed"] = func_result["embed"]
+                    if "file" in func_result and channel.permissions_for(guild.me).attach_files:
+                        if not isinstance(func_result["file"], discord.File):
+                            raise TypeError("File must be a discord.File object")
+                        kwargs["file"] = func_result["file"]
+                    if "embeds" in func_result and channel.permissions_for(guild.me).embed_links:
+                        if not isinstance(func_result["embeds"], list):
+                            raise TypeError("Embeds must be a list of discord.Embed objects")
+                        if not all(isinstance(i, discord.Embed) for i in func_result["embeds"]):
+                            raise TypeError("Embeds must be a list of discord.Embed objects")
+                        kwargs["embeds"] = func_result["embeds"]
+                    if "files" in func_result and channel.permissions_for(guild.me).attach_files:
+                        if not isinstance(func_result["files"], list):
+                            raise TypeError("Files must be a list of discord.File objects")
+                        if not all(isinstance(i, discord.File) for i in func_result["files"]):
+                            raise TypeError("Files must be a list of discord.File objects")
+                        kwargs["files"] = func_result["files"]
+                    if kwargs:
                         try:
-                            await channel.send(embed=func_result["embed"])
-                        except discord.Forbidden:
-                            result = "You do not have permissions to embed links in this channel"
+                            await channel.send(**kwargs)
+                        except discord.HTTPException as e:
+                            result = f"discord.HTTPException: {e.text}"
                             function_calls = [i for i in function_calls if i["name"] != function_name]
-                    if "file" in func_result:
-                        # Should be discord.File
-                        try:
-                            await channel.send(file=func_result["file"])
-                        except discord.Forbidden:
-                            result = "You do not have permissions to upload files in this channel"
-                            function_calls = [i for i in function_calls if i["name"] != function_name]
-                    if "embeds" in func_result:
-                        # Should be list of discord.Embed
-                        try:
-                            await channel.send(embeds=func_result["embeds"])
-                        except discord.Forbidden:
-                            result = "You do not have permissions to embed links in this channel"
-                            function_calls = [i for i in function_calls if i["name"] != function_name]
-                    if "files" in func_result:
-                        # Should be list of discord.File
-                        try:
-                            await channel.send(files=func_result["files"])
-                        except discord.Forbidden:
-                            result = "You do not have permissions to upload files in this channel"
-                            function_calls = [i for i in function_calls if i["name"] != function_name]
+
                 elif isinstance(func_result, bytes):
                     result = func_result.decode()
                 else:  # Is a string
