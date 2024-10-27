@@ -2,7 +2,8 @@ import asyncio
 import json
 import logging
 import typing as t
-from io import StringIO
+from base64 import b64decode
+from io import BytesIO, StringIO
 
 import aiohttp
 import discord
@@ -32,17 +33,21 @@ class AssistantFunctions(MixinMeta):
         cost_key = f"{quality}{size}"
         cost = constants.IMAGE_COSTS.get(cost_key, 0)
         image = await calls.request_image_raw(prompt, conf.api_key, size, quality, style)
+
         desc = _("-# Size: {}\n-# Quality: {}\n-# Style: {}").format(size, quality, style)
         color = (await self.bot.get_embed_color(channel)) if channel else discord.Color.blue()
         embed = (
             discord.Embed(description=desc, color=color)
-            .set_image(url=image.url)
+            .set_image(url="attachment://image.png")
             .set_footer(text=_("Cost: ${}").format(f"{cost:.2f}"))
         )
+        if image.revised_prompt:
+            embed.add_field(name=_("Revised Prompt"), value=image.revised_prompt)
         payload = {
             "embed": embed,
             "result_text": "Image has been generated and sent to the user!",
             "return_null": True,  # The image will be sent and the model will not be re-queried
+            "file": discord.File(BytesIO(b64decode(image.b64_json)), filename="image.png"),
         }
         if image.revised_prompt:
             payload["result_text"] += f"\nRevised prompt: {image.revised_prompt}"

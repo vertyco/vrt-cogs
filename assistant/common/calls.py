@@ -139,6 +139,8 @@ async def request_image_raw(
         size=size,
         quality=quality,
         style=style,
+        response_format="b64_json",
+        n=1,
     )
     return response.data[0]
 
