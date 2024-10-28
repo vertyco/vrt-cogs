@@ -206,15 +206,11 @@ async def ensure_message_compatibility(
     if model not in NO_SYSTEM_MESSAGES:
         return cleaned
 
-    # Remove all system messages
-    indexes_to_purge = set()
+    # Change all system messages to user messages
     for idx, message in enumerate(messages):
         if message["role"] == "system":
-            indexes_to_purge.add(idx)
+            messages[idx]["role"] = "user"
             cleaned = True
-    if indexes_to_purge:
-        for idx in sorted(indexes_to_purge, reverse=True):
-            messages.pop(idx)
     return cleaned
 
 
