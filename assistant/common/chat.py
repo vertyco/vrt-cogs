@@ -697,6 +697,7 @@ class ChatHandler(MixinMeta):
             system_prompt = format_string(conf.channel_prompts[channel.id])
         else:
             system_prompt = format_string(conversation.system_prompt_override or conf.system_prompt)
+
         initial_prompt = format_string(conf.prompt)
         model = conf.get_user_model(author)
         current_tokens = await self.count_tokens(message + system_prompt + initial_prompt, model)
