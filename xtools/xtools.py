@@ -45,7 +45,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "3.11.5"
+    __version__ = "3.11.6"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -342,6 +342,8 @@ class XTools(commands.Cog):
                     profile_data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
                 except (aiohttp.ClientResponseError, httpx.HTTPStatusError):
                     return await ctx.send("Invalid Gamertag. Try again.")
+                except httpx.ConnectTimeout:
+                    return await ctx.send("Connection timed out. Try again.")
                 # Format json data
                 gt, xuid, _, _, _, _, _, _, _ = profile(profile_data)
                 async with self.config.users() as users:
@@ -365,6 +367,8 @@ class XTools(commands.Cog):
                 profile_data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
             except (aiohttp.ClientResponseError, httpx.HTTPStatusError):
                 return await ctx.send("Invalid Gamertag. Try again.")
+            except httpx.ConnectTimeout:
+                return await ctx.send("Connection timed out. Try again.")
             _, xuid, _, _, _, _, _, _, _ = profile(profile_data)
             return await ctx.send(f"`{xuid}`")
 
@@ -380,6 +384,8 @@ class XTools(commands.Cog):
                 profile_data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
             except (aiohttp.ClientResponseError, httpx.HTTPStatusError):
                 return await ctx.send("Invalid XUID. Try again.")
+            except httpx.ConnectTimeout:
+                return await ctx.send("Connection timed out. Try again.")
             gt, _, _, _, _, _, _, _, _ = profile(profile_data)
             return await ctx.send(f"`{gt}`")
 
@@ -405,6 +411,8 @@ class XTools(commands.Cog):
             except (aiohttp.ClientResponseError, httpx.HTTPStatusError):
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
+            except httpx.ConnectTimeout:
+                return await msg.edit(content="Connection timed out. Try again.", embed=None)
             _, xuid, _, _, _, _, _, _, _ = profile(profile_data)
             friends = await xbl_client.people.get_friends_summary_by_gamertag(gamertag)
             friends_data = friends.model_dump(mode="json") if V2 else json.loads(friends.json())
@@ -457,6 +465,8 @@ class XTools(commands.Cog):
             except (aiohttp.ClientResponseError, httpx.HTTPStatusError):
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
+            except httpx.ConnectTimeout:
+                return await msg.edit(content="Connection timed out. Try again.", embed=None)
             _, xuid, _, _, _, _, _, _, _ = profile(profile_data)
             try:
                 ss = await xbl_client.screenshots.get_saved_screenshots_by_xuid(xuid=xuid, max_items=10000)
@@ -504,6 +514,8 @@ class XTools(commands.Cog):
             except (aiohttp.ClientResponseError, httpx.HTTPStatusError):
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
+            except httpx.ConnectTimeout:
+                return await msg.edit(content="Connection timed out. Try again.", embed=None)
             gt, xuid, _, _, _, _, _, _, _ = profile(profile_data)
 
             token = await self.get_token(session)
@@ -636,6 +648,8 @@ class XTools(commands.Cog):
                 except (aiohttp.ClientResponseError, httpx.HTTPStatusError):
                     embed = discord.Embed(description="Invalid Gamertag. Try again.")
                     return await msg.edit(embed=embed)
+                except httpx.ConnectTimeout:
+                    return await msg.edit(content="Connection timed out. Try again.", embed=None)
                 except Exception as e:
                     if "Forbidden" in str(e):
                         embed = discord.Embed(description="Failed to gather data, Gamertag may be set to private.")
@@ -748,6 +762,8 @@ class XTools(commands.Cog):
             except (aiohttp.ClientResponseError, httpx.HTTPStatusError):
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
+            except httpx.ConnectTimeout:
+                return await msg.edit(content="Connection timed out. Try again.", embed=None)
             gt, xuid, _, _, _, _, _, _, _ = profile(profile_data)
             try:
                 clips = await xbl_client.gameclips.get_saved_clips_by_xuid(xuid)
@@ -831,6 +847,8 @@ class XTools(commands.Cog):
             except (aiohttp.ClientResponseError, httpx.HTTPStatusError):
                 embed = discord.Embed(description="Invalid Gamertag. Try again.")
                 return await msg.edit(embed=embed)
+            except httpx.ConnectTimeout:
+                return await msg.edit(content="Connection timed out. Try again.", embed=None)
             gt, xuid, _, _, _, _, _, _, _ = profile(profile_data)
 
             token = await self.get_token(session)
@@ -965,6 +983,8 @@ class XTools(commands.Cog):
                 profile_data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
             except (aiohttp.ClientResponseError, httpx.HTTPStatusError):
                 return "Invalid Gamertag. Try again."
+            except httpx.ConnectTimeout:
+                return "Connection timed out. Try again."
 
             _, xuid, _, _, _, _, _, _, _ = profile(profile_data)
             friends = await xbl_client.people.get_friends_summary_by_gamertag(gamertag)
