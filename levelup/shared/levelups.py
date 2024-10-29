@@ -138,9 +138,10 @@ class LevelUps(MixinMeta):
             if self.db.external_api_url or (self.db.internal_api_port and self.api_proc):
                 banner = await self.get_profile_background(member.id, profile, try_return_url=True)
                 avatar = member.display_avatar.url
-
-                payload.add_field("background_bytes", BytesIO(banner))
-                payload.add_field("avatar_bytes", BytesIO(avatar))
+                payload.add_field(
+                    "background_bytes", BytesIO(banner) if isinstance(banner, bytes) else banner, filename="data"
+                )
+                payload.add_field("avatar_bytes", avatar)
                 payload.add_field("level", str(profile.level))
                 payload.add_field("color", str(color))
                 payload.add_field("font_path", font)
