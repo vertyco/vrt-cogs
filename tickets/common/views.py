@@ -185,7 +185,7 @@ class CloseView(View):
             bot=self.bot,
             guild=interaction.guild,
             channel=interaction.channel,
-            user=user,
+            author=user,
             owner_id=self.owner_id,
             conf=conf,
         )
