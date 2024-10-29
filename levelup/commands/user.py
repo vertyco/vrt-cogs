@@ -634,7 +634,11 @@ class User(MixinMeta):
 
     @set_profile.command(name="background", aliases=["bg"])
     @commands.bot_has_permissions(embed_links=True)
-    async def set_user_background(self, ctx: commands.Context, url: t.Optional[str] = None):
+    async def set_user_background(
+        self,
+        ctx: commands.Context,
+        url: t.Optional[t.Union[discord.Attachment, str]] = None,
+    ):
         """
         Set a background for your profile
 
