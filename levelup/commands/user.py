@@ -637,7 +637,7 @@ class User(MixinMeta):
     async def set_user_background(
         self,
         ctx: commands.Context,
-        url: t.Optional[t.Union[discord.Attachment, str]] = None,
+        url: t.Optional[str] = None,
     ):
         """
         Set a background for your profile
