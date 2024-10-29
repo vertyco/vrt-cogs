@@ -305,6 +305,9 @@ class ChatHandler(MixinMeta):
         user = author if isinstance(author, discord.Member) else None
         model = conf.get_user_model(user)
 
+        # Ensure the message is not longer than 1048576 characters
+        message = message[:1048576]
+
         # Determine if we should embed the user's message
         message_tokens = await self.count_tokens(message, model)
         words = message.split(" ")
