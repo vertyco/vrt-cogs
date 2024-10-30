@@ -440,6 +440,8 @@ If a file has no extension it will still try to read it only if it can be decode
                                     "text": f"```{attachment.filename.split('.')[-1]}\n{content}```",
                                 }
                             )
+                        except UnicodeDecodeError:
+                            pass
                         except Exception as e:
                             log.error("Failed to read attachment for TLDR", exc_info=e)
 
@@ -451,7 +453,7 @@ If a file has no extension it will still try to read it only if it can be decode
                 messages=payload,
                 conf=conf,
                 model_override="gpt-4o-mini",
-                temperature_override=0,
+                temperature_override=0.0,
             )
         except httpx.ReadTimeout:
             return await interaction.followup.send(_("The request timed out!"))
@@ -470,9 +472,13 @@ If a file has no extension it will still try to read it only if it can be decode
         if not response.content:
             return await interaction.followup.send(_("No response was generated!"))
 
+        split = [i.strip() for i in response.content.split("\n") if i.strip()]
+        # We want to compress the spaced out bullet points while keeping the tldr header with two new lines
+        description = split[0] + "\n\n" + "\n".join(split[1:])
+
         embed = discord.Embed(
             color=await self.bot.get_embed_color(interaction.channel),
-            description=response.content,
+            description=description,
         )
         embed.set_footer(text=_("Timeframe: {}").format(humanized_delta))
         if channel.id != interaction.channel.id:

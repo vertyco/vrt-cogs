@@ -182,7 +182,8 @@ The messages you are reviewing will be formatted as follows:
 TLDR tips:
 - Include details like names and info that might be relevant to a Discord moderation team
 - To create a jump URL for a message, format it as "https://discord.com/channels/<guild_id>/<channel_id/<message_id>"
-- If you reference a message directly, make sure to include [<t:Discord Timestamp:t>](jump url)
+- When you reference a message directly, make sure to include [<t:Discord Timestamp:t>](jump url)
+- Separate topics with bullet points
 """
 
 GENERATE_IMAGE = {
