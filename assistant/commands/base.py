@@ -4,6 +4,7 @@ import logging
 import traceback
 import typing as t
 from base64 import b64decode
+from contextlib import suppress
 from datetime import datetime, timedelta
 from io import BytesIO, StringIO
 
@@ -336,10 +337,11 @@ If a file has no extension it will still try to read it only if it can be decode
                 _("I don't have permission to view the channel!"), ephemeral=True
             )
 
-        if private:
-            await interaction.response.defer(ephemeral=True, thinking=True)
-        else:
-            await interaction.response.defer()
+        with suppress(discord.NotFound):
+            if private:
+                await interaction.response.defer(ephemeral=True, thinking=True)
+            else:
+                await interaction.response.defer()
 
         messages: t.List[discord.Message] = []
         async for message in channel.history(oldest_first=False):
