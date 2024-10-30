@@ -4,23 +4,27 @@ import logging
 import traceback
 import typing as t
 from base64 import b64decode
+from datetime import datetime, timedelta
 from io import BytesIO, StringIO
 
 import discord
-from discord import app_commands
-from redbot.core import commands
+import httpx
+import openai
+from openai.types.chat.chat_completion_message import ChatCompletionMessage
+from redbot.core import app_commands, commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import (
     box,
     escape,
     humanize_list,
+    humanize_timedelta,
     pagify,
     text_to_file,
 )
 
 from ..abc import MixinMeta
 from ..common.calls import request_image_raw
-from ..common.constants import IMAGE_COSTS, LOADING, READ_EXTENSIONS
+from ..common.constants import IMAGE_COSTS, LOADING, READ_EXTENSIONS, TLDR_PROMPT
 from ..common.models import Conversation
 from ..common.utils import can_use, get_attachments
 
@@ -276,6 +280,128 @@ If a file has no extension it will still try to read it only if it can be decode
         dump = json.dumps(last, indent=2)
         file = text_to_file(dump, "popped.json")
         await ctx.send(_("Removed the last message from this conversation"), file=file)
+
+    @app_commands.command(name="tldr", description=_("Summarize whats been happening in a channel"))
+    @app_commands.guild_only()
+    @app_commands.describe(
+        timeframe=_("The number of messages to scan"),
+        question=_("Ask for specific info about the conversation"),
+        channel=_("The channel to summarize messages from"),
+        member=_("Target a specific member"),
+    )
+    async def summarize_convo(
+        self,
+        interaction: discord.Interaction,
+        timeframe: t.Optional[str] = "30m",
+        question: t.Optional[str] = None,
+        channel: t.Optional[discord.TextChannel] = None,
+        member: t.Optional[discord.Member] = None,
+    ):
+        """
+        Get the TLDR of the last X messages in a channel
+
+        The model will read up the chat and summarize the last X messages.
+        The maximum amount of messages that can be summarized is 100.
+
+        If a member is specified, the bot will only consider messages from that member.
+        """
+        delta = commands.parse_timedelta(timeframe)
+        if not delta:
+            txt = _("Invalid timeframe! Please use a valid time format like `30m` for 30 minutes")
+            return await interaction.response.send_message(txt, ephemeral=True)
+        if delta > timedelta(hours=24):
+            txt = _("The maximum timeframe is 24 hours!")
+            return await interaction.response.send_message(txt, ephemeral=True)
+
+        if not channel:
+            channel = interaction.channel
+
+        await interaction.response.defer(ephemeral=True)
+        perms = [
+            await self.bot.is_mod(interaction.user),
+            interaction.channel.permissions_for(interaction.user).manage_messages,
+            interaction.user.id in self.bot.owner_ids,
+        ]
+        if not any(perms):
+            return await interaction.followup.send(_("Only moderators can summarize conversations!"), ephemeral=True)
+
+        messages: t.List[discord.Message] = []
+        async for message in channel.history(oldest_first=False):
+            if member and message.author.id != member.id:
+                continue
+            if not message.content and not message.attachments:
+                continue
+            if not message.content and not any(a.content_type.startswith("image") for a in message.attachments):
+                continue
+            messages.append(message)
+            now = datetime.now().astimezone()
+            if now - message.created_at > delta:
+                break
+
+        if not messages:
+            return await interaction.followup.send(_("No messages found to summarize!"), ephemeral=True)
+
+        conf = self.db.get_conf(interaction.guild)
+
+        humanized_delta = humanize_timedelta(timedelta=delta)
+
+        payload = [
+            {
+                "role": "system",
+                "content": f"Your name is '{self.bot.user.name}' and you are a discord bot. Refer to your self as 'I' or 'me' in your responses.",
+            },
+            {"role": "system", "content": TLDR_PROMPT},
+            {
+                "role": "system",
+                "content": f"Summarizing {len(messages)} messages over the last {humanized_delta}",
+            },
+        ]
+        if question:
+            payload.append({"role": "user", "content": f"User prompt: {question}"})
+
+        for message in reversed(messages):
+            if message.content and not message.attachments:
+                detail = f"[<t:{int(message.created_at.timestamp())}:F>]({message.jump_url}) - {message.author.name}: {message.content}"
+                payload.append({"role": "user", "content": detail, "name": str(message.author.id)})
+
+            elif message.attachments:
+                detail = f"[<t:{int(message.created_at.timestamp())}:F>]({message.jump_url}) - {message.author.name}: "
+                message_obj = {"role": "user", "name": str(message.author.id), "content": []}
+                if message.content:
+                    detail += message.content
+                    message_obj["content"].append({"type": "text", "content": detail})
+                for attachment in message.attachments:
+                    # Make sure the attachment is an image
+                    if not attachment.content_type.startswith("image"):
+                        continue
+                    message_obj["content"].append(
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": attachment.url, "detail": conf.vision_detail},
+                        }
+                    )
+                payload.append(message_obj)
+
+        try:
+            response: ChatCompletionMessage = await self.request_response(
+                messages=payload,
+                conf=conf,
+                model_override="gpt-4o-mini",
+                temperature_override=0,
+            )
+        except httpx.ReadTimeout:
+            return await interaction.followup.send(_("The request timed out!"), ephemeral=True)
+        except openai.BadRequestError as e:
+            error = e.body.get("message", "Unknown Error")
+            return await interaction.followup.send(f"BadRequest({e.status_code}): {error}", ephemeral=True)
+        except Exception as e:
+            log.error("Failed to get TLDR response", exc_info=e)
+            return await interaction.followup.send(_("Failed to get response"), ephemeral=True)
+
+        if not response.content:
+            return await interaction.followup.send(_("No response was generated!"), ephemeral=True)
+        for p in pagify(response.content, page_length=1900):
+            await interaction.followup.send(p, ephemeral=True)
 
     @commands.command(name="convocopy")
     @commands.guild_only()

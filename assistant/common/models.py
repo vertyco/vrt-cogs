@@ -330,6 +330,20 @@ class Conversation(AssistantBaseModel):
         return prepared
 
 
+class ContentObj(AssistantBaseModel):
+    type: str
+    text: Optional[str] = None
+    image_url: Optional[Union[str, dict]] = None
+
+
+class Message(AssistantBaseModel):
+    role: str
+    content: Union[str, ContentObj] = None
+    name: Optional[str] = None
+    tool_call_id: Optional[str] = None
+    position: Optional[int] = None
+
+
 class DB(AssistantBaseModel):
     configs: Dict[int, GuildSettings] = {}
     conversations: Dict[str, Conversation] = {}

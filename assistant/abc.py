@@ -36,6 +36,8 @@ class MixinMeta(ABC):
         functions: Optional[List[dict]] = None,
         member: discord.Member = None,
         response_token_override: int = None,
+        model_override: Optional[str] = None,
+        temperature_override: Optional[float] = None,
     ) -> Union[ChatCompletionMessage, str]:
         raise NotImplementedError
 
