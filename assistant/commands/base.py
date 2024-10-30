@@ -327,6 +327,20 @@ If a file has no extension it will still try to read it only if it can be decode
         if not any(perms):
             return await interaction.followup.send(_("Only moderators can summarize conversations!"), ephemeral=True)
 
+        user_allowed = [
+            channel.permissions_for(interaction.user).view_channel,
+            channel.permissions_for(interaction.user).read_message_history,
+        ]
+        if not all(user_allowed):
+            return await interaction.followup.send(_("You don't have permission to view the channel!"), ephemeral=True)
+
+        bot_allowed = [
+            channel.permissions_for(interaction.guild.me).view_channel,
+            channel.permissions_for(interaction.guild.me).read_message_history,
+        ]
+        if not all(bot_allowed):
+            return await interaction.followup.send(_("I don't have permission to view the channel!"), ephemeral=True)
+
         messages: t.List[discord.Message] = []
         async for message in channel.history(oldest_first=False):
             if member and message.author.id != member.id:
@@ -409,6 +423,18 @@ If a file has no extension it will still try to read it only if it can be decode
         )
         embed.set_footer(text=_("Timeframe: {}").format(humanized_delta))
         await interaction.followup.send(embed=embed, ephemeral=private)
+
+        # if private:
+        #     try:
+        #         channel = await modlog.get_modlog_channel(interaction.guild)
+        #         embed.title = _("TLDR Summary")
+        #         embed.add_field(name=_("Channel"), value=interaction.channel.mention)
+        #         embed.add_field(name=_("Messages"), value=len(messages))
+        #         embed.add_field(name=_("Timeframe"), value=humanized_delta)
+        #         embed.add_field(name=_("Moderator"), value=interaction.user.mention)
+        #         await channel.send(embed=embed)
+        #     except RuntimeError:
+        #         pass
 
     @commands.command(name="convocopy")
     @commands.guild_only()
