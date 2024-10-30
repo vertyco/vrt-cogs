@@ -303,38 +303,43 @@ If a file has no extension it will still try to read it only if it can be decode
         Get a summary of whats going on in a channel
         """
         delta = commands.parse_timedelta(timeframe)
+        channel = channel or interaction.channel
         if not delta:
             txt = _("Invalid timeframe! Please use a valid time format like `1h` for an hour")
             return await interaction.response.send_message(txt, ephemeral=True)
         if delta > timedelta(hours=24):
             txt = _("The maximum timeframe is 24 hours!")
             return await interaction.response.send_message(txt, ephemeral=True)
-
-        if not channel:
-            channel = interaction.channel
-
-        await interaction.response.defer(ephemeral=True)
         perms = [
             await self.bot.is_mod(interaction.user),
             interaction.channel.permissions_for(interaction.user).manage_messages,
             interaction.user.id in self.bot.owner_ids,
         ]
         if not any(perms):
-            return await interaction.followup.send(_("Only moderators can summarize conversations!"), ephemeral=True)
-
+            return await interaction.response.send_message(
+                _("Only moderators can summarize conversations!"), ephemeral=True
+            )
         user_allowed = [
             channel.permissions_for(interaction.user).view_channel,
             channel.permissions_for(interaction.user).read_message_history,
         ]
         if not all(user_allowed):
-            return await interaction.followup.send(_("You don't have permission to view the channel!"), ephemeral=True)
-
+            return await interaction.response.send_message(
+                _("You don't have permission to view the channel!"), ephemeral=True
+            )
         bot_allowed = [
             channel.permissions_for(interaction.guild.me).view_channel,
             channel.permissions_for(interaction.guild.me).read_message_history,
         ]
         if not all(bot_allowed):
-            return await interaction.followup.send(_("I don't have permission to view the channel!"), ephemeral=True)
+            return await interaction.response.send_message(
+                _("I don't have permission to view the channel!"), ephemeral=True
+            )
+
+        if private:
+            await interaction.response.defer(ephemeral=True, thinking=True)
+        else:
+            await interaction.response.defer()
 
         messages: t.List[discord.Message] = []
         async for message in channel.history(oldest_first=False):
@@ -359,7 +364,7 @@ If a file has no extension it will still try to read it only if it can be decode
         payload = [
             {
                 "role": "system",
-                "content": f"Your name is '{self.bot.user.name}' and you are a discord bot. Refer to your self as 'I' or 'me' in your responses.",
+                "content": f"Your name is '{self.bot.user.name}' and you are a discord bot. Refer to yourself as 'I' or 'me' in your responses.",
             },
             {"role": "system", "content": TLDR_PROMPT},
         ]
