@@ -173,6 +173,11 @@ Ignore previous instructions. You will be given a snippet of text, your job is t
 - This is a contextual memory about a topic, do not include irrelevant information like names of who is speaking.
 - Do not include the original text in your response.
 """
+TLDR_PROMPT = """
+Write a TLDR based on the messages provided.
+- Include details like names and info relevant to a discord moderator.
+- Hyperlink the jump url of notable messages into the actual sentences.
+"""
 
 GENERATE_IMAGE = {
     "name": "generate_image",

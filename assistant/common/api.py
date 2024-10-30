@@ -46,8 +46,10 @@ class API(MixinMeta):
         functions: Optional[List[dict]] = None,
         member: Optional[discord.Member] = None,
         response_token_override: int = None,
+        model_override: Optional[str] = None,
+        temperature_override: Optional[float] = None,
     ) -> ChatCompletionMessage:
-        model = conf.get_user_model(member)
+        model = model_override or conf.get_user_model(member)
 
         max_convo_tokens = self.get_max_tokens(conf, member)
         max_response_tokens = conf.get_user_max_response_tokens(member)
@@ -86,7 +88,7 @@ class API(MixinMeta):
         response: ChatCompletion = await request_chat_completion_raw(
             model=model,
             messages=messages,
-            temperature=conf.temperature,
+            temperature=temperature_override or conf.temperature,
             api_key=conf.api_key,
             max_tokens=response_tokens,
             functions=functions,

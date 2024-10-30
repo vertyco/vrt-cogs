@@ -421,15 +421,9 @@ class ChatHandler(MixinMeta):
                     continue
 
                 if e.body and isinstance(e.body, dict):
-                    if msg := e.body.get("error", {}).get("message"):
-                        log.warning("BadRequestError [error][message]", exc_info=e)
-                        reply = _("Bad Request Error({}): {}").format(e.status_code, msg)
-                    if msg := e.body.get("message"):
-                        log.warning("BadRequestError [message]", exc_info=e)
-                        reply = _("Bad Request Error({}): {}").format(e.status_code, msg)
-                    else:
-                        log.error("Bad Request Error", exc_info=e)
-                        reply = _("Bad Request Error({}): {}").format(e.status_code, e.body)
+                    msg = e.body.get("message", f"Unknown error: {str(e)}")
+                    log.error("BadRequestError2 [message]", exc_info=e)
+                    reply = _("Bad Request Error2({}): {}").format(e.status_code, msg)
                 else:
                     reply = _("Bad Request Error({}): {}").format(e.status_code, e.message)
                 if guild.id == 625757527765811240:
