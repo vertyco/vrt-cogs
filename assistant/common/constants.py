@@ -175,7 +175,7 @@ Ignore previous instructions. You will be given a snippet of text, your job is t
 """
 TLDR_PROMPT = """
 Write a TLDR based on the messages provided.
-- Include details like names and info relevant to a discord moderator.
+- Include details like names and info relevant to each situation.
 - Hyperlink the jump url of notable messages into the actual sentences.
 """
 
