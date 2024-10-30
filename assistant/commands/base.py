@@ -293,23 +293,18 @@ If a file has no extension it will still try to read it only if it can be decode
     async def summarize_convo(
         self,
         interaction: discord.Interaction,
-        timeframe: t.Optional[str] = "30m",
+        timeframe: t.Optional[str] = "1h",
         question: t.Optional[str] = None,
         channel: t.Optional[discord.TextChannel] = None,
         member: t.Optional[discord.Member] = None,
         private: t.Optional[bool] = True,
     ):
         """
-        Get the TLDR of the last X messages in a channel
-
-        The model will read up the chat and summarize the last X messages.
-        The maximum amount of messages that can be summarized is 100.
-
-        If a member is specified, the bot will only consider messages from that member.
+        Get a summary of whats going on in a channel
         """
         delta = commands.parse_timedelta(timeframe)
         if not delta:
-            txt = _("Invalid timeframe! Please use a valid time format like `30m` for 30 minutes")
+            txt = _("Invalid timeframe! Please use a valid time format like `1h` for an hour")
             return await interaction.response.send_message(txt, ephemeral=True)
         if delta > timedelta(hours=24):
             txt = _("The maximum timeframe is 24 hours!")
