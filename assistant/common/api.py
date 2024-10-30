@@ -88,7 +88,7 @@ class API(MixinMeta):
         response: ChatCompletion = await request_chat_completion_raw(
             model=model,
             messages=messages,
-            temperature=temperature_override or conf.temperature,
+            temperature=temperature_override if temperature_override is not None else conf.temperature,
             api_key=conf.api_key,
             max_tokens=response_tokens,
             functions=functions,
