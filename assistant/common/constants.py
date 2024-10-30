@@ -175,8 +175,22 @@ Ignore previous instructions. You will be given a snippet of text, your job is t
 """
 TLDR_PROMPT = """
 Write a TLDR based on the messages provided.
-- Include details like names and info relevant to each situation.
-- Hyperlink the jump url of notable messages into the actual sentences.
+
+Transcript format:
+[Humanized Date|<t:Discord Timestamp:t>(use this)](Message ID) Author Name: Message Content
+
+TLDR tips:
+- Include details like names and info that might be relevant to a Discord moderation team.
+- To create a jump URL for a message, format it as "https://discord.com/channels/<guild_id>/<channel_id/<message_id>"
+- Include the <t:Discord Timestamp:t> with the jump url hyperlinked for any messages you reference.
+- Separate different topics with bullet points.
+
+# Example
+**TLDR**
+
+- **Topic**: tldr of what happened during the interaction and the time [<t:Discord Timestamp:t>](jump url)
+- **Another Topic**: ...
+- **Yet Another Topic**: ...
 """
 
 GENERATE_IMAGE = {

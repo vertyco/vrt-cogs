@@ -308,8 +308,8 @@ If a file has no extension it will still try to read it only if it can be decode
         if not delta:
             txt = _("Invalid timeframe! Please use a valid time format like `1h` for an hour")
             return await interaction.response.send_message(txt, ephemeral=True)
-        if delta > timedelta(hours=24):
-            txt = _("The maximum timeframe is 24 hours!")
+        if delta > timedelta(hours=48):
+            txt = _("The maximum timeframe is 48 hours!")
             return await interaction.response.send_message(txt, ephemeral=True)
         perms = [
             await self.bot.is_mod(interaction.user),
@@ -317,31 +317,28 @@ If a file has no extension it will still try to read it only if it can be decode
             interaction.user.id in self.bot.owner_ids,
         ]
         if not any(perms):
-            return await interaction.response.send_message(
-                _("Only moderators can summarize conversations!"), ephemeral=True
-            )
+            txt = _("Only moderators can summarize conversations!")
+            return await interaction.response.send_message(txt, ephemeral=True)
         user_allowed = [
             channel.permissions_for(interaction.user).view_channel,
             channel.permissions_for(interaction.user).read_message_history,
         ]
         if not all(user_allowed):
-            return await interaction.response.send_message(
-                _("You don't have permission to view the channel!"), ephemeral=True
-            )
+            txt = _("You don't have permission to view the channel!")
+            return await interaction.response.send_message(txt, ephemeral=True)
         bot_allowed = [
             channel.permissions_for(interaction.guild.me).view_channel,
             channel.permissions_for(interaction.guild.me).read_message_history,
         ]
         if not all(bot_allowed):
-            return await interaction.response.send_message(
-                _("I don't have permission to view the channel!"), ephemeral=True
-            )
+            txt = _("I don't have permission to view the channel!")
+            return await interaction.response.send_message(txt, ephemeral=True)
 
         with suppress(discord.NotFound):
             if private:
                 await interaction.response.defer(ephemeral=True, thinking=True)
             else:
-                await interaction.response.defer()
+                await interaction.response.defer(ephemeral=False, thinking=True)
 
         messages: t.List[discord.Message] = []
         async for message in channel.history(oldest_first=False):
@@ -354,49 +351,88 @@ If a file has no extension it will still try to read it only if it can be decode
             messages.append(message)
             now = datetime.now().astimezone()
             if now - message.created_at > delta:
-                if len(messages) < 10:
-                    # Always fetch at least the last 10 messages
-                    continue
                 break
 
         if not messages:
-            return await interaction.followup.send(_("No messages found to summarize!"), ephemeral=True)
+            return await interaction.followup.send(_("No messages found to summarize within that timeframe!"))
+        if len(messages) < 5:
+            return await interaction.followup.send(_("Not enough messages found to summarize within that timeframe!"))
 
         conf = self.db.get_conf(interaction.guild)
 
         humanized_delta = humanize_timedelta(timedelta=delta)
 
-        payload = [
-            {
-                "role": "system",
-                "content": f"Your name is '{self.bot.user.name}' and you are a discord bot. Refer to yourself as 'I' or 'me' in your responses.",
-            },
-            {"role": "system", "content": TLDR_PROMPT},
-        ]
+        primer = (
+            f"Your name is '{self.bot.user.name}' and you are a discord bot. Refer to yourself as 'I' or 'me' in your responses.\n"
+            f"{TLDR_PROMPT}"
+            f"Dont include the following info in the summary:\n"
+            f"- guild_id: {interaction.guild.id}\n"
+            f"- channel_id: {channel.id}\n"
+            f"- timeframe: {humanized_delta}\n"
+        )
         if question:
-            payload.append({"role": "user", "content": f"User prompt: {question}"})
+            primer += f"- User prompt: {question}\n"
+
+        payload = [{"role": "system", "content": primer}]
 
         for message in reversed(messages):
-            if message.content and not message.attachments:
-                detail = f"[{message.created_at} <t:{int(message.created_at.timestamp())}:F>]({message.jump_url}) - {message.author.name}: {message.content}"
-                payload.append({"role": "user", "content": detail, "name": str(message.author.id)})
+            # Cleanup the message content
+            for mention in message.mentions:
+                message.content = message.content.replace(f"<@{mention.id}>", f"{mention.name} (<@{mention.id}>)")
+            for mention in message.channel_mentions:
+                message.content = message.content.replace(f"<#{mention.id}>", f"{mention.name} (<@{mention.id}>)")
+            for mention in message.role_mentions:
+                message.content = message.content.replace(f"<@&{mention.id}>", f"{mention.name} (<@{mention.id}>)")
 
-            elif message.attachments:
-                detail = f"[{message.created_at} <t:{int(message.created_at.timestamp())}:F>]({message.jump_url}) - {message.author.name}: "
-                message_obj = {"role": "user", "name": str(message.author.id), "content": []}
-                if message.content:
-                    detail += message.content
-                    message_obj["content"].append({"type": "text", "text": detail})
+            created = message.created_at.strftime("%m-%d-%Y %I:%M %p")
+            created_ts = f"<t:{int(message.created_at.timestamp())}:t>"
+
+            detail = f"[{created}|{created_ts}]({message.id}) {message.author.name}"
+
+            ref: t.Optional[discord.Message] = None
+            if hasattr(message, "reference") and message.reference:
+                ref = message.reference.resolved
+
+            if ref:
+                detail += f" (replying to {ref.author.name} at {ref.id})"
+
+            if message.content:
+                detail += f": {message.content}"
+            elif message.embeds:
+                detail += f": [EMBED] {message.embeds[0].title} -> {message.embeds[0].description}"
+
+            if not message.attachments:
+                payload.append({"role": "user", "content": detail, "name": str(message.author.id)})
+            else:
+                message_obj = {
+                    "role": "user",
+                    "name": str(message.author.id),
+                    "content": [{"type": "text", "text": detail}],
+                }
                 for attachment in message.attachments:
                     # Make sure the attachment is an image
-                    if not attachment.content_type.startswith("image"):
-                        continue
-                    message_obj["content"].append(
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": attachment.url, "detail": conf.vision_detail},
-                        }
-                    )
+                    if attachment.content_type.startswith("image"):
+                        message_obj["content"].append(
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": attachment.url, "detail": conf.vision_detail},
+                            }
+                        )
+                    elif attachment.content_type.startswith("text") and attachment.filename.endswith(
+                        tuple(READ_EXTENSIONS)
+                    ):
+                        try:
+                            content = await attachment.read()
+                            content = content.decode()
+                            message_obj["content"].append(
+                                {
+                                    "type": "text",
+                                    "text": f"```{attachment.filename.split('.')[-1]}\n{content}```",
+                                }
+                            )
+                        except Exception as e:
+                            log.error("Failed to read attachment for TLDR", exc_info=e)
+
                 if message_obj["content"]:
                     payload.append(message_obj)
 
@@ -408,10 +444,10 @@ If a file has no extension it will still try to read it only if it can be decode
                 temperature_override=0,
             )
         except httpx.ReadTimeout:
-            return await interaction.followup.send(_("The request timed out!"), ephemeral=True)
+            return await interaction.followup.send(_("The request timed out!"))
         except openai.BadRequestError as e:
             error = e.body.get("message", "Unknown Error")
-            kwargs = {"ephemeral": True}
+            kwargs = {}
             if interaction.user.id in self.bot.owner_ids:
                 dump = json.dumps(payload, indent=2)
                 file = text_to_file(dump, "payload.json")
@@ -419,20 +455,19 @@ If a file has no extension it will still try to read it only if it can be decode
             return await interaction.followup.send(f"BadRequest({e.status_code}): {error}", **kwargs)
         except Exception as e:
             log.error("Failed to get TLDR response", exc_info=e)
-            return await interaction.followup.send(_("Failed to get response"), ephemeral=True)
+            return await interaction.followup.send(_("Failed to get response"))
 
         if not response.content:
-            return await interaction.followup.send(_("No response was generated!"), ephemeral=True)
+            return await interaction.followup.send(_("No response was generated!"))
 
         embed = discord.Embed(
             color=await self.bot.get_embed_color(interaction.channel),
             description=response.content,
         )
         embed.set_footer(text=_("Timeframe: {}").format(humanized_delta))
-        if private:
-            await interaction.followup.send(embed=embed, ephemeral=True)
-        else:
-            await interaction.channel.send(embed=embed)
+        if channel.id != interaction.channel.id:
+            embed.add_field(name=_("Channel"), value=channel.mention)
+        await interaction.followup.send(embed=embed)
 
         # if private:
         #     try:
