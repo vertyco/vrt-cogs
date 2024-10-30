@@ -381,7 +381,7 @@ If a file has no extension it will still try to read it only if it can be decode
                 message_obj = {"role": "user", "name": str(message.author.id), "content": []}
                 if message.content:
                     detail += message.content
-                    message_obj["content"].append({"type": "text", "content": detail})
+                    message_obj["content"].append({"type": "text", "text": detail})
                 for attachment in message.attachments:
                     # Make sure the attachment is an image
                     if not attachment.content_type.startswith("image"):
@@ -392,7 +392,8 @@ If a file has no extension it will still try to read it only if it can be decode
                             "image_url": {"url": attachment.url, "detail": conf.vision_detail},
                         }
                     )
-                payload.append(message_obj)
+                if message_obj["content"]:
+                    payload.append(message_obj)
 
         try:
             response: ChatCompletionMessage = await self.request_response(
@@ -405,7 +406,12 @@ If a file has no extension it will still try to read it only if it can be decode
             return await interaction.followup.send(_("The request timed out!"), ephemeral=True)
         except openai.BadRequestError as e:
             error = e.body.get("message", "Unknown Error")
-            return await interaction.followup.send(f"BadRequest({e.status_code}): {error}", ephemeral=True)
+            kwargs = {"ephemeral": True}
+            if interaction.user.id in self.bot.owner_ids:
+                dump = json.dumps(payload, indent=2)
+                file = text_to_file(dump, "payload.json")
+                kwargs["file"] = file
+            return await interaction.followup.send(f"BadRequest({e.status_code}): {error}", **kwargs)
         except Exception as e:
             log.error("Failed to get TLDR response", exc_info=e)
             return await interaction.followup.send(_("Failed to get response"), ephemeral=True)
