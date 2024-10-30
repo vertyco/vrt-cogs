@@ -288,6 +288,7 @@ If a file has no extension it will still try to read it only if it can be decode
         question=_("Ask for specific info about the conversation"),
         channel=_("The channel to summarize messages from"),
         member=_("Target a specific member"),
+        private=_("Only you can see the response"),
     )
     async def summarize_convo(
         self,
@@ -296,6 +297,7 @@ If a file has no extension it will still try to read it only if it can be decode
         question: t.Optional[str] = None,
         channel: t.Optional[discord.TextChannel] = None,
         member: t.Optional[discord.Member] = None,
+        private: t.Optional[bool] = True,
     ):
         """
         Get the TLDR of the last X messages in a channel
@@ -400,8 +402,13 @@ If a file has no extension it will still try to read it only if it can be decode
 
         if not response.content:
             return await interaction.followup.send(_("No response was generated!"), ephemeral=True)
-        for p in pagify(response.content, page_length=1900):
-            await interaction.followup.send(p, ephemeral=True)
+
+        embed = discord.Embed(
+            color=await self.bot.get_embed_color(interaction.channel),
+            description=response.content,
+        )
+        embed.set_footer(text=_("Timeframe: {}").format(humanized_delta))
+        await interaction.followup.send(embed=embed, ephemeral=private)
 
     @commands.command(name="convocopy")
     @commands.guild_only()
