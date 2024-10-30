@@ -419,7 +419,10 @@ If a file has no extension it will still try to read it only if it can be decode
             description=response.content,
         )
         embed.set_footer(text=_("Timeframe: {}").format(humanized_delta))
-        await interaction.followup.send(embed=embed, ephemeral=private)
+        if private:
+            await interaction.followup.send(embed=embed, ephemeral=True)
+        else:
+            await interaction.channel.send(embed=embed)
 
         # if private:
         #     try:
