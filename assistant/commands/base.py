@@ -367,21 +367,17 @@ If a file has no extension it will still try to read it only if it can be decode
                 "content": f"Your name is '{self.bot.user.name}' and you are a discord bot. Refer to your self as 'I' or 'me' in your responses.",
             },
             {"role": "system", "content": TLDR_PROMPT},
-            {
-                "role": "system",
-                "content": f"Summarizing {len(messages)} messages over the last {humanized_delta}",
-            },
         ]
         if question:
             payload.append({"role": "user", "content": f"User prompt: {question}"})
 
         for message in reversed(messages):
             if message.content and not message.attachments:
-                detail = f"[<t:{int(message.created_at.timestamp())}:F>]({message.jump_url}) - {message.author.name}: {message.content}"
+                detail = f"[{message.created_at} <t:{int(message.created_at.timestamp())}:F>]({message.jump_url}) - {message.author.name}: {message.content}"
                 payload.append({"role": "user", "content": detail, "name": str(message.author.id)})
 
             elif message.attachments:
-                detail = f"[<t:{int(message.created_at.timestamp())}:F>]({message.jump_url}) - {message.author.name}: "
+                detail = f"[{message.created_at} <t:{int(message.created_at.timestamp())}:F>]({message.jump_url}) - {message.author.name}: "
                 message_obj = {"role": "user", "name": str(message.author.id), "content": []}
                 if message.content:
                     detail += message.content
