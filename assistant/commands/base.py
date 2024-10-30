@@ -354,6 +354,9 @@ If a file has no extension it will still try to read it only if it can be decode
             messages.append(message)
             now = datetime.now().astimezone()
             if now - message.created_at > delta:
+                if len(messages) < 10:
+                    # Always fetch at least the last 10 messages
+                    continue
                 break
 
         if not messages:
