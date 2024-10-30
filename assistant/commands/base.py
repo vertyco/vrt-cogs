@@ -368,7 +368,8 @@ If a file has no extension it will still try to read it only if it can be decode
             f"Dont include the following info in the summary:\n"
             f"- guild_id: {interaction.guild.id}\n"
             f"- channel_id: {channel.id}\n"
-            f"- timeframe: {humanized_delta}\n"
+            f"- Channel Name: {channel.name}\n"
+            f"- Timeframe: {humanized_delta}\n"
         )
         if question:
             primer += f"- User prompt: {question}\n"
@@ -384,10 +385,10 @@ If a file has no extension it will still try to read it only if it can be decode
             for mention in message.role_mentions:
                 message.content = message.content.replace(f"<@&{mention.id}>", f"{mention.name} (<@{mention.id}>)")
 
-            created = message.created_at.strftime("%m-%d-%Y %I:%M %p")
+            # created = message.created_at.strftime("%m-%d-%Y %I:%M %p")
             created_ts = f"<t:{int(message.created_at.timestamp())}:t>"
 
-            detail = f"[{created}|{created_ts}]({message.id}) {message.author.name}"
+            detail = f"[{created_ts}]({message.id}) {message.author.name}"
 
             ref: t.Optional[discord.Message] = None
             if hasattr(message, "reference") and message.reference:
@@ -399,7 +400,16 @@ If a file has no extension it will still try to read it only if it can be decode
             if message.content:
                 detail += f": {message.content}"
             elif message.embeds:
-                detail += f": [EMBED] {message.embeds[0].title} -> {message.embeds[0].description}"
+                detail += "\n# EMBED\n"
+                embed = message.embeds[0]
+                if embed.title:
+                    detail += f"Title: {embed.title}\n"
+                if embed.description:
+                    detail += f"Description: {embed.description}\n"
+                for field in embed.fields:
+                    detail += f"{field.name}: {field.value}\n"
+                if embed.footer:
+                    detail += f"Footer: {embed.footer.text}\n"
 
             if not message.attachments:
                 payload.append({"role": "user", "content": detail, "name": str(message.author.id)})
