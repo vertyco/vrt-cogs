@@ -197,7 +197,7 @@ class API(MixinMeta):
             try:
                 enc = tiktoken.encoding_for_model(model)
             except KeyError:
-                enc = tiktoken.get_encoding("cl100k_base")
+                enc = tiktoken.get_encoding("o200k_base")
             return enc
 
         encoding = await asyncio.to_thread(_get_encoding)
