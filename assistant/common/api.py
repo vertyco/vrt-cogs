@@ -124,68 +124,114 @@ class API(MixinMeta):
     # -------------------------------------------------------
     # -------------------------------------------------------
 
-    async def count_payload_tokens(self, messages: List[dict], model: str = "gpt-4o-mini"):
+    async def count_payload_tokens(self, messages: List[dict], model: str = "gpt-4o-mini") -> int:
         if not messages:
             return 0
 
-        def _get_encoding():
+        def _count_payload():
             try:
-                enc = tiktoken.encoding_for_model(model)
+                encoding = tiktoken.encoding_for_model(model)
             except KeyError:
-                enc = tiktoken.get_encoding("cl100k_base")
-            return enc
+                encoding = tiktoken.get_encoding("o200k_base")
 
-        encoding = await asyncio.to_thread(_get_encoding)
+            tokens_per_message = 3
+            tokens_per_name = 1
+            num_tokens = 0
+            for message in messages:
+                num_tokens += tokens_per_message
+                for key, value in message.items():
+                    num_tokens += len(encoding.encode(str(value)))
+                    if key == "name":
+                        num_tokens += tokens_per_name
+            num_tokens += 3  # every reply is primed with <|start|>assistant<|message|>
+            return num_tokens
 
-        num_tokens = 0
-        for message in messages:
-            num_tokens += 4  # every message follows <im_start>{role/name}\n{content}<im_end>\n
-            for key, value in message.items():
-                if not value:
-                    continue
-                if isinstance(value, list):
-                    for i in value:
-                        if i["type"] == "image_url":
-                            num_tokens += 65
-                            if i.get("detail", "") == "high":
-                                num_tokens += 65
-                            continue
-                        try:
-                            encoded = await asyncio.to_thread(encoding.encode, i.get("text") or str(i))
-                        except Exception as e:
-                            log.error(f"Failed to encode: {i.get('text') or str(i)}", exc_info=e)
-                            encoded = []
-                        num_tokens += len(encoded)
-                else:
-                    try:
-                        encoded = await asyncio.to_thread(encoding.encode, str(value))
-                    except Exception as e:
-                        log.error(f"Failed to encode: {value}", exc_info=e)
-                        encoded = []
-                    num_tokens += len(encoded)
-                if key == "name":  # if there's a name, the role is omitted
-                    num_tokens += -1  # role is always required and always 1 token
-        num_tokens += 2  # every reply is primed with <im_start>assistant
-        return num_tokens
+        return await asyncio.to_thread(_count_payload)
 
-    async def count_function_tokens(self, functions: List[dict], model: str = "gpt-4o-mini"):
-        def _get_encoding():
+    async def count_function_tokens(self, functions: List[dict], model: str = "gpt-4o-mini") -> int:
+        # Initialize function settings to 0
+        func_init = 0
+        prop_init = 0
+        prop_key = 0
+        enum_init = 0
+        enum_item = 0
+        func_end = 0
+
+        if model in [
+            "gpt-4o",
+            "gpt-4o-2024-05-13",
+            "gpt-4o-mini",
+            "gpt-4o-mini-2024-07-18",
+            "gpt-4o-2024-08-06",
+        ]:
+            # Set function settings for the above models
+            func_init = 7
+            prop_init = 3
+            prop_key = 3
+            enum_init = -3
+            enum_item = 3
+            func_end = 12
+        elif model in [
+            "gpt-3.5-turbo-1106",
+            "gpt-3.5-turbo-0125",
+            "gpt-4",
+            "gpt-4-turbo",
+            "gpt-4-turbo-preview",
+            "gpt-4-0125-preview",
+            "gpt-4-1106-preview",
+        ]:
+            # Set function settings for the above models
+            func_init = 10
+            prop_init = 3
+            prop_key = 3
+            enum_init = -3
+            enum_item = 3
+            func_end = 12
+        else:
+            log.warning(f"Incompatible model: {model}")
+
+        def _count_tokens():
             try:
-                enc = tiktoken.encoding_for_model(model)
+                encoding = tiktoken.encoding_for_model(model)
             except KeyError:
-                enc = tiktoken.get_encoding("cl100k_base")
-            return enc
+                encoding = tiktoken.get_encoding("o200k_base")
 
-        encoding = await asyncio.to_thread(_get_encoding)
+            func_token_count = 0
 
-        num_tokens = 0
-        for func in functions:
-            dump = json.dumps(func)
-            encoded = await asyncio.to_thread(encoding.encode, dump)
-            num_tokens += len(encoded)
-        return num_tokens
+            if len(functions) > 0:
+                for f in functions:
+                    if "function" not in f.keys():
+                        f = {"function": f, "name": f["name"], "description": f["description"]}
+                    func_token_count += func_init  # Add tokens for start of each function
+                    function = f["function"]
+                    f_name = function["name"]
+                    f_desc = function["description"]
+                    if f_desc.endswith("."):
+                        f_desc = f_desc[:-1]
+                    line = f_name + ":" + f_desc
+                    func_token_count += len(encoding.encode(line))  # Add tokens for set name and description
+                    if len(function["parameters"]["properties"]) > 0:
+                        func_token_count += prop_init  # Add tokens for start of each property
+                        for key in list(function["parameters"]["properties"].keys()):
+                            func_token_count += prop_key  # Add tokens for each set property
+                            p_name = key
+                            p_type = function["parameters"]["properties"][key].get("type", "")
+                            p_desc = function["parameters"]["properties"][key].get("description", "")
+                            if "enum" in function["parameters"]["properties"][key].keys():
+                                func_token_count += enum_init  # Add tokens if property has enum list
+                                for item in function["parameters"]["properties"][key]["enum"]:
+                                    func_token_count += enum_item
+                                    func_token_count += len(encoding.encode(item))
+                            if p_desc.endswith("."):
+                                p_desc = p_desc[:-1]
+                            line = f"{p_name}:{p_type}:{p_desc}"
+                            func_token_count += len(encoding.encode(line))
+                func_token_count += func_end
+            return func_token_count
 
-    async def get_tokens(self, text: str, model: str = "gpt-4o-mini") -> list:
+        return await asyncio.to_thread(_count_tokens)
+
+    async def get_tokens(self, text: str, model: str = "gpt-4o-mini") -> list[int]:
         """Get token list from text"""
         if not text:
             log.debug("No text to get tokens from!")
@@ -272,7 +318,7 @@ class API(MixinMeta):
             try:
                 enc = tiktoken.encoding_for_model(model)
             except KeyError:
-                enc = tiktoken.get_encoding("cl100k_base")
+                enc = tiktoken.get_encoding("o200k_base")
             return enc
 
         encoding = await asyncio.to_thread(_get_encoding)
