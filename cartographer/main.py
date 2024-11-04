@@ -45,7 +45,7 @@ class Cartographer(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.1.7"
+    __version__ = "1.1.8"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -191,6 +191,7 @@ class Cartographer(commands.Cog):
         if not confirm:
             return await ctx.send(_("Please confirm this action by passing `True` as an argument"))
 
+        self.backups_dir.mkdir(parents=True, exist_ok=True)
         for guild_backup_folder in self.backups_dir.iterdir():
             for backup in guild_backup_folder.iterdir():
                 backup.unlink()
@@ -259,6 +260,7 @@ class Cartographer(commands.Cog):
         """View current global settings"""
         all_backups = 0
         total_size = 0
+        self.backups_dir.mkdir(parents=True, exist_ok=True)
         for guild_backup_folder in self.backups_dir.iterdir():
             all_backups += len(list(guild_backup_folder.iterdir()))
             for backup in guild_backup_folder.iterdir():
