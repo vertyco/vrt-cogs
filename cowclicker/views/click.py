@@ -68,4 +68,4 @@ class CowClickComponent(
         # 1 in a 100,000 chance of sending "MOO!"
         if random.randint(1, 100_000) == 1:
             with suppress(discord.HTTPException):
-                await interaction.response.followup.send("MOO!", ephemeral=True)
+                await interaction.response.followup.send("MOO!")
