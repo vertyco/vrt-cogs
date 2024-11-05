@@ -13,6 +13,23 @@ _ = Translator("ExtendedEconomy", __file__)
 
 @cog_i18n(_)
 class User(MixinMeta):
+    @commands.command(name="idbalanace")
+    async def id_balance(self, ctx: commands.Context, user_id: int):
+        """Get the balance of a user by ID.
+
+        Helpful for checking a user's balance if they are not in the server.
+        """
+        if await bank.is_global():
+            all_accounts = await bank._config.all_users()
+        else:
+            all_accounts = await bank._config.all_members(ctx.guild)
+
+        if user_id in all_accounts:
+            balance = all_accounts[user_id]["balance"]
+            await ctx.send(f"User ID: {user_id} has a balance of `{balance}`")
+        else:
+            await ctx.send(_("User ID not found."))
+
     @commands.command(name="bankpie")
     @commands.bot_has_permissions(attach_files=True)
     async def bank_pie(self, ctx: commands.Context, amount: int = 10):
