@@ -13,7 +13,7 @@ _ = Translator("ExtendedEconomy", __file__)
 
 @cog_i18n(_)
 class User(MixinMeta):
-    @commands.command(name="idbalanace")
+    @commands.command(name="idbalance")
     async def id_balance(self, ctx: commands.Context, user_id: int):
         """Get the balance of a user by ID.
 
