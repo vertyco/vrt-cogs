@@ -1,58 +1,56 @@
-# XTools Help
-
 Provides various features and functionalities related to Xbox, including profile retrieval, game clips and screenshot viewing, Microsoft services status checking, and more.
 
-# .apiset
+# [p]apiset
 Set up the XTools cog<br/>
- - Usage: `.apiset`
+ - Usage: `[p]apiset`
  - Restricted to: `BOT_OWNER`
-## .apiset auth
-
- - Usage: `.apiset auth`
-## .apiset reset
-Reset the all token data<br/>
- - Usage: `.apiset reset`
-## .apiset help
+## [p]apiset help
 Tutorial for getting your ClientID and Secret<br/>
- - Usage: `.apiset help`
-## .apiset tokens
+ - Usage: `[p]apiset help`
+## [p]apiset auth
+
+ - Usage: `[p]apiset auth`
+## [p]apiset reset
+Reset the all token data<br/>
+ - Usage: `[p]apiset reset`
+## [p]apiset tokens
 Set Client ID and Secret<br/>
- - Usage: `.apiset tokens <client_id> <client_secret>`
-# .xstatuschannel
+ - Usage: `[p]apiset tokens <client_id> <client_secret>`
+# [p]xstatuschannel
 Set the channel for Microsoft status alerts<br/>
 
 Any time microsoft services go down an alert will go out in the channel and be updated<br/>
- - Usage: `.xstatuschannel <channel>`
-# .setgt
+ - Usage: `[p]xstatuschannel <channel>`
+# [p]setgt
 Set your Gamertag to use commands without entering it<br/>
- - Usage: `.setgt <gamertag>`
-# .xuid
+ - Usage: `[p]setgt <gamertag>`
+# [p]xuid
 Get a player's XUID<br/>
- - Usage: `.xuid [gamertag]`
-# .gamertag
+ - Usage: `[p]xuid [gamertag]`
+# [p]gamertag
 Get the Gamertag associated with an XUID<br/>
- - Usage: `.gamertag <xuid>`
-# .xprofile
+ - Usage: `[p]gamertag <xuid>`
+# [p]xprofile
 View your Xbox profile<br/>
- - Usage: `.xprofile [gamertag]`
-# .xscreenshots
+ - Usage: `[p]xprofile [gamertag]`
+# [p]xscreenshots
 View your Screenshots<br/>
- - Usage: `.xscreenshots [gamertag]`
-# .xgames
+ - Usage: `[p]xscreenshots [gamertag]`
+# [p]xgames
 View your games and achievements<br/>
- - Usage: `.xgames [gamertag]`
-# .xfriends
+ - Usage: `[p]xgames [gamertag]`
+# [p]xfriends
 View your friends list<br/>
- - Usage: `.xfriends [gamertag]`
-# .xclips
+ - Usage: `[p]xfriends [gamertag]`
+# [p]xclips
 View your game clips<br/>
- - Usage: `.xclips [gamertag]`
-# .xstatus
+ - Usage: `[p]xclips [gamertag]`
+# [p]xstatus
 Check Microsoft Services Status<br/>
- - Usage: `.xstatus`
-# .gameswithgold
+ - Usage: `[p]xstatus`
+# [p]gameswithgold
 View this month's free games with Gold<br/>
- - Usage: `.gameswithgold`
-# .xmostplayed
+ - Usage: `[p]gameswithgold`
+# [p]xmostplayed
 View your most played games<br/>
- - Usage: `.xmostplayed [gamertag]`
+ - Usage: `[p]xmostplayed [gamertag]`

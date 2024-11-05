@@ -1,8 +1,6 @@
-# AutoDocs Help
-
 Document your cogs with ease!<br/><br/>Easily create documentation for any cog in Markdown format.
 
-# .makedocs (Hybrid Command)
+# [p]makedocs (Hybrid Command)
 Create a Markdown docs page for a cog and send to discord<br/>
 
 **Arguments**<br/>
@@ -19,7 +17,7 @@ Create a Markdown docs page for a cog and send to discord<br/>
 
 **Note** If `all` is specified for cog_name, all currently loaded non-core cogs will have docs generated for<br/>
 them and sent in a zip file<br/>
- - Usage: `.makedocs <cog_name> [replace_prefix=False] [replace_botname=False] [extended_info=False] [include_hidden=False] [include_help=True] [max_privilege_level=botowner] [min_privilage_level=user] [csv_export=False]`
+ - Usage: `[p]makedocs <cog_name> [replace_prefix=False] [replace_botname=False] [extended_info=False] [include_hidden=False] [include_help=True] [max_privilege_level=botowner] [min_privilage_level=user] [csv_export=False]`
  - Slash Usage: `/makedocs <cog_name> [replace_prefix=False] [replace_botname=False] [extended_info=False] [include_hidden=False] [include_help=True] [max_privilege_level=botowner] [min_privilage_level=user] [csv_export=False]`
  - Restricted to: `BOT_OWNER`
  - Checks: `server_only`
