@@ -1,10 +1,8 @@
-# Meow Help
-
 Meow!<br/><br/><br/>My girlfriend had a dream about this cog, so I had to make it ¯\_(ツ)_/¯<br/><br/>Use `[p]automeow` to toggle automatic meow response.
 
-# .automeow
+# [p]automeow
 Toggle automatic meow response<br/>
- - Usage: `.automeow`
-# .meow
+ - Usage: `[p]automeow`
+# [p]meow
 
- - Usage: `.meow`
+ - Usage: `[p]meow`
