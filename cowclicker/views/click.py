@@ -62,7 +62,8 @@ class CowClickComponent(
         self.item.label = str(self.clicks)
         self.custom_id = f"CowClicker:{self.clicks}"
         self.item.style = self.style
-        await interaction.response.edit_message(view=self.view)
+        with suppress(discord.NotFound):
+            await interaction.response.edit_message(view=self.view)
         await Click(author_id=interaction.user.id).save()
         # 1 in a 100,000 chance of sending "MOO!"
         if random.randint(1, 100_000) == 1:
