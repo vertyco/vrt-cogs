@@ -61,7 +61,7 @@ class User(MixinMeta):
     async def show_top_clickers(
         self,
         ctx: commands.Context,
-        show_global: bool = False,
+        show_global: bool = True,
         delta: t.Optional[str] = None,
     ):
         """Show the top clickers
@@ -88,7 +88,7 @@ class User(MixinMeta):
             total_clicks = sum(click["count"] for click in top_clickers)
 
             color = await self.bot.get_embed_color(ctx)
-            title = "Top Clickers (Global)" if show_global else f"Top Clickers in {ctx.guild.name}"
+            title = "Top Clickers Globally" if show_global else f"Top Clickers in {ctx.guild.name}"
 
             def _prep():
                 embeds = []
