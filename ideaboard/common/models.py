@@ -154,6 +154,8 @@ async def run_migrations(data: dict[str, t.Any], bot: Red) -> bool:
         return False
     if "migrations" not in data:
         data["migrations"] = []
+    if "configs" not in data:
+        data["configs"] = {}
     migrated = False
     if "0.6.0" not in data["migrations"]:
         migrated = True
