@@ -163,17 +163,12 @@ async def run_migrations(data: dict[str, t.Any], bot: Red) -> bool:
         data["migrations"].append("0.6.0")
         for gid, conf in data["configs"].items():
             guild = bot.get_guild(int(gid))
-            if not guild:
-                conf["suggestions"] = {}
-                continue
-            if not conf["suggestions"]:
-                continue
-            if not conf["pending"]:
-                conf["suggestions"] = {}
-                continue
+            conf: dict = conf
+            conf.setdefault("suggestions", {})
+            conf.setdefault("pending", 0)
             channel = guild.get_channel(conf["pending"])
             if not channel:
-                log.waring(f"Channel {conf['pending']} not found in guild {guild.name}")
+                log.warning(f"Channel {conf['pending']} not found in guild {guild.name}")
                 conf["suggestions"] = {}
                 continue
             suggestions_to_remove = []
