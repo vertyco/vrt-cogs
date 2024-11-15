@@ -1,9 +1,11 @@
 import asyncio
 import logging
 import zipfile
+from collections import defaultdict
 from contextlib import suppress
 from datetime import datetime
 from io import BytesIO
+from pathlib import Path
 from typing import List, Optional, Union
 
 import chat_exporter
@@ -178,6 +180,7 @@ async def close_ticket(
                 text += _("Question: {}\nResponse: {}\n").format(q, a)
 
         history = await fetch_channel_history(channel)
+        filenames = defaultdict(int)
         for msg in history:
             if msg.author.bot:
                 continue
@@ -188,6 +191,12 @@ async def close_ticket(
             for i in msg.attachments:
                 att.append(i.filename)
                 if i.size < guild.filesize_limit and (not is_thread or conf["thread_close"]):
+                    filenames[i.filename] += 1
+                    if filenames[i.filename] > 1:
+                        # Increment filename count to avoid overwriting
+                        p = Path(i.filename)
+                        i.filename = f"{p.stem}_{filenames[i.filename]}{p.suffix}"
+
                     files.append({"filename": i.filename, "content": await i.read()})
 
             if not use_exporter:
