@@ -45,7 +45,7 @@ class ReactionListener(MixinMeta):
         if msg.author.id == payload.member.id:
             return
 
-        last_used = self.stars.setdefailt(guild.id, {}).get(payload.member.id)
+        last_used = self.stars.setdefault(guild.id, {}).get(payload.member.id)
         conf = self.db.get_conf(guild)
         now = datetime.now()
 
