@@ -55,10 +55,10 @@ class ReactionListener(MixinMeta):
                 return
 
         self.stars[guild.id][payload.member.id] = now
-        profile = conf.get_profile(payload.member)
+        profile = conf.get_profile(msg.author)
         profile.stars += 1
         if conf.weeklysettings.on:
-            weekly = conf.get_weekly_profile(payload.member)
+            weekly = conf.get_weekly_profile(msg.author)
             weekly.stars += 1
         self.save()
         txt = _("{} just gave a star to {}!").format(
