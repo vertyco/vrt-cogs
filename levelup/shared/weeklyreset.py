@@ -28,8 +28,6 @@ class WeeklyReset(MixinMeta):
         Returns:
             bool: True if the weekly stats were reset, False otherwise.
         """
-        if guild.id == 625757527765811240:
-            await guild.owner.send("Resetting weekly stats!")
         log.warning(f"Resetting weekly stats for {guild.name}")
         conf = self.db.get_conf(guild)
         if not conf.users_weekly:
