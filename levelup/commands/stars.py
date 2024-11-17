@@ -15,14 +15,9 @@ _ = Translator("LevelUp", __file__)
 
 @cog_i18n(_)
 class Stars(MixinMeta):
-    def __init__(self):
-        super().__init__()
-        # Guild_ID: {User_ID: {User_ID: datetime}}
-        self.stars: t.Dict[int, t.Dict[int, datetime]] = {}
-
     @commands.hybrid_command(name="stars", aliases=["givestar", "addstar", "thanks"])
     @commands.guild_only()
-    async def stars(self, ctx: commands.Context, *, user: t.Optional[discord.Member] = None):
+    async def give_stars(self, ctx: commands.Context, *, user: t.Optional[discord.Member] = None):
         """Reward a good noodle"""
         if user and user.id == ctx.author.id:
             return await ctx.send(_("You can't give stars to yourself!"), ephemeral=True)
@@ -66,7 +61,10 @@ class Stars(MixinMeta):
             weekly.stars += 1
         self.save()
         name = user.mention if conf.starmention else f"**{user.display_name}**"
-        await ctx.send(_("You just gave a star to {}!").format(name), ephemeral=True)
+        kwargs = {"ephemeral": True}
+        if conf.starmentionautodelete:
+            kwargs["delete_after"] = conf.starmentionautodelete
+        await ctx.send(_("You just gave a star to {}!").format(name), **kwargs)
 
     @commands.command(name="startop", aliases=["topstars", "starleaderboard", "starlb"])
     @commands.guild_only()

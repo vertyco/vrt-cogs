@@ -2,6 +2,7 @@ import asyncio
 import multiprocessing as mp
 import typing as t
 from abc import ABC, ABCMeta, abstractmethod
+from datetime import datetime
 from pathlib import Path
 
 import discord
@@ -28,6 +29,7 @@ class MixinMeta(ABC):
         self.lastmsg: t.Dict[int, t.Dict[int, float]]
         self.in_voice: t.Dict[int, t.Dict[int, float]]
         self.profile_cache: t.Dict[int, t.Dict[int, t.Tuple[str, bytes]]]
+        self.stars: t.Dict[int, t.Dict[int, datetime]]
 
         self.cog_path: Path
         self.bundled_path: Path
