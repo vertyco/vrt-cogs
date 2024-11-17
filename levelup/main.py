@@ -26,6 +26,7 @@ import multiprocessing as mp
 import sys
 import typing as t
 from contextlib import suppress
+from datetime import datetime
 from time import perf_counter
 
 import discord
@@ -75,7 +76,7 @@ class LevelUp(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "4.2.17"
+    __version__ = "4.2.18"
     __contributors__ = [
         "[aikaterna](https://github.com/aikaterna/aikaterna-cogs)",
         "[AAA3A](https://github.com/AAA3A-AAA3A/AAA3A-cogs)",
@@ -90,6 +91,7 @@ class LevelUp(
         self.lastmsg: t.Dict[int, t.Dict[int, float]] = {}  # GuildID: {UserID: LastMessageTime}
         self.in_voice: t.Dict[int, t.Dict[int, float]] = {}  # GuildID: {UserID: TimeJoined}
         self.profile_cache: t.Dict[int, t.Dict[int, t.Tuple[str, bytes]]] = {}  # GuildID: {UserID: (last_used, bytes)}
+        self.stars: t.Dict[int, t.Dict[int, datetime]] = {}  # Guild_ID: {User_ID: {User_ID: datetime}}
 
         # Root Paths
         self.cog_path = cog_data_path(self)
