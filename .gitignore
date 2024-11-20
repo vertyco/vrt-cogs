@@ -166,25 +166,28 @@ uncomp/
 compress.py
 
 
-# WIP/Temp
+# Misc
 backups/
 orchestrator/
 welcomer/
 cookiecutter*/
-fishing/
-osmosis/
-botarena/
 dbtest/
 function_wizard.py
 dbtestnew/
-locallm/
-llm/
 scratches/*
-heist/
 levelup/data/tests/
 levelup/data/stock/rs-assets/
+
+# WIP cogs
+fishing/
+osmosis/
+botarena/
+heist/
 upchat/
 petcord/
 whosalt/
 design_docs/
 idlegather/
+locallm/
+llm/
+appeals/
