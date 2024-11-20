@@ -54,7 +54,7 @@ class AdminBase(MixinMeta):
         perms = [
             pending_channel.permissions_for(ctx.me).send_messages,
             pending_channel.permissions_for(ctx.me).embed_links,
-            approved_channel.permissions_for(ctx.me).send_messages,
+            approved_channel.permissions_for(ctx.me).manage_channels,
             approved_channel.permissions_for(ctx.me).embed_links,
         ]
         if not all(perms):
@@ -188,7 +188,7 @@ class AdminBase(MixinMeta):
         perms = [
             pending_channel.permissions_for(ctx.me).send_messages,
             pending_channel.permissions_for(ctx.me).embed_links,
-            rejected_channel.permissions_for(ctx.me).send_messages,
+            rejected_channel.permissions_for(ctx.me).manage_channels,
             rejected_channel.permissions_for(ctx.me).embed_links,
         ]
         if not all(perms):
