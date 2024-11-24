@@ -54,29 +54,35 @@ class LevelUps(MixinMeta):
         log.debug(f"{member} has reached level {calculated_level} in {guild}")
         profile.level = calculated_level
         # User has reached a new level, time to log and award roles if needed
-        added, __ = await self.ensure_roles(member, conf)
+        await self.ensure_roles(member, conf)
         current_channel = channel or message.channel if message else None
         log_channel = guild.get_channel(conf.notifylog) if conf.notifylog else None
+
+        role = None
+        if calculated_level in conf.levelroles:
+            role_id = conf.levelroles[calculated_level]
+            role = guild.get_role(role_id)
+
         placeholders = {
             "username": member.name,
             "displayname": member.display_name,
             "mention": member.mention,
             "level": profile.level,
-            "role": added[0] if added else None,
+            "role": role,
             "server": guild.name,
         }
-        if added:
+        if role:
             if dm_txt_raw := conf.role_awarded_dm:
                 dm_txt = dm_txt_raw.format(**placeholders)
             else:
                 dm_txt = _("You just reached level {} in {} and obtained the {} role!").format(
-                    profile.level, guild.name, added[0].name
+                    profile.level, guild.name, role.name
                 )
             if msg_txt_raw := conf.role_awarded_msg:
                 msg_txt = msg_txt_raw.format(**placeholders)
             else:
                 msg_txt = _("{} just reached level {} and obtained the {} role!").format(
-                    member.mention, profile.level, added[0].name
+                    member.mention, profile.level, role.name
                 )
         else:
             placeholders.pop("role")
