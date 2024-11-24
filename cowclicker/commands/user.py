@@ -70,6 +70,9 @@ class User(MixinMeta):
         - `show_global`: Show global top clickers instead of server top clickers.
         - `delta`: Show top clickers within a time delta. (e.g. 1d, 1h, 1m)
         """
+        if not ctx.guild and not show_global:
+            await ctx.send("When running in DMs this defaults to showing global top clickers.")
+            show_global = True
 
         async with ctx.typing():
             query = Click.select(Click.author_id, Count())
