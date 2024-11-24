@@ -68,7 +68,7 @@ class LevelUps(MixinMeta):
             "displayname": member.display_name,
             "mention": member.mention,
             "level": profile.level,
-            "role": role,
+            "role": role.name if role else None,
             "server": guild.name,
         }
         if role:
