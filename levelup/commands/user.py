@@ -93,6 +93,8 @@ class User(MixinMeta):
             rolegroups=conf.role_groups,
             color=await self.bot.get_embed_color(ctx),
         )
+        if not pages:
+            return await ctx.send(_("No data available yet!"))
         await DynamicMenu(ctx, pages).refresh()
 
     @commands.hybrid_command(name="profile", aliases=["pf"])
