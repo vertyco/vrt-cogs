@@ -990,7 +990,7 @@ class Admin(MixinMeta):
         await self.save_conf()
 
     @assistant.command(name="maxtokens")
-    async def max_tokens(self, ctx: commands.Context, max_tokens: int):
+    async def max_tokens(self, ctx: commands.Context, max_tokens: commands.positive_int):
         """
         Set maximum tokens a convo can consume
 
@@ -1003,8 +1003,6 @@ class Admin(MixinMeta):
 
         Using more than the model can handle will raise exceptions.
         """
-        if max_tokens < 0:
-            return await ctx.send(_("Cannot be a negative number!"))
         conf = self.db.get_conf(ctx.guild)
         conf.max_tokens = max_tokens
         if max_tokens:
@@ -1018,14 +1016,12 @@ class Admin(MixinMeta):
         await self.save_conf()
 
     @assistant.command(name="maxresponsetokens")
-    async def max_response_tokens(self, ctx: commands.Context, max_tokens: int):
+    async def max_response_tokens(self, ctx: commands.Context, max_tokens: commands.positive_int):
         """
         Set the max response tokens the model can respond with
 
         Set to 0 for response tokens to be dynamic
         """
-        if max_tokens < 0:
-            return await ctx.send(_("Cannot be a negative number!"))
         conf = self.db.get_conf(ctx.guild)
         conf.max_response_tokens = max_tokens
         if max_tokens:
@@ -1813,7 +1809,9 @@ class Admin(MixinMeta):
         await self.save_conf()
 
     @override.command(name="maxresponsetokens")
-    async def max_response_token_override(self, ctx: commands.Context, max_tokens: int, *, role: discord.Role):
+    async def max_response_token_override(
+        self, ctx: commands.Context, max_tokens: commands.positive_int, *, role: discord.Role
+    ):
         """
         Assign a max response token override to a role
 
@@ -1821,8 +1819,6 @@ class Admin(MixinMeta):
 
         *Specify same role and token count to remove the override*
         """
-        if max_tokens < 0:
-            return await ctx.send(_("Cannot be a negative number!"))
         conf = self.db.get_conf(ctx.guild)
 
         if role.id in conf.max_response_token_override:

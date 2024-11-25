@@ -1090,11 +1090,9 @@ class AdminCommands(MixinMeta):
         await self.initialize(ctx.guild)
 
     @tickets.command()
-    async def maxclaims(self, ctx: commands.Context, panel_name: str, amount: int):
+    async def maxclaims(self, ctx: commands.Context, panel_name: str, amount: commands.positive_int):
         """Set how many staff members can claim/join a ticket before the join button is disabled (If using threads)"""
         panel_name = panel_name.lower()
-        if amount < 0:
-            return await ctx.send(_("Amount cannot be negative!"))
         async with self.config.guild(ctx.guild).panels() as panels:
             if panel_name not in panels:
                 return await ctx.send(_("Panel does not exist!"))

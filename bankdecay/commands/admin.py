@@ -97,13 +97,10 @@ class Admin(MixinMeta):
         await self.save()
 
     @bankdecay.command(name="setdays")
-    async def set_inactive_days(self, ctx: commands.Context, days: int):
+    async def set_inactive_days(self, ctx: commands.Context, days: commands.positive_int):
         """
         Set the number of inactive days before decay starts.
         """
-        if days < 0:
-            await ctx.send(_("Inactive days cannot be negative."))
-            return
         conf = self.db.get_conf(ctx.guild)
         conf.inactive_days = days
         await ctx.send(_("Inactive days set to {}.").format(days))
