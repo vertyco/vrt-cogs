@@ -114,7 +114,7 @@ class User(MixinMeta):
                     buffer.write("\n")
                     for i in range(start, stop):
                         click = top_clickers[i]
-                        if ctx.guid:
+                        if ctx.guild:
                             member = ctx.guild.get_member(click["author_id"]) or self.bot.get_user(click["author_id"])
                         else:
                             member = self.bot.get_user(click["author_id"])
