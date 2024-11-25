@@ -909,8 +909,8 @@ class Admin(MixinMeta):
         self,
         ctx: commands.Context,
         channel: t.Union[discord.TextChannel, discord.CategoryChannel],
-        min_xp: int,
-        max_xp: int,
+        min_xp: commands.positive_int,
+        max_xp: commands.positive_int,
     ):
         """
         Add a range of bonus XP to apply to certain channels
@@ -919,8 +919,6 @@ class Admin(MixinMeta):
 
         Set both min and max to 0 to remove the role bonus
         """
-        if min_xp < 0 or max_xp < 0:
-            return await ctx.send(_("XP values cannot be negative"))
         if min_xp > max_xp:
             return await ctx.send(_("Min XP value cannot be greater than Max XP value"))
         conf = self.db.get_conf(ctx.guild)
@@ -940,7 +938,7 @@ class Admin(MixinMeta):
         await ctx.send(_("Channel bonus has been set"))
 
     @message_group.command(name="cooldown")
-    async def set_cooldown(self, ctx: commands.Context, cooldown: int):
+    async def set_cooldown(self, ctx: commands.Context, cooldown: commands.positive_int):
         """
         Cooldown threshold for message XP
 
@@ -948,14 +946,12 @@ class Admin(MixinMeta):
         counts as XP gained
         """
         conf = self.db.get_conf(ctx.guild)
-        if cooldown < 0:
-            return await ctx.send(_("Cooldown cannot be negative"))
         conf.cooldown = cooldown
         self.save()
         await ctx.send(_("Cooldown has been set to {} seconds").format(cooldown))
 
     @message_group.command(name="length")
-    async def set_length(self, ctx: commands.Context, length: int):
+    async def set_length(self, ctx: commands.Context, length: commands.positive_int):
         """
         Set minimum message length for XP
         Minimum length a message must be to count towards XP gained
@@ -963,8 +959,6 @@ class Admin(MixinMeta):
         Set to 0 to disable
         """
         conf = self.db.get_conf(ctx.guild)
-        if length < 0:
-            return await ctx.send(_("Length cannot be negative"))
         conf.min_length = length
         self.save()
         await ctx.send(_("Minimum message length has been set to {}").format(length))
@@ -974,8 +968,8 @@ class Admin(MixinMeta):
         self,
         ctx: commands.Context,
         role: discord.Role,
-        min_xp: int,
-        max_xp: int,
+        min_xp: commands.positive_int,
+        max_xp: commands.positive_int,
     ):
         """
         Add a range of bonus XP to apply to certain roles
@@ -985,8 +979,6 @@ class Admin(MixinMeta):
         Set both min and max to 0 to remove the role bonus
         """
         conf = self.db.get_conf(ctx.guild)
-        if min_xp < 0 or max_xp < 0:
-            return await ctx.send(_("XP values cannot be negative"))
         if min_xp > max_xp:
             return await ctx.send(_("Min XP value cannot be greater than Max XP value"))
         if role.id in conf.rolebonus.msg:
@@ -1002,7 +994,7 @@ class Admin(MixinMeta):
         await ctx.send(_("Role bonus has been set"))
 
     @message_group.command(name="xp")
-    async def set_xp(self, ctx: commands.Context, min_xp: int, max_xp: int):
+    async def set_xp(self, ctx: commands.Context, min_xp: commands.positive_int, max_xp: commands.positive_int):
         """
         Set message XP range
 
@@ -1010,8 +1002,6 @@ class Admin(MixinMeta):
         Default is 3 min and 6 max
         """
         conf = self.db.get_conf(ctx.guild)
-        if min_xp < 0 or max_xp < 0:
-            return await ctx.send(_("XP values cannot be negative"))
         if min_xp > max_xp:
             return await ctx.send(_("Min XP value cannot be greater than Max XP value"))
         if min_xp == 0 and max_xp == 0:
@@ -1117,8 +1107,8 @@ class Admin(MixinMeta):
         self,
         ctx: commands.Context,
         channel: discord.VoiceChannel,
-        min_xp: int,
-        max_xp: int,
+        min_xp: commands.positive_int,
+        max_xp: commands.positive_int,
     ):
         """
         Add a range of bonus XP to apply to certain channels
@@ -1128,8 +1118,6 @@ class Admin(MixinMeta):
         Set both min and max to 0 to remove the role bonus
         """
         conf = self.db.get_conf(ctx.guild)
-        if min_xp < 0 or max_xp < 0:
-            return await ctx.send(_("XP values cannot be negative"))
         if min_xp > max_xp:
             return await ctx.send(_("Min XP value cannot be greater than Max XP value"))
         if channel.id in conf.channelbonus.voice:
@@ -1147,7 +1135,9 @@ class Admin(MixinMeta):
         await ctx.send(_("Channel bonus has been set"))
 
     @voice_group.command(name="streambonus")
-    async def voice_stream_bonus(self, ctx: commands.Context, min_xp: int, max_xp: int):
+    async def voice_stream_bonus(
+        self, ctx: commands.Context, min_xp: commands.positive_int, max_xp: commands.positive_int
+    ):
         """
         Add a range of bonus XP to users who are Discord streaming
 
@@ -1156,8 +1146,6 @@ class Admin(MixinMeta):
         Set both min and max to 0 to remove the bonus
         """
         conf = self.db.get_conf(ctx.guild)
-        if min_xp < 0 or max_xp < 0:
-            return await ctx.send(_("XP values cannot be negative"))
         if min_xp > max_xp:
             return await ctx.send(_("Min XP value cannot be greater than Max XP value"))
         if min_xp == 0 and max_xp == 0:
@@ -1173,8 +1161,8 @@ class Admin(MixinMeta):
         self,
         ctx: commands.Context,
         role: discord.Role,
-        min_xp: int,
-        max_xp: int,
+        min_xp: commands.positive_int,
+        max_xp: commands.positive_int,
     ):
         """
         Add a range of bonus XP to apply to certain roles
@@ -1184,8 +1172,6 @@ class Admin(MixinMeta):
         Set both min and max to 0 to remove the role bonus
         """
         conf = self.db.get_conf(ctx.guild)
-        if min_xp < 0 or max_xp < 0:
-            return await ctx.send(_("XP values cannot be negative"))
         if min_xp > max_xp:
             return await ctx.send(_("Min XP value cannot be greater than Max XP value"))
         if role.id in conf.rolebonus.voice:
@@ -1267,14 +1253,12 @@ class Admin(MixinMeta):
         await ctx.send(txt)
 
     @voice_group.command(name="xp")
-    async def set_voice_xp(self, ctx: commands.Context, voice_xp: int):
+    async def set_voice_xp(self, ctx: commands.Context, voice_xp: commands.positive_int):
         """
         Set voice XP gain
         Sets the amount of XP gained per minute in a voice channel (default is 2)
         """
         conf = self.db.get_conf(ctx.guild)
-        if voice_xp < 0:
-            return await ctx.send(_("XP values cannot be negative"))
         conf.voicexp = voice_xp
         self.save()
         await ctx.send(_("Voice XP has been set to {} per minute").format(voice_xp))
@@ -1293,13 +1277,11 @@ class Admin(MixinMeta):
         await ctx.send(_("Keeping roles after prestiging has been {}").format(status))
 
     @prestige_group.command(name="level")
-    async def prestige_level(self, ctx: commands.Context, level: int):
+    async def prestige_level(self, ctx: commands.Context, level: commands.positive_int):
         """
         Set the level required to prestige
         """
         conf = self.db.get_conf(ctx.guild)
-        if level < 0:
-            return await ctx.send(_("Level cannot be negative"))
         conf.prestigelevel = level
         self.save()
         await ctx.send(_("Prestige level has been set to {}").format(level))

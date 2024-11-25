@@ -324,7 +324,13 @@ class Hunting(commands.Cog):
 
     @checks.mod_or_permissions(manage_guild=True)
     @hunting.command()
-    async def timing(self, ctx, interval_min: int, interval_max: int, bang_timeout: int):
+    async def timing(
+        self,
+        ctx,
+        interval_min: commands.positive_int,
+        interval_max: commands.positive_int,
+        bang_timeout: commands.positive_int,
+    ):
         """
         Change the hunting timing.
 
@@ -335,8 +341,6 @@ class Hunting(commands.Cog):
         message = ""
         if interval_min > interval_max:
             return await ctx.send("`interval_min` needs to be lower than `interval_max`.")
-        if interval_min < 0 and interval_max < 0 and bang_timeout < 0:
-            return await ctx.send("Please no negative numbers!")
         if interval_min < 60:
             interval_min = 60
             message += "Minimum interval set to minimum of 120s.\n"
