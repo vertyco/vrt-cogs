@@ -266,6 +266,8 @@ class LevelUps(MixinMeta):
         else:
             valid_levels = {k: v for k, v in conf.levelroles.items() if k <= profile.level}
 
+        valid_levels = dict(sorted(valid_levels.items(), key=lambda x: x[0]))
+
         if conf.autoremove:
             # Add highest level role and remove the rest
             highest_role_id = 0
