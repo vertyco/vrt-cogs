@@ -198,31 +198,14 @@ class User(MixinMeta):
         self.save()
 
         txt = _("You have reached Prestige {}!\n").format(f"**{next_prestige}**")
-        user_role_ids = [r.id for r in ctx.author.roles]
-        if conf.stackprestigeroles and role.id not in user_role_ids:
-            # Just add the new role to the user
-            try:
-                await ctx.author.add_roles(role, reason=_("Prestige Level"))
-                txt += _("- {} role added!").format(role.mention)
-            except discord.HTTPException:
-                txt += _("- I was unable to give you the {} role!").format(role.mention)
-        elif not conf.stackprestigeroles:
-            # Remove all roles and give the new one if it exists
-            to_remove = [r for r in ctx.author.roles if r.id in conf.levelroles.values() and r.id != role.id]
-            to_add = [role] if role.id not in user_role_ids else []
-            if to_add:
-                try:
-                    await ctx.author.add_roles(*to_add, reason=_("Prestige Level"))
-                    txt += _("- {} role added!").format(role.mention)
-                except discord.HTTPException:
-                    txt += _("- I was unable to give you the {} role!").format(role.mention)
-            if to_remove:
-                try:
-                    await ctx.author.remove_roles(*to_remove, reason=_("Prestige Level"))
-                    txt += _("\n- I have removed your old prestige roles")
-                except discord.HTTPException:
-                    txt += _("\n- I was unable to remove your old prestige roles")
+        added, removed = await self.ensure_roles(ctx.author, conf, _("Reached prestige {}").format(next_prestige))
         embed = discord.Embed(description=txt, color=await self.bot.get_embed_color(ctx))
+        if added:
+            added_roles = humanize_list([r.mention for r in added])
+            embed.add_field(name=_("Roles Added"), value=added_roles)
+        if removed:
+            removed_roles = humanize_list([r.mention for r in removed])
+            embed.add_field(name=_("Roles Removed"), value=removed_roles)
         await ctx.send(embed=embed)
 
     @commands.hybrid_group(name="setprofile", aliases=["myprofile", "mypf", "pfset"])
