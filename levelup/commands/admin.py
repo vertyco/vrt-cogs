@@ -1082,7 +1082,7 @@ class Admin(MixinMeta):
                         idx / len(ctx.guild.members)
                     )
                     embed.description = desc
-                    await msg.edit(embed=embed)
+                    asyncio.create_task(msg.edit(embed=embed))
                     last_update = perf_counter()
 
         if not roles_added and not roles_removed:
