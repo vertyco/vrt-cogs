@@ -133,4 +133,4 @@ class User(MixinMeta):
 
         embeds = await asyncio.to_thread(_prep)
 
-        await DynamicMenu(ctx.author, embeds, ctx.channel).refresh()
+        await DynamicMenu(ctx, embeds, ctx.channel).refresh()
