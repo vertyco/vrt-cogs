@@ -43,4 +43,4 @@ class Logs(MixinMeta):
             return pages
 
         pages = await asyncio.to_thread(_get_logs)
-        await DynamicMenu(ctx.author, pages, ctx.channel, timeout=7200).refresh()
+        await DynamicMenu(ctx, pages, ctx.channel, timeout=7200).refresh()

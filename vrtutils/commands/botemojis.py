@@ -127,7 +127,7 @@ class EmojiManager(MixinMeta):
             pages.append(embed)
             start += 10
             stop += 10
-        menu = DynamicMenu(ctx.author, pages, ctx.channel)
+        menu = DynamicMenu(ctx, pages, ctx.channel)
         await menu.refresh()
         await menu.wait()
         await ctx.tick()
