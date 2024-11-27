@@ -274,7 +274,12 @@ class Emojis(Base):
             emoji_obj = bot.get_emoji(emoji)
         else:
             emoji_obj = emoji
-        return emoji_obj or Emojis().dump(False)[name]
+        final = emoji_obj or Emojis().dump(False)[name]
+        if len(final) > 50:
+            log.error(f"Something is wrong with the emoji {name}: {final}")
+            final = Emojis().dump(False)[name]
+            setattr(self, name, final if isinstance(final, str) else final.id)
+        return final
 
 
 class GuildSettings(Base):
