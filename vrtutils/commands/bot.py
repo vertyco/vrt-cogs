@@ -61,7 +61,7 @@ class BotInfo(MixinMeta):
                 embed.set_footer(text=f"Page {idx + 1}/{len(pages)}")
                 embeds.append(embed)
             if len(embeds) > 1:
-                await DynamicMenu(ctx.author, embeds, ctx.channel).refresh()
+                await DynamicMenu(ctx, embeds, ctx.channel).refresh()
             else:
                 if embeds:
                     await ctx.send(embed=embeds[0])
@@ -83,7 +83,7 @@ class BotInfo(MixinMeta):
                 page += 1
                 embeds.append(embed)
             if len(embeds) > 1:
-                await DynamicMenu(ctx.author, embeds, ctx.channel).refresh()
+                await DynamicMenu(ctx, embeds, ctx.channel).refresh()
             else:
                 if embeds:
                     await ctx.send(embed=embeds[0])
@@ -583,7 +583,7 @@ class BotInfo(MixinMeta):
             embed.set_footer(text=f"Page {idx + 1}/{len(pages)}")
             embeds.append(embed)
 
-        await DynamicMenu(ctx.author, embeds, ctx.channel).refresh()
+        await DynamicMenu(ctx, embeds, ctx.channel).refresh()
 
     @commands.command(name="botshared")
     @commands.is_owner()
@@ -605,7 +605,7 @@ class BotInfo(MixinMeta):
             embed.set_footer(text=f"Page {idx + 1}/{len(pages)}")
             embeds.append(embed)
 
-        await DynamicMenu(ctx.author, embeds, ctx.channel).refresh()
+        await DynamicMenu(ctx, embeds, ctx.channel).refresh()
 
     @commands.command(name="viewapikeys")
     @commands.is_owner()
@@ -663,7 +663,7 @@ class BotInfo(MixinMeta):
                 tmp.write(f"{cog}: {get_size(size)}{loaded}\n")
             pages = [box(p, lang="py") for p in pagify(tmp.getvalue(), page_length=800)]
             pages = [f"Saved Cog Data\n{i}\nPage {idx + 1}/{len(pages)}" for idx, i in enumerate(pages)]
-            await DynamicMenu(ctx.author, pages, ctx.channel).refresh()
+            await DynamicMenu(ctx, pages, ctx.channel).refresh()
 
     @commands.command(name="codesizes")
     @commands.is_owner()
@@ -689,4 +689,4 @@ class BotInfo(MixinMeta):
                 tmp.write(f"{cog}: {get_size(size)}{loaded}\n")
             pages = [box(p, lang="py") for p in pagify(tmp.getvalue(), page_length=800)]
             pages = [f"Codebase Sizes\n{i}\nPage {idx + 1}/{len(pages)}" for idx, i in enumerate(pages)]
-            await DynamicMenu(ctx.author, pages, ctx.channel).refresh()
+            await DynamicMenu(ctx, pages, ctx.channel).refresh()
