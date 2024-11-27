@@ -1,13 +1,18 @@
+import asyncio
+import logging
 import typing as t
 from contextlib import suppress
 from io import BytesIO
 
 import discord
 from rapidfuzz import fuzz
+from redbot.core import commands
+
+log = logging.getLogger("red.vrt.cowclicker.dynamic_menu")
 
 
 class SearchModal(discord.ui.Modal):
-    def __init__(self, current: str):
+    def __init__(self, current: t.Optional[str] = None):
         super().__init__(title="Search", timeout=240)
         self.query = current
         self.input = discord.ui.TextInput(label="Enter Search Query or Page", default=current)
@@ -22,22 +27,24 @@ class SearchModal(discord.ui.Modal):
 class DynamicMenu(discord.ui.View):
     def __init__(
         self,
-        author: t.Union[discord.Member, discord.User],
-        pages: t.List[t.Union[discord.Embed, str]],
-        channel: t.Union[discord.TextChannel, discord.Thread, discord.ForumChannel, discord.DMChannel],
-        message: t.Union[discord.Message, discord.InteractionMessage, None] = None,
+        ctx: commands.Context,
+        pages: t.Union[t.List[discord.Embed], t.List[str]],
+        message: t.Optional[t.Union[discord.Message, discord.InteractionMessage, None]] = None,
         page: int = 0,
         timeout: t.Union[int, float, None] = 300,
-        image_bytes: bytes = None,
+        image_bytes: t.Optional[bytes] = None,
     ):
         super().__init__(timeout=timeout)
-        self.author = author
-        self.pages = self.check_pages(pages)
-        self.channel = channel
+        self.check_pages(pages)  # Modifies pages in place
+
+        self.ctx = ctx
+        self.author = ctx.author
+        self.channel = ctx.channel
+        self.guild = ctx.guild
+        self.pages = pages
         self.message = message
         self.page = page
         self.image_bytes = image_bytes
-
         self.page_count = len(pages)
 
     def check_pages(self, pages: t.List[t.Union[discord.Embed, str]]):
@@ -45,18 +52,15 @@ class DynamicMenu(discord.ui.View):
         if isinstance(pages[0], discord.Embed):
             if not all(isinstance(page, discord.Embed) for page in pages):
                 raise TypeError("All pages must be Embeds or strings.")
+            # If the first page has no footer, add one to all pages for page number
+            if pages[0].footer:
+                return
+            page_count = len(pages)
             for idx in range(len(pages)):
-                if not isinstance(pages[idx], discord.Embed):
-                    embed = discord.Embed(description=str(pages[idx]))
-                    embed.set_footer(text=f"Page {idx + 1}/{len(pages)}")
-                    pages[idx] = embed
-                elif not pages[idx].footer.text:
-                    pages[idx].set_footer(text=f"Page {idx + 1}/{len(pages)}")
+                pages[idx].set_footer(text=f"Page {idx + 1}/{page_count}")
         else:
             if not all(isinstance(page, str) for page in pages):
                 raise TypeError("All pages must be Embeds or strings.")
-
-        return pages
 
     async def interaction_check(self, interaction: discord.Interaction):
         if interaction.user.id != self.author.id:
@@ -68,19 +72,35 @@ class DynamicMenu(discord.ui.View):
         if self.message:
             with suppress(discord.NotFound, discord.Forbidden, discord.HTTPException):
                 await self.message.edit(view=None)
+        await self.ctx.tick()
 
-    async def refresh(self, interaction: t.Optional[discord.Interaction] = None, followup: bool = False):
-        self.page %= self.page_count
+    async def refresh(self, interaction: discord.Interaction = None):
+        """Call this to start and refresh the menu."""
+        try:
+            await self._refresh(interaction)
+        except Exception as e:
+            current_page = self.pages[self.page]
+            if isinstance(current_page, discord.Embed):
+                content = current_page.description or current_page.title
+                if not content:
+                    content = ""
+                    for field in current_page.fields:
+                        content += f"{field.name}\n{field.value}\n"
+            else:
+                content = current_page
+            log.error(f"Error refreshing menu, current page: {content}", exc_info=e)
+
+    async def _refresh(self, interaction: discord.Interaction = None):
         self.clear_items()
         single = [self.close]
         small = [self.left] + single + [self.right]
-        large = small + [self.left10, self.select, self.right10]
+        large = small + [self.left10, self.search, self.right10]
 
         buttons = large if self.page_count > 10 else small if self.page_count > 1 else single
         for button in buttons:
             self.add_item(button)
 
-        if len(buttons) == 1 and isinstance(self.pages[0], discord.Embed):
+        if len(buttons) == 1 and isinstance(self.pages[self.page], discord.Embed):
             for embed in self.pages:
                 embed.set_footer(text=None)
 
@@ -96,24 +116,47 @@ class DynamicMenu(discord.ui.View):
             kwargs["content"] = None
         else:
             kwargs["content"] = self.pages[self.page]
-        if self.message and attachments:
-            kwargs["attachments"] = attachments
-        elif not self.message and file:
-            kwargs["file"] = file
 
-        if interaction and followup:
-            await interaction.edit_original_response(**kwargs)
-        elif interaction:
-            await interaction.response.edit_message(**kwargs)
-        elif self.message:
+        if (self.message or interaction) and attachments:
+            kwargs["attachments"] = attachments
+        elif (not self.message and not interaction) and file:
+            kwargs["file"] = file  # Need to send new message
+
+        if interaction and self.message is not None:
+            # We are refreshing due to a button press
+            if not interaction.response.is_done():
+                try:
+                    await interaction.response.edit_message(**kwargs)
+                    return self
+                except discord.HTTPException:
+                    try:
+                        await self.message.edit(**kwargs)
+                    except discord.HTTPException:
+                        kwargs.pop("attachments", None)
+                        kwargs["file"] = file
+                        self.message = await self.ctx.send(**kwargs)
+            else:
+                try:
+                    await interaction.edit_original_response(**kwargs)
+                    return self
+                except discord.HTTPException:
+                    try:
+                        await self.message.edit(**kwargs)
+                    except discord.HTTPException:
+                        kwargs.pop("attachments", None)
+                        kwargs["file"] = file
+                        self.message = await self.ctx.send(**kwargs)
+            return self
+
+        if self.message:
             try:
                 await self.message.edit(**kwargs)
             except discord.HTTPException:
                 kwargs.pop("attachments", None)
                 kwargs["file"] = file
-                self.message = await self.channel.send(**kwargs)
+                self.message = await self.ctx.send(**kwargs)
         else:
-            self.message = await self.channel.send(**kwargs)
+            self.message = await self.ctx.send(**kwargs)
         return self
 
     @discord.ui.button(
@@ -122,7 +165,8 @@ class DynamicMenu(discord.ui.View):
         row=1,
     )
     async def left10(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.pages -= 10
+        self.page -= 10
+        self.page %= self.page_count
         await self.refresh(interaction)
 
     @discord.ui.button(
@@ -131,6 +175,7 @@ class DynamicMenu(discord.ui.View):
     )
     async def left(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.page -= 1
+        self.page %= self.page_count
         await self.refresh(interaction)
 
     @discord.ui.button(
@@ -138,11 +183,14 @@ class DynamicMenu(discord.ui.View):
         style=discord.ButtonStyle.danger,
     )
     async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
-        with suppress(discord.NotFound):
+        with suppress(discord.HTTPException):
             await interaction.response.defer()
-        if self.message:
-            with suppress(discord.NotFound):
-                await self.message.delete()
+        try:
+            await interaction.delete_original_response()
+        except discord.HTTPException:
+            if self.message:
+                with suppress(discord.HTTPException):
+                    await self.message.delete()
         self.stop()
 
     @discord.ui.button(
@@ -151,6 +199,7 @@ class DynamicMenu(discord.ui.View):
     )
     async def right(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.page += 1
+        self.page %= self.page_count
         await self.refresh(interaction)
 
     @discord.ui.button(
@@ -160,6 +209,7 @@ class DynamicMenu(discord.ui.View):
     )
     async def right10(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.page += 10
+        self.page %= self.page_count
         await self.refresh(interaction)
 
     @discord.ui.button(
@@ -167,7 +217,7 @@ class DynamicMenu(discord.ui.View):
         style=discord.ButtonStyle.secondary,
         row=1,
     )
-    async def select(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def search(self, interaction: discord.Interaction, button: discord.ui.Button):
         modal = SearchModal(str(self.page + 1))
         await interaction.response.send_modal(modal)
         await modal.wait()
@@ -175,37 +225,63 @@ class DynamicMenu(discord.ui.View):
         if modal.query is None:
             return
 
-        if modal.query.isdigit():
+        if modal.query.isnumeric():
             self.page = int(modal.query) - 1
-            return await self.refresh(followup=True)
+            self.page %= self.page_count
+            return await self.refresh(interaction)
 
-        # Iterate through page content to find closest match
-        matches: list[tuple[int, int]] = []
-        for i, page in enumerate(self.pages):
-            if isinstance(page, discord.Embed):
-                if page.title and modal.query.lower() == page.title.lower():
+        if isinstance(self.pages[self.page], str):
+            for i, page in enumerate(self.pages):
+                if modal.query.casefold() in page.casefold():
                     self.page = i
-                    return await self.refresh()
-                titlematch = fuzz.ratio(modal.query.lower(), page.title.lower())
-                if titlematch > 90:
+                    return await self.refresh(interaction)
+            with suppress(discord.HTTPException):
+                await interaction.followup.send("No page found matching that query.", ephemeral=True)
+            return
+
+        # Pages are embeds
+        for i, embed in enumerate(self.pages):
+            if modal.query.casefold() in embed.title.casefold():
+                self.page = i
+                return await self.refresh(interaction)
+            if modal.query.casefold() in embed.description.casefold():
+                self.page = i
+                return await self.refresh(interaction)
+            if embed.footer and modal.query.casefold() in embed.footer.text.casefold():
+                self.page = i
+                return await self.refresh(interaction)
+            for field in embed.fields:
+                if modal.query.casefold() in field.name.casefold():
                     self.page = i
-                    return await self.refresh()
-                if page.description and modal.query.lower() in page.description.lower():
-                    titlematch += 50
-                elif any(modal.query.lower() in field.value.lower() for field in page.fields):
-                    titlematch += 50
-                elif any(modal.query.lower() in field.name.lower() for field in page.fields):
-                    titlematch += 80
-                matches.append((titlematch, i))
-                continue
-            if modal.query.lower() in page.lower():
-                matches.append((fuzz.ratio(modal.query.lower(), page.lower()), i))
+                    return await self.refresh(interaction)
+                if modal.query.casefold() in field.value.casefold():
+                    self.page = i
+                    return await self.refresh(interaction)
 
-        if not matches:
-            return await interaction.followup.send("No matches found.", ephemeral=True)
+        # No results found, resort to fuzzy matching
+        def _fuzzymatch() -> list[tuple[int, int]]:
+            # [(match, index)]
+            matches: list[tuple[int, int]] = []
+            for i, embed in enumerate(self.pages):
+                matches.append((fuzz.ratio(modal.query.lower(), embed.title.lower()), i))
+                matches.append((fuzz.ratio(modal.query.lower(), embed.description.lower()), i))
+                if embed.footer:
+                    matches.append((fuzz.ratio(modal.query.lower(), embed.footer.text.lower()), i))
+                for field in embed.fields:
+                    matches.append((fuzz.ratio(modal.query.lower(), field.name.lower()), i))
+                    matches.append((fuzz.ratio(modal.query.lower(), field.value.lower()), i))
+            if matches:
+                matches.sort(key=lambda x: x[0], reverse=True)
+            return matches
 
-        # Sort by title match
-        best = sorted(matches, key=lambda x: x[0], reverse=True)[0][1]
+        matches = await asyncio.to_thread(_fuzzymatch)
 
-        self.page = best
-        await self.refresh(interaction, followup=True)
+        # Sort by best match
+        best_score, best_index = matches[0]
+        if best_score < 50:
+            with suppress(discord.HTTPException):
+                await interaction.followup.send("No page found matching that query.", ephemeral=True)
+            return
+        self.page = best_index
+        await self.refresh(interaction)
+        await interaction.followup.send("Found closest match of {}%".format(int(best_score)), ephemeral=True)
