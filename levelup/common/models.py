@@ -284,7 +284,7 @@ class Emojis(Base):
         else:
             emoji_obj = emoji
         final = emoji_obj or Emojis().dump(False)[name]
-        if len(final) > 50:
+        if isinstance(final, str) and len(final) > 50:
             log.error(f"Something is wrong with the emoji {name}: {final}")
             final = Emojis().dump(False)[name]
             setattr(self, name, final if isinstance(final, str) else final.id)
