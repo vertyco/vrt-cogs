@@ -261,9 +261,9 @@ class DynamicMenu(discord.ui.View):
                     return await self.refresh(interaction)
 
         # No results found, resort to fuzzy matching
-        def _fuzzymatch() -> list[tuple[int, int]]:
+        def _fuzzymatch() -> t.List[t.Tuple[int, int]]:
             # [(match, index)]
-            matches: list[tuple[int, int]] = []
+            matches: t.List[t.Tuple[int, int]] = []
             for i, embed in enumerate(self.pages):
                 matches.append((fuzz.ratio(modal.query.lower(), embed.title.lower()), i))
                 matches.append((fuzz.ratio(modal.query.lower(), embed.description.lower()), i))

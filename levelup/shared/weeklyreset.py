@@ -125,9 +125,9 @@ class WeeklyReset(MixinMeta):
         top: t.List[t.Tuple[discord.Member, ProfileWeekly]] = sorted_users[: conf.weeklysettings.count]
 
         if conf.weeklysettings.role_all:
-            winners: list[discord.Member] = [user[0] for user in top]
+            winners: t.List[discord.Member] = [user[0] for user in top]
         else:
-            winners: list[discord.Member] = [top[0][0]]
+            winners: t.List[discord.Member] = [top[0][0]]
 
         winner_ids = [user.id for user in winners]
 

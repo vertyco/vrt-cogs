@@ -25,6 +25,7 @@ import logging
 import multiprocessing as mp
 import sys
 import typing as t
+from collections import defaultdict
 from contextlib import suppress
 from datetime import datetime
 from time import perf_counter
@@ -42,7 +43,7 @@ from redbot.core.utils.chat_formatting import box, humanize_list
 from .abc import CompositeMetaClass
 from .commands import Commands
 from .commands.user import view_profile_context
-from .common.models import DB, run_migrations
+from .common.models import DB, VoiceTracking, run_migrations
 from .dashboard.integration import DashboardIntegration
 from .generator import api
 from .generator.tenor.converter import TenorAPI
@@ -76,7 +77,7 @@ class LevelUp(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "4.2.25"
+    __version__ = "4.3.0"
     __contributors__ = [
         "[aikaterna](https://github.com/aikaterna/aikaterna-cogs)",
         "[AAA3A](https://github.com/AAA3A-AAA3A/AAA3A-cogs)",
@@ -89,9 +90,11 @@ class LevelUp(
         # Cache
         self.db: DB = DB()
         self.lastmsg: t.Dict[int, t.Dict[int, float]] = {}  # GuildID: {UserID: LastMessageTime}
-        self.in_voice: t.Dict[int, t.Dict[int, float]] = {}  # GuildID: {UserID: TimeJoined}
         self.profile_cache: t.Dict[int, t.Dict[int, t.Tuple[str, bytes]]] = {}  # GuildID: {UserID: (last_used, bytes)}
         self.stars: t.Dict[int, t.Dict[int, datetime]] = {}  # Guild_ID: {User_ID: {User_ID: datetime}}
+
+        # {guild_id: {member_id: tracking_data}}
+        self.voice_tracking: t.Dict[int, t.Dict[int, VoiceTracking]] = defaultdict(dict)
 
         # Root Paths
         self.cog_path = cog_data_path(self)

@@ -1113,9 +1113,10 @@ class Admin(MixinMeta):
         """
         Add a range of bonus XP to apply to certain channels
 
-        This bonus applies to voice time xp
+        This bonus applies to voice time xp per minute.
+        Example: 2 minutes in a channel with a 1-2 bonus will give 2-4 XP
 
-        Set both min and max to 0 to remove the role bonus
+        Set both min and max to 0 to remove the channel bonus.
         """
         conf = self.db.get_conf(ctx.guild)
         if min_xp > max_xp:

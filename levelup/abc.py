@@ -10,7 +10,7 @@ from discord.ext.commands.cog import CogMeta
 from redbot.core import commands
 from redbot.core.bot import Red
 
-from .common.models import DB, GuildSettings, Profile
+from .common.models import DB, GuildSettings, Profile, VoiceTracking
 from .generator.tenor.converter import TenorAPI
 
 
@@ -27,7 +27,7 @@ class MixinMeta(ABC):
         # Cache
         self.db: DB
         self.lastmsg: t.Dict[int, t.Dict[int, float]]
-        self.in_voice: t.Dict[int, t.Dict[int, float]]
+        self.voice_tracking: t.Dict[int, t.Dict[int, VoiceTracking]]
         self.profile_cache: t.Dict[int, t.Dict[int, t.Tuple[str, bytes]]]
         self.stars: t.Dict[int, t.Dict[int, datetime]]
 
