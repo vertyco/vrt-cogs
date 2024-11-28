@@ -135,6 +135,15 @@ class Base(BaseModel):
                 os.close(fd)
 
 
+class VoiceTracking(Base):
+    """Non-config model for tracking voice activity"""
+
+    joined: float  # Time when user joined VC
+    not_gaining_xp: bool  # If the user currently shouldnt gain xp (if solo or deafened is ignored ect..)
+    not_gaining_xp_time: float  # Total time user wasnt gaining xp
+    stopped_gaining_xp_at: t.Union[float, None]  # Time when user last stopped gaining xp
+
+
 class Profile(Base):
     xp: float = 0  # Experience points
     voice: float = 0  # Voice time in seconds
@@ -356,7 +365,7 @@ class GuildSettings(Base):
 
 
 class DB(Base):
-    configs: dict[int, GuildSettings] = {}
+    configs: t.Dict[int, GuildSettings] = {}
     ignored_guilds: t.List[int] = []
     cache_seconds: int = 0  # How long generated profile images should be cached, 0 to disable
     render_gifs: bool = False  # Whether to render profiles as gifs
@@ -373,7 +382,7 @@ class DB(Base):
         return self.configs.setdefault(gid, GuildSettings())
 
 
-def run_migrations(settings: dict[str, t.Any]) -> DB:
+def run_migrations(settings: t.Dict[str, t.Any]) -> DB:
     """Sanitize old config data to be validated by the new schema"""
     root: dict = settings["117117117"]
     global_settings: dict = root["GLOBAL"]

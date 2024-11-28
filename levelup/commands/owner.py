@@ -30,7 +30,7 @@ class Owner(MixinMeta):
         def _size():
             size_bytes = utils.deep_getsizeof(self.db)
             size_bytes += utils.deep_getsizeof(self.lastmsg)
-            size_bytes += utils.deep_getsizeof(self.in_voice)
+            size_bytes += utils.deep_getsizeof(self.voice_tracking)
             size_bytes += utils.deep_getsizeof(self.profile_cache)
             return size_bytes
 
