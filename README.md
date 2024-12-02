@@ -1,6 +1,6 @@
 ![Arkwork](https://github.com/vertyco/Vertyco/blob/main/.github/resources/vrt-cogs-01.png)
 
-Various useful and fun cogs for Red V3.
+Various useful and fun plugins (cogs) for **[Red-DiscordBot](https://github.com/Cog-Creators/Red-DiscordBot)**, a Discord bot you can run on your own computer!
 
 ![Py](https://img.shields.io/badge/python-v3.11-orange?style=for-the-badge)
 ![black](https://img.shields.io/badge/style-black-000000?style=for-the-badge&?link=https://github.com/psf/black)
