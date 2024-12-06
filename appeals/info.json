@@ -1,6 +1,6 @@
 {
   "author": ["Vertyco"],
-  "description": "Turn a secondary Discord into a ban appeal server, intuitive and customizable settings.",
+  "description": "Turn a secondary Discord into a ban appeal server, with intuitive and customizable settings.",
   "disabled": false,
   "end_user_data_statement": "This cog stores Discord IDs and ban appeal data, which includes user responses to ban appeal questions.",
   "hidden": false,
