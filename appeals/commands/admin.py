@@ -646,7 +646,7 @@ class Admin(MixinMeta):
         question = await AppealQuestion.objects().get(
             (AppealQuestion.id == question_id) & (AppealQuestion.guild == ctx.guild.id)
         )
-        embed = discord.Embed(await self.bot.get_embed_color(ctx))
+        embed = question.embed(await self.bot.get_embed_color(ctx))
 
         await ctx.send(
             f"Successfully updated the question data for question ID: {question_id}",
