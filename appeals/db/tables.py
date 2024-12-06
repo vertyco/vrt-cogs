@@ -72,7 +72,7 @@ class AppealQuestion(Table):
         embed.add_field(name="Sort Order", value=self.sort_order)
         embed.add_field(name="Required", value="Yes" if self.required else "No")
         embed.add_field(name="Modal Style", value=self.style)
-        embed.add_field(name="Button Style", value=self.button_style + style_emojis[self.style])
+        embed.add_field(name="Button Style", value=self.button_style + style_emojis[self.button_style])
         embed.add_field(name="Placeholder", value=self.placeholder or "Not set")
         embed.add_field(name="Default Answer", value=self.default or "Not set")
         embed.add_field(name="Max Length", value=self.max_length or "Not set")
