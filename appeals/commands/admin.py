@@ -217,7 +217,7 @@ class Admin(MixinMeta):
             return await ctx.send("User is already in the target guild!")
 
         try:
-            await target_guild.fetch_ban(member.id)
+            await target_guild.fetch_ban(member)
             try:
                 await target_guild.unban(member)
                 await ctx.send(f"Successfully unbanned {member} from {target_guild.name}")
