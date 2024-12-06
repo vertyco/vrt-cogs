@@ -483,26 +483,9 @@ class Admin(MixinMeta):
         if not questions:
             return await ctx.send("No questions found have been created yet.")
         pages: list[discord.Embed] = []
-        style_emojis = {
-            "danger": "🔴",
-            "success": "🟢",
-            "primary": "🔵",
-            "secondary": "⚫",
-        }
+        color = await self.bot.get_embed_color(ctx)
         for idx, question in enumerate(questions):
-            embed = discord.Embed(
-                title=f"Question ID: {question.id}",
-                description=question.question,
-                color=await self.bot.get_embed_color(ctx),
-            )
-            embed.add_field(name="Sort Order", value=question.sort_order)
-            embed.add_field(name="Required", value="Yes" if question.required else "No")
-            embed.add_field(name="Style", value=question.style)
-            embed.add_field(name="Button Style", value=question.button_style + style_emojis[question.button_style])
-            embed.add_field(name="Placeholder", value=question.placeholder or "Not set")
-            embed.add_field(name="Default Value", value=question.default or "Not set")
-            embed.add_field(name="Max Length", value=question.max_length or "Not set")
-            embed.add_field(name="Min Length", value=question.min_length or "Not set")
+            embed = question.embed(color)
             foot = (
                 f"Page {idx + 1}/{len(questions)}\n"
                 "The order of the pages is how the sort order will look in the appeal form."
@@ -600,8 +583,8 @@ class Admin(MixinMeta):
         button_style: str = None,
         placeholder: str = None,
         default: str = None,
-        max_length: int = None,
         min_length: int = None,
+        max_length: int = None,
     ):
         """Set specific data for a question in the appeal form
 
@@ -614,8 +597,8 @@ class Admin(MixinMeta):
           - `primary🔵`, `secondary⚫`, `success🟢`, `danger🔴`
         - `placeholder`: The placeholder text for the input
         - `default`: The default value for the input
-        - `max_length`: The maximum length for the input
         - `min_length`: The minimum length for the input
+        - `max_length`: The maximum length for the input
         """
         if isinstance(placeholder, str) and "none" in placeholder.casefold():
             placeholder = None
@@ -652,13 +635,23 @@ class Admin(MixinMeta):
             update_kwargs[AppealQuestion.placeholder] = placeholder
         if default is not None:
             update_kwargs[AppealQuestion.default] = default
+        if min_length is not None:
+            update_kwargs[AppealQuestion.min_length] = min_length
         if max_length is not None:
             update_kwargs[AppealQuestion.max_length] = max_length
 
         await AppealQuestion.update(update_kwargs).where(
             (AppealQuestion.id == question_id) & (AppealQuestion.guild == ctx.guild.id)
         )
-        await ctx.send(f"Successfully updated the question data for question ID: {question_id}")
+        question = await AppealQuestion.objects().get(
+            (AppealQuestion.id == question_id) & (AppealQuestion.guild == ctx.guild.id)
+        )
+        embed = discord.Embed(await self.bot.get_embed_color(ctx))
+
+        await ctx.send(
+            f"Successfully updated the question data for question ID: {question_id}",
+            embed=embed,
+        )
 
     @ensure_db_connection()
     @appealset.command(name="alertrole")
