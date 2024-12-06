@@ -11,7 +11,7 @@ class AppealView(discord.ui.View):
     def __init__(self, custom_id: str) -> None:
         super().__init__(timeout=None)
         self.submit_appeal.custom_id = custom_id
-        self.cooldown = commands.CooldownMapping.from_cooldown(1, 120, commands.BucketType.user)
+        self.cooldown = commands.CooldownMapping.from_cooldown(1, 60, commands.BucketType.user)
 
     async def on_timeout(self) -> None:
         await super().on_timeout()
