@@ -119,7 +119,7 @@ class Admin(MixinMeta):
 
         def cname(cid: int):
             if cid:
-                channel = ctx.guild.get_channel(cid)
+                channel = self.bot.get_channel(cid)
                 if channel:
                     return channel.mention
                 else:
