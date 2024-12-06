@@ -386,7 +386,7 @@ class Admin(MixinMeta):
         await self.refresh(ctx)
 
     @ensure_db_connection()
-    @appealset.command(name="createappealmessage")
+    @appealset.command(name="createappealmessage", aliases=["create"])
     async def create_appeal_message(self, ctx: commands.Context, channel: discord.TextChannel):
         """Quickly create and set a pre-baked appeal message in the specified channel"""
         appealguild = await AppealGuild.objects().get(AppealGuild.id == ctx.guild.id)
