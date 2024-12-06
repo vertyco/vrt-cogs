@@ -61,6 +61,24 @@ class AppealQuestion(Table):
     # Button specific (button based setup only)
     button_style = Text(default="primary")  # can be `primary`, `secondary`, `success`, `danger`
 
+    def embed(self, color: discord.Color = None) -> discord.Embed:
+        style_emojis = {
+            "danger": "🔴",
+            "success": "🟢",
+            "primary": "🔵",
+            "secondary": "⚫",
+        }
+        embed = discord.Embed(title=f"Question ID: {self.id}", description=self.question, color=color)
+        embed.add_field(name="Sort Order", value=self.sort_order)
+        embed.add_field(name="Required", value="Yes" if self.required else "No")
+        embed.add_field(name="Modal Style", value=self.style)
+        embed.add_field(name="Button Style", value=self.button_style + style_emojis[self.style])
+        embed.add_field(name="Placeholder", value=self.placeholder or "Not set")
+        embed.add_field(name="Default Answer", value=self.default or "Not set")
+        embed.add_field(name="Max Length", value=self.max_length or "Not set")
+        embed.add_field(name="Min Length", value=self.min_length or "Not set")
+        return embed
+
     def created(self, type: t.Literal["t", "T", "d", "D", "f", "F", "R"]) -> str:
         return f"<t:{int(self.created_at.timestamp())}:{type}>"
 
