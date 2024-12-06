@@ -25,7 +25,7 @@ class Appeals(Commands, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     """Straightforward ban appeal system for Discord servers."""
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.0.7b"
+    __version__ = "0.0.8b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -72,7 +72,9 @@ class Appeals(Commands, Listeners, commands.Cog, metaclass=CompositeMetaClass):
             self.bot.add_view(view, message_id=appealguild.appeal_message)
         log.info("Cog initialized")
 
-    async def conditions_met(self, guild: discord.Guild | AppealGuild) -> t.Tuple[bool, t.Optional[str]]:
+    async def conditions_met(
+        self, guild: discord.Guild | AppealGuild
+    ) -> t.Tuple[bool, t.Optional[str]]:
         """Check if conditions are met for the current guild to use the appeal system."""
         if isinstance(guild, discord.Guild):
             appealguild = await AppealGuild.objects().get(AppealGuild.id == guild.id)
@@ -90,26 +92,38 @@ class Appeals(Commands, Listeners, commands.Cog, metaclass=CompositeMetaClass):
             return False, f"Target guild is not set, set with `{p}appeal server`"
         target_guild = self.bot.get_guild(appealguild.target_guild_id)
         if not target_guild:
-            return False, f"Target guild `{appealguild.target_guild_id}` was not found, set with `{p}appeal server`"
+            return (
+                False,
+                f"Target guild `{appealguild.target_guild_id}` was not found, set with `{p}appeal server`",
+            )
         if not target_guild.me.guild_permissions.ban_members:
             return False, "Bot does not have ban members permission in target guild"
         if not appealguild.appeal_channel:
             return False, f"Appeal message is not set, set with `{p}appeal createappealmessage`"
         appeal_channel = guild.get_channel(appealguild.appeal_channel)
         if not appeal_channel:
-            return False, f"Appeal message channel is not found, please set a new one with `{p}appeal appealmessage"
+            return (
+                False,
+                f"Appeal message channel is not found, please set a new one with `{p}appeal appealmessage",
+            )
         if not appeal_channel.permissions_for(guild.me).view_channel:
             return False, "Bot does not have view channel permission in appeal message channel"
         if not appeal_channel.permissions_for(guild.me).send_messages:
             return False, "Bot does not have send messages permission in appeal message channel"
         if not appealguild.appeal_message:
-            return False, f"Appeal message is not set, you can quickly create one with `{p}appeal createappealmessage`"
+            return (
+                False,
+                f"Appeal message is not set, you can quickly create one with `{p}appeal createappealmessage`",
+            )
         try:
             await appeal_channel.fetch_message(appealguild.appeal_message)
         except discord.NotFound:
             return False, "Appeal message is not found"
         if not appealguild.pending_channel:
-            return False, f"Pending channel is not set, set with `{p}appeal channel pending <channel>`"
+            return (
+                False,
+                f"Pending channel is not set, set with `{p}appeal channel pending <channel>`",
+            )
         channel = guild.get_channel(appealguild.pending_channel)
         if not channel:
             return False, "Pending channel is not found"
@@ -118,7 +132,10 @@ class Appeals(Commands, Listeners, commands.Cog, metaclass=CompositeMetaClass):
         if not channel.permissions_for(guild.me).send_messages:
             return False, "Bot does not have send messages permission in pending channel"
         if not appealguild.approved_channel:
-            return False, f"Approved channel is not set, set with `{p}appeal channel approved <channel>`"
+            return (
+                False,
+                f"Approved channel is not set, set with `{p}appeal channel approved <channel>`",
+            )
         channel = guild.get_channel(appealguild.approved_channel)
         if not channel:
             return False, "Approved channel is not found"
@@ -127,7 +144,10 @@ class Appeals(Commands, Listeners, commands.Cog, metaclass=CompositeMetaClass):
         if not channel.permissions_for(guild.me).send_messages:
             return False, "Bot does not have send messages permission in approved channel"
         if not appealguild.denied_channel:
-            return False, f"Denied channel is not set, set with `{p}appeal channel denied <channel>`"
+            return (
+                False,
+                f"Denied channel is not set, set with `{p}appeal channel denied <channel>`",
+            )
         channel = guild.get_channel(appealguild.denied_channel)
         if not channel:
             return False, "Denied channel is not found"
@@ -136,5 +156,8 @@ class Appeals(Commands, Listeners, commands.Cog, metaclass=CompositeMetaClass):
         if not channel.permissions_for(guild.me).send_messages:
             return False, "Bot does not have send messages permission in denied channel"
         if not await AppealQuestion.exists().where(AppealQuestion.guild == guild.id):
-            return False, f"No questions are setup for this server, create one with `{p}appeal addquestion`"
+            return (
+                False,
+                f"No questions are setup for this server, create one with `{p}appeal addquestion`",
+            )
         return True, None
