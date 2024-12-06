@@ -32,7 +32,7 @@ class MessageParser:
 class Admin(MixinMeta):
     async def no_appealguild(self, ctx: commands.Context):
         txt = (
-            "This hasn't been set up for the appeal system yet!\n"
+            "This server hasn't been set up for the appeal system yet!\n"
             f"Type `{ctx.clean_prefix}appeal help` to get started."
         )
         return await ctx.send(txt)
