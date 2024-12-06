@@ -25,7 +25,7 @@ class Appeals(Commands, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     """Straightforward ban appeal system for Discord servers."""
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.0.6b"
+    __version__ = "0.0.7b"
 
     def __init__(self, bot: Red):
         super().__init__()

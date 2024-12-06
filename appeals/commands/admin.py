@@ -244,7 +244,7 @@ class Admin(MixinMeta):
 
     @ensure_db_connection()
     @appealset.command(name="deny")
-    async def deny_appeal(self, ctx: commands.Context, submission_id: int):
+    async def deny_appeal(self, ctx: commands.Context, submission_id: int, *, reason: str = None):
         """Deny an appeal submission by ID"""
         appealguild = await AppealGuild.objects().get(AppealGuild.id == ctx.guild.id)
         if not appealguild:
@@ -282,9 +282,10 @@ class Admin(MixinMeta):
         target_guild = self.bot.get_guild(appealguild.target_guild_id)
         targetname = f"**{target_guild.name}**" if target_guild else "the target server"
         try:
-            await member.send(
-                f"Your appeal has been denied in **{ctx.guild.name}**. You are still banned from {targetname}"
-            )
+            txt = f"Your appeal has been denied in **{ctx.guild.name}**. You are still banned from {targetname}"
+            if reason:
+                txt += f"\n\n**Reason**: {reason}"
+            await member.send(txt)
             await ctx.send("User has been notified of the denial.")
         except discord.Forbidden:
             await ctx.send("I couldn't send a DM to the user to notify them of the denial.")
