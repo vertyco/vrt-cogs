@@ -33,7 +33,7 @@ def ensure_db_connection():
 def ensure_appeal_system_ready():
     async def predicate(ctx: commands.Context) -> bool:
         txt = (
-            "This hasn't been set up for the appeal system yet!\n"
+            "This server hasn't been set up for the appeal system yet!\n"
             f"Type `{ctx.clean_prefix}appeal help` to get started."
         )
         if not await AppealGuild.exists().where(AppealGuild.id == ctx.guild.id):
