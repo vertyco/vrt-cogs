@@ -31,7 +31,9 @@ class AppealGuild(Table):
     alert_roles = Array(BigInt())  # Roles to alert when a new appeal is submitted
     alert_channel = BigInt()  # Channel to alert when a new appeal is submitted
     # Appeal button
-    button_style = Text(default="primary")  # can be `primary`, `secondary`, `success`, `danger`
+    button_style = Text(
+        default="primary"
+    )  # can be `primary`, `secondary`, `success`, `danger`
     button_label = Text(default="Submit Appeal")
     button_emoji = Text(default=None, null=True)  # int or string
 
@@ -59,7 +61,9 @@ class AppealQuestion(Table):
     min_length = BigInt(default=None, null=True)  # Up to 1024 characters
     style = Text(default="long")  # can be `short` or `long`
     # Button specific (button based setup only)
-    button_style = Text(default="primary")  # can be `primary`, `secondary`, `success`, `danger`
+    button_style = Text(
+        default="primary"
+    )  # can be `primary`, `secondary`, `success`, `danger`
 
     def embed(self, color: discord.Color = None) -> discord.Embed:
         style_emojis = {
@@ -68,11 +72,16 @@ class AppealQuestion(Table):
             "primary": "🔵",
             "secondary": "⚫",
         }
-        embed = discord.Embed(title=f"Question ID: {self.id}", description=self.question, color=color)
+        embed = discord.Embed(
+            title=f"Question ID: {self.id}", description=self.question, color=color
+        )
         embed.add_field(name="Sort Order", value=self.sort_order)
         embed.add_field(name="Required", value="Yes" if self.required else "No")
         embed.add_field(name="Modal Style", value=self.style)
-        embed.add_field(name="Button Style", value=self.button_style + style_emojis[self.button_style])
+        embed.add_field(
+            name="Button Style",
+            value=self.button_style + style_emojis[self.button_style],
+        )
         embed.add_field(name="Placeholder", value=self.placeholder or "Not set")
         embed.add_field(name="Default Answer", value=self.default or "Not set")
         embed.add_field(name="Max Length", value=self.max_length or "Not set")
@@ -104,8 +113,12 @@ class AppealSubmission(Table):
             "approved": discord.Color.green(),
             "denied": discord.Color.red(),
         }
+        if user:
+            desc = f"Submitted by **{user.name}** ({user.id})"
+        else:
+            desc = f"Submitted by **Unknown** ({self.user_id})"
         embed = discord.Embed(
-            description=f"Submitted by <@{self.user_id}> ({self.user_id})",
+            description=desc,
             color=colors[self.status],
             timestamp=self.created_at,
         )
@@ -114,10 +127,16 @@ class AppealSubmission(Table):
             icon_url=user.display_avatar if user else None,
         )
         embed.set_footer(text=f"Submission ID: {self.id}")
-        answers = orjson.loads(self.answers) if isinstance(self.answers, str) else self.answers
+        answers = (
+            orjson.loads(self.answers)
+            if isinstance(self.answers, str)
+            else self.answers
+        )
         for question, answer in answers.items():
             embed.add_field(name=question, value=answer, inline=False)
         return embed
 
 
-TABLES: list[Table] = sort_table_classes([AppealGuild, AppealQuestion, AppealSubmission])
+TABLES: list[Table] = sort_table_classes(
+    [AppealGuild, AppealQuestion, AppealSubmission]
+)
