@@ -17,9 +17,11 @@ class AnswerModal(discord.ui.Modal):
         self.answers = answers
 
         self.input = discord.ui.TextInput(
-            label=question.question
-            if len(question.question) <= 45
-            else f"{question.question[:42]}...",
+            label=(
+                question.question
+                if len(question.question) <= 45
+                else f"{question.question[:42]}..."
+            ),
             required=question.required,
             default=question.default or answers.get(question.question),
             placeholder=question.placeholder,
@@ -29,7 +31,9 @@ class AnswerModal(discord.ui.Modal):
         )
         self.add_item(self.input)
 
-    async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
+    async def on_error(
+        self, interaction: discord.Interaction, error: Exception
+    ) -> None:
         return await super().on_error(interaction, error)
 
     async def on_submit(self, interaction: discord.Interaction):
@@ -54,7 +58,9 @@ class MenuButton(discord.ui.Button):
         disabled: bool = False,
         row: int | None = None,
     ):
-        super().__init__(style=style, label=label, disabled=disabled, emoji=emoji, row=row)
+        super().__init__(
+            style=style, label=label, disabled=disabled, emoji=emoji, row=row
+        )
         self.question = question
         self.question_number = question_number
         self.answers = answers
@@ -149,10 +155,16 @@ class SubmissionView(discord.ui.View):
                 content=content, embed=embed, ephemeral=ephemeral
             )
         except discord.HTTPException:
-            await interaction.followup.send(content=content, embed=embed, ephemeral=ephemeral)
+            await interaction.followup.send(
+                content=content, embed=embed, ephemeral=ephemeral
+            )
 
-    @discord.ui.button(label="Submit", style=discord.ButtonStyle.success, disabled=True, row=4)
-    async def submit_appeal(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @discord.ui.button(
+        label="Submit", style=discord.ButtonStyle.success, disabled=True, row=4
+    )
+    async def submit_appeal(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
         # bot: Red = interaction.client
         # cog: MixinMeta = bot.get_cog("Appeals")
         if not self.can_submit():
@@ -164,7 +176,11 @@ class SubmissionView(discord.ui.View):
             )
 
         appealguild: AppealGuild = (
-            await AppealGuild.select(AppealGuild.pending_channel, AppealGuild.alert_roles)
+            await AppealGuild.select(
+                AppealGuild.pending_channel,
+                AppealGuild.alert_roles,
+                AppealGuild.alert_channel,
+            )
             .where(AppealGuild.id == interaction.guild.id)
             .first()
         )
