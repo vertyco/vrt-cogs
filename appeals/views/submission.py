@@ -2,7 +2,8 @@ import typing as t
 
 import discord
 
-# from redbot.core.bot import Red
+from redbot.core.bot import Red
+
 # from ..abc import MixinMeta
 from ..db.tables import AppealGuild, AppealQuestion, AppealSubmission
 
@@ -165,7 +166,7 @@ class SubmissionView(discord.ui.View):
     async def submit_appeal(
         self, interaction: discord.Interaction, button: discord.ui.Button
     ):
-        # bot: Red = interaction.client
+        bot: Red = interaction.client
         # cog: MixinMeta = bot.get_cog("Appeals")
         if not self.can_submit():
             # This shouldn't happen since the button will be disabled until all required questions are answered
@@ -240,12 +241,12 @@ class SubmissionView(discord.ui.View):
 
         # If alert channel exists and bot has permissions to send messages in it, ping there instead
         # otherwise ping the pending channel
-        alert_channel = interaction.guild.get_channel(appealguild["alert_channel"])
+        alert_channel = bot.get_channel(appealguild["alert_channel"])
         if alert_channel:
             perms = [
-                alert_channel.permissions_for(interaction.guild.me).view_channel,
-                alert_channel.permissions_for(interaction.guild.me).send_messages,
-                alert_channel.permissions_for(interaction.guild.me).embed_links,
+                alert_channel.permissions_for(alert_channel.guild.me).view_channel,
+                alert_channel.permissions_for(alert_channel.guild.me).send_messages,
+                alert_channel.permissions_for(alert_channel.guild.me).embed_links,
             ]
             if all(perms):
                 desc = f"New appeal submission from **{interaction.user.name}** (`{interaction.user.id}`)"
