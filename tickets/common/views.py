@@ -498,6 +498,12 @@ class SupportButton(Button):
                     alt_channel = guild.get_channel(alt_cid)
                     if alt_channel and isinstance(alt_channel, discord.TextChannel):
                         channel = alt_channel
+
+                if not channel.permissions_for(guild.me).manage_threads:
+                    return await interaction.followup.send(
+                        "I don't have permissions to create threads!", ephemeral=True
+                    )
+
                 archive = round(conf["inactive"] * 60)
                 arr = np.asarray([60, 1440, 4320, 10080])
                 index = (np.abs(arr - archive)).argmin()
@@ -541,6 +547,10 @@ class SupportButton(Button):
                     elif alt_channel and isinstance(alt_channel, discord.TextChannel):
                         if alt_channel.category:
                             category = alt_channel.category
+                if not category.permissions_for(guild.me).manage_channels:
+                    return await interaction.followup.send(
+                        "I don't have permissions to create channels!", ephemeral=True
+                    )
                 try:
                     channel_or_thread = await category.create_text_channel(
                         channel_name, overwrites=overwrite
