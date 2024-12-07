@@ -81,6 +81,9 @@ class Admin(MixinMeta):
     @commands.bot_has_permissions(embed_links=True)
     async def view_appeal_submissions(self, ctx: commands.Context):
         """View all appeal submissions in the server"""
+        appealguild = await AppealGuild.objects().get(AppealGuild.id == ctx.guild.id)
+        if not appealguild:
+            return await self.no_appealguild(ctx)
         submissions = await AppealSubmission.objects().where(
             AppealSubmission.guild == ctx.guild.id
         )
@@ -96,6 +99,9 @@ class Admin(MixinMeta):
             page = f"Page {idx + 1}/{page_count}"
             foot = embed.footer.text + f"\n{page}"  # type: ignore
             embed.set_footer(text=foot)
+            current_channel = getattr(appealguild, f"{submission.status}_channel")
+            jump_url = f"https://discord.com/channels/{ctx.guild.id}/{current_channel}/{submission.message_id}"
+            embed.add_field(name="Message", value=jump_url)
             pages.append(embed)
         await DynamicMenu(ctx, pages).refresh()
 
