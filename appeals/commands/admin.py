@@ -213,7 +213,9 @@ class Admin(MixinMeta):
 
     @ensure_db_connection()
     @appealset.command(name="approve")
-    async def approve_appeal(self, ctx: commands.Context, submission_id: int):
+    async def approve_appeal(
+        self, ctx: commands.Context, submission_id: int, *, reason: str = None
+    ):
         """Approve an appeal submission by ID"""
         appealguild = await AppealGuild.objects().get(AppealGuild.id == ctx.guild.id)
         if not appealguild:
@@ -228,11 +230,15 @@ class Admin(MixinMeta):
             return await ctx.send("This submission has already been approved.")
         elif submission.status == "denied":
             return await ctx.send("This submission has already been denied.")
-        await AppealSubmission.update({AppealSubmission.status: "approved"}).where(
+        update_kwargs = {AppealSubmission.status: "approved"}
+        if reason:
+            update_kwargs[AppealSubmission.reason] = reason
+        await AppealSubmission.update(update_kwargs).where(
             (AppealSubmission.id == submission_id)
             & (AppealSubmission.guild == ctx.guild.id)
         )
         submission.status = "approved"
+        submission.reason = reason or ""
         await ctx.send(f"Successfully approved submission ID: {submission_id}")
         member = ctx.guild.get_member(submission.user_id) or self.bot.get_user(
             submission.user_id
@@ -325,11 +331,15 @@ class Admin(MixinMeta):
             return await ctx.send("This submission has already been denied.")
         elif submission.status == "approved":
             return await ctx.send("This submission has already been approved.")
-        await AppealSubmission.update({AppealSubmission.status: "denied"}).where(
+        update_kwargs = {AppealSubmission.status: "denied"}
+        if reason:
+            update_kwargs[AppealSubmission.reason] = reason
+        await AppealSubmission.update(update_kwargs).where(
             (AppealSubmission.id == submission_id)
             & (AppealSubmission.guild == ctx.guild.id)
         )
         submission.status = "denied"
+        submission.reason = reason or ""
         await ctx.send(f"Successfully denied submission ID: {submission_id}")
         member = ctx.guild.get_member(submission.user_id) or self.bot.get_user(
             submission.user_id
