@@ -103,6 +103,7 @@ class AppealSubmission(Table):
     answers = JSON()  # {question: answer}
     status = Text(default="pending")  # can be `pending`, `approved`, `denied`
     message_id = BigInt()  # Message ID of the submission message
+    reason = Text()  # Reason for denial
 
     def created(self, type: t.Literal["t", "T", "d", "D", "f", "F", "R"]) -> str:
         return f"<t:{int(self.created_at.timestamp())}:{type}>"
@@ -134,6 +135,10 @@ class AppealSubmission(Table):
         )
         for question, answer in answers.items():
             embed.add_field(name=question, value=answer, inline=False)
+        if self.reason and self.status == "denied":
+            embed.add_field(name="Reason for Denial", value=self.reason)
+        elif self.reason and self.status == "approved":
+            embed.add_field(name="Reason for Approval", value=self.reason)
         return embed
 
 
