@@ -1,14 +1,17 @@
 import typing as t
-
+import logging
 import discord
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, pagify
-
+from copy import deepcopy
 from ..abc import MixinMeta
 from ..common.checks import ensure_appeal_system_ready, ensure_db_connection
 from ..db.tables import AppealGuild, AppealQuestion, AppealSubmission
 from ..views.appeal import AppealView
 from ..views.dynamic_menu import DynamicMenu
+
+
+log = logging.getLogger("red.vrt.appeals.commands.admin")
 
 
 class MessageParser:
@@ -240,9 +243,9 @@ class Admin(MixinMeta):
         submission.status = "approved"
         submission.reason = reason or ""
         await ctx.send(f"Successfully approved submission ID: {submission_id}")
-        member = ctx.guild.get_member(submission.user_id) or self.bot.get_user(
-            submission.user_id
-        )
+        member = ctx.guild.get_member(submission.user_id)
+        if not member:
+            member = await self.bot.get_or_fetch_user(submission.user_id)
         # Send the submission to the approved channel and then delete from the pending channel
         approved_channel = ctx.guild.get_channel(appealguild.approved_channel)
         if approved_channel:
@@ -298,6 +301,25 @@ class Admin(MixinMeta):
                     "I couldn't send a DM to the user to notify them that they weren't banned."
                 )
             return
+
+        if cog := ctx.bot.get_cog("ArkTools"):
+            try:
+                player = await cog.db_utils.get_player_discord(
+                    appealguild.id, member.id
+                )
+                if player:
+                    fake_ctx = deepcopy(ctx)
+                    setattr(fake_ctx, "guild", target_guild)
+                    await cog.ban_unban_player(
+                        ctx=fake_ctx,
+                        player_id=player.gameid,
+                        ban=False,
+                        reason=reason or "",
+                        prompt=True,
+                    )
+            except Exception as e:
+                log.error("Error unbanning player", exc_info=e)
+                await ctx.send(f"Error unbanning player from the Ark servers: {e}")
 
         # Alert the user that their appeal has been approved
         try:
