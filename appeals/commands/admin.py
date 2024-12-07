@@ -219,15 +219,18 @@ class Admin(MixinMeta):
             )
         pending_channel = ctx.guild.get_channel(appealguild.pending_channel)
         if pending_channel:
-            try:
-                message = await pending_channel.fetch_message(submission.message_id)
-                await message.delete()
-            except discord.Forbidden:
+            if not pending_channel.permissions_for(ctx.guild.me).manage_messages:
                 await ctx.send(
                     f"I do not have permissions to delete messages from {pending_channel.mention}"
                 )
-            except discord.NotFound:
-                pass
+            else:
+                try:
+                    message = await pending_channel.fetch_message(submission.message_id)
+                    await message.delete()
+                except discord.NotFound:
+                    await ctx.send(
+                        f"Submission message not found in {pending_channel.mention}"
+                    )
         # Now unban them from the target guild
         target_guild = self.bot.get_guild(appealguild.target_guild_id)
         if not target_guild:
@@ -309,15 +312,18 @@ class Admin(MixinMeta):
             )
         pending_channel = ctx.guild.get_channel(appealguild.pending_channel)
         if pending_channel:
-            try:
-                message = await pending_channel.fetch_message(submission.message_id)
-                await message.delete()
-            except discord.Forbidden:
+            if not pending_channel.permissions_for(ctx.guild.me).manage_messages:
                 await ctx.send(
                     f"I do not have permissions to delete messages from {pending_channel.mention}"
                 )
-            except discord.NotFound:
-                pass
+            else:
+                try:
+                    message = await pending_channel.fetch_message(submission.message_id)
+                    await message.delete()
+                except discord.NotFound:
+                    await ctx.send(
+                        f"Submission message not found in {pending_channel.mention}"
+                    )
         # Alert the user that their appeal has been denied
         target_guild = self.bot.get_guild(appealguild.target_guild_id)
         targetname = f"**{target_guild.name}**" if target_guild else "the target server"
@@ -349,15 +355,16 @@ class Admin(MixinMeta):
             getattr(appealguild, f"{submission.status}_channel")
         )
         if channel:
-            try:
-                message = await channel.fetch_message(submission.message_id)
-                await message.delete()
-            except discord.Forbidden:
+            if not channel.permissions_for(ctx.guild.me).manage_messages:
                 await ctx.send(
                     f"I do not have permissions to delete messages from {channel.mention}"
                 )
-            except discord.NotFound:
-                pass
+            else:
+                try:
+                    message = await channel.fetch_message(submission.message_id)
+                    await message.delete()
+                except discord.NotFound:
+                    await ctx.send(f"Submission message not found in {channel.mention}")
         await submission.delete().where(
             (AppealSubmission.id == submission_id)
             & (AppealSubmission.guild == ctx.guild.id)
