@@ -75,6 +75,30 @@ class Admin(MixinMeta):
         embed = submission.embed(member)
         await ctx.send(embed=embed)
 
+    @ensure_db_connection()
+    @ensure_appeal_system_ready()
+    @commands.command(name="viewappeals")
+    @commands.bot_has_permissions(embed_links=True)
+    async def view_appeal_submissions(self, ctx: commands.Context):
+        """View all appeal submissions in the server"""
+        submissions = await AppealSubmission.objects().where(
+            AppealSubmission.guild == ctx.guild.id
+        )
+        if not submissions:
+            return await ctx.send("No submissions found in this server.")
+        pages = []
+        page_count = len(submissions)
+        for idx, submission in enumerate(submissions):
+            member = ctx.guild.get_member(submission.user_id) or self.bot.get_user(
+                submission.user_id
+            )
+            embed = submission.embed(member)
+            page = f"Page {idx + 1}/{page_count}"
+            foot = embed.footer.text + f"\n{page}"  # type: ignore
+            embed.set_footer(text=foot)
+            pages.append(embed)
+        await DynamicMenu(ctx, pages).refresh()
+
     @commands.group(name="appeal", aliases=["appeals", "appealset"])
     @commands.guild_only()
     @commands.admin_or_permissions(administrator=True)
@@ -231,6 +255,8 @@ class Admin(MixinMeta):
                     await ctx.send(
                         f"Submission message not found in {pending_channel.mention}"
                     )
+        else:
+            await ctx.send("Pending channel not found, could not delete the message.")
         # Now unban them from the target guild
         target_guild = self.bot.get_guild(appealguild.target_guild_id)
         if not target_guild:
@@ -278,7 +304,9 @@ class Admin(MixinMeta):
         self, ctx: commands.Context, submission_id: int, *, reason: str = None
     ):
         """Deny an appeal submission by ID"""
-        appealguild = await AppealGuild.objects().get(AppealGuild.id == ctx.guild.id)
+        appealguild: AppealGuild = await AppealGuild.objects().get(
+            AppealGuild.id == ctx.guild.id
+        )
         if not appealguild:
             return await self.no_appealguild(ctx)
         submission = await AppealSubmission.objects().get(
@@ -303,7 +331,10 @@ class Admin(MixinMeta):
         # Send the submission to the denied channel and then delete from the pending channel
         denied_channel = ctx.guild.get_channel(appealguild.denied_channel)
         if denied_channel:
-            new_message = await denied_channel.send(embed=submission.embed(member))
+            new_embed = submission.embed(member)
+            if reason:
+                new_embed.add_field(name="Denial Reason", value=reason)
+            new_message = await denied_channel.send(embed=new_embed)
             await AppealSubmission.update(
                 {AppealSubmission.message_id: new_message.id}
             ).where(
@@ -324,6 +355,8 @@ class Admin(MixinMeta):
                     await ctx.send(
                         f"Submission message not found in {pending_channel.mention}"
                     )
+        else:
+            await ctx.send("Pending channel not found, could not delete the message.")
         # Alert the user that their appeal has been denied
         target_guild = self.bot.get_guild(appealguild.target_guild_id)
         targetname = f"**{target_guild.name}**" if target_guild else "the target server"
