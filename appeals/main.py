@@ -25,7 +25,7 @@ class Appeals(Commands, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     """Straightforward ban appeal system for Discord servers."""
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.0.8b"
+    __version__ = "0.0.9b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -87,7 +87,10 @@ class Appeals(Commands, Listeners, commands.Cog, metaclass=CompositeMetaClass):
         p = prefixes[0]
 
         if not appealguild:
-            return False, f"Appeal system is not setup for this guild, set with `{p}appeal server`"
+            return (
+                False,
+                f"Appeal system is not setup for this guild, set with `{p}appeal server`",
+            )
         if not appealguild.target_guild_id:
             return False, f"Target guild is not set, set with `{p}appeal server`"
         target_guild = self.bot.get_guild(appealguild.target_guild_id)
@@ -99,7 +102,10 @@ class Appeals(Commands, Listeners, commands.Cog, metaclass=CompositeMetaClass):
         if not target_guild.me.guild_permissions.ban_members:
             return False, "Bot does not have ban members permission in target guild"
         if not appealguild.appeal_channel:
-            return False, f"Appeal message is not set, set with `{p}appeal createappealmessage`"
+            return (
+                False,
+                f"Appeal message is not set, set with `{p}appeal createappealmessage`",
+            )
         appeal_channel = guild.get_channel(appealguild.appeal_channel)
         if not appeal_channel:
             return (
@@ -107,9 +113,15 @@ class Appeals(Commands, Listeners, commands.Cog, metaclass=CompositeMetaClass):
                 f"Appeal message channel is not found, please set a new one with `{p}appeal appealmessage",
             )
         if not appeal_channel.permissions_for(guild.me).view_channel:
-            return False, "Bot does not have view channel permission in appeal message channel"
+            return (
+                False,
+                "Bot does not have view channel permission in appeal message channel",
+            )
         if not appeal_channel.permissions_for(guild.me).send_messages:
-            return False, "Bot does not have send messages permission in appeal message channel"
+            return (
+                False,
+                "Bot does not have send messages permission in appeal message channel",
+            )
         if not appealguild.appeal_message:
             return (
                 False,
@@ -130,7 +142,10 @@ class Appeals(Commands, Listeners, commands.Cog, metaclass=CompositeMetaClass):
         if not channel.permissions_for(guild.me).view_channel:
             return False, "Bot does not have view channel permission in pending channel"
         if not channel.permissions_for(guild.me).send_messages:
-            return False, "Bot does not have send messages permission in pending channel"
+            return (
+                False,
+                "Bot does not have send messages permission in pending channel",
+            )
         if not appealguild.approved_channel:
             return (
                 False,
@@ -140,9 +155,15 @@ class Appeals(Commands, Listeners, commands.Cog, metaclass=CompositeMetaClass):
         if not channel:
             return False, "Approved channel is not found"
         if not channel.permissions_for(guild.me).view_channel:
-            return False, "Bot does not have view channel permission in approved channel"
+            return (
+                False,
+                "Bot does not have view channel permission in approved channel",
+            )
         if not channel.permissions_for(guild.me).send_messages:
-            return False, "Bot does not have send messages permission in approved channel"
+            return (
+                False,
+                "Bot does not have send messages permission in approved channel",
+            )
         if not appealguild.denied_channel:
             return (
                 False,
