@@ -519,6 +519,10 @@ class SupportButton(Button):
                         reason=reason,
                         invitable=conf["user_can_manage"],
                     )
+                except discord.Forbidden:
+                    return await interaction.followup.send(
+                        _("I don't have permissions to create threads!"), ephemeral=True
+                    )
                 except Exception as e:
                     if "Contains words not allowed" in str(e):
                         channel_or_thread = await channel.create_thread(
@@ -549,11 +553,19 @@ class SupportButton(Button):
                             category = alt_channel.category
                 if not category.permissions_for(guild.me).manage_channels:
                     return await interaction.followup.send(
-                        "I don't have permissions to create channels!", ephemeral=True
+                        _("I don't have permissions to create channels!"),
+                        ephemeral=True,
                     )
                 try:
                     channel_or_thread = await category.create_text_channel(
                         channel_name, overwrites=overwrite
+                    )
+                except discord.Forbidden:
+                    return await interaction.followup.send(
+                        _(
+                            "I don't have permissions to create channels under this category!"
+                        ),
+                        ephemeral=True,
                     )
                 except Exception as e:
                     if "Contains words not allowed" in str(e):
@@ -567,13 +579,10 @@ class SupportButton(Button):
                         )
                     else:
                         raise e
-        except discord.Forbidden as e:
-            txt = (
-                _(
-                    "I am missing the required permissions to create a ticket for you. "
-                    "Please contact an admin so they may fix my permissions."
-                )
-                + f"\n{box(str(e), 'py')}"
+        except discord.Forbidden:
+            txt = _(
+                "I am missing the required permissions to create a ticket for you. "
+                "Please contact an admin so they may fix my permissions."
             )
             em = discord.Embed(description=txt, color=discord.Color.red())
             return await interaction.followup.send(embed=em, ephemeral=True)
