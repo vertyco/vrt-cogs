@@ -37,9 +37,14 @@ class MessageListener(MixinMeta):
         )
         if not submission:
             return
+        if submission["message_id"] != message.id:
+            # Old message, dont delete
+            return
         await AppealSubmission.delete().where(AppealSubmission.id == submission_id)
         log.info(f"Deleted submission {submission_id} due to message deletion")
-        appealguild = await AppealGuild.objects().get(AppealGuild.id == message.guild.id)
+        appealguild = await AppealGuild.objects().get(
+            AppealGuild.id == message.guild.id
+        )
         if not appealguild:
             return
         channel = self.bot.get_channel(appealguild.alert_channel)
@@ -53,10 +58,16 @@ class MessageListener(MixinMeta):
         if not all(perms):
             return
         desc = f"Deleted submission `{submission_id}` due to message deletion"
-        embed = discord.Embed(description=desc, color=await self.bot.get_embed_color(channel))
+        embed = discord.Embed(
+            description=desc, color=await self.bot.get_embed_color(channel)
+        )
         try:
             user = await self.bot.get_or_fetch_user(submission["user_id"])
-            username = f"{user.name} ({user.id})" if user else f"Unknown User ({submission['user_id']})"
+            username = (
+                f"{user.name} ({user.id})"
+                if user
+                else f"Unknown User ({submission['user_id']})"
+            )
         except discord.HTTPException:
             username = f"Unknown User ({submission['user_id']})"
         embed.add_field(name="Appeal Created By", value=username)
