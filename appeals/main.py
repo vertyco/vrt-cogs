@@ -25,7 +25,7 @@ class Appeals(Commands, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     """Straightforward ban appeal system for Discord servers."""
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.0.18b"
+    __version__ = "0.0.19b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -72,9 +72,7 @@ class Appeals(Commands, Listeners, commands.Cog, metaclass=CompositeMetaClass):
             self.bot.add_view(view, message_id=appealguild.appeal_message)
         log.info("Cog initialized")
 
-    async def conditions_met(
-        self, guild: discord.Guild | AppealGuild
-    ) -> t.Tuple[bool, t.Optional[str]]:
+    async def conditions_met(self, guild: discord.Guild | AppealGuild) -> t.Tuple[bool, t.Optional[str]]:
         """Check if conditions are met for the current guild to use the appeal system."""
         if isinstance(guild, discord.Guild):
             appealguild = await AppealGuild.objects().get(AppealGuild.id == guild.id)
