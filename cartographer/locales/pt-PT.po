@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2024-02-08 18:30-0500\n"
-"PO-Revision-Date: 2024-02-08 23:51\n"
+"POT-Creation-Date: 2024-07-29 21:29-0400\n"
+"PO-Revision-Date: 2024-12-03 14:56\n"
 "Last-Translator: \n"
 "Language-Team: Portuguese\n"
 "MIME-Version: 1.0\n"
@@ -13,166 +13,284 @@ msgstr ""
 "X-Crowdin-Project: vrt-cogs\n"
 "X-Crowdin-Project-ID: 550681\n"
 "X-Crowdin-Language: pt-PT\n"
-"X-Crowdin-File: /main/cartographer/locales/messages.pot\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/cartographer/locales/messages.pot\n"
 "X-Crowdin-File-ID: 80\n"
 "Language: pt_PT\n"
 
-#: main.py:26
+#: main.py:29
 #, docstring
 msgid "\n"
 "    Backup & Restore tools for Discord servers.\n\n"
 "    This cog can backup & restore the following:\n"
+"    - Bans (including reason)\n"
 "    - Categories (permissions/order)\n"
 "    - Text channels (permissions/order)\n"
 "    - Voice channels (permissions/order)\n"
 "    - Forum channels  (permissions/order)[Not forum posts]\n"
-"    - Roles (permissions and what members they're assigned to)\n\n"
-"    **Caveats**\n"
-"    Note the following\n"
-"    - If there are multiple roles, channels, categories, or forums with the same name, only 1 of each will be restored.\n"
-"     - This is because object IDs cannot be restored so the bot relies on the name of the object.\n"
-"    - When restoring, some roles may not be fully restored (such as order) if they were higher than the bot's role.\n"
+"    - Roles (permissions and what members they're assigned to)\n"
+"    - Emojis (Very slow and rate limit heavy)\n"
+"    - Stickers (Very slow and rate limit heavy)\n"
+"    - Members (roles and nicknames)\n"
+"    - Messages (Optional, can be disabled)\n"
 "    "
-msgstr "\n"
-"    Ferramentas de backup e restauração para servidores Discord.\n\n"
-"    Esta engrenagem pode fazer backup e restaurar o seguinte:\n"
-"    - Categorias (permissões/ordem)\n"
-"    - Canais de texto (permissões/ordem)\n"
-"    - Canais de voz (permissões/ordem)\n"
-"    - Canais do fórum (permissões/ordem)[Não mensagens do fórum]\n"
-"    - Funções (permissões e membros a que estão atribuídas)\n\n"
-"    **Caveats**\n"
-"    Tenha em atenção o seguinte\n"
-"    - Se existirem várias funções, canais, categorias ou fóruns com o mesmo nome, apenas 1 de cada será restaurado.\n"
-"     - Isto acontece porque os IDs dos objectos não podem ser restaurados, por isso o bot baseia-se no nome do objeto.\n"
-"    - Ao restaurar, alguns papéis podem não ser totalmente restaurados (como ordem) se eles eram mais altos que o papel do bot.\n"
-"    "
+msgstr ""
 
-#: main.py:82
+#: main.py:87
 msgid "Version: {}\n"
 "Author: {}"
 msgstr ""
 
-#: main.py:86
+#: main.py:91
 #, docstring
 msgid "No data to delete"
 msgstr "Não há dados a eliminar"
 
-#: main.py:119
+#: main.py:139
 #, docstring
 msgid "Open the Backup/Restore menu"
 msgstr "Abrir o menu Cópia de segurança/Restauro"
 
-#: main.py:121 main.py:144 main.py:166
+#: main.py:141 main.py:189 main.py:216
 msgid "This server is in the ingored list!"
 msgstr "Este servidor está na lista de excluídos!"
 
-#: main.py:124 main.py:147 main.py:169
+#: main.py:144 main.py:192 main.py:219
 msgid "This server is not in the allowed list!"
 msgstr "Este servidor não está na lista de permissões!"
 
-#: main.py:138
+#: main.py:160
 #, docstring
 msgid "Backup & Restore Tools"
 msgstr "Ferramentas de cópia de segurança e de restauro"
 
-#: main.py:142
+#: main.py:165
 #, docstring
-msgid "Create a backup of this server"
-msgstr "Criar uma cópia de segurança deste servidor"
+msgid "\n"
+"        Wipe all backups for all servers\n\n"
+"        This action cannot be undone!\n"
+"        "
+msgstr ""
 
-#: main.py:153
+#: main.py:171
+msgid "Please confirm this action by passing `True` as an argument"
+msgstr ""
+
+#: main.py:179
+msgid "All backups have been wiped!"
+msgstr ""
+
+#: main.py:183
+#, docstring
+msgid "\n"
+"        Create a backup of this server\n\n"
+"        limit: How many messages to backup per channel (0 for None)\n"
+"        "
+msgstr ""
+
+#: main.py:206
 msgid "A backup has been created!"
 msgstr "Foi criada uma cópia de segurança!"
 
-#: main.py:159
+#: main.py:212
 #, docstring
 msgid "\n"
-"        Restore the latest backup for this server\n\n"
-"        **Arguments**\n"
-"        - delete_existing: if True, deletes existing channels/roles that aren't part of the backup.\n"
+"        Restore the latest backup for this server\n"
 "        "
-msgstr "\n"
-"        Restaurar a última cópia de segurança para este servidor\n\n"
-"        **Argumentos\n"
-"        - delete_existing: se Verdadeiro, elimina os canais/funções existentes que não fazem parte da cópia de segurança.\n"
-"        "
+msgstr ""
 
-#: main.py:175
+#: main.py:225
 msgid "There are no backups for this guild!"
 msgstr "Não há backups para esta guilda!"
 
-#: main.py:178
+#: main.py:230
 msgid "Server restore is complete!"
 msgstr "O restauro do servidor está concluído!"
 
-#: main.py:183
+#: main.py:232
+msgid "The following errors occurred while restoring the backup"
+msgstr ""
+
+#: main.py:238
 #, docstring
 msgid "View current global settings"
 msgstr "Ver as definições globais actuais"
 
-#: main.py:185 main.py:186
-msgid "None Set"
+#: main.py:246 main.py:247
+msgid "**None Set**"
 msgstr ""
 
-#: main.py:187
+#: main.py:249
 msgid "### Global Settings\n"
 "- Global backups: {}\n"
 "- Max backups per server: {}\n"
 "- Allow auto-backups: {}\n"
+"- Message backup limit: {}\n"
+"- Backup Members: {}\n"
+"- Backup Roles: {}\n"
+"- Backup Emojis: {}\n"
+"- Backup Stickers: {}\n"
 "- Ignored servers: {}\n"
 "- Allowed servers: {}\n"
 msgstr ""
 
-#: main.py:206
+#: main.py:278
 #, docstring
 msgid "Enable/Disable allowing auto backups"
 msgstr "Ativar/desativar a autorização de cópias de segurança automáticas"
 
-#: main.py:209
+#: main.py:281
 msgid "Auto backups have been **Disabled**"
 msgstr "As cópias de segurança automáticas foram **Desactivadas**"
 
-#: main.py:212
+#: main.py:284
 msgid "Auto backups have been **Enabled**"
 msgstr "As cópias de segurança automáticas foram **activadas**"
 
-#: main.py:219
+#: main.py:291
+#, docstring
+msgid "Set the message backup limit per channel for auto backups\n\n"
+"        Set to 0 to disable message backups\n\n"
+"        ⚠️**Warning**⚠️\n"
+"        Setting this to a high number can cause backups to be slow and take up a lot of space.\n"
+"        "
+msgstr ""
+
+#: main.py:299
+msgid "Limit must be 0 or higher"
+msgstr ""
+
+#: main.py:302
+msgid "Message backup has been **Disabled**"
+msgstr ""
+
+#: main.py:304
+msgid "Message backup limit has been set"
+msgstr ""
+
+#: main.py:310
+#, docstring
+msgid "Toggle backing up members\n\n"
+"        ⚠️**Warning**⚠️\n"
+"        Restoring the roles of all members can be slow for large servers.\n"
+"        "
+msgstr ""
+
+#: main.py:316
+msgid "\n"
+"⚠️**Warning**⚠️\n"
+"Restoring the roles of all members can be slow for large servers."
+msgstr ""
+
+#: main.py:318
+msgid "Members will now be backed up"
+msgstr ""
+
+#: main.py:320
+msgid "Members will no longer be backed up"
+msgstr ""
+
+#: main.py:327
+#, docstring
+msgid "Toggle backing up roles\n\n"
+"        ⚠️**Warning**⚠️\n"
+"        Any roles above the bot's role will not be restored.\n"
+"        "
+msgstr ""
+
+#: main.py:333
+msgid "\n"
+"⚠️**Warning**⚠️\n"
+"Any roles above the bot's role will not be restored."
+msgstr ""
+
+#: main.py:335
+msgid "Roles will now be backed up"
+msgstr ""
+
+#: main.py:337
+msgid "Roles will no longer be backed up"
+msgstr ""
+
+#: main.py:344
+#, docstring
+msgid "Toggle backing up emojis\n\n"
+"        ⚠️**Warning**⚠️\n"
+"        Restoring emojis is EXTREMELY rate-limited and can take a long time (like hours) for servers with many emojis.\n"
+"        "
+msgstr ""
+
+#: main.py:350
+msgid "\n"
+"⚠️**Warning**⚠️\n"
+"Restoring emojis is EXTREMELY rate-limited and can take a long time (like hours) for servers with many emojis."
+msgstr ""
+
+#: main.py:354
+msgid "Emojis will now be backed up"
+msgstr ""
+
+#: main.py:356
+msgid "Emojis will no longer be backed up"
+msgstr ""
+
+#: main.py:363
+#, docstring
+msgid "Toggle backing up stickers\n\n"
+"        ⚠️**Warning**⚠️\n"
+"        Restoring stickers is EXTREMELY rate-limited and can take a long time (like hours) for servers with many stickers.\n"
+"        "
+msgstr ""
+
+#: main.py:369
+msgid "\n"
+"⚠️**Warning**⚠️\n"
+"Restoring stickers is EXTREMELY rate-limited and can take a long time (like hours) for servers with many stickers."
+msgstr ""
+
+#: main.py:373
+msgid "Stickers will now be backed up"
+msgstr ""
+
+#: main.py:375
+msgid "Stickers will no longer be backed up"
+msgstr ""
+
+#: main.py:382
 #, docstring
 msgid "Set the max amount of backups a server can have"
 msgstr "Definir a quantidade máxima de cópias de segurança que um servidor pode ter"
 
-#: main.py:222
+#: main.py:385
 msgid "Max backups set to 0, Cartographer has been **Disabled**"
 msgstr "Máximo de cópias de segurança definido para 0, o Cartographer foi **Desativado**"
 
-#: main.py:224
+#: main.py:387
 msgid "Max backup count has been set"
 msgstr "Foi definido um número máximo de cópias de segurança"
 
-#: main.py:231
+#: main.py:394
 #, docstring
 msgid "Add/Remove a server from the ignore list"
 msgstr "Adicionar/Remover um servidor da lista de ignorados"
 
-#: main.py:234
+#: main.py:397
 msgid "Server removed from the ignore list"
 msgstr "Servidor removido da lista de ignorados"
 
-#: main.py:237
+#: main.py:400
 msgid "Server added to the ignore list"
 msgstr "Servidor adicionado à lista de ignorados"
 
-#: main.py:244
+#: main.py:407
 #, docstring
 msgid "Add/Remove a server from the allow list"
 msgstr "Adicionar/Remover um servidor da lista de permissões"
 
-#: main.py:247
+#: main.py:410
 msgid "Server removed from the allow list"
 msgstr "Servidor removido da lista de permissões"
 
-#: main.py:250
+#: main.py:413
 msgid "Server added to the allow list"
 msgstr "Servidor adicionado à lista de permissões"
 

@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2024-06-18 16:29-0400\n"
-"PO-Revision-Date: 2024-06-18 20:59\n"
+"POT-Creation-Date: 2024-07-24 17:08-0400\n"
+"PO-Revision-Date: 2024-12-03 14:58\n"
 "Last-Translator: \n"
 "Language-Team: Portuguese\n"
 "MIME-Version: 1.0\n"
@@ -13,11 +13,11 @@ msgstr ""
 "X-Crowdin-Project: vrt-cogs\n"
 "X-Crowdin-Project-ID: 550681\n"
 "X-Crowdin-Language: pt-PT\n"
-"X-Crowdin-File: /main/levelup/listeners/locales/messages.pot\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/levelup/listeners/locales/messages.pot\n"
 "X-Crowdin-File-ID: 170\n"
 "Language: pt_PT\n"
 
-#: levelup\listeners\__init__.py:13
+#: levelup\listeners\__init__.py:15
 #, docstring
 msgid "Subclass all listener classes"
 msgstr ""
