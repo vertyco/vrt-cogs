@@ -193,7 +193,7 @@ class BackupMenu(discord.ui.View):
 
     @discord.ui.button(style=discord.ButtonStyle.success, emoji="\N{INBOX TRAY}", row=1)
     async def backup(self, interaction: discord.Interaction, button: discord.Button):
-        # Check if bot has administator permissions
+        # Check if bot has administrator permissions
         if not self.guild.me.guild_permissions.administrator:
             txt = _("I need administrator permissions to restore a backup in this server!")
             return await interaction.response.send_message(txt, ephemeral=True)
@@ -252,7 +252,7 @@ class BackupMenu(discord.ui.View):
 
     @discord.ui.button(style=discord.ButtonStyle.danger, emoji=e_restore, row=1)
     async def restore(self, interaction: discord.Interaction, button: discord.Button):
-        # Check if bot has administator permissions
+        # Check if bot has administrator permissions
         if not self.guild.me.guild_permissions.administrator:
             txt = _("I need administrator permissions to restore a backup in this server!")
             return await interaction.response.send_message(txt, ephemeral=True)
