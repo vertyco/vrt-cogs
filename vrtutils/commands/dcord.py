@@ -52,6 +52,7 @@ class Dcord(MixinMeta):
 
     @commands.command(name="setcooldown")
     @commands.guild_only()
+    @commands.admin_or_can_manage_channel()
     @commands.has_permissions(manage_channels=True)
     async def set_cooldown(
         self,
