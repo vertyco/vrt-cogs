@@ -1,3 +1,4 @@
+import asyncio
 import json
 import math
 import string
@@ -12,7 +13,9 @@ from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import pagify, text_to_file
 
 from ..abc import MixinMeta
+from ..common import utils
 from ..common.dpymenu import DEFAULT_CONTROLS, confirm, menu
+from ..common.dynamic_menu import DynamicMenu
 
 
 class MessageParser:
@@ -46,6 +49,26 @@ class Dcord(MixinMeta):
             return await ctx.send("That user is not the owner of any servers I am in.")
         for p in pagify(owner_of):
             await ctx.send(p)
+
+    @commands.command(name="setcooldown")
+    @commands.guild_only()
+    @commands.has_permissions(manage_channels=True)
+    async def set_cooldown(
+        self, ctx: commands.Context, cooldown: str, channel: t.Optional[discord.PartialMessageable] = None
+    ):
+        """Set a cooldown for the current channel"""
+        if not channel:
+            channel = ctx.channel
+        delta = commands.parse_timedelta(cooldown)
+        if not delta:
+            await channel.edit(slowmode_delay=0)
+            return await ctx.send(f"Cooldown has been removed for {channel.mention}")
+        seconds = int(delta.total_seconds())
+        if not seconds:
+            await channel.edit(slowmode_delay=0)
+            return await ctx.send(f"Cooldown has been removed for {channel.mention}")
+        await channel.edit(slowmode_delay=seconds)
+        await ctx.send(f"Cooldown has been set to {cooldown} for {channel.mention}")
 
     @commands.command()
     async def closestuser(self, ctx: commands.Context, *, query: str):
@@ -231,89 +254,122 @@ class Dcord(MixinMeta):
     @commands.guild_only()
     async def oldestchannels(self, ctx: commands.Context, amount: int = 10):
         """See which channel is the oldest"""
-        async with ctx.typing():
+
+        def _exe(color: discord.Color):
+            pages = []
             channels = [c for c in ctx.guild.channels if not isinstance(c, discord.CategoryChannel)]
             c_sort = sorted(channels, key=lambda x: x.created_at)
-            txt = "\n".join(
-                [
-                    f"{i + 1}. {c.mention} "
-                    f"created <t:{int(c.created_at.timestamp())}:f> (<t:{int(c.created_at.timestamp())}:R>)"
-                    for i, c in enumerate(c_sort[:amount])
-                ]
-            )
-            for p in pagify(txt, page_length=4000):
-                em = discord.Embed(description=p, color=ctx.author.color)
-                await ctx.send(embed=em)
+            chunks: t.List[t.List[discord.TextChannel]] = list(utils.chunk(c_sort, 10))
+            for idx, chunk in enumerate(chunks):
+                page = idx + 1
+                buffer = StringIO()
+                for i, channel in enumerate(chunk):
+                    position = i + 1 + (page - 1) * 10
+                    ts = int(channel.created_at.timestamp())
+                    buffer.write(f"{position}. {channel.mention} created <t:{ts}:f> (<t:{ts}:R>)\n")
+                txt = buffer.getvalue()
+                embed = discord.Embed(
+                    title=f"Oldest Channels in {ctx.guild.name}",
+                    description=txt,
+                    color=color,
+                )
+                foot = f"Page {page}/{len(chunks)}"
+                embed.set_footer(text=foot)
+                pages.append(embed)
+            return pages
+
+        async with ctx.typing():
+            color = await self.bot.get_embed_color(ctx)
+            pages = await asyncio.to_thread(_exe, color)
+            await DynamicMenu(ctx, pages).refresh()
 
     @commands.command(aliases=["oldestusers"])
     @commands.guild_only()
-    async def oldestmembers(
-        self,
-        ctx: commands.Context,
-        amount: t.Optional[int] = 10,
-        include_bots: t.Optional[bool] = False,
-    ):
+    async def oldestmembers(self, ctx: commands.Context, include_bots: t.Optional[bool] = False):
         """
         See which users have been in the server the longest
 
         **Arguments**
-        `amount:` how many members to display
         `include_bots:` (True/False) whether to include bots
         """
-        async with ctx.typing():
+
+        def _exe(color: discord.Color):
+            pages = []
             if include_bots:
                 members = [m for m in ctx.guild.members]
             else:
                 members = [m for m in ctx.guild.members if not m.bot]
             m_sort = sorted(members, key=lambda x: x.joined_at)
-            txt = "\n".join(
-                [
-                    f"{i + 1}. {m} "
-                    f"joined <t:{int(m.joined_at.timestamp())}:f> (<t:{int(m.joined_at.timestamp())}:R>)"
-                    for i, m in enumerate(m_sort[:amount])
-                ]
-            )
+            user_pos = {m.id: i + 1 for i, m in enumerate(m_sort)}
+            chunks: t.List[t.List[discord.Member]] = list(utils.chunk(m_sort, 10))
+            for idx, chunk in enumerate(chunks):
+                page = idx + 1
+                buffer = StringIO()
+                for i, member in enumerate(chunk):
+                    position = i + 1 + (page - 1) * 10
+                    ts = int(member.joined_at.timestamp())
+                    buffer.write(f"{position}. **{member}** joined <t:{ts}:f> (<t:{ts}:R>)\n")
+                txt = buffer.getvalue()
+                embed = discord.Embed(
+                    title=f"Oldest Members in {ctx.guild.name}",
+                    description=txt,
+                    color=color,
+                )
+                foot = f"Page {page}/{len(chunks)}"
+                if pos := user_pos.get(ctx.author.id):
+                    foot += f" | Your position: {pos}"
+                embed.set_footer(text=foot)
+                pages.append(embed)
+            return pages
 
-        embeds = [discord.Embed(description=p, color=ctx.author.color) for p in pagify(txt, page_length=2000)]
-        pages = len(embeds)
-        for idx, i in enumerate(embeds):
-            i.set_footer(text=f"Page {idx + 1}/{pages}")
-        await menu(ctx, embeds, DEFAULT_CONTROLS)
+        async with ctx.typing():
+            color = await self.bot.get_embed_color(ctx)
+            pages = await asyncio.to_thread(_exe, color)
+            await DynamicMenu(ctx, pages).refresh()
 
     @commands.command()
     @commands.guild_only()
-    async def oldestaccounts(
-        self,
-        ctx: commands.Context,
-        amount: t.Optional[int] = 10,
-        include_bots: t.Optional[bool] = False,
-    ):
+    async def oldestaccounts(self, ctx: commands.Context, include_bots: t.Optional[bool] = False):
         """
         See which users have the oldest Discord accounts
 
         **Arguments**
-        `amount:` how many members to display
         `include_bots:` (True/False) whether to include bots
         """
-        async with ctx.typing():
+
+        def _exe(color: discord.Color):
+            pages = []
             if include_bots:
                 members = [m for m in ctx.guild.members]
             else:
                 members = [m for m in ctx.guild.members if not m.bot]
-            m_sort = sorted(members, key=lambda x: x.created_at)
-            txt = "\n".join(
-                [
-                    f"{i + 1}. {m} "
-                    f"created <t:{int(m.created_at.timestamp())}:f> (<t:{int(m.created_at.timestamp())}:R>)"
-                    for i, m in enumerate(m_sort[:amount])
-                ]
-            )
+            m_sort = sorted(members, key=lambda x: x.joined_at)
+            user_pos = {m.id: i + 1 for i, m in enumerate(m_sort)}
+            chunks: t.List[t.List[discord.Member]] = list(utils.chunk(m_sort, 10))
+            for idx, chunk in enumerate(chunks):
+                page = idx + 1
+                buffer = StringIO()
+                for i, member in enumerate(chunk):
+                    position = i + 1 + (page - 1) * 10
+                    ts = int(member.created_at.timestamp())
+                    buffer.write(f"{position}. **{member}** created <t:{ts}:f> (<t:{ts}:R>)\n")
+                txt = buffer.getvalue()
+                embed = discord.Embed(
+                    title=f"Oldest Members in {ctx.guild.name}",
+                    description=txt,
+                    color=color,
+                )
+                foot = f"Page {page}/{len(chunks)}"
+                if pos := user_pos.get(ctx.author.id):
+                    foot += f" | Your position: {pos}"
+                embed.set_footer(text=foot)
+                pages.append(embed)
+            return pages
 
-        embeds = [discord.Embed(description=p, color=ctx.author.color) for p in pagify(txt, page_length=2000)]
-        pages = len(embeds)
-        for idx, i in enumerate(embeds):
-            i.set_footer(text=f"Page {idx + 1}/{pages}")
-        await menu(ctx, embeds, DEFAULT_CONTROLS)
+        async with ctx.typing():
+            color = await self.bot.get_embed_color(ctx)
+            pages = await asyncio.to_thread(_exe, color)
+            await DynamicMenu(ctx, pages).refresh()
 
     @commands.command()
     @commands.guild_only()
