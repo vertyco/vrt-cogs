@@ -89,3 +89,8 @@ def calculate_directory_size(path: Path) -> int:
             total_size += file.stat().st_size
 
     return total_size
+
+
+def chunk(obj_list: list, chunk_size: int):
+    for i in range(0, len(obj_list), chunk_size):
+        yield obj_list[i : i + chunk_size]
