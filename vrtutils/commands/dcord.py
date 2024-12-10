@@ -54,7 +54,18 @@ class Dcord(MixinMeta):
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
     async def set_cooldown(
-        self, ctx: commands.Context, cooldown: str, channel: t.Optional[discord.PartialMessageable] = None
+        self,
+        ctx: commands.Context,
+        cooldown: str,
+        channel: t.Optional[
+            t.Union[
+                discord.TextChannel,
+                discord.ForumChannel,
+                discord.StageChannel,
+                discord.Thread,
+                discord.VoiceChannel,
+            ]
+        ] = None,
     ):
         """Set a cooldown for the current channel"""
         if not channel:
