@@ -100,12 +100,12 @@ class Misc(MixinMeta):
     async def clear_adventure_alerts(self, ctx: commands.Context):
         """Prune adventure alerts from members no longer in the server
 
-        This command requires the AdventureAlerts cog by TrustyJAID to be loaded.
+        This command requires the AdventureAlert cog by TrustyJAID to be loaded.
         https://github.com/TrustyJAID/Trusty-cogs/tree/master
         """
-        cog = self.bot.get_cog("AdventureAlerts")
+        cog = self.bot.get_cog("AdventureAlert")
         if cog is None:
-            txt = "The [AdventureAlerts](https://github.com/TrustyJAID/Trusty-cogs/tree/master) cog is not loaded."
+            txt = "The [AdventureAlert](https://github.com/TrustyJAID/Trusty-cogs/tree/master) cog is not loaded."
             return await ctx.send(txt)
 
         async with ctx.typing():
