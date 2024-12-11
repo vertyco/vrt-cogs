@@ -65,7 +65,7 @@ class ReactionListener(MixinMeta):
             f"**{payload.member.display_name}**",
             f"**{msg.author.display_name}**",
         )
-        if conf.starmention:
+        if conf.starmention and channel.permissions_for(guild.me).send_messages:
             kwargs = {"content": txt}
             if conf.starmentionautodelete:
                 kwargs["delete_after"] = conf.starmentionautodelete
