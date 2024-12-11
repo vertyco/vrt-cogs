@@ -1,9 +1,10 @@
+import asyncio
 import inspect
 import random
 import typing as t
 
 import discord
-from redbot.core import commands
+from redbot.core import Config, commands
 from redbot.core.utils.chat_formatting import box, pagify
 
 from ..abc import MixinMeta
@@ -93,3 +94,45 @@ class Misc(MixinMeta):
         if not message.channel.permissions_for(ctx.author).add_reactions:
             return await ctx.send("You don't have permissions to react in that channel!")
         await message.add_reaction(emoji)
+
+    @commands.command(name="cleanadventurealerts")
+    @commands.admin_or_permissions(administrator=True)
+    async def clear_adventure_alerts(self, ctx: commands.Context):
+        """Prune adventure alerts from members no longer in the server
+
+        This command requires the AdventureAlerts cog by TrustyJAID to be loaded.
+        https://github.com/TrustyJAID/Trusty-cogs/tree/master
+        """
+        cog = self.bot.get_cog("AdventureAlerts")
+        if cog is None:
+            txt = "The [AdventureAlerts](https://github.com/TrustyJAID/Trusty-cogs/tree/master) cog is not loaded."
+            return await ctx.send(txt)
+
+        async with ctx.typing():
+            conf: Config = cog.config
+            settings = await conf.guild(ctx.guild).all()
+
+            keys = [
+                "users",
+                "adventure_users",
+                "cart_users",
+                "miniboss_users",
+                "ascended_users",
+                "transcended_users",
+                "immortal_users",
+                "possessed_users",
+            ]
+            member_ids = []
+            for key in keys:
+                member_ids.extend(settings.get(key, []))
+
+            ids_to_remove = set()
+            for member_id in set(member_ids):
+                if not ctx.guild.get_member(member_id):
+                    ids_to_remove.add(member_id)
+            jobs = []
+            for member_id in ids_to_remove:
+                func = cog.red_delete_data_for_user(requester="user", user_id=member_id)
+                jobs.append(func)
+            await asyncio.gather(*jobs)
+            await ctx.send(f"Removed {len(ids_to_remove)} members from the adventure alerts.")
