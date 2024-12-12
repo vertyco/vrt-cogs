@@ -29,13 +29,13 @@ class Meow(commands.Cog):
     Meow!
 
 
-    My girlfriend had a dream about this cog, so I had to make it ¯\\_(ツ)_/¯
+    My ~~girlfriend~~ (now wife!) had a dream about this cog, so I had to make it ¯\\_(ツ)_/¯
 
     Use `[p]automeow` to toggle automatic meow response.
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.3.2"
+    __version__ = "0.3.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
