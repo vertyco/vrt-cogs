@@ -122,11 +122,18 @@ class Checks(MixinMeta):
     async def transfer_tax_check(self, ctx: commands.Context):
         if ctx.command.qualified_name != "bank transfer":
             return True
-        conf = self.db if await bank.is_global() else self.db.get_conf(ctx.guild)
+        is_global = await bank.is_global()
+        conf = self.db if is_global else self.db.get_conf(ctx.guild)
         tax = conf.transfer_tax
         if tax == 0:
             log.debug("No transfer tax set")
             return True
+
+        if not is_global and getattr(conf, "transfer_tax_whitelist", None):
+            whitelist = conf.transfer_tax_whitelist
+            if any(r.id in whitelist for r in ctx.author.roles):
+                # log.debug(f"{ctx.author} is in the transfer tax whitelist")
+                return True
 
         # Args: EconomyCog, ctx, to, amount
         amount: int = ctx.args[-1]

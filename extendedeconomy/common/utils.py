@@ -109,6 +109,9 @@ def format_settings(
     txt.write(_("# Extended Economy Settings\n"))
     tax = f"{round(conf.transfer_tax * 100, 2)}%" if conf.transfer_tax else _("None")
     txt.write(_("`Transfer Tax:      `{}\n").format(tax))
+    if not is_global:
+        tax_whitelist = [f"<@&{r}>" for r in conf.transfer_tax_whitelist]
+        txt.write(_("`Tax Whitelist:     `{}\n").format(", ".join(tax_whitelist) if tax_whitelist else _("None")))
     costs = len(db.command_costs) if is_global else len(conf.command_costs)
     txt.write(_("`Command Costs:     `{}\n").format(costs or _("None")))
     txt.write(_("`Global Bank:       `{}\n").format(is_global))

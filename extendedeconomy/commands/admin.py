@@ -243,6 +243,24 @@ class Admin(MixinMeta):
         await ctx.send(_("Transfer tax set to {}%").format(round(tax * 100, 2)))
         await self.save()
 
+    @extendedeconomy.command(name="taxwhitelist")
+    async def set_taxwhitelist(self, ctx: commands.Context, *, role: discord.Role):
+        """
+        Add/Remove roles from the transfer tax whitelist
+        """
+        is_global = await bank.is_global()
+        if is_global:
+            return await ctx.send(_("This setting is not available when global bank is enabled."))
+        conf = self.db.get_conf(ctx.guild)
+        if role.id in conf.transfer_tax_whitelist:
+            conf.transfer_tax_whitelist.remove(role.id)
+            txt = _("Role removed from the transfer tax whitelist.")
+        else:
+            conf.transfer_tax_whitelist.append(role.id)
+            txt = _("Role added to the transfer tax whitelist.")
+        await ctx.send(txt)
+        await self.save()
+
     @extendedeconomy.command(name="mainlog")
     async def set_mainlog(self, ctx: commands.Context, channel: t.Optional[discord.TextChannel] = None):
         """
