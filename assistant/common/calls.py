@@ -153,7 +153,7 @@ class CreateMemoryResponse(BaseModel):
 async def create_memory_call(messages: t.List[dict], api_key: str) -> t.Union[CreateMemoryResponse, None]:
     client = openai.AsyncOpenAI(api_key=api_key)
     response = await client.beta.chat.completions.parse(
-        model="gpt-4o-2024-08-06",
+        model="gpt-4o-2024-11-20",
         messages=messages,
         response_format=CreateMemoryResponse,
     )
