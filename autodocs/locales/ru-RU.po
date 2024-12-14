@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2024-02-08 18:30-0500\n"
-"PO-Revision-Date: 2024-06-21 14:22\n"
+"PO-Revision-Date: 2024-12-03 14:55\n"
 "Last-Translator: \n"
 "Language-Team: Russian\n"
 "MIME-Version: 1.0\n"
@@ -13,7 +13,7 @@ msgstr ""
 "X-Crowdin-Project: vrt-cogs\n"
 "X-Crowdin-Project-ID: 550681\n"
 "X-Crowdin-Language: ru\n"
-"X-Crowdin-File: /main/autodocs/locales/messages.pot\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/autodocs/locales/messages.pot\n"
 "X-Crowdin-File-ID: 25\n"
 "Language: ru_RU\n"
 
@@ -23,70 +23,75 @@ msgid "\n"
 "    Document your cogs with ease!\n\n"
 "    Easily create documentation for any cog in Markdown format.\n"
 "    "
-msgstr ""
+msgstr "\n"
+"Создавать документации — легко!\n\n"
+"   Без проблем создавайте документации для любых коков в формате Markdown.    "
 
 #: autodocs.py:36
 msgid "{}\n"
 "Cog Version: {}\n"
 "Author: {}"
-msgstr ""
+msgstr "{}\n"
+"Версия расширения: {}\n"
+"Автор: {}"
 
 #: autodocs.py:40
 #, docstring
 msgid "No data to delete"
-msgstr ""
+msgstr "Нет данных для удаления"
 
 #: autodocs.py:58
 msgid "name"
-msgstr ""
+msgstr "название"
 
 #: autodocs.py:58
 msgid "text"
-msgstr ""
+msgstr "текст"
 
 #: autodocs.py:61
 msgid "Help"
-msgstr ""
+msgstr "Справка"
 
 #: autodocs.py:68
 msgid "{} cog description"
-msgstr ""
+msgstr "{} Описание расширения"
 
 #: autodocs.py:120
 msgid "Create docs for a cog"
-msgstr ""
+msgstr "Создать документацию для расширения"
 
 #: autodocs.py:122
 msgid "The name of the cog you want to make docs for (Case Sensitive)"
-msgstr ""
+msgstr "Название расширения, для которого Вы хотите создать документацию\n"
+"**[!]** Учитывает регистр"
 
 #: autodocs.py:123
 msgid "Replace all occurrences of [p] with the bots prefix"
-msgstr ""
+msgstr "Заменить все сокращения [p] текущим префиксом приложения"
 
 #: autodocs.py:124
 msgid "Replace all occurrences of [botname] with the bots name"
-msgstr ""
+msgstr "Заменить все сокращения [botname] текущим наименованием приложения"
 
 #: autodocs.py:125
 msgid "Include extra info like converters and their docstrings"
-msgstr ""
+msgstr "Включить дополнительную информацию, например: конвертеры и их строки документации"
 
 #: autodocs.py:126
 msgid "Include hidden commands"
-msgstr ""
+msgstr "Отображать скрытые команды"
 
 #: autodocs.py:127
 msgid "Hide commands above specified privilege level (user, mod, admin, guildowner, botowner)"
-msgstr ""
+msgstr "Скрыть команды выше указанного уровня привилегий (пользователь, мод, администратор, владелец сервера, владелец приложения)"
 
 #: autodocs.py:128
 msgid "Include a csv with each command isolated per row"
-msgstr ""
+msgstr "Включите csv-файл, в котором каждая команда будет выделена в отдельную строку"
 
 #: autodocs.py:129
 msgid "Hide commands below specified privilege level (user, mod, admin, guildowner, botowner)"
-msgstr ""
+msgstr "Скрыть команды выше указанного уровня привилегий (пользователь, мод, администратор, владелец сервера, владелец приложения)"
 
 #: autodocs.py:145
 #, docstring
@@ -104,135 +109,146 @@ msgid "\n"
 "        **Note** If `all` is specified for cog_name, all currently loaded non-core cogs will have docs generated for\n"
 "        them and sent in a zip file\n"
 "        "
-msgstr ""
+msgstr "        Создать документационную страницу Markdown для расширения и отправить в Discord\n\n"
+"        **Аргументы**\n"
+"        `cog_name:           `(str) Название расширения, для которого Вы хотите создать документ. **[!]** Учитывает регистр\n"
+"        `replace_prefix:     `(bool) Если `True`, заменяет приставку `[p]` на действительный префикс\n"
+"        `replace_botname:    `(bool) Если `True`, заменяет приставку `[botname]` на пользовательское имя бота\n"
+"        `extended_info:      `(bool) Если `True`, включает допольнительную информацию, типа конвертеров и их `docstrings`\n"
+"        `include_hidden:     `(bool) Если `True`, отобразит скрытые команды\n"
+"        `privilege_level:    `(str) Скрывает команды, выше указанного уровня привилегий\n"
+"        - (user, mod, admin, guildowner, botowner)\n"
+"        `csv_export:         `(bool) Включит `csv` для каждой команды, изолированная отдельной строкой для эмбеддинга\n\n"
+"        **Примечание** Если `all` обозначено для `cog_name`, все загруженные расширения, кроме центральных (core) получат документацию, впоследствии заархивируя их\n"
+"        "
 
 #: autodocs.py:166
 msgid "AllCogDocs"
-msgstr ""
+msgstr "AllCogDocs"
 
 #: autodocs.py:208
 msgid "Here are the docs for all of your currently loaded cogs!"
-msgstr ""
+msgstr "Здесь вся документация для загруженных расширений"
 
 #: autodocs.py:212
 msgid "I could not find that cog, maybe it is not loaded?"
-msgstr ""
+msgstr "Не могу найти данное расширение. Возможно, оно не загружено."
 
 #: autodocs.py:236
 msgid "Here are your docs for {}!"
-msgstr ""
+msgstr "Документация для {}."
 
 #: autodocs.py:309
 #, docstring
 msgid "Registers a command with Assistant enabling it to access to command docs"
-msgstr ""
+msgstr "Регистрирует команду с ассистентом, позволяющую получить доступ к командному документу"
 
 #: converters.py:64
 msgid "A single word, if not using slash and multiple words are necessary use a quote e.g \"Hello world\"."
-msgstr ""
+msgstr "Одно слово. Если не используете слэш, необходимо проставить кавычки. Пример: \"Привет, мир\"."
 
 #: converters.py:65
 msgid "A number without decimal places."
-msgstr ""
+msgstr "Число без знаков после запятой."
 
 #: converters.py:66
 msgid "A number with or without decimal places."
-msgstr ""
+msgstr "Число с **или** без знаков после запятой."
 
 #: converters.py:67
 msgid "Can be 1, 0, true, false, t, f"
-msgstr ""
+msgstr "Возможные варианты: `1`, `0`, `true`, `t`, `false`, `f`."
 
 #: formatter.py:40
 #, docstring
 msgid "Formats documentation for a single command"
-msgstr ""
+msgstr "Форматирует документацию для одной команды"
 
 #: formatter.py:101
 msgid "per"
-msgstr ""
+msgstr "каждую"
 
 #: formatter.py:102
 msgid "seconds"
-msgstr ""
+msgstr "секунды"
 
 #: formatter.py:103
 msgid "second"
-msgstr ""
+msgstr "секунду"
 
 #: formatter.py:112
 msgid "Slash"
-msgstr ""
+msgstr "Слэш"
 
 #: formatter.py:113
 msgid "Command"
-msgstr ""
+msgstr "Команда"
 
 #: formatter.py:117
 msgid "Hybrid"
-msgstr ""
+msgstr "Гибрид"
 
 #: formatter.py:125
 msgid "Usage"
-msgstr ""
+msgstr "Использование"
 
 #: formatter.py:126
 msgid "Checks"
-msgstr ""
+msgstr "Проверяет"
 
 #: formatter.py:138
 msgid "Required"
-msgstr ""
+msgstr "Необходим"
 
 #: formatter.py:142
 msgid "Optional"
-msgstr ""
+msgstr "Опционально"
 
 #: formatter.py:154
 msgid "Server Only"
-msgstr ""
+msgstr "Только сервер"
 
 #: formatter.py:188
 msgid "Restricted to"
-msgstr ""
+msgstr "Ограничено"
 
 #: formatter.py:192
 msgid "Aliases"
-msgstr ""
+msgstr "Псевдонимы"
 
 #: formatter.py:195
 msgid "Cooldown"
-msgstr ""
+msgstr "Интервал"
 
 #: formatter.py:216
 msgid "Could not get docstring or class for {} converter"
-msgstr ""
+msgstr "Не удалось получить строку документации или класс для {} конвертера"
 
 #: formatter.py:220 formatter.py:280
 msgid "Could not get docstring for {} converter"
-msgstr ""
+msgstr "Не удалось получить строку документации для {} конвертера"
 
 #: formatter.py:224
 msgid "Could not get class for {} converter"
-msgstr ""
+msgstr "Не удалось получить класс для {} конвертера"
 
 #: formatter.py:233
 msgid "Autocomplete"
-msgstr ""
+msgstr "Автоматическое завершение"
 
 #: formatter.py:237
 msgid "Default"
-msgstr ""
+msgstr "По умолчанию"
 
 #: formatter.py:242
 msgid "Choices"
-msgstr ""
+msgstr "Возможные значения"
 
 #: formatter.py:272
 msgid "Could not find {} for the {} argument of the {} command"
-msgstr ""
+msgstr "Не удалось найти {} для аргумента {} команды {}"
 
 #: formatter.py:307
 msgid "Extended Arg Info\n"
-msgstr ""
+msgstr "Расширенная информация об аргументах\n"
 
