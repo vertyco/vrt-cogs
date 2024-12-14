@@ -119,6 +119,7 @@ class GuildSettings(Base):
     logs: LogChannels = LogChannels()
     command_costs: t.Dict[str, CommandCost] = {}
     transfer_tax: float = 0.0
+    transfer_tax_whitelist: t.List[int] = []  # Role IDs that are exempt from transfer tax
 
     # Unique to GuildSettings (local bank only)
     stack_paydays: bool = False
