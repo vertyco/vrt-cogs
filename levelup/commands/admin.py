@@ -1071,15 +1071,17 @@ class Admin(MixinMeta):
         last_update = perf_counter()
         conf = self.db.get_conf(ctx.guild)
         reason = _("Level role initialization")
+        member_count = len(ctx.guild.members)
         async with ctx.typing():
             for idx, user in enumerate(ctx.guild.members):
                 added, removed = await self.ensure_roles(user, conf, reason)
                 roles_added += len(added)
                 roles_removed += len(removed)
-                # Update message every 5% of the way
-                if idx % (len(ctx.guild.members) // 20) == 0 and perf_counter() - last_update > 5:
+
+                # Update message every 5% of the way if there are more than 40 users
+                if member_count > 40 and idx % (member_count // 20) == 0 and perf_counter() - last_update > 5:
                     desc = _("Synchronizing level roles, this may take a while...\n{:.0%} complete").format(
-                        idx / len(ctx.guild.members)
+                        idx / member_count
                     )
                     embed.description = desc
                     asyncio.create_task(msg.edit(embed=embed))
