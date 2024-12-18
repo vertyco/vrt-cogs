@@ -36,6 +36,8 @@ async def view_profile_context(interaction: discord.Interaction, member: discord
         return await interaction.response.send_message(_("Bots cannot have profiles!"), ephemeral=True)
     if not isinstance(interaction.user, discord.Member):
         return await interaction.response.send_message(_("This user is no longer in the server!"), ephemeral=True)
+    if not isinstance(member, discord.Member):
+        return await interaction.response.send_message(_("This user is no longer in the server!"), ephemeral=True)
     with suppress(discord.HTTPException):
         await interaction.response.defer(ephemeral=True)
     result = await cog.get_user_profile_cached(member)
