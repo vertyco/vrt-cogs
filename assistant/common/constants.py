@@ -20,6 +20,9 @@ MODELS = {
     "gpt-4o-mini-2024-07-18": 128000,
     "gpt-4o-2024-08-06": 128000,
     "gpt-4o-2024-11-20": 128000,
+    "chatgpt-4o-latest": 128000,
+    "o1": 128000,
+    "o1-2024-12-17": 128000,
     "o1-preview": 128000,
     "o1-preview-2024-09-12": 128000,
     "o1-mini": 128000,
@@ -52,8 +55,11 @@ PRICES = {
     "gpt-4o-2024-05-13": [0.005, 0.015],
     "gpt-4o-2024-08-06": [0.0025, 0.01],
     "gpt-4o-2024-11-20": [0.0025, 0.01],
+    "chatgpt-4o-latest": [0.0025, 0.01],
     "gpt-4o-mini": [0.00015, 0.0006],
     "gpt-4o-mini-2024-07-18": [0.00015, 0.0006],
+    "o1": [0.015, 0.06],
+    "o1-2024-12-17": [0.015, 0.06],
     "o1-preview": [0.015, 0.06],
     "o1-preview-2024-09-12": [0.015, 0.06],
     "o1-mini": [0.003, 0.012],
@@ -93,8 +99,11 @@ SUPPORTS_SEED = [
     "gpt-4o-mini",
     "gpt-4o-mini-2024-07-18",
     "gpt-4o-2024-08-06",
+    "chatgpt-4o-latest",
 ]
 NO_SYSTEM_MESSAGES = [
+    "o1",
+    "o1-2024-12-17",
     "o1-preview",
     "o1-preview-2024-09-12",
     "o1-mini",
@@ -111,6 +120,9 @@ SUPPORTS_VISION = [
     "gpt-4o-mini",
     "gpt-4o-mini-2024-07-18",
     "gpt-4o-2024-08-06",
+    "chatgpt-4o-latest",
+    "o1",
+    "o1-2024-12-17",
 ]
 SUPPORTS_TOOLS = [
     "gpt-3.5-turbo-1106",
@@ -127,6 +139,9 @@ SUPPORTS_TOOLS = [
     "gpt-4o-mini",
     "gpt-4o-mini-2024-07-18",
     "gpt-4o-2024-08-06",
+    "chatgpt-4o-latest",
+    "o1",
+    "o1-2024-12-17",
 ]
 READ_EXTENSIONS = [
     ".txt",
