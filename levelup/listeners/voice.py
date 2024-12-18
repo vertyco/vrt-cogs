@@ -32,8 +32,8 @@ class VoiceListener(MixinMeta):
                         earning_xp = self.can_gain_exp(conf, member, member.voice)
                         voice[member.id] = VoiceTracking(
                             joined=perf,
-                            not_gaining_xp=earning_xp,
-                            not_gaining_xp_time=0,
+                            not_gaining_xp=not earning_xp,
+                            not_gaining_xp_time=0.0,
                             stopped_gaining_xp_at=perf if not earning_xp else None,
                         )
                         initialized += 1
@@ -96,6 +96,9 @@ class VoiceListener(MixinMeta):
                 # User's state change means they shouldnt earn exp
                 data.not_gaining_xp = True
                 data.stopped_gaining_xp_at = perf
+            else:
+                # No meaningful state change, just return
+                pass
             return
 
         # Case 1: User joins VC
@@ -105,7 +108,7 @@ class VoiceListener(MixinMeta):
             voice[member.id] = VoiceTracking(
                 joined=perf,
                 not_gaining_xp=not earning_xp,
-                not_gaining_xp_time=0,
+                not_gaining_xp_time=0.0,
                 stopped_gaining_xp_at=perf if not earning_xp else None,
             )
             # Go ahead and update other users in the channel
@@ -154,7 +157,7 @@ class VoiceListener(MixinMeta):
             log.warning(f"User {member.name} left VC but wasnt in voice cache in {member.guild}")
             return
         # Add whatever time is left that the user wasnt gaining exp to their total time not gaining exp
-        if data.not_gaining_xp:
+        if data.not_gaining_xp and data.stopped_gaining_xp_at:
             data.not_gaining_xp_time += perf - data.stopped_gaining_xp_at
         # Calculate the total time the user spent in the VC
         total_time_in_voice = perf - data.joined
