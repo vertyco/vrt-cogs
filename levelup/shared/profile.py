@@ -122,6 +122,8 @@ class ProfileFormatting(MixinMeta):
         Returns:
             t.Union[discord.Embed, discord.File]: An embed or file containing the user's profile
         """
+        if not isinstance(member, discord.Member):
+            raise TypeError("member must be a discord.Member")
         guild = member.guild
         conf = self.db.get_conf(guild)
         profile = conf.get_profile(member)
