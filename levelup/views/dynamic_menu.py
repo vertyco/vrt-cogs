@@ -243,7 +243,7 @@ class DynamicMenu(discord.ui.View):
 
         # Pages are embeds
         for i, embed in enumerate(self.pages):
-            if modal.query.casefold() in embed.title.casefold():
+            if embed.title and modal.query.casefold() in embed.title.casefold():
                 self.page = i
                 return await self.refresh(interaction)
             if modal.query.casefold() in embed.description.casefold():
