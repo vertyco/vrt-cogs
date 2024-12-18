@@ -45,7 +45,10 @@ class BotInfo(MixinMeta):
         Return the bot's latency.
         """
         latency = round(self.bot.latency * 1000)
-        await interaction.response.send_message(f"Pong! `{latency}ms`", ephemeral=True)
+        try:
+            await interaction.response.send_message(f"Pong! `{latency}ms`", ephemeral=True)
+        except discord.NotFound:
+            await interaction.followup.send(f"Pong! `{latency}ms`", ephemeral=True)
 
     @commands.command()
     @commands.is_owner()
