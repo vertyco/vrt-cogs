@@ -113,7 +113,9 @@ If a file has no extension it will still try to read it only if it can be decode
         embed.set_image(url="attachment://image.png")
         embed.set_footer(text=_("Cost: ${}").format(f"{cost:.2f}"))
         if image.revised_prompt:
-            embed.add_field(name=_("Revised Prompt"), value=image.revised_prompt, inline=False)
+            chunks = [p for p in pagify(image.revised_prompt, page_length=1000)]
+            for idx, chunk in enumerate(chunks):
+                embed.add_field(name=_("Revised Prompt") if idx == 0 else _("Continued"), value=chunk, inline=False)
         await interaction.edit_original_response(embed=embed, attachments=[file])
 
     @commands.command(
