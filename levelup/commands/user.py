@@ -102,7 +102,7 @@ class User(MixinMeta):
     @commands.hybrid_command(name="profile", aliases=["pf"])
     @commands.guild_only()
     @commands.cooldown(3, 10, commands.BucketType.user)
-    async def profile(self, ctx: commands.Context, *, user: t.Optional[discord.Member] = None):
+    async def profile(self, ctx: commands.Context, *, user: t.Optional[t.Union[discord.Member, int]] = None):
         """View User Profile"""
         conf = self.db.get_conf(ctx.guild)
         if not conf.enabled:
@@ -116,6 +116,33 @@ class User(MixinMeta):
 
         if user.bot and self.db.ignore_bots:
             return await ctx.send(_("Bots cannot have profiles!"))
+
+        if isinstance(user, int):
+            user_obj = ctx.guild.get_member(user)
+            if not user_obj:
+                if user in conf.users:
+                    profile = conf.get_profile(user)
+                    user = await self.bot.get_or_fetch_user(user)
+                    stats = _(
+                        "{} is no longer in the server!\n"
+                        "XP: **{}**\n"
+                        "Level: **{}**\n"
+                        "Prestige: **{}**\n"
+                        "Voicetime: **{}**\n"
+                        "Messages: **{}**\n"
+                        "Stars: **{}**\n"
+                    ).format(
+                        user.name,
+                        profile.xp,
+                        profile.level,
+                        profile.prestige,
+                        utils.humanize_delta(int(profile.voice)),
+                        profile.messages,
+                        profile.stars,
+                    )
+                    return await ctx.send(stats)
+                return await ctx.send(_("That user is not in the server!"))
+            user = user_obj
 
         profile = conf.get_profile(user)
         new_user_txt = None
