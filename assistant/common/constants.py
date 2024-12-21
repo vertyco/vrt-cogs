@@ -12,7 +12,7 @@ MODELS = {
     "gpt-4-turbo-preview": 128000,
     "gpt-4-1106-preview": 128000,
     "gpt-4-0125-preview": 128000,
-    "gpt-4-vision-preview": 128000,
+    # "gpt-4-vision-preview": 128000, - Depricated
     "gpt-4-turbo-2024-04-09": 128000,
     "gpt-4o": 128000,
     "gpt-4o-2024-05-13": 128000,
