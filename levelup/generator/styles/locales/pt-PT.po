@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2024-06-18 16:29-0400\n"
-"PO-Revision-Date: 2024-06-18 20:59\n"
+"POT-Creation-Date: 2024-07-24 17:08-0400\n"
+"PO-Revision-Date: 2024-12-03 14:59\n"
 "Last-Translator: \n"
 "Language-Team: Portuguese\n"
 "MIME-Version: 1.0\n"
@@ -13,35 +13,35 @@ msgstr ""
 "X-Crowdin-Project: vrt-cogs\n"
 "X-Crowdin-Project-ID: 550681\n"
 "X-Crowdin-Language: pt-PT\n"
-"X-Crowdin-File: /main/levelup/generator/styles/locales/messages.pot\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/levelup/generator/styles/locales/messages.pot\n"
 "X-Crowdin-File-ID: 186\n"
 "Language: pt_PT\n"
 
-#: levelup\generator\styles\default.py:185
+#: levelup\generator\styles\default.py:201
 msgid "(Prestige {})"
 msgstr ""
 
-#: levelup\generator\styles\default.py:224
+#: levelup\generator\styles\default.py:240
 msgid "Rank: {}"
 msgstr ""
 
-#: levelup\generator\styles\default.py:240
+#: levelup\generator\styles\default.py:256
 msgid "Level: {}"
 msgstr ""
 
-#: levelup\generator\styles\default.py:256
+#: levelup\generator\styles\default.py:272
 msgid "Messages: {}"
 msgstr ""
 
-#: levelup\generator\styles\default.py:272
+#: levelup\generator\styles\default.py:288
 msgid "Voice: {}"
 msgstr ""
 
-#: levelup\generator\styles\default.py:289
+#: levelup\generator\styles\default.py:305
 msgid "Balance: {}"
 msgstr ""
 
-#: levelup\generator\styles\default.py:308
+#: levelup\generator\styles\default.py:324
 msgid "Exp: {} ({} total)"
 msgstr ""
 
