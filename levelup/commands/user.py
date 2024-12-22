@@ -102,7 +102,7 @@ class User(MixinMeta):
     @commands.hybrid_command(name="profile", aliases=["pf"])
     @commands.guild_only()
     @commands.cooldown(3, 10, commands.BucketType.user)
-    async def profile(self, ctx: commands.Context, *, user: t.Optional[t.Union[discord.Member, int]] = None):
+    async def profile(self, ctx: commands.Context, *, user: t.Union[discord.Member, int] = None):
         """View User Profile"""
         conf = self.db.get_conf(ctx.guild)
         if not conf.enabled:
@@ -113,9 +113,6 @@ class User(MixinMeta):
 
         if not user:
             user = ctx.author
-
-        if user.bot and self.db.ignore_bots:
-            return await ctx.send(_("Bots cannot have profiles!"))
 
         if isinstance(user, int):
             user_obj = ctx.guild.get_member(user)
@@ -143,6 +140,9 @@ class User(MixinMeta):
                     return await ctx.send(stats)
                 return await ctx.send(_("That user is not in the server!"))
             user = user_obj
+
+        if user.bot and self.db.ignore_bots:
+            return await ctx.send(_("Bots cannot have profiles!"))
 
         profile = conf.get_profile(user)
         new_user_txt = None
