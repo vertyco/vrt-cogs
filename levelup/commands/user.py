@@ -99,10 +99,41 @@ class User(MixinMeta):
             return await ctx.send(_("No data available yet!"))
         await DynamicMenu(ctx, pages).refresh()
 
+    @commands.command(name="profiledata")
+    @commands.guild_only()
+    @commands.mod_or_permissions(manage_messages=True)
+    async def profile_data(self, ctx: commands.Context, user_id: int):
+        """View a user's profile by ID
+
+        Useful if user has left the server
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if not conf.enabled:
+            return await ctx.send(_("Leveling is disabled in this server!"))
+        if user_id not in conf.users:
+            return await ctx.send(_("That user has no level data yet!"))
+        profile = conf.get_profile(user_id)
+        txt = _(
+            "XP: **{}**\n"
+            "Level: **{}**\n"
+            "Prestige: **{}**\n"
+            "Voicetime: **{}**\n"
+            "Messages: **{}**\n"
+            "Stars: **{}**\n"
+        ).format(
+            profile.xp,
+            profile.level,
+            profile.prestige,
+            utils.humanize_delta(int(profile.voice)),
+            profile.messages,
+            profile.stars,
+        )
+        await ctx.send(txt)
+
     @commands.hybrid_command(name="profile", aliases=["pf"])
     @commands.guild_only()
     @commands.cooldown(3, 10, commands.BucketType.user)
-    async def profile(self, ctx: commands.Context, user: t.Union[discord.Member, int] = None):
+    async def profile(self, ctx: commands.Context, *, user: t.Optional[discord.Member] = None):
         """View User Profile"""
         conf = self.db.get_conf(ctx.guild)
         if not conf.enabled:
@@ -113,33 +144,6 @@ class User(MixinMeta):
 
         if not user:
             user = ctx.author
-
-        if isinstance(user, int):
-            user_obj = ctx.guild.get_member(user)
-            if not user_obj:
-                if user in conf.users:
-                    profile = conf.get_profile(user)
-                    user = await self.bot.get_or_fetch_user(user)
-                    stats = _(
-                        "{} is no longer in the server!\n"
-                        "XP: **{}**\n"
-                        "Level: **{}**\n"
-                        "Prestige: **{}**\n"
-                        "Voicetime: **{}**\n"
-                        "Messages: **{}**\n"
-                        "Stars: **{}**\n"
-                    ).format(
-                        user.name,
-                        profile.xp,
-                        profile.level,
-                        profile.prestige,
-                        utils.humanize_delta(int(profile.voice)),
-                        profile.messages,
-                        profile.stars,
-                    )
-                    return await ctx.send(stats)
-                return await ctx.send(_("That user is not in the server!"))
-            user = user_obj
 
         if user.bot and self.db.ignore_bots:
             return await ctx.send(_("Bots cannot have profiles!"))
