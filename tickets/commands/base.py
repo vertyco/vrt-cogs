@@ -177,6 +177,6 @@ class BaseCommands(MixinMeta):
             channel=ctx.channel,
             conf=conf,
             reason=reason,
-            closedby=ctx.author.display_name,
+            closedby=ctx.author.name,
             config=self.config,
         )
