@@ -119,7 +119,7 @@ async def close_ticket(
         "`Closed by: `{}\n"
         "`Reason:    `{}\n"
     ).format(
-        member.display_name,
+        member.name,
         member.id,
         panel_name,
         opened,
@@ -455,7 +455,7 @@ def prep_overview_text(guild: discord.Guild, opened: dict, mention: bool = False
                 channel.mention if mention else channel.name,
                 panel_name,
                 int(open_time_obj.timestamp()),
-                member.display_name,
+                member.name,
             ]
             active.append(entry)
 

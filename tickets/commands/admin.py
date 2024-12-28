@@ -1741,7 +1741,7 @@ class AdminCommands(MixinMeta):
         view = PanelView(self.bot, ctx.guild, self.config, [panel], mock_user=user)
         desc = _(
             "Click the button below to open a {} ticket for {}\nThis message will self-cleanup in 2 minutes."
-        ).format(panel_name, user.display_name)
+        ).format(panel_name, user.name)
         embed = discord.Embed(
             description=desc, color=await self.bot.get_embed_color(ctx)
         )
