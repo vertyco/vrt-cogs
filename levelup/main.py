@@ -77,7 +77,7 @@ class LevelUp(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "4.3.9"
+    __version__ = "4.3.10"
     __contributors__ = [
         "[aikaterna](https://github.com/aikaterna/aikaterna-cogs)",
         "[AAA3A](https://github.com/AAA3A-AAA3A/AAA3A-cogs)",
@@ -177,6 +177,9 @@ class LevelUp(
             if self.io_lock.locked():
                 # Already saving, skip this
                 return
+            if perf_counter() - self.last_save < 2:
+                # Do not save more than once every 2 seconds
+                return
             if not self.initialized:
                 # Do not save if not initialized, we don't want to overwrite the config with default data
                 log.error("Config not initialized, not saving!")
@@ -184,16 +187,13 @@ class LevelUp(
             try:
                 log.debug("Saving config")
                 async with self.io_lock:
-                    await asyncio.to_thread(
-                        self.db.to_file,
-                        path=self.settings_file,
-                        max_backups=self.db.max_backups,
-                        interval=self.db.backup_interval,
-                    )
-                self.last_save = perf_counter()
+                    self.db.to_file(self.settings_file)
+                    await asyncio.to_thread(self.db.to_file, self.settings_file)
                 log.debug("Config saved")
             except Exception as e:
                 log.error("Failed to save config", exc_info=e)
+            finally:
+                self.last_save = perf_counter()
 
         asyncio.create_task(_save())
 
