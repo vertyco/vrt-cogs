@@ -1,6 +1,7 @@
 import asyncio
 import json
 import math
+import random
 import string
 import typing as t
 import unicodedata
@@ -523,3 +524,43 @@ class Dcord(MixinMeta):
 
         embed.description = txt
         await ctx.send(embed=embed)
+
+    @commands.command(name="samplevoters", aliases=["choosereact"])
+    async def samplevoters(
+        self,
+        ctx: commands.Context,
+        message: discord.Message,
+        emoji: t.Union[discord.Emoji, discord.PartialEmoji, str],
+        sample_size: int = 10,
+        mention: bool = False,
+    ):
+        """
+        Select a random sample of voters from a message
+
+        **Arguments**
+        `message:` The message to sample voters from
+        `emoji:` The emoji to sample voters from
+        `sample_size:` The number of voters to select
+
+        **Examples**
+        `[p]samplevoters 1234567890 🎉 5`
+        """
+        if not message.reactions:
+            return await ctx.send("This message has no reactions")
+        users_who_voted: t.List[discord.Member] = []
+        for reaction in message.reactions:
+            if str(reaction.emoji) == str(emoji):
+                async for user in reaction.users():
+                    users_who_voted.append(user)
+
+        if not users_who_voted:
+            return await ctx.send("No users voted with that emoji")
+
+        sample_size = min(sample_size, len(users_who_voted))
+        sample = random.sample(users_who_voted, sample_size)
+        sample.sort(key=lambda x: x.name)
+        if mention:
+            txt = ", ".join([u.mention for u in sample])
+        else:
+            txt = "\n".join([f"{u} - {u.id}" for u in sample])
+        await ctx.send(f"Selected {sample_size} random voters:\n{txt}")
