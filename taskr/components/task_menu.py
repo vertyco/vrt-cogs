@@ -64,6 +64,14 @@ class TaskMenu(BaseMenu):
         self.is_premium: bool = True
         self.timezone: str = self.db.timezone(ctx.guild)
 
+    async def on_timeout(self) -> None:
+        # Disable all buttons
+        for child in self.children:
+            if isinstance(child, discord.ui.Button):
+                child.disabled = True
+        await self.message.edit(embed=await self.get_page(), view=self)
+        self.stop()
+
     async def start(self):
         self.color = await self.bot.get_embed_color(self.channel)
         self.tasks = await asyncio.to_thread(self.db.get_tasks, self.guild.id)
