@@ -218,12 +218,13 @@ class TaskMenu(BaseMenu):
 
         channel = self.guild.get_channel(channel_id)
         if not channel:
-            try:
-                channel = await self.author.create_dm()
-            except discord.Forbidden:
-                return await interaction.followup.send(
-                    _("I cannot DM you, please ensure I have the proper permissions."), ephemeral=True
-                )
+            channel_id = self.channel.id
+            # try:
+            #     channel = await self.author.create_dm()
+            # except discord.Forbidden:
+            #     return await interaction.followup.send(
+            #         _("I cannot DM you, please ensure I have the proper permissions."), ephemeral=True
+            #     )
         user_perms = channel.permissions_for(self.author)
         bot_perms = channel.permissions_for(self.guild.me)
         context = await utils.invoke_command(
@@ -234,17 +235,22 @@ class TaskMenu(BaseMenu):
             message=self.message,
             invoke=False,
         )
-        if not context.valid:
-            return await interaction.followup.send(_("This command doesn't exist."), ephemeral=True)
-        elif (
-            not await discord.utils.async_all([check(context) for check in context.command.checks])
-            or not user_perms.send_messages
-            or not bot_perms.send_messages
-        ):
-            return await interaction.followup.send(_("You can't run this command!"), ephemeral=True)
-        elif context.command.qualified_name in ("shutdown", "restart", "load", "unload", "reload"):
+        try:
+            if not context.valid:
+                return await interaction.followup.send(_("This command doesn't exist."), ephemeral=True)
+            elif (
+                not await discord.utils.async_all([check(context) for check in context.command.checks])
+                or not user_perms.send_messages
+                or not bot_perms.send_messages
+            ):
+                return await interaction.followup.send(_("You can't run this command!"), ephemeral=True)
+            elif context.command.qualified_name in ("shutdown", "restart", "load", "unload", "reload"):
+                return await interaction.followup.send(
+                    _("You cannot schedule commands that affect bot restarts or cog loading/unloading"), ephemeral=True
+                )
+        except Exception as e:
             return await interaction.followup.send(
-                _("You cannot schedule commands that affect bot restarts or cog loading/unloading"), ephemeral=True
+                _("An error occurred while checking permissions: {}").format(str(e)), ephemeral=True
             )
 
         schedule = ScheduledCommand(
@@ -417,17 +423,22 @@ class TaskMenu(BaseMenu):
             message=self.message,
             invoke=False,
         )
-        if not context.valid:
-            return await interaction.followup.send(_("This command doesn't exist."), ephemeral=True)
-        elif (
-            not await discord.utils.async_all([check(context) for check in context.command.checks])
-            or not user_perms.send_messages
-            or not bot_perms.send_messages
-        ):
-            return await interaction.followup.send(_("You can't run this command!"), ephemeral=True)
-        elif context.command.qualified_name in ("shutdown", "restart", "load", "unload", "reload"):
+        try:
+            if not context.valid:
+                return await interaction.followup.send(_("This command doesn't exist."), ephemeral=True)
+            elif (
+                not await discord.utils.async_all([check(context) for check in context.command.checks])
+                or not user_perms.send_messages
+                or not bot_perms.send_messages
+            ):
+                return await interaction.followup.send(_("You can't run this command!"), ephemeral=True)
+            elif context.command.qualified_name in ("shutdown", "restart", "load", "unload", "reload"):
+                return await interaction.followup.send(
+                    _("You cannot schedule commands that affect bot restarts or cog loading/unloading"), ephemeral=True
+                )
+        except Exception as e:
             return await interaction.followup.send(
-                _("You cannot schedule commands that affect bot restarts or cog loading/unloading"), ephemeral=True
+                _("An error occurred while checking permissions: {}").format(str(e)), ephemeral=True
             )
 
         # Update
@@ -997,7 +1008,12 @@ class TaskMenu(BaseMenu):
                 _("Failed to run scheduled command: {}").format(str(e)), ephemeral=True
             )
 
-        if not context.valid:
-            return await interaction.followup.send(_("This command doesn't exist."), ephemeral=True)
-        elif not await discord.utils.async_all([check(context) for check in context.command.checks]):
-            return await interaction.followup.send(_("You can't run this command!"), ephemeral=True)
+        try:
+            if not context.valid:
+                return await interaction.followup.send(_("This command doesn't exist."), ephemeral=True)
+            elif not await discord.utils.async_all([check(context) for check in context.command.checks]):
+                return await interaction.followup.send(_("You can't run this command!"), ephemeral=True)
+        except Exception as e:
+            return await interaction.followup.send(
+                _("An error occurred while checking permissions: {}").format(str(e)), ephemeral=True
+            )
