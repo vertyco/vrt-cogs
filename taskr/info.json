@@ -1,0 +1,27 @@
+{
+  "author": ["Vertyco"],
+  "description": "Schedule commands easily with an intuitive interface and an optional AI helper for setting up tasks.",
+  "disabled": false,
+  "end_user_data_statement": "This cog stores user and guild IDs for the purpose of storing tasks.",
+  "hidden": false,
+  "install_msg": "Thank you for installing Taskr! Type `[p]help Taskr` to get started.",
+  "min_bot_version": "3.5.3",
+  "min_python_version": [3, 10, 0],
+  "permissions": [],
+  "required_cogs": {},
+  "requirements": ["pydantic", "apscheduler"],
+  "short": "Schedule bot commands within a simple menu",
+  "tags": [
+    "taskr",
+    "schedule",
+    "scheduler",
+    "tasks",
+    "fifo",
+    "queue",
+    "utility",
+    "commands",
+    "automation",
+    "vert"
+  ],
+  "type": "COG"
+}
