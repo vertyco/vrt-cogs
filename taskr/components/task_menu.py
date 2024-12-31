@@ -294,7 +294,7 @@ class TaskMenu(BaseMenu):
         if not new_pages:
             # Search by command
             for schedule in self.tasks:
-                if self.filter in schedule.rcon_command.casefold():
+                if self.filter in schedule.command.casefold():
                     new_pages.append(schedule)
         if not new_pages:
             # Search by channel
@@ -372,7 +372,7 @@ class TaskMenu(BaseMenu):
                 "label": _("Command"),
                 "style": discord.TextStyle.long,
                 "placeholder": _("ex: ping"),
-                "default": schedule.rcon_command,
+                "default": schedule.command,
                 "max_length": 4000,
             },
         }
@@ -425,7 +425,7 @@ class TaskMenu(BaseMenu):
         # Update
         schedule.name = name
         schedule.channel_id = channel_id
-        schedule.rcon_command = command
+        schedule.command = command
         await self.message.edit(embed=await self.get_page(), view=self)
         if schedule.enabled:
             await self.cog.ensure_jobs()
