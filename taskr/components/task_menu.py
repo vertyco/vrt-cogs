@@ -218,13 +218,8 @@ class TaskMenu(BaseMenu):
 
         channel = self.guild.get_channel(channel_id)
         if not channel:
+            channel = self.channel
             channel_id = self.channel.id
-            # try:
-            #     channel = await self.author.create_dm()
-            # except discord.Forbidden:
-            #     return await interaction.followup.send(
-            #         _("I cannot DM you, please ensure I have the proper permissions."), ephemeral=True
-            #     )
         user_perms = channel.permissions_for(self.author)
         bot_perms = channel.permissions_for(self.guild.me)
         context = await utils.invoke_command(
@@ -407,12 +402,7 @@ class TaskMenu(BaseMenu):
 
         channel = self.guild.get_channel(channel_id)
         if not channel:
-            try:
-                channel = await self.author.create_dm()
-            except discord.Forbidden:
-                return await interaction.followup.send(
-                    _("I cannot DM you, please ensure I have the proper permissions."), ephemeral=True
-                )
+            channel = self.channel
         user_perms = channel.permissions_for(self.author)
         bot_perms = channel.permissions_for(self.guild.me)
         context = await utils.invoke_command(
@@ -986,13 +976,6 @@ class TaskMenu(BaseMenu):
         await interaction.response.send_message(_("Running scheduled command..."), ephemeral=True)
         channel = self.guild.get_channel(schedule.channel_id)
         if not channel:
-            try:
-                # We're gonna run in DMs so make sure we can DM the user
-                await self.author.create_dm()
-            except discord.Forbidden:
-                return await interaction.followup.send(
-                    _("I cannot DM you, please ensure I have the proper permissions."), ephemeral=True
-                )
             channel = self.channel
         try:
             context: commands.Context = await utils.invoke_command(
