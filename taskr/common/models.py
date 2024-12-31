@@ -490,7 +490,7 @@ class ScheduledCommand(Base):
     def embed(self, timezone: str) -> discord.Embed:
         embed = discord.Embed(title=self.name, description=box(self.command), color=discord.Color.blurple())
         value = _("• Channel: {}\n• Author: {}\n").format(
-            f"<#{self.channel_id}>" if self.channel_id else "**None**",
+            f"<#{self.channel_id}>" if self.channel_id else _("**DM**"),
             f"<@{self.author_id}>",
         )
         embed.add_field(name="Target Info", value=value, inline=False)
