@@ -299,7 +299,7 @@ class TaskMenu(BaseMenu):
         if not new_pages:
             # Search by channel
             for schedule in self.tasks:
-                if self.filter in str(schedule.target_channel).casefold():
+                if self.filter in str(schedule.channel_id).casefold():
                     new_pages.append(schedule)
         return new_pages
 
@@ -363,7 +363,7 @@ class TaskMenu(BaseMenu):
                 "label": _("Channel ID (Optional)"),
                 "style": discord.TextStyle.short,
                 "placeholder": _("ID of the channel to send the command to"),
-                "default": str(schedule.target_channel) if schedule.target_channel else None,
+                "default": str(schedule.channel_id) if schedule.channel_id else None,
                 "required": False,
                 "max_length": 19,
                 "min_length": 18,
@@ -424,7 +424,7 @@ class TaskMenu(BaseMenu):
 
         # Update
         schedule.name = name
-        schedule.target_channel = channel_id
+        schedule.channel_id = channel_id
         schedule.rcon_command = command
         await self.message.edit(embed=await self.get_page(), view=self)
         if schedule.enabled:
