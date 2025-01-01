@@ -2,6 +2,7 @@ import asyncio
 import logging
 import typing as t
 from contextlib import suppress
+from datetime import datetime
 
 import discord
 import openai
@@ -23,18 +24,21 @@ _ = Translator("Taskr", __file__)
 
 
 system_prompt = (
-    "Your task is to take the user input and convert it into a valid cron expression.\n"
-    "example 1: 'First Friday of every 3 months at 3:30PM starting on January':\n"
+    "Your task is to take the user input and convert it into a valid cron expression.\n\n"
+    "Example 1: 'First Friday of every 3 months at 3:30PM starting on January':\n"
     "- hour: 15\n"
     "- minute: 30\n"
     "- days_of_month: 1st fri\n"
-    "- months_of_year: 1-12/3\n"
-    "example 2: 'Every odd hour at the 30 minute mark from 5am to 8pm':\n"
+    "- months_of_year: 1-12/3\n\n"
+    "Example 2: 'Every odd hour at the 30 minute mark from 5am to 8pm':\n"
     "- minute: 30\n"
     "- hour: 5-20/2\n"
     "# Rules\n"
     "- If using intervals, leave cron expressions blank.\n"
-    "- If using cron expressions, leave intervals blank.\n"
+    "- If using cron expressions, leave intervals blank.\n\n"
+    "# Tips\n"
+    "- When using between times and intervals at the same time, the interval using can only be minutes or hours.\n"
+    "- For more advanced scheduling, leave the interval blank and use cron expressions.\n"
 )
 
 
@@ -836,14 +840,18 @@ class TaskMenu(BaseMenu):
             ephemeral=True,
             wait=True,
         )
+        timezone = self.timezone
+        now = datetime.now(pytz.timezone(timezone))
+        formatted_time = now.strftime("%B %d, %Y %I:%M%p %Z")
+        system = system_prompt + f"\n- Current time: {formatted_time}"
         messages = [
-            {"role": "system", "content": system_prompt},
+            {"role": "system", "content": system},
             {"role": "user", "content": request},
         ]
         try:
             client = openai.AsyncClient(api_key=self.openai_token)
             response = await client.beta.chat.completions.parse(
-                model="gpt-4o-mini-2024-07-18",
+                model="gpt-4o-2024-11-20",
                 messages=messages,
                 response_format=CronDataResponse,
                 temperature=0,
@@ -956,7 +964,7 @@ class TaskMenu(BaseMenu):
         except Exception as e:
             log.error("Failed to compile schedule\nAI response: {}".format(model.model_dump_json(indent=2)), exc_info=e)
             return await interaction.followup.send(
-                _("AI failed to compile schedule, please check the cron expression."), ephemeral=True
+                _("AI failed to compile schedule, please check the cron expression.\n{}").format(str(e)), ephemeral=True
             )
         await self.message.edit(embed=await self.get_page(), view=self)
         if msg:
