@@ -6,9 +6,10 @@ from time import perf_counter
 
 import discord
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from redbot.core import commands
+from redbot.core import commands, modlog
 from redbot.core.bot import Red
 from redbot.core.data_manager import cog_data_path
+from redbot.core.i18n import Translator, cog_i18n
 
 from .abc import CompositeMetaClass
 from .commands import Commands
@@ -17,13 +18,15 @@ from .common.models import DB, ScheduledCommand
 
 log = logging.getLogger("red.vrt.taskr")
 RequestType = t.Literal["discord_deleted_user", "owner", "user", "user_strict"]
+_ = Translator("Taskr", __file__)
 
 
+@cog_i18n(_)
 class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
     """Schedule bot commands with ease"""
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.0.6b"
+    __version__ = "0.0.7b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -111,6 +114,25 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
             return False
         return premium_role in target_member.roles
 
+    async def send_modlog(self, guild: discord.Guild, content: str = None, embed: discord.Embed = None) -> None:
+        if not guild:
+            return
+        try:
+            channel = await modlog.get_modlog_channel(guild)
+        except RuntimeError:
+            return
+        try:
+            await channel.send(content=content, embed=embed)
+        except discord.Forbidden:
+            await modlog.set_modlog_channel(guild, None)
+            try:
+                dm = await guild.owner.create_dm()
+                await dm.send("I lost permission to send messages to the modlog channel.")
+            except discord.HTTPException:
+                log.warning(f"Could not DM {guild.owner} about modlog channel issue.")
+        except discord.HTTPException as e:
+            log.error(f"Could not send message to modlog channel in {guild}", exc_info=e)
+
     async def ensure_jobs(self) -> bool:
         tasks: list[ScheduledCommand] = [i for i in self.db.tasks.values() if i.enabled]
         changed = False
@@ -161,10 +183,20 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
     async def run_task(self, task: ScheduledCommand):
         try:
             await self._run_task(task)
+        except discord.Forbidden:
+            txt = _("A permission error occured while running task {}\nThe task has been disabled").format(
+                f"`{task.name}`"
+            )
+            await self.send_modlog(self.bot.get_guild(task.guild_id), content=txt)
+        except discord.HTTPException:
+            log.exception("Error running task %s", task)
         except Exception as e:
             log.exception("Error running task %s", task, exc_info=e)
+            txt = _("An error occured while running task {}: {}\nThe task has been disabled").format(
+                f"`{task.name}`", str(e)
+            )
+            await self.send_modlog(self.bot.get_guild(task.guild_id), content=txt)
             await self.remove_job(task)
-            # TODO: notify mods in guild of the error
 
     async def _run_task(self, task: ScheduledCommand):
         guild = self.bot.get_guild(task.guild_id)
@@ -194,12 +226,21 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
         finally:
             self.db.refresh_task(task)
 
-        if not context.valid:
-            log.warning("Task %s failed to run", task)
-            await self.remove_job(task)
-            return
-        elif not await discord.utils.async_all([check(context) for check in context.command.checks]):
-            log.warning("Task %s failed to run, author failed permission checks", task)
+        try:
+            if not context.valid:
+                log.warning("Task %s failed to run", task)
+                await self.remove_job(task)
+                return
+            elif not await discord.utils.async_all([check(context) for check in context.command.checks]):
+                log.warning("Task %s failed to run, author failed permission checks", task)
+                await self.remove_job(task)
+                return
+        except Exception as e:
+            log.exception("Error running task %s", task, exc_info=e)
+            txt = _("An error occured while running task {}: {}\nThe task has been disabled").format(
+                f"`{task.name}`", str(e)
+            )
+            await self.send_modlog(guild, content=txt)
             await self.remove_job(task)
             return
 
