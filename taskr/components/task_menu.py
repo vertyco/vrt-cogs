@@ -972,8 +972,22 @@ class TaskMenu(BaseMenu):
     async def run_command(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not self.tasks:
             return await interaction.response.send_message(_("No scheduled commands to run."), ephemeral=True)
+        fields = {
+            "confirm": {
+                "label": _("Are you sure you want to run this command?"),
+                "style": discord.TextStyle.short,
+                "placeholder": _("yes or no"),
+            }
+        }
+        modal = DynamicModal(_("Run Now"), fields)
+        await interaction.response.send_modal(modal)
+        await modal.wait()
+        if not modal.inputs:
+            return
+        res = modal.inputs["confirm"].casefold()
+        if res not in ["yes", "y"]:
+            return await interaction.followup.send(_("Cancelled."), ephemeral=True)
         schedule = self.tasks[self.page]
-        await interaction.response.send_message(_("Running scheduled command..."), ephemeral=True)
         channel = self.guild.get_channel(schedule.channel_id)
         if not channel:
             channel = self.channel

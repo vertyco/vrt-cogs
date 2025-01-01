@@ -30,5 +30,9 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    async def send_modlog(self, guild: discord.Guild, content: str = None, embed: discord.Embed = None) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
     async def ensure_jobs(self) -> bool:
         raise NotImplementedError
