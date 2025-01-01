@@ -605,7 +605,7 @@ class ScheduledCommand(Base):
                     cron_kwargs["hour"] = "*"
                     cron_kwargs["second"] = "0"
                 else:
-                    raise ValueError("Invalid interval unit for time range")
+                    raise ValueError("When using between times, the interval unit must be 'hours' or 'minutes'.")
 
                 if self.days_of_week:
                     cron_kwargs["day_of_week"] = self.days_of_week
