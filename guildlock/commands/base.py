@@ -324,13 +324,13 @@ class Base(MixinMeta):
                     continue
                 user = self.bot.get_user(owner_id) or await self.bot.fetch_user(owner_id)
                 if not prune:
-                    result.write(f"{user}: {len(guilds)}\n")
+                    result.write(f"{user} ({user.id}): {len(guilds)}\n")
                     continue
                 # Sort guilds by join date and leave the most recently joined ones
                 guilds.sort(key=lambda x: x.me.joined_at)
                 for guild in guilds[limit:]:
                     await guild.leave()
-                    result.write(f"Left {guild.name} owned by {user}\n")
+                    result.write(f"Left {guild.name} owned by {user} ({user.id})\n")
             if not result.getvalue():
                 return await ctx.send("No guilds to prune")
             file = text_to_file(result.getvalue(), "pruned_guilds.txt")
