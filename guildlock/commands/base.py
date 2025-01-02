@@ -225,7 +225,7 @@ class Base(MixinMeta):
         if not view.value:
             return await msg.edit(content=_("Not leaving **{}**").format(guild.name))
         await guild.leave()
-        await msg.edit(content=_("Left **{}**").format(guild.name))
+        await msg.edit(content=_("Left **{}**").format(guild.name), view=None)
 
     @guildlock.command()
     @commands.bot_has_permissions(attach_files=True, embed_links=True)
