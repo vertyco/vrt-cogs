@@ -2,6 +2,8 @@ import asyncio
 import logging
 import math
 import typing as t
+from collections import defaultdict
+from io import StringIO
 
 import discord
 from redbot.core import commands
@@ -301,3 +303,37 @@ class Base(MixinMeta):
         title = titles[check]
         embeds = await asyncio.to_thread(self.guild_embeds, guilds, title, ctx.author.color)
         await DynamicMenu(ctx.author, embeds, ctx.channel).refresh()
+
+    @guildlock.command(name="overlimit", aliases=["ol"])
+    @commands.is_owner()
+    async def prune_guilds_over_limit(self, ctx: commands.Context, limit: int, prune: bool):
+        """
+        Assuming each user can only have the bot in X servers that they own.
+
+        Determine how many guilds each owner has the bot in, and prune if over the limit.
+        """
+        if not await self.db_check(ctx):
+            return
+        async with ctx.typing():
+            # {owner_id: [Guild, Guild]}
+            owned: dict[int, list[discord.Guild]] = defaultdict(list)
+            for guild in self.bot.guilds:
+                owned[guild.owner_id].append(guild.id)
+
+            result = StringIO()
+            for owner_id, guilds in owned.items():
+                if len(guilds) <= limit:
+                    continue
+                user = self.bot.get_user(owner_id) or await self.bot.fetch_user(owner_id)
+                if not prune:
+                    result.write(f"{user}: {len(guilds)}\n")
+                    continue
+                # Sort guilds by join date and leave the most recently joined ones
+                guilds.sort(key=lambda x: x.me.joined_at)
+                for guild in guilds[limit:]:
+                    await guild.leave()
+                    result.write(f"Left {guild.name} owned by {user}\n")
+            if not result.getvalue():
+                return await ctx.send("No guilds to prune")
+            file = text_to_file(result.getvalue(), "pruned_guilds.txt")
+            await ctx.send("Pruned guilds", file=file)
