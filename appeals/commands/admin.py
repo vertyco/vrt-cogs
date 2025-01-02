@@ -260,8 +260,8 @@ class Admin(MixinMeta):
         try:
             await target_guild.fetch_ban(member)
             try:
-                await target_guild.unban(member)
-                await ctx.send(f"Successfully unbanned {member} from {target_guild.name}")
+                await target_guild.unban(member, reason=reason or "Appeal approved")
+                await ctx.send(f"Unbanned **{member}** (`{member.id}`) from {target_guild.name}")
             except discord.Forbidden:
                 return await ctx.send("I don't have permission to unban the user from the target guild!")
         except discord.NotFound:
