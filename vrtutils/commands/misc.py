@@ -58,6 +58,7 @@ class Misc(MixinMeta):
     @commands.command(name="binary2text")
     async def binary2text(self, ctx: commands.Context, *, binary_string: str):
         """Convert a binary string to text"""
+        binary_string = binary_string.replace(" ", "").replace("\n", "")
         try:
             text = "".join(chr(int(binary_string[i * 8 : i * 8 + 8], 2)) for i in range(len(binary_string) // 8))
             await ctx.send(text)
