@@ -116,7 +116,15 @@ class VoiceListener(MixinMeta):
                 if m.id == member.id:
                     continue
                 earning_xp = self.can_gain_exp(conf, m, m.voice)
-                user_data = voice[m.id]
+                user_data = voice.setdefault(
+                    m.id,
+                    VoiceTracking(
+                        joined=perf,
+                        not_gaining_xp=not earning_xp,
+                        not_gaining_xp_time=0.0,
+                        stopped_gaining_xp_at=perf if not earning_xp else None,
+                    ),
+                )
                 if user_data.not_gaining_xp and earning_xp:
                     log.debug(f"{m.name} now earning xp in {after.channel.name} in {member.guild}")
                     user_data.not_gaining_xp = False
@@ -205,7 +213,15 @@ class VoiceListener(MixinMeta):
                 if m.id == member.id:
                     continue
                 earning_xp = self.can_gain_exp(conf, m, m.voice)
-                user_data = voice[m.id]
+                user_data = voice.setdefault(
+                    m.id,
+                    VoiceTracking(
+                        joined=perf,
+                        not_gaining_xp=not earning_xp,
+                        not_gaining_xp_time=0.0,
+                        stopped_gaining_xp_at=perf if not earning_xp else None,
+                    ),
+                )
                 if user_data.not_gaining_xp and earning_xp:
                     log.debug(f"{m.name} now earning xp in {channel.name} in {member.guild}")
                     user_data.not_gaining_xp = False
