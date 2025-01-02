@@ -312,8 +312,6 @@ class Base(MixinMeta):
 
         Determine how many guilds each owner has the bot in, and prune if over the limit.
         """
-        if not await self.db_check(ctx):
-            return
         async with ctx.typing():
             # {owner_id: [Guild, Guild]}
             owned: dict[int, list[discord.Guild]] = defaultdict(list)
