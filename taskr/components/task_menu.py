@@ -842,8 +842,8 @@ class TaskMenu(BaseMenu):
         now = datetime.now(pytz.timezone(timezone))
         formatted_time = now.strftime("%A, %B %d, %Y %I:%M%p %Z")
         messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "system", "content": f"The current time is {formatted_time}"},
+            {"role": "developer", "content": system_prompt},
+            {"role": "developer", "content": f"The current time is {formatted_time}"},
             {"role": "user", "content": request},
         ]
         try:
