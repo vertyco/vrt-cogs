@@ -213,6 +213,21 @@ class Base(MixinMeta):
         return embeds
 
     @guildlock.command()
+    async def leaveid(self, ctx: commands.Context, guild_id: int):
+        """Leave a guild by ID"""
+        guild = self.bot.get_guild(guild_id)
+        if not guild:
+            return await ctx.send(_("Guild not found"))
+        txt = _("Are you sure you want to leave **{}**?").format(guild.name)
+        view = Confirm(ctx.author)
+        msg = await ctx.send(txt, view=view)
+        await view.wait()
+        if not view.value:
+            return await msg.edit(content=_("Not leaving **{}**").format(guild.name))
+        await guild.leave()
+        await msg.edit(content=_("Left **{}**").format(guild.name))
+
+    @guildlock.command()
     @commands.bot_has_permissions(attach_files=True, embed_links=True)
     async def leave(
         self,
