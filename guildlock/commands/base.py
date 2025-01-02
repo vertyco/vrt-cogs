@@ -316,7 +316,7 @@ class Base(MixinMeta):
             # {owner_id: [Guild, Guild]}
             owned: dict[int, list[discord.Guild]] = defaultdict(list)
             for guild in self.bot.guilds:
-                owned[guild.owner_id].append(guild.id)
+                owned[guild.owner_id].append(guild)
 
             result = StringIO()
             for owner_id, guilds in owned.items():
