@@ -79,6 +79,7 @@ class NoPing(MixinMeta):
 
     @commands.group(name="nopingset")
     @commands.admin_or_permissions(manage_guild=True)
+    @commands.bot_has_permissions(manage_guild=True)
     async def noping_group(self, ctx: commands.Context):
         """No Ping subcommands"""
         pass
@@ -105,7 +106,6 @@ class NoPing(MixinMeta):
 
     @noping_group.command(name="prune")
     @commands.guild_only()
-    @commands.bot_has_permissions(manage_guild=True)
     async def noping_prune(self, ctx: commands.Context):
         """Prune users no longer in the server from the No Ping rule"""
         pruned = await self.prune_noping_list(ctx.guild)
