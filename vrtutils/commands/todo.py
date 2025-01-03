@@ -42,7 +42,7 @@ class EditModal(discord.ui.Modal):
             required=False,
         )
         if self.content:
-            log.info(f"Creating field for message content: {self.content}")
+            log.debug(f"Creating field for message content: {self.content}")
             self.add_item(self.content_field)
 
         # For other parts of the message
@@ -105,7 +105,7 @@ class EditModal(discord.ui.Modal):
                     max_length=max_length,
                 )
                 if self.extras < 5:
-                    log.info(f"Creating field for {val}: {current}")
+                    log.debug(f"Creating field for {val}: {current}")
                     self.add_item(field)
                     self.content_fields[val] = field
                     self.extras += 1
