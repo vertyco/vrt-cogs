@@ -68,9 +68,22 @@ class TaskMenu(BaseMenu):
 
     async def on_timeout(self) -> None:
         # Disable all buttons
-        for child in self.children:
-            if isinstance(child, discord.ui.Button):
-                child.disabled = True
+        self.left10.disabled = True
+        self.left.disabled = True
+        self.right.disabled = True
+        self.right10.disabled = True
+        self.close.disabled = True
+        self.add.disabled = True
+        self.delete.disabled = True
+        self.search.disabled = True
+        self.configure.disabled = True
+        self.interval.disabled = True
+        self.toggle.disabled = True
+        self.cron.disabled = True
+        self.advanced.disabled = True
+        self.times.disabled = True
+        self.ai_helper.disabled = True
+        self.run_command.disabled = True
         await self.message.edit(embed=await self.get_page(), view=self)
         self.stop()
 
