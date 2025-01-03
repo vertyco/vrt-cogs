@@ -6,12 +6,24 @@ from .dcord import Dcord
 from .disk import DiskBench
 from .logs import Logs
 from .misc import Misc
+from .noping import NoPing
 from .todo import ToDo
 from .updates import Updates
 from .zipper import Zipper
 
 
 class Utils(
-    BotInfo, EmojiManager, ChatExport, Dcord, DiskBench, Logs, Misc, ToDo, Updates, Zipper, metaclass=CompositeMetaClass
+    BotInfo,
+    EmojiManager,
+    ChatExport,
+    Dcord,
+    DiskBench,
+    Logs,
+    Misc,
+    NoPing,
+    ToDo,
+    Updates,
+    Zipper,
+    metaclass=CompositeMetaClass,
 ):
     """Subclass all commands"""
