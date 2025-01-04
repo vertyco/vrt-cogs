@@ -1,0 +1,16 @@
+{
+  "author": ["Vertyco"],
+  "description": "Incentivise users to invite others to your server with a referral system! Configure rewards for both the inviter and the invitee, and track how many people each user has invited.",
+  "disabled": false,
+  "end_user_data_statement": "This cog stores Discord IDs to track referrals. It does not store any other personal data.",
+  "hidden": false,
+  "install_msg": "Thank you for installing Referrals! Type `[p]help Referrals` to get started.",
+  "min_bot_version": "3.5.3",
+  "min_python_version": [3, 10, 0],
+  "permissions": [],
+  "required_cogs": {},
+  "requirements": ["piccolo[sqlite]", "aiosqlite"],
+  "short": "Simple referral system with economy",
+  "tags": ["referrals", "referral", "refer", "invites", "economy", "currency", "credits"],
+  "type": "COG"
+}
