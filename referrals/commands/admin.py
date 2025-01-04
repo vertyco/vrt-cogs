@@ -77,6 +77,17 @@ class Admin(MixinMeta):
             else _("Users have no time limit to claim their referral"),
             inline=False,
         )
+        embed.add_field(
+            name=_("Initialized Users"),
+            value=_("Users who have been initialized: {}").format(f"`{len(settings.initialized_users)}`"),
+            inline=False,
+        )
+        embed.add_field(
+            name=_("Referrals Claimed"),
+            value=_("Total referrals claimed: {}").format(
+                f"`{await Referral.count().where(Referral.guild == ctx.guild.id)}`"
+            ),
+        )
         await ctx.send(embed=embed)
 
     @referset.command()
@@ -207,7 +218,7 @@ class Admin(MixinMeta):
         await settings.save([GuildSettings.claim_timeout_minutes])
         await ctx.send(txt)
 
-    @referset.command()
+    @referset.command(aliases=["initialize"])
     @ensure_db_connection()
     async def init(self, ctx: commands.Context):
         """Initialize all unreferred users in the server so they cannot retroactively claim rewards"""
@@ -216,17 +227,19 @@ class Admin(MixinMeta):
             await Referral.select(Referral.referred_id).where(Referral.guild == ctx.guild.id).output(as_list=True)
         )
         guild_members: list[int] = [member.id for member in ctx.guild.members]
-        unreferred = list(set(guild_members) - set(referrals) - set(settings.initialized_users))
+        unreferred = list(set(guild_members) - set(referrals))
         if not unreferred:
             return await ctx.send(_("All users have been initialized"))
-        await GuildSettings.update(
-            {GuildSettings.initialized_users: GuildSettings.initialized_users.cat(unreferred)}
-        ).where(GuildSettings.id == ctx.guild.id)
+        new_refs = list(set(unreferred + settings.initialized_users))
+        settings.initialized_users = new_refs
+        await GuildSettings.raw(
+            "UPDATE guild_settings SET initialized_users = {} WHERE id = {}", new_refs, ctx.guild.id
+        )
         await ctx.send(_("Initialized {} users").format(len(unreferred)))
 
     @referset.command()
     @ensure_db_connection()
-    async def reset(self, ctx: commands.Context, confirm: bool):
+    async def resetall(self, ctx: commands.Context, confirm: bool):
         """Reset all referral data for the guild"""
         if not confirm:
             return await ctx.send(_("Rerun this with `True` to comfirm"))
@@ -242,3 +255,23 @@ class Admin(MixinMeta):
             return await ctx.send(_("Rerun this with `True` to confirm"))
         await Referral.delete().where(Referral.guild == ctx.guild.id)
         await ctx.send(_("All referral data has been reset for this server"))
+
+    @referset.command()
+    @ensure_db_connection()
+    async def resetsettings(self, ctx: commands.Context, confirm: bool):
+        """Reset all referral data for the guild"""
+        if not confirm:
+            return await ctx.send(_("Rerun this with `True` to confirm"))
+        await GuildSettings.delete().where(GuildSettings.id == ctx.guild.id)
+        await ctx.send(_("All referral settings have been reset for this server"))
+
+    @referset.command()
+    @ensure_db_connection()
+    async def resetinitialized(self, ctx: commands.Context, confirm: bool):
+        """Reset all referral data for the guild"""
+        if not confirm:
+            return await ctx.send(_("Rerun this with `True` to confirm"))
+        settings = await self.db_utils.get_create_guild(ctx.guild)
+        settings.initialized_users = []
+        await settings.save([GuildSettings.initialized_users])
+        await ctx.send(_("All initialized users have been reset for this server"))

@@ -246,7 +246,7 @@ class User(MixinMeta):
     @commands.hybrid_command()
     @commands.guild_only()
     @ensure_db_connection()
-    async def whoreferred(self, ctx: commands.Context, user: discord.Member):
+    async def whoreferred(self, ctx: commands.Context, *, user: discord.Member):
         """Check if a specific user has been referred"""
         referral = await Referral.objects().get((Referral.guild == ctx.guild.id) & (Referral.referred_id == user.id))
         if not referral:
