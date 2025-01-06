@@ -134,6 +134,11 @@ class NoPing(MixinMeta):
     # Oh noo a listener in the commands section
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
+        # Check if bot has manage_guild permission
+        if not member.guild.me.guild_permissions.manage_guild:
+            return
+        if await self.bot.cog_disabled_in_guild(self, member.guild):
+            return
         # Remove the user from the no ping rule if they leave the server
         automod_rule: t.List[discord.AutoModRule] = await member.guild.fetch_automod_rules()
         for rule in automod_rule:
