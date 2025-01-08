@@ -135,6 +135,7 @@ class User(MixinMeta):
         If referral rewards are enabled, you will receive the reward for being referred.
         If referrer rewards are enabled, the person who referred you will also receive a reward.
         """
+
         if referred_by.id == ctx.author.id:
             return await ctx.send(_("You can't refer yourself."))
         if referred_by.bot:
@@ -142,13 +143,35 @@ class User(MixinMeta):
         settings = await self.db_utils.get_create_guild(ctx.guild)
         if not settings.enabled:
             return await ctx.send(_("Referral rewards are not enabled for this server."))
+        log_channel = self.bot.get_channel(settings.referral_channel)
+        if log_channel:
+            if not all(
+                [
+                    log_channel.permissions_for(ctx.guild.me).send_messages,
+                    log_channel.permissions_for(ctx.guild.me).embed_links,
+                ]
+            ):
+                log_channel = None
+
         if not settings.referral_reward and not settings.referred_reward:
             return await ctx.send(_("Referral rewards are not configured for this server."))
         if ctx.author.id in settings.initialized_users:
+            if log_channel:
+                await log_channel.send(
+                    _("{} tried to claim a referral from {} but is already initialized.").format(
+                        f"`{ctx.author.name} ({ctx.author.id})`", f"`{referred_by.name} ({referred_by.id})`"
+                    )
+                )
             return await ctx.send(_("You were already a part of this server when the referral system was initialized."))
         account_age_minutes = int((datetime.now().astimezone() - ctx.author.created_at).total_seconds() / 60)
         if settings.min_account_age_minutes and account_age_minutes < settings.min_account_age_minutes:
             required_time = humanize_timedelta(seconds=settings.min_account_age_minutes * 60)
+            if log_channel:
+                await log_channel.send(
+                    _("{} tried to claim a referral from {} but does not meet the account age requirement.").format(
+                        f"`{ctx.author.name} ({ctx.author.id})`", f"`{referred_by.name} ({referred_by.id})`"
+                    )
+                )
             return await ctx.send(
                 _("You must have an account age of at least {} to be eligible for referral rewards.").format(
                     f"**{required_time}**"
@@ -157,6 +180,12 @@ class User(MixinMeta):
         join_minutes = int((datetime.now().astimezone() - ctx.author.joined_at).total_seconds() / 60)
         if settings.claim_timeout_minutes and join_minutes > settings.claim_timeout_minutes:
             required_time = humanize_timedelta(seconds=settings.claim_timeout_minutes * 60)
+            if log_channel:
+                await log_channel.send(
+                    _("{} tried to claim a referral from {} but joined too long ago.").format(
+                        f"`{ctx.author.name} ({ctx.author.id})`", f"`{referred_by.name} ({referred_by.id})`"
+                    )
+                )
             return await ctx.send(
                 _("You joined the server too long ago to claim a referral reward. You must claim it within {}.").format(
                     f"**{required_time}**"
@@ -167,6 +196,12 @@ class User(MixinMeta):
         )
         if existing_referral:
             referrer = await self.bot.fetch_user(existing_referral.referrer_id)
+            if log_channel:
+                await log_channel.send(
+                    _("{} tried to claim a referral from {} but has already been referred.").format(
+                        f"`{ctx.author.name} ({ctx.author.id})`", f"`{referred_by.name} ({referred_by.id})`"
+                    )
+                )
             return await ctx.send(_("You have already been referred by {}.").format(f"**{referrer}**"))
 
         currency_name = await bank.get_currency_name(ctx.guild)
@@ -200,15 +235,7 @@ class User(MixinMeta):
         await referral.save()
         await ctx.send(response.getvalue())
 
-        if log_channel := self.bot.get_channel(settings.referral_channel):
-            if not all(
-                [
-                    log_channel.permissions_for(ctx.guild.me).send_messages,
-                    log_channel.permissions_for(ctx.guild.me).embed_links,
-                ]
-            ):
-                return
-
+        if log_channel:
             color = await self.bot.get_embed_color(ctx)
             embed = discord.Embed(
                 description=_("{} has been referred by {}").format(
