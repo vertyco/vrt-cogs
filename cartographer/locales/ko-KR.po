@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2024-02-08 18:30-0500\n"
-"PO-Revision-Date: 2024-02-08 23:51\n"
+"POT-Creation-Date: 2024-07-29 21:29-0400\n"
+"PO-Revision-Date: 2024-12-03 14:56\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -13,166 +13,284 @@ msgstr ""
 "X-Crowdin-Project: vrt-cogs\n"
 "X-Crowdin-Project-ID: 550681\n"
 "X-Crowdin-Language: ko\n"
-"X-Crowdin-File: /main/cartographer/locales/messages.pot\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/cartographer/locales/messages.pot\n"
 "X-Crowdin-File-ID: 80\n"
 "Language: ko_KR\n"
 
-#: main.py:26
+#: main.py:29
 #, docstring
 msgid "\n"
 "    Backup & Restore tools for Discord servers.\n\n"
 "    This cog can backup & restore the following:\n"
+"    - Bans (including reason)\n"
 "    - Categories (permissions/order)\n"
 "    - Text channels (permissions/order)\n"
 "    - Voice channels (permissions/order)\n"
 "    - Forum channels  (permissions/order)[Not forum posts]\n"
-"    - Roles (permissions and what members they're assigned to)\n\n"
-"    **Caveats**\n"
-"    Note the following\n"
-"    - If there are multiple roles, channels, categories, or forums with the same name, only 1 of each will be restored.\n"
-"     - This is because object IDs cannot be restored so the bot relies on the name of the object.\n"
-"    - When restoring, some roles may not be fully restored (such as order) if they were higher than the bot's role.\n"
+"    - Roles (permissions and what members they're assigned to)\n"
+"    - Emojis (Very slow and rate limit heavy)\n"
+"    - Stickers (Very slow and rate limit heavy)\n"
+"    - Members (roles and nicknames)\n"
+"    - Messages (Optional, can be disabled)\n"
 "    "
-msgstr "\n"
-"    Discord 서버용 백업 및 복원 도구.\n\n"
-"    이 톱니바퀴는 다음을 백업 및 복원할 수 있습니다:\n"
-"    - 카테고리 (권한/순서)\n"
-"    - 텍스트 채널(권한/순서)\n"
-"    - 음성 채널(권한/순서)\n"
-"    - 포럼 채널(권한/순서)[포럼 게시물 제외]\n"
-"    - 역할(권한 및 해당 역할에 할당된 구성원)\n\n"
-"    **주의 사항**\n"
-"    다음 사항에 유의하세요\n"
-"    - 이름이 같은 역할, 채널, 카테고리 또는 포럼이 여러 개 있는 경우에는 각각 1개만 복원됩니다.\n"
-"     - 이는 봇이 객체의 이름에 의존하기 때문에 객체 ID를 복원할 수 없기 때문입니다.\n"
-"    - 복원할 때 봇의 역할보다 상위의 역할이 있는 경우 일부 역할(예: 주문)이 완전히 복원되지 않을 수 있습니다.\n"
-"    "
+msgstr ""
 
-#: main.py:82
+#: main.py:87
 msgid "Version: {}\n"
 "Author: {}"
 msgstr ""
 
-#: main.py:86
+#: main.py:91
 #, docstring
 msgid "No data to delete"
 msgstr "삭제할 데이터 없음"
 
-#: main.py:119
+#: main.py:139
 #, docstring
 msgid "Open the Backup/Restore menu"
 msgstr "백업/복원 메뉴 열기"
 
-#: main.py:121 main.py:144 main.py:166
+#: main.py:141 main.py:189 main.py:216
 msgid "This server is in the ingored list!"
 msgstr "이 서버가 수집 목록에 추가되었습니다!"
 
-#: main.py:124 main.py:147 main.py:169
+#: main.py:144 main.py:192 main.py:219
 msgid "This server is not in the allowed list!"
 msgstr "이 서버는 허용 목록에 없습니다!"
 
-#: main.py:138
+#: main.py:160
 #, docstring
 msgid "Backup & Restore Tools"
 msgstr "백업 및 복원 도구"
 
-#: main.py:142
+#: main.py:165
 #, docstring
-msgid "Create a backup of this server"
-msgstr "이 서버의 백업 만들기"
+msgid "\n"
+"        Wipe all backups for all servers\n\n"
+"        This action cannot be undone!\n"
+"        "
+msgstr ""
 
-#: main.py:153
+#: main.py:171
+msgid "Please confirm this action by passing `True` as an argument"
+msgstr ""
+
+#: main.py:179
+msgid "All backups have been wiped!"
+msgstr ""
+
+#: main.py:183
+#, docstring
+msgid "\n"
+"        Create a backup of this server\n\n"
+"        limit: How many messages to backup per channel (0 for None)\n"
+"        "
+msgstr ""
+
+#: main.py:206
 msgid "A backup has been created!"
 msgstr "백업이 생성되었습니다!"
 
-#: main.py:159
+#: main.py:212
 #, docstring
 msgid "\n"
-"        Restore the latest backup for this server\n\n"
-"        **Arguments**\n"
-"        - delete_existing: if True, deletes existing channels/roles that aren't part of the backup.\n"
+"        Restore the latest backup for this server\n"
 "        "
-msgstr "\n"
-"        이 서버의 최신 백업 복원\n\n"
-"        **인수**\n"
-"        - delete_existing: True이면 백업에 포함되지 않은 기존 채널/역할을 삭제합니다.\n"
-"        "
+msgstr ""
 
-#: main.py:175
+#: main.py:225
 msgid "There are no backups for this guild!"
 msgstr "이 길드에는 백업이 없습니다!"
 
-#: main.py:178
+#: main.py:230
 msgid "Server restore is complete!"
 msgstr "서버 복원이 완료되었습니다!"
 
-#: main.py:183
+#: main.py:232
+msgid "The following errors occurred while restoring the backup"
+msgstr ""
+
+#: main.py:238
 #, docstring
 msgid "View current global settings"
 msgstr "현재 글로벌 설정 보기"
 
-#: main.py:185 main.py:186
-msgid "None Set"
+#: main.py:246 main.py:247
+msgid "**None Set**"
 msgstr ""
 
-#: main.py:187
+#: main.py:249
 msgid "### Global Settings\n"
 "- Global backups: {}\n"
 "- Max backups per server: {}\n"
 "- Allow auto-backups: {}\n"
+"- Message backup limit: {}\n"
+"- Backup Members: {}\n"
+"- Backup Roles: {}\n"
+"- Backup Emojis: {}\n"
+"- Backup Stickers: {}\n"
 "- Ignored servers: {}\n"
 "- Allowed servers: {}\n"
 msgstr ""
 
-#: main.py:206
+#: main.py:278
 #, docstring
 msgid "Enable/Disable allowing auto backups"
 msgstr "자동 백업 허용 활성화/비활성화"
 
-#: main.py:209
+#: main.py:281
 msgid "Auto backups have been **Disabled**"
 msgstr "자동 백업이 **사용 안 함**으로 설정되었습니다"
 
-#: main.py:212
+#: main.py:284
 msgid "Auto backups have been **Enabled**"
 msgstr "자동 백업이 **활성화**되었습니다"
 
-#: main.py:219
+#: main.py:291
+#, docstring
+msgid "Set the message backup limit per channel for auto backups\n\n"
+"        Set to 0 to disable message backups\n\n"
+"        ⚠️**Warning**⚠️\n"
+"        Setting this to a high number can cause backups to be slow and take up a lot of space.\n"
+"        "
+msgstr ""
+
+#: main.py:299
+msgid "Limit must be 0 or higher"
+msgstr ""
+
+#: main.py:302
+msgid "Message backup has been **Disabled**"
+msgstr ""
+
+#: main.py:304
+msgid "Message backup limit has been set"
+msgstr ""
+
+#: main.py:310
+#, docstring
+msgid "Toggle backing up members\n\n"
+"        ⚠️**Warning**⚠️\n"
+"        Restoring the roles of all members can be slow for large servers.\n"
+"        "
+msgstr ""
+
+#: main.py:316
+msgid "\n"
+"⚠️**Warning**⚠️\n"
+"Restoring the roles of all members can be slow for large servers."
+msgstr ""
+
+#: main.py:318
+msgid "Members will now be backed up"
+msgstr ""
+
+#: main.py:320
+msgid "Members will no longer be backed up"
+msgstr ""
+
+#: main.py:327
+#, docstring
+msgid "Toggle backing up roles\n\n"
+"        ⚠️**Warning**⚠️\n"
+"        Any roles above the bot's role will not be restored.\n"
+"        "
+msgstr ""
+
+#: main.py:333
+msgid "\n"
+"⚠️**Warning**⚠️\n"
+"Any roles above the bot's role will not be restored."
+msgstr ""
+
+#: main.py:335
+msgid "Roles will now be backed up"
+msgstr ""
+
+#: main.py:337
+msgid "Roles will no longer be backed up"
+msgstr ""
+
+#: main.py:344
+#, docstring
+msgid "Toggle backing up emojis\n\n"
+"        ⚠️**Warning**⚠️\n"
+"        Restoring emojis is EXTREMELY rate-limited and can take a long time (like hours) for servers with many emojis.\n"
+"        "
+msgstr ""
+
+#: main.py:350
+msgid "\n"
+"⚠️**Warning**⚠️\n"
+"Restoring emojis is EXTREMELY rate-limited and can take a long time (like hours) for servers with many emojis."
+msgstr ""
+
+#: main.py:354
+msgid "Emojis will now be backed up"
+msgstr ""
+
+#: main.py:356
+msgid "Emojis will no longer be backed up"
+msgstr ""
+
+#: main.py:363
+#, docstring
+msgid "Toggle backing up stickers\n\n"
+"        ⚠️**Warning**⚠️\n"
+"        Restoring stickers is EXTREMELY rate-limited and can take a long time (like hours) for servers with many stickers.\n"
+"        "
+msgstr ""
+
+#: main.py:369
+msgid "\n"
+"⚠️**Warning**⚠️\n"
+"Restoring stickers is EXTREMELY rate-limited and can take a long time (like hours) for servers with many stickers."
+msgstr ""
+
+#: main.py:373
+msgid "Stickers will now be backed up"
+msgstr ""
+
+#: main.py:375
+msgid "Stickers will no longer be backed up"
+msgstr ""
+
+#: main.py:382
 #, docstring
 msgid "Set the max amount of backups a server can have"
 msgstr "서버가 보유할 수 있는 최대 백업 용량 설정"
 
-#: main.py:222
+#: main.py:385
 msgid "Max backups set to 0, Cartographer has been **Disabled**"
 msgstr "최대 백업이 0으로 설정됨, 지도 제작자가 **사용 안 함**으로 설정됨"
 
-#: main.py:224
+#: main.py:387
 msgid "Max backup count has been set"
 msgstr "최대 백업 횟수가 설정되었습니다"
 
-#: main.py:231
+#: main.py:394
 #, docstring
 msgid "Add/Remove a server from the ignore list"
 msgstr "무시 목록에서 서버 추가/제거하기"
 
-#: main.py:234
+#: main.py:397
 msgid "Server removed from the ignore list"
 msgstr "무시 목록에서 서버 제거"
 
-#: main.py:237
+#: main.py:400
 msgid "Server added to the ignore list"
 msgstr "무시 목록에 서버 추가"
 
-#: main.py:244
+#: main.py:407
 #, docstring
 msgid "Add/Remove a server from the allow list"
 msgstr "허용 목록에서 서버 추가/제거하기"
 
-#: main.py:247
+#: main.py:410
 msgid "Server removed from the allow list"
 msgstr "허용 목록에서 서버 제거"
 
-#: main.py:250
+#: main.py:413
 msgid "Server added to the allow list"
 msgstr "허용 목록에 서버 추가"
 

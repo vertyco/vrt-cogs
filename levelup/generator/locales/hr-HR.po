@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2024-06-18 16:29-0400\n"
-"PO-Revision-Date: 2024-06-18 21:00\n"
+"POT-Creation-Date: 2024-07-24 17:08-0400\n"
+"PO-Revision-Date: 2024-12-03 14:58\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -13,107 +13,112 @@ msgstr ""
 "X-Crowdin-Project: vrt-cogs\n"
 "X-Crowdin-Project-ID: 550681\n"
 "X-Crowdin-Language: hr\n"
-"X-Crowdin-File: /main/levelup/generator/locales/messages.pot\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/levelup/generator/locales/messages.pot\n"
 "X-Crowdin-File-ID: 166\n"
 "Language: hr_HR\n"
 
-#: levelup\generator\api.py:165
+#: levelup\generator\api.py:170
 #, docstring
 msgid "\n"
 "    Find and kill the process that's using the specified port.\n"
 "    "
 msgstr ""
 
-#: levelup\generator\imgtools.py:37
+#: levelup\generator\imgtools.py:38
+#, docstring
+msgid "Get an image from a URL"
+msgstr ""
+
+#: levelup\generator\imgtools.py:55
 #, docstring
 msgid "Abbreviate a number"
 msgstr ""
 
-#: levelup\generator\imgtools.py:46
+#: levelup\generator\imgtools.py:64
 #, docstring
 msgid "Format time in seconds into an extra short human readable string"
 msgstr ""
 
-#: levelup\generator\imgtools.py:54
+#: levelup\generator\imgtools.py:72
 msgid "None"
 msgstr ""
 
-#: levelup\generator\imgtools.py:77
+#: levelup\generator\imgtools.py:95
 #, docstring
 msgid "Make a transparent circle"
 msgstr ""
 
-#: levelup\generator\imgtools.py:89
+#: levelup\generator\imgtools.py:107
 #, docstring
 msgid "Crop an image into a circle"
 msgstr ""
 
-#: levelup\generator\imgtools.py:102
+#: levelup\generator\imgtools.py:120
 #, docstring
 msgid "Get a mask for rounded corners"
 msgstr ""
 
-#: levelup\generator\imgtools.py:121
+#: levelup\generator\imgtools.py:139
 #, docstring
 msgid "Blur a section of an image"
 msgstr ""
 
-#: levelup\generator\imgtools.py:130
+#: levelup\generator\imgtools.py:148
 #, docstring
 msgid "Clean up a GIF frame"
 msgstr ""
 
-#: levelup\generator\imgtools.py:144
+#: levelup\generator\imgtools.py:162
 #, docstring
 msgid "Make a pretty rounded progress bar."
 msgstr ""
 
-#: levelup\generator\imgtools.py:176
+#: levelup\generator\imgtools.py:194
 #, docstring
 msgid "Format fonts into an image"
 msgstr ""
 
-#: levelup\generator\imgtools.py:190
+#: levelup\generator\imgtools.py:208
 #, docstring
 msgid "Format backgrounds into an image"
 msgstr ""
 
-#: levelup\generator\imgtools.py:237
+#: levelup\generator\imgtools.py:255
 #, docstring
 msgid "Merge two images vertically"
 msgstr ""
 
-#: levelup\generator\imgtools.py:245
+#: levelup\generator\imgtools.py:263
 #, docstring
 msgid "Merge two images horizontally"
 msgstr ""
 
-#: levelup\generator\imgtools.py:256
+#: levelup\generator\imgtools.py:274
 #, docstring
 msgid "Extract colors from an image using colorgram.py"
 msgstr ""
 
-#: levelup\generator\imgtools.py:268
+#: levelup\generator\imgtools.py:286
 #, docstring
 msgid "Calculate the Euclidean distance between two RGB colors"
 msgstr ""
 
-#: levelup\generator\imgtools.py:281
+#: levelup\generator\imgtools.py:299
 #, docstring
 msgid "Invert an RGB color tuple"
 msgstr ""
 
-#: levelup\generator\imgtools.py:286
+#: levelup\generator\imgtools.py:304
 #, docstring
 msgid "Generate a random RGB color tuple"
 msgstr ""
 
-#: levelup\generator\imgtools.py:294
+#: levelup\generator\imgtools.py:312
 #, docstring
 msgid "Calculate the aspect ratio of an image"
 msgstr ""
 
-#: levelup\generator\imgtools.py:305
+#: levelup\generator\imgtools.py:323
 #, docstring
 msgid "\n"
 "    Crop image to fit aspect ratio\n\n"
@@ -127,17 +132,17 @@ msgid "\n"
 "    "
 msgstr ""
 
-#: levelup\generator\imgtools.py:348
+#: levelup\generator\imgtools.py:366
 #, docstring
 msgid "Get a random background image"
 msgstr ""
 
-#: levelup\generator\imgtools.py:356
+#: levelup\generator\imgtools.py:374
 #, docstring
 msgid "Get the average duration of a GIF"
 msgstr ""
 
-#: levelup\generator\levelalert.py:78
+#: levelup\generator\levelalert.py:86
 msgid "Level {}"
 msgstr ""
 

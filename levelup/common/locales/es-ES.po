@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2024-06-18 16:29-0400\n"
-"PO-Revision-Date: 2024-06-23 01:44\n"
+"POT-Creation-Date: 2024-07-24 17:08-0400\n"
+"PO-Revision-Date: 2024-12-03 14:57\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -13,7 +13,7 @@ msgstr ""
 "X-Crowdin-Project: vrt-cogs\n"
 "X-Crowdin-Project-ID: 550681\n"
 "X-Crowdin-Language: es-ES\n"
-"X-Crowdin-File: /main/levelup/common/locales/messages.pot\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/levelup/common/locales/messages.pot\n"
 "X-Crowdin-File-ID: 162\n"
 "Language: es_ES\n"
 
@@ -55,7 +55,7 @@ msgstr "Formatear y devolver la tabla de líderes de roles\n\n"
 msgid "Role Leaderboard"
 msgstr "Clasificación de Roles"
 
-#: levelup\common\formatter.py:84 levelup\common\formatter.py:290
+#: levelup\common\formatter.py:84 levelup\common\formatter.py:305
 msgid "Page {}"
 msgstr "Página {}"
 
@@ -100,102 +100,102 @@ msgstr "Semanal "
 msgid "Global LevelUp "
 msgstr "Global LevelUp "
 
-#: levelup\common\formatter.py:153
+#: levelup\common\formatter.py:152 levelup\common\formatter.py:161
 msgid "LevelUp "
 msgstr "LevelUp "
 
-#: levelup\common\formatter.py:157
+#: levelup\common\formatter.py:165
 msgid "Voice Leaderboard"
 msgstr "Clasificación por voz"
 
-#: levelup\common\formatter.py:160
+#: levelup\common\formatter.py:168
 msgid "Voicetime"
 msgstr "Tiempo de voz"
 
-#: levelup\common\formatter.py:162
+#: levelup\common\formatter.py:170
 msgid "Message Leaderboard"
 msgstr "Clasificación de Mensajes"
 
-#: levelup\common\formatter.py:165
+#: levelup\common\formatter.py:173
 msgid "Messages"
 msgstr "Mensajes"
 
-#: levelup\common\formatter.py:167
+#: levelup\common\formatter.py:175
 msgid "Star Leaderboard"
 msgstr "Clasificación por estrellas"
 
-#: levelup\common\formatter.py:170
+#: levelup\common\formatter.py:178
 msgid "Stars"
 msgstr "Estrellas"
 
-#: levelup\common\formatter.py:172
+#: levelup\common\formatter.py:180
 msgid "Exp Leaderboard"
 msgstr "Clasificación Exp"
 
-#: levelup\common\formatter.py:175
+#: levelup\common\formatter.py:183
 msgid "Experience"
 msgstr "Experiencia"
 
-#: levelup\common\formatter.py:179
+#: levelup\common\formatter.py:194
 msgid "There is no data for the {} leaderboard yet"
 msgstr "No hay datos para la tabla de líderes de {} aún"
 
-#: levelup\common\formatter.py:180
+#: levelup\common\formatter.py:195
 msgid "weekly {}"
 msgstr "semanal {}"
 
-#: levelup\common\formatter.py:191
+#: levelup\common\formatter.py:206
 msgid " | You: {}"
 msgstr " | Tú: {}"
 
-#: levelup\common\formatter.py:198
+#: levelup\common\formatter.py:213
 msgid "➣ Total {}: {}\n"
 msgstr "➣ Total {}: {}\n"
 
-#: levelup\common\formatter.py:200
+#: levelup\common\formatter.py:215
 msgid "➣ **Total {}:** {}\n"
 msgstr "➣ **Total {}:** {}\n"
 
-#: levelup\common\formatter.py:204
+#: levelup\common\formatter.py:219
 msgid "➣ Last Reset: {}\n"
 msgstr "➣ Último reinicio: {}\n"
 
-#: levelup\common\formatter.py:208
+#: levelup\common\formatter.py:223
 msgid "➣ Next Reset: {} ({})\n"
 msgstr "➣ Próximo reinicio: {} ({})\n"
 
-#: levelup\common\formatter.py:212
+#: levelup\common\formatter.py:227
 msgid "➣ **Last Reset:** {}\n"
 msgstr "➣ **Último reinicio:** {}\n"
 
-#: levelup\common\formatter.py:215
+#: levelup\common\formatter.py:230
 msgid "➣ **Next Reset:** {}\n"
 msgstr "➣ **Próximo reinicio:** {}\n"
 
-#: levelup\common\formatter.py:220
+#: levelup\common\formatter.py:235
 msgid "Total {}: {}\n"
 msgstr "Total {}: {}\n"
 
-#: levelup\common\formatter.py:222
+#: levelup\common\formatter.py:237
 msgid "**Total {}:** {}\n\n"
 msgstr "**Total {}:** {}\n\n"
 
-#: levelup\common\models.py:20
+#: levelup\common\models.py:23
 #, docstring
 msgid "Custom BaseModel with additional methods for loading and saving settings safely"
 msgstr "Modelo base personalizado con métodos adicionales para cargar y guardar configuraciones de manera segura"
 
-#: levelup\common\models.py:243
+#: levelup\common\models.py:250
 #, docstring
 msgid "Calculate the level that corresponds to the given XP amount"
 msgstr "Calcular el nivel que corresponde a la cantidad de XP dada"
 
-#: levelup\common\models.py:247
+#: levelup\common\models.py:254
 #, docstring
 msgid "Calculate XP required to reach specified level"
 msgstr "Calcular el XP requerido para alcanzar el nivel especificado"
 
-#: levelup\common\models.py:359
+#: levelup\common\models.py:367
 #, docstring
 msgid "Sanitize old config data to be validated by the new schema"
 msgstr "Sanear datos de configuración antiguos para ser validados por el nuevo esquema"
@@ -268,34 +268,34 @@ msgstr "Sábado"
 msgid "Sunday"
 msgstr "Domingo"
 
-#: levelup\common\utils.py:211
+#: levelup\common\utils.py:213
 #, docstring
 msgid "Wait for user to respond yes or no"
 msgstr "Esperar a que el usuario responda sí o no"
 
-#: levelup\common\utils.py:282
+#: levelup\common\utils.py:284
 #, docstring
 msgid "Get a level that would be achieved from the amount of XP"
 msgstr "Obtener un nivel que se lograría con la cantidad de XP"
 
-#: levelup\common\utils.py:287
+#: levelup\common\utils.py:289
 #, docstring
 msgid "Get how much XP is needed to reach a level"
 msgstr "Obtener cuánta XP se necesita para alcanzar un nivel"
 
-#: levelup\common\utils.py:316
+#: levelup\common\utils.py:318
 msgid "• lvl {}, {} xp, {}\n"
 msgstr "• lvl {}, {} xp, {}\n"
 
-#: levelup\common\utils.py:324
+#: levelup\common\utils.py:326
 msgid "XP Curve"
 msgstr "Curva XP"
 
-#: levelup\common\utils.py:330
+#: levelup\common\utils.py:332
 msgid "Level"
 msgstr "Nivel"
 
-#: levelup\common\utils.py:331
+#: levelup\common\utils.py:333
 msgid "Experience Required"
 msgstr "Experiencia necesaria"
 

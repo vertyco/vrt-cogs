@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2024-02-08 18:31-0500\n"
-"PO-Revision-Date: 2024-06-21 16:04\n"
+"PO-Revision-Date: 2024-12-03 14:55\n"
 "Last-Translator: \n"
 "Language-Team: Russian\n"
 "MIME-Version: 1.0\n"
@@ -13,7 +13,7 @@ msgstr ""
 "X-Crowdin-Project: vrt-cogs\n"
 "X-Crowdin-Project-ID: 550681\n"
 "X-Crowdin-Language: ru\n"
-"X-Crowdin-File: /main/tickets/locales/messages.pot\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/tickets/locales/messages.pot\n"
 "X-Crowdin-File-ID: 13\n"
 "Language: ru_RU\n"
 
@@ -36,7 +36,7 @@ msgstr "Если Вы не ответите на этот тикет в тече
 
 #: tickets.py:291
 msgid "(Auto-Close) Opened ticket with no response for "
-msgstr ""
+msgstr "(Автозакрытие) Открытый тикет без ответа"
 
 #: tickets.py:338
 msgid "User left guild(Auto-Close)"
