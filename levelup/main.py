@@ -77,7 +77,7 @@ class LevelUp(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "4.3.11"
+    __version__ = "4.3.12"
     __contributors__ = [
         "[aikaterna](https://github.com/aikaterna/aikaterna-cogs)",
         "[AAA3A](https://github.com/AAA3A-AAA3A/AAA3A-cogs)",
@@ -182,7 +182,6 @@ class LevelUp(
                 return
             if not self.initialized:
                 # Do not save if not initialized, we don't want to overwrite the config with default data
-                log.error("Config not initialized, not saving!")
                 return
             try:
                 log.debug("Saving config")
