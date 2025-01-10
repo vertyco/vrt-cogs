@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-10-16 17:37-0400\n"
-"PO-Revision-Date: 2024-06-21 14:22\n"
+"POT-Creation-Date: 2024-07-29 21:29-0400\n"
+"PO-Revision-Date: 2024-12-03 14:56\n"
 "Last-Translator: \n"
 "Language-Team: Russian\n"
 "MIME-Version: 1.0\n"
@@ -13,220 +13,383 @@ msgstr ""
 "X-Crowdin-Project: vrt-cogs\n"
 "X-Crowdin-Project-ID: 550681\n"
 "X-Crowdin-Language: ru\n"
-"X-Crowdin-File: /main/cartographer/common/locales/messages.pot\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/cartographer/common/locales/messages.pot\n"
 "X-Crowdin-File-ID: 78\n"
 "Language: ru_RU\n"
 
-#: common\formatting.py:11
-msgid "`Created:        `{}\n"
-"`Name:           `{}\n"
+#: common\formatting.py:17
+msgid "## {}\n"
+"`Size:           `{}\n"
+"`Created:        `{}\n"
 "`AFK Channel:    `{}\n"
 "`AFK Timeout:    `{}\n"
 "`Verification:   `{}\n"
 "`Notifications:  `{}\n"
 "`Locale:         `{}\n"
+"`Emojis:         `{}\n"
+"`Stickers:       `{}\n"
 "`Role Count:     `{}\n"
 "`Members Saved:  `{}\n"
+"`Bans:           `{}\n"
 "`Categories:     `{}\n"
-"`Text Channels:  `{}\n"
-"`Voice Channels: `{}\n"
+"`Text Channels:  `{} ({} messages)\n"
+"`Voice Channels: `{} ({} messages)\n"
 "`Forums:         `{}\n"
 msgstr ""
 
-#: common\formatting.py:45
+#: common\formatting.py:60
+#, docstring
+msgid "Recursively finds the size of an object in memory"
+msgstr ""
+
+#: common\serializers.py:121 common\serializers.py:132
+#: common\serializers.py:164 common\serializers.py:204
+#: common\serializers.py:211 common\serializers.py:342
+#: common\serializers.py:356 common\serializers.py:706
+#: common\serializers.py:803 common\serializers.py:820
+#: common\serializers.py:928 common\serializers.py:937
+msgid "Restored from backup"
+msgstr ""
+
+#: common\serializers.py:207
+msgid "Failed to add the following roles to {}: {} - {}\n"
+msgstr ""
+
+#: common\serializers.py:214
+msgid "Failed to remove the following roles from {}: {} - {}\n"
+msgstr ""
+
+#: common\serializers.py:290
+msgid "Channel {} missing role or member overwrite: {} - {}\n"
+msgstr ""
+
+#: common\serializers.py:306
+#, docstring
+msgid "Just base attributes"
+msgstr ""
+
+#: common\serializers.py:513 common\serializers.py:830
+#: common\serializers.py:1110
+msgid "Cartographer Restore"
+msgstr ""
+
+#: common\serializers.py:513 common\serializers.py:830
+msgid "Restoring messages from backup"
+msgstr ""
+
+#: common\serializers.py:1066
+#, docstring
+msgid "Restore a guild backup to a target guild."
+msgstr ""
+
+#: common\serializers.py:1071
+msgid "Restoring backup"
+msgstr ""
+
+#: common\serializers.py:1075
+msgid "Restoring server settings"
+msgstr ""
+
+#: common\serializers.py:1076
+msgid "Step 1 of 9"
+msgstr ""
+
+#: common\serializers.py:1078
+msgid "Restoring emojis and stickers"
+msgstr ""
+
+#: common\serializers.py:1079
+msgid "Step 2 of 9"
+msgstr ""
+
+#: common\serializers.py:1081
+msgid "Restoring roles"
+msgstr ""
+
+#: common\serializers.py:1082
+msgid "Step 3 of 9"
+msgstr ""
+
+#: common\serializers.py:1084
+msgid "Restoring channels"
+msgstr ""
+
+#: common\serializers.py:1085
+msgid "Step 4 of 9"
+msgstr ""
+
+#: common\serializers.py:1087
+msgid "Restoring AFK settings"
+msgstr ""
+
+#: common\serializers.py:1088
+msgid "Step 5 of 9"
+msgstr ""
+
+#: common\serializers.py:1090
+msgid "Restoring system channels"
+msgstr ""
+
+#: common\serializers.py:1091
+msgid "Step 6 of 9"
+msgstr ""
+
+#: common\serializers.py:1093
+msgid "Restoring remainder of the server settings"
+msgstr ""
+
+#: common\serializers.py:1094
+msgid "Step 7 of 9"
+msgstr ""
+
+#: common\serializers.py:1096
+msgid "Restoring member roles"
+msgstr ""
+
+#: common\serializers.py:1097
+msgid "Step 8 of 9"
+msgstr ""
+
+#: common\serializers.py:1099
+msgid "Restoring bans"
+msgstr ""
+
+#: common\serializers.py:1100
+msgid "Step 9 of 9"
+msgstr ""
+
+#: common\serializers.py:1102
+msgid "Restoration complete!"
+msgstr ""
+
+#: common\serializers.py:1106
+msgid "Server restoration took {}"
+msgstr ""
+
+#: common\serializers.py:1129
+msgid "Banner too large to restore\n"
+msgstr ""
+
+#: common\serializers.py:1132
+msgid "Icon too large to restore\n"
+msgstr ""
+
+#: common\serializers.py:1135
+msgid "Splash too large to restore\n"
+msgstr ""
+
+#: common\serializers.py:1138
+msgid "Discovery splash too large to restore\n"
+msgstr ""
+
+#: common\serializers.py:1197
+msgid "Backup has more emojis than the target server can hold. Some emojis will not be restored.\n"
+msgstr ""
+
+#: common\serializers.py:1201
+msgid "Emoji '{}' not restored due to limit\n"
+msgstr ""
+
+#: common\serializers.py:1225
+msgid "Backup has more stickers than the target server can hold. Some stickers will not be restored.\n"
+msgstr ""
+
+#: common\serializers.py:1229
+msgid "Sticker '{}' not restored due to limit\n"
+msgstr ""
+
+#: common\serializers.py:1309
+msgid "This channel isn't part of the backup, it can be deleted after the restore is complete."
+msgstr ""
+
+#: common\views.py:43
+msgid "That is not a number!"
+msgstr ""
+
+#: common\views.py:54
+msgid "Confirmation"
+msgstr ""
+
+#: common\views.py:57
+msgid "THIS CANNOT BE UNDONE!"
+msgstr ""
+
+#: common\views.py:59
+msgid "Are you SURE?"
+msgstr ""
+
+#: common\views.py:67
+msgid "How many messages to backup? (0 = None)"
+msgstr ""
+
+#: common\views.py:77
+msgid "response must be a string!"
+msgstr ""
+
+#: common\views.py:80
+msgid "Message backup limit must be a number!"
+msgstr ""
+
+#: common\views.py:101
+msgid "Close"
+msgstr ""
+
+#: common\views.py:104
+msgid "Cartographer Backups"
+msgstr ""
+
+#: common\views.py:105
 msgid "Controls"
 msgstr ""
 
-#: common\formatting.py:46
+#: common\views.py:106
 msgid "- Backup Current Server: 📥\n"
 "- Restore Here: 🔄\n"
 "- Switch Servers: 🔍\n"
 "- Set AutoBackup Interval: ⌛\n"
 "- Delete Backup: 🗑️\n"
+"- Print Details: ℹ️\n"
 msgstr ""
 
-#: common\formatting.py:53
+#: common\views.py:114
 msgid "Settings"
 msgstr ""
 
-#: common\formatting.py:54
+#: common\views.py:115
 msgid "- Auto Backup Interval Hours: {}\n"
 "- Last Backup: {}"
 msgstr ""
 
-#: common\formatting.py:57
-msgid "Cartographer Backups for {}"
+#: common\views.py:124
+msgid "## {}\n"
+"`Size:    `{}\n"
+"`Created: `{}\n"
 msgstr ""
 
-#: common\formatting.py:64
+#: common\views.py:132
 msgid "Page {}"
 msgstr ""
 
-#: common\formatting.py:67
+#: common\views.py:134
 msgid "There are no backups for this server yet!"
 msgstr ""
 
-#: common\models.py:178 common\models.py:189 common\models.py:216
-msgid "Restored from backup"
-msgstr ""
-
-#: common\models.py:694
-msgid "Cartographer Restore"
-msgstr ""
-
-#: common\models.py:695
-msgid " (Removal)"
-msgstr ""
-
-#: common\models.py:835
-msgid "Server restore has completed successfully!"
-msgstr ""
-
-#: common\views.py:36
-msgid "That is not a number!"
-msgstr ""
-
-#: common\views.py:47
-msgid "Confirmation"
-msgstr ""
-
-#: common\views.py:49
-msgid "Are you SURE?"
-msgstr ""
-
-#: common\views.py:52
-msgid "THIS CANNOT BE UNDONE!"
-msgstr ""
-
-#: common\views.py:56
-msgid "Remove Old"
-msgstr ""
-
-#: common\views.py:59
-msgid "removes unsaved channels/roles"
-msgstr ""
-
-#: common\views.py:64
-msgid "response must be a string!"
-msgstr ""
-
-#: common\views.py:84
-msgid "Close"
-msgstr ""
-
-#: common\views.py:88
+#: common\views.py:143
 msgid "This isn't your menu!"
 msgstr ""
 
-#: common\views.py:129
-msgid "Backing up {}!"
+#: common\views.py:180 common\views.py:239
+msgid "I need administrator permissions to restore a backup in this server!"
 msgstr ""
 
-#: common\views.py:133
-msgid "Backup created!"
-msgstr ""
-
-#: common\views.py:136
-msgid "- Backup contains roles with duplcate names! Only one role per unique name can be restored!"
-msgstr ""
-
-#: common\views.py:140
-msgid "- Backup contains categories with duplcate names! Only one category per unique name can be restored!"
-msgstr ""
-
-#: common\views.py:144
-msgid "- Backup contains text channels with duplcate names! Only one text channel per unique name can be restored!"
-msgstr ""
-
-#: common\views.py:148
-msgid "- Backup contains voice channels with duplcate names! Only one voice channel per unique name can be restored!"
-msgstr ""
-
-#: common\views.py:152
-msgid "- Backup contains forum channels with duplcate names! Only one forum channel per unique name can be restored!"
-msgstr ""
-
-#: common\views.py:162
-msgid "No backups to restore!"
-msgstr ""
-
-#: common\views.py:174
-msgid "Your backup is being restored!"
-msgstr ""
-
-#: common\views.py:176
-msgid "- Backup contains roles with duplcate names! Only one role per unique name will be restored!"
-msgstr ""
-
-#: common\views.py:180
-msgid "- Backup contains categories with duplcate names! Only one category per unique name will be restored!"
-msgstr ""
-
-#: common\views.py:184
-msgid "- Backup contains text channels with duplcate names! Only one text channel per unique name will be restored!"
-msgstr ""
-
-#: common\views.py:188
-msgid "- Backup contains voice channels with duplcate names! Only one voice channel per unique name will be restored!"
-msgstr ""
-
-#: common\views.py:192
-msgid "- Backup contains forum channels with duplcate names! Only one forum channel per unique name will be restored!"
-msgstr ""
-
-#: common\views.py:197
+#: common\views.py:190 common\views.py:253
 msgid "Restore has been cancelled!"
 msgstr ""
 
-#: common\views.py:202
+#: common\views.py:194
+msgid "The maximum amount of messages that can be backed up per channel is {}!"
+msgstr ""
+
+#: common\views.py:203
+msgid "Warning! I need to have the highest role in the server to restore roles properly!"
+msgstr ""
+
+#: common\views.py:206
+msgid "Backing up {}!\n"
+"-# This may take a while..."
+msgstr ""
+
+#: common\views.py:208
+msgid "Backup in Progress"
+msgstr ""
+
+#: common\views.py:225
+msgid "An error occurred while backing up the server!\n"
+"{}"
+msgstr ""
+
+#: common\views.py:229
+msgid "Backup created in {}!"
+msgstr ""
+
+#: common\views.py:229
+msgid "0 seconds"
+msgstr ""
+
+#: common\views.py:230
+msgid "Backup Created"
+msgstr ""
+
+#: common\views.py:243
+msgid "No backups to restore!"
+msgstr ""
+
+#: common\views.py:262
+msgid "Your backup is being restored!"
+msgstr ""
+
+#: common\views.py:268
+msgid "The following errors occurred while restoring the backup"
+msgstr ""
+
+#: common\views.py:273
 msgid "Switch Servers"
 msgstr ""
 
-#: common\views.py:202
+#: common\views.py:273
 msgid "Server ID"
 msgstr ""
 
-#: common\views.py:202
+#: common\views.py:273
 msgid "Enter the ID of the server"
 msgstr ""
 
-#: common\views.py:209
+#: common\views.py:280
 msgid "I am not in that server!"
 msgstr ""
 
-#: common\views.py:213
+#: common\views.py:284
 msgid "You do not appear to be in that server!"
 msgstr ""
 
-#: common\views.py:216
+#: common\views.py:287
 msgid "You can only switch to servers that you are an administrator of!"
 msgstr ""
 
-#: common\views.py:226
+#: common\views.py:296
 msgid "Auto backups have been disabled by the bot owner!"
 msgstr ""
 
-#: common\views.py:228
+#: common\views.py:298
 msgid "Auto Backup Interval"
 msgstr ""
 
-#: common\views.py:228
+#: common\views.py:298
 msgid "Interval Hours"
 msgstr ""
 
-#: common\views.py:228
+#: common\views.py:298
 msgid "Hours in-between backups"
 msgstr ""
 
-#: common\views.py:234
+#: common\views.py:304
 msgid "Auto-backup interval hours has been set to {}"
 msgstr ""
 
-#: common\views.py:246
+#: common\views.py:316
 msgid "No backups to delete!"
 msgstr ""
 
-#: common\views.py:252
+#: common\views.py:323
 msgid "Backup deleted!"
+msgstr ""
+
+#: common\views.py:329
+#, docstring
+msgid "Load the backup and show details"
+msgstr ""
+
+#: common\views.py:331
+msgid "No backups to get info for!"
 msgstr ""
 
