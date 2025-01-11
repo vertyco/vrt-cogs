@@ -72,7 +72,6 @@ class DynamicMenu(discord.ui.View):
         if self.message:
             with suppress(discord.NotFound, discord.Forbidden, discord.HTTPException):
                 await self.message.edit(view=None)
-        await self.ctx.tick()
 
     async def refresh(self, interaction: discord.Interaction = None):
         """Call this to start and refresh the menu."""
