@@ -35,7 +35,7 @@ class Meow(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.3.3"
+    __version__ = "0.3.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -52,6 +52,7 @@ class Meow(commands.Cog):
         self.cache = {}  # {guild_id: bool}
 
     @commands.command()
+    @commands.mod_or_permissions(manage_messages=True)
     async def automeow(self, ctx: commands.Context):
         """Toggle automatic meow response"""
         auto_meow = await self.config.guild(ctx.guild).auto_meow()
