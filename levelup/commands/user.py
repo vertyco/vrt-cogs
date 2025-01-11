@@ -61,11 +61,22 @@ class User(MixinMeta):
     async def leveltop(
         self,
         ctx: commands.Context,
-        stat: str = "exp",
+        stat: str = "xp",
         globalstats: bool = False,
         displayname: bool = True,
     ):
-        """View the LevelUp leaderboard"""
+        """View the LevelUp leaderboard
+
+        **Arguments**
+        `stat` - The stat to view the leaderboard for, defaults to `exp` but can be any of the following:
+        - `xp` - Experience
+        - `level` - Level
+        - `voice` - Voicetime
+        - `messages` - Messages
+        - `stars` - Stars
+        `globalstats` - View the global leaderboard instead of the server leaderboard
+        `displayname` - Use display names instead of usernames
+        """
         stat = stat.lower()
         pages = await asyncio.to_thread(
             formatter.get_leaderboard,
@@ -114,12 +125,7 @@ class User(MixinMeta):
             return await ctx.send(_("That user has no level data yet!"))
         profile = conf.get_profile(user_id)
         txt = _(
-            "XP: **{}**\n"
-            "Level: **{}**\n"
-            "Prestige: **{}**\n"
-            "Voicetime: **{}**\n"
-            "Messages: **{}**\n"
-            "Stars: **{}**\n"
+            "XP: **{}**\nLevel: **{}**\nPrestige: **{}**\nVoicetime: **{}**\nMessages: **{}**\nStars: **{}**\n"
         ).format(
             profile.xp,
             profile.level,
