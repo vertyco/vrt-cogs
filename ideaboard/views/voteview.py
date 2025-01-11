@@ -72,19 +72,19 @@ class VoteView(discord.ui.View):
             return False
 
         if not await self.bot.is_admin(voter):
-            # Check blacklists
-            if voter.id in conf.user_blacklist:
-                txt = _("You are blacklisted from voting.")
-                await self.respond(interaction, txt)
-                return False
-            blacklisted_user_roles = [role.id for role in voter.roles if role.id in conf.role_blacklist]
-            if blacklisted_user_roles:
-                humanized = ", ".join([f"<@&{role}>" for role in blacklisted_user_roles])
-                grammar = "a blacklisted role" if len(blacklisted_user_roles) == 1 else "blacklisted roles"
-                txt = _("You have {grammar} and cannot vote.").format(grammar=grammar)
-                txt += f"\n{humanized}"
-                await self.respond(interaction, txt)
-                return False
+            # # Check blacklists
+            # if voter.id in conf.user_blacklist:
+            #     txt = _("You are blacklisted from voting.")
+            #     await self.respond(interaction, txt)
+            #     return False
+            # blacklisted_user_roles = [role.id for role in voter.roles if role.id in conf.role_blacklist]
+            # if blacklisted_user_roles:
+            #     humanized = ", ".join([f"<@&{role}>" for role in blacklisted_user_roles])
+            #     grammar = "a blacklisted role" if len(blacklisted_user_roles) == 1 else "blacklisted roles"
+            #     txt = _("You have {grammar} and cannot vote.").format(grammar=grammar)
+            #     txt += f"\n{humanized}"
+            #     await self.respond(interaction, txt)
+            #     return False
 
             # If vote_roles isnt empty, make sure voter has one of the roles
             if conf.vote_roles and not any(role.id in conf.vote_roles for role in voter.roles):
