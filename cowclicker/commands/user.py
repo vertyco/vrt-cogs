@@ -100,7 +100,7 @@ class User(MixinMeta):
                 foot = ""
                 for idx, click in enumerate(top_clickers):
                     if click["author_id"] == ctx.author.id:
-                        foot = f" | Your position: {idx+1}"
+                        foot = f" | Your position: {idx + 1}"
                         break
 
                 start = 0
@@ -119,12 +119,12 @@ class User(MixinMeta):
                         else:
                             member = self.bot.get_user(click["author_id"])
                         if member:
-                            buffer.write(f"**{i+1}**. {member.display_name} (`{click['count']}`)\n")
+                            buffer.write(f"**{i + 1}**. {member.display_name} (`{click['count']}`)\n")
                         else:
-                            buffer.write(f"**{i+1}**. {click['author_id']} (`{click['count']}`)\n")
+                            buffer.write(f"**{i + 1}**. {click['author_id']} (`{click['count']}`)\n")
 
                     embed = discord.Embed(description=buffer.getvalue(), color=color)
-                    embed.set_footer(text=f"Page {idx+1}/{pages}{foot}")
+                    embed.set_footer(text=f"Page {idx + 1}/{pages}{foot}")
                     embed.set_author(name=title, icon_url=const.COW_IMAGE)
                     start += 10
                     stop += 10
