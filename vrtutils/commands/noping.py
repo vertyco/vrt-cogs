@@ -135,7 +135,9 @@ class NoPing(MixinMeta):
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
         # Check if bot has manage_guild permission
-        if not member.guild.me:
+        if not member.guild:
+            return
+        if not hasattr(member.guild.me, "guild_permissions"):
             return
         if not member.guild.me.guild_permissions.manage_guild:
             return
