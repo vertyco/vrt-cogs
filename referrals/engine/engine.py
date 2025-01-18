@@ -3,7 +3,6 @@ import inspect
 import logging
 import os
 import subprocess
-import sys
 from pathlib import Path
 
 from discord.ext import commands
@@ -14,7 +13,6 @@ from redbot.core.data_manager import cog_data_path
 from .errors import DirectoryError, UNCPathError
 
 log = logging.getLogger("red.vrt.referrals")
-piccolo_path = Path(sys.executable).parent / "piccolo"
 
 
 async def register_cog(cog_instance: commands.Cog, tables: list[type[Table]], trace: bool = False) -> SQLiteEngine:
@@ -66,6 +64,7 @@ async def run_migrations(cog_instance: commands.Cog, trace: bool = False) -> str
     Returns:
         str: The result of the migration process, including any output messages.
     """
+    piccolo_path = _find_piccolo_executable()
     commands = [str(piccolo_path), "migrations", "forwards", _root(cog_instance).stem]
     if trace:
         commands.append("--trace")
@@ -83,6 +82,7 @@ async def reverse_migration(cog_instance: commands.Cog, timestamp: str, trace: b
     Returns:
         str: The result of the migration process, including any output messages.
     """
+    piccolo_path = _find_piccolo_executable()
     commands = [str(piccolo_path), "migrations", "backwards", _root(cog_instance).stem, timestamp]
     if trace:
         commands.append("--trace")
@@ -101,6 +101,7 @@ async def create_migrations(cog_instance: commands.Cog | Path, trace: bool = Fal
     Returns:
         str: The result of the migration process, including any output messages.
     """
+    piccolo_path = _find_piccolo_executable()
     commands = [str(piccolo_path), "migrations", "new", _root(cog_instance).stem, "--auto"]
     if trace:
         commands.append("--trace")
@@ -118,6 +119,7 @@ async def diagnose_issues(cog_instance: commands.Cog | Path) -> str:
     Returns:
         str: The result of the diagnosis process, including any output messages.
     """
+    piccolo_path = _find_piccolo_executable()
     diagnoses = await _shell(cog_instance, [str(piccolo_path), "--diagnose"], False)
     check = await _shell(cog_instance, [str(piccolo_path), "migrations", "check"], False)
     return f"{diagnoses}\n{check}"
@@ -169,3 +171,15 @@ def _is_unc_path(path: Path) -> bool:
 def _is_windows() -> bool:
     """Check if the OS is Windows"""
     return os.name == "nt"
+
+
+def _find_piccolo_executable() -> Path:
+    """Find the piccolo executable in the system's PATH."""
+    for path in os.environ["PATH"].split(os.pathsep):
+        for executable_name in ["piccolo", "piccolo.exe"]:
+            executable = Path(path) / executable_name
+            if executable.exists() and os.access(executable, os.X_OK):
+                log.info(f"Found piccolo executable at {executable}")
+                return executable
+
+    raise FileNotFoundError("Piccolo executable not found in system PATH")
