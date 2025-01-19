@@ -123,10 +123,25 @@ async def referredby_context(interaction: discord.Interaction, member: discord.M
 
 @cog_i18n(_)
 class User(MixinMeta):
-    @commands.hybrid_command()
+    @app_commands.command(name="referredby", description="Claim a referral")
+    @app_commands.describe(referred_by="The user who referred you")
+    @app_commands.guild_only()
+    async def referredby_slash(self, interaction: discord.Interaction, referred_by: discord.Member):
+        """Claim a referral
+
+        Claim a referral from a user who referred you
+
+        If referral rewards are enabled, you will receive the reward for being referred.
+        If referrer rewards are enabled, the person who referred you will also receive a reward.
+        """
+        await interaction.response.defer()
+        ctx = await commands.Context.from_interaction(interaction)
+        async with ctx.channel.typing():
+            await self.handle_referral_claim(ctx, referred_by)
+
+    @commands.command()
     @commands.guild_only()
     @ensure_db_connection()
-    @commands.admin_or_permissions(manage_guild=True)
     async def referredby(self, ctx: commands.Context, referred_by: discord.Member):
         """Claim a referral
 
@@ -135,7 +150,10 @@ class User(MixinMeta):
         If referral rewards are enabled, you will receive the reward for being referred.
         If referrer rewards are enabled, the person who referred you will also receive a reward.
         """
+        async with ctx.typing():
+            await self.handle_referral_claim(ctx, referred_by)
 
+    async def handle_referral_claim(self, ctx: commands.Context, referred_by: discord.Member):
         if referred_by.id == ctx.author.id:
             return await ctx.send(_("You can't refer yourself."))
         if referred_by.bot:
