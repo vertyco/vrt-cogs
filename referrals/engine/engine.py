@@ -12,16 +12,22 @@ from redbot.core.data_manager import cog_data_path
 
 from .errors import DirectoryError, UNCPathError
 
-log = logging.getLogger("red.vrt.referrals")
+log = logging.getLogger("red.vrt.referrals.engine")
 
 
-async def register_cog(cog_instance: commands.Cog, tables: list[type[Table]], trace: bool = False) -> SQLiteEngine:
+async def register_cog(
+    cog_instance: commands.Cog,
+    tables: list[type[Table]],
+    trace: bool = False,
+    skip_migrations: bool = False,
+) -> SQLiteEngine:
     """Registers a Discord cog with a database connection and runs migrations.
 
     Args:
         cog_instance (Cog): The instance of the cog to register.
         tables (list[type[Table]]): List of Piccolo Table classes to associate with the database engine.
         trace (bool, optional): Whether to enable tracing for migrations. Defaults to False.
+        skip_migrations (bool, optional): Whether to skip running migrations. Defaults to False.
 
     Raises:
         UNCPathError: If the cog path is a UNC path, which is not supported.
@@ -38,15 +44,16 @@ async def register_cog(cog_instance: commands.Cog, tables: list[type[Table]], tr
     if not save_path.is_dir():
         raise DirectoryError(f"Cog files are not in a valid directory: {save_path}")
 
-    log.info("Running migrations, if any")
-    result = await run_migrations(cog_instance, trace)
-    if "No migrations need to be run" in result:
-        log.info("No migrations needed!")
-    else:
-        log.info(f"Migration result...\n{result}")
-        if "Traceback" in result:
-            diagnoses = await diagnose_issues(cog_instance)
-            log.error(diagnoses + "\nOne or more migrations failed to run!")
+    if not skip_migrations:
+        log.info("Running migrations, if any")
+        result = await run_migrations(cog_instance, trace)
+        if "No migrations need to be run" in result:
+            log.info("No migrations needed!")
+        else:
+            log.info(f"Migration result...\n{result}")
+            if "Traceback" in result:
+                diagnoses = await diagnose_issues(cog_instance)
+                log.error(diagnoses + "\nOne or more migrations failed to run!")
 
     db = SQLiteEngine(path=str(save_path / "db.sqlite"))
     for table_class in tables:
@@ -179,7 +186,15 @@ def _find_piccolo_executable() -> Path:
         for executable_name in ["piccolo", "piccolo.exe"]:
             executable = Path(path) / executable_name
             if executable.exists() and os.access(executable, os.X_OK):
-                log.info(f"Found piccolo executable at {executable}")
                 return executable
 
-    raise FileNotFoundError("Piccolo executable not found in system PATH")
+    # Fetch the lib path from downloader
+    lib_path = cog_data_path(raw_name="Downloader") / "lib"
+    if lib_path.exists():
+        for folder in lib_path.iterdir():
+            for executable_name in ["piccolo", "piccolo.exe"]:
+                executable = folder / executable_name
+                if executable.exists() and os.access(executable, os.X_OK):
+                    return executable
+
+    raise FileNotFoundError("Piccolo package not found!")
