@@ -98,6 +98,7 @@ class Admin(MixinMeta):
             + _("`Vision Resolution:   `{}\n").format(conf.vision_detail)
             + _("`System Prompt:       `{} tokens\n").format(humanize_number(system_tokens))
             + _("`User Prompt:         `{} tokens\n").format(humanize_number(prompt_tokens))
+            + _("`Endpoint Override:   `{}\n").format(self.db.endpoint_override)
         )
 
         embed = discord.Embed(
@@ -357,7 +358,7 @@ class Admin(MixinMeta):
                 continue
 
             field = _(
-                "`Input:  `{} (${} @ ${}/1k tokens)\n" "`Output: `{} (${} @ ${}/1k tokens)\n" "`Total:  `{} (${})"
+                "`Input:  `{} (${} @ ${}/1k tokens)\n`Output: `{} (${} @ ${}/1k tokens)\n`Total:  `{} (${})"
             ).format(
                 humanize_number(usage.input_tokens),
                 round(input_cost, 2),
@@ -533,9 +534,9 @@ class Admin(MixinMeta):
             await ctx.send(_("The initial prompt has been removed!"))
         elif not prompt and not conf.prompt:
             await ctx.send(
-                _(
-                    "Please include an initial prompt or .txt file!\n" "Use `{}` to view details for this command"
-                ).format(f"{ctx.clean_prefix}help assistant prompt")
+                _("Please include an initial prompt or .txt file!\nUse `{}` to view details for this command").format(
+                    f"{ctx.clean_prefix}help assistant prompt"
+                )
             )
         elif prompt and conf.prompt:
             conf.prompt = prompt.strip()
@@ -673,7 +674,7 @@ class Admin(MixinMeta):
             await ctx.send(_("The system prompt has been removed!"))
         elif not system_prompt and not conf.system_prompt:
             await ctx.send(
-                _("Please include a system prompt or .txt file!\n" "Use `{}` to view details for this command").format(
+                _("Please include a system prompt or .txt file!\nUse `{}` to view details for this command").format(
                     f"{ctx.clean_prefix}help assistant system"
                 )
             )
@@ -1884,6 +1885,27 @@ class Admin(MixinMeta):
     # -------------------------------- OWNER ONLY ------------------------------------------
     # --------------------------------------------------------------------------------------
     # --------------------------------------------------------------------------------------
+
+    @assistant.command(name="endpointoverride")
+    @commands.is_owner()
+    async def endpoint_override(self, ctx: commands.Context, endpoint: str = None):
+        """
+        Override the OpenAI endpoint
+
+        **Note**: Using a custom endpoint is not supported!
+        """
+        if self.db.endpoint_override == endpoint:
+            return await ctx.send(_("Endpoint is already set to **{}**").format(endpoint))
+        if endpoint and not self.db.endpoint_override:
+            self.db.endpoint_override = endpoint
+            await ctx.send(_("Endpoint has been set to **{}**").format(endpoint))
+        elif endpoint and self.db.endpoint_override:
+            old = self.db.endpoint_override
+            self.db.endpoint_override = endpoint
+            await ctx.send(_("Endpoint has been changed from **{}** to **{}**").format(old, endpoint))
+        else:
+            self.db.endpoint_override = None
+            await ctx.send(_("Endpoint override has been removed!"))
 
     @assistant.command(name="wipecog")
     @commands.is_owner()

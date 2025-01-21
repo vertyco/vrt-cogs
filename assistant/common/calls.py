@@ -42,8 +42,9 @@ async def request_chat_completion_raw(
     frequency_penalty: float = 0.0,
     presence_penalty: float = 0.0,
     seed: int = None,
+    base_url: Optional[str] = None,
 ) -> ChatCompletion:
-    client = openai.AsyncOpenAI(api_key=api_key)
+    client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
 
     kwargs = {"model": model, "messages": messages}
 
@@ -100,8 +101,9 @@ async def request_embedding_raw(
     text: str,
     api_key: str,
     model: str,
+    base_url: Optional[str] = None,
 ) -> CreateEmbeddingResponse:
-    client = openai.AsyncOpenAI(api_key=api_key)
+    client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
     add_breadcrumb(
         category="api",
         message="Calling request_embedding_raw",
@@ -131,8 +133,9 @@ async def request_image_raw(
     size: t.Literal["1024x1024", "1792x1024", "1024x1792"] = "1024x1024",
     quality: t.Literal["standard", "hd"] = "standard",
     style: t.Literal["natural", "vivid"] = "vivid",
+    base_url: Optional[str] = None,
 ) -> Image:
-    client = openai.AsyncOpenAI(api_key=api_key)
+    client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
     response: ImagesResponse = await client.images.generate(
         model="dall-e-3",
         prompt=prompt,
@@ -150,8 +153,12 @@ class CreateMemoryResponse(BaseModel):
     memory_content: str
 
 
-async def create_memory_call(messages: t.List[dict], api_key: str) -> t.Union[CreateMemoryResponse, None]:
-    client = openai.AsyncOpenAI(api_key=api_key)
+async def create_memory_call(
+    messages: t.List[dict],
+    api_key: str,
+    base_url: Optional[str] = None,
+) -> t.Union[CreateMemoryResponse, None]:
+    client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
     response = await client.beta.chat.completions.parse(
         model="gpt-4o-2024-11-20",
         messages=messages,

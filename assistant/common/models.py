@@ -351,6 +351,7 @@ class DB(AssistantBaseModel):
     functions: Dict[str, CustomFunction] = {}
     listen_to_bots: bool = False
     brave_api_key: Optional[str] = None
+    endpoint_override: Optional[str] = None
 
     def get_conf(self, guild: Union[discord.Guild, int]) -> GuildSettings:
         gid = guild if isinstance(guild, int) else guild.id

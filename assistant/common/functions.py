@@ -32,7 +32,9 @@ class AssistantFunctions(MixinMeta):
     ):
         cost_key = f"{quality}{size}"
         cost = constants.IMAGE_COSTS.get(cost_key, 0)
-        image = await calls.request_image_raw(prompt, conf.api_key, size, quality, style)
+        image = await calls.request_image_raw(
+            prompt, conf.api_key, size, quality, style, base_url=self.db.endpoint_override
+        )
 
         desc = _("-# Size: {}\n-# Quality: {}\n-# Style: {}").format(size, quality, style)
         color = (await self.bot.get_embed_color(channel)) if channel else discord.Color.blue()

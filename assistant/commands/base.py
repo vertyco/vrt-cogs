@@ -95,7 +95,7 @@ If a file has no extension it will still try to read it only if it can be decode
         style: t.Literal["natural", "vivid"] = "vivid",
     ):
         conf = self.db.get_conf(interaction.guild)
-        if not conf.api_key:
+        if not conf.api_key and not self.db.endpoint_override:
             return await interaction.response.send_message(_("The API key is not set up!"), ephemeral=True)
         if not conf.image_command:
             return await interaction.response.send_message(_("Image generation is disabled!"), ephemeral=True)
@@ -106,7 +106,7 @@ If a file has no extension it will still try to read it only if it can be decode
         desc = _("-# Size: {}\n-# Quality: {}\n-# Style: {}").format(size, quality, style)
         cost_key = f"{quality}{size}"
         cost = IMAGE_COSTS.get(cost_key, 0)
-        image = await request_image_raw(prompt, conf.api_key, size, quality, style)
+        image = await request_image_raw(prompt, conf.api_key, size, quality, style, base_url=self.db.endpoint_override)
         image_bytes = b64decode(image.b64_json)
         file = discord.File(BytesIO(image_bytes), filename="image.png")
         embed = discord.Embed(description=desc, color=color)
@@ -206,7 +206,7 @@ If a file has no extension it will still try to read it only if it can be decode
         desc = (
             ctx.channel.mention
             + "\n"
-            + _("`Messages:   `{}/{}\n" "`Tokens:     `{}/{}\n" "`Expired:    `{}\n" "`Model:      `{}").format(
+            + _("`Messages:   `{}/{}\n`Tokens:     `{}/{}\n`Expired:    `{}\n`Model:      `{}").format(
                 messages,
                 conf.get_user_max_retention(ctx.author),
                 convo_tokens,
