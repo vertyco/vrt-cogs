@@ -52,7 +52,7 @@ class AssistantListener(MixinMeta):
             return
 
         conf = self.db.get_conf(message.guild)
-        if not conf.enabled or not conf.api_key:
+        if not conf.enabled or (not conf.api_key and not self.db.endpoint_override):
             return
 
         channel = message.channel
@@ -86,7 +86,7 @@ class AssistantListener(MixinMeta):
             return
 
         # Ignore common prefixes from other bots
-        if message.content.startswith((",", ".", "+", "!", "-", ">" "<", "?", "$", "%", "^", "&", "*", "_")):
+        if message.content.startswith((",", ".", "+", "!", "-", "><", "?", "$", "%", "^", "&", "*", "_")):
             return
         if not await can_use(message, conf.blacklist, respond=False):
             return
@@ -139,7 +139,7 @@ class AssistantListener(MixinMeta):
         conf = self.db.get_conf(guild)
         if not conf.enabled:
             return
-        if not conf.api_key:
+        if not conf.api_key and not self.db.endpoint_override:
             return
         # Check if cog is disabled
         if await self.bot.cog_disabled_in_guild(self, guild):
@@ -181,7 +181,7 @@ class AssistantListener(MixinMeta):
                 {"role": "system", "content": REACT_SUMMARY_MESSAGE.strip()},
                 {"role": "user", "content": content.getvalue()},
             ]
-            res = await create_memory_call(messages=messages, api_key=conf.api_key)
+            res = await create_memory_call(messages=messages, api_key=conf.api_key, base_url=self.db.endpoint_override)
             if res:
                 embedding = await self.add_embedding(guild, res.memory_name, res.memory_content)
                 if embedding is None:

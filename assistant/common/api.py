@@ -95,6 +95,7 @@ class API(MixinMeta):
             frequency_penalty=conf.frequency_penalty,
             presence_penalty=conf.presence_penalty,
             seed=conf.seed,
+            base_url=self.db.endpoint_override,
         )
         message: ChatCompletionMessage = response.choices[0].message
 
@@ -108,7 +109,12 @@ class API(MixinMeta):
         return message
 
     async def request_embedding(self, text: str, conf: GuildSettings) -> List[float]:
-        response: CreateEmbeddingResponse = await request_embedding_raw(text, conf.api_key, conf.embed_model)
+        response: CreateEmbeddingResponse = await request_embedding_raw(
+            text=text,
+            api_key=conf.api_key,
+            model=conf.embed_model,
+            base_url=self.db.endpoint_override,
+        )
 
         conf.update_usage(
             response.model,
@@ -263,7 +269,7 @@ class API(MixinMeta):
             return 0
 
     async def can_call_llm(self, conf: GuildSettings, ctx: Optional[commands.Context] = None) -> bool:
-        if not conf.api_key:
+        if not conf.api_key and not self.db.endpoint_override:
             if ctx:
                 txt = _("There are no API keys set!\n")
                 if ctx.author.id == ctx.guild.owner_id:
