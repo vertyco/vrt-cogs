@@ -32,6 +32,7 @@ class NoPing(MixinMeta):
                 return await ctx.send("An admin needs to use this command to establish the automod rule.")
             mod_roles = await self.bot.get_mod_roles(ctx.guild)
             admin_roles = await self.bot.get_admin_roles(ctx.guild)
+            except_roles = list(set(mod_roles + admin_roles))
             rule = await ctx.guild.create_automod_rule(
                 name="No Ping",
                 event_type=discord.AutoModRuleEventType.message_send,
@@ -42,7 +43,7 @@ class NoPing(MixinMeta):
                         custom_message="This user does not want to be pinged!",
                     ),
                 ],
-                exempt_roles=mod_roles + admin_roles,
+                exempt_roles=except_roles,
                 reason="No Ping rule for users who do not want to be pinged.",
             )
             created = True
