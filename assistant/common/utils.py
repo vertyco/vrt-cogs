@@ -12,7 +12,7 @@ from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
 
-from .constants import NO_SYSTEM_MESSAGES, SUPPORTS_VISION
+from .constants import NO_DEVELOPER_ROLE, SUPPORTS_VISION
 from .models import GuildSettings
 
 log = logging.getLogger("red.vrt.assistant.utils")
@@ -203,12 +203,12 @@ async def ensure_message_compatibility(
     cleaned = False
 
     model = conf.get_user_model(user)
-    if model not in NO_SYSTEM_MESSAGES:
+    if model not in NO_DEVELOPER_ROLE:
         return cleaned
 
     # Change all system messages to user messages
     for idx, message in enumerate(messages):
-        if message["role"] == "system":
+        if message["role"] in ["system", "developer"]:
             messages[idx]["role"] = "user"
             cleaned = True
     return cleaned

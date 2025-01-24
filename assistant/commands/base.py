@@ -376,7 +376,7 @@ If a file has no extension it will still try to read it only if it can be decode
         if question:
             primer += f"- User prompt: {question}\n"
 
-        payload = [{"role": "system", "content": primer}]
+        payload = [{"role": "developer", "content": primer}]
 
         for message in reversed(messages):
             # Cleanup the message content
