@@ -22,13 +22,13 @@ MODELS = {
     "gpt-4o-2024-11-20": 128000,
     "chatgpt-4o-latest": 128000,
     "o1": 128000,
-    "o1-2024-12-17": 128000,
+    "o1-2024-12-17": 200000,
     "o1-preview": 128000,
     "o1-preview-2024-09-12": 128000,
     "o1-mini": 128000,
     "o1-mini-2024-09-12": 128000,
 }
-PRICES = {
+PRICES = {  # Price per 1k tokens
     "gpt-3.5-turbo": [0.001, 0.0015],
     "gpt-3.5-turbo-0301": [0.0015, 0.002],
     "gpt-3.5-turbo-0613": [0.0015, 0.002],
@@ -101,13 +101,11 @@ SUPPORTS_SEED = [
     "gpt-4o-2024-08-06",
     "chatgpt-4o-latest",
 ]
-NO_SYSTEM_MESSAGES = [
-    "o1",
-    "o1-2024-12-17",
-    "o1-preview",
-    "o1-preview-2024-09-12",
+NO_DEVELOPER_ROLE = [  # Also doesnt support system messages
     "o1-mini",
     "o1-mini-2024-09-12",
+    "o1-preview",
+    "o1-preview-2024-09-12",
 ]
 SUPPORTS_VISION = [
     "gpt-4-vision-preview",

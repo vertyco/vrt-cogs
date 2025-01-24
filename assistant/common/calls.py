@@ -15,7 +15,7 @@ from tenacity import (
     wait_random_exponential,
 )
 
-from .constants import NO_SYSTEM_MESSAGES, SUPPORTS_SEED, SUPPORTS_TOOLS
+from .constants import NO_DEVELOPER_ROLE, SUPPORTS_SEED, SUPPORTS_TOOLS
 
 log = logging.getLogger("red.vrt.assistant.calls")
 
@@ -48,13 +48,13 @@ async def request_chat_completion_raw(
 
     kwargs = {"model": model, "messages": messages}
 
-    if model not in NO_SYSTEM_MESSAGES:
+    if "o1" not in model:
         kwargs["temperature"] = temperature
         kwargs["frequency_penalty"] = frequency_penalty
         kwargs["presence_penalty"] = presence_penalty
 
     if max_tokens > 0:
-        if model in NO_SYSTEM_MESSAGES:
+        if model in NO_DEVELOPER_ROLE:
             kwargs["max_completion_tokens"] = max_tokens
         else:
             kwargs["max_tokens"] = max_tokens
@@ -62,7 +62,7 @@ async def request_chat_completion_raw(
     if seed and model in SUPPORTS_SEED:
         kwargs["seed"] = seed
 
-    if functions and model not in NO_SYSTEM_MESSAGES:
+    if functions and model not in NO_DEVELOPER_ROLE:
         if model in SUPPORTS_TOOLS:
             tools = []
             for func in functions:

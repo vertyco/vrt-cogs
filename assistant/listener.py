@@ -178,7 +178,7 @@ class AssistantListener(MixinMeta):
         success = True
         try:
             messages = [
-                {"role": "system", "content": REACT_SUMMARY_MESSAGE.strip()},
+                {"role": "developer", "content": REACT_SUMMARY_MESSAGE.strip()},
                 {"role": "user", "content": content.getvalue()},
             ]
             res = await create_memory_call(messages=messages, api_key=conf.api_key, base_url=self.db.endpoint_override)
