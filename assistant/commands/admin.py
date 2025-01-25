@@ -1064,7 +1064,7 @@ class Admin(MixinMeta):
             formatted = box(humanized)
             return await ctx.send(_("Valid models are:\n{}").format(formatted))
 
-        if conf.api_key:
+        if conf.api_key and "deepseek" not in model:
             try:
                 client = openai.AsyncOpenAI(api_key=conf.api_key)
                 await client.models.retrieve(model)
