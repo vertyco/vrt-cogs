@@ -96,6 +96,7 @@ class Admin(MixinMeta):
             + _("`Presence Penalty:    `{}\n").format(conf.presence_penalty)
             + _("`Seed:                `{}\n").format(conf.seed)
             + _("`Vision Resolution:   `{}\n").format(conf.vision_detail)
+            + _("`Reasoning Effort:    `{}\n").format(conf.reasoning_effort)
             + _("`System Prompt:       `{} tokens\n").format(humanize_number(system_tokens))
             + _("`User Prompt:         `{} tokens\n").format(humanize_number(prompt_tokens))
             + _("`Endpoint Override:   `{}\n").format(self.db.endpoint_override)
@@ -757,6 +758,21 @@ class Admin(MixinMeta):
         else:
             conf.vision_detail = "auto"
             await ctx.send(_("Vision resolution has been set to **Auto**"))
+        await self.save_conf()
+
+    @assistant.command(name="reasoning")
+    async def switch_reasoning_effort(self, ctx: commands.Context):
+        """Switch reasoning effort for o1 model between low, medium, and high"""
+        conf = self.db.get_conf(ctx.guild)
+        if conf.reasoning_effort == "low":
+            conf.reasoning_effort = "medium"
+            await ctx.send(_("Reasoning effort has been set to **Medium**"))
+        elif conf.reasoning_effort == "medium":
+            conf.reasoning_effort = "high"
+            await ctx.send(_("Reasoning effort has been set to **High**"))
+        else:
+            conf.reasoning_effort = "low"
+            await ctx.send(_("Reasoning effort has been set to **Low**"))
         await self.save_conf()
 
     @assistant.command(name="questionmark")

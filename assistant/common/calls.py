@@ -43,6 +43,7 @@ async def request_chat_completion_raw(
     presence_penalty: float = 0.0,
     seed: int = None,
     base_url: Optional[str] = None,
+    reasoning_effort: Optional[str] = None,
 ) -> ChatCompletion:
     client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
 
@@ -53,11 +54,11 @@ async def request_chat_completion_raw(
         kwargs["frequency_penalty"] = frequency_penalty
         kwargs["presence_penalty"] = presence_penalty
 
+    if model in ["o1", "o1-2024-12-17"] and reasoning_effort is not None:
+        kwargs["reasoning_effort"] = reasoning_effort
+
     if max_tokens > 0:
-        if model in NO_DEVELOPER_ROLE:
-            kwargs["max_completion_tokens"] = max_tokens
-        else:
-            kwargs["max_tokens"] = max_tokens
+        kwargs["max_completion_tokens"] = max_tokens
 
     if seed and model in SUPPORTS_SEED:
         kwargs["seed"] = seed

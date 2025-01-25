@@ -93,6 +93,7 @@ class GuildSettings(AssistantBaseModel):
     model: str = "gpt-4o-mini"
     embed_model: str = "text-embedding-3-small"  # Or text-embedding-3-large, text-embedding-ada-002
     collab_convos: bool = False
+    reasoning_effort: str = "low"  # low, medium, high
 
     image_command: bool = True  # Allow image commands
 
