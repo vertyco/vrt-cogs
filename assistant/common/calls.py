@@ -15,7 +15,7 @@ from tenacity import (
     wait_random_exponential,
 )
 
-from .constants import NO_DEVELOPER_ROLE, SUPPORTS_SEED, SUPPORTS_TOOLS
+from .constants import NO_DEVELOPER_ROLE, PRICES, SUPPORTS_SEED, SUPPORTS_TOOLS
 
 log = logging.getLogger("red.vrt.assistant.calls")
 
@@ -49,30 +49,32 @@ async def request_chat_completion_raw(
 
     kwargs = {"model": model, "messages": messages}
 
-    if "o1" not in model:
-        kwargs["temperature"] = temperature
-        kwargs["frequency_penalty"] = frequency_penalty
-        kwargs["presence_penalty"] = presence_penalty
+    if model in PRICES:
+        # Using an OpenAI model
+        if "o1" not in model:
+            kwargs["temperature"] = temperature
+            kwargs["frequency_penalty"] = frequency_penalty
+            kwargs["presence_penalty"] = presence_penalty
 
-    if model in ["o1", "o1-2024-12-17"] and reasoning_effort is not None:
-        kwargs["reasoning_effort"] = reasoning_effort
+        if model in ["o1", "o1-2024-12-17"] and reasoning_effort is not None:
+            kwargs["reasoning_effort"] = reasoning_effort
 
-    if max_tokens > 0:
-        kwargs["max_completion_tokens"] = max_tokens
+        if max_tokens > 0:
+            kwargs["max_completion_tokens"] = max_tokens
 
-    if seed and model in SUPPORTS_SEED:
-        kwargs["seed"] = seed
+        if seed and model in SUPPORTS_SEED:
+            kwargs["seed"] = seed
 
-    if functions and model not in NO_DEVELOPER_ROLE:
-        if model in SUPPORTS_TOOLS:
-            tools = []
-            for func in functions:
-                function = {"type": "function", "function": func, "name": func["name"]}
-                tools.append(function)
-            if tools:
-                kwargs["tools"] = tools
-        else:
-            kwargs["functions"] = functions
+        if functions and model not in NO_DEVELOPER_ROLE:
+            if model in SUPPORTS_TOOLS:
+                tools = []
+                for func in functions:
+                    function = {"type": "function", "function": func, "name": func["name"]}
+                    tools.append(function)
+                if tools:
+                    kwargs["tools"] = tools
+            else:
+                kwargs["functions"] = functions
 
     add_breadcrumb(
         category="api",
