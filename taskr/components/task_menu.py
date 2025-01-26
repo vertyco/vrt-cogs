@@ -272,6 +272,12 @@ class TaskMenu(BaseMenu):
         )
         self.db.add_task(schedule)
         self.tasks = await asyncio.to_thread(self.db.get_tasks, self.guild.id)
+        # Find page of new schedule
+        for idx, sched in enumerate(self.tasks):
+            if sched.id == schedule.id:
+                self.page = idx
+                break
+
         await self.message.edit(embed=await self.get_page(), view=self)
         await interaction.followup.send(
             _("Scheduled command added, please configure it before enabling!"), ephemeral=True
@@ -816,7 +822,7 @@ class TaskMenu(BaseMenu):
         )
         embed.add_field(name=_("Advanced Cron Example"), value=value, inline=True)
         # Advanced, first friday of every 3rd month
-        value = _("First Friday of every 3rd month.\n" "- Days of Month: **1st fri**\n- Months of Year: **1/3**")
+        value = _("First Friday of every 3rd month.\n- Days of Month: **1st fri**\n- Months of Year: **1/3**")
         embed.add_field(name=_("Advanced Cron Example"), value=value, inline=True)
         # Advanced, every 2 hours between 8 AM and 5 PM on the last day of each month
         value = _(
