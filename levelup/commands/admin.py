@@ -6,7 +6,12 @@ from time import perf_counter
 import discord
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import box, humanize_number, humanize_timedelta
+from redbot.core.utils.chat_formatting import (
+    box,
+    humanize_number,
+    humanize_timedelta,
+    pagify,
+)
 
 from ..abc import MixinMeta
 from ..common import const, utils
@@ -93,7 +98,14 @@ class Admin(MixinMeta):
             joined = "\n".join(
                 _("• Level {}: {}").format(level, f"<@&{role_id}>") for level, role_id in conf.levelroles.items()
             )
-            embed.add_field(name=_("Level Roles"), value=joined, inline=False)
+            chunks = list(pagify(joined, page_length=1024))
+            if len(chunks) == 1:
+                embed.add_field(name=_("Level Roles"), value=joined, inline=False)
+            else:
+                for i, chunk in enumerate(chunks):
+                    embed.add_field(
+                        name=_("Level Roles") if i == 0 else _("Level Roles Continued"), value=chunk, inline=False
+                    )
         if conf.prestigelevel and conf.prestigedata:
             roles = _("➣ Prestige roles will {}").format(
                 _("**Stack**") if conf.stackprestigeroles else _("**Not Stack**")
