@@ -61,7 +61,7 @@ class TaskMenu(BaseMenu):
         self.tasks: list[ScheduledCommand] = []
         self.page = 0
         self.color = discord.Color.blurple()
-        self.filter: str = filter.casefold()
+        self.filter: str = filter.lower()
         self.openai_token: str | None = None
         self.is_premium: bool = True
         self.timezone: str = self.db.timezone(ctx.guild)
@@ -300,7 +300,7 @@ class TaskMenu(BaseMenu):
         await modal.wait()
         if not modal.inputs:
             return
-        res = modal.inputs["confirm"].casefold()
+        res = modal.inputs["confirm"].lower()
         if res not in ["yes", "y"]:
             return await interaction.followup.send(_("Cancelled."), ephemeral=True)
         schedule = self.tasks[self.page]
@@ -314,22 +314,22 @@ class TaskMenu(BaseMenu):
         new_pages = []
         # Search by name first
         for schedule in self.tasks:
-            if self.filter in schedule.name.casefold():
+            if self.filter in schedule.name.lower():
                 new_pages.append(schedule)
         if not new_pages:
             # Search by ID
             for schedule in self.tasks:
-                if self.filter in str(schedule.id).casefold():
+                if self.filter in str(schedule.id).lower():
                     new_pages.append(schedule)
         if not new_pages:
             # Search by command
             for schedule in self.tasks:
-                if self.filter in schedule.command.casefold():
+                if self.filter in schedule.command.lower():
                     new_pages.append(schedule)
         if not new_pages:
             # Search by channel
             for schedule in self.tasks:
-                if self.filter in str(schedule.channel_id).casefold():
+                if self.filter in str(schedule.channel_id).lower():
                     new_pages.append(schedule)
         return new_pages
 
@@ -351,7 +351,7 @@ class TaskMenu(BaseMenu):
         await modal.wait()
         if not modal.inputs:
             return
-        new_filter = modal.inputs["search"].casefold()
+        new_filter = modal.inputs["search"]
         if new_filter.isdigit():
             self.filter = ""
             self.page = int(new_filter) - 1
@@ -363,7 +363,7 @@ class TaskMenu(BaseMenu):
         if not new_filter:
             self.filter = ""
             return await self.message.edit(embed=await self.get_page(), view=self)
-        self.filter = new_filter
+        self.filter = new_filter.lower()
         new_pages = self.search_pages()
         if not new_pages:
             return await interaction.followup.send(
@@ -495,7 +495,7 @@ class TaskMenu(BaseMenu):
         if interval and not interval.isdigit():
             return await interaction.followup.send(_("Interval must be a number."), ephemeral=True)
         interval = int(interval) if interval else None
-        if units and units.casefold() not in valid_units:
+        if units and units.lower() not in valid_units:
             return await interaction.followup.send(_("Units must be one of {}.").format(valid_units), ephemeral=True)
         units = units.lower() if units else None
         # Update
@@ -1009,7 +1009,7 @@ class TaskMenu(BaseMenu):
         await modal.wait()
         if not modal.inputs:
             return
-        res = modal.inputs["confirm"].casefold()
+        res = modal.inputs["confirm"].lower()
         if res not in ["yes", "y"]:
             return await interaction.followup.send(_("Cancelled."), ephemeral=True)
         schedule = self.tasks[self.page]
