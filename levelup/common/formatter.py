@@ -14,7 +14,13 @@ from ..common.models import DB, GuildSettings, Profile, ProfileWeekly, WeeklySet
 _ = Translator("LevelUp", __file__)
 
 
-def get_user_position(conf: GuildSettings, lbtype: t.Literal["lb", "weekly"], target_user: int, key: str) -> dict:
+def get_user_position(
+    guild: discord.Guild,
+    conf: GuildSettings,
+    lbtype: t.Literal["lb", "weekly"],
+    target_user: int,
+    key: str,
+) -> dict:
     """Get the position of a user in the leaderboard
 
     Args:
@@ -42,7 +48,8 @@ def get_user_position(conf: GuildSettings, lbtype: t.Literal["lb", "weekly"], ta
                 profile.level += profile.prestige * conf.prestigelevel
             lb[user_id] = profile
 
-    sorted_users = sorted(lb.items(), key=lambda x: getattr(x[1], key), reverse=True)
+    valid_users = {k: v for k, v in lb.items() if guild.get_member(k)}
+    sorted_users = sorted(valid_users.items(), key=lambda x: getattr(x[1], key), reverse=True)
     for idx, (uid, _) in enumerate(sorted_users):
         if uid == target_user:
             position = idx + 1
