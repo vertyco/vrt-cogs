@@ -68,9 +68,11 @@ class AssistantFunctions(MixinMeta):
             "Accept-Encoding": "gzip",
             "X-Subscription-Token": self.db.brave_api_key,
         }
+        locale_parts = str(guild.preferred_locale).split("-")
+        country = locale_parts[1].lower() if len(locale_parts) > 1 else "us"
         params = {
             "q": search_query,
-            "country": str(guild.preferred_locale).split("-")[1].lower(),
+            "country": country,
             "search_lang": str(guild.preferred_locale).split("-")[0],
             "count": search_result_amount,
             "safesearch": "off",
