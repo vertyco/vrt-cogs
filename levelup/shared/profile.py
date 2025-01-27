@@ -145,8 +145,8 @@ class ProfileFormatting(MixinMeta):
             formatter.get_user_position,
             guild=guild,
             conf=conf,
-            lb_type="xp",
-            user_id=member.id,
+            lbtype="xp",
+            target_user=member.id,
             key="xp",
         )
         bar = utils.get_bar(progress, current_diff)
