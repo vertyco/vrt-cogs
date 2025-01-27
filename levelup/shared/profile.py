@@ -143,10 +143,11 @@ class ProfileFormatting(MixinMeta):
 
         stat = await asyncio.to_thread(
             formatter.get_user_position,
-            conf,
-            "lb",
-            member.id,
-            "xp",
+            guild=guild,
+            conf=conf,
+            lb_type="xp",
+            user_id=member.id,
+            key="xp",
         )
         bar = utils.get_bar(progress, current_diff)
 
