@@ -61,16 +61,14 @@ class NoPing(MixinMeta):
             blocked_ids: list[str] = PING_RE.findall(", ".join(rule.trigger.keyword_filter))
 
         user_id = str(ctx.author.id)
-        if created:
-            txt = "You will no longer be pinged."
-        elif user_id in blocked_ids:
+        txt = f"{ctx.author.display_name}, you will no longer be pinged."
+        if user_id in blocked_ids:
             blocked_ids.remove(user_id)
             new_triggers = [f"*<@{user_id}>*" for user_id in blocked_ids]
-            txt = "You can now be pinged."
+            txt = f"{ctx.author.display_name}, you can now be pinged."
         else:
             blocked_ids.append(user_id)
             new_triggers = [f"*<@{user_id}>*" for user_id in blocked_ids]
-            txt = "You will no longer be pinged."
 
         if created:
             txt += " A new rule has been created for this, you may configure it further in the server settings."
