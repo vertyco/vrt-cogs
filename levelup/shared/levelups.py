@@ -207,8 +207,6 @@ class LevelUps(MixinMeta):
                 with suppress(discord.HTTPException):
                     if conf.notifymention and message is not None:
                         await message.reply(msg_txt, file=file, mention_author=True)
-                    if conf.notifymention:
-                        await current_channel.send(member.mention, file=file)
                     else:
                         await current_channel.send(msg_txt, file=file)
 
