@@ -26,7 +26,7 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
     """Schedule bot commands with ease"""
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.0.10b"
+    __version__ = "0.0.11b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -143,7 +143,7 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
                     # Job already exists and is up to date
                     # log.debug("Task %s already scheduled", task)
                     continue
-                log.debug("Rescheduling task %s", task)
+                log.info("Rescheduling task %s", task)
             timezone = self.db.timezones.get(task.guild_id, "UTC")
             self.scheduler.add_job(
                 func=self.run_task,
@@ -154,8 +154,9 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
                 replace_existing=True,
                 max_instances=1,
                 next_run_time=task.next_run(timezone),
+                misfire_grace_time=None,
             )
-            log.debug("Task %s scheduled", task)
+            log.info("Task %s scheduled", task)
             changed = True
 
         # Remove any jobs that are no longer active
@@ -163,7 +164,7 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
             if job.id in self.db.tasks and self.db.tasks[job.id].enabled:
                 log.debug("Task %s is still active", job.id)
                 continue
-            log.debug("Removing job %s", job)
+            log.info("Removing job %s", job)
             self.scheduler.remove_job(job.id)
             changed = True
         return changed
@@ -176,7 +177,7 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
         job = self.scheduler.get_job(task.id)
         if job:
             self.scheduler.remove_job(job.id)
-            log.debug("Removed job %s", job)
+            log.info("Removed job %s", job)
             return True
         return False
 
