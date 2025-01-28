@@ -55,7 +55,7 @@ class LevelUps(MixinMeta):
         profile.level = calculated_level
         # User has reached a new level, time to log and award roles if needed
         await self.ensure_roles(member, conf)
-        current_channel = channel or message.channel if message else None
+        current_channel = channel or (message.channel if message else None)
         log_channel = guild.get_channel(conf.notifylog) if conf.notifylog else None
 
         role = None
@@ -71,18 +71,20 @@ class LevelUps(MixinMeta):
             "role": role.name if role else None,
             "server": guild.name,
         }
+        username = member.display_name if profile.show_displayname else member.name
+        mention = member.mention if conf.notifymention else username
         if role:
             if dm_txt_raw := conf.role_awarded_dm:
                 dm_txt = dm_txt_raw.format(**placeholders)
             else:
                 dm_txt = _("You just reached level {} in {} and obtained the {} role!").format(
-                    profile.level, guild.name, role.name
+                    profile.level, guild.name, role.mention
                 )
             if msg_txt_raw := conf.role_awarded_msg:
                 msg_txt = msg_txt_raw.format(**placeholders)
             else:
                 msg_txt = _("{} just reached level {} and obtained the {} role!").format(
-                    member.mention, profile.level, role.name
+                    mention, profile.level, role.mention
                 )
         else:
             placeholders.pop("role")
@@ -93,9 +95,7 @@ class LevelUps(MixinMeta):
             if msg_txt_raw := conf.levelup_msg:
                 msg_txt = msg_txt_raw.format(**placeholders)
             else:
-                msg_txt = _("{} just reached level {}!").format(
-                    member.mention if conf.notifymention else member.display_name, profile.level
-                )
+                msg_txt = _("{} just reached level {}!").format(mention, profile.level)
 
         if conf.use_embeds or self.db.force_embeds:
             if conf.notifydm:
@@ -109,8 +109,10 @@ class LevelUps(MixinMeta):
             embed = discord.Embed(
                 description=msg_txt,
                 color=member.color,
-            ).set_author(name=member.display_name, icon_url=member.display_avatar)
-
+            ).set_author(
+                name=member.display_name if profile.show_displayname else member.name,
+                icon_url=member.display_avatar,
+            )
             if current_channel and conf.notify:
                 with suppress(discord.HTTPException):
                     if conf.notifymention:
@@ -121,8 +123,7 @@ class LevelUps(MixinMeta):
             current_channel_id = current_channel.id if current_channel else 0
             if log_channel and log_channel.id != current_channel_id:
                 with suppress(discord.HTTPException):
-                    if not conf.notify and conf.notifymention:
-                        # Notify is off but mention is on, so mention the user in logs instead
+                    if conf.notifymention:
                         await log_channel.send(member.mention, embed=embed)
                     else:
                         await log_channel.send(embed=embed)
@@ -204,25 +205,21 @@ class LevelUps(MixinMeta):
             if current_channel and conf.notify:
                 file = discord.File(BytesIO(img_bytes), filename=f"levelup.{ext}")
                 with suppress(discord.HTTPException):
+                    if conf.notifymention and message is not None:
+                        await message.reply(msg_txt, file=file, mention_author=True)
                     if conf.notifymention:
                         await current_channel.send(member.mention, file=file)
                     else:
-                        await current_channel.send(dm_txt, file=file)
+                        await current_channel.send(msg_txt, file=file)
 
             current_channel_id = current_channel.id if current_channel else 0
             if log_channel and log_channel.id != current_channel_id:
                 file = discord.File(BytesIO(img_bytes), filename=f"levelup.{ext}")
                 with suppress(discord.HTTPException):
-                    if not conf.notify and conf.notifymention:
-                        # Notify is off but mention is on, so mention the user in logs instead
-                        await log_channel.send(msg_txt, file=file)
+                    if conf.notifymention:
+                        await current_channel.send(msg_txt, file=file)
                     else:
-                        await log_channel.send(
-                            msg_txt.replace(
-                                member.mention, member.display_name if profile.show_displayname else member.name
-                            ),
-                            file=file,
-                        )
+                        await log_channel.send(msg_txt, file=file)
 
         payload = {
             "guild": guild,  # discord.Guild
