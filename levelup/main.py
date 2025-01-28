@@ -77,7 +77,7 @@ class LevelUp(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "4.3.17"
+    __version__ = "4.3.18"
     __contributors__ = [
         "[aikaterna](https://github.com/aikaterna/aikaterna-cogs)",
         "[AAA3A](https://github.com/AAA3A-AAA3A/AAA3A-cogs)",
@@ -206,23 +206,8 @@ class LevelUp(
             try:
                 self.db = await asyncio.to_thread(DB.from_file, self.settings_file)
             except Exception as e:
-                log.error("Failed to load config, trying to load from backup files", exc_info=e)
-                # Try to load from one of the .bak files (i.e. settings.bak1, settings.bak2, settings.bak3)
-                checkpoints = list(self.settings_file.parent.glob(f"{self.settings_file.stem}.bak*"))
-                if checkpoints:
-                    # Sort by newest first
-                    checkpoints.sort(key=lambda x: x.stat().st_mtime, reverse=True)
-                    for backup_file in checkpoints:
-                        try:
-                            self.db = await asyncio.to_thread(DB.from_file, backup_file)
-                            log.warning(f"Loaded from backup file: {backup_file}")
-                            self.save()
-                            break
-                        except UnicodeDecodeError:
-                            log.error(f"Failed to load from backup file: {backup_file}")
-                else:
-                    log.error("No backups found! Failed to load config!")
-                    return
+                log.error("Failed to load config!", exc_info=e)
+                return
         elif self.old_settings_file.exists():
             raw_settings = self.old_settings_file.read_text()
             settings = orjson.loads(raw_settings)
