@@ -4,6 +4,7 @@ from typing import List, Optional
 
 import httpx
 import openai
+from aiocache import cached
 from openai.types import CreateEmbeddingResponse, Image, ImagesResponse
 from openai.types.chat import ChatCompletion
 from pydantic import BaseModel
@@ -88,6 +89,7 @@ async def request_chat_completion_raw(
     return response
 
 
+@cached(ttl=60)
 @retry(
     retry=retry_if_exception_type(
         t.Union[

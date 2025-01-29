@@ -108,6 +108,15 @@ class Admin(MixinMeta):
             color=ctx.author.color,
         )
 
+        name = _("Auto Answer")
+        val = _(
+            "Auto-answer will trigger the bot outside of the assistant channel if a question is detected and an embedding is not found.\n"
+        )
+        val += _("`Status:    `{}\n").format(_("Enabled") if conf.auto_answer else _("Disabled"))
+        val += _("`Threshold: `{}\n").format(conf.auto_answer_threshold)
+        val += _("`Ignored:   `{}\n").format(humanize_list([f"<#{i}>" for i in conf.auto_answer_ignored_channels]))
+        embed.add_field(name=name, value=val, inline=False)
+
         if conf.allow_sys_prompt_override:
             val = _("System prompt override is **Allowed**, users can set a personal system prompt per convo.")
         else:
@@ -743,6 +752,44 @@ class Admin(MixinMeta):
         else:
             conf.image_command = True
             await ctx.send(_("The draw command is now **Enabled**"))
+        await self.save_conf()
+
+    @assistant.command(name="autoanswer")
+    async def toggle_autoanswer(self, ctx: commands.Context):
+        """Toggle the auto-answer feature on or off"""
+        conf = self.db.get_conf(ctx.guild)
+        if conf.auto_answer:
+            conf.auto_answer = False
+            await ctx.send(_("Auto-answer has been **Disabled**"))
+        else:
+            conf.auto_answer = True
+            await ctx.send(_("Auto-answer has been **Enabled**"))
+        await self.save_conf()
+
+    @assistant.command(name="autoanswerthreshold")
+    async def set_autoanswer_threshold(self, ctx: commands.Context, threshold: float):
+        """Set the auto-answer threshold for the bot"""
+        conf = self.db.get_conf(ctx.guild)
+        conf.auto_answer_threshold = threshold
+        await ctx.send(_("Auto-answer threshold has been set to **{}**").format(threshold))
+        await self.save_conf()
+
+    @assistant.command(name="autoanswerignore")
+    async def autoanswer_ignore_channel(self, ctx: commands.Context, channel: discord.TextChannel | int):
+        """Ignore a channel for auto-answer"""
+        conf = self.db.get_conf(ctx.guild)
+        if isinstance(channel, discord.TextChannel):
+            channel_id = channel.id
+            mention = channel.mention
+        else:
+            channel_id = channel
+            mention = f"<#{channel}>"
+        if channel_id in conf.auto_answer_ignored_channels:
+            conf.auto_answer_ignored_channels.remove(channel_id)
+            await ctx.send(_("Auto-answer will no longer ignore {}").format(mention))
+        else:
+            conf.auto_answer_ignored_channels.append(channel_id)
+            await ctx.send(_("Auto-answer will now ignore {}").format(mention))
         await self.save_conf()
 
     @assistant.command(name="resolution")
