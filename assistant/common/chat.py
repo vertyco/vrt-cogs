@@ -52,7 +52,12 @@ _ = Translator("Assistant", __file__)
 @cog_i18n(_)
 class ChatHandler(MixinMeta):
     async def handle_message(
-        self, message: discord.Message, question: str, conf: GuildSettings, listener: bool = False
+        self,
+        message: discord.Message,
+        question: str,
+        conf: GuildSettings,
+        listener: bool = False,
+        model_override: Optional[str] = None,
     ):
         outputfile_pattern = r"--outputfile\s+([^\s]+)"
         extract_pattern = r"--extract"
@@ -149,13 +154,14 @@ class ChatHandler(MixinMeta):
         else:
             try:
                 reply = await self.get_chat_response(
-                    question,
-                    message.author,
-                    message.guild,
-                    message.channel,
-                    conf,
+                    message=question,
+                    author=message.author,
+                    guild=message.guild,
+                    channel=message.channel,
+                    conf=conf,
                     message_obj=message,
                     images=images,
+                    model_override=model_override,
                 )
             except openai.InternalServerError as e:
                 if e.body and isinstance(e.body, dict):
@@ -240,6 +246,7 @@ class ChatHandler(MixinMeta):
         extend_function_calls: bool = True,
         message_obj: Optional[discord.Message] = None,
         images: list[str] = None,
+        model_override: Optional[str] = None,
     ) -> Union[str, None]:
         """Call the API asynchronously"""
         functions = function_calls.copy() if function_calls else []
@@ -269,16 +276,17 @@ class ChatHandler(MixinMeta):
         conversation.refresh()
         try:
             return await self._get_chat_response(
-                message,
-                author,
-                guild,
-                channel,
-                conf,
-                conversation,
-                functions,
-                mapping,
-                message_obj,
-                images,
+                message=message,
+                author=author,
+                guild=guild,
+                channel=channel,
+                conf=conf,
+                conversation=conversation,
+                function_calls=functions,
+                function_map=mapping,
+                message_obj=message_obj,
+                images=images,
+                model_override=model_override,
             )
         finally:
             conversation.cleanup(conf, author)
@@ -296,6 +304,7 @@ class ChatHandler(MixinMeta):
         function_map: Dict[str, Callable],
         message_obj: Optional[discord.Message] = None,
         images: list[str] = None,
+        model_override: Optional[str] = None,
     ) -> Union[str, None]:
         if isinstance(author, int):
             author = guild.get_member(author)
@@ -364,16 +373,16 @@ class ChatHandler(MixinMeta):
             del function_map["search_internet"]
 
         messages = await self.prepare_messages(
-            message,
-            guild,
-            conf,
-            conversation,
-            author,
-            channel,
-            query_embedding,
-            extras,
-            function_calls,
-            images,
+            message=message,
+            guild=guild,
+            conf=conf,
+            conversation=conversation,
+            author=author,
+            channel=channel,
+            query_embedding=query_embedding,
+            extras=extras,
+            function_calls=function_calls,
+            images=images,
         )
         reply = None
 
@@ -411,6 +420,7 @@ class ChatHandler(MixinMeta):
                     conf=conf,
                     functions=function_calls,
                     member=author,
+                    model_override=model_override,
                 )
             except httpx.ReadTimeout:
                 reply = _("Request timed out, please try again.")

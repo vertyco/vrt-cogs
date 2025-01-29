@@ -792,6 +792,16 @@ class Admin(MixinMeta):
             await ctx.send(_("Auto-answer will now ignore {}").format(mention))
         await self.save_conf()
 
+    @assistant.command(name="autoanswermodel")
+    async def set_autoanswer_model(self, ctx: commands.Context, model: str):
+        """Set the model used for auto-answer"""
+        conf = self.db.get_conf(ctx.guild)
+        if model not in MODELS:
+            return await ctx.send(_("Invalid model, valid models are: {}").format(humanize_list(MODELS)))
+        conf.auto_answer_model = model
+        await ctx.send(_("Auto-answer model has been set to **{}**").format(model))
+        await self.save_conf()
+
     @assistant.command(name="resolution")
     async def switch_vision_resolution(self, ctx: commands.Context):
         """Switch vision resolution between high and low for relevant GPT-4-Turbo models"""
