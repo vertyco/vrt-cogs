@@ -19,6 +19,49 @@ log = logging.getLogger("red.vrt.assistant.utils")
 _ = Translator("Assistant", __file__)
 
 
+def is_question(text: str):
+    text_stripped = text.strip()
+
+    # Quick check for question mark
+    if text_stripped.endswith("?"):
+        return True
+
+    lower_text = text_stripped.lower()
+
+    # List of words typically used in questions
+    question_indicators = [
+        "who",
+        "what",
+        "why",
+        "how",
+        "where",
+        "when",
+        "which",
+        "is",
+        "are",
+        "do",
+        "does",
+        "did",
+        "can",
+        "could",
+        "would",
+        "will",
+        "am",
+    ]
+
+    tokens = lower_text.split()
+
+    # Check if the first token is a question indicator
+    if len(tokens) > 0 and tokens[0] in question_indicators:
+        return True
+
+    # Check if any question word is present in the text
+    if any(word in tokens for word in question_indicators):
+        return True
+
+    return False
+
+
 def clean_name(name: str):
     """
     Cleans the function name to ensure it only contains alphanumeric characters,

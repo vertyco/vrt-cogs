@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import functools
 import json
 import logging
@@ -102,9 +103,9 @@ class ChatHandler(MixinMeta):
             has_extension = i.filename.count(".") > 0
             if any(i.filename.lower().endswith(ext) for ext in img_ext):
                 # No reason to download the image now, we can just use the url
-                # image_bytes: bytes = await i.read()
-                # image_b64 = base64.b64encode(image_bytes).decode()
-                images.append(i.url)
+                image_bytes: bytes = await i.read()
+                image_b64 = base64.b64encode(image_bytes).decode()
+                images.append(image_b64)
                 continue
 
             if not any(i.filename.lower().endswith(ext) for ext in READ_EXTENSIONS) and has_extension:
@@ -141,7 +142,7 @@ class ChatHandler(MixinMeta):
                         include = False
 
                 if include:
-                    question = f"# {ref.author.name} SAID:\n{ref.content}\n\n" f"# REPLY\n{question}"
+                    question = f"# {ref.author.name} SAID:\n{ref.content}\n\n# REPLY\n{question}"
 
         if get_last_message:
             reply = conversation.messages[-1]["content"] if conversation.messages else _("No message history!")

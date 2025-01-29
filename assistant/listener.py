@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import typing as t
 from io import StringIO
@@ -9,7 +10,7 @@ from redbot.core.i18n import Translator
 from .abc import MixinMeta
 from .common.calls import create_memory_call
 from .common.constants import REACT_SUMMARY_MESSAGE
-from .common.utils import can_use, embed_to_content
+from .common.utils import can_use, embed_to_content, is_question
 
 log = logging.getLogger("red.vrt.assistant.listener")
 _ = Translator("Assistant", __file__)
@@ -27,11 +28,11 @@ class AssistantListener(MixinMeta):
             return
         if message.author.id in self.responding_to:
             return
-        # If message was from a bot
-        if message.author.bot and not self.db.listen_to_bots:
-            return
         # If message wasn't sent in a guild
         if not message.guild:
+            return
+        # If message was from a bot
+        if message.author.bot and not self.db.listen_to_bots:
             return
         # Ignore messages without content
         if not message.content:
@@ -72,28 +73,54 @@ class AssistantListener(MixinMeta):
         if ref and ref.author.id == self.bot.user.id:
             bot_mentioned = True
 
-        if channel.id != conf.channel_id:
-            # Message outside of assistant channel
-            # The ONLY way we dont return is if the bot was mentioned and mention_respond is enabled
-            if not bot_mentioned or not conf.mention_respond:
-                return
-        elif ref is not None:  # Message in assistant channel and user is replying to someone
-            # If user is replying to anyone other than the bot, ignore
-            if ref.author.id != self.bot.user.id:
-                return
-        elif mention_ids and self.bot.user.id not in mention_ids:
-            # Message in the assistant channel and user mentioned someone other than the bot
-            return
-
         # Ignore common prefixes from other bots
         if message.content.startswith((",", ".", "+", "!", "-", "><", "?", "$", "%", "^", "&", "*", "_")):
             return
         if not await can_use(message, conf.blacklist, respond=False):
             return
-        if not message.content.endswith("?") and conf.endswith_questionmark and self.bot.user.id not in mention_ids:
-            return
         if len(message.content.strip()) < conf.min_length:
             return
+
+        # Return under the following conditions
+        conditions = [
+            channel.id == conf.channel_id,
+            (
+                (ref is not None and ref.author.id != self.bot.user.id)
+                or (mention_ids and self.bot.user.id not in mention_ids)
+            ),
+        ]
+        if all(conditions):
+            # User is replying to someone else or mentioning someone else in the assistant channel
+            return
+
+        conditions = [
+            channel.id != conf.channel_id,
+            (not bot_mentioned or not conf.mention_respond),
+        ]
+        if conf.auto_answer and is_question(message.content) and channel.id not in conf.auto_answer_ignored_channels:
+            # Check if any embeddings match above the threshold
+            embedding = await self.request_embedding(message.content, conf)
+            related = await asyncio.to_thread(
+                conf.get_related_embeddings,
+                query_embedding=embedding,
+                top_n_override=1,
+                relatedness_override=conf.auto_answer_threshold,
+            )
+            conditions.append(len(related) == 0)
+        if all(conditions):
+            # Message was not in the assistant channel and bot was not mentioned
+            return
+
+        conditions = [
+            channel.id == conf.channel_id,
+            not message.content.endswith("?"),
+            conf.endswith_questionmark,
+            self.bot.user.id not in mention_ids,
+        ]
+        if all(conditions):
+            # Message was in the assistant channel and didn't end with a question mark while the config requires it
+            return
+
         self.responding_to.add(message.author.id)
         try:
             async with channel.typing():

@@ -95,6 +95,11 @@ class GuildSettings(AssistantBaseModel):
     collab_convos: bool = False
     reasoning_effort: str = "low"  # low, medium, high
 
+    # Auto-answer
+    auto_answer: bool = False  # Answer questions anywhere if one is detected and embedding is found for it
+    auto_answer_threshold: float = 0.7  # 0.0 - 1.0  # Confidence threshold for auto-answer
+    auto_answer_ignored_channels: List[int] = []  # Channel IDs to ignore auto-answer
+
     image_command: bool = True  # Allow image commands
 
     timezone: str = "UTC"
