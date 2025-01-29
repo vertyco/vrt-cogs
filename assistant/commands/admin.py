@@ -112,6 +112,7 @@ class Admin(MixinMeta):
         val = _(
             "Auto-answer will trigger the bot outside of the assistant channel if a question is detected and an embedding is not found.\n"
         )
+        val += _("`Model:     `{}\n").format(conf.auto_answer_model)
         val += _("`Status:    `{}\n").format(_("Enabled") if conf.auto_answer else _("Disabled"))
         val += _("`Threshold: `{}\n").format(conf.auto_answer_threshold)
         val += _("`Ignored:   `{}\n").format(humanize_list([f"<#{i}>" for i in conf.auto_answer_ignored_channels]))
