@@ -99,6 +99,7 @@ class GuildSettings(AssistantBaseModel):
     auto_answer: bool = False  # Answer questions anywhere if one is detected and embedding is found for it
     auto_answer_threshold: float = 0.7  # 0.0 - 1.0  # Confidence threshold for auto-answer
     auto_answer_ignored_channels: List[int] = []  # Channel IDs to ignore auto-answer
+    auto_answer_model: str = "gpt-4o-mini"  # Model to use for auto-answer
 
     image_command: bool = True  # Allow image commands
 

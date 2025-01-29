@@ -81,6 +81,13 @@ class AssistantListener(MixinMeta):
         if len(message.content.strip()) < conf.min_length:
             return
 
+        handle_message_kwargs = {
+            "message": message,
+            "question": message.content,
+            "conf": conf,
+            "listener": True,
+        }
+
         # Return under the following conditions
         conditions = [
             channel.id == conf.channel_id,
@@ -107,8 +114,10 @@ class AssistantListener(MixinMeta):
                 relatedness_override=conf.auto_answer_threshold,
             )
             conditions.append(len(related) == 0)
+            if len(related) > 0:
+                handle_message_kwargs["model_override"] = conf.auto_answer_model
         if all(conditions):
-            # Message was not in the assistant channel and bot was not mentioned
+            # Message was not in the assistant channel and bot was not mentioned and auto answer is enabled and no related embeddings
             return
 
         conditions = [
@@ -124,7 +133,7 @@ class AssistantListener(MixinMeta):
         self.responding_to.add(message.author.id)
         try:
             async with channel.typing():
-                await self.handle_message(message, message.content, conf, listener=True)
+                await self.handle_message(**handle_message_kwargs)
         finally:
             self.responding_to.remove(message.author.id)
 
