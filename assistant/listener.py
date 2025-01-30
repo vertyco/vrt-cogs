@@ -89,15 +89,10 @@ class AssistantListener(MixinMeta):
         }
 
         # Return under the following conditions
-        conditions = [
-            channel.id == conf.channel_id,
-            (
-                (ref is not None and ref.author.id != self.bot.user.id)
-                or (mention_ids and self.bot.user.id not in mention_ids)
-            ),
-        ]
-        if all(conditions):
-            # User is replying to someone else or mentioning someone else in the assistant channel
+        if (ref is not None and ref.author.id != self.bot.user.id) or (
+            mention_ids and self.bot.user.id not in mention_ids
+        ):
+            # Do not respond to messages that are replies to other messages or mention someone else
             return
 
         conditions = [
