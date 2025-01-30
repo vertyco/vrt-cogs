@@ -22,44 +22,51 @@ _ = Translator("Assistant", __file__)
 def is_question(text: str):
     text_stripped = text.strip()
 
-    # Quick check for question mark
+    # Quick check for question mark - most reliable indicator
     if text_stripped.endswith("?"):
         return True
 
     lower_text = text_stripped.lower()
 
-    # List of words typically used in questions
-    question_indicators = [
-        "who",
-        "what",
-        "why",
-        "how",
-        "where",
-        "when",
-        "which",
-        "is",
-        "are",
-        "do",
-        "does",
-        "did",
-        "can",
-        "could",
-        "would",
-        "will",
-        "am",
+    # Common question patterns at the start of a sentence
+    start_patterns = [
+        r"^(what|who|when|where|why|how|which)(\s|\s.+)?$",
+        r"^(do|does|did|would|could|should|can|will|have|has|is|are|am)(\s|\s.+)?$",
+        r"^(isn't|aren't|won't|wouldn't|couldn't|shouldn't|can't|haven't|hasn't)(\s|\s.+)?$",
+        r"^(isnt|arent|wont|wouldnt|couldnt|shouldnt|cant|havent|hasnt)(\s|\s.+)?$",
     ]
 
-    tokens = lower_text.split()
-
-    # Check if the first token is a question indicator
-    if len(tokens) > 0 and tokens[0] in question_indicators:
+    if any(re.match(pattern, lower_text) for pattern in start_patterns):
         return True
 
-    # Check if any question word is present in the text
-    if any(word in tokens for word in question_indicators):
-        return True
+    # Negative indicators that suggest a statement rather than a question
+    statement_indicators = [
+        "i think",
+        "i believe",
+        "i know",
+        "i understand",
+        "therefore",
+        "thus",
+        "hence",
+        "consequently",
+        "because",
+        "since",
+        "as a result",
+    ]
 
-    return False
+    if any(indicator in lower_text for indicator in statement_indicators):
+        return False
+
+    # Question word combinations that are likely to indicate a question
+    question_patterns = [
+        r"\b(can|could|would|will) you\b",
+        r"\b(do|does|did) (you|anyone|somebody|anyone|they)\b",
+        r"\b(is|are) there\b",
+        r"\blet me know\b",
+        r"\b(what|who|when|where|why|how) (is|are|do|does|did)\b",
+    ]
+
+    return any(re.search(pattern, lower_text) for pattern in question_patterns)
 
 
 def clean_name(name: str):
