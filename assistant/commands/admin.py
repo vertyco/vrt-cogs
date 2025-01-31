@@ -781,12 +781,12 @@ class Admin(MixinMeta):
     ):
         """Ignore a channel for auto-answer"""
         conf = self.db.get_conf(ctx.guild)
-        if isinstance(channel, discord.TextChannel):
-            channel_id = channel.id
-            mention = channel.mention
-        else:
+        if isinstance(channel, int):
             channel_id = channel
             mention = f"<#{channel}>"
+        else:
+            channel_id = channel.id
+            mention = channel.mention
 
         if channel_id in conf.auto_answer_ignored_channels:
             conf.auto_answer_ignored_channels.remove(channel_id)
