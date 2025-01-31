@@ -27,6 +27,8 @@ MODELS = {
     "o1-preview-2024-09-12": 128000,
     "o1-mini": 128000,
     "o1-mini-2024-09-12": 128000,
+    "o3-mini": 200000,
+    "o3-mini-2025-01-31": 200000,
 }
 PRICES = {  # Price per 1k tokens
     "gpt-3.5-turbo": [0.001, 0.0015],
@@ -64,6 +66,8 @@ PRICES = {  # Price per 1k tokens
     "o1-preview-2024-09-12": [0.015, 0.06],
     "o1-mini": [0.003, 0.012],
     "o1-mini-2024-09-12": [0.003, 0.012],
+    "o3-mini": [0.0011, 0.0044],
+    "o3-mini-2025-01-31": [0.0011, 0.0044],
     "text-ada-001": [0.0004, 0.0016],
     "text-babbage-001": [0.0006, 0.0024],
     "text-curie-001": [0.003, 0.012],
@@ -121,6 +125,8 @@ SUPPORTS_VISION = [
     "chatgpt-4o-latest",
     "o1",
     "o1-2024-12-17",
+    "o3-mini",
+    "o3-mini-2025-01-31",
 ]
 SUPPORTS_TOOLS = [
     "gpt-3.5-turbo-1106",
@@ -140,6 +146,8 @@ SUPPORTS_TOOLS = [
     "chatgpt-4o-latest",
     "o1",
     "o1-2024-12-17",
+    "o3-mini",
+    "o3-mini-2025-01-31",
 ]
 READ_EXTENSIONS = [
     ".txt",
