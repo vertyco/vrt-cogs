@@ -776,7 +776,9 @@ class Admin(MixinMeta):
         await self.save_conf()
 
     @assistant.command(name="autoanswerignore")
-    async def autoanswer_ignore_channel(self, ctx: commands.Context, channel: discord.TextChannel | int):
+    async def autoanswer_ignore_channel(
+        self, ctx: commands.Context, channel: discord.TextChannel | discord.CategoryChannel | int
+    ):
         """Ignore a channel for auto-answer"""
         conf = self.db.get_conf(ctx.guild)
         if isinstance(channel, discord.TextChannel):
@@ -785,10 +787,13 @@ class Admin(MixinMeta):
         else:
             channel_id = channel
             mention = f"<#{channel}>"
+
         if channel_id in conf.auto_answer_ignored_channels:
             conf.auto_answer_ignored_channels.remove(channel_id)
             await ctx.send(_("Auto-answer will no longer ignore {}").format(mention))
         else:
+            if not ctx.guild.get_channel(channel_id):
+                return await ctx.send(_("Channel not found!"))
             conf.auto_answer_ignored_channels.append(channel_id)
             await ctx.send(_("Auto-answer will now ignore {}").format(mention))
         await self.save_conf()

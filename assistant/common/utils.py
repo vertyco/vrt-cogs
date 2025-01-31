@@ -28,23 +28,14 @@ def is_question(text: str):
 
     lower_text = text_stripped.lower()
 
-    # Common question patterns at the start of a sentence
-    start_patterns = [
-        r"^(what|who|when|where|why|how|which)(\s|\s.+)?$",
-        r"^(do|does|did|would|could|should|can|will|have|has|is|are|am)(\s|\s.+)?$",
-        r"^(isn't|aren't|won't|wouldn't|couldn't|shouldn't|can't|haven't|hasn't)(\s|\s.+)?$",
-        r"^(isnt|arent|wont|wouldnt|couldnt|shouldnt|cant|havent|hasnt)(\s|\s.+)?$",
-    ]
-
-    if any(re.match(pattern, lower_text) for pattern in start_patterns):
-        return True
-
-    # Negative indicators that suggest a statement rather than a question
+    # More statement indicators that suggest not a question
     statement_indicators = [
         "i think",
         "i believe",
         "i know",
         "i understand",
+        "i guess",
+        "i assume",
         "therefore",
         "thus",
         "hence",
@@ -52,20 +43,43 @@ def is_question(text: str):
         "because",
         "since",
         "as a result",
+        "so",
+        "i want",
+        "i need",
+        "i would like",
+        "please",
+        "maybe",
+        "perhaps",
+        "possibly",
+        "it seems",
+        "it appears",
+        "apparently",
     ]
 
     if any(indicator in lower_text for indicator in statement_indicators):
         return False
 
-    # Question word combinations that are likely to indicate a question
-    question_patterns = [
-        r"\b(can|could|would|will) you\b",
-        r"\b(do|does|did) (you|anyone|somebody|anyone|they)\b",
-        r"\b(is|are) there\b",
-        r"\blet me know\b",
-        r"\b(what|who|when|where|why|how) (is|are|do|does|did)\b",
+    # Stricter patterns for question starts that require proper sentence structure
+    start_patterns = [
+        r"^(what|who|when|where|why|how|which)\s+(is|are|was|were|do|does|did|would|could|should|can|will|have|has)\s+\w+",
+        r"^(do|does|did|would|could|should|can|will|have|has)\s+(you|we|they|it|he|she|the)\s+\w+",
+        r"^(isn't|aren't|won't|wouldn't|couldn't|shouldn't|can't|haven't|hasn't)\s+(it|there|that|this|he|she|they)\s+\w+",
+        r"^(isnt|arent|wont|wouldnt|couldnt|shouldnt|cant|havent|hasnt)\s+(it|there|that|this|he|she|they)\s+\w+",
     ]
 
+    if any(re.match(pattern, lower_text) for pattern in start_patterns):
+        return True
+
+    # Specific question patterns that require clear question structure
+    question_patterns = [
+        r"\b(can|could|would|will)\s+you\s+(please\s+)?(tell|help|explain|show|give)\b",
+        r"\b(do|does|did)\s+(you|anyone|somebody|anybody)\s+(know|think|have|want)\b",
+        r"\b(is|are)\s+there\s+(any|some|many|much)\b",
+        r"\b(what|who|when|where|why|how)\s+(exactly|specifically|do|does|would|could|should)\s+\w+",
+        r"\bhas\s+anyone\s+(ever|here|tried|seen|heard)\b",
+    ]
+
+    # Require at least one clear question pattern
     return any(re.search(pattern, lower_text) for pattern in question_patterns)
 
 

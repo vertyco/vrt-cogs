@@ -99,18 +99,26 @@ class AssistantListener(MixinMeta):
             channel.id != conf.channel_id,
             (not bot_mentioned or not conf.mention_respond),
         ]
-        if conf.auto_answer and is_question(message.content) and channel.id not in conf.auto_answer_ignored_channels:
-            # Check if any embeddings match above the threshold
-            embedding = await self.request_embedding(message.content, conf)
-            related = await asyncio.to_thread(
-                conf.get_related_embeddings,
-                query_embedding=embedding,
-                top_n_override=1,
-                relatedness_override=conf.auto_answer_threshold,
-            )
-            conditions.append(len(related) == 0)
-            if len(related) > 0:
-                handle_message_kwargs["model_override"] = conf.auto_answer_model
+        check_auto_answer = [
+            conf.auto_answer,
+            channel.id not in conf.auto_answer_ignored_channels,
+            channel.category_id not in conf.auto_answer_ignored_channels,
+            message.author.id not in conf.tutors,
+            not any([role.id in conf.tutors for role in message.author.roles]),
+        ]
+        if all(check_auto_answer):
+            if is_question(message.content):
+                # Check if any embeddings match above the threshold
+                embedding = await self.request_embedding(message.content, conf)
+                related = await asyncio.to_thread(
+                    conf.get_related_embeddings,
+                    query_embedding=embedding,
+                    top_n_override=1,
+                    relatedness_override=conf.auto_answer_threshold,
+                )
+                conditions.append(len(related) == 0)
+                if len(related) > 0:
+                    handle_message_kwargs["model_override"] = conf.auto_answer_model
         if all(conditions):
             # Message was not in the assistant channel and bot was not mentioned and auto answer is enabled and no related embeddings
             return
