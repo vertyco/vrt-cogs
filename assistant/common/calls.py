@@ -57,7 +57,7 @@ async def request_chat_completion_raw(
             kwargs["frequency_penalty"] = frequency_penalty
             kwargs["presence_penalty"] = presence_penalty
 
-        if model in ["o1", "o1-2024-12-17"] and reasoning_effort is not None:
+        if model in ["o1", "o1-2024-12-17", "o3-mini", "o3-mini-2025-01-31"] and reasoning_effort is not None:
             kwargs["reasoning_effort"] = reasoning_effort
 
         if max_tokens > 0:
