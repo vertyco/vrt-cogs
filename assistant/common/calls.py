@@ -52,7 +52,7 @@ async def request_chat_completion_raw(
 
     if model in PRICES and base_url is None:
         # Using an OpenAI model
-        if "o1" not in model:
+        if "o1" not in model and "o3" not in model:
             kwargs["temperature"] = temperature
             kwargs["frequency_penalty"] = frequency_penalty
             kwargs["presence_penalty"] = presence_penalty
