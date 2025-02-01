@@ -1,6 +1,6 @@
 import logging
+import typing as t
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import discord
 import numpy as np
@@ -13,7 +13,7 @@ log = logging.getLogger("red.vrt.assistant.models")
 
 class AssistantBaseModel(BaseModel):
     @classmethod
-    def model_validate(cls, obj: Any, *args, **kwargs):
+    def model_validate(cls, obj: t.Any, *args, **kwargs):
         if VERSION >= "2.0.1":
             return super().model_validate(obj, *args, **kwargs)
         return super().parse_obj(obj, *args, **kwargs)
@@ -26,7 +26,7 @@ class AssistantBaseModel(BaseModel):
 
 class Embedding(AssistantBaseModel):
     text: str
-    embedding: List[float]
+    embedding: t.List[float]
     ai_created: bool = False
     created: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
     modified: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
@@ -54,7 +54,7 @@ class CustomFunction(AssistantBaseModel):
     jsonschema: dict
     permission_level: str = "user"  # user, mod, admin, owner
 
-    def prep(self) -> Callable:
+    def prep(self) -> t.Callable:
         """Prep function for execution"""
         exec(self.code, globals())
         return globals()[self.jsonschema["name"]]
@@ -69,18 +69,18 @@ class Usage(AssistantBaseModel):
 class GuildSettings(AssistantBaseModel):
     system_prompt: str = "You are a discord bot named {botname}, and are chatting with {username}."
     prompt: str = ""
-    channel_prompts: Dict[int, str] = {}
+    channel_prompts: t.Dict[int, str] = {}
     allow_sys_prompt_override: bool = False  # Per convo system prompt
-    embeddings: Dict[str, Embedding] = {}
-    usage: Dict[str, Usage] = {}
-    blacklist: List[int] = []  # Channel/Role/User IDs
-    tutors: List[int] = []  # Role or user IDs
+    embeddings: t.Dict[str, Embedding] = {}
+    usage: t.Dict[str, Usage] = {}
+    blacklist: t.List[int] = []  # Channel/Role/User IDs
+    tutors: t.List[int] = []  # Role or user IDs
     top_n: int = 3
     min_relatedness: float = 0.78
     embed_method: str = "dynamic"  # hybrid, dynamic, static, user
     question_mode: bool = False  # If True, only the first message and messages that end with ? will have emebddings
-    channel_id: Optional[int] = 0
-    api_key: Optional[str] = None
+    channel_id: t.Optional[int] = 0
+    api_key: t.Optional[str] = None
     endswith_questionmark: bool = False
     min_length: int = 7
     max_retention: int = 50
@@ -98,7 +98,7 @@ class GuildSettings(AssistantBaseModel):
     # Auto-answer
     auto_answer: bool = False  # Answer questions anywhere if one is detected and embedding is found for it
     auto_answer_threshold: float = 0.7  # 0.0 - 1.0  # Confidence threshold for auto-answer
-    auto_answer_ignored_channels: List[int] = []  # Channel IDs to ignore auto-answer
+    auto_answer_ignored_channels: t.List[int] = []  # Channel IDs to ignore auto-answer
     auto_answer_model: str = "gpt-4o-mini"  # Model to use for auto-answer
 
     image_command: bool = True  # Allow image commands
@@ -107,30 +107,30 @@ class GuildSettings(AssistantBaseModel):
     temperature: float = 0.0  # 0.0 - 2.0
     frequency_penalty: float = 0.0  # -2.0 - 2.0
     presence_penalty: float = 0.0  # -2.0 - 2.0
-    seed: Union[int, None] = None
+    seed: t.Union[int, None] = None
 
-    regex_blacklist: List[str] = [r"^As an AI language model,"]
+    regex_blacklist: t.List[str] = [r"^As an AI language model,"]
     block_failed_regex: bool = False
 
-    max_response_token_override: Dict[int, int] = {}
-    max_token_role_override: Dict[int, int] = {}
-    max_retention_role_override: Dict[int, int] = {}
-    role_overrides: Dict[int, str] = Field(default_factory=dict, alias="model_role_overrides")
-    max_time_role_override: Dict[int, int] = {}
+    max_response_token_override: t.Dict[int, int] = {}
+    max_token_role_override: t.Dict[int, int] = {}
+    max_retention_role_override: t.Dict[int, int] = {}
+    role_overrides: t.Dict[int, str] = Field(default_factory=dict, alias="model_role_overrides")
+    max_time_role_override: t.Dict[int, int] = {}
 
     vision_detail: str = "auto"  # high, low, auto
 
     use_function_calls: bool = False
     max_function_calls: int = 20  # Max calls in a row
-    disabled_functions: List[str] = []
+    disabled_functions: t.List[str] = []
     functions_called: int = 0
 
     def get_related_embeddings(
         self,
-        query_embedding: List[float],
-        top_n_override: Optional[int] = None,
-        relatedness_override: Optional[float] = None,
-    ) -> List[Tuple[str, str, float, int]]:
+        query_embedding: t.List[float],
+        top_n_override: t.Optional[int] = None,
+        relatedness_override: t.Optional[float] = None,
+    ) -> t.List[t.Tuple[str, str, float, int]]:
         def cosine_similarity(a, b):
             return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
 
@@ -181,7 +181,7 @@ class GuildSettings(AssistantBaseModel):
         if output_tokens:
             self.usage[model].output_tokens += output_tokens
 
-    def get_user_model(self, member: Optional[discord.Member] = None) -> str:
+    def get_user_model(self, member: t.Optional[discord.Member] = None) -> str:
         if not member or not self.role_overrides:
             return self.model
         sorted_roles = sorted(member.roles, reverse=True)
@@ -190,7 +190,7 @@ class GuildSettings(AssistantBaseModel):
                 return self.role_overrides[role.id]
         return self.model
 
-    def get_user_max_tokens(self, member: Optional[discord.Member] = None) -> int:
+    def get_user_max_tokens(self, member: t.Optional[discord.Member] = None) -> int:
         if not member or not self.max_token_role_override:
             return self.max_tokens
         sorted_roles = sorted(member.roles, reverse=True)
@@ -199,7 +199,7 @@ class GuildSettings(AssistantBaseModel):
                 return self.max_token_role_override[role.id]
         return self.max_tokens
 
-    def get_user_max_response_tokens(self, member: Optional[discord.Member] = None) -> int:
+    def get_user_max_response_tokens(self, member: t.Optional[discord.Member] = None) -> int:
         if not member or not self.max_response_token_override:
             return self.max_response_tokens
         sorted_roles = sorted(member.roles, reverse=True)
@@ -208,7 +208,7 @@ class GuildSettings(AssistantBaseModel):
                 return self.max_response_token_override[role.id]
         return self.max_tokens
 
-    def get_user_max_retention(self, member: Optional[discord.Member] = None) -> int:
+    def get_user_max_retention(self, member: t.Optional[discord.Member] = None) -> int:
         if not member or not self.max_retention_role_override:
             return self.max_retention
         sorted_roles = sorted(member.roles, reverse=True)
@@ -217,7 +217,7 @@ class GuildSettings(AssistantBaseModel):
                 return self.max_retention_role_override[role.id]
         return self.max_retention
 
-    def get_user_max_time(self, member: Optional[discord.Member] = None) -> int:
+    def get_user_max_time(self, member: t.Optional[discord.Member] = None) -> int:
         if not member or not self.max_time_role_override:
             return self.max_retention_time
         sorted_roles = sorted(member.roles, reverse=True)
@@ -228,21 +228,21 @@ class GuildSettings(AssistantBaseModel):
 
 
 class Conversation(AssistantBaseModel):
-    messages: List[dict] = []
+    messages: t.List[dict] = []
     last_updated: float = 0.0
-    system_prompt_override: Optional[str] = None
+    system_prompt_override: t.Optional[str] = None
 
     def function_count(self) -> int:
         if not self.messages:
             return 0
         return sum(i["role"] in ["function", "tool"] for i in self.messages)
 
-    def is_expired(self, conf: GuildSettings, member: Optional[discord.Member] = None):
+    def is_expired(self, conf: GuildSettings, member: t.Optional[discord.Member] = None):
         if not conf.get_user_max_time(member):
             return False
         return (datetime.now().timestamp() - self.last_updated) > conf.get_user_max_time(member)
 
-    def cleanup(self, conf: GuildSettings, member: Optional[discord.Member] = None):
+    def cleanup(self, conf: GuildSettings, member: t.Optional[discord.Member] = None):
         clear = [
             self.is_expired(conf, member),
             not conf.get_user_max_retention(member),
@@ -259,7 +259,7 @@ class Conversation(AssistantBaseModel):
     def refresh(self):
         self.last_updated = datetime.now().timestamp()
 
-    def overwrite(self, messages: List[dict]):
+    def overwrite(self, messages: t.List[dict]):
         self.refresh()
         self.messages = [i for i in messages if i["role"] not in ["system", "developer"]]
 
@@ -296,9 +296,9 @@ class Conversation(AssistantBaseModel):
         initial_prompt: str,
         system_prompt: str,
         name: str = None,
-        images: List[str] = None,
+        images: t.List[str] = None,
         resolution: str = "auto",
-    ) -> List[dict]:
+    ) -> t.List[dict]:
         """Pre-appends the prmompts before the user's messages without motifying them"""
         prepared = []
         if system_prompt.strip():
@@ -337,30 +337,16 @@ class Conversation(AssistantBaseModel):
         return prepared
 
 
-class ContentObj(AssistantBaseModel):
-    type: str
-    text: Optional[str] = None
-    image_url: Optional[Union[str, dict]] = None
-
-
-class Message(AssistantBaseModel):
-    role: str
-    content: Union[str, ContentObj] = None
-    name: Optional[str] = None
-    tool_call_id: Optional[str] = None
-    position: Optional[int] = None
-
-
 class DB(AssistantBaseModel):
-    configs: Dict[int, GuildSettings] = {}
-    conversations: Dict[str, Conversation] = {}
+    configs: t.Dict[int, GuildSettings] = {}
+    conversations: t.Dict[str, Conversation] = {}
     persistent_conversations: bool = False
-    functions: Dict[str, CustomFunction] = {}
+    functions: t.Dict[str, CustomFunction] = {}
     listen_to_bots: bool = False
-    brave_api_key: Optional[str] = None
-    endpoint_override: Optional[str] = None
+    brave_api_key: t.Optional[str] = None
+    endpoint_override: t.Optional[str] = None
 
-    def get_conf(self, guild: Union[discord.Guild, int]) -> GuildSettings:
+    def get_conf(self, guild: t.Union[discord.Guild, int]) -> GuildSettings:
         gid = guild if isinstance(guild, int) else guild.id
         return self.configs.setdefault(gid, GuildSettings())
 
@@ -377,19 +363,19 @@ class DB(AssistantBaseModel):
         self,
         bot: Red,
         conf: GuildSettings,
-        registry: Dict[str, Dict[str, dict]],
+        registry: t.Dict[str, t.Dict[str, dict]],
         member: discord.Member = None,
         showall: bool = False,
-    ) -> Tuple[List[dict], Dict[str, Callable]]:
+    ) -> t.Tuple[t.List[dict], t.Dict[str, t.Callable]]:
         """Prep custom and registry functions for use with the API
 
         Args:
             bot (Red): Red instance
             conf (GuildSettings): current guild settings
-            registry (Dict[str, Dict[str, dict]]): 3rd party cog registry dict
+            registry (t.Dict[str, t.Dict[str, dict]]): 3rd party cog registry dict
 
         Returns:
-            Tuple[List[dict], Dict[str, Callable]]: List of json function schemas and a dict mapping to their callables
+            t.Tuple[t.List[dict], t.Dict[str, t.Callable]]: t.List of json function schemas and a dict mapping to their callables
         """
 
         async def can_use(perm_level: str) -> bool:

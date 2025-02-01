@@ -103,7 +103,7 @@ class ChatHandler(MixinMeta):
                 f"[Role: {mention.name} | Mention: {mention.mention}]",
             )
 
-        img_ext = ["png", "jpg", "jpeg", "gif", "webp"]
+        img_ext = ["png", "jpg", "jpeg", "webp"]
         for i in get_attachments(message):
             has_extension = i.filename.count(".") > 0
             if any(i.filename.lower().endswith(ext) for ext in img_ext):
