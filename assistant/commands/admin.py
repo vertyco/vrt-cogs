@@ -1138,6 +1138,13 @@ class Admin(MixinMeta):
         conf.model = model
         await ctx.send(_("The **{}** model will now be used").format(model))
         await self.save_conf()
+        if model.startswith("o"):
+            txt = _(
+                "**Note**: Starting with `o1-2024-12-17`, reasoning models in the API will avoid generating "
+                "responses with markdown formatting. To signal to the model when you do want markdown formatting "
+                "in the response, include the string `Formatting re-enabled` on the first line of your system message."
+            )
+            await ctx.send(txt)
 
     @assistant.command(name="embedmodel")
     async def set_embedding_model(self, ctx: commands.Context, model: str = None):
