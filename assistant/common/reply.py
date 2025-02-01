@@ -72,11 +72,11 @@ async def send_reply(
 
     # Simple case: Content fits in a single message
     if len(content) <= 2000:
-        return await send(content, files=files, as_reply=True, mention=conf.mention)
+        return await send(content, files=files, as_reply=reply, mention=conf.mention)
 
     # Medium case: Content fits in a single embed and we have embed permissions
     elif len(content) <= 4000 and embed_perms and "```" not in content:
-        return await send(embed=discord.Embed(description=content), files=files, as_reply=True, mention=conf.mention)
+        return await send(embed=discord.Embed(description=content), files=files, as_reply=reply, mention=conf.mention)
 
     # Long content case without code blocks: Paginate into multiple messages
     elif "```" not in content:
@@ -93,7 +93,7 @@ async def send_reply(
             if idx == 0:
                 kwargs["mention"] = conf.mention
                 kwargs["files"] = files
-                kwargs["as_reply"] = True
+                kwargs["as_reply"] = reply
             await send(**kwargs)
         return
 
@@ -132,7 +132,7 @@ async def send_reply(
                 if idx == 0:
                     kwargs["mention"] = conf.mention
                     kwargs["files"] = files
-                    kwargs["as_reply"] = True
+                    kwargs["as_reply"] = reply
                 await send(**kwargs)
         else:
             # For code blocks, pagify the inner content and wrap each chunk
@@ -146,5 +146,5 @@ async def send_reply(
                     if idx == 0:
                         kwargs["mention"] = conf.mention
                         kwargs["files"] = files
-                        kwargs["as_reply"] = True
+                        kwargs["as_reply"] = reply
                     await send(**kwargs)
