@@ -125,8 +125,8 @@ SUPPORTS_VISION = [
     "chatgpt-4o-latest",
     "o1",
     "o1-2024-12-17",
-    "o3-mini",
-    "o3-mini-2025-01-31",
+    # "o3-mini",
+    # "o3-mini-2025-01-31",
 ]
 SUPPORTS_TOOLS = [
     "gpt-3.5-turbo-1106",
