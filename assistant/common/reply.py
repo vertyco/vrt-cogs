@@ -33,7 +33,7 @@ async def send_reply(
             files = []
         for idx, match in enumerate(THINK_BLOCK.finditer(content)):
             think_content = match.group(1).strip()
-            filename = "thinking.txt" if idx == 0 else f"thinking_{idx + 1}.txt"
+            filename = "thinkies.txt" if idx == 0 else f"thinkies_part{idx + 1}.txt"
             files.append(text_to_file(think_content, filename=filename))
         content = THINK_BLOCK.sub("", content).strip()
 
@@ -75,7 +75,7 @@ async def send_reply(
         return await send(content, files=files, as_reply=True, mention=conf.mention)
 
     # Medium case: Content fits in a single embed and we have embed permissions
-    elif len(content) <= 4000 and embed_perms:
+    elif len(content) <= 4000 and embed_perms and "```" not in content:
         return await send(embed=discord.Embed(description=content), files=files, as_reply=True, mention=conf.mention)
 
     # Long content case without code blocks: Paginate into multiple messages
