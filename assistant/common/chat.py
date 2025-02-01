@@ -24,12 +24,13 @@ from openai.types.chat.chat_completion_message_tool_call import (
 )
 from redbot.core import bank
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import box, humanize_number, pagify, text_to_file
+from redbot.core.utils.chat_formatting import box, humanize_number, text_to_file
 from sentry_sdk import add_breadcrumb
 
 from ..abc import MixinMeta
 from .constants import READ_EXTENSIONS, SUPPORTS_VISION
 from .models import Conversation, GuildSettings
+from .reply import send_reply
 from .utils import (
     clean_name,
     clean_response,
@@ -230,9 +231,15 @@ class ChatHandler(MixinMeta):
 
         for index, text in enumerate(to_send):
             if index == 0:
-                await self.send_reply(message, text, conf, files, True)
+                await send_reply(
+                    message=message,
+                    content=text,
+                    conf=conf,
+                    files=files,
+                    reply=True,
+                )
             else:
-                await self.send_reply(message, text, conf, None, False)
+                await send_reply(message=message, content=text, conf=conf)
 
     async def get_chat_response(
         self,
@@ -750,59 +757,3 @@ class ChatHandler(MixinMeta):
             resolution=conf.vision_detail,
         )
         return messages
-
-    async def send_reply(
-        self,
-        message: discord.Message,
-        content: str,
-        conf: GuildSettings,
-        files: Optional[List[discord.File]],
-        reply: bool = False,
-    ):
-        embed_perms = message.channel.permissions_for(message.guild.me).embed_links
-        file_perms = message.channel.permissions_for(message.guild.me).attach_files
-        if files and not file_perms:
-            files = []
-            content += _("\nMissing 'attach files' permissions!")
-        delims = ("```", "\n")
-
-        async def send(
-            content: Optional[str] = None,
-            embed: Optional[discord.Embed] = None,
-            embeds: Optional[List[discord.Embed]] = None,
-            files: Optional[List[discord.File]] = None,
-            mention: bool = False,
-        ):
-            if files is None:
-                files = []
-            if reply:
-                try:
-                    return await message.reply(
-                        content=content,
-                        embed=embed,
-                        embeds=embeds,
-                        files=files,
-                        mention_author=mention,
-                    )
-                except discord.HTTPException:
-                    pass
-            return await message.channel.send(content=content, embed=embed, embeds=embeds, files=files)
-
-        if len(content) <= 2000:
-            await send(content, files=files, mention=conf.mention)
-        elif len(content) <= 4000 and embed_perms:
-            await send(embed=discord.Embed(description=content), files=files, mention=conf.mention)
-        elif embed_perms:
-            embeds = [discord.Embed(description=p) for p in pagify(content, page_length=3950, delims=delims)]
-            for index, embed in enumerate(embeds):
-                if index == 0:
-                    await send(embed=embed, files=files, mention=conf.mention)
-                else:
-                    await send(embed=embed)
-        else:
-            pages = [p for p in pagify(content, page_length=2000, delims=delims)]
-            for index, p in enumerate(pages):
-                if index == 0:
-                    await send(content=p, files=files, mention=conf.mention)
-                else:
-                    await send(content=p)
