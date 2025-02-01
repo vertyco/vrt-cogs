@@ -7,7 +7,7 @@ from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, pagify
 
 from ..abc import MixinMeta
-from ..common.checks import ensure_appeal_system_ready, ensure_db_connection
+from ..common.checks import ensure_db_connection
 from ..db.tables import AppealGuild, AppealQuestion, AppealSubmission
 from ..views.appeal import AppealView
 from ..views.dynamic_menu import DynamicMenu
@@ -41,12 +41,23 @@ class Admin(MixinMeta):
         )
         return await ctx.send(txt)
 
+    async def appeal_guild_check(self, ctx: commands.Context):
+        if not await AppealGuild.exists().where(AppealGuild.id == ctx.guild.id):
+            txt = (
+                "This server hasn't been set up for the appeal system yet!\n"
+                f"Type `{ctx.clean_prefix}appeal help` to get started."
+            )
+            await ctx.send(txt)
+            return False
+        return True
+
     @ensure_db_connection()
-    @ensure_appeal_system_ready()
     @commands.command(name="appealsfor")
     @commands.bot_has_permissions(embed_links=True)
     async def get_appeal_submissions(self, ctx: commands.Context, user: discord.User | discord.Member | int):
         """Get all appeal submissions for a specific user"""
+        if not await self.appeal_guild_check(ctx):
+            return
         if isinstance(user, int):
             user = self.bot.get_user(user)
         user_id = user.id if isinstance(user, discord.User) else user
@@ -59,11 +70,12 @@ class Admin(MixinMeta):
         await ctx.send(embed=embed)
 
     @ensure_db_connection()
-    @ensure_appeal_system_ready()
     @commands.command(name="viewappeal")
     @commands.bot_has_permissions(embed_links=True)
     async def view_appeal_submission(self, ctx: commands.Context, submission_id: int):
         """View an appeal submission by ID"""
+        if not await self.appeal_guild_check(ctx):
+            return
         submission = await AppealSubmission.objects().get(
             (AppealSubmission.id == submission_id) & (AppealSubmission.guild == ctx.guild.id)
         )
@@ -74,7 +86,6 @@ class Admin(MixinMeta):
         await ctx.send(embed=embed)
 
     @ensure_db_connection()
-    @ensure_appeal_system_ready()
     @commands.command(name="viewappeals")
     @commands.bot_has_permissions(embed_links=True)
     async def view_appeal_submissions(self, ctx: commands.Context):
@@ -106,7 +117,7 @@ class Admin(MixinMeta):
         """Configure appeal server settings"""
 
     @ensure_db_connection()
-    @appealset.command(name="help", aliases=["info", "setup"])
+    @appealset.command(name="gethelp", aliases=["info", "setup"])
     @commands.bot_has_permissions(embed_links=True)
     async def appeal_help(self, ctx: commands.Context):
         """How to set up the appeal system"""
@@ -550,7 +561,6 @@ class Admin(MixinMeta):
         await ctx.send(f"Successfully removed the following question: {questions[0]['question']}")
 
     @ensure_db_connection()
-    @ensure_appeal_system_ready()
     @appealset.command(name="questions")
     async def appeal_question_menu(self, ctx: commands.Context):
         """Menu to view questions in the appeal form"""
@@ -574,7 +584,6 @@ class Admin(MixinMeta):
         await DynamicMenu(ctx, pages).refresh()
 
     @ensure_db_connection()
-    @ensure_appeal_system_ready()
     @appealset.command(name="listquestions")
     async def list_appeal_questions(self, ctx: commands.Context):
         """
@@ -582,6 +591,8 @@ class Admin(MixinMeta):
 
         Questions will be sorted by their sort order and then by creation date.
         """
+        if not await self.appeal_guild_check(ctx):
+            return
         questions = await self.db_utils.get_sorted_questions(ctx.guild.id)
         if not questions:
             return await ctx.send("No questions found have been created yet.")
@@ -590,11 +601,12 @@ class Admin(MixinMeta):
             await ctx.send(f"**ID. [Sort Order] Question**\n{box(page)}")
 
     @ensure_db_connection()
-    @ensure_appeal_system_ready()
     @appealset.command(name="viewquestion")
     @commands.bot_has_permissions(embed_links=True)
     async def view_appeal_question(self, ctx: commands.Context, question_id: int):
         """View a question in the appeal form"""
+        if not await self.appeal_guild_check(ctx):
+            return
         question = await AppealQuestion.objects().get(
             (AppealQuestion.id == question_id) & (AppealQuestion.guild == ctx.guild.id)
         )
@@ -624,10 +636,11 @@ class Admin(MixinMeta):
         await ctx.send(embed=embed)
 
     @ensure_db_connection()
-    @ensure_appeal_system_ready()
     @appealset.command(name="editquestion")
     async def edit_appeal_question(self, ctx: commands.Context, question_id: int, *, question: str):
         """Edit a question in the appeal form"""
+        if not await self.appeal_guild_check(ctx):
+            return
         original = await AppealQuestion.objects().get(
             (AppealQuestion.id == question_id) & (AppealQuestion.guild == ctx.guild.id)
         )
@@ -641,10 +654,11 @@ class Admin(MixinMeta):
         await ctx.send(f"Question has been edited! Original content: {original.question}")
 
     @ensure_db_connection()
-    @ensure_appeal_system_ready()
     @appealset.command(name="sortorder")
     async def set_appeal_question_order(self, ctx: commands.Context, question_id: int, sort_order: int):
         """Set the sort order for a question in the appeal form"""
+        if not await self.appeal_guild_check(ctx):
+            return
         question = await AppealQuestion.objects().get(
             (AppealQuestion.id == question_id) & (AppealQuestion.guild == ctx.guild.id)
         )
@@ -656,7 +670,6 @@ class Admin(MixinMeta):
         await ctx.send(f"Successfully updated the sort order for question ID: {question_id}")
 
     @ensure_db_connection()
-    @ensure_appeal_system_ready()
     @appealset.command(
         name="questiondetails",
         aliases=["questiondata", "setquestiondata", "qd", "details"],
@@ -687,6 +700,8 @@ class Admin(MixinMeta):
         - `min_length`: The minimum length for the input
         - `max_length`: The maximum length for the input
         """
+        if not await self.appeal_guild_check(ctx):
+            return
         if isinstance(placeholder, str) and "none" in placeholder.casefold():
             placeholder = None
         if isinstance(default, str) and "none" in default.casefold():
