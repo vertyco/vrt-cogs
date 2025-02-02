@@ -4,6 +4,7 @@ import typing as t
 
 import deepl
 import googletrans
+import openai
 from aiohttp import (
     ClientConnectorError,
     ClientResponseError,
@@ -11,6 +12,7 @@ from aiohttp import (
     ClientTimeout,
 )
 from httpx import ReadTimeout
+from pydantic import BaseModel
 from rapidfuzz import fuzz
 
 from .constants import deepl_langs, google_langs
@@ -28,9 +30,19 @@ class Result:
         return f"Result: {self.text}, source: {self.src}, target: {self.dest}"
 
 
+class OpenAITranslateResponse(BaseModel):
+    translated_text: str
+    detected_source_language: str
+
+
 class TranslateManager:
-    def __init__(self, deepl_key: t.Optional[str] = None):
+    def __init__(
+        self,
+        deepl_key: t.Optional[str] = None,
+        openai_key: t.Optional[str] = None,
+    ):
         self.deepl_key = deepl_key
+        self.openai_key = openai_key
 
     async def translate(
         self,
@@ -53,7 +65,14 @@ class TranslateManager:
         target_lang = target_lang.lower()
         res = None
         log.debug(f"Translate {target_lang}")
-        if self.deepl_key:
+        if self.openai_key:
+            log.debug("Using openai")
+            res = await self.openaitranslate(text, target_lang)
+            if res is None or (res.text == text and not force):
+                log.warning(f"OpenAI failed to translate to {target_lang}")
+                res = None
+
+        if self.deepl_key and res is None:
             if lang := await self.fuzzy_deepl_lang(target_lang.lower()):
                 log.debug("Using deepl")
                 res = await self.deepl(text, lang, formality)
@@ -103,6 +122,26 @@ class TranslateManager:
                 return lang[0]
 
         return await asyncio.to_thread(_fuzzy_google_flowery_lang)
+
+    async def openaitranslate(
+        self,
+        text: str,
+        target_lang: str,
+    ):
+        client = openai.AsyncClient(api_key=self.openai_key)
+        try:
+            response = await client.beta.chat.completions.parse(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "developer", "content": f"Translate the given text to {target_lang}"},
+                    {"role": "user", "content": text},
+                ],
+                response_format=OpenAITranslateResponse,
+            )
+            result = response.choices[0].message.parsed
+            return Result(text=result.translated_text, src=result.detected_source_language, dest=target_lang)
+        except Exception as e:
+            log.error(f"Failed to make openai translation to {target_lang}", exc_info=e)
 
     async def deepl(
         self,

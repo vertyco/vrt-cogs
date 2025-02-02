@@ -11,6 +11,7 @@ from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import pagify
+from redbot.core.utils.views import SetApiView
 
 from .abc import CompositeMetaClass
 from .common.api import Result, TranslateManager
@@ -55,17 +56,18 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
 
     Fluent uses google translate by default, with [Flowery](https://flowery.pw/) as a fallback.
 
-    Fluent also supports the [Deepl](https://www.deepl.com/pro#developer) tranlsation api.
-    1. Register your free Deepl account **[Here](https://www.deepl.com/pro#developer)**.
-    2. Obtain your API key **[Here](https://www.deepl.com/account/summary)**.
-    3. Set your API key with:
-    `[p]set api deepl key YOUR_KEY_HERE`
+    Fluent also supports Deeple and OpenAI for translations.
+    Use `[p]fluent openai` and `[p]fluent deepl` to set your keys.
 
-    If a deepl key is set, it will use that before falling back to google translate and then flowery.
+    Fallback order (If translation fails):
+    1. OpenAI
+    2. Deepl
+    3. Google Translate
+    4. Flowery
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "2.3.2"
+    __version__ = "2.4.0"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -82,6 +84,8 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
         logging.getLogger("deepl").setLevel(logging.WARNING)
         logging.getLogger("aiocache").setLevel(logging.WARNING)
         logging.getLogger("urllib3").setLevel(logging.WARNING)
+        logging.getLogger("httpcore").setLevel(logging.WARNING)
+        logging.getLogger("openai").setLevel(logging.WARNING)
 
     async def cog_load(self):
         self.bot.tree.add_command(translate_message_ctx)
@@ -122,6 +126,20 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
                 with suppress(discord.HTTPException):
                     await message.edit(view=view)
 
+    @commands.Cog.listener()
+    async def on_message_delete(self, message: discord.Message):
+        if not message.guild:
+            return
+        buttons = await self.get_buttons(message.guild)
+        if not buttons:
+            return
+        to_delete = [b for b in buttons if b.message_id == message.id]
+        if not to_delete:
+            return
+        keep = [b.model_dump() for b in buttons if b not in to_delete]
+        await self.config.guild(message.guild).buttons.set(keep)
+        log.info(f"Removed {len(to_delete)} buttons for message {message.id}")
+
     @cached(ttl=10)
     async def get_channels(self, guild: discord.Guild) -> dict:
         return await self.config.guild(guild).channels()
@@ -143,8 +161,12 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
         Returns:
             t.Optional[Result]: Result object containing source/target lang and translated text
         """
-        deepl_key = await self.bot.get_shared_api_tokens("deepl")
-        translator = TranslateManager(deepl_key=deepl_key.get("key"))
+        deepl_key = await self.bot.get_shared_api_tokens("fluent_deepl")
+        openai_key = await self.bot.get_shared_api_tokens("fluent_openai")
+        translator = TranslateManager(
+            deepl_key=deepl_key.get("key"),
+            openai_key=openai_key.get("key"),
+        )
         return await translator.translate(msg, dest, force=force)
 
     @commands.command(name="serverlocale")
@@ -206,7 +228,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
         ][:25]
 
     @commands.group()
-    @commands.mod()
+    @commands.mod_or_permissions(manage_messages=True)
     async def fluent(self, ctx: commands.Context):
         """Base command"""
         pass
@@ -285,6 +307,43 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
 
         for p in pagify(msg, page_length=1000):
             await ctx.send(p)
+
+    @fluent.command()
+    @commands.is_owner()
+    async def openai(self, ctx: commands.Context):
+        """Set an openai key for translations"""
+        tokens = await self.bot.get_shared_api_tokens("fluent_openai")
+        message = _(
+            "1. Go to [OpenAI](https://platform.openai.com/signup) and sign up for an account.\n"
+            "2. Go to the [API keys](https://platform.openai.com/account/api-keys) page.\n"
+            "3. Click the `+ Create new secret key` button to create a new API key.\n"
+            "4. Copy the API key click the button below to set it."
+        )
+        await ctx.send(
+            message,
+            view=SetApiView(
+                default_service="fluent_openai",
+                default_keys={"key": tokens.get("key", "")},
+            ),
+        )
+
+    @fluent.command()
+    @commands.is_owner()
+    async def deepl(self, ctx: commands.Context):
+        """Set a deepl key for translations"""
+        tokens = await self.bot.get_shared_api_tokens("fluent_deepl")
+        message = _(
+            "1. Go to [Deepl](https://www.deepl.com/pro#developer) and sign up for an account.\n"
+            "2. Go to the [API keys](https://www.deepl.com/en/your-account/keys) page.\n"
+            "3. Copy the API key click the button below to set it."
+        )
+        await ctx.send(
+            message,
+            view=SetApiView(
+                default_service="fluent_deepl",
+                default_keys={"key": tokens.get("key", "")},
+            ),
+        )
 
     @fluent.command()
     @commands.bot_has_permissions(embed_links=True)

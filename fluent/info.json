@@ -22,7 +22,9 @@
     "deepl",
     "googletrans-py",
     "msgpack",
-    "ujson"
+    "ujson",
+    "openai",
+    "pydantic"
   ],
   "short": "Auto translation between two languages.",
   "tags": [
