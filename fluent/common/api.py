@@ -114,6 +114,7 @@ class TranslateManager:
         translator = deepl.Translator(self.deepl_key, send_platform_info=False)
         usage = await asyncio.to_thread(translator.get_usage)
         if usage.any_limit_reached:
+            log.warning("Deepl usage limit reached!")
             return None
         try:
             res = await asyncio.to_thread(

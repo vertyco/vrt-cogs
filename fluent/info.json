@@ -10,7 +10,7 @@
   "min_bot_version": "3.5.0",
   "min_python_version": [
     3,
-    9,
+    10,
     1
   ],
   "permissions": [

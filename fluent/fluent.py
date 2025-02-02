@@ -65,7 +65,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "2.3.0"
+    __version__ = "2.3.1"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -80,6 +80,8 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
         self.config.register_guild(channels={}, buttons=[])
         logging.getLogger("hpack.hpack").setLevel(logging.INFO)
         logging.getLogger("deepl").setLevel(logging.WARNING)
+        logging.getLogger("aiocache").setLevel(logging.WARNING)
+        logging.getLogger("urllib3").setLevel(logging.WARNING)
 
     async def cog_load(self):
         self.bot.tree.add_command(translate_message_ctx)
@@ -95,6 +97,10 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
 
     async def init_buttons(self, guild: discord.Guild):
         buttons = await self.get_buttons(guild)
+        if not buttons:
+            return
+        buttons.sort(key=lambda x: x.button_text.lower())
+        log.info(f"Initializing {len(buttons)} buttons for {guild}")
 
         # {channel_id: {message_id: [buttons]}}
         button_dict: dict[int, dict[int, list[TranslateButton]]] = defaultdict(dict)
@@ -236,7 +242,6 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
             buttons.append(button.model_dump())
 
         await self.init_buttons(ctx.guild)
-
         await ctx.send(_("Button added successfully."))
 
     @fluent.command()
@@ -245,8 +250,17 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
         buttons = await self.get_buttons(ctx.guild)
         for idx, b in enumerate(buttons):
             if b.message_id == message.id and b.target_lang == target_lang:
+                # Make sure to remove the view from the message if there are no other buttons for it
+                if len([x for x in buttons if x.message_id == message.id]) == 1:
+                    channel = message.channel
+                    try:
+                        message = await channel.fetch_message(message.id)
+                        await message.edit(view=None)
+                    except discord.NotFound:
+                        pass
                 async with self.config.guild(ctx.guild).buttons() as buttons:
                     del buttons[idx]
+                await self.init_buttons(ctx.guild)
                 return await ctx.send(_("Button removed successfully."))
 
         await ctx.send(_("No button found for that message."))
