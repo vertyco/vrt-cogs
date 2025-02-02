@@ -67,7 +67,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "2.4.1"
+    __version__ = "2.4.2"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -99,7 +99,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
         for guild in self.bot.guilds:
             await self.init_buttons(guild)
 
-    async def init_buttons(self, guild: discord.Guild):
+    async def init_buttons(self, guild: discord.Guild, target_message_id: int = None):
         buttons = await self.get_buttons(guild)
         if not buttons:
             return
@@ -117,6 +117,8 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
             if not channel:
                 continue
             for message_id, button_objs in messages.items():
+                if target_message_id and message_id != target_message_id:
+                    continue
                 view = TranslateMenu(self, button_objs)
                 try:
                     message = await channel.fetch_message(message_id)
@@ -263,7 +265,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
         async with self.config.guild(ctx.guild).buttons() as buttons:
             buttons.append(button.model_dump())
 
-        await self.init_buttons(ctx.guild)
+        await self.init_buttons(ctx.guild, target_message_id=message.id)
         await ctx.send(_("Button added successfully to {} for {}").format(message.jump_url, target_lang))
 
     @fluent.command()
@@ -282,7 +284,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
                         pass
                 async with self.config.guild(ctx.guild).buttons() as buttons:
                     del buttons[idx]
-                await self.init_buttons(ctx.guild)
+                await self.init_buttons(ctx.guild, target_message_id=message.id)
                 return await ctx.send(_("Button removed successfully from {}").format(message.jump_url))
 
         await ctx.send(_("No button found for that message."))
