@@ -149,10 +149,6 @@ class TranslateMenu(discord.ui.View):
 
         translate_button.translated_embeds = new_embeds
 
-        # After translations, before saving
-        log.debug(f"Original embeds after translation: {translate_button.original_embeds}")
-        log.debug(f"New translated embeds: {new_embeds}")
-
         await interaction.edit_original_response(
             content=translate_button.translated_content,
             embeds=translate_button.get_embeds(),
