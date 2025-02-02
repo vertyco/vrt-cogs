@@ -17,7 +17,7 @@ _ = Translator("Fluent", __file__)
 
 class MenuButton(discord.ui.Button):
     def __init__(self, response_func: Callable, label: str, translate_button: TranslateButton):
-        super().__init__(label=label)
+        super().__init__(label=label, style=discord.ButtonStyle.primary)
         self.func = response_func
         self.translate_button = translate_button
 
