@@ -1127,7 +1127,7 @@ class Admin(MixinMeta):
             formatted = box(humanized)
             return await ctx.send(_("Valid models are:\n{}").format(formatted))
 
-        if conf.api_key and "deepseek" not in model:
+        if conf.api_key and "deepseek" not in model and not self.db.endpoint_override:
             try:
                 client = openai.AsyncOpenAI(api_key=conf.api_key)
                 await client.models.retrieve(model)

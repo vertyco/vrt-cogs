@@ -404,6 +404,11 @@ class ChatHandler(MixinMeta):
 
             await ensure_supports_vision(messages, conf, author)
             await ensure_message_compatibility(messages, conf, author)
+            if self.db.endpoint_override:
+                # Replace "developer" role with "system" role
+                for i in messages:
+                    if i["role"] == "developer":
+                        i["role"] = "system"
 
             # Iteratively degrade the conversation to ensure it is always under the token limit
             degraded = await self.degrade_conversation(messages, function_calls, conf, author)

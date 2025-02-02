@@ -110,6 +110,7 @@ NO_DEVELOPER_ROLE = [  # Also doesnt support system messages
     "o1-mini-2024-09-12",
     "o1-preview",
     "o1-preview-2024-09-12",
+    "deepseek",
 ]
 SUPPORTS_VISION = [
     "gpt-4-vision-preview",
