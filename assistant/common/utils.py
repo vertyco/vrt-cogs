@@ -262,7 +262,9 @@ def get_params(
 
 
 async def ensure_message_compatibility(
-    messages: List[dict], conf: GuildSettings, user: Optional[discord.Member]
+    messages: List[dict],
+    conf: GuildSettings,
+    user: Optional[discord.Member],
 ) -> bool:
     cleaned = False
 
