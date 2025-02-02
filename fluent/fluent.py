@@ -1,5 +1,7 @@
+import asyncio
 import logging
 import typing as t
+from collections import defaultdict
 from contextlib import suppress
 
 import discord
@@ -10,8 +12,11 @@ from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import pagify
 
+from .abc import CompositeMetaClass
 from .common.api import Result, TranslateManager
 from .common.constants import available_langs
+from .common.models import TranslateButton
+from .views import TranslateMenu
 
 log = logging.getLogger("red.vrt.fluent")
 _ = Translator("Fluent", __file__)
@@ -44,7 +49,7 @@ async def translate_message_ctx(interaction: discord.Interaction, message: disco
 
 # redgettext -D fluent/fluent.py --command-docstring
 @cog_i18n(_)
-class Fluent(commands.Cog):
+class Fluent(commands.Cog, metaclass=CompositeMetaClass):
     """
     Seamless translation between two languages in one channel. Or manual translation to various languages.
 
@@ -60,7 +65,7 @@ class Fluent(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "2.2.0"
+    __version__ = "2.3.0"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -72,19 +77,53 @@ class Fluent(commands.Cog):
     def __init__(self, bot: Red):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=11701170)
-        self.config.register_guild(channels={})
+        self.config.register_guild(channels={}, buttons=[])
         logging.getLogger("hpack.hpack").setLevel(logging.INFO)
         logging.getLogger("deepl").setLevel(logging.WARNING)
 
     async def cog_load(self):
         self.bot.tree.add_command(translate_message_ctx)
+        asyncio.create_task(self.initialize())
 
     async def cog_unload(self):
         self.bot.tree.remove_command(translate_message_ctx)
 
+    async def initialize(self):
+        await self.bot.wait_until_red_ready()
+        for guild in self.bot.guilds:
+            await self.init_buttons(guild)
+
+    async def init_buttons(self, guild: discord.Guild):
+        buttons = await self.get_buttons(guild)
+
+        # {channel_id: {message_id: [buttons]}}
+        button_dict: dict[int, dict[int, list[TranslateButton]]] = defaultdict(dict)
+        for button in buttons:
+            if button.message_id not in button_dict[button.channel_id]:
+                button_dict[button.channel_id][button.message_id] = []
+            button_dict[button.channel_id][button.message_id].append(button)
+        for channel_id, messages in button_dict.items():
+            channel = self.bot.get_channel(channel_id)
+            if not channel:
+                continue
+            for message_id, button_objs in messages.items():
+                view = TranslateMenu(self, button_objs)
+                try:
+                    message = await channel.fetch_message(message_id)
+                except discord.NotFound:
+                    continue
+                log.info(f"Adding {len(button_objs)} buttons to message {message_id}")
+                with suppress(discord.HTTPException):
+                    await message.edit(view=view)
+
     @cached(ttl=10)
     async def get_channels(self, guild: discord.Guild) -> dict:
         return await self.config.guild(guild).channels()
+
+    async def get_buttons(self, guild: discord.Guild) -> list[TranslateButton]:
+        buttons = await self.config.guild(guild).buttons()
+        button_objs = [TranslateButton.model_validate(b) for b in buttons]
+        return list(set(button_objs))
 
     @cached(ttl=900)
     async def translate(self, msg: str, dest: str, force: bool = False) -> t.Optional[Result]:
@@ -165,6 +204,73 @@ class Fluent(commands.Cog):
     async def fluent(self, ctx: commands.Context):
         """Base command"""
         pass
+
+    @fluent.command()
+    async def addbutton(
+        self,
+        ctx: commands.Context,
+        message: discord.Message,
+        target_lang: str,
+        *,
+        button_text: str,
+    ):
+        """Add a translation button to a message"""
+        buttons = await self.get_buttons(ctx.guild)
+        for b in buttons:
+            if b.message_id == message.id and b.target_lang == target_lang:
+                return await ctx.send(_("That message already has a translation button for that language."))
+
+        translator = TranslateManager()
+        lang = await translator.get_lang(target_lang)
+        if not lang:
+            txt = _("Target language is invalid.")
+            return await ctx.send(txt)
+
+        button = TranslateButton(
+            channel_id=message.channel.id,
+            message_id=message.id,
+            target_lang=target_lang,
+            button_text=button_text,
+        )
+        async with self.config.guild(ctx.guild).buttons() as buttons:
+            buttons.append(button.model_dump())
+
+        await self.init_buttons(ctx.guild)
+
+        await ctx.send(_("Button added successfully."))
+
+    @fluent.command()
+    async def removebutton(self, ctx: commands.Context, message: discord.Message, target_lang: str):
+        """Remove a translation button from a message"""
+        buttons = await self.get_buttons(ctx.guild)
+        for idx, b in enumerate(buttons):
+            if b.message_id == message.id and b.target_lang == target_lang:
+                async with self.config.guild(ctx.guild).buttons() as buttons:
+                    del buttons[idx]
+                return await ctx.send(_("Button removed successfully."))
+
+        await ctx.send(_("No button found for that message."))
+
+    @fluent.command()
+    async def viewbuttons(self, ctx: commands.Context):
+        """View all translation buttons"""
+        buttons = await self.get_buttons(ctx.guild)
+        if not buttons:
+            return await ctx.send(_("There are no translation buttons at this time."))
+
+        msg = ""
+        for button in buttons:
+            channel = ctx.guild.get_channel(button.channel_id)
+            if not channel:
+                continue
+            try:
+                message = await channel.fetch_message(button.message_id)
+                msg += f"{message.jump_url} -> {button.target_lang} ({button.button_text})\n"
+            except discord.NotFound:
+                msg += f"Message not found <#{button.channel_id}> {button.message_id} -> {button.target_lang} ({button.button_text})\n"
+
+        for p in pagify(msg, page_length=1000):
+            await ctx.send(p)
 
     @fluent.command()
     @commands.bot_has_permissions(embed_links=True)
