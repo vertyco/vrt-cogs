@@ -29,23 +29,23 @@ async def translate_message_ctx(interaction: discord.Interaction, message: disco
     if not message.content and not message.embeds:
         return await interaction.response.send_message(_("❌ No content to translate."), ephemeral=True)
     with suppress(discord.HTTPException):
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.defer(ephemeral=True, thinking=True)
     bot: Red = interaction.client
     content = message.content or message.embeds[0].description
     res: t.Optional[Result] = await bot.get_cog("Fluent").translate(content, message.guild.preferred_locale.value)
     if res is None:
-        return await interaction.followup.send(_("❌ Translation failed."), ephemeral=True)
+        return await interaction.edit_original_response(content=_("❌ Translation failed."))
     if res.src == res.dest:
-        return await interaction.followup.send(
-            _("❌ The detected language is the same as the target language."), ephemeral=True
+        return await interaction.edit_original_response(
+            content=_("❌ The detected language is the same as the target language.")
         )
     if res.text == content:
-        return await interaction.followup.send(_("❌ Translated content matches the source."), ephemeral=True)
+        return await interaction.edit_original_response(content=_("❌ Translated content matches the source."))
     embed = discord.Embed(
         description=res.text,
         color=await bot.get_embed_color(message),
     ).set_footer(text=f"{res.src} -> {res.dest}")
-    await interaction.followup.send(embed=embed, ephemeral=True)
+    await interaction.edit_original_response(content=None, embed=embed)
 
 
 # redgettext -D fluent/fluent.py --command-docstring
@@ -67,7 +67,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "2.4.3"
+    __version__ = "2.4.4"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
