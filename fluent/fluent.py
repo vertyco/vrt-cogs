@@ -67,7 +67,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "2.4.2"
+    __version__ = "2.4.3"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -306,13 +306,18 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
         if not buttons:
             return await ctx.send(_("There are no translation buttons at this time."))
 
+        cached_messages: dict[int, discord.Message] = {}
         msg = ""
         for button in buttons:
             channel = ctx.guild.get_channel(button.channel_id)
             if not channel:
                 continue
             try:
-                message = await channel.fetch_message(button.message_id)
+                if button.message_id not in cached_messages:
+                    message = await channel.fetch_message(button.message_id)
+                    cached_messages[button.message_id] = message
+                else:
+                    message = cached_messages[button.message_id]
                 msg += f"{message.jump_url} -> {button.target_lang} ({button.button_text})\n"
             except discord.NotFound:
                 msg += f"Message not found <#{button.channel_id}> {button.message_id} -> {button.target_lang} ({button.button_text})\n"
