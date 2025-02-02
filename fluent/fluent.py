@@ -264,7 +264,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
             buttons.append(button.model_dump())
 
         await self.init_buttons(ctx.guild)
-        await ctx.send(_("Button added successfully to {}").format(message.jump_url))
+        await ctx.send(_("Button added successfully to {} for {}").format(message.jump_url, target_lang))
 
     @fluent.command()
     async def removebutton(self, ctx: commands.Context, message: discord.Message, target_lang: str):
