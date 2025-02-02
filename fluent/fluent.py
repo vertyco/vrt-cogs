@@ -67,7 +67,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "2.4.0"
+    __version__ = "2.4.1"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -286,6 +286,16 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
                 return await ctx.send(_("Button removed successfully from {}").format(message.jump_url))
 
         await ctx.send(_("No button found for that message."))
+
+    @fluent.command()
+    async def resetbuttontranslations(self, ctx: commands.Context):
+        """Reset the translations for saved buttons, to force a re-translation"""
+        buttons = await self.get_buttons(ctx.guild)
+        for button in buttons:
+            button.translated_content = None
+            button.translated_embeds = None
+        await self.config.guild(ctx.guild).buttons.set([b.model_dump() for b in buttons])
+        await ctx.send(_("Translations reset for all buttons."))
 
     @fluent.command()
     async def viewbuttons(self, ctx: commands.Context):
