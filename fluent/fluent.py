@@ -65,7 +65,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "2.3.1"
+    __version__ = "2.3.2"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -242,7 +242,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
             buttons.append(button.model_dump())
 
         await self.init_buttons(ctx.guild)
-        await ctx.send(_("Button added successfully."))
+        await ctx.send(_("Button added successfully to {}").format(message.jump_url))
 
     @fluent.command()
     async def removebutton(self, ctx: commands.Context, message: discord.Message, target_lang: str):
@@ -261,7 +261,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
                 async with self.config.guild(ctx.guild).buttons() as buttons:
                     del buttons[idx]
                 await self.init_buttons(ctx.guild)
-                return await ctx.send(_("Button removed successfully."))
+                return await ctx.send(_("Button removed successfully from {}").format(message.jump_url))
 
         await ctx.send(_("No button found for that message."))
 
