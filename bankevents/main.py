@@ -2,6 +2,7 @@ import asyncio
 import logging
 from pathlib import Path
 
+import discord
 from redbot.core import bank, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
@@ -32,7 +33,7 @@ class BankEvents(PaydayOverride, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "2.2.1"
+    __version__ = "2.2.2"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -118,6 +119,7 @@ class BankEvents(PaydayOverride, commands.Cog, metaclass=CompositeMetaClass):
 
     @commands.command()
     @commands.is_owner()
+    @commands.bot_has_permissions(embed_links=True)
     async def bankevents(self, ctx: commands.Context):
         """Get help using the BankEvents cog"""
         txt = _(
@@ -134,4 +136,5 @@ class BankEvents(PaydayOverride, commands.Cog, metaclass=CompositeMetaClass):
 
         examples = Path(__file__).parent / "examples.txt"
         await ctx.send(txt)
-        await ctx.send(box(examples.read_text(), "python"))
+        embed = discord.Embed(description=box(examples.read_text(), "python"))
+        await ctx.send(embed=embed)
