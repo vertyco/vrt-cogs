@@ -202,6 +202,14 @@ class TaskMenu(BaseMenu):
                 "placeholder": _("Name of the scheduled command"),
                 "max_length": 45,
             },
+            "author": {
+                "label": _("Author ID"),
+                "style": discord.TextStyle.short,
+                "placeholder": _("ID of the user who created the command"),
+                "default": str(self.author.id),
+                "max_length": 19,
+                "min_length": 18,
+            },
             "channel": {
                 "label": _("Channel ID (Optional)"),
                 "style": discord.TextStyle.short,
@@ -223,8 +231,29 @@ class TaskMenu(BaseMenu):
         if not modal.inputs:
             return
         name = modal.inputs["name"]
+        author_id = modal.inputs["author"]
         channel_id = modal.inputs["channel"]
         command = modal.inputs["command"]
+
+        if not author_id.isdigit():
+            return await interaction.followup.send(_("Author ID must be a number."), ephemeral=True)
+        author_id = int(author_id)
+        command_author = self.guild.get_member(author_id)
+        if not command_author:
+            return await interaction.followup.send(_("Author for that ID was not found."), ephemeral=True)
+
+        if author_id != self.author.id:
+            # Perform some checks to make sure the user is allowed to schedule commands for others
+            if not await self.bot.is_admin(self.author):
+                return await interaction.followup.send(
+                    _("You cannot schedule commands for other users."), ephemeral=True
+                )
+            # Make sure they are higher in the role hierarchy
+            if command_author.top_role >= self.author.top_role:
+                return await interaction.followup.send(
+                    _("You cannot schedule commands for users with equal or higher roles."), ephemeral=True
+                )
+
         if channel_id and not channel_id.isdigit():
             return await interaction.followup.send(_("Channel ID must be a number."), ephemeral=True)
         channel_id = int(channel_id) if channel_id else 0
@@ -235,11 +264,12 @@ class TaskMenu(BaseMenu):
         if not channel:
             channel = self.channel
             channel_id = self.channel.id
-        user_perms = channel.permissions_for(self.author)
+
+        user_perms = channel.permissions_for(command_author)
         bot_perms = channel.permissions_for(self.guild.me)
         context = await utils.invoke_command(
             bot=self.bot,
-            author=self.author,
+            author=command_author,
             channel=channel,
             command=command,
             message=self.message,
@@ -267,7 +297,7 @@ class TaskMenu(BaseMenu):
             guild_id=self.guild.id,
             name=name,
             channel_id=channel_id,
-            author_id=self.author.id,
+            author_id=command_author.id,
             command=command,
         )
         self.db.add_task(schedule)
@@ -389,6 +419,14 @@ class TaskMenu(BaseMenu):
                 "default": schedule.name,
                 "max_length": 45,
             },
+            "author": {
+                "label": _("Author ID"),
+                "style": discord.TextStyle.short,
+                "placeholder": _("ID of the user who created the command"),
+                "default": str(self.author.id),
+                "max_length": 19,
+                "min_length": 18,
+            },
             "channel": {
                 "label": _("Channel ID (Optional)"),
                 "style": discord.TextStyle.short,
@@ -412,9 +450,29 @@ class TaskMenu(BaseMenu):
         if not modal.inputs:
             return
         name = modal.inputs["name"]
+        author_id = modal.inputs["author"]
         channel_id = modal.inputs["channel"]
         command = modal.inputs["command"]
-        # Validate
+
+        if not author_id.isdigit():
+            return await interaction.followup.send(_("Author ID must be a number."), ephemeral=True)
+        author_id = int(author_id)
+        command_author = self.guild.get_member(author_id)
+        if not command_author:
+            return await interaction.followup.send(_("Author for that ID was not found."), ephemeral=True)
+
+        if author_id != self.author.id:
+            # Perform some checks to make sure the user is allowed to schedule commands for others
+            if not await self.bot.is_admin(self.author):
+                return await interaction.followup.send(
+                    _("You cannot schedule commands for other users."), ephemeral=True
+                )
+            # Make sure they are higher in the role hierarchy
+            if command_author.top_role >= self.author.top_role:
+                return await interaction.followup.send(
+                    _("You cannot schedule commands for users with equal or higher roles."), ephemeral=True
+                )
+
         if channel_id and not channel_id.isdigit():
             return await interaction.followup.send(_("Channel ID must be a number."), ephemeral=True)
         channel_id = int(channel_id) if channel_id else 0
@@ -424,11 +482,12 @@ class TaskMenu(BaseMenu):
         channel = self.guild.get_channel(channel_id)
         if not channel:
             channel = self.channel
-        user_perms = channel.permissions_for(self.author)
+
+        user_perms = channel.permissions_for(command_author)
         bot_perms = channel.permissions_for(self.guild.me)
         context = await utils.invoke_command(
             bot=self.bot,
-            author=self.author,
+            author=command_author,
             channel=channel,
             command=command,
             message=self.message,
@@ -454,6 +513,7 @@ class TaskMenu(BaseMenu):
 
         # Update
         schedule.name = name
+        schedule.author_id = command_author.id
         schedule.channel_id = channel_id
         schedule.command = command
         await self.message.edit(embed=await self.get_page(), view=self)
