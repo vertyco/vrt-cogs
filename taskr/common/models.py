@@ -190,7 +190,7 @@ class ScheduledCommand(Base):
         return " ".join(parts)
 
     def _format_time(self, hour: str, minute: str) -> str:
-        def parse_field(field_str) -> str | list[int]:
+        def parse_field(field_str: str) -> str | list[int]:
             if field_str == "*":
                 return "*"
             elif "," in field_str:
@@ -211,8 +211,13 @@ class ScheduledCommand(Base):
                 start, end = map(int, field_str.split("-"))
                 return list(range(start, end + 1))
             elif "/" in field_str:
-                start, step = map(int, field_str.split("/"))
-                return list(range(start, 60, step))
+                # Updated handling for patterns like "*/2" or "1/2"
+                if field_str.startswith("*/"):
+                    step = int(field_str[2:])
+                    return list(range(0, 60, step))
+                else:
+                    start, step = map(int, field_str.split("/"))
+                    return list(range(start, 60, step))
             else:
                 return [int(field_str)]
 
