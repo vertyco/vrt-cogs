@@ -534,14 +534,15 @@ class Admin(MixinMeta):
         ptokens = await self.count_tokens(prompt, model) if prompt else 0
         stokens = await self.count_tokens(conf.system_prompt, model) if conf.system_prompt else 0
         combined = ptokens + stokens
-        max_tokens = round(conf.max_tokens * 0.9)
-        if combined >= max_tokens:
-            return await ctx.send(
-                _(
-                    "Your system and initial prompt combined will use {} tokens!\n"
-                    "Write a prompt combination using {} tokens or less to leave 10% of your configured max tokens for your response."
-                ).format(humanize_number(combined), humanize_number(max_tokens))
-            )
+        if conf.max_tokens:
+            max_tokens = round(conf.max_tokens * 0.9)
+            if combined >= max_tokens:
+                return await ctx.send(
+                    _(
+                        "Your system and initial prompt combined will use {} tokens!\n"
+                        "Write a prompt combination using {} tokens or less to leave 10% of your configured max tokens for your response."
+                    ).format(humanize_number(combined), humanize_number(max_tokens))
+                )
 
         if not prompt and conf.prompt:
             conf.prompt = ""
@@ -605,14 +606,15 @@ class Admin(MixinMeta):
         ptokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
         stokens = await self.count_tokens(system_prompt, model) if system_prompt else 0
         combined = ptokens + stokens
-        max_tokens = round(conf.max_tokens * 0.9)
-        if combined >= max_tokens:
-            return await ctx.send(
-                _(
-                    "Your system and initial prompt combined will use {} tokens!\n"
-                    "Write a prompt combination using {} tokens or less to leave 10% of your configured max tokens for your response."
-                ).format(humanize_number(combined), humanize_number(max_tokens))
-            )
+        if conf.max_tokens:
+            max_tokens = round(conf.max_tokens * 0.9)
+            if combined >= max_tokens:
+                return await ctx.send(
+                    _(
+                        "Your system and initial prompt combined will use {} tokens!\n"
+                        "Write a prompt combination using {} tokens or less to leave 10% of your configured max tokens for your response."
+                    ).format(humanize_number(combined), humanize_number(max_tokens))
+                )
         if channel.id in conf.channel_prompts:
             await ctx.send(_("Channel prompt has been overwritten for {}!").format(channel.mention))
         else:
@@ -674,14 +676,15 @@ class Admin(MixinMeta):
         stokens = await self.count_tokens(system_prompt, model) if system_prompt else 0
 
         combined = ptokens + stokens
-        max_tokens = round(conf.max_tokens * 0.9)
-        if combined >= max_tokens:
-            return await ctx.send(
-                _(
-                    "Your system and initial prompt combined will use {} tokens!\n"
-                    "Write a prompt combination using {} tokens or less to leave 10% of your configured max tokens for your response."
-                ).format(humanize_number(combined), humanize_number(max_tokens))
-            )
+        if conf.max_tokens:
+            max_tokens = round(conf.max_tokens * 0.9)
+            if combined >= max_tokens:
+                return await ctx.send(
+                    _(
+                        "Your system and initial prompt combined will use {} tokens!\n"
+                        "Write a prompt combination using {} tokens or less to leave 10% of your configured max tokens for your response."
+                    ).format(humanize_number(combined), humanize_number(max_tokens))
+                )
 
         if not system_prompt and conf.system_prompt:
             conf.system_prompt = ""
@@ -1881,8 +1884,6 @@ class Admin(MixinMeta):
 
         *Specify same role and token count to remove the override*
         """
-        if max_tokens < 100:
-            return await ctx.send(_("Use at least 100 tokens"))
         conf = self.db.get_conf(ctx.guild)
 
         if role.id in conf.max_token_role_override:
