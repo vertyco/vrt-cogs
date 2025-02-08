@@ -125,7 +125,7 @@ async def send_reply(
             page_length = 4000 if embed_perms else 2000
             for chunk in pagify(text, page_length=page_length):
                 kwargs = {}
-                if embed_perms and len(chunk) >= 2000:
+                if len(chunk) >= 2000:
                     kwargs["embed"] = discord.Embed(description=chunk)
                 else:
                     kwargs["content"] = chunk
@@ -141,7 +141,8 @@ async def send_reply(
                 lang = match.group("lang") or ""
                 code = match.group("code")
                 # Pagify just the code content
-                for chunk in pagify(code, delims=("\n",)):
+                lang_length = 6 + len(lang)
+                for chunk in pagify(code, delims=("\n",), page_length=2000 - lang_length):
                     kwargs = {"content": f"```{lang}\n{chunk}```"}
                     if idx == 0:
                         kwargs["mention"] = conf.mention
