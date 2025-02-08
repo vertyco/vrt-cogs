@@ -424,15 +424,18 @@ class Admin(MixinMeta):
         await view.wait()
         key = view.key.strip() if view.key else "none"
 
-        if key == "none" and conf.api_key:
-            conf.api_key = None
-            await msg.edit(content=_("OpenAI key has been removed!"), embed=None, view=None)
-        elif key == "none" and not conf.api_key:
-            conf.api_key = key
-            await msg.edit(content=_("No API key was entered!"), embed=None, view=None)
-        else:
-            conf.api_key = key
-            await msg.edit(content=_("OpenAI key has been set!"), embed=None, view=None)
+        try:
+            if key == "none" and conf.api_key:
+                conf.api_key = None
+                await msg.edit(content=_("OpenAI key has been removed!"), embed=None, view=None)
+            elif key == "none" and not conf.api_key:
+                conf.api_key = key
+                await msg.edit(content=_("No API key was entered!"), embed=None, view=None)
+            else:
+                conf.api_key = key
+                await msg.edit(content=_("OpenAI key has been set!"), embed=None, view=None)
+        except discord.NotFound:
+            pass
 
         await self.save_conf()
 
