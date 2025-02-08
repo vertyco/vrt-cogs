@@ -17,11 +17,13 @@ def referral_embed(
     referrer_reward: int,  # Reward for person who referred the user
     referred_reward: int,  # Reward for the person who was referred
     currency: str,
+    channel: str,
 ):
     referrer_name = f"{referrer.name} ({referrer.id})"
     referred_name = f"{referred.name} ({referred.id})"
     embed = discord.Embed(color=discord.Color.green(), timestamp=datetime.now())
     embed.add_field(name=_("Referred User"), value=referred_name, inline=False)
+    embed.add_field(name=_("Channel"), value=channel, inline=False)
     if referred_reward:
         embed.add_field(
             name=_("Referred Reward"),
@@ -43,11 +45,13 @@ def referral_error(
     referrer: discord.Member,  # The member who referred the user
     referred: discord.Member,  # The member who was referred
     error: str,
+    channel: str,
 ):
     referrer_name = f"{referrer.name} ({referrer.id})"
     referred_name = f"{referred.name} ({referred.id})"
     embed = discord.Embed(color=discord.Color.red(), timestamp=datetime.now())
     embed.add_field(name=_("Referred User"), value=referred_name, inline=False)
+    embed.add_field(name=_("Channel"), value=channel, inline=False)
     embed.add_field(
         name=_("Error"),
         value=error,

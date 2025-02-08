@@ -65,6 +65,7 @@ async def referredby_context(interaction: discord.Interaction, member: discord.M
                 referrer=member,
                 referred=interaction.user,
                 error=txt,
+                channel=interaction.channel.mention,
             )
             await log_channel.send(embed=embed)
         return await interaction.followup.send(
@@ -84,6 +85,7 @@ async def referredby_context(interaction: discord.Interaction, member: discord.M
                 referrer=member,
                 referred=interaction.user,
                 error=txt,
+                channel=interaction.channel.mention,
             )
             await log_channel.send(embed=embed)
 
@@ -137,6 +139,7 @@ async def referredby_context(interaction: discord.Interaction, member: discord.M
             referrer_reward=settings.referral_reward,
             referred_reward=settings.referred_reward,
             currency=currency_name,
+            channel=interaction.channel.mention,
         )
         await log_channel.send(embed=embed)
 
@@ -207,6 +210,7 @@ class User(MixinMeta):
                     referrer=referred_by,
                     referred=ctx.author,
                     error=txt,
+                    channel=ctx.channel.mention,
                 )
                 await log_channel.send(embed=embed)
             return await ctx.send(
@@ -226,6 +230,7 @@ class User(MixinMeta):
                     referrer=referred_by,
                     referred=ctx.author,
                     error=txt,
+                    channel=ctx.channel.mention,
                 )
                 await log_channel.send(embed=embed)
             return await ctx.send(
@@ -278,6 +283,7 @@ class User(MixinMeta):
                 referrer_reward=settings.referral_reward,
                 referred_reward=settings.referred_reward,
                 currency=currency_name,
+                channel=ctx.channel.mention,
             )
             await log_channel.send(embed=embed)
 
