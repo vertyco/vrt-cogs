@@ -62,7 +62,11 @@ class Appeals(Commands, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     async def initialize(self) -> None:
         await self.bot.wait_until_red_ready()
         logging.getLogger("aiosqlite").setLevel(logging.INFO)
-        self.db = await engine.register_cog(self, TABLES, trace=True)
+        self.db = await engine.register_cog(
+            cog_instance=self,
+            tables=TABLES,
+            trace=True,
+        )
         appealguilds = await AppealGuild.objects()
         for appealguild in appealguilds:
             ready, __ = await self.conditions_met(appealguild)
