@@ -2,6 +2,7 @@ import asyncio
 import inspect
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 from discord.ext import commands
@@ -30,7 +31,7 @@ def find_piccolo_executable() -> Path:
     for path in os.environ["PATH"].split(os.pathsep):
         for executable_name in ["piccolo", "piccolo.exe"]:
             executable = Path(path) / executable_name
-            if executable.exists() and os.access(executable, os.X_OK):
+            if executable.exists():
                 return executable
 
     # Fetch the lib path from downloader
@@ -39,8 +40,12 @@ def find_piccolo_executable() -> Path:
         for folder in lib_path.iterdir():
             for executable_name in ["piccolo", "piccolo.exe"]:
                 executable = folder / executable_name
-                if executable.exists() and os.access(executable, os.X_OK):
+                if executable.exists():
                     return executable
+
+    default_path = Path(sys.executable).parent / "piccolo"
+    if default_path.exists():
+        return default_path
 
     raise FileNotFoundError("Piccolo package not found!")
 
