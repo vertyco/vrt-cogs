@@ -74,8 +74,19 @@ async def request_chat_completion_raw(
                     tools.append(function)
                 if tools:
                     kwargs["tools"] = tools
+                    # If passing tools, make sure the messages payload has no "function_call" key
+                    for idx, message in enumerate(messages):
+                        if "function_call" in message:
+                            # Remove the message from the payload
+                            del kwargs["messages"][idx]
+
             else:
                 kwargs["functions"] = functions
+                # If passing functions, make sure the messages payload has no tool calls
+                for idx, message in enumerate(messages):
+                    if "tool_calls" in message:
+                        # Remove the message from the payload
+                        del kwargs["messages"][idx]
 
     add_breadcrumb(
         category="api",
