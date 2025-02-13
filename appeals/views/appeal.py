@@ -16,9 +16,7 @@ class AppealView(discord.ui.View):
     async def on_timeout(self) -> None:
         await super().on_timeout()
 
-    async def on_error(
-        self, error: Exception, item: discord.ui.Item, interaction: discord.Interaction
-    ) -> None:
+    async def on_error(self, error: Exception, item: discord.ui.Item, interaction: discord.Interaction) -> None:
         await super().on_error(error, item, interaction)
 
     @discord.ui.button(label="Submit Appeal", style=discord.ButtonStyle.primary)
@@ -26,36 +24,34 @@ class AppealView(discord.ui.View):
         bucket = self.cooldown.get_bucket(interaction.message)
         retry_after = bucket.update_rate_limit()
         if retry_after:
-            return await interaction.response.send_message(
-                f"Try again in {retry_after:.0f} seconds", ephemeral=True
-            )
+            return await interaction.response.send_message(f"Try again in {retry_after:.0f} seconds", ephemeral=True)
         bot: Red = interaction.client
         cog: MixinMeta | None = bot.get_cog("Appeals")
         if not cog:
             return await interaction.response.send_message(
-                "The Appeals cog is not loaded, try again later"
+                "The Appeals cog is not loaded, try again later", ephemeral=True
             )
         if not cog.db:
             return await interaction.response.send_message(
-                "Database connection is not active, try again later"
+                "Database connection is not active, try again later", ephemeral=True
             )
 
         ready, reason = await cog.conditions_met(interaction.guild)
         if not ready:
-            return await interaction.response.send_message(f"Appeal system not ready: {reason}")
+            return await interaction.response.send_message(f"Appeal system not ready: {reason}", ephemeral=True)
         appealguild = await AppealGuild.objects().get(AppealGuild.id == interaction.guild.id)
         if not appealguild:
             return await interaction.response.send_message(
-                "Appeal system is no longer setup for this server"
+                "Appeal system is no longer setup for this server", ephemeral=True
             )
         target_guild = bot.get_guild(appealguild.target_guild_id)
         if not target_guild:
             return await interaction.response.send_message(
-                "The server you're appealing for is no longer available"
+                "The server you're appealing for is no longer available", ephemeral=True
             )
         if not target_guild.me.guild_permissions.ban_members:
             return await interaction.response.send_message(
-                "I don't have permission to unban members in the server you're appealing for!"
+                "I don't have permission to unban members in the server you're appealing for!", ephemeral=True
             )
         is_admin = await bot.is_admin(interaction.user)
         if not is_admin and interaction.user.id in [m.id for m in target_guild.members]:
@@ -89,8 +85,7 @@ class AppealView(discord.ui.View):
                 )
 
         existing = await AppealSubmission.objects().get(
-            (AppealSubmission.guild == interaction.guild.id)
-            & (AppealSubmission.user_id == interaction.user.id)
+            (AppealSubmission.guild == interaction.guild.id) & (AppealSubmission.user_id == interaction.user.id)
         )
         if existing:
             ts, relative = existing.created("F"), existing.created("R")
