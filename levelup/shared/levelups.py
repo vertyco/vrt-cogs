@@ -214,10 +214,7 @@ class LevelUps(MixinMeta):
             if log_channel and log_channel.id != current_channel_id:
                 file = discord.File(BytesIO(img_bytes), filename=f"levelup.{ext}")
                 with suppress(discord.HTTPException):
-                    if conf.notifymention:
-                        await current_channel.send(msg_txt, file=file)
-                    else:
-                        await log_channel.send(msg_txt, file=file)
+                    await log_channel.send(msg_txt, file=file)
 
         payload = {
             "guild": guild,  # discord.Guild
