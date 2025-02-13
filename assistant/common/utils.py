@@ -277,6 +277,7 @@ async def ensure_message_compatibility(
         if message["role"] in ["system", "developer"]:
             messages[idx]["role"] = "user"
             cleaned = True
+
     return cleaned
 
 

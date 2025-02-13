@@ -1,7 +1,7 @@
 MODELS = {
     "gpt-3.5-turbo": 4096,
-    # "gpt-3.5-turbo-1106": 16385, - Depricated
-    # "gpt-3.5-turbo-0125": 16385, - Depricated
+    "gpt-3.5-turbo-1106": 16385,
+    "gpt-3.5-turbo-0125": 16385,
     # "gpt-3.5-turbo-16k": 16384, - Depricated
     # "gpt-3.5-turbo-16k-0301": 16384, - Depricated
     # "gpt-3.5-turbo-16k-0613": 16384 - Depricated
@@ -88,6 +88,7 @@ IMAGE_COSTS = {
     "hd1024x1792": 0.12,
 }
 SUPPORTS_SEED = [
+    "gpt-3.5-turbo",
     "gpt-3.5-turbo-1106",
     "gpt-3.5-turbo-0125",
     "gpt-4-1106-preview",
