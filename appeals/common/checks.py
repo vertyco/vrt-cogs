@@ -17,7 +17,7 @@ def ensure_db_connection():
     async def predicate(ctx: commands.Context) -> bool:
         if not ctx.cog.db:
             txt = "Database connection is not active, try again later"
-            raise commands.CheckFailure(txt)
+            raise commands.UserFeedbackCheckFailure(txt)
         return True
 
     return check(predicate)
