@@ -309,7 +309,7 @@ class GuildSettings(Base):
     keep_level_roles: bool = False  # Keep level roles after prestiging
 
     # Alerts
-    notify: bool = False  # Toggle whether to notify member of levelups if notify log channel is not set
+    notify: bool = False  # Toggle whether to notify member of levelups in the channel they are in
     notifylog: int = 0  # Notify member of level up in a set channel
     notifydm: bool = False  # Notify member of level up in DMs
     notifymention: bool = False  # Mention the user when sending a level up message
