@@ -1,7 +1,6 @@
 import typing as t
 
 import discord
-
 from redbot.core.bot import Red
 
 # from ..abc import MixinMeta
@@ -9,32 +8,23 @@ from ..db.tables import AppealGuild, AppealQuestion, AppealSubmission
 
 
 class AnswerModal(discord.ui.Modal):
-    def __init__(
-        self, question: AppealQuestion, question_number: int, answers: dict[str, str]
-    ) -> None:
+    def __init__(self, question: AppealQuestion, question_number: int, answers: dict[str, str]) -> None:
         super().__init__(timeout=None, title=f"Question {question_number}")
         self.question = question
         self.question_number = question_number
         self.answers = answers
-
         self.input = discord.ui.TextInput(
-            label=(
-                question.question
-                if len(question.question) <= 45
-                else f"{question.question[:42]}..."
-            ),
+            label=(question.question if len(question.question) <= 45 else f"{question.question[:42]}..."),
             required=question.required,
             default=question.default or answers.get(question.question),
             placeholder=question.placeholder,
             min_length=question.min_length,
             max_length=question.max_length,
-            style=getattr(discord.TextStyle, question.style),
+            style=discord.TextStyle.paragraph if question.style == "long" else discord.TextStyle.short,
         )
         self.add_item(self.input)
 
-    async def on_error(
-        self, interaction: discord.Interaction, error: Exception
-    ) -> None:
+    async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
         return await super().on_error(interaction, error)
 
     async def on_submit(self, interaction: discord.Interaction):
@@ -59,9 +49,7 @@ class MenuButton(discord.ui.Button):
         disabled: bool = False,
         row: int | None = None,
     ):
-        super().__init__(
-            style=style, label=label, disabled=disabled, emoji=emoji, row=row
-        )
+        super().__init__(style=style, label=label, disabled=disabled, emoji=emoji, row=row)
         self.question = question
         self.question_number = question_number
         self.answers = answers
@@ -100,9 +88,7 @@ class SubmissionView(discord.ui.View):
     async def on_timeout(self) -> None:
         await super().on_timeout()
 
-    async def on_error(
-        self, error: Exception, item: discord.ui.Item, interaction: discord.Interaction
-    ) -> None:
+    async def on_error(self, error: Exception, item: discord.ui.Item, interaction: discord.Interaction) -> None:
         await super().on_error(error, item, interaction)
 
     async def response(self, interaction: discord.Interaction, button: MenuButton):
@@ -114,20 +100,12 @@ class SubmissionView(discord.ui.View):
         await interaction.edit_original_response(embed=embed, view=self)
 
     async def make_embed(self):
-        color = (
-            discord.Color.green()
-            if len(self.answers) == len(self.questions)
-            else discord.Color.blue()
-        )
+        color = discord.Color.green() if len(self.answers) == len(self.questions) else discord.Color.blue()
         embed = discord.Embed(title="Appeal Submission", color=color)
         if self.can_submit():
-            embed.set_footer(
-                text="Required questions have been answered. You may submit when ready."
-            )
+            embed.set_footer(text="Required questions have been answered. You may submit when ready.")
         else:
-            embed.set_footer(
-                text="Click the buttons that correspond to the questions to answer them."
-            )
+            embed.set_footer(text="Click the buttons that correspond to the questions to answer them.")
         for i, question in enumerate(self.questions):
             name = f"{i + 1}. {question.question}"
             value = self.answers.get(question.question)
@@ -152,20 +130,12 @@ class SubmissionView(discord.ui.View):
         ephemeral: bool = False,
     ):
         try:
-            await interaction.response.send_message(
-                content=content, embed=embed, ephemeral=ephemeral
-            )
+            await interaction.response.send_message(content=content, embed=embed, ephemeral=ephemeral)
         except discord.HTTPException:
-            await interaction.followup.send(
-                content=content, embed=embed, ephemeral=ephemeral
-            )
+            await interaction.followup.send(content=content, embed=embed, ephemeral=ephemeral)
 
-    @discord.ui.button(
-        label="Submit", style=discord.ButtonStyle.success, disabled=True, row=4
-    )
-    async def submit_appeal(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
+    @discord.ui.button(label="Submit", style=discord.ButtonStyle.success, disabled=True, row=4)
+    async def submit_appeal(self, interaction: discord.Interaction, button: discord.ui.Button):
         bot: Red = interaction.client
         # cog: MixinMeta = bot.get_cog("Appeals")
         if not self.can_submit():
@@ -186,9 +156,7 @@ class SubmissionView(discord.ui.View):
             .first()
         )
         if not appealguild:
-            return await self.send(
-                interaction, "Appeal system is no longer setup for this server."
-            )
+            return await self.send(interaction, "Appeal system is no longer setup for this server.")
 
         pending_channel = interaction.guild.get_channel(appealguild["pending_channel"])
         if not pending_channel:
@@ -209,13 +177,9 @@ class SubmissionView(discord.ui.View):
             )
 
         try:
-            await interaction.response.edit_message(
-                content="Submission complete!", embed=None, view=None
-            )
+            await interaction.response.edit_message(content="Submission complete!", embed=None, view=None)
         except discord.HTTPException:
-            await interaction.edit_original_response(
-                content="Submission complete!", embed=None, view=None
-            )
+            await interaction.edit_original_response(content="Submission complete!", embed=None, view=None)
 
         final_answers = {}
         for question in self.questions:
@@ -235,9 +199,7 @@ class SubmissionView(discord.ui.View):
         if alert_roles := appealguild["alert_roles"]:
             mentions = ", ".join([f"<@&{r}>" for r in alert_roles])
 
-        message = await pending_channel.send(
-            content=mentions, embed=embed, allowed_mentions=allowed_mentions
-        )
+        message = await pending_channel.send(content=mentions, embed=embed, allowed_mentions=allowed_mentions)
 
         # If alert channel exists and bot has permissions to send messages in it, ping there instead
         # otherwise ping the pending channel
