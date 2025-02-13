@@ -62,11 +62,16 @@ class Appeals(Commands, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     async def initialize(self) -> None:
         await self.bot.wait_until_red_ready()
         logging.getLogger("aiosqlite").setLevel(logging.INFO)
-        self.db = await engine.register_cog(
-            cog_instance=self,
-            tables=TABLES,
-            trace=True,
-        )
+        try:
+            self.db = await engine.register_cog(
+                cog_instance=self,
+                tables=TABLES,
+                trace=True,
+            )
+        except Exception as e:
+            log.error("Failed to initialize database", exc_info=e)
+            res = await engine.diagnose_issues(self)
+            log.error(res)
         appealguilds = await AppealGuild.objects()
         for appealguild in appealguilds:
             ready, __ = await self.conditions_met(appealguild)
