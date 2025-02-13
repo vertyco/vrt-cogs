@@ -54,6 +54,7 @@ class Admin(MixinMeta):
     @ensure_db_connection()
     @commands.command(name="appealsfor")
     @commands.bot_has_permissions(embed_links=True)
+    @commands.admin_or_can_manage_channel()
     async def get_appeal_submissions(self, ctx: commands.Context, user: discord.User | discord.Member | int):
         """Get all appeal submissions for a specific user"""
         if not await self.appeal_guild_check(ctx):
