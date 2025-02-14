@@ -138,7 +138,7 @@ class AssistantListener(MixinMeta):
             async with channel.typing():
                 await self.handle_message(**handle_message_kwargs)
         finally:
-            self.responding_to.remove(message.author.id)
+            self.responding_to.discard(message.author.id)
 
     @commands.Cog.listener("on_guild_remove")
     async def cleanup(self, guild: discord.Guild):
