@@ -62,13 +62,13 @@ class Admin(MixinMeta):
         if isinstance(user, int):
             user = self.bot.get_user(user)
         user_id = user.id if isinstance(user, discord.User) else user
-        submission = await AppealSubmission.objects().get(
+        submissions = await AppealSubmission.objects().where(
             (AppealSubmission.user_id == user_id) & (AppealSubmission.guild == ctx.guild.id)
         )
-        if not submission:
+        if not submissions:
             return await ctx.send("No submissions found for that user.")
-        embed = submission.embed(user)
-        await ctx.send(embed=embed)
+        pages = [submission.embed(user) for submission in submissions]
+        await DynamicMenu(ctx, pages).refresh()
 
     @ensure_db_connection()
     @commands.command(name="viewappeal")
@@ -184,6 +184,7 @@ class Admin(MixinMeta):
             f"**Denied Channel**: {cname(appealguild.denied_channel)}\n"
             f"**Appeal Message**: {appeal_msg}\n"
             f"**Alert Channel**: {cname(appealguild.alert_channel)}\n"
+            f"**Appeal Limit**: {appealguild.appeal_limit}\n"
             f"**Alert Roles**: {', '.join([r.mention for r in roles]) if roles else 'None set'}\n"
             f"**Questions**: {await AppealQuestion.count().where(AppealQuestion.guild == ctx.guild.id)}"
         )
@@ -205,6 +206,15 @@ class Admin(MixinMeta):
         await AppealSubmission.delete(force=True)
         await AppealGuild.delete(force=True)
         await ctx.send("Successfully nuked the appeal database.")
+
+    @ensure_db_connection()
+    @appealset.command(name="limit")
+    async def appeal_limit(self, ctx: commands.Context, limit: commands.positive_int):
+        """Set the maximum number of appeals a user can submit"""
+        if limit < 1:
+            return await ctx.send("Appeal limit must be at least 1")
+        await AppealGuild.update({AppealGuild.appeal_limit: limit}).where(AppealGuild.id == ctx.guild.id)
+        await ctx.send(f"Successfully set the appeal limit to {limit}")
 
     @ensure_db_connection()
     @appealset.command(name="wipeappeals")

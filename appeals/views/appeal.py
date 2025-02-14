@@ -84,15 +84,34 @@ class AppealView(discord.ui.View):
                     "You're not banned from the server you're appealing for!", ephemeral=True
                 )
 
-        existing = await AppealSubmission.objects().get(
-            (AppealSubmission.guild == interaction.guild.id) & (AppealSubmission.user_id == interaction.user.id)
-        )
-        if existing:
-            ts, relative = existing.created("F"), existing.created("R")
-            txt = f"You have already submitted an appeal on {ts} ({relative})"
-            if existing.status != "pending":
-                txt += f" and it was **{existing.status.capitalize()}**"
-            return await interaction.followup.send(txt, ephemeral=True)
+        if appealguild.appeal_limit == 1:
+            existing = await AppealSubmission.objects().get(
+                (AppealSubmission.guild == interaction.guild.id) & (AppealSubmission.user_id == interaction.user.id)
+            )
+            if existing:
+                ts, relative = existing.created("F"), existing.created("R")
+                txt = f"You have already submitted an appeal on {ts} ({relative})"
+                if existing.status != "pending":
+                    txt += f" and it was **{existing.status.capitalize()}**"
+                return await interaction.followup.send(txt, ephemeral=True)
+        else:
+            pending = await AppealSubmission.objects().get(
+                (AppealSubmission.guild == interaction.guild.id)
+                & (AppealSubmission.user_id == interaction.user.id)
+                & (AppealSubmission.status == "pending")
+            )
+            if pending:
+                ts, relative = pending.created("F"), pending.created("R")
+                txt = f"You still have a pending appeal submitted on {ts} ({relative})"
+                return await interaction.followup.send(txt, ephemeral=True)
+            existing = await AppealSubmission.objects().where(
+                (AppealSubmission.guild == interaction.guild.id) & (AppealSubmission.user_id == interaction.user.id)
+            )
+            if len(existing) >= appealguild.appeal_limit:
+                return await interaction.followup.send(
+                    f"You have already submitted {len(existing)} appeals which is the maximum allowed",
+                    ephemeral=True,
+                )
 
         questions = await cog.db_utils.get_sorted_questions(interaction.guild.id)
         view = SubmissionView(questions)

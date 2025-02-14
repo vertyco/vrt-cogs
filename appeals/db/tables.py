@@ -30,6 +30,7 @@ class AppealGuild(Table):
     denied_channel = BigInt()  # Channel where denied appeals are stored
     alert_roles = Array(BigInt())  # Roles to alert when a new appeal is submitted
     alert_channel = BigInt()  # Channel to alert when a new appeal is submitted
+    appeal_limit = Integer(default=1)  # Maximum number of times a user can submit an appeal
     # Appeal button
     button_style = Text(default="primary")  # can be `primary`, `secondary`, `success`, `danger`
     button_label = Text(default="Submit Appeal")
