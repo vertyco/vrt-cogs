@@ -1,7 +1,5 @@
 import logging
-from contextlib import suppress
 
-import discord
 from discord.ext.commands.core import check
 from piccolo.columns import BigInt, Serial, Timestamptz
 from piccolo.table import Table, sort_table_classes
@@ -17,9 +15,7 @@ def ensure_db_connection():
                 txt = "Database connection is not active, try again later"
             else:
                 txt = f"Database connection is not active, configure with `{ctx.clean_prefix}clickerset postgres`"
-            with suppress(discord.HTTPException):
-                await ctx.send(txt, ephemeral=True)
-            return False
+            raise commands.UserFeedbackCheckFailure(txt)
         return True
 
     return check(predicate)
