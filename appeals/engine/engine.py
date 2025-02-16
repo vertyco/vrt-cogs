@@ -9,7 +9,7 @@ from redbot.core.data_manager import cog_data_path
 from .common import find_piccolo_executable, get_root, is_unc_path, run_shell
 from .errors import DirectoryError, UNCPathError
 
-log = logging.getLogger("red.orm.sqlite")
+log = logging.getLogger("red.vrt.appeals.engine")
 
 
 async def register_cog(
