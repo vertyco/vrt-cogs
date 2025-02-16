@@ -317,7 +317,11 @@ class API(MixinMeta):
 
     def get_max_tokens(self, conf: GuildSettings, user: Optional[discord.Member]) -> int:
         user_max = conf.get_user_max_tokens(user)
-        return min(user_max, MODELS[conf.get_user_model(user)] - 96)
+        model = conf.get_user_model(user)
+        max_model_tokens = MODELS.get(model, 4000)
+        if not user_max or user_max > max_model_tokens:
+            return max_model_tokens
+        return user_max
 
     async def cut_text_by_tokens(self, text: str, conf: GuildSettings, user: Optional[discord.Member] = None) -> str:
         if not text:
@@ -375,7 +379,7 @@ class API(MixinMeta):
         # Fetch the current model the user is using
         model = conf.get_user_model(user)
         # Fetch the max token limit for the current user
-        max_tokens = min(self.get_max_tokens(conf, user), MODELS[model] - 96)
+        max_tokens = self.get_max_tokens(conf, user)
         # Token count of current conversation
         convo_tokens = await self.count_payload_tokens(messages, model)
         # Token count of function calls available to model
