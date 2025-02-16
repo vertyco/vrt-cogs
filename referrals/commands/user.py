@@ -30,6 +30,10 @@ async def referredby_context(interaction: discord.Interaction, member: discord.M
         return await interaction.response.send_message(_("Bots can't refer users."), ephemeral=True)
     if member.id == interaction.user.id:
         return await interaction.response.send_message(_("You can't refer yourself."), ephemeral=True)
+    if not member.guild:
+        return await interaction.response.send_message(
+            _("The user you are trying to refer is not in this server."), ephemeral=True
+        )
     bot: Red = interaction.client
     cog: MixinMeta = bot.get_cog("Referrals")
     if not cog.db:
@@ -47,6 +51,11 @@ async def referredby_context(interaction: discord.Interaction, member: discord.M
         return await interaction.followup.send(
             _("You were already a part of this server when the referral system was initialized.")
         )
+    if interaction.user.joined_at:
+        if interaction.user.joined_at < member.joined_at:
+            return await interaction.followup.send(
+                _("This user joined the server after you, they couldn't have referred you.")
+            )
     if log_channel := bot.get_channel(settings.referral_channel):
         if not all(
             [
@@ -184,6 +193,9 @@ class User(MixinMeta):
         settings = await self.db_utils.get_create_guild(ctx.guild)
         if not settings.enabled:
             return await ctx.send(_("Referral rewards are not enabled for this server."))
+        if ctx.author.joined_at:
+            if ctx.author.joined_at < referred_by.joined_at:
+                return await ctx.send(_("This user joined the server after you, they couldn't have referred you."))
         log_channel = self.bot.get_channel(settings.referral_channel)
         if log_channel:
             if not all(
