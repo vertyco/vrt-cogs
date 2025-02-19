@@ -641,12 +641,10 @@ class Dcord(MixinMeta):
                     if embed.description and any(f in embed.description.lower() for f in filters):
                         await message.delete()
                         deleted += 1
-                        already_deleted = True
                         break
                     if embed.title and any(f in embed.title.lower() for f in filters):
                         await message.delete()
                         deleted += 1
-                        already_deleted = True
                         break
                     if embed.fields:
                         for field in embed.fields:
