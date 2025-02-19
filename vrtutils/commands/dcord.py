@@ -11,7 +11,13 @@ import discord
 from rapidfuzz import fuzz
 from redbot.core import commands
 from redbot.core.utils import AsyncIter
-from redbot.core.utils.chat_formatting import pagify, text_to_file
+from redbot.core.utils.chat_formatting import (
+    box,
+    humanize_list,
+    humanize_timedelta,
+    pagify,
+    text_to_file,
+)
 
 from ..abc import MixinMeta
 from ..common import utils
@@ -564,3 +570,87 @@ class Dcord(MixinMeta):
         else:
             txt = "\n".join([f"{u} - {u.id}" for u in sample])
         await ctx.send(f"Selected {sample_size} random voters:\n{txt}")
+
+    @commands.command(name="filterdelete")
+    @commands.admin_or_permissions(manage_messages=True)
+    @commands.bot_has_permissions(manage_messages=True, embed_links=True)
+    async def filter_delete(self, ctx: commands.Context, channel: t.Optional[discord.TextChannel], *, filters: str):
+        """Delete all messages containing a keyword in a channel
+
+        **Arguments**
+        `channel:` The channel to delete messages from
+        `filters:` The keywords to filter messages by, separated by new lines
+        """
+        import asyncio
+        from time import perf_counter
+
+        if not channel:
+            channel = ctx.channel
+        filters = [i.lower().strip() for i in filters.split("\n") if i.lower().strip()]
+        if not filters:
+            return await ctx.send("No filters provided")
+
+        cancelled = False
+
+        def check_cancel(m):
+            return m.author == ctx.author and m.channel == ctx.channel and m.content.lower() == "cancel"
+
+        async def listen_for_cancel():
+            nonlocal cancelled
+            try:
+                await self.bot.wait_for("message", check=check_cancel, timeout=None)
+                cancelled = True
+            except Exception:
+                pass
+
+        asyncio.create_task(listen_for_cancel())
+
+        start_time = perf_counter()
+        last_update = start_time
+        scanned = 0
+        deleted = 0
+        embed = discord.Embed(title="Filtering Messages", color=ctx.author.color)
+        embed.set_footer(text="Type 'cancel' to stop the scan")
+        humanized_filters = humanize_list(filters)
+        progress_msg = await ctx.send(embed=embed)
+
+        async for message in channel.history(limit=None):
+            if cancelled:
+                break
+            scanned += 1
+            if any(f in message.content.lower() for f in filters):
+                await message.delete()
+                deleted += 1
+            now = perf_counter()
+            if now - last_update >= 5:
+                rate = scanned / ((now - start_time) / 60)
+                embed.description = (
+                    f"Currently scanning {channel.mention} for the following filters:\n"
+                    f"{box(humanized_filters)}\n"
+                    f"Scanned: {scanned}\n"
+                    f"Deleted: {deleted}\n"
+                    f"Scanning ~{rate:.2f} messages/min"
+                )
+                await progress_msg.edit(embed=embed)
+                last_update = now
+
+        total_time = perf_counter() - start_time
+        rate = scanned / (total_time / 60) if total_time else 0
+        if cancelled:
+            embed.description = (
+                f"Scan cancelled in {channel.mention}\n"
+                f"Scanned: {scanned}\n"
+                f"Deleted: {deleted}\n"
+                f"Scanning ~{rate:.2f} messages/min"
+            )
+            embed.title = "Cancelled Filtering Messages"
+        else:
+            embed.description = (
+                f"Finished scanning: {channel.mention}\n"
+                f"Scanned: {scanned}\n"
+                f"Deleted: {deleted}\n"
+                f"Scanning ~{rate:.2f} messages/min"
+            )
+            embed.title = "Finished Filtering Messages"
+        embed.set_footer(text=f"Scan took {humanize_timedelta(seconds=int(total_time))}")
+        await progress_msg.edit(embed=embed)
