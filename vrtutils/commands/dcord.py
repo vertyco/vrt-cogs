@@ -5,6 +5,7 @@ import random
 import string
 import typing as t
 import unicodedata
+from contextlib import suppress
 from io import StringIO
 
 import discord
@@ -631,7 +632,8 @@ class Dcord(MixinMeta):
                     f"Deleted: {deleted}\n"
                     f"Scanning ~{rate:.2f} messages/min"
                 )
-                await progress_msg.edit(embed=embed)
+                with suppress(discord.HTTPException):
+                    await progress_msg.edit(embed=embed)
                 last_update = now
 
         total_time = perf_counter() - start_time
