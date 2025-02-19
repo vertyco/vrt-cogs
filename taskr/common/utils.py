@@ -1,3 +1,4 @@
+import os
 import random
 import typing as t
 from copy import copy
@@ -12,6 +13,8 @@ from redbot.core.bot import Red
 
 
 def get_scheduler(start: bool = True) -> AsyncIOScheduler:
+    if "TZ" not in os.environ:
+        os.environ["TZ"] = "UTC"
     scheduler = AsyncIOScheduler(jobstores={"default": MemoryJobStore()})
     scheduler.configure(timezone=pytz.utc)
     if start:
