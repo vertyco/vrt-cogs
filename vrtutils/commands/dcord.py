@@ -632,9 +632,34 @@ class Dcord(MixinMeta):
             if cancelled:
                 break
             scanned += 1
-            if any(f in message.content.lower() for f in filters):
+            if message.content and any(f in message.content.lower() for f in filters):
                 await message.delete()
                 deleted += 1
+            elif message.embeds:
+                already_deleted = False
+                for embed in message.embeds:
+                    if embed.description and any(f in embed.description.lower() for f in filters):
+                        await message.delete()
+                        deleted += 1
+                        already_deleted = True
+                        break
+                    if embed.title and any(f in embed.title.lower() for f in filters):
+                        await message.delete()
+                        deleted += 1
+                        already_deleted = True
+                        break
+                    if embed.fields:
+                        for field in embed.fields:
+                            if any(f in field.name.lower() for f in filters) or any(
+                                f in field.value.lower() for f in filters
+                            ):
+                                await message.delete()
+                                deleted += 1
+                                already_deleted = True
+                                break
+                    if already_deleted:
+                        break
+
             now = perf_counter()
             if now - last_update >= 5:
                 rate = scanned / ((now - start_time) / 60)
