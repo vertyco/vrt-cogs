@@ -7,7 +7,9 @@ import typing as t
 import unicodedata
 from contextlib import suppress
 from io import StringIO
+from time import perf_counter
 
+import aiohttp
 import discord
 from rapidfuzz import fuzz
 from redbot.core import commands
@@ -45,6 +47,10 @@ class MessageParser:
 
 
 class Dcord(MixinMeta):
+    def __init__(self):
+        super().__init__()
+        self.scanning_channels = set()
+
     @commands.command(aliases=["ownerof"])
     @commands.is_owner()
     async def isownerof(self, ctx: commands.Context, user_id: int):
@@ -582,15 +588,22 @@ class Dcord(MixinMeta):
         `channel:` The channel to delete messages from
         `filters:` The keywords to filter messages by, separated by new lines
         """
-        import asyncio
-        from time import perf_counter
-
         if not channel:
             channel = ctx.channel
         filters = [i.lower().strip() for i in filters.split("\n") if i.lower().strip()]
         if not filters:
             return await ctx.send("No filters provided")
 
+        if channel.id in self.scanning_channels:
+            return await ctx.send("This channel is already being scanned for filters")
+
+        self.scanning_channels.add(channel.id)
+        try:
+            await self._filter_delete(ctx, channel, filters)
+        finally:
+            self.scanning_channels.discard(channel.id)
+
+    async def _filter_delete(self, ctx: commands.Context, channel: discord.TextChannel, filters: t.List[str]):
         cancelled = False
 
         def check_cancel(m):
@@ -632,7 +645,7 @@ class Dcord(MixinMeta):
                     f"Deleted: {deleted}\n"
                     f"Scanning ~{rate:.2f} messages/min"
                 )
-                with suppress(discord.HTTPException):
+                with suppress(discord.HTTPException, aiohttp.ClientOSError):
                     await progress_msg.edit(embed=embed)
                 last_update = now
 
