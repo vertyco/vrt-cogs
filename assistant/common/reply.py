@@ -33,6 +33,8 @@ async def send_reply(
             files = []
         for idx, match in enumerate(THINK_BLOCK.finditer(content)):
             think_content = match.group(1).strip()
+            if not think_content:
+                think_content += "no thinkies 🤯"
             filename = "thinkies.txt" if idx == 0 else f"thinkies_part{idx + 1}.txt"
             files.append(text_to_file(think_content, filename=filename))
         content = THINK_BLOCK.sub("", content).strip()
