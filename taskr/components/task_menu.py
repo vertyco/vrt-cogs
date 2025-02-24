@@ -84,6 +84,7 @@ class TaskMenu(BaseMenu):
         self.times.disabled = True
         self.ai_helper.disabled = True
         self.run_command.disabled = True
+        self.help.disabled = True
         await self.message.edit(embed=await self.get_page(), view=self)
         self.stop()
 

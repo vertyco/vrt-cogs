@@ -27,11 +27,11 @@ class DynamicModal(discord.ui.Modal):
             self.fields[k] = field
 
     async def on_submit(self, interaction: discord.Interaction):
+        with suppress(discord.NotFound):
+            await interaction.response.defer()
         self.inputs = {}
         for k, v in self.fields.items():
             self.inputs[k] = v.value
-        with suppress(discord.NotFound):
-            await interaction.response.defer()
         self.stop()
 
     async def on_timeout(self) -> None:
@@ -39,9 +39,5 @@ class DynamicModal(discord.ui.Modal):
         return await super().on_timeout()
 
     async def on_error(self, interaction: discord.Interaction, error: Exception, /) -> None:
-        txt = (
-            f"DynamicModal failed for {interaction.user.name}!\n"
-            f"Guild: {interaction.guild}\n"
-            f"Title: {self.title}\n"
-        )
+        txt = f"DynamicModal failed for {interaction.user.name}!\nGuild: {interaction.guild}\nTitle: {self.title}\n"
         log.error(txt, exc_info=error)
