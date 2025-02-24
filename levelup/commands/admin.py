@@ -531,6 +531,9 @@ class Admin(MixinMeta):
             profile = conf.get_profile(user)
             profile.level = level
             profile.xp = conf.algorithm.get_xp(level)
+            # Make sure xp is a valid number that python can actually handle
+            if profile.xp > 1e308:
+                return await ctx.send(_("That level is too high!"))
             self.save()
             reason = _("{} set {}'s level to {}").format(ctx.author.name, user.name, level)
             added, removed = await self.ensure_roles(user, conf, reason)
