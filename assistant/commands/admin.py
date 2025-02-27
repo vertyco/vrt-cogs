@@ -100,6 +100,7 @@ class Admin(MixinMeta):
             + _("`System Prompt:       `{} tokens\n").format(humanize_number(system_tokens))
             + _("`User Prompt:         `{} tokens\n").format(humanize_number(prompt_tokens))
             + _("`Endpoint Override:   `{}\n").format(self.db.endpoint_override)
+            + _("'Tool Output Format:  `{}\n").format(self.db.tool_format)
         )
 
         embed = discord.Embed(
@@ -2133,8 +2134,13 @@ class Admin(MixinMeta):
         await self.save_conf()
 
     @assistant.command(name="toolformat")
+    @commands.is_owner()
     async def toggle_tool_formatting(self, ctx: commands.Context, true_or_false: bool):
+        """
+        Assistant will submit enabled functions to your endpoint as tools instead of functions.
 
+        Useful for troubleshooting function calling with a custom endpoint.
+        """
         match true_or_false:
             case True:
                 self.db.tool_format = True
