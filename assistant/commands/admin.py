@@ -2131,3 +2131,15 @@ class Admin(MixinMeta):
             self.db.listen_to_bots = True
             await ctx.send(_("Assistant will listen to other bot messages"))
         await self.save_conf()
+
+    @assistant.command(name="toolformat")
+    async def toggle_tool_formatting(self, ctx: commands.Context, true_or_false: bool):
+
+        match true_or_false:
+            case True:
+                self.db.tool_format = True
+                await ctx.send("Assistant will now send functions via tools.")
+            case False:
+                self.db.tool_format = False
+                await ctx.send("Assistant will now send functions via functions.")
+        await self.save_conf()

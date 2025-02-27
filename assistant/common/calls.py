@@ -9,6 +9,8 @@ from openai.types import CreateEmbeddingResponse, Image, ImagesResponse
 from openai.types.chat import ChatCompletion
 from pydantic import BaseModel
 from sentry_sdk import add_breadcrumb
+from ..common.models import DB
+
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -45,6 +47,7 @@ async def request_chat_completion_raw(
     seed: int = None,
     base_url: Optional[str] = None,
     reasoning_effort: Optional[str] = None,
+    db: Optional[any] = None,
 ) -> ChatCompletion:
     client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
 
@@ -66,27 +69,30 @@ async def request_chat_completion_raw(
         if seed and model in SUPPORTS_SEED:
             kwargs["seed"] = seed
 
-        if functions and model not in NO_DEVELOPER_ROLE:
-            if model in SUPPORTS_TOOLS:
-                tools = []
-                for func in functions:
-                    function = {"type": "function", "function": func, "name": func["name"]}
-                    tools.append(function)
-                if tools:
-                    kwargs["tools"] = tools
-                    # If passing tools, make sure the messages payload has no "function_call" key
+        if functions:
+            if model not in NO_DEVELOPER_ROLE or db.endpoint_override:
+
+                if model in SUPPORTS_TOOLS or db.tool_format:
+                    tools = []
+                    for func in functions:
+                        function = {"type": "function", "function": func, "name": func["name"]}
+                        tools.append(function)
+                    if tools:
+                        kwargs["tools"] = tools
+                        # If passing tools, make sure the messages payload has no "function_call" key
+                        for idx, message in enumerate(messages):
+                            if "function_call" in message:
+                                # Remove the message from the payload
+                                del kwargs["messages"][idx]
+
+                else:
+                    kwargs["functions"] = functions
+                    # If passing functions, make sure the messages payload has no tool calls
                     for idx, message in enumerate(messages):
-                        if "function_call" in message:
+                        if "tool_calls" in message:
                             # Remove the message from the payload
                             del kwargs["messages"][idx]
 
-            else:
-                kwargs["functions"] = functions
-                # If passing functions, make sure the messages payload has no tool calls
-                for idx, message in enumerate(messages):
-                    if "tool_calls" in message:
-                        # Remove the message from the payload
-                        del kwargs["messages"][idx]
 
     add_breadcrumb(
         category="api",
