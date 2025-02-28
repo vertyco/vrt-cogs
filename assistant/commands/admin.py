@@ -100,7 +100,6 @@ class Admin(MixinMeta):
             + _("`System Prompt:       `{} tokens\n").format(humanize_number(system_tokens))
             + _("`User Prompt:         `{} tokens\n").format(humanize_number(prompt_tokens))
             + _("`Endpoint Override:   `{}\n").format(self.db.endpoint_override)
-            + _("'Tool Output Format:  `{}\n").format(self.db.tool_format)
         )
 
         embed = discord.Embed(
@@ -170,6 +169,7 @@ class Admin(MixinMeta):
 
         custom_func_field = (
             _("`Function Calling:  `{}\n").format(conf.use_function_calls)
+            + _("`Tool Output Format:  `{}\n").format(self.db.tool_format)
             + _("`Maximum Recursion: `{}\n").format(conf.max_function_calls)
             + _("`Function Tokens:   `{}\n").format(humanize_number(func_tokens))
         )
