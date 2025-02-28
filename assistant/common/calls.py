@@ -69,29 +69,29 @@ async def request_chat_completion_raw(
         if seed and model in SUPPORTS_SEED:
             kwargs["seed"] = seed
 
-        if functions:
-            if model not in NO_DEVELOPER_ROLE or db.endpoint_override:
+    if functions:
+        if model not in NO_DEVELOPER_ROLE or db.endpoint_override:
 
-                if model in SUPPORTS_TOOLS or db.tool_format:
-                    tools = []
-                    for func in functions:
-                        function = {"type": "function", "function": func, "name": func["name"]}
-                        tools.append(function)
-                    if tools:
-                        kwargs["tools"] = tools
-                        # If passing tools, make sure the messages payload has no "function_call" key
-                        for idx, message in enumerate(messages):
-                            if "function_call" in message:
-                                # Remove the message from the payload
-                                del kwargs["messages"][idx]
-
-                else:
-                    kwargs["functions"] = functions
-                    # If passing functions, make sure the messages payload has no tool calls
+            if model in SUPPORTS_TOOLS or db.tool_format:
+                tools = []
+                for func in functions:
+                    function = {"type": "function", "function": func, "name": func["name"]}
+                    tools.append(function)
+                if tools:
+                    kwargs["tools"] = tools
+                    # If passing tools, make sure the messages payload has no "function_call" key
                     for idx, message in enumerate(messages):
-                        if "tool_calls" in message:
+                        if "function_call" in message:
                             # Remove the message from the payload
                             del kwargs["messages"][idx]
+
+            else:
+                kwargs["functions"] = functions
+                # If passing functions, make sure the messages payload has no tool calls
+                for idx, message in enumerate(messages):
+                    if "tool_calls" in message:
+                        # Remove the message from the payload
+                        del kwargs["messages"][idx]
 
 
     add_breadcrumb(
