@@ -656,6 +656,11 @@ class TaskMenu(BaseMenu):
         schedule.hour = hour
         schedule.minute = minute
         schedule.second = second
+        try:
+            schedule.trigger(self.timezone)
+        except ValueError as e:
+            return await interaction.followup.send(str(e), ephemeral=True)
+
         await self.message.edit(embed=await self.get_page(), view=self)
         await interaction.followup.send(_("Scheduled command cron updated."), ephemeral=True)
         self.cog.save()

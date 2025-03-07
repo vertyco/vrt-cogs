@@ -9,7 +9,7 @@
   "min_python_version": [3, 10, 0],
   "permissions": [],
   "required_cogs": {},
-  "requirements": ["pydantic", "apscheduler", "openai"],
+  "requirements": ["pydantic", "apscheduler", "openai", "pytz"],
   "short": "Schedule bot commands within a simple menu",
   "tags": [
     "taskr",
