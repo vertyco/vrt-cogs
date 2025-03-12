@@ -385,7 +385,7 @@ class Hunting(commands.Cog):
             await asyncio.sleep(wait)
             await self._wait_for_bang(guild, channel, conf)
         except Exception as e:
-            log.error(f"Failed to wait for bang: {e}")
+            log.error("Failed to wait for bang", exc_info=e)
         finally:
             self.in_game.discard(channel.id)
 
