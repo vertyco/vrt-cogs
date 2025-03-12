@@ -7,6 +7,7 @@ from typing import Literal
 
 import discord
 from redbot.core import Config, bank, checks, commands
+from redbot.core.bot import Red
 from redbot.core.errors import BalanceTooHigh
 from redbot.core.utils.chat_formatting import (
     bold,
@@ -18,7 +19,7 @@ from redbot.core.utils.chat_formatting import (
 from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 from redbot.core.utils.predicates import MessagePredicate
 
-__version__ = "3.4.12"
+__version__ = "3.5.0"
 log = logging.getLogger("red.vrt.hunting")
 
 
@@ -35,7 +36,7 @@ class Hunting(commands.Cog):
 
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.bot = bot
+        self.bot: Red = bot
         self.config = Config.get_conf(self, 2784481002, force_registration=True)
 
         self.animals = {
@@ -389,59 +390,82 @@ class Hunting(commands.Cog):
             self.in_game.discard(channel.id)
 
     async def _wait_for_bang(self, guild: discord.Guild, channel: discord.TextChannel, conf: dict):
-        def mcheck(m: discord.Message):
-            if m.guild != guild:
-                return False
-            if m.channel != channel:
-                return False
-            if not m.content:
-                return False
-            res = m.content.lower().strip()
-            return "bang" in res
-
-        def rcheck(r: discord.Reaction, u: discord.Member):
-            if u.bot:
-                return False
-            if r.message.guild != guild:
-                return False
-            if r.message.channel != channel:
-                return False
-            if not u:
-                return False
-            return str(r.emoji) == "💥"
-
+        bang = ["💥", "\N{COLLISION SYMBOL}"]
+        salute = ["🫡", "\N{SALUTING FACE}"]
         animal = random.choice(list(self.animals.keys()))
+        await channel.send(self.animals[animal])
 
-        animal_message = await channel.send(self.animals[animal])
+        def bang_mcheck(m: discord.Message):
+            if m.guild != guild or m.channel != channel or not m.content:
+                return False
+            return "bang" in m.content.lower().strip()
+
+        def salute_mcheck(m: discord.Message):
+            if m.guild != guild or m.channel != channel or not m.content:
+                return False
+            return any(s in m.content.lower().strip() for s in salute)
+
+        def bang_rcheck(r: discord.Reaction, u: discord.Member):
+            if u.bot or r.message.guild != guild or r.message.channel != channel:
+                return False
+            return str(r.emoji) in bang
+
+        def salute_rcheck(r: discord.Reaction, u: discord.Member):
+            if u.bot or r.message.guild != guild or r.message.channel != channel:
+                return False
+            return str(r.emoji) in salute
+
         now = datetime.now().timestamp()
         timeout = conf["wait_for_bang_timeout"]
+        # Wait for whatever comes first, a message with bang or a reaction with bang emoji
+        # Use asyncio.FIRST_COMPLETED to return the first completed future
+        futures: list[asyncio.Future] = []
+        futures.append(asyncio.ensure_future(self.bot.wait_for("message", check=bang_mcheck, timeout=timeout)))
+        futures.append(asyncio.ensure_future(self.bot.wait_for("reaction_add", check=bang_rcheck, timeout=timeout)))
+        if animal == "eagle":
+            futures.append(asyncio.ensure_future(self.bot.wait_for("message", check=salute_mcheck, timeout=timeout)))
+            futures.append(
+                asyncio.ensure_future(self.bot.wait_for("reaction_add", check=salute_rcheck, timeout=timeout))
+            )
 
-        if conf["bang_words"]:
-            try:
-                bang_msg = await self.bot.wait_for("message", check=mcheck, timeout=timeout)
-            except asyncio.TimeoutError:
-                return await channel.send(f"The {animal} got away!")
-            author = bang_msg.author
+        done, pending = await asyncio.wait(futures, return_when=asyncio.FIRST_COMPLETED)
+        for future in pending:
+            future.cancel()
+        res = done.pop().result()
+        if isinstance(res, discord.Message):
+            author: discord.Member = res.author
+            saluted = False
+            if any(s in res.content.lower().strip() for s in salute) and animal == "eagle":
+                saluted = True
         else:
-            emoji = "\N{COLLISION SYMBOL}"
-            await animal_message.add_reaction(emoji)
-            try:
-                reaction, author = await self.bot.wait_for("reaction_add", check=rcheck, timeout=timeout)
-            except asyncio.TimeoutError:
-                return await channel.send(f"The {animal} got away!")
+            reaction: discord.Reaction = res[0]
+            author: discord.Member = res[1]
+            saluted = False
+            if str(reaction.emoji) in salute and animal == "eagle":
+                saluted = True
 
         bang_now = datetime.now().timestamp()
         time_for_bang = round(bang_now - now, 1)
         bangtime = "" if not await self.config.guild(guild).bang_time() else f" in {time_for_bang}s"
 
         if random.randrange(0, 17) > 1:
-            if conf["eagle"] and animal == "eagle":
-                punish = await self.maybe_send_reward(guild, author, True)
-                if punish:
-                    cur_name = await bank.get_currency_name(guild)
-                    msg = f"Oh no! {author.display_name} shot an eagle{bangtime} and paid {punish} {cur_name} in fines!"
+            if animal == "eagle" and conf["eagle"]:
+                # Shooting bad, salute good
+                if saluted:
+                    await self.add_score(author, animal)
+                    reward = await self.maybe_send_reward(guild, author)
+                    if reward:
+                        cur_name = await bank.get_currency_name(guild)
+                        msg = f"{author.display_name} saluted the eagle{bangtime} and earned {reward} {cur_name}!"
+                    else:
+                        msg = f"{author.display_name} saluted the eagle{bangtime}!"
                 else:
-                    msg = f"Oh no! {author.display_name} shot an eagle{bangtime}!"
+                    punish = await self.maybe_send_reward(guild, author, True)
+                    if punish:
+                        cur_name = await bank.get_currency_name(guild)
+                        msg = f"Oh no! {author.display_name} shot an eagle{bangtime} and paid {punish} {cur_name} in fines!"
+                    else:
+                        msg = f"Oh no! {author.display_name} shot an eagle{bangtime}!"
             else:
                 await self.add_score(author, animal)
                 reward = await self.maybe_send_reward(guild, author)
@@ -452,6 +476,8 @@ class Hunting(commands.Cog):
                     msg = f"{author.display_name} shot a {animal}{bangtime}!"
         else:
             msg = f"{author.display_name} missed the shot and the {animal} got away!"
+            if conf["eagle"] and animal == "eagle" and saluted:
+                msg = f"{author.display_name} saluted the eagle but it just flew away!"
 
         await channel.send(bold(msg))
 
