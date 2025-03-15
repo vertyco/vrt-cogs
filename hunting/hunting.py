@@ -393,7 +393,7 @@ class Hunting(commands.Cog):
         bang = ["💥", "\N{COLLISION SYMBOL}"]
         salute = ["🫡", "\N{SALUTING FACE}"]
         animal = random.choice(list(self.animals.keys()))
-        await channel.send(self.animals[animal])
+        animal_message = await channel.send(self.animals[animal])
 
         def bang_mcheck(m: discord.Message):
             if m.guild != guild or m.channel != channel or not m.content:
@@ -420,18 +420,28 @@ class Hunting(commands.Cog):
         # Wait for whatever comes first, a message with bang or a reaction with bang emoji
         # Use asyncio.FIRST_COMPLETED to return the first completed future
         futures: list[asyncio.Future] = []
-        futures.append(asyncio.ensure_future(self.bot.wait_for("message", check=bang_mcheck, timeout=timeout)))
-        futures.append(asyncio.ensure_future(self.bot.wait_for("reaction_add", check=bang_rcheck, timeout=timeout)))
+        futures.append(asyncio.ensure_future(self.bot.wait_for("message", check=bang_mcheck)))
+        futures.append(asyncio.ensure_future(self.bot.wait_for("reaction_add", check=bang_rcheck)))
         if animal == "eagle":
-            futures.append(asyncio.ensure_future(self.bot.wait_for("message", check=salute_mcheck, timeout=timeout)))
-            futures.append(
-                asyncio.ensure_future(self.bot.wait_for("reaction_add", check=salute_rcheck, timeout=timeout))
-            )
+            futures.append(asyncio.ensure_future(self.bot.wait_for("message", check=salute_mcheck)))
+            futures.append(asyncio.ensure_future(self.bot.wait_for("reaction_add", check=salute_rcheck)))
 
-        done, pending = await asyncio.wait(futures, return_when=asyncio.FIRST_COMPLETED)
-        for future in pending:
-            future.cancel()
+        if not conf["bang_words"]:
+            await animal_message.add_reaction("\N{COLLISION SYMBOL}")
+
+        try:
+            done, pending = await asyncio.wait(futures, return_when=asyncio.FIRST_COMPLETED, timeout=timeout)
+        except asyncio.TimeoutError:
+            return await channel.send(f"The {animal} flew away!")
+        try:
+            for future in pending:
+                future.cancel()
+        except Exception as e:
+            log.info(f"Failed to cancel pending futures: {e}")
+        if not done:
+            return await channel.send(f"The {animal} flew away!")
         res = done.pop().result()
+
         if isinstance(res, discord.Message):
             author: discord.Member = res.author
             saluted = False
