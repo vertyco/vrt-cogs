@@ -4,7 +4,7 @@
   "disabled": false,
   "end_user_data_statement": "This cog stores prompts and OpenAI API keys on a per server basis. If enabled, conversations with the bot are also persistently stored",
   "hidden": false,
-  "install_msg": "Thank you for installing Assistant! type `[p]assistant` to see all commands. and `[p]chathelp` for tips on how to interact.\nYou will need an api key **Per Server** for this cog. https://platform.openai.com/account/api-keys\n\n**Warning**\nIt is not recommended to run this cog on a public bot or on a server with limited resources!.\n\n**Note**\nThis cog allows other 3rd party cogs to register functions with it, extending functionality. Be aware of what functions other cogs are registering with `[p]customfunc`\n\nDOCUMENTATION: https://github.com/vertyco/vrt-cogs/blob/main/assistant/README.md",
+  "install_msg": "Thank you for installing Assistant! type `[p]assistant` to see all commands. and `[p]chathelp` for tips on how to interact.\nYou will need an [OpenAI API key](https://platform.openai.com/account/api-keys) **per server** via `[p]assistant openaikey`.\n\n**Warning**\nIt is not recommended to run this cog on a public bot or on a server with limited resources!\n\n**Note**\nThis cog allows other 3rd party cogs to register functions with it, extending functionality. Be aware of what functions other cogs are registering with `[p]customfunc`\n\nDOCUMENTATION: https://github.com/vertyco/vrt-cogs/blob/main/assistant/README.md",
   "min_bot_version": "3.5.0",
   "min_python_version": [3, 10, 0],
   "permissions": ["read_messages", "send_messages", "embed_links", "attach_files"],
