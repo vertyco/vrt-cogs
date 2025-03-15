@@ -59,9 +59,6 @@ class DashboardIntegration(MixinMeta):
             "Pagination": Pagination,
         }
         """
-        log.warning("Kwargs")
-        for k, v in kwargs.items():
-            log.warning(f"{k}: {v}")
         conf = self.db.get_conf(guild)
         if lbtype == "weekly":
             if not conf.weeklysettings.on:
@@ -121,9 +118,7 @@ class DashboardIntegration(MixinMeta):
             "stat": stat,
             "total": res["description"].replace("`", ""),
             "type": lbtype,
-            "statname": res["stat"],
-            "query": query if query is not None else "",  # Changed to prevent None
-            "page": int(kwargs["extra_kwargs"].get("page", 1)),  # Ensure it's an integer
+            "page": int(kwargs["extra_kwargs"].get("page", 1)),
         }
         content = {
             "status": 0,
@@ -131,10 +126,8 @@ class DashboardIntegration(MixinMeta):
                 "source": source,
                 "data": data,
                 "stat": stat,
-                "total": res["description"].replace("`", ""),
                 "statname": res["stat"],
-                "query": query,
-                "current_user": user,
+                "expanded": True,
             },
         }
         return content
