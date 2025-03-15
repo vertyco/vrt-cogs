@@ -1,0 +1,110 @@
+/* Trippy search bar styling */
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes glow-pulse {
+  0% { box-shadow: 0 0 5px rgba(255, 0, 255, 0.7); }
+  50% { box-shadow: 0 0 20px rgba(0, 255, 255, 0.9); }
+  100% { box-shadow: 0 0 5px rgba(255, 0, 255, 0.7); }
+}
+
+@keyframes wobble {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  25% { transform: translateX(-5px) rotate(-1deg); }
+  75% { transform: translateX(5px) rotate(1deg); }
+}
+
+/* Default search input styles */
+.search-container input[type="text"] {
+  transition: all 0.3s ease;
+}
+
+/* Trippy styles applied conditionally */
+.search-container input[type="text"].trippy-search {
+  background: linear-gradient(45deg, #ff00e1, #00ffff, #ff00a2, #00ff9d, #8400ff, #00e1ff);
+  background-size: 600% 600%;
+  animation: gradient-shift 10s ease infinite, glow-pulse 3s infinite;
+  color: white;
+  text-shadow: 1px 1px 2px black;
+  font-weight: bold;
+  border: 2px solid transparent;
+  /* border-image: linear-gradient(to right, violet, indigo, blue, green, yellow, orange, red); */
+  border-image-slice: 1;
+}
+
+.search-container input[type="text"].trippy-search:focus {
+  animation: gradient-shift 3s ease infinite, glow-pulse 1.5s infinite, wobble 2s ease-in-out infinite;
+  transform: scale(1.02);
+  outline: none;
+}
+
+.search-container input[type="text"].trippy-search::placeholder {
+  color: rgba(255, 255, 255, 0.8);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.search-container input[type="text"].trippy-search:not(:placeholder-shown) {
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+
+/* Toggle switch styling */
+.form-switch .form-check-input {
+  cursor: pointer;
+}
+
+.form-check-label {
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+/* Sleek Toggle Switch */
+.trippy-toggle {
+  position: relative;
+  display: inline-block;
+}
+
+.trippy-toggle .toggle-input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.trippy-toggle .toggle-label {
+  position: relative;
+  display: inline-block;
+  width: 30px;
+  height: 16px;
+  background-color: #ccc;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.trippy-toggle .toggle-label:before {
+  position: absolute;
+  content: '';
+  height: 12px;
+  width: 12px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  border-radius: 50%;
+  transition: 0.3s;
+}
+
+.trippy-toggle .toggle-input:checked + .toggle-label {
+  background: linear-gradient(90deg, #ff00e1, #00ffff);
+  box-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+}
+
+.trippy-toggle .toggle-input:checked + .toggle-label:before {
+  transform: translateX(14px);
+}
+
+.search-input-container {
+  position: relative;
+}
