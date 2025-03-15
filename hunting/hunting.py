@@ -19,7 +19,7 @@ from redbot.core.utils.chat_formatting import (
 from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 from redbot.core.utils.predicates import MessagePredicate
 
-__version__ = "3.5.0"
+__version__ = "3.5.1"
 log = logging.getLogger("red.vrt.hunting")
 
 
