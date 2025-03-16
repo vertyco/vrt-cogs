@@ -197,10 +197,6 @@ class UpgradeChat(commands.Cog):
                 buffer.write(f"<t:{date}:R>: `${price}`\n")
 
             em.description = buffer.getvalue()
-
-            if uid == int(user_id):
-                return await ctx.send(embed=em)
-
             em.set_footer(text=f"Page {index + 1}/{pages} | ${total} total")
             embeds.append(em)
 
