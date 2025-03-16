@@ -1,7 +1,7 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('leaderBoard', (data = {}) => ({
         // DATA INITIALIZATION
-        searchquery: data.query,
+        searchQuery: data.query,
         page: data.page,
         perPage: 100,
         users: data.users,
@@ -19,7 +19,7 @@ document.addEventListener('alpine:init', () => {
         getPageUsers() {
             console.log("Fetching users for page", this.page);
             console.log(`There are ${this.users.length} users in total`);
-            if (this.searchquery === "") {
+            if (this.searchQuery === "") {
                 return this.users.slice((this.page - 1) * this.perPage, this.page * this.perPage);
             } else {
                 // Need to filter users based on search query
@@ -49,7 +49,7 @@ document.addEventListener('alpine:init', () => {
             }
         },
         getPageCount() {
-            if (this.searchquery === "") {
+            if (this.searchQuery === "") {
                 return Math.ceil(this.users.length / this.perPage);
             } else {
                 // Need to filter users based on search query
@@ -71,10 +71,10 @@ document.addEventListener('alpine:init', () => {
         // SEARCH AND FILTERING
         filterUsers() {
             // Filter users based on search query
-            if (this.searchquery === "") {
+            if (this.searchQuery === "") {
                 return this.users;
             }
-            return this.users.filter(user => user.name.toLowerCase().includes(this.searchquery.toLowerCase()));
+            return this.users.filter(user => user.name.toLowerCase().includes(this.searchQuery.toLowerCase()));
         },
 
         // TRIPPY MODE FUNCTIONALITY
@@ -109,7 +109,6 @@ document.addEventListener('alpine:init', () => {
         // INITIALIZATION AND LOCAL STORAGE
         init() {
             console.log(`Leaderboard initialized starting on page ${this.page}`);
-            this.getPageUsers();
 
             // Store the URL-provided page (if any)
             const urlProvidedPage = this.page;
@@ -125,7 +124,7 @@ document.addEventListener('alpine:init', () => {
             // Retrieve stored values if available
             const storedSearch = localStorage.getItem('leaderBoardSearch');
             if (storedSearch !== null) {
-                this.searchquery = storedSearch;
+                this.searchQuery = storedSearch;
             }
 
             // Get stored perPage preference
@@ -142,7 +141,7 @@ document.addEventListener('alpine:init', () => {
                 if (this.trippyEnabled) {
                     this.trippyMode = true;
                     setTimeout(() => {
-                        if (!this.searchquery) { // Only turn off if not actively searching
+                        if (!this.searchQuery) { // Only turn off if not actively searching
                             this.trippyMode = false;
                         }
                     }, 1500);
@@ -159,7 +158,7 @@ document.addEventListener('alpine:init', () => {
 
             // WATCHERS
             // Watch for changes to store them
-            this.$watch('searchquery', (newquery, oldquery) => {
+            this.$watch('searchQuery', (newquery, oldquery) => {
                 console.log(`Search query changed from ${oldquery} to ${newquery}`);
                 localStorage.setItem('leaderBoardSearch', newquery);
                 this.page = 1;
