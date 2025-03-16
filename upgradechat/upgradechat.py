@@ -198,7 +198,7 @@ class UpgradeChat(commands.Cog):
 
             em.description = buffer.getvalue()
 
-            if member and user.id == uid:
+            if uid == int(user_id):
                 return await ctx.send(embed=em)
 
             em.set_footer(text=f"Page {index + 1}/{pages} | ${total} total")
