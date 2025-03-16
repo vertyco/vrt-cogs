@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+from io import StringIO
 
 import discord
 from discord.ext.commands.cooldowns import BucketType
@@ -128,7 +129,7 @@ class UpgradeChat(commands.Cog):
                 return await ctx.send("UpgradeChat API credentials have not been set yet!")
             status, results, newtoken = await API().get_product(conf, uuid)
             if status != 200:
-                return await ctx.send(f"I could not find any products with that UUID!\n" f"`status {status}`")
+                return await ctx.send(f"I could not find any products with that UUID!\n`status {status}`")
             product = results["data"]
             async with self.config.guild(ctx.guild).products() as products:
                 products[uuid] = product
@@ -147,7 +148,7 @@ class UpgradeChat(commands.Cog):
                     for pid, data in products.items():
                         text += f"`{pid}: `{data['name']}\n"
                     return await ctx.send(
-                        "UUID not found in existing products. Here are the current products you have set.\n" f"{text}"
+                        f"UUID not found in existing products. Here are the current products you have set.\n{text}"
                     )
                 await ctx.send(f"Product with title `{products[uuid]['name']}` has been deleted!")
                 del products[uuid]
@@ -164,6 +165,7 @@ class UpgradeChat(commands.Cog):
         """View user purchase history"""
         users = await self.config.guild(ctx.guild).users()
 
+        uid = 0
         if member is not None:
             uid = member.id if isinstance(member, discord.Member) else member
             if str(uid) not in users:
@@ -175,13 +177,8 @@ class UpgradeChat(commands.Cog):
         for index, user_id in enumerate(users.keys()):
             purchases = users[user_id]
             user = ctx.guild.get_member(int(user_id))
-            if member is not None:
-                if isinstance(member, int):
-                    uid = member
-                else:
-                    uid = member.id
-                if uid == int(user_id):
-                    page = index
+            if uid == int(user_id):
+                page = index
 
             name = f"{user.name} ({user.id})" if user else user_id
 
@@ -192,14 +189,18 @@ class UpgradeChat(commands.Cog):
             )
 
             total = 0
-            desc = ""
+            buffer = StringIO()
             for transaction_id, purchase in purchases.items():
                 price = purchase["price"]
                 date = int(datetime.fromisoformat(purchase["date"]).timestamp())
                 total += price
-                desc += f"`${price}`|`{transaction_id}:`<t:{date}:D>(<t:{date}:R>)\n"
+                buffer.write(f"<t:{date}:R>: `${price}`\n")
 
-            em.description = desc
+            em.description = buffer.getvalue()
+
+            if member and user.id == uid:
+                return await ctx.send(embed=em)
+
             em.set_footer(text=f"Page {index + 1}/{pages} | ${total} total")
             embeds.append(em)
 
@@ -218,21 +219,14 @@ class UpgradeChat(commands.Cog):
         token = conf["bearer_token"] if conf["bearer_token"] else "Not Authorized Yet"
         cid = conf["id"]
         secret = conf["secret"]
-        txt = (
-            f"UpgradeChat secrets\n"
-            f"`client_id:     `{cid}\n"
-            f"`client_secret: `{secret}\n"
-            f"`bearer_token:  `{token}"
-        )
+        txt = f"UpgradeChat secrets\n`client_id:     `{cid}\n`client_secret: `{secret}\n`bearer_token:  `{token}"
         try:
             await ctx.author.send(txt)
         except discord.Forbidden:
             await ctx.send("I was unable to DM your api credentials")
         ratio = conf["conversion_ratio"]
         producs = conf["products"]
-        desc = (
-            f"`Conversion Ratio: `{ratio} ($1 = {ratio} {currency_name})\n" f"`Claim Message:    `{conf['claim_msg']}\n"
-        )
+        desc = f"`Conversion Ratio: `{ratio} ($1 = {ratio} {currency_name})\n`Claim Message:    `{conf['claim_msg']}\n"
         if producs:
             text = ""
             for uuid, data in producs.items():
@@ -356,7 +350,7 @@ class UpgradeChat(commands.Cog):
             except Exception as e:
                 log.error("Failed to fetch cluster from Arktools", exc_info=e)
 
-            desc = f"`Spent:   `${amount_spent}\n" f"`Awarded: `{'{:,}'.format(amount_to_give)} {currency_name}"
+            desc = f"`Spent:   `${amount_spent}\n`Awarded: `{'{:,}'.format(amount_to_give)} {currency_name}"
 
             if cluster:
                 desc += f"\n`Cluster: `{cluster}"
