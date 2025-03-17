@@ -77,7 +77,7 @@ class DynamicMenu(discord.ui.View):
     async def refresh(self, interaction: discord.Interaction = None):
         """Call this to start and refresh the menu."""
         try:
-            await self._refresh(interaction)
+            await self.__refresh(interaction)
         except Exception as e:
             current_page = self.pages[self.page]
             if isinstance(current_page, discord.Embed):
@@ -90,7 +90,7 @@ class DynamicMenu(discord.ui.View):
                 content = current_page
             log.error(f"Error refreshing menu, current page: {content}", exc_info=e)
 
-    async def _refresh(self, interaction: discord.Interaction = None):
+    async def __refresh(self, interaction: discord.Interaction = None):
         self.clear_items()
         single = [self.close]
         small = [self.left] + single + [self.right]
