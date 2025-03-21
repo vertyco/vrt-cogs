@@ -26,20 +26,31 @@ class VoiceListener(MixinMeta):
                 conf = self.db.get_conf(guild)
                 if not conf.enabled:
                     continue
-                voice = self.voice_tracking[guild.id]
                 for member in guild.members:
                     if member.voice and member.voice.channel:
-                        earning_xp = self.can_gain_exp(conf, member, member.voice)
-                        voice[member.id] = VoiceTracking(
-                            joined=perf,
-                            not_gaining_xp=not earning_xp,
-                            not_gaining_xp_time=0.0,
-                            stopped_gaining_xp_at=perf if not earning_xp else None,
-                        )
+                        self.get_init_state(conf, member, perf)
                         initialized += 1
             return initialized
 
         return await asyncio.to_thread(_init)
+
+    def get_init_state(
+        self,
+        conf: GuildSettings,
+        member: discord.Member,
+        perf: float = None,
+        state: discord.VoiceState = None,
+    ) -> VoiceTracking:
+        earning_xp = self.can_gain_exp(conf, member, state or member.voice)
+        return self.voice_tracking[member.guild.id].setdefault(
+            member.id,
+            VoiceTracking(
+                joined=perf or perf_counter(),
+                not_gaining_xp=not earning_xp,
+                not_gaining_xp_time=0.0,
+                stopped_gaining_xp_at=perf if not earning_xp else None,
+            ),
+        )
 
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member) -> None:
@@ -55,18 +66,15 @@ class VoiceListener(MixinMeta):
 
     @commands.Cog.listener()
     async def on_voice_state_update(
-        self,
-        member: discord.Member,
-        before: discord.VoiceState,
-        after: discord.VoiceState,
+        self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState
     ):
-        await self._on_voice_state_update(member, before, after)
+        try:
+            await self._on_voice_state_update(member, before, after)
+        except Exception as e:
+            log.error(f"Error in voice state update event.\nBefore: {before}\nAfter: {after}", exc_info=e)
 
     async def _on_voice_state_update(
-        self,
-        member: discord.Member,
-        before: discord.VoiceState,
-        after: discord.VoiceState,
+        self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState
     ):
         if member.bot and self.db.ignore_bots:
             return
@@ -78,24 +86,24 @@ class VoiceListener(MixinMeta):
             log.error(f"False voice state update for {member.name} in {member.guild}")
             voice.pop(member.id, None)
             return
+
         perf = perf_counter()
 
         if before.channel == after.channel:
-            # Voice state changed but user is still in the same VC
             log.debug(f"Voice state changed for {member.name} in {member.guild}")
             earning_xp = self.can_gain_exp(conf, member, after)
-            data = voice[member.id]
-            if data.not_gaining_xp and earning_xp:
+            user_data = self.get_init_state(conf, member, perf, after)
+            if user_data.not_gaining_xp and earning_xp:
                 log.debug(f"{member.name} now earning xp in {after.channel.name} in {member.guild}")
                 # User's state change means they can now earn exp again
-                data.not_gaining_xp = False
-                data.not_gaining_xp_time += perf - data.stopped_gaining_xp_at
-                data.stopped_gaining_xp_at = None
-            elif not data.not_gaining_xp and not earning_xp:
+                user_data.not_gaining_xp = False
+                user_data.not_gaining_xp_time += perf - user_data.stopped_gaining_xp_at
+                user_data.stopped_gaining_xp_at = None
+            elif not user_data.not_gaining_xp and not earning_xp:
                 log.debug(f"{member.name} no longer earning xp in {after.channel.name} in {member.guild}")
                 # User's state change means they shouldnt earn exp
-                data.not_gaining_xp = True
-                data.stopped_gaining_xp_at = perf
+                user_data.not_gaining_xp = True
+                user_data.stopped_gaining_xp_at = perf
             else:
                 # No meaningful state change, just return
                 pass
@@ -104,27 +112,14 @@ class VoiceListener(MixinMeta):
         # Case 1: User joins VC
         if not before.channel and after.channel:
             log.debug(f"{member.name} joined VC {after.channel.name} in {member.guild}")
-            earning_xp = self.can_gain_exp(conf, member, after)
-            voice[member.id] = VoiceTracking(
-                joined=perf,
-                not_gaining_xp=not earning_xp,
-                not_gaining_xp_time=0.0,
-                stopped_gaining_xp_at=perf if not earning_xp else None,
-            )
+            self.get_init_state(conf, member, perf, after)
             # Go ahead and update other users in the channel
             for m in after.channel.members:
                 if m.id == member.id:
+                    # We just initialized them
                     continue
+                user_data = self.get_init_state(conf, m, perf)
                 earning_xp = self.can_gain_exp(conf, m, m.voice)
-                user_data = voice.setdefault(
-                    m.id,
-                    VoiceTracking(
-                        joined=perf,
-                        not_gaining_xp=not earning_xp,
-                        not_gaining_xp_time=0.0,
-                        stopped_gaining_xp_at=perf if not earning_xp else None,
-                    ),
-                )
                 if user_data.not_gaining_xp and earning_xp:
                     log.debug(f"{m.name} now earning xp in {after.channel.name} in {member.guild}")
                     user_data.not_gaining_xp = False
@@ -162,7 +157,9 @@ class VoiceListener(MixinMeta):
         data = voice.pop(member.id, None)
         if not data:
             # User wasnt in the voice cache, maybe cog was reloaded while user was in VC?
-            log.warning(f"User {member.name} left VC but wasnt in voice cache in {member.guild}")
+            log.error(
+                f"User {member.name} left VC but wasnt in voice cache in {member.guild}\nBefore: {before}\nAfter: {after}"
+            )
             return
         # Add whatever time is left that the user wasnt gaining exp to their total time not gaining exp
         if data.not_gaining_xp and data.stopped_gaining_xp_at:
@@ -204,24 +201,17 @@ class VoiceListener(MixinMeta):
 
         # Now we need to update everyone else in the channel in case the exp gaining states have changed
         # Get the channel now that the user has left
-        channel = member.guild.get_channel(before.channel.id)
+        channel: discord.VoiceChannel = member.guild.get_channel(before.channel.id)
         if not channel:
             # User left channel because it was deleted?
             log.warning(f"User {member.name} left VC {before.channel.name} but channel wasnt found in {member.guild}")
         else:
+            # Update everyone else in the channel
             for m in channel.members:
                 if m.id == member.id:
                     continue
                 earning_xp = self.can_gain_exp(conf, m, m.voice)
-                user_data = voice.setdefault(
-                    m.id,
-                    VoiceTracking(
-                        joined=perf,
-                        not_gaining_xp=not earning_xp,
-                        not_gaining_xp_time=0.0,
-                        stopped_gaining_xp_at=perf if not earning_xp else None,
-                    ),
-                )
+                user_data = self.get_init_state(conf, m, perf)
                 if user_data.not_gaining_xp and earning_xp:
                     log.debug(f"{m.name} now earning xp in {channel.name} in {member.guild}")
                     user_data.not_gaining_xp = False
