@@ -1,7 +1,7 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('leaderBoard', (data = {}) => ({
         // DATA INITIALIZATION
-        searchQuery: data.query,
+        searchQuery: '',
         page: data.page,
         perPage: 100,
         users: data.users,
