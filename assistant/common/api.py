@@ -405,7 +405,14 @@ class API(MixinMeta):
                 if "name" in removed:
                     reduction += 1
                 if content := removed.get("content"):
-                    reduction += await self.count_tokens(content, model)
+                    if isinstance(content, list):
+                        for i in content:
+                            if i["type"] == "text":
+                                reduction += await self.count_tokens(i["text"], model)
+                            else:
+                                reduction += 2
+                    else:
+                        reduction += await self.count_tokens(str(content), model)
                 elif tool_calls := removed.get("tool_calls"):
                     reduction += await self.count_tokens(str(tool_calls), model)
                 elif function_call := removed.get("function_call"):
