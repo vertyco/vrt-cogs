@@ -4,19 +4,21 @@ import typing as t
 from pathlib import Path
 
 import discord
-import pydantic
 from redbot.core import commands
 from redbot.core.i18n import Translator
 
 from ..abc import MixinMeta
-from ..common import formatter, models
+from ..common import formatter
 
 _ = Translator("LevelUp", __file__)
 log = logging.getLogger("red.levelup.dashboard")
+root = Path(__file__).parent
+static = root / "static"
+templates = root / "templates"
 
 
-def dashboard_page(*args, **kwargs):
-    def decorator(func: t.Callable):
+def dashboard_page(*args: t.Any, **kwargs: t.Any) -> t.Callable[[t.Any], t.Any]:
+    def decorator(func: t.Callable) -> t.Callable[[t.Any], t.Any]:
         func.__dashboard_decorator_params__ = (args, kwargs)
         return func
 
@@ -74,12 +76,9 @@ class DashboardIntegration(MixinMeta):
                     "error_message": _("There is no data for the weekly leaderboard yet, please chat a bit first."),
                 }
 
-        parent = Path(__file__).parent
-
-        source_path = parent / "templates" / "leaderboard.html"
-        static_dir = parent / "static"
-        js_path = static_dir / "js" / "leaderboard.js"
-        css_path = static_dir / "css" / "leaderboard.css"
+        source_path = templates / "leaderboard.html"
+        js_path = static / "js" / "leaderboard.js"
+        css_path = static / "css" / "leaderboard.css"
 
         # Inject JS and CSS into the HTML source for full page loads
         source = (
@@ -133,66 +132,34 @@ class DashboardIntegration(MixinMeta):
 
     @dashboard_page(name="leaderboard", description="Display the guild leaderboard.")
     async def leaderboard_page(
-        self, user: discord.User, guild: discord.Guild, stat: str = None, query: t.Optional[str] = None, **kwargs
+        self, user: discord.User, guild: discord.Guild, stat: str = None, **kwargs
     ) -> t.Dict[str, t.Any]:
         stat = stat if stat is not None and stat in {"exp", "messages", "voice", "stars"} else "exp"
-        return await self.get_dashboard_leaderboard(user, guild, "lb", stat, query, **kwargs)
+        return await self.get_dashboard_leaderboard(user, guild, "lb", stat, **kwargs)
 
     @dashboard_page(name="weekly", description="Display the guild weekly leaderboard.")
     async def weekly_page(
-        self, user: discord.User, guild: discord.Guild, stat: str = None, query: t.Optional[str] = None, **kwargs
+        self, user: discord.User, guild: discord.Guild, stat: str = None, **kwargs
     ) -> t.Dict[str, t.Any]:
         stat = stat if stat is not None and stat in {"exp", "messages", "voice", "stars"} else "exp"
-        return await self.get_dashboard_leaderboard(user, guild, "weekly", stat, query, **kwargs)
+        return await self.get_dashboard_leaderboard(user, guild, "weekly", stat, **kwargs)
 
-    async def save_settings(self, user: discord.User, guild: discord.Guild, data: dict, **kwargs):
-        member = guild.get_member(user.id)
-        if not member:
-            return {
-                "status": 1,
-                "error_title": _("Member not found"),
-                "error_message": _("You are not a member of this guild."),
-            }
-        if not await self.bot.is_admin(member):
-            return {
-                "status": 1,
-                "error_title": _("Insufficient permissions"),
-                "error_message": _("You need to be an admin to access this page."),
-            }
+    # @dashboard_page(name="settings", description="Configure the leveling system.", methods=("GET", "POST"))
+    async def cog_settings(self, user: discord.User, guild: discord.Guild, **kwargs):
+        import wtforms  # pip install WTForms
+        from flask_wtf import FlaskForm  # pip install Flask-WTF
 
-        try:
-            new_conf = models.GuildSettings.model_validate(data)
-        except pydantic.ValidationError as e:
-            return {
-                "status": 1,
-                "error_title": _("Validation error"),
-                "error_message": str(e),
-            }
-
-        conf = self.db.get_conf(guild)
-        for k, v in data.items():
-            setattr(conf, k, getattr(new_conf, k, v))
-        self.save()
-        return {
-            "status": 0,
-            "success_title": _("Settings saved"),
-            "success_message": _("The settings have been saved."),
-        }
-
-    # @dashboard_page(name="settings", description="Configure the leveling system.")
-    async def get_cog_settings(self, user: discord.User, guild: discord.Guild, **kwargs):
-        if kwargs.get("save") and (data := kwargs.get("new_data")):
-            log.info(f"Saving settings for {guild.name} by {user.name}")
-            return await self.save_settings(user, guild, data, **kwargs)
         log.info(f"Getting settings for {guild.name} by {user.name}")
         member = guild.get_member(user.id)
         if not member:
+            log.warning(f"Member {user.name} not found in guild {guild.name}")
             return {
                 "status": 1,
                 "error_title": _("Member not found"),
                 "error_message": _("You are not a member of this guild."),
             }
         if not await self.bot.is_admin(member):
+            log.warning(f"Member {user.name} is not an admin in guild {guild.name}")
             return {
                 "status": 1,
                 "error_title": _("Insufficient permissions"),
@@ -200,64 +167,39 @@ class DashboardIntegration(MixinMeta):
             }
 
         conf = self.db.get_conf(guild)
-        settings = conf.model_dump(mode="json", exclude=["users", "users_weekly"])
 
-        users = []
-        for user in guild.members:
-            users.append(
-                {
-                    "id": user.id,
-                    "name": user.name,
-                    "avatar": user.display_avatar.url,
-                }
+        class SettingsForm(kwargs["Form"]):
+            def __init__(self):
+                super().__init__(prefix="levelup_settings_form_")
+
+            # General settings
+            enabled = wtforms.BooleanField(_("Enabled:"), default=conf.enabled)
+            algo_base = wtforms.IntegerField(
+                _("Algorithm Base:"), default=conf.algorithm.base, validators=[wtforms.validators.InputRequired()]
+            )
+            algo_multiplier = wtforms.FloatField(
+                _("Algorithm Multiplier:"), default=conf.algorithm.exp, validators=[wtforms.validators.InputRequired()]
             )
 
-        emojis = []
-        for emoji in guild.emojis:
-            emojis.append(
-                {
-                    "id": emoji.id,
-                    "name": emoji.name,
-                    "url": emoji.url,
-                }
-            )
+            # Submit button
+            submit = wtforms.SubmitField(_("Save Settings"))
 
-        # Add roles data for the settings page
-        roles = []
-        for role in sorted(guild.roles, reverse=True):
-            if role.is_default():
-                continue
-            roles.append(
-                {
-                    "id": role.id,
-                    "name": role.name,
-                    "color": str(role.color),
-                    "position": role.position,
-                }
-            )
+        form: FlaskForm = SettingsForm()
 
-        parent = Path(__file__).parent
-        source_path = parent / "templates" / "settings.html"
-        static_dir = parent / "static"
-        js_path = static_dir / "js" / "settings.js"
-        css_path = static_dir / "css" / "settings.css"
-
-        # Inject JS and CSS into the HTML source for full page loads
-        source = (
-            f"<style>\n{css_path.read_text() if css_path.exists() else ''}\n</style>\n\n"
-            + source_path.read_text().strip()
-            + f"\n\n<script>\n{js_path.read_text()}\n</script>"
-        )
-
-        payload = {
+        # Handle form submission
+        if form.validate_on_submit() and await form.validate_dpy_converters():
+            log.info(f"Form validated for {guild.name} by {user.name}")
+            conf.enabled = form.enabled.data
+            conf.algorithm.base = form.algo_base.data or 100
+            conf.algorithm.exp = form.algo_multiplier.data or 2.0
+            self.save()
+            return {
+                "status": 0,
+                "notifications": [{"message": _("Settings saved"), "category": "success"}],
+                "redirect_url": kwargs["request_url"],
+            }
+        source = (templates / "settings.html").read_text()
+        return {
             "status": 0,
-            "web_content": {
-                "source": source,
-                "expanded": True,
-                "settings": settings,
-                "users": users,
-                "emojis": emojis,
-                "roles": roles,
-            },
+            "web_content": {"source": source, "settings_form": form},
         }
-        return payload

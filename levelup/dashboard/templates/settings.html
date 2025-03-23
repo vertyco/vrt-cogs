@@ -3,42 +3,7 @@
   src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
 ></script>
 
-<!-- Add CSRF token meta tag -->
-<meta name="csrf-token" content="{{ csrf_token }}" />
-
-<div class="container-fluid" x-data="levelUpSettings({{ data }})">
-  <div class="card mb-3">
-    <div class="card-header">
-      <h3>LevelUp Settings</h3>
-    </div>
-    <div class="card-body">
-      <form @submit.prevent>
-        <!-- Enable/Disable Leveling -->
-        <div class="mb-3">
-          <div class="form-check form-switch ps-0">
-            <input
-              id="setting-enabled"
-              class="form-check-input ms-0"
-              type="checkbox"
-              x-model="settings.enabled"
-              x-bind:checked="settings.enabled"
-            />
-            <label class="form-check-label"
-              >Enable the leveling system in this server.</label
-            >
-          </div>
-        </div>
-        <!-- Submit Button -->
-        <div class="mt-4">
-          <button
-            type="button"
-            class="btn btn-primary"
-            x-bind:href="{{ url_for_query( save=True, new_data=settings ) }}"
-          >
-            Save Settings
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
+<div class="container-fluid">
+  <h3 class="text-dark mb-4">This page is a work in progress!</h3>
+  <div class="card-body">{{ settings_form|safe }}</div>
 </div>

@@ -9,17 +9,24 @@ document.addEventListener('alpine:init', () => {
 
         // METHODS
         async saveSettings(event) {
-            if (event) event.preventDefault();
+            console.log(`Event: ${event}`);
             console.log("Saving settings:", this.settings);
             try {
-                // Get CSRF token from meta tag
-                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+                // Get CSRF token from span element's data-value attribute
+                const csrfToken = document.querySelector('#settings-csrf-token').value;
+                console.log("CSRF token:", csrfToken);
 
                 if (!csrfToken) {
                     console.error("CSRF token not found");
                     alert("CSRF token not found. Please refresh the page and try again.");
                     return;
                 }
+
+                // Wrap settings in the expected structure
+                const requestData = {
+                    save: true,
+                    new_data: this.settings
+                };
 
                 const response = await fetch(window.location.href, {
                     method: 'POST',
@@ -28,7 +35,7 @@ document.addEventListener('alpine:init', () => {
                         'X-CSRFToken': csrfToken  // Changed from X-CSRF-Token to X-CSRFToken
                     },
                     credentials: 'same-origin',  // Added to ensure cookies are sent
-                    body: JSON.stringify(this.settings)
+                    body: JSON.stringify(requestData)
                 });
 
                 const result = await response.json();
