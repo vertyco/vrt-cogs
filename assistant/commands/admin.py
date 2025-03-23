@@ -169,6 +169,7 @@ class Admin(MixinMeta):
 
         custom_func_field = (
             _("`Function Calling:  `{}\n").format(conf.use_function_calls)
+            + _("`Tool Output Format:  `{}\n").format(self.db.tool_format)
             + _("`Maximum Recursion: `{}\n").format(conf.max_function_calls)
             + _("`Function Tokens:   `{}\n").format(humanize_number(func_tokens))
         )
@@ -2130,4 +2131,21 @@ class Admin(MixinMeta):
         else:
             self.db.listen_to_bots = True
             await ctx.send(_("Assistant will listen to other bot messages"))
+        await self.save_conf()
+
+    @assistant.command(name="toolformat")
+    @commands.is_owner()
+    async def toggle_tool_formatting(self, ctx: commands.Context, true_or_false: bool):
+        """
+        Assistant will submit enabled functions to your endpoint as tools instead of functions.
+
+        Useful for troubleshooting function calling with a custom endpoint.
+        """
+        match true_or_false:
+            case True:
+                self.db.tool_format = True
+                await ctx.send("Assistant will now send functions via tools.")
+            case False:
+                self.db.tool_format = False
+                await ctx.send("Assistant will now send functions via functions.")
         await self.save_conf()
