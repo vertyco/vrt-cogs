@@ -22,6 +22,7 @@
     "deepl",
     "googletrans-py",
     "msgpack",
+    "openai",
     "ujson",
     "openai",
     "pydantic"
