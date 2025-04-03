@@ -132,7 +132,15 @@ class ChatHandler(MixinMeta):
             else:
                 question += f"\n\n### Uploaded File ({i.filename}):\n{text}\n"
 
-        mem_id = message.channel.id if conf.collab_convos else message.author.id
+        if conf.collab_convos:
+            mem_id = message.channel.id
+            if message.author.name == message.author.display_name:
+                question = f"@{message.author.name}: {question}"
+            else:
+                question = f"@{message.author.name}({message.author.display_name}): {question}"
+        else:
+            mem_id = message.author.id
+
         conversation = self.db.get_conversation(mem_id, message.channel.id, message.guild.id)
 
         # If referencing a message that isnt part of the user's conversation, include the context
@@ -148,7 +156,12 @@ class ChatHandler(MixinMeta):
                         include = False
 
                 if include:
-                    question = f"# {ref.author.name} SAID:\n{ref.content}\n\n# REPLY\n{question}"
+                    ref_author: discord.User | discord.Member = ref.author
+                    if ref_author.display_name == ref_author.name:
+                        name = f"@{ref_author.name}"
+                    else:
+                        name = f"@{ref_author.name}({ref_author.display_name})"
+                    question = f"{name}: {ref.content}\n\n# REPLY\n{question}"
 
         if get_last_message:
             reply = conversation.messages[-1]["content"] if conversation.messages else _("No message history!")
@@ -266,6 +279,9 @@ class ChatHandler(MixinMeta):
             )
             functions.extend(prepped_function_calls)
             mapping.update(prepped_function_map)
+
+        if not conf.use_function_calls and functions:
+            functions = []
 
         mem_id = author if isinstance(author, int) else author.id
         chan_id = channel if isinstance(channel, int) else channel.id
