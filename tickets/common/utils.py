@@ -7,6 +7,7 @@ from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 from typing import List, Optional, Union
+from urllib.parse import quote #IMPORT TO ENCODE THE URL
 
 import chat_exporter
 import discord
@@ -42,16 +43,16 @@ async def can_close(
     support_roles = [i[0] for i in conf["support_roles"]]
     support_roles.extend([i[0] for i in panel_roles])
 
-    can_close = False
+    can_close_flag = False
     if any(i in support_roles for i in user_roles):
-        can_close = True
+        can_close_flag = True
     elif author.id == guild.owner_id:
-        can_close = True
+        can_close_flag = True
     elif await is_admin_or_superior(bot, author):
-        can_close = True
+        can_close_flag = True
     elif str(owner_id) == str(author.id) and conf["user_can_close"]:
-        can_close = True
-    return can_close
+        can_close_flag = True
+    return can_close_flag
 
 
 async def fetch_channel_history(channel: discord.TextChannel, limit: int | None = None) -> List[discord.Message]:
@@ -107,8 +108,8 @@ async def close_ticket(
         await channel.send(_("I am missing the `Manage Threads` permission to close this ticket!"))
         return
 
-    opened = int(datetime.fromisoformat(ticket["opened"]).timestamp())
-    closed = int(datetime.now().timestamp())
+    opened_ts = int(datetime.fromisoformat(ticket["opened"]).timestamp())
+    closed_ts = int(datetime.now().timestamp())
     closer_name = escape_markdown(closedby)
 
     desc = _(
@@ -122,8 +123,8 @@ async def close_ticket(
         member.name,
         member.id,
         panel_name,
-        opened,
-        closed,
+        opened_ts,
+        closed_ts,
         closer_name,
         str(reason),
     )
@@ -196,7 +197,6 @@ async def close_ticket(
                         # Increment filename count to avoid overwriting
                         p = Path(i.filename)
                         i.filename = f"{p.stem}_{filenames[i.filename]}{p.suffix}"
-
                     files.append({"filename": i.filename, "content": await i.read()})
 
             if not use_exporter:
@@ -261,7 +261,6 @@ async def close_ticket(
             attachments.append(zip_file)
 
         log_msg: discord.Message = None
-        # attachment://image.webp
         try:
             if all(perms):
                 log_msg = await log_chan.send(embed=embed, files=attachments or None, view=view)
@@ -296,7 +295,9 @@ async def close_ticket(
                 raise
 
         if log_msg and exporter_success:
-            url = f"https://mahto.id/chat-exporter?url={log_msg.attachments[0].url}"
+            # Encoding the attachment URL before constructing the final URL
+            encoded_attachment_url = quote(log_msg.attachments[0].url, safe='')
+            url = f"https://ticketview.alienhost.ovh/index.php?url={encoded_attachment_url}"
             view = discord.ui.View()
             view.add_item(discord.ui.Button(label=view_label, style=discord.ButtonStyle.link, url=url))
             await log_msg.edit(view=view)
@@ -319,7 +320,9 @@ async def close_ticket(
             if text:
                 text_file = text_to_file(text, filename) if text else None
                 dm_msg = await member.send(embed=embed, file=text_file)
-                url = f"https://mahto.id/chat-exporter?url={dm_msg.attachments[0].url}"
+                # Encode the URL of the direct message attachment
+                encoded_attachment_url = quote(dm_msg.attachments[0].url, safe='')
+                url = f"https://ticketview.alienhost.ovh/index.php?url={encoded_attachment_url}"
                 view = discord.ui.View()
                 view.add_item(discord.ui.Button(label=view_label, style=discord.ButtonStyle.link, url=url))
                 await dm_msg.edit(view=view)
@@ -418,10 +421,8 @@ async def prune_invalid_tickets(
                 del opened[uid]
             for uid, cid in tickets_to_remove:
                 if uid not in opened:
-                    # User was already removed
                     continue
                 if cid not in opened[uid]:
-                    # Ticket was already removed
                     continue
                 del opened[uid][cid]
 
