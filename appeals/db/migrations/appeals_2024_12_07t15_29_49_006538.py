@@ -2,7 +2,6 @@ from piccolo.apps.migrations.auto.migration_manager import MigrationManager
 from piccolo.columns.column_types import Text
 from piccolo.columns.indexes import IndexMethod
 
-
 ID = "2024-12-07T15:29:49:006538"
 VERSION = "1.22.0"
 DESCRIPTION = "Appeal reason"
