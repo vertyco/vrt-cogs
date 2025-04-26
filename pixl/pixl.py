@@ -48,7 +48,7 @@ class Pixl(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.3.7"
+    __version__ = "0.3.8"
 
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -250,7 +250,7 @@ class Pixl(commands.Cog):
         if winner:  # Chicken dinner
             thumb = (winner.display_avatar.url) if dpy2 else winner.avatar_url
             title = "Winner!"
-            desc = f"{winner.name} guessed correctly after {shown} blocks!\n" f"`Points Awarded:  `{points}\n"
+            desc = f"{winner.name} guessed correctly after {shown} blocks!\n`Points Awarded:  `{points}\n"
             if participants >= min_p and reward:
                 desc += f"`Credits Awarded: `{humanize_number(reward)}"
             color = winner.color
@@ -426,6 +426,30 @@ class Pixl(commands.Cog):
         async with ctx.typing():
             await self.config.delay.set(seconds)
             await ctx.send(f"Game delay has been set to {humanize_timedelta(seconds=seconds)}")
+
+    @pixlset.command(name="reset")
+    @commands.guild_only()
+    @commands.admin_or_permissions(manage_guild=True)
+    async def reset_scoreboard(self, ctx: commands.Context, user: Optional[discord.Member] = None):
+        """
+        Reset the Pixl scoreboard
+
+        **Arguments**
+        `user`: (Optional) A specific user to reset scores for. If not provided, resets scores for all users.
+
+        Examples:
+        - `[p]pixlset reset` - Resets scores for all users
+        - `[p]pixlset reset @user` - Resets scores for the specified user
+        """
+        async with ctx.typing():
+            if user:
+                # Reset scores for a specific user
+                await self.config.member(user).clear()
+                await ctx.send(f"Scoreboard has been reset for {user.display_name}")
+            else:
+                # Reset scores for all users
+                await self.config.clear_all_members(ctx.guild)
+                await ctx.send("Scoreboard has been reset for all users in this server")
 
     @pixlset.group(name="image")
     async def image(self, ctx: commands.Context):
