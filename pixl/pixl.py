@@ -48,7 +48,7 @@ class Pixl(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.3.8"
+    __version__ = "0.3.9"
 
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -704,6 +704,28 @@ class Pixl(commands.Cog):
                 )
                 embed.set_image(url=url)
                 await ctx.send(embed=embed)
+
+    @image.command(name="deleteall")
+    @commands.bot_has_permissions(embed_links=True)
+    async def delete_all_images(self, ctx: commands.Context, confirm: bool):
+        """
+        Delete all custom images for this guild
+
+        This will remove all custom images that have been added to this guild.
+        Default and global images will remain available if enabled.
+        """
+        guild_images = await self.config.guild(ctx.guild).images()
+        if not guild_images or len(guild_images) < 1:
+            return await ctx.send("There are no guild images to delete")
+
+        if confirm:
+            # User confirmed, delete all images
+            async with ctx.typing():
+                await self.config.guild(ctx.guild).images.set([])
+                await ctx.send(f"Successfully deleted all {len(guild_images)} custom images for this guild")
+        else:
+            # User cancelled
+            await ctx.send("Run this command again with `confirm=True` to delete all custom images")
 
     # -/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/ METHODS -/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/
     async def image_menu(
