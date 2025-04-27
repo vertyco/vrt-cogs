@@ -1,11 +1,11 @@
 import asyncio
-import functools
 import logging
 import math
 import random
 import traceback
+from datetime import datetime
 from io import BytesIO
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import discord
 from PIL import Image, UnidentifiedImageError
@@ -22,7 +22,7 @@ from redbot.core.utils.chat_formatting import (
 from tabulate import tabulate
 
 from .defaults import defaults
-from .utils import PixlGrids, delete, exe, get_content_from_url
+from .utils import PixlGrids, delete, get_content_from_url, is_valid_url
 
 log = logging.getLogger("red.vrt.pixl")
 dpy2 = True if discord.version_info.major >= 2 else False
@@ -48,7 +48,7 @@ class Pixl(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.3.9"
+    __version__ = "0.3.10"
 
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -75,6 +75,52 @@ class Pixl(commands.Cog):
         self.config.register_member(wins=0, games=0, score=0)
 
         self.active = set()
+
+    async def validate_image_entry(self, index: int, line: str, existing_images: list):
+        """Validates a single image entry from a text file"""
+        result = {"index": index, "line": line, "valid": False, "url": None, "answers": None, "error": None}
+
+        if not line:  # Skip empty lines
+            result["error"] = "Empty line"
+            return result
+
+        parts = [p.strip() for p in line.split(",") if p.strip()]
+        if len(parts) < 2:
+            result["error"] = "Invalid Format"
+            return result
+
+        url = parts.pop(0)
+        result["url"] = url
+
+        if any([g["url"] == url for g in existing_images]):
+            result["error"] = "Already Exists"
+            return result
+
+        try:
+            image_bytes = await get_content_from_url(url)
+            if not image_bytes:
+                result["error"] = "Invalid URL"
+                return result
+
+            # Test if the image can be opened by Pillow
+            img = await asyncio.to_thread(Image.open, BytesIO(image_bytes))
+            # Force load the image data to ensure it's valid
+            img.load()
+            # Test conversion to RGB to catch other potential issues
+            if img.mode not in ("RGB", "RGBA"):
+                await asyncio.to_thread(img.convert, "RGBA")
+
+        except UnidentifiedImageError:
+            result["error"] = "Cannot identify image format"
+            return result
+        except Exception as e:
+            result["error"] = f"Image Error: {str(e)}"
+            return result
+
+        answers = parts
+        result["answers"] = answers
+        result["valid"] = True
+        return result
 
     @commands.command(name="pixlboard", aliases=["pixlb", "pixelb", "pixlelb", "pixleaderboard"])
     @commands.guild_only()
@@ -185,26 +231,53 @@ class Pixl(commands.Cog):
         if conf["use_default"] or len(to_use) == 0:
             to_use.extend(defaults)
 
+        if not to_use:
+            return await ctx.send("No images are available for the game. Add images first.")
+
+        # Shuffle images to get more randomness
+        random.shuffle(to_use)
+
         tries = 0
         cant_get = []
-        while tries < 3:
+        while tries < 10 and to_use:  # Increased max tries
             tries += 1
-            choice = random.choice(to_use)
+            if not to_use:
+                break
+
+            choice = to_use.pop(0)  # Take first image and remove it from the list
             url = choice["url"]
             correct = choice["answers"]
-            imgbytes = await get_content_from_url(url)
-            if not imgbytes:
-                cant_get.append(url)
+
+            # Validate URL first
+            if not is_valid_url(url):
+                cant_get.append(f"Invalid URL: {url}")
                 continue
+
             try:
-                game_image = await exe(functools.partial(Image.open, BytesIO(imgbytes)))
+                imgbytes = await get_content_from_url(url)
+                if not imgbytes:
+                    cant_get.append(f"Cant Fetch: {url}")
+                    continue
+
+                # Open and validate the image
+                game_image = await asyncio.to_thread(Image.open, BytesIO(imgbytes))
+                # Force load the image data to ensure it's valid
+                game_image.load()
+                # Convert to RGBA if needed
+                if game_image.mode not in ("RGB", "RGBA"):
+                    game_image = await asyncio.to_thread(game_image.convert, "RGBA")
+
+                break
+
             except UnidentifiedImageError:
-                cant_get.append(url)
+                cant_get.append(f"Cant Identify: {url}")
                 continue
-            break
+            except Exception as e:
+                cant_get.append(f"Error ({url}): {str(e)}")
+                continue
         else:
             invalid = "\n".join(cant_get)
-            return await ctx.send(f"Game prep failed 3 times in a row\n\nThese urls were invalid\n{box(invalid)}")
+            return await ctx.send(f"Game prep failed after {tries} attempts\n\nThese urls were invalid\n{box(invalid)}")
 
         if cant_get:
             invalid = "\n".join(cant_get)
@@ -553,23 +626,18 @@ class Pixl(commands.Cog):
 
                 text = (await file.read()).decode("utf-8").strip()
                 lines = [line.strip() for line in text.split("\n")]
-                for index, line in enumerate(lines):
-                    if not line:  # Skip empty lines
-                        continue
-                    parts = [p.strip().lower() for p in line.split(",") if p.strip()]
-                    if len(parts) < 2:
-                        failed.append(f"Line {index + 1}(Invalid Format): {line}")
-                        continue
-                    url = parts.pop(0)
-                    if any([g["url"] == url for g in global_images]):
-                        failed.append(f"Line {index + 1}(Already Exists): {line}")
-                        continue
-                    image = await get_content_from_url(url)
-                    if not image:
-                        failed.append(f"Line {index + 1}(Invalid URL): {line}")
-                        continue
-                    answers = parts
-                    to_add.append({"url": url, "answers": answers})
+
+                # Validate images concurrently
+                validation_tasks = [
+                    self.validate_image_entry(i, line, global_images) for i, line in enumerate(lines) if line
+                ]
+                validation_results = await asyncio.gather(*validation_tasks)
+
+                for result in validation_results:
+                    if result["valid"]:
+                        to_add.append({"url": result["url"], "answers": result["answers"]})
+                    else:
+                        failed.append(f"Line {result['index'] + 1}({result['error']}): {result['line']}")
 
                 added = len(to_add)
                 for index, i in enumerate(to_add):
@@ -647,25 +715,22 @@ class Pixl(commands.Cog):
                 file = attachments[0]
                 if not file.filename.endswith(".txt"):
                     return await ctx.send("This does not look like a `.txt` file!")
+
                 text = (await file.read()).decode("utf-8").strip()
                 lines = [line.strip() for line in text.split("\n")]
-                for i, line in enumerate(lines):
-                    if not line:  # Skip empty lines
-                        continue
-                    parts = [p.strip().lower() for p in line.split(",") if p.strip()]
-                    if len(parts) < 2:
-                        failed.append(f"Line {i + 1}(Invalid Format): {line}")
-                        continue
-                    url = parts.pop(0)
-                    if any([g["url"] == url for g in guild_images]):
-                        failed.append(f"Line {i + 1}(Already Exists): {line}")
-                        continue
-                    image = await get_content_from_url(url)
-                    if not image:
-                        failed.append(f"Line {i + 1}(Invalid URL): {line}")
-                        continue
-                    answers = parts
-                    to_add.append({"url": url, "answers": answers})
+
+                # Validate images concurrently
+                validation_tasks = [
+                    self.validate_image_entry(i, line, guild_images) for i, line in enumerate(lines) if line
+                ]
+                validation_results = await asyncio.gather(*validation_tasks)
+
+                for result in validation_results:
+                    if result["valid"]:
+                        to_add.append({"url": result["url"], "answers": result["answers"]})
+                    else:
+                        failed.append(f"Line {result['index'] + 1}({result['error']}): {result['line']}")
+
                 added = len(to_add)
                 for index, i in enumerate(to_add):
                     if index == 4:
@@ -678,8 +743,10 @@ class Pixl(commands.Cog):
                     if added > 4 and dpy2:
                         embed.set_footer(text="Showing first 4 images in the list")
                     embeds.append(embed)
+
                 async with self.config.guild(ctx.guild).images() as images:
                     images.extend(to_add)
+
                 if failed:
                     txt = "\n".join(failed)
                     await ctx.send("The following lines failed!")
@@ -726,6 +793,134 @@ class Pixl(commands.Cog):
         else:
             # User cancelled
             await ctx.send("Run this command again with `confirm=True` to delete all custom images")
+
+    @image.command(name="cleanup")
+    @commands.bot_has_permissions(embed_links=True)
+    async def cleanup_images(self, ctx: commands.Context, scope: str = "guild"):
+        """
+        Clean up invalid or dead image links
+
+        **Arguments**
+        `scope`: The scope to clean up - "guild", "global", or "all"
+
+        This command will test all images and remove any that are no longer accessible
+        """
+        if scope not in ["guild", "global", "all"]:
+            return await ctx.send('Scope must be one of: "guild", "global", or "all"')
+
+        if scope in ["global", "all"] and not await ctx.bot.is_owner(ctx.author):
+            return await ctx.send("Only the bot owner can clean up global images")
+
+        async with ctx.typing():
+            message = await ctx.send("Starting image cleanup... This may take a while.")
+
+            results = {"guild": {"total": 0, "removed": 0, "kept": 0}, "global": {"total": 0, "removed": 0, "kept": 0}}
+
+            # Clean guild images if requested
+            if scope in ["guild", "all"]:
+                guild_images = await self.config.guild(ctx.guild).images()
+                results["guild"]["total"] = len(guild_images)
+
+                good_images = []
+                removed = []
+
+                # Test all guild images
+                for img in guild_images:
+                    url = img["url"]
+                    test_result = await self.test_single_image(img)
+
+                    if test_result["valid"]:
+                        good_images.append(img)
+                    else:
+                        removed.append(f"{url} - {test_result['error']}")
+
+                # Update the database
+                if len(good_images) != len(guild_images):
+                    await self.config.guild(ctx.guild).images.set(good_images)
+
+                results["guild"]["removed"] = len(guild_images) - len(good_images)
+                results["guild"]["kept"] = len(good_images)
+
+            # Clean global images if requested
+            if scope in ["global", "all"] and await ctx.bot.is_owner(ctx.author):
+                global_images = await self.config.images()
+                results["global"]["total"] = len(global_images)
+
+                good_images = []
+                removed = []
+
+                # Test all global images
+                for img in global_images:
+                    url = img["url"]
+                    test_result = await self.test_single_image(img)
+
+                    if test_result["valid"]:
+                        good_images.append(img)
+                    else:
+                        removed.append(f"{url} - {test_result['error']}")
+
+                # Update the database
+                if len(good_images) != len(global_images):
+                    await self.config.images.set(good_images)
+
+                results["global"]["removed"] = len(global_images) - len(good_images)
+                results["global"]["kept"] = len(good_images)
+
+            # Create report
+            embed = discord.Embed(title="Image Cleanup Results", color=ctx.author.color, timestamp=datetime.now())
+
+            if scope in ["guild", "all"]:
+                embed.add_field(
+                    name="Guild Images",
+                    value=f"Total: {results['guild']['total']}\n"
+                    f"Kept: {results['guild']['kept']}\n"
+                    f"Removed: {results['guild']['removed']}",
+                    inline=True,
+                )
+
+            if scope in ["global", "all"] and await ctx.bot.is_owner(ctx.author):
+                embed.add_field(
+                    name="Global Images",
+                    value=f"Total: {results['global']['total']}\n"
+                    f"Kept: {results['global']['kept']}\n"
+                    f"Removed: {results['global']['removed']}",
+                    inline=True,
+                )
+
+            await message.edit(content=None, embed=embed)
+
+            total_removed = results["guild"]["removed"] + results["global"]["removed"]
+            if total_removed > 0:
+                await ctx.send(f"{total_removed} images were removed because they were inaccessible or invalid.")
+
+    async def test_single_image(self, image_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Test a single image to see if it's still valid"""
+        result = {"valid": False, "error": None}
+
+        try:
+            url = image_data["url"]
+
+            # Basic URL validation
+            if not is_valid_url(url):
+                result["error"] = "Invalid URL format"
+                return result
+
+            # Fetch and validate image data
+            image_bytes = await get_content_from_url(url)
+            if not image_bytes:
+                result["error"] = "Failed to fetch image"
+                return result
+
+            # Test if the image can be opened
+            img = await asyncio.to_thread(Image.open, BytesIO(image_bytes))
+            img.load()  # Force load to verify data is valid
+
+            result["valid"] = True
+            return result
+
+        except Exception as e:
+            result["error"] = str(e)
+            return result
 
     # -/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/ METHODS -/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/
     async def image_menu(
@@ -843,22 +1038,32 @@ class Pixl(commands.Cog):
         return content
 
     @staticmethod
-    async def test_images(images: list):
+    async def test_images(images: list) -> Tuple[list, list]:
+        """Test images to ensure they're valid"""
         good = []
         bad = []
 
         async def check(img):
-            bytefile = await get_content_from_url(img["url"], timeout=10)
-            if not bytefile:
-                bad.append(f"(Bad URL)`{img['answers'][0]}: {img['url']}`")
-                return
             try:
-                partial = functools.partial(Image.open, BytesIO(bytefile))
-                await exe(partial)
+                bytefile = await get_content_from_url(img["url"], timeout=10)
+                if not bytefile:
+                    bad.append(f"(Bad URL)`{img['answers'][0]}: {img['url']}`")
+                    return
+
+                # Open and validate the image
+                image = await asyncio.to_thread(Image.open, BytesIO(bytefile))
+                # Force load the image data
+                image.load()
+                # Test conversion if needed
+                if image.mode not in ("RGB", "RGBA"):
+                    await asyncio.to_thread(image.convert, "RGBA")
+
+                good.append(img["url"])
+
             except UnidentifiedImageError:
-                bad.append(f"(Bad Image)`{img['answers'][0]}: {img['url']}`")
-                return
-            good.append(img["url"])
+                bad.append(f"(Cannot Identify)`{img['answers'][0]}: {img['url']}`")
+            except Exception as e:
+                bad.append(f"(Error: {str(e)})`{img['answers'][0]}: {img['url']}`")
 
         tasks = [check(i) for i in images]
         await asyncio.gather(*tasks)

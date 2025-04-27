@@ -1,11 +1,11 @@
 import asyncio
 import contextlib
-import functools
 import logging
 import random
 from datetime import datetime
 from io import BytesIO
 from typing import Optional
+from urllib.parse import urlparse
 
 import discord
 from aiocache import cached
@@ -18,20 +18,84 @@ log = logging.getLogger("red.vrt.pixl.generator")
 dpy2 = True if version_info >= VersionInfo.from_str("3.5.0") else False
 
 
-@cached(ttl=240)
-async def get_content_from_url(url: str, timeout: Optional[int] = 60) -> Optional[bytes]:
-    headers = {"User-Agent": "Mozilla/5.0"}
+def is_valid_url(url: str) -> bool:
+    """Basic URL validation"""
     try:
-        async with ClientSession(timeout=ClientTimeout(total=timeout), headers=headers) as session:
-            async with session.get(url) as res:
-                return await res.read()
+        result = urlparse(url)
+        return all([result.scheme in ("http", "https"), result.netloc])
     except Exception as e:
-        log.error(f"Failed to fetch content from url: {e}")
+        log.error("Error parsing url", exc_info=e)
+        return False
 
 
-async def exe(*args):
-    loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, functools.partial(*args))
+# Reduced cache time to avoid stale results
+@cached(ttl=120)
+async def get_content_from_url(url: str, timeout: Optional[int] = 60) -> Optional[bytes]:
+    """
+    Get content from a URL with improved headers and retry logic for 403/404 errors.
+
+    Args:
+        url: The URL to fetch content from
+        timeout: Timeout in seconds
+
+    Returns:
+        Optional[bytes]: The content if successful, otherwise None
+    """
+    # First do basic URL validation
+    if not is_valid_url(url):
+        log.error(f"Invalid URL format: {url}")
+        return None
+
+    # More browser-like headers to avoid 403 errors
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    }
+
+    # Try up to 3 times with increasing delay
+    max_retries = 3
+    retry_delay = 1
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            async with ClientSession(timeout=ClientTimeout(total=timeout), headers=headers) as session:
+                async with session.get(url, allow_redirects=True, ssl=False) as res:
+                    if res.status != 200:
+                        # Handle specific HTTP errors
+                        if res.status == 404:
+                            log.error(f"Resource not found (404): {url}")
+                            return None  # Don't retry 404s - the resource doesn't exist
+                        elif res.status in (403, 429) and attempt < max_retries:
+                            retry_delay_with_jitter = retry_delay + random.uniform(0, 0.5)
+                            log.warning(
+                                f"Received {res.status} for {url}. Retrying in {retry_delay_with_jitter:.2f}s (attempt {attempt}/{max_retries})"
+                            )
+                            await asyncio.sleep(retry_delay_with_jitter)
+                            retry_delay *= 2  # Exponential backoff
+                            continue
+                        else:
+                            log.error(f"Failed to fetch content from url: HTTP {res.status}")
+                            return None
+
+                    content_type = res.headers.get("Content-Type", "")
+                    if not content_type.startswith("image/"):
+                        log.error(f"URL doesn't contain image data: {content_type}")
+                        return None
+
+                    image_data = await res.read()
+                    # Simple check for minimal valid image data size
+                    if len(image_data) < 100:
+                        log.error(f"Image data too small ({len(image_data)} bytes): {url}")
+                        return None
+
+                    return image_data
+        except Exception as e:
+            if attempt < max_retries:
+                log.warning(f"Error fetching {url}: {e}. Retrying... (attempt {attempt}/{max_retries})")
+                await asyncio.sleep(retry_delay)
+                retry_delay *= 2  # Exponential backoff
+            else:
+                log.error(f"Failed to fetch content from url after {max_retries} attempts: {e}")
+                return None
 
 
 async def delete(message: discord.Message):
@@ -100,8 +164,8 @@ class PixlGrids:
         pop = self.amount_to_reveal if self.amount_to_reveal <= len(self.to_chop) else len(self.to_chop)
         for _ in range(pop):
             bbox = self.to_chop.pop(random.randrange(len(self.to_chop)))
-            cropped = await exe(self.image.crop, bbox)
-            await exe(self.blank.paste, cropped, (bbox[0], bbox[1]))
+            cropped = await asyncio.to_thread(self.image.crop, bbox)
+            await asyncio.to_thread(self.blank.paste, cropped, (bbox[0], bbox[1]))
         buffer = BytesIO()
         buffer.name = f"{random.randint(999, 9999999)}.webp"
         self.blank.save(buffer, format="WEBP", quality=100)
