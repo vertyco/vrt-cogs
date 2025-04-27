@@ -132,12 +132,14 @@ class PixlGrids:
         answers: list,
         amount_to_reveal: int,
         time_limit: int,
+        fuzzy_threshold: int = 92,
     ):
         self.ctx = ctx
         self.image = image
         self.answers = answers
         self.amount_to_reveal = amount_to_reveal
         self.time_limit = time_limit
+        self.fuzzy_threshold = fuzzy_threshold
         # Game stuff
         self.start = datetime.now()
         self.time_left = f"<t:{round(self.start.timestamp() + self.time_limit)}:R>"
@@ -205,7 +207,11 @@ class PixlGrids:
         responses = sorted(self.data["responses"].copy(), key=lambda x: x[2], reverse=False)
         self.data["responses"].clear()
         for author, answer, _ in responses:
-            if any([fuzz.ratio(answer, a) > 92 for a in self.answers]):
+            if not self.fuzzy_threshold:
+                if answer in self.answers:
+                    self.winner = author
+                    return True
+            elif any([fuzz.ratio(answer.lower(), a.lower()) > self.fuzzy_threshold for a in self.answers]):
                 self.winner = author
                 return True
         else:
