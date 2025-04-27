@@ -48,7 +48,7 @@ class Pixl(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.3.10"
+    __version__ = "0.4.0"
 
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -65,6 +65,7 @@ class Pixl(commands.Cog):
             "show_answer": True,  # Show the answer after game over
             "use_global": True,  # Use global images added by bot owner
             "use_default": True,  # Use default images
+            "fuzzy_threshold": 92,  # Fuzzy matching threshold (0-100)
         }
         default_global = {
             "images": [],  # Images added by bot owner
@@ -283,7 +284,9 @@ class Pixl(commands.Cog):
             invalid = "\n".join(cant_get)
             await ctx.send(f"Some images failed during prep\n{box(invalid)}")
 
-        game = PixlGrids(ctx, game_image, correct, conf["blocks_to_reveal"], conf["time_limit"])
+        game = PixlGrids(
+            ctx, game_image, correct, conf["blocks_to_reveal"], conf["time_limit"], conf["fuzzy_threshold"]
+        )
         msg = None
         embed = discord.Embed(
             title="Pixl Guess",
@@ -393,6 +396,7 @@ class Pixl(commands.Cog):
             f"`Participants:   `{conf['min_participants']} minimum\n"
             f"`Currency Ratio: `{conf['currency_ratio']}x\n"
             f"`Show Answer:    `{conf['show_answer']}\n"
+            f"`Fuzzy Threshold:`{conf['fuzzy_threshold']}%\n"
             f"Delay between blocks is {await self.config.delay()} seconds"
         )
         # If the timeout is faster than the amount of blocks could be revealed at that delay, calculate how many blocks would be left at game end
@@ -523,6 +527,29 @@ class Pixl(commands.Cog):
                 # Reset scores for all users
                 await self.config.clear_all_members(ctx.guild)
                 await ctx.send("Scoreboard has been reset for all users in this server")
+
+    @pixlset.command(name="fuzzy")
+    async def set_fuzzy_threshold(self, ctx: commands.Context, threshold: float):
+        """
+        Set the fuzzy matching threshold for answer checking (0.0 to 1.0)
+
+        A lower value means more lenient matching (more answers accepted)
+        A higher value requires more accurate spelling
+
+        Examples:
+        - 0.92 (default) accepts answers that are 92% similar
+        - 0.7 would accept answers that are roughly 70% similar
+        - 1.0 would require exact matching
+        - 0 would disable fuzzy matching entirely
+        """
+        if threshold < 0 or threshold > 1:
+            return await ctx.send("The threshold must be between 0 and 1")
+
+        # Convert from 0-1 range to 0-100 range for fuzz.ratio
+        threshold_int = int(threshold * 100)
+
+        await self.config.guild(ctx.guild).fuzzy_threshold.set(threshold_int)
+        await ctx.send(f"The fuzzy matching threshold has been set to {threshold} ({threshold_int}%)")
 
     @pixlset.group(name="image")
     async def image(self, ctx: commands.Context):
