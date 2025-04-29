@@ -611,28 +611,34 @@ class Admin(MixinMeta):
                     if uid not in accounts or uid not in ecousers:
                         continue
 
-                    # Calculate how many paydays they could have claimed
-                    next_payday_timestamp = ecousers[uid].get("next_payday", 0)
+                    # Get the last payday timestamp
+                    last_payday_time = ecousers[uid].get("next_payday", 0)
 
-                    # Calculate how many full payday periods have passed since lookback_time
-                    # Handle case where user has never claimed a payday
-                    if next_payday_timestamp == 0:
-                        # User has never claimed payday, assume they could claim from the lookback time
-                        potential_paydays = (current_time - lookback_time) // payday_time
+                    # If they've never used payday before, assume they could claim from lookback time
+                    if last_payday_time == 0:
+                        last_payday_time = lookback_time - payday_time  # Make them eligible for one at lookback time
+
+                    # Calculate maximum possible paydays in the time window
+                    # We start from max(last_payday_time, lookback_time - payday_time)
+                    # This ensures we count a payday right at the lookback boundary if they're eligible
+                    earliest_payday = max(last_payday_time, lookback_time - payday_time)
+
+                    # How many complete payday periods fit between earliest_payday and now?
+                    # Note that we need to add payday_time to earliest_payday because the Economy cog
+                    # sets next_payday to the time of last claim, not the time of next eligibility
+                    time_until_eligible = earliest_payday + payday_time
+
+                    # If they aren't eligible for a payday yet at the lookback time,
+                    # we use their first eligible time after lookback
+                    time_until_eligible = max(time_until_eligible, lookback_time)
+
+                    # Now count how many paydays fit between their eligibility time and now
+                    if time_until_eligible > current_time:
+                        potential_paydays = 0  # They aren't eligible for any paydays yet
                     else:
-                        # Check if user's next payday is after our lookback time
-                        if next_payday_timestamp > lookback_time:
-                            # Calculate how many complete payday periods have passed
-                            # between their next available payday and now
-                            time_since_next_available = max(0, current_time - next_payday_timestamp)
-                            potential_paydays = time_since_next_available // payday_time
-                        else:
-                            # They could have claimed from the lookback time to now,
-                            # plus one more if their next payday was before lookback
-                            potential_paydays = (current_time - lookback_time) // payday_time
-                            # Add 1 if they could have claimed right at lookback time
-                            if next_payday_timestamp <= lookback_time:
-                                potential_paydays += 1
+                        # How many full payday periods fit between their eligibility and now
+                        potential_paydays = (current_time - time_until_eligible) // payday_time + 1
+                        # The +1 accounts for the payday they're eligible for at time_until_eligible
 
                     if potential_paydays <= 0:
                         continue
@@ -690,28 +696,34 @@ class Admin(MixinMeta):
                     if uid not in accounts or uid not in ecousers:
                         continue
 
-                    # Calculate how many paydays they could have claimed
-                    next_payday_timestamp = ecousers[uid].get("next_payday", 0)
+                    # Get the last payday timestamp
+                    last_payday_time = ecousers[uid].get("next_payday", 0)
 
-                    # Calculate how many full payday periods have passed since lookback_time
-                    # Handle case where user has never claimed a payday
-                    if next_payday_timestamp == 0:
-                        # User has never claimed payday, assume they could claim from the lookback time
-                        potential_paydays = (current_time - lookback_time) // payday_time
+                    # If they've never used payday before, assume they could claim from lookback time
+                    if last_payday_time == 0:
+                        last_payday_time = lookback_time - payday_time  # Make them eligible for one at lookback time
+
+                    # Calculate maximum possible paydays in the time window
+                    # We start from max(last_payday_time, lookback_time - payday_time)
+                    # This ensures we count a payday right at the lookback boundary if they're eligible
+                    earliest_payday = max(last_payday_time, lookback_time - payday_time)
+
+                    # How many complete payday periods fit between earliest_payday and now?
+                    # Note that we need to add payday_time to earliest_payday because the Economy cog
+                    # sets next_payday to the time of last claim, not the time of next eligibility
+                    time_until_eligible = earliest_payday + payday_time
+
+                    # If they aren't eligible for a payday yet at the lookback time,
+                    # we use their first eligible time after lookback
+                    time_until_eligible = max(time_until_eligible, lookback_time)
+
+                    # Now count how many paydays fit between their eligibility time and now
+                    if time_until_eligible > current_time:
+                        potential_paydays = 0  # They aren't eligible for any paydays yet
                     else:
-                        # Check if user's next payday is after our lookback time
-                        if next_payday_timestamp > lookback_time:
-                            # Calculate how many complete payday periods have passed
-                            # between their next available payday and now
-                            time_since_next_available = max(0, current_time - next_payday_timestamp)
-                            potential_paydays = time_since_next_available // payday_time
-                        else:
-                            # They could have claimed from the lookback time to now,
-                            # plus one more if their next payday was before lookback
-                            potential_paydays = (current_time - lookback_time) // payday_time
-                            # Add 1 if they could have claimed right at lookback time
-                            if next_payday_timestamp <= lookback_time:
-                                potential_paydays += 1
+                        # How many full payday periods fit between their eligibility and now
+                        potential_paydays = (current_time - time_until_eligible) // payday_time + 1
+                        # The +1 accounts for the payday they're eligible for at time_until_eligible
 
                     if potential_paydays <= 0:
                         continue
