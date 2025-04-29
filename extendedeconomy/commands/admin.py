@@ -611,15 +611,29 @@ class Admin(MixinMeta):
                     if uid not in accounts or uid not in ecousers:
                         continue
 
-                    # Get their last payday time
-                    last_payday = ecousers[uid].get("next_payday", 0)
-
-                    # If their last payday is after our lookback time, skip
-                    if last_payday > lookback_time:
-                        continue
-
                     # Calculate how many paydays they could have claimed
-                    potential_paydays = (current_time - last_payday) // payday_time
+                    next_payday_timestamp = ecousers[uid].get("next_payday", 0)
+
+                    # Calculate how many full payday periods have passed since lookback_time
+                    # Handle case where user has never claimed a payday
+                    if next_payday_timestamp == 0:
+                        # User has never claimed payday, assume they could claim from the lookback time
+                        potential_paydays = (current_time - lookback_time) // payday_time
+                    else:
+                        # Check if user's next payday is after our lookback time
+                        if next_payday_timestamp > lookback_time:
+                            # Calculate how many complete payday periods have passed
+                            # between their next available payday and now
+                            time_since_next_available = max(0, current_time - next_payday_timestamp)
+                            potential_paydays = time_since_next_available // payday_time
+                        else:
+                            # They could have claimed from the lookback time to now,
+                            # plus one more if their next payday was before lookback
+                            potential_paydays = (current_time - lookback_time) // payday_time
+                            # Add 1 if they could have claimed right at lookback time
+                            if next_payday_timestamp <= lookback_time:
+                                potential_paydays += 1
+
                     if potential_paydays <= 0:
                         continue
 
@@ -676,15 +690,29 @@ class Admin(MixinMeta):
                     if uid not in accounts or uid not in ecousers:
                         continue
 
-                    # Get their last payday time
-                    last_payday = ecousers[uid].get("next_payday", 0)
-
-                    # If their last payday is after our lookback time, skip
-                    if last_payday > lookback_time:
-                        continue
-
                     # Calculate how many paydays they could have claimed
-                    potential_paydays = (current_time - last_payday) // payday_time
+                    next_payday_timestamp = ecousers[uid].get("next_payday", 0)
+
+                    # Calculate how many full payday periods have passed since lookback_time
+                    # Handle case where user has never claimed a payday
+                    if next_payday_timestamp == 0:
+                        # User has never claimed payday, assume they could claim from the lookback time
+                        potential_paydays = (current_time - lookback_time) // payday_time
+                    else:
+                        # Check if user's next payday is after our lookback time
+                        if next_payday_timestamp > lookback_time:
+                            # Calculate how many complete payday periods have passed
+                            # between their next available payday and now
+                            time_since_next_available = max(0, current_time - next_payday_timestamp)
+                            potential_paydays = time_since_next_available // payday_time
+                        else:
+                            # They could have claimed from the lookback time to now,
+                            # plus one more if their next payday was before lookback
+                            potential_paydays = (current_time - lookback_time) // payday_time
+                            # Add 1 if they could have claimed right at lookback time
+                            if next_payday_timestamp <= lookback_time:
+                                potential_paydays += 1
+
                     if potential_paydays <= 0:
                         continue
 
