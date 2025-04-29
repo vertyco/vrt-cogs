@@ -1,4 +1,5 @@
 import calendar
+import io
 import logging
 import typing as t
 from datetime import datetime, timezone
@@ -7,6 +8,7 @@ import discord
 from discord import app_commands
 from redbot.core import Config, bank, commands
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.chat_formatting import humanize_number, humanize_timedelta
 
 from ..abc import MixinMeta
 from ..common.models import CommandCost
@@ -548,3 +550,242 @@ class Admin(MixinMeta):
                 f"{users_affected} {grammar}", f"{total} {currency}"
             )
             await ctx.send(msg)
+
+    @commands.command(name="backpay")
+    @bank.is_owner_if_bank_global()
+    @commands.admin_or_permissions(manage_guild=True)
+    @commands.guild_only()
+    async def backpay_cmd(self, ctx: commands.Context, duration: commands.TimedeltaConverter, confirm: bool = False):
+        """Calculate and award missed paydays for all members within a time period.
+
+        This will calculate how many paydays each member could have claimed within the
+        specified time period and award them accordingly.
+
+        By default, this command will only show a preview. Use `confirm=True` to apply changes.
+
+        Examples:
+        - `[p]backpay 48h` - Preview paydays missed in the last 48 hours
+        - `[p]backpay 7d True` - Calculate and give paydays missed in the last 7 days
+
+        **Arguments**
+        - `<duration>` How far back to check for missed paydays. Use time abbreviations like 1d, 12h, etc.
+        - `[confirm]` Set to True to actually apply the changes. Default: False (preview only)
+        """
+        if await bank.is_global() and ctx.author.id not in self.bot.owner_ids:
+            return await ctx.send(_("You must be a bot owner to use this command while global bank is active."))
+
+        if duration.total_seconds() <= 0:
+            return await ctx.send(_("Duration must be positive!"))
+
+        async with ctx.typing():
+            eco_cog = self.bot.get_cog("Economy")
+            if not eco_cog:
+                return await ctx.send(_("Economy cog is not loaded."))
+
+            eco_conf: Config = eco_cog.config
+            is_global = await bank.is_global()
+            currency = await bank.get_currency_name(ctx.guild)
+            max_bal = await bank.get_max_balance(ctx.guild)
+
+            # Get current time and the time to look back to
+            current_time = calendar.timegm(datetime.now(tz=timezone.utc).utctimetuple())
+            lookback_time = current_time - int(duration.total_seconds())
+
+            # Create a list to store the report data
+            report_data = []
+            users_updated = 0
+            total_credits = 0
+
+            if is_global:
+                bankgroup = bank._config._get_base_group(bank._config.USER)
+                ecogroup = eco_conf._get_base_group(eco_conf.USER)
+                accounts: t.Dict[str, dict] = await bankgroup.all()
+                ecousers: t.Dict[str, dict] = await ecogroup.all()
+                payday_time = await eco_conf.PAYDAY_TIME()
+                payday_credits = await eco_conf.PAYDAY_CREDITS()
+
+                for member in ctx.guild.members:
+                    uid = str(member.id)
+
+                    # Skip users with no bank accounts or economy data
+                    if uid not in accounts or uid not in ecousers:
+                        continue
+
+                    # Get their last payday time
+                    last_payday = ecousers[uid].get("next_payday", 0)
+
+                    # If their last payday is after our lookback time, skip
+                    if last_payday > lookback_time:
+                        continue
+
+                    # Calculate how many paydays they could have claimed
+                    potential_paydays = (current_time - last_payday) // payday_time
+                    if potential_paydays <= 0:
+                        continue
+
+                    # Calculate amount to give (base amount * number of paydays)
+                    amount_to_give = payday_credits * potential_paydays
+
+                    # Don't exceed max balance
+                    current_balance = accounts[uid]["balance"]
+                    new_balance = min(current_balance + amount_to_give, max_bal)
+                    added_amount = new_balance - current_balance
+
+                    # Add to report even if no credits are added due to max balance
+                    report_data.append(
+                        {
+                            "name": member.display_name,
+                            "id": member.id,
+                            "paydays": potential_paydays,
+                            "amount": added_amount,
+                            "current_balance": current_balance,
+                            "new_balance": new_balance,
+                            "max_hit": added_amount < amount_to_give,
+                        }
+                    )
+
+                    # Track stats
+                    total_credits += added_amount
+                    users_updated += 1
+
+                    # Only update the account if confirm is True
+                    if confirm:
+                        accounts[uid]["balance"] = new_balance
+                        ecousers[uid]["next_payday"] = current_time
+
+                # Save changes if any and confirmation is True
+                if users_updated > 0 and confirm:
+                    await bankgroup.set(accounts)
+                    await ecogroup.set(ecousers)
+
+            else:
+                # Per-guild logic
+                conf = self.db.get_conf(ctx.guild)
+                bankgroup = bank._config._get_base_group(bank._config.MEMBER, str(ctx.guild.id))
+                ecogroup = eco_conf._get_base_group(eco_conf.MEMBER, str(ctx.guild.id))
+                accounts: t.Dict[str, dict] = await bankgroup.all()
+                ecousers: t.Dict[str, dict] = await ecogroup.all()
+                payday_time = await eco_conf.guild(ctx.guild).PAYDAY_TIME()
+                payday_credits = await eco_conf.guild(ctx.guild).PAYDAY_CREDITS()
+                payday_roles: t.Dict[int, dict] = await eco_conf.all_roles()
+
+                for member in ctx.guild.members:
+                    uid = str(member.id)
+
+                    # Skip users with no bank accounts or economy data
+                    if uid not in accounts or uid not in ecousers:
+                        continue
+
+                    # Get their last payday time
+                    last_payday = ecousers[uid].get("next_payday", 0)
+
+                    # If their last payday is after our lookback time, skip
+                    if last_payday > lookback_time:
+                        continue
+
+                    # Calculate how many paydays they could have claimed
+                    potential_paydays = (current_time - last_payday) // payday_time
+                    if potential_paydays <= 0:
+                        continue
+
+                    # Calculate per-payday amount with role bonuses
+                    base_amount = payday_credits
+                    for role in member.roles:
+                        if role.id in payday_roles:
+                            role_credits = payday_roles[role.id]["PAYDAY_CREDITS"]
+                            if conf.stack_paydays:
+                                base_amount += role_credits
+                            elif role_credits > base_amount:
+                                base_amount = role_credits
+
+                    # Apply role bonus multipliers if configured
+                    if conf.role_bonuses and any(role.id in conf.role_bonuses for role in member.roles):
+                        highest_bonus = max(conf.role_bonuses.get(role.id, 0) for role in member.roles)
+                        base_amount += round(base_amount * highest_bonus)
+
+                    # Calculate total amount to give
+                    amount_to_give = base_amount * potential_paydays
+
+                    # Don't exceed max balance
+                    current_balance = accounts[uid]["balance"]
+                    new_balance = min(current_balance + amount_to_give, max_bal)
+                    added_amount = new_balance - current_balance
+
+                    # Add to report even if no credits are added due to max balance
+                    report_data.append(
+                        {
+                            "name": member.display_name,
+                            "id": member.id,
+                            "paydays": potential_paydays,
+                            "amount": added_amount,
+                            "current_balance": current_balance,
+                            "new_balance": new_balance,
+                            "max_hit": added_amount < amount_to_give,
+                            "payday_value": base_amount,
+                        }
+                    )
+
+                    # Track stats
+                    total_credits += added_amount
+                    users_updated += 1
+
+                    # Only update the account if confirm is True
+                    if confirm:
+                        accounts[uid]["balance"] = new_balance
+                        ecousers[uid]["next_payday"] = current_time
+
+                # Save changes if any and confirmation is True
+                if users_updated > 0 and confirm:
+                    await bankgroup.set(accounts)
+                    await ecogroup.set(ecousers)
+
+            # Generate report
+            if users_updated > 0:
+                # Sort by amount in descending order
+                report_data.sort(key=lambda x: x["amount"], reverse=True)
+
+                report_lines = [
+                    f"# Backpay Report for {humanize_timedelta(seconds=int(duration.total_seconds()))}\n",
+                    f"Total Users: {users_updated}",
+                    f"Total Credits: {humanize_number(total_credits)} {currency}\n",
+                    "Details:",
+                ]
+
+                for entry in report_data:
+                    max_note = " (Max balance hit)" if entry.get("max_hit") else ""
+                    per_payday = (
+                        f" ({humanize_number(entry.get('payday_value', payday_credits))}/payday)"
+                        if "payday_value" in entry
+                        else ""
+                    )
+                    report_lines.append(
+                        f"{entry['name']} (ID: {entry['id']}): "
+                        f"{humanize_number(entry['amount'])} {currency} for {entry['paydays']} paydays{per_payday}{max_note}"
+                    )
+
+                report_text = "\n".join(report_lines)
+                report_file = discord.File(io.StringIO(report_text), filename=f"backpay_report_{ctx.guild.id}.txt")
+
+                if confirm:
+                    msg = _(
+                        "Backpay complete for {duration}!\n{users} users received a total of {credits} {currency}."
+                    ).format(
+                        duration=humanize_timedelta(seconds=int(duration.total_seconds())),
+                        users=humanize_number(users_updated),
+                        credits=humanize_number(total_credits),
+                        currency=currency,
+                    )
+                    await ctx.send(msg, file=report_file)
+                else:
+                    msg = _(
+                        "Backpay preview for {duration}:\n{users} users would receive a total of {credits} {currency}.\n"
+                        "Run with `confirm=True` to apply these changes."
+                    ).format(
+                        duration=humanize_timedelta(seconds=int(duration.total_seconds())),
+                        users=humanize_number(users_updated),
+                        credits=humanize_number(total_credits),
+                        currency=currency,
+                    )
+                    await ctx.send(msg, file=report_file)
+            else:
+                await ctx.send(_("No users were eligible for backpay in that time period."))
