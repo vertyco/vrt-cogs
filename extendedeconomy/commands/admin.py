@@ -589,7 +589,21 @@ class Admin(MixinMeta):
 
             # Get current time and the time to look back to
             current_time = calendar.timegm(datetime.now(tz=timezone.utc).utctimetuple())
-            lookback_time = current_time - int(duration.total_seconds())
+
+            # Get the payday cooldown period
+            if is_global:
+                payday_time = await eco_conf.PAYDAY_TIME()
+                payday_credits = await eco_conf.PAYDAY_CREDITS()
+            else:
+                payday_time = await eco_conf.guild(ctx.guild).PAYDAY_TIME()
+                payday_credits = await eco_conf.guild(ctx.guild).PAYDAY_CREDITS()
+
+            # Calculate total possible paydays in the lookback period
+            # This ensures everyone gets the same number of paydays for the same duration
+            total_possible_paydays = int(duration.total_seconds() // payday_time)
+
+            if total_possible_paydays <= 0:
+                return await ctx.send(_("The specified duration is too short for any paydays."))
 
             # Create a list to store the report data
             report_data = []
@@ -601,8 +615,6 @@ class Admin(MixinMeta):
                 ecogroup = eco_conf._get_base_group(eco_conf.USER)
                 accounts: t.Dict[str, dict] = await bankgroup.all()
                 ecousers: t.Dict[str, dict] = await ecogroup.all()
-                payday_time = await eco_conf.PAYDAY_TIME()
-                payday_credits = await eco_conf.PAYDAY_CREDITS()
 
                 for member in ctx.guild.members:
                     uid = str(member.id)
@@ -611,37 +623,8 @@ class Admin(MixinMeta):
                     if uid not in accounts or uid not in ecousers:
                         continue
 
-                    # Get the last payday timestamp
-                    last_payday_time = ecousers[uid].get("next_payday", 0)
-
-                    # If they've never used payday before, assume they could claim from lookback time
-                    if last_payday_time == 0:
-                        last_payday_time = lookback_time - payday_time  # Make them eligible for one at lookback time
-
-                    # Calculate maximum possible paydays in the time window
-                    # We start from max(last_payday_time, lookback_time - payday_time)
-                    # This ensures we count a payday right at the lookback boundary if they're eligible
-                    earliest_payday = max(last_payday_time, lookback_time - payday_time)
-
-                    # How many complete payday periods fit between earliest_payday and now?
-                    # Note that we need to add payday_time to earliest_payday because the Economy cog
-                    # sets next_payday to the time of last claim, not the time of next eligibility
-                    time_until_eligible = earliest_payday + payday_time
-
-                    # If they aren't eligible for a payday yet at the lookback time,
-                    # we use their first eligible time after lookback
-                    time_until_eligible = max(time_until_eligible, lookback_time)
-
-                    # Now count how many paydays fit between their eligibility time and now
-                    if time_until_eligible > current_time:
-                        potential_paydays = 0  # They aren't eligible for any paydays yet
-                    else:
-                        # How many full payday periods fit between their eligibility and now
-                        potential_paydays = (current_time - time_until_eligible) // payday_time + 1
-                        # The +1 accounts for the payday they're eligible for at time_until_eligible
-
-                    if potential_paydays <= 0:
-                        continue
+                    # All eligible users get the same number of paydays
+                    potential_paydays = total_possible_paydays
 
                     # Calculate amount to give (base amount * number of paydays)
                     amount_to_give = payday_credits * potential_paydays
@@ -685,8 +668,6 @@ class Admin(MixinMeta):
                 ecogroup = eco_conf._get_base_group(eco_conf.MEMBER, str(ctx.guild.id))
                 accounts: t.Dict[str, dict] = await bankgroup.all()
                 ecousers: t.Dict[str, dict] = await ecogroup.all()
-                payday_time = await eco_conf.guild(ctx.guild).PAYDAY_TIME()
-                payday_credits = await eco_conf.guild(ctx.guild).PAYDAY_CREDITS()
                 payday_roles: t.Dict[int, dict] = await eco_conf.all_roles()
 
                 for member in ctx.guild.members:
@@ -696,37 +677,8 @@ class Admin(MixinMeta):
                     if uid not in accounts or uid not in ecousers:
                         continue
 
-                    # Get the last payday timestamp
-                    last_payday_time = ecousers[uid].get("next_payday", 0)
-
-                    # If they've never used payday before, assume they could claim from lookback time
-                    if last_payday_time == 0:
-                        last_payday_time = lookback_time - payday_time  # Make them eligible for one at lookback time
-
-                    # Calculate maximum possible paydays in the time window
-                    # We start from max(last_payday_time, lookback_time - payday_time)
-                    # This ensures we count a payday right at the lookback boundary if they're eligible
-                    earliest_payday = max(last_payday_time, lookback_time - payday_time)
-
-                    # How many complete payday periods fit between earliest_payday and now?
-                    # Note that we need to add payday_time to earliest_payday because the Economy cog
-                    # sets next_payday to the time of last claim, not the time of next eligibility
-                    time_until_eligible = earliest_payday + payday_time
-
-                    # If they aren't eligible for a payday yet at the lookback time,
-                    # we use their first eligible time after lookback
-                    time_until_eligible = max(time_until_eligible, lookback_time)
-
-                    # Now count how many paydays fit between their eligibility time and now
-                    if time_until_eligible > current_time:
-                        potential_paydays = 0  # They aren't eligible for any paydays yet
-                    else:
-                        # How many full payday periods fit between their eligibility and now
-                        potential_paydays = (current_time - time_until_eligible) // payday_time + 1
-                        # The +1 accounts for the payday they're eligible for at time_until_eligible
-
-                    if potential_paydays <= 0:
-                        continue
+                    # All eligible users get the same number of paydays
+                    potential_paydays = total_possible_paydays
 
                     # Calculate per-payday amount with role bonuses
                     base_amount = payday_credits
