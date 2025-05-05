@@ -4,14 +4,10 @@ from io import BytesIO
 from time import perf_counter
 
 import discord
+from discord.ext.commands import cooldowns
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import (
-    box,
-    humanize_number,
-    humanize_timedelta,
-    pagify,
-)
+from redbot.core.utils.chat_formatting import box, humanize_number, humanize_timedelta, pagify, error, warning, info
 
 from ..abc import MixinMeta
 from ..common import const, utils
@@ -28,6 +24,200 @@ class Admin(MixinMeta):
     async def levelset(self, ctx: commands.Context):
         """Configure LevelUp Settings"""
         pass
+
+    @levelset.group(name="bypass")
+    async def levelset_bypass(self, ctx: commands.Context):
+        """Set roles/members that bypass level requirement and cooldowns set"""
+        pass
+
+    @levelset_bypass.command(name="member")
+    async def levelset_bypass_member(self, ctx: commands.Context, member: t.Optional[discord.Member] = None):
+        """
+        Add a member to the bypass list.
+
+        Run with no arguments to see all the bypass members
+        Run with a member already in the list to remove them from the list
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if member is None:
+            if not conf.cmd_bypass_member:
+                await ctx.reply(
+                    info("No members configured for bypassing command restrictions."),
+                    delete_after=30,
+                    mention_author=False,
+                )
+                return
+            text = "# Bypass Members:\n"
+            for member_id in conf.cmd_bypass_member.copy():
+                member = ctx.guild.get_member(member_id)
+                if member is None:  # member left, remove from conf
+                    conf.cmd_bypass_member.remove(member_id)
+                    continue
+                text += f"- {member.mention}\n"
+            pages = list(pagify(text))
+            await ctx.send_interactive(pages)
+            return
+        if member.id not in conf.cmd_bypass_member:
+            conf.cmd_bypass_member.append(member.id)
+        else:
+            conf.cmd_bypass_member.remove(member.id)
+            await ctx.reply(
+                info(f"Member {member.mention} removed from command bypasses."), delete_after=30, mention_author=False
+            )
+        await ctx.tick()
+
+    @levelset_bypass.command(name="role")
+    async def levelset_bypass_role(self, ctx: commands.Context, role: t.Optional[discord.Role] = None):
+        """
+        Add a role to the bypass list.
+
+        Run with no arguments to see all the bypass roles
+        Run with a role already in the list to remove it from the list
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if role is None:
+            if not conf.cmd_bypass_roles:
+                await ctx.reply(
+                    info("No roles configured for bypassing command restrictions."),
+                    delete_after=30,
+                    mention_author=False,
+                )
+                return
+            text = "# Bypass Roles:\n"
+            for role_id in conf.cmd_bypass_roles.copy():
+                role = ctx.guild.get_role(role_id)
+                if role is None:  # role gone, remove from conf
+                    conf.cmd_bypass_roles.remove(role_id)
+                    continue
+                text += f"- {role.mention}\n"
+            pages = list(pagify(text))
+            await ctx.send_interactive(pages)
+            return
+        if role.id not in conf.cmd_bypass_roles:
+            conf.cmd_bypass_roles.append(role.id)
+        else:
+            conf.cmd_bypass_roles.remove(role.id)
+            await ctx.reply(
+                info(f"Role {role.mention} removed from command bypasses."),
+                delete_after=30,
+                mention_author=False,
+            )
+        await ctx.tick()
+
+    @levelset.group(name="cooldowns")
+    async def levelset_cooldowns(self, ctx: commands.Context):
+        """Manage per level command cooldowns"""
+        pass
+
+    @levelset_cooldowns.command(name="add")
+    async def levelset_cooldowns_add(self, ctx: commands.Context, level: int, cooldown: int, *, command: str):
+        """
+        Add a cooldown for a command based on level
+        Multiple cooldown levels can be set, the cooldown will be applied to members at the specified level and under
+
+        **Warning:** This will override any default cooldowns for the command
+
+        Example:
+        [p]lset cooldowns add 5 15 mycommand
+        [p]lset cooldowns add 10 5 mycommand
+        Members who are level [0, 5] will have a cooldown of 15 seconds for mycommand (including members at level 5)
+        Members who are level (5, 10] will have a cooldown of 5 seconds
+        Members above level 10 will have no cooldown
+        """
+        if self.bot.get_command(command) is None:
+            return await ctx.reply(error(f"Invalid command: `{command}`"), delete_after=30, mention_author=False)
+        conf = self.db.get_conf(ctx.guild)
+        command_cooldowns = conf.cmd_cooldowns.get(command, {})
+        command_cooldowns[level] = cooldown
+        conf.cmd_cooldowns[command] = command_cooldowns
+        self.save()
+        await ctx.tick()
+
+    @levelset_cooldowns.command(name="del")
+    async def levelset_cooldowns_del(self, ctx: commands.Context, level: int, *, command: str):
+        """Delete a cooldown for a specific command and level"""
+        if self.bot.get_command(command) is None:
+            return await ctx.reply(error(f"Invalid command: `{command}`"), delete_after=30, mention_author=False)
+        conf = self.db.get_conf(ctx.guild)
+        command_cooldowns = conf.cmd_cooldowns.get(command, {})
+        if not command_cooldowns:
+            return await ctx.reply(
+                warning(f"No cooldowns are set for `{command}`"), delete_after=30, mention_author=False
+            )
+        if level not in command_cooldowns:
+            return await ctx.reply(
+                warning(f"There is no cooldown for level {level}"), delete_after=30, mention_author=False
+            )
+        del command_cooldowns[level]
+        conf.cmd_cooldowns[command] = command_cooldowns
+        if command_cooldowns == {}:
+            del conf.cmd_cooldowns[command]
+
+        self.save()
+        await ctx.tick()
+
+    @levelset_cooldowns.command(name="list")
+    async def levelset_cooldowns_list(self, ctx: commands.Context):
+        """List cooldowns for all commands"""
+        conf = self.db.get_conf(ctx.guild)
+        cmds = conf.cmd_cooldowns
+        if not cmds:
+            await ctx.send(info("No commands configured."))
+            return
+
+        msg = f"# Cooldowns for {ctx.guild.name}\n"
+        for cmd, cooldowns in cmds.items():
+            msg += f"- `{cmd}`:\n"
+            for level, cooldown in cooldowns.items():
+                msg += f"   - Level `{level}`: `{humanize_timedelta(seconds=cooldown)}`\n"
+
+        for page in pagify(msg):
+            await ctx.send(page)
+
+    @levelset.group(name="lvlreq")
+    async def levelset_lvlreq(self, ctx: commands.Context):
+        """Manage level requirement for commands"""
+        pass
+
+    @levelset_lvlreq.command(name="add")
+    async def levelset_lvlreq_add(self, ctx: commands.Context, level: int, *, command: str):
+        """Add a level requirement to a command."""
+        if self.bot.get_command(command) is None:
+            return await ctx.reply(error(f"Invalid command: `{command}`"), delete_after=30, mention_author=False)
+        conf = self.db.get_conf(ctx.guild)
+        conf.cmd_requirements[command] = level
+        self.save()
+        await ctx.tick()
+
+    @levelset_lvlreq.command(name="del")
+    async def levelset_lvlreq_del(self, ctx: commands.Context, *, command: str):
+        """Delete a level requirement for a command."""
+        conf = self.db.get_conf(ctx.guild)
+        if command not in conf.cmd_requirements:
+            return await ctx.reply(
+                warning(f"No level requirement was set for `{command}`"),
+                delete_after=30,
+                mention_author=False,
+            )
+        del conf.cmd_requirements[command]
+        self.save()
+        await ctx.tick()
+
+    @levelset_lvlreq.command(name="list")
+    async def levelset_lvlreq_list(self, ctx: commands.Context):
+        """List all command level requirements"""
+        conf = self.db.get_conf(ctx.guild)
+        cmds = conf.cmd_requirements
+        if not cmds:
+            await ctx.send(info("No commands configured."))
+            return
+
+        msg = f"# Command Level Requirements for {ctx.guild.name}\n"
+        for cmd, level in cmds.items():
+            msg += f"- `{cmd}`: `{level}`\n"
+
+        for page in pagify(msg):
+            await ctx.send(page)
 
     @levelset.command(name="view")
     @commands.bot_has_permissions(embed_links=True)

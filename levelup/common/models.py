@@ -281,6 +281,13 @@ class GuildSettings(Base):
     cooldown: int = 60  # Only gives XP every 60 seconds
     min_length: int = 0  # Minimum length of message to be considered eligible for XP gain
 
+    # command checks and cooldown based on level
+    cmd_requirements: t.Dict[str, int] = {}  # command name -> level requirement
+    # command name -> Dict[level, cooldown], levels at specified level and under will be under that cooldown
+    cmd_cooldowns: t.Dict[str, t.Dict[int, int]] = {}
+    cmd_bypass_roles: t.List[int] = []  # allow roles to bypass req level and cooldown
+    cmd_bypass_member: t.List[int] = []  # allow members to bypass req level and cooldown
+
     # Voice
     voicexp: int = 2  # XP per minute in voice
     ignore_muted: bool = True  # Ignore XP while being muted in voice
