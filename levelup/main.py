@@ -131,6 +131,8 @@ class LevelUp(
 
     async def cog_unload(self) -> None:
         self.bot.tree.remove_command(view_profile_context)
+        self.bot.remove_before_invoke_hook(self.level_check)
+        self.bot.remove_before_invoke_hook(self.cooldown_check)
         self.stop_levelup_tasks()
 
     async def start_api(self) -> bool:
@@ -244,6 +246,10 @@ class LevelUp(
 
         if voice_initialized := await self.initialize_voice_states():
             log.info(f"Initialized {voice_initialized} voice states")
+
+        # add checks
+        self.bot.before_invoke(self.level_check)
+        self.bot.before_invoke(self.cooldown_check)
 
         self.start_levelup_tasks()
         self.custom_fonts.mkdir(exist_ok=True)
