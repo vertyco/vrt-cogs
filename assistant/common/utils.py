@@ -2,8 +2,8 @@ import asyncio
 import logging
 import re
 import sys
+import typing as t
 from datetime import datetime
-from typing import List, Optional, Tuple, Union
 
 import discord
 from openai.types.chat.chat_completion_message import ChatCompletionMessage
@@ -103,7 +103,7 @@ def clean_name(name: str):
     return cleaned_name
 
 
-def get_attachments(message: discord.Message) -> List[discord.Attachment]:
+def get_attachments(message: discord.Message) -> list[discord.Attachment]:
     """Get all attachments from context"""
     attachments = []
     if message.attachments:
@@ -118,7 +118,7 @@ def get_attachments(message: discord.Message) -> List[discord.Attachment]:
     return attachments
 
 
-async def wait_message(ctx: commands.Context) -> Optional[discord.Message]:
+async def wait_message(ctx: commands.Context) -> t.Optional[discord.Message]:
     def check(message: discord.Message):
         return message.author == ctx.author and message.channel == ctx.channel
 
@@ -169,14 +169,14 @@ def embed_to_content(message: discord.Message) -> None:
     message.content = extracted
 
 
-def extract_code_blocks(content: str) -> List[str]:
+def extract_code_blocks(content: str) -> list[str]:
     code_blocks = re.findall(r"```(?:\w+)(.*?)```", content, re.DOTALL)
     if not code_blocks:
         code_blocks = re.findall(r"```(.*?)```", content, re.DOTALL)
     return [block.strip() for block in code_blocks]
 
 
-def extract_code_blocks_with_lang(content: str) -> List[Tuple[str, str]]:
+def extract_code_blocks_with_lang(content: str) -> list[tuple[str, str]]:
     code_blocks = re.findall(r"```(\w+)(.*?)```", content, re.DOTALL)
     if not code_blocks:
         code_blocks = re.findall(r"```(.*?)```", content, re.DOTALL)
@@ -223,8 +223,8 @@ def get_params(
     bot: Red,
     guild: discord.Guild,
     now: datetime,
-    author: Optional[discord.Member],
-    channel: Optional[Union[discord.TextChannel, discord.Thread, discord.ForumChannel]],
+    author: t.Optional[discord.Member],
+    channel: t.Optional[discord.TextChannel | discord.Thread | discord.ForumChannel],
     extras: dict,
 ) -> dict:
     roles = [role for role in author.roles if "everyone" not in role.name] if author else []
@@ -262,9 +262,9 @@ def get_params(
 
 
 async def ensure_message_compatibility(
-    messages: List[dict],
+    messages: list[dict],
     conf: GuildSettings,
-    user: Optional[discord.Member],
+    user: t.Optional[discord.Member],
 ) -> bool:
     cleaned = False
 
@@ -281,7 +281,7 @@ async def ensure_message_compatibility(
     return cleaned
 
 
-async def ensure_supports_vision(messages: List[dict], conf: GuildSettings, user: Optional[discord.Member]) -> bool:
+async def ensure_supports_vision(messages: list[dict], conf: GuildSettings, user: t.Optional[discord.Member]) -> bool:
     """Make sure that if a conversation payload contains images that the model supports vision"""
     cleaned = False
 
@@ -301,7 +301,7 @@ async def ensure_supports_vision(messages: List[dict], conf: GuildSettings, user
     return cleaned
 
 
-async def purge_images(messages: List[dict]) -> bool:
+async def purge_images(messages: list[dict]) -> bool:
     """Remove all images sourced from URLs from the message payload"""
     cleaned = False
     for idx, message in enumerate(list(messages)):
@@ -317,6 +317,36 @@ async def purge_images(messages: List[dict]) -> bool:
                 messages.pop(idx)
                 cleaned = True
     return cleaned
+
+
+def clean_text_content(text: str) -> tuple[str, bool]:
+    """Remove invisible Unicode characters that AI detectors might flag.
+
+    Returns: (cleaned_text, was_modified)
+    """
+    if not text:
+        return text, False
+
+    original_length = len(text)
+    to_clean = [
+        "\u200b",  # Zero-width space
+        "\u200c",  # Zero-width non-joiner
+        "\u200d",  # Zero-width joiner
+        "\u2060",  # Invisible separator
+        "\u2061",  # Invisible times
+        "\u00ad",  # Soft hyphen
+        "\u180e",  # Mongolian vowel separator
+        "\u200b-",  # Zero-width space (non-breaking)
+        "\u200f",  # Right-to-left mark
+        "\u202a-",  # Left-to-right embedding
+        "\u202e",  # Right-to-left embedding
+        "\u2066-",  # Left-to-right override
+        "\u2069",  # Pop directional formatting
+        "\ufeff",  # Zero-width no-break space (BOM)
+    ]
+    for char in to_clean:
+        text = text.replace(char, "")
+    return text, len(text) != original_length
 
 
 async def clean_response(response: ChatCompletionMessage) -> bool:
@@ -335,9 +365,9 @@ async def clean_response(response: ChatCompletionMessage) -> bool:
     ```
     Will return: Bad Request Error(400): 'multi_tool_use.create_ticket_for_user' does not match '^[a-zA-Z0-9_-]{1,64}$' - 'messages.16.tool_calls.0.function.name'
     """
-    if not response.tool_calls and not response.function_call:
-        return False
     modified = False
+
+    # Clean function/tool names
     if response.tool_calls:
         for tool_call in response.tool_calls:
             original = tool_call.function.name
@@ -351,10 +381,27 @@ async def clean_response(response: ChatCompletionMessage) -> bool:
         if cleaned != original:
             response.function_call.name = cleaned
             modified = True
+
+    # Clean content from invisible Unicode characters
+    if response.content:
+        if isinstance(response.content, str):
+            cleaned_content, was_cleaned = clean_text_content(response.content)
+            if was_cleaned:
+                response.content = cleaned_content
+                modified = True
+        elif isinstance(response.content, list):
+            # Handle multi-modal content (list of content items)
+            for item in response.content:
+                if item.get("type") == "text" and "text" in item:
+                    cleaned_text, was_cleaned = clean_text_content(item["text"])
+                    if was_cleaned:
+                        item["text"] = cleaned_text
+                        modified = True
+
     return modified
 
 
-async def clean_responses(messages: List[dict]) -> bool:
+async def clean_responses(messages: list[dict]) -> bool:
     """Same as clean_response but cleans the whole message payload"""
     modified = False
     for message in messages:
@@ -369,7 +416,7 @@ async def clean_responses(messages: List[dict]) -> bool:
     return modified
 
 
-async def ensure_tool_consistency(messages: List[dict]) -> bool:
+async def ensure_tool_consistency(messages: list[dict]) -> bool:
     """
     Ensure all tool calls satisfy schema requirements, modifying the messages payload in-place.
 
