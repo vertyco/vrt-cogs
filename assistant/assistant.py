@@ -54,7 +54,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "6.12.23"
+    __version__ = "6.12.24"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
