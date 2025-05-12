@@ -1,44 +1,7 @@
-"""
-Generate a full profile image with customizable parameters.
-If the avatar is animated and not the background, the avatar will be rendered as a gif.
-If the background is animated and not the avatar, the background will be rendered as a gif.
-If both are animated, the avatar will be rendered as a gif and the background will be rendered as a static image.
-To optimize performance, the profile will be generated in 3 layers, the background, the avatar, and the stats.
-The stats layer will be generated as a separate image and then pasted onto the background.
-
-Args:
-    background (t.Optional[bytes], optional): The background image as bytes. Defaults to None.
-    avatar (t.Optional[bytes], optional): The avatar image as bytes. Defaults to None.
-    username (t.Optional[str], optional): The username. Defaults to "Spartan117".
-    status (t.Optional[str], optional): The status. Defaults to "online".
-    level (t.Optional[int], optional): The level. Defaults to 1.
-    messages (t.Optional[int], optional): The number of messages. Defaults to 0.
-    voicetime (t.Optional[int], optional): The voicetime. Defaults to 3600.
-    stars (t.Optional[int], optional): The number of stars. Defaults to 0.
-    prestige (t.Optional[int], optional): The prestige level. Defaults to 0.
-    prestige_emoji (t.Optional[bytes], optional): The prestige emoji as bytes. Defaults to None.
-    balance (t.Optional[int], optional): The balance. Defaults to 0.
-    currency_name (t.Optional[str], optional): The name of the currency. Defaults to "Credits".
-    previous_xp (t.Optional[int], optional): The previous XP. Defaults to 0.
-    current_xp (t.Optional[int], optional): The current XP. Defaults to 0.
-    next_xp (t.Optional[int], optional): The next XP. Defaults to 0.
-    position (t.Optional[int], optional): The position. Defaults to 0.
-    role_icon (t.Optional[bytes, str], optional): The role icon as bytes or url. Defaults to None.
-    blur (t.Optional[bool], optional): Whether to blur the box behind the stats. Defaults to False.
-    user_color (t.Optional[t.Tuple[int, int, int]], optional): The color for the user. Defaults to None.
-    base_color (t.Optional[t.Tuple[int, int, int]], optional): The base color. Defaults to None.
-    stat_color (t.Optional[t.Tuple[int, int, int]], optional): The color for the stats. Defaults to None.
-    level_bar_color (t.Optional[t.Tuple[int, int, int]], optional): The color for the level bar. Defaults to None.
-    font_path (t.Optional[t.Union[str, Path], optional): The path to the font file. Defaults to None.
-    render_gif (t.Optional[bool], optional): Whether to render as gif if profile or background is one. Defaults to False.
-    debug (t.Optional[bool], optional): Whether to raise any errors rather than suppressing. Defaults to False.
-
-Returns:
-    t.Tuple[bytes, bool]: The generated full profile image as bytes, and whether the image is animated.
-"""
-
+import importlib.util
 import logging
 import math
+import sys
 import typing as t
 from io import BytesIO
 from pathlib import Path
@@ -48,11 +11,65 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_number
 
 try:
+    # Loaded from cog
     from .. import imgtools
     from ..pilmojisrc.core import Pilmoji
 except ImportError:
-    import imgtools
-    from pilmojisrc.core import Pilmoji
+    # Running in vscode "Run Python File in Terminal"
+    # Add parent directory to sys.path to enable imports
+    parent_dir = Path(__file__).parent.parent
+    sys.path.insert(0, str(parent_dir))
+
+    # Import imgtools directly
+    imgtools_path = parent_dir / "imgtools.py"
+    if imgtools_path.exists():
+        spec = importlib.util.spec_from_file_location("imgtools", imgtools_path)
+        imgtools = importlib.util.module_from_spec(spec)
+        sys.modules["imgtools"] = imgtools
+        spec.loader.exec_module(imgtools)
+    else:
+        raise ImportError(f"Could not find imgtools at {imgtools_path}")
+
+    # Set up pilmojisrc as a package
+    pilmoji_dir = parent_dir / "pilmojisrc"
+    if not pilmoji_dir.exists():
+        raise ImportError(f"Could not find pilmojisrc directory at {pilmoji_dir}")
+
+    # Create and register the pilmojisrc package
+    pilmojisrc_init = pilmoji_dir / "__init__.py"
+    if pilmojisrc_init.exists():
+        spec = importlib.util.spec_from_file_location("pilmojisrc", pilmojisrc_init)
+        pilmojisrc = importlib.util.module_from_spec(spec)
+        sys.modules["pilmojisrc"] = pilmojisrc
+        spec.loader.exec_module(pilmojisrc)
+    else:
+        # Create an empty module if __init__.py doesn't exist
+        pilmojisrc = type(sys)("pilmojisrc")
+        sys.modules["pilmojisrc"] = pilmojisrc
+
+    # Import helpers module first (since core depends on it)
+    helpers_path = pilmoji_dir / "helpers.py"
+    if helpers_path.exists():
+        spec = importlib.util.spec_from_file_location("pilmojisrc.helpers", helpers_path)
+        helpers = importlib.util.module_from_spec(spec)
+        pilmojisrc.helpers = helpers
+        sys.modules["pilmojisrc.helpers"] = helpers
+        spec.loader.exec_module(helpers)
+    else:
+        raise ImportError(f"Could not find helpers module at {helpers_path}")
+
+    # Now import core module
+    core_path = pilmoji_dir / "core.py"
+    if core_path.exists():
+        spec = importlib.util.spec_from_file_location("pilmojisrc.core", core_path)
+        core = importlib.util.module_from_spec(spec)
+        pilmojisrc.core = core
+        sys.modules["pilmojisrc.core"] = core
+        spec.loader.exec_module(core)
+        Pilmoji = core.Pilmoji
+    else:
+        raise ImportError(f"Could not find core module at {core_path}")
+
 
 log = logging.getLogger("red.vrt.levelup.generator.styles.default")
 _ = Translator("LevelUp", __file__)
@@ -85,8 +102,50 @@ def generate_default_profile(
     render_gif: bool = False,
     debug: bool = False,
     reraise: bool = False,
+    square: bool = False,
     **kwargs,
 ) -> t.Tuple[bytes, bool]:
+    """
+    Generate a full profile image with customizable parameters.
+    If the avatar is animated and not the background, the avatar will be rendered as a gif.
+    If the background is animated and not the avatar, the background will be rendered as a gif.
+    If both are animated, the avatar will be rendered as a gif and the background will be rendered as a static image.
+    To optimize performance, the profile will be generated in 3 layers, the background, the avatar, and the stats.
+    The stats layer will be generated as a separate image and then pasted onto the background.
+
+    Args:
+        background (t.Optional[bytes], optional): The background image as bytes. Defaults to None.
+        avatar (t.Optional[bytes], optional): The avatar image as bytes. Defaults to None.
+        username (t.Optional[str], optional): The username. Defaults to "Spartan117".
+        status (t.Optional[str], optional): The status. Defaults to "online".
+        level (t.Optional[int], optional): The level. Defaults to 1.
+        messages (t.Optional[int], optional): The number of messages. Defaults to 0.
+        voicetime (t.Optional[int], optional): The voicetime. Defaults to 3600.
+        stars (t.Optional[int], optional): The number of stars. Defaults to 0.
+        prestige (t.Optional[int], optional): The prestige level. Defaults to 0.
+        prestige_emoji (t.Optional[bytes], optional): The prestige emoji as bytes. Defaults to None.
+        balance (t.Optional[int], optional): The balance. Defaults to 0.
+        currency_name (t.Optional[str], optional): The name of the currency. Defaults to "Credits".
+        previous_xp (t.Optional[int], optional): The previous XP. Defaults to 0.
+        current_xp (t.Optional[int], optional): The current XP. Defaults to 0.
+        next_xp (t.Optional[int], optional): The next XP. Defaults to 0.
+        position (t.Optional[int], optional): The position. Defaults to 0.
+        role_icon (t.Optional[bytes, str], optional): The role icon as bytes or url. Defaults to None.
+        blur (t.Optional[bool], optional): Whether to blur the box behind the stats. Defaults to False.
+        user_color (t.Optional[t.Tuple[int, int, int]], optional): The color for the user. Defaults to None.
+        base_color (t.Optional[t.Tuple[int, int, int]], optional): The base color. Defaults to None.
+        stat_color (t.Optional[t.Tuple[int, int, int]], optional): The color for the stats. Defaults to None.
+        level_bar_color (t.Optional[t.Tuple[int, int, int]], optional): The color for the level bar. Defaults to None.
+        font_path (t.Optional[t.Union[str, Path], optional): The path to the font file. Defaults to None.
+        render_gif (t.Optional[bool], optional): Whether to render as gif if profile or background is one. Defaults to False.
+        debug (t.Optional[bool], optional): Whether to raise any errors rather than suppressing. Defaults to False.
+        reraise (t.Optional[bool], optional): Whether to raise any errors rather than suppressing. Defaults to False.
+        square (t.Optional[bool], optional): Whether to render the profile as a square. Defaults to False.
+        **kwargs: Additional keyword arguments.
+
+    Returns:
+        t.Tuple[bytes, bool]: The generated full profile image as bytes, and whether the image is animated.
+    """
     user_color = user_color or base_color
     stat_color = stat_color or base_color
     level_bar_color = level_bar_color or base_color
@@ -130,30 +189,53 @@ def generate_default_profile(
     bg_animated = getattr(card, "is_animated", False)
     log.debug(f"PFP animated: {pfp_animated}, BG animated: {bg_animated}")
 
-    # Ensure the card is the correct size and aspect ratio
-    desired_card_size = (1050, 450)
-    # aspect_ratio = imgtools.calc_aspect_ratio(*desired_card_size)
     # Setup
     default_fill = (0, 0, 0)  # Default fill color for text
     stroke_width = 2  # Width of the stroke around text
-    name_y = 35  # Upper bound of username placement
-    stats_y = 160  # Upper bound of stats texts
-    blur_edge = 450  # Left bound of blur edge
-    bar_width = 550  # Length of level bar
-    bar_height = 40  # Height of level bar
-    bar_start = 475  # Left bound of level bar
-    bar_top = 380  # Top bound of level bar
-    stat_bottom = bar_top - 10  # Bottom bound of all stats
-    stat_start = bar_start + 10  # Left bound of all stats
-    stat_split = stat_start + 210  # Split between left and right stats
-    stat_end = 990  # Right bound of all stats
-    stat_offset = 45  # Offset between stats
-    circle_x = 60  # Left bound of profile circle
-    circle_y = 60  # Top bound of profile circle
-    star_text_x = 910  # Left bound of star text
-    star_text_y = 35  # Top bound of star text
-    star_icon_x = 850  # Left bound of star icon
-    star_icon_y = 35  # Top bound of star icon
+
+    if square:
+        desired_card_size = (450, 450)
+        # aspect_ratio = imgtools.calc_aspect_ratio(*desired_card_size)
+        name_y = 35  # Upper bound of username placement
+        stats_y = 160  # Upper bound of stats texts
+        blur_edge = 450  # Left bound of blur edge
+        bar_width = 550  # Length of level bar
+        bar_height = 40  # Height of level bar
+        bar_start = 475  # Left bound of level bar
+        bar_top = 380  # Top bound of level bar
+        stat_bottom = bar_top - 10  # Bottom bound of all stats
+        stat_start = bar_start + 10  # Left bound of all stats
+        stat_split = stat_start + 210  # Split between left and right stats
+        stat_end = 990  # Right bound of all stats
+        stat_offset = 45  # Offset between stats
+        circle_x = 60  # Left bound of profile circle
+        circle_y = 60  # Top bound of profile circle
+        star_text_x = 910  # Left bound of star text
+        star_text_y = 35  # Top bound of star text
+        star_icon_x = 850  # Left bound of star icon
+        star_icon_y = 35  # Top bound of star icon
+    else:
+        # Ensure the card is the correct size and aspect ratio
+        desired_card_size = (1050, 450)
+        # aspect_ratio = imgtools.calc_aspect_ratio(*desired_card_size)
+        name_y = 35  # Upper bound of username placement
+        stats_y = 160  # Upper bound of stats texts
+        blur_edge = 450  # Left bound of blur edge
+        bar_width = 550  # Length of level bar
+        bar_height = 40  # Height of level bar
+        bar_start = 475  # Left bound of level bar
+        bar_top = 380  # Top bound of level bar
+        stat_bottom = bar_top - 10  # Bottom bound of all stats
+        stat_start = bar_start + 10  # Left bound of all stats
+        stat_split = stat_start + 210  # Split between left and right stats
+        stat_end = 990  # Right bound of all stats
+        stat_offset = 45  # Offset between stats
+        circle_x = 60  # Left bound of profile circle
+        circle_y = 60  # Top bound of profile circle
+        star_text_x = 910  # Left bound of star text
+        star_text_y = 35  # Top bound of star text
+        star_icon_x = 850  # Left bound of star icon
+        star_icon_y = 35  # Top bound of star icon
 
     # Establish layer for all text and accents
     stats = Image.new("RGBA", desired_card_size, (0, 0, 0, 0))
