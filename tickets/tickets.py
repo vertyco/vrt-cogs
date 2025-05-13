@@ -34,11 +34,11 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "2.9.12"
+    __version__ = "2.9.13"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
-        info = f"{helpcmd}\n" f"Cog Version: {self.__version__}\n" f"Author: {self.__author__}\n"
+        info = f"{helpcmd}\nCog Version: {self.__version__}\nAuthor: {self.__author__}\n"
         return info
 
     async def red_delete_data_for_user(self, *, requester, user_id: int):

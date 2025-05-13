@@ -201,7 +201,8 @@ class CloseView(View):
             modal = CloseReasonModal()
             try:
                 await interaction.response.send_modal(modal)
-            except discord.NotFound:
+            except discord.NotFound as e:
+                log.warning(f"Failed to send ticket modal for panel {panel_name}", exc_info=e)
                 txt = _("Something went wrong, please try again.")
                 try:
                     await interaction.followup.send(txt, ephemeral=True)
@@ -334,14 +335,14 @@ class SupportButton(Button):
         category = guild.get_channel(panel["category_id"]) if panel["category_id"] else None
         if not category:
             em = discord.Embed(
-                description=_("The category for this support panel cannot be found!\n" "please contact an admin!"),
+                description=_("The category for this support panel cannot be found!\nplease contact an admin!"),
                 color=discord.Color.red(),
             )
             return await interaction.response.send_message(embed=em, ephemeral=True)
         if not isinstance(category, discord.CategoryChannel):
             em = discord.Embed(
                 description=_(
-                    "The category for this support panel is not a category channel!\n" "please contact an admin!"
+                    "The category for this support panel is not a category channel!\nplease contact an admin!"
                 ),
                 color=discord.Color.red(),
             )
