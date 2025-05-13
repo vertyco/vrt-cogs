@@ -1984,7 +1984,7 @@ class Admin(MixinMeta):
 
         **Notes**
         - Using a custom endpoint is not supported!
-        - Using an endpoing override will negate model settings like temperature and custom funcitons
+        - Using an endpoing override will negate model settings like temperature and custom functions
         """
         if self.db.endpoint_override == endpoint:
             return await ctx.send(_("Endpoint is already set to **{}**").format(endpoint))

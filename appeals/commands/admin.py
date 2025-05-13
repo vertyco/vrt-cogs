@@ -267,6 +267,8 @@ class Admin(MixinMeta):
             else:
                 try:
                     message = await pending_channel.fetch_message(submission.message_id)
+                    if message.thread:
+                        await message.thread.delete()
                     await message.delete()
                 except discord.NotFound:
                     await ctx.send(f"Submission message not found in {pending_channel.mention}")
@@ -363,6 +365,8 @@ class Admin(MixinMeta):
             else:
                 try:
                     message = await pending_channel.fetch_message(submission.message_id)
+                    if message.thread:
+                        await message.thread.delete()
                     await message.delete()
                 except discord.NotFound:
                     await ctx.send(f"Submission message not found in {pending_channel.mention}")
