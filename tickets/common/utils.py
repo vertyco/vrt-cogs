@@ -4,7 +4,7 @@ import zipfile
 from collections import defaultdict
 from contextlib import suppress
 from datetime import datetime
-from io import BytesIO
+from io import BytesIO, StringIO
 from pathlib import Path
 from typing import List, Optional, Union
 
@@ -14,7 +14,7 @@ from discord.utils import escape_markdown
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import humanize_list, pagify, text_to_file
+from redbot.core.utils.chat_formatting import pagify, text_to_file
 from redbot.core.utils.mod import is_admin_or_superior
 
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
@@ -138,9 +138,9 @@ async def close_ticket(
         color=discord.Color.green(),
     )
     embed.set_thumbnail(url=pfp)
-    log_chan = guild.get_channel(panel["log_channel"]) if panel["log_channel"] else None
+    log_chan: discord.TextChannel = guild.get_channel(panel["log_channel"]) if panel["log_channel"] else None
 
-    text = ""
+    buffer = StringIO()
     files: List[dict] = []
     filename = (
         f"{member.name}-{member.id}.html" if conf.get("detailed_transcript") else f"{member.name}-{member.id}.txt"
@@ -153,14 +153,14 @@ async def close_ticket(
 
     use_exporter = conf.get("detailed_transcript", False)
     is_thread = isinstance(channel, discord.Thread)
-    exporter_success = False
+    # exporter_success = False
 
     if conf["transcript"]:
         temp_message = await channel.send(embed=em)
 
         if use_exporter:
             try:
-                text = await chat_exporter.export(
+                res = await chat_exporter.export(
                     channel=channel,
                     limit=None,
                     tz_info="UTC",
@@ -170,14 +170,15 @@ async def close_ticket(
                     fancy_times=True,
                     support_dev=False,
                 )
-                exporter_success = True
+                buffer.write(res)
+                # exporter_success = True
             except AttributeError:
                 pass
 
         answers = ticket.get("answers")
         if answers and not use_exporter:
             for q, a in answers.items():
-                text += _("Question: {}\nResponse: {}\n").format(q, a)
+                buffer.write(_("Question: {}\nResponse: {}\n").format(q, a))
 
         history = await fetch_channel_history(channel)
         filenames = defaultdict(int)
@@ -187,9 +188,9 @@ async def close_ticket(
             if not msg:
                 continue
 
-            att = []
+            att: list[discord.Attachment] = []
             for i in msg.attachments:
-                att.append(i.filename)
+                att.append(i)
                 if i.size < guild.filesize_limit and (not is_thread or conf["thread_close"]):
                     filenames[i.filename] += 1
                     if filenames[i.filename] > 1:
@@ -201,9 +202,11 @@ async def close_ticket(
 
             if not use_exporter:
                 if msg.content:
-                    text += f"{msg.author.name}: {msg.content}\n"
+                    buffer.write(f"{msg.created_at.strftime('%Y-%m-%d %H:%M:%S')} - {msg.author.name}: {msg.content}\n")
                 if att:
-                    text += _("Files uploaded: ") + humanize_list(att) + "\n"
+                    buffer.write(_("Files Uploaded:\n"))
+                    for i in att:
+                        buffer.write(f"[{i.filename}]({i.url})\n")
 
         with suppress(discord.HTTPException):
             await temp_message.delete()
@@ -242,6 +245,8 @@ async def close_ticket(
         )
 
     view_label = _("View Transcript")
+
+    text = buffer.getvalue()
 
     if log_chan and ticket["logmsg"]:
         text_file = text_to_file(text, filename) if text else None
@@ -295,11 +300,11 @@ async def close_ticket(
             else:
                 raise
 
-        if log_msg and exporter_success:
-            url = f"https://mahto.id/chat-exporter?url={log_msg.attachments[0].url}"
-            view = discord.ui.View()
-            view.add_item(discord.ui.Button(label=view_label, style=discord.ButtonStyle.link, url=url))
-            await log_msg.edit(view=view)
+        # if log_msg and exporter_success:
+        #     url = f"https://mahto.id/chat-exporter?url={log_msg.attachments[0].url}"
+        #     view = discord.ui.View()
+        #     view.add_item(discord.ui.Button(label=view_label, style=discord.ButtonStyle.link, url=url))
+        #     await log_msg.edit(view=view)
 
         # Delete old log msg
         log_msg_id = ticket["logmsg"]
