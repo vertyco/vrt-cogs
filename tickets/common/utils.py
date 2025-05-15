@@ -202,7 +202,9 @@ async def close_ticket(
 
             if not use_exporter:
                 if msg.content:
-                    buffer.write(f"{msg.created_at.strftime('%Y-%m-%d %H:%M:%S')} - {msg.author.name}: {msg.content}\n")
+                    buffer.write(
+                        f"{msg.created_at.strftime('%m-%d-%Y %I:%M:%S %p')} - {msg.author.name}: {msg.content}\n"
+                    )
                 if att:
                     buffer.write(_("Files Uploaded:\n"))
                     for i in att:
