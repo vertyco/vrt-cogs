@@ -35,8 +35,23 @@ MODELS = {
     "o1-mini-2024-09-12": 128000,
     "o3-mini": 200000,
     "o3-mini-2025-01-31": 200000,
+    "gemini-2.5-pro": 1000000,
+    "gemini-2.5-flash": 1000000,
+    "gemini-2.0-flash": 1000000,
+    "gemini-2.0-flash-lite": 1000000,
+    "gemini-1.5-pro": 1000000,
+    "gemini-1.5-flash": 1000000,
+    "gemini-1.0-pro": 32000,
 }
 PRICES = {  # Price per 1k tokens
+    # Note: Gemini pricing is complex and can be context-dependent (e.g., >200K tokens for 2.5 models) or per-character/media for older models. These are simplified per-1k-token approximations for text I/O based on available documentation. Exact billing may vary.
+    "gemini-2.5-pro": [0.00125, 0.01],
+    "gemini-2.5-flash": [0.00015, 0.0006],
+    "gemini-2.0-flash": [0.00015, 0.0006],
+    "gemini-2.0-flash-lite": [0.000075, 0.0003],
+    "gemini-1.5-pro": [0.00125, 0.005],
+    "gemini-1.5-flash": [0.000075, 0.0003],
+    "gemini-1.0-pro": [0.0005, 0.0015],
     "gpt-3.5-turbo": [0.001, 0.0015],
     "gpt-3.5-turbo-0301": [0.0015, 0.002],
     "gpt-3.5-turbo-0613": [0.0015, 0.002],
@@ -123,6 +138,10 @@ SUPPORTS_SEED = [
     "gpt-4.1-mini-2025-04-14",
     "gpt-4.1-nano",
     "gpt-4.1-nano-2025-04-14",
+    "gemini-2.5-flash",
+    "gemini-2.5-pro",
+    "gemini-2.0-flash-lite",
+    "gemini-2.0-flash",
 ]
 NO_DEVELOPER_ROLE = [  # Also doesnt support system messages
     "o1-mini",
@@ -153,6 +172,13 @@ SUPPORTS_VISION = [
     "o1-2024-12-17",
     # "o3-mini",
     # "o3-mini-2025-01-31",
+    "gemini-2.5-pro",
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-lite",
+    "gemini-1.5-pro",
+    "gemini-1.5-flash",
+    "gemini-1.0-pro",
 ]
 SUPPORTS_TOOLS = [
     "gpt-3.5-turbo-1106",
@@ -180,6 +206,13 @@ SUPPORTS_TOOLS = [
     "o1-2024-12-17",
     "o3-mini",
     "o3-mini-2025-01-31",
+    "gemini-2.5-pro",
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-lite",
+    "gemini-1.5-pro",
+    "gemini-1.5-flash",
+    "gemini-1.0-pro",
 ]
 READ_EXTENSIONS = [
     ".txt",

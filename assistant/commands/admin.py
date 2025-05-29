@@ -413,31 +413,116 @@ class Admin(MixinMeta):
     @commands.bot_has_permissions(embed_links=True)
     async def set_openai_key(self, ctx: commands.Context):
         """
-        Set your OpenAI key
+        Set your OpenAI API key.
+
+        This key is used for accessing OpenAI models like GPT-3.5, GPT-4, DALL-E, etc.
+        You can obtain a key from [OpenAI Platform](https://platform.openai.com/account/api-keys).
         """
         conf = self.db.get_conf(ctx.guild)
 
         view = SetAPI(ctx.author, conf.api_key)
-        txt = _("Click to set your OpenAI key\n\nTo remove your keys, enter `none`")
-        embed = discord.Embed(description=txt, color=ctx.author.color)
+        txt = _(
+            "Click the button to set your OpenAI API key.\n"
+            "This key is required for models like GPT-4, GPT-3.5, DALL-E, etc.\n\n"
+            "To remove your key, enter `none` in the input field."
+        )
+        embed = discord.Embed(title=_("OpenAI API Key Setup"), description=txt, color=ctx.author.color)
+        embed.add_field(
+            name=_("Important Note"),
+            value=_(
+                "Your API key is sensitive. Ensure it's set in a private channel or DM if you're concerned about privacy."
+            ),
+            inline=False,
+        )
         msg = await ctx.send(embed=embed, view=view)
         await view.wait()
-        key = view.key.strip() if view.key else "none"
 
-        try:
-            if key == "none" and conf.api_key:
-                conf.api_key = None
-                await msg.edit(content=_("OpenAI key has been removed!"), embed=None, view=None)
-            elif key == "none" and not conf.api_key:
-                conf.api_key = key
-                await msg.edit(content=_("No API key was entered!"), embed=None, view=None)
+        if view.key is not None:
+            key_to_set = view.key.strip()
+            if key_to_set.lower() == "none":
+                if conf.api_key:
+                    conf.api_key = None
+                    await msg.edit(content=_("OpenAI API key has been removed!"), embed=None, view=None)
+                else:
+                    await msg.edit(content=_("No OpenAI API key was set to remove."), embed=None, view=None)
+            elif not key_to_set: # Empty input
+                 await msg.edit(content=_("No API key was entered. Current key remains unchanged."), embed=None, view=None)
             else:
-                conf.api_key = key
-                await msg.edit(content=_("OpenAI key has been set!"), embed=None, view=None)
-        except discord.NotFound:
-            pass
+                conf.api_key = key_to_set
+                await msg.edit(content=_("OpenAI API key has been set!"), embed=None, view=None)
+            await self.save_conf()
+        else: # View timed out or was dismissed
+            await msg.edit(content=_("API key setup was cancelled or timed out."), embed=None, view=None)
 
-        await self.save_conf()
+
+    @assistant.command(name="gauth", aliases=["googleauth", "googleprojectid"])
+    @commands.is_owner() # Or specific admin permission
+    @commands.bot_has_permissions(embed_links=True)
+    async def set_google_auth_config(self, ctx: commands.Context, project_id: t.Optional[str] = None):
+        """
+        Configure Google Cloud settings for Gemini models.
+
+        This command sets the Google Cloud Project ID to be used with Gemini models.
+        For authentication, ensure the bot is running in an environment with Google Cloud
+        Application Default Credentials (ADC) configured.
+
+        **How to set up ADC:**
+        1.  **Google Cloud Service Account:**
+            *   Create a service account in your Google Cloud Project.
+            *   Grant it necessary roles (e.g., "Vertex AI User" or "AI Platform User").
+            *   Download the JSON key file for this service account.
+        2.  **Set Environment Variable:**
+            *   Set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to the absolute path of the downloaded JSON key file.
+            *   Example: `export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/keyfile.json"`
+        3.  **Running on Google Cloud:**
+            *   If your bot runs on Google Cloud services (e.g., Compute Engine, Cloud Run, GKE), ADC might be automatically configured if the service has an attached service account with appropriate permissions.
+
+        If `project_id` is not provided, the current setting will be shown.
+        To remove the project ID, use `[p]assistant gauth none`.
+        """
+        if project_id is None:
+            current_project_id = self.db.google_project_id
+            if current_project_id:
+                await ctx.send(
+                    _("Current Google Cloud Project ID is: `{}`\n"
+                      "To change it, provide a new Project ID. To remove it, use `{prefix}assistant gauth none`.").format(
+                        current_project_id, prefix=ctx.clean_prefix
+                    )
+                )
+            else:
+                await ctx.send(
+                    _("No Google Cloud Project ID is currently set.\n"
+                      "Provide a Project ID to set it, or use `{prefix}assistant gauth none` to explicitly clear it.").format(
+                          prefix=ctx.clean_prefix
+                      )
+                )
+            return
+
+        if project_id.lower() == "none":
+            if self.db.google_project_id:
+                self.db.google_project_id = None
+                await self.save_conf()
+                await ctx.send(_("Google Cloud Project ID has been removed."))
+            else:
+                await ctx.send(_("No Google Cloud Project ID was set to remove."))
+        else:
+            self.db.google_project_id = project_id.strip()
+            await self.save_conf()
+            await ctx.send(_("Google Cloud Project ID has been set to: `{}`").format(self.db.google_project_id))
+
+        # Provide a reminder about ADC
+        adc_help_embed = discord.Embed(
+            title=_("Google Application Default Credentials (ADC)"),
+            description=_(
+                "Remember to configure ADC in your bot's environment for Gemini authentication. "
+                "This typically involves setting the `GOOGLE_APPLICATION_CREDENTIALS` environment variable "
+                "to point to your service account key JSON file, or ensuring the bot runs on Google Cloud "
+                "infrastructure with an appropriately permissioned service account."
+            ),
+            color=discord.Color.blue()
+        )
+        await ctx.send(embed=adc_help_embed)
+
 
     @assistant.command(name="braveapikey", aliases=["brave"])
     @commands.bot_has_permissions(embed_links=True)
