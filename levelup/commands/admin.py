@@ -256,18 +256,25 @@ class Admin(MixinMeta):
         self,
         ctx: commands.Context,
         user_or_role: t.Union[discord.Member, discord.Role],
-        xp: int,
+        xp: commands.positive_int,
     ):
         """Add XP to a user or role"""
         conf = self.db.get_conf(ctx.guild)
         if isinstance(user_or_role, discord.Member):
             profile = conf.get_profile(user_or_role)
+            new_xp = profile.xp + xp
+            if new_xp > 2**62:
+                return await ctx.send(_("That XP value is too high!"))
             profile.xp += xp
             txt = _("Added {} XP to {}").format(xp, user_or_role.name)
             self.save()
             return await ctx.send(txt)
+
         for user in user_or_role.members:
             profile = conf.get_profile(user)
+            new_xp = profile.xp + xp
+            if new_xp > 2**62:
+                return await ctx.send(_("That XP value is too high!"))
             profile.xp += xp
         txt = _("Added {} XP {} member(s) with the {} role").format(
             xp,
@@ -282,7 +289,7 @@ class Admin(MixinMeta):
         self,
         ctx: commands.Context,
         user_or_role: t.Union[discord.Member, discord.Role],
-        xp: int,
+        xp: commands.positive_int,
     ):
         """Remove XP from a user or role"""
         conf = self.db.get_conf(ctx.guild)
@@ -528,6 +535,11 @@ class Admin(MixinMeta):
         """
         async with ctx.typing():
             conf = self.db.get_conf(ctx.guild)
+            new_xp = conf.algorithm.get_xp(level)
+            # Ensure the user doesn't set a level that requires more than what pydantic can handle as far as large numbers go
+            if new_xp > 2**62:
+                return await ctx.send(_("That level is too high!"))
+
             profile = conf.get_profile(user)
             profile.level = level
             profile.xp = conf.algorithm.get_xp(level)
