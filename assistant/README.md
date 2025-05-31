@@ -1,5 +1,30 @@
 Set up and configure an AI assistant (or chat) cog for your server with one of OpenAI's ChatGPT language models.<br/><br/>Features include configurable prompt injection, dynamic embeddings, custom function calling, and more!<br/><br/>- **[p]assistant**: base command for setting up the assistant<br/>- **[p]chat**: talk with the assistant<br/>- **[p]convostats**: view a user's token usage/conversation message count for the channel<br/>- **[p]clearconvo**: reset your conversation with the assistant in the channel
 
+# Google Gemini Model Support
+
+The Assistant cog also supports Google's Gemini models, allowing you to leverage their advanced capabilities.
+
+## How to Use Gemini Models
+
+To use a Gemini model, you first need to select it using the model selection command:
+- `[p]assistant model <model_name>`
+
+You can find a list of available Gemini models (e.g., `gemini-2.5-pro`, `gemini-1.5-flash`) by either:
+- Checking the output of `[p]assistant model` with no arguments (if it lists available models).
+- Referring to the cog's internal model list (though this might not be directly visible to end-users, admins can be aware).
+
+Once a Gemini model is selected, your interactions via the `[p]chat` command and other features will utilize that model.
+
+## Prerequisites for Gemini
+
+For Gemini models to function correctly, the following must be configured by the bot owner:
+
+1.  **Google Cloud Project ID**: A valid Google Cloud Project ID must be set in the bot's global configuration for the Assistant. This can typically be done via an admin command (e.g., a hypothetical `[p]assistant setgoogleprojectid <your-project-id>`).
+    - *Developer Note: The specific command to set this was not identified during review, but it's stored in `db.google_project_id`.*
+2.  **Application Default Credentials (ADC)**: The environment where the bot is running must have Google Cloud Application Default Credentials configured. This usually involves setting the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to point to a service account key JSON file with appropriate permissions for Vertex AI (which powers Gemini access). Refer to Google Cloud documentation for setting up ADC.
+
+Without these prerequisites, attempts to use Gemini models will result in authentication errors.
+
 # /draw (Slash Command)
 Generate an image with Dalle-3<br/>
  - Usage: `/draw <prompt> [size] [quality] [style]`
