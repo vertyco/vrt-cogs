@@ -124,6 +124,7 @@ class Profile(Base):
         description="Last time the user was active in the guild (message sent or voice activity)",
     )
     show_tutorial: bool = True  # Init with True, show tutorial on first command usage
+    ignore_level_up_notification: bool = False  # if true level up notifications will not be announced for this user
 
     # Profile customization
     style: str = "default"  # Can be default, runescape... (WIP)
@@ -308,6 +309,7 @@ class GuildSettings(Base):
     ignoredchannels: t.List[int] = []  # Channels that dont gain XP
     ignoredroles: t.List[int] = []  # Roles that dont gain XP
     ignoredusers: t.List[int] = []  # Ignored users won't gain XP
+    ignore_notification_channels: t.List[int] = []  # channels where level up announcements won't be sent if configured
 
     # Prestige
     prestigelevel: int = 0  # Level required to prestige, 0 is disabled

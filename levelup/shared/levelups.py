@@ -115,18 +115,23 @@ class LevelUps(MixinMeta):
             )
             if current_channel and conf.notify:
                 with suppress(discord.HTTPException):
-                    if conf.notifymention:
-                        await current_channel.send(member.mention, embed=embed)
-                    else:
-                        await current_channel.send(embed=embed)
+                    if (
+                        not profile.ignore_level_up_notification
+                        and current_channel.id not in conf.ignore_notification_channels
+                    ):
+                        if conf.notifymention:
+                            await current_channel.send(member.mention, embed=embed)
+                        else:
+                            await current_channel.send(embed=embed)
 
             current_channel_id = current_channel.id if current_channel else 0
             if log_channel and log_channel.id != current_channel_id:
                 with suppress(discord.HTTPException):
-                    if conf.notifymention:
-                        await log_channel.send(member.mention, embed=embed)
-                    else:
-                        await log_channel.send(embed=embed)
+                    if not profile.ignore_level_up_notification:
+                        if conf.notifymention:
+                            await log_channel.send(member.mention, embed=embed)
+                        else:
+                            await log_channel.send(embed=embed)
 
         else:
             fonts = list(self.fonts.glob("*.ttf")) + list(self.custom_fonts.iterdir())
@@ -205,16 +210,21 @@ class LevelUps(MixinMeta):
             if current_channel and conf.notify:
                 file = discord.File(BytesIO(img_bytes), filename=f"levelup.{ext}")
                 with suppress(discord.HTTPException):
-                    if conf.notifymention and message is not None:
-                        await message.reply(msg_txt, file=file, mention_author=True)
-                    else:
-                        await current_channel.send(msg_txt, file=file)
+                    if (
+                        not profile.ignore_level_up_notification
+                        and current_channel.id not in conf.ignore_notification_channels
+                    ):
+                        if conf.notifymention and message is not None:
+                            await message.reply(msg_txt, file=file, mention_author=True)
+                        else:
+                            await current_channel.send(msg_txt, file=file)
 
             current_channel_id = current_channel.id if current_channel else 0
             if log_channel and log_channel.id != current_channel_id:
                 file = discord.File(BytesIO(img_bytes), filename=f"levelup.{ext}")
                 with suppress(discord.HTTPException):
-                    await log_channel.send(msg_txt, file=file)
+                    if not profile.ignore_level_up_notification:
+                        await log_channel.send(msg_txt, file=file)
 
         payload = {
             "guild": guild,  # discord.Guild
