@@ -66,34 +66,43 @@ class API(MixinMeta):
         api_key_to_use = None
         project_id_to_use = None
         base_url_to_use = self.db.endpoint_override # Default, can be overridden for Gemini
+        using_aistudio_key = False
 
         if is_gemini:
-            try:
-                credentials, detected_project_id = await asyncio.to_thread(
-                    google.auth.default, scopes=["https://www.googleapis.com/auth/cloud-platform"]
-                )
-                if not credentials:
-                    raise google.auth.exceptions.DefaultCredentialsError(_("Google Cloud credentials not found."))
-                
-                # Refresh credentials if they are stale
-                if credentials.expired and credentials.refresh_token:
-                     await asyncio.to_thread(credentials.refresh, google.auth.transport.requests.Request())
-                
-                api_key_to_use = credentials.token # This is the Google Access Token
-            except Exception as e:
-                log.error("Failed to get Google Cloud credentials for Gemini", exc_info=e)
-                raise commands.UserFeedbackCheckFailure(
-                    _("Gemini Auth Error: Could not obtain Google Cloud credentials. Ensure Application Default Credentials are set up correctly. Error: {}").format(e)
-                ) from e
+            if self.db.gemini_api_key:
+                api_key_to_use = self.db.gemini_api_key
+                base_url_to_use = "https://generativelanguage.googleapis.com/v1beta"
+                project_id_to_use = None # Not used for AI Studio keys
+                using_aistudio_key = True
+                log.debug("Using Gemini AI Studio API Key for chat")
+            else:
+                using_aistudio_key = False
+                try:
+                    credentials, detected_project_id = await asyncio.to_thread(
+                        google.auth.default, scopes=["https://www.googleapis.com/auth/cloud-platform"]
+                    )
+                    if not credentials:
+                        raise google.auth.exceptions.DefaultCredentialsError(_("Google Cloud credentials not found."))
 
-            project_id_to_use = self.db.google_project_id or detected_project_id
-            if not project_id_to_use:
-                raise commands.UserFeedbackCheckFailure(
-                    _("Google Cloud Project ID not set or detected. Configure it using the bot's admin commands or ensure ADC is providing it.")
-                )
-            # For Gemini, base_url is regional. If endpoint_override is set, it might be a specific Vertex AI endpoint.
-            # If not, default to a common regional endpoint. User might need to configure region if not us-central1.
-            base_url_to_use = self.db.endpoint_override or "https://us-central1-aiplatform.googleapis.com/v1"
+                    # Refresh credentials if they are stale
+                    if credentials.expired and credentials.refresh_token:
+                         await asyncio.to_thread(credentials.refresh, google.auth.transport.requests.Request())
+
+                    api_key_to_use = credentials.token # This is the Google Access Token
+                except Exception as e:
+                    log.error("Failed to get Google Cloud credentials for Gemini", exc_info=e)
+                    raise commands.UserFeedbackCheckFailure(
+                        _("Gemini Auth Error: Could not obtain Google Cloud credentials. Ensure Application Default Credentials are set up correctly or provide an AI Studio API key. Error: {}").format(e)
+                    ) from e
+
+                project_id_to_use = self.db.google_project_id or detected_project_id
+                if not project_id_to_use:
+                    raise commands.UserFeedbackCheckFailure(
+                        _("Google Cloud Project ID not set or detected. Configure it using the bot's admin commands or ensure ADC is providing it.")
+                    )
+                # For Gemini with ADC, base_url is regional.
+                base_url_to_use = self.db.endpoint_override or "https://us-central1-aiplatform.googleapis.com/v1"
+                log.debug(f"Using Google Cloud ADC for Gemini chat. Project: {project_id_to_use}, Endpoint: {base_url_to_use}")
         else:
             api_key_to_use = conf.api_key
             base_url_to_use = self.db.endpoint_override
@@ -151,8 +160,9 @@ class API(MixinMeta):
                 api_key=api_key_to_use, # Google Cloud Access Token
                 max_tokens=max_api_response_tokens, 
                 functions=functions,
-                base_url=base_url_to_use, # Regional Vertex AI endpoint
+                base_url=base_url_to_use,
                 system_message=system_message_str,
+                using_aistudio_key=using_aistudio_key,
                 # seed=conf.seed, # TODO: Add seed if supported
             )
             
@@ -251,39 +261,64 @@ class API(MixinMeta):
         api_key_to_use = None
         project_id_to_use = None
         base_url_to_use = self.db.endpoint_override
+        using_aistudio_key = False
 
         if is_gemini_provider:
-            try:
-                credentials, detected_project_id = await asyncio.to_thread(
-                    google.auth.default, scopes=["https://www.googleapis.com/auth/cloud-platform"]
-                )
-                if not credentials:
-                    raise google.auth.exceptions.DefaultCredentialsError(_("Google Cloud credentials not found for Gemini embeddings."))
-                if credentials.expired and credentials.refresh_token:
-                    await asyncio.to_thread(credentials.refresh, google.auth.transport.requests.Request())
-                api_key_to_use = credentials.token
-            except Exception as e:
-                log.error("Failed to get Google Cloud credentials for Gemini embedding", exc_info=e)
-                raise commands.UserFeedbackCheckFailure(
-                     _("Gemini Auth Error (Embeddings): Could not obtain Google Cloud credentials. Error: {}").format(e)
-                ) from e
+            if self.db.gemini_api_key:
+                api_key_to_use = self.db.gemini_api_key
+                base_url_to_use = "https://generativelanguage.googleapis.com/v1beta"
+                project_id_to_use = None # Not used for AI Studio keys
+                using_aistudio_key = True
+                log.debug("Using Gemini AI Studio API Key for embeddings")
+            else:
+                using_aistudio_key = False
+                try:
+                    credentials, detected_project_id = await asyncio.to_thread(
+                        google.auth.default, scopes=["https://www.googleapis.com/auth/cloud-platform"]
+                    )
+                    if not credentials:
+                        raise google.auth.exceptions.DefaultCredentialsError(_("Google Cloud credentials not found for Gemini embeddings."))
+                    if credentials.expired and credentials.refresh_token:
+                        await asyncio.to_thread(credentials.refresh, google.auth.transport.requests.Request())
+                    api_key_to_use = credentials.token
+                except Exception as e:
+                    log.error("Failed to get Google Cloud credentials for Gemini embedding", exc_info=e)
+                    raise commands.UserFeedbackCheckFailure(
+                         _("Gemini Auth Error (Embeddings): Could not obtain Google Cloud credentials or use AI Studio Key. Error: {}").format(e)
+                    ) from e
 
-            project_id_to_use = self.db.google_project_id or detected_project_id
-            if not project_id_to_use:
-                raise commands.UserFeedbackCheckFailure(
-                    _("Google Cloud Project ID not set or detected for Gemini embeddings. Configure it or ensure ADC provides it.")
-                )
-            base_url_to_use = self.db.endpoint_override or f"https://us-central1-aiplatform.googleapis.com/v1"
-            
+                project_id_to_use = self.db.google_project_id or detected_project_id
+                if not project_id_to_use:
+                    raise commands.UserFeedbackCheckFailure(
+                        _("Google Cloud Project ID not set or detected for Gemini embeddings. Configure it or ensure ADC provides it.")
+                    )
+                base_url_to_use = self.db.endpoint_override or f"https://us-central1-aiplatform.googleapis.com/v1"
+                log.debug(f"Using Google Cloud ADC for Gemini embeddings. Project: {project_id_to_use}, Endpoint: {base_url_to_use}")
+
             gemini_response = await self.request_gemini_embedding_raw(
                 text=text,
                 api_key=api_key_to_use, 
-                model=model_name, # Just the model ID, e.g. "text-embedding-004"
-                project_id=project_id_to_use,
-                base_url=base_url_to_use
+                model=model_name,
+                project_id=project_id_to_use, # May be None if using AI Studio Key
+                base_url=base_url_to_use,
+                using_aistudio_key=using_aistudio_key
             )
-            embedding_values = gemini_response["predictions"][0]["embeddings"]["values"]
-            token_count = gemini_response["predictions"][0]["embeddings"]["statistics"]["token_count"]
+            # Handle different response structures for AI Studio vs Vertex AI
+            if using_aistudio_key:
+                # AI Studio direct embedding response
+                if "embedding" not in gemini_response or "value" not in gemini_response["embedding"]:
+                    log.error(f"Invalid Gemini AI Studio Embedding API response format: {gemini_response}")
+                    raise commands.UserFeedbackCheckFailure(_("Invalid response format from Gemini AI Studio Embedding API."))
+                embedding_values = gemini_response["embedding"]["value"]
+                # AI Studio does not provide token counts in the embedding response directly
+                token_count = await self.count_tokens(text, model_name)
+            else:
+                # Vertex AI embedding response
+                if not gemini_response.get("predictions") or not gemini_response["predictions"][0].get("embeddings"):
+                    log.error(f"Invalid Vertex AI Embedding API response format: {gemini_response}")
+                    raise commands.UserFeedbackCheckFailure(_("Invalid response format from Vertex AI Embedding API."))
+                embedding_values = gemini_response["predictions"][0]["embeddings"]["values"]
+                token_count = gemini_response["predictions"][0]["embeddings"]["statistics"]["token_count"]
             
             conf.update_usage(
                 model_name, 
@@ -311,14 +346,15 @@ class API(MixinMeta):
     async def request_gemini_embedding_raw(
         self,
         text: str,
-        api_key: str, # Google Cloud Access Token
-        model: str, # Gemini model ID, e.g. "text-embedding-004"
-        project_id: str, # Google Cloud Project ID
-        base_url: str, # Regional endpoint e.g. https://us-central1-aiplatform.googleapis.com/v1
+        api_key: str,
+        model: str,
+        project_id: Optional[str], # Google Cloud Project ID, optional if using AI Studio key
+        base_url: str,
         task_type: str = "RETRIEVAL_DOCUMENT", 
+        using_aistudio_key: bool = False,
     ) -> dict: 
         """
-        Makes a raw request to a Google Gemini Embedding model.
+        Makes a raw request to a Google Gemini Embedding model (Vertex AI or AI Studio).
         """
         # Construct the full model path for the endpoint
         # Example: projects/PROJECT_ID/locations/us-central1/publishers/google/models/text-embedding-004
@@ -327,21 +363,35 @@ class API(MixinMeta):
         # We'll assume a default location `us-central1` if not part of base_url or model string
         location = "us-central1" # Or extract from base_url if more complex logic is needed
         
-        # If model is already a full path, use it directly. Otherwise, construct it.
-        if model.startswith("projects/"):
-            model_path_for_endpoint = model
-        else: # Assume it's a short model name
-            model_path_for_endpoint = f"projects/{project_id}/locations/{location}/publishers/google/models/{model}"
-        
-        predict_endpoint = f"{base_url}/{model_path_for_endpoint}:predict"
+        if using_aistudio_key:
+            # AI Studio uses a different endpoint structure and payload
+            # Model is usually just "embedding-001" or similar.
+            # Base URL: "https://generativelanguage.googleapis.com/v1beta"
+            # Key is passed in the URL for REST embedContent.
+            predict_endpoint = f"{base_url}/models/{model}:embedContent?key={api_key}"
+            payload = {"content": {"parts": [{"text": text}]}} # Model is in the URL, not payload
+            headers = {
+                "Content-Type": "application/json; charset=utf-8",
+            }
+        else:
+            # Vertex AI
+            if not project_id: # Should be ensured by caller if not using AI studio key
+                raise ValueError("Project ID is required for Vertex AI Gemini embeddings.")
 
-        payload = {
-            "instances": [{"content": text, "task_type": task_type}],
-        }
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json; charset=utf-8",
-        }
+            if model.startswith("projects/"):
+                model_path_for_endpoint = model
+            else:
+                model_path_for_endpoint = f"projects/{project_id}/locations/{location}/publishers/google/models/{model}"
+
+            predict_endpoint = f"{base_url}/{model_path_for_endpoint}:predict"
+            payload = {
+                "instances": [{"content": text, "task_type": task_type}],
+            }
+            headers = { # Vertex AI uses Bearer token
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json; charset=utf-8",
+            }
+
         timeout = aiohttp.ClientTimeout(total=120)
         async with self.bot.session.post(predict_endpoint, json=payload, headers=headers, timeout=timeout) as resp:
             if resp.status != 200:
@@ -350,10 +400,10 @@ class API(MixinMeta):
                 raise commands.UserFeedbackCheckFailure(
                     _("Gemini Embedding API request failed with status {status}: {error}").format(status=resp.status, error=err_text)
                 )
+
             response_json = await resp.json()
-            if not response_json.get("predictions") or not response_json["predictions"][0].get("embeddings"):
-                log.error(f"Invalid Gemini Embedding API response format: {response_json}")
-                raise commands.UserFeedbackCheckFailure(_("Invalid response format from Gemini Embedding API."))
+
+            # Validation is now handled by the caller (request_embedding) due to different response structures
             return response_json
 
     async def request_openai_embedding_raw(self, text: str, api_key: str, model: str, base_url: Optional[str] = None ) -> CreateEmbeddingResponse:
@@ -366,31 +416,47 @@ class API(MixinMeta):
 
     async def request_gemini_chat_completion_raw(
         self,
-        model: str, # Gemini Model ID, e.g., "gemini-1.5-pro-latest"
-        project_id: str, # Google Cloud Project ID
+        model: str,
+        project_id: Optional[str], # Google Cloud Project ID, optional if using AI Studio key
         messages: List[dict],
         temperature: float,
-        api_key: str, # Google Cloud Access Token
+        api_key: str,
         max_tokens: Optional[int], 
         functions: Optional[List[dict]], 
-        base_url: str, # Regional Vertex AI endpoint
+        base_url: str,
         system_message: Optional[str] = None,
+        using_aistudio_key: bool = False,
     ) -> dict: 
         """
-        Makes a raw request to a Google Gemini Chat Completion model.
+        Makes a raw request to a Google Gemini Chat Completion model (Vertex AI or AI Studio).
         """
         # Construct the full model path for the endpoint
         # Example: projects/PROJECT_ID/locations/us-central1/publishers/google/models/gemini-1.5-pro-latest
         location = "us-central1" # Or extract from base_url
         
-        # If model is already a full path, use it directly. Otherwise, construct it.
-        if model.startswith("projects/"):
-            model_path_for_endpoint = model
-        else: # Assume it's a short model name
-            model_path_for_endpoint = f"projects/{project_id}/locations/{location}/publishers/google/models/{model}"
-
         action = "generateContent" # Could be streamGenerateContent for streaming
-        generate_endpoint = f"{base_url}/{model_path_for_endpoint}:{action}"
+
+        if using_aistudio_key:
+            # AI Studio uses a different endpoint structure. Key is in the URL.
+            model_id_for_url = model if model.startswith("models/") else f"models/{model}"
+            generate_endpoint = f"{base_url}/{model_id_for_url}:{action}?key={api_key}"
+            headers = {
+                "Content-Type": "application/json; charset=utf-8",
+            }
+        else:
+            # Vertex AI
+            if not project_id:
+                raise ValueError("Project ID is required for Vertex AI Gemini chat.")
+
+            if model.startswith("projects/"):
+                model_path_for_endpoint = model
+            else:
+                model_path_for_endpoint = f"projects/{project_id}/locations/{location}/publishers/google/models/{model}"
+            generate_endpoint = f"{base_url}/{model_path_for_endpoint}:{action}"
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json; charset=utf-8",
+            }
 
         gemini_contents = []
         for msg in messages:
@@ -437,26 +503,31 @@ class API(MixinMeta):
             payload["generationConfig"] = generation_config
 
         if system_message:
-            payload["systemInstruction"] = {"role": "system", "parts": [{"text": system_message}]}
+            payload["systemInstruction"] = {"parts": [{"text": system_message}]} # AI Studio format for system prompt
 
         if functions: 
             gemini_tools = []
             function_declarations = []
             for func_schema in functions:
+                # Ensure parameters is a dict, even if empty, for Gemini schema
+                params = func_schema.get("parameters")
+                if params is None or not isinstance(params, dict) or not params.get("properties"):
+                     # Gemini needs parameters to be a valid OpenAPI schema object.
+                     # If it's missing or not structured correctly, provide a default empty one.
+                    params = {"type": "object", "properties": {}}
+
                 function_declarations.append({
                     "name": func_schema["name"],
                     "description": func_schema.get("description", ""),
-                    "parameters": func_schema.get("parameters", {"type": "object", "properties": {}}), 
+                    "parameters": params,
                 })
+
             if function_declarations:
                  gemini_tools.append({"functionDeclarations": function_declarations})
             if gemini_tools:
                 payload["tools"] = gemini_tools
         
-        headers = {
-            "Authorization": f"Bearer {api_key}", # api_key is Google Access Token here
-            "Content-Type": "application/json; charset=utf-8", 
-        }
+        # Headers are defined above based on using_aistudio_key
 
         timeout = aiohttp.ClientTimeout(total=300) 
         async with self.bot.session.post(generate_endpoint, json=payload, headers=headers, timeout=timeout) as resp:
@@ -695,21 +766,26 @@ class API(MixinMeta):
         is_gemini = model_name.startswith("gemini-")
 
         if is_gemini:
+            # If gemini_api_key is set, we can call the LLM.
+            if self.db.gemini_api_key:
+                return True
+
+            # If no AI Studio key, check ADC for Vertex AI, which requires a project ID.
             if not self.db.google_project_id:
                 if ctx:
-                    await ctx.send(_("Google Cloud Project ID is not set. This is required for Gemini models. Please use the admin command to set it."))
+                    await ctx.send(_("Google Cloud Project ID is not set and no Gemini API Key is available. This is required for Gemini models. Please use the admin command to set one of these."))
                 return False
             try:
                 # Try to get credentials to check if ADC is set up
                 credentials, _ = await asyncio.to_thread(google.auth.default)
                 if not credentials:
                     if ctx:
-                        await ctx.send(_("Google Cloud credentials not found. Ensure Application Default Credentials (ADC) are configured in the bot's environment."))
+                        await ctx.send(_("Google Cloud credentials not found (and no AI Studio key set). Ensure Application Default Credentials (ADC) are configured in the bot's environment."))
                     return False
             except Exception as e:
                 if ctx:
-                    await ctx.send(_("Failed to acquire Google Cloud credentials: {}. Ensure ADC is configured.").format(e))
-                log.error("ADC check failed for Gemini", exc_info=e)
+                    await ctx.send(_("Failed to acquire Google Cloud credentials (and no AI Studio key set): {}. Ensure ADC is configured.").format(e))
+                log.error("ADC check failed for Gemini (no AI Studio key set)", exc_info=e)
                 return False
             return True
         else: # OpenAI or other non-Gemini
