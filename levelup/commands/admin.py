@@ -354,6 +354,15 @@ class Admin(MixinMeta):
                 [f"<#{channel_id}>" for channel_id in conf.ignoredchannels if ctx.guild.get_channel(channel_id)]
             )
             embed.add_field(name=_("Ignored Channels"), value=joined, inline=False)
+        if conf.ignore_notification_channels:
+            joined = ", ".join(
+                [
+                    f"<#{channel_id}>"
+                    for channel_id in conf.ignore_notification_channels
+                    if ctx.guild.get_channel(channel_id)
+                ]
+            )
+            embed.add_field(name=_("Notification Ignored Channels"), value=joined, inline=False)
         if conf.ignoredusers:
             joined = ", ".join([f"<@{user_id}>" for user_id in conf.ignoredusers if ctx.guild.get_member(user_id)])
             embed.add_field(name=_("Ignored Users"), value=joined, inline=False)
@@ -854,6 +863,29 @@ class Admin(MixinMeta):
     async def ignore(self, ctx: commands.Context):
         """Base command for all ignore lists"""
         pass
+
+    @ignore.command(name="notify")
+    async def ignore_notify(
+        self,
+        ctx: commands.Context,
+        *,
+        channel: t.Union[discord.TextChannel, discord.VoiceChannel, discord.CategoryChannel, discord.ForumChannel],
+    ):
+        """
+        Add/Remove a channel in the notify ignore list
+        Channels in the notify ignore list won't have level up notifications sent there
+
+        Use the command with a channel already in the notify ignore list to remove it
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if channel.id in conf.ignore_notification_channels:
+            conf.ignore_notification_channels.remove(channel.id)
+            txt = _("Channel {} has been removed from the notify ignore list").format(channel.mention)
+        else:
+            conf.ignore_notification_channels.append(channel.id)
+            txt = _("Channel {} has been added to the notify ignore list").format(channel.mention)
+        self.save()
+        await ctx.send(txt)
 
     @ignore.command(name="channel")
     async def ignore_channel(
