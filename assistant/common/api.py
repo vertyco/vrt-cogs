@@ -1,4 +1,6 @@
 import asyncio
+import google.auth
+import google.auth.transport.requests
 import inspect
 import json
 import logging
@@ -10,7 +12,13 @@ import discord
 import tiktoken
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.chat.chat_completion_message import ChatCompletionMessage
-from openai.types.create_embedding_response import CreateEmbeddingResponse
+# Used to help adapt Gemini response to be somewhat OpenAI-like for easier integration
+from openai.types.chat.chat_completion import Choice as OpenAIChoice, ChatCompletion as OpenAIChatCompletion
+from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall
+from openai.types.chat.chat_completion_chunk import ChoiceDeltaToolCall, ChoiceDeltaToolCallFunction
+from openai.types.chat.completion_create_params import Function as OpenAIFunction
+from openai.types.create_embedding_response import CreateEmbeddingResponse, Usage as OpenAIEmbeddingUsage
+from openai.types.embedding import Embedding as OpenAIEmbedding
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_number
@@ -49,80 +57,441 @@ class API(MixinMeta):
         model_override: Optional[str] = None,
         temperature_override: Optional[float] = None,
     ) -> ChatCompletionMessage:
-        model = model_override or conf.get_user_model(member)
+        model_name = model_override or conf.get_user_model(member)
+        
+        # Determine if we are using Gemini
+        is_gemini = model_name.startswith("gemini-")
 
-        max_convo_tokens = self.get_max_tokens(conf, member)
-        max_response_tokens = conf.get_user_max_response_tokens(member)
+        # API key and base URL determination
+        api_key_to_use = None
+        project_id_to_use = None
+        base_url_to_use = self.db.endpoint_override # Default, can be overridden for Gemini
 
-        current_convo_tokens = await self.count_payload_tokens(messages, model)
-        if functions:
-            current_convo_tokens += await self.count_function_tokens(functions, model)
+        if is_gemini:
+            try:
+                credentials, detected_project_id = await asyncio.to_thread(
+                    google.auth.default, scopes=["https://www.googleapis.com/auth/cloud-platform"]
+                )
+                if not credentials:
+                    raise google.auth.exceptions.DefaultCredentialsError(_("Google Cloud credentials not found."))
+                
+                # Refresh credentials if they are stale
+                if credentials.expired and credentials.refresh_token:
+                     await asyncio.to_thread(credentials.refresh, google.auth.transport.requests.Request())
+                
+                api_key_to_use = credentials.token # This is the Google Access Token
+            except Exception as e:
+                log.error("Failed to get Google Cloud credentials for Gemini", exc_info=e)
+                raise commands.UserFeedbackCheckFailure(
+                    _("Gemini Auth Error: Could not obtain Google Cloud credentials. Ensure Application Default Credentials are set up correctly. Error: {}").format(e)
+                ) from e
 
-        # Dynamically adjust to lower model to save on cost
-        if "-16k" in model and current_convo_tokens < 3000:
-            model = model.replace("-16k", "")
-        if "-32k" in model and current_convo_tokens < 4000:
-            model = model.replace("-32k", "")
-
-        max_model_tokens = MODELS[model]
-
-        # Ensure that user doesn't set max response tokens higher than model can handle
-        if response_token_override:
-            response_tokens = response_token_override
+            project_id_to_use = self.db.google_project_id or detected_project_id
+            if not project_id_to_use:
+                raise commands.UserFeedbackCheckFailure(
+                    _("Google Cloud Project ID not set or detected. Configure it using the bot's admin commands or ensure ADC is providing it.")
+                )
+            # For Gemini, base_url is regional. If endpoint_override is set, it might be a specific Vertex AI endpoint.
+            # If not, default to a common regional endpoint. User might need to configure region if not us-central1.
+            base_url_to_use = self.db.endpoint_override or "https://us-central1-aiplatform.googleapis.com/v1"
         else:
-            response_tokens = 0  # Dynamic
-            if max_response_tokens:
-                # Calculate max response tokens
-                response_tokens = max(max_convo_tokens - current_convo_tokens, 0)
-                # If current convo exceeds the max convo tokens for that user, use max model tokens
-                if not response_tokens:
-                    response_tokens = max(max_model_tokens - current_convo_tokens, 0)
-                # Use the lesser of caculated vs set response tokens
-                response_tokens = min(response_tokens, max_response_tokens)
+            api_key_to_use = conf.api_key
+            base_url_to_use = self.db.endpoint_override
 
-        if model not in MODELS:
-            log.error(f"This model is not longer supported: {model}. Switching to gpt-4o-mini")
-            model = "gpt-4o-mini"
-            await self.save_conf()
 
-        response: ChatCompletion = await request_chat_completion_raw(
-            model=model,
-            messages=messages,
-            temperature=temperature_override if temperature_override is not None else conf.temperature,
-            api_key=conf.api_key,
-            max_tokens=response_tokens,
-            functions=functions,
-            frequency_penalty=conf.frequency_penalty,
-            presence_penalty=conf.presence_penalty,
-            seed=conf.seed,
-            base_url=self.db.endpoint_override,
-        )
-        message: ChatCompletionMessage = response.choices[0].message
+        max_convo_tokens = self.get_max_tokens(conf, member) # Max tokens for the *conversation*
+        max_response_tokens_user_setting = conf.get_user_max_response_tokens(member) # User's desired max for the *response*
 
-        conf.update_usage(
-            response.model,
-            response.usage.total_tokens,
-            response.usage.prompt_tokens,
-            response.usage.completion_tokens,
-        )
-        log.debug(f"MESSAGE TYPE: {type(message)}")
-        return message
+        current_convo_tokens = await self.count_payload_tokens(messages, model_name)
+        if functions:
+            current_convo_tokens += await self.count_function_tokens(functions, model_name)
+
+        # Dynamically adjust OpenAI model_name to lower cost if applicable
+        if not is_gemini:
+            if "-16k" in model_name and current_convo_tokens < 3000:
+                model_name = model_name.replace("-16k", "")
+            if "-32k" in model_name and current_convo_tokens < 4000:
+                model_name = model_name.replace("-32k", "")
+
+        max_model_tokens = MODELS.get(model_name, 1000000 if is_gemini else 4096) # Default based on type
+
+        # Calculate actual max_tokens for the API call (max_output_tokens for Gemini)
+        # This needs to be the capacity for the response itself.
+        if response_token_override:
+            max_api_response_tokens = response_token_override
+        elif max_response_tokens_user_setting:
+             # User has a specific limit for the response size
+            max_api_response_tokens = max_response_tokens_user_setting
+        else:
+            # Dynamic: calculate available space, ensuring it's positive
+            available_for_response = max_model_tokens - current_convo_tokens
+            max_api_response_tokens = max(0, available_for_response) if not is_gemini else None # Gemini often doesn't need this if not strictly limiting output
+
+        if model_name not in MODELS: # Check against our known models list
+            log.warning(f"Model {model_name} is not in internal MODELS list. Attempting to use, but may fail.")
+            # Potentially switch to a default if truly unknown, but for now, let it try
+
+        if is_gemini:
+            # `model_name` for Gemini is just the model ID, e.g., "gemini-1.5-pro-latest"
+            # `project_id_to_use` is determined above
+            # `base_url_to_use` is the regional Vertex AI endpoint
+            
+            # Extract system message if present (OpenAI format uses first message if role is system)
+            system_message_str = None
+            processed_messages = messages
+            if messages and messages[0]["role"] == "system":
+                system_message_str = messages[0]["content"]
+                processed_messages = messages[1:] # Pass messages without system prompt if extracted
+
+            gemini_raw_response = await self.request_gemini_chat_completion_raw(
+                model=model_name, # Just the model ID, e.g., "gemini-1.5-pro-latest"
+                project_id=project_id_to_use,
+                messages=processed_messages, 
+                temperature=temperature_override if temperature_override is not None else conf.temperature,
+                api_key=api_key_to_use, # Google Cloud Access Token
+                max_tokens=max_api_response_tokens, 
+                functions=functions,
+                base_url=base_url_to_use, # Regional Vertex AI endpoint
+                system_message=system_message_str,
+                # seed=conf.seed, # TODO: Add seed if supported
+            )
+            
+            # Adapt Gemini response to OpenAI's ChatCompletionMessage structure
+            # This is a simplified adaptation
+            final_content = ""
+            tool_calls_adapted = []
+
+            if gemini_raw_response.get("candidates"):
+                candidate = gemini_raw_response["candidates"][0]
+                if candidate.get("content") and candidate["content"].get("parts"):
+                    for part in candidate["content"]["parts"]:
+                        if "text" in part:
+                            final_content += part["text"]
+                        elif "functionCall" in part:
+                            fc = part["functionCall"]
+                            tool_calls_adapted.append(
+                                ChatCompletionMessageToolCall(
+                                    id=f"call_{fc['name']}_{abs(hash(json.dumps(fc['args'])))}", # Create a unique enough ID
+                                    function=OpenAIFunction(name=fc["name"], arguments=json.dumps(fc["args"])),
+                                    type="function",
+                                )
+                            )
+            
+            message_role = "assistant" # Gemini uses "model" for assistant responses
+            
+            prompt_tokens = gemini_raw_response.get("usageMetadata", {}).get("promptTokenCount", 0)
+            completion_tokens = gemini_raw_response.get("usageMetadata", {}).get("candidatesTokenCount", 0)
+            total_tokens = gemini_raw_response.get("usageMetadata", {}).get("totalTokenCount", 0)
+
+            adapted_choice = OpenAIChoice(
+                finish_reason="stop", # Gemini has finishReason, map it if needed
+                index=0,
+                message=ChatCompletionMessage(
+                    content=final_content if final_content else None, 
+                    role=message_role, 
+                    tool_calls=tool_calls_adapted if tool_calls_adapted else None,
+                    function_call=None
+                ),
+                logprobs=None,
+            )
+            
+            simulated_openai_response = OpenAIChatCompletion(
+                id="chatcmpl-gemini-" + str(abs(hash(final_content))), 
+                choices=[adapted_choice],
+                created=int(discord.utils.utcnow().timestamp()), 
+                model=model_name, 
+                object="chat.completion", 
+                usage={
+                    "prompt_tokens": prompt_tokens,
+                    "completion_tokens": completion_tokens,
+                    "total_tokens": total_tokens,
+                }
+            )
+            message_to_return = simulated_openai_response.choices[0].message
+            
+            conf.update_usage(
+                model_name, 
+                total_tokens,
+                prompt_tokens,
+                completion_tokens,
+            )
+
+        else: # OpenAI or compatible API call
+            if model_name not in MODELS: 
+                log.error(f"OpenAI model {model_name} is not in internal MODELS list. Switching to gpt-4o-mini.")
+                model_name = "gpt-4o-mini"
+
+            response: OpenAIChatCompletion = await request_chat_completion_raw(
+                model=model_name,
+                messages=messages,
+                temperature=temperature_override if temperature_override is not None else conf.temperature,
+                api_key=api_key_to_use,
+                max_tokens=max_api_response_tokens,
+                functions=functions,
+                frequency_penalty=conf.frequency_penalty,
+                presence_penalty=conf.presence_penalty,
+                seed=conf.seed,
+                base_url=base_url_to_use,
+            )
+            message_to_return: ChatCompletionMessage = response.choices[0].message
+            conf.update_usage(
+                response.model,
+                response.usage.total_tokens,
+                response.usage.prompt_tokens,
+                response.usage.completion_tokens,
+            )
+
+        log.debug(f"MESSAGE TYPE: {type(message_to_return)}")
+        return message_to_return
 
     async def request_embedding(self, text: str, conf: GuildSettings) -> List[float]:
-        response: CreateEmbeddingResponse = await request_embedding_raw(
+        model_name = conf.embed_model
+        is_gemini_provider = model_name.startswith("gemini-")
+        
+        api_key_to_use = None
+        project_id_to_use = None
+        base_url_to_use = self.db.endpoint_override
+
+        if is_gemini_provider:
+            try:
+                credentials, detected_project_id = await asyncio.to_thread(
+                    google.auth.default, scopes=["https://www.googleapis.com/auth/cloud-platform"]
+                )
+                if not credentials:
+                    raise google.auth.exceptions.DefaultCredentialsError(_("Google Cloud credentials not found for Gemini embeddings."))
+                if credentials.expired and credentials.refresh_token:
+                    await asyncio.to_thread(credentials.refresh, google.auth.transport.requests.Request())
+                api_key_to_use = credentials.token
+            except Exception as e:
+                log.error("Failed to get Google Cloud credentials for Gemini embedding", exc_info=e)
+                raise commands.UserFeedbackCheckFailure(
+                     _("Gemini Auth Error (Embeddings): Could not obtain Google Cloud credentials. Error: {}").format(e)
+                ) from e
+
+            project_id_to_use = self.db.google_project_id or detected_project_id
+            if not project_id_to_use:
+                raise commands.UserFeedbackCheckFailure(
+                    _("Google Cloud Project ID not set or detected for Gemini embeddings. Configure it or ensure ADC provides it.")
+                )
+            base_url_to_use = self.db.endpoint_override or f"https://us-central1-aiplatform.googleapis.com/v1"
+            
+            gemini_response = await self.request_gemini_embedding_raw(
+                text=text,
+                api_key=api_key_to_use, 
+                model=model_name, # Just the model ID, e.g. "text-embedding-004"
+                project_id=project_id_to_use,
+                base_url=base_url_to_use
+            )
+            embedding_values = gemini_response["predictions"][0]["embeddings"]["values"]
+            token_count = gemini_response["predictions"][0]["embeddings"]["statistics"]["token_count"]
+            
+            conf.update_usage(
+                model_name, 
+                token_count,
+                token_count, 
+                0, 
+            )
+            return embedding_values
+        else: # OpenAI or compatible
+            api_key_to_use = conf.api_key # Standard OpenAI key
+            response: CreateEmbeddingResponse = await self.request_openai_embedding_raw(
+                text=text,
+                api_key=api_key_to_use,
+                model=model_name,
+                base_url=base_url_to_use,
+            )
+            conf.update_usage(
+                response.model,
+                response.usage.total_tokens,
+                response.usage.prompt_tokens,
+                0,
+            )
+            return response.data[0].embedding
+
+    async def request_gemini_embedding_raw(
+        self,
+        text: str,
+        api_key: str, # Google Cloud Access Token
+        model: str, # Gemini model ID, e.g. "text-embedding-004"
+        project_id: str, # Google Cloud Project ID
+        base_url: str, # Regional endpoint e.g. https://us-central1-aiplatform.googleapis.com/v1
+        task_type: str = "RETRIEVAL_DOCUMENT", 
+    ) -> dict: 
+        """
+        Makes a raw request to a Google Gemini Embedding model.
+        """
+        # Construct the full model path for the endpoint
+        # Example: projects/PROJECT_ID/locations/us-central1/publishers/google/models/text-embedding-004
+        # Assuming 'model' is just the ID like 'text-embedding-004' or 'gemini-1.5-flash' for embeddings
+        # For embeddings, the model path often includes "publishers/google/models/"
+        # We'll assume a default location `us-central1` if not part of base_url or model string
+        location = "us-central1" # Or extract from base_url if more complex logic is needed
+        
+        # If model is already a full path, use it directly. Otherwise, construct it.
+        if model.startswith("projects/"):
+            model_path_for_endpoint = model
+        else: # Assume it's a short model name
+            model_path_for_endpoint = f"projects/{project_id}/locations/{location}/publishers/google/models/{model}"
+        
+        predict_endpoint = f"{base_url}/{model_path_for_endpoint}:predict"
+
+        payload = {
+            "instances": [{"content": text, "task_type": task_type}],
+        }
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json; charset=utf-8",
+        }
+        timeout = aiohttp.ClientTimeout(total=120)
+        async with self.bot.session.post(predict_endpoint, json=payload, headers=headers, timeout=timeout) as resp:
+            if resp.status != 200:
+                err_text = await resp.text()
+                log.error(f"Gemini Embedding API Error ({resp.status}) hitting {predict_endpoint}: {err_text}")
+                raise commands.UserFeedbackCheckFailure(
+                    _("Gemini Embedding API request failed with status {status}: {error}").format(status=resp.status, error=err_text)
+                )
+            response_json = await resp.json()
+            if not response_json.get("predictions") or not response_json["predictions"][0].get("embeddings"):
+                log.error(f"Invalid Gemini Embedding API response format: {response_json}")
+                raise commands.UserFeedbackCheckFailure(_("Invalid response format from Gemini Embedding API."))
+            return response_json
+
+    async def request_openai_embedding_raw(self, text: str, api_key: str, model: str, base_url: Optional[str] = None ) -> CreateEmbeddingResponse:
+        return await request_embedding_raw( 
             text=text,
-            api_key=conf.api_key,
-            model=conf.embed_model,
-            base_url=self.db.endpoint_override,
+            api_key=api_key,
+            model=model,
+            base_url=base_url,
         )
 
-        conf.update_usage(
-            response.model,
-            response.usage.total_tokens,
-            response.usage.prompt_tokens,
-            0,
-        )
-        return response.data[0].embedding
+    async def request_gemini_chat_completion_raw(
+        self,
+        model: str, # Gemini Model ID, e.g., "gemini-1.5-pro-latest"
+        project_id: str, # Google Cloud Project ID
+        messages: List[dict],
+        temperature: float,
+        api_key: str, # Google Cloud Access Token
+        max_tokens: Optional[int], 
+        functions: Optional[List[dict]], 
+        base_url: str, # Regional Vertex AI endpoint
+        system_message: Optional[str] = None,
+    ) -> dict: 
+        """
+        Makes a raw request to a Google Gemini Chat Completion model.
+        """
+        # Construct the full model path for the endpoint
+        # Example: projects/PROJECT_ID/locations/us-central1/publishers/google/models/gemini-1.5-pro-latest
+        location = "us-central1" # Or extract from base_url
+        
+        # If model is already a full path, use it directly. Otherwise, construct it.
+        if model.startswith("projects/"):
+            model_path_for_endpoint = model
+        else: # Assume it's a short model name
+            model_path_for_endpoint = f"projects/{project_id}/locations/{location}/publishers/google/models/{model}"
+
+        action = "generateContent" # Could be streamGenerateContent for streaming
+        generate_endpoint = f"{base_url}/{model_path_for_endpoint}:{action}"
+
+        gemini_contents = []
+        for msg in messages:
+            role = "user" if msg["role"] == "user" else "model" 
+            
+            if msg["role"] == "tool" or msg["role"] == "function": 
+                gemini_contents.append({
+                    "role": "function", 
+                    "parts": [{
+                        "functionResponse": {
+                            "name": msg.get("name") or msg.get("tool_call_id", "unknown_function"), 
+                            "response": {"content": msg["content"]}, 
+                        }
+                    }]
+                })
+                continue
+
+            if isinstance(msg.get("content"), list): 
+                parts = []
+                for item in msg["content"]:
+                    if item["type"] == "text":
+                        parts.append({"text": item["text"]})
+                    elif item["type"] == "image_url":
+                        image_url_data = item["image_url"]["url"]
+                        if image_url_data.startswith("data:image/"): 
+                            mime_type, base64_data = image_url_data.split(";", 1)[0].split(":")[1], image_url_data.split(",", 1)[1]
+                            parts.append({"inlineData": {"mimeType": mime_type, "data": base64_data}})
+                        else: 
+                            log.warning(f"Direct image URL {image_url_data} might not be supported by Gemini API. Consider inlineData or fileData.")
+                            parts.append({"text": f"[Image available at: {image_url_data}]"}) 
+                gemini_contents.append({"role": role, "parts": parts})
+            elif isinstance(msg.get("content"), str): 
+                 gemini_contents.append({"role": role, "parts": [{"text": msg["content"]}]})
+
+        payload = {"contents": gemini_contents}
+        
+        generation_config = {}
+        if temperature is not None:
+            generation_config["temperature"] = temperature
+        if max_tokens is not None: 
+            generation_config["maxOutputTokens"] = max_tokens
+
+        if generation_config:
+            payload["generationConfig"] = generation_config
+
+        if system_message:
+            payload["systemInstruction"] = {"role": "system", "parts": [{"text": system_message}]}
+
+        if functions: 
+            gemini_tools = []
+            function_declarations = []
+            for func_schema in functions:
+                function_declarations.append({
+                    "name": func_schema["name"],
+                    "description": func_schema.get("description", ""),
+                    "parameters": func_schema.get("parameters", {"type": "object", "properties": {}}), 
+                })
+            if function_declarations:
+                 gemini_tools.append({"functionDeclarations": function_declarations})
+            if gemini_tools:
+                payload["tools"] = gemini_tools
+        
+        headers = {
+            "Authorization": f"Bearer {api_key}", # api_key is Google Access Token here
+            "Content-Type": "application/json; charset=utf-8", 
+        }
+
+        timeout = aiohttp.ClientTimeout(total=300) 
+        async with self.bot.session.post(generate_endpoint, json=payload, headers=headers, timeout=timeout) as resp:
+            if resp.status != 200:
+                err_text = await resp.text()
+                log.error(f"Gemini API Error ({resp.status}) hitting {generate_endpoint}: {err_text}\nPayload: {json.dumps(payload, indent=2)}")
+                raise commands.UserFeedbackCheckFailure(
+                     _("Gemini API request failed with status {status}: {error}").format(status=resp.status, error=err_text)
+                )
+            try:
+                response_json = await resp.json()
+            except aiohttp.ContentTypeError:
+                err_text = await resp.text()
+                log.error(f"Gemini API Error: Non-JSON response from {generate_endpoint}. Response: {err_text}")
+                raise commands.UserFeedbackCheckFailure(
+                    _("Gemini API returned a non-JSON response.")
+                )
+
+            if not response_json.get("candidates") and not response_json.get("error"):
+                if response_json.get("promptFeedback", {}).get("blockReason"):
+                    block_reason = response_json["promptFeedback"]["blockReason"]
+                    log.warning(f"Gemini request blocked. Reason: {block_reason}. Details: {response_json['promptFeedback']}")
+                    raise commands.UserFeedbackCheckFailure(
+                        _("Content blocked by Gemini due to: {reason}").format(reason=block_reason)
+                    )
+                log.error(f"Invalid Gemini API response format (no candidates or error): {response_json} from {generate_endpoint}")
+                raise commands.UserFeedbackCheckFailure(_("Invalid response format from Gemini API (no candidates or error field)."))
+            elif response_json.get("error"):
+                error_details = response_json["error"]
+                log.error(f"Gemini API returned an error: {error_details} from {generate_endpoint}")
+                raise commands.UserFeedbackCheckFailure(
+                    _("Gemini API error: {message} (Code: {code})").format(message=error_details.get("message","Unknown"), code=error_details.get("code", "N/A"))
+                )
+
+            return response_json
 
     # -------------------------------------------------------
     # -------------------------------------------------------
@@ -130,14 +499,28 @@ class API(MixinMeta):
     # -------------------------------------------------------
     # -------------------------------------------------------
 
-    async def count_payload_tokens(self, messages: List[dict], model: str = "gpt-4o-mini") -> int:
+    async def count_payload_tokens(self, messages: List[dict], model_name: str = "gpt-4o-mini") -> int:
+        if model_name.startswith("gemini-"):
+            num_tokens = 0
+            for message in messages:
+                content = message.get("content")
+                if isinstance(content, str):
+                    num_tokens += len(content) 
+                elif isinstance(content, list): 
+                    for item in content:
+                        if item["type"] == "text":
+                             num_tokens += len(item["text"]) 
+            log.debug(f"Rough token estimate for Gemini model '{model_name}': {num_tokens} (character count based)")
+            return num_tokens 
+
         if not messages:
             return 0
 
-        def _count_payload():
+        def _count_payload_openai():
             try:
-                encoding = tiktoken.encoding_for_model(model)
+                encoding = tiktoken.encoding_for_model(model_name)
             except KeyError:
+                log.warning(f"Tiktoken encoding not found for model {model_name}. Using o200k_base.")
                 encoding = tiktoken.get_encoding("o200k_base")
 
             tokens_per_message = 3
@@ -146,16 +529,39 @@ class API(MixinMeta):
             for message in messages:
                 num_tokens += tokens_per_message
                 for key, value in message.items():
-                    num_tokens += len(encoding.encode(str(value)))
+                    if key == "content" and value is None: 
+                        continue
+                    if isinstance(value, list) and key == "content": 
+                        for item in value:
+                            if item.get("type") == "text" and item.get("text"):
+                                num_tokens += len(encoding.encode(str(item["text"])))
+                    elif isinstance(value, str):
+                         num_tokens += len(encoding.encode(value))
+                    else: 
+                        num_tokens += len(encoding.encode(json.dumps(value)))
+
                     if key == "name":
                         num_tokens += tokens_per_name
-            num_tokens += 3  # every reply is primed with <|start|>assistant<|message|>
+            num_tokens += 3  
             return num_tokens
 
-        return await asyncio.to_thread(_count_payload)
+        return await asyncio.to_thread(_count_payload_openai)
 
-    async def count_function_tokens(self, functions: List[dict], model: str = "gpt-4o-mini") -> int:
-        # Initialize function settings to 0
+    async def count_function_tokens(self, functions: List[dict], model_name: str = "gpt-4o-mini") -> int:
+        if model_name.startswith("gemini-"):
+            if not functions:
+                return 0
+            try:
+                json_str = json.dumps(functions)
+                log.debug(f"Rough function token estimate for Gemini model '{model_name}': {len(json_str)} (character count of JSON)")
+                return len(json_str) 
+            except Exception as e:
+                log.error(f"Error estimating function tokens for Gemini: {e}")
+                return 0 
+
+        if not functions:
+            return 0
+            
         func_init = 0
         prop_init = 0
         prop_key = 0
@@ -163,7 +569,7 @@ class API(MixinMeta):
         enum_item = 0
         func_end = 0
 
-        if model in [
+        if model_name in [
             "gpt-4o",
             "gpt-4o-2024-05-13",
             "gpt-4o-2024-08-06",
@@ -182,14 +588,13 @@ class API(MixinMeta):
             "o3-mini",
             "o3-mini-2025-01-31",
         ]:
-            # Set function settings for the above models
             func_init = 7
             prop_init = 3
             prop_key = 3
             enum_init = -3
             enum_item = 3
             func_end = 12
-        elif model in [
+        elif model_name in [
             "gpt-3.5-turbo-1106",
             "gpt-3.5-turbo-0125",
             "gpt-4",
@@ -197,8 +602,7 @@ class API(MixinMeta):
             "gpt-4-turbo-preview",
             "gpt-4-0125-preview",
             "gpt-4-1106-preview",
-        ]:
-            # Set function settings for the above models
+        ] or model_name.startswith("gpt-4o") or model_name.startswith("gpt-4.1"): 
             func_init = 10
             prop_init = 3
             prop_key = 3
@@ -206,37 +610,36 @@ class API(MixinMeta):
             enum_item = 3
             func_end = 12
         else:
-            log.warning(f"Incompatible model: {model}")
+            log.warning(f"Incompatible model for function token counting: {model_name}")
 
         def _count_tokens():
             try:
-                encoding = tiktoken.encoding_for_model(model)
+                encoding = tiktoken.encoding_for_model(model_name)
             except KeyError:
                 encoding = tiktoken.get_encoding("o200k_base")
 
             func_token_count = 0
-
             if len(functions) > 0:
                 for f in functions:
                     if "function" not in f.keys():
                         f = {"function": f, "name": f["name"], "description": f["description"]}
-                    func_token_count += func_init  # Add tokens for start of each function
+                    func_token_count += func_init  
                     function = f["function"]
                     f_name = function["name"]
                     f_desc = function["description"]
                     if f_desc.endswith("."):
                         f_desc = f_desc[:-1]
                     line = f_name + ":" + f_desc
-                    func_token_count += len(encoding.encode(line))  # Add tokens for set name and description
+                    func_token_count += len(encoding.encode(line))  
                     if len(function["parameters"]["properties"]) > 0:
-                        func_token_count += prop_init  # Add tokens for start of each property
+                        func_token_count += prop_init  
                         for key in list(function["parameters"]["properties"].keys()):
-                            func_token_count += prop_key  # Add tokens for each set property
+                            func_token_count += prop_key  
                             p_name = key
                             p_type = function["parameters"]["properties"][key].get("type", "")
                             p_desc = function["parameters"]["properties"][key].get("description", "")
                             if "enum" in function["parameters"]["properties"][key].keys():
-                                func_token_count += enum_init  # Add tokens if property has enum list
+                                func_token_count += enum_init  
                                 for item in function["parameters"]["properties"][key]["enum"]:
                                     func_token_count += enum_item
                                     func_token_count += len(encoding.encode(item))
@@ -246,106 +649,169 @@ class API(MixinMeta):
                             func_token_count += len(encoding.encode(line))
                 func_token_count += func_end
             return func_token_count
-
         return await asyncio.to_thread(_count_tokens)
 
-    async def get_tokens(self, text: str, model: str = "gpt-4o-mini") -> list[int]:
-        """Get token list from text"""
+    async def get_tokens(self, text: str, model_name: str = "gpt-4o-mini") -> list[int]:
         if not text:
             log.debug("No text to get tokens from!")
             return []
         if isinstance(text, bytes):
-            text = text.decode(encoding="utf-8")
+            text = text.decode(encoding="utf-8", errors="ignore") 
 
-        def _get_encoding():
+        if model_name.startswith("gemini-"):
+            log.warning(f"get_tokens called for Gemini model '{model_name}'. Returning character codes as placeholder.")
+            return [ord(c) for c in text]
+
+        def _get_encoding_openai():
             try:
-                enc = tiktoken.encoding_for_model(model)
+                enc = tiktoken.encoding_for_model(model_name)
             except KeyError:
+                log.warning(f"Tiktoken encoding not found for model {model_name}. Using o200k_base.")
                 enc = tiktoken.get_encoding("o200k_base")
             return enc
 
-        encoding = await asyncio.to_thread(_get_encoding)
-
+        encoding = await asyncio.to_thread(_get_encoding_openai)
         return await asyncio.to_thread(encoding.encode, text)
 
-    async def count_tokens(self, text: str, model: str) -> int:
+    async def count_tokens(self, text: str, model_name: str) -> int:
         if not text:
             log.debug("No text to get token count from!")
             return 0
+        
+        if model_name.startswith("gemini-"):
+            char_count = len(text)
+            log.debug(f"Rough token estimate for Gemini model '{model_name}' (text): {char_count} (character count)")
+            return char_count 
+
         try:
-            tokens = await self.get_tokens(text, model)
+            tokens = await self.get_tokens(text, model_name) 
             return len(tokens)
         except TypeError as e:
-            log.error(f"Failed to count tokens for: {text}", exc_info=e)
+            log.error(f"Failed to count tokens for '{model_name}': {text}", exc_info=e)
             return 0
 
     async def can_call_llm(self, conf: GuildSettings, ctx: Optional[commands.Context] = None) -> bool:
-        if not conf.api_key and not self.db.endpoint_override:
-            if ctx:
-                txt = _("There are no API keys set!\n")
-                if ctx.author.id == ctx.guild.owner_id:
-                    txt += _("- Set your OpenAI key with `{}`\n").format(f"{ctx.clean_prefix}assist openaikey")
-                await ctx.send(txt)
-            return False
-        return True
+        model_name = conf.get_user_model(ctx.author if ctx else None)
+        is_gemini = model_name.startswith("gemini-")
+
+        if is_gemini:
+            if not self.db.google_project_id:
+                if ctx:
+                    await ctx.send(_("Google Cloud Project ID is not set. This is required for Gemini models. Please use the admin command to set it."))
+                return False
+            try:
+                # Try to get credentials to check if ADC is set up
+                credentials, _ = await asyncio.to_thread(google.auth.default)
+                if not credentials:
+                    if ctx:
+                        await ctx.send(_("Google Cloud credentials not found. Ensure Application Default Credentials (ADC) are configured in the bot's environment."))
+                    return False
+            except Exception as e:
+                if ctx:
+                    await ctx.send(_("Failed to acquire Google Cloud credentials: {}. Ensure ADC is configured.").format(e))
+                log.error("ADC check failed for Gemini", exc_info=e)
+                return False
+            return True
+        else: # OpenAI or other non-Gemini
+            if not conf.api_key and not self.db.endpoint_override:
+                if ctx:
+                    txt = _("There are no API keys set for LLM interaction!\n")
+                    if ctx.author.id == ctx.guild.owner_id: 
+                        txt += _("- Set your OpenAI API key with `{cmd}assist openaikey`\n").format(cmd=ctx.clean_prefix)
+                    await ctx.send(txt)
+                return False
+            return True
+
 
     async def resync_embeddings(self, conf: GuildSettings) -> int:
-        """Update embeds to match current dimensions
-
-        Takes a sample using current embed method, the updates the rest to match dimensions
-        """
+        """Update embeds to match current dimensions or model type."""
         if not conf.embeddings:
             return 0
+        
+        sample_key = list(conf.embeddings.keys())[0] if conf.embeddings else None
+        if not sample_key:
+            return 0 # No embeddings to sample or resync
 
-        sample = list(conf.embeddings.values())[0]
-        sample_embed = await self.request_embedding(sample.text, conf)
+        sample_text_for_probing = conf.embeddings[sample_key].text
+        try:
+            sample_embed_vector = await self.request_embedding(sample_text_for_probing, conf)
+        except Exception as e:
+            log.error(f"Failed to get sample embedding during resync: {e}. Aborting resync.")
+            return 0
 
-        async def update_embedding(name: str, text: str):
-            conf.embeddings[name].embedding = await self.request_embedding(text, conf)
-            conf.embeddings[name].update()
-            conf.embeddings[name].model = conf.embed_model
-            log.debug(f"Updated embedding: {name}")
+        target_dimension = len(sample_embed_vector)
+        target_model_name = conf.embed_model 
 
-        synced = 0
+        synced_count = 0
         tasks = []
-        for name, em in conf.embeddings.items():
-            if conf.embed_model != em.model or len(em.embedding) != len(sample_embed):
-                synced += 1
-                tasks.append(update_embedding(name, em.text))
 
-        if synced:
-            await asyncio.gather(*tasks)
-            await self.save_conf()
-        return synced
+        for name, em_data in conf.embeddings.items():
+            if em_data.model != target_model_name or len(em_data.embedding) != target_dimension:
+                log.info(f"Resyncing embedding for '{name}': model mismatch ('{em_data.model}' vs '{target_model_name}') or dim mismatch ({len(em_data.embedding)} vs {target_dimension}).")
+                
+                async def update_task(n, text_to_embed, current_conf):
+                    try:
+                        new_embedding_vector = await self.request_embedding(text_to_embed, current_conf)
+                        current_conf.embeddings[n].embedding = new_embedding_vector
+                        current_conf.embeddings[n].model = current_conf.embed_model 
+                        current_conf.embeddings[n].update() 
+                        log.debug(f"Successfully updated embedding for '{n}' to model '{current_conf.embed_model}'.")
+                        return 1
+                    except Exception as e_update:
+                        log.error(f"Failed to update embedding for '{n}' during resync: {e_update}")
+                        return 0
+
+                tasks.append(update_task(name, em_data.text, conf))
+
+        if tasks:
+            results = await asyncio.gather(*tasks)
+            synced_count = sum(results)
+            if synced_count > 0:
+                log.info(f"Resynced {synced_count} embeddings successfully.")
+        
+        return synced_count
+
 
     def get_max_tokens(self, conf: GuildSettings, user: Optional[discord.Member]) -> int:
-        user_max = conf.get_user_max_tokens(user)
-        model = conf.get_user_model(user)
-        max_model_tokens = MODELS.get(model, 4000)
-        if not user_max or user_max > max_model_tokens:
-            return max_model_tokens
-        return user_max
+        user_max_convo_tokens = conf.get_user_max_tokens(user) 
+        model_name = conf.get_user_model(user)
+        
+        default_for_gemini = 1000000 if "1.5" in model_name or "2." in model_name else 32000
+        max_model_total_tokens = MODELS.get(model_name, default_for_gemini if model_name.startswith("gemini-") else 4096)
+
+        if not user_max_convo_tokens or user_max_convo_tokens > max_model_total_tokens:
+            return max_model_total_tokens 
+        return user_max_convo_tokens 
 
     async def cut_text_by_tokens(self, text: str, conf: GuildSettings, user: Optional[discord.Member] = None) -> str:
         if not text:
             log.debug("No text to cut by tokens!")
             return text
-        tokens = await self.get_tokens(text, conf.get_user_model(user))
-        return await self.get_text(tokens[: self.get_max_tokens(conf, user)], conf.get_user_model(user))
+        
+        model_name = conf.get_user_model(user)
+        max_tokens_for_context = self.get_max_tokens(conf, user)
+        tokens = await self.get_tokens(text, model_name) 
+        cut_tokens = tokens[:max_tokens_for_context]
+        return await self.get_text(cut_tokens, model_name) 
 
-    async def get_text(self, tokens: list, model: str = "gpt-4o-mini") -> str:
-        """Get text from token list"""
-
-        def _get_encoding():
+    async def get_text(self, tokens: list, model_name: str = "gpt-4o-mini") -> str:
+        if model_name.startswith("gemini-"):
             try:
-                enc = tiktoken.encoding_for_model(model)
+                return "".join([chr(t) for t in tokens])
+            except TypeError: 
+                log.error(f"Cannot decode Gemini tokens for model {model_name} as char codes. Tokens: {tokens[:10]}")
+                return "" 
+
+        def _get_encoding_openai():
+            try:
+                enc = tiktoken.encoding_for_model(model_name)
             except KeyError:
+                log.warning(f"Tiktoken encoding not found for model {model_name}. Using o200k_base.")
                 enc = tiktoken.get_encoding("o200k_base")
             return enc
 
-        encoding = await asyncio.to_thread(_get_encoding)
-
-        return await asyncio.to_thread(encoding.decode, tokens)
+        encoding = await asyncio.to_thread(_get_encoding_openai)
+        return await asyncio.to_thread(encoding.decode, tokens, errors="ignore") 
 
     # -------------------------------------------------------
     # -------------------------------------------------------

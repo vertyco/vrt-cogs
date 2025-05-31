@@ -345,6 +345,7 @@ class DB(AssistantBaseModel):
     listen_to_bots: bool = False
     brave_api_key: t.Optional[str] = None
     endpoint_override: t.Optional[str] = None
+    google_project_id: t.Optional[str] = None
 
     def get_conf(self, guild: t.Union[discord.Guild, int]) -> GuildSettings:
         gid = guild if isinstance(guild, int) else guild.id
