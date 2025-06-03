@@ -80,6 +80,12 @@ View User Profile<br/>
  - Aliases: `pf`
  - Cooldown: `3 per 10.0 seconds`
  - Checks: `server_only`
+# [p]lvlupnotify (Hybrid Command)
+Toggles level up notifications for a user
+- Usage: `[p]lvlupnotify`
+- Slash Usage: `/lvlupnotify`
+- Aliases: `notify`
+- Checks: `server_only`
 # [p]prestige (Hybrid Command)
 Prestige your rank!<br/>
 Once you have reached this servers prestige level requirement, you can<br/>
@@ -583,6 +589,37 @@ The following placeholders can be used:<br/>
 ### [p]levelset levelupmessages view
 View the current level up alert messages<br/>
  - Usage: `[p]levelset levelupmessages view`
+## [p]levelset lvlreq
+Manage level requirement for commands
+### [p]levelset lvlreq add
+Add a level requirement to the command
+- Usage: `[p]levelset lvlreq add <level> <command>`
+### [p]levelset lvlreq del
+Remove a level requirement for a command
+- Usage: `[p]levelset lvlreq del <command>`
+### [p]levelset lvlreq list
+List all commands and their level requirements
+- Usage: `[p]levelset lvlreq list`
+## [p]levelset cooldowns
+Manage per level command cooldowns
+### [p]levelset cooldowns add
+Add a cooldown for a command based on level
+Multiple cooldown levels can be set, the cooldown will be applied to members at the specified level and under
+Warning: This will override any default cooldowns for the command
+
+Example:
+[p]lset cooldowns add 5 15 mycommand
+[p]lset cooldowns add 10 5 mycommand
+Members who are level [0, 5] will have a cooldown of 15 seconds for mycommand (including members at level 5)
+Members who are level (5, 10] will have a cooldown of 5 seconds (level 6 to level 10)
+Members above level 10 will have no cooldown
+- Usage: `[p]levelset cooldowns add <level> <cooldown> <command>`
+### [p]levelset cooldowns del
+Remove a level cooldown for a command
+- Usage: `[p]levelset cooldowns del <level> <command>`
+### [p]levelset cooldowns list
+List all commands and their cooldowns per level
+- Usage: `[p]levelset cooldowns list`
 ## [p]levelset view
 View all LevelUP settings<br/>
  - Usage: `[p]levelset view`
@@ -710,6 +747,12 @@ Channels in the ignore list don't gain XP<br/>
 
 Use the command with a channel already in the ignore list to remove it<br/>
  - Usage: `[p]levelset ignore channel <channel>`
+### [p]levelset ignore notify
+Add/Remove a channel in the notify ignore list<br/>
+Channels in the notify ignore list will have level up notifications supressed<br/>
+
+Use the command with a channel already in the notify ignore list to remove it<br/>
+ - Usage: `[p]levelset ignore notify <channel>`
 ### [p]levelset ignore role
 Add/Remove a role in the ignore list<br/>
 Members with roles in the ignore list don't gain XP<br/>
