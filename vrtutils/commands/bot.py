@@ -188,7 +188,7 @@ class BotInfo(MixinMeta):
             text_channels = len(guild.text_channels)
             nsfw_channels = len([c for c in guild.text_channels if c.is_nsfw()])
             voice_channels = len(guild.voice_channels)
-            field = f"`Text:  `{text_channels}\n" f"`Voice: `{voice_channels}\n" f"`NSFW:  `{nsfw_channels}"
+            field = f"`Text:  `{text_channels}\n`Voice: `{voice_channels}\n`NSFW:  `{nsfw_channels}"
             em.add_field(name="Channels", value=field)
 
             elevated_roles = [r for r in guild.roles if any([p[0] in elevated_perms for p in r.permissions if p[1]])]
@@ -461,10 +461,7 @@ class BotInfo(MixinMeta):
         rambar = get_bar(0, 0, ram.percent, width=18)
         diskbar = get_bar(0, 0, disk.percent, width=18)
         memtext = (
-            f"RAM {ram_used}/{ram_total} (Bot: {bot_ram_used})\n"
-            f"{rambar}\n"
-            f"DISK {disk_used}/{disk_total}\n"
-            f"{diskbar}\n"
+            f"RAM {ram_used}/{ram_total} (Bot: {bot_ram_used})\n{rambar}\nDISK {disk_used}/{disk_total}\n{diskbar}\n"
         )
         embed.add_field(
             name="\N{FLOPPY DISK} MEM",
@@ -473,14 +470,14 @@ class BotInfo(MixinMeta):
         )
 
         disk_usage_bar = get_bar(0, 0, disk_usage, width=18)
-        i_o = f"DISK LOAD\n" f"{disk_usage_bar}"
+        i_o = f"DISK LOAD\n{disk_usage_bar}"
         embed.add_field(
             name="\N{GEAR}\N{VARIATION SELECTOR-16} I/O",
             value=box(i_o, lang="python"),
             inline=False,
         )
 
-        netstat = f"Sent:     {sent}\n" f"Received: {recv}"
+        netstat = f"Sent:     {sent}\nReceived: {recv}"
         embed.add_field(
             name="\N{SATELLITE ANTENNA} Network",
             value=box(netstat, lang="python"),
@@ -680,10 +677,11 @@ class BotInfo(MixinMeta):
 
             sizes = {}
             for path in paths:
-                for cog_dir in path.iterdir():
-                    if cog_dir.name.startswith((".", "_")):
-                        continue
-                    sizes[cog_dir.name] = await asyncio.to_thread(calculate_directory_size, cog_dir)
+                if path.exists():  # Check if path exists before iterating
+                    for cog_dir in path.iterdir():
+                        if cog_dir.name.startswith((".", "_")):
+                            continue
+                        sizes[cog_dir.name] = await asyncio.to_thread(calculate_directory_size, cog_dir)
 
             sorted_sizes = sorted(sizes.items(), key=lambda x: x[1], reverse=True)
             tmp = StringIO()
