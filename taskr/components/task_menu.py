@@ -67,24 +67,11 @@ class TaskMenu(BaseMenu):
         self.timezone: str = self.db.timezone(ctx.guild)
 
     async def on_timeout(self) -> None:
-        # Disable all buttons
-        self.left10.disabled = True
-        self.left.disabled = True
-        self.right.disabled = True
-        self.right10.disabled = True
-        self.close.disabled = True
-        self.add.disabled = True
-        self.delete.disabled = True
-        self.search.disabled = True
-        self.configure.disabled = True
-        self.interval.disabled = True
-        self.toggle.disabled = True
-        self.cron.disabled = True
-        self.advanced.disabled = True
-        self.times.disabled = True
-        self.ai_helper.disabled = True
-        self.run_command.disabled = True
-        self.help.disabled = True
+        # Disable all buttons by iterating through all children
+        for item in self.children:
+            if isinstance(item, discord.ui.Button):
+                item.disabled = True
+
         await self.message.edit(embed=await self.get_page(), view=self)
         self.stop()
 
@@ -870,7 +857,7 @@ class TaskMenu(BaseMenu):
         )
         embed.add_field(name=_("Advanced Cron Expressions"), value=value, inline=False)
         # Simple, every 15 minutes
-        value = _("Every 30 minutes.\n- Interval: **15**\n- Units: **minutes**")
+        value = _("Every 15 minutes.\n- Interval: **15**\n- Units: **minutes**")
         embed.add_field(name=_("Simple Interval Example"), value=value, inline=True)
         # Simple, every 2 hours
         value = _("Every 2 hours.\n- Interval: **2**\n- Units: **hours**")
