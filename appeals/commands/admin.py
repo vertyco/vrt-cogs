@@ -167,6 +167,8 @@ class Admin(MixinMeta):
             f"**Appeal Message**: {appeal_msg}\n"
             f"**Alert Channel**: {cname(appealguild.alert_channel)}\n"
             f"**Appeal Limit**: {appealguild.appeal_limit}\n"
+            f"**Discussion Threads**: {'Enabled' if appealguild.discussion_threads else 'Disabled'}\n"
+            f"**Vote Emojis**: {'Enabled' if appealguild.vote_emojis else 'Disabled'}\n"
             f"**Alert Roles**: {', '.join([r for r in roles]) if roles else 'None set'}\n"
             f"**Questions**: {await AppealQuestion.count().where(AppealQuestion.guild == ctx.guild.id)}"
         )
