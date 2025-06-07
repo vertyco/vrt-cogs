@@ -15,24 +15,6 @@ from ..views.dynamic_menu import DynamicMenu
 log = logging.getLogger("red.vrt.appeals.commands.admin")
 
 
-class MessageParser:
-    def __init__(self, argument):
-        if "-" not in argument:
-            raise commands.BadArgument("Invalid format, must be `channelID-messageID`")
-        try:
-            cid, mid = [i.strip() for i in argument.split("-")]
-        except ValueError:
-            raise commands.BadArgument("Invalid format, must be `channelID-messageID`")
-        try:
-            self.channel_id = int(cid)
-        except ValueError:
-            raise commands.BadArgument("Channel ID must be an integer")
-        try:
-            self.message_id = int(mid)
-        except ValueError:
-            raise commands.BadArgument("Message ID must be an integer")
-
-
 class Admin(MixinMeta):
     async def no_appealguild(self, ctx: commands.Context):
         txt = (
@@ -161,7 +143,7 @@ class Admin(MixinMeta):
 
         def cname(cid: int):
             if cid:
-                channel = self.bot.get_channel(cid)
+                channel: discord.TextChannel = self.bot.get_channel(cid)
                 if channel:
                     return channel.mention
                 else:
@@ -185,7 +167,9 @@ class Admin(MixinMeta):
             f"**Appeal Message**: {appeal_msg}\n"
             f"**Alert Channel**: {cname(appealguild.alert_channel)}\n"
             f"**Appeal Limit**: {appealguild.appeal_limit}\n"
-            f"**Alert Roles**: {', '.join([r.mention for r in roles]) if roles else 'None set'}\n"
+            f"**Discussion Threads**: {'Enabled' if appealguild.discussion_threads else 'Disabled'}\n"
+            f"**Vote Emojis**: {'Enabled' if appealguild.vote_emojis else 'Disabled'}\n"
+            f"**Alert Roles**: {', '.join([r for r in roles]) if roles else 'None set'}\n"
             f"**Questions**: {await AppealQuestion.count().where(AppealQuestion.guild == ctx.guild.id)}"
         )
         embed = discord.Embed(
@@ -254,13 +238,13 @@ class Admin(MixinMeta):
         if not member:
             member = await self.bot.get_or_fetch_user(submission.user_id)
         # Send the submission to the approved channel and then delete from the pending channel
-        approved_channel = ctx.guild.get_channel(appealguild.approved_channel)
+        approved_channel: discord.TextChannel = ctx.guild.get_channel(appealguild.approved_channel)
         if approved_channel:
             new_message = await approved_channel.send(embed=submission.embed(member))
             await AppealSubmission.update({AppealSubmission.message_id: new_message.id}).where(
                 (AppealSubmission.id == submission_id) & (AppealSubmission.guild == ctx.guild.id)
             )
-        pending_channel = ctx.guild.get_channel(appealguild.pending_channel)
+        pending_channel: discord.TextChannel = ctx.guild.get_channel(appealguild.pending_channel)
         if pending_channel:
             if not pending_channel.permissions_for(ctx.guild.me).manage_messages:
                 await ctx.send(f"I do not have permissions to delete messages from {pending_channel.mention}")
@@ -269,6 +253,8 @@ class Admin(MixinMeta):
                     message = await pending_channel.fetch_message(submission.message_id)
                     if message.thread:
                         await message.thread.delete()
+                    elif thread := ctx.guild.get_thread(submission.discussion_thread):
+                        await thread.delete()
                     await message.delete()
                 except discord.NotFound:
                     await ctx.send(f"Submission message not found in {pending_channel.mention}")
@@ -349,16 +335,18 @@ class Admin(MixinMeta):
         submission.status = "denied"
         submission.reason = reason or ""
         await ctx.send(f"Successfully denied submission ID: {submission_id}")
-        member = ctx.guild.get_member(submission.user_id) or self.bot.get_user(submission.user_id)
+        member = ctx.guild.get_member(submission.user_id)
+        if not member:
+            member = await self.bot.get_or_fetch_user(submission.user_id)
         # Send the submission to the denied channel and then delete from the pending channel
-        denied_channel = ctx.guild.get_channel(appealguild.denied_channel)
+        denied_channel: discord.TextChannel = ctx.guild.get_channel(appealguild.denied_channel)
         if denied_channel:
             new_embed = submission.embed(member)
             new_message = await denied_channel.send(embed=new_embed)
             await AppealSubmission.update({AppealSubmission.message_id: new_message.id}).where(
                 (AppealSubmission.id == submission_id) & (AppealSubmission.guild == ctx.guild.id)
             )
-        pending_channel = ctx.guild.get_channel(appealguild.pending_channel)
+        pending_channel: discord.TextChannel = ctx.guild.get_channel(appealguild.pending_channel)
         if pending_channel:
             if not pending_channel.permissions_for(ctx.guild.me).manage_messages:
                 await ctx.send(f"I do not have permissions to delete messages from {pending_channel.mention}")
@@ -367,6 +355,8 @@ class Admin(MixinMeta):
                     message = await pending_channel.fetch_message(submission.message_id)
                     if message.thread:
                         await message.thread.delete()
+                    elif thread := ctx.guild.get_thread(submission.discussion_thread):
+                        await thread.delete()
                     await message.delete()
                 except discord.NotFound:
                     await ctx.send(f"Submission message not found in {pending_channel.mention}")
@@ -396,7 +386,7 @@ class Admin(MixinMeta):
         )
         if not submission:
             return await ctx.send("No submission found with that ID.")
-        channel = ctx.guild.get_channel(getattr(appealguild, f"{submission.status}_channel"))
+        channel: discord.TextChannel = ctx.guild.get_channel(getattr(appealguild, f"{submission.status}_channel"))
         if channel:
             if not channel.permissions_for(ctx.guild.me).manage_messages:
                 await ctx.send(f"I do not have permissions to delete messages from {channel.mention}")
@@ -463,6 +453,16 @@ class Admin(MixinMeta):
         if not appealguild:
             return await self.no_appealguild(ctx)
 
+        permissions = {
+            "View Channel": channel.permissions_for(ctx.guild.me).view_channel,
+            "Send Messages": channel.permissions_for(ctx.guild.me).send_messages,
+            "Embed Links": channel.permissions_for(ctx.guild.me).embed_links,
+            "Create Threads": channel.permissions_for(ctx.guild.me).create_public_threads,
+        }
+        for perm, has_perm in permissions.items():
+            if not has_perm:
+                return await ctx.send(f"I don't have the `{perm}` permission in {channel.mention}!")
+
         if channel_type == "pending":
             if channel.id == appealguild.pending_channel:
                 return await ctx.send("That channel is already set as the pending appeals channel.")
@@ -508,7 +508,7 @@ class Admin(MixinMeta):
 
     @ensure_db_connection()
     @appealset.command(name="appealmessage")
-    async def set_appeal_message(self, ctx: commands.Context, message: MessageParser):
+    async def set_appeal_message(self, ctx: commands.Context, message: discord.Message):
         """
         Set the message where users will appeal from
         Message format: `channelID-messageID`
@@ -516,11 +516,13 @@ class Admin(MixinMeta):
         appealguild = await AppealGuild.objects().get(AppealGuild.id == ctx.guild.id)
         if not appealguild:
             return await self.no_appealguild(ctx)
-        channel = ctx.guild.get_channel(message.channel_id)
+        channel = ctx.guild.get_channel(message.channel.id)
         if not channel:
             return await ctx.send("Invalid channel ID provided.")
+        if not isinstance(channel, discord.TextChannel):
+            return await ctx.send("The provided channel ID is not a text channel.")
         try:
-            msg = await channel.fetch_message(message.message_id)
+            msg = await channel.fetch_message(message.channel.id)
         except discord.NotFound:
             return await ctx.send("Invalid message ID provided.")
         except discord.Forbidden:
@@ -546,11 +548,11 @@ class Admin(MixinMeta):
         count = await AppealQuestion.count().where(AppealQuestion.guild == appealguild)
         if count >= 24:
             return await ctx.send("You can only have up to 24 questions in the appeal form.")
-        question = AppealQuestion(
+        question_obj = AppealQuestion(
             guild=ctx.guild.id,
             question=question,
         )
-        await question.save()
+        await question_obj.save()
         await ctx.send("Successfully added the question to the appeal form.")
         await self.refresh(ctx)
 
@@ -778,15 +780,16 @@ class Admin(MixinMeta):
         These roles will be pinged in the appeal server, NOT the target server.
         """
         rid = role.id if isinstance(role, discord.Role) else role
+        role_name = role.mention if isinstance(role, discord.Role) else f"<@&{rid}>"
         appealguild = await AppealGuild.objects().get(AppealGuild.id == ctx.guild.id)
         if not appealguild:
             return await self.no_appealguild(ctx)
         if rid in appealguild.alert_roles:
             appealguild.alert_roles.remove(rid)
-            await ctx.send(f"Removed {role.name} from the alert roles.")
+            await ctx.send(f"Removed {role_name} from the alert roles.")
         else:
             appealguild.alert_roles.append(rid)
-            await ctx.send(f"Added {role.name} to the alert roles.")
+            await ctx.send(f"Added {role_name} to the alert roles.")
         await AppealGuild.update({AppealGuild.alert_roles: appealguild.alert_roles}).where(
             AppealGuild.id == ctx.guild.id
         )
@@ -804,9 +807,11 @@ class Admin(MixinMeta):
         if not appealguild:
             return await self.no_appealguild(ctx)
         if isinstance(channel, int):
-            channel = self.bot.get_channel(channel)
+            channel: discord.TextChannel = self.bot.get_channel(channel)
             if not channel:
                 return await ctx.send("Invalid channel ID provided.")
+        if not isinstance(channel, discord.TextChannel):
+            return await ctx.send("You must provide a valid text channel.")
         if channel:
             await AppealGuild.update({AppealGuild.alert_channel: channel.id}).where(AppealGuild.id == ctx.guild.id)
             return await ctx.send(f"Successfully set the alert channel to {channel.mention}")
@@ -827,7 +832,7 @@ class Admin(MixinMeta):
                 await ctx.send(f"Appeal system not ready yet: {reason}")
             return reason
         appealguild = await AppealGuild.objects().get(AppealGuild.id == guild.id)
-        channel = guild.get_channel(appealguild.appeal_channel)
+        channel: discord.TextChannel = guild.get_channel(appealguild.appeal_channel)
         message = await channel.fetch_message(appealguild.appeal_message)
         view = AppealView(custom_id=f"{appealguild.id}")
         await message.edit(view=view)
@@ -915,3 +920,33 @@ class Admin(MixinMeta):
         )
         await ctx.send("Successfully removed the button emoji", view=view)
         await self.refresh(ctx)
+
+    @ensure_db_connection()
+    @appealset.command(name="discussionthreads")
+    async def toggle_discussion_threads(self, ctx: commands.Context):
+        """Toggle whether appeals will have a discussion thread created for them"""
+        appealguild = await AppealGuild.objects().get(AppealGuild.id == ctx.guild.id)
+        if not appealguild:
+            return await self.no_appealguild(ctx)
+        if appealguild.discussion_threads:
+            appealguild.discussion_threads = False
+            await ctx.send("Successfully disabled discussion threads for appeals.")
+        else:
+            appealguild.discussion_threads = True
+            await ctx.send("Successfully enabled discussion threads for appeals.")
+        await appealguild.save([AppealGuild.discussion_threads])
+
+    @ensure_db_connection()
+    @appealset.command(name="voteemojis")
+    async def toggle_vote_emojis(self, ctx: commands.Context):
+        """Toggle whether appeals will have vote emojis added to them"""
+        appealguild = await AppealGuild.objects().get(AppealGuild.id == ctx.guild.id)
+        if not appealguild:
+            return await self.no_appealguild(ctx)
+        if appealguild.vote_emojis:
+            appealguild.vote_emojis = False
+            await ctx.send("Successfully disabled vote emojis for appeals.")
+        else:
+            appealguild.vote_emojis = True
+            await ctx.send("Successfully enabled vote emojis for appeals.")
+        await appealguild.save([AppealGuild.vote_emojis])

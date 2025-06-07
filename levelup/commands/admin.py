@@ -284,18 +284,24 @@ class Admin(MixinMeta):
             description=txt.strip(),
             color=await self.bot.get_embed_color(ctx),
         )
+
+        def add_field(embed: discord.Embed, name: str, value: str):
+            chunks = list(pagify(value, page_length=1024))
+            if len(chunks) == 1:
+                embed.add_field(name=name, value=value, inline=False)
+            else:
+                for i, chunk in enumerate(chunks):
+                    embed.add_field(
+                        name=name if i == 0 else f"{name} Continued",
+                        value=chunk,
+                        inline=False,
+                    )
+
         if conf.levelroles:
             joined = "\n".join(
                 _("• Level {}: {}").format(level, f"<@&{role_id}>") for level, role_id in conf.levelroles.items()
             )
-            chunks = list(pagify(joined, page_length=1024))
-            if len(chunks) == 1:
-                embed.add_field(name=_("Level Roles"), value=joined, inline=False)
-            else:
-                for i, chunk in enumerate(chunks):
-                    embed.add_field(
-                        name=_("Level Roles") if i == 0 else _("Level Roles Continued"), value=chunk, inline=False
-                    )
+            add_field(embed, _("Level Roles"), joined)
         if conf.prestigelevel and conf.prestigedata:
             roles = _("➣ Prestige roles will {}").format(
                 _("**Stack**") if conf.stackprestigeroles else _("**Not Stack**")
@@ -309,51 +315,56 @@ class Admin(MixinMeta):
                 _("• Prestige {}: {}").format(level, f"<@&{prestige.role}>")
                 for level, prestige in conf.prestigedata.items()
             )
-            embed.add_field(name=_("Prestige"), value=f"{roles}\n{req}\n{joined}", inline=False)
+            add_field(embed, _("Prestige Roles"), f"{roles}\n{req}\n{joined}")
         if conf.rolebonus.voice:
             joined = "\n".join(
                 _("• {}: `{}`").format(f"<@&{role_id}>", xp_range) for role_id, xp_range in conf.rolebonus.voice.items()
             )
-            embed.add_field(name=_("Voice XP Bonus Roles"), value=joined, inline=False)
+            add_field(embed, _("Voice XP Bonus Roles"), joined)
         if conf.channelbonus.voice:
             joined = "\n".join(
                 _("• {}: `{}`").format(f"<#{channel_id}>", xp_range)
                 for channel_id, xp_range in conf.channelbonus.voice.items()
             )
-            embed.add_field(name=_("Voice XP Bonus Channels"), value=joined, inline=False)
+            add_field(embed, _("Voice XP Bonus Channels"), joined)
         if conf.streambonus:
             embed.add_field(
                 name=_("Stream Bonus"),
                 value=_("Bonus for streaming: {}").format(f"`{conf.streambonus}`"),
                 inline=False,
             )
+        if conf.appbonus:
+            joined = "\n".join(
+                _("• {}: `{}`").format(app_name, xp_range) for app_name, xp_range in conf.appbonus.items()
+            )
+            add_field(embed, _("Application XP Bonus"), joined)
         if conf.rolebonus.msg:
             joined = "\n".join(
                 _("• {}: `{}`").format(f"<@&{role_id}>", xp_range) for role_id, xp_range in conf.rolebonus.msg.items()
             )
-            embed.add_field(name=_("Message XP Bonus Roles"), value=joined, inline=False)
+            add_field(embed, _("Message XP Bonus Roles"), joined)
         if conf.channelbonus.msg:
             joined = "\n".join(
                 _("• {}: `{}`").format(f"<#{channel_id}>", xp_range)
                 for channel_id, xp_range in conf.channelbonus.msg.items()
             )
-            embed.add_field(name=_("Message XP Bonus Channels"), value=joined, inline=False)
+            add_field(embed, _("Message XP Bonus Channels"), joined)
         if conf.allowedroles:
             joined = ", ".join([f"<@&{role_id}>" for role_id in conf.allowedroles if ctx.guild.get_role(role_id)])
-            embed.add_field(name=_("Allowed Roles"), value=joined, inline=False)
+            add_field(embed, _("Allowed Roles"), joined)
         if conf.allowedchannels:
             joined = ", ".join(
                 [f"<#{channel_id}>" for channel_id in conf.allowedchannels if ctx.guild.get_channel(channel_id)]
             )
-            embed.add_field(name=_("Allowed Channels"), value=joined, inline=False)
+            add_field(embed, _("Allowed Channels"), joined)
         if conf.ignoredroles:
             joined = ", ".join([f"<@&{role_id}>" for role_id in conf.ignoredroles if ctx.guild.get_role(role_id)])
-            embed.add_field(name=_("Ignored Roles"), value=joined, inline=False)
+            add_field(embed, _("Ignored Roles"), joined)
         if conf.ignoredchannels:
             joined = ", ".join(
                 [f"<#{channel_id}>" for channel_id in conf.ignoredchannels if ctx.guild.get_channel(channel_id)]
             )
-            embed.add_field(name=_("Ignored Channels"), value=joined, inline=False)
+            add_field(embed, _("Ignored Channels"), joined)
         if conf.ignore_notification_channels:
             joined = ", ".join(
                 [
@@ -362,10 +373,10 @@ class Admin(MixinMeta):
                     if ctx.guild.get_channel(channel_id)
                 ]
             )
-            embed.add_field(name=_("Notification Ignored Channels"), value=joined, inline=False)
+            add_field(embed, _("Notification Ignored Channels"), joined)
         if conf.ignoredusers:
             joined = ", ".join([f"<@{user_id}>" for user_id in conf.ignoredusers if ctx.guild.get_member(user_id)])
-            embed.add_field(name=_("Ignored Users"), value=joined, inline=False)
+            add_field(embed, _("Ignored Users"), joined)
         if dm_role := conf.role_awarded_dm:
             embed.add_field(name=_("LevelUp DM Role Message"), value=dm_role, inline=False)
         if dm_msg := conf.levelup_dm:
@@ -377,7 +388,7 @@ class Admin(MixinMeta):
         if roles := conf.role_groups:
             joined = ", ".join([f"<@&{role_id}>" for role_id in roles if ctx.guild.get_role(role_id)])
             txt = _("The following roles gain exp as a group:\n{}").format(joined)
-            embed.add_field(name=_("Role Exp Groups"), value=txt, inline=False)
+            add_field(embed, _("Role Exp Groups"), txt)
         if ctx.author.id not in self.bot.owner_ids:
             txt = _("➣ Profile Cache Time\n")
             if self.db.cache_seconds:
@@ -455,18 +466,25 @@ class Admin(MixinMeta):
         self,
         ctx: commands.Context,
         user_or_role: t.Union[discord.Member, discord.Role],
-        xp: int,
+        xp: commands.positive_int,
     ):
         """Add XP to a user or role"""
         conf = self.db.get_conf(ctx.guild)
         if isinstance(user_or_role, discord.Member):
             profile = conf.get_profile(user_or_role)
+            new_xp = profile.xp + xp
+            if new_xp > 2**62:
+                return await ctx.send(_("That XP value is too high!"))
             profile.xp += xp
             txt = _("Added {} XP to {}").format(xp, user_or_role.name)
             self.save()
             return await ctx.send(txt)
+
         for user in user_or_role.members:
             profile = conf.get_profile(user)
+            new_xp = profile.xp + xp
+            if new_xp > 2**62:
+                return await ctx.send(_("That XP value is too high!"))
             profile.xp += xp
         txt = _("Added {} XP {} member(s) with the {} role").format(
             xp,
@@ -481,7 +499,7 @@ class Admin(MixinMeta):
         self,
         ctx: commands.Context,
         user_or_role: t.Union[discord.Member, discord.Role],
-        xp: int,
+        xp: commands.positive_int,
     ):
         """Remove XP from a user or role"""
         conf = self.db.get_conf(ctx.guild)
@@ -727,6 +745,11 @@ class Admin(MixinMeta):
         """
         async with ctx.typing():
             conf = self.db.get_conf(ctx.guild)
+            new_xp = conf.algorithm.get_xp(level)
+            # Ensure the user doesn't set a level that requires more than what pydantic can handle as far as large numbers go
+            if new_xp > 2**62:
+                return await ctx.send(_("That level is too high!"))
+
             profile = conf.get_profile(user)
             profile.level = level
             profile.xp = conf.algorithm.get_xp(level)
@@ -1154,7 +1177,7 @@ class Admin(MixinMeta):
 
         This bonus applies to message xp
 
-        Set both min and max to 0 to remove the role bonus
+        Set both min and max to 0 to remove the channel bonus
         """
         if min_xp > max_xp:
             return await ctx.send(_("Min XP value cannot be greater than Max XP value"))
@@ -1215,9 +1238,9 @@ class Admin(MixinMeta):
 
         Set both min and max to 0 to remove the role bonus
         """
-        conf = self.db.get_conf(ctx.guild)
         if min_xp > max_xp:
             return await ctx.send(_("Min XP value cannot be greater than Max XP value"))
+        conf = self.db.get_conf(ctx.guild)
         if role.id in conf.rolebonus.msg:
             if min_xp == 0 and max_xp == 0:
                 del conf.rolebonus.msg[role.id]
@@ -1226,6 +1249,9 @@ class Admin(MixinMeta):
             conf.rolebonus.msg[role.id] = [min_xp, max_xp]
             self.save()
             return await ctx.send(_("Role bonus has been updated"))
+
+        if min_xp == 0 and max_xp == 0:
+            return await ctx.send(_("XP range cannot be 0"))
         conf.rolebonus.msg[role.id] = [min_xp, max_xp]
         self.save()
         await ctx.send(_("Role bonus has been set"))
@@ -1411,9 +1437,9 @@ class Admin(MixinMeta):
 
         Set both min and max to 0 to remove the role bonus
         """
-        conf = self.db.get_conf(ctx.guild)
         if min_xp > max_xp:
             return await ctx.send(_("Min XP value cannot be greater than Max XP value"))
+        conf = self.db.get_conf(ctx.guild)
         if role.id in conf.rolebonus.voice:
             if min_xp == 0 and max_xp == 0:
                 del conf.rolebonus.voice[role.id]
@@ -1422,6 +1448,7 @@ class Admin(MixinMeta):
             conf.rolebonus.voice[role.id] = [min_xp, max_xp]
             self.save()
             return await ctx.send(_("Role bonus has been updated"))
+
         if min_xp == 0 and max_xp == 0:
             return await ctx.send(_("XP range cannot be 0"))
         conf.rolebonus.voice[role.id] = [min_xp, max_xp]
@@ -1579,3 +1606,237 @@ class Admin(MixinMeta):
         del conf.prestigedata[prestige]
         self.save()
         await ctx.send(_("Prestige level {} has been removed").format(prestige))
+
+    @voice_group.command(name="appbonus")
+    async def voice_app_bonus(
+        self,
+        ctx: commands.Context,
+        application_name: str,
+        min_xp: commands.positive_int,
+        max_xp: commands.positive_int,
+    ):
+        """
+        Add a range of bonus XP to users running a specific application/game in voice channels
+
+        This bonus applies to voice time xp
+
+        Set both min and max to 0 to remove the application bonus
+
+        **Examples:**
+        • `[p]levelset voice appbonus VALORANT 5 10` - Users playing VALORANT get 5-10 bonus XP per minute
+        • `[p]levelset voice appbonus "Visual Studio Code" 2 4` - Use quotes for names with spaces
+        • `[p]levelset voice appbonus VALORANT 0 0` - Remove the bonus for VALORANT
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if min_xp > max_xp:
+            return await ctx.send(_("Min XP value cannot be greater than Max XP value"))
+
+        application_name = application_name.upper()  # Normalize application name
+
+        if application_name in conf.appbonus.voice:
+            if min_xp == 0 and max_xp == 0:
+                del conf.appbonus.voice[application_name]
+                self.save()
+                return await ctx.send(_("Application bonus for {} has been removed").format(application_name))
+            conf.appbonus.voice[application_name] = [min_xp, max_xp]
+            self.save()
+            return await ctx.send(_("Application bonus for {} has been updated").format(application_name))
+
+        if min_xp == 0 and max_xp == 0:
+            return await ctx.send(_("XP range cannot be 0"))
+
+        conf.appbonus.voice[application_name] = [min_xp, max_xp]
+        self.save()
+        await ctx.send(_("Application bonus for {} has been set").format(application_name))
+
+    @message_group.command(name="appbonus")
+    async def msg_app_bonus(
+        self,
+        ctx: commands.Context,
+        application_name: str,
+        min_xp: commands.positive_int,
+        max_xp: commands.positive_int,
+    ):
+        """
+        Add a range of bonus XP to users running a specific application/game
+
+        This bonus applies to message xp
+
+        Set both min and max to 0 to remove the application bonus
+
+        **Examples:**
+        • `[p]levelset messages appbonus VALORANT 5 10` - Users playing VALORANT get 5-10 bonus XP per message
+        • `[p]levelset messages appbonus "Visual Studio Code" 2 4` - Use quotes for names with spaces
+        • `[p]levelset messages appbonus VALORANT 0 0` - Remove the bonus for VALORANT
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if min_xp > max_xp:
+            return await ctx.send(_("Min XP value cannot be greater than Max XP value"))
+
+        application_name = application_name.upper()  # Normalize application name
+
+        if application_name in conf.appbonus.msg:
+            if min_xp == 0 and max_xp == 0:
+                del conf.appbonus.msg[application_name]
+                self.save()
+                return await ctx.send(_("Application bonus for {} has been removed").format(application_name))
+            conf.appbonus.msg[application_name] = [min_xp, max_xp]
+            self.save()
+            return await ctx.send(_("Application bonus for {} has been updated").format(application_name))
+
+        if min_xp == 0 and max_xp == 0:
+            return await ctx.send(_("XP range cannot be 0"))
+
+        conf.appbonus.msg[application_name] = [min_xp, max_xp]
+        self.save()
+        await ctx.send(_("Application bonus for {} has been set").format(application_name))
+
+    @levelset.command(name="defaultbackground")
+    async def set_default_background(self, ctx: commands.Context, *, background: str = None):
+        """
+        Set the default background for all users in the guild
+
+        This background will be used when a user hasn't set their own background.
+        You can specify:
+        - A URL to an image
+        - The name of a background from the backgrounds folder
+        - "random" for a random background each time
+        - "default" to use Discord banner or random (system default)
+
+        If no background is specified, shows the current default background.
+        """
+        conf = self.db.get_conf(ctx.guild)
+
+        if not background:
+            return await ctx.send(_("Current default background: `{}`").format(conf.default_background))
+
+        conf.default_background = background
+        self.save()
+        await ctx.send(_("Default background for all users has been set to: `{}`").format(background))
+
+        if background.lower() not in ["default", "random"] and not background.lower().startswith("http"):
+            # Check if the background exists
+            valid = list(self.backgrounds.glob("*.webp")) + list(self.custom_backgrounds.iterdir())
+            found = False
+            for path in valid:
+                if background == path.stem or background == path.name:
+                    found = True
+                    break
+            if not found:
+                await ctx.send(
+                    _(
+                        "Warning: I couldn't find a background with that name. Make sure it exists in the backgrounds folder."
+                    )
+                )
+
+    @levelset.group(name="presencebonus", aliases=["statusbonus"])
+    async def presence_bonus_group(self, ctx: commands.Context):
+        """Presence status bonus settings"""
+        pass
+
+    @presence_bonus_group.command(name="message", aliases=["msg"])
+    async def presence_msg_bonus(
+        self,
+        ctx: commands.Context,
+        status: t.Literal["online", "idle", "dnd", "offline"],
+        min_xp: commands.positive_int,
+        max_xp: commands.positive_int,
+    ):
+        """
+        Add a range of bonus XP to users with a specific presence status
+
+        This bonus applies to message XP
+
+        Set both min and max to 0 to remove the status bonus
+
+        **Examples:**
+        • `[p]levelset presencebonus message online 2 5` - Users with online status get 2-5 bonus XP per message
+        • `[p]levelset presencebonus message idle 1 3` - Users with idle status get 1-3 bonus XP per message
+        • `[p]levelset presencebonus message dnd 0 0` - Remove the bonus for dnd status
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if min_xp > max_xp:
+            return await ctx.send(_("Min XP value cannot be greater than Max XP value"))
+
+        if status in conf.presencebonus.msg:
+            if min_xp == 0 and max_xp == 0:
+                del conf.presencebonus.msg[status]
+                self.save()
+                return await ctx.send(_("Presence bonus for {} status has been removed for messages").format(status))
+            conf.presencebonus.msg[status] = [min_xp, max_xp]
+            self.save()
+            return await ctx.send(_("Presence bonus for {} status has been updated for messages").format(status))
+
+        if min_xp == 0 and max_xp == 0:
+            return await ctx.send(_("XP range cannot be 0"))
+
+        conf.presencebonus.msg[status] = [min_xp, max_xp]
+        self.save()
+        await ctx.send(_("Presence bonus for {} status has been set for messages").format(status))
+
+    @presence_bonus_group.command(name="voice")
+    async def presence_voice_bonus(
+        self,
+        ctx: commands.Context,
+        status: t.Literal["online", "idle", "dnd", "offline"],
+        min_xp: commands.positive_int,
+        max_xp: commands.positive_int,
+    ):
+        """
+        Add a range of bonus XP to users with a specific presence status
+
+        This bonus applies to voice time XP
+
+        Set both min and max to 0 to remove the status bonus
+
+        **Examples:**
+        • `[p]levelset presencebonus voice online 2 5` - Users with online status get 2-5 bonus XP per minute in voice
+        • `[p]levelset presencebonus voice idle 1 3` - Users with idle status get 1-3 bonus XP per minute in voice
+        • `[p]levelset presencebonus voice dnd 0 0` - Remove the bonus for dnd status
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if min_xp > max_xp:
+            return await ctx.send(_("Min XP value cannot be greater than Max XP value"))
+
+        if status in conf.presencebonus.voice:
+            if min_xp == 0 and max_xp == 0:
+                del conf.presencebonus.voice[status]
+                self.save()
+                return await ctx.send(_("Presence bonus for {} status has been removed for voice").format(status))
+            conf.presencebonus.voice[status] = [min_xp, max_xp]
+            self.save()
+            return await ctx.send(_("Presence bonus for {} status has been updated for voice").format(status))
+
+        if min_xp == 0 and max_xp == 0:
+            return await ctx.send(_("XP range cannot be 0"))
+
+        conf.presencebonus.voice[status] = [min_xp, max_xp]
+        self.save()
+        await ctx.send(_("Presence bonus for {} status has been set for voice").format(status))
+
+    @presence_bonus_group.command(name="view")
+    async def view_presence_bonuses(self, ctx: commands.Context):
+        """View all presence status bonuses"""
+        conf = self.db.get_conf(ctx.guild)
+
+        if not conf.presencebonus.msg and not conf.presencebonus.voice:
+            return await ctx.send(_("No presence bonuses have been set."))
+
+        embed = discord.Embed(
+            title=_("Presence Status Bonuses"),
+            color=await self.bot.get_embed_color(ctx),
+        )
+
+        if conf.presencebonus.msg:
+            msg_bonuses = "\n".join(
+                _("• {}: `{}`").format(status, xp_range) for status, xp_range in conf.presencebonus.msg.items()
+            )
+            embed.add_field(name=_("Message XP Bonuses"), value=msg_bonuses, inline=False)
+
+        if conf.presencebonus.voice:
+            voice_bonuses = "\n".join(
+                _("• {}: `{}`").format(status, xp_range) for status, xp_range in conf.presencebonus.voice.items()
+            )
+            embed.add_field(name=_("Voice XP Bonuses"), value=voice_bonuses, inline=False)
+
+        await ctx.send(embed=embed)

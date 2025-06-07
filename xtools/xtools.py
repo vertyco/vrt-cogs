@@ -45,7 +45,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "3.11.6"
+    __version__ = "3.11.7"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -227,8 +227,7 @@ class XTools(commands.Cog):
         client_id = await self.config.clientid()
         if not client_id:
             await ctx.send(
-                f"Client ID and Secret have not been set yet!\n"
-                f"Bot owner needs to run `{ctx.clean_prefix}apiset tokens`"
+                f"Client ID and Secret have not been set yet!\nBot owner needs to run `{ctx.clean_prefix}apiset tokens`"
             )
             return None
         url = "https://login.live.com/oauth20_authorize.srf?"
@@ -391,12 +390,12 @@ class XTools(commands.Cog):
 
     @commands.command(name="xprofile")
     @commands.bot_has_permissions(embed_links=True)
-    async def get_profile(self, ctx, *, gamertag: str = None):
-        """View your Xbox profile"""
-        # If user didn't enter Gamertag, check if they've set one
-        if not gamertag:
-            gamertag = await self.pull_user(ctx)
-            if not gamertag:
+    async def get_profile(self, ctx, *, gamertag_or_xuid: str = None):
+        """View your Xbox profile (can use gamertag or XUID)"""
+        # If user didn't enter anything, check if they've set a gamertag
+        if not gamertag_or_xuid:
+            gamertag_or_xuid = await self.pull_user(ctx)
+            if not gamertag_or_xuid:
                 return
         async with SignedSession() as session:
             xbl_client = await self.auth_manager(session, ctx)
@@ -406,14 +405,29 @@ class XTools(commands.Cog):
             embed.set_thumbnail(url=LOADING)
             msg = await ctx.send(embed=embed)
             try:
-                pdata = await xbl_client.profile.get_profile_by_gamertag(gamertag)
-                profile_data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
+                # Check if the input is a XUID (numeric) or a gamertag
+                is_xuid = gamertag_or_xuid.isdigit()
+
+                if is_xuid:
+                    # Get profile by XUID
+                    pdata = await xbl_client.profile.get_profile_by_xuid(gamertag_or_xuid)
+                    profile_data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
+                    # Extract gamertag for further API calls
+                    gamertag, xuid, _, _, _, _, _, _, _ = profile(profile_data)
+                else:
+                    # Get profile by gamertag
+                    pdata = await xbl_client.profile.get_profile_by_gamertag(gamertag_or_xuid)
+                    profile_data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
+                    # Extract XUID for further API calls
+                    gamertag, xuid, _, _, _, _, _, _, _ = profile(profile_data)
             except (aiohttp.ClientResponseError, httpx.HTTPStatusError):
-                embed = discord.Embed(description="Invalid Gamertag. Try again.")
+                error_type = "XUID" if gamertag_or_xuid.isdigit() else "Gamertag"
+                embed = discord.Embed(description=f"Invalid {error_type}. Try again.")
                 return await msg.edit(embed=embed)
             except httpx.ConnectTimeout:
                 return await msg.edit(content="Connection timed out. Try again.", embed=None)
-            _, xuid, _, _, _, _, _, _, _ = profile(profile_data)
+
+            # Now we have both the gamertag and XUID, we can proceed with the rest of the API calls
             friends = await xbl_client.people.get_friends_summary_by_gamertag(gamertag)
             friends_data = friends.model_dump(mode="json") if V2 else json.loads(friends.json())
 
@@ -570,7 +584,7 @@ class XTools(commands.Cog):
             for title in titles:
                 name = title["name"]
                 if reply.content.lower() in name.lower():
-                    gs = f'{title["currentGamerscore"]}/{title["maxGamerscore"]}'
+                    gs = f"{title['currentGamerscore']}/{title['maxGamerscore']}"
                     gamelist.append((name, title["titleId"], gs))
             if len(gamelist) == 0:
                 return await msg.edit(
@@ -908,7 +922,7 @@ class XTools(commands.Cog):
                                 cant_find += f"{title['name']}\n"
             pages = mostplayed(most_played, gt)
             if not_found:
-                embed = discord.Embed(description=f"Couldn't find playtime data for:\n" f"{box(cant_find)}")
+                embed = discord.Embed(description=f"Couldn't find playtime data for:\n{box(cant_find)}")
                 await msg.edit(embed=embed)
             else:
                 await msg.delete()

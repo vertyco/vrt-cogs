@@ -2,6 +2,7 @@ import typing as t
 
 import discord
 from redbot.core.bot import Red
+from redbot.core.utils.menus import start_adding_reactions
 
 # from ..abc import MixinMeta
 from ..db.tables import AppealGuild, AppealQuestion, AppealSubmission
@@ -146,11 +147,12 @@ class SubmissionView(discord.ui.View):
                 ephemeral=True,
             )
 
-        appealguild: AppealGuild = (
+        appealguild: dict = (
             await AppealGuild.select(
                 AppealGuild.pending_channel,
                 AppealGuild.alert_roles,
                 AppealGuild.alert_channel,
+                AppealGuild.discussion_threads,
             )
             .where(AppealGuild.id == interaction.guild.id)
             .first()
@@ -158,7 +160,7 @@ class SubmissionView(discord.ui.View):
         if not appealguild:
             return await self.send(interaction, "Appeal system is no longer setup for this server.")
 
-        pending_channel = interaction.guild.get_channel(appealguild["pending_channel"])
+        pending_channel: discord.TextChannel = interaction.guild.get_channel(appealguild["pending_channel"])
         if not pending_channel:
             return await self.send(
                 interaction,
@@ -185,12 +187,12 @@ class SubmissionView(discord.ui.View):
         for question in self.questions:
             answer = self.answers.get(question.question, "*Not answered*")
             final_answers[question.question] = answer
+
         submission = AppealSubmission(
             guild=interaction.guild.id,
             user_id=interaction.user.id,
             answers=final_answers,
         )
-        await submission.save()
 
         embed = submission.embed(interaction.user)
 
@@ -200,10 +202,26 @@ class SubmissionView(discord.ui.View):
             mentions = ", ".join([f"<@&{r}>" for r in alert_roles])
 
         message = await pending_channel.send(content=mentions, embed=embed, allowed_mentions=allowed_mentions)
+        submission.message_id = message.id
+
+        if (
+            appealguild["discussion_threads"]
+            and pending_channel.permissions_for(interaction.guild.me).create_public_threads
+        ):
+            thread = await message.create_thread(
+                name=f"Appeal Discussion for {interaction.user.name}",
+                reason=f"Discussion thread for appeal submission by {interaction.user.name} ({interaction.user.id})",
+            )
+            submission.discussion_thread = thread.id
+
+        await submission.save()
+
+        if appealguild["vote_emojis"] and pending_channel.permissions_for(interaction.guild.me).add_reactions:
+            start_adding_reactions(message, ["✅", "❌"])
 
         # If alert channel exists and bot has permissions to send messages in it, ping there instead
         # otherwise ping the pending channel
-        alert_channel = bot.get_channel(appealguild["alert_channel"])
+        alert_channel: discord.TextChannel = bot.get_channel(appealguild["alert_channel"])
         if alert_channel:
             perms = [
                 alert_channel.permissions_for(alert_channel.guild.me).view_channel,
@@ -216,7 +234,3 @@ class SubmissionView(discord.ui.View):
                 embed = discord.Embed(description=desc, color=discord.Color.yellow())
                 embed.set_thumbnail(url=interaction.user.display_avatar)
                 await alert_channel.send(embed=embed, allowed_mentions=allowed_mentions)
-
-        await AppealSubmission.update({AppealSubmission.message_id: message.id}).where(
-            AppealSubmission.id == submission.id
-        )

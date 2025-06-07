@@ -40,7 +40,7 @@ async def column_bug():
     # Insert a row
     guild = SomeTable(num1=guild_id, num2=guild_id, num3=guild_id)
     await guild.save()
-    res = await SomeTable.select().first()
+    res: dict = await SomeTable.select().first()
     print("PICCOLO")
     print("num1", res["num1"], type(res["num1"]))
     print("num2", res["num2"], type(res["num2"]))
@@ -68,7 +68,7 @@ async def update_bug():
     number = 123
     guild = SomeTable(num1=number, num2=number, num3=number)
     await guild.save()
-    res = await SomeTable.select().first()
+    res: dict = await SomeTable.select().first()
     print("BEFORE")
     print("num1", res["num1"])
     print("num2", res["num2"], type(res["num2"]))

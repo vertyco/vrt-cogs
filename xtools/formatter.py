@@ -27,9 +27,7 @@ def time_format(time):
 
 # Format time from total seconds and format into readable string
 def time_formatter(time_in_seconds) -> str:
-    time_in_seconds = int(
-        time_in_seconds
-    )  # Some time differences get sent as a float so just handle it the dumb way
+    time_in_seconds = int(time_in_seconds)  # Some time differences get sent as a float so just handle it the dumb way
     minutes, seconds = divmod(time_in_seconds, 60)
     hours, minutes = divmod(minutes, 60)
     days, hours = divmod(hours, 24)
@@ -68,7 +66,7 @@ def fix_timestamp(time: str, timezone: str = "UTC"):
 # Format profile data
 def profile(data):
     # Main profile data
-    gt, bio, location, gs, pfp, tenure, tier, rep = (
+    gt, xuid, bio, location, gs, pfp, tenure, tier, rep = (
         None,
         None,
         None,
@@ -201,9 +199,7 @@ def screenshot_embeds(data, gamertag):
         ss = pic["screenshot_uris"][0]["uri"]
         ss = ss.split("?")[0]
         timestamp = (datetime.fromisoformat(pic["date_taken"])).strftime("%m/%d/%Y, %H:%M:%S")
-        embed = discord.Embed(
-            color=discord.Color.random(), description=f"**{gamertag}'s Screenshots**"
-        )
+        embed = discord.Embed(color=discord.Color.random(), description=f"**{gamertag}'s Screenshots**")
         embed.set_image(url=ss)
         embed.add_field(
             name="Info",
@@ -246,13 +242,11 @@ def game_embeds(gamertag, gamename, gs, data):
             time = fix_timestamp(timestamp)
             time = time.strftime("%m/%d/%Y, %H:%M:%S")
             desc = ach["description"]
-            info = f"{name}\n" f"Status: Unlocked on {time}\n" f"{desc}\n" f"{worth} Gamerscore"
+            info = f"{name}\nStatus: Unlocked on {time}\n{desc}\n{worth} Gamerscore"
         else:
-            info = f"{name}\n" f"Status: {status}\n" f"{desc}\n" f"{worth} Gamerscore"
+            info = f"{name}\nStatus: {status}\n{desc}\n{worth} Gamerscore"
 
-        embed = discord.Embed(
-            description=f"**{gamertag}'s Achievements for {gamename}**\n{gs} Gamerscore"
-        )
+        embed = discord.Embed(description=f"**{gamertag}'s Achievements for {gamename}**\n{gs} Gamerscore")
 
         # See if stat value is a float for a percentage or something
         def check_float(number):
@@ -281,9 +275,7 @@ def game_embeds(gamertag, gamename, gs, data):
         embed.set_image(url=icon)
         hours, minutes = divmod(minutes_played, 60)
         days, hours = divmod(hours, 24)
-        embed.set_footer(
-            text=f"Page {count}/{len(achievements)} | Total time played: {days}d {hours}h {minutes}m"
-        )
+        embed.set_footer(text=f"Page {count}/{len(achievements)} | Total time played: {days}d {hours}h {minutes}m")
         embeds.append(embed)
         count += 1
     return embeds
@@ -358,9 +350,7 @@ def gameclip_embeds(clip_data, gamertag):
         thumbnail = clip["thumbnails"][0]["uri"]
         clip_uri = clip["game_clip_uris"][0]["uri"]
         game = clip["title_name"]
-        embed = discord.Embed(
-            description=f"**{gamertag}'s Game Clips**", color=discord.Color.random()
-        )
+        embed = discord.Embed(description=f"**{gamertag}'s Game Clips**", color=discord.Color.random())
         embed.set_image(url=thumbnail)
         clip_info = (
             f"Title: `{title}`\n"
@@ -392,15 +382,11 @@ def ms_status(data: dict) -> List[discord.Embed]:
 
     status_data = ss["Status"]["Overall"]
     overall = status_data["State"]
-    last_updated = fix_timestamp(status_data["LastUpdated"], timezone).strftime(
-        "%m/%d/%y at %I:%M %p %Z"
-    )
+    last_updated = fix_timestamp(status_data["LastUpdated"], timezone).strftime("%m/%d/%y at %I:%M %p %Z")
     # If nothing is impacted then just return embed
     if overall == "None":
         color = discord.Color.green()
-        embed = discord.Embed(
-            description="✅ All Microsoft services are up and running!", color=color
-        )
+        embed = discord.Embed(description="✅ All Microsoft services are up and running!", color=color)
         embed.set_footer(text=f"Last Updated: {last_updated}")
         return [embed]
 
@@ -450,7 +436,7 @@ def ms_status(data: dict) -> List[discord.Embed]:
 
             name = scenario["Name"]
             service_info = scenario["Description"]
-            info += f"➣ {name.upper()}\n" f"{service_info}\n"
+            info += f"➣ {name.upper()}\n{service_info}\n"
         service_statuses += f"{box(info.strip())}\n"
 
     for i in title_svc["Category"]:
@@ -479,14 +465,14 @@ def ms_status(data: dict) -> List[discord.Embed]:
 
             name = scenario["Name"]
             service_info = scenario["Description"]
-            info += f"➣ {name.upper()}\n" f"{service_info}\n"
+            info += f"➣ {name.upper()}\n{service_info}\n"
         service_statuses += f"{box(info.strip())}\n"
 
     grammar = f"{out} {'service is' if out == 1 else 'services are'}"
     title = f"{grammar} affected at this time"
-    text = f"{limited} Limited\n" f"{down} Major outage"
+    text = f"{limited} Limited\n{down} Major outage"
 
-    desc = f"{text}\n\n" f"{service_statuses.strip()}"
+    desc = f"{text}\n\n{service_statuses.strip()}"
 
     if len(desc) > 4096:
         embeds = []
@@ -495,10 +481,10 @@ def ms_status(data: dict) -> List[discord.Embed]:
             embed.set_footer(text=f"Last Updated: {last_updated}")
             embeds.append(embed)
             return embeds
-    else:
-        embed = discord.Embed(title=title, description=desc, color=discord.Color.orange())
-        embed.set_footer(text=f"Last Updated: {last_updated}")
-        return [embed]
+
+    embed = discord.Embed(title=title, description=desc, color=discord.Color.orange())
+    embed.set_footer(text=f"Last Updated: {last_updated}")
+    return [embed]
 
 
 # Format games with gold products
@@ -511,12 +497,12 @@ def gwg_embeds(products):
         desc = game["localized_properties"][0]["short_description"]
         for image in game["localized_properties"][0]["images"]:
             if image["image_purpose"] == "BoxArt":
-                icon = f'https:{image["uri"]}'
+                icon = f"https:{image['uri']}"
                 break
         else:
             for image in game["localized_properties"][0]["images"]:
                 if image["image_purpose"] != "Screenshot":
-                    icon = f'https:{image["uri"]}'
+                    icon = f"https:{image['uri']}"
                     break
             else:
                 icon = None
@@ -526,19 +512,15 @@ def gwg_embeds(products):
             categories += f"{category}\n"
         if categories == "":
             categories = "--"
-        price = game["display_sku_availabilities"][0]["availabilities"][0][
-            "order_management_data"
-        ]["price"]["list_price"]
-        release_date = game["display_sku_availabilities"][0]["availabilities"][0]["properties"][
-            "original_release_date"
+        price = game["display_sku_availabilities"][0]["availabilities"][0]["order_management_data"]["price"][
+            "list_price"
         ]
+        release_date = game["display_sku_availabilities"][0]["availabilities"][0]["properties"]["original_release_date"]
         timestamp = fix_timestamp(release_date).strftime("%m/%d/%Y")
         embed = discord.Embed(title=f"{game_name}", description=f"**Description**\n{box(desc)}")
         embed.add_field(
             name="Info",
-            value=f"`Developer:` {dev_name}\n"
-            f"`Release Date:` {timestamp}\n"
-            f"`Price:` ~~${price}~~ FREE",
+            value=f"`Developer:` {dev_name}\n`Release Date:` {timestamp}\n`Price:` ~~${price}~~ FREE",
             inline=False,
         )
         embed.add_field(name="Categories", value=categories)
@@ -583,9 +565,7 @@ def mostplayed(data, gt):
         )
         hours, minutes = divmod(total_playtime, 60)
         days, hours = divmod(hours, 24)
-        embed.set_footer(
-            text=f"Page {p + 1}/{int(pages)} | Total Playtime: {days}d {hours}h {minutes}m"
-        )
+        embed.set_footer(text=f"Page {p + 1}/{int(pages)} | Total Playtime: {days}d {hours}h {minutes}m")
         embeds.append(embed)
     return embeds
 
