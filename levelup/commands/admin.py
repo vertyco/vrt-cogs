@@ -143,11 +143,12 @@ class Admin(MixinMeta):
                 value=_("Bonus for streaming: {}").format(f"`{conf.streambonus}`"),
                 inline=False,
             )
-        if conf.appbonus:
+
+        if conf.appbonus.voice:
             joined = "\n".join(
-                _("• {}: `{}`").format(app_name, xp_range) for app_name, xp_range in conf.appbonus.items()
+                _("• {}: `{}`").format(app_name, xp_range) for app_name, xp_range in conf.appbonus.voice.items()
             )
-            add_field(embed, _("Application XP Bonus"), joined)
+            add_field(embed, _("Voice Application XP Bonus"), joined)
         if conf.rolebonus.msg:
             joined = "\n".join(
                 _("• {}: `{}`").format(f"<@&{role_id}>", xp_range) for role_id, xp_range in conf.rolebonus.msg.items()
@@ -159,6 +160,11 @@ class Admin(MixinMeta):
                 for channel_id, xp_range in conf.channelbonus.msg.items()
             )
             add_field(embed, _("Message XP Bonus Channels"), joined)
+        if conf.appbonus.msg:
+            joined = "\n".join(
+                _("• {}: `{}`").format(app_name, xp_range) for app_name, xp_range in conf.appbonus.msg.items()
+            )
+            add_field(embed, _("Message Application XP Bonus"), joined)
         if conf.allowedroles:
             joined = ", ".join([f"<@&{role_id}>" for role_id in conf.allowedroles if ctx.guild.get_role(role_id)])
             add_field(embed, _("Allowed Roles"), joined)
