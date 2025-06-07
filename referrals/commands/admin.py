@@ -213,7 +213,7 @@ class Admin(MixinMeta):
         else:
             settings.claim_timeout_minutes = int(delta.total_seconds() / 60)
             txt = _("Users will have {} to claim their referral after joining.").format(
-                f"`{humanize_timedelta(timedelta=delta)}"
+                f"`{humanize_timedelta(timedelta=delta)}`"
             )
         await settings.save([GuildSettings.claim_timeout_minutes])
         await ctx.send(txt)
