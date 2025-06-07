@@ -240,7 +240,10 @@ class Admin(MixinMeta):
     @referset.command()
     @ensure_db_connection()
     async def resetall(self, ctx: commands.Context, confirm: bool):
-        """Reset all referral data for the guild"""
+        """Reset all referral data and settings for the guild
+
+        This deletes all referrals and settings, completely starting fresh.
+        """
         if not confirm:
             return await ctx.send(_("Rerun this with `True` to comfirm"))
         await Referral.delete().where(Referral.guild == ctx.guild.id)
@@ -250,7 +253,10 @@ class Admin(MixinMeta):
     @referset.command()
     @ensure_db_connection()
     async def resetreferrals(self, ctx: commands.Context, confirm: bool):
-        """Reset all referral data for the guild"""
+        """Reset all referral records for the guild
+
+        This keeps your settings but removes all referral history.
+        """
         if not confirm:
             return await ctx.send(_("Rerun this with `True` to confirm"))
         await Referral.delete().where(Referral.guild == ctx.guild.id)
@@ -259,7 +265,10 @@ class Admin(MixinMeta):
     @referset.command()
     @ensure_db_connection()
     async def resetsettings(self, ctx: commands.Context, confirm: bool):
-        """Reset all referral data for the guild"""
+        """Reset all referral settings for the guild
+
+        This keeps your referral history but resets all configuration settings.
+        """
         if not confirm:
             return await ctx.send(_("Rerun this with `True` to confirm"))
         await GuildSettings.delete().where(GuildSettings.id == ctx.guild.id)
@@ -268,7 +277,11 @@ class Admin(MixinMeta):
     @referset.command()
     @ensure_db_connection()
     async def resetinitialized(self, ctx: commands.Context, confirm: bool):
-        """Reset all referral data for the guild"""
+        """Reset the list of initialized users for the guild
+
+        This clears the record of which users have been initialized, allowing them
+        to potentially claim referrals.
+        """
         if not confirm:
             return await ctx.send(_("Rerun this with `True` to confirm"))
         settings = await self.db_utils.get_create_guild(ctx.guild)
