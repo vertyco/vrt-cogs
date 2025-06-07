@@ -955,7 +955,7 @@ class Admin(MixinMeta):
 
         This bonus applies to message xp
 
-        Set both min and max to 0 to remove the role bonus
+        Set both min and max to 0 to remove the channel bonus
         """
         if min_xp > max_xp:
             return await ctx.send(_("Min XP value cannot be greater than Max XP value"))
@@ -1016,9 +1016,9 @@ class Admin(MixinMeta):
 
         Set both min and max to 0 to remove the role bonus
         """
-        conf = self.db.get_conf(ctx.guild)
         if min_xp > max_xp:
             return await ctx.send(_("Min XP value cannot be greater than Max XP value"))
+        conf = self.db.get_conf(ctx.guild)
         if role.id in conf.rolebonus.msg:
             if min_xp == 0 and max_xp == 0:
                 del conf.rolebonus.msg[role.id]
@@ -1027,6 +1027,9 @@ class Admin(MixinMeta):
             conf.rolebonus.msg[role.id] = [min_xp, max_xp]
             self.save()
             return await ctx.send(_("Role bonus has been updated"))
+
+        if min_xp == 0 and max_xp == 0:
+            return await ctx.send(_("XP range cannot be 0"))
         conf.rolebonus.msg[role.id] = [min_xp, max_xp]
         self.save()
         await ctx.send(_("Role bonus has been set"))
@@ -1212,9 +1215,9 @@ class Admin(MixinMeta):
 
         Set both min and max to 0 to remove the role bonus
         """
-        conf = self.db.get_conf(ctx.guild)
         if min_xp > max_xp:
             return await ctx.send(_("Min XP value cannot be greater than Max XP value"))
+        conf = self.db.get_conf(ctx.guild)
         if role.id in conf.rolebonus.voice:
             if min_xp == 0 and max_xp == 0:
                 del conf.rolebonus.voice[role.id]
@@ -1223,6 +1226,7 @@ class Admin(MixinMeta):
             conf.rolebonus.voice[role.id] = [min_xp, max_xp]
             self.save()
             return await ctx.send(_("Role bonus has been updated"))
+
         if min_xp == 0 and max_xp == 0:
             return await ctx.send(_("XP range cannot be 0"))
         conf.rolebonus.voice[role.id] = [min_xp, max_xp]
@@ -1407,19 +1411,61 @@ class Admin(MixinMeta):
 
         application_name = application_name.upper()  # Normalize application name
 
-        if application_name in conf.appbonus:
+        if application_name in conf.appbonus.voice:
             if min_xp == 0 and max_xp == 0:
-                del conf.appbonus[application_name]
+                del conf.appbonus.voice[application_name]
                 self.save()
                 return await ctx.send(_("Application bonus for {} has been removed").format(application_name))
-            conf.appbonus[application_name] = [min_xp, max_xp]
+            conf.appbonus.voice[application_name] = [min_xp, max_xp]
             self.save()
             return await ctx.send(_("Application bonus for {} has been updated").format(application_name))
 
         if min_xp == 0 and max_xp == 0:
             return await ctx.send(_("XP range cannot be 0"))
 
-        conf.appbonus[application_name] = [min_xp, max_xp]
+        conf.appbonus.voice[application_name] = [min_xp, max_xp]
+        self.save()
+        await ctx.send(_("Application bonus for {} has been set").format(application_name))
+
+    @message_group.command(name="appbonus")
+    async def msg_app_bonus(
+        self,
+        ctx: commands.Context,
+        application_name: str,
+        min_xp: commands.positive_int,
+        max_xp: commands.positive_int,
+    ):
+        """
+        Add a range of bonus XP to users running a specific application/game
+
+        This bonus applies to message xp
+
+        Set both min and max to 0 to remove the application bonus
+
+        **Examples:**
+        • `[p]levelset messages appbonus VALORANT 5 10` - Users playing VALORANT get 5-10 bonus XP per message
+        • `[p]levelset messages appbonus "Visual Studio Code" 2 4` - Use quotes for names with spaces
+        • `[p]levelset messages appbonus VALORANT 0 0` - Remove the bonus for VALORANT
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if min_xp > max_xp:
+            return await ctx.send(_("Min XP value cannot be greater than Max XP value"))
+
+        application_name = application_name.upper()  # Normalize application name
+
+        if application_name in conf.appbonus.msg:
+            if min_xp == 0 and max_xp == 0:
+                del conf.appbonus.msg[application_name]
+                self.save()
+                return await ctx.send(_("Application bonus for {} has been removed").format(application_name))
+            conf.appbonus.msg[application_name] = [min_xp, max_xp]
+            self.save()
+            return await ctx.send(_("Application bonus for {} has been updated").format(application_name))
+
+        if min_xp == 0 and max_xp == 0:
+            return await ctx.send(_("XP range cannot be 0"))
+
+        conf.appbonus.msg[application_name] = [min_xp, max_xp]
         self.save()
         await ctx.send(_("Application bonus for {} has been set").format(application_name))
 
@@ -1460,3 +1506,115 @@ class Admin(MixinMeta):
                         "Warning: I couldn't find a background with that name. Make sure it exists in the backgrounds folder."
                     )
                 )
+
+    @levelset.group(name="presencebonus", aliases=["statusbonus"])
+    async def presence_bonus_group(self, ctx: commands.Context):
+        """Presence status bonus settings"""
+        pass
+
+    @presence_bonus_group.command(name="message", aliases=["msg"])
+    async def presence_msg_bonus(
+        self,
+        ctx: commands.Context,
+        status: t.Literal["online", "idle", "dnd", "offline"],
+        min_xp: commands.positive_int,
+        max_xp: commands.positive_int,
+    ):
+        """
+        Add a range of bonus XP to users with a specific presence status
+
+        This bonus applies to message XP
+
+        Set both min and max to 0 to remove the status bonus
+
+        **Examples:**
+        • `[p]levelset presencebonus message online 2 5` - Users with online status get 2-5 bonus XP per message
+        • `[p]levelset presencebonus message idle 1 3` - Users with idle status get 1-3 bonus XP per message
+        • `[p]levelset presencebonus message dnd 0 0` - Remove the bonus for dnd status
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if min_xp > max_xp:
+            return await ctx.send(_("Min XP value cannot be greater than Max XP value"))
+
+        if status in conf.presencebonus.msg:
+            if min_xp == 0 and max_xp == 0:
+                del conf.presencebonus.msg[status]
+                self.save()
+                return await ctx.send(_("Presence bonus for {} status has been removed for messages").format(status))
+            conf.presencebonus.msg[status] = [min_xp, max_xp]
+            self.save()
+            return await ctx.send(_("Presence bonus for {} status has been updated for messages").format(status))
+
+        if min_xp == 0 and max_xp == 0:
+            return await ctx.send(_("XP range cannot be 0"))
+
+        conf.presencebonus.msg[status] = [min_xp, max_xp]
+        self.save()
+        await ctx.send(_("Presence bonus for {} status has been set for messages").format(status))
+
+    @presence_bonus_group.command(name="voice")
+    async def presence_voice_bonus(
+        self,
+        ctx: commands.Context,
+        status: t.Literal["online", "idle", "dnd", "offline"],
+        min_xp: commands.positive_int,
+        max_xp: commands.positive_int,
+    ):
+        """
+        Add a range of bonus XP to users with a specific presence status
+
+        This bonus applies to voice time XP
+
+        Set both min and max to 0 to remove the status bonus
+
+        **Examples:**
+        • `[p]levelset presencebonus voice online 2 5` - Users with online status get 2-5 bonus XP per minute in voice
+        • `[p]levelset presencebonus voice idle 1 3` - Users with idle status get 1-3 bonus XP per minute in voice
+        • `[p]levelset presencebonus voice dnd 0 0` - Remove the bonus for dnd status
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if min_xp > max_xp:
+            return await ctx.send(_("Min XP value cannot be greater than Max XP value"))
+
+        if status in conf.presencebonus.voice:
+            if min_xp == 0 and max_xp == 0:
+                del conf.presencebonus.voice[status]
+                self.save()
+                return await ctx.send(_("Presence bonus for {} status has been removed for voice").format(status))
+            conf.presencebonus.voice[status] = [min_xp, max_xp]
+            self.save()
+            return await ctx.send(_("Presence bonus for {} status has been updated for voice").format(status))
+
+        if min_xp == 0 and max_xp == 0:
+            return await ctx.send(_("XP range cannot be 0"))
+
+        conf.presencebonus.voice[status] = [min_xp, max_xp]
+        self.save()
+        await ctx.send(_("Presence bonus for {} status has been set for voice").format(status))
+
+    @presence_bonus_group.command(name="view")
+    async def view_presence_bonuses(self, ctx: commands.Context):
+        """View all presence status bonuses"""
+        conf = self.db.get_conf(ctx.guild)
+
+        if not conf.presencebonus.msg and not conf.presencebonus.voice:
+            return await ctx.send(_("No presence bonuses have been set."))
+
+        embed = discord.Embed(
+            title=_("Presence Status Bonuses"),
+            color=await self.bot.get_embed_color(ctx),
+        )
+
+        if conf.presencebonus.msg:
+            msg_bonuses = "\n".join(
+                _("• {}: `{}`").format(status, xp_range) for status, xp_range in conf.presencebonus.msg.items()
+            )
+            embed.add_field(name=_("Message XP Bonuses"), value=msg_bonuses, inline=False)
+
+        if conf.presencebonus.voice:
+            voice_bonuses = "\n".join(
+                _("• {}: `{}`").format(status, xp_range) for status, xp_range in conf.presencebonus.voice.items()
+            )
+            embed.add_field(name=_("Voice XP Bonuses"), value=voice_bonuses, inline=False)
+
+        await ctx.send(embed=embed)
