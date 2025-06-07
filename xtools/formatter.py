@@ -75,6 +75,7 @@ def profile(data):
         None,
         None,
         None,
+        None,
     )
     user = data["profile_users"][0]
     xuid = user["id"]
