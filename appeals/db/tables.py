@@ -31,6 +31,9 @@ class AppealGuild(Table):
     alert_roles = Array(BigInt())  # Roles to alert when a new appeal is submitted
     alert_channel = BigInt()  # Channel to alert when a new appeal is submitted
     appeal_limit = Integer(default=1)  # Maximum number of times a user can submit an appeal
+    discussion_threads = Boolean(default=True)  # Whether to create discussion threads for appeals
+    vote_emojis = Boolean(default=False)  # Whether to add basic check and cross emojis to the appeal message
+
     # Appeal button
     button_style = Text(default="primary")  # can be `primary`, `secondary`, `success`, `danger`
     button_label = Text(default="Submit Appeal")
@@ -99,6 +102,9 @@ class AppealSubmission(Table):
     status = Text(default="pending")  # can be `pending`, `approved`, `denied`
     message_id = BigInt()  # Message ID of the submission message
     reason = Text()  # Reason for denial
+
+    # 0.2.0+
+    discussion_thread = BigInt()  # ID of the discussion thread for this question, if applicable
 
     def created(self, type: t.Literal["t", "T", "d", "D", "f", "F", "R"]) -> str:
         return f"<t:{int(self.created_at.timestamp())}:{type}>"

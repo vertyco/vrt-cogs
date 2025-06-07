@@ -25,12 +25,12 @@ class Appeals(Commands, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     """Straightforward ban appeal system for Discord servers."""
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.1.2"
+    __version__ = "0.2.0"
 
     def __init__(self, bot: Red):
         super().__init__()
         self.bot: Red = bot
-        self.db: SQLiteEngine = None
+        self.db: SQLiteEngine | None = None
         self.db_utils: DBUtils = DBUtils()
 
     def format_help_for_context(self, ctx: commands.Context):
