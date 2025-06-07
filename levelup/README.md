@@ -749,7 +749,7 @@ Use the command with a channel already in the ignore list to remove it<br/>
  - Usage: `[p]levelset ignore channel <channel>`
 ### [p]levelset ignore notify
 Add/Remove a channel in the notify ignore list<br/>
-Channels in the notify ignore list will have level up notifications supressed<br/>
+Channels in the notify ignore list will have level up notifications suppressed<br/>
 
 Use the command with a channel already in the notify ignore list to remove it<br/>
  - Usage: `[p]levelset ignore notify <channel>`
