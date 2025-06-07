@@ -31,8 +31,8 @@ Get a player's XUID<br/>
 Get the Gamertag associated with an XUID<br/>
  - Usage: `[p]gamertag <xuid>`
 # [p]xprofile
-View your Xbox profile<br/>
- - Usage: `[p]xprofile [gamertag]`
+View your Xbox profile (can use gamertag or XUID)<br/>
+ - Usage: `[p]xprofile [gamertag_or_xuid]`
 # [p]xscreenshots
 View your Screenshots<br/>
  - Usage: `[p]xscreenshots [gamertag]`

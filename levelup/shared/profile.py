@@ -69,14 +69,19 @@ class ProfileFormatting(MixinMeta):
         return profile.level
 
     async def get_profile_background(
-        self, user_id: int, profile: Profile, try_return_url: bool = False
+        self, user_id: int, profile: Profile, try_return_url: bool = False, guild_id: int = None
     ) -> t.Union[bytes, str]:
         """
         Get a background for a user's profile in the following priority:
         - Custom background selected by user
         - Banner of user's Discord profile
+        - Guild default background
         - Random background
         """
+        guild_conf = None
+        if guild_id is not None:
+            guild_conf = self.db.get_conf(guild_id)
+
         if profile.background == "default":
             if banner_url := await self.get_banner(user_id):
                 if try_return_url:
@@ -108,6 +113,20 @@ class ProfileFormatting(MixinMeta):
                 if banner_bytes := await utils.get_content_from_url(banner_url):
                     return banner_bytes
 
+        # Check guild default background if available
+        if guild_conf and guild_conf.default_background != "default":
+            if guild_conf.default_background.lower().startswith("http"):
+                if try_return_url:
+                    return guild_conf.default_background
+                if content := await utils.get_content_from_url(guild_conf.default_background):
+                    return content
+
+            # Check if guild default is a filename
+            for path in valid:
+                if guild_conf.default_background == path.stem or guild_conf.default_background == path.name:
+                    return path.read_bytes()
+
+        # Fallback to random
         return random.choice(valid).read_bytes()
 
     async def get_banner(self, user_id: int) -> t.Optional[str]:
@@ -244,7 +263,9 @@ class ProfileFormatting(MixinMeta):
             # We'll use the external/internal API, try to get URLs instead for faster http requests
             kwargs["avatar_bytes"] = member.display_avatar.url
             if profile_style != "runescape":
-                kwargs["background_bytes"] = await self.get_profile_background(member.id, profile, try_return_url=True)
+                kwargs["background_bytes"] = await self.get_profile_background(
+                    member.id, profile, try_return_url=True, guild_id=guild.id
+                )
                 if pdata and pdata.emoji_url:
                     kwargs["prestige_emoji"] = pdata.emoji_url
                 if member.top_role.icon:
@@ -252,7 +273,7 @@ class ProfileFormatting(MixinMeta):
         else:
             kwargs["avatar_bytes"] = await member.display_avatar.read()
             if profile_style != "runescape":
-                kwargs["background_bytes"] = await self.get_profile_background(member.id, profile)
+                kwargs["background_bytes"] = await self.get_profile_background(member.id, profile, guild_id=guild.id)
                 if pdata and pdata.emoji_url:
                     emoji_bytes = await utils.get_content_from_url(pdata.emoji_url)
                     kwargs["prestige_emoji"] = emoji_bytes

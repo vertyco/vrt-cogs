@@ -134,6 +134,23 @@ class MessageListener(MixinMeta):
         for role_id, (bonus_min, bonus_max) in conf.rolebonus.msg.items():
             if role_id in role_ids:
                 xp_to_add += random.randint(bonus_min, bonus_max)
+
+        # Add presence bonus if applicable
+        presence_status = str(message.author.status).lower()  # 'online', 'idle', 'dnd', 'offline'
+        if presence_status in conf.presencebonus.msg:
+            bonus_min, bonus_max = conf.presencebonus.msg[presence_status]
+            xp_to_add += random.randint(bonus_min, bonus_max)
+            log.debug(f"Adding {presence_status} presence bonus to {message.author.name} in {message.guild.name}")
+
+        # Add application bonus if the user is using a specific application
+        if hasattr(message.author, "activity") and message.author.activity:
+            activity_name = getattr(message.author.activity, "name", "").upper()
+            if activity_name and activity_name in conf.appbonus.msg:
+                app_bonus_min, app_bonus_max = conf.appbonus.msg[activity_name]
+                app_bonus = random.randint(app_bonus_min, app_bonus_max)
+                xp_to_add += app_bonus
+                log.debug(f"Adding {app_bonus} application bonus XP to {message.author.name} for using {activity_name}")
+
         # Add the xp to the role groups
         for role_id in role_ids:
             if role_id in conf.role_groups:
