@@ -219,6 +219,16 @@ class ChannelBonus(Base):
     voice: t.Dict[int, t.List[int]] = {}  # Channel_ID: [Min, Max]
 
 
+class PresenceBonus(Base):
+    msg: t.Dict[str, t.List[int]] = {}  # online: [Min, Max], dnd: [Min, Max], idle: [Min, Max], ect...
+    voice: t.Dict[str, t.List[int]] = {}  # online: [Min, Max], dnd: [Min, Max], idle: [Min, Max], ect...
+
+
+class AppBonus(Base):
+    msg: t.Dict[str, t.List[int]] = {}  # Application_Name: [Min, Max]
+    voice: t.Dict[str, t.List[int]] = {}  # Application_Name: [Min, Max]
+
+
 class Algorithm(Base):
     base: int = 100  # Base denominator for level algorithm, higher takes longer to level
     exp: float = 2.0  # Exponent for level algorithm, higher is a more exponential/steeper curve
@@ -291,9 +301,10 @@ class GuildSettings(Base):
 
     # Bonuses
     streambonus: t.List[int] = []  # Bonus voice XP for streaming in voice Example: [2, 5]
-    appbonus: t.Dict[str, t.List[int]] = {}  # Application_Name: [Min, Max] - Bonus for using specific applications
+    appbonus: AppBonus = AppBonus()  # Application bonuses for voice and messages
     rolebonus: RoleBonus = RoleBonus()
     channelbonus: ChannelBonus = ChannelBonus()
+    presencebonus: PresenceBonus = PresenceBonus()  # Bonus for presence status (online, dnd, idle, offline)
 
     # Allowed
     allowedchannels: t.List[int] = []  # Only channels that gain XP if not empty
@@ -419,9 +430,6 @@ def run_migrations(settings: t.Dict[str, t.Any]) -> DB:
             "base": conf.get("base", 100),
             "exp": conf.get("exp", 2.0),
         }
-
-        migrated += 1
-
     log.warning(f"Migrated {migrated} guilds to new schema")
     db: DB = DB.load(data)
     return db
