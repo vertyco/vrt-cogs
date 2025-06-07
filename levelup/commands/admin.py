@@ -94,18 +94,24 @@ class Admin(MixinMeta):
             description=txt.strip(),
             color=await self.bot.get_embed_color(ctx),
         )
+
+        def add_field(embed: discord.Embed, name: str, value: str):
+            chunks = list(pagify(value, page_length=1024))
+            if len(chunks) == 1:
+                embed.add_field(name=name, value=value, inline=False)
+            else:
+                for i, chunk in enumerate(chunks):
+                    embed.add_field(
+                        name=name if i == 0 else f"{name} Continued",
+                        value=chunk,
+                        inline=False,
+                    )
+
         if conf.levelroles:
             joined = "\n".join(
                 _("• Level {}: {}").format(level, f"<@&{role_id}>") for level, role_id in conf.levelroles.items()
             )
-            chunks = list(pagify(joined, page_length=1024))
-            if len(chunks) == 1:
-                embed.add_field(name=_("Level Roles"), value=joined, inline=False)
-            else:
-                for i, chunk in enumerate(chunks):
-                    embed.add_field(
-                        name=_("Level Roles") if i == 0 else _("Level Roles Continued"), value=chunk, inline=False
-                    )
+            add_field(embed, _("Level Roles"), joined)
         if conf.prestigelevel and conf.prestigedata:
             roles = _("➣ Prestige roles will {}").format(
                 _("**Stack**") if conf.stackprestigeroles else _("**Not Stack**")
@@ -119,18 +125,18 @@ class Admin(MixinMeta):
                 _("• Prestige {}: {}").format(level, f"<@&{prestige.role}>")
                 for level, prestige in conf.prestigedata.items()
             )
-            embed.add_field(name=_("Prestige"), value=f"{roles}\n{req}\n{joined}", inline=False)
+            add_field(embed, _("Prestige Roles"), f"{roles}\n{req}\n{joined}")
         if conf.rolebonus.voice:
             joined = "\n".join(
                 _("• {}: `{}`").format(f"<@&{role_id}>", xp_range) for role_id, xp_range in conf.rolebonus.voice.items()
             )
-            embed.add_field(name=_("Voice XP Bonus Roles"), value=joined, inline=False)
+            add_field(embed, _("Voice XP Bonus Roles"), joined)
         if conf.channelbonus.voice:
             joined = "\n".join(
                 _("• {}: `{}`").format(f"<#{channel_id}>", xp_range)
                 for channel_id, xp_range in conf.channelbonus.voice.items()
             )
-            embed.add_field(name=_("Voice XP Bonus Channels"), value=joined, inline=False)
+            add_field(embed, _("Voice XP Bonus Channels"), joined)
         if conf.streambonus:
             embed.add_field(
                 name=_("Stream Bonus"),
@@ -141,32 +147,32 @@ class Admin(MixinMeta):
             joined = "\n".join(
                 _("• {}: `{}`").format(f"<@&{role_id}>", xp_range) for role_id, xp_range in conf.rolebonus.msg.items()
             )
-            embed.add_field(name=_("Message XP Bonus Roles"), value=joined, inline=False)
+            add_field(embed, _("Message XP Bonus Roles"), joined)
         if conf.channelbonus.msg:
             joined = "\n".join(
                 _("• {}: `{}`").format(f"<#{channel_id}>", xp_range)
                 for channel_id, xp_range in conf.channelbonus.msg.items()
             )
-            embed.add_field(name=_("Message XP Bonus Channels"), value=joined, inline=False)
+            add_field(embed, _("Message XP Bonus Channels"), joined)
         if conf.allowedroles:
             joined = ", ".join([f"<@&{role_id}>" for role_id in conf.allowedroles if ctx.guild.get_role(role_id)])
-            embed.add_field(name=_("Allowed Roles"), value=joined, inline=False)
+            add_field(embed, _("Allowed Roles"), joined)
         if conf.allowedchannels:
             joined = ", ".join(
                 [f"<#{channel_id}>" for channel_id in conf.allowedchannels if ctx.guild.get_channel(channel_id)]
             )
-            embed.add_field(name=_("Allowed Channels"), value=joined, inline=False)
+            add_field(embed, _("Allowed Channels"), joined)
         if conf.ignoredroles:
             joined = ", ".join([f"<@&{role_id}>" for role_id in conf.ignoredroles if ctx.guild.get_role(role_id)])
-            embed.add_field(name=_("Ignored Roles"), value=joined, inline=False)
+            add_field(embed, _("Ignored Roles"), joined)
         if conf.ignoredchannels:
             joined = ", ".join(
                 [f"<#{channel_id}>" for channel_id in conf.ignoredchannels if ctx.guild.get_channel(channel_id)]
             )
-            embed.add_field(name=_("Ignored Channels"), value=joined, inline=False)
+            add_field(embed, _("Ignored Channels"), joined)
         if conf.ignoredusers:
             joined = ", ".join([f"<@{user_id}>" for user_id in conf.ignoredusers if ctx.guild.get_member(user_id)])
-            embed.add_field(name=_("Ignored Users"), value=joined, inline=False)
+            add_field(embed, _("Ignored Users"), joined)
         if dm_role := conf.role_awarded_dm:
             embed.add_field(name=_("LevelUp DM Role Message"), value=dm_role, inline=False)
         if dm_msg := conf.levelup_dm:
@@ -178,7 +184,7 @@ class Admin(MixinMeta):
         if roles := conf.role_groups:
             joined = ", ".join([f"<@&{role_id}>" for role_id in roles if ctx.guild.get_role(role_id)])
             txt = _("The following roles gain exp as a group:\n{}").format(joined)
-            embed.add_field(name=_("Role Exp Groups"), value=txt, inline=False)
+            add_field(embed, _("Role Exp Groups"), txt)
         if ctx.author.id not in self.bot.owner_ids:
             txt = _("➣ Profile Cache Time\n")
             if self.db.cache_seconds:
