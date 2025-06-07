@@ -1422,3 +1422,41 @@ class Admin(MixinMeta):
         conf.appbonus[application_name] = [min_xp, max_xp]
         self.save()
         await ctx.send(_("Application bonus for {} has been set").format(application_name))
+
+    @levelset.command(name="defaultbackground")
+    async def set_default_background(self, ctx: commands.Context, *, background: str = None):
+        """
+        Set the default background for all users in the guild
+
+        This background will be used when a user hasn't set their own background.
+        You can specify:
+        - A URL to an image
+        - The name of a background from the backgrounds folder
+        - "random" for a random background each time
+        - "default" to use Discord banner or random (system default)
+
+        If no background is specified, shows the current default background.
+        """
+        conf = self.db.get_conf(ctx.guild)
+
+        if not background:
+            return await ctx.send(_("Current default background: `{}`").format(conf.default_background))
+
+        conf.default_background = background
+        self.save()
+        await ctx.send(_("Default background for all users has been set to: `{}`").format(background))
+
+        if background.lower() not in ["default", "random"] and not background.lower().startswith("http"):
+            # Check if the background exists
+            valid = list(self.backgrounds.glob("*.webp")) + list(self.custom_backgrounds.iterdir())
+            found = False
+            for path in valid:
+                if background == path.stem or background == path.name:
+                    found = True
+                    break
+            if not found:
+                await ctx.send(
+                    _(
+                        "Warning: I couldn't find a background with that name. Make sure it exists in the backgrounds folder."
+                    )
+                )
