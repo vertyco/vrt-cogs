@@ -290,6 +290,7 @@ class GuildSettings(Base):
 
     # Bonuses
     streambonus: t.List[int] = []  # Bonus voice XP for streaming in voice Example: [2, 5]
+    appbonus: t.Dict[str, t.List[int]] = {}  # Application_Name: [Min, Max] - Bonus for using specific applications
     rolebonus: RoleBonus = RoleBonus()
     channelbonus: ChannelBonus = ChannelBonus()
 

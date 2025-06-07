@@ -143,6 +143,11 @@ class Admin(MixinMeta):
                 value=_("Bonus for streaming: {}").format(f"`{conf.streambonus}`"),
                 inline=False,
             )
+        if conf.appbonus:
+            joined = "\n".join(
+                _("• {}: `{}`").format(app_name, xp_range) for app_name, xp_range in conf.appbonus.items()
+            )
+            add_field(embed, _("Application XP Bonus"), joined)
         if conf.rolebonus.msg:
             joined = "\n".join(
                 _("• {}: `{}`").format(f"<@&{role_id}>", xp_range) for role_id, xp_range in conf.rolebonus.msg.items()
@@ -1375,3 +1380,45 @@ class Admin(MixinMeta):
         del conf.prestigedata[prestige]
         self.save()
         await ctx.send(_("Prestige level {} has been removed").format(prestige))
+
+    @voice_group.command(name="appbonus")
+    async def voice_app_bonus(
+        self,
+        ctx: commands.Context,
+        application_name: str,
+        min_xp: commands.positive_int,
+        max_xp: commands.positive_int,
+    ):
+        """
+        Add a range of bonus XP to users running a specific application/game in voice channels
+
+        This bonus applies to voice time xp
+
+        Set both min and max to 0 to remove the application bonus
+
+        **Examples:**
+        • `[p]levelset voice appbonus VALORANT 5 10` - Users playing VALORANT get 5-10 bonus XP per minute
+        • `[p]levelset voice appbonus "Visual Studio Code" 2 4` - Use quotes for names with spaces
+        • `[p]levelset voice appbonus VALORANT 0 0` - Remove the bonus for VALORANT
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if min_xp > max_xp:
+            return await ctx.send(_("Min XP value cannot be greater than Max XP value"))
+
+        application_name = application_name.upper()  # Normalize application name
+
+        if application_name in conf.appbonus:
+            if min_xp == 0 and max_xp == 0:
+                del conf.appbonus[application_name]
+                self.save()
+                return await ctx.send(_("Application bonus for {} has been removed").format(application_name))
+            conf.appbonus[application_name] = [min_xp, max_xp]
+            self.save()
+            return await ctx.send(_("Application bonus for {} has been updated").format(application_name))
+
+        if min_xp == 0 and max_xp == 0:
+            return await ctx.send(_("XP range cannot be 0"))
+
+        conf.appbonus[application_name] = [min_xp, max_xp]
+        self.save()
+        await ctx.send(_("Application bonus for {} has been set").format(application_name))

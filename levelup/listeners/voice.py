@@ -192,6 +192,17 @@ class VoiceListener(MixinMeta):
             if role_id in role_ids:
                 xp_to_add += random.randint(bonus_min, bonus_max) * (effective_time / 60)
 
+        # Add application bonus if the user was using a specific application
+        if hasattr(member, "activity") and member.activity:
+            activity_name = getattr(member.activity, "name", "").upper()
+            if activity_name and activity_name in conf.appbonus:
+                app_bonus_min, app_bonus_max = conf.appbonus[activity_name]
+                app_bonus = random.randint(app_bonus_min, app_bonus_max) * (effective_time / 60)
+                xp_to_add += app_bonus
+                log.debug(
+                    f"Adding {round(app_bonus, 2)} application bonus XP to {member.name} for using {activity_name}"
+                )
+
         # Add the exp to the user
         if xp_to_add:
             log.debug(f"Adding {round(xp_to_add, 2)} Voice XP to {member.name} in {member.guild}")
