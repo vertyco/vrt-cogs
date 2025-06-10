@@ -57,7 +57,12 @@ class DynamicMenu(discord.ui.View):
                 return
             page_count = len(pages)
             for idx in range(len(pages)):
-                pages[idx].set_footer(text=f"Page {idx + 1}/{page_count}")
+                page = pages[idx]
+                assert isinstance(page, discord.Embed), "All pages must be Embeds."
+                footer = f"Page {idx + 1}/{page_count}"
+                if page.footer:
+                    footer = f"{page.footer.text}\n{footer}"
+                pages[idx].set_footer(text=footer)
         else:
             if not all(isinstance(page, str) for page in pages):
                 raise TypeError("All pages must be Embeds or strings.")
