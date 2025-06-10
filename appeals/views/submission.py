@@ -193,6 +193,7 @@ class SubmissionView(discord.ui.View):
             user_id=interaction.user.id,
             answers=final_answers,
         )
+        await submission.save()
 
         embed = submission.embed(interaction.user)
 
@@ -214,7 +215,7 @@ class SubmissionView(discord.ui.View):
             )
             submission.discussion_thread = thread.id
 
-        await submission.save()
+        await submission.save([AppealSubmission.message_id, AppealSubmission.discussion_thread])
 
         if appealguild["vote_emojis"] and pending_channel.permissions_for(interaction.guild.me).add_reactions:
             start_adding_reactions(message, ["✅", "❌"])
