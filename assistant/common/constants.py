@@ -33,6 +33,8 @@ MODELS = {
     "o1-preview-2024-09-12": 128000,
     "o1-mini": 128000,
     "o1-mini-2024-09-12": 128000,
+    "o3": 200000,
+    "o3-2025-04-16": 200000,
     "o3-mini": 200000,
     "o3-mini-2025-01-31": 200000,
 }
@@ -78,6 +80,7 @@ PRICES = {  # Price per 1k tokens
     "o1-preview-2024-09-12": [0.015, 0.06],
     "o1-mini": [0.003, 0.012],
     "o1-mini-2024-09-12": [0.003, 0.012],
+    "o3": [0.002, 0.008],
     "o3-mini": [0.0011, 0.0044],
     "o3-mini-2025-01-31": [0.0011, 0.0044],
     "text-ada-001": [0.0004, 0.0016],
@@ -90,6 +93,19 @@ PRICES = {  # Price per 1k tokens
     "text-embedding-ada-002-v2": [0.0001, 0.0001],
     "text-embedding-3-small": [0.00002, 0.00002],
     "text-embedding-3-large": [0.00013, 0.00013],
+}
+VISION_COSTS = {
+    "gpt-4o": [85, 170],  # 85 base tokens, 170 per (32x32) pixel tile in the image
+    "gpt-4o-2024-05-13": [85, 170],
+    "gpt-4o-2024-08-06": [85, 170],
+    "gpt-4o-2024-11-20": [85, 170],
+    "gpt-4o-mini": [2833, 5667],  # 2833 base tokens, 5667 per (32x32) pixel tile in the image
+    "gpt-4o-mini-2024-07-18": [2833, 5667],
+    "gpt-4.1": [85, 170],  # 85 base tokens, 170 per (32x32) pixel tile in the image
+    "gpt-4.1-2025-04-14": [85, 170],
+    "o1": [75, 150],  # 75 base tokens, 150 per (32x32) pixel tile in the image
+    "o1-2024-12-17": [75, 150],
+    "o3": [75, 150],  # 75 base tokens, 150 per (32x32) pixel tile in the image
 }
 IMAGE_COSTS = {
     "standard1024x1024": 0.04,
