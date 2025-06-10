@@ -17,7 +17,7 @@ from redbot.core.utils.chat_formatting import box, humanize_number
 
 from ..abc import MixinMeta
 from .calls import request_chat_completion_raw, request_embedding_raw
-from .constants import MODELS
+from .constants import MODELS, VISION_COSTS
 from .models import GuildSettings
 
 log = logging.getLogger("red.vrt.assistant.api")
@@ -146,9 +146,17 @@ class API(MixinMeta):
             for message in messages:
                 num_tokens += tokens_per_message
                 for key, value in message.items():
-                    num_tokens += len(encoding.encode(str(value)))
                     if key == "name":
                         num_tokens += tokens_per_name
+                    elif key == "content" and isinstance(value, str):
+                        num_tokens += len(encoding.encode(value))
+                    elif key == "content" and not isinstance(value, str):
+                        for item in value:
+                            if item["type"] == "text":
+                                num_tokens += len(encoding.encode(item["text"]))
+                            elif item["type"] == "image_url":
+                                num_tokens += VISION_COSTS.get(model, 1000)  # Just assume around 1k tokens for images
+
             num_tokens += 3  # every reply is primed with <|start|>assistant<|message|>
             return num_tokens
 
