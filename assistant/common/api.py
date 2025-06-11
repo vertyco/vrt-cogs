@@ -148,14 +148,15 @@ class API(MixinMeta):
                 for key, value in message.items():
                     if key == "name":
                         num_tokens += tokens_per_name
-                    elif key == "content" and isinstance(value, str):
-                        num_tokens += len(encoding.encode(value))
-                    elif key == "content" and not isinstance(value, str):
+
+                    if key == "content" and isinstance(value, list):
                         for item in value:
                             if item["type"] == "text":
                                 num_tokens += len(encoding.encode(item["text"]))
                             elif item["type"] == "image_url":
                                 num_tokens += VISION_COSTS.get(model, 1000)  # Just assume around 1k tokens for images
+                    else:  # String, probably
+                        num_tokens += len(encoding.encode(str(value)))
 
             num_tokens += 3  # every reply is primed with <|start|>assistant<|message|>
             return num_tokens
