@@ -52,12 +52,12 @@ async def request_chat_completion_raw(
 
     if model in PRICES and base_url is None:
         # Using an OpenAI model
-        if "o1" not in model and "o3" not in model:
+        if not model.startswith("o"):
             kwargs["temperature"] = temperature
             kwargs["frequency_penalty"] = frequency_penalty
             kwargs["presence_penalty"] = presence_penalty
 
-        if model in ["o1", "o1-2024-12-17", "o3-mini", "o3-mini-2025-01-31"] and reasoning_effort is not None:
+        if model.startswith("o") and reasoning_effort is not None:
             kwargs["reasoning_effort"] = reasoning_effort
 
         if max_tokens > 0:
