@@ -158,7 +158,6 @@ async def request_image_raw(
         "model": model,
         "prompt": prompt,
         "size": size,
-        "response_format": "b64_json",
         "n": 1,
     }
 
@@ -166,6 +165,7 @@ async def request_image_raw(
     if model == "dall-e-3":
         kwargs["quality"] = quality if quality in ["standard", "hd"] else "standard"
         kwargs["style"] = style
+        kwargs["response_format"] = "b64_json"
     elif model == "gpt-image-1":
         if quality in ["low", "medium", "high"]:
             kwargs["quality"] = quality
