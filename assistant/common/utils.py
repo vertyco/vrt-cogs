@@ -502,7 +502,7 @@ async def ensure_tool_consistency(messages: list[dict]) -> bool:
     for idx, message in enumerate(messages):
         if message["role"] != "tool":
             continue
-        if message["tool_call_id"] not in tool_call_ids:
+        if message.get("tool_call_id", "unknown") not in tool_call_ids:
             indexes_to_purge.add(idx)
             log.info(f"Purging tool response with no tool call: {message}")
 
