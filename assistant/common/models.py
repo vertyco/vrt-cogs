@@ -90,7 +90,7 @@ class GuildSettings(AssistantBaseModel):
     mention: bool = False
     mention_respond: bool = True
     enabled: bool = True  # Auto-reply channel
-    model: str = "gpt-4o-mini"
+    model: str = "gpt-4.1"
     embed_model: str = "text-embedding-3-small"  # Or text-embedding-3-large, text-embedding-ada-002
     collab_convos: bool = False
     reasoning_effort: str = "low"  # low, medium, high
@@ -99,7 +99,7 @@ class GuildSettings(AssistantBaseModel):
     auto_answer: bool = False  # Answer questions anywhere if one is detected and embedding is found for it
     auto_answer_threshold: float = 0.7  # 0.0 - 1.0  # Confidence threshold for auto-answer
     auto_answer_ignored_channels: t.List[int] = []  # Channel IDs to ignore auto-answer
-    auto_answer_model: str = "gpt-4o-mini"  # Model to use for auto-answer
+    auto_answer_model: str = "gpt-4.1"  # Model to use for auto-answer
 
     image_command: bool = True  # Allow image commands
 
