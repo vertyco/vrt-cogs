@@ -518,7 +518,7 @@ class ChatHandler(MixinMeta):
                     function_name = function_call.name
                     arguments = function_call.arguments
                     tool_id = None
-                    role = "function"
+                    role = "tool"
                 elif isinstance(function_call, ChatCompletionMessageToolCall):
                     function_name = function_call.function.name
                     arguments = function_call.function.arguments
