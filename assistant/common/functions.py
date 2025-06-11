@@ -24,26 +24,33 @@ class AssistantFunctions(MixinMeta):
         channel: discord.TextChannel,
         conf: GuildSettings,
         prompt: str,
-        size: t.Literal["1024x1024", "1792x1024", "1024x1792"] = "1024x1024",
-        quality: t.Literal["standard", "hd"] = "standard",
-        style: t.Literal["natural", "vivid"] = "vivid",
+        size: t.Literal["1024x1024", "1792x1024", "1024x1792", "1024x1536", "1536x1024"] = "1024x1024",
+        quality: t.Literal["standard", "hd", "low", "medium", "high"] = "medium",
+        style: t.Optional[t.Literal["natural", "vivid"]] = "vivid",
+        model: t.Literal["dall-e-3", "gpt-image-1"] = "dall-e-3",
         *args,
         **kwargs,
     ):
         cost_key = f"{quality}{size}"
+        if model == "gpt-image-1":
+            cost_key = f"{quality}{size}"
         cost = constants.IMAGE_COSTS.get(cost_key, 0)
+
         image = await calls.request_image_raw(
-            prompt, conf.api_key, size, quality, style, base_url=self.db.endpoint_override
+            prompt, conf.api_key, size, quality, style, model, base_url=self.db.endpoint_override
         )
 
-        desc = _("-# Size: {}\n-# Quality: {}\n-# Style: {}").format(size, quality, style)
+        desc = _("-# Size: {}\n-# Quality: {}\n-# Model: {}").format(size, quality, model)
+        if model == "dall-e-3":
+            desc += _("\n-# Style: {}").format(style)
+
         color = (await self.bot.get_embed_color(channel)) if channel else discord.Color.blue()
         embed = (
             discord.Embed(description=desc, color=color)
             .set_image(url="attachment://image.png")
             .set_footer(text=_("Cost: ${}").format(f"{cost:.2f}"))
         )
-        if image.revised_prompt:
+        if hasattr(image, "revised_prompt") and image.revised_prompt:
             embed.add_field(name=_("Revised Prompt"), value=image.revised_prompt)
         payload = {
             "embed": embed,
@@ -51,7 +58,7 @@ class AssistantFunctions(MixinMeta):
             "return_null": True,  # The image will be sent and the model will not be re-queried
             "file": discord.File(BytesIO(b64decode(image.b64_json)), filename="image.png"),
         }
-        if image.revised_prompt:
+        if hasattr(image, "revised_prompt") and image.revised_prompt:
             payload["result_text"] += f"\nRevised prompt: {image.revised_prompt}"
 
         return payload

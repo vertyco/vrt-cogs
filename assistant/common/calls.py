@@ -146,21 +146,34 @@ async def request_embedding_raw(
 async def request_image_raw(
     prompt: str,
     api_key: str,
-    size: t.Literal["1024x1024", "1792x1024", "1024x1792"] = "1024x1024",
-    quality: t.Literal["standard", "hd"] = "standard",
-    style: t.Literal["natural", "vivid"] = "vivid",
+    size: t.Literal["1024x1024", "1792x1024", "1024x1792", "1024x1536", "1536x1024"] = "1024x1024",
+    quality: t.Literal["standard", "hd", "low", "medium", "high"] = "standard",
+    style: t.Optional[t.Literal["natural", "vivid"]] = "vivid",
+    model: t.Literal["dall-e-3", "gpt-image-1"] = "dall-e-3",
     base_url: Optional[str] = None,
 ) -> Image:
     client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
-    response: ImagesResponse = await client.images.generate(
-        model="dall-e-3",
-        prompt=prompt,
-        size=size,
-        quality=quality,
-        style=style,
-        response_format="b64_json",
-        n=1,
-    )
+
+    kwargs = {
+        "model": model,
+        "prompt": prompt,
+        "size": size,
+        "response_format": "b64_json",
+        "n": 1,
+    }
+
+    # Handle model-specific parameters
+    if model == "dall-e-3":
+        kwargs["quality"] = quality if quality in ["standard", "hd"] else "standard"
+        kwargs["style"] = style
+    elif model == "gpt-image-1":
+        if quality in ["low", "medium", "high"]:
+            kwargs["quality"] = quality
+        else:
+            kwargs["quality"] = "medium"
+        # gpt-image-1 doesn't support style parameter
+
+    response: ImagesResponse = await client.images.generate(**kwargs)
     return response.data[0]
 
 
@@ -176,7 +189,7 @@ async def create_memory_call(
 ) -> t.Union[CreateMemoryResponse, None]:
     client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
     response = await client.beta.chat.completions.parse(
-        model="gpt-4o-2024-11-20",
+        model="o3",
         messages=messages,
         response_format=CreateMemoryResponse,
     )
