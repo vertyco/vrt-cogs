@@ -154,7 +154,9 @@ class API(MixinMeta):
                             if item["type"] == "text":
                                 num_tokens += len(encoding.encode(item["text"]))
                             elif item["type"] == "image_url":
-                                num_tokens += VISION_COSTS.get(model, 1000)  # Just assume around 1k tokens for images
+                                num_tokens += VISION_COSTS.get(model, [1000])[
+                                    0
+                                ]  # Just assume around 1k tokens for images
                     else:  # String, probably
                         num_tokens += len(encoding.encode(str(value)))
 

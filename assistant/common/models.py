@@ -232,6 +232,21 @@ class Conversation(AssistantBaseModel):
     last_updated: float = 0.0
     system_prompt_override: t.Optional[str] = None
 
+    def get_images(self) -> t.List[str]:
+        """Get all image b64 strings in the conversation
+        Each string looks like "data:image/jpeg;base64,..." so we need to extract the base64 part
+
+        """
+        images = []
+        for message in self.messages:
+            if isinstance(message.get("content"), list):
+                for item in message["content"]:
+                    if item.get("type") == "image_url":
+                        images.append(item["image_url"]["url"])
+        if images:
+            log.info(f"Found {len(images)} images in conversation.")
+        return images
+
     def function_count(self) -> int:
         if not self.messages:
             return 0
