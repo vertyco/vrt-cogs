@@ -395,6 +395,10 @@ class ChatHandler(MixinMeta):
             function_calls = [i for i in function_calls if i["name"] != "search_internet"]
             del function_map["search_internet"]
 
+        if "edit_image" in function_map and not conversation.get_images():
+            function_calls = [i for i in function_calls if i["name"] != "edit_image"]
+            del function_map["edit_image"]
+
         messages = await self.prepare_messages(
             message=message,
             guild=guild,
@@ -566,6 +570,8 @@ class ChatHandler(MixinMeta):
                         "guild": guild,
                         "bot": self.bot,
                         "conf": conf,
+                        "conversation": conversation,
+                        "messages": messages,
                     }
                     kwargs = {**args, **extras}
                     func = function_map[function_name]

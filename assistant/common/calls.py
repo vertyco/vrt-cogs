@@ -174,7 +174,26 @@ async def request_image_raw(
         # gpt-image-1 doesn't support style parameter
 
     response: ImagesResponse = await client.images.generate(**kwargs)
-    return response.data[0]
+    images: list[Image] = response.data
+    return images[0]
+
+
+async def request_image_edit_raw(
+    prompt: str,
+    api_key: str,
+    images: t.List[str],  # list[data:image/jpeg;base64,...]
+    base_url: Optional[str] = None,
+) -> Image:
+    assert all(isinstance(image, bytes) for image in images), "All images must be bytes."
+    client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
+
+    response: ImagesResponse = await client.images.edit(
+        model="gpt-image-1",
+        prompt=prompt,
+        image=images,
+    )
+    images: list[Image] = response.data
+    return images[0]
 
 
 class CreateMemoryResponse(BaseModel):

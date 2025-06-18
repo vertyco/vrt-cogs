@@ -11,7 +11,7 @@ from redbot.core.i18n import Translator, cog_i18n
 
 from ..abc import MixinMeta
 from ..common import calls, constants
-from .models import EmbeddingEntryExists, GuildSettings
+from .models import Conversation, EmbeddingEntryExists, GuildSettings
 
 log = logging.getLogger("red.vrt.assistant.functions")
 _ = Translator("Assistant", __file__)
@@ -19,6 +19,59 @@ _ = Translator("Assistant", __file__)
 
 @cog_i18n(_)
 class AssistantFunctions(MixinMeta):
+    async def edit_image(
+        self,
+        channel: discord.TextChannel,
+        conf: GuildSettings,
+        prompt: str,
+        conversation: Conversation,
+        *args,
+        **kwargs,
+    ):
+        """Edit an image using the provided base64 encoded image and prompt."""
+        images: list[str] = conversation.get_images()
+        if not images:
+            return "This conversation has no images to edit!"
+
+        # Each image is formatted like: data:image/jpeg;base64,... so we need to decode it
+        if not all(isinstance(image, str) for image in images):
+            return "All images must be base64 encoded strings."
+
+        # Extract both the MIME type and image data from the data URI
+        image_data = []
+        for i, image in enumerate(images):
+            parts = image.split(",", 1)
+            if len(parts) != 2 or not parts[0].startswith("data:"):
+                return "Invalid image format. Expected data URI format."
+
+            mime_type = parts[0].split(";")[0].split(":")[1]
+            if mime_type not in ["image/jpeg", "image/png", "image/webp"]:
+                return f"Unsupported image format: {mime_type}. Supported formats are image/jpeg, image/png, and image/webp."
+
+            # Get the file extension from the MIME type
+            extension = mime_type.split("/")[1]
+            image_bytes = BytesIO(b64decode(parts[1]))
+
+            # Format as a tuple with (filename, file_data, mime_type)
+            image_data.append((f"image{i}.{extension}", image_bytes, mime_type))
+
+        # Pass the image data with the correct format
+        image = await calls.request_image_edit_raw(
+            prompt=prompt,
+            api_key=conf.api_key,
+            images=image_data,
+            base_url=self.db.endpoint_override,
+        )
+        color = (await self.bot.get_embed_color(channel)) if channel else discord.Color.blue()
+        embed = discord.Embed(color=color).set_image(url="attachment://image.png")
+        payload = {
+            "embed": embed,
+            "result_text": _("Image has been edited and sent to the user!"),
+            "return_null": True,  # The image will be sent and the model will not be re-queried
+            "file": discord.File(BytesIO(b64decode(image.b64_json)), filename="image.png"),
+        }
+        return payload
+
     async def generate_image(
         self,
         channel: discord.TextChannel,
@@ -27,13 +80,11 @@ class AssistantFunctions(MixinMeta):
         size: t.Literal["1024x1024", "1792x1024", "1024x1792", "1024x1536", "1536x1024"] = "1024x1024",
         quality: t.Literal["standard", "hd", "low", "medium", "high"] = "medium",
         style: t.Optional[t.Literal["natural", "vivid"]] = "vivid",
-        model: t.Literal["dall-e-3", "gpt-image-1"] = "dall-e-3",
+        model: t.Literal["dall-e-3", "gpt-image-1"] = "gpt-image-1",
         *args,
         **kwargs,
     ):
         cost_key = f"{quality}{size}"
-        if model == "gpt-image-1":
-            cost_key = f"{quality}{size}"
         cost = constants.IMAGE_COSTS.get(cost_key, 0)
 
         image = await calls.request_image_raw(
