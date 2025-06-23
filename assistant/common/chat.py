@@ -8,7 +8,7 @@ import re
 import traceback
 from datetime import datetime
 from inspect import iscoroutinefunction
-from io import BytesIO
+from io import BytesIO, StringIO
 from typing import Callable, Dict, List, Optional, Union
 
 import discord
@@ -111,7 +111,9 @@ class ChatHandler(MixinMeta):
                 # No reason to download the image now, we can just use the url
                 image_bytes: bytes = await i.read()
                 image_b64 = base64.b64encode(image_bytes).decode()
-                images.append(image_b64)
+                image_format = i.filename.split(".")[-1].lower()
+                image_string = f"data:image/{image_format};base64,{image_b64}"
+                images.append(image_string)
                 continue
 
             if not any(i.filename.lower().endswith(ext) for ext in READ_EXTENSIONS) and has_extension:
@@ -395,7 +397,7 @@ class ChatHandler(MixinMeta):
             function_calls = [i for i in function_calls if i["name"] != "search_internet"]
             del function_map["search_internet"]
 
-        if "edit_image" in function_map and not conversation.get_images():
+        if "edit_image" in function_map and (not conversation.get_images() and not images):
             function_calls = [i for i in function_calls if i["name"] != "edit_image"]
             del function_map["edit_image"]
 
@@ -594,22 +596,24 @@ class ChatHandler(MixinMeta):
                 return_null = False
 
                 if isinstance(func_result, discord.Embed):
-                    result = func_result.description or _("Result sent!")
+                    content = func_result.description or _("Result sent!")
                     try:
                         await channel.send(embed=func_result)
                     except discord.Forbidden:
-                        result = "You do not have permissions to embed links in this channel"
+                        content = "You do not have permissions to embed links in this channel"
                         function_calls = [i for i in function_calls if i["name"] != function_name]
                 elif isinstance(func_result, discord.File):
-                    result = "File uploaded!"
+                    content = "File uploaded!"
                     try:
                         await channel.send(file=func_result)
                     except discord.Forbidden:
-                        result = "You do not have permissions to upload files in this channel"
+                        content = "You do not have permissions to upload files in this channel"
                         function_calls = [i for i in function_calls if i["name"] != function_name]
                 elif isinstance(func_result, dict):
                     # For complex responses
-                    result = func_result["result_text"]
+                    content = func_result.get("result_text")
+                    if not content:
+                        content = func_result.get("content")
                     return_null = func_result.get("return_null", False)
                     kwargs = {}
                     if "embed" in func_result and channel.permissions_for(guild.me).embed_links:
@@ -636,22 +640,40 @@ class ChatHandler(MixinMeta):
                         try:
                             await channel.send(**kwargs)
                         except discord.HTTPException as e:
-                            result = f"discord.HTTPException: {e.text}"
+                            content = f"discord.HTTPException: {e.text}"
                             function_calls = [i for i in function_calls if i["name"] != function_name]
 
                 elif isinstance(func_result, bytes):
-                    result = func_result.decode()
-                else:  # Is a string
-                    result = str(func_result)
+                    content = func_result.decode()
+                elif isinstance(func_result, str):
+                    content = str(func_result)
+                else:
+                    log.error(f"Function {function_name} returned an unknown type: {type(func_result)}")
+                    content = f"Unknown type: {type(func_result)}"
 
-                # Ensure response isnt too large
-                result = await self.cut_text_by_tokens(result, conf, author)
+                logging_content = StringIO()
+                if isinstance(func_result, str) and len(func_result):
+                    logging_content.write(func_result[:2000])
+                elif isinstance(func_result, bytes):
+                    logging_content.write(str(func_result)[:20] + "... (bytes content)")
+                elif isinstance(func_result, dict):
+                    for k, v in func_result.items():
+                        txt = str(v)
+                        if txt.startswith("data:image/"):
+                            txt = txt[:20] + "... (image content)"
+
+                        logging_content.write(f"{k}: {txt[:1000]}\n")
+
                 info = (
                     f"Called function {function_name} in {guild.name} for {author.display_name}\n"
-                    f"Params: {args}\nResult: {result}"
+                    f"Params: {args}\nResult: {logging_content.getvalue()}"
                 )
                 log.debug(info)
-                e = {"role": role, "name": function_name, "content": result}
+                if isinstance(content, str):
+                    # Ensure response isnt too large
+                    content = await self.cut_text_by_tokens(content, conf, author)
+
+                e = {"role": role, "name": function_name, "content": content}
                 if tool_id:
                     e["tool_call_id"] = tool_id
                 messages.append(e)

@@ -39,12 +39,15 @@ class AssistantFunctions(MixinMeta):
 
         # Extract both the MIME type and image data from the data URI
         image_data = []
-        for i, image in enumerate(images):
+        for i, image in enumerate([images[-1]]):
             parts = image.split(",", 1)
             if len(parts) != 2 or not parts[0].startswith("data:"):
                 return "Invalid image format. Expected data URI format."
 
             mime_type = parts[0].split(";")[0].split(":")[1]
+            if mime_type == "image/jpg":
+                mime_type = "image/jpeg"
+
             if mime_type not in ["image/jpeg", "image/png", "image/webp"]:
                 return f"Unsupported image format: {mime_type}. Supported formats are image/jpeg, image/png, and image/webp."
 
@@ -64,9 +67,21 @@ class AssistantFunctions(MixinMeta):
         )
         color = (await self.bot.get_embed_color(channel)) if channel else discord.Color.blue()
         embed = discord.Embed(color=color).set_image(url="attachment://image.png")
+
+        content = [
+            {
+                "type": "text",
+                "text": _("Here is the edited image based on your prompt, it has been sent to the user!"),
+            },
+            {
+                "type": "image_url",
+                "image_url": {"url": "data:image/png;base64," + image.b64_json, "detail": conf.vision_detail},
+            },
+        ]
+
         payload = {
             "embed": embed,
-            "result_text": _("Image has been edited and sent to the user!"),
+            "content": content,
             "return_null": True,  # The image will be sent and the model will not be re-queried
             "file": discord.File(BytesIO(b64decode(image.b64_json)), filename="image.png"),
         }

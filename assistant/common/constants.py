@@ -313,13 +313,13 @@ GENERATE_IMAGE = {
 }
 EDIT_IMAGE = {
     "name": "edit_image",
-    "description": "Use this to edit an existing image with a text prompt. (Only call this is the conversation contains an image)",
+    "description": "Use this to edit an existing image for a user.",
     "parameters": {
         "type": "object",
         "properties": {
             "prompt": {
                 "type": "string",
-                "description": "A sentence or phrase that describes what you want to change about the image, probably provided by the user",
+                "description": "Pass the user's prompt directly as this argument and make sure it includes to keep the image exactly the same except for the changes they want to make.",
             },
         },
         "required": ["prompt"],
