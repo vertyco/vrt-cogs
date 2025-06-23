@@ -313,7 +313,7 @@ GENERATE_IMAGE = {
 }
 EDIT_IMAGE = {
     "name": "edit_image",
-    "description": "Use this to edit an existing image for a user.",
+    "description": "Use this to edit an existing image for a user. (Use this is the user tells you to do something to an image!)",
     "parameters": {
         "type": "object",
         "properties": {

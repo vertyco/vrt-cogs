@@ -71,7 +71,7 @@ class AssistantFunctions(MixinMeta):
         content = [
             {
                 "type": "text",
-                "text": _("Here is the edited image based on your prompt, it has been sent to the user!"),
+                "text": _("Here is the edited image, it has been sent to the user!"),
             },
             {
                 "type": "image_url",
@@ -116,17 +116,28 @@ class AssistantFunctions(MixinMeta):
             .set_image(url="attachment://image.png")
             .set_footer(text=_("Cost: ${}").format(f"{cost:.2f}"))
         )
+        txt = "Image has been generated and sent to the user!"
         if hasattr(image, "revised_prompt") and image.revised_prompt:
             embed.add_field(name=_("Revised Prompt"), value=image.revised_prompt)
+            txt += f"\n{_('Revised prompt:')} {image.revised_prompt}"
+
+        content = [
+            {
+                "type": "text",
+                "text": txt,
+            },
+            {
+                "type": "image_url",
+                "image_url": {"url": "data:image/png;base64," + image.b64_json, "detail": conf.vision_detail},
+            },
+        ]
+
         payload = {
             "embed": embed,
-            "result_text": "Image has been generated and sent to the user!",
+            "content": content,
             "return_null": True,  # The image will be sent and the model will not be re-queried
             "file": discord.File(BytesIO(b64decode(image.b64_json)), filename="image.png"),
         }
-        if hasattr(image, "revised_prompt") and image.revised_prompt:
-            payload["result_text"] += f"\nRevised prompt: {image.revised_prompt}"
-
         return payload
 
     async def search_internet(
