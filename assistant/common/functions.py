@@ -39,7 +39,7 @@ class AssistantFunctions(MixinMeta):
 
         # Extract both the MIME type and image data from the data URI
         image_data = []
-        for i, image in enumerate(images):
+        for i, image in enumerate(images[-16:]):  # Limit to the last 16 images
             parts = image.split(",", 1)
             if len(parts) != 2 or not parts[0].startswith("data:"):
                 return "Invalid image format. Expected data URI format."
