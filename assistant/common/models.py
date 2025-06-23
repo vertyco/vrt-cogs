@@ -333,10 +333,14 @@ class Conversation(AssistantBaseModel):
                         }
                     )
                 else:
+                    if img.startswith("data:image/"):
+                        image_string = img
+                    else:
+                        image_string = f"data:image/png;base64,{img}"
                     content.append(
                         {
                             "type": "image_url",
-                            "image_url": {"url": f"data:image/jpeg;base64,{img}", "detail": resolution},
+                            "image_url": {"url": image_string, "detail": resolution},
                         }
                     )
 
