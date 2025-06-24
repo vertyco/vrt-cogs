@@ -153,6 +153,7 @@ class SubmissionView(discord.ui.View):
                 AppealGuild.alert_roles,
                 AppealGuild.alert_channel,
                 AppealGuild.discussion_threads,
+                AppealGuild.vote_emojis,
             )
             .where(AppealGuild.id == interaction.guild.id)
             .first()
