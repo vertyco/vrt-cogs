@@ -312,3 +312,14 @@ class Functions(MixinMeta):
         if timestamp_format not in ["d", "D", "t", "T", "f", "F", "R"]:
             return "Invalid timestamp format. Please use one of the following: d, D, t, T, f, F, R."
         return f"<t:{timestamp}:{timestamp_format}>"
+
+    async def get_user_roles(self, user: discord.Member, *args, **kwargs) -> str:
+        buffer = StringIO()
+        for role in user.roles:
+            if role.is_default():
+                continue
+            buffer.write(f"{role.name} (ID: {role.id})\n")
+        roles = buffer.getvalue().strip()
+        if not roles:
+            return "This user has no roles."
+        return buffer.getvalue().strip()

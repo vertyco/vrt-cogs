@@ -108,6 +108,20 @@ GET_ID_FROM_USERNAME = {
         "required": ["username"],
     },
 }
+GET_USER_ROLES = {
+    "name": "get_user_roles",
+    "description": "Get the current Discord roles that the user has.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "username_or_id": {
+                "type": "string",
+                "description": "Discord user's username or ID",
+            }
+        },
+        "required": ["username_or_id"],
+    },
+}
 SEARCH_INTERNET = {
     "name": "search_web_duckduckgo",
     "description": "Search the web for current information on a topic using the DuckDuckGo Search API.",

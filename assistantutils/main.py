@@ -27,7 +27,7 @@ class AssistantUtils(Functions, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.1.0"
+    __version__ = "0.1.1"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -47,6 +47,7 @@ class AssistantUtils(Functions, commands.Cog, metaclass=CompositeMetaClass):
         await cog.register_function(self.qualified_name, schemas.GET_SEARCH_URL)
         await cog.register_function(self.qualified_name, schemas.GET_USERNAME_FROM_ID)
         await cog.register_function(self.qualified_name, schemas.GET_ID_FROM_USERNAME)
+        await cog.register_function(self.qualified_name, schemas.GET_USER_ROLES)
         await cog.register_function(self.qualified_name, schemas.SEARCH_INTERNET)
         await cog.register_function(self.qualified_name, schemas.FETCH_CHANNEL_HISTORY)
         await cog.register_function(self.qualified_name, schemas.GET_DATE_FROM_TIMESTAMP)
