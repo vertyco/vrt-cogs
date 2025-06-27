@@ -328,21 +328,22 @@ EDIT_IMAGE = {
 
 
 SEARCH_INTERNET = {
-    "name": "search_internet",
-    "description": "Use this to search the internet for information.",
+    "name": "search_web_brave",
+    "description": "Search the web for current information on a topic using the Brave Search API.",
     "parameters": {
         "type": "object",
         "properties": {
-            "search_query": {
+            "query": {
                 "type": "string",
-                "description": "a sentence or phrase that describes what you are looking for",
+                "description": "The search query, can be a question or topic",
             },
-            "amount": {
+            "num_results": {
                 "type": "integer",
-                "description": "Max amount of search results to fetch. Defaults to 10",
+                "description": "Number of results to return (default: 5)",
+                "default": 5,
             },
         },
-        "required": ["search_query"],
+        "required": ["query"],
     },
 }
 

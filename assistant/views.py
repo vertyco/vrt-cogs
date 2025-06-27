@@ -789,18 +789,20 @@ class CodeMenu(discord.ui.View):
         def _get_matches():
             matches: List[Tuple[int, int]] = []
             for i, embed in enumerate(self.pages):
+                code_field = embed.fields[-1]
+                schema_field = embed.fields[-2]
+
                 if query == embed.description.lower():
                     matches.append((100, i))
                     break
-                if query in embed.fields[0].value.lower():
+                if query in code_field.value.lower():
                     matches.append((98, i))
                     continue
-                if query in embed.fields[1].value.lower():
+                if query in schema_field.value.lower():
                     matches.append((98, i))
                     continue
+
                 matches.append((fuzz.ratio(query, embed.description.lower()), i))
-                matches.append((fuzz.ratio(query, embed.fields[0].value.lower()), i))
-                matches.append((fuzz.ratio(query, embed.fields[1].value.lower()), i))
 
             if len(matches) > 1:
                 matches.sort(key=lambda x: x[0], reverse=True)

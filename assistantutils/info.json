@@ -11,7 +11,7 @@
   "required_cogs": {
     "assistant": "https://github.com/vertyco/vrt-cogs"
   },
-  "requirements": [],
+  "requirements": ["duckduckgo_search", "pytz"],
   "short": "Extended functionality for Assistant",
   "tags": ["assistant", "ai", "chat", "functions", "utility"],
   "type": "COG"
