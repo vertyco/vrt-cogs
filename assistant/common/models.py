@@ -122,7 +122,7 @@ class GuildSettings(AssistantBaseModel):
 
     use_function_calls: bool = False
     max_function_calls: int = 20  # Max calls in a row
-    disabled_functions: t.List[str] = []
+    function_statuses: t.Dict[str, bool] = {}  # {"function_name": True/False for enabled/disabled}
     functions_called: int = 0
 
     def get_related_embeddings(
@@ -423,7 +423,8 @@ class DB(AssistantBaseModel):
 
         # Prep bot owner functions first
         for function_name, func in self.functions.items():
-            if func.jsonschema["name"] in conf.disabled_functions:
+            if not conf.function_statuses.get(function_name, False):
+                # Function is disabled
                 continue
             if not await can_use(func.permission_level) and not showall:
                 continue
@@ -436,7 +437,8 @@ class DB(AssistantBaseModel):
             if not cog:
                 continue
             for function_name, data in function_schemas.items():
-                if function_name in conf.disabled_functions:
+                if not conf.function_statuses.get(function_name, False):
+                    # Function is disabled
                     continue
                 if function_name in function_map:
                     continue
