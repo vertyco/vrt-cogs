@@ -280,13 +280,23 @@ class Functions(MixinMeta):
                 break
             timestamp = message.created_at.strftime("%Y-%m-%d %H:%M:%S")
             if message.content:
-                buffer.write(f"{timestamp} - {message.author.name}: {message.content}\n")
+                buffer.write(f"{timestamp} - {message.author.name}(ID: {message.id}): {message.content}\n")
                 added += 1
             elif message.embeds:
                 for embed in message.embeds:
-                    buffer.write(f"{timestamp} - {message.author.name}: [Embed]{embed.to_dict()}\n")
+                    buffer.write(f"{timestamp} - {message.author.name}(ID: {message.id}): [Embed]{embed.to_dict()}\n")
                     added += 1
-        return buffer.getvalue() or "No messages found in this channel history."
+        final = buffer.getvalue().strip()
+        if not final:
+            return "No messages found in this channel history."
+        base_jump_url = f"https://discord.com/channels/{guild.id}/{channel.id}/"
+        final = (
+            f"Here are the last {added} messages from {channel.mention}\n"
+            f"To link a specific message, format as `{base_jump_url}/<message_id>`\n"
+            f"# Message History\n"
+            f"{final}"
+        )
+        return final
 
     async def get_date_from_timestamp(self, timestamp: str, *args, **kwargs) -> str:
         timestamp = str(timestamp).strip()
