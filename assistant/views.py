@@ -525,12 +525,13 @@ class CodeMenu(discord.ui.View):
         if not self.pages[self.page].fields:
             return
         function_name = self.pages[self.page].description
-        if function_name in self.conf.disabled_functions:
-            self.toggle.emoji = OFF_EMOJI
-            self.toggle.style = discord.ButtonStyle.secondary
-        else:
+        enabled = self.conf.function_statuses.get(function_name, False)
+        if enabled:
             self.toggle.emoji = ON_EMOJI
             self.toggle.style = discord.ButtonStyle.success
+        else:
+            self.toggle.emoji = OFF_EMOJI
+            self.toggle.style = discord.ButtonStyle.secondary
 
     @discord.ui.button(style=discord.ButtonStyle.secondary, emoji="\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}")
     async def left10(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -758,10 +759,11 @@ class CodeMenu(discord.ui.View):
             return await interaction.response.send_message(_("No code to toggle!"), ephemeral=True)
         await interaction.response.defer()
         function_name = self.pages[self.page].description
-        if function_name in self.conf.disabled_functions:
-            self.conf.disabled_functions.remove(function_name)
+        enabled = self.conf.function_statuses.get(function_name, False)
+        if enabled:
+            self.conf.function_statuses[function_name] = False
         else:
-            self.conf.disabled_functions.append(function_name)
+            self.conf.function_statuses[function_name] = True
         self.update_button()
         await self.message.edit(view=self)
         await self.save()
