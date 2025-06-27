@@ -136,6 +136,17 @@ class Admin(MixinMeta):
                 inline=False,
             )
 
+        if conf.listen_channels:
+            valid = [i for i in conf.listen_channels if ctx.guild.get_channel(i)]
+            if len(valid) != len(conf.listen_channels):
+                conf.listen_channels = valid
+                await self.save_conf()
+            embed.add_field(
+                name=_("Auto-Reply Channels"),
+                value=humanize_list([f"<#{i}>" for i in valid]),
+                inline=False,
+            )
+
         types = set(len(i.embedding) for i in conf.embeddings.values())
 
         if len(types) == 2:
@@ -710,7 +721,7 @@ class Admin(MixinMeta):
         ctx: commands.Context,
         channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel, None] = None,
     ):
-        """Set the channel for the assistant"""
+        """Set the main auto-response channel for the assistant"""
         conf = self.db.get_conf(ctx.guild)
         if channel is None and not conf.channel_id:
             return await ctx.send_help()
@@ -723,6 +734,20 @@ class Admin(MixinMeta):
         else:
             await ctx.send(_("Channel id has been set"))
             conf.channel_id = channel.id
+        await self.save_conf()
+
+    @assistant.command(name="listen")
+    async def toggle_listen(self, ctx: commands.Context):
+        """Toggle this channel as an auto-response channel"""
+        conf = self.db.get_conf(ctx.guild)
+        if conf.channel_id == ctx.channel.id:
+            return await ctx.send(_("This channel is already set as the assistant channel!"))
+        if ctx.channel.id in conf.listen_channels:
+            conf.listen_channels.remove(ctx.channel.id)
+            await ctx.send(_("I will no longer auto-respond to messages in this channel!"))
+        else:
+            conf.listen_channels.append(ctx.channel.id)
+            await ctx.send(_("I will now auto-respond to messages in this channel!"))
         await self.save_conf()
 
     @assistant.command(name="sysoverride")

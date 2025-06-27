@@ -79,7 +79,8 @@ class GuildSettings(AssistantBaseModel):
     min_relatedness: float = 0.78
     embed_method: str = "dynamic"  # hybrid, dynamic, static, user
     question_mode: bool = False  # If True, only the first message and messages that end with ? will have emebddings
-    channel_id: t.Optional[int] = 0
+    channel_id: t.Optional[int] = 0  # The main auto-response channel ID
+    listen_channels: t.List[int] = []  # Channels to listen to for auto-reply
     api_key: t.Optional[str] = None
     endswith_questionmark: bool = False
     min_length: int = 7

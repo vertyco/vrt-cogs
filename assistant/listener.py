@@ -96,7 +96,7 @@ class AssistantListener(MixinMeta):
             return
 
         conditions = [
-            channel.id != conf.channel_id,
+            (channel.id != conf.channel_id and channel.id not in conf.listen_channels),
             (not bot_mentioned or not conf.mention_respond),
         ]
         check_auto_answer = [
@@ -124,7 +124,7 @@ class AssistantListener(MixinMeta):
             return
 
         conditions = [
-            channel.id == conf.channel_id,
+            (channel.id == conf.channel_id or channel.id in conf.listen_channels),
             not message.content.endswith("?"),
             conf.endswith_questionmark,
             self.bot.user.id not in mention_ids,
