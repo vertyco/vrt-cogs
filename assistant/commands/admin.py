@@ -287,7 +287,7 @@ class Admin(MixinMeta):
                 value = _("Your Brave websearch API key is set!")
             else:
                 value = _(
-                    "Enables the use of the `search_internet` function\n"
+                    "Enables the use of the `search_web_brave` function\n"
                     "Get your API key **[Here](https://brave.com/search/api/)**\n"
                 )
             embed.add_field(name=_("Brave Websearch API key"), value=value)
@@ -444,7 +444,7 @@ class Admin(MixinMeta):
     @commands.is_owner()
     async def set_brave_key(self, ctx: commands.Context):
         """
-        Enables use of the `search_internet` function
+        Enables use of the `search_web_brave` function
 
         Get your API key **[Here](https://brave.com/search/api/)**
         """

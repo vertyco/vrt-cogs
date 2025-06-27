@@ -1,7 +1,13 @@
+import asyncio
+import json
 import string
-from typing import List, Tuple, Union
+from datetime import datetime
+from io import StringIO
+from typing import List, Literal, Tuple, Union
 
 import discord
+from dateutil import parser
+from duckduckgo_search import DDGS
 from rapidfuzz import fuzz
 
 from ..abc import MixinMeta
@@ -174,3 +180,135 @@ class Functions(MixinMeta):
         if not member:
             return "A member with that ID does not exist!"
         return member.name
+
+    async def get_id_from_username(
+        self,
+        guild: discord.Guild,
+        username: str,
+        *args,
+        **kwargs,
+    ) -> str:
+        named_members = {i.name: i.id for i in guild.members}
+        nicknamed_members = {i.display_name: i.id for i in guild.members}
+        user_id = None
+        if username in named_members:
+            user_id = named_members[username]
+        elif username in nicknamed_members:
+            user_id = nicknamed_members[username]
+
+        if user_id:
+            return f"The ID of {username} is {user_id}"
+
+        # No exact match found, try fuzzy matching
+        matches = []
+        for member in guild.members:
+            name_score = fuzz.ratio(member.name, username)
+            if name_score >= 80:
+                matches.append((member.name, member.id, name_score))
+            nickname_score = fuzz.ratio(member.display_name, username)
+            if nickname_score >= 80:
+                matches.append((member.display_name, member.id, nickname_score))
+        if matches:
+            matches.sort(key=lambda x: x[2], reverse=True)
+            # Get best match
+            name, uid, score = matches[0]
+            return f"The closest match for '{username}' is '{name}' with ID {uid} (fuzzy score: {score})"
+        return "No user found with that name or nickname!"
+
+    async def search_web_duckduckgo(self, query: str, num_results: int = 5, *args, **kwargs) -> str:
+        def _search():
+            with DDGS() as ddgs:
+                return list(ddgs.text(query, max_results=num_results))
+
+        res: list[dict] = await asyncio.to_thread(_search)
+        return json.dumps(res)
+
+    async def fetch_channel_history(
+        self,
+        guild: discord.Guild,
+        channel_name_or_id: str | int,
+        user: discord.Member,
+        limit: int = 30,
+        *args,
+        **kwargs,
+    ):
+        channel_name_or_id = str(channel_name_or_id)
+        if channel_name_or_id.isdigit():
+            channel = guild.get_channel(int(channel_name_or_id))
+        else:
+            named_channels = {c.name: c for c in guild.channels}
+            channel = named_channels.get(channel_name_or_id)
+            if not channel:
+                # Try fuzzy matching
+                matches = []
+                for c in guild.channels:
+                    name_score = fuzz.ratio(c.name, channel_name_or_id)
+                    if name_score >= 80:
+                        matches.append((c.name, c.id, name_score))
+                    clean_name_score = fuzz.ratio(clean_name(c.name), clean_name(channel_name_or_id))
+                    if clean_name_score >= 80:
+                        matches.append((c.name, c.id, clean_name_score))
+                if matches:
+                    matches.sort(key=lambda x: x[2], reverse=True)
+                    channel_name, channel_id, score = matches[0]
+                    channel = guild.get_channel(int(channel_id))
+
+        if not channel:
+            return "No channel found with that name or ID!"
+        if not channel.permissions_for(channel.guild.me).view_channel:
+            return "I do not have permission to view that channel"
+        if not channel.permissions_for(channel.guild.me).read_message_history:
+            return "I do not have permission to read message history in that channel"
+
+        if not channel.permissions_for(user).view_channel:
+            return "The user you are chatting with doesn't have permission to view that channel"
+        if not channel.permissions_for(user).read_message_history:
+            return "The user you are chatting with doesn't have permission to read message history in that channel"
+
+        if isinstance(channel, discord.VoiceChannel):
+            return "This function only works for text channels, not voice channels."
+        if isinstance(channel, discord.ForumChannel):
+            return "This function does not work for forum channels."
+        if isinstance(channel, discord.CategoryChannel):
+            return "This function does not work for category channels."
+
+        # Start fetching the content
+        buffer = StringIO()
+        added = 0
+        async for message in channel.history():
+            if added >= limit:
+                break
+            timestamp = message.created_at.strftime("%Y-%m-%d %H:%M:%S")
+            if message.content:
+                buffer.write(f"{timestamp} - {message.author.name}: {message.content}\n")
+                added += 1
+            elif message.embeds:
+                for embed in message.embeds:
+                    buffer.write(f"{timestamp} - {message.author.name}: [Embed]{embed.to_dict()}\n")
+                    added += 1
+        return buffer.getvalue() or "No messages found in this channel history."
+
+    async def get_date_from_timestamp(self, timestamp: str, *args, **kwargs) -> str:
+        timestamp = str(timestamp).strip()
+        if not timestamp.isdigit():
+            return "Invalid timestamp format. Please provide a valid integer timestamp."
+        return str(datetime.fromtimestamp(int(timestamp)))
+
+    async def get_discord_timestamp_format(
+        self,
+        date_or_timestamp: str,
+        timestamp_format: Literal["d", "D", "t", "T", "f", "F", "R"] = "F",
+        *args,
+        **kwargs,
+    ) -> str:
+        if date_or_timestamp.isdigit():
+            timestamp = int(date_or_timestamp)
+        else:
+            try:
+                date = parser.parse(date_or_timestamp)
+                timestamp = int(date.timestamp())
+            except ValueError:
+                return "Invalid date or timestamp format. Please provide a valid date string or integer timestamp."
+        if timestamp_format not in ["d", "D", "t", "T", "f", "F", "R"]:
+            return "Invalid timestamp format. Please use one of the following: d, D, t, T, f, F, R."
+        return f"<t:{timestamp}:{timestamp_format}>"
