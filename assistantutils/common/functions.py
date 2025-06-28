@@ -226,32 +226,34 @@ class Functions(MixinMeta):
     async def fetch_channel_history(
         self,
         guild: discord.Guild,
-        channel_name_or_id: str | int,
+        channel: discord.TextChannel,
         user: discord.Member,
+        channel_name_or_id: str | int = None,
         limit: int = 30,
         *args,
         **kwargs,
     ):
-        channel_name_or_id = str(channel_name_or_id)
-        if channel_name_or_id.isdigit():
-            channel = guild.get_channel(int(channel_name_or_id))
-        else:
-            named_channels = {c.name: c for c in guild.channels}
-            channel = named_channels.get(channel_name_or_id)
-            if not channel:
-                # Try fuzzy matching
-                matches = []
-                for c in guild.channels:
-                    name_score = fuzz.ratio(c.name, channel_name_or_id)
-                    if name_score >= 80:
-                        matches.append((c.name, c.id, name_score))
-                    clean_name_score = fuzz.ratio(clean_name(c.name), clean_name(channel_name_or_id))
-                    if clean_name_score >= 80:
-                        matches.append((c.name, c.id, clean_name_score))
-                if matches:
-                    matches.sort(key=lambda x: x[2], reverse=True)
-                    channel_name, channel_id, score = matches[0]
-                    channel = guild.get_channel(int(channel_id))
+        if channel_name_or_id is not None:
+            channel_name_or_id = str(channel_name_or_id)
+            if channel_name_or_id.isdigit():
+                channel = guild.get_channel(int(channel_name_or_id))
+            else:
+                named_channels = {c.name: c for c in guild.channels}
+                channel = named_channels.get(channel_name_or_id)
+                if not channel:
+                    # Try fuzzy matching
+                    matches = []
+                    for c in guild.channels:
+                        name_score = fuzz.ratio(c.name, channel_name_or_id)
+                        if name_score >= 80:
+                            matches.append((c.name, c.id, name_score))
+                        clean_name_score = fuzz.ratio(clean_name(c.name), clean_name(channel_name_or_id))
+                        if clean_name_score >= 80:
+                            matches.append((c.name, c.id, clean_name_score))
+                    if matches:
+                        matches.sort(key=lambda x: x[2], reverse=True)
+                        channel_name, channel_id, score = matches[0]
+                        channel = guild.get_channel(int(channel_id))
 
         if not channel:
             return "No channel found with that name or ID!"
@@ -291,7 +293,7 @@ class Functions(MixinMeta):
             return "No messages found in this channel history."
         base_jump_url = f"https://discord.com/channels/{guild.id}/{channel.id}/"
         final = (
-            f"Here are the last {added} messages from {channel.mention}\n"
+            f"Here are the last {added} messages from {channel.name} (Mention: {channel.mention})\n"
             f"To link a specific message, format as `{base_jump_url}/<message_id>`\n"
             f"# Message History\n"
             f"{final}"

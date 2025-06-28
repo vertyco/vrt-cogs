@@ -149,7 +149,7 @@ FETCH_CHANNEL_HISTORY = {
         "properties": {
             "channel_name_or_id": {
                 "type": "string",
-                "description": "The name or ID of the channel to fetch history from",
+                "description": "The name or ID of the channel to fetch history from (defaults to the current channel if not provided)",
             },
             "limit": {
                 "type": "integer",
@@ -157,7 +157,6 @@ FETCH_CHANNEL_HISTORY = {
                 "default": 30,
             },
         },
-        "required": ["channel_name_or_id"],
     },
 }
 GET_DATE_FROM_TIMESTAMP = {
