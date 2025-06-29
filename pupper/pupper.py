@@ -18,7 +18,7 @@ class Pupper(commands.Cog):
     """Pet the doggo!"""
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.1.0"
+    __version__ = "1.1.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -314,7 +314,7 @@ class Pupper(commands.Cog):
             self.pets[message.guild.id] = True
             await self.do_pet_stuff(message)
         except Exception as e:
-            log.error(f"Error in pupper loop: {e}")
+            log.error("Error in pupper do_pet_stuff", exc_info=e)
         finally:
             self.pets[message.guild.id] = False
 
