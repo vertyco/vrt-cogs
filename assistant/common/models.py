@@ -4,7 +4,6 @@ from datetime import datetime, timezone
 from time import perf_counter
 
 import chromadb
-import chromadb.errors
 import discord
 import numpy as np
 import orjson
