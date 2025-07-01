@@ -193,6 +193,7 @@ class EmbeddingMenu(discord.ui.View):
         if name in self.conf.embeddings:
             return await self.ctx.send(_("An embedding with the name `{}` already exists!").format(name))
         self.conf.embeddings[name] = Embedding(text=text, embedding=embedding, model=self.conf.embed_model)
+        await asyncio.to_thread(self.conf.sync_embeddings, self.ctx.guild.id)
         await self.get_pages()
         with suppress(discord.NotFound):
             self.message = await self.message.edit(embed=self.pages[self.page], view=self)
@@ -248,6 +249,7 @@ class EmbeddingMenu(discord.ui.View):
         self.conf.embeddings[modal.name] = embedding_obj
         if modal.name != name:
             del self.conf.embeddings[name]
+        await asyncio.to_thread(self.conf.sync_embeddings, self.ctx.guild.id)
         await self.get_pages()
         await self.message.edit(embed=self.pages[self.page], view=self)
         await interaction.followup.send(_("Your embedding has been modified!"), ephemeral=True)

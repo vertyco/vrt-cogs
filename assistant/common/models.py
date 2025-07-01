@@ -1,7 +1,10 @@
 import logging
 import typing as t
 from datetime import datetime, timezone
+from time import perf_counter
 
+import chromadb
+import chromadb.errors
 import discord
 import numpy as np
 import orjson
@@ -9,6 +12,8 @@ from pydantic import VERSION, BaseModel, Field
 from redbot.core.bot import Red
 
 log = logging.getLogger("red.vrt.assistant.models")
+
+_chroma_client = chromadb.Client()
 
 
 class AssistantBaseModel(BaseModel):
@@ -18,10 +23,10 @@ class AssistantBaseModel(BaseModel):
             return super().model_validate(obj, *args, **kwargs)
         return super().parse_obj(obj, *args, **kwargs)
 
-    def model_dump(self, exclude_defaults: bool = True):
+    def model_dump(self, exclude_defaults: bool = True, **kwargs):
         if VERSION >= "2.0.1":
-            return super().model_dump(mode="json", exclude_defaults=exclude_defaults)
-        return orjson.loads(super().json(exclude_defaults=exclude_defaults))
+            return super().model_dump(mode="json", exclude_defaults=exclude_defaults, **kwargs)
+        return orjson.loads(super().json(exclude_defaults=exclude_defaults, **kwargs))
 
 
 class Embedding(AssistantBaseModel):
@@ -126,8 +131,73 @@ class GuildSettings(AssistantBaseModel):
     function_statuses: t.Dict[str, bool] = {}  # {"function_name": True/False for enabled/disabled}
     functions_called: int = 0
 
+    def sync_embeddings(self, guild_id: int):
+        try:
+            collection = _chroma_client.get_collection(f"assistant-{guild_id}")
+        except chromadb.errors.ChromaError as e:
+            log.info(f"Failed to get collection for guild {guild_id}: {e}")
+            collection = None
+
+        if not collection:
+            collection = _chroma_client.create_collection(
+                f"assistant-{guild_id}",
+                metadata={"hnsw:space": "cosine", "guild_id": guild_id},
+            )
+            # Populate the collection with existing embeddings
+            ids = list(self.embeddings.keys())
+            if ids:  # Only add if there are embeddings
+                log.info(f"Populating collection with {len(ids)} existing embeddings for guild {guild_id}")
+                embeddings = [em.embedding for em in self.embeddings.values()]
+                metadatas = [i.model_dump(exclude=["embedding"]) for i in self.embeddings.values()]
+                collection.add(ids=ids, embeddings=embeddings, metadatas=metadatas)
+        else:
+            # Make sure everything in self.embeddings is in the collection
+            ids = list(self.embeddings.keys())
+            collection_data = collection.get()
+            existing_ids = collection_data["ids"] if collection_data["ids"] else []
+            new_ids = [i for i in ids if i not in existing_ids]
+            if new_ids:
+                log.info(f"Adding {len(new_ids)} new embeddings to collection for guild {guild_id}")
+                embeddings = [self.embeddings[i].embedding for i in new_ids]
+                metadatas = [self.embeddings[i].model_dump(exclude=["embedding"]) for i in new_ids]
+                collection.add(ids=new_ids, embeddings=embeddings, metadatas=metadatas)
+
+            # See if there are any embeddings in the collection that are not in self.embeddings
+            missing_ids = [i for i in existing_ids if i not in ids]
+            if missing_ids:
+                log.info(f"Removing {len(missing_ids)} old embeddings from collection for guild {guild_id}")
+                collection.delete(ids=list(set(missing_ids)))
+
+            # Make sure that all embeddings match the current text and vector (check for updates)
+            for embed_name, em in self.embeddings.items():
+                if embed_name not in existing_ids:
+                    continue
+                # Get the embedding by ID instead of text for more reliable matching
+                result = collection.get(ids=[embed_name])
+
+                if not result["ids"] or not result["embeddings"]:
+                    log.warning(f"Embedding {embed_name} not found in collection for guild {guild_id}. Adding it.")
+                    collection.add(
+                        ids=[embed_name],
+                        embeddings=[em.embedding],
+                        metadatas=[em.model_dump(exclude=["embedding"])],
+                    )
+                else:
+                    existing_embedding = result["embeddings"][0] if result["embeddings"] else []
+                    if existing_embedding != em.embedding:
+                        log.info(f"Updating embedding {embed_name} in collection for guild {guild_id}.")
+                        collection.update(
+                            ids=[embed_name],
+                            embeddings=[em.embedding],
+                            metadatas=[em.model_dump(exclude=["embedding"])],
+                        )
+                    else:
+                        log.debug(f"Embedding {embed_name} is already up-to-date in collection for guild {guild_id}.")
+        log.info(f"Synced embeddings for guild {guild_id} with {len(self.embeddings)} embeddings.")
+
     def get_related_embeddings(
         self,
+        guild_id: int,
         query_embedding: t.List[float],
         top_n_override: t.Optional[int] = None,
         relatedness_override: t.Optional[float] = None,
@@ -137,7 +207,6 @@ class GuildSettings(AssistantBaseModel):
 
         if not query_embedding:
             return []
-
         # Name, text, score, dimensions
         q_length = len(query_embedding)
         top_n = top_n_override or self.top_n
@@ -146,19 +215,40 @@ class GuildSettings(AssistantBaseModel):
         if not top_n or q_length == 0 or not self.embeddings:
             return []
 
+        try:
+            collection = _chroma_client.get_collection(f"assistant-{guild_id}")
+        except chromadb.errors.ChromaError as e:
+            log.info(f"Failed to get collection for guild {guild_id}: {e}")
+            collection = None
+
+        if not collection:
+            collection = _chroma_client.create_collection(
+                f"assistant-{guild_id}",
+                metadata={"hnsw:space": "cosine", "guild_id": guild_id},
+            )
+            # Populate the collection with existing embeddings
+            ids = list(self.embeddings.keys())
+            log.info(f"Populating collection with {len(ids)} existing embeddings for guild {guild_id}")
+            embeddings = [em.embedding for em in self.embeddings.values()]
+            metadatas = [i.model_dump(exclude=["embedding"]) for i in self.embeddings.values()]
+            collection.add(ids=ids, embeddings=embeddings, metadatas=metadatas)
+
+        start = perf_counter()
+        results = collection.query(query_embeddings=[query_embedding], n_results=top_n_override or self.top_n)
+        # print(results)
         strings_and_relatedness = []
-        for name, em in self.embeddings.items():
-            if q_length != len(em.embedding):
-                continue
-            try:
-                score = cosine_similarity(query_embedding, em.embedding)
-                if score >= min_relatedness:
-                    strings_and_relatedness.append((name, em.text, score, len(em.embedding)))
-            except ValueError as e:
-                log.error(
-                    f"Failed to compare '{name}' embedding {q_length} - {len(em.embedding)}",
-                    exc_info=e,
-                )
+        for idx in range(len(results["ids"][0])):
+            embed_name = results["ids"][0][idx]
+            embedding = self.embeddings[embed_name].embedding
+            metadata = results["metadatas"][0][idx] if results["metadatas"] else {}
+            distance = results["distances"][0][idx] if results["distances"] else 0.0
+            if distance >= min_relatedness:
+                strings_and_relatedness.append((embed_name, metadata["text"], distance, len(embedding)))
+        end = perf_counter()
+        iter_time = end - start
+        log.debug(
+            f"Got {len(strings_and_relatedness)} related embeddings in {iter_time:.2f} seconds for guild {guild_id}."
+        )
 
         if not strings_and_relatedness:
             return []
