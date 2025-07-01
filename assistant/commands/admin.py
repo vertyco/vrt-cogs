@@ -1041,7 +1041,7 @@ class Admin(MixinMeta):
         if not await self.can_call_llm(conf, ctx):
             return
         async with ctx.typing():
-            synced = await self.resync_embeddings(conf)
+            synced = await self.resync_embeddings(conf, ctx.guild.id)
             if synced:
                 await ctx.send(_("{} embeddings have been updated").format(synced))
             else:
@@ -1417,6 +1417,7 @@ class Admin(MixinMeta):
 
             conf.embeddings[name] = Embedding(text=text, embedding=query_embedding, model=conf.embed_model)
             imported += 1
+        await asyncio.to_thread(conf.sync_embeddings, ctx.guild.id)
         await message.edit(content=_("{}\n**COMPLETE**").format(message_text))
         await ctx.send(_("Successfully imported {} embeddings!").format(humanize_number(imported)))
         await self.save_conf()
@@ -1464,6 +1465,7 @@ class Admin(MixinMeta):
                     humanize_list(files), humanize_number(imported)
                 )
             )
+        await asyncio.to_thread(conf.sync_embeddings, ctx.guild.id)
         await self.save_conf()
 
     @assistant.command(name="importexcel")
@@ -1550,6 +1552,7 @@ class Admin(MixinMeta):
                 imported += 1
 
             if imported:
+                await asyncio.to_thread(conf.sync_embeddings, ctx.guild.id)
                 await message.edit(content=_("{}\n**COMPLETE**").format(message_text))
                 await ctx.send(_("Successfully imported {} embeddings!").format(humanize_number(imported)))
                 await self.save_conf()
@@ -2136,8 +2139,9 @@ class Admin(MixinMeta):
         """
         if not yes_or_no:
             return await ctx.send(_("Not wiping embedding data"))
-        for conf in self.db.configs.values():
+        for guild_id, conf in self.db.configs.items():
             conf.embeddings = {}
+            await asyncio.to_thread(conf.sync_embeddings, guild_id)
         await ctx.send(_("All embedding data has been wiped for all servers!"))
         await self.save_conf()
 

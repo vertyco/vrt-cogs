@@ -50,7 +50,7 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def resync_embeddings(self, conf: GuildSettings) -> int:
+    async def resync_embeddings(self, conf: GuildSettings, guild_id: int) -> int:
         raise NotImplementedError
 
     @abstractmethod

@@ -776,7 +776,7 @@ class ChatHandler(MixinMeta):
 
         max_tokens = self.get_max_tokens(conf, author)
 
-        related = await asyncio.to_thread(conf.get_related_embeddings, query_embedding)
+        related = await asyncio.to_thread(conf.get_related_embeddings, guild.id, query_embedding)
 
         embeds: List[str] = []
         # Get related embeddings (Name, text, score, dimensions)

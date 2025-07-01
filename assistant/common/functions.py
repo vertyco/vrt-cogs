@@ -234,6 +234,7 @@ class AssistantFunctions(MixinMeta):
 
     async def search_memories(
         self,
+        guild: discord.Guild,
         conf: GuildSettings,
         search_query: str,
         amount: int = 2,
@@ -261,6 +262,7 @@ class AssistantFunctions(MixinMeta):
 
         embeddings = await asyncio.to_thread(
             conf.get_related_embeddings,
+            guild_id=guild.id,
             query_embedding=query_embedding,
             top_n_override=amount,
             relatedness_override=0.5,
@@ -277,6 +279,7 @@ class AssistantFunctions(MixinMeta):
 
     async def edit_memory(
         self,
+        guild: discord.Guild,
         conf: GuildSettings,
         user: discord.Member,
         memory_name: str,
@@ -298,6 +301,7 @@ class AssistantFunctions(MixinMeta):
         conf.embeddings[memory_name].embedding = embedding
         conf.embeddings[memory_name].update()
         conf.embeddings[memory_name].model = conf.embed_model
+        await asyncio.to_thread(conf.sync_embeddings, guild.id)
         asyncio.create_task(self.save_conf())
         return "Your memory has been updated!"
 

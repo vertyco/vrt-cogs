@@ -112,6 +112,7 @@ class AssistantListener(MixinMeta):
                 embedding = await self.request_embedding(message.content, conf)
                 related = await asyncio.to_thread(
                     conf.get_related_embeddings,
+                    guild_id=message.guild.id,
                     query_embedding=embedding,
                     top_n_override=1,
                     relatedness_override=conf.auto_answer_threshold,

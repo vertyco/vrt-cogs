@@ -55,7 +55,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "6.15.2"
+    __version__ = "6.16.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -204,6 +204,7 @@ class Assistant(
                     cleaned = True
                 new_embeddings[entry_name[:100]] = embedding
             conf.embeddings = new_embeddings
+            conf.sync_embeddings(guild_id)
 
         health = "BAD (Cleaned)" if cleaned else "GOOD"
         log.info(f"Config health: {health}")
@@ -249,6 +250,7 @@ class Assistant(
         if not embedding:
             return None
         conf.embeddings[name] = Embedding(text=text, embedding=embedding, ai_created=ai_created, model=conf.embed_model)
+        await asyncio.to_thread(conf.sync_embeddings, guild.id)
         asyncio.create_task(self.save_conf())
         return embedding
 

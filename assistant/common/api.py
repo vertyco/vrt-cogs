@@ -305,7 +305,7 @@ class API(MixinMeta):
             return False
         return True
 
-    async def resync_embeddings(self, conf: GuildSettings) -> int:
+    async def resync_embeddings(self, conf: GuildSettings, guild_id: int) -> int:
         """Update embeds to match current dimensions
 
         Takes a sample using current embed method, the updates the rest to match dimensions
@@ -331,6 +331,7 @@ class API(MixinMeta):
 
         if synced:
             await asyncio.gather(*tasks)
+            await asyncio.to_thread(conf.sync_embeddings, guild_id)
             await self.save_conf()
         return synced
 

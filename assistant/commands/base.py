@@ -673,7 +673,9 @@ If a file has no extension it will still try to read it only if it can be decode
             if not query_embedding:
                 return await ctx.send(_("Failed to get embedding for your query"))
 
-            embeddings = await asyncio.to_thread(conf.get_related_embeddings, query_embedding, relatedness_override=0.1)
+            embeddings = await asyncio.to_thread(
+                conf.get_related_embeddings, ctx.guild.id, query_embedding, relatedness_override=0.1
+            )
             if not embeddings:
                 return await ctx.send(_("No embeddings could be related to this query with the current settings"))
             for name, em, score, dimension in embeddings:
