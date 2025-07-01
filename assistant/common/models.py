@@ -7,6 +7,7 @@ import chromadb
 import discord
 import numpy as np
 import orjson
+from chromadb.errors import ChromaError
 from pydantic import VERSION, BaseModel, Field
 from redbot.core.bot import Red
 
@@ -133,7 +134,7 @@ class GuildSettings(AssistantBaseModel):
     def sync_embeddings(self, guild_id: int):
         try:
             collection = _chroma_client.get_collection(f"assistant-{guild_id}")
-        except chromadb.errors.ChromaError as e:
+        except ChromaError as e:
             log.info(f"Failed to get collection for guild {guild_id}: {e}")
             collection = None
 
@@ -216,7 +217,7 @@ class GuildSettings(AssistantBaseModel):
 
         try:
             collection = _chroma_client.get_collection(f"assistant-{guild_id}")
-        except chromadb.errors.ChromaError as e:
+        except ChromaError as e:
             log.info(f"Failed to get collection for guild {guild_id}: {e}")
             collection = None
 
