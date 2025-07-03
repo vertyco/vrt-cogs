@@ -68,6 +68,11 @@ FETCH_CHANNEL_HISTORY = {
                 "description": "The number of messages to fetch from the channel, starting from the most recent (default: 30)",
                 "default": 30,
             },
+            "delta": {
+                "type": "string",
+                "description": "The time delta to filter messages by, in the format 'XdXhXmXs' (e.g., '1d2h30m' for 1 day, 2 hours, and 30 minutes). If this is provided, it will use the delta instead of the limit. If not provided, the default `limit` will be used",
+                "default": "",
+            },
         },
     },
 }

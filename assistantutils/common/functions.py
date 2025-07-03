@@ -8,6 +8,7 @@ import discord
 from dateutil import parser
 from duckduckgo_search import DDGS
 from rapidfuzz import fuzz
+from redbot.core import commands
 
 from ..abc import MixinMeta
 from .utils import clean_name
@@ -161,6 +162,7 @@ class Functions(MixinMeta):
         user: discord.Member,
         channel_name_or_id: str | int = None,
         limit: int = 30,
+        delta: str = "",
         *args,
         **kwargs,
     ):
@@ -205,12 +207,21 @@ class Functions(MixinMeta):
         if isinstance(channel, discord.CategoryChannel):
             return "This function does not work for category channels."
 
+        try:
+            timedelta = commands.parse_timedelta(delta)
+        except (ValueError, TypeError):
+            timedelta = None
+
         # Start fetching the content
         buffer = StringIO()
         added = 0
         async for message in channel.history():
-            if added >= limit:
+            if added >= limit and not timedelta:
                 break
+            if timedelta:
+                if message.created_at < (discord.utils.utcnow() - timedelta):
+                    break
+
             timestamp = message.created_at.strftime("%Y-%m-%d %H:%M:%S")
             if message.content:
                 buffer.write(f"{timestamp} - {message.author.name}(ID: {message.id}): {message.content}\n")
@@ -219,14 +230,16 @@ class Functions(MixinMeta):
                 for embed in message.embeds:
                     buffer.write(f"{timestamp} - {message.author.name}(ID: {message.id}): [Embed]{embed.to_dict()}\n")
                     added += 1
+
         final = buffer.getvalue().strip()
         if not final:
             return "No messages found in this channel history."
+
         base_jump_url = f"https://discord.com/channels/{guild.id}/{channel.id}/"
         final = (
             f"Here are the last {added} messages from {channel.name} (Mention: {channel.mention})\n"
             f"To link a specific message, format as `{base_jump_url}/<message_id>`\n"
-            f"# Message History\n"
+            f"# Message History (Current time: {discord.utils.utcnow()})\n"
             f"{final}"
         )
         return final
