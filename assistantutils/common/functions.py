@@ -1,9 +1,8 @@
 import asyncio
 import json
-import string
 from datetime import datetime
 from io import StringIO
-from typing import List, Literal, Tuple, Union
+from typing import Literal
 
 import discord
 from dateutil import parser
@@ -15,88 +14,6 @@ from .utils import clean_name
 
 
 class Functions(MixinMeta):
-    async def get_channel_name_from_id(
-        self,
-        guild: discord.Guild,
-        channel_id: Union[str, int],
-        user: discord.Member,
-        *args,
-        **kwargs,
-    ):
-        if isinstance(channel_id, str):
-            if not channel_id.isdigit():
-                return "channel_id must be a valid integer!"
-        if channel := guild.get_channel_or_thread(int(channel_id)):
-            if not channel.permissions_for(user).view_channel:
-                return "The user you are chatting with doesnt have permission to view that channel"
-            ctype = "voice" if isinstance(channel, discord.VoiceChannel) else "text"
-            return f"the name of the {ctype} channel with ID {channel_id} is {channel.name}"
-        return "a channel with that ID could not be found!"
-
-    async def get_channel_id_from_name(
-        self,
-        guild: discord.Guild,
-        channel_name: str,
-        user: discord.Member,
-        *args,
-        **kwargs,
-    ):
-        channels = list(guild.channels) + list(guild.threads) + list(guild.forums)
-        valid_channels = [i for i in channels if i.permissions_for(user).view_channel]
-        if not valid_channels:
-            return "There are no channels this user can view"
-
-        matches = []
-        for channel in valid_channels:
-            if clean_name(channel.name) == channel_name:
-                return channel.mention
-            if channel.name == channel_name:
-                return channel.mention
-            name_score = fuzz.ratio(clean_name(channel.name), clean_name(channel_name.lower()))
-            if name_score >= 80:
-                matches.append((channel, name_score))
-
-        if not matches:
-            return "No channels found with that name or id!"
-
-        matches.sort(key=lambda x: x[1], reverse=True)
-        return str(matches[0][0].id)
-
-    async def get_channel_mention(
-        self,
-        guild: discord.Guild,
-        channel_name_or_id: str,
-        user: discord.Member,
-        *args,
-        **kwargs,
-    ):
-        channels = list(guild.channels) + list(guild.threads) + list(guild.forums)
-        valid_channels = [i for i in channels if i.permissions_for(user).view_channel]
-        if not valid_channels:
-            return "There are no channels this user can view"
-
-        matches = []
-        for channel in valid_channels:
-            if clean_name(channel.name) == channel_name_or_id:
-                return channel.mention
-            if channel.name == channel_name_or_id:
-                return channel.mention
-            if str(channel.id) == channel_name_or_id:
-                return channel.mention
-            name_score = fuzz.ratio(clean_name(channel.name), clean_name(channel_name_or_id.lower()))
-            if name_score >= 80:
-                matches.append((channel, name_score))
-
-            id_score = fuzz.ratio(str(channel.id), channel_name_or_id)
-            if id_score > 90:
-                matches.append((channel, id_score))
-
-        if not matches:
-            return "No channels found with that name or id!"
-
-        matches.sort(key=lambda x: x[1], reverse=True)
-        return matches[0][0].mention
-
     async def get_channel_list(
         self,
         guild: discord.Guild,
@@ -104,116 +21,130 @@ class Functions(MixinMeta):
         *args,
         **kwargs,
     ):
-        valid_channels = [i for i in guild.channels if i.permissions_for(user).view_channel]
+        valid_channels = set(list(guild.channels) + list(guild.threads) + list(guild.forums))
+        valid_channels = [i for i in valid_channels if i.permissions_for(user).view_channel]
         if not valid_channels:
             return "There are no channels this user can view"
-        txt = ""
+        buffer = StringIO()
         for channel in valid_channels:
-            txt += f"{clean_name(channel.name)}\n"
-        return txt
+            if topic := getattr(channel, "topic", None):
+                text = f"{channel.name} (mention: {channel.mention}) - Topic: {topic}"
+            else:
+                text = f"{channel.name} (mention: {channel.mention})"
+            buffer.write(f"{text}\n")
+        return buffer.getvalue().strip()
 
-    async def get_channel_topic(
+    async def get_channel_info(
         self,
         guild: discord.Guild,
-        channel_name_or_id: str,
         user: discord.Member,
+        channel_name_or_id: str,
         *args,
         **kwargs,
     ):
-        valid_channels = [i for i in guild.text_channels if i.permissions_for(user).view_channel]
-        if not valid_channels:
-            return "There are no channels this user can view"
+        def _fuzzymatch() -> discord.abc.GuildChannel | None:
+            valid_channels = set(list(guild.channels) + list(guild.threads) + list(guild.forums))
+            matches = []
+            clean_query = clean_name(channel_name_or_id.lower())
+            for c in valid_channels:
+                matches.append((c, fuzz.ratio(clean_name(c.name), clean_query)))
+                matches.append((c, fuzz.ratio(c.name, channel_name_or_id)))
 
-        notfound = "This channel does not have a topic set!"
-        matches: List[Tuple[discord.TextChannel, int]] = []
-        for channel in valid_channels:
-            if clean_name(channel.name) == channel_name_or_id:
-                return channel.topic or notfound
-            if channel.name == channel_name_or_id:
-                return channel.topic or notfound
-            if str(channel.id) == channel_name_or_id:
-                return channel.topic or notfound
+            if matches:
+                matches.sort(key=lambda x: x[1], reverse=True)
+                return matches[0][0]
+            return None
 
-            name_score = fuzz.ratio(clean_name(channel.name), clean_name(channel_name_or_id.lower()))
-            if name_score >= 80:
-                matches.append((channel, name_score))
+        channel_name_or_id = str(channel_name_or_id).strip()
+        if channel_name_or_id.isdigit():
+            channel = guild.get_channel(int(channel_name_or_id))
+        else:
+            channel = discord.utils.get(guild.channels, name=channel_name_or_id)
+            if not channel:
+                channel = await asyncio.to_thread(_fuzzymatch)
 
-            id_score = fuzz.ratio(str(channel.id), channel_name_or_id)
-            if id_score > 90:
-                matches.append((channel, id_score))
+        if not channel:
+            return f"Channel not found matching the name or ID: `{channel_name_or_id}`"
 
-        if not matches:
-            return "No channels found with that name or id!"
+        if not channel.permissions_for(user).view_channel:
+            return "The user you are talking to doesn't have permission to view that channel"
+        if not channel.permissions_for(user).read_message_history:
+            return "The user you are talking to doesn't have permission to read message history in that channel"
 
-        matches = [i for i in matches if i[0].topic]
-        if not matches:
-            return "No channels found with a topic!"
+        buffer = StringIO()
+        buffer.write(f"Channel Name: {channel.name}\n")
+        buffer.write(f"Channel ID: {channel.id}\n")
+        buffer.write(f"Channel Mention: {channel.mention}\n")
+        buffer.write(f"Channel Type: {channel.type.name}\n")
+        buffer.write(f"Created At: {channel.created_at.strftime('%Y-%m-%d %H:%M:%S')}\n")
+        buffer.write(f"Created At (Discord Format): <t:{int(channel.created_at.timestamp())}:F>\n")
+        if topic := getattr(channel, "topic", None):
+            buffer.write(f"Channel Topic: {topic}\n")
+        if isinstance(channel, discord.VoiceChannel):
+            buffer.write(f"Bitrate: {channel.bitrate}\n")
+            buffer.write(f"User Limit: {channel.user_limit}\n")
+        elif isinstance(channel, discord.TextChannel):
+            buffer.write(f"NSFW: {channel.is_nsfw()}\n")
+            buffer.write(f"Slowmode Delay: {channel.slowmode_delay} seconds\n")
+        elif isinstance(channel, discord.ForumChannel):
+            buffer.write(f"Default Reaction Emoji: {channel.default_reaction_emoji}\n")
+            buffer.write(f"Default Sort Order: {channel.default_sort_order}\n")
+            if channel.available_tags:
+                buffer.write(f"Available Tags: {', '.join(channel.available_tags)}\n")
+        return buffer.getvalue().strip()
 
-        matches.sort(key=lambda x: x[1], reverse=True)
-        return matches[0][0].topic
-
-    async def make_search_url(
-        self,
-        site: str,
-        search_query: str,
-        *args,
-        **kwargs,
-    ):
-        site = site.lower()
-        chars = string.ascii_letters + string.hexdigits
-        for char in search_query:
-            if char not in chars:
-                search_query = search_query.replace(char, "")
-        search_query = search_query.replace(" ", "+")
-        if site == "youtube":
-            return f"https://www.youtube.com/results?search_query={search_query}"
-        return f"https://www.google.com/search?q={search_query}"
-
-    async def get_user_from_id(
-        self,
-        guild: discord.Guild,
-        discord_id: int,
-        *args,
-        **kwargs,
-    ):
-        member = guild.get_member(int(discord_id))
-        if not member:
-            return "A member with that ID does not exist!"
-        return member.name
-
-    async def get_id_from_username(
+    async def get_user_info(
         self,
         guild: discord.Guild,
-        username: str,
+        user_name_or_id: str,
         *args,
         **kwargs,
-    ) -> str:
-        named_members = {i.name: i.id for i in guild.members}
-        nicknamed_members = {i.display_name: i.id for i in guild.members}
-        user_id = None
-        if username in named_members:
-            user_id = named_members[username]
-        elif username in nicknamed_members:
-            user_id = nicknamed_members[username]
+    ):
+        def _fuzzymatch() -> discord.Member | None:
+            matches = []
+            clean_query = clean_name(user_name_or_id.lower())
+            for member in guild.members:
+                matches.append((member, fuzz.ratio(clean_name(member.name), clean_query)))
+                matches.append((member, fuzz.ratio(member.name, user_name_or_id)))
+                if member.display_name != member.name:
+                    matches.append((member, fuzz.ratio(clean_name(member.display_name), clean_query)))
+                    matches.append((member, fuzz.ratio(member.display_name, user_name_or_id)))
 
-        if user_id:
-            return f"The ID of {username} is {user_id}"
+            if matches:
+                matches.sort(key=lambda x: x[1], reverse=True)
+                return matches[0][0]
+            return None
 
-        # No exact match found, try fuzzy matching
-        matches = []
-        for member in guild.members:
-            name_score = fuzz.ratio(member.name, username)
-            if name_score >= 80:
-                matches.append((member.name, member.id, name_score))
-            nickname_score = fuzz.ratio(member.display_name, username)
-            if nickname_score >= 80:
-                matches.append((member.display_name, member.id, nickname_score))
-        if matches:
-            matches.sort(key=lambda x: x[2], reverse=True)
-            # Get best match
-            name, uid, score = matches[0]
-            return f"The closest match for '{username}' is '{name}' with ID {uid} (fuzzy score: {score})"
-        return "No user found with that name or nickname!"
+        user_name_or_id = str(user_name_or_id).strip()
+        if user_name_or_id.isdigit():
+            user = guild.get_member(int(user_name_or_id))
+        else:
+            user = discord.utils.get(guild.members, name=user_name_or_id)
+            if not user:
+                user = discord.utils.get(guild.members, display_name=user_name_or_id)
+                if not user:
+                    user = await asyncio.to_thread(_fuzzymatch)
+
+        if not user:
+            return f"User not found for the name or ID: `{user_name_or_id}`"
+
+        buffer = StringIO()
+        buffer.write(f"Username: {user.name}\n")
+        if user.display_name != user.name:
+            buffer.write(f"Display Name: {user.display_name}\n")
+        buffer.write(f"User ID: {user.id}\n")
+        buffer.write(f"User Mention: {user.mention}\n")
+        buffer.write(f"Created At: {user.created_at.strftime('%Y-%m-%d %H:%M:%S')}\n")
+        buffer.write(f"Created At (Discord Format): <t:{int(user.created_at.timestamp())}:F>\n")
+        buffer.write(f"Joined At: {user.joined_at.strftime('%Y-%m-%d %H:%M:%S')}\n")
+        buffer.write(f"Joined At (Discord Format): <t:{int(user.joined_at.timestamp())}:F>\n")
+
+        for role in user.roles:
+            if role.is_default():
+                continue
+            buffer.write(f"Role: {role.name} (Mention: {role.mention})\n")
+
+        return buffer.getvalue().strip()
 
     async def search_web_duckduckgo(self, query: str, num_results: int = 5, *args, **kwargs) -> str:
         def _search():
@@ -300,11 +231,27 @@ class Functions(MixinMeta):
         )
         return final
 
-    async def get_date_from_timestamp(self, timestamp: str, *args, **kwargs) -> str:
-        timestamp = str(timestamp).strip()
-        if not timestamp.isdigit():
-            return "Invalid timestamp format. Please provide a valid integer timestamp."
-        return str(datetime.fromtimestamp(int(timestamp)))
+    async def convert_datetime_timestamp(
+        self,
+        date_or_timestamp: str,
+        *args,
+        **kwargs,
+    ):
+        date_or_timestamp = str(date_or_timestamp).strip()
+        if date_or_timestamp.isdigit():
+            # It's a timestamp
+            try:
+                timestamp = int(date_or_timestamp)
+                return str(datetime.fromtimestamp(timestamp))
+            except ValueError:
+                return "Invalid timestamp format. Please provide a valid integer timestamp."
+        else:
+            # It's a date string
+            try:
+                date = parser.parse(date_or_timestamp)
+                return str(int(date.timestamp()))
+            except ValueError:
+                return "Invalid date format. Please provide a valid date string in 'YYYY-MM-DD HH:MM:SS' format."
 
     async def get_discord_timestamp_format(
         self,
@@ -324,14 +271,3 @@ class Functions(MixinMeta):
         if timestamp_format not in ["d", "D", "t", "T", "f", "F", "R"]:
             return "Invalid timestamp format. Please use one of the following: d, D, t, T, f, F, R."
         return f"<t:{timestamp}:{timestamp_format}>"
-
-    async def get_user_roles(self, user: discord.Member, *args, **kwargs) -> str:
-        buffer = StringIO()
-        for role in user.roles:
-            if role.is_default():
-                continue
-            buffer.write(f"{role.name} (ID: {role.id})\n")
-        roles = buffer.getvalue().strip()
-        if not roles:
-            return "This user has no roles."
-        return buffer.getvalue().strip()
