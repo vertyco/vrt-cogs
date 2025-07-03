@@ -168,6 +168,7 @@ class Functions(MixinMeta):
     ):
         if channel_name_or_id is not None:
             channel_name_or_id = str(channel_name_or_id)
+            channel_name_or_id = channel_name_or_id.replace("#", "").replace("<", "").replace(">", "").strip()
             if channel_name_or_id.isdigit():
                 channel = guild.get_channel(int(channel_name_or_id))
             else:
