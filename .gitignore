@@ -170,6 +170,7 @@ compress.py
 
 
 # Misc
+copilot-instructions.md
 backups/
 orchestrator/
 welcomer/
