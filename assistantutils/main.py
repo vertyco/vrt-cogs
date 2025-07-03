@@ -27,7 +27,7 @@ class AssistantUtils(Functions, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.1.3"
+    __version__ = "1.0.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -39,17 +39,11 @@ class AssistantUtils(Functions, commands.Cog, metaclass=CompositeMetaClass):
 
     @commands.Cog.listener()
     async def on_assistant_cog_add(self, cog: MockAssistantCog):
-        await cog.register_function(self.qualified_name, schemas.GET_CHANNEL_ID)
-        await cog.register_function(self.qualified_name, schemas.GET_CHANNEL_NAMED)
-        await cog.register_function(self.qualified_name, schemas.GET_CHANNEL_MENTION)
         await cog.register_function(self.qualified_name, schemas.GET_CHANNEL_LIST)
-        await cog.register_function(self.qualified_name, schemas.GET_CHANNEL_TOPIC)
-        await cog.register_function(self.qualified_name, schemas.GET_SEARCH_URL)
-        await cog.register_function(self.qualified_name, schemas.GET_USERNAME_FROM_ID)
-        await cog.register_function(self.qualified_name, schemas.GET_ID_FROM_USERNAME)
-        await cog.register_function(self.qualified_name, schemas.GET_USER_ROLES)
+        await cog.register_function(self.qualified_name, schemas.GET_CHANNEL_INFO)
+        await cog.register_function(self.qualified_name, schemas.GET_USER_INFO)
         await cog.register_function(self.qualified_name, schemas.SEARCH_INTERNET)
         await cog.register_function(self.qualified_name, schemas.FETCH_CHANNEL_HISTORY)
-        await cog.register_function(self.qualified_name, schemas.GET_DATE_FROM_TIMESTAMP)
+        await cog.register_function(self.qualified_name, schemas.CONVERT_DATETIME_TIMESTAMP)
         await cog.register_function(self.qualified_name, schemas.GET_DISCORD_TIMESTAMP_FORMAT)
         log.info("Functions have been registered")
