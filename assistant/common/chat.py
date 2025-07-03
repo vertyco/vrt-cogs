@@ -289,8 +289,8 @@ class ChatHandler(MixinMeta):
             functions.extend(prepped_function_calls)
             mapping.update(prepped_function_map)
             if auto_answer:
-                functions.extend(DO_NOT_RESPOND_SCHEMA)
-                mapping.update({"do_not_respond": do_not_respond})
+                functions.append(DO_NOT_RESPOND_SCHEMA)
+                mapping["do_not_respond"] = do_not_respond
 
         if not conf.use_function_calls and functions:
             functions = []
