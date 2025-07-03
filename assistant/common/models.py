@@ -239,6 +239,11 @@ class GuildSettings(AssistantBaseModel):
         strings_and_relatedness = []
         for idx in range(len(results["ids"][0])):
             embed_name = results["ids"][0][idx]
+            embed_obj = self.embeddings.get(embed_name)
+            if not embed_obj:
+                # In collection but not config, remove it
+                collection.delete(ids=[embed_name])
+                continue
             embedding = self.embeddings[embed_name].embedding
             metadata = results["metadatas"][0][idx] if results["metadatas"] else {}
             distance = results["distances"][0][idx] if results["distances"] else 0.0
