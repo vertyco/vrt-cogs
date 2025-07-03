@@ -409,3 +409,11 @@ LIST_MEMORIES = {
         "properties": {},
     },
 }
+DO_NOT_RESPOND_SCHEMA = {
+    "name": "do_not_respond",
+    "description": "Call this function if you do not want to or do not need to respond to the user.",
+    "parameters": {
+        "type": "object",
+        "properties": {},
+    },
+}
