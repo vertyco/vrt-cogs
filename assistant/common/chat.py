@@ -278,6 +278,9 @@ class ChatHandler(MixinMeta):
         functions = function_calls.copy() if function_calls else []
         mapping = function_map.copy() if function_map else {}
 
+        async def do_not_respond(*args, **kwargs):
+            return {"return_null": True, "content": "do_not_respond"}
+
         if conf.use_function_calls and extend_function_calls:
             # Prepare registry and custom functions
             prepped_function_calls, prepped_function_map = await self.db.prep_functions(
@@ -287,9 +290,7 @@ class ChatHandler(MixinMeta):
             mapping.update(prepped_function_map)
             if auto_answer:
                 functions.extend(DO_NOT_RESPOND_SCHEMA)
-                mapping.update(
-                    {"do_not_respond": lambda **kwargs: {"return_null": True, "content": "No response needed"}}
-                )
+                mapping.update({"do_not_respond": do_not_respond})
 
         if not conf.use_function_calls and functions:
             functions = []
