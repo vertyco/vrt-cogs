@@ -28,7 +28,7 @@ from redbot.core.utils.chat_formatting import box, humanize_number, text_to_file
 from sentry_sdk import add_breadcrumb
 
 from ..abc import MixinMeta
-from .constants import READ_EXTENSIONS, SUPPORTS_VISION
+from .constants import DO_NOT_RESPOND_SCHEMA, READ_EXTENSIONS, SUPPORTS_VISION
 from .models import Conversation, GuildSettings
 from .reply import send_reply
 from .utils import (
@@ -59,6 +59,8 @@ class ChatHandler(MixinMeta):
         conf: GuildSettings,
         listener: bool = False,
         model_override: Optional[str] = None,
+        auto_answer: Optional[bool] = False,
+        **kwargs,
     ):
         outputfile_pattern = r"--outputfile\s+([^\s]+)"
         extract_pattern = r"--extract"
@@ -178,6 +180,7 @@ class ChatHandler(MixinMeta):
                     message_obj=message,
                     images=images,
                     model_override=model_override,
+                    auto_answer=auto_answer,
                 )
             except openai.InternalServerError as e:
                 if e.body and isinstance(e.body, dict):
@@ -269,6 +272,7 @@ class ChatHandler(MixinMeta):
         message_obj: Optional[discord.Message] = None,
         images: list[str] = None,
         model_override: Optional[str] = None,
+        auto_answer: Optional[bool] = False,
     ) -> Union[str, None]:
         """Call the API asynchronously"""
         functions = function_calls.copy() if function_calls else []
@@ -281,6 +285,11 @@ class ChatHandler(MixinMeta):
             )
             functions.extend(prepped_function_calls)
             mapping.update(prepped_function_map)
+            if auto_answer:
+                functions.extend(DO_NOT_RESPOND_SCHEMA)
+                mapping.update(
+                    {"do_not_respond": lambda **kwargs: {"return_null": True, "content": "No response needed"}}
+                )
 
         if not conf.use_function_calls and functions:
             functions = []
@@ -294,8 +303,6 @@ class ChatHandler(MixinMeta):
             channel_id=chan_id,
             guild_id=guild.id,
         )
-        # if conf.collab_convos and isinstance(author, discord.Member):
-        #     message = f"{author.display_name}: {message}"
 
         conversation.cleanup(conf, author)
         conversation.refresh()
@@ -312,6 +319,7 @@ class ChatHandler(MixinMeta):
                 message_obj=message_obj,
                 images=images,
                 model_override=model_override,
+                auto_answer=auto_answer,
             )
         finally:
             conversation.cleanup(conf, author)
@@ -330,6 +338,7 @@ class ChatHandler(MixinMeta):
         message_obj: Optional[discord.Message] = None,
         images: list[str] = None,
         model_override: Optional[str] = None,
+        auto_answer: Optional[bool] = False,
     ) -> Union[str, None]:
         if isinstance(author, int):
             author = guild.get_member(author)
@@ -337,7 +346,8 @@ class ChatHandler(MixinMeta):
             channel = guild.get_channel(channel)
 
         query_embedding = []
-        user = author if isinstance(author, discord.Member) else None
+        user = author if isinstance(author, discord.Member) else guild.get_member(author)
+        user_id = author.id if isinstance(author, discord.Member) else author
         model = conf.get_user_model(user)
 
         # Ensure the message is not longer than 1048576 characters
@@ -373,8 +383,8 @@ class ChatHandler(MixinMeta):
 
         # Don't include if user is not a tutor
         not_tutor = [
-            author.id not in conf.tutors,
-            not any([role.id in conf.tutors for role in author.roles]),
+            user_id not in conf.tutors,
+            not any([role.id in conf.tutors for role in user.roles]),
         ]
 
         if "create_memory" in function_map and all(not_tutor):
@@ -412,6 +422,7 @@ class ChatHandler(MixinMeta):
             extras=extras,
             function_calls=function_calls,
             images=images,
+            auto_answer=auto_answer,
         )
         reply = None
 
@@ -709,6 +720,10 @@ class ChatHandler(MixinMeta):
         if block:
             reply = _("Response failed due to invalid regex, check logs for more info.")
 
+        if reply and reply == "do_not_respond":
+            log.info("Auto answer triggered, not responding to user")
+            return None
+
         return reply
 
     async def safe_regex(self, regex: str, content: str):
@@ -738,6 +753,7 @@ class ChatHandler(MixinMeta):
         extras: dict,
         function_calls: List[dict],
         images: list[str] | None,
+        auto_answer: Optional[bool] = False,
     ) -> List[dict]:
         """Prepare content for calling the GPT API
 
@@ -749,6 +765,10 @@ class ChatHandler(MixinMeta):
             author (Optional[discord.Member]): user chatting with the bot
             channel (Optional[Union[discord.TextChannel, discord.Thread, discord.ForumChannel]]): channel for context
             query_embedding List[float]: message embedding weights
+            extras (dict): extra parameters to include in the prompt
+            function_calls (List[dict]): list of function calls to include in the prompt
+            images (list[str] | None): list of image URLs to include in the prompt
+            auto_answer (Optional[bool]): whether this is an auto answer response
 
         Returns:
             List[dict]: list of messages prepped for api
@@ -801,6 +821,13 @@ class ChatHandler(MixinMeta):
                 message += f"\n\n# RELATED EMBEDDINGS\n{embeds[0]}"
                 if len(embeds) > 1:
                     system_prompt += f"\n\n# RELATED EMBEDDINGS\n{''.join(embeds[1:])}"
+
+        if auto_answer:
+            initial_prompt += (
+                "\n# AUTO ANSWER:\nYou are responding to a triggered event not specifically requested by the user. "
+                "You may opt to not respond if necessary by calling the `do_not_respond` function.\n"
+                "If you do not have access to functions, you may respond with the exact phrase `do_not_respond`"
+            )
 
         images = images if model in SUPPORTS_VISION else []
         messages = conversation.prepare_chat(

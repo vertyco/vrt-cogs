@@ -102,9 +102,9 @@ class AssistantListener(MixinMeta):
         check_auto_answer = [
             conf.auto_answer,
             channel.id not in conf.auto_answer_ignored_channels,
-            channel.category_id not in conf.auto_answer_ignored_channels,
+            getattr(channel, "category_id", 0) not in conf.auto_answer_ignored_channels,
             message.author.id not in conf.tutors,
-            not any([role.id in conf.tutors for role in message.author.roles]),
+            not any([role.id in conf.tutors for role in getattr(message.author, "roles", [])]),
         ]
         if all(check_auto_answer):
             if is_question(message.content):
@@ -120,6 +120,7 @@ class AssistantListener(MixinMeta):
                 conditions.append(len(related) == 0)
                 if len(related) > 0:
                     handle_message_kwargs["model_override"] = conf.auto_answer_model
+                    handle_message_kwargs["auto_answer"] = True
         if all(conditions):
             # Message was not in the assistant channel and bot was not mentioned and auto answer is enabled and no related embeddings
             return
