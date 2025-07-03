@@ -1,6 +1,6 @@
 GET_CHANNEL_LIST = {
     "name": "get_channel_list",
-    "description": "Get a list of all the available channels the user can see",
+    "description": "Get a list of all the Discord channels that the person you are talking to can see, including their name and ID along with the topic.",
     "parameters": {
         "type": "object",
         "properties": {},
