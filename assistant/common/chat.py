@@ -578,7 +578,8 @@ class ChatHandler(MixinMeta):
                     parse_success = True
 
                 if parse_success:
-                    extras = {
+                    data = {
+                        **extras,
                         "user": guild.get_member(author) if isinstance(author, int) else author,
                         "channel": guild.get_channel_or_thread(channel) if isinstance(channel, int) else channel,
                         "guild": guild,
@@ -586,8 +587,9 @@ class ChatHandler(MixinMeta):
                         "conf": conf,
                         "conversation": conversation,
                         "messages": messages,
+                        "message_obj": message_obj,
                     }
-                    kwargs = {**args, **extras}
+                    kwargs = {**args, **data}
                     func = function_map[function_name]
                     try:
                         if iscoroutinefunction(func):
