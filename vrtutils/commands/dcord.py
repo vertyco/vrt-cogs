@@ -75,7 +75,7 @@ class Dcord(MixinMeta):
             tries = 0
             while tries < 3:
                 try:
-                    await member.edit(nick=None)
+                    await member.edit(nick=member.name, reason="Resetting hoisted nickname")
                     return True
                 except discord.Forbidden:
                     return False
@@ -85,22 +85,29 @@ class Dcord(MixinMeta):
 
         buffer = StringIO()
         for member in ctx.guild.members:
-            if not member.nick:
+            nickname = member.nick
+            if not nickname:
+                nickname = member.global_name
+            if not nickname:
+                nickname = member.display_name
+
+            if nickname == member.name:
                 continue
-            if member.nick.startswith(hoist_characters):
+
+            if nickname.startswith(hoist_characters):
                 if not confirm:
-                    buffer.write(f"- {member.name} - {member.id} - {member.nick}\n")
+                    buffer.write(f"- {member.name} - {member.id} - {nickname}\n")
                     continue
                 if await rename(member):
-                    buffer.write(f"- {member.name} - {member.id} - {member.nick}\n")
+                    buffer.write(f"- {member.name} - {member.id} - {nickname}\n")
                 else:
                     buffer.write(f"- {member.name} - {member.id} - Unable to reset nickname!\n")
-            elif member.nick[0].isdigit() and not member.name.startswith(member.nick[0]):
+            elif nickname[0].isdigit() and not member.name.startswith(nickname[0]):
                 if not confirm:
-                    buffer.write(f"- {member.name} - {member.id} - {member.nick}\n")
+                    buffer.write(f"- {member.name} - {member.id} - {nickname}\n")
                     continue
                 if await rename(member):
-                    buffer.write(f"- {member.name} - {member.id} - {member.nick}\n")
+                    buffer.write(f"- {member.name} - {member.id} - {nickname}\n")
                 else:
                     buffer.write(f"- {member.name} - {member.id} - Unable to reset nickname!\n")
 
