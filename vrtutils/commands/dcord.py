@@ -70,7 +70,35 @@ class Dcord(MixinMeta):
         **Examples**
         `[p]nohoist true`
         """
-        hoist_characters = ("!", "$", "(", ")", "*")
+        hoist_characters = (
+            "!",
+            "$",
+            "(",
+            ")",
+            "*",
+            "/",
+            "\\",
+            ":",
+            ";",
+            "<",
+            ">",
+            "?",
+            "@",
+            "[",
+            "]",
+            "{",
+            "}",
+            "|",
+            "~",
+            "`",
+            "^",
+            "+",
+            "-",
+            "=",
+            "_",
+            ".",
+            ",",
+        )
 
         async def rename(member: discord.Member):
             """Reset nickname of a member"""
