@@ -88,11 +88,17 @@ class Dcord(MixinMeta):
             if not member.nick:
                 continue
             if member.nick.startswith(hoist_characters):
+                if not confirm:
+                    buffer.write(f"- {member.name} - {member.id} - {member.nick}\n")
+                    continue
                 if await rename(member):
                     buffer.write(f"- {member.name} - {member.id} - {member.nick}\n")
                 else:
                     buffer.write(f"- {member.name} - {member.id} - Unable to reset nickname!\n")
             elif member.nick[0].isdigit() and not member.name.startswith(member.nick[0]):
+                if not confirm:
+                    buffer.write(f"- {member.name} - {member.id} - {member.nick}\n")
+                    continue
                 if await rename(member):
                     buffer.write(f"- {member.name} - {member.id} - {member.nick}\n")
                 else:
