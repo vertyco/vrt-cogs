@@ -56,7 +56,7 @@ class Dcord(MixinMeta):
     @commands.admin_or_permissions(manage_nicknames=True)
     @commands.bot_has_guild_permissions(manage_nicknames=True)
     @commands.bot_has_permissions(attach_files=True)
-    async def no_hoist(self, ctx: commands.Context, confirm: bool):
+    async def no_hoist(self, ctx: commands.Context, confirm: bool = False):
         """Dehoist all nicknames in the server
         **Arguments**
         `confirm:` (True/False) whether to confirm the action
