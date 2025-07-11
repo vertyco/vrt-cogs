@@ -56,10 +56,12 @@ class Dcord(MixinMeta):
     @commands.admin_or_permissions(manage_nicknames=True)
     @commands.bot_has_guild_permissions(manage_nicknames=True)
     @commands.bot_has_permissions(attach_files=True)
-    async def no_hoist(self, ctx: commands.Context, confirm: bool = False):
+    async def no_hoist(self, ctx: commands.Context, confirm: bool):
         """Dehoist all nicknames in the server
         **Arguments**
         `confirm:` (True/False) whether to confirm the action
+
+        Run with confirm **False** to see which nicknames would be reset.
 
         Users will be dehoisted IF:
         - Their nickname starts with a hoist character (e.g., `!`, `$`, `(`, `)`, `*`)
