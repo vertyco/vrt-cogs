@@ -124,13 +124,29 @@ class EconomyTrackCommands(MixinMeta):
     @commands.guildowner()
     @commands.guild_only()
     @commands.bot_has_permissions(embed_links=True)
-    async def remoutliers(self, ctx: commands.Context, max_value: int, datatype: str = "bank"):
+    async def remoutliers(
+        self, ctx: commands.Context, min_value: int = None, max_value: int = None, datatype: str = "bank"
+    ):
         """
-        Cleanup data above a certain total economy balance
+        Cleanup data that falls outside a specified range
 
         **Arguments**
-        datatype: either `bank` or `member`
+        `[min_value]` - Minimum value to keep (optional)
+        `[max_value]` - Maximum value to keep (optional)
+        `[datatype]` - Either `bank` or `member` (defaults to bank)
+
+        At least one of min_value or max_value must be provided.
+
+        **Examples:**
+        `[p]remoutliers 0 50000 bank` - Remove bank points outside 0-50000 range
+        `[p]remoutliers 500 10000 member` - Remove member counts outside 500-10000 range
+        `[p]remoutliers None 8000 member` - Remove only data points above 8000 members
+        `[p]remoutliers 5000 None member` - Remove only data points below 5000 members
         """
+        # Check if at least one threshold is provided
+        if min_value is None and max_value is None:
+            return await ctx.send("You must provide at least one threshold (min_value or max_value).")
+
         if datatype.lower() in ["b", "bank", "bnk"]:
             banktype = True
         else:
@@ -153,10 +169,21 @@ class EconomyTrackCommands(MixinMeta):
             )
             return await ctx.send(embed=embed)
 
-        newrows = [i for i in data if i[1] and i[1] <= max_value]
-        deleted = len(data) - len(newrows)
+        # Filter data based on provided thresholds
+        original_count = len(data)
+        if min_value is not None and max_value is not None:
+            newrows = [i for i in data if i[1] and min_value <= i[1] <= max_value]
+            range_str = f"between {min_value} and {max_value}"
+        elif min_value is not None:
+            newrows = [i for i in data if i[1] and i[1] >= min_value]
+            range_str = f"below {min_value}"
+        else:  # max_value is not None
+            newrows = [i for i in data if i[1] and i[1] <= max_value]
+            range_str = f"above {max_value}"
+
+        deleted = original_count - len(newrows)
         if not deleted:
-            return await ctx.send("No data to delete")
+            return await ctx.send("No data points found outside the specified range.")
 
         async with ctx.typing():
             if banktype:
@@ -166,7 +193,9 @@ class EconomyTrackCommands(MixinMeta):
                     await self.config.guild(ctx.guild).data.set(newrows)
             else:
                 await self.config.guild(ctx.guild).member_data.set(newrows)
-            await ctx.send("Deleted all data points above " + str(max_value))
+
+            data_type_str = "bank balance" if banktype else "member count"
+            await ctx.send(f"Deleted {deleted} data points with {data_type_str} {range_str}")
 
     @commands.command(aliases=["bgraph"])
     @commands.cooldown(5, 60.0, BucketType.user)
@@ -235,9 +264,7 @@ class EconomyTrackCommands(MixinMeta):
         current = df.values[-1][0]
 
         desc = (
-            f"`DataPoints: `{humanize_number(len(df.values))}\n"
-            f"`BankName:   `{bank_name}\n"
-            f"`Currency:   `{currency_name}"
+            f"`DataPoints: `{humanize_number(len(df.values))}\n`BankName:   `{bank_name}\n`Currency:   `{currency_name}"
         )
 
         field = (
@@ -352,3 +379,117 @@ class EconomyTrackCommands(MixinMeta):
         async with ctx.typing():
             file = await self.get_plot(df, "Member Count")
         await ctx.send(embed=embed, file=file)
+
+    @commands.command()
+    @commands.guildowner()
+    @commands.guild_only()
+    @commands.bot_has_permissions(embed_links=True)
+    async def autoremoutliers(
+        self,
+        ctx: commands.Context,
+        confirm: bool,
+        datatype: str = "bank",
+        multiplier: float = 1.5,
+    ):
+        """
+        Automatically detect and remove outliers in your data using statistical methods
+
+        **Arguments**
+        `[datatype]` - Either `bank` or `member` (defaults to bank)
+        `[multiplier]` - IQR multiplier for outlier detection sensitivity (default: 1.5)
+            - Higher values = more lenient (keeps more data)
+            - Lower values = more strict (removes more outliers)
+        `[confirm]` - Whether to actually remove the outliers
+            - Set to False for a dry run that shows what would be removed without actually removing anything
+
+        This command uses the Interquartile Range (IQR) method to detect outliers:
+        - Calculates Q1 (25th percentile) and Q3 (75th percentile)
+        - Any value outside [Q1 - multiplier*IQR, Q3 + multiplier*IQR] is considered an outlier
+
+        **Examples:**
+        `[p]autoremoutliers member` - Automatically remove member count outliers
+        `[p]autoremoutliers bank 2.0` - Remove bank outliers with higher tolerance
+        `[p]autoremoutliers member 1.0 false` - Show outliers that would be removed without actually removing them
+        """
+        if multiplier <= 0:
+            return await ctx.send("Multiplier must be a positive number.")
+
+        if datatype.lower() in ["b", "bank", "bnk"]:
+            banktype = True
+        else:
+            banktype = False
+
+        is_global = await bank.is_global()
+
+        if banktype:
+            if is_global:
+                data = await self.config.data()
+            else:
+                data = await self.config.guild(ctx.guild).data()
+        else:
+            data = await self.config.guild(ctx.guild).member_data()
+
+        if len(data) < 10:
+            embed = discord.Embed(
+                description="There is not enough data collected. Try again later.",
+                color=discord.Color.red(),
+            )
+            return await ctx.send(embed=embed)
+
+        # Extract values for statistical analysis
+        values = [point[1] for point in data if point[1] is not None]
+        if not values:
+            return await ctx.send("No valid data points found.")
+
+        # Calculate quartiles and IQR
+        values.sort()
+        mid = len(values) // 2
+        q1_idx = mid // 2
+        q3_idx = mid + (len(values) - mid) // 2
+
+        q1 = values[q1_idx]
+        q3 = values[q3_idx]
+        iqr = q3 - q1
+
+        # Calculate bounds
+        lower_bound = q1 - (multiplier * iqr)
+        upper_bound = q3 + (multiplier * iqr)
+
+        # Filter out outliers
+        original_count = len(data)
+        newrows = [i for i in data if i[1] and lower_bound <= i[1] <= upper_bound]
+        deleted = original_count - len(newrows)
+
+        if not deleted:
+            return await ctx.send("No outliers detected in the data.")
+
+        async with ctx.typing():
+            # Only update data if confirm is True
+            if confirm:
+                if banktype:
+                    if is_global:
+                        await self.config.data.set(newrows)
+                    else:
+                        await self.config.guild(ctx.guild).data.set(newrows)
+                else:
+                    await self.config.guild(ctx.guild).member_data.set(newrows)
+
+            data_type_str = "bank balance" if banktype else "member count"
+            stats_msg = (
+                f"**Statistical Analysis:**\n"
+                f"- First quartile (Q1): {humanize_number(q1)}\n"
+                f"- Third quartile (Q3): {humanize_number(q3)}\n"
+                f"- Interquartile range (IQR): {humanize_number(iqr)}\n"
+                f"- Calculated acceptable range: {humanize_number(lower_bound)} to {humanize_number(upper_bound)}"
+            )
+
+            title = "Outlier Detection Results"
+            if confirm:
+                description = f"Deleted {deleted} outliers from {data_type_str} data."
+            else:
+                description = f"Dry run: Would delete {deleted} outliers from {data_type_str} data.\nRun the command without `false` to actually remove them."
+
+            embed = discord.Embed(title=title, description=description, color=ctx.author.color)
+            embed.add_field(name="Statistics", value=stats_msg, inline=False)
+
+            await ctx.send(embed=embed)
