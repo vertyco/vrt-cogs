@@ -407,9 +407,9 @@ class EconomyTrackCommands(MixinMeta):
         - Any value outside [Q1 - multiplier*IQR, Q3 + multiplier*IQR] is considered an outlier
 
         **Examples:**
-        `[p]autoremoutliers member` - Automatically remove member count outliers
-        `[p]autoremoutliers bank 2.0` - Remove bank outliers with higher tolerance
-        `[p]autoremoutliers member 1.0 false` - Show outliers that would be removed without actually removing them
+        `[p]autoremoutliers true member` - Automatically remove member count outliers
+        `[p]autoremoutliers true bank 2.0` - Remove bank outliers with higher tolerance
+        `[p]autoremoutliers false member 1.0` - Show outliers that would be removed without actually removing them
         """
         if multiplier <= 0:
             return await ctx.send("Multiplier must be a positive number.")
