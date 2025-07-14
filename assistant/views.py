@@ -816,4 +816,7 @@ class CodeMenu(discord.ui.View):
 
         self.page = best
         self.page %= len(self.pages)
+
+        self.update_button()
+
         await self.message.edit(embed=self.pages[self.page], view=self)
