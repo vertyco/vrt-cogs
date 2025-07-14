@@ -8,9 +8,10 @@ from io import BytesIO, StringIO
 import aiohttp
 import discord
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.chat_formatting import pagify
 
 from ..abc import MixinMeta
-from ..common import calls, constants
+from ..common import calls, constants, reply
 from .models import Conversation, EmbeddingEntryExists, GuildSettings
 
 log = logging.getLogger("red.vrt.assistant.functions")
@@ -316,3 +317,19 @@ class AssistantFunctions(MixinMeta):
             return "You have no memories available!"
         joined = "\n".join([i for i in conf.embeddings])
         return joined
+
+    async def respond_and_continue(
+        self,
+        conf: GuildSettings,
+        channel: discord.TextChannel,
+        response: str,
+        message_obj: discord.Message,
+        *args,
+        **kwargs,
+    ):
+        if message_obj is not None:
+            await reply.send_reply(message=message_obj, content=response, conf=conf)
+        else:
+            for p in pagify(response):
+                await channel.send(p)
+        return "Your message has been sent to the user! You can continue working."
