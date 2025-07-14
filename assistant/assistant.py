@@ -20,6 +20,7 @@ from .common.constants import (
     EDIT_MEMORY,
     GENERATE_IMAGE,
     LIST_MEMORIES,
+    RESPOND_AND_CONTINUE,
     SEARCH_INTERNET,
     SEARCH_MEMORIES,
 )
@@ -55,7 +56,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "6.18.0"
+    __version__ = "6.18.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -112,6 +113,7 @@ class Assistant(
         await self.register_function(self.qualified_name, SEARCH_MEMORIES)
         await self.register_function(self.qualified_name, EDIT_MEMORY)
         await self.register_function(self.qualified_name, LIST_MEMORIES)
+        await self.register_function(self.qualified_name, RESPOND_AND_CONTINUE)
 
         logging.getLogger("openai").setLevel(logging.WARNING)
         logging.getLogger("aiocache").setLevel(logging.WARNING)
