@@ -285,7 +285,6 @@ class SupportButton(Button):
         if not isinstance(interaction.channel, discord.TextChannel) or not guild:
             return
 
-        channel: discord.TextChannel = interaction.channel
         roles = [r.id for r in user.roles]
         conf = await self.view.config.guild(guild).all()
         if conf["suspended_msg"]:
@@ -320,6 +319,10 @@ class SupportButton(Button):
                     color=discord.Color.red(),
                 )
                 return await interaction.response.send_message(embed=em, ephemeral=True)
+
+        channel: discord.TextChannel = guild.get_channel(panel.get("channel_id", 0))
+        if not channel:
+            channel = interaction.channel
 
         max_tickets = conf["max_tickets"]
         opened = conf["opened"]
