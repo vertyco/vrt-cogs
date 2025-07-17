@@ -38,7 +38,7 @@ async def request_chat_completion_raw(
     messages: List[dict],
     temperature: float,
     api_key: str,
-    max_tokens: int,
+    max_tokens: Optional[int] = None,
     functions: Optional[List[dict]] = None,
     frequency_penalty: float = 0.0,
     presence_penalty: float = 0.0,
@@ -60,7 +60,7 @@ async def request_chat_completion_raw(
         if model.startswith("o") and reasoning_effort is not None:
             kwargs["reasoning_effort"] = reasoning_effort
 
-        if max_tokens > 0:
+        if max_tokens and max_tokens > 0:
             kwargs["max_completion_tokens"] = max_tokens
 
         if seed and model in SUPPORTS_SEED:

@@ -64,7 +64,7 @@ class API(MixinMeta):
         if "-32k" in model and current_convo_tokens < 4000:
             model = model.replace("-32k", "")
 
-        max_model_tokens = MODELS[model]
+        max_model_tokens = MODELS.get(model)
 
         # Ensure that user doesn't set max response tokens higher than model can handle
         if response_token_override:
@@ -75,7 +75,7 @@ class API(MixinMeta):
                 # Calculate max response tokens
                 response_tokens = max(max_convo_tokens - current_convo_tokens, 0)
                 # If current convo exceeds the max convo tokens for that user, use max model tokens
-                if not response_tokens:
+                if not response_tokens and max_model_tokens:
                     response_tokens = max(max_model_tokens - current_convo_tokens, 0)
                 # Use the lesser of caculated vs set response tokens
                 response_tokens = min(response_tokens, max_response_tokens)
@@ -491,7 +491,7 @@ class API(MixinMeta):
         tokens = await self.get_tokens(text)
         current_chunk = []
 
-        max_tokens = min(conf.max_tokens - 100, MODELS[conf.model])
+        max_tokens = min(conf.max_tokens - 100, MODELS.get(conf.model, 4000))
         for token in tokens:
             current_chunk.append(token)
             if len(current_chunk) == max_tokens:
