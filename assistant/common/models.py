@@ -215,6 +215,13 @@ class GuildSettings(AssistantBaseModel):
         if not top_n or q_length == 0 or not self.embeddings:
             return []
 
+        if not all(q_length == len(em.embedding) for em in self.embeddings.values()):
+            log.warning(
+                f"Query embedding length {q_length} does not match all stored embeddings in guild {guild_id}. "
+                "Skipping related embeddings search."
+            )
+            return []
+
         try:
             collection = _chroma_client.get_collection(f"assistant-{guild_id}")
         except ChromaError as e:
