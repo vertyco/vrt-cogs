@@ -322,14 +322,14 @@ class AssistantFunctions(MixinMeta):
         self,
         conf: GuildSettings,
         channel: discord.TextChannel,
-        response: str,
+        content: str,
         message_obj: discord.Message,
         *args,
         **kwargs,
     ):
         if message_obj is not None:
-            await reply.send_reply(message=message_obj, content=response, conf=conf)
+            await reply.send_reply(message=message_obj, content=content, conf=conf)
         else:
-            for p in pagify(response):
+            for p in pagify(content):
                 await channel.send(p)
         return "Your message has been sent to the user! You can continue working."
