@@ -118,6 +118,8 @@ class Dcord(MixinMeta):
             if nickname == member.name:
                 continue
 
+            is_number = nickname[0].isdigit() and nickname[0].isalnum()
+
             if nickname.startswith(hoist_characters):
                 if not confirm:
                     buffer.write(f"- {member.name} - {member.id} - {nickname}\n")
@@ -126,7 +128,8 @@ class Dcord(MixinMeta):
                     buffer.write(f"- {member.name} - {member.id} - {nickname}\n")
                 else:
                     buffer.write(f"- {member.name} - {member.id} - Unable to reset nickname!\n")
-            elif nickname[0].isdigit() and not member.name.startswith(nickname[0]) and int(nickname[1]) in range(4):
+
+            elif is_number and not member.name.startswith(nickname[0]) and nickname[0] in ["0", "1", "2", "3"]:
                 if not confirm:
                     buffer.write(f"- {member.name} - {member.id} - {nickname}\n")
                     continue
