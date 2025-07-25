@@ -72,18 +72,12 @@ class Dcord(MixinMeta):
         """
         hoist_characters = (
             "!",
-            "$",
-            "(",
-            ")",
             "*",
-            "/",
-            "\\",
             ":",
             ";",
             "<",
             ">",
             "?",
-            "@",
             "[",
             "]",
             "{",
@@ -132,7 +126,7 @@ class Dcord(MixinMeta):
                     buffer.write(f"- {member.name} - {member.id} - {nickname}\n")
                 else:
                     buffer.write(f"- {member.name} - {member.id} - Unable to reset nickname!\n")
-            elif nickname[0].isdigit() and not member.name.startswith(nickname[0]):
+            elif nickname[0].isdigit() and not member.name.startswith(nickname[0]) and int(nickname[1]) in range(4):
                 if not confirm:
                     buffer.write(f"- {member.name} - {member.id} - {nickname}\n")
                     continue
