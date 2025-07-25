@@ -653,6 +653,49 @@ If a file has no extension it will still try to read it only if it can be decode
 
         await ctx.send(_("Here is your conversation transcript!"), file=file)
 
+    @commands.command(name="importconvo")
+    @commands.guild_only()
+    @commands.guildowner()
+    async def import_conversation(self, ctx: commands.Context):
+        """
+        Import a conversation from a file
+        """
+        attachments = get_attachments(ctx.message)
+        if not attachments:
+            return await ctx.send(_("Please attach a file to import the conversation from!"))
+        if len(attachments) > 1:
+            return await ctx.send(_("Please only attach one file to import the conversation from!"))
+        attachment = attachments[0]
+        if not attachment.filename.endswith(".json"):
+            return await ctx.send(_("Please upload a valid JSON file."))
+        try:
+            data = await attachment.read()
+            messages = json.loads(data)
+        except Exception as e:
+            await ctx.send(_("Failed to parse conversation file."))
+            log.error("Failed to parse conversation file", exc_info=e)
+            return
+        # Verify that it is a list of messages (dicts)
+        if not isinstance(messages, list) or not all(isinstance(msg, dict) for msg in messages):
+            return await ctx.send(
+                _("The conversation file is not in the correct format. It should be a list of messages.")
+            )
+        conf = self.db.get_conf(ctx.guild)
+        mem_id = ctx.channel.id if conf.collab_convos else ctx.author.id
+        perms = [
+            await self.bot.is_mod(ctx.author),
+            ctx.channel.permissions_for(ctx.author).manage_messages,
+            ctx.author.id in self.bot.owner_ids,
+        ]
+        if not any(perms) and conf.collab_convos:
+            return await ctx.send(_("You do not have permission to import conversations."))
+
+        conversation = self.db.get_conversation(mem_id, ctx.channel.id, ctx.guild.id)
+        conversation.messages = messages
+
+        await ctx.send(_("Conversation has been imported successfully!"))
+        await self.save_conf()
+
     @commands.command(name="query")
     @commands.bot_has_permissions(embed_links=True)
     async def test_embedding_response(self, ctx: commands.Context, *, query: str):
