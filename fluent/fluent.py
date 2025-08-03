@@ -32,6 +32,8 @@ async def translate_message_ctx(interaction: discord.Interaction, message: disco
         await interaction.response.defer(ephemeral=True, thinking=True)
     bot: Red = interaction.client
     content = message.content or message.embeds[0].description
+    if not content:
+        return await interaction.edit_original_response(content=_("❌ No content to translate."))
     res: t.Optional[Result] = await bot.get_cog("Fluent").translate(content, message.guild.preferred_locale.value)
     if res is None:
         return await interaction.edit_original_response(content=_("❌ Translation failed."))
@@ -67,7 +69,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "2.4.6"
+    __version__ = "2.4.7"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
