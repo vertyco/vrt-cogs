@@ -65,6 +65,7 @@ async def request_chat_completion_raw(
             kwargs["reasoning_effort"] = reasoning_effort
 
         if "gpt-5" in model and verbosity is not None:
+            print(f"VERBOSITY: {verbosity}")
             kwargs["verbosity"] = verbosity
 
         if max_tokens and max_tokens > 0:
