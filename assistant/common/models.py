@@ -100,6 +100,7 @@ class GuildSettings(AssistantBaseModel):
     embed_model: str = "text-embedding-3-small"  # Or text-embedding-3-large, text-embedding-ada-002
     collab_convos: bool = False
     reasoning_effort: str = "low"  # low, medium, high (or minimal for gpt-5)
+    verbosity: str = "low"  # low, medium, high (gpt-5 only)
 
     # Auto-answer
     auto_answer: bool = False  # Answer questions anywhere if one is detected and embedding is found for it
