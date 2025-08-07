@@ -96,6 +96,8 @@ class API(MixinMeta):
             presence_penalty=conf.presence_penalty,
             seed=conf.seed,
             base_url=self.db.endpoint_override,
+            reasoning_effort=conf.reasoning_effort,
+            verbosity=conf.verbosity,
         )
         message: ChatCompletionMessage = response.choices[0].message
 

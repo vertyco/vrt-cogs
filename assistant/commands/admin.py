@@ -97,6 +97,7 @@ class Admin(MixinMeta):
             + _("`Seed:                `{}\n").format(conf.seed)
             + _("`Vision Resolution:   `{}\n").format(conf.vision_detail)
             + _("`Reasoning Effort:    `{}\n").format(conf.reasoning_effort)
+            + _("`Verbosity:           `{}\n").format(conf.verbosity)
             + _("`System Prompt:       `{} tokens\n").format(humanize_number(system_tokens))
             + _("`User Prompt:         `{} tokens\n").format(humanize_number(prompt_tokens))
             + _("`Endpoint Override:   `{}\n").format(self.db.endpoint_override)
@@ -2001,6 +2002,25 @@ class Admin(MixinMeta):
         else:
             conf.max_time_role_override[role.id] = retention_seconds
             await ctx.send(_("Max retention time override for {} added!").format(role.mention))
+        await self.save_conf()
+
+    @assistant.command(name="verbosity")
+    async def switch_verbosity(self, ctx: commands.Context):
+        """
+        Switch verbosity level for gpt-5 model between low, medium, and high
+
+        This setting is exclusive to the gpt-5 model and affects how detailed the model's responses are.
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if conf.verbosity == "low":
+            conf.verbosity = "medium"
+            await ctx.send(_("Verbosity has been set to **Medium**"))
+        elif conf.verbosity == "medium":
+            conf.verbosity = "high"
+            await ctx.send(_("Verbosity has been set to **High**"))
+        else:
+            conf.verbosity = "low"
+            await ctx.send(_("Verbosity has been set to **Low**"))
         await self.save_conf()
 
     # --------------------------------------------------------------------------------------

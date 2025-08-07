@@ -45,6 +45,7 @@ async def request_chat_completion_raw(
     seed: int = None,
     base_url: Optional[str] = None,
     reasoning_effort: Optional[str] = None,
+    verbosity: Optional[str] = None,
 ) -> ChatCompletion:
     client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
 
@@ -62,6 +63,9 @@ async def request_chat_completion_raw(
                 # Only gpt-5 supports minimal reasoning effort
                 reasoning_effort = "low"
             kwargs["reasoning_effort"] = reasoning_effort
+
+        if "gpt-5" in model and verbosity is not None:
+            kwargs["verbosity"] = verbosity
 
         if max_tokens and max_tokens > 0:
             kwargs["max_completion_tokens"] = max_tokens
