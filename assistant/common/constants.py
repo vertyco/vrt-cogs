@@ -37,6 +37,12 @@ MODELS = {
     "o3-2025-04-16": 200000,
     "o3-mini": 200000,
     "o3-mini-2025-01-31": 200000,
+    "gpt-5": 400000,
+    "gpt-5-2025-08-07": 400000,
+    "gpt-5-mini": 400000,
+    "gpt-5-mini-2025-08-07": 400000,
+    "gpt-5-nano": 400000,
+    "gpt-5-nano-2025-08-07": 400000,
 }
 PRICES = {  # Price per 1k tokens
     "gpt-3.5-turbo": [0.001, 0.0015],
@@ -74,6 +80,12 @@ PRICES = {  # Price per 1k tokens
     "gpt-4.1-mini-2025-04-14": [0.0004, 0.0016],
     "gpt-4.1-nano": [0.0001, 0.0004],
     "gpt-4.1-nano-2025-04-14": [0.0001, 0.0004],
+    "gpt-5": [0.00125, 0.010],
+    "gpt-5-2025-08-07": [0.00125, 0.010],
+    "gpt-5-mini": [0.00025, 0.002],
+    "gpt-5-mini-2025-08-07": [0.00025, 0.002],
+    "gpt-5-nano": [0.00005, 0.0004],
+    "gpt-5-nano-2025-08-07": [0.00005, 0.0004],
     "o1": [0.015, 0.06],
     "o1-2024-12-17": [0.015, 0.06],
     "o1-preview": [0.015, 0.06],
@@ -148,6 +160,12 @@ SUPPORTS_SEED = [
     "gpt-4.1-mini-2025-04-14",
     "gpt-4.1-nano",
     "gpt-4.1-nano-2025-04-14",
+    "gpt-5",
+    "gpt-5-2025-08-07",
+    "gpt-5-mini",
+    "gpt-5-mini-2025-08-07",
+    "gpt-5-nano",
+    "gpt-5-nano-2025-08-07",
 ]
 NO_DEVELOPER_ROLE = [  # Also doesnt support system messages
     "o1-mini",
@@ -180,6 +198,12 @@ SUPPORTS_VISION = [
     # "o3-mini-2025-01-31",
     "o3",
     "o3-2025-04-16",
+    "gpt-5",
+    "gpt-5-2025-08-07",
+    "gpt-5-mini",
+    "gpt-5-mini-2025-08-07",
+    "gpt-5-nano",
+    "gpt-5-nano-2025-08-07",
 ]
 SUPPORTS_TOOLS = [
     "gpt-3.5-turbo-1106",
@@ -209,6 +233,12 @@ SUPPORTS_TOOLS = [
     "o3-mini-2025-01-31",
     "o3",
     "o3-2025-04-16",
+    "gpt-5",
+    "gpt-5-2025-08-07",
+    "gpt-5-mini",
+    "gpt-5-mini-2025-08-07",
+    "gpt-5-nano",
+    "gpt-5-nano-2025-08-07",
 ]
 READ_EXTENSIONS = [
     ".txt",

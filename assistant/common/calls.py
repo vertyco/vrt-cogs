@@ -52,12 +52,15 @@ async def request_chat_completion_raw(
 
     if model in PRICES and base_url is None:
         # Using an OpenAI model
-        if not model.startswith("o"):
+        if not model.startswith("o") and "gpt-5" not in model:
             kwargs["temperature"] = temperature
             kwargs["frequency_penalty"] = frequency_penalty
             kwargs["presence_penalty"] = presence_penalty
 
-        if model.startswith("o") and reasoning_effort is not None:
+        if (model.startswith("o") or "gpt-5" in model) and reasoning_effort is not None:
+            if reasoning_effort == "minimal" and "gpt-5" not in model:
+                # Only gpt-5 supports minimal reasoning effort
+                reasoning_effort = "low"
             kwargs["reasoning_effort"] = reasoning_effort
 
         if max_tokens and max_tokens > 0:

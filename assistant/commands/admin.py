@@ -858,15 +858,20 @@ class Admin(MixinMeta):
     async def switch_reasoning_effort(self, ctx: commands.Context):
         """Switch reasoning effort for o1 model between low, medium, and high"""
         conf = self.db.get_conf(ctx.guild)
-        if conf.reasoning_effort == "low":
+        if conf.reasoning_effort == "minimal":
+            conf.reasoning_effort = "low"
+            await ctx.send(_("Reasoning effort has been set to **Low**"))
+        elif conf.reasoning_effort == "low":
             conf.reasoning_effort = "medium"
             await ctx.send(_("Reasoning effort has been set to **Medium**"))
         elif conf.reasoning_effort == "medium":
             conf.reasoning_effort = "high"
             await ctx.send(_("Reasoning effort has been set to **High**"))
         else:
-            conf.reasoning_effort = "low"
-            await ctx.send(_("Reasoning effort has been set to **Low**"))
+            conf.reasoning_effort = "minimal"
+            await ctx.send(
+                _("Reasoning effort has been set to **Minimal** (Only gpt-5 supports this, otherwise it'll use low)")
+            )
         await self.save_conf()
 
     @assistant.command(name="questionmark")

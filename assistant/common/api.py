@@ -81,8 +81,8 @@ class API(MixinMeta):
                 response_tokens = min(response_tokens, max_response_tokens)
 
         if model not in MODELS:
-            log.error(f"This model is not longer supported: {model}. Switching to gpt-4.1")
-            model = "gpt-4.1"
+            log.error(f"This model is not longer supported: {model}. Switching to gpt-4")
+            model = "gpt-5"
             await self.save_conf()
 
         response: ChatCompletion = await request_chat_completion_raw(
@@ -130,7 +130,7 @@ class API(MixinMeta):
     # -------------------------------------------------------
     # -------------------------------------------------------
 
-    async def count_payload_tokens(self, messages: List[dict], model: str = "gpt-4.1") -> int:
+    async def count_payload_tokens(self, messages: List[dict], model: str = "gpt-5") -> int:
         if not messages:
             return 0
 
@@ -165,7 +165,7 @@ class API(MixinMeta):
 
         return await asyncio.to_thread(_count_payload)
 
-    async def count_function_tokens(self, functions: List[dict], model: str = "gpt-4.1") -> int:
+    async def count_function_tokens(self, functions: List[dict], model: str = "gpt-5") -> int:
         # Initialize function settings to 0
         func_init = 0
         prop_init = 0
@@ -197,6 +197,12 @@ class API(MixinMeta):
             "o3-mini-2025-01-31",
             "o3",
             "o3-2025-04-16",
+            "gpt-5",
+            "gpt-5-2025-04-16",
+            "gpt-5-mini",
+            "gpt-5-mini-2025-04-16",
+            "gpt-5-nano",
+            "gpt-5-nano-2025-04-16",
         ]:
             # Set function settings for the above models
             func_init = 7
@@ -265,7 +271,7 @@ class API(MixinMeta):
 
         return await asyncio.to_thread(_count_tokens)
 
-    async def get_tokens(self, text: str, model: str = "gpt-4.1") -> list[int]:
+    async def get_tokens(self, text: str, model: str = "gpt-5") -> list[int]:
         """Get token list from text"""
         if not text:
             log.debug("No text to get tokens from!")
@@ -350,7 +356,7 @@ class API(MixinMeta):
         tokens = await self.get_tokens(text, conf.get_user_model(user))
         return await self.get_text(tokens[: self.get_max_tokens(conf, user)], conf.get_user_model(user))
 
-    async def get_text(self, tokens: list, model: str = "gpt-4.1") -> str:
+    async def get_text(self, tokens: list, model: str = "gpt-5") -> str:
         """Get text from token list"""
 
         def _get_encoding():
