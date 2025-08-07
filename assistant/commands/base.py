@@ -473,7 +473,7 @@ If a file has no extension it will still try to read it only if it can be decode
             response: ChatCompletionMessage = await self.request_response(
                 messages=payload,
                 conf=conf,
-                model_override="gpt-4.1",
+                model_override="gpt-5",
                 temperature_override=0.0,
             )
         except httpx.ReadTimeout:
