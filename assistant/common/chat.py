@@ -532,18 +532,21 @@ class ChatHandler(MixinMeta):
             conf.functions_called += len(response_functions)
 
             for function_call in response_functions:
-                if isinstance(function_call, FunctionCall):
+                if hasattr(function_call, "name") and hasattr(function_call, "arguments"):
+                    # This is a FunctionCall
                     function_name = function_call.name
                     arguments = function_call.arguments
                     tool_id = None
                     role = "tool"
-                elif isinstance(function_call, ChatCompletionMessageToolCall):
+                elif hasattr(function_call, "function") and hasattr(function_call, "id"):
+                    # This is a ChatCompletionMessageToolCall
                     function_name = function_call.function.name
                     arguments = function_call.function.arguments
                     tool_id = function_call.id
                     role = "tool"
                 else:
                     log.error(f"Unknown function call type: {type(function_call)}: {function_call}")
+                    # Try to handle as ChatCompletionMessageToolCall as fallback
                     function_name = function_call.function.name
                     arguments = function_call.function.arguments
                     tool_id = function_call.id
