@@ -124,6 +124,7 @@ class Profile(Base):
         description="Last time the user was active in the guild (message sent or voice activity)",
     )
     show_tutorial: bool = True  # Init with True, show tutorial on first command usage
+    ignore_level_up_notification: bool = False  # if true level up notifications will not be announced for this user
 
     # Profile customization
     style: str = "default"  # Can be default, runescape... (WIP)
@@ -292,6 +293,13 @@ class GuildSettings(Base):
     cooldown: int = 60  # Only gives XP every 60 seconds
     min_length: int = 0  # Minimum length of message to be considered eligible for XP gain
 
+    # command checks and cooldown based on level
+    cmd_requirements: t.Dict[str, int] = {}  # command name -> level requirement
+    # command name -> Dict[level, cooldown], levels at specified level and under will be under that cooldown
+    cmd_cooldowns: t.Dict[str, t.Dict[int, int]] = {}
+    cmd_bypass_roles: t.List[int] = []  # allow roles to bypass req level and cooldown
+    cmd_bypass_member: t.List[int] = []  # allow members to bypass req level and cooldown
+
     # Voice
     voicexp: int = 2  # XP per minute in voice
     ignore_muted: bool = True  # Ignore XP while being muted in voice
@@ -314,6 +322,7 @@ class GuildSettings(Base):
     ignoredchannels: t.List[int] = []  # Channels that dont gain XP
     ignoredroles: t.List[int] = []  # Roles that dont gain XP
     ignoredusers: t.List[int] = []  # Ignored users won't gain XP
+    ignore_notification_channels: t.List[int] = []  # channels where level up announcements won't be sent if configured
 
     # Prestige
     prestigelevel: int = 0  # Level required to prestige, 0 is disabled
