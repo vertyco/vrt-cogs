@@ -48,7 +48,7 @@ class RockView(discord.ui.View):
         )
 
         # Respect discord rate limits, forcing a lower update frequency than documented by 1
-        self.msg_update_cooldown = commands.CooldownMapping.from_cooldown(4, 5, commands.BucketType.user)
+        self.msg_update_cooldown = commands.CooldownMapping.from_cooldown(1, 2, commands.BucketType.user)
 
         self.end_time: datetime | None = None
         self.ttl_task: asyncio.Task | None = None
