@@ -236,21 +236,24 @@ class RockView(discord.ui.View):
                     buffer.write(f"<@{uid}> dealt `{round(dmg)}` damage in `{hits}` hits:\n{loot}\n")
 
                     player: Player = mapped_players[uid]
-                    current_tool = constants.TOOLS[player.tool]
-                    downgraded_tool = constants.TOOLS[constants.TOOL_ORDER[constants.TOOL_ORDER.index(player.tool) - 1]]
-                    dura_deduction = max(1, hits // constants.HITS_PER_DURA_LOST)
-                    new_durability = max(0, player.durability - dura_deduction)
-                    if new_durability:
-                        buffer.write(
-                            f"-`{dura_deduction}` durability to {current_tool.display_name} (now `{new_durability}`)\n"
-                        )
-                        update_kwargs[Player.durability] = new_durability
-                    else:
-                        buffer.write(
-                            f"‼️{player.tool.title()} broke due to overuse, downgraded to {downgraded_tool.display_name}\n"
-                        )
-                        update_kwargs[Player.tool] = downgraded_tool.key
-                        update_kwargs[Player.durability] = downgraded_tool.max_durability
+                    if player.tool != "wood":
+                        current_tool = constants.TOOLS[player.tool]
+                        downgraded_tool = constants.TOOLS[
+                            constants.TOOL_ORDER[constants.TOOL_ORDER.index(player.tool) - 1]
+                        ]
+                        dura_deduction = max(1, hits // constants.HITS_PER_DURA_LOST)
+                        new_durability = max(0, player.durability - dura_deduction)
+                        if new_durability:
+                            buffer.write(
+                                f"-`{dura_deduction}` durability to {current_tool.display_name} (now `{new_durability}`)\n"
+                            )
+                            update_kwargs[Player.durability] = new_durability
+                        else:
+                            buffer.write(
+                                f"‼️{player.tool.title()} broke due to overuse, downgraded to {downgraded_tool.display_name}\n"
+                            )
+                            update_kwargs[Player.tool] = downgraded_tool.key
+                            update_kwargs[Player.durability] = downgraded_tool.max_durability
                     await player.update_self(update_kwargs)
 
         if not buffer.getvalue():
