@@ -191,7 +191,7 @@ class RockView(discord.ui.View):
         embed.add_field(name="Collapse Yield", value=box("\n".join(collapse_loot) or "None", lang="py"))
         full_loot = [f"• {k.title()}: {v}" for k, v in self.total_loot.items()]
         embed.add_field(name="Depletion Yield", value=box("\n".join(full_loot) or "None", lang="py"))
-        volatility = f"`{self.rocktype.overswing_break_chance * 100:.0f}%`"
+        volatility = f"• {self.rocktype.overswing_break_chance * 100:.0f}%"
         embed.add_field(name="Volatility", value=box(volatility, lang="py"))
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
