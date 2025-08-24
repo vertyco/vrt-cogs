@@ -99,5 +99,5 @@ class Miner(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMet
         if not self.db:
             return False
         if hasattr(self.db.pool, "is_closing"):
-            return self.db.pool.is_closing()  # 1.27.1
+            return not self.db.pool.is_closing()  # 1.27.1
         return self.db is not None
