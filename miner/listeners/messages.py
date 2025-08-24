@@ -1,5 +1,4 @@
 import logging
-from string import punctuation
 
 import discord
 from redbot.core import commands
@@ -27,8 +26,6 @@ class MessageListener(MixinMeta):
             return
         self.activity.note(message.channel.id)
         if message.content and "reload" in message.content:
-            return
-        if message.content and message.content.startswith(tuple(punctuation)):
             return
         if self.active_guild_rocks[message.guild.id] >= constants.PER_GUILD_ROCK_CAP:
             return
