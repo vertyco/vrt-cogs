@@ -171,5 +171,7 @@ class LeaderboardView(ui.LayoutView):
 
     async def start(self):
         await self.update_players()
+        if not self.players:
+            return await self.channel.send("No players found.")
         await self.update_containers()
         await self.refresh()

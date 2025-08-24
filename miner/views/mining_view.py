@@ -145,7 +145,7 @@ class RockView(discord.ui.View):
                 elif random.random() < self.rocktype.overswing_damage_chance:
                     new_durability = max(0, player.durability - self.rocktype.overswing_damage)
                     actual_damage_dealt = self.rocktype.overswing_damage if new_durability else player.durability
-                    txt = f"⚠️{interaction.user.name} did {actual_damage_dealt} to their pickaxe swinging too hastily"
+                    txt = f"⚠️{interaction.user.name} did {actual_damage_dealt} damage to their pickaxe swinging too hastily"
                     txt += "!" if new_durability else f" and their {current_tool.display_name} broke!"
                     if new_durability:
                         await player.update_self({Player.durability: new_durability})
@@ -229,7 +229,7 @@ class RockView(discord.ui.View):
                     column = getattr(Player, resource)
                     update_kwargs[column] = column + to_add
                     emoji = constants.resource_emoji(resource)
-                    lines.append(f"+`{to_add}` {emoji}")
+                    lines.append(f"+`{to_add}` {emoji} {resource.title()}")
                 if update_kwargs:
                     hits = self.hits[uid]
                     loot = "\n".join(lines)
