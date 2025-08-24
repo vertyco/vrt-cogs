@@ -30,11 +30,17 @@ class DatabaseCommands(MixinMeta):
         config = await self.bot.get_shared_api_tokens("postgres")
         if not config:
             return await ctx.send(f"Postgres credentials not set! Use `{ctx.clean_prefix}minerdb postgres` command!")
-
+        if self.db:
+            tmp = self.db
+            self.db = None
+            tmp.pool.terminate()
         conn = None
         try:
+            # Connect to the 'postgres' maintenance database to drop the target database
+            config_copy = dict(config)
+            config_copy["database"] = "postgres"
             try:
-                conn = await asyncpg.connect(**config)
+                conn = await asyncpg.connect(**config_copy)
             except asyncpg.InvalidPasswordError:
                 return await ctx.send("Invalid password!")
             except asyncpg.InvalidCatalogNameError:
@@ -43,10 +49,6 @@ class DatabaseCommands(MixinMeta):
                 return await ctx.send("Invalid user!")
 
             await conn.execute(f"DROP DATABASE IF EXISTS {engine.db_name(self)}")
-            if self.db:
-                tmp = self.db
-                self.db = None
-                tmp.pool.terminate()
         finally:
             if conn:
                 await conn.close()
