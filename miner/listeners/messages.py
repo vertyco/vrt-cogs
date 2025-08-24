@@ -25,11 +25,11 @@ class MessageListener(MixinMeta):
             return
         if not await ActiveChannel.exists().where(ActiveChannel.id == message.channel.id):
             return
+        self.activity.note(message.channel.id)
         if message.content and "reload" in message.content:
             return
         if message.content and message.content.startswith(tuple(punctuation)):
             return
-        self.activity.note(message.channel.id)
         if self.active_guild_rocks[message.guild.id] >= constants.PER_GUILD_ROCK_CAP:
             return
         if message.channel.id in self.active_channel_rocks:
