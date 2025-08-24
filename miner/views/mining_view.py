@@ -206,8 +206,11 @@ class RockView(discord.ui.View):
         self.inspect.style = discord.ButtonStyle.secondary
         self.stop()
 
-        players = await Player.objects().where(Player.id.is_in(list(self.participants.keys())))
-        mapped_players: dict[int, Player] = {p.id: p for p in players}
+        if self.participants:
+            players = await Player.objects().where(Player.id.is_in(list(self.participants.keys())))
+            mapped_players: dict[int, Player] = {p.id: p for p in players}
+        else:
+            mapped_players = {}
 
         buffer = StringIO()
         # {user_id: {resource: amount}}

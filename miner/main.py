@@ -64,12 +64,6 @@ class Miner(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMet
 
     async def initialize(self) -> None:
         await self.bot.wait_until_red_ready()
-        if self.db:
-            try:
-                self.db.pool.terminate()
-                self.db = None
-            except Exception as e:
-                log.error("Error terminating database pool", exc_info=e)
         config = await self.bot.get_shared_api_tokens("postgres")
         if not config:
             log.warning("Postgres credentials not set!")
