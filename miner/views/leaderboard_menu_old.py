@@ -146,6 +146,8 @@ class LeaderboardView(discord.ui.View):
 
     async def start(self):
         await self.update_players()
+        if not self.players:
+            return await self.channel.send("No players found.")
         await self.update_pages()
         await self.refresh()
 

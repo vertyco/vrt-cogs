@@ -31,7 +31,7 @@ class User(MixinMeta):
         player = await self.db_utils.get_create_player(user)
         tool = constants.TOOLS[player.tool]
         # Show current/max durability
-        dura_str = f"Durability: `{player.durability}` / `{tool.max_durability}`"
+        dura_str = f"Durability: `{player.durability}` / `{tool.max_durability}`" if player.tool != "wood" else ""
         embed = discord.Embed(
             title=f"{user.display_name}'s Inventory",
             color=discord.Color.blurple(),
