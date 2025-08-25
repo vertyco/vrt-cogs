@@ -19,7 +19,7 @@ class ResourceDropdown(ui.ActionRow["LeaderboardView"]):
         self.__view = view
         super().__init__()
 
-    @ui.select(placeholder="Change resource type", options=options)
+    @ui.select(placeholder="Change leaderboard type", options=options)
     async def select_resource(self, interaction: discord.Interaction, select: ui.Select) -> None:
         with suppress(discord.NotFound):
             await interaction.response.defer()
