@@ -256,16 +256,14 @@ class RockView(discord.ui.View):
                             update_kwargs[Player.durability] = downgraded_tool.max_durability
                     await player.update_self(update_kwargs)
 
-        if not buffer.getvalue():
-            buffer.write("No loot received :(")
-        else:
+        if buffer.getvalue():
             buffer.write("\n-# Run the `miner repair` command to repair your tools.")
-        embed = discord.Embed(
-            title=f"Yield From {self.rocktype.display_name}",
-            color=discord.Color.green(),
-            description=buffer.getvalue(),
-        )
-        await self.message.channel.send(embed=embed)
+            embed = discord.Embed(
+                title=f"Yield From {self.rocktype.display_name}",
+                color=discord.Color.green(),
+                description=buffer.getvalue(),
+            )
+            await self.message.channel.send(embed=embed)
         await self.message.edit(embed=self.embed(), view=self)
 
     def _compute_payouts(self) -> dict[int, dict[str, int]]:

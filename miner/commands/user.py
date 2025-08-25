@@ -155,6 +155,30 @@ class User(MixinMeta):
         view = TradePanel(self.bot, player, target)
         await view.start(ctx.channel)
 
+    @miner_group.command(name="transfer", description="Transfer resources to another miner")
+    @ensure_db_connection()
+    async def miner_transfer(
+        self,
+        ctx: commands.Context,
+        user: discord.User | discord.Member,
+        resource: constants.Resource,
+        amount: commands.positive_int,
+    ):
+        """Transfer resources to another miner."""
+        player = await self.db_utils.get_create_player(ctx.author)
+        target = await self.db_utils.get_create_player(user)
+
+        if player.id == target.id:
+            return await ctx.send("You cannot transfer resources to yourself!", ephemeral=True)
+
+        balance = getattr(player, resource, 0) or 0
+        if balance < amount:
+            return await ctx.send(f"You do not have enough {resource.title()} to transfer.", ephemeral=True)
+
+        await player.update_self({getattr(Player, resource): balance - amount})
+        await target.update_self({getattr(Player, resource): getattr(target, resource, 0) + amount})
+        await ctx.send(f"Successfully transferred `{humanize_number(amount)}` {resource.title()} to {user.mention}.")
+
     @miner_group.command(name="upgrade")
     @ensure_db_connection()
     async def miner_upgrade(self, ctx: commands.Context):
