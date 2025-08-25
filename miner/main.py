@@ -27,7 +27,7 @@ class Miner(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMet
     """Pickaxe in hand, fortune awaits"""
 
     __author__ = "Vertyco"
-    __version__ = "0.0.3b"
+    __version__ = "0.0.4b"
 
     def __init__(self, bot: Red):
         super().__init__()
