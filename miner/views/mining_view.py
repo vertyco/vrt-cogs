@@ -253,7 +253,7 @@ class RockView(discord.ui.View):
                                 f"‼️{player.tool.title()} broke due to overuse, downgraded to {downgraded_tool.display_name}\n"
                             )
                             update_kwargs[Player.tool] = downgraded_tool.key
-                            update_kwargs[Player.durability] = downgraded_tool.max_durability
+                            update_kwargs[Player.durability] = downgraded_tool.max_durability or 0
                     await player.update_self(update_kwargs)
 
         if buffer.getvalue():
