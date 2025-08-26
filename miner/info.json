@@ -5,7 +5,7 @@
   "end_user_data_statement": "This cog does not store any personal data.",
   "hidden": false,
   "install_msg": "Thank you for installing! If you dont have postgres setup, use `[p]minerdb postgres` to configure the connection.",
-  "min_bot_version": "3.5.20",
+  "min_bot_version": "3.5.21",
   "min_python_version": [3, 10, 0],
   "permissions": [],
   "required_cogs": {},
