@@ -24,6 +24,7 @@ _ = Translator("Taskr", __file__)
 
 
 system_prompt = (
+    "# INSTRUCTIONS\n"
     "Your task is to take the user input and convert it into a valid cron expression.\n"
     "Example 1: 'First Friday of every 3 months at 3:30PM starting on January':\n"
     "- hour: 15\n"
@@ -33,7 +34,11 @@ system_prompt = (
     "Example 2: 'Every odd hour at the 30 minute mark from 5am to 8pm':\n"
     "- minute: 30\n"
     "- hour: 5-20/2\n"
-    "# Rules\n"
+    "Example 3: 'Run on the 15th of each month at 3pm':\n"
+    "- hour: 15\n"
+    "- days_of_month: 15\n"
+    "# RULES\n"
+    "- USE EITHER CRON RELATED EXPRESSIONS OR INTERVALS, NOT BOTH.\n"
     "- If using intervals, leave cron expressions blank.\n"
     "- If using cron expressions, leave intervals blank.\n"
     "- When using between times and intervals at the same time, the interval using can only be minutes or hours.\n"
@@ -41,18 +46,23 @@ system_prompt = (
 
 
 class CronDataResponse(BaseModel):
-    interval: t.Optional[int] = Field(description="Interval for the schedule (e.g. every N units)")
-    interval_unit: t.Optional[str] = Field(description="seconds, minutes, hours, days, weeks, months, years")
-    hour: t.Optional[str] = Field(description="ex: *, */a, a-b, a-b/c, a,b,c")
-    minute: t.Optional[str] = Field(description="ex: *, */a, a-b, a-b/c, a,b,c")
-    second: t.Optional[str] = Field(description="ex: *, */a, a-b, a-b/c, a,b,c")
-    days_of_week: t.Optional[str] = Field(description="ex: 'mon', 'tue', '1-4', '1,2,3' etc.")
-    days_of_month: t.Optional[str] = Field(description="ex: *, */a, a-b, a-b/c, a,b,c, xth y, last, last x, etc.")
-    months_of_year: t.Optional[str] = Field(description="ex: '1', '1-12/3', '1/2', '1,7', etc.")
-    start_date: t.Optional[str] = Field(description="Start date for the schedule")
-    end_date: t.Optional[str] = Field(description="End date for the schedule")
-    between_time_start: t.Optional[str] = Field(description="HH:MM")
-    between_time_end: t.Optional[str] = Field(description="HH:MM")
+    interval: t.Optional[int] = Field(description="[INTERVAL]: for the schedule (e.g. every N units)")
+    interval_unit: t.Optional[str] = Field(
+        description="[INTERVAL]: seconds, minutes, hours, days, weeks, months, years"
+    )
+
+    hour: t.Optional[str] = Field(description="[CRON]: ex: *, */a, a-b, a-b/c, a,b,c")
+    minute: t.Optional[str] = Field(description="[CRON]: ex: *, */a, a-b, a-b/c, a,b,c")
+    second: t.Optional[str] = Field(description="[CRON]: ex: *, */a, a-b, a-b/c, a,b,c")
+    days_of_week: t.Optional[str] = Field(description="[CRON]: ex: 'mon', 'tue', '1-4', '1,2,3' etc.")
+    days_of_month: t.Optional[str] = Field(
+        description="[CRON]: ex: *, */a, a-b, a-b/c, a,b,c, xth y, last, last x, etc."
+    )
+    months_of_year: t.Optional[str] = Field(description="[CRON]: ex: '1', '1-12/3', '1/2', '1,7', etc.")
+    start_date: t.Optional[str] = Field(description="[CRON]: Start date for the schedule")
+    end_date: t.Optional[str] = Field(description="[CRON]: End date for the schedule")
+    between_time_start: t.Optional[str] = Field(description="[CRON]: HH:MM")
+    between_time_end: t.Optional[str] = Field(description="[CRON]: HH:MM")
 
 
 class TaskMenu(BaseMenu):
@@ -62,7 +72,7 @@ class TaskMenu(BaseMenu):
         self.page = 0
         self.color = discord.Color.blurple()
         self.filter: str = filter.lower()
-        self.openai_token: str | None = None
+        # self.openai_token: str | None = None
         self.is_premium: bool = True
         self.timezone: str = self.db.timezone(ctx.guild)
 
@@ -84,10 +94,8 @@ class TaskMenu(BaseMenu):
             if not pages:
                 return await self.channel.send(_("No scheduled commands found matching that query."))
 
-        tokens = await self.bot.get_shared_api_tokens("openai")
-        self.openai_token = tokens.get("api_key")
-        if not self.openai_token:
-            self.remove_item(self.ai_helper)
+        # tokens = await self.bot.get_shared_api_tokens("openai")
+        # self.openai_token = tokens.get("api_key")
         self.message = await self.channel.send(embed=await self.get_page(), view=self)
 
     async def get_page(self) -> discord.Embed:
@@ -889,10 +897,10 @@ class TaskMenu(BaseMenu):
 
     @discord.ui.button(emoji=C.WAND, style=discord.ButtonStyle.secondary, row=4)
     async def ai_helper(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if not self.openai_token:
-            return await interaction.response.send_message(
-                _("OpenAI API key is not set, cannot use AI helper."), ephemeral=True
-            )
+        # if not self.openai_token:
+        #     return await interaction.response.send_message(
+        #         _("OpenAI API key is not set, cannot use AI helper."), ephemeral=True
+        #     )
         fields = {
             "request": {
                 "label": _("When do you want this command to run?"),
@@ -915,14 +923,14 @@ class TaskMenu(BaseMenu):
         now = datetime.now(pytz.timezone(timezone))
         formatted_time = now.strftime("%A, %B %d, %Y %I:%M%p %Z")
         messages = [
-            {"role": "developer", "content": system_prompt},
             {"role": "developer", "content": f"The current time is {formatted_time}"},
+            {"role": "developer", "content": system_prompt},
             {"role": "user", "content": request},
         ]
         try:
-            client = openai.AsyncClient(api_key=self.openai_token)
+            client = openai.AsyncClient(base_url="https://text.pollinations.ai/openai")
             response = await client.beta.chat.completions.parse(
-                model="gpt-4o-mini-2024-07-18",
+                model="gpt-4.1",
                 messages=messages,
                 response_format=CronDataResponse,
                 temperature=0,
@@ -941,16 +949,14 @@ class TaskMenu(BaseMenu):
             return await interaction.followup.send(_("Failed to get cron expression from AI model."), ephemeral=True)
         # log.debug("AI model dump: %s", model.model_dump_json(indent=2))
         schedule = self.tasks[self.page]
-        if model.interval:
-            schedule.interval = model.interval
-        if model.interval_unit:
-            schedule.interval_unit = model.interval_unit
+        schedule.interval = model.interval
+        schedule.interval_unit = model.interval_unit
         if model.hour:
             try:
                 CronTrigger.from_crontab(f"* {model.hour} * * *")
                 schedule.hour = model.hour
             except ValueError:
-                pass
+                schedule.hour = None
         else:
             schedule.hour = None
         if model.minute:
@@ -958,7 +964,7 @@ class TaskMenu(BaseMenu):
                 CronTrigger.from_crontab(f"{model.minute} * * * *")
                 schedule.minute = model.minute
             except ValueError:
-                pass
+                schedule.minute = None
         else:
             schedule.minute = None
         if model.second:
@@ -966,7 +972,7 @@ class TaskMenu(BaseMenu):
                 CronTrigger(second=model.second)
                 schedule.second = model.second
             except ValueError:
-                pass
+                schedule.second = None
         else:
             schedule.second = None
         if model.days_of_week:
@@ -974,7 +980,7 @@ class TaskMenu(BaseMenu):
                 CronTrigger(day_of_week=model.days_of_week)
                 schedule.days_of_week = model.days_of_week
             except ValueError:
-                pass
+                schedule.days_of_week = None
         else:
             schedule.days_of_week = None
         if model.days_of_month:
@@ -982,7 +988,7 @@ class TaskMenu(BaseMenu):
                 CronTrigger(day=model.days_of_month)
                 schedule.days_of_month = model.days_of_month
             except ValueError:
-                pass
+                schedule.days_of_month = None
         else:
             schedule.days_of_month = None
         if model.months_of_year:
@@ -990,7 +996,7 @@ class TaskMenu(BaseMenu):
                 CronTrigger(month=model.months_of_year)
                 schedule.months_of_year = model.months_of_year
             except ValueError:
-                pass
+                schedule.months_of_year = None
         else:
             schedule.months_of_year = None
         if model.start_date:
@@ -1000,7 +1006,7 @@ class TaskMenu(BaseMenu):
                     start_date = start_date.astimezone(pytz.timezone(self.timezone))
                 schedule.start_date = start_date
             except ValueError:
-                pass
+                schedule.start_date = None
         else:
             schedule.start_date = None
         if model.end_date:
@@ -1010,7 +1016,7 @@ class TaskMenu(BaseMenu):
                     end_date = end_date.astimezone(pytz.timezone(self.timezone))
                 schedule.end_date = end_date
             except ValueError:
-                pass
+                schedule.end_date = None
         else:
             schedule.end_date = None
         if model.between_time_start:
@@ -1018,7 +1024,7 @@ class TaskMenu(BaseMenu):
                 between_time_start = parser.parse(model.between_time_start).time()
                 schedule.between_time_start = between_time_start
             except ValueError:
-                pass
+                schedule.between_time_start = None
         else:
             schedule.between_time_start = None
         if model.between_time_end:
@@ -1026,7 +1032,7 @@ class TaskMenu(BaseMenu):
                 between_time_end = parser.parse(model.between_time_end).time()
                 schedule.between_time_end = between_time_end
             except ValueError:
-                pass
+                schedule.between_time_end = None
         else:
             schedule.between_time_end = None
         try:
