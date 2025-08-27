@@ -465,10 +465,10 @@ class TaskMenu(BaseMenu):
         if channel_id and not channel_id.isdigit():
             return await interaction.followup.send(_("Channel ID must be a number."), ephemeral=True)
         channel_id = int(channel_id) if channel_id else 0
-        if channel_id and not self.guild.get_channel(channel_id):
+        if channel_id and not self.guild.get_channel_or_thread(channel_id):
             return await interaction.followup.send(_("Channel for that ID was not found."), ephemeral=True)
 
-        channel = self.guild.get_channel(channel_id)
+        channel = self.guild.get_channel_or_thread(channel_id)
         if not channel:
             channel = self.channel
 
@@ -1067,7 +1067,7 @@ class TaskMenu(BaseMenu):
         if res not in ["yes", "y"]:
             return await interaction.followup.send(_("Cancelled."), ephemeral=True)
         schedule = self.tasks[self.page]
-        channel = self.guild.get_channel(schedule.channel_id)
+        channel = self.guild.get_channel_or_thread(schedule.channel_id)
         if not channel:
             channel = self.channel
         try:
