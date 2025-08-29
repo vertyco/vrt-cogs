@@ -111,26 +111,23 @@ class RockView(discord.ui.View):
         with suppress(discord.HTTPException):
             await interaction.response.defer()
 
+        player: Player = await Player.objects().get_or_create(
+            (Player.id == interaction.user.id), defaults={Player.id: interaction.user.id}
+        )
         async with self._mine_lock:
             if self.finalizing:
                 return
             fake_msg = copy(interaction.message)
             fake_msg.author = interaction.user
             bucket = self.mine_cooldown.get_bucket(fake_msg)
-            player: Player = await Player.objects().get_or_create(
-                (Player.id == interaction.user.id), defaults={Player.id: interaction.user.id}
-            )
-
             if bucket.update_rate_limit():
                 txt = f"🤕{interaction.user.name} slipped and fell from swinging too fast!"
                 if player.tool == "wood":
                     self.action_window.append(txt)
                     return
-
                 current_tool = constants.TOOLS[player.tool]
                 downgraded_tool = constants.TOOLS[constants.TOOL_ORDER[constants.TOOL_ORDER.index(player.tool) - 1]]
                 shatter_txt = f"You swing too hastily at the {self.rocktype.display_name} and your {current_tool.display_name} shatters!"
-
                 # Player is swinging too fast so we're going to deduct from their durability
                 # Tool break sets them back to previous tool tier
                 if random.random() < self.rocktype.overswing_break_chance:
@@ -154,7 +151,6 @@ class RockView(discord.ui.View):
                         await player.update_self(
                             {Player.tool: downgraded_tool.key, Player.durability: downgraded_tool.max_durability}
                         )
-
                 self.action_window.append(txt)
                 return
 
@@ -178,7 +174,7 @@ class RockView(discord.ui.View):
 
             bucket = self.msg_update_cooldown.get_bucket(self.message)
             if not bucket.update_rate_limit():
-                await self.message.edit(embed=self.embed(), view=self)
+                asyncio.create_task(self.message.edit(embed=self.embed(), view=self))
 
     @discord.ui.button(emoji=constants.INSPECT_EMOJI, style=discord.ButtonStyle.primary)
     async def inspect(self, interaction: discord.Interaction, button: discord.ui.Button):
