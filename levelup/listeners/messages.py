@@ -6,6 +6,7 @@ import discord
 from redbot.core import commands
 
 from ..abc import MixinMeta
+from ..common import const
 
 log = logging.getLogger("red.vrt.levelup.listeners.messages")
 
@@ -103,7 +104,9 @@ class MessageListener(MixinMeta):
         now = perf_counter()
         last_messages = self.lastmsg.setdefault(message.guild.id, {})
         addxp = False
-        if len(message.content) > conf.min_length:
+
+        length_check_content = const.EMOJI_PATTERN.sub("", message.content)
+        if len(length_check_content) > conf.min_length:
             if user_id not in last_messages:
                 addxp = True
             elif now - last_messages[user_id] > conf.cooldown:
