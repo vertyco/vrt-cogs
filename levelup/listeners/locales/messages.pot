@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2024-07-24 17:08-0400\n"
+"POT-Creation-Date: 2025-08-31 20:23-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -11,7 +11,28 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: redgettext 3.4.2\n"
 
-#: levelup\listeners\__init__.py:15
+#: levelup\listeners\__init__.py:17
 #, docstring
 msgid "Subclass all listener classes"
+msgstr ""
+
+#: levelup\listeners\reactions.py:64
+msgid "{} just gave a star to {}!"
+msgstr ""
+
+#: levelup\listeners\voice.py:257
+#, docstring
+msgid ""
+"Determine whether a user can gain exp in the current voice state\n"
+"\n"
+"        voice_state may be the before or after voice state, depending on the event\n"
+"\n"
+"        Args:\n"
+"            conf (GuildSettings): The guild settings\n"
+"            member (discord.Member): The member to check\n"
+"            voice_state (discord.VoiceState): The current state of the user in the VC\n"
+"\n"
+"        Returns:\n"
+"            bool: Whether the user can gain exp\n"
+"        "
 msgstr ""

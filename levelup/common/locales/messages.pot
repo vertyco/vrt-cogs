@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2024-07-24 17:08-0400\n"
+"POT-Creation-Date: 2025-08-31 20:23-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -11,7 +11,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: redgettext 3.4.2\n"
 
-#: levelup\common\formatter.py:18
+#: levelup\common\formatter.py:24
 #, docstring
 msgid ""
 "Get the position of a user in the leaderboard\n"
@@ -26,7 +26,7 @@ msgid ""
 "    "
 msgstr ""
 
-#: levelup\common\formatter.py:58
+#: levelup\common\formatter.py:65
 #, docstring
 msgid ""
 "Format and return the role leaderboard\n"
@@ -39,15 +39,15 @@ msgid ""
 "    "
 msgstr ""
 
-#: levelup\common\formatter.py:81
+#: levelup\common\formatter.py:88
 msgid "Role Leaderboard"
 msgstr ""
 
-#: levelup\common\formatter.py:84 levelup\common\formatter.py:305
+#: levelup\common\formatter.py:91 levelup\common\formatter.py:312
 msgid "Page {}"
 msgstr ""
 
-#: levelup\common\formatter.py:106
+#: levelup\common\formatter.py:113
 #, docstring
 msgid ""
 "Format and return the leaderboard\n"
@@ -69,91 +69,91 @@ msgid ""
 "    "
 msgstr ""
 
-#: levelup\common\formatter.py:129
+#: levelup\common\formatter.py:136
 msgid "Weekly "
 msgstr ""
 
-#: levelup\common\formatter.py:133
+#: levelup\common\formatter.py:140
 msgid "Global LevelUp "
 msgstr ""
 
-#: levelup\common\formatter.py:152 levelup\common\formatter.py:161
+#: levelup\common\formatter.py:159 levelup\common\formatter.py:168
 msgid "LevelUp "
 msgstr ""
 
-#: levelup\common\formatter.py:165
+#: levelup\common\formatter.py:172
 msgid "Voice Leaderboard"
 msgstr ""
 
-#: levelup\common\formatter.py:168
+#: levelup\common\formatter.py:175
 msgid "Voicetime"
 msgstr ""
 
-#: levelup\common\formatter.py:170
+#: levelup\common\formatter.py:177
 msgid "Message Leaderboard"
 msgstr ""
 
-#: levelup\common\formatter.py:173
+#: levelup\common\formatter.py:180
 msgid "Messages"
 msgstr ""
 
-#: levelup\common\formatter.py:175
+#: levelup\common\formatter.py:182
 msgid "Star Leaderboard"
 msgstr ""
 
-#: levelup\common\formatter.py:178
+#: levelup\common\formatter.py:185
 msgid "Stars"
 msgstr ""
 
-#: levelup\common\formatter.py:180
+#: levelup\common\formatter.py:187
 msgid "Exp Leaderboard"
 msgstr ""
 
-#: levelup\common\formatter.py:183
+#: levelup\common\formatter.py:190
 msgid "Experience"
 msgstr ""
 
-#: levelup\common\formatter.py:194
+#: levelup\common\formatter.py:201
 msgid "There is no data for the {} leaderboard yet"
 msgstr ""
 
-#: levelup\common\formatter.py:195
+#: levelup\common\formatter.py:202
 msgid "weekly {}"
 msgstr ""
 
-#: levelup\common\formatter.py:206
+#: levelup\common\formatter.py:213
 msgid " | You: {}"
 msgstr ""
 
-#: levelup\common\formatter.py:213
+#: levelup\common\formatter.py:220
 msgid "➣ Total {}: {}\n"
 msgstr ""
 
-#: levelup\common\formatter.py:215
+#: levelup\common\formatter.py:222
 msgid "➣ **Total {}:** {}\n"
 msgstr ""
 
-#: levelup\common\formatter.py:219
+#: levelup\common\formatter.py:226
 msgid "➣ Last Reset: {}\n"
 msgstr ""
 
-#: levelup\common\formatter.py:223
+#: levelup\common\formatter.py:230
 msgid "➣ Next Reset: {} ({})\n"
 msgstr ""
 
-#: levelup\common\formatter.py:227
+#: levelup\common\formatter.py:234
 msgid "➣ **Last Reset:** {}\n"
 msgstr ""
 
-#: levelup\common\formatter.py:230
+#: levelup\common\formatter.py:237
 msgid "➣ **Next Reset:** {}\n"
 msgstr ""
 
-#: levelup\common\formatter.py:235
+#: levelup\common\formatter.py:242
 msgid "Total {}: {}\n"
 msgstr ""
 
-#: levelup\common\formatter.py:237
+#: levelup\common\formatter.py:244
 msgid ""
 "**Total {}:** {}\n"
 "\n"
@@ -166,17 +166,22 @@ msgid ""
 "safely"
 msgstr ""
 
-#: levelup\common\models.py:250
+#: levelup\common\models.py:107
+#, docstring
+msgid "Non-config model for tracking voice activity"
+msgstr ""
+
+#: levelup\common\models.py:237
 #, docstring
 msgid "Calculate the level that corresponds to the given XP amount"
 msgstr ""
 
-#: levelup\common\models.py:254
+#: levelup\common\models.py:241
 #, docstring
 msgid "Calculate XP required to reach specified level"
 msgstr ""
 
-#: levelup\common\models.py:367
+#: levelup\common\models.py:365
 #, docstring
 msgid "Sanitize old config data to be validated by the new schema"
 msgstr ""

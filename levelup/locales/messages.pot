@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2024-07-24 17:08-0400\n"
+"POT-Creation-Date: 2025-08-31 20:23-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -11,17 +11,17 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: redgettext 3.4.2\n"
 
-#: levelup\abc.py:17
+#: levelup\abc.py:18
 #, docstring
 msgid "Type detection"
 msgstr ""
 
-#: levelup\abc.py:21
+#: levelup\abc.py:22
 #, docstring
 msgid "Type hinting"
 msgstr ""
 
-#: levelup\main.py:71
+#: levelup\main.py:73
 #, docstring
 msgid ""
 "\n"
@@ -31,14 +31,14 @@ msgid ""
 "    "
 msgstr ""
 
-#: levelup\main.py:233
+#: levelup\main.py:222
 msgid ""
 "LevelUp has successfully migrated to v4!\n"
 "Leveling is now disabled by default and must be toggled on in each server via `[p]lset toggle`.\n"
 "[View the changelog](https://github.com/vertyco/vrt-cogs/blob/main/levelup/CHANGELOG.md) for more information."
 msgstr ""
 
-#: levelup\main.py:243
+#: levelup\main.py:232
 msgid ""
 "LevelUp has failed to migrate to v4!\n"
 "Send this to vertyco:\n"
