@@ -5,7 +5,7 @@ from time import perf_counter
 
 import discord
 from redbot.core import commands
-from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import (
     box,
     humanize_number,
@@ -20,7 +20,6 @@ from ..common.models import Emojis, Prestige
 _ = Translator("LevelUp", __file__)
 
 
-@cog_i18n(_)
 class Admin(MixinMeta):
     @commands.group(name="levelset", aliases=["lvlset", "lset"])
     @commands.guild_only()

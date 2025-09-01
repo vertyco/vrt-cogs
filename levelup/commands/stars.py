@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 import discord
 from redbot.core import commands
-from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.i18n import Translator
 
 from ..abc import MixinMeta
 from ..common import formatter, utils
@@ -13,7 +13,6 @@ from ..views.dynamic_menu import DynamicMenu
 _ = Translator("LevelUp", __file__)
 
 
-@cog_i18n(_)
 class Stars(MixinMeta):
     @commands.hybrid_command(name="stars", aliases=["givestar", "addstar", "thanks"])
     @commands.guild_only()
