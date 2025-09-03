@@ -9,6 +9,7 @@ from redbot.core.utils.chat_formatting import box, pagify
 
 from ..abc import MixinMeta
 from ..common.dpymenu import DEFAULT_CONTROLS, menu
+from ..common.utils import teredo_unobfuscate
 
 
 class Misc(MixinMeta):
@@ -137,3 +138,15 @@ class Misc(MixinMeta):
                 jobs.append(func)
             await asyncio.gather(*jobs)
             await ctx.send(f"Removed {len(ids_to_remove)} members from the adventure alerts.")
+
+    @commands.command(name="teredo")
+    async def teredo(self, ctx: commands.Context, *, ipv6: str):
+        """Unobfuscate a Teredo IPv6 address"""
+        try:
+            result = teredo_unobfuscate(ipv6)
+            txt = f"- Server IPv4: `{result['server_ipv4']}`\n"
+            txt += f"- UDP Port: `{result['udp_port']}`\n"
+            txt += f"- Client IPv4: `{result['client_ipv4']}`"
+            await ctx.send(txt)
+        except Exception as e:
+            await ctx.send(f"Error: {e}")
