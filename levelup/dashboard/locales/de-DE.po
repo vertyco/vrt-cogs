@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2024-06-18 16:29-0400\n"
-"PO-Revision-Date: 2024-12-03 14:58\n"
+"POT-Creation-Date: 2025-08-31 20:23-0400\n"
+"PO-Revision-Date: 2025-09-01 00:32\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -17,19 +17,80 @@ msgstr ""
 "X-Crowdin-File-ID: 164\n"
 "Language: de_DE\n"
 
-#: levelup\dashboard\integration.py:42
+#: levelup\dashboard\integration.py:43
+#, docstring
+msgid "\n"
+"        kwargs = {\n"
+"            \"user_id\": int,\n"
+"            \"guild_id\": int,\n"
+"            \"method\": str,  # GET or POST\n"
+"            \"request_url\": str,\n"
+"            \"cxrf_token\": str,\n"
+"            \"wtf_csrf_secret_key\": bytes,\n"
+"            \"extra_kwargs\": MultiDict,\n"
+"            \"data\": {\n"
+"                \"form\": ImmutableMultiDict,\n"
+"                \"json\": ImmutableMultiDict,\n"
+"            }\n"
+"            \"lang_code\": str,\n"
+"            \"Form\": FlaskForm,\n"
+"            \"DpyObjectConverter\": DpyObjectConverter,\n"
+"            \"get_sorted_channels\": Callable,\n"
+"            \"get_sorted_roles\": Callable,\n"
+"            \"Pagination\": Pagination,\n"
+"        }\n"
+"        "
+msgstr ""
+
+#: levelup\dashboard\integration.py:69
 msgid "Weekly stats disabled"
 msgstr ""
 
-#: levelup\dashboard\integration.py:43
+#: levelup\dashboard\integration.py:70
 msgid "Weekly stats are disabled for this guild."
 msgstr ""
 
-#: levelup\dashboard\integration.py:48
+#: levelup\dashboard\integration.py:75
 msgid "No Weekly stats available"
 msgstr ""
 
-#: levelup\dashboard\integration.py:49
+#: levelup\dashboard\integration.py:76
 msgid "There is no data for the weekly leaderboard yet, please chat a bit first."
+msgstr ""
+
+#: levelup\dashboard\integration.py:158
+msgid "Member not found"
+msgstr ""
+
+#: levelup\dashboard\integration.py:159
+msgid "You are not a member of this guild."
+msgstr ""
+
+#: levelup\dashboard\integration.py:165
+msgid "Insufficient permissions"
+msgstr ""
+
+#: levelup\dashboard\integration.py:166
+msgid "You need to be an admin to access this page."
+msgstr ""
+
+#: levelup\dashboard\integration.py:176
+msgid "Enabled:"
+msgstr ""
+
+#: levelup\dashboard\integration.py:178
+msgid "Algorithm Base:"
+msgstr ""
+
+#: levelup\dashboard\integration.py:181
+msgid "Algorithm Multiplier:"
+msgstr ""
+
+#: levelup\dashboard\integration.py:185
+msgid "Save Settings"
+msgstr ""
+
+#: levelup\dashboard\integration.py:198
+msgid "Settings saved"
 msgstr ""
 
