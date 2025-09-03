@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2024-07-24 17:08-0400\n"
-"PO-Revision-Date: 2024-12-03 14:59\n"
+"POT-Creation-Date: 2025-08-31 20:23-0400\n"
+"PO-Revision-Date: 2025-09-01 00:32\n"
 "Last-Translator: \n"
 "Language-Team: Russian\n"
 "MIME-Version: 1.0\n"
@@ -17,31 +17,74 @@ msgstr ""
 "X-Crowdin-File-ID: 186\n"
 "Language: ru_RU\n"
 
-#: levelup\generator\styles\default.py:201
+#: levelup\generator\styles\default.py:108
+#, docstring
+msgid "\n"
+"    Generate a full profile image with customizable parameters.\n"
+"    If the avatar is animated and not the background, the avatar will be rendered as a gif.\n"
+"    If the background is animated and not the avatar, the background will be rendered as a gif.\n"
+"    If both are animated, the avatar will be rendered as a gif and the background will be rendered as a static image.\n"
+"    To optimize performance, the profile will be generated in 3 layers, the background, the avatar, and the stats.\n"
+"    The stats layer will be generated as a separate image and then pasted onto the background.\n\n"
+"    Args:\n"
+"        background (t.Optional[bytes], optional): The background image as bytes. Defaults to None.\n"
+"        avatar (t.Optional[bytes], optional): The avatar image as bytes. Defaults to None.\n"
+"        username (t.Optional[str], optional): The username. Defaults to \"Spartan117\".\n"
+"        status (t.Optional[str], optional): The status. Defaults to \"online\".\n"
+"        level (t.Optional[int], optional): The level. Defaults to 1.\n"
+"        messages (t.Optional[int], optional): The number of messages. Defaults to 0.\n"
+"        voicetime (t.Optional[int], optional): The voicetime. Defaults to 3600.\n"
+"        stars (t.Optional[int], optional): The number of stars. Defaults to 0.\n"
+"        prestige (t.Optional[int], optional): The prestige level. Defaults to 0.\n"
+"        prestige_emoji (t.Optional[bytes], optional): The prestige emoji as bytes. Defaults to None.\n"
+"        balance (t.Optional[int], optional): The balance. Defaults to 0.\n"
+"        currency_name (t.Optional[str], optional): The name of the currency. Defaults to \"Credits\".\n"
+"        previous_xp (t.Optional[int], optional): The previous XP. Defaults to 0.\n"
+"        current_xp (t.Optional[int], optional): The current XP. Defaults to 0.\n"
+"        next_xp (t.Optional[int], optional): The next XP. Defaults to 0.\n"
+"        position (t.Optional[int], optional): The position. Defaults to 0.\n"
+"        role_icon (t.Optional[bytes, str], optional): The role icon as bytes or url. Defaults to None.\n"
+"        blur (t.Optional[bool], optional): Whether to blur the box behind the stats. Defaults to False.\n"
+"        user_color (t.Optional[t.Tuple[int, int, int]], optional): The color for the user. Defaults to None.\n"
+"        base_color (t.Optional[t.Tuple[int, int, int]], optional): The base color. Defaults to None.\n"
+"        stat_color (t.Optional[t.Tuple[int, int, int]], optional): The color for the stats. Defaults to None.\n"
+"        level_bar_color (t.Optional[t.Tuple[int, int, int]], optional): The color for the level bar. Defaults to None.\n"
+"        font_path (t.Optional[t.Union[str, Path], optional): The path to the font file. Defaults to None.\n"
+"        render_gif (t.Optional[bool], optional): Whether to render as gif if profile or background is one. Defaults to False.\n"
+"        debug (t.Optional[bool], optional): Whether to raise any errors rather than suppressing. Defaults to False.\n"
+"        reraise (t.Optional[bool], optional): Whether to raise any errors rather than suppressing. Defaults to False.\n"
+"        square (t.Optional[bool], optional): Whether to render the profile as a square. Defaults to False.\n"
+"        **kwargs: Additional keyword arguments.\n\n"
+"    Returns:\n"
+"        t.Tuple[bytes, bool]: The generated full profile image as bytes, and whether the image is animated.\n"
+"    "
+msgstr ""
+
+#: levelup\generator\styles\default.py:285
 msgid "(Prestige {})"
 msgstr ""
 
-#: levelup\generator\styles\default.py:240
+#: levelup\generator\styles\default.py:324
 msgid "Rank: {}"
 msgstr ""
 
-#: levelup\generator\styles\default.py:256
+#: levelup\generator\styles\default.py:340
 msgid "Level: {}"
 msgstr ""
 
-#: levelup\generator\styles\default.py:272
+#: levelup\generator\styles\default.py:356
 msgid "Messages: {}"
 msgstr ""
 
-#: levelup\generator\styles\default.py:288
+#: levelup\generator\styles\default.py:372
 msgid "Voice: {}"
 msgstr ""
 
-#: levelup\generator\styles\default.py:305
+#: levelup\generator\styles\default.py:389
 msgid "Balance: {}"
 msgstr ""
 
-#: levelup\generator\styles\default.py:324
+#: levelup\generator\styles\default.py:408
 msgid "Exp: {} ({} total)"
 msgstr ""
 

@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2024-07-24 17:08-0400\n"
-"PO-Revision-Date: 2024-12-03 14:59\n"
+"POT-Creation-Date: 2025-08-31 20:23-0400\n"
+"PO-Revision-Date: 2025-09-01 00:32\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -40,25 +40,29 @@ msgid "Check if a user has leveled up and award roles if needed\n\n"
 "        "
 msgstr ""
 
-#: levelup\shared\levelups.py:72
+#: levelup\shared\levelups.py:80
 msgid "You just reached level {} in {} and obtained the {} role!"
 msgstr ""
 
-#: levelup\shared\levelups.py:78
+#: levelup\shared\levelups.py:86
 msgid "{} just reached level {} and obtained the {} role!"
 msgstr ""
 
-#: levelup\shared\levelups.py:86
+#: levelup\shared\levelups.py:94
 msgid "You just reached level {} in {}!"
 msgstr ""
 
-#: levelup\shared\levelups.py:90
+#: levelup\shared\levelups.py:98
 msgid "{} just reached level {}!"
 msgstr ""
 
-#: levelup\shared\levelups.py:232
+#: levelup\shared\levelups.py:235
 #, docstring
 msgid "Ensure a user has the correct level roles based on their level and the guild's settings"
+msgstr ""
+
+#: levelup\shared\levelups.py:245
+msgid "Level Up"
 msgstr ""
 
 #: levelup\shared\profile.py:26
@@ -82,11 +86,12 @@ msgid "\n"
 "        Get a background for a user's profile in the following priority:\n"
 "        - Custom background selected by user\n"
 "        - Banner of user's Discord profile\n"
+"        - Guild default background\n"
 "        - Random background\n"
 "        "
 msgstr ""
 
-#: levelup\shared\profile.py:98
+#: levelup\shared\profile.py:117
 #, docstring
 msgid "Fetch a user's banner from Discord's API\n\n"
 "        Args:\n"
@@ -96,7 +101,7 @@ msgid "Fetch a user's banner from Discord's API\n\n"
 "        "
 msgstr ""
 
-#: levelup\shared\profile.py:113
+#: levelup\shared\profile.py:132
 #, docstring
 msgid "\n"
 "        Get a user's profile as an embed or file\n"
@@ -110,43 +115,43 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: levelup\shared\profile.py:165
+#: levelup\shared\profile.py:187
 msgid "Level {}\n"
 msgstr ""
 
-#: levelup\shared\profile.py:167
+#: levelup\shared\profile.py:189
 msgid "Prestige {}\n"
 msgstr ""
 
-#: levelup\shared\profile.py:170
+#: levelup\shared\profile.py:192
 msgid " stars\n"
 msgstr ""
 
-#: levelup\shared\profile.py:171
+#: levelup\shared\profile.py:193
 msgid " messages sent\n"
 msgstr ""
 
-#: levelup\shared\profile.py:172
+#: levelup\shared\profile.py:194
 msgid " in voice\n"
 msgstr ""
 
-#: levelup\shared\profile.py:174
+#: levelup\shared\profile.py:196
 msgid " Exp ({} total)\n"
 msgstr ""
 
-#: levelup\shared\profile.py:188
+#: levelup\shared\profile.py:210
 msgid "{}'s Profile"
 msgstr ""
 
-#: levelup\shared\profile.py:192
+#: levelup\shared\profile.py:214
 msgid "Rank {}, with {}% of the total server Exp"
 msgstr ""
 
-#: levelup\shared\profile.py:197
+#: levelup\shared\profile.py:219
 msgid "Progress"
 msgstr ""
 
-#: levelup\shared\profile.py:320
+#: levelup\shared\profile.py:344
 #, docstring
 msgid "Cached version of get_user_profile"
 msgstr ""
@@ -162,15 +167,15 @@ msgid "Announce and reset weekly stats\n\n"
 "        "
 msgstr ""
 
-#: levelup\shared\weeklyreset.py:38
+#: levelup\shared\weeklyreset.py:36
 msgid "There are no users in the weekly data yet"
 msgstr ""
 
-#: levelup\shared\weeklyreset.py:52
+#: levelup\shared\weeklyreset.py:50
 msgid "There are no users with XP in the weekly data yet"
 msgstr ""
 
-#: levelup\shared\weeklyreset.py:76
+#: levelup\shared\weeklyreset.py:74
 msgid "`Total Exp:       `{}\n"
 "`Total Messages:  `{}\n"
 "`Total Stars:     `{}\n"
@@ -178,23 +183,23 @@ msgid "`Total Exp:       `{}\n"
 "`Next Reset:      `{}"
 msgstr ""
 
-#: levelup\shared\weeklyreset.py:92
+#: levelup\shared\weeklyreset.py:90
 msgid "Top Weekly Exp Earners"
 msgstr ""
 
-#: levelup\shared\weeklyreset.py:106
+#: levelup\shared\weeklyreset.py:104
 msgid "`Experience: `{}\n"
 msgstr ""
 
-#: levelup\shared\weeklyreset.py:107
+#: levelup\shared\weeklyreset.py:105
 msgid "`Messages:   `{}\n"
 msgstr ""
 
-#: levelup\shared\weeklyreset.py:109
+#: levelup\shared\weeklyreset.py:107
 msgid "`Stars:      `{}\n"
 msgstr ""
 
-#: levelup\shared\weeklyreset.py:111
+#: levelup\shared\weeklyreset.py:109
 msgid "`Voicetime:  `{}\n"
 msgstr ""
 
