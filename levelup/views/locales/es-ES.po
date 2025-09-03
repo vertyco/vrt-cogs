@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2024-06-18 16:29-0400\n"
-"PO-Revision-Date: 2024-12-03 14:59\n"
+"POT-Creation-Date: 2025-08-31 20:23-0400\n"
+"PO-Revision-Date: 2025-09-01 00:32\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -16,4 +16,21 @@ msgstr ""
 "X-Crowdin-File: /[vertyco.vrt-cogs] main/levelup/views/locales/messages.pot\n"
 "X-Crowdin-File-ID: 176\n"
 "Language: es_ES\n"
+
+#: levelup\views\dynamic_menu.py:20
+msgid "Enter Search Query or Page"
+msgstr ""
+
+#: levelup\views\dynamic_menu.py:80
+#, docstring
+msgid "Call this to start and refresh the menu."
+msgstr ""
+
+#: levelup\views\dynamic_menu.py:241 levelup\views\dynamic_menu.py:285
+msgid "No page found matching that query."
+msgstr ""
+
+#: levelup\views\dynamic_menu.py:289
+msgid "Found closest match of {}%"
+msgstr ""
 
