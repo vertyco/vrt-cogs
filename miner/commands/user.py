@@ -37,6 +37,7 @@ class User(MixinMeta):
                 f"Power: `{tool.power}`\n"
                 f"Crit Chance: `{tool.crit_chance * 100:.1f}%`\n"
                 f"Crit Multiplier: `x{tool.crit_multiplier:.2f}`\n"
+                f"Shatter Resistance: `{tool.shatter_resistance * 100:.1f}%`\n"
                 f"{dura_str}"
             ),
         )
@@ -61,6 +62,7 @@ class User(MixinMeta):
                 f"Power: `{next_tool.power}`\n"
                 f"Crit Chance: `{next_tool.crit_chance * 100:.1f}%`\n"
                 f"Crit Multiplier: `x{next_tool.crit_multiplier:.2f}`\n"
+                f"Shatter Resistance: `{next_tool.shatter_resistance * 100:.1f}%`\n"
                 f"Durability: `{next_tool.max_durability}`"
             )
             if next_tool.upgrade_cost:
@@ -215,8 +217,9 @@ class User(MixinMeta):
         stats_str = (
             f"Power: `{next_tool.power}`\n"
             f"Crit Chance: `{next_tool.crit_chance * 100:.1f}%`\n"
-            f"Crit Multiplier: `x{next_tool.crit_multiplier:.2f}`"
-            f"\nDurability: `{next_tool.max_durability}`"
+            f"Crit Multiplier: `x{next_tool.crit_multiplier:.2f}`\n"
+            f"Shatter Resistance: `{next_tool.shatter_resistance * 100:.1f}%`\n"
+            f"Durability: `{next_tool.max_durability}`"
         )
         embed = discord.Embed(
             title=f"Upgrade to {next_tool.display_name}?",

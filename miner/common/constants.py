@@ -15,6 +15,7 @@ ROCK_ORDER: tuple[RockTierName, ...] = ("small", "medium", "large", "meteor", "v
 
 # Pacing
 ROCK_TTL_SECONDS: int = 2 * 60  # 2 minutes
+SWINGS_PER_THRESHOLD: int = 1
 OVERSWING_THRESHOLD_SECONDS: int = 0.5  # 1 swing per 0.5 seconds
 
 # Spawn probability bonus
@@ -76,6 +77,7 @@ class ToolTier:
     # None for base tier; dict for upgrade cost in resources
     upgrade_cost: dict[Resource, int] | None
     max_durability: int | None
+    shatter_resistance: float = 0.0  # Chance to resist shattering on overswing
 
 
 TOOLS: dict[ToolName, ToolTier] = {
@@ -96,6 +98,7 @@ TOOLS: dict[ToolName, ToolTier] = {
         crit_multiplier=1.4,
         upgrade_cost={"stone": 90},
         max_durability=98,
+        shatter_resistance=0.02,
     ),
     "iron": ToolTier(
         key="iron",
@@ -105,6 +108,7 @@ TOOLS: dict[ToolName, ToolTier] = {
         crit_multiplier=1.4,
         upgrade_cost={"stone": 260, "iron": 80},
         max_durability=242,
+        shatter_resistance=0.06,
     ),
     "steel": ToolTier(
         key="steel",
@@ -114,6 +118,7 @@ TOOLS: dict[ToolName, ToolTier] = {
         crit_multiplier=1.5,
         upgrade_cost={"stone": 360, "iron": 570, "gems": 10},
         max_durability=512,
+        shatter_resistance=0.12,
     ),
     "carbide": ToolTier(
         key="carbide",
@@ -123,6 +128,7 @@ TOOLS: dict[ToolName, ToolTier] = {
         crit_multiplier=1.6,
         upgrade_cost={"stone": 3400, "iron": 1750, "gems": 30},
         max_durability=968,
+        shatter_resistance=0.24,
     ),
     "diamond": ToolTier(
         key="diamond",
@@ -132,6 +138,7 @@ TOOLS: dict[ToolName, ToolTier] = {
         crit_multiplier=1.8,
         upgrade_cost={"stone": 6750, "iron": 2220, "gems": 115},
         max_durability=1682,
+        shatter_resistance=0.50,
     ),
 }
 
@@ -174,8 +181,8 @@ ROCK_TYPES: dict[RockTierName, RockType] = {
         hp=360,
         image_url="https://i.imgur.com/4MQBGYi.png",
         rarity=2,
-        total_loot={"stone": 120, "iron": 20},
-        floor_loot={"stone": 25},
+        total_loot={"stone": 170, "iron": 30},
+        floor_loot={"stone": 45},
         overswing_break_chance=0.03,
         overswing_damage_chance=0.1,
         overswing_damage=2,
@@ -186,8 +193,8 @@ ROCK_TYPES: dict[RockTierName, RockType] = {
         hp=1000,
         image_url="https://i.imgur.com/BNrC5MD.png",
         rarity=3,
-        total_loot={"stone": 360, "iron": 90, "gems": 2},
-        floor_loot={"stone": 65, "iron": 8},
+        total_loot={"stone": 360, "iron": 100, "gems": 2},
+        floor_loot={"stone": 65, "iron": 20},
         overswing_break_chance=0.05,
         overswing_damage_chance=0.1,
         overswing_damage=5,
@@ -198,7 +205,7 @@ ROCK_TYPES: dict[RockTierName, RockType] = {
         hp=2000,
         image_url="https://i.imgur.com/fl1Hdts.png",
         rarity=5,
-        total_loot={"stone": 75, "iron": 220, "gems": 10},
+        total_loot={"stone": 75, "iron": 260, "gems": 10},
         floor_loot={"stone": 10, "iron": 42, "gems": 1},
         overswing_break_chance=0.1,
         overswing_damage_chance=0.35,
@@ -210,8 +217,8 @@ ROCK_TYPES: dict[RockTierName, RockType] = {
         hp=1500,
         image_url="https://i.imgur.com/bMPINaW.png",
         rarity=6,
-        total_loot={"iron": 25, "gems": 50},
-        floor_loot={"iron": 10, "gems": 3},
+        total_loot={"iron": 100, "gems": 65},
+        floor_loot={"iron": 20, "gems": 15},
         overswing_break_chance=0.5,
         overswing_damage_chance=0.05,
         overswing_damage=25,
