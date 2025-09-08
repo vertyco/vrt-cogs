@@ -144,7 +144,7 @@ class LeaderboardView(ui.LayoutView):
             entry["name"] = user.name if user else str(entry["player"])
 
     async def update_containers(self):
-        await self.update_containers()
+        await self.update_leaderboard_data()
         position = next((i for i, p in enumerate(self.data) if p["player"] == self.author.id), None)
 
         header = ui.TextDisplay(
