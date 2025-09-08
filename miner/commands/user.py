@@ -1,19 +1,16 @@
 import typing as t
 
 import discord
-from redbot.core import commands
+from redbot.core import bank, commands
+from redbot.core.errors import BalanceTooHigh
 from redbot.core.utils.chat_formatting import humanize_number
 
 from ..abc import MixinMeta
 from ..common import constants
 from ..db.tables import Player, ensure_db_connection
+from ..views.leaderboard_menu import LeaderboardView
 from ..views.trade_panel import TradePanel
 from ..views.upgrade_view import UpgradeConfirmView
-
-if discord.version_info.minor >= 6:
-    from ..views.leaderboard_menu import LeaderboardView
-else:
-    from ..views.leaderboard_menu_old import LeaderboardView
 
 
 class User(MixinMeta):
@@ -267,3 +264,42 @@ class User(MixinMeta):
     async def miner_leaderboard(self, ctx: commands.Context):
         """View the top players for a specific resource."""
         await LeaderboardView(self.bot, ctx).start()
+
+    @miner_group.command(name="convert")
+    async def miner_convert_group(
+        self, ctx: commands.Context, resource: constants.Resource, amount: commands.positive_int
+    ):
+        """Convert resources to economy credits (if enabled)."""
+        player = await self.db_utils.get_create_player(ctx.author)
+        if await bank.is_global():
+            settings = await self.db_utils.get_create_global_settings()
+        else:
+            settings = await self.db_utils.get_create_guild_settings(ctx.guild)
+
+        if not settings.conversion_enabled:
+            return await ctx.send("Resource conversion is not enabled.", ephemeral=True)
+
+        if amount > getattr(player, resource):
+            grammar = "that many" if resource == "gems" else "that much"
+            return await ctx.send(f"You do not have {grammar} {resource.title()}!", ephemeral=True)
+
+        rate: float = getattr(settings, f"{resource}_convert_rate")
+
+        creditsname = await bank.get_currency_name(ctx.guild)
+
+        credits, remainder = divmod(amount, rate)
+        if credits == 0:
+            return await ctx.send(
+                f"You need to convert at least `{rate}` {resource.title()} to receive 1 {creditsname}.", ephemeral=True
+            )
+
+        amount_to_deduct = amount - remainder
+        try:
+            await bank.deposit_credits(ctx.author, credits)
+        except BalanceTooHigh as e:
+            await bank.set_balance(ctx.author, e.max_balance)
+        await player.update_self({getattr(Player, resource): max(0, getattr(player, resource) - amount_to_deduct)})
+
+        return await ctx.send(
+            f"{ctx.author.mention}, you have converted `{humanize_number(amount_to_deduct)}` {resource.title()} into `{humanize_number(credits)}` {creditsname}."
+        )
