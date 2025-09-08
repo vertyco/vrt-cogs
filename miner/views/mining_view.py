@@ -47,8 +47,7 @@ class RockView(discord.ui.View):
             1, constants.OVERSWING_THRESHOLD_SECONDS, commands.BucketType.user
         )
 
-        # Respect discord rate limits, forcing a lower update frequency than documented by 1
-        self.msg_update_cooldown = commands.CooldownMapping.from_cooldown(1, 2, commands.BucketType.user)
+        self.msg_update_cooldown = commands.CooldownMapping.from_cooldown(1, 1, commands.BucketType.user)
 
         self.end_time: datetime | None = None
         self.ttl_task: asyncio.Task | None = None
@@ -136,7 +135,7 @@ class RockView(discord.ui.View):
                     self.action_window.append(txt)
                     await interaction.followup.send(shatter_txt, ephemeral=True)
                     await player.update_self(
-                        {Player.tool: downgraded_tool.key, Player.durability: downgraded_tool.max_durability}
+                        {Player.tool: downgraded_tool.key, Player.durability: downgraded_tool.max_durability or 0}
                     )
                     return
                 elif random.random() < self.rocktype.overswing_damage_chance:
