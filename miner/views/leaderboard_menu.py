@@ -30,7 +30,6 @@ class ResourceDropdown(ui.ActionRow["LeaderboardView"]):
             await interaction.response.defer()
         choice: constants.Resource = select.values[0].lower()
         self.__view.resource = choice
-        await self.__view.update_leaderboard_data()
         await self.__view.update_containers()
         await self.__view.refresh(interaction, followup=True)
 
@@ -53,7 +52,6 @@ class LeaderBoardDeltaDropdown(ui.ActionRow["LeaderboardView"]):
             await interaction.response.defer()
         choice: t.Literal["daily", "weekly", "monthly", "all time"] = select.values[0].lower()
         self.__view.lb_type = choice
-        await self.__view.update_leaderboard_data()
         await self.__view.update_containers()
         await self.__view.refresh(interaction, followup=True)
 
@@ -146,6 +144,7 @@ class LeaderboardView(ui.LayoutView):
             entry["name"] = user.name if user else str(entry["player"])
 
     async def update_containers(self):
+        await self.update_containers()
         position = next((i for i, p in enumerate(self.data) if p["player"] == self.author.id), None)
 
         header = ui.TextDisplay(
@@ -153,6 +152,17 @@ class LeaderboardView(ui.LayoutView):
         )
 
         color = await self.bot.get_embed_color(self.channel)
+        if not self.data:
+            container = ui.Container(accent_color=color)
+            container.add_item(header)
+            container.add_item(ui.TextDisplay("No players found."))
+            container.add_item(ResourceDropdown(self))
+            container.add_item(LeaderBoardDeltaDropdown(self))
+            container.add_item(PaginationButtons(self))
+            self.page_count = 1
+            self.pages = [container]
+            return
+
         pages: list[ui.Container] = []
         per_page = 10
         start = 0
@@ -211,8 +221,5 @@ class LeaderboardView(ui.LayoutView):
             self.message = await self.channel.send(view=self)
 
     async def start(self):
-        await self.update_leaderboard_data()
-        if not self.data:
-            return await self.channel.send("No players found.")
         await self.update_containers()
         await self.refresh()
