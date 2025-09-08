@@ -334,4 +334,3 @@ class RockView(discord.ui.View):
                     leftover -= 1
 
         return payouts
-        return payouts
