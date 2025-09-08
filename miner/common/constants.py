@@ -122,7 +122,7 @@ TOOLS: dict[ToolName, ToolTier] = {
         crit_chance=0.15,
         crit_multiplier=1.6,
         upgrade_cost={"stone": 3400, "iron": 1750, "gems": 30},
-        max_durability=1250,
+        max_durability=968,
     ),
     "diamond": ToolTier(
         key="diamond",
@@ -131,7 +131,7 @@ TOOLS: dict[ToolName, ToolTier] = {
         crit_chance=0.2,
         crit_multiplier=1.8,
         upgrade_cost={"stone": 6750, "iron": 2220, "gems": 115},
-        max_durability=841,
+        max_durability=1682,
     ),
 }
 
@@ -186,7 +186,7 @@ ROCK_TYPES: dict[RockTierName, RockType] = {
         hp=1000,
         image_url="https://i.imgur.com/BNrC5MD.png",
         rarity=3,
-        total_loot={"stone": 360, "iron": 85, "gems": 2},
+        total_loot={"stone": 360, "iron": 90, "gems": 2},
         floor_loot={"stone": 65, "iron": 8},
         overswing_break_chance=0.05,
         overswing_damage_chance=0.1,
@@ -198,9 +198,9 @@ ROCK_TYPES: dict[RockTierName, RockType] = {
         hp=2000,
         image_url="https://i.imgur.com/fl1Hdts.png",
         rarity=5,
-        total_loot={"stone": 75, "iron": 190, "gems": 10},
+        total_loot={"stone": 75, "iron": 220, "gems": 10},
         floor_loot={"stone": 10, "iron": 42, "gems": 1},
-        overswing_break_chance=0.15,
+        overswing_break_chance=0.1,
         overswing_damage_chance=0.35,
         overswing_damage=10,
     ),
