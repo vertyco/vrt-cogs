@@ -1,9 +1,16 @@
 import discord
 
-from .tables import GuildSettings, Player
+from .tables import GlobalSettings, GuildSettings, Player
 
 
 class DBUtils:
+    @staticmethod
+    async def get_create_global_settings() -> GlobalSettings:
+        settings: GlobalSettings = await GlobalSettings.objects().get_or_create(
+            (GlobalSettings.key == 1), defaults={GlobalSettings.key: 1}
+        )
+        return settings
+
     @staticmethod
     async def get_create_player(user: discord.User | discord.Member | int) -> Player:
         uid = user if isinstance(user, int) else user.id

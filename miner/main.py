@@ -27,7 +27,7 @@ class Miner(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMet
     """Pickaxe in hand, fortune awaits"""
 
     __author__ = "Vertyco"
-    __version__ = "0.0.7b"
+    __version__ = "0.1.0b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -100,4 +100,6 @@ class Miner(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMet
             return False
         if hasattr(self.db.pool, "is_closing"):
             return not self.db.pool.is_closing()  # 1.27.1
+        if self.db.pool._closed:
+            return False
         return self.db is not None

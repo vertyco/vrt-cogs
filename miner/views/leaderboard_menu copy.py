@@ -1,20 +1,15 @@
 import math
-import typing as t
 from contextlib import suppress
-from datetime import timedelta
 from io import StringIO
 
 import discord
 from discord import ui
-from piccolo.columns.defaults.timestamptz import TimestamptzNow
-from piccolo.query import OrderByRaw
-from piccolo.query.functions.aggregate import Sum
 from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import box
 
 from ..common import constants
-from ..db.tables import ResourceLedger
+from ..db.tables import Player
 
 
 class ResourceDropdown(ui.ActionRow["LeaderboardView"]):
@@ -24,36 +19,13 @@ class ResourceDropdown(ui.ActionRow["LeaderboardView"]):
         self.__view = view
         super().__init__()
 
-    @ui.select(placeholder="Resource type", options=options)
+    @ui.select(placeholder="Change leaderboard type", options=options)
     async def select_resource(self, interaction: discord.Interaction, select: ui.Select) -> None:
         with suppress(discord.NotFound):
             await interaction.response.defer()
         choice: constants.Resource = select.values[0].lower()
         self.__view.resource = choice
-        await self.__view.update_leaderboard_data()
-        await self.__view.update_containers()
-        await self.__view.refresh(interaction, followup=True)
-
-
-class LeaderBoardDeltaDropdown(ui.ActionRow["LeaderboardView"]):
-    options = [
-        discord.SelectOption(label="Daily", description="Past 24 hours"),
-        discord.SelectOption(label="Weekly", description="Past 7 days"),
-        discord.SelectOption(label="Monthly", description="Past 30 days"),
-        discord.SelectOption(label="All Time", description="All time"),
-    ]
-
-    def __init__(self, view: "LeaderboardView"):
-        self.__view = view
-        super().__init__()
-
-    @ui.select(placeholder="Leaderboard type", options=options)
-    async def select_delta(self, interaction: discord.Interaction, select: ui.Select) -> None:
-        with suppress(discord.NotFound):
-            await interaction.response.defer()
-        choice: t.Literal["daily", "weekly", "monthly", "all time"] = select.values[0].lower()
-        self.__view.lb_type = choice
-        await self.__view.update_leaderboard_data()
+        await self.__view.update_players()
         await self.__view.update_containers()
         await self.__view.refresh(interaction, followup=True)
 
@@ -98,11 +70,9 @@ class LeaderboardView(ui.LayoutView):
         self.page = 0
         self.page_count = 0
         self.pages: list[ui.Container] = []
+        self.players: list[dict] = []
         self.message: discord.Message | None = None
-
-        self.data: list[dict] = []
         self.resource: constants.Resource = "stone"
-        self.lb_type: t.Literal["daily", "weekly", "monthly", "all time"] = "all time"
 
     async def interaction_check(self, interaction: discord.Interaction):
         if interaction.user.id != self.author.id:
@@ -124,55 +94,45 @@ class LeaderboardView(ui.LayoutView):
             await self.refresh()
         self.stop()
 
-    async def update_leaderboard_data(self):
-        if self.lb_type == "daily":
-            delta = timedelta(days=1)
-        elif self.lb_type == "weekly":
-            delta = timedelta(weeks=1)
-        elif self.lb_type == "monthly":
-            delta = timedelta(days=30)
-        else:
-            delta = None
-
-        query = ResourceLedger.select(ResourceLedger.player, Sum(ResourceLedger.amount).as_alias("total")).where(
-            (ResourceLedger.resource == self.resource) & (ResourceLedger.amount > 0)
+    async def update_players(self):
+        players = (
+            await Player.select(Player.id, getattr(Player, self.resource))
+            .where(getattr(Player, self.resource) > 0)
+            .order_by(getattr(Player, self.resource), ascending=False)
         )
-        if delta:
-            query = query.where(ResourceLedger.created_on >= TimestamptzNow().python() - delta)
-        query = query.group_by(ResourceLedger.player).order_by(OrderByRaw("total"), ascending=False)
-        self.data: list[dict] = await query
-        for entry in self.data:
-            user = self.bot.get_user(entry["player"])
-            entry["name"] = user.name if user else str(entry["player"])
+        self.players = [p for p in players if self.bot.get_user(p["id"])]
 
     async def update_containers(self):
-        position = next((i for i, p in enumerate(self.data) if p["player"] == self.author.id), None)
-
-        header = ui.TextDisplay(
-            f"{constants.resource_emoji(self.resource)} **{self.lb_type.title()} {self.resource.title().rstrip('s')} Leaderboard**"
-        )
-
-        color = await self.bot.get_embed_color(self.channel)
         pages: list[ui.Container] = []
         per_page = 10
         start = 0
         stop = per_page
-        max_pages = math.ceil(len(self.data) / per_page)
+        max_pages = math.ceil(len(self.players) / per_page)
+        color = await self.bot.get_embed_color(self.channel)
+        header = ui.TextDisplay(
+            f"{constants.resource_emoji(self.resource)} **{self.resource.title().rstrip('s')} Leaderboard**"
+        )
+        # Find out what position the author is in
+        position = next((i for i, p in enumerate(self.players) if p["id"] == self.author.id), None)
         for p in range(max_pages):
-            stop = min(stop, len(self.data))
+            stop = min(stop, len(self.players))
+
             # Get max spacing of number and username so we can pad placement
             max_num_length = 1
             max_name_length = 0
+
             for i in range(start, stop):
-                entry = self.data[i]
-                max_name_length = max(max_name_length, len(entry["name"]))
+                player = self.players[i]
+                user = self.bot.get_user(player["id"])
+                max_name_length = max(max_name_length, len(user.name if user else player["id"]))
                 max_num_length = max(max_num_length, len(str(i + 1)))
 
             buffer = StringIO()
             for i in range(start, stop):
-                entry = self.data[i]
-                name = entry["name"]
-                amount = entry.get("total", 0) or 0
+                player = self.players[i]
+                user = self.bot.get_user(player["id"])
+                name = user.name if user else str(player["id"])
+                amount = player.get(self.resource, 0)
                 num_padding = " " * (max_num_length - len(str(i + 1)))
                 name_padding = " " * (max_name_length - len(name))
                 buffer.write(f"{i + 1}.{num_padding} {name}{name_padding} {amount}\n")
@@ -181,9 +141,8 @@ class LeaderboardView(ui.LayoutView):
             container = ui.Container(accent_color=color)
             container.add_item(header)
             # container.add_item(ui.Separator(spacing=discord.SeparatorSpacing.large))
-            container.add_item(ui.TextDisplay(f"Top {len(self.data)} miners.\n{box(buffer.getvalue(), lang='py')}"))
+            container.add_item(ui.TextDisplay(f"Top {len(self.players)} miners.\n{box(buffer.getvalue(), lang='py')}"))
             container.add_item(ResourceDropdown(self))
-            container.add_item(LeaderBoardDeltaDropdown(self))
             # container.add_item(ui.Separator(spacing=discord.SeparatorSpacing.large))
             container.add_item(PaginationButtons(self))
             footer = f"Page {p + 1}/{max_pages}"
@@ -211,8 +170,8 @@ class LeaderboardView(ui.LayoutView):
             self.message = await self.channel.send(view=self)
 
     async def start(self):
-        await self.update_leaderboard_data()
-        if not self.data:
+        await self.update_players()
+        if not self.players:
             return await self.channel.send("No players found.")
         await self.update_containers()
         await self.refresh()

@@ -15,7 +15,7 @@ from redbot.core.utils.chat_formatting import box
 
 from ..abc import MixinMeta
 from ..common import constants
-from ..db.tables import Player
+from ..db.tables import Player, ResourceLedger
 
 log = logging.getLogger("red.vrt.miner.views.mining_view")
 
@@ -209,8 +209,9 @@ class RockView(discord.ui.View):
 
         buffer = StringIO()
         # {user_id: {resource: amount}}
-        payouts: dict[int, dict[str, int]] = self._compute_payouts()
+        payouts: dict[int, dict[constants.Resource, int]] = self._compute_payouts()
         if payouts:
+            ledgers: list[ResourceLedger] = []
             sorted_participants = sorted(self.participants.items(), key=lambda x: x[1], reverse=True)
             for uid, dmg in sorted_participants:
                 payout = payouts.get(uid, {})
@@ -225,6 +226,14 @@ class RockView(discord.ui.View):
                     update_kwargs[column] = column + to_add
                     emoji = constants.resource_emoji(resource)
                     lines.append(f"+`{to_add}` {emoji} {resource.title()}")
+                    ledgers.append(
+                        ResourceLedger(
+                            player=uid,
+                            resource=resource,
+                            amount=to_add,
+                        )
+                    )
+
                 if update_kwargs:
                     hits = self.hits[uid]
                     loot = "\n".join(lines)
@@ -251,6 +260,9 @@ class RockView(discord.ui.View):
                             update_kwargs[Player.durability] = downgraded_tool.max_durability or 0
                     await player.update_self(update_kwargs)
 
+            if ledgers:
+                await ResourceLedger.insert(*ledgers)
+
         if buffer.getvalue():
             buffer.write("\n-# Run the `miner repair` command to repair your tools.")
             embed = discord.Embed(
@@ -261,7 +273,7 @@ class RockView(discord.ui.View):
             await self.message.channel.send(embed=embed)
         await self.message.edit(embed=self.embed(), view=self)
 
-    def _compute_payouts(self) -> dict[int, dict[str, int]]:
+    def _compute_payouts(self) -> dict[int, dict[constants.Resource, int]]:
         """Evenly distribute loot pool among participants"""
         # Select pool: collapse -> floor_loot pool; depletion -> total_loot pool
         collapsed = self.current_hp > 0
@@ -273,7 +285,7 @@ class RockView(discord.ui.View):
         total_damage = sum(d for __, d in sorted_participants)
 
         # {user_id: {resource: amount}}
-        payouts: dict[int, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+        payouts: dict[int, dict[constants.Resource, int]] = defaultdict(lambda: defaultdict(int))
         for resource, total_amount in pool.items():
             assigned_sum = 0  # How much to award the user
 

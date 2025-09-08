@@ -47,9 +47,3 @@ class MessageListener(MixinMeta):
         finally:
             self.active_guild_rocks[message.guild.id] -= 1
             self.active_channel_rocks.discard(message.channel.id)
-
-    @commands.Cog.listener()
-    async def on_message_delete(self, message: discord.Message):
-        if not self.db_active():
-            return
-        # TODO: delete active rock if it exists for this channel
