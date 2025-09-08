@@ -37,9 +37,9 @@ class GuildSettings(TableMixin, Table):
 
     # When bot is using per-guild bank (amount // convert_rate = economy credits)
     conversion_enabled = Boolean(default=False)  # Whether conversion is enabled
-    stone_convert_rate = Float(default=20)  # Stone to gems conversion rate
-    iron_convert_rate = Float(default=5)  # Iron to gems conversion rate
-    gems_convert_rate = Float(default=1)  # Gems to gems conversion rate
+    stone_convert_rate = Float(default=20.0)  # Stone to gems conversion rate
+    iron_convert_rate = Float(default=5.0)  # Iron to gems conversion rate
+    gems_convert_rate = Float(default=1.0)  # Gems to gems conversion rate
 
 
 class GlobalSettings(TableMixin, Table):
@@ -48,9 +48,9 @@ class GlobalSettings(TableMixin, Table):
 
     # When bot is using global bank (amount // convert_rate = economy credits)
     conversion_enabled = Boolean(default=False)  # Whether conversion is enabled
-    stone_convert_rate = Float(default=20)  # Stone to gems conversion rate
-    iron_convert_rate = Float(default=5)  # Iron to gems conversion rate
-    gems_convert_rate = Float(default=1)  # Gems to gems conversion rate
+    stone_convert_rate = Float(default=20.0)  # Stone to gems conversion rate
+    iron_convert_rate = Float(default=5.0)  # Iron to gems conversion rate
+    gems_convert_rate = Float(default=1.0)  # Gems to gems conversion rate
 
 
 class Player(TableMixin, Table):
