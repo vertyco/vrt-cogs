@@ -5,9 +5,10 @@ import logging
 import random
 from collections import defaultdict, deque
 from contextlib import suppress
-from copy import copy
+from copy import deepcopy
 from datetime import datetime, timedelta
 from io import StringIO
+from types import SimpleNamespace
 
 import discord
 from redbot.core import commands
@@ -56,6 +57,7 @@ class RockView(discord.ui.View):
         self.finalizing: bool = False
 
         self._mine_lock = asyncio.Lock()
+        self._user_locks = defaultdict(asyncio.Lock)
 
     async def start(self, channel: discord.TextChannel):
         """Start the rock session"""
@@ -107,52 +109,60 @@ class RockView(discord.ui.View):
             return await interaction.response.send_message("Database is not active.", ephemeral=True)
         if self.finalizing:
             return await interaction.response.send_message("This mining event is being finalized!", ephemeral=True)
+
         with suppress(discord.HTTPException):
             await interaction.response.defer()
 
-        player: Player = await Player.objects().get_or_create(
-            (Player.id == interaction.user.id), defaults={Player.id: interaction.user.id}
-        )
-        fake_msg = copy(interaction.message)
-        fake_msg.author = interaction.user
-        bucket = self.mine_cooldown.get_bucket(fake_msg)
-        if bucket.update_rate_limit():
-            txt = f"🤕{interaction.user.name} slipped and fell from swinging too fast!"
-            if player.tool == "wood":
-                self.action_window.append(txt)
-                return await self.update_message()
-            current_tool = constants.TOOLS[player.tool]
-            downgraded_tool = constants.TOOLS[constants.TOOL_ORDER[constants.TOOL_ORDER.index(player.tool) - 1]]
-            shatter_txt = f"You swing too hastily at the {self.rocktype.display_name} and your {current_tool.display_name} shatters!"
-            # Player is swinging too fast so we're going to deduct from their durability
-            # Tool break sets them back to previous tool tier
-            if random.random() < self.rocktype.overswing_break_chance:
-                # Players tool shattered!
-                txt = f"‼️{interaction.user.name} shattered their {current_tool.display_name}!"
-                self.action_window.append(txt)
-                await interaction.followup.send(shatter_txt, ephemeral=True)
-                await player.update_self(
-                    {Player.tool: downgraded_tool.key, Player.durability: downgraded_tool.max_durability or 0}
+        if self._user_locks[interaction.user.id].locked():
+            return
+
+        async with self._user_locks[interaction.user.id]:
+            fake_msg = SimpleNamespace(author=SimpleNamespace(id=interaction.user.id))
+            bucket = self.mine_cooldown.get_bucket(fake_msg)
+            remaining = bucket.update_rate_limit()
+            if remaining:
+                player: Player = await Player.objects().get_or_create(
+                    (Player.id == interaction.user.id), defaults={Player.id: interaction.user.id}
                 )
-                return await self.update_message()
-            elif random.random() < self.rocktype.overswing_damage_chance:
-                new_durability = max(0, player.durability - self.rocktype.overswing_damage)
-                actual_damage_dealt = self.rocktype.overswing_damage if new_durability else player.durability
-                txt = f"⚠️{interaction.user.name} did {actual_damage_dealt} damage to their pickaxe swinging too hastily"
-                txt += "!" if new_durability else f" and their {current_tool.display_name} broke!"
-                if new_durability:
-                    await player.update_self({Player.durability: new_durability})
-                else:
+                txt = f"🤕{interaction.user.name} slipped and fell from swinging too fast!"
+                if player.tool == "wood":
+                    self.action_window.append(txt)
+                    return await self.update_message()
+                current_tool = constants.TOOLS[player.tool]
+                downgraded_tool = constants.TOOLS[constants.TOOL_ORDER[constants.TOOL_ORDER.index(player.tool) - 1]]
+                shatter_txt = f"You swing too hastily at the {self.rocktype.display_name} and your {current_tool.display_name} shatters!"
+                # Player is swinging too fast so we're going to deduct from their durability
+                # Tool break sets them back to previous tool tier
+                if random.random() < self.rocktype.overswing_break_chance:
+                    # Players tool shattered!
+                    txt = f"‼️{interaction.user.name} shattered their {current_tool.display_name}!"
+                    self.action_window.append(txt)
                     await interaction.followup.send(shatter_txt, ephemeral=True)
                     await player.update_self(
-                        {Player.tool: downgraded_tool.key, Player.durability: downgraded_tool.max_durability}
+                        {Player.tool: downgraded_tool.key, Player.durability: downgraded_tool.max_durability or 0}
                     )
-            self.action_window.append(txt)
-            return await self.update_message()
+                    return await self.update_message()
+                elif random.random() < self.rocktype.overswing_damage_chance:
+                    new_durability = max(0, player.durability - self.rocktype.overswing_damage)
+                    actual_damage_dealt = self.rocktype.overswing_damage if new_durability else player.durability
+                    txt = f"⚠️{interaction.user.name} did {actual_damage_dealt} damage to their pickaxe swinging too hastily"
+                    txt += "!" if new_durability else f" and their {current_tool.display_name} broke!"
+                    if new_durability:
+                        await player.update_self({Player.durability: new_durability})
+                    else:
+                        await interaction.followup.send(shatter_txt, ephemeral=True)
+                        await player.update_self(
+                            {Player.tool: downgraded_tool.key, Player.durability: downgraded_tool.max_durability}
+                        )
+                self.action_window.append(txt)
+                return await self.update_message()
 
         async with self._mine_lock:
             if self.finalizing:
                 return
+            player: Player = await Player.objects().get_or_create(
+                (Player.id == interaction.user.id), defaults={Player.id: interaction.user.id}
+            )
             tool = constants.TOOLS[player.tool]
             power = tool.power
             crit = False
@@ -169,15 +179,21 @@ class RockView(discord.ui.View):
                 if self.ttl_task:
                     self.ttl_task.cancel()
                 return await self.finalize()
-
             await self.update_message()
 
     async def update_message(self):
         if not self.message:
             return
+
+        async def _update():
+            if self.finalizing:
+                return
+            with suppress(discord.HTTPException):
+                await self.message.edit(embed=self.embed(), view=self)
+
         bucket = self.msg_update_cooldown.get_bucket(self.message)
         if not bucket.update_rate_limit():
-            asyncio.create_task(self.message.edit(embed=self.embed(), view=self))
+            asyncio.create_task(_update())
 
     @discord.ui.button(emoji=constants.INSPECT_EMOJI, style=discord.ButtonStyle.primary)
     async def inspect(self, interaction: discord.Interaction, button: discord.ui.Button):
