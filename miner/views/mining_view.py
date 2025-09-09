@@ -123,6 +123,7 @@ class RockView(discord.ui.View):
             if tool_name == "wood":
                 self.action_window.append(txt)
                 return
+
             player = await self.cog.db_utils.get_create_player(interaction.user)
             current_tool = constants.TOOLS[player.tool]
             downgraded_tool = constants.TOOLS[constants.TOOL_ORDER[constants.TOOL_ORDER.index(player.tool) - 1]]
@@ -139,6 +140,9 @@ class RockView(discord.ui.View):
                 await interaction.followup.send(shatter_txt, ephemeral=True)
                 kwargs = {Player.tool: downgraded_tool.key, Player.durability: downgraded_tool.max_durability or 0}
                 await player.update_self(kwargs)
+
+                # Clear the tool_name cache since they broke their tool
+                await self.cog.db_utils.get_player_tool.cache.clear()  # type: ignore
                 return
             if random.random() < self.rocktype.overswing_damage_chance:
                 new_durability = max(0, player.durability - self.rocktype.overswing_damage)
@@ -150,7 +154,11 @@ class RockView(discord.ui.View):
                     await interaction.followup.send(shatter_txt, ephemeral=True)
                     kwargs = {Player.tool: downgraded_tool.key, Player.durability: downgraded_tool.max_durability}
                     await player.update_self(kwargs)
+
+                    # Clear the tool_name cache since they broke their tool
+                    await self.cog.db_utils.get_player_tool.cache.clear()  # type: ignore
                     return
+
                 await player.update_self({Player.durability: new_durability})
             self.action_window.append(txt)
             return
@@ -239,7 +247,7 @@ class RockView(discord.ui.View):
                     column = getattr(Player, resource)
                     update_kwargs[column] = column + to_add
                     emoji = constants.resource_emoji(resource)
-                    lines.append(f"+`{to_add}` {emoji} {resource.title()}")
+                    lines.append(f"+`{to_add}` {emoji}")
                     ledgers.append(
                         ResourceLedger(
                             player=uid,
@@ -250,7 +258,7 @@ class RockView(discord.ui.View):
 
                 if update_kwargs:
                     hits = self.hits[uid]
-                    loot = "\n".join(lines)
+                    loot = ", ".join(lines)
                     buffer.write(f"<@{uid}> dealt `{round(dmg)}` damage in `{hits}` hits:\n{loot}\n")
 
                     player: Player = mapped_players[uid]
