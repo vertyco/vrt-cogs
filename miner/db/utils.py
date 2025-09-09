@@ -1,5 +1,7 @@
 import discord
+from aiocache import cached
 
+from ..common import constants
 from .tables import GlobalSettings, GuildSettings, Player
 
 
@@ -24,3 +26,9 @@ class DBUtils:
             (GuildSettings.id == gid), defaults={GuildSettings.id: gid}
         )
         return settings
+
+    @cached(ttl=constants.ROCK_TTL_SECONDS)  # Cached for length of time that rocks last
+    async def get_player_tool(self, user: discord.User | discord.Member | int) -> constants.ToolName:
+        player = await self.get_create_player(user)
+        tool: constants.ToolName = player.tool
+        return tool
