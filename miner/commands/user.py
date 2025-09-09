@@ -1,3 +1,4 @@
+import math
 import typing as t
 
 import discord
@@ -27,8 +28,13 @@ class User(MixinMeta):
             user = ctx.author
         player = await self.db_utils.get_create_player(user)
         tool = constants.TOOLS[player.tool]
-        # Show current/max durability
-        dura_str = f"Durability: `{player.durability}` / `{tool.max_durability}`" if player.tool != "wood" else ""
+        # Show current/max durability with percentage (non-wood tools)
+        if player.tool != "wood" and isinstance(tool.max_durability, int) and tool.max_durability > 0:
+            pct = (player.durability / tool.max_durability) * 100
+            dura_str = f"Durability: `{player.durability}` / `{tool.max_durability}` ({pct:.1f}%)"
+        else:
+            dura_str = ""
+
         embed = discord.Embed(
             title=f"{user.display_name}'s Inventory",
             color=discord.Color.blurple(),
@@ -85,17 +91,25 @@ class User(MixinMeta):
             await ctx.send("The Wooden Pickaxe does not require or support repairs.")
             return
         max_dura = tool.max_durability
+        # Guard against None for static type checking and safety
+        if not isinstance(max_dura, int):
+            await ctx.send("This tool cannot be repaired.")
+            return
         if player.durability >= max_dura:
             await ctx.send(f"Your {tool.display_name} is already at full durability! ({max_dura})")
             return
 
-        # Calculate repair cost (20% of upgrade cost, rounded up)
+        # Calculate repair cost dynamically based on missing durability percentage
+        # Base cost is TOOL_REPAIR_COST_PCT of upgrade cost, scaled by missing_ratio
+        missing_ratio = (max_dura - player.durability) / max_dura
         repair_cost = {}
         if tool.upgrade_cost:
             for resource, amount in tool.upgrade_cost.items():
-                cost = int(amount * constants.TOOL_REPAIR_COST_PCT)
+                base = amount * constants.TOOL_REPAIR_COST_PCT
+                scaled = base * missing_ratio
+                cost = int(math.ceil(scaled))
                 if cost > 0:
-                    repair_cost[resource] = max(1, cost)
+                    repair_cost[resource] = cost
         else:
             await ctx.send("This tool cannot be repaired.")
             return

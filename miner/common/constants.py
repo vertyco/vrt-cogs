@@ -171,9 +171,9 @@ ROCK_TYPES: dict[RockTierName, RockType] = {
         rarity=1,
         total_loot={"stone": 45},
         floor_loot={"stone": 5},
-        overswing_break_chance=0.01,
+        overswing_break_chance=0.0,
         overswing_damage_chance=0.1,
-        overswing_damage=2,
+        overswing_damage=5,
     ),
     "medium": RockType(
         key="medium",
@@ -183,9 +183,9 @@ ROCK_TYPES: dict[RockTierName, RockType] = {
         rarity=2,
         total_loot={"stone": 170, "iron": 30},
         floor_loot={"stone": 45},
-        overswing_break_chance=0.03,
+        overswing_break_chance=0.02,
         overswing_damage_chance=0.1,
-        overswing_damage=2,
+        overswing_damage=15,
     ),
     "large": RockType(
         key="large",
@@ -195,9 +195,9 @@ ROCK_TYPES: dict[RockTierName, RockType] = {
         rarity=3,
         total_loot={"stone": 360, "iron": 100, "gems": 2},
         floor_loot={"stone": 65, "iron": 20},
-        overswing_break_chance=0.05,
+        overswing_break_chance=0.03,
         overswing_damage_chance=0.1,
-        overswing_damage=5,
+        overswing_damage=25,
     ),
     "meteor": RockType(
         key="meteor",
@@ -209,7 +209,7 @@ ROCK_TYPES: dict[RockTierName, RockType] = {
         floor_loot={"stone": 10, "iron": 42, "gems": 1},
         overswing_break_chance=0.1,
         overswing_damage_chance=0.35,
-        overswing_damage=10,
+        overswing_damage=50,
     ),
     "volatile geode": RockType(
         key="volatile geode",
@@ -221,6 +221,6 @@ ROCK_TYPES: dict[RockTierName, RockType] = {
         floor_loot={"iron": 20, "gems": 15},
         overswing_break_chance=0.5,
         overswing_damage_chance=0.05,
-        overswing_damage=25,
+        overswing_damage=80,
     ),
 }
