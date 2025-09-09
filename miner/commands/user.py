@@ -71,7 +71,7 @@ class User(MixinMeta):
                     txt += f"{constants.resource_emoji(resource)} {resource.title()}: `{amount}`\n"
             embed.add_field(name=f"Next Upgrade: {next_tool.display_name}", value=txt, inline=False)
 
-        embed.set_thumbnail(url=ctx.author.display_avatar)
+        embed.set_thumbnail(url=user.display_avatar)
         await ctx.send(embed=embed)
 
     @miner_group.command(name="repair", description="Repair your mining tool for a resource cost.")
