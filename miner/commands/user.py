@@ -145,6 +145,9 @@ class User(MixinMeta):
     @ensure_db_connection()
     async def miner_trade(self, ctx: commands.Context, user: discord.User | discord.Member):
         """Trade resources with another miner."""
+        if user.bot:
+            return await ctx.send("You cannot trade with a bot!", ephemeral=True)
+
         player = await self.db_utils.get_create_player(ctx.author)
         target = await self.db_utils.get_create_player(user)
         if player.id == target.id:
@@ -164,6 +167,9 @@ class User(MixinMeta):
         amount: commands.positive_int,
     ):
         """Transfer resources to another miner."""
+        if user.bot:
+            return await ctx.send("You cannot transfer resources to a bot!", ephemeral=True)
+
         player = await self.db_utils.get_create_player(ctx.author)
         target = await self.db_utils.get_create_player(user)
 

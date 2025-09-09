@@ -112,16 +112,18 @@ class RockView(discord.ui.View):
         if self.finalizing:
             return await interaction.response.send_message("This mining event is being finalized!", ephemeral=True)
 
+        await interaction.response.defer()
+
+        tool_name = await self.cog.db_utils.get_player_tool(interaction.user)
+
         fake_msg = SimpleNamespace(author=SimpleNamespace(id=interaction.user.id))
         bucket = self.mine_cooldown.get_bucket(fake_msg)
         if bucket.update_rate_limit():
-            player = await self.cog.db_utils.get_create_player(interaction.user)
             txt = f"🤕{interaction.user.name} slipped and fell from swinging too fast!"
-
-            if player.tool == "wood":
+            if tool_name == "wood":
                 self.action_window.append(txt)
-                return await self.maybe_update_message(interaction)
-
+                return
+            player = await self.cog.db_utils.get_create_player(interaction.user)
             current_tool = constants.TOOLS[player.tool]
             downgraded_tool = constants.TOOLS[constants.TOOL_ORDER[constants.TOOL_ORDER.index(player.tool) - 1]]
             shatter_txt = f"You swing too hastily at the {self.rocktype.display_name} and your {current_tool.display_name} shatters!"
@@ -134,11 +136,10 @@ class RockView(discord.ui.View):
                 # Players tool shattered!
                 txt = f"‼️{interaction.user.name} shattered their {current_tool.display_name}!"
                 self.action_window.append(txt)
-                await interaction.response.send_message(shatter_txt, ephemeral=True)
+                await interaction.followup.send(shatter_txt, ephemeral=True)
                 kwargs = {Player.tool: downgraded_tool.key, Player.durability: downgraded_tool.max_durability or 0}
                 await player.update_self(kwargs)
-                return await self.maybe_update_message(interaction)
-
+                return
             if random.random() < self.rocktype.overswing_damage_chance:
                 new_durability = max(0, player.durability - self.rocktype.overswing_damage)
                 actual_damage_dealt = self.rocktype.overswing_damage if new_durability else player.durability
@@ -146,22 +147,18 @@ class RockView(discord.ui.View):
                 txt += "!" if new_durability else f" and their {current_tool.display_name} broke!"
                 if not new_durability:
                     # Tool was shattered
-                    await interaction.response.send_message(shatter_txt, ephemeral=True)
+                    await interaction.followup.send(shatter_txt, ephemeral=True)
                     kwargs = {Player.tool: downgraded_tool.key, Player.durability: downgraded_tool.max_durability}
                     await player.update_self(kwargs)
-                    return await self.maybe_update_message(interaction)
-
-                await interaction.response.defer()
+                    return
                 await player.update_self({Player.durability: new_durability})
-
             self.action_window.append(txt)
-            return await self.maybe_update_message(interaction)
+            return
 
         async with self._mine_lock:
             if self.finalizing:
                 return
-            player = await self.cog.db_utils.get_create_player(interaction.user)
-            tool = constants.TOOLS[player.tool]
+            tool = constants.TOOLS[tool_name]
             power = tool.power
             crit = False
             if random.random() < tool.crit_chance:
@@ -178,23 +175,17 @@ class RockView(discord.ui.View):
                     self.ttl_task.cancel()
                 return await self.finalize()
 
-            await self.maybe_update_message(interaction)
+        await self.maybe_update_message()
 
-    async def maybe_update_message(self, interaction: discord.Interaction | None = None):
+    async def maybe_update_message(self):
         if not self.message:
             return
+        if self.finalizing:
+            return
         bucket = self.msg_update_cooldown.get_bucket(self.message)
-        if not bucket.update_rate_limit():
-            if interaction and not interaction.response.is_done():
-                await interaction.response.edit_message(embed=self.embed(), view=self)
-            elif interaction is not None:
-                await interaction.edit_original_response(embed=self.embed(), view=self)
-            else:
-                await self.message.edit(embed=self.embed(), view=self)
-        if interaction and not interaction.response.is_done():
-            await interaction.response.defer()
-        elif interaction is not None:
-            await interaction.edit_original_response(embed=self.embed(), view=self)
+        if bucket.update_rate_limit():
+            return
+        await self.message.edit(embed=self.embed(), view=self)
 
     @discord.ui.button(emoji=constants.INSPECT_EMOJI, style=discord.ButtonStyle.primary)
     async def inspect(self, interaction: discord.Interaction, button: discord.ui.Button):
