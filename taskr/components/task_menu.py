@@ -928,7 +928,7 @@ class TaskMenu(BaseMenu):
             {"role": "user", "content": request},
         ]
         try:
-            client = openai.AsyncClient(base_url="https://text.pollinations.ai/openai")
+            client = openai.AsyncClient(base_url="https://text.pollinations.ai/openai", api_key="")
             response = await client.beta.chat.completions.parse(
                 model="gpt-4.1",
                 messages=messages,
