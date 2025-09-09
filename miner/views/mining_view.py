@@ -49,7 +49,7 @@ class RockView(discord.ui.View):
         )
         self.msg_update_cooldown = commands.CooldownMapping.from_cooldown(
             rate=1,
-            per=1,
+            per=1.5,
             type=commands.BucketType.channel,
         )
 
@@ -184,6 +184,8 @@ class RockView(discord.ui.View):
             return
         bucket = self.msg_update_cooldown.get_bucket(self.message)
         if bucket.update_rate_limit():
+            # Update the "per" dynamically based on participants
+            bucket.per = 1 + (len(self.participants) - 1) * 0.5
             return
         await self.message.edit(embed=self.embed(), view=self)
 
