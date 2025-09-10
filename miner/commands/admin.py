@@ -136,6 +136,20 @@ class Admin(MixinMeta):
         view = RockView(self, rock)
         await view.start(channel)
 
+    @miner_set.command(name="spawnprobability", aliases=["prob"])
+    @ensure_db_connection()
+    async def miner_spawn_probability(
+        self, ctx: commands.Context, channel: t.Optional[discord.TextChannel | discord.Thread]
+    ):
+        """View the current rock spawn probability for a channel."""
+        if not channel:
+            channel = ctx.channel
+
+        settings = await self.db_utils.get_create_guild_settings(ctx.guild.id)
+        key = channel.id if settings.per_channel_activity_trigger else ctx.guild.id
+        probability = self.activity.get_spawn_probability(key) * 100
+        await ctx.send(f"Current rock spawn probability in {channel.mention} is {probability:.2f}%.")
+
     @miner_set.command(name="toggleconvert")
     @ensure_db_connection()
     async def miner_remove_rock(self, ctx: commands.Context):

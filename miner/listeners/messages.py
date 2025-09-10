@@ -64,17 +64,17 @@ class MessageListener(MixinMeta):
                 log.warning(f"Deleted stale active channel {active_channel['id']}")
                 return
 
-        if message.channel.id in self.active_channel_rocks:
+        if channel.id in self.active_channel_rocks:
             return
         self.active_guild_rocks[message.guild.id] += 1
-        self.active_channel_rocks.add(message.channel.id)
+        self.active_channel_rocks.add(channel.id)
         try:
             rock: constants.RockType = constants.ROCK_TYPES[rock_type]
             view = RockView(self, rock)
-            await view.start(message.channel)
+            await view.start(channel)
             await view.wait()
         except Exception as e:
-            log.error(f"Error spawning rock in {message.channel.id}: {e}")
+            log.error(f"Error spawning rock in {channel.id}: {e}")
         finally:
             self.active_guild_rocks[message.guild.id] = max(0, self.active_guild_rocks[message.guild.id] - 1)
-            self.active_channel_rocks.discard(message.channel.id)
+            self.active_channel_rocks.discard(channel.id)
