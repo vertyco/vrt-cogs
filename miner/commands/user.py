@@ -89,19 +89,30 @@ class User(MixinMeta):
 
     @miner_group.command(name="notify", description="Toggle rock spawn notifications.")
     @ensure_db_connection()
-    async def miner_notify(self, ctx: commands.Context):
+    async def miner_notify(self, ctx: commands.Context, enable: t.Optional[bool] = None):
         """Toggle rock spawn notifications."""
         player = await self.db_utils.get_create_player(ctx.author)
         settings = await self.db_utils.get_create_guild_settings(ctx.guild.id)
-        if player.id in settings.notify_players:
-            settings.notify_players.remove(player.id)
+
+        if enable is not None:
+            # In case user specifically wants to enable/disable
+            if enable and player.id in settings.notify_players:
+                return await ctx.send("Rock spawn notifications are already enabled.", ephemeral=True)
+            elif not enable and player.id not in settings.notify_players:
+                return await ctx.send("Rock spawn notifications are already disabled.", ephemeral=True)
+            if enable:
+                settings.notify_players.append(player.id)
+            else:
+                settings.notify_players.remove(player.id)
         else:
-            settings.notify_players.append(player.id)
+            if player.id in settings.notify_players:
+                settings.notify_players.remove(player.id)
+            else:
+                settings.notify_players.append(player.id)
+
         await settings.save([GuildSettings.notify_players])
-        await ctx.send(
-            f"Rock spawn notifications have been `{'enabled' if player.id in settings.notify_players else 'disabled'}`.",
-            ephemeral=True,
-        )
+        status = "enabled" if player.id in settings.notify_players else "disabled"
+        await ctx.send(f"Rock spawn notifications have been `{status}` for {ctx.author.name}.", ephemeral=True)
 
     @miner_group.command(name="repair", description="Repair your mining tool for a resource cost.")
     @ensure_db_connection()
@@ -304,15 +315,15 @@ class User(MixinMeta):
 
     @miner_group.command(name="leaderboard", aliases=["lb"], description="View the leaderboard.")
     @ensure_db_connection()
-    async def miner_leaderboard_from_group(self, ctx: commands.Context):
+    async def miner_leaderboard_from_group(self, ctx: commands.Context, local: bool = False):
         """View the leaderboard."""
-        await LeaderboardView(self.bot, ctx).start()
+        await LeaderboardView(self.bot, ctx, local=local).start()
 
     @commands.hybrid_command(name="minerlb", description="View the leaderboard.")
     @ensure_db_connection()
-    async def miner_leaderboard(self, ctx: commands.Context):
+    async def miner_leaderboard(self, ctx: commands.Context, local: bool = False):
         """View the leaderboard."""
-        await LeaderboardView(self.bot, ctx).start()
+        await LeaderboardView(self.bot, ctx, local=local).start()
 
     @miner_group.command(name="convert", description="Convert resources to economy credits (if enabled).")
     @ensure_db_connection()
@@ -341,6 +352,7 @@ class User(MixinMeta):
         creditsname = await bank.get_currency_name(ctx.guild)
 
         credits, remainder = divmod(amount, rate)
+        credits = int(credits)
         if credits == 0:
             return await ctx.send(
                 f"You need to convert at least `{rate}` {resource.title()} to receive 1 {creditsname}.", ephemeral=True

@@ -7,6 +7,7 @@ from piccolo.columns import (
     Boolean,
     Float,
     ForeignKey,
+    Integer,
     Serial,
     SmallInt,
     Text,
@@ -38,6 +39,7 @@ class GuildSettings(TableMixin, Table):
     per_channel_activity_trigger = Boolean(default=False)  # Whether to use per-channel activity tracking
 
     notify_players = Array(base_column=BigInt(), default=list)  # List of user IDs to notify on rock spawn
+    time_between_spawns = Integer()  # Min time between spawns in seconds
 
     # When bot is using per-guild bank (amount // convert_rate = economy credits)
     conversion_enabled = Boolean(default=False)  # Whether conversion is enabled

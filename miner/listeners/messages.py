@@ -48,7 +48,8 @@ class MessageListener(MixinMeta):
 
         # Check last rock spawn
         last_spawn = self.last_channel_rock_spawn.get(message.channel.id, 0)
-        if perf_counter() - last_spawn < constants.MIN_TIME_BETWEEN_SPAWNS:
+        time_between_spawns = max(settings.time_between_spawns, constants.MIN_TIME_BETWEEN_SPAWNS)
+        if perf_counter() - last_spawn < time_between_spawns:
             return
         self.last_channel_rock_spawn[message.channel.id] = perf_counter()
 
