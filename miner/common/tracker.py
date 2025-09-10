@@ -11,7 +11,7 @@ from . import constants
 class ActivityTracker:
     """Track message activity for spawning rocks.
 
-    In-memory sliding window per guild using a deque of timestamps.
+    In-memory sliding window using a deque of timestamps.
     Single-process only; resets on restart.
     """
 
@@ -27,13 +27,13 @@ class ActivityTracker:
             dq.popleft()
 
     def update(self, key: int) -> None:
-        """Record a message event for a guild."""
+        """Record a message event."""
         now = perf_counter()
         self.messages[key].append(now)
         self._trim(key)
 
     def maybe_get_rock(self, key: int) -> t.Optional[constants.RockTierName]:
-        """Determine if a rock should spawn in this guild, and return its tier if so."""
+        """Determine if a rock should spawn, and return its tier if so."""
         spawn_probability = self.get_spawn_probability(key)
         if random.random() >= spawn_probability:
             return None
@@ -63,17 +63,13 @@ class ActivityTracker:
         self.last_spawns[key] = perf_counter()
         return random.choices(rock_types, weights=weights, k=1)[0]
 
-    def get_spawn_probability(self, key: int, force: bool = False) -> float:
+    def get_spawn_probability(self, key: int) -> float:
         """Get the current spawn probability for a guild based on activity."""
         self._trim(key)
         msg_count = len(self.messages[key])
         last_spawn = self.last_spawns.get(key, 0)
         now = perf_counter()
-        if last_spawn and now - last_spawn < constants.MIN_TIME_BETWEEN_SPAWNS and not force:
-            return 0.0
         msg_count = len(self.messages[key])
-        if msg_count < constants.SPAWN_ACTIVITY_THRESHOLD and not force:
-            return 0.0
         # Calculate spawn probability based on message activity
         base_spawn_prob = constants.SPAWN_PROB_MIN
         time_since_last_spawn = now - last_spawn if last_spawn else float("inf")
