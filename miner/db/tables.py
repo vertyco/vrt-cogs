@@ -34,6 +34,7 @@ class TableMixin:
 
 class GuildSettings(TableMixin, Table):
     id = BigInt(primary_key=True)  # Discord Guild ID
+    per_channel_activity_trigger = Boolean(default=False)  # Whether to use per-channel activity tracking
 
     # When bot is using per-guild bank (amount // convert_rate = economy credits)
     conversion_enabled = Boolean(default=False)  # Whether conversion is enabled

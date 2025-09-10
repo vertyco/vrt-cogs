@@ -67,11 +67,13 @@ class Admin(MixinMeta):
         embed = discord.Embed(title="Miner Settings", color=await self.bot.get_embed_color(ctx.channel))
         embed.add_field(name="Active Mining Channels", value=" ".join(f"<#{i}>" for i in active_channels) or "None")
 
+        guild_settings = await self.db_utils.get_create_guild_settings(ctx.guild.id)
+
         if await bank.is_global():
             settings = await self.db_utils.get_create_global_settings()
             field = "Only bot owner can change these settings\n"
         else:
-            settings = await self.db_utils.get_create_guild_settings(ctx.guild.id)
+            settings = guild_settings
             field = ""
         creditsname = await bank.get_currency_name(ctx.guild)
 
@@ -87,7 +89,32 @@ class Admin(MixinMeta):
         field += f"Gems: `{settings.gems_convert_rate}` ({_ratio_text(settings.gems_convert_rate, 'gems')})\n"
         embed.add_field(name="Resource Conversion Settings", value=field, inline=False)
 
+        trigger_mode_description = (
+            "Whether message activity is tracked per-channel or per-guild.\n"
+            "In `Per Channel` mode, activity in each channel is tracked separately, and rocks can spawn in any active channel.\n"
+            "In `Per Guild` mode, activity is tracked across the entire guild, and rocks will spawn in random active channels.\n"
+        )
+        embed.add_field(
+            name="Activity Trigger Mode",
+            value=f"{trigger_mode_description}Current mode: `{'Per Channel' if guild_settings.per_channel_activity_trigger else 'Per Guild'}`",
+            inline=False,
+        )
+
         await ctx.send(embed=embed)
+
+    @miner_set.command(name="activitytracking")
+    @ensure_db_connection()
+    async def miner_activity_tracking(self, ctx: commands.Context):
+        """Toggle per-channel or per-guild activity tracking.
+
+        `Per Channel` mode tracks activity in each channel separately, and rocks can spawn in any active channel.
+        `Per Guild` mode tracks activity across the entire guild, and rocks will spawn in random active channels.
+        """
+        settings = await self.db_utils.get_create_guild_settings(ctx.guild.id)
+        settings.per_channel_activity_trigger = not settings.per_channel_activity_trigger
+        await settings.save()
+        mode = "Per Channel" if settings.per_channel_activity_trigger else "Per Guild"
+        await ctx.send(f"Activity tracking mode set to `{mode}`.")
 
     @miner_set.command(name="spawn")
     @ensure_db_connection()
