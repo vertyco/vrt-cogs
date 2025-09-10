@@ -8,7 +8,7 @@ from redbot.core.utils.chat_formatting import humanize_number
 
 from ..abc import MixinMeta
 from ..common import constants
-from ..db.tables import Player, ensure_db_connection
+from ..db.tables import GuildSettings, Player, ensure_db_connection
 from ..views.leaderboard_menu import LeaderboardView
 from ..views.trade_panel import TradePanel
 from ..views.upgrade_view import UpgradeConfirmView
@@ -20,10 +20,10 @@ class User(MixinMeta):
         """User commands"""
         await ctx.send_help()
 
-    @miner_group.command(name="inventory", aliases=["inv"])
+    @miner_group.command(name="inventory", aliases=["inv"], description="View your stats.")
     @ensure_db_connection()
     async def miner_inventory(self, ctx: commands.Context, user: t.Optional[discord.User | discord.Member] = None):
-        """View your mining inventory and tool."""
+        """View your stats."""
         if not user:
             user = ctx.author
         player = await self.db_utils.get_create_player(user)
@@ -77,8 +77,31 @@ class User(MixinMeta):
                     txt += f"{constants.resource_emoji(resource)} {resource.title()}: `{amount}`\n"
             embed.add_field(name=f"Next Upgrade: {next_tool.display_name}", value=txt, inline=False)
 
+        settings = await self.db_utils.get_create_guild_settings(ctx.guild.id)
+        embed.add_field(
+            name="Notifications",
+            value=f"Rock Spawn Notifications: `{'Enabled' if player.id in settings.notify_players else 'Disabled'}`\nUse `{ctx.clean_prefix}miner notify` to toggle.",
+            inline=False,
+        )
+
         embed.set_thumbnail(url=user.display_avatar)
         await ctx.send(embed=embed)
+
+    @miner_group.command(name="notify", description="Toggle rock spawn notifications.")
+    @ensure_db_connection()
+    async def miner_notify(self, ctx: commands.Context):
+        """Toggle rock spawn notifications."""
+        player = await self.db_utils.get_create_player(ctx.author)
+        settings = await self.db_utils.get_create_guild_settings(ctx.guild.id)
+        if player.id in settings.notify_players:
+            settings.notify_players.remove(player.id)
+        else:
+            settings.notify_players.append(player.id)
+        await settings.save([GuildSettings.notify_players])
+        await ctx.send(
+            f"Rock spawn notifications have been `{'enabled' if player.id in settings.notify_players else 'disabled'}`.",
+            ephemeral=True,
+        )
 
     @miner_group.command(name="repair", description="Repair your mining tool for a resource cost.")
     @ensure_db_connection()
@@ -198,7 +221,9 @@ class User(MixinMeta):
         await target.update_self({getattr(Player, resource): getattr(target, resource, 0) + amount})
         await ctx.send(f"Successfully transferred `{humanize_number(amount)}` {resource.title()} to {user.mention}.")
 
-    @miner_group.command(name="upgrade")
+    @miner_group.command(
+        name="upgrade", description="Upgrade your mining tool if you have enough resources (with confirmation)."
+    )
     @ensure_db_connection()
     async def miner_upgrade(self, ctx: commands.Context):
         """Upgrade your mining tool if you have enough resources (with confirmation)."""
@@ -276,21 +301,25 @@ class User(MixinMeta):
         )
         await msg.edit(content=None, embed=done_embed, view=None)
 
-    @miner_group.command(name="leaderboard", aliases=["lb"])
+    @miner_group.command(name="leaderboard", aliases=["lb"], description="View the leaderboard.")
     @ensure_db_connection()
     async def miner_leaderboard_from_group(self, ctx: commands.Context):
-        """View the top players for a specific resource."""
+        """View the leaderboard."""
         await LeaderboardView(self.bot, ctx).start()
 
-    @commands.hybrid_command(name="minerlb")
+    @commands.hybrid_command(name="minerlb", description="View the leaderboard.")
     @ensure_db_connection()
     async def miner_leaderboard(self, ctx: commands.Context):
-        """View the top players for a specific resource."""
+        """View the leaderboard."""
         await LeaderboardView(self.bot, ctx).start()
 
-    @miner_group.command(name="convert")
+    @miner_group.command(name="convert", description="Convert resources to economy credits (if enabled).")
+    @ensure_db_connection()
     async def miner_convert_group(
-        self, ctx: commands.Context, resource: constants.Resource, amount: commands.positive_int
+        self,
+        ctx: commands.Context,
+        resource: constants.Resource,
+        amount: commands.positive_int,
     ):
         """Convert resources to economy credits (if enabled)."""
         player = await self.db_utils.get_create_player(ctx.author)

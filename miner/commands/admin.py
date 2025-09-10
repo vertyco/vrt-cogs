@@ -117,6 +117,7 @@ class Admin(MixinMeta):
         await ctx.send(f"Activity tracking mode set to `{mode}`.")
 
     @miner_set.command(name="spawn")
+    @commands.is_owner()
     @ensure_db_connection()
     async def miner_spawn(
         self,

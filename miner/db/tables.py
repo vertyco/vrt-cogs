@@ -2,6 +2,7 @@ import logging
 
 from discord.ext.commands.core import check
 from piccolo.columns import (
+    Array,
     BigInt,
     Boolean,
     Float,
@@ -35,6 +36,8 @@ class TableMixin:
 class GuildSettings(TableMixin, Table):
     id = BigInt(primary_key=True)  # Discord Guild ID
     per_channel_activity_trigger = Boolean(default=False)  # Whether to use per-channel activity tracking
+
+    notify_players = Array(base_column=BigInt(), default=list)  # List of user IDs to notify on rock spawn
 
     # When bot is using per-guild bank (amount // convert_rate = economy credits)
     conversion_enabled = Boolean(default=False)  # Whether conversion is enabled
