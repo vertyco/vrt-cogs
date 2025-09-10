@@ -63,16 +63,16 @@ class ActivityTracker:
         self.last_spawns[key] = perf_counter()
         return random.choices(rock_types, weights=weights, k=1)[0]
 
-    def get_spawn_probability(self, key: int) -> float:
+    def get_spawn_probability(self, key: int, force: bool = False) -> float:
         """Get the current spawn probability for a guild based on activity."""
         self._trim(key)
         msg_count = len(self.messages[key])
         last_spawn = self.last_spawns.get(key, 0)
         now = perf_counter()
-        if last_spawn and now - last_spawn < constants.MIN_TIME_BETWEEN_SPAWNS:
+        if last_spawn and now - last_spawn < constants.MIN_TIME_BETWEEN_SPAWNS and not force:
             return 0.0
         msg_count = len(self.messages[key])
-        if msg_count < constants.SPAWN_ACTIVITY_THRESHOLD:
+        if msg_count < constants.SPAWN_ACTIVITY_THRESHOLD and not force:
             return 0.0
         # Calculate spawn probability based on message activity
         base_spawn_prob = constants.SPAWN_PROB_MIN
