@@ -27,13 +27,13 @@ class DBUtils:
         )
         return settings
 
-    @cached(ttl=constants.ROCK_TTL_SECONDS)  # Cached for length of time that rocks last
-    async def get_cached_player_tool(self, user: discord.User | discord.Member | int) -> constants.ToolName:
+    @cached(ttl=constants.ROCK_TTL_SECONDS, key="miner_player_tool:{user}")  # Cached for length of time that rocks last
+    async def get_cached_player_tool(self, user: int) -> constants.ToolName:
         player = await self.get_create_player(user)
         tool: constants.ToolName = player.tool
         return tool
 
-    @cached(ttl=10)
-    async def get_cached_guild_settings(self, guild: discord.Guild | int) -> GuildSettings:
+    @cached(ttl=10, key="miner_guild_settings:{guild}")
+    async def get_cached_guild_settings(self, guild: int) -> GuildSettings:
         settings = await self.get_create_guild_settings(guild)
         return settings

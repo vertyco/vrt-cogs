@@ -144,7 +144,7 @@ class RockView(discord.ui.View):
                 await player.update_self(kwargs)
 
                 # Clear the tool_name cache since they broke their tool
-                await self.cog.db_utils.get_cached_player_tool.cache.delete(player.id)  # type: ignore
+                await self.cog.db_utils.get_cached_player_tool.cache.delete(f"miner_player_tool:{player.id}")  # type: ignore
                 return
             if random.random() < self.rocktype.overswing_damage_chance:
                 new_durability = max(0, player.durability - self.rocktype.overswing_damage)
@@ -158,7 +158,7 @@ class RockView(discord.ui.View):
                     await player.update_self(kwargs)
 
                     # Clear the tool_name cache since they broke their tool
-                    await self.cog.db_utils.get_cached_player_tool.cache.delete(player.id)  # type: ignore
+                    await self.cog.db_utils.get_cached_player_tool.cache.delete(f"miner_player_tool:{player.id}")  # type: ignore
                     return
 
                 await player.update_self({Player.durability: new_durability})
