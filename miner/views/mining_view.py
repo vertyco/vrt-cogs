@@ -4,6 +4,7 @@ import asyncio
 import logging
 import random
 from collections import defaultdict, deque
+from contextlib import suppress
 from datetime import datetime, timedelta
 from io import StringIO
 from types import SimpleNamespace
@@ -112,7 +113,8 @@ class RockView(discord.ui.View):
         if self.finalizing:
             return await interaction.response.send_message("This mining event is being finalized!", ephemeral=True)
 
-        await interaction.response.defer()
+        with suppress(discord.HTTPException):
+            await interaction.response.defer()
 
         tool_name = await self.cog.db_utils.get_cached_player_tool(interaction.user)
 
