@@ -13,6 +13,10 @@ log = logging.getLogger("red.vrt.miner.listeners.messages")
 
 
 class MessageListener(MixinMeta):
+    def __init__(self):
+        super().__init__()
+        self.last_user_message: dict[int, int] = {}
+
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if message.author.bot:
@@ -26,6 +30,12 @@ class MessageListener(MixinMeta):
         if self.active_guild_rocks[message.guild.id] >= constants.PER_GUILD_ROCK_CAP:
             return
         if not self.db_active():
+            return
+
+        if message.guild.id not in self.last_user_message:
+            self.last_user_message[message.guild.id] = message.author.id
+        elif self.last_user_message[message.guild.id] == message.author.id:
+            # Same user cannot spam messages to increase activity
             return
 
         settings: GuildSettings = await self.db_utils.get_cached_guild_settings(message.guild.id)
