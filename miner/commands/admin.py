@@ -5,29 +5,11 @@ from redbot.core import bank, commands
 
 from ..abc import MixinMeta
 from ..common import constants
-from ..db.tables import ActiveChannel, GuildSettings, Player, ensure_db_connection
+from ..db.tables import ActiveChannel, GuildSettings, ensure_db_connection
 from ..views.mining_view import RockView
 
 
 class Admin(MixinMeta):
-    @commands.command(name="tempadd")
-    async def miner_temp_add(self, ctx: commands.Context, role: discord.Role):
-        async with ctx.typing():
-            players = await Player.select(Player.id).output(as_list=True)
-            added = 0
-            for p in players:
-                member = ctx.guild.get_member(p)
-                if member and role not in member.roles:
-                    try:
-                        await member.add_roles(role, reason="Miner tempadd command")
-                        added += 1
-                    except discord.Forbidden:
-                        await ctx.send(f"Failed to add role to {member.mention}, missing permissions.")
-                    except discord.HTTPException:
-                        await ctx.send(f"Failed to add role to {member.mention}, unknown error.")
-
-            await ctx.send(f"Added role to {added} members.")
-
     @commands.group(name="minerset")
     @commands.admin_or_permissions(manage_guild=True)
     async def miner_set(self, ctx: commands.Context):
@@ -92,15 +74,42 @@ class Admin(MixinMeta):
         trigger_mode_description = (
             "Whether message activity is tracked per-channel or per-guild.\n"
             "In `Per Channel` mode, activity in each channel is tracked separately, and rocks can spawn in any active channel.\n"
-            "In `Per Guild` mode, activity is tracked across the entire guild, and rocks will spawn in random active channels.\n"
+            "In `Per Guild` mode, activity is tracked across the entire guild, and rocks will spawn in random active channels."
         )
+        mode = "Per Channel" if guild_settings.per_channel_activity_trigger else "Per Guild"
         embed.add_field(
             name="Activity Trigger Mode",
-            value=f"{trigger_mode_description}Current mode: `{'Per Channel' if guild_settings.per_channel_activity_trigger else 'Per Guild'}`",
+            value=f"Current mode: `{mode}`\n{trigger_mode_description}",
+            inline=False,
+        )
+
+        min_default = constants.MIN_TIME_BETWEEN_SPAWNS
+        txt = (
+            f"default ({min_default}s)"
+            if not guild_settings.time_between_spawns
+            else f"{guild_settings.time_between_spawns}s"
+        )
+        embed.add_field(
+            name="Min Time Between Spawns",
+            value=txt,
             inline=False,
         )
 
         await ctx.send(embed=embed)
+
+    @miner_set.command(name="spawntime")
+    @ensure_db_connection()
+    async def miner_spawn_time(self, ctx: commands.Context, seconds: t.Optional[int]):
+        """Set min time between rock spawns in seconds."""
+        settings = await self.db_utils.get_create_guild_settings(ctx.guild.id)
+        if seconds is None:
+            settings.time_between_spawns = 0
+            txt = f"Reset to default (`{constants.MIN_TIME_BETWEEN_SPAWNS}s`)."
+        else:
+            settings.time_between_spawns = seconds
+            txt = f"Set to `{seconds}s`."
+        await settings.save()
+        await ctx.send(f"Minimum time between rock spawns has been {txt}")
 
     @miner_set.command(name="activitytracking")
     @ensure_db_connection()

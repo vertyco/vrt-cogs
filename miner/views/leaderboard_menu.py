@@ -24,7 +24,7 @@ class ResourceDropdown(ui.ActionRow["LeaderboardView"]):
         self.__view = view
         super().__init__()
 
-    @ui.select(placeholder="Resource type", options=options)
+    @ui.select(placeholder="Resource", options=options)
     async def select_resource(self, interaction: discord.Interaction, select: ui.Select) -> None:
         with suppress(discord.NotFound):
             await interaction.response.defer()
@@ -36,6 +36,7 @@ class ResourceDropdown(ui.ActionRow["LeaderboardView"]):
 
 class LeaderBoardDeltaDropdown(ui.ActionRow["LeaderboardView"]):
     options = [
+        discord.SelectOption(label="Hourly", description="Past 1 hour"),
         discord.SelectOption(label="Daily", description="Past 24 hours"),
         discord.SelectOption(label="Weekly", description="Past 7 days"),
         discord.SelectOption(label="Monthly", description="Past 30 days"),
@@ -46,11 +47,11 @@ class LeaderBoardDeltaDropdown(ui.ActionRow["LeaderboardView"]):
         self.__view = view
         super().__init__()
 
-    @ui.select(placeholder="Leaderboard type", options=options)
+    @ui.select(placeholder="Timeframe", options=options)
     async def select_delta(self, interaction: discord.Interaction, select: ui.Select) -> None:
         with suppress(discord.NotFound):
             await interaction.response.defer()
-        choice: t.Literal["daily", "weekly", "monthly", "all time"] = select.values[0].lower()
+        choice: t.Literal["hourly", "daily", "weekly", "monthly", "all time"] = select.values[0].lower()
         self.__view.lb_type = choice
         await self.__view.update_containers()
         await self.__view.refresh(interaction, followup=True)
@@ -87,11 +88,12 @@ class PaginationButtons(ui.ActionRow["LeaderboardView"]):
 class LeaderboardView(ui.LayoutView):
     row = ui.ActionRow()
 
-    def __init__(self, bot: Red, ctx: commands.Context):
+    def __init__(self, bot: Red, ctx: commands.Context, local: bool = False):
         super().__init__()
         self.bot = bot
         self.author: discord.Member | discord.User = ctx.author
         self.channel: discord.abc.MessageableChannel = ctx.channel
+        self.local = local
 
         self.page = 0
         self.page_count = 0
@@ -100,7 +102,7 @@ class LeaderboardView(ui.LayoutView):
 
         self.data: list[dict] = []
         self.resource: constants.Resource = "stone"
-        self.lb_type: t.Literal["daily", "weekly", "monthly", "all time"] = "all time"
+        self.lb_type: t.Literal["hourly", "daily", "weekly", "monthly", "all time"] = "all time"
 
     async def interaction_check(self, interaction: discord.Interaction):
         if interaction.user.id != self.author.id:
@@ -123,7 +125,9 @@ class LeaderboardView(ui.LayoutView):
         self.stop()
 
     async def update_leaderboard_data(self):
-        if self.lb_type == "daily":
+        if self.lb_type == "hourly":
+            delta = timedelta(hours=1)
+        elif self.lb_type == "daily":
             delta = timedelta(days=1)
         elif self.lb_type == "weekly":
             delta = timedelta(weeks=1)
@@ -139,9 +143,15 @@ class LeaderboardView(ui.LayoutView):
             query = query.where(ResourceLedger.created_on >= TimestamptzNow().python() - delta)
         query = query.group_by(ResourceLedger.player).order_by(OrderByRaw("total"), ascending=False)
         self.data: list[dict] = await query
+
         for entry in self.data:
-            user = self.bot.get_user(entry["player"])
-            entry["name"] = user.name if user else str(entry["player"])
+            if self.local:
+                user = self.channel.guild.get_member(entry["player"])
+            else:
+                user = self.bot.get_user(entry["player"])
+            if not user:
+                continue
+            entry["name"] = user.name
 
     async def update_containers(self):
         await self.update_leaderboard_data()
