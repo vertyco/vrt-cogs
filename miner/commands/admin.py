@@ -101,8 +101,10 @@ class Admin(MixinMeta):
     @ensure_db_connection()
     async def miner_spawn_time(self, ctx: commands.Context, seconds: t.Optional[int]):
         """Set min time between rock spawns in seconds."""
+        if seconds and seconds < constants.MIN_TIME_BETWEEN_SPAWNS:
+            return await ctx.send(f"Time must be at least {constants.MIN_TIME_BETWEEN_SPAWNS} seconds.")
         settings = await self.db_utils.get_create_guild_settings(ctx.guild.id)
-        if seconds is None:
+        if seconds is None or seconds == constants.MIN_TIME_BETWEEN_SPAWNS:
             settings.time_between_spawns = 0
             txt = f"Reset to default (`{constants.MIN_TIME_BETWEEN_SPAWNS}s`)."
         else:
