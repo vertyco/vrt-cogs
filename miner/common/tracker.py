@@ -42,19 +42,10 @@ class ActivityTracker:
         rock_types = list(constants.ROCK_TYPES.keys())
 
         weights = []
-        max_rarity = max(rt.rarity for rt in constants.ROCK_TYPES.values())
-        # Normalise activity to [0, 1] to smoothly shift bias from common -> rare
-        msg_count = len(self.messages[key])
-        activity_level = min(msg_count * constants.SCALE_PER_MESSAGE, constants.SPAWN_BONUS_MAX)
-        activity_bias = min(1.0, activity_level / constants.SPAWN_BONUS_MAX)
-
         for rocktype in rock_types:
             rarity: int = constants.ROCK_TYPES[rocktype].rarity  # 1 (common) .. N (rarest)
-            inv_rarity_weight = 1.0 / rarity if rarity > 0 else 1.0
-            rare_bias_weight = rarity / max_rarity  # higher for rarer rocks
-            # Blend: low activity -> inverse rarity; high activity -> rarity-proportional
-            weight = (1.0 - activity_bias) * inv_rarity_weight + activity_bias * rare_bias_weight
-            weights.append(weight)
+            inv_rarity_weight = 1.0 / rarity if rarity > 0 else 0.1
+            weights.append(inv_rarity_weight)
 
         # Use random.choices for weighted selection, guarding against zero-weight cases
         if not any(weights):
