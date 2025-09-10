@@ -25,7 +25,7 @@ class MessageListener(MixinMeta):
             return
         if not message.guild:
             return
-        if isinstance(message.channel, discord.DMChannel):
+        if isinstance(message.channel, (discord.DMChannel, discord.ForumChannel, discord.CategoryChannel)):
             return
         if message.content and "reload" in message.content:
             return
@@ -57,7 +57,7 @@ class MessageListener(MixinMeta):
             return
 
         if settings.per_channel_activity_trigger:
-            channel = message.channel
+            channel: discord.TextChannel | discord.Thread = message.channel
             if not await ActiveChannel.exists(ActiveChannel.id == channel.id):
                 return
         else:
@@ -68,7 +68,7 @@ class MessageListener(MixinMeta):
             active_channel = await query
             if not active_channel:
                 return
-            channel = message.guild.get_channel_or_thread(active_channel["id"])
+            channel: discord.TextChannel | discord.Thread = message.guild.get_channel_or_thread(active_channel["id"])
             if not channel:
                 # Delete stale active channel entry
                 await ActiveChannel.delete().where(ActiveChannel.id == active_channel["id"])
@@ -77,9 +77,20 @@ class MessageListener(MixinMeta):
 
         if channel.id in self.active_channel_rocks:
             return
+
         self.active_guild_rocks[message.guild.id] += 1
         self.active_channel_rocks.add(channel.id)
         try:
+            if settings.notify_players:
+                valid_users = [i for i in settings.notify_players if message.guild.get_member(i)]
+                invalid_users = [i for i in settings.notify_players if i not in valid_users]
+                if invalid_users:
+                    settings.notify_players = valid_users
+                    await settings.save([GuildSettings.notify_players])
+                    await self.db_utils.get_cached_guild_settings.cache.clear()  # type: ignore
+                if valid_users:
+                    mention_str = " ".join(f"<@{i}>" for i in valid_users)
+                    await channel.send(f"{mention_str}")
             rock: constants.RockType = constants.ROCK_TYPES[rock_type]
             view = RockView(self, rock)
             await view.start(channel)
