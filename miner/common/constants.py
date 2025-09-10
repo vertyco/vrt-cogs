@@ -14,8 +14,8 @@ ROCK_ORDER: tuple[RockTierName, ...] = ("small", "medium", "large", "meteor", "v
 
 # Pacing
 ROCK_TTL_SECONDS: int = 2 * 60  # 2 minutes
-SWINGS_PER_THRESHOLD: int = 2
-OVERSWING_THRESHOLD_SECONDS: int = 0.8
+SWINGS_PER_THRESHOLD: int = 3
+OVERSWING_THRESHOLD_SECONDS: int = 1.5  # seconds between swings to count as overswing
 
 # Spawning
 ACTIVITY_WINDOW_SECONDS: int = 5 * 60  # Length of sliding window in seconds
