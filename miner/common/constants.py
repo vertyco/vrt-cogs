@@ -20,9 +20,7 @@ OVERSWING_THRESHOLD_SECONDS: int = 0.5  # 1 swing per 0.5 seconds
 # Spawning
 ACTIVITY_WINDOW_SECONDS: int = 5 * 60  # Length of sliding window in seconds
 SPAWN_ACTIVITY_THRESHOLD: int = 3  # min messages in window to be eligible
-GENERAL_SPAWN_CHANCE: float = 0.5  # 50% chance to spawn on eligible event
 MIN_TIME_BETWEEN_SPAWNS: int = 10  # seconds
-MAX_TIME_BETWEEN_SPAWNS: int = 45  # seconds
 SPAWN_PROB_MIN: float = 0.05  # minimum spawn chance
 SPAWN_PROB_MAX: float = 0.30  # maximum spawn chance
 SCALE_PER_MESSAGE: float = 0.03  # per-message increase to spawn chance
