@@ -300,7 +300,7 @@ class User(MixinMeta):
             color=discord.Color.green(),
         )
         await msg.edit(content=None, embed=done_embed, view=None)
-        await self.db_utils.get_cached_player_tool.cache.clear()  # type: ignore
+        await self.db_utils.get_cached_player_tool.cache.delete(player.id)  # type: ignore
 
     @miner_group.command(name="leaderboard", aliases=["lb"], description="View the leaderboard.")
     @ensure_db_connection()
