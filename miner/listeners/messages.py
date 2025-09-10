@@ -88,7 +88,9 @@ class MessageListener(MixinMeta):
                 if invalid_users:
                     settings.notify_players = valid_users
                     await settings.save([GuildSettings.notify_players])
-                    await self.db_utils.get_cached_guild_settings.cache.delete(message.guild.id)  # type: ignore
+                    await self.db_utils.get_cached_guild_settings.cache.delete(
+                        f"miner_guild_settings:{message.guild.id}"
+                    )  # type: ignore
                 if valid_users:
                     mention_str = " ".join(f"<@{i}>" for i in valid_users)
                     await channel.send(f"{mention_str}")
