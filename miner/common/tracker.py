@@ -64,9 +64,11 @@ class ActivityTracker:
         # Calculate spawn probability based on message activity
         base_spawn_prob = constants.SPAWN_PROB_MIN
         time_since_last_spawn = now - last_spawn if last_spawn else float("inf")
-        # If its been twice as long as the activity window since last spawn, double chance
-        if time_since_last_spawn > 2 * constants.ACTIVITY_WINDOW_SECONDS:
-            base_spawn_prob *= 2  # Double chance if no spawn in a while
+        # If its been twice as long as the rock TTL since last spawn, double chance
+        if time_since_last_spawn > constants.ROCK_TTL_SECONDS:
+            # Gradually increase spawn probability based on time since last spawn
+            multiplier = min(10.0, time_since_last_spawn / constants.ROCK_TTL_SECONDS)
+            base_spawn_prob *= multiplier
         # Add bonus based on message count, capped at SPAWN_BONUS_MAX
         base_spawn_prob += min(msg_count * constants.SCALE_PER_MESSAGE, constants.SPAWN_BONUS_MAX)
         final_spawn_prob = min(base_spawn_prob, constants.SPAWN_PROB_MAX)
