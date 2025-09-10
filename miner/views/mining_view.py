@@ -258,7 +258,7 @@ class RockView(discord.ui.View):
 
                 if update_kwargs:
                     hits = self.hits[uid]
-                    loot = ", ".join(lines)
+                    loot = " ".join(lines)
                     buffer.write(f"<@{uid}> dealt `{round(dmg)}` damage in `{hits}` hits:\n{loot}\n")
 
                     player: Player = mapped_players[uid]
