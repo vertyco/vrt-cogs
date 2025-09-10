@@ -12,22 +12,21 @@ RESOURCES: tuple[Resource, ...] = ("stone", "iron", "gems")
 TOOL_ORDER: tuple[ToolName, ...] = ("wood", "stone", "iron", "steel", "carbide", "diamond")
 ROCK_ORDER: tuple[RockTierName, ...] = ("small", "medium", "large", "meteor", "volatile geode")
 
-
 # Pacing
 ROCK_TTL_SECONDS: int = 2 * 60  # 2 minutes
 SWINGS_PER_THRESHOLD: int = 1
 OVERSWING_THRESHOLD_SECONDS: int = 0.5  # 1 swing per 0.5 seconds
 
-# Spawn probability bonus
-SCALE_PER_MESSAGE: float = 0.05
-SPAWN_BONUS_MAX: float = 0.15
-SPAWN_BONUS_TIME: int = 300  # seconds (5 minutes)
-
 # Spawning
-ACTIVITY_WINDOW_SECONDS: int = 180
+ACTIVITY_WINDOW_SECONDS: int = 5 * 60  # Length of sliding window in seconds
 SPAWN_ACTIVITY_THRESHOLD: int = 3  # min messages in window to be eligible
-SPAWN_PROB_MIN: float = 0.05  # clamp lower bound
-SPAWN_PROB_MAX: float = 0.30  # clamp upper bound
+GENERAL_SPAWN_CHANCE: float = 0.5  # 50% chance to spawn on eligible event
+MIN_TIME_BETWEEN_SPAWNS: int = 30  # seconds
+MAX_TIME_BETWEEN_SPAWNS: int = 60  # seconds
+SPAWN_PROB_MIN: float = 0.05  # minimum spawn chance
+SPAWN_PROB_MAX: float = 0.30  # maximum spawn chance
+SCALE_PER_MESSAGE: float = 0.03  # per-message increase to spawn chance
+SPAWN_BONUS_MAX: float = 0.15  # max activity bonus to add to spawn chance
 
 PER_GUILD_ROCK_CAP: int = 4
 PER_CHANNEL_ROCK_CAP: int = 1

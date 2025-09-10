@@ -114,7 +114,7 @@ class RockView(discord.ui.View):
 
         await interaction.response.defer()
 
-        tool_name = await self.cog.db_utils.get_player_tool(interaction.user)
+        tool_name = await self.cog.db_utils.get_cached_player_tool(interaction.user)
 
         fake_msg = SimpleNamespace(author=SimpleNamespace(id=interaction.user.id))
         bucket = self.mine_cooldown.get_bucket(fake_msg)
@@ -142,7 +142,7 @@ class RockView(discord.ui.View):
                 await player.update_self(kwargs)
 
                 # Clear the tool_name cache since they broke their tool
-                await self.cog.db_utils.get_player_tool.cache.clear()  # type: ignore
+                await self.cog.db_utils.get_cached_player_tool.cache.clear()  # type: ignore
                 return
             if random.random() < self.rocktype.overswing_damage_chance:
                 new_durability = max(0, player.durability - self.rocktype.overswing_damage)
@@ -156,7 +156,7 @@ class RockView(discord.ui.View):
                     await player.update_self(kwargs)
 
                     # Clear the tool_name cache since they broke their tool
-                    await self.cog.db_utils.get_player_tool.cache.clear()  # type: ignore
+                    await self.cog.db_utils.get_cached_player_tool.cache.clear()  # type: ignore
                     return
 
                 await player.update_self({Player.durability: new_durability})
