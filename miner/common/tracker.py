@@ -80,4 +80,6 @@ class ActivityTracker:
         # Use random.choices for weighted selection, guarding against zero-weight cases
         if not any(weights):
             return None
+
+        self.last_spawns[key] = now
         return random.choices(rock_types, weights=weights, k=1)[0]
