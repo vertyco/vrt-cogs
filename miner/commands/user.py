@@ -315,13 +315,13 @@ class User(MixinMeta):
 
     @miner_group.command(name="leaderboard", aliases=["lb"], description="View the leaderboard.")
     @ensure_db_connection()
-    async def miner_leaderboard_from_group(self, ctx: commands.Context, local: bool = False):
+    async def miner_leaderboard_from_group(self, ctx: commands.Context, local: bool = True):
         """View the leaderboard."""
         await LeaderboardView(self.bot, ctx, local=local).start()
 
     @commands.hybrid_command(name="minerlb", description="View the leaderboard.")
     @ensure_db_connection()
-    async def miner_leaderboard(self, ctx: commands.Context, local: bool = False):
+    async def miner_leaderboard(self, ctx: commands.Context, local: bool = True):
         """View the leaderboard."""
         await LeaderboardView(self.bot, ctx, local=local).start()
 

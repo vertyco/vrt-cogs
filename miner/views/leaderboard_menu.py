@@ -88,7 +88,7 @@ class PaginationButtons(ui.ActionRow["LeaderboardView"]):
 class LeaderboardView(ui.LayoutView):
     row = ui.ActionRow()
 
-    def __init__(self, bot: Red, ctx: commands.Context, local: bool = False):
+    def __init__(self, bot: Red, ctx: commands.Context, local: bool):
         super().__init__()
         self.bot = bot
         self.author: discord.Member | discord.User = ctx.author
@@ -142,9 +142,11 @@ class LeaderboardView(ui.LayoutView):
         if delta:
             query = query.where(ResourceLedger.created_on >= TimestamptzNow().python() - delta)
         query = query.group_by(ResourceLedger.player).order_by(OrderByRaw("total"), ascending=False)
-        self.data: list[dict] = await query
 
-        for entry in self.data:
+        data: list[dict] = await query
+        self.data = []
+
+        for entry in data:
             if self.local:
                 user = self.channel.guild.get_member(entry["player"])
             else:
@@ -152,13 +154,15 @@ class LeaderboardView(ui.LayoutView):
             if not user:
                 continue
             entry["name"] = user.name
+            self.data.append(entry)
 
     async def update_containers(self):
         await self.update_leaderboard_data()
         position = next((i for i, p in enumerate(self.data) if p["player"] == self.author.id), None)
 
+        lb_type = "Global " if not self.local else ""
         header = ui.TextDisplay(
-            f"{constants.resource_emoji(self.resource)} **{self.lb_type.title()} {self.resource.title().rstrip('s')} Leaderboard**"
+            f"{constants.resource_emoji(self.resource)} **{lb_type}{self.lb_type.title()} {self.resource.title().rstrip('s')} Leaderboard**"
         )
 
         color = await self.bot.get_embed_color(self.channel)
