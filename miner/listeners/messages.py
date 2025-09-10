@@ -1,4 +1,5 @@
 import logging
+from time import perf_counter
 
 import discord
 from piccolo.query import OrderByRaw
@@ -16,6 +17,7 @@ class MessageListener(MixinMeta):
     def __init__(self):
         super().__init__()
         self.last_user_message: dict[int, int] = {}
+        self.last_channel_rock_spawn: dict[int, float] = {}
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -38,9 +40,18 @@ class MessageListener(MixinMeta):
             # Same user cannot spam messages to increase activity
             return
 
+        self.last_user_message[message.guild.id] = message.author.id
+
         settings: GuildSettings = await self.db_utils.get_cached_guild_settings(message.guild.id)
         key = message.channel.id if settings.per_channel_activity_trigger else message.guild.id
         self.activity.update(key)
+
+        # Check last rock spawn
+        last_spawn = self.last_channel_rock_spawn.get(message.channel.id, 0)
+        if perf_counter() - last_spawn < constants.MIN_TIME_BETWEEN_SPAWNS:
+            return
+        self.last_channel_rock_spawn[message.channel.id] = perf_counter()
+
         rock_type: constants.RockTierName | None = self.activity.maybe_get_rock(key)
         if not rock_type:
             return
