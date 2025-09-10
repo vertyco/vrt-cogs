@@ -1,8 +1,15 @@
+import typing as t
+
 import discord
 from aiocache import cached
 
 from ..common import constants
 from .tables import GlobalSettings, GuildSettings, Player
+
+
+def key_builder(func: t.Callable, *args, **kwargs) -> str:
+    func_name = str(func.__name__).replace("get_cached_", "miner_")
+    return f"{func_name}:{args[1]}"
 
 
 class DBUtils:
@@ -27,13 +34,14 @@ class DBUtils:
         )
         return settings
 
-    @cached(ttl=constants.ROCK_TTL_SECONDS, key="miner_player_tool:{user}")  # Cached for length of time that rocks last
+    # Cached for length of time that rocks last
+    @cached(ttl=constants.ROCK_TTL_SECONDS, key_builder=key_builder)
     async def get_cached_player_tool(self, user: int) -> constants.ToolName:
         player = await self.get_create_player(user)
         tool: constants.ToolName = player.tool
         return tool
 
-    @cached(ttl=10, key="miner_guild_settings:{guild}")
+    @cached(ttl=10, key_builder=key_builder)
     async def get_cached_guild_settings(self, guild: int) -> GuildSettings:
         settings = await self.get_create_guild_settings(guild)
         return settings
