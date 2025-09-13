@@ -33,9 +33,9 @@ HP_BAR_SEGMENTS: int = 10
 HP_BAR_FILLED: str = "▰"
 HP_BAR_EMPTY: str = "▱"
 
-# Tool repair cost percentage (e.g., 0.2 = 20% of upgrade cost)
-TOOL_REPAIR_COST_PCT: float = 0.2
-HITS_PER_DURA_LOST: int = 5  # 1 durability lost per 5 hits
+# Tool repair cost percentage (e.g., 0.5 = 50% of upgrade cost)
+TOOL_REPAIR_COST_PCT: float = 0.5
+HITS_PER_DURA_LOST: int = 4  # 1 durability lost per 4 hits
 
 # Emojis (adjust to your server assets if needed)
 PICKAXE_EMOJI: str = "\N{PICK}\N{VARIATION SELECTOR-16}"
@@ -112,7 +112,7 @@ TOOLS: dict[ToolName, ToolTier] = {
         power=16,
         crit_chance=0.11,
         crit_multiplier=1.5,
-        upgrade_cost={"stone": 360, "iron": 570, "gems": 10},
+        upgrade_cost={"stone": 440, "iron": 500, "gems": 10},
         max_durability=512,
         shatter_resistance=0.12,
     ),
