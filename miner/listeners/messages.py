@@ -59,7 +59,7 @@ class MessageListener(MixinMeta):
 
         if settings.per_channel_activity_trigger:
             channel: discord.TextChannel | discord.Thread = message.channel
-            if not await ActiveChannel.exists(ActiveChannel.id == channel.id):
+            if not await ActiveChannel.exists().where(ActiveChannel.id == channel.id):
                 return
         else:
             query = ActiveChannel.select(ActiveChannel.id).where(ActiveChannel.guild == message.guild.id)
