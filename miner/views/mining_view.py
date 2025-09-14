@@ -62,7 +62,7 @@ class RockView(discord.ui.View):
 
         self._mine_lock = asyncio.Lock()
 
-    async def start(self, channel: discord.TextChannel):
+    async def start(self, channel: discord.TextChannel | discord.Thread):
         """Start the rock session"""
         self.end_time = datetime.now() + timedelta(seconds=constants.ROCK_TTL_SECONDS)
         self.message = await channel.send(embed=self.embed(), view=self)

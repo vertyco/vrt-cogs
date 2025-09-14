@@ -17,7 +17,7 @@ class Admin(MixinMeta):
 
     @miner_set.command(name="toggle")
     @ensure_db_connection()
-    async def miner_toggle(self, ctx: commands.Context, *, channel: t.Optional[discord.TextChannel]):
+    async def miner_toggle(self, ctx: commands.Context, *, channel: t.Optional[discord.TextChannel | discord.Thread]):
         """Toggle active mining channels"""
         if not channel:
             channel = ctx.channel
@@ -133,7 +133,7 @@ class Admin(MixinMeta):
     async def miner_spawn(
         self,
         ctx: commands.Context,
-        channel: t.Optional[discord.TextChannel],
+        channel: t.Optional[discord.TextChannel | discord.Thread],
         *,
         rock_type: constants.RockTierName,
     ):
