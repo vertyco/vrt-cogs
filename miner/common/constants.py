@@ -20,6 +20,7 @@ OVERSWING_THRESHOLD_SECONDS: int = 2  # seconds between swings to count as overs
 # Spawning
 ACTIVITY_WINDOW_SECONDS: int = 5 * 60  # Length of sliding window in seconds
 MIN_TIME_BETWEEN_SPAWNS: int = 10  # seconds
+ABSOLUTE_MAX_TIME_BETWEEN_SPAWNS: int = 10 * 60  # 10 minutes, after which even a single person can spawn a rock
 SPAWN_PROB_MIN: float = 0.05  # minimum spawn chance
 SPAWN_PROB_MAX: float = 0.50  # maximum spawn chance
 SCALE_PER_MESSAGE: float = 0.03  # per-message increase to spawn chance
