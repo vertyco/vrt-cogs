@@ -73,7 +73,6 @@ class RockView(discord.ui.View):
             await asyncio.sleep(constants.ROCK_TTL_SECONDS)
             if self.finalizing:
                 return
-            log.info(f"Mine has collapsed in {self.message.channel}!")
             await self.finalize()
         except asyncio.CancelledError:
             pass
