@@ -183,7 +183,12 @@ class Owner(MixinMeta):
         await ctx.send(f"Sentry profiling is now **{self.db.sentry_profiler}**")
 
     @profiler.command(name="tracking")
-    async def track_toggle(self, ctx: commands.Context, method: str, state: bool):
+    async def track_toggle(
+        self,
+        ctx: commands.Context,
+        method: t.Literal["methods", "commands", "listeners", "tasks"],
+        state: bool,
+    ):
         """
         Toggle tracking of a method
 
@@ -193,8 +198,6 @@ class Owner(MixinMeta):
         - `method`: The method to toggle tracking for (methods, commands, listeners, tasks)
         - `state`: The state to set tracking to (True/False, 1/0, t/f)
         """
-        if method not in ("methods", "commands", "listeners", "tasks"):
-            return await ctx.send("Invalid method, use one of: `methods`, `commands`, `listeners`, `tasks`")
 
         if getattr(self.db, f"track_{method}") == state:
             return await ctx.send(f"Tracking of {method} is already set to **{state}**")
