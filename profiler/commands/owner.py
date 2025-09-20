@@ -272,9 +272,8 @@ class Owner(MixinMeta):
         if item.lower().startswith("m"):
             if item_name in self.db.tracked_methods:
                 return await ctx.send(f"**{item_name}** is already being profiled")
-            elif self.attach_method(item_name):
+            if self.attach_method(item_name):
                 self.db.tracked_methods.append(item_name)
-                self.attach_method(item_name)
                 await ctx.send(f"**{item_name}** is now being profiled")
                 await self.save()
                 return

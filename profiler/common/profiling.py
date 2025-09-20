@@ -272,6 +272,8 @@ class Profiling(MixinMeta):
             self.original_listeners[method.cog_name].pop(listener_name, None)
         else:
             raise ValueError(f"Invalid method type: {method.func_type}")
+        # Remove from currently_tracked to allow re-attachment
+        self.currently_tracked.discard(method_key)
         return True
 
     def detach_cog(self, cog_name: str) -> bool:
@@ -322,6 +324,19 @@ class Profiling(MixinMeta):
                 self.bot.add_listener(original_coro, name=listener_name)
                 log.debug(f"Detaching profiler from listener {cog_name}.{listener_name}")
                 detached = True
+
+        # Remove all detached methods from currently_tracked
+        if detached:
+            # Get all method keys that belong to this cog
+            cog_method_keys = []
+            for method_key, method_info in self.methods.items():
+                if method_info.cog_name == cog_name:
+                    cog_method_keys.append(method_key)
+
+            # Remove them from currently_tracked
+            for key in cog_method_keys:
+                self.currently_tracked.discard(key)
+
         return detached
 
     def detach_profilers(self) -> None:
@@ -385,6 +400,9 @@ class Profiling(MixinMeta):
                 self.bot.add_listener(original_coro, name=listener_name)
                 log.debug(f"Detaching profiler from listener {cog_name}.{listener_name}")
         self.original_listeners.clear()
+
+        # Clear currently_tracked to allow re-attachment of all methods
+        self.currently_tracked.clear()
 
     def map_methods(self) -> None:
         """Populate the methods cache"""
