@@ -2,18 +2,14 @@ import asyncio
 import typing as t
 from contextlib import suppress
 from io import BytesIO
+from uuid import uuid4
 
 import discord
 from rapidfuzz import fuzz
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import text_to_file
 
 from ..abc import MixinMeta
-from ..common.formatting import (
-    format_method_pages,
-    format_method_tables,
-    format_runtime_pages,
-)
+from ..common.formatting import format_method_pages, format_runtime_pages
 from ..common.generator import generate_line_graph
 
 
@@ -47,7 +43,6 @@ class ProfileMenu(discord.ui.View):
         self.pages: t.List[str] = []
         self.page: int = 0
 
-        self.tables: t.List[str] = []
         self.plot: bytes = None
 
         self.sorting_by: str = "Impact"
@@ -119,11 +114,8 @@ class ProfileMenu(discord.ui.View):
 
         if self.inspecting:
             files = []
-            if self.tables:
-                file = text_to_file(self.tables[self.page], filename="profile.txt")
-                files.append(file)
             if self.plot:
-                file = discord.File(BytesIO(self.plot), filename="plot.png")
+                file = discord.File(BytesIO(self.plot), filename=f"plot_{uuid4()}.png")
                 files.append(file)
             try:
                 await self.message.edit(content=self.pages[self.page], view=self, attachments=files)
@@ -232,7 +224,6 @@ class ProfileMenu(discord.ui.View):
 
         self.inspecting = modal.query
         self.pages = await asyncio.to_thread(format_method_pages, modal.query, method_stats)
-        self.tables = await asyncio.to_thread(format_method_tables, method_stats)
         if len(method_stats) > 10:
             self.plot = await asyncio.to_thread(generate_line_graph, method_stats)
         await self.update()
@@ -383,6 +374,5 @@ class ProfileMenu(discord.ui.View):
         if not self.inspecting:
             return
         self.inspecting = None
-        self.tables.clear()
         self.pages = await asyncio.to_thread(format_runtime_pages, self.db, self.sorting_by, self.query)
         await self.update()

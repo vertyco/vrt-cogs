@@ -5,14 +5,18 @@ import typing as t
 from contextlib import suppress
 
 import discord
+import sentry_sdk
 from discord import app_commands
 from rapidfuzz import fuzz
 from redbot.core import commands
+from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import box, humanize_number, pagify
+from sentry_sdk import profiler
 
 from ..abc import MixinMeta
 from ..common.formatting import humanize_size
 from ..common.mem_profiler import profile_memory
+from ..common.models import IGNORED_COGS
 from ..views.profile_menu import ProfileMenu
 
 log = logging.getLogger("red.vrt.profiler.commands")
@@ -55,12 +59,11 @@ class Owner(MixinMeta):
                 "- Start by attaching the profiler to a cog using the `attach` command.\n"
                 f" - Example: `{ctx.clean_prefix}attach cog <cog_name>`.\n"
                 f"- Identify suspicious methods using the `{ctx.clean_prefix}profiler view` command.\n"
-                f"- Attach profilers to specific methods to be tracked verbosely using the `{ctx.clean_prefix}attach` command.\n"
+                f"- Attach profilers to specific methods using the `{ctx.clean_prefix}attach` command.\n"
                 f" - Attaching to a cog: `{ctx.clean_prefix}attach cog <cog_name>`.\n"
                 f" - Attaching to a method: `{ctx.clean_prefix}attach method <method_key>`.\n"
                 "- Detach the profiler from the cog and only monitor the necessary methods and save memory overhead.\n"
                 "- Add a threshold using the `threshold` command to only record entries that exceed a certain execution time in ms.\n"
-                f"- To enable more verbose profiling of tracked methods, use the `{ctx.clean_prefix}profiler verbose` command.\n"
             )
             await ctx.send(txt)
 
@@ -76,6 +79,9 @@ class Owner(MixinMeta):
 
         # DATA RETENTION
         txt += f"- Data retention is set to **{self.db.delta} {'hour' if self.db.delta == 1 else 'hours'}**\n"
+
+        # SENTRY PROFILING
+        txt += f"- Sentry Profiling: **{'Enabled' if self.db.sentry_profiler else 'Disabled'}**\n"
 
         # CONFIG SIZE
         mem_size_raw = await asyncio.to_thread(deep_getsizeof, self.db)
@@ -108,7 +114,7 @@ class Owner(MixinMeta):
 
         # TRACKED METHODS
         joined = ", ".join([f"`{i}`" for i in self.db.tracked_methods]) if self.db.tracked_methods else "`None`"
-        txt += f"## Tracked Methods:\n- Verbose profiling of tracked methods is **{'Enabled' if self.db.verbose else 'Disabled'}**\n"
+        txt += "## Tracked Methods:\n"
         txt += f"- All methods with a runtime greater than **{self.db.tracked_threshold}ms** are being recorded\n"
         txt += f"The following methods are being tracked: {joined}\n"
 
@@ -142,29 +148,6 @@ class Owner(MixinMeta):
         await self.save()
         await ctx.send(f"Saving of metrics is now **{self.db.save_stats}**")
 
-    @profiler.command(name="verbose")
-    async def verbose_toggle(self, ctx: commands.Context):
-        """
-        Toggle verbose stats for methods on the watchlist
-
-        **WARNING**: Enabling this will increase memory usage significantly if there are a lot of watched methods
-        """
-        self.db.verbose = not self.db.verbose
-        cleaned = await asyncio.to_thread(self.db.cleanup)
-        if cleaned:
-            await self.save()
-        if self.db.verbose:
-            txt = (
-                "Verbose stats are now **Enabled**\n"
-                "**Warning**: This will increase memory usage!\n"
-                f"Methods attached to a profiler via `{ctx.clean_prefix}attach method <method_key>` will be profiled verbosely\n"
-            )
-            await ctx.send(txt)
-        else:
-            await ctx.send(
-                "Verbose stats are now **Disabled**. Detailed stat breakdowns will no longer be recorded for tracked methods"
-            )
-
     @profiler.command(name="delta")
     async def set_delta(self, ctx: commands.Context, delta: int):
         """
@@ -177,6 +160,25 @@ class Owner(MixinMeta):
         if cleaned:
             await self.save()
         await ctx.send(f"Data retention is now set to **{delta} {'hour' if delta == 1 else 'hours'}**")
+
+    @profiler.command(name="sentry")
+    async def toggle_sentry(self, ctx: commands.Context):
+        """
+        Toggle Sentry profiling integration
+
+        **Warning**: This will increase memory usage and may have privacy implications.
+        Ensure you have configured Sentry SDK in your bot before enabling this.
+        """
+        # Check sentry version
+        if "sentry_sdk" not in sys.modules:
+            return await ctx.send("Sentry SDK is not installed or configured in your bot.")
+        if not sentry_sdk.Hub.current.client:
+            return await ctx.send("Sentry SDK is not initialized in your bot.")
+        if not hasattr(profiler, "start_profiler"):
+            return await ctx.send("Your version of Sentry SDK does not support profiling. Please update it.")
+        self.db.sentry_profiler = not self.db.sentry_profiler
+        await self.save()
+        await ctx.send(f"Sentry profiling is now **{self.db.sentry_profiler}**")
 
     @profiler.command(name="tracking")
     async def track_toggle(self, ctx: commands.Context, method: str, state: bool):
@@ -276,10 +278,11 @@ class Owner(MixinMeta):
             return await ctx.send(f"Could not find **{item_name}**")
 
         if item_name == "all":
-            for cog in self.bot.cogs:
-                if cog not in self.db.tracked_cogs:
-                    self.db.tracked_cogs.append(cog)
-                    self.attach_cog(cog)
+            bot: Red = self.bot  # type: ignore
+            for cogname in bot.cogs:
+                if cogname not in self.db.tracked_cogs and cogname not in IGNORED_COGS:
+                    self.db.tracked_cogs.append(cogname)
+                    self.attach_cog(cogname)
             await ctx.send("All cogs are now being profiled")
             await self.save()
             return
@@ -287,6 +290,8 @@ class Owner(MixinMeta):
         elif len(item_name.split()) > 1:
             added = []
             cogs = [i.strip() for i in item_name.split()]
+            if any(cog in IGNORED_COGS for cog in cogs):
+                return await ctx.send(f"Cannot profile the following cogs: {', '.join(IGNORED_COGS)}")
             for cog in cogs:
                 if not self.bot.get_cog(cog):
                     await ctx.send(f"Could not find **{cog}**")
@@ -306,6 +311,8 @@ class Owner(MixinMeta):
         if item_name in self.db.tracked_cogs:
             return await ctx.send(f"**{item_name}** was already being profiled")
         if self.bot.get_cog(item_name):
+            if item_name in IGNORED_COGS:
+                return await ctx.send(f"Cannot profile the **{item_name}** cog")
             self.db.tracked_cogs.append(item_name)
             await ctx.send(f"**{item_name}** is now being profiled")
             self.attach_cog(item_name)
@@ -442,8 +449,6 @@ class Owner(MixinMeta):
         - Calls/Min: The average calls per minute of the method over the set delta
         - Last X: The total number of times the method was called over the set delta
         - Impact Score: A score calculated from the average runtime and calls per minute
-
-        **Note**: The `Inspect` button will only be available if verbose stats are enabled
 
         **Impact Score**:
         The impact score represents the impact of the method on the bot's performance.

@@ -6,7 +6,7 @@ from discord.ext import tasks
 from redbot.core import commands
 
 from ..abc import MixinMeta
-from .models import Method
+from .models import IGNORED_COGS, Method
 
 log = logging.getLogger("red.vrt.profiler.profiling")
 
@@ -391,6 +391,8 @@ class Profiling(MixinMeta):
         self.methods.clear()
         cogs = [i for i in self.bot.cogs]
         for cog_name in cogs:
+            if cog_name in IGNORED_COGS:
+                continue
             cog = self.bot.get_cog(cog_name)
             if not cog:
                 continue
