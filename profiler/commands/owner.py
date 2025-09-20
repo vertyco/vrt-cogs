@@ -1,4 +1,5 @@
 import asyncio
+import io
 import logging
 import sys
 import typing as t
@@ -56,6 +57,7 @@ class Owner(MixinMeta):
         if ctx.invoked_subcommand is None:
             txt = (
                 "## Profiler Tips\n"
+                f"- Use `{ctx.clean_prefix}profiler methods` to see all available methods that can be tracked.\n"
                 "- Start by attaching the profiler to a cog using the `attach` command.\n"
                 f" - Example: `{ctx.clean_prefix}attach cog <cog_name>`.\n"
                 f"- Identify suspicious methods using the `{ctx.clean_prefix}profiler view` command.\n"
@@ -435,6 +437,83 @@ class Owner(MixinMeta):
                 await msg.delete()
             for p in pagify(res, page_length=1980):
                 await ctx.send(box(p, "py"))
+
+    @profiler.command(name="methods", aliases=["list"])
+    async def list_methods(self, ctx: commands.Context):
+        """
+        List all available methods that can be tracked
+
+        This will send a text file containing all trackable methods organized by cog.
+        Useful for finding specific methods to profile without attaching to entire cogs.
+        """
+        async with ctx.typing():
+            self.map_methods()
+
+            if not self.methods:
+                return await ctx.send("No methods found. Make sure your cogs are loaded.")
+
+            # Group methods by cog
+            cogs_data = {}
+            for method_key, method_info in self.methods.items():
+                cog_name = method_info.cog_name
+                if cog_name not in cogs_data:
+                    cogs_data[cog_name] = {"commands": [], "methods": [], "listeners": [], "tasks": []}
+
+                func_type = method_info.func_type
+                if func_type in ["command", "hybrid", "slash"]:
+                    cogs_data[cog_name]["commands"].append(method_key)
+                elif func_type == "method":
+                    cogs_data[cog_name]["methods"].append(method_key)
+                elif func_type == "listener":
+                    cogs_data[cog_name]["listeners"].append(method_key)
+                elif func_type == "task":
+                    cogs_data[cog_name]["tasks"].append(method_key)
+
+            # Generate the text file content
+            content_lines = []
+            content_lines.append("PROFILER - AVAILABLE METHODS")
+            content_lines.append("=" * 50)
+            content_lines.append(f"Generated: {discord.utils.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}")
+            content_lines.append(f"Total Methods: {len(self.methods)}")
+            content_lines.append("")
+
+            for cog_name in sorted(cogs_data.keys()):
+                cog_data = cogs_data[cog_name]
+                content_lines.append(f"COG: {cog_name}")
+                content_lines.append("-" * (5 + len(cog_name)))
+
+                total_methods = sum(len(methods) for methods in cog_data.values())
+                content_lines.append(f"Total: {total_methods} methods")
+                content_lines.append("")
+
+                for category, methods in cog_data.items():
+                    if methods:
+                        content_lines.append(f"{category.upper()} ({len(methods)}):")
+                        for method in sorted(methods):
+                            content_lines.append(f"  - {method}")
+                        content_lines.append("")
+
+                content_lines.append("")
+
+            content = "\n".join(content_lines)
+
+            # Create the file
+            file_content = content.encode("utf-8")
+            file = discord.File(
+                io.BytesIO(file_content),
+                filename=f"profiler_methods_{discord.utils.utcnow().strftime('%Y%m%d_%H%M%S')}.txt",
+            )
+
+            embed = discord.Embed(
+                title="📋 Available Methods",
+                description=(
+                    f"Found **{len(self.methods)}** trackable methods across **{len(cogs_data)}** cogs.\n\n"
+                    f"Use `{ctx.clean_prefix}attach method <method_key>` to profile specific methods."
+                ),
+                color=discord.Color.blue(),
+            )
+
+            await ctx.send(embed=embed, file=file)
 
     @profiler.command(name="view", aliases=["v"])
     async def profile_menu(self, ctx: commands.Context):

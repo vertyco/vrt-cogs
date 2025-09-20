@@ -25,7 +25,7 @@ class Profiler(Owner, Profiling, Wrapper, commands.Cog, metaclass=CompositeMetaC
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.5.0"
+    __version__ = "1.5.1"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -125,8 +125,4 @@ class Profiler(Owner, Profiling, Wrapper, commands.Cog, metaclass=CompositeMetaC
     @commands.Cog.listener()
     async def on_cog_remove(self, cog: commands.Cog) -> None:
         await asyncio.to_thread(self.map_methods)
-        self.original_methods.pop(cog.qualified_name, None)
-        self.original_loops.pop(cog.qualified_name, None)
-        self.original_callbacks.pop(cog.qualified_name, None)
-        self.original_slash_callbacks.pop(cog.qualified_name, None)
-        self.original_listeners.pop(cog.qualified_name, None)
+        self.detach_cog(cog.qualified_name)
