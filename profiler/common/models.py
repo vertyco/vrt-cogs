@@ -6,6 +6,8 @@ from pydantic import Field
 
 from . import Base
 
+IGNORED_COGS = ["SentryIO", "Profiler"]
+
 
 @dataclass
 class Method:
@@ -15,21 +17,10 @@ class Method:
     command_name: t.Optional[str] = None
 
 
-class FunctionProfile(Base):
-    ncalls: str  # Number of calls to the function
-    tottime: float  # Total time spent in the function
-    percall_tottime: float  # Time spent per call
-    cumtime: float  # Cumulative time spent in the function
-    percall_cumtime: float  # Cumulative time per call
-    file_name: str  # File name where the function is defined
-    line_number: int  # Line number where the function is defined
-
-
 class StatsProfile(Base):
     total_tt: float  # Execution time in seconds
     func_type: str  # Function type (command, slash, method, task)
     is_coro: bool  # Async if True
-    func_profiles: t.Dict[str, FunctionProfile] = {}  # Empty if not verbose
     exception_thrown: t.Optional[str] = None  # Exception thrown if any
     timestamp: datetime = Field(default_factory=datetime.now)  # Time the profile was recorded
 
@@ -37,6 +28,7 @@ class StatsProfile(Base):
 class DB(Base):
     save_stats: bool = False  # Save stats persistently
     delta: int = 1  # Data retention in hours
+    sentry_profiler: bool = False  # Enable Sentry profiling
 
     # Profiling entire cogs's methods on a high level (No verbosity)
     tracked_cogs: t.List[str] = []  # List of cogs to track
@@ -48,7 +40,6 @@ class DB(Base):
 
     # For tracking specific methods independent of the watched cogs
     tracked_methods: t.List[str] = []  # List of specific methods to track
-    verbose: bool = False  # If true, tracked_methods will be profiled verbosely
     tracked_threshold: float = 0.0  # Minimum execution delta to record a profile of tracked methods
 
     # {cog_name: {method_key: [StatsProfile]}}

@@ -16,6 +16,7 @@ class MixinMeta(metaclass=ABCMeta):
 
     bot: Red
     db: DB
+    saving: bool
 
     # {cog_name: {method_name: original_method}}
     original_methods: t.Dict[str, t.Dict[str, t.Callable]] = {}

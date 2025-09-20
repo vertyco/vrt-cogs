@@ -82,15 +82,6 @@ def format_method_pages(
     return pages
 
 
-def format_method_tables(data: t.List[StatsProfile]) -> t.List[str]:
-    data = [i for i in data if i.func_profiles]
-    tables = []
-    for stats in data:
-        table = format_func_profiles(stats)
-        tables.append(table)
-    return tables
-
-
 def format_runtime_pages(
     db: DB,
     sort_by: str,
@@ -214,10 +205,7 @@ def format_runtime_pages(
 
         # page = f"{box(tabulate(rows, headers=cols), lang='diff')}\n\n"
         page = f"{tabulate(rows, headers=cols)}\n\n"
-        if db.verbose:
-            page += "+ Verbose Tracking\n- Has Errors\n"
-        else:
-            page += "+ Tracking\n- Has Errors\n"
+        page += "+ Tracking\n- Has Errors\n"
         page = box(page, lang="diff")
 
         if db.track_commands:
@@ -240,32 +228,6 @@ def format_runtime_pages(
     if not pages:
         pages.append("No data to display. Come back later.")
     return pages
-
-
-def format_func_profiles(stats: StatsProfile):
-    cols = [
-        "Function",
-        "ncalls",
-        "tottime",
-        "percall_tottime",
-        "cumtime",
-        "percall_cumtime",
-        "file:line",
-    ]
-    rows = []
-    for func, profile in stats.func_profiles.items():
-        rows.append(
-            [
-                func,
-                profile.ncalls,
-                profile.tottime,
-                profile.percall_tottime,
-                profile.cumtime,
-                profile.percall_cumtime,
-                f"{profile.file_name}:{profile.line_number}",
-            ]
-        )
-    return tabulate(rows, headers=cols)
 
 
 def format_runtimes(stats: t.Dict[str, t.List[StatsProfile]]):

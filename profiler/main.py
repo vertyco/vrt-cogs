@@ -25,7 +25,7 @@ class Profiler(Owner, Profiling, Wrapper, commands.Cog, metaclass=CompositeMetaC
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.4.5"
+    __version__ = "1.5.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -81,22 +81,16 @@ class Profiler(Owner, Profiling, Wrapper, commands.Cog, metaclass=CompositeMetaC
         if self.saving:
             return
 
-        def _dump():
-            db = DB.model_validate(self.db.model_dump(exclude={"stats"}))
-            # Break stats down to avoid RuntimeErrors
-            if self.db.save_stats:
-                keys = list(self.db.stats.keys())
-                for cog_name in keys:
-                    db.stats[cog_name] = {}
-                    method_keys = list(self.db.stats[cog_name].keys())
-                    for method_key in method_keys:
-                        db.stats[cog_name][method_key] = self.db.stats[cog_name][method_key].copy()
-            return db.model_dump(mode="json")
+        def _dump() -> dict:
+            kwargs = {"exclude_defaults": True, "mode": "json"}
+            if not self.db.save_stats:
+                kwargs["exclude"] = {"stats"}
+            return self.db.model_dump(**kwargs)
 
         try:
             self.saving = True
             log.debug("Saving config")
-            dump = await asyncio.to_thread(_dump)
+            dump: dict = await asyncio.to_thread(_dump)
             await self.config.db.set(dump)
         except Exception as e:
             log.exception("Failed to save config", exc_info=e)
