@@ -41,6 +41,13 @@ View the current profiler settings
 
 Profile memory usage of objects in the current environment
 
+## profiler methods
+
+- Usage: `[p]profiler methods`
+- Aliases: `list`
+
+List all available methods that can be tracked<br/><br/>Sends a text file containing all trackable methods organized by cog. Useful for finding specific methods to profile without attaching to entire cogs.
+
 ## profiler save
 
 - Usage: `[p]profiler save`
