@@ -172,8 +172,8 @@ def format_runtime_pages(
                 name = f"- {name}"
 
             stats[name] = [
-                max_runtime,
                 min_runtime,
+                max_runtime,
                 avg_runtime,
                 calls_per_minute,
                 total_calls,
@@ -185,38 +185,48 @@ def format_runtime_pages(
     start = 0
     end = per_page
     page_count = math.ceil(len(stats) / per_page)
-    delta_text = f"Last {'Hour' if db.delta == 1 else f'{db.delta}hrs'}"
+    delta_text = f"Last {'Hr' if db.delta == 1 else f'{db.delta}hrs'}"
 
-    cols = ["Method", "Max", "Min", "Avg", "Calls/Min", delta_text, "Errors", "Impact"]
     if sort_by == "Name":
-        cols = ["[Method]", "Max", "Min", "Avg", "Calls/Min", delta_text, "Errors", "Impact"]
+        cols = ["[Method]", "Min/Max/Avg", "CPM", delta_text, "Errors", "Impact"]
         stats = dict(sorted(stats.items()))
     elif sort_by == "Max":
-        cols = ["Method", "[Max]", "Min", "Avg", "Calls/Min", delta_text, "Errors", "Impact"]
+        cols = ["Method", "Min/[Max]/Avg", "CPM", delta_text, "Errors", "Impact"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][0], reverse=True))
     elif sort_by == "Min":
-        cols = ["Method", "Max", "[Min]", "Avg", "Calls/Min", delta_text, "Errors", "Impact"]
+        cols = ["Method", "[Min]/Max/Avg", "CPM", delta_text, "Errors", "Impact"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][1], reverse=True))
     elif sort_by == "Avg":
-        cols = ["Method", "Max", "Min", "[Avg]", "Calls/Min", delta_text, "Errors", "Impact"]
+        cols = ["Method", "Min/Max/[Avg]", "CPM", delta_text, "Errors", "Impact"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][2], reverse=True))
     elif sort_by == "CPM":
-        cols = ["Method", "Max", "Min", "Avg", "[Calls/Min]", delta_text, "Errors", "Impact"]
+        cols = ["Method", "Min/Max/Avg", "[CPM]", delta_text, "Errors", "Impact"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][3], reverse=True))
     elif sort_by == "Count":
-        cols = ["Method", "Max", "Min", "Avg", "Calls/Min", f"[{delta_text}]", "Errors", "Impact"]
+        cols = ["Method", "Min/Max/Avg", "CPM", f"[{delta_text}]", "Errors", "Impact"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][4], reverse=True))
     elif sort_by == "Errors":
-        cols = ["Method", "Max", "Min", "Avg", "Calls/Min", delta_text, "[Errors]", "Impact"]
+        cols = ["Method", "Min/Max/Avg", "CPM", delta_text, "[Errors]", "Impact"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][5], reverse=True))
-    elif sort_by == "Impact":
-        cols = ["Method", "Max", "Min", "Avg", "Calls/Min", delta_text, "Errors", "[Impact]"]
+    else:  # sort_by == "Impact"
+        cols = ["Method", "Min/Max/Avg", "CPM", delta_text, "Errors", "[Impact]"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][6], reverse=True))
 
-    def _format(value: float):
-        if value < 1:
-            return f"{value * 1000:.1f}ms"
-        return f"{value:.3f}s"
+    def _format(value_seconds: float) -> str:
+        if value_seconds > 999:
+            return f"{value_seconds / 60:.1f}m"
+        elif value_seconds < 1:
+            return f"{value_seconds * 1000:.1f}ms"
+        return f"{value_seconds:.1f}s"
+
+    def _format_cpm(value: float) -> float:
+        if value < 0.009:
+            return round(value, 4)
+        elif value < 0.1:
+            return round(value, 3)
+        elif value < 1:
+            return round(value, 2)
+        return round(value, 1)
 
     pages = []
     for p in range(page_count):
@@ -232,17 +242,14 @@ def format_runtime_pages(
             rows.append(
                 [
                     method_key,
-                    _format(max_runtime),
-                    _format(min_runtime),
-                    _format(avg_runtime),
-                    round(calls_per_minute, 4),
+                    f"{_format(min_runtime)}/{_format(max_runtime)}/{_format(avg_runtime)}",
+                    _format_cpm(calls_per_minute),
                     total_calls,
                     error_count,
                     round(impact_score, 2),
                 ]
             )
 
-        # page = f"{box(tabulate(rows, headers=cols), lang='diff')}\n\n"
         page = f"{tabulate(rows, headers=cols)}\n\n"
         page += "+ Tracking\n- Has Errors\n"
         page = box(page, lang="diff")
