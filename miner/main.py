@@ -27,7 +27,7 @@ class Miner(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMet
     """Pickaxe in hand, fortune awaits"""
 
     __author__ = "Vertyco"
-    __version__ = "0.1.28b"
+    __version__ = "0.1.29b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -72,21 +72,26 @@ class Miner(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMet
             log.info("Closing existing database connection")
             await self.db.close_connection_pool()
         log.info("Registering database connection")
-        self.db = await engine.register_cog(self, TABLES, config, trace=True)
+        try:
+            self.db = await engine.register_cog(self, TABLES, config, trace=True)
+            # If anyone's tool is at 0 dura for some reason (and not wood), update it to the tool's max durability
+            sql = f"""
+                UPDATE player SET durability = CASE tool
+                WHEN 'stone' THEN {constants.TOOLS["stone"].max_durability}
+                WHEN 'iron' THEN {constants.TOOLS["iron"].max_durability}
+                WHEN 'steel' THEN {constants.TOOLS["steel"].max_durability}
+                WHEN 'carbide' THEN {constants.TOOLS["carbide"].max_durability}
+                WHEN 'diamond' THEN {constants.TOOLS["diamond"].max_durability}
+                ELSE durability
+                END
+                WHERE durability = 0
+            """
+            await Player.raw(textwrap.dedent(sql))
+        except Exception as e:
+            log.error("Failed to connect to database", exc_info=e)
+            self.db = None
+            return
         log.info("Cog initialized")
-        # If anyone's tool is at 0 dura for some reason (and not wood), update it to the tool's max durability
-        sql = f"""
-            UPDATE player SET durability = CASE tool
-            WHEN 'stone' THEN {constants.TOOLS["stone"].max_durability}
-            WHEN 'iron' THEN {constants.TOOLS["iron"].max_durability}
-            WHEN 'steel' THEN {constants.TOOLS["steel"].max_durability}
-            WHEN 'carbide' THEN {constants.TOOLS["carbide"].max_durability}
-            WHEN 'diamond' THEN {constants.TOOLS["diamond"].max_durability}
-            ELSE durability
-            END
-            WHERE durability = 0
-        """
-        await Player.raw(textwrap.dedent(sql))
 
     @commands.Cog.listener()
     async def on_red_api_tokens_update(self, service_name: str, api_tokens: dict):
