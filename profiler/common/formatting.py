@@ -188,35 +188,35 @@ def format_runtime_pages(
     delta_text = f"Last {'Hr' if db.delta == 1 else f'{db.delta}hrs'}"
 
     if sort_by == "Name":
-        cols = ["[Method]", "Min/Max/Avg", "CPM", delta_text, "Errors", "Impact"]
+        cols = ["[Method]", "Min/Max/Avg", "CPM", delta_text, "Err", "Impact"]
         stats = dict(sorted(stats.items()))
     elif sort_by == "Max":
-        cols = ["Method", "Min/[Max]/Avg", "CPM", delta_text, "Errors", "Impact"]
+        cols = ["Method", "Min/[Max]/Avg", "CPM", delta_text, "Err", "Impact"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][0], reverse=True))
     elif sort_by == "Min":
-        cols = ["Method", "[Min]/Max/Avg", "CPM", delta_text, "Errors", "Impact"]
+        cols = ["Method", "[Min]/Max/Avg", "CPM", delta_text, "Err", "Impact"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][1], reverse=True))
     elif sort_by == "Avg":
-        cols = ["Method", "Min/Max/[Avg]", "CPM", delta_text, "Errors", "Impact"]
+        cols = ["Method", "Min/Max/[Avg]", "CPM", delta_text, "Err", "Impact"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][2], reverse=True))
     elif sort_by == "CPM":
-        cols = ["Method", "Min/Max/Avg", "[CPM]", delta_text, "Errors", "Impact"]
+        cols = ["Method", "Min/Max/Avg", "[CPM]", delta_text, "Err", "Impact"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][3], reverse=True))
     elif sort_by == "Count":
-        cols = ["Method", "Min/Max/Avg", "CPM", f"[{delta_text}]", "Errors", "Impact"]
+        cols = ["Method", "Min/Max/Avg", "CPM", f"[{delta_text}]", "Err", "Impact"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][4], reverse=True))
     elif sort_by == "Errors":
-        cols = ["Method", "Min/Max/Avg", "CPM", delta_text, "[Errors]", "Impact"]
+        cols = ["Method", "Min/Max/Avg", "CPM", delta_text, "[Err]", "Impact"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][5], reverse=True))
     else:  # sort_by == "Impact"
-        cols = ["Method", "Min/Max/Avg", "CPM", delta_text, "Errors", "[Impact]"]
+        cols = ["Method", "Min/Max/Avg", "CPM", delta_text, "Err", "[Impact]"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][6], reverse=True))
 
     def _format(value_seconds: float) -> str:
-        if value_seconds > 999:
+        if value_seconds > 120:
             return f"{value_seconds / 60:.1f}m"
         elif value_seconds < 1:
-            return f"{value_seconds * 1000:.1f}ms"
+            return f"{value_seconds * 1000:.0f}ms"
         return f"{value_seconds:.1f}s"
 
     def _format_cpm(value: float) -> float:
@@ -246,7 +246,7 @@ def format_runtime_pages(
                     _format_cpm(calls_per_minute),
                     total_calls,
                     error_count,
-                    round(impact_score, 2),
+                    round(impact_score),
                 ]
             )
 
