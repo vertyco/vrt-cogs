@@ -2,12 +2,21 @@ import asyncio
 import logging
 import typing as t
 
+import sentry_sdk
 from discord.ext import tasks
 from redbot.core import Config, commands
 from redbot.core.bot import Red
+from sentry_sdk.integrations.aiohttp import AioHttpIntegration
+from sentry_sdk.integrations.asyncio import AsyncioIntegration
+from sentry_sdk.integrations.asyncpg import AsyncPGIntegration
+from sentry_sdk.integrations.httpx import HttpxIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
+from sentry_sdk.integrations.openai import OpenAIIntegration
+from sentry_sdk.integrations.socket import SocketIntegration
 
 from .abc import CompositeMetaClass
 from .commands.owner import Owner
+from .common.listeners import Listeners
 from .common.models import DB, Method
 from .common.profiling import Profiling
 from .common.wrapper import Wrapper
@@ -15,7 +24,7 @@ from .common.wrapper import Wrapper
 log = logging.getLogger("red.vrt.profiler")
 
 
-class Profiler(Owner, Profiling, Wrapper, commands.Cog, metaclass=CompositeMetaClass):
+class Profiler(Owner, Profiling, Wrapper, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     """
     Cog profiling tools for bot owners and developers
 
@@ -25,7 +34,7 @@ class Profiler(Owner, Profiling, Wrapper, commands.Cog, metaclass=CompositeMetaC
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.5.4"
+    __version__ = "1.6.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -76,6 +85,7 @@ class Profiler(Owner, Profiling, Wrapper, commands.Cog, metaclass=CompositeMetaC
         await asyncio.to_thread(self.db.cleanup)
         await asyncio.sleep(10)
         self.save_loop.start()
+        await self.start_sentry(await self.get_dsn())
 
     async def save(self) -> None:
         if self.saving:
@@ -116,13 +126,41 @@ class Profiler(Owner, Profiling, Wrapper, commands.Cog, metaclass=CompositeMetaC
         if cleaned:
             await self.save()
 
-    @commands.Cog.listener()
-    async def on_cog_add(self, cog: commands.Cog) -> None:
-        await asyncio.to_thread(self.map_methods)
-        if cog.qualified_name in self.db.tracked_cogs:
-            await asyncio.to_thread(self.attach_cog, cog.qualified_name)
+    async def close_sentry(self) -> None:
+        try:
+            client: sentry_sdk.Client = sentry_sdk.Hub.current.client  # type: ignore
+        except KeyError:
+            client = None
+        if client is not None:
+            client.close(timeout=0)
 
-    @commands.Cog.listener()
-    async def on_cog_remove(self, cog: commands.Cog) -> None:
-        await asyncio.to_thread(self.map_methods)
-        self.detach_cog(cog.qualified_name)
+    async def start_sentry(self, dsn: str) -> None:
+        await self.close_sentry()
+        if not dsn:
+            return
+        log.info("Initializing Sentry with DSN %s", dsn)
+        sentry_sdk.init(
+            dsn=dsn,
+            integrations=[
+                AioHttpIntegration(),
+                AsyncioIntegration(),
+                AsyncPGIntegration(),
+                HttpxIntegration(),
+                LoggingIntegration(event_level=logging.ERROR),
+                OpenAIIntegration(),
+                SocketIntegration(),
+            ],
+            include_local_variables=True,
+            traces_sample_rate=1.0,
+            profiles_sample_rate=1.0,
+            profiler_mode="manual",
+        )
+
+    async def get_dsn(self, api_tokens: t.Optional[dict[str, str]] = None) -> str:
+        """Get Sentry DSN."""
+        if api_tokens is None:
+            api_tokens: dict = await self.bot.get_shared_api_tokens("sentry")
+        dsn = api_tokens.get("dsn", "")
+        if not dsn:
+            log.error("No valid DSN found")
+        return dsn
