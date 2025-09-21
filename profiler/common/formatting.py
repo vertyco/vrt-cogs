@@ -82,6 +82,45 @@ def format_method_pages(
     return pages
 
 
+def format_method_error_pages(method_key: str, data: t.List[StatsProfile]) -> t.List[str]:
+    """Create pages that show only the errored runs for a given method.
+
+    Parameters
+    - method_key: The identifier of the method being inspected.
+    - data: The list of StatsProfile entries for this method.
+
+    Returns
+    - List of page strings suitable for sending as message content.
+    """
+    error_profiles = [i for i in data if i.exception_thrown]
+
+    if not error_profiles:
+        return ["No errors recorded for this method."]
+
+    pages: list[str] = []
+    total_errors = len(error_profiles)
+
+    for idx, stats in enumerate(error_profiles, start=1):
+        ts = int(stats.timestamp.timestamp())
+        exe_time = f"{stats.total_tt:.4f}s" if stats.total_tt >= 1 else f"{stats.total_tt * 1000:.2f}ms"
+        # Keep exception concise; field is expected to be a short string per model
+        exc_text = str(stats.exception_thrown).strip()
+
+        page = (
+            f"# {method_key}\n"
+            "## Error Instance\n"
+            f"- Time Recorded: <t:{ts}:F> (<t:{ts}:R>)\n"
+            f"- Type: {stats.func_type.capitalize()}\n"
+            f"- Is Coroutine: {stats.is_coro}\n"
+            f"- Runtime: {exe_time}\n"
+            f"- Exception: `{exc_text}`\n\n"
+            f"Showing errors only. Page `{idx}/{total_errors}`"
+        )
+        pages.append(page)
+
+    return pages
+
+
 def format_runtime_pages(
     db: DB,
     sort_by: str,
