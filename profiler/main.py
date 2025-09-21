@@ -34,7 +34,7 @@ class Profiler(Owner, Profiling, Wrapper, Listeners, commands.Cog, metaclass=Com
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.6.1"
+    __version__ = "1.6.2"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -153,7 +153,6 @@ class Profiler(Owner, Profiling, Wrapper, Listeners, commands.Cog, metaclass=Com
             include_local_variables=True,
             traces_sample_rate=1.0,
             profiles_sample_rate=1.0,
-            profiler_mode="manual",
         )
 
     async def get_dsn(self, api_tokens: t.Optional[dict[str, str]] = None) -> str:
