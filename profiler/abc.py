@@ -41,6 +41,14 @@ class MixinMeta(metaclass=ABCMeta):
     async def rebuild(self) -> None:
         raise NotImplementedError
 
+    @abstractmethod
+    async def start_sentry(self, dsn: str) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def get_dsn(self, api_tokens: t.Optional[dict[str, str]] = None) -> str:
+        raise NotImplementedError
+
     # -------------- profiler.common.profiling --------------
     @abstractmethod
     def attach_method(self, method_key: str) -> bool:

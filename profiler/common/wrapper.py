@@ -26,8 +26,8 @@ class Wrapper(MixinMeta):
             async def async_wrapper(*args, **kwargs):
                 exception = None
                 start = perf_counter()
-                if self.db.sentry_profiler and hasattr(profiler, "start_profiler"):
-                    profiler.start_profiler()  # type: ignore
+                if self.db.sentry_profiler:
+                    profiler.start_profiler()
                 try:
                     retval = await func(*args, **kwargs)
                     return retval
@@ -35,8 +35,8 @@ class Wrapper(MixinMeta):
                     exception = str(exc)
                     raise exc
                 finally:
-                    if self.db.sentry_profiler and hasattr(profiler, "stop_profiler"):
-                        profiler.stop_profiler()  # type: ignore
+                    if self.db.sentry_profiler:
+                        profiler.stop_profiler()
                     delta = perf_counter() - start
                     await asyncio.to_thread(self.add_stats, func, delta, cog_name, func_type, exception)
 
@@ -60,7 +60,6 @@ class Wrapper(MixinMeta):
                 finally:
                     if self.db.sentry_profiler:
                         profiler.stop_profiler()
-                        profiler
                     delta = perf_counter() - start
                     self.add_stats(func, delta, cog_name, func_type, exception)
 

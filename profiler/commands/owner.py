@@ -12,6 +12,7 @@ from rapidfuzz import fuzz
 from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import box, humanize_number, pagify
+from redbot.core.utils.views import SetApiView
 from sentry_sdk import profiler
 
 from ..abc import MixinMeta
@@ -50,7 +51,7 @@ def deep_getsizeof(obj: t.Any, seen: t.Optional[set] = None) -> int:
 
 
 class Owner(MixinMeta):
-    @commands.group()
+    @commands.group(name="profiler")
     @commands.is_owner()
     async def profiler(self, ctx: commands.Context):
         """Profiling commands"""
@@ -162,25 +163,6 @@ class Owner(MixinMeta):
         if cleaned:
             await self.save()
         await ctx.send(f"Data retention is now set to **{delta} {'hour' if delta == 1 else 'hours'}**")
-
-    @profiler.command(name="sentry")
-    async def toggle_sentry(self, ctx: commands.Context):
-        """
-        Toggle Sentry profiling integration
-
-        **Warning**: This will increase memory usage and may have privacy implications.
-        Ensure you have configured Sentry SDK in your bot before enabling this.
-        """
-        # Check sentry version
-        if "sentry_sdk" not in sys.modules:
-            return await ctx.send("Sentry SDK is not installed or configured in your bot.")
-        if not sentry_sdk.Hub.current.client:
-            return await ctx.send("Sentry SDK is not initialized in your bot.")
-        if not hasattr(profiler, "start_profiler"):
-            return await ctx.send("Your version of Sentry SDK does not support profiling. Please update it.")
-        self.db.sentry_profiler = not self.db.sentry_profiler
-        await self.save()
-        await ctx.send(f"Sentry profiling is now **{self.db.sentry_profiler}**")
 
     @profiler.command(name="tracking")
     async def track_toggle(
@@ -541,3 +523,48 @@ class Owner(MixinMeta):
         """
         view = ProfileMenu(ctx, self)
         await view.start()
+
+    @profiler.command(name="sentryprofiling")
+    async def toggle_sentry(self, ctx: commands.Context):
+        """
+        Toggle Sentry profiling integration
+
+        **Warning**: This will increase memory usage and may have privacy implications.
+        Ensure you have configured Sentry SDK in your bot before enabling this.
+        """
+        # Check sentry version
+        if "sentry_sdk" not in sys.modules:
+            return await ctx.send("Sentry SDK is not installed or configured in your bot.")
+        if not sentry_sdk.Hub.current.client:
+            return await ctx.send("Sentry SDK is not initialized in your bot.")
+        if not hasattr(profiler, "start_profiler"):
+            return await ctx.send("Your version of Sentry SDK does not support profiling. Please update it.")
+        self.db.sentry_profiler = not self.db.sentry_profiler
+        await self.save()
+        await ctx.send(f"Sentry profiling is now **{self.db.sentry_profiler}**")
+
+    @profiler.command(name="sentrydsn")
+    async def set_sentry_dsn(self, ctx: commands.Context):
+        """
+        Configure Sentry DSN for general error tracking
+        - Go to https://sentry.io/settings
+        - Go to projects list and select the project you want
+        - Select client keys (DSN) on the left sidebar
+        - Copy the DSN value
+        """
+        existing_tokens = await self.bot.get_shared_api_tokens("sentry")
+        await ctx.send(view=SetApiView(default_service="sentry", default_keys={"dsn": existing_tokens.get("dsn", "")}))
+
+    @profiler.command(name="sentrystatus")
+    async def sentry_status(self, ctx: commands.Context):
+        """
+        Check the status of Sentry integration
+        """
+        if not hasattr(profiler, "start_profiler"):
+            return await ctx.send("Your version of Sentry SDK does not support profiling. Please update it.")
+        if not sentry_sdk.Hub.current.client:
+            return await ctx.send("Sentry SDK is not initialized in your bot.")
+        dsn = sentry_sdk.Hub.current.client.options.get("dsn")
+        if not dsn:
+            return await ctx.send("Sentry DSN is not configured.")
+        await ctx.send(f"Sentry DSN configured with DSN: `{dsn}`")
