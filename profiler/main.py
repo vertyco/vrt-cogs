@@ -34,7 +34,7 @@ class Profiler(Owner, Profiling, Wrapper, Listeners, commands.Cog, metaclass=Com
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.6.2"
+    __version__ = "1.6.3"
 
     def __init__(self, bot: Red):
         super().__init__()
