@@ -4,8 +4,6 @@ import logging
 import typing as t
 from time import perf_counter
 
-from sentry_sdk import profiler
-
 from ..abc import MixinMeta
 from .models import StatsProfile
 
@@ -26,8 +24,6 @@ class Wrapper(MixinMeta):
             async def async_wrapper(*args, **kwargs):
                 exception = None
                 start = perf_counter()
-                if self.db.sentry_profiler:
-                    profiler.start_profiler()
                 try:
                     retval = await func(*args, **kwargs)
                     return retval
@@ -35,10 +31,16 @@ class Wrapper(MixinMeta):
                     exception = str(exc)
                     raise exc
                 finally:
-                    if self.db.sentry_profiler:
-                        profiler.stop_profiler()
                     delta = perf_counter() - start
-                    await asyncio.to_thread(self.add_stats, func, delta, cog_name, func_type, exception)
+                    await asyncio.to_thread(
+                        self.add_stats,
+                        func,
+                        delta,
+                        cog_name,
+                        func_type,
+                        exception,
+                        self.bot.latency,
+                    )
 
             # Preserve the signature of the original function
             functools.update_wrapper(async_wrapper, func)
@@ -49,8 +51,6 @@ class Wrapper(MixinMeta):
             def sync_wrapper(*args, **kwargs):
                 exception = None
                 start = perf_counter()
-                if self.db.sentry_profiler:
-                    profiler.start_profiler()
                 try:
                     retval = func(*args, **kwargs)
                     return retval
@@ -58,10 +58,15 @@ class Wrapper(MixinMeta):
                     exception = str(exc)
                     raise exc
                 finally:
-                    if self.db.sentry_profiler:
-                        profiler.stop_profiler()
                     delta = perf_counter() - start
-                    self.add_stats(func, delta, cog_name, func_type, exception)
+                    self.add_stats(
+                        func,
+                        delta,
+                        cog_name,
+                        func_type,
+                        exception,
+                        self.bot.latency,
+                    )
 
             # Preserve the signature of the original function
             functools.update_wrapper(sync_wrapper, func)
@@ -74,6 +79,7 @@ class Wrapper(MixinMeta):
         cog_name: str,
         func_type: str,
         exception_thrown: t.Optional[str] = None,
+        latency: t.Optional[float] = None,
     ):
         if self.saving:
             # Dont record stats while saving to avoid conflicts
@@ -85,6 +91,7 @@ class Wrapper(MixinMeta):
                 func_type=func_type,
                 is_coro=asyncio.iscoroutinefunction(func),
                 exception_thrown=exception_thrown,
+                latency=latency,
             )
             self.db.stats.setdefault(cog_name, {}).setdefault(key, []).append(stats_profile)
         except Exception as e:

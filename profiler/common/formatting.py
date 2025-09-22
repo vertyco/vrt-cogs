@@ -70,6 +70,7 @@ def format_method_pages(
             f"- Type: {stats.func_type.capitalize()}\n"
             f"- Is Coroutine: {stats.is_coro}\n"
             f"- Time: {exe_time}\n"
+            f"- Latency: {(stats.latency or 0) * 1000:.1f}ms\n"
         )
         if stats.exception_thrown:
             page += f"- {warning_sign} **Exception**: `{stats.exception_thrown}`\n"
@@ -113,8 +114,9 @@ def format_method_error_pages(method_key: str, data: t.List[StatsProfile]) -> t.
             f"- Type: {stats.func_type.capitalize()}\n"
             f"- Is Coroutine: {stats.is_coro}\n"
             f"- Runtime: {exe_time}\n"
-            f"- Exception: `{exc_text}`\n\n"
-            f"Showing errors only. Page `{idx}/{total_errors}`"
+            f"- Exception: `{exc_text}`\n"
+            if stats.latency is not None
+            else f"Showing errors only. Page `{idx}/{total_errors}`"
         )
         pages.append(page)
 

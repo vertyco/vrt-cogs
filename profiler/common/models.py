@@ -23,6 +23,7 @@ class StatsProfile(Base):
     is_coro: bool  # Async if True
     exception_thrown: t.Optional[str] = None  # Exception thrown if any
     timestamp: datetime = Field(default_factory=datetime.now)  # Time the profile was recorded
+    latency: t.Optional[float] = None  # Websocket latency during the call
 
 
 class DB(Base):
