@@ -14,24 +14,25 @@ class CompositeMetaClass(CogMeta, ABCMeta):
 class MixinMeta(metaclass=ABCMeta):
     """Type hinting"""
 
-    bot: Red
-    db: DB
-    saving: bool
+    def __init__(self, *_args):
+        self.bot: Red
+        self.db: DB
+        self.saving: bool
 
-    # {cog_name: {method_name: original_method}}
-    original_methods: t.Dict[str, t.Dict[str, t.Callable]] = {}
-    # {cog_name: {command_name: original_callback}}
-    original_callbacks: t.Dict[str, t.Dict[str, t.Callable]] = {}
-    # {cog_name: {slash_name: original_callback}}
-    original_slash_callbacks: t.Dict[str, t.Dict[str, t.Callable]] = {}
-    # {cog_name: {loop_name: original_coro}}
-    original_loops: t.Dict[str, t.Dict[str, t.Callable]] = {}
-    # {cog_name: {listener_name, (original_coro, wrapped_coro)}}
-    original_listeners: t.Dict[str, t.Dict[str, t.Tuple[t.Callable, t.Callable]]] = {}
+        # {cog_name: {method_name: original_method}}
+        self.original_methods: t.Dict[str, t.Dict[str, t.Callable]] = {}
+        # {cog_name: {command_name: original_callback}}
+        self.original_callbacks: t.Dict[str, t.Dict[str, t.Callable]] = {}
+        # {cog_name: {slash_name: original_callback}}
+        self.original_slash_callbacks: t.Dict[str, t.Dict[str, t.Callable]] = {}
+        # {cog_name: {loop_name: original_coro}}
+        self.original_loops: t.Dict[str, t.Dict[str, t.Callable]] = {}
+        # {cog_name: {listener_name, (original_coro, wrapped_coro)}}
+        self.original_listeners: t.Dict[str, t.Dict[str, t.Tuple[t.Callable, t.Callable]]] = {}
 
-    # {method_key: Method}
-    methods: t.Dict[str, Method] = {}
-    currently_tracked: t.Set[str] = set()
+        # {method_key: Method}
+        self.methods: t.Dict[str, Method] = {}
+        self.currently_tracked: t.Set[str] = set()
 
     @abstractmethod
     def save(self) -> None:

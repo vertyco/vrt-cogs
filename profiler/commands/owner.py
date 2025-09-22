@@ -12,7 +12,6 @@ from rapidfuzz import fuzz
 from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import box, humanize_number, pagify
-from redbot.core.utils.views import SetApiView
 from sentry_sdk import profiler
 
 from ..abc import MixinMeta
@@ -542,9 +541,10 @@ class Owner(MixinMeta):
         self.db.sentry_profiler = not self.db.sentry_profiler
         await self.save()
         await ctx.send(f"Sentry profiling is now **{self.db.sentry_profiler}**")
+        await self.start_sentry(await self.get_dsn())
 
     @profiler.command(name="sentrydsn")
-    async def set_sentry_dsn(self, ctx: commands.Context):
+    async def set_sentry_dsn(self, ctx: commands.Context, dsn: str):
         """
         Configure Sentry DSN for general error tracking
         - Go to https://sentry.io/settings
@@ -553,7 +553,11 @@ class Owner(MixinMeta):
         - Copy the DSN value
         """
         existing_tokens = await self.bot.get_shared_api_tokens("sentry")
-        await ctx.send(view=SetApiView(default_service="sentry", default_keys={"dsn": existing_tokens.get("dsn", "")}))
+        if existing_tokens.get("dsn", "") == dsn:
+            return await ctx.send("The provided DSN is already configured.")
+        await self.bot.set_shared_api_tokens("sentry", dsn=dsn)
+        await ctx.message.delete()
+        await ctx.send("Sentry DSN has been updated.")
 
     @profiler.command(name="sentrystatus")
     async def sentry_status(self, ctx: commands.Context):
