@@ -355,7 +355,7 @@ class DataAdmin(MixinMeta):
 
         *Obviously you will need MongoDB running while you run this command*
         """
-        path = self.cog_path / "Leveler" / "settings.json"
+        path = self.cog_path.parent / "Leveler" / "settings.json"
         if not path.exists():
             return await ctx.send(_("No config found for Fixator's Leveler cog!"))
         data = orjson.loads(path.read_text())
