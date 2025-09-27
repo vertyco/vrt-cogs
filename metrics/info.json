@@ -1,0 +1,22 @@
+{
+  "author": ["Vertyco"],
+  "description": "The successor to EconomyTrack, Metrics is a powerful cog for tracking and visualizing server statistics over time, including economy data and member activity.",
+  "disabled": false,
+  "end_user_data_statement": "This cog does not store any end user data.",
+  "hidden": false,
+  "install_msg": "Thank you for installing Metrics! Use `[p]help Metrics` to get started.",
+  "min_bot_version": "3.5.22",
+  "min_python_version": [3, 10, 0],
+  "permissions": [],
+  "required_cogs": {},
+  "requirements": ["redbot-orm", "pytz", "pandas", "plotly", "kaleido"],
+  "short": "Track and visualize server statistics over time.",
+  "tags": [
+    "economy",
+    "metrics",
+    "statistics",
+    "tracking",
+    "visualization"
+  ],
+  "type": "COG"
+}
