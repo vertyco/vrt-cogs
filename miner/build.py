@@ -30,7 +30,7 @@ async def main():
         print(res)
     except Exception as e:
         print(f"Error: {e}")
-        print(await engine.diagnose_issues(root))
+        print(await engine.diagnose_issues(root, config))
 
 
 if __name__ == "__main__":
