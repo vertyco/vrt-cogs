@@ -17,8 +17,8 @@ class CronDataResponse(BaseModel):
         description="[CRON]: ex: *, */a, a-b, a-b/c, a,b,c, xth y, last, last x, etc."
     )
     months_of_year: t.Optional[str] = Field(description="[CRON]: ex: '1', '1-12/3', '1/2', '1,7', etc.")
-    start_date: t.Optional[str] = Field(description="[CRON]: Start date for the schedule")
-    end_date: t.Optional[str] = Field(description="[CRON]: End date for the schedule")
+    start_date: t.Optional[str] = Field(description="[CRON]: Start date for the schedule (ISOFORMAT)")
+    end_date: t.Optional[str] = Field(description="[CRON]: End date for the schedule (ISOFORMAT)")
     between_time_start: t.Optional[str] = Field(description="[CRON]: HH:MM")
     between_time_end: t.Optional[str] = Field(description="[CRON]: HH:MM")
 

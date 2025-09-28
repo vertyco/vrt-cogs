@@ -4,6 +4,7 @@ from datetime import datetime
 import discord
 import openai
 import pytz
+from dateutil import parser
 from discord import app_commands
 from rapidfuzz import fuzz
 from redbot.core import commands
@@ -107,7 +108,7 @@ class Admin(MixinMeta):
                 model="gpt-5",
                 messages=messages,
                 response_format=CommandCreationResponse,
-                reasoning_effort="minimal",
+                reasoning_effort="low",
             )
             model: CommandCreationResponse = response.choices[0].message.parsed
         except Exception as e:
@@ -131,6 +132,35 @@ class Admin(MixinMeta):
             dump["author_id"] = ctx.author.id
         elif not cmd_author:
             dump["author_id"] = ctx.author.id
+
+        if "start_date" in dump and dump["start_date"]:
+            try:
+                parsed_date = parser.parse(dump["start_date"])
+                dump["start_date"] = parsed_date.isoformat()
+            except ValueError:
+                return await ctx.send(_("The start date provided by the AI model is not valid."), ephemeral=True)
+        if "end_date" in dump and dump["end_date"]:
+            try:
+                parsed_date = parser.parse(dump["end_date"])
+                dump["end_date"] = parsed_date.isoformat()
+            except ValueError:
+                return await ctx.send(_("The end date provided by the AI model is not valid."), ephemeral=True)
+        if "between_time_start" in dump and dump["between_time_start"]:
+            try:
+                parsed_time = parser.parse(dump["between_time_start"])
+                dump["between_time_start"] = parsed_time.strftime("%H:%M")
+            except ValueError:
+                return await ctx.send(
+                    _("The between time start provided by the AI model is not valid, use HH:MM format."), ephemeral=True
+                )
+        if "between_time_end" in dump and dump["between_time_end"]:
+            try:
+                parsed_time = parser.parse(dump["between_time_end"])
+                dump["between_time_end"] = parsed_time.strftime("%H:%M")
+            except ValueError:
+                return await ctx.send(
+                    _("The between time end provided by the AI model is not valid, use HH:MM format."), ephemeral=True
+                )
 
         try:
             command = ScheduledCommand.model_validate(dump)
