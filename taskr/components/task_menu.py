@@ -72,7 +72,6 @@ class TaskMenu(BaseMenu):
         self.page = 0
         self.color = discord.Color.blurple()
         self.filter: str = filter.lower()
-        # self.openai_token: str | None = None
         self.is_premium: bool = True
         self.timezone: str = self.db.timezone(ctx.guild)
 
@@ -94,8 +93,6 @@ class TaskMenu(BaseMenu):
             if not pages:
                 return await self.channel.send(_("No scheduled commands found matching that query."))
 
-        # tokens = await self.bot.get_shared_api_tokens("openai")
-        # self.openai_token = tokens.get("api_key")
         self.message = await self.channel.send(embed=await self.get_page(), view=self)
 
     async def get_page(self) -> discord.Embed:
@@ -897,10 +894,24 @@ class TaskMenu(BaseMenu):
 
     @discord.ui.button(emoji=C.WAND, style=discord.ButtonStyle.secondary, row=4)
     async def ai_helper(self, interaction: discord.Interaction, button: discord.ui.Button):
-        # if not self.openai_token:
-        #     return await interaction.response.send_message(
-        #         _("OpenAI API key is not set, cannot use AI helper."), ephemeral=True
-        #     )
+        openai_token = None
+        keys = await self.bot.get_shared_api_tokens("openai")
+        if keys and keys.get("api_key"):
+            openai_token = keys["api_key"]
+            if not openai_token and "key" in keys:
+                openai_token = keys["key"]
+
+        if not openai_token:
+            all_tokens = await self.bot.get_shared_api_tokens()
+            for service_name, tokens in all_tokens.items():
+                if "openai" in service_name:
+                    openai_token = tokens.get("api_key") or tokens.get("key")  # type: ignore
+
+        if not openai_token:
+            return await interaction.response.send_message(
+                _("OpenAI API key is not set, cannot use AI helper."), ephemeral=True
+            )
+
         fields = {
             "request": {
                 "label": _("When do you want this command to run?"),
