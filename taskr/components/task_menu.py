@@ -901,7 +901,7 @@ class TaskMenu(BaseMenu):
                 model="gpt-5",
                 messages=messages,
                 response_format=ai_responses.CronDataResponse,
-                reasoning_effort="minimal",
+                reasoning_effort="low",
             )
             model: ai_responses.CronDataResponse = response.choices[0].message.parsed
         except Exception as e:
