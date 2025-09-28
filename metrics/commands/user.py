@@ -70,6 +70,8 @@ class User(MixinMeta):
         data: list[dict] = await query.order_by(table.created_on)
         if not data:
             return await ctx.send("No data available for the specified timespan.", ephemeral=True)
+        if len(data) < 2:
+            return await ctx.send("Not enough data points to generate a graph.", ephemeral=True)
 
         color = await ctx.embed_color()
 
@@ -125,7 +127,7 @@ class User(MixinMeta):
         show_global: t.Optional[bool] = False,
         start: t.Optional[str] = None,
         end: t.Optional[str] = None,
-    ) -> None:
+    ):
         """View member-related metrics."""
 
         settings = await self.db_utils.get_create_guild_settings(ctx.guild.id)
@@ -173,8 +175,9 @@ class User(MixinMeta):
 
         data: list[dict] = await query.order_by(table.created_on)
         if not data:
-            await ctx.send("No data available for the specified timespan.", ephemeral=True)
-            return
+            return await ctx.send("No data available for the specified timespan.", ephemeral=True)
+        if len(data) < 2:
+            return await ctx.send("Not enough data points to generate a graph.", ephemeral=True)
 
         color = await ctx.embed_color()
 
@@ -226,7 +229,7 @@ class User(MixinMeta):
         metric: t.Literal["latency", "cpu", "memory", "tasks", "duration"] = "latency",
         start: t.Optional[str] = None,
         end: t.Optional[str] = None,
-    ) -> None:
+    ):
         """View bot performance metrics."""
 
         global_settings = await self.db_utils.get_create_global_settings()
@@ -267,8 +270,9 @@ class User(MixinMeta):
 
         data: list[dict] = await query.order_by(GlobalSnapshot.created_on)
         if not data:
-            await ctx.send("No data available for the specified timespan.", ephemeral=True)
-            return
+            return await ctx.send("No data available for the specified timespan.", ephemeral=True)
+        if len(data) < 2:
+            return await ctx.send("Not enough data points to generate a graph.", ephemeral=True)
 
         color = await ctx.embed_color()
 
