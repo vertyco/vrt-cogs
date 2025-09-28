@@ -7,7 +7,7 @@ import discord
 import pytz
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
-from pydantic import Field
+from pydantic import Field, field_validator
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box
 
@@ -86,6 +86,13 @@ class ScheduledCommand(Base):
     # Time range for interval scheduling
     between_time_start: t.Optional[time] = Field(default=None)
     between_time_end: t.Optional[time] = Field(default=None)
+
+    @field_validator("name")
+    @classmethod
+    def _limit_name_length(cls, value: str) -> str:
+        if len(value) > 45:
+            return value[:45]
+        return value
 
     def humanize(self) -> str:
         """
