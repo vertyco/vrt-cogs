@@ -593,17 +593,52 @@ class ScheduledCommand(Base):
         6. "every 2 hours between 10am and 10pm"
         """
         tz = pytz.timezone(timezone)
-        if self.interval and self.interval_unit:
+
+        def build_cron_kwargs() -> dict[str, object]:
+            cron_kwargs: dict[str, object] = {
+                "hour": self.hour or "*",
+                "minute": self.minute or "0",
+                "second": self.second or "0",
+                "timezone": tz,
+            }
+            if self.days_of_week:
+                cron_kwargs["day_of_week"] = self.days_of_week
+            if self.days_of_month:
+                cron_kwargs["day"] = self.days_of_month
+            if self.months_of_year:
+                cron_kwargs["month"] = self.months_of_year
+            if self.start_date:
+                cron_kwargs["start_date"] = self.start_date.astimezone(tz)
+            if self.end_date:
+                cron_kwargs["end_date"] = self.end_date.astimezone(tz)
+            return cron_kwargs
+
+        interval_unit_raw = (self.interval_unit or "").strip().lower()
+        interval_unit_aliases = {
+            "second": "seconds",
+            "seconds": "seconds",
+            "minute": "minutes",
+            "minutes": "minutes",
+            "hour": "hours",
+            "hours": "hours",
+            "day": "days",
+            "days": "days",
+            "week": "weeks",
+            "weeks": "weeks",
+        }
+        normalized_unit = interval_unit_aliases.get(interval_unit_raw)
+
+        if self.interval and interval_unit_raw:
             if self.between_time_start and self.between_time_end:
                 # Use CronTrigger to handle intervals within a time range
                 cron_kwargs = {"timezone": tz}
-                if self.interval_unit == "hours":
+                if normalized_unit == "hours":
                     start_hour = self.between_time_start.hour
                     end_hour = self.between_time_end.hour - 1  # Make it inclusive
                     cron_kwargs["hour"] = f"{start_hour}-{end_hour}/{self.interval}"
                     cron_kwargs["minute"] = self.between_time_start.minute
                     cron_kwargs["second"] = "0"
-                elif self.interval_unit == "minutes":
+                elif normalized_unit == "minutes":
                     start_minute = self.between_time_start.minute
                     end_minute = self.between_time_end.minute - 1
                     cron_kwargs["minute"] = f"{start_minute}-{end_minute}/{self.interval}"
@@ -624,9 +659,9 @@ class ScheduledCommand(Base):
                     cron_kwargs["end_date"] = self.end_date.astimezone(tz)
 
                 return CronTrigger(**cron_kwargs)
-            else:
+            elif normalized_unit:
                 # Use IntervalTrigger when there's no time range
-                interval_kwargs = {self.interval_unit: self.interval, "timezone": tz}
+                interval_kwargs = {normalized_unit: self.interval, "timezone": tz}
                 if self.hour and self.hour.isdigit():
                     interval_kwargs["hours"] = int(self.hour)
                 if self.minute and self.minute.isdigit():
@@ -638,24 +673,19 @@ class ScheduledCommand(Base):
                 if self.end_date:
                     interval_kwargs["end_date"] = self.end_date.astimezone(tz)
                 return IntervalTrigger(**interval_kwargs)
+            else:
+                cron_kwargs = build_cron_kwargs()
+                if interval_unit_raw in {"month", "months"}:
+                    cron_kwargs["month"] = cron_kwargs.get("month") or f"*/{self.interval}"
+                elif interval_unit_raw in {"year", "years"}:
+                    cron_kwargs["year"] = f"*/{self.interval}"
+                    cron_kwargs.setdefault("day", self.days_of_month or "1")
+                else:
+                    cron_kwargs.setdefault("day", "*")
+                return CronTrigger(**cron_kwargs)
         else:
             # Use CronTrigger for more advanced scheduling options
-            cron_kwargs = {
-                "hour": self.hour or "*",
-                "minute": self.minute or "0",
-                "second": self.second or "0",
-                "timezone": tz,
-            }
-            if self.days_of_week:
-                cron_kwargs["day_of_week"] = self.days_of_week
-            if self.days_of_month:
-                cron_kwargs["day"] = self.days_of_month
-            if self.months_of_year:
-                cron_kwargs["month"] = self.months_of_year
-            if self.start_date:
-                cron_kwargs["start_date"] = self.start_date.astimezone(tz)
-            if self.end_date:
-                cron_kwargs["end_date"] = self.end_date.astimezone(tz)
+            cron_kwargs = build_cron_kwargs()
             return CronTrigger(**cron_kwargs)
 
     def is_safe(self, timezone: str, minimum_interval: int) -> bool:
