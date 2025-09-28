@@ -176,8 +176,6 @@ class Base(MixinMeta):
     async def get_guilds_type(self, check: str) -> list[discord.Guild]:
         guilds: list[discord.Guild] = []
         for guild in self.bot.guilds:
-            if guild.id in self.db.whitelist:
-                continue
             if check == "botfarms":
                 ratio = await asyncio.to_thread(get_bot_percentage, guild)
                 if ratio > self.db.bot_ratio:
@@ -187,6 +185,8 @@ class Base(MixinMeta):
                 if count < self.db.min_members:
                     guilds.append(guild)
             elif check == "blacklist" and guild.id in self.db.blacklist:
+                guilds.append(guild)
+            elif check == "whitelist" and guild.id not in self.db.whitelist and self.db.whitelist:
                 guilds.append(guild)
         return guilds
 
