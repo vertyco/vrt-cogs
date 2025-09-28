@@ -887,12 +887,32 @@ class TaskMenu(BaseMenu):
             ephemeral=True,
             wait=True,
         )
-        timezone = self.timezone
-        now = datetime.now(pytz.timezone(timezone))
+        schedule = self.tasks[self.page]
+        now = datetime.now(pytz.timezone(self.timezone))
         formatted_time = now.strftime("%A, %B %d, %Y %I:%M%p %Z")
+
+        existing_settings = []
+        for k, v in schedule.model_dump(
+            mode="json",
+            exclude_defaults=True,
+            exclude={
+                "id",
+                "created_on",
+                "last_run",
+                "name",
+                "guild_id",
+                "channel_id",
+                "author_id",
+                "command",
+                "enabled",
+            },
+        ).items():
+            existing_settings.append(f"- {k}: {v}")
+
         messages = [
             {"role": "developer", "content": f"The current time is {formatted_time}"},
             {"role": "developer", "content": C.SYSTEM_PROMPT},
+            {"role": "developer", "content": "Existing schedule settings:\n" + "\n".join(existing_settings)},
             {"role": "user", "content": request},
         ]
         try:
@@ -916,7 +936,6 @@ class TaskMenu(BaseMenu):
                     await msg.delete()
             return await interaction.followup.send(_("Failed to get cron expression from AI model."), ephemeral=True)
         # log.debug("AI model dump: %s", model.model_dump_json(indent=2))
-        schedule = self.tasks[self.page]
         schedule.interval = model.interval
         schedule.interval_unit = model.interval_unit
         if model.hour:
