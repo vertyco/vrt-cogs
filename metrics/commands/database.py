@@ -67,6 +67,6 @@ class DatabaseCommands(MixinMeta):
     async def dbsetgroup_diagnose(self, ctx: commands.Context):
         """Check the database connection"""
         config = await self.bot.get_shared_api_tokens("postgres")
-        issues = await redbot_orm.diagnose_issues(self, config)
+        issues = await redbot_orm.diagnose_issues(self, config=config)
         for p in pagify(issues, page_length=1980):
             await ctx.send(box(p, lang="python"))
