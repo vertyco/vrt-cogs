@@ -367,7 +367,7 @@ class TaskMenu(BaseMenu):
                 "label": _("Scheduled Command Name"),
                 "style": discord.TextStyle.short,
                 "placeholder": _("Name of the scheduled command"),
-                "default": schedule.name,
+                "default": schedule.name[:45],
                 "max_length": 45,
             },
             "author": {

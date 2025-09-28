@@ -24,7 +24,7 @@ class CronDataResponse(BaseModel):
 
 
 class CommandCreationResponse(CronDataResponse):
-    name: str = Field(description="The name of the scheduled command")
+    name: str = Field(description="The name of the scheduled command, 45 character limit")
     channel_id: t.Optional[int] = Field(
         description="The channel ID to run the command in, default to current channel if not provided in request"
     )
