@@ -7,6 +7,7 @@ import orjson
 import pytz
 from redbot.core import bank, commands
 from redbot.core.data_manager import cog_data_path
+from redbot.core.utils import AsyncIter
 
 from ..abc import MixinMeta
 from ..common import utils
@@ -157,7 +158,7 @@ class Admin(MixinMeta):
             guild_snapshots: list[GuildSnapshot] = []
             global_snapshots: list[GlobalSnapshot] = []
 
-            for entry in et_data.get("GLOBAL", {}).get("data", []):
+            async for entry in AsyncIter(et_data.get("GLOBAL", {}).get("data", []), steps=100):
                 timestamp, bank_total = entry
                 timestamp_dt = datetime.fromtimestamp(timestamp, tz=timezone.utc)
                 global_snapshots.append(GlobalSnapshot(created_on=timestamp_dt, bank_total=bank_total))
@@ -172,7 +173,7 @@ class Admin(MixinMeta):
 
                 guild_snapshots_by_timestamp: dict[float, GuildSnapshot] = {}
 
-                for entry in guild_data.get("data", []):
+                async for entry in AsyncIter(guild_data.get("data", []), steps=100):
                     timestamp, bank_total = entry
                     timestamp_dt = datetime.fromtimestamp(timestamp, tz=timezone.utc)
                     if timestamp in guild_snapshots_by_timestamp:
@@ -184,7 +185,7 @@ class Admin(MixinMeta):
                             bank_total=bank_total,
                         )
 
-                for entry in guild_data.get("member_data", []):
+                async for entry in AsyncIter(guild_data.get("member_data", []), steps=100):
                     timestamp, member_total = entry
                     timestamp_dt = datetime.fromtimestamp(timestamp, tz=timezone.utc)
                     if timestamp in guild_snapshots_by_timestamp:
