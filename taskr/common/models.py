@@ -755,7 +755,7 @@ class DB(Base):
 
     def timezone(self, guild: discord.Guild | int) -> str:
         guild_id = guild if isinstance(guild, int) else guild.id
-        return self.timezones.get(guild_id, "UTC")
+        return self.timezones.get(guild_id, "UTC") or "UTC"
 
     def get_tasks(self, guild: discord.Guild | int) -> list[ScheduledCommand]:
         guild_id = guild if isinstance(guild, int) else guild.id
