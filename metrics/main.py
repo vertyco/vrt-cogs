@@ -25,7 +25,7 @@ class Metrics(Commands, TaskLoops, commands.Cog, metaclass=CompositeMetaClass):
     """Track various metrics about your server."""
 
     __author__ = "Vertyco"
-    __version__ = "0.0.4b"
+    __version__ = "0.0.5b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -67,9 +67,9 @@ class Metrics(Commands, TaskLoops, commands.Cog, metaclass=CompositeMetaClass):
             else:
                 log.error("Failed to establish database connection", exc_info=e)
                 return
-        log.info("Database connection established")
         global_settings = await self.db_utils.get_create_global_settings()
-        self.change_snapshot_interval(global_settings.snapshot_interval)
+        if global_settings.snapshot_interval != 5:
+            self.change_snapshot_interval(global_settings.snapshot_interval)
         self.start_tasks()
         asyncio.create_task(self.cleanup())
 

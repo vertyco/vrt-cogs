@@ -1,68 +1,25 @@
 import asyncio
 import logging
-import typing as t
 from contextlib import suppress
 from datetime import datetime
+from uuid import uuid4
 
 import discord
 import openai
 import pytz
 from apscheduler.triggers.cron import CronTrigger
 from dateutil import parser
-from pydantic import BaseModel, Field
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box
 
-from ..common import constants as C, utils
+from ..common import ai_responses, constants as C, utils
 from ..common.models import ScheduledCommand
 from . import BaseMenu
 from .dynamic_modal import DynamicModal
 
 log = logging.getLogger("red.vrt.taskr.task_menu")
 _ = Translator("Taskr", __file__)
-
-
-system_prompt = (
-    "# INSTRUCTIONS\n"
-    "Your task is to take the user input and convert it into a valid cron expression.\n"
-    "Example 1: 'First Friday of every 3 months at 3:30PM starting on January':\n"
-    "- hour: 15\n"
-    "- minute: 30\n"
-    "- days_of_month: 1st fri\n"
-    "- months_of_year: 1-12/3\n"
-    "Example 2: 'Every odd hour at the 30 minute mark from 5am to 8pm':\n"
-    "- minute: 30\n"
-    "- hour: 5-20/2\n"
-    "Example 3: 'Run on the 15th of each month at 3pm':\n"
-    "- hour: 15\n"
-    "- days_of_month: 15\n"
-    "# RULES\n"
-    "- USE EITHER CRON RELATED EXPRESSIONS OR INTERVALS, NOT BOTH.\n"
-    "- If using intervals, leave cron expressions blank.\n"
-    "- If using cron expressions, leave intervals blank.\n"
-    "- When using between times and intervals at the same time, the interval using can only be minutes or hours.\n"
-)
-
-
-class CronDataResponse(BaseModel):
-    interval: t.Optional[int] = Field(description="[INTERVAL]: for the schedule (e.g. every N units)")
-    interval_unit: t.Optional[str] = Field(
-        description="[INTERVAL]: seconds, minutes, hours, days, weeks, months, years"
-    )
-
-    hour: t.Optional[str] = Field(description="[CRON]: ex: *, */a, a-b, a-b/c, a,b,c")
-    minute: t.Optional[str] = Field(description="[CRON]: ex: *, */a, a-b, a-b/c, a,b,c")
-    second: t.Optional[str] = Field(description="[CRON]: ex: *, */a, a-b, a-b/c, a,b,c")
-    days_of_week: t.Optional[str] = Field(description="[CRON]: ex: 'mon', 'tue', '1-4', '1,2,3' etc.")
-    days_of_month: t.Optional[str] = Field(
-        description="[CRON]: ex: *, */a, a-b, a-b/c, a,b,c, xth y, last, last x, etc."
-    )
-    months_of_year: t.Optional[str] = Field(description="[CRON]: ex: '1', '1-12/3', '1/2', '1,7', etc.")
-    start_date: t.Optional[str] = Field(description="[CRON]: Start date for the schedule")
-    end_date: t.Optional[str] = Field(description="[CRON]: End date for the schedule")
-    between_time_start: t.Optional[str] = Field(description="[CRON]: HH:MM")
-    between_time_end: t.Optional[str] = Field(description="[CRON]: HH:MM")
 
 
 class TaskMenu(BaseMenu):
@@ -77,7 +34,7 @@ class TaskMenu(BaseMenu):
 
     async def on_timeout(self) -> None:
         # Disable all buttons by iterating through all children
-        for item in self.children:
+        for item in self.walk_children():
             if isinstance(item, discord.ui.Button):
                 item.disabled = True
 
@@ -935,18 +892,18 @@ class TaskMenu(BaseMenu):
         formatted_time = now.strftime("%A, %B %d, %Y %I:%M%p %Z")
         messages = [
             {"role": "developer", "content": f"The current time is {formatted_time}"},
-            {"role": "developer", "content": system_prompt},
+            {"role": "developer", "content": C.SYSTEM_PROMPT},
             {"role": "user", "content": request},
         ]
         try:
-            client = openai.AsyncClient(base_url="https://text.pollinations.ai/openai", api_key="")
+            client = openai.AsyncClient(api_key=openai_token)
             response = await client.beta.chat.completions.parse(
-                model="gpt-4.1",
+                model="gpt-5",
                 messages=messages,
-                response_format=CronDataResponse,
-                temperature=0,
+                response_format=ai_responses.CronDataResponse,
+                reasoning_effort="minimal",
             )
-            model: CronDataResponse = response.choices[0].message.parsed
+            model: ai_responses.CronDataResponse = response.choices[0].message.parsed
         except Exception as e:
             log.error("Failed to get cron expression from AI model", exc_info=e)
             return await interaction.followup.send(
@@ -1110,3 +1067,49 @@ class TaskMenu(BaseMenu):
             return await interaction.followup.send(
                 _("An error occurred while checking permissions: {}").format(str(e)), ephemeral=True
             )
+
+    @discord.ui.button(emoji=C.COPY, style=discord.ButtonStyle.secondary, row=4)
+    async def duplicate(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        if not self.tasks:
+            await interaction.response.send_message(_("No scheduled commands to duplicate."), ephemeral=True)
+            return
+        if not self.is_premium and len(self.tasks) >= self.db.free_tasks:
+            await interaction.response.send_message(
+                _("You have reached the maximum number of schedules for the free tier.\n"), ephemeral=True
+            )
+            return
+        if len(self.tasks) >= self.db.max_tasks:
+            await interaction.response.send_message(
+                _("You have reached the maximum number of schedules.\n"), ephemeral=True
+            )
+            return
+
+        schedule = self.tasks[self.page]
+        command_author = self.guild.get_member(schedule.author_id)
+        if not command_author:
+            await interaction.response.send_message(
+                _("The original author is no longer in this server."), ephemeral=True
+            )
+            return
+
+        copy_suffix = _(" (Copy)")
+        max_length = 45
+        base_name = schedule.name
+        if len(base_name) + len(copy_suffix) > max_length:
+            base_name = base_name[: max_length - len(copy_suffix)]
+        new_name = f"{base_name}{copy_suffix}"
+
+        new_schedule = schedule.model_copy(update={"id": str(uuid4()), "name": new_name, "enabled": False})
+
+        self.db.add_task(new_schedule)
+        self.tasks = await asyncio.to_thread(self.db.get_tasks, self.guild.id)
+        for idx, sched in enumerate(self.tasks):
+            if sched.id == new_schedule.id:
+                self.page = idx
+                break
+
+        await interaction.response.edit_message(embed=await self.get_page(), view=self)
+        await interaction.followup.send(
+            _("Scheduled command duplicated. Please configure it before enabling!"), ephemeral=True
+        )
+        self.cog.save()
