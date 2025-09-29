@@ -18,18 +18,34 @@ def chunk(obj_list: list, chunk_size: int):
         yield obj_list[i : i + chunk_size]
 
 
-def get_window(delta: timedelta) -> int:
-    if delta > timedelta(days=30):
-        rolling_window = 120
-    elif delta > timedelta(days=7):
-        rolling_window = 72
-    elif delta > timedelta(days=1):
-        rolling_window = 48
-    elif delta > timedelta(hours=12):
-        rolling_window = 24
-    else:
-        rolling_window = 2
-    return rolling_window
+def get_window(delta: timedelta, data_points: int, snapshot_interval_minutes: int) -> int:
+    if data_points <= 2:
+        return max(2, data_points)
+
+    delta_minutes = max(delta.total_seconds() / 60.0, 1.0)
+
+    avg_interval = delta_minutes / max(data_points - 1, 1)
+    effective_interval = max(float(snapshot_interval_minutes), avg_interval, 1.0)
+
+    min_span = effective_interval * 2
+    max_span = min(delta_minutes, 60.0 * 24 * 2)
+    target_span = delta_minutes * 0.1
+
+    target_span = max(target_span, min_span)
+    target_span = min(target_span, max_span)
+
+    desired_points = int(round(target_span / effective_interval))
+    if desired_points < 2:
+        desired_points = 2
+
+    if desired_points > data_points:
+        desired_points = data_points
+
+    max_allowed = max(2, int(data_points * 0.4))
+    if desired_points > max_allowed:
+        desired_points = max_allowed
+
+    return desired_points
 
 
 def get_timespan(

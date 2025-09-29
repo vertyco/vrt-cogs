@@ -216,4 +216,4 @@ class Admin(MixinMeta):
             self.db.add_task(command)
             self.save()
             await ctx.send(_("Scheduled command created successfully."), ephemeral=True)
-            await TaskMenu(ctx, command.id).start()
+            await TaskMenu(ctx, command.name).start()

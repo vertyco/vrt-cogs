@@ -21,6 +21,7 @@ class User(MixinMeta):
         """View metrics about the bot and server."""
 
     @metrics.command(name="bank", aliases=["economy"])
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def bank_metrics(
         self,
         ctx: commands.Context,
@@ -38,6 +39,9 @@ class User(MixinMeta):
         if not settings.track_bank:
             txt = f"Bank tracking is not enabled for this server. An admin can enable it with `{ctx.clean_prefix}setmetrics track bank`."
             return await ctx.send(txt, ephemeral=True)
+
+        global_settings = await self.db_utils.get_create_global_settings()
+        interval_minutes = global_settings.snapshot_interval
 
         currency_name = await bank.get_currency_name(ctx.guild)
         query_key = "average_balance" if average_balance else "bank_total"
@@ -83,11 +87,10 @@ class User(MixinMeta):
             df.rename(columns={query_key: currency_name}, inplace=True)
             df.index.rename("Date", inplace=True)
             # ------- DATA SMOOTHING -------
-            # First resample to 10 minutes
-            df = df.resample("10min").mean()
             # Apply a rolling average to smooth out the data
             actual_delta = df.index[-1] - df.index[0]
-            rolling_window = utils.get_window(actual_delta)
+            point_count = len(df.index)
+            rolling_window = utils.get_window(actual_delta, point_count, interval_minutes)
             rolling_column = "(Rolling Avg)"
             df[rolling_column] = df[currency_name].rolling(window=rolling_window, min_periods=1).mean()
             df.reset_index(inplace=True)
@@ -119,6 +122,7 @@ class User(MixinMeta):
         await ctx.send(embed=embed, file=file)
 
     @metrics.command(name="members", aliases=["membercount", "population"])
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def member_metrics(
         self,
         ctx: commands.Context,
@@ -135,6 +139,9 @@ class User(MixinMeta):
             txt = f"Member tracking is not enabled for this server. An admin can enable it with `{ctx.clean_prefix}setmetrics track members`."
             await ctx.send(txt, ephemeral=True)
             return
+
+        global_settings = await self.db_utils.get_create_global_settings()
+        interval_minutes = global_settings.snapshot_interval
 
         metric_map: dict[str, tuple[str, str, str]] = {
             "total": ("member_total", "Total Members", "#009DFF"),
@@ -187,9 +194,9 @@ class User(MixinMeta):
             df.set_index("created_on", inplace=True)
             df.rename(columns={query_key: dataset_label}, inplace=True)
             df.index.rename("Date", inplace=True)
-            df = df.resample("10min").mean()
             actual_delta = df.index[-1] - df.index[0]
-            rolling_window = utils.get_window(actual_delta)
+            point_count = len(df.index)
+            rolling_window = utils.get_window(actual_delta, point_count, interval_minutes)
             rolling_column = "(Rolling Avg)"
             df[rolling_column] = df[dataset_label].rolling(window=rolling_window, min_periods=1).mean()
             df.reset_index(inplace=True)
@@ -222,6 +229,7 @@ class User(MixinMeta):
         await ctx.send(embed=embed, file=file)
 
     @metrics.command(name="performance", aliases=["perf"])
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def performance_metrics(
         self,
         ctx: commands.Context,
@@ -242,6 +250,7 @@ class User(MixinMeta):
             return
 
         settings = await self.db_utils.get_create_guild_settings(ctx.guild.id)
+        interval_minutes = global_settings.snapshot_interval
 
         metric_map: dict[str, tuple[str, str, str, int]] = {
             "latency": ("latency_ms", "Latency (ms)", "ms", 2),
@@ -282,9 +291,9 @@ class User(MixinMeta):
             df.set_index("created_on", inplace=True)
             df.rename(columns={query_key: dataset_label}, inplace=True)
             df.index.rename("Date", inplace=True)
-            df = df.resample("10min").mean()
             actual_delta = df.index[-1] - df.index[0]
-            rolling_window = utils.get_window(actual_delta)
+            point_count = len(df.index)
+            rolling_window = utils.get_window(actual_delta, point_count, interval_minutes)
             rolling_column = "(Rolling Avg)"
             df[rolling_column] = df[dataset_label].rolling(window=rolling_window, min_periods=1).mean()
             df.reset_index(inplace=True)
