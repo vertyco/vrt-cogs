@@ -80,8 +80,8 @@ class API(MixinMeta):
                 # Use the lesser of caculated vs set response tokens
                 response_tokens = min(response_tokens, max_response_tokens)
 
-        if model not in MODELS:
-            log.error(f"This model is not longer supported: {model}. Switching to gpt-4")
+        if model not in MODELS and self.db.endpoint_override is None:
+            log.error(f"This model is no longer supported: {model}. Switching to gpt-5")
             model = "gpt-5"
             await self.save_conf()
 
