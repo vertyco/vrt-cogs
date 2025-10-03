@@ -63,8 +63,8 @@ class Base(MixinMeta):
             embed.add_field(name=n, value=v or _("None Set"), inline=False)
 
             n = _("Guild Blacklist")
-            v = "\n".join(self.db.blacklist)
-            embed.add_field(name=n, value=v or _("None Set"), inline=False)
+            v = "\n".join(self.db.blacklist) if self.db.blacklist else _("None Set")
+            embed.add_field(name=n, value=v, inline=False)
             await ctx.send(embed=embed)
 
     @guildlock.command(aliases=["chan"])
