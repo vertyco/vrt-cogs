@@ -683,7 +683,7 @@ class TaskMenu(BaseMenu):
         await interaction.followup.send(_("Scheduled command advanced cron updated."), ephemeral=True)
         self.cog.save()
         if schedule.enabled:
-            await self.cog.ensure_scheduled_commands()
+            await self.cog.ensure_jobs()
 
     @discord.ui.button(label="Times", style=discord.ButtonStyle.primary, row=3)
     async def times(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -768,7 +768,7 @@ class TaskMenu(BaseMenu):
         await interaction.followup.send(_("Scheduled command times updated."), ephemeral=True)
         self.cog.save()
         if schedule.enabled:
-            await self.cog.ensure_scheduled_commands()
+            await self.cog.ensure_jobs()
 
     @discord.ui.button(emoji=C.QUESTION, style=discord.ButtonStyle.secondary, row=4)
     async def help(self, interaction: discord.Interaction, button: discord.ui.Button):
