@@ -4,6 +4,7 @@ from .botemojis import EmojiManager
 from .chatexport import ChatExport
 from .dcord import Dcord
 from .disk import DiskBench
+from .guildprofiles import GuildProfiles
 from .logs import Logs
 from .misc import Misc
 from .noping import NoPing
@@ -18,6 +19,7 @@ class Utils(
     ChatExport,
     Dcord,
     DiskBench,
+    GuildProfiles,
     Logs,
     Misc,
     NoPing,
