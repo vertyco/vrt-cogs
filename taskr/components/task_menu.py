@@ -24,7 +24,7 @@ _ = Translator("Taskr", __file__)
 
 class TaskMenu(BaseMenu):
     def __init__(self, ctx: commands.Context, filter: str = ""):
-        super().__init__(ctx=ctx, timeout=900)
+        super().__init__(ctx=ctx, timeout=600)
         self.tasks: list[ScheduledCommand] = []
         self.page = 0
         self.color = discord.Color.blurple()
