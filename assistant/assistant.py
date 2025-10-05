@@ -56,7 +56,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "6.18.9"
+    __version__ = "6.18.10"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -211,7 +211,7 @@ class Assistant(
         health = "BAD (Cleaned)" if cleaned else "GOOD"
         log.info(f"Config health: {health}")
 
-    @tasks.loop(minutes=2)
+    @tasks.loop(minutes=30)
     async def save_loop(self):
         if not self.db.persistent_conversations:
             return
