@@ -287,7 +287,7 @@ class RockView(discord.ui.View):
                 await ResourceLedger.insert(*ledgers)
 
         embed = self.embed()
-        embed.set_footer(text="Run the 'miner repair' command to repair your tools.")
+        embed.set_footer(text='Run the "miner repair" command to repair your tools.')
 
         if buffer.getvalue():
             chunks = list(pagify(buffer.getvalue(), page_length=1000))
