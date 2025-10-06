@@ -11,7 +11,7 @@ from types import SimpleNamespace
 
 import discord
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import box
+from redbot.core.utils.chat_formatting import box, pagify
 
 from ..abc import MixinMeta
 from ..common import constants
@@ -286,15 +286,16 @@ class RockView(discord.ui.View):
             if ledgers:
                 await ResourceLedger.insert(*ledgers)
 
+        embed = self.embed()
+        embed.set_footer(text="Run the 'miner repair' command to repair your tools.")
+
         if buffer.getvalue():
-            buffer.write("\n-# Run the `miner repair` command to repair your tools.")
-            embed = discord.Embed(
-                title=f"Yield From {self.rocktype.display_name}",
-                color=discord.Color.green(),
-                description=buffer.getvalue(),
-            )
-            await self.message.channel.send(embed=embed)
-        await self.message.edit(embed=self.embed(), view=self)
+            chunks = list(pagify(buffer.getvalue(), page_length=1000))
+            for chunk in chunks:
+                name = "Yield" if len(chunks) == 1 else "Yield (Continued)"
+                embed.add_field(name=name, value=chunk)
+
+        await self.message.edit(embed=embed, view=self)
 
     def _compute_payouts(self) -> dict[int, dict[constants.Resource, int]]:
         """Evenly distribute loot pool among participants"""
