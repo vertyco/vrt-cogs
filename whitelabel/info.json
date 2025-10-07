@@ -1,0 +1,16 @@
+{
+  "author": ["Vertyco"],
+  "description": "Allow server owners to customize the bot's avatar, banner, and bio on a per-server basis with optional role-based access control.",
+  "disabled": false,
+  "end_user_data_statement": "This cog does not store any end user data.",
+  "hidden": false,
+  "install_msg": "Thank you for installing Whitelabel!\n\nServer owners with Manage Server permission can use `/botprofile` commands to customize the bot's profile in their server.\n\nBot owners can configure access control with `[p]whitelabel` commands.\n\nFor more information, check `[p]help whitelabel` or read the README.",
+  "min_bot_version": "3.5.3",
+  "min_python_version": [3, 10, 0],
+  "permissions": ["manage_guild"],
+  "required_cogs": {},
+  "requirements": [],
+  "short": "Per-server bot profile customization with role-based access control",
+  "tags": ["whitelabel", "profile", "avatar", "banner", "bio", "customization", "branding"],
+  "type": "COG"
+}
