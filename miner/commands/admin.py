@@ -184,7 +184,7 @@ class Admin(MixinMeta):
     @miner_set.command(name="convertratio")
     @ensure_db_connection()
     async def miner_convert_ratio(self, ctx: commands.Context, resource: constants.Resource, ratio: float):
-        """View the conversion ratio for a resource.
+        """Set the conversion ratio for a resource.
 
         **Examples:**
         - `[p]minerset convertratio stone 20` (20 stone = 1 credit)
