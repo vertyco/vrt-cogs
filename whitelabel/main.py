@@ -334,8 +334,18 @@ class Whitelabel(commands.Cog):
                 if allowed:
                     continue
                 route: Route = Route(method="PATCH", path=ENDPOINT.format(guild.id))
+                data = {}
+                if guild.me.display_avatar.url != self.bot.user.display_avatar.url:
+                    data["avatar"] = ""
+                if guild.me.display_banner and not self.bot.user.banner:
+                    data["banner"] = ""
+                elif guild.me.display_banner != self.bot.user.banner:
+                    data["banner"] = ""
+
+                if "avatar" in data or "banner" in data:
+                    data["bio"] = ""
+
                 try:
-                    data = {"avatar": "", "banner": "", "bio": ""}
                     await self.bot.http.request(route, json=data)
                     reverted += 1
                 except discord.HTTPException:
