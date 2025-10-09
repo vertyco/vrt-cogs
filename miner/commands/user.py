@@ -348,23 +348,26 @@ class User(MixinMeta):
             return await ctx.send(f"You do not have {grammar} {resource.title()}!", ephemeral=True)
 
         rate: float = getattr(settings, f"{resource}_convert_rate")
+        if rate > amount:
+            return await ctx.send(
+                f"You need to convert at least `{rate}` {resource.title()} to receive 1 credit.", ephemeral=True
+            )
 
         creditsname = await bank.get_currency_name(ctx.guild)
 
-        credits, remainder = divmod(amount, rate)
-        credits = round(credits)
-        if credits == 0:
+        credits_to_give = round(amount / rate)
+        amount_to_deduct = round(credits_to_give * rate)
+        if credits_to_give == 0:
             return await ctx.send(
                 f"You need to convert at least `{rate}` {resource.title()} to receive 1 {creditsname}.", ephemeral=True
             )
 
-        amount_to_deduct = round(amount - remainder)
         try:
-            await bank.deposit_credits(ctx.author, credits)
+            await bank.deposit_credits(ctx.author, credits_to_give)
         except BalanceTooHigh as e:
             await bank.set_balance(ctx.author, e.max_balance)
         await player.update_self({getattr(Player, resource): max(0, getattr(player, resource) - amount_to_deduct)})
 
         return await ctx.send(
-            f"{ctx.author.mention}, you have converted `{humanize_number(amount_to_deduct)}` {resource.title()} into `{humanize_number(credits)}` {creditsname}."
+            f"{ctx.author.mention}, you have converted `{humanize_number(amount_to_deduct)}` {resource.title()} into `{humanize_number(credits_to_give)}` {creditsname}."
         )
