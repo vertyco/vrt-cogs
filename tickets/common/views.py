@@ -357,7 +357,7 @@ class SupportButton(Button):
         # Throw modal before creating ticket if the panel has one
         form_embed = discord.Embed()
         modal = panel.get("modal")
-        panel_title = panel.get("modal_title", "{} Ticket".format(self.panel_name))
+        panel_title = panel.get("modal_title", None) or "{} Ticket".format(self.panel_name)
         answers = {}
         has_response = False
         if modal:
