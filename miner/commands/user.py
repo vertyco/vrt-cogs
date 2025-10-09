@@ -352,13 +352,13 @@ class User(MixinMeta):
         creditsname = await bank.get_currency_name(ctx.guild)
 
         credits, remainder = divmod(amount, rate)
-        credits = int(credits)
+        credits = round(credits)
         if credits == 0:
             return await ctx.send(
                 f"You need to convert at least `{rate}` {resource.title()} to receive 1 {creditsname}.", ephemeral=True
             )
 
-        amount_to_deduct = amount - remainder
+        amount_to_deduct = round(amount - remainder)
         try:
             await bank.deposit_credits(ctx.author, credits)
         except BalanceTooHigh as e:
