@@ -908,11 +908,13 @@ class TaskMenu(BaseMenu):
             },
         ).items():
             existing_settings.append(f"- {k}: {v}")
-
+        interval = self.db.premium_interval if self.is_premium(self.guild) else self.db.minimum_interval
+        details = f"Current user ID: {self.author.id}\nMinimum task interval: {interval}"
         messages = [
             {"role": "developer", "content": f"The current time is {formatted_time}"},
             {"role": "developer", "content": C.SYSTEM_PROMPT},
             {"role": "developer", "content": "Existing schedule settings:\n" + "\n".join(existing_settings)},
+            {"role": "developer", "content": f"Context:\n{details}"},
             {"role": "user", "content": request},
         ]
         try:
