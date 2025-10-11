@@ -13,6 +13,7 @@ from redbot.core.i18n import Translator, cog_i18n
 log = logging.getLogger("red.vrt.whitelabel")
 _ = Translator("Whitelabel", __file__)
 ENDPOINT = "/guilds/{guild_id}/members/@me"
+VALID_IMAGE_TYPES = ("image/png", "image/jpeg", "image/jpg", "image/gif")
 
 
 @app_commands.guild_only()
@@ -26,7 +27,7 @@ class Whitelabel(commands.Cog):
     """Allow server owners to set a custom bot avatar, banner and bio."""
 
     __author__ = "vertyco"
-    __version__ = "1.0.1"
+    __version__ = "1.0.3"
     set_bot_profile = BotProfileGroup(name="botprofile", description="Manage bot's bio, banner, and avatar.")
 
     def __init__(self, bot: Red):
@@ -137,18 +138,25 @@ class Whitelabel(commands.Cog):
     @app_commands.checks.cooldown(1, 600, key=lambda i: (i.guild_id))
     async def set_avatar(self, interaction: discord.Interaction, avatar: t.Optional[discord.Attachment]):
         """Set the bot's avatar for this server."""
+        if avatar and avatar.size > 8 * 1024 * 1024:
+            return await interaction.response.send_message(
+                _("The provided attachment is too large. Max size is 8MB."), ephemeral=True
+            )
+        if avatar and avatar.content_type not in VALID_IMAGE_TYPES:
+            return await interaction.response.send_message(
+                _("Invalid attachment type `{}`, must be one of: PNG, JPEG, JPG, GIF.").format(avatar.content_type),
+                ephemeral=True,
+            )
+
         route: Route = Route(method="PATCH", path=ENDPOINT.format(guild_id=interaction.guild_id))
         allowed, msg = await self.is_allowed(interaction.guild)
         if not allowed:
             return await interaction.response.send_message(msg, ephemeral=True)
         await interaction.response.defer(thinking=True)
         if avatar:
-            if not avatar.content_type or not avatar.content_type.startswith("image/"):
-                return await interaction.edit_original_response(content=_("The provided attachment is not an image."))
             image_bytes = await avatar.read()
             imageb64 = b64encode(image_bytes).decode("utf-8")
-            extension = avatar.content_type.split("/")[-1]
-            image = f"data:image/{extension};base64,{imageb64}"
+            image = f"data:{avatar.content_type};base64,{imageb64}"
             txt = _("My avatar has been updated for this server!")
         else:
             default_avatar = self.bot.user.avatar
@@ -174,18 +182,24 @@ class Whitelabel(commands.Cog):
     @app_commands.checks.cooldown(1, 30, key=lambda i: (i.guild_id))
     async def set_banner(self, interaction: discord.Interaction, banner: t.Optional[discord.Attachment]):
         """Set the bot's banner for this server."""
+        if banner and banner.size > 10 * 1024 * 1024:
+            return await interaction.response.send_message(
+                _("The provided attachment is too large. Max size is 10MB."), ephemeral=True
+            )
+        if banner and banner.content_type not in VALID_IMAGE_TYPES:
+            return await interaction.response.send_message(
+                _("Invalid attachment type `{}`, must be one of: PNG, JPEG, JPG, GIF.").format(banner.content_type),
+                ephemeral=True,
+            )
         route: Route = Route(method="PATCH", path=ENDPOINT.format(guild_id=interaction.guild_id))
         allowed, msg = await self.is_allowed(interaction.guild)
         if not allowed:
             return await interaction.response.send_message(msg, ephemeral=True)
         await interaction.response.defer(thinking=True)
         if banner:
-            if not banner.content_type or not banner.content_type.startswith("image/"):
-                return await interaction.edit_original_response(content=_("The provided attachment is not an image."))
             image_bytes = await banner.read()
             imageb64 = b64encode(image_bytes).decode("utf-8")
-            extension = banner.content_type.split("/")[-1]
-            image = f"data:image/{extension};base64,{imageb64}"
+            image = f"data:{banner.content_type};base64,{imageb64}"
             txt = _("My banner has been updated for this server!")
         else:
             default_banner = self.bot.user.banner
@@ -254,7 +268,8 @@ class Whitelabel(commands.Cog):
     async def mainserver(self, ctx: commands.Context):
         """Set THIS server as the main server."""
         await self.config.main_guild.set(ctx.guild.id)
-        await ctx.send(_("Main server has been set to: `{}`").format(ctx.guild.name))
+        await self.config.main_role.set(0)  # Clear main role when changing main server
+        await ctx.send(_("Main server has been set to: `{}`, main role has been cleared.").format(ctx.guild.name))
 
     @whitelabel.command(name="mainrole")
     @commands.guild_only()
