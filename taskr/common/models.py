@@ -686,6 +686,12 @@ class ScheduledCommand(Base):
         6. "every 2 hours between 10am and 10pm"
         """
         tz = pytz.timezone(timezone)
+        if self.minute and "--" in self.minute:
+            self.minute = self.minute.replace("--", "-")
+        if self.hour and "--" in self.hour:
+            self.hour = self.hour.replace("--", "-")
+        if self.second and "--" in self.second:
+            self.second = self.second.replace("--", "-")
 
         def build_cron_kwargs() -> dict[str, object]:
             cron_kwargs: dict[str, object] = {
@@ -783,7 +789,10 @@ class ScheduledCommand(Base):
 
     def is_safe(self, timezone: str, minimum_interval: int) -> bool:
         """Ensure that the scheduled task will not run more frequently than the minimum interval."""
-        trigger: IntervalTrigger | CronTrigger = self.trigger(timezone)
+        try:
+            trigger: IntervalTrigger | CronTrigger = self.trigger(timezone)
+        except ValueError:
+            return False
 
         if isinstance(trigger, IntervalTrigger):
             # For IntervalTrigger, check if the interval is at least the minimum interval
