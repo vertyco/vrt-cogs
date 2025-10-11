@@ -30,4 +30,5 @@ SYSTEM_PROMPT = (
     "- If using intervals, leave cron expressions blank.\n"
     "- If using cron expressions, leave intervals blank.\n"
     "- When using between times and intervals at the same time, the interval using can only be minutes or hours.\n"
+    "- Ensure that the task interval is not less than the minimum interval provided.\n"
 )
