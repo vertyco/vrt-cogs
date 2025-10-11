@@ -21,6 +21,7 @@ class CronDataResponse(BaseModel):
     end_date: t.Optional[str] = Field(description="[CRON]: End date for the schedule (ISOFORMAT)")
     between_time_start: t.Optional[str] = Field(description="[CRON]: HH:MM")
     between_time_end: t.Optional[str] = Field(description="[CRON]: HH:MM")
+    user_comment: t.Optional[str] = Field(description="An optional user comment about the scheduled command")
 
 
 class CommandCreationResponse(CronDataResponse):

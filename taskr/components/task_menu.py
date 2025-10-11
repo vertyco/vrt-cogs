@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import logging
 from contextlib import suppress
@@ -9,6 +11,7 @@ import openai
 import pytz
 from apscheduler.triggers.cron import CronTrigger
 from dateutil import parser
+from discord import ui
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box, humanize_timedelta
@@ -20,6 +23,59 @@ from .dynamic_modal import DynamicModal
 
 log = logging.getLogger("red.vrt.taskr.task_menu")
 _ = Translator("Taskr", __file__)
+
+
+class ConfigScheduleModal(ui.Modal, title=_("Edit Scheduled Command")):
+    name = ui.TextInput(label=_("Scheduled Command Name"), max_length=45)
+    author = ui.Label(
+        text=_("Command Author"),
+        component=discord.ui.UserSelect(
+            placeholder=_("Select the user to run the command as"),
+            max_values=1,
+            min_values=1,
+        ),
+    )
+    channel = ui.Label(
+        text=_("Command Channel (Optional)"),
+        component=discord.ui.ChannelSelect(
+            placeholder=_("Channel that the command will be run in"),
+            channel_types=[discord.ChannelType.text, discord.ChannelType.public_thread],
+            min_values=0,
+        ),
+    )
+    command = ui.TextInput(
+        label=_("Command"),
+        style=discord.TextStyle.long,
+        max_length=4000,
+        placeholder=_("ex: ping"),
+    )
+
+    def __init__(self, view: TaskMenu, schedule: ScheduledCommand):
+        super().__init__()
+        self.view = view
+        self.schedule = schedule
+        self.name.default = schedule.name
+        user = view.guild.get_member(schedule.author_id)
+        if user:
+            self.author.component.default_values = [  # type: ignore
+                discord.SelectDefaultValue(id=user.id, type=discord.SelectDefaultValueType.user)
+            ]
+        if schedule.channel_id:
+            channel = view.guild.get_channel_or_thread(schedule.channel_id)
+            if channel:
+                self.channel.component.default_values = [  # type: ignore
+                    discord.SelectDefaultValue(id=channel.id, type=discord.SelectDefaultValueType.channel)
+                ]
+        self.command.default = schedule.command
+
+        self.inputs = {}
+
+    async def on_submit(self, interaction: discord.Interaction):
+        self.inputs["name"] = self.name.value
+        self.inputs["author"] = self.author.component.values[0].id if self.author.component.values else None
+        self.inputs["channel"] = self.channel.component.values[0].id if self.channel.component.values else None
+        self.inputs["command"] = self.command.value
+        self.stop()
 
 
 class TaskMenu(BaseMenu):
@@ -362,40 +418,7 @@ class TaskMenu(BaseMenu):
         if not self.tasks:
             return await interaction.response.send_message(_("No scheduled commands to configure."), ephemeral=True)
         schedule = self.tasks[self.page]
-        fields = {
-            "name": {
-                "label": _("Scheduled Command Name"),
-                "style": discord.TextStyle.short,
-                "placeholder": _("Name of the scheduled command"),
-                "default": schedule.name[:45],
-                "max_length": 45,
-            },
-            "author": {
-                "label": _("Author ID"),
-                "style": discord.TextStyle.short,
-                "placeholder": _("ID of the user who created the command"),
-                "default": str(self.author.id),
-                "max_length": 19,
-                "min_length": 18,
-            },
-            "channel": {
-                "label": _("Channel ID (Optional)"),
-                "style": discord.TextStyle.short,
-                "placeholder": _("ID of the channel to send the command to"),
-                "default": str(schedule.channel_id) if schedule.channel_id else None,
-                "required": False,
-                "max_length": 19,
-                "min_length": 18,
-            },
-            "command": {
-                "label": _("Command"),
-                "style": discord.TextStyle.long,
-                "placeholder": _("ex: ping"),
-                "default": schedule.command,
-                "max_length": 4000,
-            },
-        }
-        modal = DynamicModal(_("Edit Scheduled Command"), fields, timeout=600)
+        modal = ConfigScheduleModal(self, schedule)
         await interaction.response.send_modal(modal)
         await modal.wait()
         if not modal.inputs:
@@ -423,12 +446,6 @@ class TaskMenu(BaseMenu):
                 return await interaction.followup.send(
                     _("You cannot schedule commands for users with equal or higher roles."), ephemeral=True
                 )
-
-        if channel_id and not channel_id.isdigit():
-            return await interaction.followup.send(_("Channel ID must be a number."), ephemeral=True)
-        channel_id = int(channel_id) if channel_id else 0
-        if channel_id and not self.guild.get_channel_or_thread(channel_id):
-            return await interaction.followup.send(_("Channel for that ID was not found."), ephemeral=True)
 
         channel = self.guild.get_channel_or_thread(channel_id)
         if not channel:
@@ -512,6 +529,12 @@ class TaskMenu(BaseMenu):
         # Update
         schedule.interval = interval
         schedule.interval_unit = units
+        if not schedule.is_safe(
+            self.timezone, self.db.premium_interval if self.is_premium else self.db.minimum_interval
+        ):
+            schedule.enabled = False
+            await interaction.followup.send(_("Scheduled command interval is not safe."), ephemeral=True)
+            return
         await self.message.edit(embed=await self.get_page(), view=self)
         await interaction.followup.send(_("Scheduled command interval updated."), ephemeral=True)
         self.cog.save()
@@ -528,8 +551,8 @@ class TaskMenu(BaseMenu):
                 return await interaction.response.send_message(
                     _(
                         "Scheduled command is not safe to enable, please configure it first.\n"
-                        "The minimum interval between tasks is {} ({} seconds)."
-                    ).format(min_interval_human, min_interval),
+                        "The minimum interval between tasks is {}."
+                    ).format(min_interval_human),
                     ephemeral=True,
                 )
             schedule.enabled = True
@@ -612,6 +635,13 @@ class TaskMenu(BaseMenu):
         except ValueError as e:
             return await interaction.followup.send(str(e), ephemeral=True)
 
+        if not schedule.is_safe(
+            self.timezone, self.db.premium_interval if self.is_premium else self.db.minimum_interval
+        ):
+            schedule.enabled = False
+            await interaction.followup.send(_("Scheduled command interval is not safe."), ephemeral=True)
+            return
+
         await self.message.edit(embed=await self.get_page(), view=self)
         await interaction.followup.send(_("Scheduled command cron updated."), ephemeral=True)
         self.cog.save()
@@ -680,6 +710,14 @@ class TaskMenu(BaseMenu):
         schedule.days_of_week = days_of_week
         schedule.days_of_month = days_of_month
         schedule.months_of_year = months_of_year
+
+        if not schedule.is_safe(
+            self.timezone, self.db.premium_interval if self.is_premium else self.db.minimum_interval
+        ):
+            schedule.enabled = False
+            await interaction.followup.send(_("Scheduled command interval is not safe."), ephemeral=True)
+            return
+
         await self.message.edit(embed=await self.get_page(), view=self)
         await interaction.followup.send(_("Scheduled command advanced cron updated."), ephemeral=True)
         self.cog.save()
@@ -1030,17 +1068,18 @@ class TaskMenu(BaseMenu):
             schedule.trigger(self.timezone)
         except Exception as e:
             log.error("Failed to compile schedule\nAI response: {}".format(model.model_dump_json(indent=2)), exc_info=e)
-            return await interaction.followup.send(
-                _("AI failed to compile schedule, please check the cron expression.\n{}").format(str(e)), ephemeral=True
-            )
+            txt = _("AI failed to compile schedule, please check the cron expression.\n{}").format(str(e))
+            if model.user_comment:
+                txt += _("\nAI Comment: {}").format(model.user_comment)
+            return await interaction.followup.send(txt, ephemeral=True)
         await self.message.edit(embed=await self.get_page(), view=self)
         if msg:
             with suppress(discord.HTTPException):
                 await msg.delete()
-        await interaction.followup.send(
-            _("Scheduled command updated from the following request:\n{}").format(box(request)),
-            ephemeral=True,
-        )
+        txt = _("Scheduled command updated from the following request:\n{}").format(box(request))
+        if model.user_comment:
+            txt += _("\nAI Comment: {}").format(model.user_comment)
+        await interaction.followup.send(txt, ephemeral=True)
         self.cog.save()
 
     @discord.ui.button(emoji=C.PLAY, style=discord.ButtonStyle.secondary, row=4)

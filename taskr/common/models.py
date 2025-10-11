@@ -733,15 +733,40 @@ class ScheduledCommand(Base):
                 cron_kwargs = {"timezone": tz}
                 if normalized_unit == "hours":
                     start_hour = self.between_time_start.hour
-                    end_hour = self.between_time_end.hour - 1  # Make it inclusive
+                    end_hour = self.between_time_end.hour - 1
+                    if end_hour < start_hour:
+                        raise ValueError(
+                            "End time must be after start time when using hour intervals with between times."
+                        )
                     cron_kwargs["hour"] = f"{start_hour}-{end_hour}/{self.interval}"
                     cron_kwargs["minute"] = self.between_time_start.minute
                     cron_kwargs["second"] = "0"
                 elif normalized_unit == "minutes":
+                    start_hour = self.between_time_start.hour
+                    end_hour = self.between_time_end.hour
                     start_minute = self.between_time_start.minute
-                    end_minute = self.between_time_end.minute - 1
-                    cron_kwargs["minute"] = f"{start_minute}-{end_minute}/{self.interval}"
-                    cron_kwargs["hour"] = "*"
+                    minute_values: list[int] = []
+                    current = start_minute % 60
+                    for _ in range(60):
+                        if current in minute_values:
+                            break
+                        minute_values.append(current)
+                        current = (current + self.interval) % 60
+                    if not minute_values:
+                        minute_values.append(0)
+                    minute_values.sort()
+                    minute_expr = ",".join(str(value) for value in minute_values)
+                    if self.hour:
+                        hour_expr = self.hour
+                    else:
+                        if start_hour == end_hour:
+                            hour_expr = str(start_hour)
+                        elif start_hour < end_hour:
+                            hour_expr = f"{start_hour}-{end_hour}"
+                        else:
+                            hour_expr = f"{start_hour}-23,0-{end_hour}"
+                    cron_kwargs["minute"] = minute_expr
+                    cron_kwargs["hour"] = hour_expr
                     cron_kwargs["second"] = "0"
                 else:
                     raise ValueError("When using between times, the interval unit must be 'hours' or 'minutes'.")
