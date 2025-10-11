@@ -23,7 +23,7 @@ class Owner(MixinMeta):
         """Set the maximum number of tasks allowed per guild"""
         if max_tasks < 1:
             return await ctx.send(_("The maximum number of tasks must be at least 1."))
-        self.db.free_tasks = max_tasks
+        self.db.max_tasks = max_tasks
         self.save()
         await ctx.send(_("The maximum number of tasks has been set to {}.").format(max_tasks))
 
