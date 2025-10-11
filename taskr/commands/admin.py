@@ -101,8 +101,8 @@ class Admin(MixinMeta):
             timezone = self.db.timezone(ctx.guild.id)
             now = datetime.now(pytz.timezone(timezone))
             formatted_time = now.strftime("%A, %B %d, %Y %I:%M%p %Z")
-
-            details = f"Current user ID: {ctx.author.id}\nCurrent channel ID: {ctx.channel.id}\n"
+            interval = self.db.premium_interval if self.is_premium(ctx.guild) else self.db.minimum_interval
+            details = f"Current user ID: {ctx.author.id}\nCurrent channel ID: {ctx.channel.id}\nMinimum task interval: {interval}"
             messages = [
                 {"role": "developer", "content": f"The current time is {formatted_time}"},
                 {"role": "developer", "content": C.SYSTEM_PROMPT},
