@@ -9,7 +9,7 @@
   "min_python_version": [3, 10, 0],
   "permissions": ["manage_guild"],
   "required_cogs": {},
-  "requirements": [],
+  "requirements": ["openai"],
   "short": "Per-server bot profile customization with role-based access control",
   "tags": ["whitelabel", "profile", "avatar", "banner", "bio", "customization", "branding"],
   "type": "COG"

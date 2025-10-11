@@ -3,6 +3,7 @@ import logging
 import discord
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.views import SetApiView
 
 from ..abc import MixinMeta
 
@@ -39,23 +40,23 @@ class Owner(MixinMeta):
         self.save()
         await ctx.send(_("The minimum interval has been set to {} seconds.").format(interval))
 
-    # @taskrset.command(name="openai")
-    # async def set_ai(self, ctx: commands.Context):
-    #     """Set an openai key for the AI helper"""
-    #     tokens = await self.bot.get_shared_api_tokens("openai")
-    #     message = _(
-    #         "1. Go to [OpenAI](https://platform.openai.com/signup) and sign up for an account.\n"
-    #         "2. Go to the [API keys](https://platform.openai.com/account/api-keys) page.\n"
-    #         "3. Click the `+ Create new secret key` button to create a new API key.\n"
-    #         "4. Copy the API key click the button below to set it."
-    #     )
-    #     await ctx.send(
-    #         message,
-    #         view=SetApiView(
-    #             default_service="openai",
-    #             default_keys={"api_key": tokens.get("api_key", "")},
-    #         ),
-    #     )
+    @taskrset.command(name="openai")
+    async def set_ai(self, ctx: commands.Context):
+        """Set an openai key for the AI helper"""
+        tokens = await self.bot.get_shared_api_tokens("openai")
+        message = _(
+            "1. Go to [OpenAI](https://platform.openai.com/signup) and sign up for an account.\n"
+            "2. Go to the [API keys](https://platform.openai.com/account/api-keys) page.\n"
+            "3. Click the `+ Create new secret key` button to create a new API key.\n"
+            "4. Copy the API key click the button below to set it."
+        )
+        await ctx.send(
+            message,
+            view=SetApiView(
+                default_service="openai",
+                default_keys={"api_key": tokens.get("api_key", "")},
+            ),
+        )
 
     @taskrset.group(name="premium")
     async def premium_group(self, ctx: commands.Context):
