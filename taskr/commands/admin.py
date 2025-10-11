@@ -49,10 +49,17 @@ class Admin(MixinMeta):
                 key=lambda x: fuzz.ratio(timezone.lower(), x.lower()),
                 reverse=True,
             )[0]
-            return await ctx.send(_("Invalid Timezone, did you mean `{}`?").format(likely_match))
+
+            return await ctx.send(
+                _(
+                    "Invalid Timezone, did you mean `{}`?\n[Timezone List](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)"
+                ).format(likely_match)
+            )
         self.db.timezones[ctx.guild.id] = timezone
         self.save()
-        await ctx.send(_("Timezone set to {}").format(timezone))
+        now = datetime.now(pytz.timezone(timezone))
+        timestring = now.strftime("%A, %B %d, %Y %I:%M%p %Z")
+        await ctx.send(_("Timezone set to `{}`: `{}`").format(timezone, timestring))
 
     @set_timezone.autocomplete("timezone")
     async def _timezone_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice]:
