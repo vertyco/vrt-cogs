@@ -2,13 +2,16 @@ import asyncio
 import logging
 import typing as t
 from base64 import b64encode
+from io import StringIO
 
 import discord
+import openai
 from discord import app_commands
 from discord.http import Route
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.views import SetApiView
 
 log = logging.getLogger("red.vrt.whitelabel")
 _ = Translator("Whitelabel", __file__)
@@ -27,14 +30,14 @@ class Whitelabel(commands.Cog):
     """Allow server owners to set a custom bot avatar, banner and bio."""
 
     __author__ = "vertyco"
-    __version__ = "1.0.3"
+    __version__ = "1.0.4"
     set_bot_profile = BotProfileGroup(name="botprofile", description="Manage bot's bio, banner, and avatar.")
 
     def __init__(self, bot: Red):
         super().__init__()
         self.bot: Red = bot
         self.config = Config.get_conf(self, 117, force_registration=True)
-        self.config.register_global(main_guild=0, main_role=0, disallowed_msg="")
+        self.config.register_global(main_guild=0, main_role=0, disallowed_msg="", openai_validation=False)
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -57,6 +60,45 @@ class Whitelabel(commands.Cog):
 
     async def initialize(self) -> None:
         await self.bot.wait_until_red_ready()
+
+    async def validate_submission(self, image_url: str = None, text: str = None) -> str | None:
+        """If image or content is safe, return None, else return reason."""
+        assert image_url or text, "Either image_url or text must be provided"
+        if not await self.config.openai_validation():
+            return
+        openai_tokens = await self.bot.get_shared_api_tokens("openai")
+        if not openai_tokens:
+            return
+        key = openai_tokens.get("api_key")
+        if not key:
+            return
+        log.debug("Validating submission with OpenAI moderation")
+        client = openai.OpenAI(api_key=key)
+        try:
+            data = []
+            if image_url:
+                data.append({"type": "image_url", "image_url": {"url": image_url}})
+            if text:
+                data.append({"type": "text", "text": text})
+            response = client.moderations.create(
+                model="omni-moderation-latest",
+                input=data,
+            )
+        except Exception as e:
+            log.error("OpenAI moderation request failed", exc_info=e)
+            return _("Failed to validate submission, contact bot owner.")
+        result = response.results[0]
+        if not result.flagged:
+            return
+        flagged_categories = [k for k, v in result.categories.model_dump().items() if v]
+        if not flagged_categories:
+            return
+        buffer = StringIO()
+        buffer.write(_("Submission was flagged by OpenAI moderation for the following reasons:\n"))
+        for category in flagged_categories:
+            score = round(getattr(result.category_scores, category) * 100, 2)
+            buffer.write(f"- {category.replace('_', ' ').title()} ({score}%)\n")
+        return buffer.getvalue()
 
     async def is_allowed(self, requesting_guild: discord.Guild) -> t.Tuple[bool, str]:
         main_guild_id = await self.config.main_guild()
@@ -154,6 +196,8 @@ class Whitelabel(commands.Cog):
             return await interaction.response.send_message(msg, ephemeral=True)
         await interaction.response.defer(thinking=True)
         if avatar:
+            if alert := await self.validate_submission(avatar.url):
+                return await interaction.edit_original_response(content=alert)
             image_bytes = await avatar.read()
             imageb64 = b64encode(image_bytes).decode("utf-8")
             image = f"data:{avatar.content_type};base64,{imageb64}"
@@ -197,6 +241,8 @@ class Whitelabel(commands.Cog):
             return await interaction.response.send_message(msg, ephemeral=True)
         await interaction.response.defer(thinking=True)
         if banner:
+            if alert := await self.validate_submission(banner.url):
+                return await interaction.edit_original_response(content=alert)
             image_bytes = await banner.read()
             imageb64 = b64encode(image_bytes).decode("utf-8")
             image = f"data:{banner.content_type};base64,{imageb64}"
@@ -231,6 +277,8 @@ class Whitelabel(commands.Cog):
         if bio:
             if len(bio) > 190:
                 return await interaction.edit_original_response(content=_("Bio cannot be longer than 190 characters."))
+            if alert := await self.validate_submission(text=bio):
+                return await interaction.edit_original_response(content=alert)
             txt = _("My bio has been updated for this server!")
         else:
             txt = _("My bio for this server has been reset to my global bio!")
@@ -262,6 +310,8 @@ class Whitelabel(commands.Cog):
         embed.add_field(name=_("Main Guild"), value=f"{main_guild} ({main_guild_id})" if main_guild else _("Not set"))
         embed.add_field(name=_("Main Role"), value=f"{main_role} ({main_role_id})" if main_role else _("Not set"))
         embed.add_field(name=_("Disallowed Message"), value=disallowed_msg or _("Not set"), inline=False)
+        openai_validation = await self.config.openai_validation()
+        embed.add_field(name=_("OpenAI Validation"), value=_("Enabled") if openai_validation else _("Disabled"))
         await ctx.send(embed=embed)
 
     @whitelabel.command(name="mainserver")
@@ -313,6 +363,49 @@ class Whitelabel(commands.Cog):
             return await ctx.send(_("The disallowed message cannot be longer than 1000 characters."))
         await self.config.disallowed_msg.set(message)
         await ctx.send(_("Disallowed message has been set."))
+
+    @whitelabel.command(name="validation")
+    async def toggle_openai(self, ctx: commands.Context):
+        """Toggle OpenAI's free validation on or off."""
+        tokens = await self.bot.get_shared_api_tokens("openai")
+        if not tokens:
+            message = _(
+                "1. Go to [OpenAI](https://platform.openai.com/signup) and sign up for an account.\n"
+                "2. Go to the [API keys](https://platform.openai.com/account/api-keys) page.\n"
+                "3. Click the `+ Create new secret key` button to create a new API key.\n"
+                "4. Copy the API key click the button below to set it."
+            )
+            await ctx.send(
+                message,
+                view=SetApiView(
+                    default_service="openai",
+                    default_keys={"api_key": tokens.get("api_key", "")},
+                ),
+            )
+
+        current = await self.config.openai_validation()
+        await self.config.openai_validation.set(not current)
+        status = _("enabled") if not current else _("disabled")
+        await ctx.send(_("OpenAI validation has been {}.").format(status))
+
+    @whitelabel.command(name="settokens")
+    @commands.is_owner()
+    async def openai_key(self, ctx: commands.Context):
+        """Set an openai key for free content moderation"""
+        tokens = await self.bot.get_shared_api_tokens("openai")
+        message = _(
+            "1. Go to [OpenAI](https://platform.openai.com/signup) and sign up for an account.\n"
+            "2. Go to the [API keys](https://platform.openai.com/account/api-keys) page.\n"
+            "3. Click the `+ Create new secret key` button to create a new API key.\n"
+            "4. Copy the API key click the button below to set it."
+        )
+        await ctx.send(
+            message,
+            view=SetApiView(
+                default_service="openai",
+                default_keys={"api_key": tokens.get("api_key", "")},
+            ),
+        )
 
     @whitelabel.command(name="cleanup")
     async def cleanup(self, ctx: commands.Context):
