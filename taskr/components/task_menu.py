@@ -11,7 +11,7 @@ from apscheduler.triggers.cron import CronTrigger
 from dateutil import parser
 from redbot.core import commands
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import box
+from redbot.core.utils.chat_formatting import box, humanize_timedelta
 
 from ..common import ai_responses, constants as C, utils
 from ..common.models import ScheduledCommand
@@ -522,13 +522,14 @@ class TaskMenu(BaseMenu):
     async def toggle(self, interaction: discord.Interaction, button: discord.ui.Button):
         schedule = self.tasks[self.page]
         min_interval = self.db.premium_interval if self.is_premium else self.db.minimum_interval
+        min_interval_human = humanize_timedelta(seconds=min_interval) or _("0 seconds")
         if not schedule.enabled:
             if not schedule.is_safe(self.timezone, min_interval) and self.ctx.author.id not in self.bot.owner_ids:
                 return await interaction.response.send_message(
                     _(
                         "Scheduled command is not safe to enable, please configure it first.\n"
-                        "The minimum interval between tasks is {} seconds."
-                    ).format(min_interval),
+                        "The minimum interval between tasks is {} ({} seconds)."
+                    ).format(min_interval_human, min_interval),
                     ephemeral=True,
                 )
             schedule.enabled = True
