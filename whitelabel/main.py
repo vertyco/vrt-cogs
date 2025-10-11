@@ -86,8 +86,8 @@ class Whitelabel(commands.Cog):
             disallowed_msg = await self.config.disallowed_msg()
             if not disallowed_msg:
                 disallowed_msg = _(
-                    "The owner ({}) of this server does not have the required role (`{}` in `{}`) to use this feature."
-                ).format(owner.mention, main_role.name, main_guild.name)
+                    "The owner ({}) of this server does not have the {} role in the {} server required to use this feature."
+                ).format(owner.mention, f"`@{main_role.name}`", f"`{main_guild.name}`")
                 invite = await self.get_guild_invite(main_guild)
                 if invite:
                     disallowed_msg += _(" You can join the server here: {}").format(invite)
