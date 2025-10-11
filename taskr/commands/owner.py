@@ -23,7 +23,7 @@ class Owner(MixinMeta):
         """Set the maximum number of tasks allowed per guild"""
         if max_tasks < 1:
             return await ctx.send(_("The maximum number of tasks must be at least 1."))
-        self.db.max_tasks = max_tasks
+        self.db.free_tasks = max_tasks
         self.save()
         await ctx.send(_("The maximum number of tasks has been set to {}.").format(max_tasks))
 
@@ -124,6 +124,13 @@ class Owner(MixinMeta):
             inline=False,
         )
         await ctx.send(embed=embed)
+
+    @premium_group.command(name="maxfree")
+    async def set_max_free_tasks(self, ctx: commands.Context, max_tasks: commands.positive_int):
+        """Set the maximum number of free tasks"""
+        self.db.free_tasks = max_tasks
+        self.save()
+        await ctx.send(_("The maximum number of free tasks has been set to {}.").format(max_tasks))
 
     @premium_group.command(name="toggle")
     async def toggle_premium(self, ctx: commands.Context):
