@@ -26,7 +26,7 @@ class Whitelabel(commands.Cog):
     """Allow server owners to set a custom bot avatar, banner and bio."""
 
     __author__ = "vertyco"
-    __version__ = "1.0.0"
+    __version__ = "1.0.1"
     set_bot_profile = BotProfileGroup(name="botprofile", description="Manage bot's bio, banner, and avatar.")
 
     def __init__(self, bot: Red):
@@ -365,6 +365,7 @@ class Whitelabel(commands.Cog):
         if not main_role:
             return
         if main_role in before.roles and main_role not in after.roles:
+            log.warning("Member %s lost the main role %s", after, main_role)
             # Role was removed
             for guild in self.bot.guilds:
                 if guild.owner_id != after.id:
@@ -388,6 +389,7 @@ class Whitelabel(commands.Cog):
         if not main_role:
             return
         if main_role in member.roles:
+            log.warning("Member %s left the main guild %s", member, main_guild)
             # Member had the role and left the guild
             for guild in self.bot.guilds:
                 if guild.owner_id != member.id:
