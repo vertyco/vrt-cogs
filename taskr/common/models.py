@@ -782,11 +782,11 @@ class ScheduledCommand(Base):
             return CronTrigger(**cron_kwargs)
 
     def is_safe(self, timezone: str, minimum_interval: int) -> bool:
-        """Ensure that the scheduled task will not run more frequently than every 5 minutes."""
+        """Ensure that the scheduled task will not run more frequently than the minimum interval."""
         trigger: IntervalTrigger | CronTrigger = self.trigger(timezone)
 
         if isinstance(trigger, IntervalTrigger):
-            # For IntervalTrigger, check if the interval is at least 5 minutes
+            # For IntervalTrigger, check if the interval is at least the minimum interval
             interval_seconds = trigger.interval.total_seconds()
             return interval_seconds >= minimum_interval
         elif isinstance(trigger, CronTrigger):
