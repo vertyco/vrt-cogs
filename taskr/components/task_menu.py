@@ -33,12 +33,12 @@ class TaskMenu(BaseMenu):
         self.timezone: str = self.db.timezone(ctx.guild)
 
     async def on_timeout(self) -> None:
+        page = await self.get_page()
         # Disable all buttons by iterating through all children
         for item in self.walk_children():
             if isinstance(item, discord.ui.Button):
                 item.disabled = True
-
-        await self.message.edit(embed=await self.get_page(), view=self)
+        await self.message.edit(embed=page, view=self)
         self.stop()
 
     async def start(self):

@@ -23,6 +23,32 @@ DAYS_OF_WEEK = {
     "sat": "Saturday",
     "sun": "Sunday",
 }
+DAY_NAME_TO_INDEX: dict[str, int] = {
+    "sun": 0,
+    "0": 0,
+    "7": 0,
+    "mon": 1,
+    "1": 1,
+    "tue": 2,
+    "2": 2,
+    "wed": 3,
+    "3": 3,
+    "thu": 4,
+    "4": 4,
+    "fri": 5,
+    "5": 5,
+    "sat": 6,
+    "6": 6,
+}
+INDEX_TO_DAY_NAME: dict[int, str] = {
+    0: "Sunday",
+    1: "Monday",
+    2: "Tuesday",
+    3: "Wednesday",
+    4: "Thursday",
+    5: "Friday",
+    6: "Saturday",
+}
 MONTHS_OF_YEAR = {
     "1": "January",
     "2": "February",
@@ -197,36 +223,60 @@ class ScheduledCommand(Base):
         return " ".join(parts)
 
     def _format_time(self, hour: str, minute: str) -> str:
-        def parse_field(field_str: str) -> str | list[int]:
+        def parse_field(field_str: str, upper_bound: int) -> str | list[int]:
+            field_str = (field_str or "*").strip()
             if field_str == "*":
                 return "*"
-            elif "," in field_str:
-                values = []
-                for part in field_str.split(","):
-                    if "-" in part:
-                        start, end = map(int, part.split("-"))
-                        values.extend(range(start, end + 1))
+            values: list[int] = []
+            parts = [part.strip() for part in field_str.split(",") if part.strip()]
+            for part in parts:
+                step = 1
+                base = part
+                if "/" in part:
+                    base, step_str = part.split("/", 1)
+                    base = base.strip()
+                    try:
+                        step = max(int(step_str.strip()), 1)
+                    except ValueError:
+                        return []
+                if base in {"", "*"}:
+                    values.extend(range(0, upper_bound, step))
+                    continue
+                if "-" in base:
+                    start_str, end_str = base.split("-", 1)
+                    try:
+                        start = int(start_str.strip())
+                        end = int(end_str.strip())
+                    except ValueError:
+                        return []
+                    if start <= end:
+                        rng = range(start, end + 1, step)
+                        values.extend(v for v in rng if 0 <= v < upper_bound)
                     else:
-                        values.append(int(part))
-                return sorted(set(values))
-            elif "-" in field_str and "/" in field_str:
-                range_part, step = field_str.split("/")
-                start, end = map(int, range_part.split("-"))
-                step = int(step)
-                return list(range(start, end + 1, step))
-            elif "-" in field_str:
-                start, end = map(int, field_str.split("-"))
-                return list(range(start, end + 1))
-            elif "/" in field_str:
-                # Updated handling for patterns like "*/2" or "1/2"
-                if field_str.startswith("*/"):
-                    step = int(field_str[2:])
-                    return list(range(0, 60, step))
+                        forward = range(start, upper_bound, step)
+                        wrap = range(0, end + 1, step)
+                        values.extend(v for v in forward if 0 <= v < upper_bound)
+                        values.extend(v for v in wrap if 0 <= v < upper_bound)
                 else:
-                    start, step = map(int, field_str.split("/"))
-                    return list(range(start, 60, step))
-            else:
-                return [int(field_str)]
+                    try:
+                        start = int(base.strip())
+                    except ValueError:
+                        return []
+                    if 0 <= start < upper_bound:
+                        if step == 1:
+                            values.append(start)
+                        else:
+                            values.extend(range(start, upper_bound, step))
+            if not values:
+                return []
+            seen: set[int] = set()
+            ordered: list[int] = []
+            for value in values:
+                normalized = value % upper_bound
+                if normalized not in seen:
+                    seen.add(normalized)
+                    ordered.append(normalized)
+            return ordered
 
         def get_step(lst):
             if len(lst) < 2:
@@ -237,8 +287,13 @@ class ScheduledCommand(Base):
                     return None
             return step
 
-        hour_parsed = parse_field(hour)
-        minute_parsed = parse_field(minute)
+        hour_parsed = parse_field(hour, 24)
+        minute_parsed = parse_field(minute, 60)
+
+        if isinstance(hour_parsed, list) and not hour_parsed:
+            return "Invalid time format."
+        if isinstance(minute_parsed, list) and not minute_parsed:
+            return "Invalid time format."
 
         # Case when both hour and minute are wildcards
         if hour_parsed == "*" and minute_parsed == "*":
@@ -364,40 +419,71 @@ class ScheduledCommand(Base):
         if not days_of_week or days_of_week == "*":
             return None
 
-        days = []
-        tokens = days_of_week.lower().split(",")
+        tokens = [token.strip() for token in days_of_week.split(",") if token.strip()]
+        expanded_names: list[str] = []
         for token in tokens:
-            token = token.strip()
-            if "-" in token:
-                # Handle ranges (e.g., mon-fri)
-                start_day, end_day = token.split("-")
-                ordered_days = list(DAYS_OF_WEEK.keys())
-                start_index = ordered_days.index(start_day)
-                end_index = ordered_days.index(end_day)
-                if start_index <= end_index:
-                    days_range = ordered_days[start_index : end_index + 1]
-                else:
-                    days_range = ordered_days[start_index:] + ordered_days[: end_index + 1]
-                days.extend([DAYS_OF_WEEK[day] for day in days_range])
-            elif "/" in token:
-                # Handle steps (e.g., mon/2)
-                day, step = token.split("/")
-                day_name = DAYS_OF_WEEK.get(day, day.capitalize())
-                step = int(step)
-                if step == 2:
-                    days.append(f"every other {day_name}")
-                else:
-                    days.append(f"every {step} {day_name}")
-            else:
-                day_name = DAYS_OF_WEEK.get(token, token.capitalize())
-                days.append(day_name)
+            try:
+                indexes = self._expand_day_token(token)
+            except ValueError:
+                expanded_names.append(token)
+                continue
+            for idx in indexes:
+                day_name = INDEX_TO_DAY_NAME.get(idx)
+                if day_name and day_name not in expanded_names:
+                    expanded_names.append(day_name)
 
-        if len(days) == 7:
+        if len(expanded_names) == 7:
             return None  # Every day
-        elif len(days) > 1:
-            return ", ".join(days[:-1]) + f" and {days[-1]}"
+        if not expanded_names:
+            return None
+        if len(expanded_names) > 1:
+            return ", ".join(expanded_names[:-1]) + f" and {expanded_names[-1]}"
+        return expanded_names[0]
+
+    @staticmethod
+    def _day_to_index(value: str) -> int:
+        key = value.strip().lower()
+        if key not in DAY_NAME_TO_INDEX:
+            raise ValueError(f"Invalid day token: {value}")
+        return DAY_NAME_TO_INDEX[key]
+
+    def _expand_day_token(self, token: str) -> list[int]:
+        token = token.strip().lower()
+        if not token:
+            return []
+        step = 1
+        base = token
+        if "/" in token:
+            base, step_str = token.split("/", 1)
+            base = base.strip()
+            step = max(int(step_str.strip()), 1)
+        if base in {"", "*"}:
+            values = list(range(7))
+        elif "-" in base:
+            start_str, end_str = base.split("-", 1)
+            start = self._day_to_index(start_str)
+            end = self._day_to_index(end_str)
+            if start <= end:
+                values = list(range(start, end + 1))
+            else:
+                values = list(range(start, 7)) + list(range(0, end + 1))
         else:
-            return days[0]
+            start = self._day_to_index(base)
+            values = [start]
+        if step > 1:
+            if len(values) == 1 and "-" not in base and base not in {"", "*"}:
+                start_value = values[0]
+                values = [val for val in range(start_value, 7, step)]
+            else:
+                values = values[::step]
+        seen: set[int] = set()
+        ordered: list[int] = []
+        for value in values:
+            normalized = value % 7
+            if normalized not in seen:
+                seen.add(normalized)
+                ordered.append(normalized)
+        return ordered
 
     def _parse_days_of_month(self, days_of_month: str) -> str | None:
         if not days_of_month or days_of_month == "*":
@@ -810,6 +896,11 @@ class DB(Base):
     def remove_task(self, task: str | ScheduledCommand) -> ScheduledCommand | None:
         task_id = task if isinstance(task, str) else task.id
         return self.tasks.pop(task_id)
+
+    def disable_task(self, task: str | ScheduledCommand) -> None:
+        task_id = task if isinstance(task, str) else task.id
+        if task_id in self.tasks:
+            self.tasks[task_id].enabled = False
 
     def refresh_task(self, task: str | ScheduledCommand) -> None:
         task_id = task if isinstance(task, str) else task.id
