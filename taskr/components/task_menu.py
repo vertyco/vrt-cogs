@@ -913,6 +913,7 @@ class TaskMenu(BaseMenu):
                 "label": _("When do you want this command to run?"),
                 "style": discord.TextStyle.short,
                 "placeholder": _("ex: run every 5 minutes"),
+                "max_length": 1000,
             }
         }
         modal = DynamicModal(_("AI Schedule Helper"), fields, timeout=600)
@@ -962,7 +963,7 @@ class TaskMenu(BaseMenu):
                 model="gpt-5",
                 messages=messages,
                 response_format=ai_responses.CronDataResponse,
-                reasoning_effort="low",
+                reasoning_effort="medium",
             )
             model: ai_responses.CronDataResponse = response.choices[0].message.parsed
         except Exception as e:
@@ -1081,6 +1082,8 @@ class TaskMenu(BaseMenu):
             txt += _("\nAI Comment: {}").format(model.user_comment)
         await interaction.followup.send(txt, ephemeral=True)
         self.cog.save()
+        if schedule.enabled:
+            await self.cog.ensure_jobs()
 
     @discord.ui.button(emoji=C.PLAY, style=discord.ButtonStyle.secondary, row=4)
     async def run_command(self, interaction: discord.Interaction, button: discord.ui.Button):

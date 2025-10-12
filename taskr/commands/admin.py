@@ -80,6 +80,8 @@ class Admin(MixinMeta):
         - Please run the ping command every odd hour at the 30 minute mark from 5am to 8pm
         - Please run the ping command on the 15th of each month at 3pm
         """
+        if len(request) > 1000:
+            return await ctx.send(_("Your request is too long, please keep it under 1000 characters."))
         async with ctx.typing():
             openai_token = None
             keys = await self.bot.get_shared_api_tokens("openai")
@@ -121,7 +123,7 @@ class Admin(MixinMeta):
                     model="gpt-5",
                     messages=messages,
                     response_format=CommandCreationResponse,
-                    reasoning_effort="low",
+                    reasoning_effort="medium",
                 )
                 model: CommandCreationResponse = response.choices[0].message.parsed
             except Exception as e:
