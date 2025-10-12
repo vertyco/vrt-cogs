@@ -159,7 +159,7 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
                 replace_existing=True,
                 max_instances=1,
                 next_run_time=task.next_run(timezone),
-                misfire_grace_time=None,
+                misfire_grace_time=10,
             )
             log.info("Task %s scheduled", task)
             changed = True
