@@ -23,7 +23,7 @@
     "fastapi",
     "msgpack",
     "plotly",
-    "pydantic",
+    "pydantic>=2.11,<2.12",
     "python-multipart",
     "python-decouple",
     "python-dotenv",
