@@ -17,7 +17,7 @@
     "numpy",
     "openai>=1.99.2",
     "pandas",
-    "pydantic",
+    "pydantic>=2.11,<2.12",
     "pytz",
     "sentry_sdk",
     "tenacity",
