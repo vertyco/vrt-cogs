@@ -333,33 +333,41 @@ class User(MixinMeta):
         resource: constants.Resource,
         amount: commands.positive_int,
     ):
-        """Convert resources to economy credits (if enabled)."""
-        player = await self.db_utils.get_create_player(ctx.author)
+        """Convert resources to economy credits (if enabled).
+
+        **Arguments:**
+        `resource`: The type of resource to convert (stone, iron, gems).
+        `amount`: The amount of the resource to convert.
+        """
         if await bank.is_global():
             settings = await self.db_utils.get_create_global_settings()
         else:
             settings = await self.db_utils.get_create_guild_settings(ctx.guild)
-
         if not settings.conversion_enabled:
             return await ctx.send("Resource conversion is not enabled.", ephemeral=True)
+        conversion_ratio: float = getattr(settings, f"{resource}_convert_rate")
+        if not conversion_ratio or conversion_ratio <= 0:
+            return await ctx.send("No conversion rate set for that resource.", ephemeral=True)
 
-        if amount > getattr(player, resource):
+        player = await self.db_utils.get_create_player(ctx.author)
+        resource_balance: int = getattr(player, resource)
+        creditsname = await bank.get_currency_name(ctx.guild)
+        if amount > resource_balance:
             grammar = "that many" if resource == "gems" else "that much"
             return await ctx.send(f"You do not have {grammar} {resource.title()}!", ephemeral=True)
-
-        rate: float = getattr(settings, f"{resource}_convert_rate")
-        if rate > amount:
+        if conversion_ratio > amount:
             return await ctx.send(
-                f"You need to convert at least `{rate}` {resource.title()} to receive 1 credit.", ephemeral=True
+                f"You need to convert at least `{conversion_ratio}` {resource.title()} to receive {creditsname}.",
+                ephemeral=True,
             )
+        # Conversion ratio can be a float between 0 and infinity
+        credits_to_give = math.floor(amount / conversion_ratio)
+        amount_to_deduct = round(credits_to_give * conversion_ratio)
 
-        creditsname = await bank.get_currency_name(ctx.guild)
-
-        credits_to_give = round(amount / rate)
-        amount_to_deduct = round(credits_to_give * rate)
         if credits_to_give == 0:
             return await ctx.send(
-                f"You need to convert at least `{rate}` {resource.title()} to receive 1 {creditsname}.", ephemeral=True
+                f"You need to convert at least `{conversion_ratio}` {resource.title()} to receive 1 {creditsname}.",
+                ephemeral=True,
             )
 
         try:
