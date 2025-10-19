@@ -71,9 +71,13 @@ class ConfigScheduleModal(ui.Modal, title=_("Edit Scheduled Command")):
         self.inputs = {}
 
     async def on_submit(self, interaction: discord.Interaction):
+        author_component: discord.ui.UserSelect = self.author.component  # type: ignore
+        channel_component: discord.ui.ChannelSelect = self.channel.component  # type: ignore
+        author_values = author_component.values
+        channel_values = channel_component.values
         self.inputs["name"] = self.name.value
-        self.inputs["author"] = self.author.component.values[0].id if self.author.component.values else None
-        self.inputs["channel"] = self.channel.component.values[0].id if self.channel.component.values else None
+        self.inputs["author"] = author_values[0].id if author_values else None
+        self.inputs["channel"] = channel_values[0].id if channel_values else None
         self.inputs["command"] = self.command.value
         self.stop()
 
