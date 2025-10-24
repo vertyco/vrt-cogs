@@ -26,7 +26,7 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
     """Schedule bot commands with ease"""
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.0.6"
+    __version__ = "1.0.7"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -44,8 +44,12 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
         return f"{helpcmd}\n\n{txt}"
 
     async def red_delete_data_for_user(self, *, requester: RequestType, user_id: int):
-        self.db.tasks = {k: v for k, v in self.db.tasks.items() if v.author_id != user_id}
+        filtered = {k: v for k, v in self.db.tasks.items() if v.author_id != user_id}
+        if len(filtered) == len(self.db.tasks):
+            return
+        self.db.tasks = filtered
         self.save()
+        await self.ensure_jobs()
 
     async def red_get_data_for_user(self, *, user_id: int) -> t.MutableMapping[str, BytesIO]:
         def _exe():
@@ -310,23 +314,34 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
             return
         has_premium = await self.is_premium(guild)
         minimum_interval = self.db.premium_interval if has_premium else self.db.minimum_interval
+        timezone_name = self.db.timezone(guild)
+        changed = False
+
         # First ensure intervals are within limits
         for task in tasks:
-            if not task.is_safe(self.db.timezone(guild, minimum_interval)):
-                task.enabled = False
+            if task.is_safe(timezone_name, minimum_interval):
+                continue
+            if task.enabled:
                 log.info("Disabling task %s, interval too low", task)
-                self.db.refresh_task(task)
-                self.save(maybe=True)
-        # Now ensure we are within the task limit for non premium guilds
-        if has_premium:
-            return
-        enabled_tasks = [i for i in tasks if i.enabled]
-        if len(enabled_tasks) <= self.db.free_tasks:
-            return
-        # Disable excess tasks, oldest first
-        to_disable = sorted(enabled_tasks, key=lambda x: x.created_on)[: len(enabled_tasks) - self.db.free_tasks]
-        for task in to_disable:
+            changed = True
             task.enabled = False
-            log.info("Disabling task %s, excess tasks", task)
             self.db.refresh_task(task)
-        self.save(maybe=True)
+
+        # Now ensure we are within the task limit for non premium guilds
+        if not has_premium:
+            enabled_tasks = [i for i in tasks if i.enabled]
+            if len(enabled_tasks) > self.db.free_tasks:
+                # Disable excess tasks, oldest first
+                to_disable = sorted(enabled_tasks, key=lambda x: x.created_on)[
+                    : len(enabled_tasks) - self.db.free_tasks
+                ]
+                for task in to_disable:
+                    if task.enabled:
+                        log.info("Disabling task %s, excess tasks", task)
+                    changed = True
+                    task.enabled = False
+                    self.db.refresh_task(task)
+
+        if changed:
+            self.save(maybe=True)
+            await self.ensure_jobs()

@@ -345,6 +345,7 @@ class TaskMenu(BaseMenu):
         if res not in ["yes", "y"]:
             return await interaction.followup.send(_("Cancelled."), ephemeral=True)
         schedule = self.tasks[self.page]
+        await self.cog.remove_job(schedule)
         self.db.remove_task(schedule)
         self.tasks = await asyncio.to_thread(self.db.get_tasks, self.guild.id)
         await self.message.edit(embed=await self.get_page(), view=self)
@@ -536,7 +537,8 @@ class TaskMenu(BaseMenu):
         if not schedule.is_safe(
             self.timezone, self.db.premium_interval if self.is_premium else self.db.minimum_interval
         ):
-            schedule.enabled = False
+            await self.cog.remove_job(schedule)
+            await self.message.edit(embed=await self.get_page(), view=self)
             await interaction.followup.send(_("Scheduled command interval is not safe."), ephemeral=True)
             return
         await self.message.edit(embed=await self.get_page(), view=self)
@@ -642,7 +644,8 @@ class TaskMenu(BaseMenu):
         if not schedule.is_safe(
             self.timezone, self.db.premium_interval if self.is_premium else self.db.minimum_interval
         ):
-            schedule.enabled = False
+            await self.cog.remove_job(schedule)
+            await self.message.edit(embed=await self.get_page(), view=self)
             await interaction.followup.send(_("Scheduled command interval is not safe."), ephemeral=True)
             return
 
@@ -718,7 +721,8 @@ class TaskMenu(BaseMenu):
         if not schedule.is_safe(
             self.timezone, self.db.premium_interval if self.is_premium else self.db.minimum_interval
         ):
-            schedule.enabled = False
+            await self.cog.remove_job(schedule)
+            await self.message.edit(embed=await self.get_page(), view=self)
             await interaction.followup.send(_("Scheduled command interval is not safe."), ephemeral=True)
             return
 
