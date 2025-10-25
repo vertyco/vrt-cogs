@@ -364,21 +364,13 @@ class TaskMenu(BaseMenu):
         for schedule in self.tasks:
             if self.filter in schedule.name.lower():
                 new_pages.append(schedule)
-        if not new_pages:
-            # Search by ID
-            for schedule in self.tasks:
-                if self.filter in str(schedule.id).lower():
-                    new_pages.append(schedule)
-        if not new_pages:
-            # Search by command
-            for schedule in self.tasks:
-                if self.filter in schedule.command.lower():
-                    new_pages.append(schedule)
-        if not new_pages:
-            # Search by channel
-            for schedule in self.tasks:
-                if self.filter in str(schedule.channel_id).lower():
-                    new_pages.append(schedule)
+            elif self.filter.casefold() == str(schedule.id).casefold():
+                new_pages.append(schedule)
+            elif self.filter.casefold() in schedule.command.casefold():
+                new_pages.append(schedule)
+            elif self.filter.casefold() in str(schedule.channel_id).casefold():
+                new_pages.append(schedule)
+
         return new_pages
 
     @discord.ui.button(emoji=C.MAG, style=discord.ButtonStyle.secondary, row=1)
