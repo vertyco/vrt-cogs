@@ -77,10 +77,8 @@ class ConfigScheduleModal(ui.Modal, title=_("Edit Scheduled Command")):
         channel_values = channel_component.values
         try:
             self.inputs["name"] = self.name.value
-            self.inputs["author"] = int(getattr(author_values[0], "id", author_values[0])) if author_values else None
-            self.inputs["channel"] = (
-                int(getattr(channel_values[0], "id", channel_values[0])) if channel_values else None
-            )
+            self.inputs["author"] = getattr(author_values[0], "id", author_values[0]) if author_values else None
+            self.inputs["channel"] = getattr(channel_values[0], "id", channel_values[0]) if channel_values else None
             self.inputs["command"] = self.command.value
             self.stop()
         except Exception as e:
@@ -412,7 +410,7 @@ class TaskMenu(BaseMenu):
         self.page = 0
         await self.message.edit(embed=await self.get_page(), view=self)
         await interaction.followup.send(
-            _("Found {} scheduled commands matching that query.").format(len(self.tasks)),
+            _("Found {} scheduled commands matching that query.").format(len(new_pages)),
             ephemeral=True,
         )
 
@@ -431,7 +429,7 @@ class TaskMenu(BaseMenu):
         channel_id = modal.inputs["channel"]
         command = modal.inputs["command"]
 
-        if not author_id.isdigit():
+        if isinstance(author_id, str) and not author_id.isdigit():
             return await interaction.followup.send(_("Author ID must be a number."), ephemeral=True)
         author_id = int(author_id)
         command_author = self.guild.get_member(author_id)
