@@ -75,11 +75,15 @@ class ConfigScheduleModal(ui.Modal, title=_("Edit Scheduled Command")):
         channel_component: discord.ui.ChannelSelect = self.channel.component  # type: ignore
         author_values = author_component.values
         channel_values = channel_component.values
-        self.inputs["name"] = self.name.value
-        self.inputs["author"] = author_values[0].id if author_values else None
-        self.inputs["channel"] = channel_values[0].id if channel_values else None
-        self.inputs["command"] = self.command.value
-        self.stop()
+        try:
+            self.inputs["name"] = self.name.value
+            self.inputs["author"] = author_values[0].id if author_values else None
+            self.inputs["channel"] = channel_values[0].id if channel_values else None
+            self.inputs["command"] = self.command.value
+            self.stop()
+        except Exception as e:
+            log.error(f"Error in ConfigScheduleModal on_submit: {author_values}, {channel_values}", exc_info=e)
+            raise e
 
 
 class TaskMenu(BaseMenu):
