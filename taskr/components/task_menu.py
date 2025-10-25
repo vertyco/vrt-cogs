@@ -112,8 +112,8 @@ class TaskMenu(BaseMenu):
         self.tasks = await asyncio.to_thread(self.db.get_tasks, self.guild.id)
         self.is_premium = await self.cog.is_premium(self.guild)
         if self.filter:
-            pages = self.search_pages()
-            if not pages:
+            found = self.search_pages()
+            if not found:
                 return await self.channel.send(_("No scheduled commands found matching that query."))
 
         self.message = await self.channel.send(embed=await self.get_page(), view=self)
@@ -144,7 +144,7 @@ class TaskMenu(BaseMenu):
         embed = await asyncio.to_thread(_exe)
         if self.tasks:
             self.toggle.disabled = False
-            self.configure.disabled = False
+            self.configure_task.disabled = False
             self.delete.disabled = False
             self.interval.disabled = False
             self.cron.disabled = False
@@ -155,7 +155,7 @@ class TaskMenu(BaseMenu):
             self.run_command.disabled = False
         else:
             self.toggle.disabled = True
-            self.configure.disabled = True
+            self.configure_task.disabled = True
             self.delete.disabled = True
             self.interval.disabled = True
             self.cron.disabled = True
@@ -358,20 +358,31 @@ class TaskMenu(BaseMenu):
         await interaction.followup.send(_("Scheduled command deleted."), ephemeral=True)
         self.cog.save()
 
-    def search_pages(self) -> list[ScheduledCommand]:
-        new_pages = []
+    def search_pages(self) -> bool:
+        # Find the page number matching the filter the closest
+        options: list[tuple[int, int]] = []  # [(page_index, match_score)]
         # Search by name first
-        for schedule in self.tasks:
-            if self.filter in schedule.name.lower():
-                new_pages.append(schedule)
-            elif self.filter.casefold() == str(schedule.id).casefold():
-                new_pages.append(schedule)
-            elif self.filter.casefold() in schedule.command.casefold():
-                new_pages.append(schedule)
-            elif self.filter.casefold() in str(schedule.channel_id).casefold():
-                new_pages.append(schedule)
+        for idx, schedule in enumerate(self.tasks):
+            if self.filter.casefold() == schedule.name.casefold():
+                options.append((idx, 100))
+            elif self.filter.casefold() in schedule.name.casefold():
+                options.append((idx, 50))
 
-        return new_pages
+            if self.filter.casefold() == schedule.command.casefold():
+                options.append((idx, 100))
+            elif self.filter.casefold() in schedule.command.casefold():
+                options.append((idx, 50))
+
+            if self.filter.casefold() == str(schedule.id).casefold():
+                options.append((idx, 100))
+
+            if self.filter == str(schedule.channel_id):
+                options.append((idx, 100))
+
+        if options:
+            best_option = max(options, key=lambda x: x[1])
+            self.page = best_option[0]
+        return True if options else False
 
     @discord.ui.button(emoji=C.MAG, style=discord.ButtonStyle.secondary, row=1)
     async def search(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -404,20 +415,16 @@ class TaskMenu(BaseMenu):
             self.filter = ""
             return await self.message.edit(embed=await self.get_page(), view=self)
         self.filter = new_filter.lower()
-        new_pages = self.search_pages()
-        if not new_pages:
+        found = self.search_pages()
+        if not found:
             return await interaction.followup.send(
                 _("No scheduled commands found matching that query."), ephemeral=True
             )
-        self.page = 0
         await self.message.edit(embed=await self.get_page(), view=self)
-        await interaction.followup.send(
-            _("Found {} scheduled commands matching that query.").format(len(new_pages)),
-            ephemeral=True,
-        )
+        await interaction.followup.send(_("Found a scheduled command matching that query."), ephemeral=True)
 
     @discord.ui.button(label="Configure", style=discord.ButtonStyle.primary, row=2)
-    async def configure(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def configure_task(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not self.tasks:
             return await interaction.response.send_message(_("No scheduled commands to configure."), ephemeral=True)
         schedule = self.tasks[self.page]
