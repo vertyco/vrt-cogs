@@ -77,12 +77,14 @@ class ConfigScheduleModal(ui.Modal, title=_("Edit Scheduled Command")):
         channel_values = channel_component.values
         try:
             self.inputs["name"] = self.name.value
-            self.inputs["author"] = author_values[0].id if author_values else None
-            self.inputs["channel"] = channel_values[0].id if channel_values else None
+            self.inputs["author"] = int(getattr(author_values[0], "id", author_values[0])) if author_values else None
+            self.inputs["channel"] = (
+                int(getattr(channel_values[0], "id", channel_values[0])) if channel_values else None
+            )
             self.inputs["command"] = self.command.value
             self.stop()
         except Exception as e:
-            log.error(f"Error in ConfigScheduleModal on_submit: {author_values}, {channel_values}", exc_info=e)
+            log.error(f"Error in ConfigScheduleModal on_submit: {author_values}, {channel_values}")
             raise e
 
 
