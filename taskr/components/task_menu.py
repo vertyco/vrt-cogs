@@ -68,21 +68,23 @@ class ConfigScheduleModal(ui.Modal, title=_("Edit Scheduled Command")):
                 ]
         self.command.default = schedule.command
 
-        self.inputs = {}
+        self.inputs: dict[str, int | str | None] = {}
 
     async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer()
         author_component: discord.ui.UserSelect = self.author.component  # type: ignore
         channel_component: discord.ui.ChannelSelect = self.channel.component  # type: ignore
-        author_values = author_component.values
-        channel_values = channel_component.values
+        author_value = int(author_component.values[0]) if author_component.values else None
+        channel_value = int(channel_component.values[0]) if channel_component.values else None
+        log.debug(f"AUTHOR VALUES: {author_value!r}, CHANNEL VALUES: {channel_value!r}")
         try:
             self.inputs["name"] = self.name.value
-            self.inputs["author"] = getattr(author_values[0], "id", author_values[0]) if author_values else None
-            self.inputs["channel"] = getattr(channel_values[0], "id", channel_values[0]) if channel_values else None
+            self.inputs["author"] = author_value
+            self.inputs["channel"] = channel_value
             self.inputs["command"] = self.command.value
             self.stop()
         except Exception as e:
-            log.error(f"Error in ConfigScheduleModal on_submit: {author_values}, {channel_values}")
+            log.error(f"Error in ConfigScheduleModal on_submit: {author_value}, {channel_value}")
             raise e
 
 
@@ -424,14 +426,12 @@ class TaskMenu(BaseMenu):
         await modal.wait()
         if not modal.inputs:
             return
-        name = modal.inputs["name"]
-        author_id = modal.inputs["author"]
-        channel_id = modal.inputs["channel"]
-        command = modal.inputs["command"]
 
-        if isinstance(author_id, str) and not author_id.isdigit():
-            return await interaction.followup.send(_("Author ID must be a number."), ephemeral=True)
-        author_id = int(author_id)
+        name: str = modal.inputs["name"]
+        author_id: int = modal.inputs["author"]
+        channel_id: int | None = modal.inputs["channel"]
+        command: str = modal.inputs["command"]
+
         command_author = self.guild.get_member(author_id)
         if not command_author:
             return await interaction.followup.send(_("Author for that ID was not found."), ephemeral=True)
