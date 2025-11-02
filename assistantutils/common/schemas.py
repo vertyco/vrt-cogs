@@ -55,7 +55,7 @@ SEARCH_INTERNET = {
 }
 FETCH_CHANNEL_HISTORY = {
     "name": "fetch_channel_history",
-    "description": "Fetch the last X messages from a channel to see their content.",
+    "description": "Fetch messages from a Discord channel over a specified limit or time delta.",
     "parameters": {
         "type": "object",
         "properties": {
@@ -70,7 +70,7 @@ FETCH_CHANNEL_HISTORY = {
             },
             "delta": {
                 "type": "string",
-                "description": "The time delta to filter messages by, in the format 'XdXhXmXs' (e.g., '1d2h30m' for 1 day, 2 hours, and 30 minutes). If this is provided, it will use the delta instead of the limit. If not provided, the default `limit` will be used",
+                "description": "The time delta to filter messages by, in the format 'XdXhXmXs' (e.g., '1d2h30m' for 1 day, 2 hours, and 30 minutes. MAX 2d). If this is provided, it will use the delta instead of the limit. If not provided, the default `limit` will be used",
                 "default": "",
             },
         },
