@@ -210,7 +210,7 @@ class Functions(MixinMeta):
 
         try:
             timedelta = commands.parse_timedelta(delta)
-        except (ValueError, TypeError):
+        except (ValueError, TypeError, commands.BadArgument):
             timedelta = None
 
         # Start fetching the content
