@@ -29,6 +29,9 @@ class Result:
     def __str__(self):
         return f"Result: {self.text}, source: {self.src}, target: {self.dest}"
 
+    def __repr__(self):
+        return f"Result(text={self.text}, src={self.src}, dest={self.dest})"
+
 
 class OpenAITranslateResponse(BaseModel):
     translated_text: str
