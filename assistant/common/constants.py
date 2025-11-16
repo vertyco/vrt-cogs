@@ -284,6 +284,7 @@ READ_EXTENSIONS = [
     ".pde",
     ".spec",
     ".sql",
+    ".log",
 ]
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
 REACT_SUMMARY_MESSAGE = """
