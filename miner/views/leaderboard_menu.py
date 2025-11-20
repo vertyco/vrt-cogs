@@ -60,10 +60,10 @@ class LeaderBoardDeltaDropdown(ui.ActionRow["LeaderboardView"]):
 class PaginationButtons(ui.ActionRow["LeaderboardView"]):
     def __init__(self, view: "LeaderboardView"):
         self.__view = view
-        if self.__view.page_count > 10:
+        super().__init__()
+        if self.__view.page_count < 10:
             self.remove_item(self.left)
             self.remove_item(self.right)
-        super().__init__()
 
     @ui.button(emoji="\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}", style=discord.ButtonStyle.primary)
     async def left(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
