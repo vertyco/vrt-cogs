@@ -17,7 +17,6 @@ class MessageListener(MixinMeta):
     def __init__(self):
         super().__init__()
         self.last_user_message: dict[int, int] = {}
-        self.last_channel_rock_spawn: dict[int, float] = {}
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -38,28 +37,24 @@ class MessageListener(MixinMeta):
         key = message.channel.id if settings.per_channel_activity_trigger else message.guild.id
         self.activity.update(key)
 
-        # Check last rock spawn
-        last_spawn = self.last_channel_rock_spawn.get(message.channel.id, 0)
-        min_time = max(settings.time_between_spawns, constants.MIN_TIME_BETWEEN_SPAWNS)
-        time_elapsed = perf_counter() - last_spawn
-
-        if time_elapsed < min_time:
-            return
-        else:
-            self.last_channel_rock_spawn[message.channel.id] = perf_counter()
-
         if message.guild.id not in self.last_user_message:
             self.last_user_message[message.guild.id] = message.author.id
         elif (
             self.last_user_message[message.guild.id] == message.author.id
-            and time_elapsed < constants.ABSOLUTE_MAX_TIME_BETWEEN_SPAWNS
+            and (perf_counter() - self.activity.last_spawns.get(key, 0)) < constants.ABSOLUTE_MAX_TIME_BETWEEN_SPAWNS
         ):
             # Same user cannot spam messages to increase activity
             return
         else:
             self.last_user_message[message.guild.id] = message.author.id
 
-        rock_type: constants.RockTierName | None = self.activity.maybe_get_rock(key)
+        # Fetch global spawn timing and determine if a rock should spawn.
+        min_interval, max_interval = await self.db_utils.get_spawn_timing()
+        rock_type: constants.RockTierName | None = self.activity.maybe_get_rock(
+            key,
+            min_interval=min_interval,
+            max_interval=max_interval,
+        )
         if not rock_type:
             return
 

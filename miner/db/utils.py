@@ -21,6 +21,23 @@ class DBUtils:
         return settings
 
     @staticmethod
+    @cached(ttl=60)
+    async def get_spawn_timing() -> tuple[int, int]:
+        """Return the global min and max spawn intervals in seconds.
+
+        Falls back to the defaults in constants if no values are set.
+        Cached for a short period to avoid excessive database queries.
+        """
+        settings = await DBUtils.get_create_global_settings()
+        min_interval = settings.min_spawn_interval or constants.MIN_TIME_BETWEEN_SPAWNS
+        max_interval = settings.max_spawn_interval or constants.ABSOLUTE_MAX_TIME_BETWEEN_SPAWNS
+        # Ensure min is never >= max; fall back to sane defaults if misconfigured.
+        if min_interval >= max_interval:
+            min_interval = constants.MIN_TIME_BETWEEN_SPAWNS
+            max_interval = constants.ABSOLUTE_MAX_TIME_BETWEEN_SPAWNS
+        return min_interval, max_interval
+
+    @staticmethod
     async def get_create_player(user: discord.User | discord.Member | int) -> Player:
         uid = user if isinstance(user, int) else user.id
         player = await Player.objects().get_or_create((Player.id == uid), defaults={Player.id: uid})

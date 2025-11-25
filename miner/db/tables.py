@@ -58,6 +58,12 @@ class GlobalSettings(TableMixin, Table):
     iron_convert_rate = Float(default=5.0)  # Iron to gems conversion rate
     gems_convert_rate = Float(default=1.0)  # Gems to gems conversion rate
 
+    # Global rock spawn timing configuration (in seconds)
+    # These control the minimum and maximum time between rock spawns globally.
+    # If unset, they fall back to the constants defined in miner.common.constants.
+    min_spawn_interval = Integer(null=True)
+    max_spawn_interval = Integer(null=True)
+
 
 class Player(TableMixin, Table):
     id = BigInt(primary_key=True)  # Discord User ID
