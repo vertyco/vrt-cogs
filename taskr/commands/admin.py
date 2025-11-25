@@ -120,7 +120,7 @@ class Admin(MixinMeta):
             try:
                 client = openai.AsyncClient(api_key=openai_token)
                 response = await client.beta.chat.completions.parse(
-                    model="gpt-5",
+                    model="gpt-5.1",
                     messages=messages,
                     response_format=CommandCreationResponse,
                     reasoning_effort="medium",
