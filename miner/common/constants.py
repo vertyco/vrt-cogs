@@ -26,6 +26,17 @@ SPAWN_PROB_MAX: float = 0.50  # maximum spawn chance
 SCALE_PER_MESSAGE: float = 0.03  # per-message increase to spawn chance
 SPAWN_BONUS_MAX: float = 0.15  # max activity bonus to add to spawn chance
 
+# Spawn feedback (UX)
+RUMBLE_MIN_INTERVAL_SECONDS: float = 60.0  # minimum time between rumble messages per key
+RUMBLE_MEDIUM_THRESHOLD: float = 0.10  # spawn probability where rumble feedback can start
+RUMBLE_HIGH_THRESHOLD: float = 0.30  # spawn probability considered "high" for rumble
+RUMBLE_CHANCE_MEDIUM: float = 0.10  # chance to send rumble when in medium range
+RUMBLE_CHANCE_HIGH: float = 0.30  # chance to send rumble when in high range
+
+# Status command spawn buckets
+STATUS_PROB_LOW_MAX: float = 0.05
+STATUS_PROB_MEDIUM_MAX: float = 0.20
+
 PER_GUILD_ROCK_CAP: int = 4
 PER_CHANNEL_ROCK_CAP: int = 1
 

@@ -379,3 +379,56 @@ class User(MixinMeta):
         return await ctx.send(
             f"{ctx.author.mention}, you have converted `{humanize_number(amount_to_deduct)}` {resource.title()} into `{humanize_number(credits_to_give)}` {creditsname}."
         )
+
+    @miner_group.command(name="status", description="Show the current mining activity state.")
+    @ensure_db_connection()
+    async def miner_status(self, ctx: commands.Context):
+        """Show an approximate rock spawn chance for this server.
+
+        This reports a bucketed spawn chance (Low / Medium / High) based on
+        recent activity and time since the last rock, without exposing exact
+        internal percentages.
+        """
+
+        if not ctx.guild:
+            await ctx.send("This command can only be used in a server.")
+            return
+
+        settings = await self.db_utils.get_create_guild_settings(ctx.guild.id)
+        key = ctx.channel.id if settings.per_channel_activity_trigger else ctx.guild.id
+
+        min_interval, max_interval = await self.db_utils.get_spawn_timing()
+
+        try:
+            spawn_prob = self.activity.get_spawn_probability(key, min_interval, max_interval)
+        except TypeError:
+            # Backwards compatibility: fall back to basic probability if older signature.
+            spawn_prob = self.activity.get_spawn_probability(key)  # type: ignore[call-arg]
+
+        # Bucket the probability for player-friendly output.
+        if spawn_prob < constants.STATUS_PROB_LOW_MAX:
+            label = "Low"
+            desc = "Rocks are unlikely to spawn right now. Keep chatting in mining channels to raise the chance."
+        elif spawn_prob < constants.STATUS_PROB_MEDIUM_MAX:
+            label = "Medium"
+            desc = "Rocks have a reasonable chance to appear soon if activity stays steady."
+        else:
+            label = "High"
+            desc = "The air feels heavy with dust. A rock could appear at any moment if activity continues."
+
+        mode = "Per Channel" if settings.per_channel_activity_trigger else "Per Guild"
+        embed = discord.Embed(
+            title="Mining Activity Status",
+            description=desc,
+            color=discord.Color.blurple(),
+        )
+        embed.add_field(name="Approximate Spawn Chance", value=f"`{label}`", inline=True)
+        embed.add_field(name="Activity Mode", value=f"`{mode}`", inline=True)
+        embed.set_footer(
+            text=(
+                "Chatting in mining-enabled channels increases the chance for a rock "
+                "to appear over time. Exact chances may change as the game is tuned."
+            )
+        )
+
+        await ctx.send(embed=embed)
