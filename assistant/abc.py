@@ -62,11 +62,11 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def count_payload_tokens(self, messages: List[dict], model: str = "gpt-5") -> int:
+    async def count_payload_tokens(self, messages: List[dict], model: str = "gpt-5.1") -> int:
         raise NotImplementedError
 
     @abstractmethod
-    async def count_function_tokens(self, functions: List[dict], model: str = "gpt-5") -> int:
+    async def count_function_tokens(self, functions: List[dict], model: str = "gpt-5.1") -> int:
         raise NotImplementedError
 
     @abstractmethod
@@ -74,11 +74,11 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_tokens(self, text: str, model: str = "gpt-5") -> list[int]:
+    async def get_tokens(self, text: str, model: str = "gpt-5.1") -> list[int]:
         raise NotImplementedError
 
     @abstractmethod
-    async def get_text(self, tokens: list, model: str = "gpt-5") -> str:
+    async def get_text(self, tokens: list, model: str = "gpt-5.1") -> str:
         raise NotImplementedError
 
     @abstractmethod
