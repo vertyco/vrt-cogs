@@ -64,13 +64,14 @@ class RockView(discord.ui.View):
 
     async def start(self, channel: discord.TextChannel | discord.Thread):
         """Start the rock session"""
-        self.end_time = datetime.now() + timedelta(seconds=constants.ROCK_TTL_SECONDS)
+        ttl_seconds = self.rocktype.ttl_seconds
+        self.end_time = datetime.now() + timedelta(seconds=ttl_seconds)
         self.message = await channel.send(embed=self.embed(), view=self)
-        self.ttl_task = asyncio.create_task(self.ttl())
+        self.ttl_task = asyncio.create_task(self.ttl(ttl_seconds))
 
-    async def ttl(self):
+    async def ttl(self, ttl_seconds: int):
         try:
-            await asyncio.sleep(constants.ROCK_TTL_SECONDS)
+            await asyncio.sleep(ttl_seconds)
             if self.finalizing:
                 return
             await self.finalize()

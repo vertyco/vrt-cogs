@@ -13,7 +13,6 @@ TOOL_ORDER: tuple[ToolName, ...] = ("wood", "stone", "iron", "steel", "carbide",
 ROCK_ORDER: tuple[RockTierName, ...] = ("small", "medium", "large", "meteor", "volatile geode")
 
 # Pacing
-ROCK_TTL_SECONDS: int = 2 * 60  # 2 minutes
 SWINGS_PER_THRESHOLD: int = 3
 OVERSWING_THRESHOLD_SECONDS: int = 2  # seconds between swings to count as overswing
 
@@ -168,6 +167,8 @@ class RockType:
     overswing_damage_chance: float
     # If tool doesnt shatter, how much damage to deal to tool durability
     overswing_damage: int
+    # How long this rock stays active before collapsing, in seconds
+    ttl_seconds: int
 
 
 ROCK_TYPES: dict[RockTierName, RockType] = {
@@ -182,6 +183,7 @@ ROCK_TYPES: dict[RockTierName, RockType] = {
         overswing_break_chance=0.0,
         overswing_damage_chance=0.1,
         overswing_damage=5,
+        ttl_seconds=90,
     ),
     "medium": RockType(
         key="medium",
@@ -194,6 +196,7 @@ ROCK_TYPES: dict[RockTierName, RockType] = {
         overswing_break_chance=0.02,
         overswing_damage_chance=0.1,
         overswing_damage=15,
+        ttl_seconds=120,
     ),
     "large": RockType(
         key="large",
@@ -206,6 +209,7 @@ ROCK_TYPES: dict[RockTierName, RockType] = {
         overswing_break_chance=0.03,
         overswing_damage_chance=0.1,
         overswing_damage=25,
+        ttl_seconds=150,
     ),
     "meteor": RockType(
         key="meteor",
@@ -218,6 +222,7 @@ ROCK_TYPES: dict[RockTierName, RockType] = {
         overswing_break_chance=0.1,
         overswing_damage_chance=0.35,
         overswing_damage=50,
+        ttl_seconds=180,
     ),
     "volatile geode": RockType(
         key="volatile geode",
@@ -230,5 +235,6 @@ ROCK_TYPES: dict[RockTierName, RockType] = {
         overswing_break_chance=0.5,
         overswing_damage_chance=0.05,
         overswing_damage=80,
+        ttl_seconds=210,
     ),
 }
