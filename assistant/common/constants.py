@@ -43,6 +43,8 @@ MODELS = {
     "gpt-5-mini-2025-08-07": 400000,
     "gpt-5-nano": 400000,
     "gpt-5-nano-2025-08-07": 400000,
+    "gpt-5.1": 400000,
+    "gpt-5.1-2025-11-13": 400000,
 }
 PRICES = {  # Price per 1k tokens
     "gpt-3.5-turbo": [0.001, 0.0015],
@@ -86,6 +88,8 @@ PRICES = {  # Price per 1k tokens
     "gpt-5-mini-2025-08-07": [0.00025, 0.002],
     "gpt-5-nano": [0.00005, 0.0004],
     "gpt-5-nano-2025-08-07": [0.00005, 0.0004],
+    "gpt-5.1": [0.00125, 0.010],
+    "gpt-5.1-2025-11-13": [0.00125, 0.010],
     "o1": [0.015, 0.06],
     "o1-2024-12-17": [0.015, 0.06],
     "o1-preview": [0.015, 0.06],
@@ -166,6 +170,8 @@ SUPPORTS_SEED = [
     "gpt-5-mini-2025-08-07",
     "gpt-5-nano",
     "gpt-5-nano-2025-08-07",
+    "gpt-5.1",
+    "gpt-5.1-2025-11-13",
 ]
 NO_DEVELOPER_ROLE = [  # Also doesnt support system messages
     "o1-mini",
@@ -204,6 +210,8 @@ SUPPORTS_VISION = [
     "gpt-5-mini-2025-08-07",
     "gpt-5-nano",
     "gpt-5-nano-2025-08-07",
+    "gpt-5.1",
+    "gpt-5.1-2025-11-13",
 ]
 SUPPORTS_TOOLS = [
     "gpt-3.5-turbo-1106",
@@ -239,6 +247,8 @@ SUPPORTS_TOOLS = [
     "gpt-5-mini-2025-08-07",
     "gpt-5-nano",
     "gpt-5-nano-2025-08-07",
+    "gpt-5.1",
+    "gpt-5.1-2025-11-13",
 ]
 READ_EXTENSIONS = [
     ".txt",
