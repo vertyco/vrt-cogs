@@ -97,6 +97,12 @@ View User Profile<br/>
  - Aliases: `pf`
  - Cooldown: `3 per 10.0 seconds`
  - Checks: `server_only`
+# [p]lvlupnotify (Hybrid Command)
+Toggles level up notifications for a user
+- Usage: `[p]lvlupnotify`
+- Slash Usage: `/lvlupnotify`
+- Aliases: `notify`
+- Checks: `server_only`
 # [p]prestige (Hybrid Command)
 Prestige your rank!<br/>
 Once you have reached this servers prestige level requirement, you can<br/>
@@ -543,17 +549,98 @@ Add a role to a prestige level<br/>
 ### [p]levelset prestige stack
 Toggle stacking roles on prestige<br/>
 
-For example each time you prestige, you keep the previous prestige roles<br/>
- - Usage: `[p]levelset prestige stack`
-### [p]levelset prestige level
-Set the level required to prestige<br/>
- - Usage: `[p]levelset prestige level <level>`
-## [p]levelset ignore
-Base command for all ignore lists<br/>
- - Usage: `[p]levelset ignore`
-### [p]levelset ignore role
-Add/Remove a role in the ignore list<br/>
-Members with roles in the ignore list don't gain XP<br/>
+**If using dmrole or msgrole**<br/>
+• `{role}`: The role the user just recieved<br/>
+ - Usage: `[p]levelset levelupmessages`
+ - Aliases: `lvlalerts, levelalerts, lvlmessages, and lvlmsg`
+### [p]levelset levelupmessages msgrole
+Set the message sent when a user levels up and recieves a role.<br/>
+
+**Arguments**<br/>
+The following placeholders can be used:<br/>
+• `{username}`: The user's name<br/>
+• `{mention}`: Mentions the user<br/>
+• `{displayname}`: The user's display name<br/>
+• `{level}`: The level the user just reached<br/>
+• `{server}`: The server the user is in<br/>
+• `{role}`: The role the user just recieved<br/>
+ - Usage: `[p]levelset levelupmessages msgrole [message]`
+### [p]levelset levelupmessages msg
+Set the message sent when a user levels up.<br/>
+
+**Arguments**<br/>
+The following placeholders can be used:<br/>
+• `{username}`: The user's name<br/>
+• `{mention}`: Mentions the user<br/>
+• `{displayname}`: The user's display name<br/>
+• `{level}`: The level the user just reached<br/>
+• `{server}`: The server the user is in<br/>
+ - Usage: `[p]levelset levelupmessages msg [message]`
+### [p]levelset levelupmessages dmrole
+Set the DM a user gets when they level up and recieve a role.<br/>
+
+**Arguments**<br/>
+The following placeholders can be used:<br/>
+• `{username}`: The user's name<br/>
+• `{mention}`: Mentions the user<br/>
+• `{displayname}`: The user's display name<br/>
+• `{level}`: The level the user just reached<br/>
+• `{server}`: The server the user is in<br/>
+• `{role}`: The role the user just recieved<br/>
+ - Usage: `[p]levelset levelupmessages dmrole [message]`
+### [p]levelset levelupmessages dm
+Set the DM a user gets when they level up (Without recieving a role).<br/>
+
+**Arguments**<br/>
+The following placeholders can be used:<br/>
+• `{username}`: The user's name<br/>
+• `{mention}`: Mentions the user<br/>
+• `{displayname}`: The user's display name<br/>
+• `{level}`: The level the user just reached<br/>
+• `{server}`: The server the user is in<br/>
+ - Usage: `[p]levelset levelupmessages dm [message]`
+### [p]levelset levelupmessages view
+View the current level up alert messages<br/>
+ - Usage: `[p]levelset levelupmessages view`
+## [p]levelset lvlreq
+Manage level requirement for commands
+### [p]levelset lvlreq add
+Add a level requirement to the command
+- Usage: `[p]levelset lvlreq add <level> <command>`
+### [p]levelset lvlreq del
+Remove a level requirement for a command
+- Usage: `[p]levelset lvlreq del <command>`
+### [p]levelset lvlreq list
+List all commands and their level requirements
+- Usage: `[p]levelset lvlreq list`
+## [p]levelset cooldowns
+Manage per level command cooldowns
+### [p]levelset cooldowns add
+Add a cooldown for a command based on level
+Multiple cooldown levels can be set, the cooldown will be applied to members at the specified level and under
+Warning: This will override any default cooldowns for the command
+
+Example:
+[p]lset cooldowns add 5 15 mycommand
+[p]lset cooldowns add 10 5 mycommand
+Members who are level [0, 5] will have a cooldown of 15 seconds for mycommand (including members at level 5)
+Members who are level (5, 10] will have a cooldown of 5 seconds (level 6 to level 10)
+Members above level 10 will have no cooldown
+- Usage: `[p]levelset cooldowns add <level> <cooldown> <command>`
+### [p]levelset cooldowns del
+Remove a level cooldown for a command
+- Usage: `[p]levelset cooldowns del <level> <command>`
+### [p]levelset cooldowns list
+List all commands and their cooldowns per level
+- Usage: `[p]levelset cooldowns list`
+## [p]levelset view
+View all LevelUP settings<br/>
+ - Usage: `[p]levelset view`
+## [p]levelset addxp
+Add XP to a user or role<br/>
+ - Usage: `[p]levelset addxp <user_or_role> <xp>`
+## [p]levelset setlevel
+Set a user's level<br/>
 
 Use the command with a role already in the ignore list to remove it<br/>
  - Usage: `[p]levelset ignore role <role>`
@@ -634,11 +721,72 @@ Cooldown threshold for message XP<br/>
 When a user sends a message they will have to wait X seconds before their message<br/>
 counts as XP gained<br/>
  - Usage: `[p]levelset messages cooldown <cooldown>`
-## [p]levelset roles
-Level role assignment<br/>
- - Usage: `[p]levelset roles`
-### [p]levelset roles initialize
-Initialize level roles<br/>
+## [p]levelset rolegroup
+Add or remove a role to the role group<br/>
+
+These roles gain their own experience points as a group<br/>
+When a member gains xp while having this role, the xp they earn is also added to the role group<br/>
+ - Usage: `[p]levelset rolegroup <role>`
+## [p]levelset levelnotify
+Send levelup message in the channel the user is typing in<br/>
+
+Send a message in the channel a user is typing in when they level up<br/>
+ - Usage: `[p]levelset levelnotify`
+## [p]levelset commandxp
+Toggle whether users can gain Exp from running commands<br/>
+ - Usage: `[p]levelset commandxp`
+## [p]levelset allowed
+Base command for all allowed lists<br/>
+ - Usage: `[p]levelset allowed`
+### [p]levelset allowed role
+Add/Remove a role in the allowed list<br/>
+If the allow list is not empty, only roles in the list will gain XP<br/>
+
+Use the command with a role already in the allowed list to remove it<br/>
+ - Usage: `[p]levelset allowed role <role>`
+### [p]levelset allowed channel
+Add/Remove a channel in the allowed list<br/>
+If the allow list is not empty, only channels in the list will gain XP<br/>
+
+Use the command with a channel already in the allowed list to remove it<br/>
+ - Usage: `[p]levelset allowed channel <channel>`
+## [p]levelset dm
+Toggle DM notifications<br/>
+
+Determines whether LevelUp messages are DM'd to the user<br/>
+ - Usage: `[p]levelset dm`
+## [p]levelset starmention
+Toggle star reaction mentions<br/>
+Toggle whether the bot mentions that a user reacted to a message with a star<br/>
+ - Usage: `[p]levelset starmention`
+## [p]levelset seelevels
+Test the level algorithm<br/>
+View the first 20 levels using the current algorithm to test experience curve<br/>
+ - Usage: `[p]levelset seelevels`
+## [p]levelset ignore
+Base command for all ignore lists<br/>
+ - Usage: `[p]levelset ignore`
+### [p]levelset ignore channel
+Add/Remove a channel in the ignore list<br/>
+Channels in the ignore list don't gain XP<br/>
+
+Use the command with a channel already in the ignore list to remove it<br/>
+ - Usage: `[p]levelset ignore channel <channel>`
+### [p]levelset ignore notify
+Add/Remove a channel in the notify ignore list<br/>
+Channels in the notify ignore list will have level up notifications suppressed<br/>
+
+Use the command with a channel already in the notify ignore list to remove it<br/>
+ - Usage: `[p]levelset ignore notify <channel>`
+### [p]levelset ignore role
+Add/Remove a role in the ignore list<br/>
+Members with roles in the ignore list don't gain XP<br/>
+
+Use the command with a role already in the ignore list to remove it<br/>
+ - Usage: `[p]levelset ignore role <role>`
+### [p]levelset ignore user
+Add/Remove a user in the ignore list<br/>
+Members in the ignore list don't gain XP<br/>
 
 This command is for if you added level roles after users have achieved that level,<br/>
 it will apply all necessary roles to a user according to their level and prestige<br/>

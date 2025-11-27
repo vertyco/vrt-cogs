@@ -52,6 +52,22 @@ class ProfileFormatting(MixinMeta):
         self.save()
         return int(profile.xp)
 
+    async def get_xp(self, member: discord.Member) -> int:
+        """Get the XP for a member"""
+        if not isinstance(member, discord.Member):
+            raise TypeError("member must be a discord.Member")
+        conf = self.db.get_conf(member.guild)
+        profile = conf.get_profile(member)
+        return int(profile.xp)
+
+    async def get_level(self, member: discord.Member) -> int:
+        """Get the level for a member"""
+        if not isinstance(member, discord.Member):
+            raise TypeError("member must be a discord.Member")
+        conf = self.db.get_conf(member.guild)
+        profile = conf.get_profile(member)
+        return profile.level
+
     async def get_profile_background(
         self, user_id: int, profile: Profile, try_return_url: bool = False, guild_id: int = None
     ) -> t.Union[bytes, str]:
@@ -127,7 +143,9 @@ class ProfileFormatting(MixinMeta):
             return f"https://cdn.discordapp.com/banners/{user_id}/{banner_id}?size=1024"
 
     async def get_user_profile(
-        self, member: discord.Member, reraise: bool = False
+        self,
+        member: discord.Member,
+        reraise: bool = False,
     ) -> t.Union[discord.Embed, discord.File]:
         """
         Get a user's profile as an embed or file
