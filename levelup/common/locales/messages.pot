@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2025-08-31 20:23-0400\n"
+"POT-Creation-Date: 2025-11-27 13:02-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -171,17 +171,17 @@ msgstr ""
 msgid "Non-config model for tracking voice activity"
 msgstr ""
 
-#: levelup\common\models.py:237
+#: levelup\common\models.py:238
 #, docstring
 msgid "Calculate the level that corresponds to the given XP amount"
 msgstr ""
 
-#: levelup\common\models.py:241
+#: levelup\common\models.py:242
 #, docstring
 msgid "Calculate XP required to reach specified level"
 msgstr ""
 
-#: levelup\common\models.py:365
+#: levelup\common\models.py:374
 #, docstring
 msgid "Sanitize old config data to be validated by the new schema"
 msgstr ""
