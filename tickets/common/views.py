@@ -517,6 +517,8 @@ class SupportButton(Button):
                     else:
                         raise e
                 asyncio.create_task(channel_or_thread.add_user(interaction.user))
+                if self.mock_user:
+                    asyncio.create_task(channel_or_thread.add_user(self.mock_user))
                 if conf["auto_add"] and not support_mentions:
                     for role in support_roles:
                         for member in role.members:
