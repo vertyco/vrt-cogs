@@ -1,6 +1,7 @@
 from ..abc import CompositeMetaClass
+from .member import MemberListener
 from .messages import MessageListener
 
 
-class Listeners(MessageListener, metaclass=CompositeMetaClass):
+class Listeners(MemberListener, MessageListener, metaclass=CompositeMetaClass):
     pass

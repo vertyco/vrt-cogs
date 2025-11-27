@@ -9,7 +9,13 @@ from .tables import GlobalSettings, GuildSettings, Player
 
 def key_builder(func: t.Callable, *args, **kwargs) -> str:
     func_name = str(func.__name__).replace("get_cached_", "miner_")
-    return f"{func_name}:{args[1]}"
+    target = args[1] if len(args) > 1 else None
+    if target is None and kwargs:
+        # Fallback for keyword-only invocation
+        target = next(iter(kwargs.values()))
+    if hasattr(target, "id"):
+        target = target.id
+    return f"{func_name}:{target}"
 
 
 class DBUtils:
