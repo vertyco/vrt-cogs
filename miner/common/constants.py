@@ -13,9 +13,12 @@ TOOL_ORDER: tuple[ToolName, ...] = ("wood", "stone", "iron", "steel", "carbide",
 ROCK_ORDER: tuple[RockTierName, ...] = ("small", "medium", "large", "meteor", "volatile geode")
 
 # Pacing
-ROCK_TTL_SECONDS: int = 2 * 60  # 2 minutes
 SWINGS_PER_THRESHOLD: int = 3
-OVERSWING_THRESHOLD_SECONDS: int = 2  # seconds between swings to count as overswing
+OVERSWING_THRESHOLD_SECONDS: int = 3  # seconds between swings to count as overswing
+# Fraction of max durability at or below which catastrophic overswing shatters are allowed
+OVERSWING_SHATTER_DURA_THRESHOLD: float = 0.25
+# Durability percentage thresholds where we start warning players about tool condition
+DURABILITY_WARNING_THRESHOLDS: tuple[float, ...] = (0.25, 0.10)
 
 # Spawning
 ACTIVITY_WINDOW_SECONDS: int = 5 * 60  # Length of sliding window in seconds
@@ -25,6 +28,17 @@ SPAWN_PROB_MIN: float = 0.05  # minimum spawn chance
 SPAWN_PROB_MAX: float = 0.50  # maximum spawn chance
 SCALE_PER_MESSAGE: float = 0.03  # per-message increase to spawn chance
 SPAWN_BONUS_MAX: float = 0.15  # max activity bonus to add to spawn chance
+
+# Spawn feedback (UX)
+RUMBLE_MIN_INTERVAL_SECONDS: float = 60.0  # minimum time between rumble messages per key
+RUMBLE_MEDIUM_THRESHOLD: float = 0.10  # spawn probability where rumble feedback can start
+RUMBLE_HIGH_THRESHOLD: float = 0.30  # spawn probability considered "high" for rumble
+RUMBLE_CHANCE_MEDIUM: float = 0.10  # chance to send rumble when in medium range
+RUMBLE_CHANCE_HIGH: float = 0.30  # chance to send rumble when in high range
+
+# Status command spawn buckets
+STATUS_PROB_LOW_MAX: float = 0.05
+STATUS_PROB_MEDIUM_MAX: float = 0.20
 
 PER_GUILD_ROCK_CAP: int = 4
 PER_CHANNEL_ROCK_CAP: int = 1
@@ -45,6 +59,7 @@ GEM_EMOJI: str = "\N{GEM STONE}"
 INSPECT_EMOJI: str = "\N{LEFT-POINTING MAGNIFYING GLASS}"
 IRON_EMOJI: str = "\N{CHAINS}\N{VARIATION SELECTOR-16}"
 TROPHY_EMOJI: str = "\N{TROPHY}"
+CLOCK_EMOJI: str = "\N{ALARM CLOCK}"
 
 
 def resource_emoji(resource: str) -> str:
@@ -157,6 +172,8 @@ class RockType:
     overswing_damage_chance: float
     # If tool doesnt shatter, how much damage to deal to tool durability
     overswing_damage: int
+    # How long this rock stays active before collapsing, in seconds
+    ttl_seconds: int
 
 
 ROCK_TYPES: dict[RockTierName, RockType] = {
@@ -171,6 +188,7 @@ ROCK_TYPES: dict[RockTierName, RockType] = {
         overswing_break_chance=0.0,
         overswing_damage_chance=0.1,
         overswing_damage=5,
+        ttl_seconds=90,
     ),
     "medium": RockType(
         key="medium",
@@ -183,6 +201,7 @@ ROCK_TYPES: dict[RockTierName, RockType] = {
         overswing_break_chance=0.02,
         overswing_damage_chance=0.1,
         overswing_damage=15,
+        ttl_seconds=120,
     ),
     "large": RockType(
         key="large",
@@ -195,29 +214,34 @@ ROCK_TYPES: dict[RockTierName, RockType] = {
         overswing_break_chance=0.03,
         overswing_damage_chance=0.1,
         overswing_damage=25,
+        ttl_seconds=150,
     ),
     "meteor": RockType(
         key="meteor",
         display_name="Meteor",
         hp=2000,
         image_url="https://i.imgur.com/fl1Hdts.png",
-        rarity=5,
+        rarity=10,
         total_loot={"stone": 75, "iron": 360, "gems": 10},
         floor_loot={"stone": 10, "iron": 42, "gems": 1},
         overswing_break_chance=0.1,
         overswing_damage_chance=0.35,
         overswing_damage=50,
+        ttl_seconds=180,
     ),
     "volatile geode": RockType(
         key="volatile geode",
         display_name="Volatile Geode",
         hp=1500,
         image_url="https://i.imgur.com/bMPINaW.png",
-        rarity=6,
+        rarity=20,
         total_loot={"iron": 240, "gems": 65},
         floor_loot={"iron": 65, "gems": 7},
         overswing_break_chance=0.5,
         overswing_damage_chance=0.05,
         overswing_damage=80,
+        ttl_seconds=210,
     ),
 }
+
+MAX_ROCK_TTL_SECONDS: int = max(rock.ttl_seconds for rock in ROCK_TYPES.values())

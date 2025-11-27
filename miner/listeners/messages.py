@@ -1,4 +1,5 @@
 import logging
+import random
 from time import perf_counter
 
 import discord
@@ -17,7 +18,57 @@ class MessageListener(MixinMeta):
     def __init__(self):
         super().__init__()
         self.last_user_message: dict[int, int] = {}
-        self.last_channel_rock_spawn: dict[int, float] = {}
+        # key (guild or channel) -> last rumble timestamp
+        self.last_rumble: dict[int, float] = {}
+
+    async def maybe_rumble(self, channel: discord.TextChannel | discord.Thread, key: int, spawn_prob: float) -> None:
+        """Occasionally send a flavor message when spawn probability is high.
+
+        This is purely cosmetic feedback to make the game feel more alive and
+        does not affect actual spawn mechanics.
+        """
+
+        # Don't rumble if there is already an active rock cap reached.
+        if self.active_guild_rocks.get(channel.guild.id, 0) >= constants.PER_GUILD_ROCK_CAP:
+            return
+
+        now = perf_counter()
+        last = self.last_rumble.get(key, 0.0)
+        # Minimum time between rumbles for a given key (seconds).
+        if now - last < constants.RUMBLE_MIN_INTERVAL_SECONDS:
+            return
+
+        # Only consider feedback when chances are at least "medium".
+        if spawn_prob < constants.RUMBLE_MEDIUM_THRESHOLD:
+            return
+
+        # Scale rumble likelihood based on probability bucket.
+        if spawn_prob >= constants.RUMBLE_HIGH_THRESHOLD:
+            chance = constants.RUMBLE_CHANCE_HIGH  # High spawn chance -> more likely to rumble.
+        elif spawn_prob >= constants.RUMBLE_MEDIUM_THRESHOLD:
+            chance = constants.RUMBLE_CHANCE_MEDIUM
+        else:
+            chance = 0.0
+
+        if not chance or random.random() >= chance:
+            return
+
+        # Choose a short flavor message.
+        rumble_lines = [
+            "The ground rumbles softly beneath your feet...",
+            "You hear distant rockfalls echoing through the mineshaft...",
+            "Loose stones clatter around you as the earth shifts...",
+        ]
+        text = random.choice(rumble_lines)
+
+        # In per-guild mode we might be spawning in a different channel; however
+        # for feedback purposes we use the current channel where activity occurs.
+        try:
+            await channel.send(text)
+        except discord.HTTPException:
+            return
+
+        self.last_rumble[key] = now
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -34,38 +85,44 @@ class MessageListener(MixinMeta):
         if not self.db_active():
             return
 
+        channel: discord.TextChannel | discord.Thread = message.channel
+
         settings: GuildSettings = await self.db_utils.get_cached_guild_settings(message.guild.id)
-        key = message.channel.id if settings.per_channel_activity_trigger else message.guild.id
+        key = channel.id if settings.per_channel_activity_trigger else message.guild.id
         self.activity.update(key)
 
-        # Check last rock spawn
-        last_spawn = self.last_channel_rock_spawn.get(message.channel.id, 0)
-        min_time = max(settings.time_between_spawns, constants.MIN_TIME_BETWEEN_SPAWNS)
-        time_elapsed = perf_counter() - last_spawn
-
-        if time_elapsed < min_time:
-            return
-        else:
-            self.last_channel_rock_spawn[message.channel.id] = perf_counter()
+        # Fetch global spawn timing.
+        min_interval, max_interval = await self.db_utils.get_spawn_timing()
 
         if message.guild.id not in self.last_user_message:
             self.last_user_message[message.guild.id] = message.author.id
         elif (
             self.last_user_message[message.guild.id] == message.author.id
-            and time_elapsed < constants.ABSOLUTE_MAX_TIME_BETWEEN_SPAWNS
+            and (perf_counter() - self.activity.last_spawns.get(key, 0)) < max_interval
         ):
             # Same user cannot spam messages to increase activity
             return
         else:
             self.last_user_message[message.guild.id] = message.author.id
 
-        rock_type: constants.RockTierName | None = self.activity.maybe_get_rock(key)
+        # Spawn feedback: occasionally send a "rumble" message when spawn chance is high.
+        spawn_prob = self.activity.get_spawn_probability(key, min_interval, max_interval)
+
+        is_mining_channel = await ActiveChannel.exists().where(ActiveChannel.id == channel.id)
+        if is_mining_channel:
+            await self.maybe_rumble(channel, key, spawn_prob)
+
+        # Determine if a rock should spawn.
+        rock_type: constants.RockTierName | None = self.activity.maybe_get_rock(
+            key,
+            min_interval=min_interval,
+            max_interval=max_interval,
+        )
         if not rock_type:
             return
 
         if settings.per_channel_activity_trigger:
-            channel: discord.TextChannel | discord.Thread = message.channel
-            if not await ActiveChannel.exists().where(ActiveChannel.id == channel.id):
+            if not is_mining_channel:
                 return
         else:
             query = ActiveChannel.select(ActiveChannel.id).where(ActiveChannel.guild == message.guild.id)

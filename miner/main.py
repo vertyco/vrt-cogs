@@ -27,7 +27,7 @@ class Miner(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMet
     """Pickaxe in hand, fortune awaits"""
 
     __author__ = "Vertyco"
-    __version__ = "0.1.33b"
+    __version__ = "1.0.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -38,6 +38,7 @@ class Miner(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMet
         self.activity = tracker.ActivityTracker()
         self.active_guild_rocks: dict[int, int] = defaultdict(int)
         self.active_channel_rocks: set[int] = set()
+        self._durability_warning_state: dict[int, float] = {}
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -108,3 +109,24 @@ class Miner(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMet
         if self.db.pool._closed:
             return False
         return self.db is not None
+
+    # ---------------------------- DURABILITY UTILITIES ----------------------------
+    def reset_durability_warnings(self, player_id: int) -> None:
+        """Clear tracked durability warnings for a player (e.g., after repair or tool reset)."""
+
+        self._durability_warning_state.pop(player_id, None)
+
+    def register_durability_ratio(self, player_id: int, ratio: float | None) -> float | None:
+        """Record the player's current durability ratio and return the threshold crossed, if any."""
+
+        if ratio is None:
+            return None
+        thresholds = getattr(constants, "DURABILITY_WARNING_THRESHOLDS", ())
+        if not thresholds:
+            return None
+        last_threshold = self._durability_warning_state.get(player_id, 1.0)
+        for threshold in sorted(thresholds, reverse=True):
+            if ratio <= threshold < last_threshold:
+                self._durability_warning_state[player_id] = threshold
+                return threshold
+        return None
