@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import typing as t
 from pathlib import Path
 from typing import Any, Callable, Dict, Literal, Set, Type, TypeVar
 from uuid import uuid4
@@ -140,7 +141,7 @@ class Base(BaseModel):
         )
 
     @classmethod
-    def from_file(cls, path: Path) -> Base:
+    def from_file(cls, path: Path) -> t.Self:
         if not path.exists():
             raise FileNotFoundError(f"File not found: {path}")
         if not path.is_file():

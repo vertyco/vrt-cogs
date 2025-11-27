@@ -28,6 +28,24 @@ Bring all messages without a ✅ or ❌ to the front of the channel.<br/>
  - Usage: `[p]todorefresh <confirm>`
  - Restricted to: `MOD`
  - Aliases: `refreshtodo`
+# [p]noping
+Toggle whether you want to be pinged<br/>
+ - Usage: `[p]noping`
+ - Restricted to: `MOD`
+ - Checks: `server_only`
+# [p]nopingset
+No Ping subcommands<br/>
+ - Usage: `[p]nopingset`
+ - Restricted to: `ADMIN`
+## [p]nopingset prune
+Prune users no longer in the server from the No Ping rule<br/>
+ - Usage: `[p]nopingset prune`
+ - Checks: `server_only`
+## [p]nopingset view
+List users who have opted out of being pinged<br/>
+ - Usage: `[p]nopingset view`
+ - Aliases: `list`
+ - Checks: `server_only`
 # [p]throwerror (Hybrid Command)
 Throw an unhandled exception<br/>
 
@@ -54,6 +72,13 @@ Add a reaction to a message<br/>
  - Usage: `[p]reactmsg <emoji> [message=None]`
  - Restricted to: `MOD`
  - Checks: `bot_has_server_permissions`
+# [p]cleanadventurealerts
+Prune adventure alerts from members no longer in the server<br/>
+
+This command requires the AdventureAlert cog by TrustyJAID to be loaded.<br/>
+https://github.com/TrustyJAID/Trusty-cogs/tree/master<br/>
+ - Usage: `[p]cleanadventurealerts`
+ - Restricted to: `ADMIN`
 # [p]logs
 View the bot's logs.<br/>
  - Usage: `[p]logs [max_pages=50]`
@@ -67,11 +92,31 @@ Still this can give a good idea of where the bot is at I/O wise.<br/>
  - Usage: `[p]diskspeed`
  - Restricted to: `BOT_OWNER`
  - Aliases: `diskbench`
+# [p]nohoist
+Dehoist all nicknames in the server<br/>
+**Arguments**<br/>
+`confirm:` (True/False) whether to confirm the action<br/>
+
+Run with confirm **False** to see which nicknames would be reset.<br/>
+
+Users will be dehoisted IF:<br/>
+- Their nickname starts with a hoist character (e.g., `!`, `$`, `(`, `)`, `*`)<br/>
+- Their nickname starts with a number but not their username<br/>
+
+**Examples**<br/>
+`[p]nohoist true`<br/>
+ - Usage: `[p]nohoist <confirm>`
+ - Restricted to: `ADMIN`
+ - Checks: `bot_has_server_permissions and server_only`
 # [p]isownerof
 Get a list of servers the specified user is the owner of<br/>
  - Usage: `[p]isownerof <user_id>`
  - Restricted to: `BOT_OWNER`
  - Aliases: `ownerof`
+# [p]setcooldown
+Set a cooldown for the current channel<br/>
+ - Usage: `[p]setcooldown <cooldown> [channel=None]`
+ - Checks: `server_only`
 # [p]closestuser
 Find the closest fuzzy match for a user<br/>
  - Usage: `[p]closestuser <query>`
@@ -114,18 +159,16 @@ See which channel is the oldest<br/>
 See which users have been in the server the longest<br/>
 
 **Arguments**<br/>
-`amount:` how many members to display<br/>
 `include_bots:` (True/False) whether to include bots<br/>
- - Usage: `[p]oldestmembers [amount=10] [include_bots=False]`
+ - Usage: `[p]oldestmembers [include_bots=False]`
  - Aliases: `oldestusers`
  - Checks: `server_only`
 # [p]oldestaccounts
 See which users have the oldest Discord accounts<br/>
 
 **Arguments**<br/>
-`amount:` how many members to display<br/>
 `include_bots:` (True/False) whether to include bots<br/>
- - Usage: `[p]oldestaccounts [amount=10] [include_bots=False]`
+ - Usage: `[p]oldestaccounts [include_bots=False]`
  - Checks: `server_only`
 # [p]rolemembers
 View all members that have a specific role<br/>
@@ -144,6 +187,26 @@ Clear all threads from a server<br/>
 # [p]emojidata
 Get info about an emoji<br/>
  - Usage: `[p]emojidata <emoji>`
+# [p]samplevoters
+Select a random sample of voters from a message<br/>
+
+**Arguments**<br/>
+`message:` The message to sample voters from<br/>
+`emoji:` The emoji to sample voters from<br/>
+`sample_size:` The number of voters to select<br/>
+
+**Examples**<br/>
+`[p]samplevoters 1234567890 🎉 5`<br/>
+ - Usage: `[p]samplevoters <message> <emoji> [sample_size=10] [mention=False]`
+ - Aliases: `choosereact`
+# [p]filterdelete
+Delete all messages containing a keyword in a channel<br/>
+
+**Arguments**<br/>
+`channel:` The channel to delete messages from<br/>
+`filters:` The keywords to filter messages by, separated by new lines<br/>
+ - Usage: `[p]filterdelete <channel> <filters>`
+ - Restricted to: `ADMIN`
 # [p]exportchat
 Export chat history to an html file<br/>
  - Usage: `[p]exportchat [channel=operator.attrgetter('channel')] [limit=50] [tz_info=UTC] [military_time=False]`
@@ -153,17 +216,6 @@ Add/Edit/List/Delete bot emojis<br/>
  - Usage: `[p]botemojis`
  - Restricted to: `BOT_OWNER`
  - Aliases: `botemoji and bmoji`
-## [p]botemojis delete
-Delete an bot emoji<br/>
- - Usage: `[p]botemojis delete <emoji_id>`
-## [p]botemojis add
-Create a new emoji from an image attachment<br/>
-
-If a name is not specified, the image's filename will be used<br/>
- - Usage: `[p]botemojis add [name=None]`
-## [p]botemojis edit
-Edit a bot emoji's name<br/>
- - Usage: `[p]botemojis edit <emoji_id> <name>`
 ## [p]botemojis fromemoji
 Create a new bot emoji from an existing one<br/>
  - Usage: `[p]botemojis fromemoji <emoji>`
@@ -171,6 +223,17 @@ Create a new bot emoji from an existing one<br/>
 ## [p]botemojis list
 List all existing bot emojis<br/>
  - Usage: `[p]botemojis list`
+## [p]botemojis delete
+Delete an bot emoji<br/>
+ - Usage: `[p]botemojis delete <emoji_id>`
+## [p]botemojis edit
+Edit a bot emoji's name<br/>
+ - Usage: `[p]botemojis edit <emoji_id> <name>`
+## [p]botemojis add
+Create a new emoji from an image attachment<br/>
+
+If a name is not specified, the image's filename will be used<br/>
+ - Usage: `[p]botemojis add [name=None]`
 ## [p]botemojis get
 Get details about a bot emoji<br/>
  - Usage: `[p]botemojis get <emoji_id>`

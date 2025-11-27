@@ -54,7 +54,7 @@ class Base(BaseModel):
         if not path.is_file():
             raise IsADirectoryError(f"Path is not a file: {path}")
         if VERSION >= "2.0.1":
-            text = path.read_text()
+            text = path.read_text(encoding="utf-8")
             try:
                 return cls.model_validate_json(text)
             except UnicodeDecodeError as e:
@@ -68,13 +68,13 @@ class Base(BaseModel):
                     log.error("Failed to load via json5")
                     raise e
         try:
-            return cls.parse_file(path)
+            return cls.parse_file(path, encoding="utf-8")
         except UnicodeDecodeError as e:
             log.warning(f"Failed to load {path}, attempting to load via json5")
             try:
                 import json5
 
-                data = json5.loads(path.read_text())
+                data = json5.loads(path.read_text(encoding="utf-8"))
                 return cls.parse_obj(data)
             except ImportError:
                 log.error("Failed to load via json5")

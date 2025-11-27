@@ -27,6 +27,22 @@ Base support ticket settings<br/>
  - Restricted to: `ADMIN`
  - Aliases: `tset`
  - Checks: `server_only`
+## [p]tickets toggle
+Toggle a panel on/off<br/>
+
+Disabled panels will still show the button but it will be disabled<br/>
+ - Usage: `[p]tickets toggle <panel_name>`
+## [p]tickets viewmessages
+View/Delete a ticket message for a support ticket panel<br/>
+ - Usage: `[p]tickets viewmessages <panel_name>`
+## [p]tickets priority
+Set the priority order of a panel's button<br/>
+ - Usage: `[p]tickets priority <panel_name> <priority>`
+## [p]tickets autoadd
+(Toggle) Auto-add support and panel roles to thread tickets<br/>
+
+Adding a user to a thread pings them, so this is off by default<br/>
+ - Usage: `[p]tickets autoadd`
 ## [p]tickets panelrole
 Add/Remove roles for a specific panel<br/>
 
@@ -37,9 +53,26 @@ To remove a role, simply run this command with it again to remove it<br/>
 These roles are a specialized subset of the main support roles.<br/>
 Use this role type if you want to isolate specific groups to a certain panel.<br/>
  - Usage: `[p]tickets panelrole <panel_name> <role> [mention=False]`
+## [p]tickets panelmessage
+Set the message ID of a ticket panel<br/>
+Run this command in the same channel as the ticket panel message<br/>
+ - Usage: `[p]tickets panelmessage <panel_name> <message>`
+## [p]tickets modaltitle
+Set a title for a ticket panel's modal<br/>
+ - Usage: `[p]tickets modaltitle <panel_name> [title]`
+## [p]tickets threadclose
+(Toggle) Thread tickets being closed & archived instead of deleted<br/>
+ - Usage: `[p]tickets threadclose`
 ## [p]tickets overviewmention
 Toggle whether channels are mentioned in the active ticket overview<br/>
  - Usage: `[p]tickets overviewmention`
+## [p]tickets suspend
+Suspend the ticket system<br/>
+If a suspension message is set, any user that tries to open a ticket will receive this message<br/>
+ - Usage: `[p]tickets suspend [message]`
+## [p]tickets panels
+View/Delete currently configured support ticket panels<br/>
+ - Usage: `[p]tickets panels`
 ## [p]tickets transcript
 (Toggle) Ticket transcripts<br/>
 
@@ -59,19 +92,9 @@ You can include the following in the name<br/>
 
 You can set this to {default} to use default "Ticket-Username<br/>
  - Usage: `[p]tickets ticketname <panel_name> <ticket_name>`
-## [p]tickets panels
-View/Delete currently configured support ticket panels<br/>
- - Usage: `[p]tickets panels`
-## [p]tickets suspend
-Suspend the ticket system<br/>
-If a suspension message is set, any user that tries to open a ticket will receive this message<br/>
- - Usage: `[p]tickets suspend [message]`
 ## [p]tickets row
 Set the row of a panel's button (0 - 4)<br/>
  - Usage: `[p]tickets row <panel_name> <row>`
-## [p]tickets buttontext
-Set the button text for a support ticket panel<br/>
- - Usage: `[p]tickets buttontext <panel_name> <button_text>`
 ## [p]tickets addmodal
 Add a modal field a ticket panel<br/>
 
@@ -95,6 +118,9 @@ Set how many staff members can claim/join a ticket before the join button is dis
 ## [p]tickets selfrename
 (Toggle) If users can rename their own tickets<br/>
  - Usage: `[p]tickets selfrename`
+## [p]tickets buttontext
+Set the button text for a support ticket panel<br/>
+ - Usage: `[p]tickets buttontext <panel_name> <button_text>`
 ## [p]tickets addpanel
 Add a support ticket panel<br/>
  - Usage: `[p]tickets addpanel <panel_name>`
@@ -115,32 +141,32 @@ Add/Remove users or roles from the blacklist<br/>
 
 Users and roles in the blacklist will not be able to create a ticket<br/>
  - Usage: `[p]tickets blacklist <user_or_role>`
-## [p]tickets buttoncolor
-Set the button color for a support ticket panel<br/>
- - Usage: `[p]tickets buttoncolor <panel_name> <button_color>`
 ## [p]tickets selfclose
 (Toggle) If users can close their own tickets<br/>
  - Usage: `[p]tickets selfclose`
+## [p]tickets buttoncolor
+Set the button color for a support ticket panel<br/>
+ - Usage: `[p]tickets buttoncolor <panel_name> <button_color>`
+## [p]tickets viewmodal
+View/Delete a ticket message for a support ticket panel<br/>
+ - Usage: `[p]tickets viewmodal <panel_name>`
 ## [p]tickets interactivetranscript
 (Toggle) Interactive transcripts<br/>
 
 Transcripts will be an interactive html file to visualize the conversation from your browser.<br/>
  - Usage: `[p]tickets interactivetranscript`
  - Aliases: `intertrans, itrans, and itranscript`
-## [p]tickets viewmodal
-View/Delete a ticket message for a support ticket panel<br/>
- - Usage: `[p]tickets viewmodal <panel_name>`
 ## [p]tickets openrole
 Add/Remove roles required to open a ticket for a specific panel<br/>
 
 Specify the same role to remove it<br/>
  - Usage: `[p]tickets openrole <panel_name> <role>`
-## [p]tickets closemodal
-Throw a modal when the close button is clicked to enter a reason<br/>
- - Usage: `[p]tickets closemodal <panel_name>`
 ## [p]tickets getlink
 Refetch the transcript link for a ticket<br/>
  - Usage: `[p]tickets getlink <message>`
+## [p]tickets closemodal
+Throw a modal when the close button is clicked to enter a reason<br/>
+ - Usage: `[p]tickets closemodal <panel_name>`
 ## [p]tickets category
 Set the category ID for a ticket panel<br/>
  - Usage: `[p]tickets category <panel_name> <category>`
@@ -150,9 +176,6 @@ Set the max tickets a user can have open at one time of any kind<br/>
 ## [p]tickets updatemessage
 Update a message with another message (Target gets updated using the source)<br/>
  - Usage: `[p]tickets updatemessage <source> <target>`
-## [p]tickets buttonemoji
-Set the button emoji for a support ticket panel<br/>
- - Usage: `[p]tickets buttonemoji <panel_name> <emoji>`
 ## [p]tickets noresponse
 Auto-close ticket if opener doesn't say anything after X hours of opening<br/>
 
@@ -171,6 +194,9 @@ Tickets will default to the closest value you select.<br/>
 
 Users will be able to add/remove others to their support ticket<br/>
  - Usage: `[p]tickets selfmanage`
+## [p]tickets buttonemoji
+Set the button emoji for a support ticket panel<br/>
+ - Usage: `[p]tickets buttonemoji <panel_name> <emoji>`
 ## [p]tickets addmessage
 Add a message embed to be sent when a ticket is opened<br/>
 
@@ -181,6 +207,9 @@ You can include any of these in the embed to be replaced by their value when the
 
 The bot will walk you through a few steps to set up the embed<br/>
  - Usage: `[p]tickets addmessage <panel_name>`
+## [p]tickets setuphelp
+Ticket Setup Guide<br/>
+ - Usage: `[p]tickets setuphelp`
 ## [p]tickets altchannel
 Set an alternate channel that tickets will be opened under for a panel<br/>
 
@@ -191,12 +220,12 @@ If the panel is a channel type and a channel is used, the bot will use the categ
 
 To remove the alt channel, specify the existing one<br/>
  - Usage: `[p]tickets altchannel <panel_name> <channel>`
-## [p]tickets logchannel
-Set the logging channel for each panel's tickets<br/>
- - Usage: `[p]tickets logchannel <panel_name> <channel>`
 ## [p]tickets channel
 Set the channel ID where a ticket panel is located<br/>
  - Usage: `[p]tickets channel <panel_name> <channel>`
+## [p]tickets logchannel
+Set the logging channel for each panel's tickets<br/>
+ - Usage: `[p]tickets logchannel <panel_name> <channel>`
 ## [p]tickets supportrole
 Add/Remove ticket support roles (one at a time)<br/>
 
@@ -207,40 +236,11 @@ To remove a role, simply run this command with it again to remove it<br/>
 ## [p]tickets dm
 (Toggle) The bot sending DM's for ticket alerts<br/>
  - Usage: `[p]tickets dm`
-## [p]tickets toggle
-Toggle a panel on/off<br/>
-
-Disabled panels will still show the button but it will be disabled<br/>
- - Usage: `[p]tickets toggle <panel_name>`
 ## [p]tickets overview
 Set a channel for the live overview message<br/>
 
 The overview message shows all active tickets across all configured panels for a server.<br/>
  - Usage: `[p]tickets overview [channel]`
-## [p]tickets autoadd
-(Toggle) Auto-add support and panel roles to thread tickets<br/>
-
-Adding a user to a thread pings them, so this is off by default<br/>
- - Usage: `[p]tickets autoadd`
-## [p]tickets viewmessages
-View/Delete a ticket message for a support ticket panel<br/>
- - Usage: `[p]tickets viewmessages <panel_name>`
-## [p]tickets setuphelp
-Ticket Setup Guide<br/>
- - Usage: `[p]tickets setuphelp`
-## [p]tickets priority
-Set the priority order of a panel's button<br/>
- - Usage: `[p]tickets priority <panel_name> <priority>`
-## [p]tickets panelmessage
-Set the message ID of a ticket panel<br/>
-Run this command in the same channel as the ticket panel message<br/>
- - Usage: `[p]tickets panelmessage <panel_name> <message>`
-## [p]tickets modaltitle
-Set a title for a ticket panel's modal<br/>
- - Usage: `[p]tickets modaltitle <panel_name> [title]`
-## [p]tickets threadclose
-(Toggle) Thread tickets being closed & archived instead of deleted<br/>
- - Usage: `[p]tickets threadclose`
 # [p]openfor (Hybrid Command)
 Open a ticket for another user<br/>
  - Usage: `[p]openfor <user> <panel_name>`

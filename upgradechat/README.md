@@ -6,6 +6,18 @@ Base command for cog settings<br/>
  - Restricted to: `GUILD_OWNER`
  - Aliases: `upchat`
  - Checks: `server_only`
+## [p]upgradechat tokens
+Set your Upgrade.Chat api tokens<br/>
+By using this feature it is assumed that you are already familiar with Upgrade.Chat<br/>
+
+1. Create your api keys here: https://upgrade.chat/developers<br/>
+
+2. Copy your client ID and Client Secret<br/>
+
+3. Run this command with your credentials<br/>
+
+**Enjoy!**<br/>
+ - Usage: `[p]upgradechat tokens <client_id> <client_secret>`
 ## [p]upgradechat purchases
 View user purchase history<br/>
  - Usage: `[p]upgradechat purchases [member]`
@@ -36,26 +48,14 @@ Valid placeholders:<br/>
 
 set to `default` to use the default message<br/>
  - Usage: `[p]upgradechat message <claim_message>`
+## [p]upgradechat view
+View your current products<br/>
+ - Usage: `[p]upgradechat view`
 ## [p]upgradechat ratio
 Set the worth of 1 unit of real currency to economy credits<br/>
 
 for example, if `credit_worth` is 100, then $1 = 100 Credits<br/>
  - Usage: `[p]upgradechat ratio <credit_worth>`
-## [p]upgradechat view
-View your current products<br/>
- - Usage: `[p]upgradechat view`
-## [p]upgradechat tokens
-Set your Upgrade.Chat api tokens<br/>
-By using this feature it is assumed that you are already familiar with Upgrade.Chat<br/>
-
-1. Create your api keys here: https://upgrade.chat/developers<br/>
-
-2. Copy your client ID and Client Secret<br/>
-
-3. Run this command with your credentials<br/>
-
-**Enjoy!**<br/>
- - Usage: `[p]upgradechat tokens <client_id> <client_secret>`
 # [p]claim
 Claim your Upgrade.Chat purchases!<br/>
  - Usage: `[p]claim`

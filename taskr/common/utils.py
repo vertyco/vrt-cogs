@@ -25,7 +25,7 @@ def get_scheduler(start: bool = True) -> AsyncIOScheduler:
 async def invoke_command(
     bot: Red,
     author: discord.User,
-    channel: discord.TextChannel,
+    channel: discord.TextChannel | discord.Thread,
     command: str,
     prefix: t.Optional[str] = None,
     message: t.Optional[discord.Message] = None,

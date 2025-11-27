@@ -170,6 +170,7 @@ compress.py
 
 
 # Misc
+copilot-instructions.md
 backups/
 orchestrator/
 welcomer/
@@ -182,6 +183,7 @@ levelup/data/tests/
 levelup/data/stock/rs-assets/
 
 # WIP cogs
+arkadia/
 fishing/
 osmosis/
 botarena/
@@ -192,7 +194,8 @@ whosalt/
 design_docs/
 idlegather/
 locallm/
-llm/
 bedrocktools/
 kingdoms/
 dungeon/
+llms/
+v2/

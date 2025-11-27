@@ -7,15 +7,15 @@ Set up the XTools cog<br/>
 ## [p]apiset help
 Tutorial for getting your ClientID and Secret<br/>
  - Usage: `[p]apiset help`
-## [p]apiset auth
-
- - Usage: `[p]apiset auth`
-## [p]apiset reset
-Reset the all token data<br/>
- - Usage: `[p]apiset reset`
 ## [p]apiset tokens
 Set Client ID and Secret<br/>
  - Usage: `[p]apiset tokens <client_id> <client_secret>`
+## [p]apiset reset
+Reset the all token data<br/>
+ - Usage: `[p]apiset reset`
+## [p]apiset auth
+
+ - Usage: `[p]apiset auth`
 # [p]xstatuschannel
 Set the channel for Microsoft status alerts<br/>
 

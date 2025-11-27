@@ -42,7 +42,7 @@ class Events(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.2.3"
+    __version__ = "0.2.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -233,8 +233,7 @@ class Events(commands.Cog):
 
         if per_user > 1:
             txt += (
-                "\n\nWhen you are finished, type `done`.\n"
-                f"This event allows up to `{per_user}` submissions per user."
+                f"\n\nWhen you are finished, type `done`.\nThis event allows up to `{per_user}` submissions per user."
             )
         txt += "\n\nType `cancel` at any time to cancel."
         await edit(msg, txt, title=event_name)
@@ -309,7 +308,7 @@ class Events(commands.Cog):
                 pfp = author.avatar_url
             ts = int(datetime.now().timestamp())
             dtype = "Description" if filesub else "Entry"
-            desc = f"`Author:    `{author}\n" f"`Submitted: `<t:{ts}:f>\n\n"
+            desc = f"`Author:    `{author}\n`Submitted: `<t:{ts}:f>\n\n"
             if text.strip():
                 desc += f"**{dtype}**\n{text}"
 
@@ -831,7 +830,7 @@ class Events(commands.Cog):
                     continue
                 break
 
-        await msg.edit(content="Will submissions be file uploads, or text based?\n" "Reply with (`file` or `text`)")
+        await msg.edit(content="Will submissions be file uploads, or text based?\nReply with (`file` or `text`)")
         async with GetReply(ctx) as reply:
             if reply is None:
                 return await cancel(msg)
@@ -854,7 +853,7 @@ class Events(commands.Cog):
         if not all(perms.keys()):
             missing = [v for k, v in perms.items() if not k]
             return await msg.edit(
-                content="I am missing the following permissions for that channel:\n" f"{box(humanize_list(missing))}"
+                content=f"I am missing the following permissions for that channel:\n{box(humanize_list(missing))}"
             )
 
         await msg.edit(content="How many submissions per user are allowed?")
@@ -929,7 +928,7 @@ class Events(commands.Cog):
                 if done:
                     break
 
-        await msg.edit(content="How long will this event be running for?\n" "**Example Replies**\n10d\n7d4h\n2w3d10h")
+        await msg.edit(content="How long will this event be running for?\n**Example Replies**\n10d\n7d4h\n2w3d10h")
         delta = timedelta(days=1)
         while True:
             async with GetReply(ctx) as reply:
@@ -1054,7 +1053,7 @@ class Events(commands.Cog):
         notify_roles = [ctx.guild.get_role(r).mention for r in notify_roles if ctx.guild.get_role(r)]
         notify_users = conf["notify_users"]
         notify_users = [ctx.guild.get_member(m).mention for m in notify_users if ctx.guild.get_member(m)]
-        txt = f"{humanize_list(notify_users)}\n" f"{humanize_list(notify_roles)}"
+        txt = f"{humanize_list(notify_users)}\n{humanize_list(notify_roles)}"
 
         emoji_id = conf["default_emoji"]
         if emoji_id:
@@ -1108,7 +1107,7 @@ class Events(commands.Cog):
         async with self.config.guild(ctx.guild).events() as events:
             events[name] = event
 
-    async def _end_event(self, guild: discord.guild, event: dict):
+    async def _end_event(self, guild: discord.Guild, event: dict):
         conf = await self.config.guild(guild).all()
         rblacklist = conf["role_blacklist"]
         ublacklist = conf["user_blacklist"]
@@ -1154,7 +1153,7 @@ class Events(commands.Cog):
                         dont_want = [
                             voter.bot,
                             voter.id == submitter.id,
-                            voter.guild is None,
+                            isinstance(voter, discord.User),
                         ]
                         if any(dont_want):
                             continue
@@ -1258,7 +1257,7 @@ class Events(commands.Cog):
         notify_staff = conf["ping_staff"]
         staff_roles = conf["staff_roles"]
         staff_roles = [guild.get_role(r).mention for r in staff_roles if guild.get_role(r)]
-        txt = f"{humanize_list(to_mention)}\n" f"{humanize_list(notify_users)}\n" f"{humanize_list(notify_roles)}"
+        txt = f"{humanize_list(to_mention)}\n{humanize_list(notify_users)}\n{humanize_list(notify_roles)}"
         if notify_staff and staff_roles:
             txt += f"\n{humanize_list(staff_roles)}"
         mentions = discord.AllowedMentions(roles=True, users=True)

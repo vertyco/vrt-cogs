@@ -16,7 +16,7 @@ Show the top clickers<br/>
 **Arguments:**<br/>
 - `show_global`: Show global top clickers instead of server top clickers.<br/>
 - `delta`: Show top clickers within a time delta. (e.g. 1d, 1h, 1m)<br/>
- - Usage: `[p]topclickers [show_global=False] [delta=None]`
+ - Usage: `[p]topclickers [show_global=True] [delta=None]`
  - Aliases: `clicklb`
  - Checks: `ensure_db_connection`
 # [p]clickerset
@@ -31,9 +31,6 @@ Use `[p]help CowClicker` to view the cog help and version (Case sensitive)<br/>
  - Usage: `[p]clickerset`
  - Restricted to: `BOT_OWNER`
  - Aliases: `cowclicker`
-## [p]clickerset postgres
-Set the Postgres connection info<br/>
- - Usage: `[p]clickerset postgres`
 ## [p]clickerset nukedb
 Delete the database for this cog and reinitialize it<br/>
 
@@ -42,3 +39,6 @@ THIS CANNOT BE UNDONE!<br/>
 ## [p]clickerset diagnose
 Check the database connection<br/>
  - Usage: `[p]clickerset diagnose`
+## [p]clickerset postgres
+Set the Postgres connection info<br/>
+ - Usage: `[p]clickerset postgres`

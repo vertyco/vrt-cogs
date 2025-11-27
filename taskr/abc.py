@@ -6,7 +6,7 @@ from discord.ext.commands.cog import CogMeta
 from redbot.core import commands
 from redbot.core.bot import Red
 
-from .common.models import DB
+from .common.models import DB, ScheduledCommand
 
 
 class CompositeMetaClass(CogMeta, ABCMeta):
@@ -35,4 +35,8 @@ class MixinMeta(ABC):
 
     @abstractmethod
     async def ensure_jobs(self) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def remove_job(self, task: ScheduledCommand) -> bool:
         raise NotImplementedError

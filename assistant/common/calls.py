@@ -38,13 +38,14 @@ async def request_chat_completion_raw(
     messages: List[dict],
     temperature: float,
     api_key: str,
-    max_tokens: int,
+    max_tokens: Optional[int] = None,
     functions: Optional[List[dict]] = None,
     frequency_penalty: float = 0.0,
     presence_penalty: float = 0.0,
     seed: int = None,
     base_url: Optional[str] = None,
     reasoning_effort: Optional[str] = None,
+    verbosity: Optional[str] = None,
 ) -> ChatCompletion:
     client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
 
@@ -52,15 +53,21 @@ async def request_chat_completion_raw(
 
     if model in PRICES and base_url is None:
         # Using an OpenAI model
-        if "o1" not in model and "o3" not in model:
+        if not model.startswith("o") and "gpt-5" not in model:
             kwargs["temperature"] = temperature
             kwargs["frequency_penalty"] = frequency_penalty
             kwargs["presence_penalty"] = presence_penalty
 
-        if model in ["o1", "o1-2024-12-17", "o3-mini", "o3-mini-2025-01-31"] and reasoning_effort is not None:
+        if (model.startswith("o") or "gpt-5" in model) and reasoning_effort is not None:
+            if reasoning_effort == "minimal" and "gpt-5" not in model:
+                # Only gpt-5 supports minimal reasoning effort
+                reasoning_effort = "low"
             kwargs["reasoning_effort"] = reasoning_effort
 
-        if max_tokens > 0:
+        if "gpt-5" in model and verbosity is not None:
+            kwargs["verbosity"] = verbosity
+
+        if max_tokens and max_tokens > 0:
             kwargs["max_completion_tokens"] = max_tokens
 
         if seed and model in SUPPORTS_SEED:
@@ -146,22 +153,54 @@ async def request_embedding_raw(
 async def request_image_raw(
     prompt: str,
     api_key: str,
-    size: t.Literal["1024x1024", "1792x1024", "1024x1792"] = "1024x1024",
-    quality: t.Literal["standard", "hd"] = "standard",
-    style: t.Literal["natural", "vivid"] = "vivid",
+    size: t.Literal["1024x1024", "1792x1024", "1024x1792", "1024x1536", "1536x1024"] = "1024x1024",
+    quality: t.Literal["standard", "hd", "low", "medium", "high"] = "standard",
+    style: t.Optional[t.Literal["natural", "vivid"]] = "vivid",
+    model: t.Literal["dall-e-3", "gpt-image-1"] = "dall-e-3",
     base_url: Optional[str] = None,
 ) -> Image:
     client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
-    response: ImagesResponse = await client.images.generate(
-        model="dall-e-3",
+
+    kwargs = {
+        "model": model,
+        "prompt": prompt,
+        "size": size,
+        "n": 1,
+    }
+
+    # Handle model-specific parameters
+    if model == "dall-e-3":
+        kwargs["quality"] = quality if quality in ["standard", "hd"] else "standard"
+        kwargs["style"] = style
+        kwargs["response_format"] = "b64_json"
+    elif model == "gpt-image-1":
+        if quality in ["low", "medium", "high"]:
+            kwargs["quality"] = quality
+        else:
+            kwargs["quality"] = "medium"
+        # gpt-image-1 doesn't support style parameter
+
+    response: ImagesResponse = await client.images.generate(**kwargs)
+    images: list[Image] = response.data
+    return images[0]
+
+
+async def request_image_edit_raw(
+    prompt: str,
+    api_key: str,
+    images: t.List[str],  # list[data:image/jpeg;base64,...]
+    base_url: Optional[str] = None,
+) -> Image:
+    assert all(isinstance(image, bytes) for image in images), "All images must be bytes."
+    client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
+
+    response: ImagesResponse = await client.images.edit(
+        model="gpt-image-1",
         prompt=prompt,
-        size=size,
-        quality=quality,
-        style=style,
-        response_format="b64_json",
-        n=1,
+        image=images,
     )
-    return response.data[0]
+    images: list[Image] = response.data
+    return images[0]
 
 
 class CreateMemoryResponse(BaseModel):
@@ -176,7 +215,7 @@ async def create_memory_call(
 ) -> t.Union[CreateMemoryResponse, None]:
     client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
     response = await client.beta.chat.completions.parse(
-        model="gpt-4o-2024-11-20",
+        model="o3",
         messages=messages,
         response_format=CreateMemoryResponse,
     )

@@ -4,7 +4,7 @@ from io import BytesIO, StringIO
 
 import discord
 from redbot.core import commands
-from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.i18n import Translator
 
 from ..abc import MixinMeta
 from ..common import utils
@@ -13,7 +13,6 @@ from ..generator import imgtools, levelalert
 _ = Translator("LevelUp", __file__)
 
 
-@cog_i18n(_)
 class Owner(MixinMeta):
     @commands.group(name="levelowner", aliases=["lvlowner"])
     @commands.guild_only()
@@ -38,7 +37,7 @@ class Owner(MixinMeta):
         size = await asyncio.to_thread(_size)
         embed.add_field(
             name=_("Global Settings"),
-            value=_("`Profile Cache Time: `{}\n" "`Cache Size:         `{}\n").format(
+            value=_("`Profile Cache Time: `{}\n`Cache Size:         `{}\n").format(
                 utils.humanize_delta(self.db.cache_seconds),
                 utils.humanize_size(size),
             ),
