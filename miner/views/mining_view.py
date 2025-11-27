@@ -64,13 +64,14 @@ class RockView(discord.ui.View):
 
     async def start(self, channel: discord.TextChannel | discord.Thread):
         """Start the rock session"""
-        self.end_time = datetime.now() + timedelta(seconds=constants.ROCK_TTL_SECONDS)
+        ttl_seconds = self.rocktype.ttl_seconds
+        self.end_time = datetime.now() + timedelta(seconds=ttl_seconds)
         self.message = await channel.send(embed=self.embed(), view=self)
-        self.ttl_task = asyncio.create_task(self.ttl())
+        self.ttl_task = asyncio.create_task(self.ttl(ttl_seconds))
 
-    async def ttl(self):
+    async def ttl(self, ttl_seconds: int):
         try:
-            await asyncio.sleep(constants.ROCK_TTL_SECONDS)
+            await asyncio.sleep(ttl_seconds)
             if self.finalizing:
                 return
             await self.finalize()
@@ -129,10 +130,14 @@ class RockView(discord.ui.View):
             current_tool = constants.TOOLS[player.tool]
             downgraded_tool = constants.TOOLS[constants.TOOL_ORDER[constants.TOOL_ORDER.index(player.tool) - 1]]
             shatter_txt = f"You swing too hastily at the {self.rocktype.display_name} and your {current_tool.display_name} shatters!"
+            max_durability = current_tool.max_durability or 0
+            dura_ratio = (player.durability / max_durability) if max_durability else None
+            allow_catastrophic = dura_ratio is None or dura_ratio <= constants.OVERSWING_SHATTER_DURA_THRESHOLD
             # Player is swinging too fast so we're going to deduct from their durability
             # Tool break sets them back to previous tool tier
             if (
-                random.random() < self.rocktype.overswing_break_chance
+                allow_catastrophic
+                and random.random() < self.rocktype.overswing_break_chance
                 and random.random() >= current_tool.shatter_resistance
             ):
                 # Players tool shattered!
@@ -141,6 +146,7 @@ class RockView(discord.ui.View):
                 await interaction.followup.send(shatter_txt, ephemeral=True)
                 kwargs = {Player.tool: downgraded_tool.key, Player.durability: downgraded_tool.max_durability or 0}
                 await player.update_self(kwargs)
+                self.cog.reset_durability_warnings(player.id)
 
                 # Clear the tool_name cache since they broke their tool
                 await self.cog.db_utils.get_cached_player_tool.cache.delete(f"miner_player_tool:{player.id}")  # type: ignore
@@ -155,12 +161,20 @@ class RockView(discord.ui.View):
                     await interaction.followup.send(shatter_txt, ephemeral=True)
                     kwargs = {Player.tool: downgraded_tool.key, Player.durability: downgraded_tool.max_durability}
                     await player.update_self(kwargs)
+                    self.cog.reset_durability_warnings(player.id)
 
                     # Clear the tool_name cache since they broke their tool
                     await self.cog.db_utils.get_cached_player_tool.cache.delete(f"miner_player_tool:{player.id}")  # type: ignore
                     return
 
                 await player.update_self({Player.durability: new_durability})
+                await self._maybe_send_durability_warning(
+                    interaction,
+                    player.id,
+                    current_tool,
+                    new_durability,
+                    max_durability,
+                )
             self.action_window.append(txt)
             return
 
@@ -275,12 +289,16 @@ class RockView(discord.ui.View):
                                 f"-`{dura_deduction}` durability to {current_tool.display_name} (now `{new_durability}`)\n"
                             )
                             update_kwargs[Player.durability] = new_durability
+                            warning_note = self._durability_warning_note(player.id, current_tool, new_durability)
+                            if warning_note:
+                                buffer.write(f"{warning_note}\n")
                         else:
                             buffer.write(
                                 f"‼️{player.tool.title()} broke due to overuse, downgraded to {downgraded_tool.display_name}\n"
                             )
                             update_kwargs[Player.tool] = downgraded_tool.key
                             update_kwargs[Player.durability] = downgraded_tool.max_durability or 0
+                            self.cog.reset_durability_warnings(player.id)
                     await player.update_self(update_kwargs)
 
             if ledgers:
@@ -338,3 +356,44 @@ class RockView(discord.ui.View):
                     leftover -= 1
 
         return payouts
+
+    async def _maybe_send_durability_warning(
+        self,
+        interaction: discord.Interaction,
+        player_id: int,
+        tool: constants.ToolTier,
+        durability: int,
+        max_durability: int | None,
+    ) -> None:
+        if not isinstance(max_durability, int) or max_durability <= 0:
+            return
+        ratio = durability / max_durability
+        threshold = self.cog.register_durability_ratio(player_id, ratio)
+        if threshold is None:
+            return
+        critical = min(constants.DURABILITY_WARNING_THRESHOLDS or (0.1,))
+        severity = "critically low" if threshold <= critical else "running low"
+        message = (
+            f"⚠️ Your {tool.display_name} durability is {severity}"
+            f" ({durability}/{max_durability}). Consider repairing soon."
+        )
+        with suppress(discord.HTTPException):
+            await interaction.followup.send(message, ephemeral=True)
+
+    def _durability_warning_note(
+        self,
+        player_id: int,
+        tool: constants.ToolTier,
+        durability: int,
+    ) -> str | None:
+        max_durability = tool.max_durability
+        if not isinstance(max_durability, int) or max_durability <= 0:
+            return None
+        ratio = durability / max_durability
+        threshold = self.cog.register_durability_ratio(player_id, ratio)
+        if threshold is None:
+            return None
+        critical = min(constants.DURABILITY_WARNING_THRESHOLDS or (0.1,))
+        if threshold <= critical:
+            return f"⚠️ {tool.display_name} is critically low on durability ({durability}/{max_durability})."
+        return f"⚠️ {tool.display_name} durability is running low ({durability}/{max_durability})."

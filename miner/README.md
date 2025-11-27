@@ -30,6 +30,11 @@ View your mining inventory and tool.<br/>
  - Slash Usage: `/miner inventory [user=None]`
  - Aliases: `inv`
  - Checks: `ensure_db_connection`
+## [p]miner guide (Hybrid Command)
+Learn how Miner works, including spawns, overswing, and helpful commands.<br/>
+ - Usage: `[p]miner guide`
+ - Slash Usage: `/miner guide`
+ - Checks: `ensure_db_connection`
 # [p]minerlb (Hybrid Command)
 View the top players for a specific resource.<br/>
  - Usage: `[p]minerlb`
@@ -67,3 +72,4 @@ Toggle active mining channels<br/>
 View active mining channels<br/>
  - Usage: `[p]minerset view`
  - Checks: `ensure_db_connection`
+	- Notes: Rock spawn pacing (minimum/maximum intervals) is global and configured by the bot owner. Guild admins only control which channels are eligible for rocks and whether activity is tracked per-channel or per-guild; rare rocks remain globally rare regardless of guild-specific settings.

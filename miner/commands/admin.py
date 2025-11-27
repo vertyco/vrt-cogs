@@ -5,7 +5,12 @@ from redbot.core import bank, commands
 
 from ..abc import MixinMeta
 from ..common import constants
-from ..db.tables import ActiveChannel, GuildSettings, ensure_db_connection
+from ..db.tables import (
+    ActiveChannel,
+    GlobalSettings,
+    GuildSettings,
+    ensure_db_connection,
+)
 from ..views.mining_view import RockView
 
 
@@ -71,6 +76,15 @@ class Admin(MixinMeta):
         field += f"Gems: `{settings.gems_convert_rate}` ({_ratio_text(settings.gems_convert_rate, 'gems')})\n"
         embed.add_field(name="Resource Conversion Settings", value=field, inline=False)
 
+        # Global rock spawn timing (owner-only configurable)
+        min_interval, max_interval = await self.db_utils.get_spawn_timing()
+        timing_text = (
+            f"Min interval: `{min_interval}s`\n"
+            f"Max interval: `{max_interval}s`\n"
+            "(Only the bot owner can change these values.)"
+        )
+        embed.add_field(name="Global Rock Spawn Timing", value=timing_text, inline=False)
+
         trigger_mode_description = (
             "Whether message activity is tracked per-channel or per-guild.\n"
             "In `Per Channel` mode, activity in each channel is tracked separately, and rocks can spawn in any active channel.\n"
@@ -83,35 +97,62 @@ class Admin(MixinMeta):
             inline=False,
         )
 
-        min_default = constants.MIN_TIME_BETWEEN_SPAWNS
-        txt = (
-            f"default ({min_default}s)"
-            if not guild_settings.time_between_spawns
-            else f"{guild_settings.time_between_spawns}s"
+        expectation_lines = (
+            "• Rock spawn pacing (minimum/maximum timers) is global and set by the bot owner.\n"
+            "• Server admins choose *where* rocks can appear by toggling mining channels.\n"
+            "• Per-Server settings only influence eligible channels and activity tracking; rare rocks remain globally rare."
         )
         embed.add_field(
-            name="Min Time Between Spawns",
-            value=txt,
+            name="Global vs Server Expectations",
+            value=expectation_lines,
             inline=False,
         )
 
         await ctx.send(embed=embed)
 
-    @miner_set.command(name="spawntime")
+    @miner_set.command(name="spawntiming")
+    @commands.is_owner()
     @ensure_db_connection()
-    async def miner_spawn_time(self, ctx: commands.Context, seconds: t.Optional[int]):
-        """Set min time between rock spawns in seconds."""
-        if seconds and seconds < constants.MIN_TIME_BETWEEN_SPAWNS:
-            return await ctx.send(f"Time must be at least {constants.MIN_TIME_BETWEEN_SPAWNS} seconds.")
-        settings = await self.db_utils.get_create_guild_settings(ctx.guild.id)
-        if seconds is None or seconds == constants.MIN_TIME_BETWEEN_SPAWNS:
-            settings.time_between_spawns = 0
-            txt = f"Reset to default (`{constants.MIN_TIME_BETWEEN_SPAWNS}s`)."
-        else:
-            settings.time_between_spawns = seconds
-            txt = f"Set to `{seconds}s`."
-        await settings.save()
-        await ctx.send(f"Minimum time between rock spawns has been {txt}")
+    async def miner_spawn_timing(
+        self,
+        ctx: commands.Context,
+        min_seconds: int,
+        max_seconds: int,
+    ):
+        """Set the global minimum and maximum time between rock spawns in seconds.
+
+        Example: `[p]minerset spawntiming 30 600`
+        """
+
+        if min_seconds <= 0 or max_seconds <= 0:
+            await ctx.send("Values must be positive integers.")
+            return
+
+        if min_seconds >= max_seconds:
+            await ctx.send("Minimum interval must be less than maximum interval.")
+            return
+
+        # Basic sanity bounds.
+        min_allowed = 5
+        max_allowed = 3600
+        if min_seconds < min_allowed or max_seconds > max_allowed:
+            await ctx.send(
+                f"Intervals must be between `{min_allowed}` and `{max_allowed}` seconds, "
+                "and minimum must be less than maximum."
+            )
+            return
+
+        settings = await self.db_utils.get_create_global_settings()
+        settings.min_spawn_interval = min_seconds
+        settings.max_spawn_interval = max_seconds
+        await settings.save([GlobalSettings.min_spawn_interval, GlobalSettings.max_spawn_interval])
+
+        # Invalidate cached timing.
+        await self.db_utils.get_spawn_timing.cache.clear()  # type: ignore[attr-defined]
+
+        await ctx.send(
+            f"Global rock spawn timing updated:\nMin interval: `{min_seconds}s`\nMax interval: `{max_seconds}s`."
+        )
 
     @miner_set.command(name="activitytracking")
     @ensure_db_connection()

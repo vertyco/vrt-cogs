@@ -181,6 +181,7 @@ class User(MixinMeta):
         }
         update_kwargs[Player.durability] = max_dura
         await player.update_self(update_kwargs)
+        self.reset_durability_warnings(player.id)
 
         embed = discord.Embed(
             title="Tool Repaired!",
@@ -305,6 +306,7 @@ class User(MixinMeta):
         update_kwargs[Player.tool] = next_tool_name
         update_kwargs[Player.durability] = next_tool.max_durability
         await Player.update(update_kwargs).where(Player.id == ctx.author.id)
+        self.reset_durability_warnings(player.id)
         done_embed = discord.Embed(
             title="Upgrade Successful!",
             description=f"{ctx.author.mention}, you have upgraded to the **{next_tool.display_name}**! {constants.PICKAXE_EMOJI}\nDurability restored to `{next_tool.max_durability}`.",
@@ -379,3 +381,109 @@ class User(MixinMeta):
         return await ctx.send(
             f"{ctx.author.mention}, you have converted `{humanize_number(amount_to_deduct)}` {resource.title()} into `{humanize_number(credits_to_give)}` {creditsname}."
         )
+
+    @miner_group.command(name="status", description="Show the current mining activity state.")
+    @ensure_db_connection()
+    async def miner_status(self, ctx: commands.Context):
+        """Show an approximate rock spawn chance for this server.
+
+        This reports a bucketed spawn chance (Low / Medium / High) based on
+        recent activity and time since the last rock, without exposing exact
+        internal percentages.
+        """
+
+        if not ctx.guild:
+            await ctx.send("This command can only be used in a server.")
+            return
+
+        settings = await self.db_utils.get_create_guild_settings(ctx.guild.id)
+        key = ctx.channel.id if settings.per_channel_activity_trigger else ctx.guild.id
+
+        min_interval, max_interval = await self.db_utils.get_spawn_timing()
+
+        try:
+            spawn_prob = self.activity.get_spawn_probability(key, min_interval, max_interval)
+        except TypeError:
+            # Backwards compatibility: fall back to basic probability if older signature.
+            spawn_prob = self.activity.get_spawn_probability(key)  # type: ignore[call-arg]
+
+        # Bucket the probability for player-friendly output.
+        if spawn_prob < constants.STATUS_PROB_LOW_MAX:
+            label = "Low"
+            desc = "Rocks are unlikely to spawn right now. Keep chatting in mining channels to raise the chance."
+        elif spawn_prob < constants.STATUS_PROB_MEDIUM_MAX:
+            label = "Medium"
+            desc = "Rocks have a reasonable chance to appear soon if activity stays steady."
+        else:
+            label = "High"
+            desc = "The air feels heavy with dust. A rock could appear at any moment if activity continues."
+
+        mode = "Per Channel" if settings.per_channel_activity_trigger else "Per Guild"
+        embed = discord.Embed(
+            title="Mining Activity Status",
+            description=desc,
+            color=discord.Color.blurple(),
+        )
+        embed.add_field(name="Approximate Spawn Chance", value=f"`{label}`", inline=True)
+        embed.add_field(name="Activity Mode", value=f"`{mode}`", inline=True)
+        embed.set_footer(
+            text=(
+                "Chatting in mining-enabled channels increases the chance for a rock "
+                "to appear over time. Exact chances may change as the game is tuned. "
+                "Spawn pacing is global; server settings only control where rocks can appear."
+            )
+        )
+
+        await ctx.send(embed=embed)
+
+    @miner_group.command(name="guide", description="Overview of how Miner works and core commands.")
+    @ensure_db_connection()
+    async def miner_guide(self, ctx: commands.Context):
+        """Send an in-game guide covering the core loop, spawns, overswing, and repairs."""
+
+        description = (
+            "Chat in mining-enabled channels to build up activity, wait for rocks to appear, "
+            "then mine them with your pickaxe to earn resources you can upgrade or trade."
+        )
+        embed = discord.Embed(
+            title="Miner Guide",
+            description=description,
+            color=discord.Color.gold(),
+        )
+
+        spawn_text = (
+            "• Rock spawn pacing (min / max intervals) is configured globally by the bot owner.\n"
+            "• Server admins choose *which channels* can spawn rocks via `[p]minerset toggle`.\n"
+            "• If your server uses per-channel tracking, each enabled channel builds its own chance; "
+            "otherwise activity is shared server-wide."
+        )
+        embed.add_field(name="Spawns & Activity", value=spawn_text, inline=False)
+
+        overswing_text = (
+            "• Swinging faster than the cooldown causes slips (overswing).\n"
+            "• Overswing can damage your tool and may shatter it if durability is low.\n"
+            "• Use `[p]miner status` to gauge when a rock might appear and pace your swings."
+        )
+        embed.add_field(name="Mining & Overswing", value=overswing_text, inline=False)
+
+        durability_text = (
+            "• Every hit reduces durability; breaking a tool downgrades it.\n"
+            "• Repairs cost a fraction of the upgrade resources via `[p]miner repair true`.\n"
+            "• Upgrade tools with `[p]miner upgrade` to increase power and max durability."
+        )
+        embed.add_field(name="Durability & Repairs", value=durability_text, inline=False)
+
+        p = ctx.clean_prefix
+        commands_text = (
+            f"`{p}miner inventory` - view your tool, durability, and resources.\n"
+            f"`{p}miner trade @user` - trade resources with others.\n"
+            f"`{p}miner status` - see the current spawn chance bucket for this server.\n"
+            f"`{p}minerset view` - (admins) list enabled channels and timings."
+        )
+        embed.add_field(name="Helpful Commands", value=commands_text, inline=False)
+
+        embed.set_footer(
+            text="Need more help? Ask your admins to review `[p]minerset view` for server-specific settings."
+        )
+
+        await ctx.send(embed=embed)

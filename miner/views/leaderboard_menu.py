@@ -23,6 +23,14 @@ class ResourceDropdown(ui.ActionRow["LeaderboardView"]):
     def __init__(self, view: "LeaderboardView"):
         self.__view = view
         super().__init__()
+        self.update_options()
+
+    def update_options(self):
+        for option in self.options:
+            if self.__view.resource == option.label.lower():
+                option.default = True
+            else:
+                option.default = False
 
     @ui.select(placeholder="Resource", options=options)
     async def select_resource(self, interaction: discord.Interaction, select: ui.Select) -> None:
@@ -36,16 +44,24 @@ class ResourceDropdown(ui.ActionRow["LeaderboardView"]):
 
 class LeaderBoardDeltaDropdown(ui.ActionRow["LeaderboardView"]):
     options = [
-        discord.SelectOption(label="Hourly", description="Past 1 hour"),
-        discord.SelectOption(label="Daily", description="Past 24 hours"),
-        discord.SelectOption(label="Weekly", description="Past 7 days"),
-        discord.SelectOption(label="Monthly", description="Past 30 days"),
-        discord.SelectOption(label="All Time", description="All time"),
+        discord.SelectOption(label="Hourly", description="Past 1 hour", emoji=constants.CLOCK_EMOJI),
+        discord.SelectOption(label="Daily", description="Past 24 hours", emoji=constants.CLOCK_EMOJI),
+        discord.SelectOption(label="Weekly", description="Past 7 days", emoji=constants.CLOCK_EMOJI),
+        discord.SelectOption(label="Monthly", description="Past 30 days", emoji=constants.CLOCK_EMOJI),
+        discord.SelectOption(label="All Time", description="All time", emoji=constants.CLOCK_EMOJI),
     ]
 
     def __init__(self, view: "LeaderboardView"):
         self.__view = view
         super().__init__()
+        self.update_options()
+
+    def update_options(self):
+        for option in self.options:
+            if self.__view.lb_type == option.label.lower():
+                option.default = True
+            else:
+                option.default = False
 
     @ui.select(placeholder="Timeframe", options=options)
     async def select_delta(self, interaction: discord.Interaction, select: ui.Select) -> None:

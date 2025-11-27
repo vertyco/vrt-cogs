@@ -31,3 +31,11 @@ class MixinMeta(ABC):
     @abstractmethod
     def db_active(self) -> bool:
         raise NotImplementedError
+
+    @abstractmethod
+    def reset_durability_warnings(self, player_id: int) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def register_durability_ratio(self, player_id: int, ratio: float | None) -> float | None:
+        raise NotImplementedError
