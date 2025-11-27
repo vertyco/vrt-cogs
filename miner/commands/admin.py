@@ -77,17 +77,7 @@ class Admin(MixinMeta):
         embed.add_field(name="Resource Conversion Settings", value=field, inline=False)
 
         # Global rock spawn timing (owner-only configurable)
-        global_settings = await self.db_utils.get_create_global_settings()
-        min_interval = (
-            global_settings.min_spawn_interval
-            if global_settings.min_spawn_interval is not None
-            else constants.MIN_TIME_BETWEEN_SPAWNS
-        )
-        max_interval = (
-            global_settings.max_spawn_interval
-            if global_settings.max_spawn_interval is not None
-            else constants.ABSOLUTE_MAX_TIME_BETWEEN_SPAWNS
-        )
+        min_interval, max_interval = await self.db_utils.get_spawn_timing()
         timing_text = (
             f"Min interval: `{min_interval}s`\n"
             f"Max interval: `{max_interval}s`\n"

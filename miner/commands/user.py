@@ -473,11 +473,12 @@ class User(MixinMeta):
         )
         embed.add_field(name="Durability & Repairs", value=durability_text, inline=False)
 
+        p = ctx.clean_prefix
         commands_text = (
-            "`[p]miner inventory` – view your tool, durability, and resources.\n"
-            "`[p]miner trade @user` – trade resources with others.\n"
-            "`[p]miner status` – see the current spawn chance bucket for this server.\n"
-            "`[p]minerset view` – (admins) list enabled channels and timings."
+            f"`{p}miner inventory` - view your tool, durability, and resources.\n"
+            f"`{p}miner trade @user` - trade resources with others.\n"
+            f"`{p}miner status` - see the current spawn chance bucket for this server.\n"
+            f"`{p}minerset view` - (admins) list enabled channels and timings."
         )
         embed.add_field(name="Helpful Commands", value=commands_text, inline=False)
 

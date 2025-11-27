@@ -59,6 +59,7 @@ GEM_EMOJI: str = "\N{GEM STONE}"
 INSPECT_EMOJI: str = "\N{LEFT-POINTING MAGNIFYING GLASS}"
 IRON_EMOJI: str = "\N{CHAINS}\N{VARIATION SELECTOR-16}"
 TROPHY_EMOJI: str = "\N{TROPHY}"
+CLOCK_EMOJI: str = "\N{ALARM CLOCK}"
 
 
 def resource_emoji(resource: str) -> str:
