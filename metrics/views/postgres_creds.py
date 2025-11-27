@@ -106,6 +106,7 @@ class SetConnectionView(discord.ui.View):
                     await interaction.channel.send(txt, delete_after=10)
 
         await interaction.edit_original_response(content="Testing connection...")
+        conn = None
         try:
             conn = await asyncpg.connect(**modal.data, timeout=5)
         except asyncpg.InvalidPasswordError:
@@ -115,7 +116,8 @@ class SetConnectionView(discord.ui.View):
         except asyncpg.InvalidAuthorizationSpecificationError:
             return await _respond("Invalid user!")
         finally:
-            await conn.close()
+            if conn:
+                await conn.close()
 
         await self.cog.bot.set_shared_api_tokens("postgres", **modal.data)
         await interaction.edit_original_response(content="Postgres connection info set", view=None)
