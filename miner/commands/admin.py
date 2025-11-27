@@ -107,6 +107,17 @@ class Admin(MixinMeta):
             inline=False,
         )
 
+        expectation_lines = (
+            "• Rock spawn pacing (minimum/maximum timers) is global and set by the bot owner.\n"
+            "• Server admins choose *where* rocks can appear by toggling mining channels.\n"
+            "• Per-Server settings only influence eligible channels and activity tracking; rare rocks remain globally rare."
+        )
+        embed.add_field(
+            name="Global vs Server Expectations",
+            value=expectation_lines,
+            inline=False,
+        )
+
         await ctx.send(embed=embed)
 
     @miner_set.command(name="spawntiming")

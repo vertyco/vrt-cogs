@@ -429,8 +429,60 @@ class User(MixinMeta):
         embed.set_footer(
             text=(
                 "Chatting in mining-enabled channels increases the chance for a rock "
-                "to appear over time. Exact chances may change as the game is tuned."
+                "to appear over time. Exact chances may change as the game is tuned. "
+                "Spawn pacing is global; server settings only control where rocks can appear."
             )
+        )
+
+        await ctx.send(embed=embed)
+
+    @miner_group.command(name="guide", description="Overview of how Miner works and core commands.")
+    @ensure_db_connection()
+    async def miner_guide(self, ctx: commands.Context):
+        """Send an in-game guide covering the core loop, spawns, overswing, and repairs."""
+
+        description = (
+            "Chat in mining-enabled channels to build up activity, wait for rocks to appear, "
+            "then mine them with your pickaxe to earn resources you can upgrade or trade."
+        )
+        embed = discord.Embed(
+            title="Miner Guide",
+            description=description,
+            color=discord.Color.gold(),
+        )
+
+        spawn_text = (
+            "• Rock spawn pacing (min / max intervals) is configured globally by the bot owner.\n"
+            "• Server admins choose *which channels* can spawn rocks via `[p]minerset toggle`.\n"
+            "• If your server uses per-channel tracking, each enabled channel builds its own chance; "
+            "otherwise activity is shared server-wide."
+        )
+        embed.add_field(name="Spawns & Activity", value=spawn_text, inline=False)
+
+        overswing_text = (
+            "• Swinging faster than the cooldown causes slips (overswing).\n"
+            "• Overswing can damage your tool and may shatter it if durability is low.\n"
+            "• Use `[p]miner status` to gauge when a rock might appear and pace your swings."
+        )
+        embed.add_field(name="Mining & Overswing", value=overswing_text, inline=False)
+
+        durability_text = (
+            "• Every hit reduces durability; breaking a tool downgrades it.\n"
+            "• Repairs cost a fraction of the upgrade resources via `[p]miner repair true`.\n"
+            "• Upgrade tools with `[p]miner upgrade` to increase power and max durability."
+        )
+        embed.add_field(name="Durability & Repairs", value=durability_text, inline=False)
+
+        commands_text = (
+            "`[p]miner inventory` – view your tool, durability, and resources.\n"
+            "`[p]miner trade @user` – trade resources with others.\n"
+            "`[p]miner status` – see the current spawn chance bucket for this server.\n"
+            "`[p]minerset view` – (admins) list enabled channels and timings."
+        )
+        embed.add_field(name="Helpful Commands", value=commands_text, inline=False)
+
+        embed.set_footer(
+            text="Need more help? Ask your admins to review `[p]minerset view` for server-specific settings."
         )
 
         await ctx.send(embed=embed)

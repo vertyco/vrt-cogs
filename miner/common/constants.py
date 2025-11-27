@@ -14,7 +14,7 @@ ROCK_ORDER: tuple[RockTierName, ...] = ("small", "medium", "large", "meteor", "v
 
 # Pacing
 SWINGS_PER_THRESHOLD: int = 3
-OVERSWING_THRESHOLD_SECONDS: int = 2  # seconds between swings to count as overswing
+OVERSWING_THRESHOLD_SECONDS: int = 3  # seconds between swings to count as overswing
 # Fraction of max durability at or below which catastrophic overswing shatters are allowed
 OVERSWING_SHATTER_DURA_THRESHOLD: float = 0.25
 # Durability percentage thresholds where we start warning players about tool condition
