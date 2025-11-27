@@ -181,6 +181,7 @@ class User(MixinMeta):
         }
         update_kwargs[Player.durability] = max_dura
         await player.update_self(update_kwargs)
+        self.reset_durability_warnings(player.id)
 
         embed = discord.Embed(
             title="Tool Repaired!",
@@ -305,6 +306,7 @@ class User(MixinMeta):
         update_kwargs[Player.tool] = next_tool_name
         update_kwargs[Player.durability] = next_tool.max_durability
         await Player.update(update_kwargs).where(Player.id == ctx.author.id)
+        self.reset_durability_warnings(player.id)
         done_embed = discord.Embed(
             title="Upgrade Successful!",
             description=f"{ctx.author.mention}, you have upgraded to the **{next_tool.display_name}**! {constants.PICKAXE_EMOJI}\nDurability restored to `{next_tool.max_durability}`.",

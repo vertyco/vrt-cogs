@@ -106,7 +106,10 @@ class MessageListener(MixinMeta):
         # Spawn feedback: occasionally send a "rumble" message when spawn chance is high.
         spawn_prob = self.activity.get_spawn_probability(key, min_interval, max_interval)
 
-        await self.maybe_rumble(message, key, spawn_prob)
+        is_mining_channel = await ActiveChannel.exists().where(ActiveChannel.id == message.channel.id)
+
+        if is_mining_channel:
+            await self.maybe_rumble(message, key, spawn_prob)
 
         # Determine if a rock should spawn.
         rock_type: constants.RockTierName | None = self.activity.maybe_get_rock(
@@ -119,7 +122,7 @@ class MessageListener(MixinMeta):
 
         if settings.per_channel_activity_trigger:
             channel: discord.TextChannel | discord.Thread = message.channel
-            if not await ActiveChannel.exists().where(ActiveChannel.id == channel.id):
+            if not is_mining_channel:
                 return
         else:
             query = ActiveChannel.select(ActiveChannel.id).where(ActiveChannel.guild == message.guild.id)

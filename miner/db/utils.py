@@ -51,8 +51,8 @@ class DBUtils:
         )
         return settings
 
-    # Cached for length of time that rocks last
-    @cached(ttl=constants.ROCK_TTL_SECONDS, key_builder=key_builder)
+    # Cached roughly for the longest possible rock lifetime
+    @cached(ttl=constants.MAX_ROCK_TTL_SECONDS, key_builder=key_builder)
     async def get_cached_player_tool(self, user: int) -> constants.ToolName:
         player = await self.get_create_player(user)
         tool: constants.ToolName = player.tool
