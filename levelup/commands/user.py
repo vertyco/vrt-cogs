@@ -135,6 +135,33 @@ class User(MixinMeta):
         )
         await ctx.send(txt)
 
+    @commands.hybrid_command(name="lvlupnotify", aliases=["notify"])
+    @commands.guild_only()
+    @commands.cooldown(3, 10, commands.BucketType.user)
+    async def level_up_notify(self, ctx: commands.Context):
+        """
+        If enabled, level up notifications won't be sent for you in the server
+        """
+        conf = self.db.get_conf(ctx.guild)
+        profile = conf.get_profile(ctx.author.id)
+
+        profile.ignore_level_up_notification = not profile.ignore_level_up_notification
+
+        if profile.ignore_level_up_notification:
+            await ctx.reply(
+                "Level up notifications are now **disabled** for you.",
+                mention_author=False,
+                delete_after=30,
+            )
+        else:
+            await ctx.reply(
+                "Level up notifications are now **enabled** for you.",
+                mention_author=False,
+                delete_after=30,
+            )
+
+        self.save()
+
     @commands.hybrid_command(name="profile", aliases=["pf"])
     @commands.guild_only()
     @commands.cooldown(3, 10, commands.BucketType.user)
@@ -225,13 +252,17 @@ class User(MixinMeta):
         if not role:
             return await ctx.send(_("The prestige role for this level no longer exists, please contact an admin!"))
 
-        current_xp = int(profile.xp)
-        xp_at_prestige = conf.algorithm.get_xp(conf.prestigelevel)
-        leftover_xp = current_xp - xp_at_prestige if current_xp > xp_at_prestige else 0
-        newlevel = conf.algorithm.get_level(leftover_xp)
+        # current_xp = int(profile.xp)
+        # xp_at_prestige = conf.algorithm.get_xp(conf.prestigelevel)
+        # leftover_xp = current_xp - xp_at_prestige if current_xp > xp_at_prestige else 0
+        # newlevel = conf.algorithm.get_level(leftover_xp)
+        # change prestige to work by levels instead of exp
+        current_level = profile.level
+        new_level = max(1, current_level - conf.prestigelevel)
+        new_xp = conf.algorithm.get_xp(new_level)
 
-        profile.level = newlevel
-        profile.xp = leftover_xp
+        profile.level = new_level
+        profile.xp = new_xp
         profile.prestige = next_prestige
         self.save()
 
