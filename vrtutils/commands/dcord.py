@@ -51,6 +51,108 @@ class Dcord(MixinMeta):
         super().__init__()
         self.scanning_channels = set()
 
+    @commands.command(name="nohoist")
+    @commands.guild_only()
+    @commands.admin_or_permissions(manage_nicknames=True)
+    @commands.bot_has_guild_permissions(manage_nicknames=True)
+    @commands.bot_has_permissions(attach_files=True)
+    async def no_hoist(self, ctx: commands.Context, confirm: bool):
+        """Dehoist all nicknames in the server
+        **Arguments**
+        `confirm:` (True/False) whether to confirm the action
+
+        Run with confirm **False** to see which nicknames would be reset.
+
+        Users will be dehoisted IF:
+        - Their nickname starts with a hoist character (e.g., `!`, `$`, `(`, `)`, `*`)
+        - Their nickname starts with a number but not their username
+
+        **Examples**
+        `[p]nohoist true`
+        """
+        hoist_characters = (
+            "!",
+            "*",
+            ":",
+            ";",
+            "<",
+            ">",
+            "?",
+            "[",
+            "]",
+            "{",
+            "}",
+            "|",
+            "~",
+            "`",
+            "^",
+            "+",
+            "-",
+            "=",
+            "_",
+            ".",
+            ",",
+        )
+
+        async def rename(member: discord.Member):
+            """Reset nickname of a member"""
+            tries = 0
+            while tries < 3:
+                try:
+                    await member.edit(nick=member.name, reason="Resetting hoisted nickname")
+                    return True
+                except discord.Forbidden:
+                    return False
+                except discord.HTTPException:
+                    tries += 1
+                    await asyncio.sleep(1)
+
+        buffer = StringIO()
+        for member in ctx.guild.members:
+            nickname = member.nick
+            if not nickname:
+                nickname = member.global_name
+            if not nickname:
+                nickname = member.display_name
+
+            if nickname == member.name:
+                continue
+
+            is_number = nickname[0].isdigit() and nickname[0].isalnum()
+
+            if nickname.startswith(hoist_characters):
+                if not confirm:
+                    buffer.write(f"- {member.name} - {member.id} - {nickname}\n")
+                    continue
+                if await rename(member):
+                    buffer.write(f"- {member.name} - {member.id} - {nickname}\n")
+                else:
+                    buffer.write(f"- {member.name} - {member.id} - Unable to reset nickname!\n")
+
+            elif is_number and not member.name.startswith(nickname[0]) and nickname[0] in ["0", "1", "2", "3"]:
+                if not confirm:
+                    buffer.write(f"- {member.name} - {member.id} - {nickname}\n")
+                    continue
+                if await rename(member):
+                    buffer.write(f"- {member.name} - {member.id} - {nickname}\n")
+                else:
+                    buffer.write(f"- {member.name} - {member.id} - Unable to reset nickname!\n")
+
+        if buffer.tell() == 0:
+            return await ctx.send("No nicknames were hoisted or reset.")
+
+        text = buffer.getvalue()
+        if confirm:
+            text = f"**Hoisted Nicknames Reset:**\n{text}"
+        else:
+            text = f"**Hoisted Nicknames Found:**\n{text}\n\nRun the command again with `confirm=True` to reset them."
+
+        if len(text) > 2000:
+            file = text_to_file(text)
+            return await ctx.send("Too many hoisted nicknames to display, sending as a file.", file=file)
+        else:
+            return await ctx.send(text)
+
     @commands.command(aliases=["ownerof"])
     @commands.is_owner()
     async def isownerof(self, ctx: commands.Context, user_id: int):

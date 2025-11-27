@@ -1,20 +1,22 @@
+from __future__ import annotations
+
 import asyncio
 import logging
-import typing as t
 from contextlib import suppress
 from datetime import datetime
+from uuid import uuid4
 
 import discord
 import openai
 import pytz
 from apscheduler.triggers.cron import CronTrigger
 from dateutil import parser
-from pydantic import BaseModel, Field
+from discord import ui
 from redbot.core import commands
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import box
+from redbot.core.utils.chat_formatting import box, humanize_timedelta
 
-from ..common import constants as C, utils
+from ..common import ai_responses, constants as C, utils
 from ..common.models import ScheduledCommand
 from . import BaseMenu
 from .dynamic_modal import DynamicModal
@@ -23,56 +25,86 @@ log = logging.getLogger("red.vrt.taskr.task_menu")
 _ = Translator("Taskr", __file__)
 
 
-system_prompt = (
-    "Your task is to take the user input and convert it into a valid cron expression.\n"
-    "Example 1: 'First Friday of every 3 months at 3:30PM starting on January':\n"
-    "- hour: 15\n"
-    "- minute: 30\n"
-    "- days_of_month: 1st fri\n"
-    "- months_of_year: 1-12/3\n"
-    "Example 2: 'Every odd hour at the 30 minute mark from 5am to 8pm':\n"
-    "- minute: 30\n"
-    "- hour: 5-20/2\n"
-    "# Rules\n"
-    "- If using intervals, leave cron expressions blank.\n"
-    "- If using cron expressions, leave intervals blank.\n"
-    "- When using between times and intervals at the same time, the interval using can only be minutes or hours.\n"
-)
+class ConfigScheduleModal(ui.Modal, title=_("Edit Scheduled Command")):
+    name = ui.TextInput(label=_("Scheduled Command Name"), max_length=45)
+    author = ui.Label(
+        text=_("Command Author"),
+        component=discord.ui.UserSelect(
+            placeholder=_("Select the user to run the command as"),
+            max_values=1,
+            min_values=1,
+        ),
+    )
+    channel = ui.Label(
+        text=_("Command Channel (Optional)"),
+        component=discord.ui.ChannelSelect(
+            placeholder=_("Channel that the command will be run in"),
+            channel_types=[discord.ChannelType.text, discord.ChannelType.public_thread],
+            min_values=0,
+        ),
+    )
+    command = ui.TextInput(
+        label=_("Command"),
+        style=discord.TextStyle.long,
+        max_length=4000,
+        placeholder=_("ex: ping"),
+    )
 
+    def __init__(self, view: TaskMenu, schedule: ScheduledCommand):
+        super().__init__()
+        self.view = view
+        self.schedule = schedule
+        self.name.default = schedule.name
+        user = view.guild.get_member(schedule.author_id)
+        if user:
+            self.author.component.default_values = [  # type: ignore
+                discord.SelectDefaultValue(id=user.id, type=discord.SelectDefaultValueType.user)
+            ]
+        if schedule.channel_id:
+            channel = view.guild.get_channel_or_thread(schedule.channel_id)
+            if channel:
+                self.channel.component.default_values = [  # type: ignore
+                    discord.SelectDefaultValue(id=channel.id, type=discord.SelectDefaultValueType.channel)
+                ]
+        self.command.default = schedule.command
 
-class CronDataResponse(BaseModel):
-    interval: t.Optional[int] = Field(description="Interval for the schedule (e.g. every N units)")
-    interval_unit: t.Optional[str] = Field(description="seconds, minutes, hours, days, weeks, months, years")
-    hour: t.Optional[str] = Field(description="ex: *, */a, a-b, a-b/c, a,b,c")
-    minute: t.Optional[str] = Field(description="ex: *, */a, a-b, a-b/c, a,b,c")
-    second: t.Optional[str] = Field(description="ex: *, */a, a-b, a-b/c, a,b,c")
-    days_of_week: t.Optional[str] = Field(description="ex: 'mon', 'tue', '1-4', '1,2,3' etc.")
-    days_of_month: t.Optional[str] = Field(description="ex: *, */a, a-b, a-b/c, a,b,c, xth y, last, last x, etc.")
-    months_of_year: t.Optional[str] = Field(description="ex: '1', '1-12/3', '1/2', '1,7', etc.")
-    start_date: t.Optional[str] = Field(description="Start date for the schedule")
-    end_date: t.Optional[str] = Field(description="End date for the schedule")
-    between_time_start: t.Optional[str] = Field(description="HH:MM")
-    between_time_end: t.Optional[str] = Field(description="HH:MM")
+        self.inputs: dict[str, int | str | None] = {}
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        author_component: discord.ui.UserSelect = self.author.component  # type: ignore
+        channel_component: discord.ui.ChannelSelect = self.channel.component  # type: ignore
+        author_value = int(author_component.values[0]) if author_component.values else None
+        channel_value = int(channel_component.values[0]) if channel_component.values else None
+        log.debug(f"AUTHOR VALUES: {author_value!r}, CHANNEL VALUES: {channel_value!r}")
+        try:
+            self.inputs["name"] = self.name.value
+            self.inputs["author"] = author_value
+            self.inputs["channel"] = channel_value
+            self.inputs["command"] = self.command.value
+            self.stop()
+        except Exception as e:
+            log.error(f"Error in ConfigScheduleModal on_submit: {author_value}, {channel_value}")
+            raise e
 
 
 class TaskMenu(BaseMenu):
     def __init__(self, ctx: commands.Context, filter: str = ""):
-        super().__init__(ctx=ctx, timeout=900)
+        super().__init__(ctx=ctx, timeout=600)
         self.tasks: list[ScheduledCommand] = []
         self.page = 0
         self.color = discord.Color.blurple()
         self.filter: str = filter.lower()
-        self.openai_token: str | None = None
         self.is_premium: bool = True
         self.timezone: str = self.db.timezone(ctx.guild)
 
     async def on_timeout(self) -> None:
+        page = await self.get_page()
         # Disable all buttons by iterating through all children
-        for item in self.children:
+        for item in self.walk_children():
             if isinstance(item, discord.ui.Button):
                 item.disabled = True
-
-        await self.message.edit(embed=await self.get_page(), view=self)
+        await self.message.edit(embed=page, view=self)
         self.stop()
 
     async def start(self):
@@ -80,14 +112,10 @@ class TaskMenu(BaseMenu):
         self.tasks = await asyncio.to_thread(self.db.get_tasks, self.guild.id)
         self.is_premium = await self.cog.is_premium(self.guild)
         if self.filter:
-            pages = self.search_pages()
-            if not pages:
+            found = self.search_pages()
+            if not found:
                 return await self.channel.send(_("No scheduled commands found matching that query."))
 
-        tokens = await self.bot.get_shared_api_tokens("openai")
-        self.openai_token = tokens.get("api_key")
-        if not self.openai_token:
-            self.remove_item(self.ai_helper)
         self.message = await self.channel.send(embed=await self.get_page(), view=self)
 
     async def get_page(self) -> discord.Embed:
@@ -116,7 +144,7 @@ class TaskMenu(BaseMenu):
         embed = await asyncio.to_thread(_exe)
         if self.tasks:
             self.toggle.disabled = False
-            self.configure.disabled = False
+            self.configure_task.disabled = False
             self.delete.disabled = False
             self.interval.disabled = False
             self.cron.disabled = False
@@ -127,7 +155,7 @@ class TaskMenu(BaseMenu):
             self.run_command.disabled = False
         else:
             self.toggle.disabled = True
-            self.configure.disabled = True
+            self.configure_task.disabled = True
             self.delete.disabled = True
             self.interval.disabled = True
             self.cron.disabled = True
@@ -244,11 +272,12 @@ class TaskMenu(BaseMenu):
 
         if channel_id and not channel_id.isdigit():
             return await interaction.followup.send(_("Channel ID must be a number."), ephemeral=True)
+
         channel_id = int(channel_id) if channel_id else 0
-        if channel_id and not self.guild.get_channel(channel_id):
+        channel = self.guild.get_channel_or_thread(channel_id)
+        if channel_id and not channel:
             return await interaction.followup.send(_("Channel for that ID was not found."), ephemeral=True)
 
-        channel = self.guild.get_channel(channel_id)
         if not channel:
             channel = self.channel
             channel_id = self.channel.id
@@ -322,34 +351,38 @@ class TaskMenu(BaseMenu):
         if res not in ["yes", "y"]:
             return await interaction.followup.send(_("Cancelled."), ephemeral=True)
         schedule = self.tasks[self.page]
+        await self.cog.remove_job(schedule)
         self.db.remove_task(schedule)
         self.tasks = await asyncio.to_thread(self.db.get_tasks, self.guild.id)
         await self.message.edit(embed=await self.get_page(), view=self)
         await interaction.followup.send(_("Scheduled command deleted."), ephemeral=True)
         self.cog.save()
 
-    def search_pages(self) -> list[ScheduledCommand]:
-        new_pages = []
+    def search_pages(self) -> bool:
+        # Find the page number matching the filter the closest
+        options: list[tuple[int, int]] = []  # [(page_index, match_score)]
         # Search by name first
-        for schedule in self.tasks:
-            if self.filter in schedule.name.lower():
-                new_pages.append(schedule)
-        if not new_pages:
-            # Search by ID
-            for schedule in self.tasks:
-                if self.filter in str(schedule.id).lower():
-                    new_pages.append(schedule)
-        if not new_pages:
-            # Search by command
-            for schedule in self.tasks:
-                if self.filter in schedule.command.lower():
-                    new_pages.append(schedule)
-        if not new_pages:
-            # Search by channel
-            for schedule in self.tasks:
-                if self.filter in str(schedule.channel_id).lower():
-                    new_pages.append(schedule)
-        return new_pages
+        for idx, schedule in enumerate(self.tasks):
+            if self.filter.casefold() == schedule.name.casefold():
+                options.append((idx, 100))
+            elif self.filter.casefold() in schedule.name.casefold():
+                options.append((idx, 50))
+
+            if self.filter.casefold() == schedule.command.casefold():
+                options.append((idx, 100))
+            elif self.filter.casefold() in schedule.command.casefold():
+                options.append((idx, 50))
+
+            if self.filter.casefold() == str(schedule.id).casefold():
+                options.append((idx, 100))
+
+            if self.filter == str(schedule.channel_id):
+                options.append((idx, 100))
+
+        if options:
+            best_option = max(options, key=lambda x: x[1])
+            self.page = best_option[0]
+        return True if options else False
 
     @discord.ui.button(emoji=C.MAG, style=discord.ButtonStyle.secondary, row=1)
     async def search(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -382,69 +415,30 @@ class TaskMenu(BaseMenu):
             self.filter = ""
             return await self.message.edit(embed=await self.get_page(), view=self)
         self.filter = new_filter.lower()
-        new_pages = self.search_pages()
-        if not new_pages:
+        found = self.search_pages()
+        if not found:
             return await interaction.followup.send(
                 _("No scheduled commands found matching that query."), ephemeral=True
             )
-        self.page = 0
         await self.message.edit(embed=await self.get_page(), view=self)
-        await interaction.followup.send(
-            _("Found {} scheduled commands matching that query.").format(len(self.tasks)),
-            ephemeral=True,
-        )
+        await interaction.followup.send(_("Found a scheduled command matching that query."), ephemeral=True)
 
     @discord.ui.button(label="Configure", style=discord.ButtonStyle.primary, row=2)
-    async def configure(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def configure_task(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not self.tasks:
             return await interaction.response.send_message(_("No scheduled commands to configure."), ephemeral=True)
         schedule = self.tasks[self.page]
-        fields = {
-            "name": {
-                "label": _("Scheduled Command Name"),
-                "style": discord.TextStyle.short,
-                "placeholder": _("Name of the scheduled command"),
-                "default": schedule.name,
-                "max_length": 45,
-            },
-            "author": {
-                "label": _("Author ID"),
-                "style": discord.TextStyle.short,
-                "placeholder": _("ID of the user who created the command"),
-                "default": str(self.author.id),
-                "max_length": 19,
-                "min_length": 18,
-            },
-            "channel": {
-                "label": _("Channel ID (Optional)"),
-                "style": discord.TextStyle.short,
-                "placeholder": _("ID of the channel to send the command to"),
-                "default": str(schedule.channel_id) if schedule.channel_id else None,
-                "required": False,
-                "max_length": 19,
-                "min_length": 18,
-            },
-            "command": {
-                "label": _("Command"),
-                "style": discord.TextStyle.long,
-                "placeholder": _("ex: ping"),
-                "default": schedule.command,
-                "max_length": 4000,
-            },
-        }
-        modal = DynamicModal(_("Edit Scheduled Command"), fields, timeout=600)
+        modal = ConfigScheduleModal(self, schedule)
         await interaction.response.send_modal(modal)
         await modal.wait()
         if not modal.inputs:
             return
-        name = modal.inputs["name"]
-        author_id = modal.inputs["author"]
-        channel_id = modal.inputs["channel"]
-        command = modal.inputs["command"]
 
-        if not author_id.isdigit():
-            return await interaction.followup.send(_("Author ID must be a number."), ephemeral=True)
-        author_id = int(author_id)
+        name: str = modal.inputs["name"]
+        author_id: int = modal.inputs["author"]
+        channel_id: int | None = modal.inputs["channel"]
+        command: str = modal.inputs["command"]
+
         command_author = self.guild.get_member(author_id)
         if not command_author:
             return await interaction.followup.send(_("Author for that ID was not found."), ephemeral=True)
@@ -461,13 +455,7 @@ class TaskMenu(BaseMenu):
                     _("You cannot schedule commands for users with equal or higher roles."), ephemeral=True
                 )
 
-        if channel_id and not channel_id.isdigit():
-            return await interaction.followup.send(_("Channel ID must be a number."), ephemeral=True)
-        channel_id = int(channel_id) if channel_id else 0
-        if channel_id and not self.guild.get_channel(channel_id):
-            return await interaction.followup.send(_("Channel for that ID was not found."), ephemeral=True)
-
-        channel = self.guild.get_channel(channel_id)
+        channel = self.guild.get_channel_or_thread(channel_id)
         if not channel:
             channel = self.channel
 
@@ -549,6 +537,13 @@ class TaskMenu(BaseMenu):
         # Update
         schedule.interval = interval
         schedule.interval_unit = units
+        if not schedule.is_safe(
+            self.timezone, self.db.premium_interval if self.is_premium else self.db.minimum_interval
+        ):
+            await self.cog.remove_job(schedule)
+            await self.message.edit(embed=await self.get_page(), view=self)
+            await interaction.followup.send(_("Scheduled command interval is not safe."), ephemeral=True)
+            return
         await self.message.edit(embed=await self.get_page(), view=self)
         await interaction.followup.send(_("Scheduled command interval updated."), ephemeral=True)
         self.cog.save()
@@ -559,13 +554,14 @@ class TaskMenu(BaseMenu):
     async def toggle(self, interaction: discord.Interaction, button: discord.ui.Button):
         schedule = self.tasks[self.page]
         min_interval = self.db.premium_interval if self.is_premium else self.db.minimum_interval
+        min_interval_human = humanize_timedelta(seconds=min_interval) or _("0 seconds")
         if not schedule.enabled:
             if not schedule.is_safe(self.timezone, min_interval) and self.ctx.author.id not in self.bot.owner_ids:
                 return await interaction.response.send_message(
                     _(
                         "Scheduled command is not safe to enable, please configure it first.\n"
-                        "The minimum interval between tasks is {} seconds."
-                    ).format(min_interval),
+                        "The minimum interval between tasks is {}."
+                    ).format(min_interval_human),
                     ephemeral=True,
                 )
             schedule.enabled = True
@@ -648,6 +644,14 @@ class TaskMenu(BaseMenu):
         except ValueError as e:
             return await interaction.followup.send(str(e), ephemeral=True)
 
+        if not schedule.is_safe(
+            self.timezone, self.db.premium_interval if self.is_premium else self.db.minimum_interval
+        ):
+            await self.cog.remove_job(schedule)
+            await self.message.edit(embed=await self.get_page(), view=self)
+            await interaction.followup.send(_("Scheduled command interval is not safe."), ephemeral=True)
+            return
+
         await self.message.edit(embed=await self.get_page(), view=self)
         await interaction.followup.send(_("Scheduled command cron updated."), ephemeral=True)
         self.cog.save()
@@ -716,11 +720,20 @@ class TaskMenu(BaseMenu):
         schedule.days_of_week = days_of_week
         schedule.days_of_month = days_of_month
         schedule.months_of_year = months_of_year
+
+        if not schedule.is_safe(
+            self.timezone, self.db.premium_interval if self.is_premium else self.db.minimum_interval
+        ):
+            await self.cog.remove_job(schedule)
+            await self.message.edit(embed=await self.get_page(), view=self)
+            await interaction.followup.send(_("Scheduled command interval is not safe."), ephemeral=True)
+            return
+
         await self.message.edit(embed=await self.get_page(), view=self)
         await interaction.followup.send(_("Scheduled command advanced cron updated."), ephemeral=True)
         self.cog.save()
         if schedule.enabled:
-            await self.cog.ensure_scheduled_commands()
+            await self.cog.ensure_jobs()
 
     @discord.ui.button(label="Times", style=discord.ButtonStyle.primary, row=3)
     async def times(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -805,7 +818,7 @@ class TaskMenu(BaseMenu):
         await interaction.followup.send(_("Scheduled command times updated."), ephemeral=True)
         self.cog.save()
         if schedule.enabled:
-            await self.cog.ensure_scheduled_commands()
+            await self.cog.ensure_jobs()
 
     @discord.ui.button(emoji=C.QUESTION, style=discord.ButtonStyle.secondary, row=4)
     async def help(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -888,15 +901,30 @@ class TaskMenu(BaseMenu):
 
     @discord.ui.button(emoji=C.WAND, style=discord.ButtonStyle.secondary, row=4)
     async def ai_helper(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if not self.openai_token:
+        openai_token = None
+        keys = await self.bot.get_shared_api_tokens("openai")
+        if keys and keys.get("api_key"):
+            openai_token = keys["api_key"]
+            if not openai_token and "key" in keys:
+                openai_token = keys["key"]
+
+        if not openai_token:
+            all_tokens = await self.bot.get_shared_api_tokens()
+            for service_name, tokens in all_tokens.items():
+                if "openai" in service_name:
+                    openai_token = tokens.get("api_key") or tokens.get("key")  # type: ignore
+
+        if not openai_token:
             return await interaction.response.send_message(
                 _("OpenAI API key is not set, cannot use AI helper."), ephemeral=True
             )
+
         fields = {
             "request": {
                 "label": _("When do you want this command to run?"),
                 "style": discord.TextStyle.short,
                 "placeholder": _("ex: run every 5 minutes"),
+                "max_length": 1000,
             }
         }
         modal = DynamicModal(_("AI Schedule Helper"), fields, timeout=600)
@@ -910,23 +938,45 @@ class TaskMenu(BaseMenu):
             ephemeral=True,
             wait=True,
         )
-        timezone = self.timezone
-        now = datetime.now(pytz.timezone(timezone))
+        schedule = self.tasks[self.page]
+        now = datetime.now(pytz.timezone(self.timezone))
         formatted_time = now.strftime("%A, %B %d, %Y %I:%M%p %Z")
+
+        existing_settings = []
+        for k, v in schedule.model_dump(
+            mode="json",
+            exclude_defaults=True,
+            exclude={
+                "id",
+                "created_on",
+                "last_run",
+                "name",
+                "guild_id",
+                "channel_id",
+                "author_id",
+                "command",
+                "enabled",
+            },
+        ).items():
+            existing_settings.append(f"- {k}: {v}")
+        interval = self.db.premium_interval if self.is_premium(self.guild) else self.db.minimum_interval
+        details = f"Current user ID: {self.author.id}\nMinimum task interval: {interval}"
         messages = [
-            {"role": "developer", "content": system_prompt},
             {"role": "developer", "content": f"The current time is {formatted_time}"},
+            {"role": "developer", "content": C.SYSTEM_PROMPT},
+            {"role": "developer", "content": "Existing schedule settings:\n" + "\n".join(existing_settings)},
+            {"role": "developer", "content": f"Context:\n{details}"},
             {"role": "user", "content": request},
         ]
         try:
-            client = openai.AsyncClient(api_key=self.openai_token)
+            client = openai.AsyncClient(api_key=openai_token)
             response = await client.beta.chat.completions.parse(
-                model="gpt-4o-mini-2024-07-18",
+                model="gpt-5.1",
                 messages=messages,
-                response_format=CronDataResponse,
-                temperature=0,
+                response_format=ai_responses.CronDataResponse,
+                reasoning_effort="medium",
             )
-            model: CronDataResponse = response.choices[0].message.parsed
+            model: ai_responses.CronDataResponse = response.choices[0].message.parsed
         except Exception as e:
             log.error("Failed to get cron expression from AI model", exc_info=e)
             return await interaction.followup.send(
@@ -939,17 +989,14 @@ class TaskMenu(BaseMenu):
                     await msg.delete()
             return await interaction.followup.send(_("Failed to get cron expression from AI model."), ephemeral=True)
         # log.debug("AI model dump: %s", model.model_dump_json(indent=2))
-        schedule = self.tasks[self.page]
-        if model.interval:
-            schedule.interval = model.interval
-        if model.interval_unit:
-            schedule.interval_unit = model.interval_unit
+        schedule.interval = model.interval
+        schedule.interval_unit = model.interval_unit
         if model.hour:
             try:
                 CronTrigger.from_crontab(f"* {model.hour} * * *")
                 schedule.hour = model.hour
             except ValueError:
-                pass
+                schedule.hour = None
         else:
             schedule.hour = None
         if model.minute:
@@ -957,7 +1004,7 @@ class TaskMenu(BaseMenu):
                 CronTrigger.from_crontab(f"{model.minute} * * * *")
                 schedule.minute = model.minute
             except ValueError:
-                pass
+                schedule.minute = None
         else:
             schedule.minute = None
         if model.second:
@@ -965,7 +1012,7 @@ class TaskMenu(BaseMenu):
                 CronTrigger(second=model.second)
                 schedule.second = model.second
             except ValueError:
-                pass
+                schedule.second = None
         else:
             schedule.second = None
         if model.days_of_week:
@@ -973,7 +1020,7 @@ class TaskMenu(BaseMenu):
                 CronTrigger(day_of_week=model.days_of_week)
                 schedule.days_of_week = model.days_of_week
             except ValueError:
-                pass
+                schedule.days_of_week = None
         else:
             schedule.days_of_week = None
         if model.days_of_month:
@@ -981,7 +1028,7 @@ class TaskMenu(BaseMenu):
                 CronTrigger(day=model.days_of_month)
                 schedule.days_of_month = model.days_of_month
             except ValueError:
-                pass
+                schedule.days_of_month = None
         else:
             schedule.days_of_month = None
         if model.months_of_year:
@@ -989,7 +1036,7 @@ class TaskMenu(BaseMenu):
                 CronTrigger(month=model.months_of_year)
                 schedule.months_of_year = model.months_of_year
             except ValueError:
-                pass
+                schedule.months_of_year = None
         else:
             schedule.months_of_year = None
         if model.start_date:
@@ -999,7 +1046,7 @@ class TaskMenu(BaseMenu):
                     start_date = start_date.astimezone(pytz.timezone(self.timezone))
                 schedule.start_date = start_date
             except ValueError:
-                pass
+                schedule.start_date = None
         else:
             schedule.start_date = None
         if model.end_date:
@@ -1009,7 +1056,7 @@ class TaskMenu(BaseMenu):
                     end_date = end_date.astimezone(pytz.timezone(self.timezone))
                 schedule.end_date = end_date
             except ValueError:
-                pass
+                schedule.end_date = None
         else:
             schedule.end_date = None
         if model.between_time_start:
@@ -1017,7 +1064,7 @@ class TaskMenu(BaseMenu):
                 between_time_start = parser.parse(model.between_time_start).time()
                 schedule.between_time_start = between_time_start
             except ValueError:
-                pass
+                schedule.between_time_start = None
         else:
             schedule.between_time_start = None
         if model.between_time_end:
@@ -1025,7 +1072,7 @@ class TaskMenu(BaseMenu):
                 between_time_end = parser.parse(model.between_time_end).time()
                 schedule.between_time_end = between_time_end
             except ValueError:
-                pass
+                schedule.between_time_end = None
         else:
             schedule.between_time_end = None
         try:
@@ -1033,18 +1080,21 @@ class TaskMenu(BaseMenu):
             schedule.trigger(self.timezone)
         except Exception as e:
             log.error("Failed to compile schedule\nAI response: {}".format(model.model_dump_json(indent=2)), exc_info=e)
-            return await interaction.followup.send(
-                _("AI failed to compile schedule, please check the cron expression.\n{}").format(str(e)), ephemeral=True
-            )
+            txt = _("AI failed to compile schedule, please check the cron expression.\n{}").format(str(e))
+            if model.user_comment:
+                txt += _("\nAI Comment: {}").format(model.user_comment)
+            return await interaction.followup.send(txt, ephemeral=True)
         await self.message.edit(embed=await self.get_page(), view=self)
         if msg:
             with suppress(discord.HTTPException):
                 await msg.delete()
-        await interaction.followup.send(
-            _("Scheduled command updated from the following request:\n{}").format(box(request)),
-            ephemeral=True,
-        )
+        txt = _("Scheduled command updated from the following request:\n{}").format(box(request))
+        if model.user_comment:
+            txt += _("\nAI Comment: {}").format(model.user_comment)
+        await interaction.followup.send(txt, ephemeral=True)
         self.cog.save()
+        if schedule.enabled:
+            await self.cog.ensure_jobs()
 
     @discord.ui.button(emoji=C.PLAY, style=discord.ButtonStyle.secondary, row=4)
     async def run_command(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -1066,7 +1116,7 @@ class TaskMenu(BaseMenu):
         if res not in ["yes", "y"]:
             return await interaction.followup.send(_("Cancelled."), ephemeral=True)
         schedule = self.tasks[self.page]
-        channel = self.guild.get_channel(schedule.channel_id)
+        channel = self.guild.get_channel_or_thread(schedule.channel_id)
         if not channel:
             channel = self.channel
         try:
@@ -1092,3 +1142,49 @@ class TaskMenu(BaseMenu):
             return await interaction.followup.send(
                 _("An error occurred while checking permissions: {}").format(str(e)), ephemeral=True
             )
+
+    @discord.ui.button(emoji=C.COPY, style=discord.ButtonStyle.secondary, row=4)
+    async def duplicate(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        if not self.tasks:
+            await interaction.response.send_message(_("No scheduled commands to duplicate."), ephemeral=True)
+            return
+        if not self.is_premium and len(self.tasks) >= self.db.free_tasks:
+            await interaction.response.send_message(
+                _("You have reached the maximum number of schedules for the free tier.\n"), ephemeral=True
+            )
+            return
+        if len(self.tasks) >= self.db.max_tasks:
+            await interaction.response.send_message(
+                _("You have reached the maximum number of schedules.\n"), ephemeral=True
+            )
+            return
+
+        schedule = self.tasks[self.page]
+        command_author = self.guild.get_member(schedule.author_id)
+        if not command_author:
+            await interaction.response.send_message(
+                _("The original author is no longer in this server."), ephemeral=True
+            )
+            return
+
+        copy_suffix = _(" (Copy)")
+        max_length = 45
+        base_name = schedule.name
+        if len(base_name) + len(copy_suffix) > max_length:
+            base_name = base_name[: max_length - len(copy_suffix)]
+        new_name = f"{base_name}{copy_suffix}"
+
+        new_schedule = schedule.model_copy(update={"id": str(uuid4()), "name": new_name, "enabled": False})
+
+        self.db.add_task(new_schedule)
+        self.tasks = await asyncio.to_thread(self.db.get_tasks, self.guild.id)
+        for idx, sched in enumerate(self.tasks):
+            if sched.id == new_schedule.id:
+                self.page = idx
+                break
+
+        await interaction.response.edit_message(embed=await self.get_page(), view=self)
+        await interaction.followup.send(
+            _("Scheduled command duplicated. Please configure it before enabling!"), ephemeral=True
+        )
+        self.cog.save()

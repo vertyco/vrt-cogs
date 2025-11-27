@@ -125,6 +125,13 @@ class Owner(MixinMeta):
         )
         await ctx.send(embed=embed)
 
+    @premium_group.command(name="maxfree")
+    async def set_max_free_tasks(self, ctx: commands.Context, max_tasks: commands.positive_int):
+        """Set the maximum number of free tasks"""
+        self.db.free_tasks = max_tasks
+        self.save()
+        await ctx.send(_("The maximum number of free tasks has been set to {}.").format(max_tasks))
+
     @premium_group.command(name="toggle")
     async def toggle_premium(self, ctx: commands.Context):
         """Toggle premium system"""

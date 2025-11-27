@@ -285,7 +285,6 @@ class SupportButton(Button):
         if not isinstance(interaction.channel, discord.TextChannel) or not guild:
             return
 
-        channel: discord.TextChannel = interaction.channel
         roles = [r.id for r in user.roles]
         conf = await self.view.config.guild(guild).all()
         if conf["suspended_msg"]:
@@ -321,6 +320,10 @@ class SupportButton(Button):
                 )
                 return await interaction.response.send_message(embed=em, ephemeral=True)
 
+        channel: discord.TextChannel = guild.get_channel(panel.get("channel_id", 0))
+        if not channel:
+            channel = interaction.channel
+
         max_tickets = conf["max_tickets"]
         opened = conf["opened"]
         uid = str(user.id)
@@ -354,7 +357,7 @@ class SupportButton(Button):
         # Throw modal before creating ticket if the panel has one
         form_embed = discord.Embed()
         modal = panel.get("modal")
-        panel_title = panel.get("modal_title", "{} Ticket".format(self.panel_name))
+        panel_title = panel.get("modal_title", None) or "{} Ticket".format(self.panel_name)
         answers = {}
         has_response = False
         if modal:

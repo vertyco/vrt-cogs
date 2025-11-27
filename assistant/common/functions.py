@@ -8,10 +8,11 @@ from io import BytesIO, StringIO
 import aiohttp
 import discord
 from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.chat_formatting import pagify
 
 from ..abc import MixinMeta
-from ..common import calls, constants
-from .models import EmbeddingEntryExists, GuildSettings
+from ..common import calls, constants, reply
+from .models import Conversation, EmbeddingEntryExists, GuildSettings
 
 log = logging.getLogger("red.vrt.assistant.functions")
 _ = Translator("Assistant", __file__)
@@ -19,45 +20,134 @@ _ = Translator("Assistant", __file__)
 
 @cog_i18n(_)
 class AssistantFunctions(MixinMeta):
+    async def edit_image(
+        self,
+        channel: discord.TextChannel,
+        conf: GuildSettings,
+        prompt: str,
+        conversation: Conversation,
+        *args,
+        **kwargs,
+    ):
+        """Edit an image using the provided base64 encoded image and prompt."""
+        images: list[str] = conversation.get_images()
+        if not images:
+            return "This conversation has no images to edit!"
+
+        # Each image is formatted like: data:image/jpeg;base64,... so we need to decode it
+        if not all(isinstance(image, str) for image in images):
+            return "All images must be base64 encoded strings."
+
+        # Extract both the MIME type and image data from the data URI
+        image_data = []
+        for i, image in enumerate(images[-16:]):  # Limit to the last 16 images
+            parts = image.split(",", 1)
+            if len(parts) != 2 or not parts[0].startswith("data:"):
+                return "Invalid image format. Expected data URI format."
+
+            mime_type = parts[0].split(";")[0].split(":")[1]
+            if mime_type == "image/jpg":
+                mime_type = "image/jpeg"
+
+            if mime_type not in ["image/jpeg", "image/png", "image/webp"]:
+                return f"Unsupported image format: {mime_type}. Supported formats are image/jpeg, image/png, and image/webp."
+
+            # Get the file extension from the MIME type
+            extension = mime_type.split("/")[1]
+            image_bytes = BytesIO(b64decode(parts[1]))
+
+            # Format as a tuple with (filename, file_data, mime_type)
+            image_data.append((f"image{i}.{extension}", image_bytes, mime_type))
+
+        # Pass the image data with the correct format
+        image = await calls.request_image_edit_raw(
+            prompt=prompt,
+            api_key=conf.api_key,
+            images=image_data,
+            base_url=self.db.endpoint_override,
+        )
+        color = (await self.bot.get_embed_color(channel)) if channel else discord.Color.blue()
+        embed = discord.Embed(color=color).set_image(url="attachment://image.png")
+
+        content = [
+            {
+                "type": "text",
+                "text": _("Here is the edited image, it has been sent to the user!"),
+            },
+            {
+                "type": "image_url",
+                "image_url": {"url": "data:image/png;base64," + image.b64_json, "detail": conf.vision_detail},
+            },
+        ]
+
+        payload = {
+            "embed": embed,
+            "content": content,
+            "return_null": True,  # The image will be sent and the model will not be re-queried
+            "file": discord.File(BytesIO(b64decode(image.b64_json)), filename="image.png"),
+        }
+        return payload
+
     async def generate_image(
         self,
         channel: discord.TextChannel,
         conf: GuildSettings,
         prompt: str,
-        size: t.Literal["1024x1024", "1792x1024", "1024x1792"] = "1024x1024",
-        quality: t.Literal["standard", "hd"] = "standard",
-        style: t.Literal["natural", "vivid"] = "vivid",
+        size: t.Literal["1024x1024", "1792x1024", "1024x1792", "1024x1536", "1536x1024"] = "1024x1024",
+        quality: t.Literal["standard", "hd", "low", "medium", "high"] = "medium",
+        style: t.Optional[t.Literal["natural", "vivid"]] = "vivid",
+        model: t.Literal["dall-e-3", "gpt-image-1"] = "gpt-image-1",
         *args,
         **kwargs,
     ):
         cost_key = f"{quality}{size}"
         cost = constants.IMAGE_COSTS.get(cost_key, 0)
+
         image = await calls.request_image_raw(
-            prompt, conf.api_key, size, quality, style, base_url=self.db.endpoint_override
+            prompt, conf.api_key, size, quality, style, model, base_url=self.db.endpoint_override
         )
 
-        desc = _("-# Size: {}\n-# Quality: {}\n-# Style: {}").format(size, quality, style)
+        desc = _("-# Size: {}\n-# Quality: {}\n-# Model: {}").format(size, quality, model)
+        if model == "dall-e-3":
+            desc += _("\n-# Style: {}").format(style)
+
         color = (await self.bot.get_embed_color(channel)) if channel else discord.Color.blue()
         embed = (
             discord.Embed(description=desc, color=color)
             .set_image(url="attachment://image.png")
             .set_footer(text=_("Cost: ${}").format(f"{cost:.2f}"))
         )
-        if image.revised_prompt:
+        txt = "Image has been generated and sent to the user!"
+        if hasattr(image, "revised_prompt") and image.revised_prompt:
             embed.add_field(name=_("Revised Prompt"), value=image.revised_prompt)
+            txt += f"\n{_('Revised prompt:')} {image.revised_prompt}"
+
+        content = [
+            {
+                "type": "text",
+                "text": txt,
+            },
+            {
+                "type": "image_url",
+                "image_url": {"url": "data:image/png;base64," + image.b64_json, "detail": conf.vision_detail},
+            },
+        ]
+
         payload = {
             "embed": embed,
-            "result_text": "Image has been generated and sent to the user!",
+            "content": content,
             "return_null": True,  # The image will be sent and the model will not be re-queried
             "file": discord.File(BytesIO(b64decode(image.b64_json)), filename="image.png"),
         }
-        if image.revised_prompt:
-            payload["result_text"] += f"\nRevised prompt: {image.revised_prompt}"
-
         return payload
 
-    async def search_internet(
-        self, guild: discord.Guild, search_query: str, search_result_amount: int = 10, *args, **kwargs
+    async def search_web_brave(
+        self,
+        guild: discord.Guild,
+        query: str,
+        num_results: int = 5,
+        *args,
+        **kwargs,
     ):
         if not self.db.brave_api_key:
             return "Error: Brave API key is not set!"
@@ -71,10 +161,10 @@ class AssistantFunctions(MixinMeta):
         locale_parts = str(guild.preferred_locale).split("-")
         country = locale_parts[1].lower() if len(locale_parts) > 1 else "us"
         params = {
-            "q": search_query,
+            "q": query,
             "country": country,
             "search_lang": str(guild.preferred_locale).split("-")[0],
-            "count": search_result_amount,
+            "count": num_results,
             "safesearch": "off",
         }
         async with aiohttp.ClientSession() as session:
@@ -145,6 +235,7 @@ class AssistantFunctions(MixinMeta):
 
     async def search_memories(
         self,
+        guild: discord.Guild,
         conf: GuildSettings,
         search_query: str,
         amount: int = 2,
@@ -172,6 +263,7 @@ class AssistantFunctions(MixinMeta):
 
         embeddings = await asyncio.to_thread(
             conf.get_related_embeddings,
+            guild_id=guild.id,
             query_embedding=query_embedding,
             top_n_override=amount,
             relatedness_override=0.5,
@@ -188,6 +280,7 @@ class AssistantFunctions(MixinMeta):
 
     async def edit_memory(
         self,
+        guild: discord.Guild,
         conf: GuildSettings,
         user: discord.Member,
         memory_name: str,
@@ -209,6 +302,7 @@ class AssistantFunctions(MixinMeta):
         conf.embeddings[memory_name].embedding = embedding
         conf.embeddings[memory_name].update()
         conf.embeddings[memory_name].model = conf.embed_model
+        await asyncio.to_thread(conf.sync_embeddings, guild.id)
         asyncio.create_task(self.save_conf())
         return "Your memory has been updated!"
 
@@ -223,3 +317,19 @@ class AssistantFunctions(MixinMeta):
             return "You have no memories available!"
         joined = "\n".join([i for i in conf.embeddings])
         return joined
+
+    async def respond_and_continue(
+        self,
+        conf: GuildSettings,
+        channel: discord.TextChannel,
+        content: str,
+        message_obj: discord.Message,
+        *args,
+        **kwargs,
+    ):
+        if message_obj is not None:
+            await reply.send_reply(message=message_obj, content=content, conf=conf)
+        else:
+            for p in pagify(content):
+                await channel.send(p)
+        return "Your message has been sent to the user! You can continue working."

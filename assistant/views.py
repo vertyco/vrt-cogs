@@ -193,6 +193,7 @@ class EmbeddingMenu(discord.ui.View):
         if name in self.conf.embeddings:
             return await self.ctx.send(_("An embedding with the name `{}` already exists!").format(name))
         self.conf.embeddings[name] = Embedding(text=text, embedding=embedding, model=self.conf.embed_model)
+        await asyncio.to_thread(self.conf.sync_embeddings, self.ctx.guild.id)
         await self.get_pages()
         with suppress(discord.NotFound):
             self.message = await self.message.edit(embed=self.pages[self.page], view=self)
@@ -248,6 +249,7 @@ class EmbeddingMenu(discord.ui.View):
         self.conf.embeddings[modal.name] = embedding_obj
         if modal.name != name:
             del self.conf.embeddings[name]
+        await asyncio.to_thread(self.conf.sync_embeddings, self.ctx.guild.id)
         await self.get_pages()
         await self.message.edit(embed=self.pages[self.page], view=self)
         await interaction.followup.send(_("Your embedding has been modified!"), ephemeral=True)
@@ -525,12 +527,13 @@ class CodeMenu(discord.ui.View):
         if not self.pages[self.page].fields:
             return
         function_name = self.pages[self.page].description
-        if function_name in self.conf.disabled_functions:
-            self.toggle.emoji = OFF_EMOJI
-            self.toggle.style = discord.ButtonStyle.secondary
-        else:
+        enabled = self.conf.function_statuses.get(function_name, False)
+        if enabled:
             self.toggle.emoji = ON_EMOJI
             self.toggle.style = discord.ButtonStyle.success
+        else:
+            self.toggle.emoji = OFF_EMOJI
+            self.toggle.style = discord.ButtonStyle.secondary
 
     @discord.ui.button(style=discord.ButtonStyle.secondary, emoji="\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}")
     async def left10(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -758,10 +761,11 @@ class CodeMenu(discord.ui.View):
             return await interaction.response.send_message(_("No code to toggle!"), ephemeral=True)
         await interaction.response.defer()
         function_name = self.pages[self.page].description
-        if function_name in self.conf.disabled_functions:
-            self.conf.disabled_functions.remove(function_name)
+        enabled = self.conf.function_statuses.get(function_name, False)
+        if enabled:
+            self.conf.function_statuses[function_name] = False
         else:
-            self.conf.disabled_functions.append(function_name)
+            self.conf.function_statuses[function_name] = True
         self.update_button()
         await self.message.edit(view=self)
         await self.save()
@@ -787,18 +791,20 @@ class CodeMenu(discord.ui.View):
         def _get_matches():
             matches: List[Tuple[int, int]] = []
             for i, embed in enumerate(self.pages):
+                code_field = embed.fields[-1]
+                schema_field = embed.fields[-2]
+
                 if query == embed.description.lower():
                     matches.append((100, i))
                     break
-                if query in embed.fields[0].value.lower():
+                if query in code_field.value.lower():
                     matches.append((98, i))
                     continue
-                if query in embed.fields[1].value.lower():
+                if query in schema_field.value.lower():
                     matches.append((98, i))
                     continue
+
                 matches.append((fuzz.ratio(query, embed.description.lower()), i))
-                matches.append((fuzz.ratio(query, embed.fields[0].value.lower()), i))
-                matches.append((fuzz.ratio(query, embed.fields[1].value.lower()), i))
 
             if len(matches) > 1:
                 matches.sort(key=lambda x: x[0], reverse=True)
@@ -810,4 +816,7 @@ class CodeMenu(discord.ui.View):
 
         self.page = best
         self.page %= len(self.pages)
+
+        self.update_button()
+
         await self.message.edit(embed=self.pages[self.page], view=self)

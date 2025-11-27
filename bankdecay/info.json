@@ -9,7 +9,7 @@
   "min_python_version": [3, 10, 0],
   "permissions": [],
   "required_cogs": {},
-  "requirements": ["pydantic", "pytz", "apscheduler"],
+  "requirements": ["pydantic>=2.11,<2.12", "pytz", "apscheduler"],
   "short": "Inactivity-based economy credit decay",
   "tags": [],
   "type": "COG"

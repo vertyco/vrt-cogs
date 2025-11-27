@@ -188,7 +188,6 @@ class LevelUp(
             try:
                 log.debug("Saving config")
                 async with self.io_lock:
-                    self.db.to_file(self.settings_file)
                     await asyncio.to_thread(self.db.to_file, self.settings_file)
                 log.debug("Config saved")
             except Exception as e:

@@ -1,14 +1,19 @@
 import logging
 import typing as t
 from datetime import datetime, timezone
+from time import perf_counter
 
+import chromadb
 import discord
 import numpy as np
 import orjson
+from chromadb.errors import ChromaError
 from pydantic import VERSION, BaseModel, Field
 from redbot.core.bot import Red
 
 log = logging.getLogger("red.vrt.assistant.models")
+
+_chroma_client = chromadb.Client()
 
 
 class AssistantBaseModel(BaseModel):
@@ -18,10 +23,10 @@ class AssistantBaseModel(BaseModel):
             return super().model_validate(obj, *args, **kwargs)
         return super().parse_obj(obj, *args, **kwargs)
 
-    def model_dump(self, exclude_defaults: bool = True):
+    def model_dump(self, exclude_defaults: bool = True, **kwargs):
         if VERSION >= "2.0.1":
-            return super().model_dump(mode="json", exclude_defaults=exclude_defaults)
-        return orjson.loads(super().json(exclude_defaults=exclude_defaults))
+            return super().model_dump(mode="json", exclude_defaults=exclude_defaults, **kwargs)
+        return orjson.loads(super().json(exclude_defaults=exclude_defaults, **kwargs))
 
 
 class Embedding(AssistantBaseModel):
@@ -79,7 +84,8 @@ class GuildSettings(AssistantBaseModel):
     min_relatedness: float = 0.78
     embed_method: str = "dynamic"  # hybrid, dynamic, static, user
     question_mode: bool = False  # If True, only the first message and messages that end with ? will have emebddings
-    channel_id: t.Optional[int] = 0
+    channel_id: t.Optional[int] = 0  # The main auto-response channel ID
+    listen_channels: t.List[int] = []  # Channels to listen to for auto-reply
     api_key: t.Optional[str] = None
     endswith_questionmark: bool = False
     min_length: int = 7
@@ -90,16 +96,17 @@ class GuildSettings(AssistantBaseModel):
     mention: bool = False
     mention_respond: bool = True
     enabled: bool = True  # Auto-reply channel
-    model: str = "gpt-4o-mini"
+    model: str = "gpt-5.1"
     embed_model: str = "text-embedding-3-small"  # Or text-embedding-3-large, text-embedding-ada-002
     collab_convos: bool = False
-    reasoning_effort: str = "low"  # low, medium, high
+    reasoning_effort: str = "low"  # low, medium, high (or minimal for gpt-5)
+    verbosity: str = "low"  # low, medium, high (gpt-5 only)
 
     # Auto-answer
     auto_answer: bool = False  # Answer questions anywhere if one is detected and embedding is found for it
     auto_answer_threshold: float = 0.7  # 0.0 - 1.0  # Confidence threshold for auto-answer
     auto_answer_ignored_channels: t.List[int] = []  # Channel IDs to ignore auto-answer
-    auto_answer_model: str = "gpt-4o-mini"  # Model to use for auto-answer
+    auto_answer_model: str = "gpt-5.1"  # Model to use for auto-answer
 
     image_command: bool = True  # Allow image commands
 
@@ -122,11 +129,76 @@ class GuildSettings(AssistantBaseModel):
 
     use_function_calls: bool = False
     max_function_calls: int = 20  # Max calls in a row
-    disabled_functions: t.List[str] = []
+    function_statuses: t.Dict[str, bool] = {}  # {"function_name": True/False for enabled/disabled}
     functions_called: int = 0
+
+    def sync_embeddings(self, guild_id: int):
+        try:
+            collection = _chroma_client.get_collection(f"assistant-{guild_id}")
+        except ChromaError as e:
+            log.info(f"Failed to get collection for guild {guild_id}: {e}")
+            collection = None
+
+        if not collection:
+            collection = _chroma_client.create_collection(
+                f"assistant-{guild_id}",
+                configuration={"hnsw": {"space": "cosine"}},
+            )
+            # Populate the collection with existing embeddings
+            ids = list(self.embeddings.keys())
+            if ids:  # Only add if there are embeddings
+                log.info(f"Populating collection with {len(ids)} existing embeddings for guild {guild_id}")
+                embeddings = [em.embedding for em in self.embeddings.values()]
+                metadatas = [i.model_dump(exclude=["embedding"]) for i in self.embeddings.values()]
+                collection.add(ids=ids, embeddings=embeddings, metadatas=metadatas)
+        else:
+            # Make sure everything in self.embeddings is in the collection
+            ids = list(self.embeddings.keys())
+            collection_data = collection.get()
+            existing_ids = collection_data["ids"] if collection_data["ids"] else []
+            new_ids = [i for i in ids if i not in existing_ids]
+            if new_ids:
+                log.info(f"Adding {len(new_ids)} new embeddings to collection for guild {guild_id}")
+                embeddings = [self.embeddings[i].embedding for i in new_ids]
+                metadatas = [self.embeddings[i].model_dump(exclude=["embedding"]) for i in new_ids]
+                collection.add(ids=new_ids, embeddings=embeddings, metadatas=metadatas)
+
+            # See if there are any embeddings in the collection that are not in self.embeddings
+            missing_ids = [i for i in existing_ids if i not in ids]
+            if missing_ids:
+                log.info(f"Removing {len(missing_ids)} old embeddings from collection for guild {guild_id}")
+                collection.delete(ids=list(set(missing_ids)))
+
+            # Make sure that all embeddings match the current text and vector (check for updates)
+            for embed_name, em in self.embeddings.items():
+                if embed_name not in existing_ids:
+                    continue
+                # Get the embedding by ID instead of text for more reliable matching
+                result = collection.get(ids=[embed_name])
+
+                if not result["ids"] or not result["embeddings"]:
+                    log.warning(f"Embedding {embed_name} not found in collection for guild {guild_id}. Adding it.")
+                    collection.add(
+                        ids=[embed_name],
+                        embeddings=[em.embedding],
+                        metadatas=[em.model_dump(exclude=["embedding"])],
+                    )
+                else:
+                    existing_embedding = result["embeddings"][0] if result["embeddings"] else []
+                    if existing_embedding != em.embedding:
+                        log.info(f"Updating embedding {embed_name} in collection for guild {guild_id}.")
+                        collection.update(
+                            ids=[embed_name],
+                            embeddings=[em.embedding],
+                            metadatas=[em.model_dump(exclude=["embedding"])],
+                        )
+                    else:
+                        log.debug(f"Embedding {embed_name} is already up-to-date in collection for guild {guild_id}.")
+        log.info(f"Synced embeddings for guild {guild_id} with {len(self.embeddings)} embeddings.")
 
     def get_related_embeddings(
         self,
+        guild_id: int,
         query_embedding: t.List[float],
         top_n_override: t.Optional[int] = None,
         relatedness_override: t.Optional[float] = None,
@@ -136,7 +208,6 @@ class GuildSettings(AssistantBaseModel):
 
         if not query_embedding:
             return []
-
         # Name, text, score, dimensions
         q_length = len(query_embedding)
         top_n = top_n_override or self.top_n
@@ -145,19 +216,54 @@ class GuildSettings(AssistantBaseModel):
         if not top_n or q_length == 0 or not self.embeddings:
             return []
 
+        if not all(q_length == len(em.embedding) for em in self.embeddings.values()):
+            log.warning(
+                f"Query embedding length {q_length} does not match all stored embeddings in guild {guild_id}. "
+                "Skipping related embeddings search."
+            )
+            return []
+
+        try:
+            collection = _chroma_client.get_collection(f"assistant-{guild_id}")
+        except ChromaError as e:
+            log.info(f"Failed to get collection for guild {guild_id}: {e}")
+            collection = None
+
+        if not collection:
+            collection = _chroma_client.create_collection(
+                f"assistant-{guild_id}",
+                metadata={"hnsw:space": "cosine", "guild_id": guild_id},
+            )
+            # Populate the collection with existing embeddings
+            ids = list(self.embeddings.keys())
+            log.info(f"Populating collection with {len(ids)} existing embeddings for guild {guild_id}")
+            embeddings = [em.embedding for em in self.embeddings.values()]
+            metadatas = [i.model_dump(exclude=["embedding"]) for i in self.embeddings.values()]
+            collection.add(ids=ids, embeddings=embeddings, metadatas=metadatas)
+
+        start = perf_counter()
+        results = collection.query(query_embeddings=[query_embedding], n_results=top_n_override or self.top_n)
+        # print(results)
         strings_and_relatedness = []
-        for name, em in self.embeddings.items():
-            if q_length != len(em.embedding):
+        for idx in range(len(results["ids"][0])):
+            embed_name = results["ids"][0][idx]
+            embed_obj = self.embeddings.get(embed_name)
+            if not embed_obj:
+                # In collection but not config, remove it
+                collection.delete(ids=[embed_name])
                 continue
-            try:
-                score = cosine_similarity(query_embedding, em.embedding)
-                if score >= min_relatedness:
-                    strings_and_relatedness.append((name, em.text, score, len(em.embedding)))
-            except ValueError as e:
-                log.error(
-                    f"Failed to compare '{name}' embedding {q_length} - {len(em.embedding)}",
-                    exc_info=e,
-                )
+            embedding = self.embeddings[embed_name].embedding
+            metadata = results["metadatas"][0][idx] if results["metadatas"] else {}
+            distance = results["distances"][0][idx] if results["distances"] else 0.0
+            relatedness = 1 - distance
+            if relatedness >= min_relatedness:
+                strings_and_relatedness.append((embed_name, metadata["text"], relatedness, len(embedding)))
+
+        end = perf_counter()
+        iter_time = end - start
+        log.debug(
+            f"Got {len(strings_and_relatedness)} related embeddings in {iter_time:.2f} seconds for guild {guild_id}."
+        )
 
         if not strings_and_relatedness:
             return []
@@ -231,6 +337,21 @@ class Conversation(AssistantBaseModel):
     messages: t.List[dict] = []
     last_updated: float = 0.0
     system_prompt_override: t.Optional[str] = None
+
+    def get_images(self) -> t.List[str]:
+        """Get all image b64 strings in the conversation
+        Each string looks like "data:image/jpeg;base64,..." so we need to extract the base64 part
+
+        """
+        images = []
+        for message in self.messages:
+            if isinstance(message.get("content"), list):
+                for item in message["content"]:
+                    if item.get("type") == "image_url":
+                        images.append(item["image_url"]["url"])
+        if images:
+            log.info(f"Found {len(images)} images in conversation.")
+        return images
 
     def function_count(self) -> int:
         if not self.messages:
@@ -318,10 +439,14 @@ class Conversation(AssistantBaseModel):
                         }
                     )
                 else:
+                    if img.startswith("data:image/"):
+                        image_string = img
+                    else:
+                        image_string = f"data:image/png;base64,{img}"
                     content.append(
                         {
                             "type": "image_url",
-                            "image_url": {"url": f"data:image/jpeg;base64,{img}", "detail": resolution},
+                            "image_url": {"url": image_string, "detail": resolution},
                         }
                     )
 
@@ -404,7 +529,8 @@ class DB(AssistantBaseModel):
 
         # Prep bot owner functions first
         for function_name, func in self.functions.items():
-            if func.jsonschema["name"] in conf.disabled_functions:
+            if not conf.function_statuses.get(function_name, False):
+                # Function is disabled
                 continue
             if not await can_use(func.permission_level) and not showall:
                 continue
@@ -417,7 +543,8 @@ class DB(AssistantBaseModel):
             if not cog:
                 continue
             for function_name, data in function_schemas.items():
-                if function_name in conf.disabled_functions:
+                if not conf.function_statuses.get(function_name, False):
+                    # Function is disabled
                     continue
                 if function_name in function_map:
                     continue

@@ -130,7 +130,7 @@ def format_settings(
     # If not global
     txt.write(_("`Stack Roles:       `{}\n").format(conf.stack_paydays) if not is_global else "")
     if not is_global:
-        bonuses = ", ".join([f"<@&{r}>" for r in conf.role_bonuses]) if conf.role_bonuses else _("None")
+        bonuses = ", ".join([f"<@&{r}>: {b}" for r, b in conf.role_bonuses.items()]) if conf.role_bonuses else _("None")
         txt.write(_("`Role Bonuses:      `{}\n").format(bonuses) if not is_global else "")
     txt.write(_("`Payday Autoclaim:  `{}\n").format(db.auto_payday_claim))
     if not is_global:

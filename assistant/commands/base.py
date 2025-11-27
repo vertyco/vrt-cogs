@@ -80,42 +80,61 @@ If a file has no extension it will still try to read it only if it can be decode
         embed = discord.Embed(description=txt.strip(), color=ctx.me.color)
         await ctx.send(embed=embed)
 
-    @app_commands.command(name="draw", description=_("Generate an image with Dalle-3"))
+    @app_commands.command(name="draw", description=_("Generate an image with AI"))
     @app_commands.describe(prompt=_("What would you like to draw?"))
     @app_commands.describe(size=_("The size of the image to generate"))
     @app_commands.describe(quality=_("The quality of the image to generate"))
     @app_commands.describe(style=_("The style of the image to generate"))
+    @app_commands.describe(model=_("The model to use for image generation"))
     @commands.guild_only()
     async def draw(
         self,
         interaction: discord.Interaction,
         prompt: str,
-        size: t.Literal["1024x1024", "1792x1024", "1024x1792"] = "1024x1024",
-        quality: t.Literal["standard", "hd"] = "standard",
+        size: t.Literal["1024x1024", "1792x1024", "1024x1792", "1024x1536", "1536x1024"] = "1024x1024",
+        quality: t.Literal["low", "medium", "high", "standard", "hd"] = "medium",
         style: t.Literal["natural", "vivid"] = "vivid",
+        model: t.Literal["dall-e-3", "gpt-image-1"] = "dall-e-3",
     ):
         conf = self.db.get_conf(interaction.guild)
         if not conf.api_key and not self.db.endpoint_override:
             return await interaction.response.send_message(_("The API key is not set up!"), ephemeral=True)
         if not conf.image_command:
             return await interaction.response.send_message(_("Image generation is disabled!"), ephemeral=True)
+
+        # Model-specific parameter validation
+        if model == "gpt-image-1" and quality in ["standard", "hd"]:
+            quality = "medium"  # Default for gpt-image-1 if dall-e-3 quality is provided
+        if model == "dall-e-3" and quality in ["low", "medium", "high"]:
+            quality = "standard"  # Default for dall-e-3 if gpt-image-1 quality is provided
+
         color = await self.bot.get_embed_color(interaction.channel)
         embed = discord.Embed(description=_("Generating image..."), color=color)
         embed.set_thumbnail(url=LOADING)
         await interaction.response.send_message(embed=embed)
-        desc = _("-# Size: {}\n-# Quality: {}\n-# Style: {}").format(size, quality, style)
+
+        desc = _("-# Size: {}\n-# Quality: {}\n-# Model: {}").format(size, quality, model)
+        if model == "dall-e-3":
+            desc += _("\n-# Style: {}").format(style)
+
         cost_key = f"{quality}{size}"
         cost = IMAGE_COSTS.get(cost_key, 0)
-        image = await request_image_raw(prompt, conf.api_key, size, quality, style, base_url=self.db.endpoint_override)
+
+        image = await request_image_raw(
+            prompt, conf.api_key, size, quality, style, model, base_url=self.db.endpoint_override
+        )
+
         image_bytes = b64decode(image.b64_json)
         file = discord.File(BytesIO(image_bytes), filename="image.png")
         embed = discord.Embed(description=desc, color=color)
         embed.set_image(url="attachment://image.png")
         embed.set_footer(text=_("Cost: ${}").format(f"{cost:.2f}"))
-        if image.revised_prompt:
+
+        if hasattr(image, "revised_prompt") and image.revised_prompt:
             chunks = [p for p in pagify(image.revised_prompt, page_length=1000)]
             for idx, chunk in enumerate(chunks):
                 embed.add_field(name=_("Revised Prompt") if idx == 0 else _("Continued"), value=chunk, inline=False)
+
         await interaction.edit_original_response(embed=embed, attachments=[file])
 
     @commands.command(
@@ -454,7 +473,7 @@ If a file has no extension it will still try to read it only if it can be decode
             response: ChatCompletionMessage = await self.request_response(
                 messages=payload,
                 conf=conf,
-                model_override="gpt-4o-mini",
+                model_override="gpt-5.1",
                 temperature_override=0.0,
             )
         except httpx.ReadTimeout:
@@ -634,6 +653,49 @@ If a file has no extension it will still try to read it only if it can be decode
 
         await ctx.send(_("Here is your conversation transcript!"), file=file)
 
+    @commands.command(name="importconvo")
+    @commands.guild_only()
+    @commands.guildowner()
+    async def import_conversation(self, ctx: commands.Context):
+        """
+        Import a conversation from a file
+        """
+        attachments = get_attachments(ctx.message)
+        if not attachments:
+            return await ctx.send(_("Please attach a file to import the conversation from!"))
+        if len(attachments) > 1:
+            return await ctx.send(_("Please only attach one file to import the conversation from!"))
+        attachment = attachments[0]
+        if not attachment.filename.endswith(".json"):
+            return await ctx.send(_("Please upload a valid JSON file."))
+        try:
+            data = await attachment.read()
+            messages = json.loads(data)
+        except Exception as e:
+            await ctx.send(_("Failed to parse conversation file."))
+            log.error("Failed to parse conversation file", exc_info=e)
+            return
+        # Verify that it is a list of messages (dicts)
+        if not isinstance(messages, list) or not all(isinstance(msg, dict) for msg in messages):
+            return await ctx.send(
+                _("The conversation file is not in the correct format. It should be a list of messages.")
+            )
+        conf = self.db.get_conf(ctx.guild)
+        mem_id = ctx.channel.id if conf.collab_convos else ctx.author.id
+        perms = [
+            await self.bot.is_mod(ctx.author),
+            ctx.channel.permissions_for(ctx.author).manage_messages,
+            ctx.author.id in self.bot.owner_ids,
+        ]
+        if not any(perms) and conf.collab_convos:
+            return await ctx.send(_("You do not have permission to import conversations."))
+
+        conversation = self.db.get_conversation(mem_id, ctx.channel.id, ctx.guild.id)
+        conversation.messages = messages
+
+        await ctx.send(_("Conversation has been imported successfully!"))
+        await self.save_conf()
+
     @commands.command(name="query")
     @commands.bot_has_permissions(embed_links=True)
     async def test_embedding_response(self, ctx: commands.Context, *, query: str):
@@ -654,7 +716,9 @@ If a file has no extension it will still try to read it only if it can be decode
             if not query_embedding:
                 return await ctx.send(_("Failed to get embedding for your query"))
 
-            embeddings = await asyncio.to_thread(conf.get_related_embeddings, query_embedding, relatedness_override=0.1)
+            embeddings = await asyncio.to_thread(
+                conf.get_related_embeddings, ctx.guild.id, query_embedding, relatedness_override=0.1
+            )
             if not embeddings:
                 return await ctx.send(_("No embeddings could be related to this query with the current settings"))
             for name, em, score, dimension in embeddings:

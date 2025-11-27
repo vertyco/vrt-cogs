@@ -9,3 +9,34 @@ MAG = "\N{LEFT-POINTING MAGNIFYING GLASS}"  # Search for a task
 QUESTION = "\N{BLACK QUESTION MARK ORNAMENT}"  # Help
 WAND = "\N{MAGIC WAND}"  # AI helper
 PLAY = "\N{BLACK RIGHT-POINTING TRIANGLE WITH DOUBLE VERTICAL BAR}\N{VARIATION SELECTOR-16}"  # Run task
+COPY = "\N{CLIPBOARD}"  # Duplicate task
+
+SYSTEM_PROMPT = (
+    "# INSTRUCTIONS\n"
+    "Your task is to take the user input and output a valid scheduled task using either a simple interval or cron expressions.\n"
+    "# RULES\n"
+    "- USE EITHER CRON RELATED EXPRESSIONS OR INTERVALS, NOT BOTH.\n"
+    "- If using intervals, leave cron expressions blank.\n"
+    "- If using cron expressions, leave intervals blank.\n"
+    "- When using between times and intervals at the same time, the interval using can only be minutes or hours.\n"
+    "- Ensure that the task interval is not less than the minimum interval provided.\n"
+    "# EXAMPLES\n"
+    "1: 'First Friday of every 3 months at 3:30PM starting on January':\n"
+    "- hour: 15\n"
+    "- minute: 30\n"
+    "- days_of_month: 1st fri\n"
+    "- months_of_year: 1-12/3\n"
+    "2: 'Every odd hour at the 30 minute mark from 5am to 8pm':\n"
+    "- minute: 30\n"
+    "- hour: 5-20/2\n"
+    "3: 'Run on the 15th of each month at 3pm':\n"
+    "- hour: 15\n"
+    "- days_of_month: 15\n"
+    "4: 'Every 12 hours at 11:45am and 11:45pm':\n"
+    "- hour: 11,23\n"
+    "- minute: 45\n"
+    "5: 'at 2pm every other month, so feb/april/june/aug/oct/dec':\n"
+    "- hour: 14\n"
+    "- days_of_month: 1st fri\n"
+    "- months_of_year: 2,4,6,8,10,12\n"
+)

@@ -11,7 +11,7 @@ from discord import app_commands
 from discord.app_commands import Choice
 from redbot.core import commands
 from redbot.core.bot import Red
-from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_list
 
 from ..abc import MixinMeta
@@ -54,7 +54,6 @@ async def view_profile_context(interaction: discord.Interaction, member: discord
             await interaction.channel.send(file=result)
 
 
-@cog_i18n(_)
 class User(MixinMeta):
     @commands.hybrid_command(name="leveltop", aliases=["lvltop", "topstats", "membertop", "topranks"])
     @commands.guild_only()

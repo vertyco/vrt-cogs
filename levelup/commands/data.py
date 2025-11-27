@@ -9,7 +9,7 @@ import discord
 import orjson
 from pydantic import ValidationError
 from redbot.core import commands
-from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box, pagify, text_to_file
 
 from ..abc import MixinMeta
@@ -21,7 +21,6 @@ _ = Translator("LevelUp", __file__)
 log = logging.getLogger("red.vrt.levelup.commands.data")
 
 
-@cog_i18n(_)
 class DataAdmin(MixinMeta):
     @commands.group(name="leveldata", aliases=["lvldata", "ldata"])
     @commands.guild_only()
@@ -356,7 +355,7 @@ class DataAdmin(MixinMeta):
 
         *Obviously you will need MongoDB running while you run this command*
         """
-        path = self.cog_path / "Leveler" / "settings.json"
+        path = self.cog_path.parent / "Leveler" / "settings.json"
         if not path.exists():
             return await ctx.send(_("No config found for Fixator's Leveler cog!"))
         data = orjson.loads(path.read_text())

@@ -2,16 +2,16 @@ import asyncio
 import typing as t
 from contextlib import suppress
 from io import BytesIO
+from uuid import uuid4
 
 import discord
 from rapidfuzz import fuzz
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import text_to_file
 
 from ..abc import MixinMeta
 from ..common.formatting import (
+    format_method_error_pages,
     format_method_pages,
-    format_method_tables,
     format_runtime_pages,
 )
 from ..common.generator import generate_line_graph
@@ -43,17 +43,17 @@ class ProfileMenu(discord.ui.View):
         self.cog = cog
         self.db = cog.db
 
-        self.message: discord.Message = None
+        self.message: discord.Message | None = None
         self.pages: t.List[str] = []
         self.page: int = 0
 
-        self.tables: t.List[str] = []
-        self.plot: bytes = None
+        self.plot: bytes | None = None
 
         self.sorting_by: str = "Impact"
         self.query: t.Union[str, None] = None
 
         self.inspecting: t.Union[str, None] = None
+        self.remove_item(self.view_errors)
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user.id != self.ctx.author.id:
@@ -70,6 +70,7 @@ class ProfileMenu(discord.ui.View):
             self.right10.disabled = True
             self.filter_results.disabled = True
             self.inspect.disabled = True
+            self.view_errors.disabled = True
             self.change_sorting.disabled = True
             self.back.disabled = True
             self.refresh.disabled = True
@@ -97,6 +98,7 @@ class ProfileMenu(discord.ui.View):
             self.add_item(self.close)
             self.add_item(self.right)
             self.add_item(self.filter_results)
+            self.add_item(self.view_errors)
             self.add_item(self.back)
             if len(self.pages) >= 15:
                 self.add_item(self.left10)
@@ -119,11 +121,8 @@ class ProfileMenu(discord.ui.View):
 
         if self.inspecting:
             files = []
-            if self.tables:
-                file = text_to_file(self.tables[self.page], filename="profile.txt")
-                files.append(file)
             if self.plot:
-                file = discord.File(BytesIO(self.plot), filename="plot.png")
+                file = discord.File(BytesIO(self.plot), filename=f"plot_{uuid4()}.png")
                 files.append(file)
             try:
                 await self.message.edit(content=self.pages[self.page], view=self, attachments=files)
@@ -135,6 +134,30 @@ class ProfileMenu(discord.ui.View):
                 await self.message.edit(content=self.pages[self.page], view=self, attachments=[])
             except discord.NotFound:
                 self.message = await self.ctx.send(self.pages[self.page], view=self)
+
+    @discord.ui.button(label="Errors", style=discord.ButtonStyle.secondary, row=1)
+    async def view_errors(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # Only valid during inspection of a specific method
+        if not self.inspecting:
+            with suppress(discord.NotFound):
+                await interaction.response.defer()
+            return
+
+        for methodlist in self.db.stats.values():
+            method_stats = methodlist.get(self.inspecting)
+            if method_stats:
+                break
+        else:
+            return await interaction.response.send_message("No method found with that key", ephemeral=True)
+
+        with suppress(discord.NotFound):
+            await interaction.response.defer()
+
+        self.pages = await asyncio.to_thread(format_method_error_pages, self.inspecting, method_stats)
+        # No plot for error-only view
+        self.plot = None
+        self.page = 0
+        await self.update()
 
     @discord.ui.button(emoji="\N{BLACK LEFT-POINTING DOUBLE TRIANGLE}", style=discord.ButtonStyle.primary, row=4)
     async def left10(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -232,7 +255,6 @@ class ProfileMenu(discord.ui.View):
 
         self.inspecting = modal.query
         self.pages = await asyncio.to_thread(format_method_pages, modal.query, method_stats)
-        self.tables = await asyncio.to_thread(format_method_tables, method_stats)
         if len(method_stats) > 10:
             self.plot = await asyncio.to_thread(generate_line_graph, method_stats)
         await self.update()
@@ -383,6 +405,5 @@ class ProfileMenu(discord.ui.View):
         if not self.inspecting:
             return
         self.inspecting = None
-        self.tables.clear()
         self.pages = await asyncio.to_thread(format_runtime_pages, self.db, self.sorting_by, self.query)
         await self.update()

@@ -7,7 +7,7 @@ import discord
 import pytz
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
-from pydantic import Field
+from pydantic import Field, field_validator
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box
 
@@ -22,6 +22,32 @@ DAYS_OF_WEEK = {
     "fri": "Friday",
     "sat": "Saturday",
     "sun": "Sunday",
+}
+DAY_NAME_TO_INDEX: dict[str, int] = {
+    "sun": 0,
+    "0": 0,
+    "7": 0,
+    "mon": 1,
+    "1": 1,
+    "tue": 2,
+    "2": 2,
+    "wed": 3,
+    "3": 3,
+    "thu": 4,
+    "4": 4,
+    "fri": 5,
+    "5": 5,
+    "sat": 6,
+    "6": 6,
+}
+INDEX_TO_DAY_NAME: dict[int, str] = {
+    0: "Sunday",
+    1: "Monday",
+    2: "Tuesday",
+    3: "Wednesday",
+    4: "Thursday",
+    5: "Friday",
+    6: "Saturday",
 }
 MONTHS_OF_YEAR = {
     "1": "January",
@@ -86,6 +112,13 @@ class ScheduledCommand(Base):
     # Time range for interval scheduling
     between_time_start: t.Optional[time] = Field(default=None)
     between_time_end: t.Optional[time] = Field(default=None)
+
+    @field_validator("name")
+    @classmethod
+    def _limit_name_length(cls, value: str) -> str:
+        if len(value) > 45:
+            return value[:45]
+        return value
 
     def humanize(self) -> str:
         """
@@ -190,36 +223,60 @@ class ScheduledCommand(Base):
         return " ".join(parts)
 
     def _format_time(self, hour: str, minute: str) -> str:
-        def parse_field(field_str: str) -> str | list[int]:
+        def parse_field(field_str: str, upper_bound: int) -> str | list[int]:
+            field_str = (field_str or "*").strip()
             if field_str == "*":
                 return "*"
-            elif "," in field_str:
-                values = []
-                for part in field_str.split(","):
-                    if "-" in part:
-                        start, end = map(int, part.split("-"))
-                        values.extend(range(start, end + 1))
+            values: list[int] = []
+            parts = [part.strip() for part in field_str.split(",") if part.strip()]
+            for part in parts:
+                step = 1
+                base = part
+                if "/" in part:
+                    base, step_str = part.split("/", 1)
+                    base = base.strip()
+                    try:
+                        step = max(int(step_str.strip()), 1)
+                    except ValueError:
+                        return []
+                if base in {"", "*"}:
+                    values.extend(range(0, upper_bound, step))
+                    continue
+                if "-" in base:
+                    start_str, end_str = base.split("-", 1)
+                    try:
+                        start = int(start_str.strip())
+                        end = int(end_str.strip())
+                    except ValueError:
+                        return []
+                    if start <= end:
+                        rng = range(start, end + 1, step)
+                        values.extend(v for v in rng if 0 <= v < upper_bound)
                     else:
-                        values.append(int(part))
-                return sorted(set(values))
-            elif "-" in field_str and "/" in field_str:
-                range_part, step = field_str.split("/")
-                start, end = map(int, range_part.split("-"))
-                step = int(step)
-                return list(range(start, end + 1, step))
-            elif "-" in field_str:
-                start, end = map(int, field_str.split("-"))
-                return list(range(start, end + 1))
-            elif "/" in field_str:
-                # Updated handling for patterns like "*/2" or "1/2"
-                if field_str.startswith("*/"):
-                    step = int(field_str[2:])
-                    return list(range(0, 60, step))
+                        forward = range(start, upper_bound, step)
+                        wrap = range(0, end + 1, step)
+                        values.extend(v for v in forward if 0 <= v < upper_bound)
+                        values.extend(v for v in wrap if 0 <= v < upper_bound)
                 else:
-                    start, step = map(int, field_str.split("/"))
-                    return list(range(start, 60, step))
-            else:
-                return [int(field_str)]
+                    try:
+                        start = int(base.strip())
+                    except ValueError:
+                        return []
+                    if 0 <= start < upper_bound:
+                        if step == 1:
+                            values.append(start)
+                        else:
+                            values.extend(range(start, upper_bound, step))
+            if not values:
+                return []
+            seen: set[int] = set()
+            ordered: list[int] = []
+            for value in values:
+                normalized = value % upper_bound
+                if normalized not in seen:
+                    seen.add(normalized)
+                    ordered.append(normalized)
+            return ordered
 
         def get_step(lst):
             if len(lst) < 2:
@@ -230,8 +287,13 @@ class ScheduledCommand(Base):
                     return None
             return step
 
-        hour_parsed = parse_field(hour)
-        minute_parsed = parse_field(minute)
+        hour_parsed = parse_field(hour, 24)
+        minute_parsed = parse_field(minute, 60)
+
+        if isinstance(hour_parsed, list) and not hour_parsed:
+            return "Invalid time format."
+        if isinstance(minute_parsed, list) and not minute_parsed:
+            return "Invalid time format."
 
         # Case when both hour and minute are wildcards
         if hour_parsed == "*" and minute_parsed == "*":
@@ -357,40 +419,71 @@ class ScheduledCommand(Base):
         if not days_of_week or days_of_week == "*":
             return None
 
-        days = []
-        tokens = days_of_week.lower().split(",")
+        tokens = [token.strip() for token in days_of_week.split(",") if token.strip()]
+        expanded_names: list[str] = []
         for token in tokens:
-            token = token.strip()
-            if "-" in token:
-                # Handle ranges (e.g., mon-fri)
-                start_day, end_day = token.split("-")
-                ordered_days = list(DAYS_OF_WEEK.keys())
-                start_index = ordered_days.index(start_day)
-                end_index = ordered_days.index(end_day)
-                if start_index <= end_index:
-                    days_range = ordered_days[start_index : end_index + 1]
-                else:
-                    days_range = ordered_days[start_index:] + ordered_days[: end_index + 1]
-                days.extend([DAYS_OF_WEEK[day] for day in days_range])
-            elif "/" in token:
-                # Handle steps (e.g., mon/2)
-                day, step = token.split("/")
-                day_name = DAYS_OF_WEEK.get(day, day.capitalize())
-                step = int(step)
-                if step == 2:
-                    days.append(f"every other {day_name}")
-                else:
-                    days.append(f"every {step} {day_name}")
-            else:
-                day_name = DAYS_OF_WEEK.get(token, token.capitalize())
-                days.append(day_name)
+            try:
+                indexes = self._expand_day_token(token)
+            except ValueError:
+                expanded_names.append(token)
+                continue
+            for idx in indexes:
+                day_name = INDEX_TO_DAY_NAME.get(idx)
+                if day_name and day_name not in expanded_names:
+                    expanded_names.append(day_name)
 
-        if len(days) == 7:
+        if len(expanded_names) == 7:
             return None  # Every day
-        elif len(days) > 1:
-            return ", ".join(days[:-1]) + f" and {days[-1]}"
+        if not expanded_names:
+            return None
+        if len(expanded_names) > 1:
+            return ", ".join(expanded_names[:-1]) + f" and {expanded_names[-1]}"
+        return expanded_names[0]
+
+    @staticmethod
+    def _day_to_index(value: str) -> int:
+        key = value.strip().lower()
+        if key not in DAY_NAME_TO_INDEX:
+            raise ValueError(f"Invalid day token: {value}")
+        return DAY_NAME_TO_INDEX[key]
+
+    def _expand_day_token(self, token: str) -> list[int]:
+        token = token.strip().lower()
+        if not token:
+            return []
+        step = 1
+        base = token
+        if "/" in token:
+            base, step_str = token.split("/", 1)
+            base = base.strip()
+            step = max(int(step_str.strip()), 1)
+        if base in {"", "*"}:
+            values = list(range(7))
+        elif "-" in base:
+            start_str, end_str = base.split("-", 1)
+            start = self._day_to_index(start_str)
+            end = self._day_to_index(end_str)
+            if start <= end:
+                values = list(range(start, end + 1))
+            else:
+                values = list(range(start, 7)) + list(range(0, end + 1))
         else:
-            return days[0]
+            start = self._day_to_index(base)
+            values = [start]
+        if step > 1:
+            if len(values) == 1 and "-" not in base and base not in {"", "*"}:
+                start_value = values[0]
+                values = [val for val in range(start_value, 7, step)]
+            else:
+                values = values[::step]
+        seen: set[int] = set()
+        ordered: list[int] = []
+        for value in values:
+            normalized = value % 7
+            if normalized not in seen:
+                seen.add(normalized)
+                ordered.append(normalized)
+        return ordered
 
     def _parse_days_of_month(self, days_of_month: str) -> str | None:
         if not days_of_month or days_of_month == "*":
@@ -593,21 +686,87 @@ class ScheduledCommand(Base):
         6. "every 2 hours between 10am and 10pm"
         """
         tz = pytz.timezone(timezone)
-        if self.interval and self.interval_unit:
+        if self.minute and "--" in self.minute:
+            self.minute = self.minute.replace("--", "-")
+        if self.hour and "--" in self.hour:
+            self.hour = self.hour.replace("--", "-")
+        if self.second and "--" in self.second:
+            self.second = self.second.replace("--", "-")
+
+        def build_cron_kwargs() -> dict[str, object]:
+            cron_kwargs: dict[str, object] = {
+                "hour": self.hour or "*",
+                "minute": self.minute or "0",
+                "second": self.second or "0",
+                "timezone": tz,
+            }
+            if self.days_of_week:
+                cron_kwargs["day_of_week"] = self.days_of_week
+            if self.days_of_month:
+                cron_kwargs["day"] = self.days_of_month
+            if self.months_of_year:
+                cron_kwargs["month"] = self.months_of_year
+            if self.start_date:
+                cron_kwargs["start_date"] = self.start_date.astimezone(tz)
+            if self.end_date:
+                cron_kwargs["end_date"] = self.end_date.astimezone(tz)
+            return cron_kwargs
+
+        interval_unit_raw = (self.interval_unit or "").strip().lower()
+        interval_unit_aliases = {
+            "second": "seconds",
+            "seconds": "seconds",
+            "minute": "minutes",
+            "minutes": "minutes",
+            "hour": "hours",
+            "hours": "hours",
+            "day": "days",
+            "days": "days",
+            "week": "weeks",
+            "weeks": "weeks",
+        }
+        normalized_unit = interval_unit_aliases.get(interval_unit_raw)
+
+        if self.interval and interval_unit_raw:
             if self.between_time_start and self.between_time_end:
                 # Use CronTrigger to handle intervals within a time range
                 cron_kwargs = {"timezone": tz}
-                if self.interval_unit == "hours":
+                if normalized_unit == "hours":
                     start_hour = self.between_time_start.hour
-                    end_hour = self.between_time_end.hour - 1  # Make it inclusive
+                    end_hour = self.between_time_end.hour - 1
+                    if end_hour < start_hour:
+                        raise ValueError(
+                            "End time must be after start time when using hour intervals with between times."
+                        )
                     cron_kwargs["hour"] = f"{start_hour}-{end_hour}/{self.interval}"
                     cron_kwargs["minute"] = self.between_time_start.minute
                     cron_kwargs["second"] = "0"
-                elif self.interval_unit == "minutes":
+                elif normalized_unit == "minutes":
+                    start_hour = self.between_time_start.hour
+                    end_hour = self.between_time_end.hour
                     start_minute = self.between_time_start.minute
-                    end_minute = self.between_time_end.minute - 1
-                    cron_kwargs["minute"] = f"{start_minute}-{end_minute}/{self.interval}"
-                    cron_kwargs["hour"] = "*"
+                    minute_values: list[int] = []
+                    current = start_minute % 60
+                    for _ in range(60):
+                        if current in minute_values:
+                            break
+                        minute_values.append(current)
+                        current = (current + self.interval) % 60
+                    if not minute_values:
+                        minute_values.append(0)
+                    minute_values.sort()
+                    minute_expr = ",".join(str(value) for value in minute_values)
+                    if self.hour:
+                        hour_expr = self.hour
+                    else:
+                        if start_hour == end_hour:
+                            hour_expr = str(start_hour)
+                        elif start_hour < end_hour:
+                            hour_expr = f"{start_hour}-{end_hour}"
+                        else:
+                            hour_expr = f"{start_hour}-23,0-{end_hour}"
+                    cron_kwargs["minute"] = minute_expr
+                    cron_kwargs["hour"] = hour_expr
                     cron_kwargs["second"] = "0"
                 else:
                     raise ValueError("When using between times, the interval unit must be 'hours' or 'minutes'.")
@@ -624,9 +783,9 @@ class ScheduledCommand(Base):
                     cron_kwargs["end_date"] = self.end_date.astimezone(tz)
 
                 return CronTrigger(**cron_kwargs)
-            else:
+            elif normalized_unit:
                 # Use IntervalTrigger when there's no time range
-                interval_kwargs = {self.interval_unit: self.interval, "timezone": tz}
+                interval_kwargs = {normalized_unit: self.interval, "timezone": tz}
                 if self.hour and self.hour.isdigit():
                     interval_kwargs["hours"] = int(self.hour)
                 if self.minute and self.minute.isdigit():
@@ -638,32 +797,30 @@ class ScheduledCommand(Base):
                 if self.end_date:
                     interval_kwargs["end_date"] = self.end_date.astimezone(tz)
                 return IntervalTrigger(**interval_kwargs)
+            else:
+                cron_kwargs = build_cron_kwargs()
+                if interval_unit_raw in {"month", "months"}:
+                    cron_kwargs["month"] = cron_kwargs.get("month") or f"*/{self.interval}"
+                elif interval_unit_raw in {"year", "years"}:
+                    cron_kwargs["year"] = f"*/{self.interval}"
+                    cron_kwargs.setdefault("day", self.days_of_month or "1")
+                else:
+                    cron_kwargs.setdefault("day", "*")
+                return CronTrigger(**cron_kwargs)
         else:
             # Use CronTrigger for more advanced scheduling options
-            cron_kwargs = {
-                "hour": self.hour or "*",
-                "minute": self.minute or "0",
-                "second": self.second or "0",
-                "timezone": tz,
-            }
-            if self.days_of_week:
-                cron_kwargs["day_of_week"] = self.days_of_week
-            if self.days_of_month:
-                cron_kwargs["day"] = self.days_of_month
-            if self.months_of_year:
-                cron_kwargs["month"] = self.months_of_year
-            if self.start_date:
-                cron_kwargs["start_date"] = self.start_date.astimezone(tz)
-            if self.end_date:
-                cron_kwargs["end_date"] = self.end_date.astimezone(tz)
+            cron_kwargs = build_cron_kwargs()
             return CronTrigger(**cron_kwargs)
 
     def is_safe(self, timezone: str, minimum_interval: int) -> bool:
-        """Ensure that the scheduled task will not run more frequently than every 5 minutes."""
-        trigger: IntervalTrigger | CronTrigger = self.trigger(timezone)
+        """Ensure that the scheduled task will not run more frequently than the minimum interval."""
+        try:
+            trigger: IntervalTrigger | CronTrigger = self.trigger(timezone)
+        except ValueError:
+            return False
 
         if isinstance(trigger, IntervalTrigger):
-            # For IntervalTrigger, check if the interval is at least 5 minutes
+            # For IntervalTrigger, check if the interval is at least the minimum interval
             interval_seconds = trigger.interval.total_seconds()
             return interval_seconds >= minimum_interval
         elif isinstance(trigger, CronTrigger):
@@ -755,7 +912,7 @@ class DB(Base):
 
     def timezone(self, guild: discord.Guild | int) -> str:
         guild_id = guild if isinstance(guild, int) else guild.id
-        return self.timezones.get(guild_id, "UTC")
+        return self.timezones.get(guild_id, "UTC") or "UTC"
 
     def get_tasks(self, guild: discord.Guild | int) -> list[ScheduledCommand]:
         guild_id = guild if isinstance(guild, int) else guild.id
@@ -773,6 +930,11 @@ class DB(Base):
     def remove_task(self, task: str | ScheduledCommand) -> ScheduledCommand | None:
         task_id = task if isinstance(task, str) else task.id
         return self.tasks.pop(task_id)
+
+    def disable_task(self, task: str | ScheduledCommand) -> None:
+        task_id = task if isinstance(task, str) else task.id
+        if task_id in self.tasks:
+            self.tasks[task_id].enabled = False
 
     def refresh_task(self, task: str | ScheduledCommand) -> None:
         task_id = task if isinstance(task, str) else task.id

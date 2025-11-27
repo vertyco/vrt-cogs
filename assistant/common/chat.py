@@ -8,7 +8,7 @@ import re
 import traceback
 from datetime import datetime
 from inspect import iscoroutinefunction
-from io import BytesIO
+from io import BytesIO, StringIO
 from typing import Callable, Dict, List, Optional, Union
 
 import discord
@@ -28,7 +28,7 @@ from redbot.core.utils.chat_formatting import box, humanize_number, text_to_file
 from sentry_sdk import add_breadcrumb
 
 from ..abc import MixinMeta
-from .constants import READ_EXTENSIONS, SUPPORTS_VISION
+from .constants import DO_NOT_RESPOND_SCHEMA, READ_EXTENSIONS, SUPPORTS_VISION
 from .models import Conversation, GuildSettings
 from .reply import send_reply
 from .utils import (
@@ -59,6 +59,8 @@ class ChatHandler(MixinMeta):
         conf: GuildSettings,
         listener: bool = False,
         model_override: Optional[str] = None,
+        auto_answer: Optional[bool] = False,
+        **kwargs,
     ):
         outputfile_pattern = r"--outputfile\s+([^\s]+)"
         extract_pattern = r"--extract"
@@ -111,7 +113,9 @@ class ChatHandler(MixinMeta):
                 # No reason to download the image now, we can just use the url
                 image_bytes: bytes = await i.read()
                 image_b64 = base64.b64encode(image_bytes).decode()
-                images.append(image_b64)
+                image_format = i.filename.split(".")[-1].lower()
+                image_string = f"data:image/{image_format};base64,{image_b64}"
+                images.append(image_string)
                 continue
 
             if not any(i.filename.lower().endswith(ext) for ext in READ_EXTENSIONS) and has_extension:
@@ -176,6 +180,7 @@ class ChatHandler(MixinMeta):
                     message_obj=message,
                     images=images,
                     model_override=model_override,
+                    auto_answer=auto_answer,
                 )
             except openai.InternalServerError as e:
                 if e.body and isinstance(e.body, dict):
@@ -267,10 +272,14 @@ class ChatHandler(MixinMeta):
         message_obj: Optional[discord.Message] = None,
         images: list[str] = None,
         model_override: Optional[str] = None,
+        auto_answer: Optional[bool] = False,
     ) -> Union[str, None]:
         """Call the API asynchronously"""
         functions = function_calls.copy() if function_calls else []
         mapping = function_map.copy() if function_map else {}
+
+        async def do_not_respond(*args, **kwargs):
+            return {"return_null": True, "content": "do_not_respond"}
 
         if conf.use_function_calls and extend_function_calls:
             # Prepare registry and custom functions
@@ -279,6 +288,9 @@ class ChatHandler(MixinMeta):
             )
             functions.extend(prepped_function_calls)
             mapping.update(prepped_function_map)
+            if auto_answer:
+                functions.append(DO_NOT_RESPOND_SCHEMA)
+                mapping["do_not_respond"] = do_not_respond
 
         if not conf.use_function_calls and functions:
             functions = []
@@ -292,8 +304,6 @@ class ChatHandler(MixinMeta):
             channel_id=chan_id,
             guild_id=guild.id,
         )
-        # if conf.collab_convos and isinstance(author, discord.Member):
-        #     message = f"{author.display_name}: {message}"
 
         conversation.cleanup(conf, author)
         conversation.refresh()
@@ -310,6 +320,7 @@ class ChatHandler(MixinMeta):
                 message_obj=message_obj,
                 images=images,
                 model_override=model_override,
+                auto_answer=auto_answer,
             )
         finally:
             conversation.cleanup(conf, author)
@@ -328,6 +339,7 @@ class ChatHandler(MixinMeta):
         message_obj: Optional[discord.Message] = None,
         images: list[str] = None,
         model_override: Optional[str] = None,
+        auto_answer: Optional[bool] = False,
     ) -> Union[str, None]:
         if isinstance(author, int):
             author = guild.get_member(author)
@@ -335,7 +347,8 @@ class ChatHandler(MixinMeta):
             channel = guild.get_channel(channel)
 
         query_embedding = []
-        user = author if isinstance(author, discord.Member) else None
+        user = author if isinstance(author, discord.Member) else guild.get_member(author)
+        user_id = author.id if isinstance(author, discord.Member) else author
         model = conf.get_user_model(user)
 
         # Ensure the message is not longer than 1048576 characters
@@ -371,8 +384,8 @@ class ChatHandler(MixinMeta):
 
         # Don't include if user is not a tutor
         not_tutor = [
-            author.id not in conf.tutors,
-            not any([role.id in conf.tutors for role in author.roles]),
+            user_id not in conf.tutors,
+            not any([role.id in conf.tutors for role in user.roles]),
         ]
 
         if "create_memory" in function_map and all(not_tutor):
@@ -391,9 +404,13 @@ class ChatHandler(MixinMeta):
             function_calls = [i for i in function_calls if i["name"] != "list_memories"]
             del function_map["list_memories"]
 
-        if "search_internet" in function_map and not self.db.brave_api_key:
-            function_calls = [i for i in function_calls if i["name"] != "search_internet"]
-            del function_map["search_internet"]
+        if "search_web_brave" in function_map and not self.db.brave_api_key:
+            function_calls = [i for i in function_calls if i["name"] != "search_web_brave"]
+            del function_map["search_web_brave"]
+
+        if "edit_image" in function_map and (not conversation.get_images() and not images):
+            function_calls = [i for i in function_calls if i["name"] != "edit_image"]
+            del function_map["edit_image"]
 
         messages = await self.prepare_messages(
             message=message,
@@ -406,6 +423,7 @@ class ChatHandler(MixinMeta):
             extras=extras,
             function_calls=function_calls,
             images=images,
+            auto_answer=auto_answer,
         )
         reply = None
 
@@ -514,16 +532,25 @@ class ChatHandler(MixinMeta):
             conf.functions_called += len(response_functions)
 
             for function_call in response_functions:
-                if isinstance(function_call, ChatCompletionMessageToolCall):
+                if hasattr(function_call, "name") and hasattr(function_call, "arguments"):
+                    # This is a FunctionCall
+                    function_name = function_call.name
+                    arguments = function_call.arguments
+                    tool_id = None
+                    role = "tool"
+                elif hasattr(function_call, "function") and hasattr(function_call, "id"):
+                    # This is a ChatCompletionMessageToolCall
                     function_name = function_call.function.name
                     arguments = function_call.function.arguments
                     tool_id = function_call.id
                     role = "tool"
                 else:
-                    function_name = function_call.name
-                    arguments = function_call.arguments
-                    tool_id = None
-                    role = "function"
+                    log.error(f"Unknown function call type: {type(function_call)}: {function_call}")
+                    # Try to handle as ChatCompletionMessageToolCall as fallback
+                    function_name = function_call.function.name
+                    arguments = function_call.function.arguments
+                    tool_id = function_call.id
+                    role = "tool"
 
                 calls += 1
 
@@ -554,14 +581,18 @@ class ChatHandler(MixinMeta):
                     parse_success = True
 
                 if parse_success:
-                    extras = {
+                    data = {
+                        **extras,
                         "user": guild.get_member(author) if isinstance(author, int) else author,
                         "channel": guild.get_channel_or_thread(channel) if isinstance(channel, int) else channel,
                         "guild": guild,
                         "bot": self.bot,
                         "conf": conf,
+                        "conversation": conversation,
+                        "messages": messages,
+                        "message_obj": message_obj,
                     }
-                    kwargs = {**args, **extras}
+                    kwargs = {**args, **data}
                     func = function_map[function_name]
                     try:
                         if iscoroutinefunction(func):
@@ -582,22 +613,24 @@ class ChatHandler(MixinMeta):
                 return_null = False
 
                 if isinstance(func_result, discord.Embed):
-                    result = func_result.description or _("Result sent!")
+                    content = func_result.description or _("Result sent!")
                     try:
                         await channel.send(embed=func_result)
                     except discord.Forbidden:
-                        result = "You do not have permissions to embed links in this channel"
+                        content = "You do not have permissions to embed links in this channel"
                         function_calls = [i for i in function_calls if i["name"] != function_name]
                 elif isinstance(func_result, discord.File):
-                    result = "File uploaded!"
+                    content = "File uploaded!"
                     try:
                         await channel.send(file=func_result)
                     except discord.Forbidden:
-                        result = "You do not have permissions to upload files in this channel"
+                        content = "You do not have permissions to upload files in this channel"
                         function_calls = [i for i in function_calls if i["name"] != function_name]
                 elif isinstance(func_result, dict):
                     # For complex responses
-                    result = func_result["result_text"]
+                    content = func_result.get("result_text")
+                    if not content:
+                        content = func_result.get("content")
                     return_null = func_result.get("return_null", False)
                     kwargs = {}
                     if "embed" in func_result and channel.permissions_for(guild.me).embed_links:
@@ -624,22 +657,40 @@ class ChatHandler(MixinMeta):
                         try:
                             await channel.send(**kwargs)
                         except discord.HTTPException as e:
-                            result = f"discord.HTTPException: {e.text}"
+                            content = f"discord.HTTPException: {e.text}"
                             function_calls = [i for i in function_calls if i["name"] != function_name]
 
                 elif isinstance(func_result, bytes):
-                    result = func_result.decode()
-                else:  # Is a string
-                    result = str(func_result)
+                    content = func_result.decode()
+                elif isinstance(func_result, str):
+                    content = str(func_result)
+                else:
+                    log.error(f"Function {function_name} returned an unknown type: {type(func_result)}")
+                    content = f"Unknown type: {type(func_result)}"
 
-                # Ensure response isnt too large
-                result = await self.cut_text_by_tokens(result, conf, author)
+                logging_content = StringIO()
+                if isinstance(func_result, str) and len(func_result):
+                    logging_content.write(func_result[:2000])
+                elif isinstance(func_result, bytes):
+                    logging_content.write(str(func_result)[:20] + "... (bytes content)")
+                elif isinstance(func_result, dict):
+                    for k, v in func_result.items():
+                        txt = str(v)
+                        if txt.startswith("data:image/"):
+                            txt = txt[:20] + "... (image content)"
+
+                        logging_content.write(f"{k}: {txt[:1000]}\n")
+
                 info = (
                     f"Called function {function_name} in {guild.name} for {author.display_name}\n"
-                    f"Params: {args}\nResult: {result}"
+                    f"Params: {args}\nResult: {logging_content.getvalue()}"
                 )
                 log.debug(info)
-                e = {"role": role, "name": function_name, "content": result}
+                if isinstance(content, str):
+                    # Ensure response isnt too large
+                    content = await self.cut_text_by_tokens(content, conf, author)
+
+                e = {"role": role, "name": function_name, "content": content}
                 if tool_id:
                     e["tool_call_id"] = tool_id
                 messages.append(e)
@@ -675,6 +726,10 @@ class ChatHandler(MixinMeta):
         if block:
             reply = _("Response failed due to invalid regex, check logs for more info.")
 
+        if reply and reply == "do_not_respond":
+            log.info("Auto answer triggered, not responding to user")
+            return None
+
         return reply
 
     async def safe_regex(self, regex: str, content: str):
@@ -704,6 +759,7 @@ class ChatHandler(MixinMeta):
         extras: dict,
         function_calls: List[dict],
         images: list[str] | None,
+        auto_answer: Optional[bool] = False,
     ) -> List[dict]:
         """Prepare content for calling the GPT API
 
@@ -715,6 +771,10 @@ class ChatHandler(MixinMeta):
             author (Optional[discord.Member]): user chatting with the bot
             channel (Optional[Union[discord.TextChannel, discord.Thread, discord.ForumChannel]]): channel for context
             query_embedding List[float]: message embedding weights
+            extras (dict): extra parameters to include in the prompt
+            function_calls (List[dict]): list of function calls to include in the prompt
+            images (list[str] | None): list of image URLs to include in the prompt
+            auto_answer (Optional[bool]): whether this is an auto answer response
 
         Returns:
             List[dict]: list of messages prepped for api
@@ -742,7 +802,7 @@ class ChatHandler(MixinMeta):
 
         max_tokens = self.get_max_tokens(conf, author)
 
-        related = await asyncio.to_thread(conf.get_related_embeddings, query_embedding)
+        related = await asyncio.to_thread(conf.get_related_embeddings, guild.id, query_embedding)
 
         embeds: List[str] = []
         # Get related embeddings (Name, text, score, dimensions)
@@ -767,6 +827,13 @@ class ChatHandler(MixinMeta):
                 message += f"\n\n# RELATED EMBEDDINGS\n{embeds[0]}"
                 if len(embeds) > 1:
                     system_prompt += f"\n\n# RELATED EMBEDDINGS\n{''.join(embeds[1:])}"
+
+        if auto_answer:
+            initial_prompt += (
+                "\n# AUTO ANSWER:\nYou are responding to a triggered event not specifically requested by the user. "
+                "You may opt to not respond if necessary by calling the `do_not_respond` function.\n"
+                "If you do not have access to functions, you may respond with the exact phrase `do_not_respond`"
+            )
 
         images = images if model in SUPPORTS_VISION else []
         messages = conversation.prepare_chat(

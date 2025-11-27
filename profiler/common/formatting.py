@@ -70,6 +70,7 @@ def format_method_pages(
             f"- Type: {stats.func_type.capitalize()}\n"
             f"- Is Coroutine: {stats.is_coro}\n"
             f"- Time: {exe_time}\n"
+            f"- Latency: {(stats.latency or 0) * 1000:.1f}ms\n"
         )
         if stats.exception_thrown:
             page += f"- {warning_sign} **Exception**: `{stats.exception_thrown}`\n"
@@ -82,13 +83,44 @@ def format_method_pages(
     return pages
 
 
-def format_method_tables(data: t.List[StatsProfile]) -> t.List[str]:
-    data = [i for i in data if i.func_profiles]
-    tables = []
-    for stats in data:
-        table = format_func_profiles(stats)
-        tables.append(table)
-    return tables
+def format_method_error_pages(method_key: str, data: t.List[StatsProfile]) -> t.List[str]:
+    """Create pages that show only the errored runs for a given method.
+
+    Parameters
+    - method_key: The identifier of the method being inspected.
+    - data: The list of StatsProfile entries for this method.
+
+    Returns
+    - List of page strings suitable for sending as message content.
+    """
+    error_profiles = [i for i in data if i.exception_thrown]
+
+    if not error_profiles:
+        return ["No errors recorded for this method."]
+
+    pages: list[str] = []
+    total_errors = len(error_profiles)
+
+    for idx, stats in enumerate(error_profiles, start=1):
+        ts = int(stats.timestamp.timestamp())
+        exe_time = f"{stats.total_tt:.4f}s" if stats.total_tt >= 1 else f"{stats.total_tt * 1000:.2f}ms"
+        # Keep exception concise; field is expected to be a short string per model
+        exc_text = str(stats.exception_thrown).strip()
+
+        page = (
+            f"# {method_key}\n"
+            "## Error Instance\n"
+            f"- Time Recorded: <t:{ts}:F> (<t:{ts}:R>)\n"
+            f"- Type: {stats.func_type.capitalize()}\n"
+            f"- Is Coroutine: {stats.is_coro}\n"
+            f"- Runtime: {exe_time}\n"
+            f"- Exception: `{exc_text}`\n"
+            if stats.latency is not None
+            else f"Showing errors only. Page `{idx}/{total_errors}`"
+        )
+        pages.append(page)
+
+    return pages
 
 
 def format_runtime_pages(
@@ -142,8 +174,8 @@ def format_runtime_pages(
                 name = f"- {name}"
 
             stats[name] = [
-                max_runtime,
                 min_runtime,
+                max_runtime,
                 avg_runtime,
                 calls_per_minute,
                 total_calls,
@@ -155,38 +187,48 @@ def format_runtime_pages(
     start = 0
     end = per_page
     page_count = math.ceil(len(stats) / per_page)
-    delta_text = f"Last {'Hour' if db.delta == 1 else f'{db.delta}hrs'}"
+    delta_text = f"Last {'Hr' if db.delta == 1 else f'{db.delta}hrs'}"
 
-    cols = ["Method", "Max", "Min", "Avg", "Calls/Min", delta_text, "Errors", "Impact"]
     if sort_by == "Name":
-        cols = ["[Method]", "Max", "Min", "Avg", "Calls/Min", delta_text, "Errors", "Impact"]
+        cols = ["[Method]", "Min/Max/Avg", "CPM", delta_text, "Err", "Impact"]
         stats = dict(sorted(stats.items()))
     elif sort_by == "Max":
-        cols = ["Method", "[Max]", "Min", "Avg", "Calls/Min", delta_text, "Errors", "Impact"]
+        cols = ["Method", "Min/[Max]/Avg", "CPM", delta_text, "Err", "Impact"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][0], reverse=True))
     elif sort_by == "Min":
-        cols = ["Method", "Max", "[Min]", "Avg", "Calls/Min", delta_text, "Errors", "Impact"]
+        cols = ["Method", "[Min]/Max/Avg", "CPM", delta_text, "Err", "Impact"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][1], reverse=True))
     elif sort_by == "Avg":
-        cols = ["Method", "Max", "Min", "[Avg]", "Calls/Min", delta_text, "Errors", "Impact"]
+        cols = ["Method", "Min/Max/[Avg]", "CPM", delta_text, "Err", "Impact"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][2], reverse=True))
     elif sort_by == "CPM":
-        cols = ["Method", "Max", "Min", "Avg", "[Calls/Min]", delta_text, "Errors", "Impact"]
+        cols = ["Method", "Min/Max/Avg", "[CPM]", delta_text, "Err", "Impact"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][3], reverse=True))
     elif sort_by == "Count":
-        cols = ["Method", "Max", "Min", "Avg", "Calls/Min", f"[{delta_text}]", "Errors", "Impact"]
+        cols = ["Method", "Min/Max/Avg", "CPM", f"[{delta_text}]", "Err", "Impact"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][4], reverse=True))
     elif sort_by == "Errors":
-        cols = ["Method", "Max", "Min", "Avg", "Calls/Min", delta_text, "[Errors]", "Impact"]
+        cols = ["Method", "Min/Max/Avg", "CPM", delta_text, "[Err]", "Impact"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][5], reverse=True))
-    elif sort_by == "Impact":
-        cols = ["Method", "Max", "Min", "Avg", "Calls/Min", delta_text, "Errors", "[Impact]"]
+    else:  # sort_by == "Impact"
+        cols = ["Method", "Min/Max/Avg", "CPM", delta_text, "Err", "[Impact]"]
         stats = dict(sorted(stats.items(), key=lambda item: item[1][6], reverse=True))
 
-    def _format(value: float):
-        if value < 1:
-            return f"{value * 1000:.1f}ms"
-        return f"{value:.3f}s"
+    def _format(value_seconds: float) -> str:
+        if value_seconds > 120:
+            return f"{value_seconds / 60:.1f}m"
+        elif value_seconds < 1:
+            return f"{value_seconds * 1000:.0f}ms"
+        return f"{value_seconds:.1f}s"
+
+    def _format_cpm(value: float) -> float:
+        if value < 0.009:
+            return round(value, 4)
+        elif value < 0.1:
+            return round(value, 3)
+        elif value < 1:
+            return round(value, 2)
+        return round(value, 1)
 
     pages = []
     for p in range(page_count):
@@ -202,22 +244,16 @@ def format_runtime_pages(
             rows.append(
                 [
                     method_key,
-                    _format(max_runtime),
-                    _format(min_runtime),
-                    _format(avg_runtime),
-                    round(calls_per_minute, 4),
+                    f"{_format(min_runtime)}/{_format(max_runtime)}/{_format(avg_runtime)}",
+                    _format_cpm(calls_per_minute),
                     total_calls,
                     error_count,
-                    round(impact_score, 2),
+                    round(impact_score),
                 ]
             )
 
-        # page = f"{box(tabulate(rows, headers=cols), lang='diff')}\n\n"
         page = f"{tabulate(rows, headers=cols)}\n\n"
-        if db.verbose:
-            page += "+ Verbose Tracking\n- Has Errors\n"
-        else:
-            page += "+ Tracking\n- Has Errors\n"
+        page += "+ Tracking\n- Has Errors\n"
         page = box(page, lang="diff")
 
         if db.track_commands:
@@ -240,32 +276,6 @@ def format_runtime_pages(
     if not pages:
         pages.append("No data to display. Come back later.")
     return pages
-
-
-def format_func_profiles(stats: StatsProfile):
-    cols = [
-        "Function",
-        "ncalls",
-        "tottime",
-        "percall_tottime",
-        "cumtime",
-        "percall_cumtime",
-        "file:line",
-    ]
-    rows = []
-    for func, profile in stats.func_profiles.items():
-        rows.append(
-            [
-                func,
-                profile.ncalls,
-                profile.tottime,
-                profile.percall_tottime,
-                profile.cumtime,
-                profile.percall_cumtime,
-                f"{profile.file_name}:{profile.line_number}",
-            ]
-        )
-    return tabulate(rows, headers=cols)
 
 
 def format_runtimes(stats: t.Dict[str, t.List[StatsProfile]]):

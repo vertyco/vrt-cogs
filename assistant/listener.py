@@ -96,15 +96,15 @@ class AssistantListener(MixinMeta):
             return
 
         conditions = [
-            channel.id != conf.channel_id,
+            (channel.id != conf.channel_id and channel.id not in conf.listen_channels),
             (not bot_mentioned or not conf.mention_respond),
         ]
         check_auto_answer = [
             conf.auto_answer,
             channel.id not in conf.auto_answer_ignored_channels,
-            channel.category_id not in conf.auto_answer_ignored_channels,
+            getattr(channel, "category_id", 0) not in conf.auto_answer_ignored_channels,
             message.author.id not in conf.tutors,
-            not any([role.id in conf.tutors for role in message.author.roles]),
+            not any([role.id in conf.tutors for role in getattr(message.author, "roles", [])]),
         ]
         if all(check_auto_answer):
             if is_question(message.content):
@@ -112,6 +112,7 @@ class AssistantListener(MixinMeta):
                 embedding = await self.request_embedding(message.content, conf)
                 related = await asyncio.to_thread(
                     conf.get_related_embeddings,
+                    guild_id=message.guild.id,
                     query_embedding=embedding,
                     top_n_override=1,
                     relatedness_override=conf.auto_answer_threshold,
@@ -119,12 +120,13 @@ class AssistantListener(MixinMeta):
                 conditions.append(len(related) == 0)
                 if len(related) > 0:
                     handle_message_kwargs["model_override"] = conf.auto_answer_model
+                    handle_message_kwargs["auto_answer"] = True
         if all(conditions):
             # Message was not in the assistant channel and bot was not mentioned and auto answer is enabled and no related embeddings
             return
 
         conditions = [
-            channel.id == conf.channel_id,
+            (channel.id == conf.channel_id or channel.id in conf.listen_channels),
             not message.content.endswith("?"),
             conf.endswith_questionmark,
             self.bot.user.id not in mention_ids,

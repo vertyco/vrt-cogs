@@ -2,7 +2,7 @@ import asyncio
 
 import discord
 from redbot.core import commands
-from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.i18n import Translator
 
 from ..abc import MixinMeta
 from ..common import formatter, utils
@@ -11,7 +11,6 @@ from ..views.dynamic_menu import DynamicMenu
 _ = Translator("LevelUp", __file__)
 
 
-@cog_i18n(_)
 class Weekly(MixinMeta):
     @commands.command(name="weekly", aliases=["week"])
     @commands.guild_only()

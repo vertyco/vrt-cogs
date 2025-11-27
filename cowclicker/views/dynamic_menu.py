@@ -261,14 +261,23 @@ class DynamicMenu(discord.ui.View):
         def _fuzzymatch() -> list[tuple[int, int]]:
             # [(match, index)]
             matches: list[tuple[int, int]] = []
-            for i, embed in enumerate(self.pages):
-                matches.append((fuzz.ratio(modal.query.lower(), embed.title.lower()), i))
-                matches.append((fuzz.ratio(modal.query.lower(), embed.description.lower()), i))
-                if embed.footer:
-                    matches.append((fuzz.ratio(modal.query.lower(), embed.footer.text.lower()), i))
-                for field in embed.fields:
-                    matches.append((fuzz.ratio(modal.query.lower(), field.name.lower()), i))
-                    matches.append((fuzz.ratio(modal.query.lower(), field.value.lower()), i))
+            for i, page in enumerate(self.pages):
+                if isinstance(page, discord.Embed):
+                    if page.title:
+                        matches.append((fuzz.ratio(modal.query.lower(), page.title.lower()), i))
+                    if page.description:
+                        matches.append((fuzz.ratio(modal.query.lower(), page.description.lower()), i))
+                    if page.footer:
+                        matches.append((fuzz.ratio(modal.query.lower(), page.footer.text.lower()), i))
+                    for field in page.fields:
+                        matches.append((fuzz.ratio(modal.query.lower(), field.name.lower()), i))
+                        matches.append((fuzz.ratio(modal.query.lower(), field.value.lower()), i))
+                else:
+                    matches.append((fuzz.ratio(modal.query.lower(), page.lower()), i))
+                    if modal.query.casefold() in page.casefold():
+                        matches.append((95, i))
+                    if modal.query in page:
+                        matches.append((100, i))
             if matches:
                 matches.sort(key=lambda x: x[0], reverse=True)
             return matches

@@ -16,9 +16,11 @@ from .common.api import API
 from .common.chat import ChatHandler
 from .common.constants import (
     CREATE_MEMORY,
+    EDIT_IMAGE,
     EDIT_MEMORY,
     GENERATE_IMAGE,
     LIST_MEMORIES,
+    RESPOND_AND_CONTINUE,
     SEARCH_INTERNET,
     SEARCH_MEMORIES,
 )
@@ -54,7 +56,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "6.12.25"
+    __version__ = "6.18.12"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -105,11 +107,13 @@ class Assistant(
 
         # Register internal functions
         await self.register_function(self.qualified_name, GENERATE_IMAGE)
+        await self.register_function(self.qualified_name, EDIT_IMAGE)
         await self.register_function(self.qualified_name, SEARCH_INTERNET)
         await self.register_function(self.qualified_name, CREATE_MEMORY)
         await self.register_function(self.qualified_name, SEARCH_MEMORIES)
         await self.register_function(self.qualified_name, EDIT_MEMORY)
         await self.register_function(self.qualified_name, LIST_MEMORIES)
+        await self.register_function(self.qualified_name, RESPOND_AND_CONTINUE)
 
         logging.getLogger("openai").setLevel(logging.WARNING)
         logging.getLogger("aiocache").setLevel(logging.WARNING)
@@ -202,11 +206,12 @@ class Assistant(
                     cleaned = True
                 new_embeddings[entry_name[:100]] = embedding
             conf.embeddings = new_embeddings
+            conf.sync_embeddings(guild_id)
 
         health = "BAD (Cleaned)" if cleaned else "GOOD"
         log.info(f"Config health: {health}")
 
-    @tasks.loop(minutes=2)
+    @tasks.loop(minutes=30)
     async def save_loop(self):
         if not self.db.persistent_conversations:
             return
@@ -247,6 +252,7 @@ class Assistant(
         if not embedding:
             return None
         conf.embeddings[name] = Embedding(text=text, embedding=embedding, ai_created=ai_created, model=conf.embed_model)
+        await asyncio.to_thread(conf.sync_embeddings, guild.id)
         asyncio.create_task(self.save_conf())
         return embedding
 

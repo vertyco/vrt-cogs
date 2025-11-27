@@ -474,7 +474,7 @@ async def ensure_tool_consistency(messages: list[dict]) -> bool:
         elif message.get("role") == "tool":
             # if message["tool_call_id"] in tool_response_ids:
             #     log.error("Message payload contains duplicate tool response ids!")
-            tool_response_ids.add(message["tool_call_id"])
+            tool_response_ids.add(message.get("tool_call_id", "unknown"))
 
     if len(tool_call_ids) != len(tool_response_ids):
         log.warning(f"Collected {len(tool_call_ids)} tool call IDs and {len(tool_response_ids)} tool response IDs.")
@@ -502,7 +502,7 @@ async def ensure_tool_consistency(messages: list[dict]) -> bool:
     for idx, message in enumerate(messages):
         if message["role"] != "tool":
             continue
-        if message["tool_call_id"] not in tool_call_ids:
+        if message.get("tool_call_id", "unknown") not in tool_call_ids:
             indexes_to_purge.add(idx)
             log.info(f"Purging tool response with no tool call: {message}")
 

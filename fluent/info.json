@@ -25,7 +25,7 @@
     "openai",
     "ujson",
     "openai",
-    "pydantic"
+    "pydantic>=2.11,<2.12"
   ],
   "short": "Auto translation between two languages.",
   "tags": [

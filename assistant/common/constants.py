@@ -33,8 +33,18 @@ MODELS = {
     "o1-preview-2024-09-12": 128000,
     "o1-mini": 128000,
     "o1-mini-2024-09-12": 128000,
+    "o3": 200000,
+    "o3-2025-04-16": 200000,
     "o3-mini": 200000,
     "o3-mini-2025-01-31": 200000,
+    "gpt-5": 400000,
+    "gpt-5-2025-08-07": 400000,
+    "gpt-5-mini": 400000,
+    "gpt-5-mini-2025-08-07": 400000,
+    "gpt-5-nano": 400000,
+    "gpt-5-nano-2025-08-07": 400000,
+    "gpt-5.1": 400000,
+    "gpt-5.1-2025-11-13": 400000,
 }
 PRICES = {  # Price per 1k tokens
     "gpt-3.5-turbo": [0.001, 0.0015],
@@ -72,12 +82,21 @@ PRICES = {  # Price per 1k tokens
     "gpt-4.1-mini-2025-04-14": [0.0004, 0.0016],
     "gpt-4.1-nano": [0.0001, 0.0004],
     "gpt-4.1-nano-2025-04-14": [0.0001, 0.0004],
+    "gpt-5": [0.00125, 0.010],
+    "gpt-5-2025-08-07": [0.00125, 0.010],
+    "gpt-5-mini": [0.00025, 0.002],
+    "gpt-5-mini-2025-08-07": [0.00025, 0.002],
+    "gpt-5-nano": [0.00005, 0.0004],
+    "gpt-5-nano-2025-08-07": [0.00005, 0.0004],
+    "gpt-5.1": [0.00125, 0.010],
+    "gpt-5.1-2025-11-13": [0.00125, 0.010],
     "o1": [0.015, 0.06],
     "o1-2024-12-17": [0.015, 0.06],
     "o1-preview": [0.015, 0.06],
     "o1-preview-2024-09-12": [0.015, 0.06],
     "o1-mini": [0.003, 0.012],
     "o1-mini-2024-09-12": [0.003, 0.012],
+    "o3": [0.002, 0.008],
     "o3-mini": [0.0011, 0.0044],
     "o3-mini-2025-01-31": [0.0011, 0.0044],
     "text-ada-001": [0.0004, 0.0016],
@@ -91,6 +110,19 @@ PRICES = {  # Price per 1k tokens
     "text-embedding-3-small": [0.00002, 0.00002],
     "text-embedding-3-large": [0.00013, 0.00013],
 }
+VISION_COSTS = {
+    "gpt-4o": [85, 170],  # 85 base tokens, 170 per (32x32) pixel tile in the image
+    "gpt-4o-2024-05-13": [85, 170],
+    "gpt-4o-2024-08-06": [85, 170],
+    "gpt-4o-2024-11-20": [85, 170],
+    "gpt-4o-mini": [2833, 5667],  # 2833 base tokens, 5667 per (32x32) pixel tile in the image
+    "gpt-4o-mini-2024-07-18": [2833, 5667],
+    "gpt-4.1": [85, 170],  # 85 base tokens, 170 per (32x32) pixel tile in the image
+    "gpt-4.1-2025-04-14": [85, 170],
+    "o1": [75, 150],  # 75 base tokens, 150 per (32x32) pixel tile in the image
+    "o1-2024-12-17": [75, 150],
+    # 75 base tokens, 150 per (32x32) pixel tile in the image
+}
 IMAGE_COSTS = {
     "standard1024x1024": 0.04,
     "standard1792x1024": 0.08,
@@ -98,6 +130,15 @@ IMAGE_COSTS = {
     "hd1024x1024": 0.08,
     "hd1792x1024": 0.12,
     "hd1024x1792": 0.12,
+    "low1024x1024": 0.011,
+    "low1024x1536": 0.016,
+    "low1536x1024": 0.016,
+    "medium1024x1024": 0.042,
+    "medium1024x1536": 0.063,
+    "medium1536x1024": 0.063,
+    "high1024x1024": 0.167,
+    "high1024x1536": 0.25,
+    "high1536x1024": 0.25,
 }
 SUPPORTS_SEED = [
     "gpt-3.5-turbo",
@@ -123,6 +164,14 @@ SUPPORTS_SEED = [
     "gpt-4.1-mini-2025-04-14",
     "gpt-4.1-nano",
     "gpt-4.1-nano-2025-04-14",
+    "gpt-5",
+    "gpt-5-2025-08-07",
+    "gpt-5-mini",
+    "gpt-5-mini-2025-08-07",
+    "gpt-5-nano",
+    "gpt-5-nano-2025-08-07",
+    "gpt-5.1",
+    "gpt-5.1-2025-11-13",
 ]
 NO_DEVELOPER_ROLE = [  # Also doesnt support system messages
     "o1-mini",
@@ -153,6 +202,16 @@ SUPPORTS_VISION = [
     "o1-2024-12-17",
     # "o3-mini",
     # "o3-mini-2025-01-31",
+    "o3",
+    "o3-2025-04-16",
+    "gpt-5",
+    "gpt-5-2025-08-07",
+    "gpt-5-mini",
+    "gpt-5-mini-2025-08-07",
+    "gpt-5-nano",
+    "gpt-5-nano-2025-08-07",
+    "gpt-5.1",
+    "gpt-5.1-2025-11-13",
 ]
 SUPPORTS_TOOLS = [
     "gpt-3.5-turbo-1106",
@@ -180,6 +239,16 @@ SUPPORTS_TOOLS = [
     "o1-2024-12-17",
     "o3-mini",
     "o3-mini-2025-01-31",
+    "o3",
+    "o3-2025-04-16",
+    "gpt-5",
+    "gpt-5-2025-08-07",
+    "gpt-5-mini",
+    "gpt-5-mini-2025-08-07",
+    "gpt-5-nano",
+    "gpt-5-nano-2025-08-07",
+    "gpt-5.1",
+    "gpt-5.1-2025-11-13",
 ]
 READ_EXTENSIONS = [
     ".txt",
@@ -225,6 +294,7 @@ READ_EXTENSIONS = [
     ".pde",
     ".spec",
     ".sql",
+    ".log",
 ]
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
 REACT_SUMMARY_MESSAGE = """
@@ -260,40 +330,61 @@ GENERATE_IMAGE = {
             },
             "quality": {
                 "type": "string",
-                "enum": ["standard", "hd"],
-                "description": "The quality of the image, defaults to standard",
+                "enum": ["standard", "hd", "low", "medium", "high"],
+                "description": "The quality of the image. For dall-e-3, use 'standard' or 'hd'. For gpt-image-1, use 'low', 'medium', or 'high'. Defaults to 'medium'.",
             },
             "style": {
                 "type": "string",
                 "enum": ["natural", "vivid"],
-                "description": "Vivid leans toward more hyper-real and dramatic images. Natural creates more natural, less hyper-real looking images. Defaults to 'vivid'",
+                "description": "Vivid leans toward more hyper-real and dramatic images. Natural creates more natural, less hyper-real looking images. Only applies to dall-e-3. Defaults to 'vivid'",
             },
             "size": {
                 "type": "string",
-                "enum": ["1024x1024", "1792x1024", "1024x1792"],
+                "enum": ["1024x1024", "1792x1024", "1024x1792", "1024x1536", "1536x1024"],
                 "description": "The size of the image, defaults to 1024x1024",
+            },
+            "model": {
+                "type": "string",
+                "enum": ["dall-e-3", "gpt-image-1"],
+                "description": "The model to use for image generation. dall-e-3 is the standard model, gpt-image-1 is a newer model with different pricing. Defaults to 'dall-e-3'",
+            },
+        },
+        "required": ["prompt"],
+    },
+}
+EDIT_IMAGE = {
+    "name": "edit_image",
+    "description": "Use this to edit an existing image for a user. (Use this is the user tells you to do something to an image!)",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "prompt": {
+                "type": "string",
+                "description": "Pass the user's prompt directly as this argument and make sure it includes to keep the image exactly the same except for the changes they want to make.",
             },
         },
         "required": ["prompt"],
     },
 }
 
+
 SEARCH_INTERNET = {
-    "name": "search_internet",
-    "description": "Use this to search the internet for information.",
+    "name": "search_web_brave",
+    "description": "Search the web for current information on a topic using the Brave Search API.",
     "parameters": {
         "type": "object",
         "properties": {
-            "search_query": {
+            "query": {
                 "type": "string",
-                "description": "a sentence or phrase that describes what you are looking for",
+                "description": "The search query, can be a question or topic",
             },
-            "amount": {
+            "num_results": {
                 "type": "integer",
-                "description": "Max amount of search results to fetch. Defaults to 10",
+                "description": "Number of results to return (default: 5)",
+                "default": 5,
             },
         },
-        "required": ["search_query"],
+        "required": ["query"],
     },
 }
 
@@ -357,5 +448,27 @@ LIST_MEMORIES = {
     "parameters": {
         "type": "object",
         "properties": {},
+    },
+}
+DO_NOT_RESPOND_SCHEMA = {
+    "name": "do_not_respond",
+    "description": "Call this function if you do not want to or do not need to respond to the user.",
+    "parameters": {
+        "type": "object",
+        "properties": {},
+    },
+}
+RESPOND_AND_CONTINUE = {
+    "name": "respond_and_continue",
+    "description": "Call this function if you want to respond to the user but also continue working on the task at hand.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "content": {
+                "type": "string",
+                "description": "The message to send to the user, this can be something like 'I will continue working on this task, please wait.' or 'I will get back to you shortly.'",
+            },
+        },
+        "required": ["content"],
     },
 }

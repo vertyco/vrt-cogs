@@ -622,6 +622,32 @@ class BotInfo(MixinMeta):
         except discord.Forbidden:
             await ctx.send("I cannot DM you, please enable DMs and try again.")
 
+    @commands.command(name="deleteapikey")
+    @commands.is_owner()
+    async def delete_api_key(self, ctx: commands.Context, service: str):
+        """
+        Delete an API key from the bot's config
+
+        WARNING: This is irreversible and will delete the key from the bot's config!
+        """
+        bot: Red = self.bot
+        data = await bot.get_shared_api_tokens()
+        if service not in data:
+            return await ctx.send("I do not have any API keys saved for that service.")
+        msg = await ctx.send(f"Are you sure you want to delete the API key for `{service}`?")
+        yes = await confirm(ctx, msg)
+        await msg.delete()
+        if yes is None:
+            return
+        if yes:
+            try:
+                await bot.remove_shared_api_services(service)
+            except KeyError:
+                return await ctx.send("I do not have any API keys saved for that service.")
+            await ctx.send(f"Deleted the API key for `{service}`")
+        else:
+            await ctx.send("Aborted, did not delete anything.")
+
     @commands.command(name="cleantmp")
     @commands.is_owner()
     async def clean_tmp(self, ctx: commands.Context):

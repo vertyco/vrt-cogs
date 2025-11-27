@@ -26,7 +26,7 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
     """Schedule bot commands with ease"""
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.0.16b"
+    __version__ = "1.0.10"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -44,8 +44,12 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
         return f"{helpcmd}\n\n{txt}"
 
     async def red_delete_data_for_user(self, *, requester: RequestType, user_id: int):
-        self.db.tasks = {k: v for k, v in self.db.tasks.items() if v.author_id != user_id}
+        filtered = {k: v for k, v in self.db.tasks.items() if v.author_id != user_id}
+        if len(filtered) == len(self.db.tasks):
+            return
+        self.db.tasks = filtered
         self.save()
+        await self.ensure_jobs()
 
     async def red_get_data_for_user(self, *, user_id: int) -> t.MutableMapping[str, BytesIO]:
         def _exe():
@@ -144,6 +148,11 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
                     # log.debug("Task %s already scheduled", task)
                     continue
                 log.info("Rescheduling task %s", task)
+            if not self.bot.get_guild(task.guild_id):
+                self.db.disable_task(task)
+                self.save()
+                log.info("Disabling task %s, guild not found", task)
+                continue
             timezone = self.db.timezones.get(task.guild_id, "UTC")
             self.scheduler.add_job(
                 func=self.run_task,
@@ -154,7 +163,7 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
                 replace_existing=True,
                 max_instances=1,
                 next_run_time=task.next_run(timezone),
-                misfire_grace_time=None,
+                misfire_grace_time=10,
             )
             log.info("Task %s scheduled", task)
             changed = True
@@ -213,6 +222,7 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
             channel = await self.bot.fetch_channel(task.channel_id)
         except (discord.NotFound, discord.Forbidden):
             channel = None
+
         if not channel:
             channel: discord.abc.Messageable = await author.create_dm()
 
@@ -247,3 +257,91 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
 
         log.debug("Task %s ran successfully", task)
         self.save(maybe=True)
+
+    @commands.Cog.listener()
+    async def on_member_update(self, before: discord.Member, after: discord.Member) -> None:
+        """Check if a server owner lost the required role and disable their excess tasks if so."""
+        if not self.db.premium_enabled:
+            return
+        if not self.db.main_guild:
+            return
+        if not self.db.premium_role:
+            return
+        if before.guild.id != self.db.main_guild:
+            return
+        if before.id != before.guild.owner_id:
+            return
+        main_guild = self.bot.get_guild(self.db.main_guild)
+        if not main_guild:
+            return
+        premium_role = main_guild.get_role(self.db.premium_role)
+        if not premium_role:
+            return
+
+        # User has gained or lost a role in the main server
+        had_role = self.db.premium_role in [role.id for role in before.roles]
+        has_role = self.db.premium_role in [role.id for role in after.roles]
+        if has_role:
+            return
+        if not had_role and not has_role:
+            return
+        log.info("User %s lost premium role, checking tasks", before)
+        # Disable excess tasks in any guild they own
+        owned_guilds = [g for g in self.bot.guilds if g.owner_id == before.id]
+        for guild in owned_guilds:
+            await self.ensure_guild_compliance(guild)
+
+    @commands.Cog.listener()
+    async def on_member_remove(self, member: discord.Member) -> None:
+        """Check if a server owner left the main guild and revert the bot's profile if so."""
+        if not self.db.premium_enabled:
+            return
+        if not self.db.main_guild:
+            return
+        if member.guild.id != self.db.main_guild:
+            return
+        if member.id != member.guild.owner_id:
+            return
+        log.info("User %s left main guild, checking tasks", member)
+        # Disable excess tasks in any guild they own
+        owned_guilds = [g for g in self.bot.guilds if g.owner_id == member.id]
+        for guild in owned_guilds:
+            await self.ensure_guild_compliance(guild)
+
+    async def ensure_guild_compliance(self, guild: discord.Guild):
+        tasks = self.db.get_tasks(guild)
+        if not tasks:
+            return
+        has_premium = await self.is_premium(guild)
+        minimum_interval = self.db.premium_interval if has_premium else self.db.minimum_interval
+        timezone_name = self.db.timezone(guild)
+        changed = False
+
+        # First ensure intervals are within limits
+        for task in tasks:
+            if task.is_safe(timezone_name, minimum_interval):
+                continue
+            if task.enabled:
+                log.info("Disabling task %s, interval too low", task)
+            changed = True
+            task.enabled = False
+            self.db.refresh_task(task)
+
+        # Now ensure we are within the task limit for non premium guilds
+        if not has_premium:
+            enabled_tasks = [i for i in tasks if i.enabled]
+            if len(enabled_tasks) > self.db.free_tasks:
+                # Disable excess tasks, oldest first
+                to_disable = sorted(enabled_tasks, key=lambda x: x.created_on)[
+                    : len(enabled_tasks) - self.db.free_tasks
+                ]
+                for task in to_disable:
+                    if task.enabled:
+                        log.info("Disabling task %s, excess tasks", task)
+                    changed = True
+                    task.enabled = False
+                    self.db.refresh_task(task)
+
+        if changed:
+            self.save(maybe=True)
+            await self.ensure_jobs()

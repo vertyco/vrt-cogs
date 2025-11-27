@@ -17,7 +17,7 @@ from redbot.core.utils.chat_formatting import box, humanize_number
 
 from ..abc import MixinMeta
 from .calls import request_chat_completion_raw, request_embedding_raw
-from .constants import MODELS
+from .constants import MODELS, VISION_COSTS
 from .models import GuildSettings
 
 log = logging.getLogger("red.vrt.assistant.api")
@@ -64,7 +64,7 @@ class API(MixinMeta):
         if "-32k" in model and current_convo_tokens < 4000:
             model = model.replace("-32k", "")
 
-        max_model_tokens = MODELS[model]
+        max_model_tokens = MODELS.get(model)
 
         # Ensure that user doesn't set max response tokens higher than model can handle
         if response_token_override:
@@ -75,14 +75,14 @@ class API(MixinMeta):
                 # Calculate max response tokens
                 response_tokens = max(max_convo_tokens - current_convo_tokens, 0)
                 # If current convo exceeds the max convo tokens for that user, use max model tokens
-                if not response_tokens:
+                if not response_tokens and max_model_tokens:
                     response_tokens = max(max_model_tokens - current_convo_tokens, 0)
                 # Use the lesser of caculated vs set response tokens
                 response_tokens = min(response_tokens, max_response_tokens)
 
-        if model not in MODELS:
-            log.error(f"This model is not longer supported: {model}. Switching to gpt-4o-mini")
-            model = "gpt-4o-mini"
+        if model not in MODELS and self.db.endpoint_override is None:
+            log.error(f"This model is no longer supported: {model}. Switching to gpt-5.1")
+            model = "gpt-5.1"
             await self.save_conf()
 
         response: ChatCompletion = await request_chat_completion_raw(
@@ -96,6 +96,8 @@ class API(MixinMeta):
             presence_penalty=conf.presence_penalty,
             seed=conf.seed,
             base_url=self.db.endpoint_override,
+            reasoning_effort=conf.reasoning_effort,
+            verbosity=conf.verbosity,
         )
         message: ChatCompletionMessage = response.choices[0].message
 
@@ -130,7 +132,7 @@ class API(MixinMeta):
     # -------------------------------------------------------
     # -------------------------------------------------------
 
-    async def count_payload_tokens(self, messages: List[dict], model: str = "gpt-4o-mini") -> int:
+    async def count_payload_tokens(self, messages: List[dict], model: str = "gpt-5.1") -> int:
         if not messages:
             return 0
 
@@ -146,15 +148,26 @@ class API(MixinMeta):
             for message in messages:
                 num_tokens += tokens_per_message
                 for key, value in message.items():
-                    num_tokens += len(encoding.encode(str(value)))
                     if key == "name":
                         num_tokens += tokens_per_name
+
+                    if key == "content" and isinstance(value, list):
+                        for item in value:
+                            if item["type"] == "text":
+                                num_tokens += len(encoding.encode(item["text"]))
+                            elif item["type"] == "image_url":
+                                num_tokens += VISION_COSTS.get(model, [1000])[
+                                    0
+                                ]  # Just assume around 1k tokens for images
+                    else:  # String, probably
+                        num_tokens += len(encoding.encode(str(value)))
+
             num_tokens += 3  # every reply is primed with <|start|>assistant<|message|>
             return num_tokens
 
         return await asyncio.to_thread(_count_payload)
 
-    async def count_function_tokens(self, functions: List[dict], model: str = "gpt-4o-mini") -> int:
+    async def count_function_tokens(self, functions: List[dict], model: str = "gpt-5.1") -> int:
         # Initialize function settings to 0
         func_init = 0
         prop_init = 0
@@ -171,8 +184,11 @@ class API(MixinMeta):
             "gpt-4o-mini",
             "gpt-4o-mini-2024-07-18",
             "gpt-4.1",
+            "gpt-4.1-2025-04-14",
             "gpt-4.1-mini",
+            "gpt-4.1-mini-2025-04-14",
             "gpt-4.1-nano",
+            "gpt-4.1-nano-2025-04-14",
             "o1-preview",
             "o1-preview-2024-09-12",
             "o1",
@@ -181,6 +197,16 @@ class API(MixinMeta):
             "o1-mini-2024-09-12",
             "o3-mini",
             "o3-mini-2025-01-31",
+            "o3",
+            "o3-2025-04-16",
+            "gpt-5",
+            "gpt-5-2025-04-16",
+            "gpt-5-mini",
+            "gpt-5-mini-2025-04-16",
+            "gpt-5-nano",
+            "gpt-5-nano-2025-04-16",
+            "gpt-5.1",
+            "gpt-5.1-2025-11-13",
         ]:
             # Set function settings for the above models
             func_init = 7
@@ -249,7 +275,7 @@ class API(MixinMeta):
 
         return await asyncio.to_thread(_count_tokens)
 
-    async def get_tokens(self, text: str, model: str = "gpt-4o-mini") -> list[int]:
+    async def get_tokens(self, text: str, model: str = "gpt-5.1") -> list[int]:
         """Get token list from text"""
         if not text:
             log.debug("No text to get tokens from!")
@@ -289,7 +315,7 @@ class API(MixinMeta):
             return False
         return True
 
-    async def resync_embeddings(self, conf: GuildSettings) -> int:
+    async def resync_embeddings(self, conf: GuildSettings, guild_id: int) -> int:
         """Update embeds to match current dimensions
 
         Takes a sample using current embed method, the updates the rest to match dimensions
@@ -315,6 +341,7 @@ class API(MixinMeta):
 
         if synced:
             await asyncio.gather(*tasks)
+            await asyncio.to_thread(conf.sync_embeddings, guild_id)
             await self.save_conf()
         return synced
 
@@ -333,7 +360,7 @@ class API(MixinMeta):
         tokens = await self.get_tokens(text, conf.get_user_model(user))
         return await self.get_text(tokens[: self.get_max_tokens(conf, user)], conf.get_user_model(user))
 
-    async def get_text(self, tokens: list, model: str = "gpt-4o-mini") -> str:
+    async def get_text(self, tokens: list, model: str = "gpt-5.1") -> str:
         """Get text from token list"""
 
         def _get_encoding():
@@ -474,7 +501,7 @@ class API(MixinMeta):
         tokens = await self.get_tokens(text)
         current_chunk = []
 
-        max_tokens = min(conf.max_tokens - 100, MODELS[conf.model])
+        max_tokens = min(conf.max_tokens - 100, MODELS.get(conf.model, 4000))
         for token in tokens:
             current_chunk.append(token)
             if len(current_chunk) == max_tokens:
