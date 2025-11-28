@@ -65,6 +65,11 @@ class CommandLock(commands.Cog):
         if await self.is_immune(ctx):
             return True
         allowed_channels = await self.get_allowed_channels(ctx)
+        if not allowed_channels:
+            # The allowed channels are channels they cannot access
+            err = "There are no channels in which you have permission to use this command."
+            await ctx.send(err, delete_after=30)
+            raise commands.CheckFailure(err)
         channel = ctx.channel.parent if isinstance(ctx.channel, discord.Thread) else ctx.channel
         if channel in allowed_channels:
             return True
@@ -131,7 +136,11 @@ class CommandLock(commands.Cog):
         else:
             # No locks set, allow all channels
             allowed_channels = set(ctx.guild.channels).union(set(ctx.guild.threads))
-        return set(c for c in allowed_channels if c.permissions_for(ctx.author).view_channel)
+        return set(
+            c
+            for c in allowed_channels
+            if c.permissions_for(ctx.author).view_channel and c.permissions_for(ctx.author).send_messages
+        )
 
     @commands.group(name="commandlock", aliases=["cmdlock"])
     @commands.guild_only()
