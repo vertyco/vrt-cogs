@@ -158,6 +158,7 @@ class CommandLock(commands.Cog):
         self,
         ctx: commands.Context,
         allowed_channels: commands.Greedy[discord.abc.GuildChannel],
+        *,
         cog_or_command: CogCommandConverter,
     ):
         """Add a lock to a cog or command to restrict its usage to the specified channels.
