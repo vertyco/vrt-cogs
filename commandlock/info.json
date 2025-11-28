@@ -4,7 +4,7 @@
   "disabled": false,
   "end_user_data_statement": "This cog does not store data about end users.",
   "hidden": false,
-  "install_msg": "Thank you for installing! run `[p]commandlock` to get started.\n\nThis cog is a derivative work inspired by the ChannelRedirect cog by [SinbadCogs](https://github.com/mikeshardmind/SinbadCogs)",
+  "install_msg": "Thank you for installing! run `[p]commandlock` to get started.\n\nThis cog is a derivative work inspired by the ChannelRedirect cog by SinbadCogs (`https://github.com/mikeshardmind/SinbadCogs`)",
   "min_bot_version": "3.5.3",
   "min_python_version": [3, 10, 0],
   "permissions": ["manage_guild"],
