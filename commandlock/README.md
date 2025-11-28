@@ -35,3 +35,13 @@ Add a lock to a cog or command to restrict its usage to the specified channels.<
 Remove a lock from a cog or command, allowing it to be used in any channel.<br/>
  - Usage: `[p]commandlock unlock <cog_or_command>`
  - Aliases: `remove, rem, and del`
+## [p]commandlock toggelchannel
+Toggle a single channel for an existing cog or command lock.<br/>
+
+This quickly adds or removes a channel from the lock configuration.<br/>
+
+**Examples:**<br/>
+`[p]commandlock toggle #channel MyCog`<br/>
+`[p]cmdlock toggle #channel mycommand`<br/>
+ - Usage: `[p]commandlock toggelchannel <channel> <cog_or_command>`
+ - Aliases: `toggle`

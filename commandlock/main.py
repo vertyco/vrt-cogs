@@ -29,7 +29,7 @@ class CommandLock(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.0.1"
+    __version__ = "0.0.2"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -131,7 +131,7 @@ class CommandLock(commands.Cog):
         else:
             # No locks set, allow all channels
             allowed_channels = set(ctx.guild.channels).union(set(ctx.guild.threads))
-        return allowed_channels
+        return set(c for c in allowed_channels if c.permissions_for(ctx.author).view_channel)
 
     @commands.group(name="commandlock", aliases=["cmdlock"])
     @commands.guild_only()
@@ -320,3 +320,64 @@ class CommandLock(commands.Cog):
                     buffer.write(f"- `{command_name}`: {channel_mentions}\n")
             embed.description = buffer.getvalue() or "No locks set."
         await ctx.send(embed=embed)
+
+    @commandlock.command(name="toggelchannel", aliases=["toggle"])
+    async def toggle_channel(
+        self,
+        ctx: commands.Context,
+        channel: discord.abc.GuildChannel,
+        *,
+        cog_or_command: CogCommandConverter,
+    ) -> None:
+        """Toggle a channel for an existing cog or command lock.
+
+        This quickly adds or removes a channel from the lock configuration.
+
+        Example:
+        `[p]commandlock toggle #channel MyCog`
+        `[p]cmdlock toggle #channel mycommand`
+        """
+        conf = await self.config.guild(ctx.guild).all()
+
+        if cog_or_command.is_cog:
+            target: commands.Cog = cog_or_command.cog_or_command
+            target_name: str = target.qualified_name
+            lock_map = conf["cog_locks"]
+            lock_key = "cog_locks"
+            target_label = f"cog `{target_name}`"
+        else:
+            target_cmd: commands.Command = cog_or_command.cog_or_command
+            target_name = target_cmd.qualified_name
+            lock_map = conf["command_locks"]
+            lock_key = "command_locks"
+            target_label = f"command `{target_name}`"
+
+        # Ensure entry exists
+        channel_ids: list[int] = lock_map.get(target_name, [])
+
+        if channel.id in channel_ids:
+            channel_ids.remove(channel.id)
+            action = "removed from"
+        else:
+            channel_ids.append(channel.id)
+            action = "added to"
+
+        lock_map[target_name] = channel_ids
+        await getattr(self.config.guild(ctx.guild), lock_key).set(lock_map)
+
+        if channel_ids:
+            channels = [
+                ctx.guild.get_channel_or_thread(ch_id)
+                for ch_id in channel_ids
+                if ctx.guild.get_channel_or_thread(ch_id) is not None
+            ]
+            channel_mentions = ", ".join(ch.mention for ch in channels)
+            await ctx.send(
+                f"Channel {channel.mention} has been {action} the lock for {target_label}.\n"
+                f"Current allowed channels: {channel_mentions}"
+            )
+        else:
+            await ctx.send(
+                f"Channel {channel.mention} has been {action} the lock for {target_label}.\n"
+                "No channels remain in the lock; this target is now effectively unlocked until channels are re-added."
+            )
