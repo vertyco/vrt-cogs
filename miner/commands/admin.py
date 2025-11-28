@@ -200,7 +200,8 @@ class Admin(MixinMeta):
 
         settings = await self.db_utils.get_create_guild_settings(ctx.guild.id)
         key = channel.id if settings.per_channel_activity_trigger else ctx.guild.id
-        probability = self.activity.get_spawn_probability(key) * 100
+        min_interval, max_interval = await self.db_utils.get_spawn_timing()
+        probability = self.activity.get_spawn_probability(key, min_interval, max_interval) * 100
         await ctx.send(f"Current rock spawn probability in {channel.mention} is {probability:.2f}%.")
 
     @miner_set.command(name="toggleconvert")
