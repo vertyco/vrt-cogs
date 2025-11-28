@@ -167,6 +167,7 @@ class CommandLock(commands.Cog):
         - Bot owners, server owners, and admins are immune to command locks.
         - Whitelisted roles bypass all command and cog locks.
         - Command locks take precedence over cog locks.
+        - Channels can be categories, in which case all channels within that category are included.
 
         **Examples:**
         `[p]commandlock lock #allowed-channel MyCog`
