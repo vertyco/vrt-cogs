@@ -29,7 +29,7 @@ class CommandLock(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.0.2"
+    __version__ = "0.0.3"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -39,6 +39,7 @@ class CommandLock(commands.Cog):
             "cog_locks": {},  # {cog_name: [channel_ids]}
             "command_locks": {},  # {qualified_command_name: [channel_ids]}
             "whitelisted_roles": [],  # list[role_ids] that bypass all locks
+            "delete_after": 30,  # seconds; 0 means never delete
         }
         self.config.register_guild(**guild_config)
 
@@ -65,10 +66,12 @@ class CommandLock(commands.Cog):
         if await self.is_immune(ctx):
             return True
         allowed_channels = await self.get_allowed_channels(ctx)
+        delete_after = await self.config.guild(ctx.guild).delete_after()
+        kwargs = {"delete_after": delete_after} if delete_after else {}
         if not allowed_channels:
             # The allowed channels are channels they cannot access
             err = "There are no channels in which you have permission to use this command."
-            await ctx.send(err, delete_after=30)
+            await ctx.send(err, **kwargs)
             raise commands.CheckFailure(err)
         channel = ctx.channel.parent if isinstance(ctx.channel, discord.Thread) else ctx.channel
         if channel in allowed_channels:
@@ -83,7 +86,7 @@ class CommandLock(commands.Cog):
         mentions = ", ".join(mentions)
         msg = f"{ctx.author.mention}, you can only use this command in the following channels: {mentions}"
         for p in pagify(msg, page_length=1900, delims=[",", "\n"]):
-            await ctx.send(p, delete_after=30)
+            await ctx.send(p, **kwargs)
         raise commands.CheckFailure("Command used in disallowed channel.")
 
     async def is_immune(self, ctx: commands.Context) -> bool:
@@ -161,6 +164,23 @@ class CommandLock(commands.Cog):
             whitelist.append(role.id)
             await self.config.guild(ctx.guild).whitelisted_roles.set(whitelist)
             await ctx.send(f"Role {role.mention} has been added to the whitelist.")
+
+    @commandlock.command(name="deleteafter")
+    async def set_delete_after(self, ctx: commands.Context, seconds: commands.positive_int):
+        """Set a duration in seconds after the redirect message is deleted.
+
+        Set to 0 to never delete the messages.
+        """
+        if seconds < 0:
+            await ctx.send("`seconds` must be 0 or greater.")
+            return
+
+        await self.config.guild(ctx.guild).delete_after.set(seconds)
+
+        if seconds == 0:
+            await ctx.send("CommandLock redirect messages will no longer be auto-deleted.")
+        else:
+            await ctx.send(f"CommandLock redirect messages will now auto-delete after {seconds} seconds.")
 
     @commandlock.command(name="lock", aliases=["set", "add"])
     async def add_lock(
@@ -241,6 +261,13 @@ class CommandLock(commands.Cog):
         """
         conf = await self.config.guild(ctx.guild).all()
         embed = discord.Embed(title="CommandLock Settings", color=await ctx.embed_color())
+
+        delete_after = conf["delete_after"]
+        if delete_after:
+            value = f"{delete_after} seconds"
+        else:
+            value = "Disabled (messages will not auto-delete)"
+        embed.add_field(name="Delete Redirect Message After", value=value, inline=False)
 
         if conf["whitelisted_roles"]:
             roles = [
