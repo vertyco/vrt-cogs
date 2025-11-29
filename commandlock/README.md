@@ -9,6 +9,9 @@ Manage command and cog locks to specific channels.<br/>
 ## [p]commandlock whitelistrole
 Add/Remove whitelisted roles to bypass all command and cog locks.<br/>
  - Usage: `[p]commandlock whitelistrole <role>`
+## [p]commandlock deleteafter
+Set how long CommandLock messages last before deletion (seconds). Use 0 to disable auto-deletion.<br/>
+ - Usage: `[p]commandlock deleteafter <seconds>`
 ## [p]commandlock view
 View the current lock settings for a cog or command.<br/>
 
