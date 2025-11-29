@@ -29,7 +29,7 @@ class CommandLock(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.0.3"
+    __version__ = "0.0.4"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -72,7 +72,7 @@ class CommandLock(commands.Cog):
             # The allowed channels are channels they cannot access
             err = "There are no channels in which you have permission to use this command."
             await ctx.send(err, **kwargs)
-            raise commands.CheckFailure(err)
+            return False
         channel = ctx.channel.parent if isinstance(ctx.channel, discord.Thread) else ctx.channel
         if channel in allowed_channels:
             return True
@@ -87,7 +87,7 @@ class CommandLock(commands.Cog):
         msg = f"{ctx.author.mention}, you can only use this command in the following channels: {mentions}"
         for p in pagify(msg, page_length=1900, delims=[",", "\n"]):
             await ctx.send(p, **kwargs)
-        raise commands.CheckFailure("Command used in disallowed channel.")
+        return False
 
     async def is_immune(self, ctx: commands.Context) -> bool:
         if (
