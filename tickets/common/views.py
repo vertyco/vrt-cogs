@@ -14,7 +14,13 @@ from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box, humanize_list, pagify
 
-from .utils import can_close, close_ticket, format_working_hours_embed, is_within_working_hours, update_active_overview
+from .utils import (
+    can_close,
+    close_ticket,
+    format_working_hours_embed,
+    is_within_working_hours,
+    update_active_overview,
+)
 
 _ = Translator("SupportViews", __file__)
 log = logging.getLogger("red.vrt.supportview")
@@ -237,6 +243,7 @@ class TicketModal(Modal):
         super().__init__(title=title, timeout=300)
         self.fields = {}
         self.inputs: Dict[str, TextInput] = {}
+        self.labels: Dict[str, str] = {}  # Store labels separately to avoid deprecation warning
         for key, info in data.items():
             field = TextInput(
                 label=info["label"],
@@ -249,10 +256,11 @@ class TicketModal(Modal):
             )
             self.add_item(field)
             self.inputs[key] = field
+            self.labels[key] = info["label"]
 
     async def on_submit(self, interaction: discord.Interaction):
         for k, v in self.inputs.items():
-            self.fields[k] = {"question": v.label, "answer": v.value}
+            self.fields[k] = {"question": self.labels[k], "answer": v.value}
         with contextlib.suppress(discord.NotFound):
             await interaction.response.defer()
         self.stop()
