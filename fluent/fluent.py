@@ -67,7 +67,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "2.5.3"
+    __version__ = "2.5.4"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -600,6 +600,8 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
 
         channel = message.channel
 
+        translator = api.TranslateManager()
+
         # Handle "only" mode - translate all messages to a single target language
         if "target" in channel_config:
             target_lang = channel_config["target"]
@@ -618,7 +620,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
                     return
 
                 # If translated text is the same as the source, no need to send
-                if trans.text.lower() == clean_content.lower():
+                if trans.text.lower() == clean_content.lower() or trans.src == trans.dest:
                     log.debug("Translated text is the same as the source, no need to send")
                     return
 
@@ -654,7 +656,6 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
                 log.debug("Auto translation first phase returned None")
                 return
 
-            translator = api.TranslateManager()
             source = await translator.get_lang(trans.src)
             source = source.split("-")[0].lower() if source else trans.src.lower()
             target = await translator.get_lang(lang1)
