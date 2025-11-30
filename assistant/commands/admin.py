@@ -119,6 +119,14 @@ class Admin(MixinMeta):
         val += _("`Ignored:   `{}\n").format(humanize_list([f"<#{i}>" for i in conf.auto_answer_ignored_channels]))
         embed.add_field(name=name, value=val, inline=False)
 
+        name = _("Trigger Words")
+        val = _("Trigger words allow the bot to respond to messages containing specific keywords or regex patterns.\n")
+        val += _("`Status:    `{}\n").format(_("Enabled") if conf.trigger_enabled else _("Disabled"))
+        val += _("`Phrases:   `{}\n").format(len(conf.trigger_phrases))
+        val += _("`Ignored:   `{}\n").format(humanize_list([f"<#{i}>" for i in conf.trigger_ignore_channels]) or _("None"))
+        val += _("`Has Prompt:`{}\n").format(_("Yes") if conf.trigger_prompt else _("No"))
+        embed.add_field(name=name, value=val, inline=False)
+
         if conf.allow_sys_prompt_override:
             val = _("System prompt override is **Allowed**, users can set a personal system prompt per convo.")
         else:
@@ -839,6 +847,168 @@ class Admin(MixinMeta):
         conf.auto_answer_model = model
         await ctx.send(_("Auto-answer model has been set to **{}**").format(model))
         await self.save_conf()
+
+    # ---------- Trigger Word Commands ----------
+
+    @assistant.command(name="trigger")
+    async def toggle_trigger(self, ctx: commands.Context):
+        """Toggle the trigger word feature on or off"""
+        conf = self.db.get_conf(ctx.guild)
+        if conf.trigger_enabled:
+            conf.trigger_enabled = False
+            await ctx.send(_("Trigger word feature has been **Disabled**"))
+        else:
+            conf.trigger_enabled = True
+            await ctx.send(_("Trigger word feature has been **Enabled**"))
+        await self.save_conf()
+
+    @assistant.command(name="triggerphrase")
+    async def add_trigger_phrase(self, ctx: commands.Context, *, phrase: str):
+        """
+        Add or remove a trigger phrase (supports regex)
+
+        The bot will respond to messages containing this phrase.
+        Phrases are case-insensitive regex patterns.
+
+        **Examples**
+        - `hello` - matches messages containing "hello"
+        - `\\bhelp\\b` - matches the word "help" (word boundary)
+        - `bad.*word` - matches "bad" followed by any characters then "word"
+        """
+        try:
+            re.compile(phrase)
+        except re.error:
+            return await ctx.send(_("That regex pattern is invalid!"))
+
+        conf = self.db.get_conf(ctx.guild)
+        if phrase in conf.trigger_phrases:
+            conf.trigger_phrases.remove(phrase)
+            await ctx.send(_("Trigger phrase `{}` has been **Removed**").format(phrase))
+        else:
+            conf.trigger_phrases.append(phrase)
+            await ctx.send(_("Trigger phrase `{}` has been **Added**").format(phrase))
+        await self.save_conf()
+
+    @assistant.command(name="triggerprompt")
+    async def set_trigger_prompt(self, ctx: commands.Context, *, prompt: str = None):
+        """
+        Set the prompt to use when a trigger phrase is matched
+
+        This prompt will be appended to the initial prompt when the bot responds to a triggered message.
+
+        **Placeholders**
+        - **botname**: [botname]
+        - **timestamp**: discord timestamp
+        - **day**: Mon-Sun
+        - **date**: MM-DD-YYYY
+        - **time**: HH:MM AM/PM
+        - **timetz**: HH:MM AM/PM Timezone
+        - **members**: server member count
+        - **username**: user's name
+        - **displayname**: user's display name
+        - **roles**: the names of the user's roles
+        - **rolementions**: the mentions of the user's roles
+        - **avatar**: the user's avatar url
+        - **owner**: the owner of the server
+        - **servercreated**: the create date/time of the server
+        - **server**: the name of the server
+        - **py**: python version
+        - **dpy**: discord.py version
+        - **red**: red version
+        - **cogs**: list of currently loaded cogs
+        - **channelname**: name of the channel the conversation is taking place in
+        - **channelmention**: current channel mention
+        - **topic**: topic of current channel (if not forum or thread)
+        - **banktype**: whether the bank is global or not
+        - **currency**: currency name
+        - **bank**: bank name
+        - **balance**: the user's current balance
+        """
+        attachments = get_attachments(ctx.message)
+        if attachments:
+            try:
+                prompt = (await attachments[0].read()).decode()
+            except Exception as e:
+                txt = _("Failed to read `{}`, bot owner can use `{}` for more information").format(
+                    attachments[0].filename, f"{ctx.clean_prefix}traceback"
+                )
+                await ctx.send(txt)
+                log.error("Failed to parse trigger prompt", exc_info=e)
+                self.bot._last_exception = traceback.format_exc()
+                return
+
+        conf = self.db.get_conf(ctx.guild)
+
+        if not prompt and conf.trigger_prompt:
+            conf.trigger_prompt = ""
+            await ctx.send(_("The trigger prompt has been removed!"))
+        elif not prompt and not conf.trigger_prompt:
+            await ctx.send(
+                _("Please include a trigger prompt or .txt file!\nUse `{}` to view details for this command").format(
+                    f"{ctx.clean_prefix}help assistant triggerprompt"
+                )
+            )
+        elif prompt and conf.trigger_prompt:
+            conf.trigger_prompt = prompt.strip()
+            await ctx.send(_("The trigger prompt has been overwritten!"))
+        else:
+            conf.trigger_prompt = prompt.strip()
+            await ctx.send(_("Trigger prompt has been set!"))
+
+        await self.save_conf()
+
+    @assistant.command(name="triggerignore")
+    async def trigger_ignore_channel(
+        self, ctx: commands.Context, channel: discord.TextChannel | discord.CategoryChannel | int
+    ):
+        """Ignore a channel or category for trigger phrases"""
+        conf = self.db.get_conf(ctx.guild)
+        if isinstance(channel, int):
+            channel_id = channel
+            mention = f"<#{channel}>"
+        else:
+            channel_id = channel.id
+            mention = channel.mention
+
+        if channel_id in conf.trigger_ignore_channels:
+            conf.trigger_ignore_channels.remove(channel_id)
+            await ctx.send(_("Trigger phrases will no longer ignore {}").format(mention))
+        else:
+            if not ctx.guild.get_channel(channel_id):
+                return await ctx.send(_("Channel not found!"))
+            conf.trigger_ignore_channels.append(channel_id)
+            await ctx.send(_("Trigger phrases will now ignore {}").format(mention))
+        await self.save_conf()
+
+    @assistant.command(name="triggerlist")
+    @commands.bot_has_permissions(embed_links=True)
+    async def list_triggers(self, ctx: commands.Context):
+        """View configured trigger phrases"""
+        conf = self.db.get_conf(ctx.guild)
+        if not conf.trigger_phrases:
+            return await ctx.send(_("No trigger phrases configured!"))
+
+        embed = discord.Embed(
+            title=_("Trigger Phrases"),
+            description=_("The following phrases will trigger a response:\n"),
+            color=ctx.author.color,
+        )
+
+        phrases = "\n".join([f"• `{phrase}`" for phrase in conf.trigger_phrases])
+        for page in pagify(phrases, page_length=1000):
+            embed.add_field(name=_("Patterns"), value=page, inline=False)
+
+        embed.add_field(
+            name=_("Status"),
+            value=_("Enabled") if conf.trigger_enabled else _("Disabled"),
+            inline=True,
+        )
+
+        if conf.trigger_ignore_channels:
+            ignored = humanize_list([f"<#{c}>" for c in conf.trigger_ignore_channels])
+            embed.add_field(name=_("Ignored Channels"), value=ignored, inline=False)
+
+        await ctx.send(embed=embed)
 
     @assistant.command(name="resolution")
     async def switch_vision_resolution(self, ctx: commands.Context):

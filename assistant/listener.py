@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 import typing as t
 from io import StringIO
 
@@ -14,6 +15,19 @@ from .common.utils import can_use, embed_to_content, is_question
 
 log = logging.getLogger("red.vrt.assistant.listener")
 _ = Translator("Assistant", __file__)
+
+
+def matches_trigger(content: str, trigger_phrases: t.List[str]) -> bool:
+    """Check if the message content matches any trigger phrase (regex patterns)."""
+    for pattern in trigger_phrases:
+        try:
+            if re.search(pattern, content, re.IGNORECASE):
+                return True
+        except re.error:
+            # Invalid regex pattern, skip it
+            log.warning(f"Invalid trigger regex pattern: {pattern}")
+            continue
+    return False
 
 
 class AssistantListener(MixinMeta):
@@ -95,9 +109,24 @@ class AssistantListener(MixinMeta):
             # Do not respond to messages that are replies to other messages or mention someone else
             return
 
+        # Check for trigger word matches (this can override other conditions)
+        trigger_matched = False
+        check_trigger = [
+            conf.trigger_enabled,
+            conf.trigger_phrases,
+            channel.id not in conf.trigger_ignore_channels,
+            getattr(channel, "category_id", 0) not in conf.trigger_ignore_channels,
+        ]
+        if all(check_trigger):
+            if matches_trigger(message.content, conf.trigger_phrases):
+                trigger_matched = True
+                if conf.trigger_prompt:
+                    handle_message_kwargs["trigger_prompt"] = conf.trigger_prompt
+
         conditions = [
             (channel.id != conf.channel_id and channel.id not in conf.listen_channels),
             (not bot_mentioned or not conf.mention_respond),
+            not trigger_matched,  # If trigger matched, don't skip
         ]
         check_auto_answer = [
             conf.auto_answer,
@@ -130,6 +159,7 @@ class AssistantListener(MixinMeta):
             not message.content.endswith("?"),
             conf.endswith_questionmark,
             self.bot.user.id not in mention_ids,
+            not trigger_matched,  # If trigger matched, don't skip
         ]
         if all(conditions):
             # Message was in the assistant channel and didn't end with a question mark while the config requires it

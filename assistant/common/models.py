@@ -108,6 +108,12 @@ class GuildSettings(AssistantBaseModel):
     auto_answer_ignored_channels: t.List[int] = []  # Channel IDs to ignore auto-answer
     auto_answer_model: str = "gpt-5.1"  # Model to use for auto-answer
 
+    # Trigger words - reply to messages containing specific keywords/regex patterns
+    trigger_enabled: bool = False  # Whether trigger word feature is enabled
+    trigger_phrases: t.List[str] = []  # List of regex patterns to match
+    trigger_prompt: str = ""  # Custom prompt to use when triggered
+    trigger_ignore_channels: t.List[int] = []  # Channels to ignore trigger words
+
     image_command: bool = True  # Allow image commands
 
     timezone: str = "UTC"
