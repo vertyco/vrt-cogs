@@ -26,21 +26,32 @@ Set a deepl key for translations<br/>
  - Usage: `[p]fluent deepl`
  - Restricted to: `BOT_OWNER`
 ## [p]fluent remove
-Remove a channel from Fluent<br/>
+Remove a channel or category from Fluent<br/>
  - Usage: `[p]fluent remove [channel=None]`
  - Aliases: `delete, del, and rem`
 ## [p]fluent resetbuttontranslations
 Reset the translations for saved buttons, to force a re-translation<br/>
  - Usage: `[p]fluent resetbuttontranslations`
 ## [p]fluent view
-View all fluent channels<br/>
+View all fluent channels and categories<br/>
  - Usage: `[p]fluent view`
 ## [p]fluent add
-Add a channel and languages to translate between<br/>
+Add a channel or category and languages to translate between<br/>
 
 Tip: Language 1 is the first to be converted. For example, if you expect most of the conversation to be<br/>
 in english, then make english language 2 to use less api calls.<br/>
+
+You can also specify a category channel to translate all channels within it.<br/>
  - Usage: `[p]fluent add <language1> <language2> [channel=None]`
+## [p]fluent only
+Add a channel or category that translates all messages to a single language<br/>
+
+Unlike `[p]fluent add` which translates between two languages,<br/>
+this translates all messages to the specified target language<br/>
+regardless of the source language.<br/>
+
+You can also specify a category channel to translate all channels within it.<br/>
+ - Usage: `[p]fluent only <target_language> [channel=None]`
 ## [p]fluent addbutton
 Add a translation button to a message<br/>
  - Usage: `[p]fluent addbutton <message> <target_lang> <button_text>`
