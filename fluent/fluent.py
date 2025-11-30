@@ -69,7 +69,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "2.5.0"
+    __version__ = "2.5.1"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -535,7 +535,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
 
         channels = await self.get_channels(message.guild)
         channel_id = str(message.channel.id)
-        
+
         # Check if channel is directly configured, or if its parent category is configured
         channel_config = None
         if channel_id in channels:
@@ -544,7 +544,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
             category_id = str(message.channel.category_id)
             if category_id in channels:
                 channel_config = channels[category_id]
-        
+
         if channel_config is None:
             return
 
