@@ -65,6 +65,14 @@ MODAL_SCHEMA = {
     "max_length": None,  # (Optional)
     "answer": None,  # (Optional)
 }
+# Schema for ticket messages (stored in panels[panel_name]["ticket_messages"])
+TICKET_MESSAGE_SCHEMA = {
+    "title": None,  # (Optional) Embed title
+    "desc": "",  # <Required> Embed description
+    "footer": None,  # (Optional) Embed footer
+    "color": None,  # (Optional) Embed color as hex int (e.g., 0xFF0000 for red)
+    "image": None,  # (Optional) Embed image URL
+}
 OPENED_TICKET_SCHEMA = {
     "panel": str,
     "opened": "datetime",
