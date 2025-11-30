@@ -880,6 +880,13 @@ class Admin(MixinMeta):
         except re.error:
             return await ctx.send(_("That regex pattern is invalid!"))
 
+        # Warn about overly broad patterns
+        broad_patterns = [r".*", r".+", r".", r"^", r"$", r"^.*$", r"^.+$"]
+        if phrase in broad_patterns:
+            await ctx.send(
+                _("⚠️ Warning: `{}` is a very broad pattern that may match most messages!").format(phrase)
+            )
+
         conf = self.db.get_conf(ctx.guild)
         if phrase in conf.trigger_phrases:
             conf.trigger_phrases.remove(phrase)
