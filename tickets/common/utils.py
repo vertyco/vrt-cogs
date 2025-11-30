@@ -10,17 +10,13 @@ from typing import List, Optional, Tuple, Union
 
 import chat_exporter
 import discord
+import pytz
 from discord.utils import escape_markdown
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import pagify, text_to_file
 from redbot.core.utils.mod import is_admin_or_superior
-
-try:
-    from zoneinfo import ZoneInfo
-except ImportError:
-    from backports.zoneinfo import ZoneInfo
 
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
 log = logging.getLogger("red.vrt.tickets.base")
@@ -56,9 +52,9 @@ def is_within_working_hours(panel: dict) -> Tuple[bool, Optional[str], Optional[
 
     timezone_str = panel.get("timezone", "UTC")
     try:
-        tz = ZoneInfo(timezone_str)
+        tz = pytz.timezone(timezone_str)
     except Exception:
-        tz = ZoneInfo("UTC")
+        tz = pytz.UTC
 
     now = datetime.now(tz)
     day_name = DAY_NAMES[now.weekday()]
@@ -102,9 +98,9 @@ def format_working_hours_embed(panel: dict, user: discord.Member) -> Optional[di
     timezone_str = panel.get("timezone", "UTC")
 
     try:
-        tz = ZoneInfo(timezone_str)
+        tz = pytz.timezone(timezone_str)
     except Exception:
-        tz = ZoneInfo("UTC")
+        tz = pytz.UTC
 
     now = datetime.now(tz)
     day_name = DAY_NAMES[now.weekday()]

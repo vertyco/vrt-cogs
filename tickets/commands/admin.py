@@ -5,6 +5,7 @@ from contextlib import suppress
 from typing import Optional, Union
 
 import discord
+import pytz
 from discord import Embed
 from redbot.core import commands
 from redbot.core.i18n import Translator
@@ -13,7 +14,7 @@ from redbot.core.utils.chat_formatting import box
 from ..abc import MixinMeta
 from ..common.constants import MODAL_SCHEMA, TICKET_PANEL_SCHEMA
 from ..common.menu import SMALL_CONTROLS, MenuButton, menu
-from ..common.utils import ZoneInfo, prune_invalid_tickets, update_active_overview
+from ..common.utils import prune_invalid_tickets, update_active_overview
 from ..common.views import PanelView, TestButton, confirm, wait_reply
 
 log = logging.getLogger("red.vrt.admincommands")
@@ -1343,7 +1344,7 @@ class AdminCommands(MixinMeta):
 
         # Validate timezone
         try:
-            ZoneInfo(timezone_str)
+            pytz.timezone(timezone_str)
         except Exception:
             return await ctx.send(
                 _("Invalid timezone! Use IANA timezone names like `America/New_York`, `Europe/London`, or `UTC`.")
