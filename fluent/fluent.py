@@ -418,6 +418,47 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
                 txt = _("✅ Fluent channel has been set!")
                 return await ctx.send(txt)
 
+    @fluent.command()
+    @commands.bot_has_permissions(embed_links=True)
+    async def only(
+        self,
+        ctx: commands.Context,
+        target_language: str,
+        channel: t.Optional[
+            t.Union[
+                discord.TextChannel,
+                discord.Thread,
+                discord.ForumChannel,
+            ]
+        ] = None,
+    ):
+        """
+        Add a channel that translates all messages to a single language
+
+        Unlike `[p]fluent add` which translates between two languages,
+        this translates all messages to the specified target language
+        regardless of the source language.
+        """
+        if not channel:
+            channel = ctx.channel
+
+        translator = TranslateManager()
+        lang = await translator.get_lang(target_language)
+
+        if not lang:
+            txt = _("Target language is invalid.")
+            return await ctx.send(txt)
+
+        async with self.config.guild(ctx.guild).channels() as channels:
+            cid = str(channel.id)
+            if cid in channels.keys():
+                txt = _("❌ {} is already a fluent channel.").format(channel.mention)
+                return await ctx.send(txt)
+            else:
+                channels[cid] = {"target": target_language}
+                txt = _("✅ Fluent channel has been set to translate all messages to {}!").format(target_language)
+                return await ctx.send(txt)
+
     @fluent.command(aliases=["delete", "del", "rem"])
     @commands.bot_has_permissions(embed_links=True)
     async def remove(
@@ -452,9 +493,14 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
             channel = ctx.guild.get_channel(int(cid))
             if not channel:
                 continue
-            l1 = langs["lang1"]
-            l2 = langs["lang2"]
-            msg += f"{channel.mention} `({l1} <-> {l2})`\n"
+            # Handle "only" mode (single target language)
+            if "target" in langs:
+                target = langs["target"]
+                msg += f"{channel.mention} `(-> {target})`\n"
+            else:
+                l1 = langs["lang1"]
+                l2 = langs["lang2"]
+                msg += f"{channel.mention} `({l1} <-> {l2})`\n"
 
         if not msg:
             return await ctx.send(_("There are no fluent channels at this time."))
@@ -480,11 +526,49 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
         if channel_id not in channels:
             return
 
-        lang1 = channels[channel_id]["lang1"]
-        lang2 = channels[channel_id]["lang2"]
+        channel_config = channels[channel_id]
+        channel = message.channel
+
+        # Handle "only" mode - translate all messages to a single target language
+        if "target" in channel_config:
+            target_lang = channel_config["target"]
+            log.debug(f"Translating to target language: {target_lang}")
+
+            async with channel.typing():
+                try:
+                    trans = await self.translate(message.content, target_lang)
+                except Exception as e:
+                    log.error("Translation failed in 'only' mode", exc_info=e)
+                    self.bot._last_exception = e
+                    return
+
+                if trans is None:
+                    log.debug("Translation returned None")
+                    return
+
+                # If translated text is the same as the source, no need to send
+                if trans.text.lower() == message.content.lower():
+                    log.debug("Translated text is the same as the source, no need to send")
+                    return
+
+                if message.channel.permissions_for(message.guild.me).embed_links:
+                    embed = discord.Embed(description=trans.text, color=message.author.color)
+                    try:
+                        await message.reply(embed=embed, mention_author=False)
+                    except (discord.NotFound, AttributeError):
+                        await channel.send(embed=embed)
+                else:
+                    try:
+                        await message.reply(trans.text, mention_author=False)
+                    except (discord.NotFound, AttributeError):
+                        await channel.send(trans.text)
+            return
+
+        # Handle bidirectional mode (lang1 <-> lang2)
+        lang1 = channel_config["lang1"]
+        lang2 = channel_config["lang2"]
         log.debug(f"Translating... {lang1} <-> {lang2}")
 
-        channel = message.channel
         async with channel.typing():
             # Attempts to translate message into language1.
             try:

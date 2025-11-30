@@ -41,6 +41,13 @@ Add a channel and languages to translate between<br/>
 Tip: Language 1 is the first to be converted. For example, if you expect most of the conversation to be<br/>
 in english, then make english language 2 to use less api calls.<br/>
  - Usage: `[p]fluent add <language1> <language2> [channel=None]`
+## [p]fluent only
+Add a channel that translates all messages to a single language<br/>
+
+Unlike `[p]fluent add` which translates between two languages,<br/>
+this translates all messages to the specified target language<br/>
+regardless of the source language.<br/>
+ - Usage: `[p]fluent only <target_language> [channel=None]`
 ## [p]fluent addbutton
 Add a translation button to a message<br/>
  - Usage: `[p]fluent addbutton <message> <target_lang> <button_text>`
