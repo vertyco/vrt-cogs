@@ -11,8 +11,9 @@ from aiohttp import (
     ClientSession,
     ClientTimeout,
 )
+from googletrans.models import Translated
 from httpx import ReadTimeout
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from rapidfuzz import fuzz
 
 from .constants import deepl_langs, google_langs
@@ -23,8 +24,8 @@ log = logging.getLogger("red.vrt.fluent.api")
 class Result:
     def __init__(self, text: str, src: str, dest: str):
         self.text = text
-        self.src = src
-        self.dest = dest
+        self.src = src.lower()
+        self.dest = dest.lower()
 
     def __str__(self):
         return f"Result: {self.text}, source: {self.src}, target: {self.dest}"
@@ -34,8 +35,10 @@ class Result:
 
 
 class OpenAITranslateResponse(BaseModel):
-    translated_text: str
-    detected_source_language: str
+    """Translate response format"""
+
+    translated_text: str = Field(description="The translated text")
+    detected_source_language: str = Field(description="The detected source language")
 
 
 class TranslateManager:
@@ -136,7 +139,7 @@ class TranslateManager:
             response = await client.beta.chat.completions.parse(
                 model="gpt-5-nano",
                 messages=[
-                    {"role": "developer", "content": f"Translate the given text to {target_lang}"},
+                    {"role": "developer", "content": f"Translate the given text to `{target_lang}`"},
                     {"role": "user", "content": text},
                 ],
                 response_format=OpenAITranslateResponse,
@@ -159,7 +162,7 @@ class TranslateManager:
             log.warning("Deepl usage limit reached!")
             return None
         try:
-            res = await asyncio.to_thread(
+            res: deepl.TextResult = await asyncio.to_thread(
                 translator.translate_text, text=text, target_lang=target_lang, formality=formality
             )
             return Result(text=res.text, src=res.detected_source_lang, dest=target_lang)
@@ -170,7 +173,7 @@ class TranslateManager:
         log.debug(f"Google: {target_lang}")
         translator = googletrans.Translator()
         try:
-            res = await asyncio.to_thread(translator.translate, text, target_lang)
+            res: Translated = await asyncio.to_thread(translator.translate, text, target_lang)
             return Result(text=res.text, src=res.src, dest=res.dest)
         except (AttributeError, TypeError, ReadTimeout):
             return None

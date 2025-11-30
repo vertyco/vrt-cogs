@@ -1,3 +1,5 @@
+import re
+
 deepl_langs = [
     {"language": "BG", "name": "Bulgarian", "supports_formality": False},
     {"language": "CS", "name": "Czech", "supports_formality": False},
@@ -147,3 +149,10 @@ google_langs = [
     {"language": "zu", "name": "zulu", "supports_formality": False},
 ]
 available_langs = deepl_langs + google_langs
+
+# Regex patterns for content filtering (used in message listener)
+URL_PATTERN = re.compile(r"https?://\S+", re.IGNORECASE)
+CUSTOM_EMOJI_PATTERN = re.compile(r"<a?:\w+:\d+>")
+DISCORD_MENTION_PATTERN = re.compile(r"<[@#][!&]?\d+>")
+# Matches multiline ```code``` and inline `code`
+CODE_BLOCK_PATTERN = re.compile(r"```[\s\S]*?```|`[^`]+`")
