@@ -69,7 +69,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "2.5.1"
+    __version__ = "2.5.2"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -557,7 +557,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
 
             async with channel.typing():
                 try:
-                    trans = await self.translate(message.content, target_lang, force=True)
+                    trans: Result = await self.translate(message.content, target_lang, force=True)
                 except Exception as e:
                     log.error("Translation failed in 'only' mode", exc_info=e)
                     self.bot._last_exception = e
@@ -574,6 +574,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
 
                 if message.channel.permissions_for(message.guild.me).embed_links:
                     embed = discord.Embed(description=trans.text, color=message.author.color)
+                    embed.set_footer(text=f"{trans.src} -> {trans.dest}")
                     try:
                         await message.reply(embed=embed, mention_author=False)
                     except (discord.NotFound, AttributeError):
