@@ -11,6 +11,8 @@ from redbot.core.errors import BalanceTooHigh
 from redbot.core.utils.chat_formatting import box, humanize_list, pagify
 from redbot.core.utils.menus import start_adding_reactions
 
+from .views import PupperLeaderboard
+
 log = logging.getLogger("red.vrt.pupper")
 
 
@@ -18,7 +20,7 @@ class Pupper(commands.Cog):
     """Pet the doggo!"""
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.1.1"
+    __version__ = "1.2.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -30,9 +32,12 @@ class Pupper(commands.Cog):
         )
         return info
 
-    async def red_delete_data_for_user(self, **kwargs):
-        """Nothing to delete"""
-        return
+    async def red_delete_data_for_user(self, *, requester: str, user_id: int):
+        """Delete user's petting data across all guilds."""
+        all_members = await self.config.all_members()
+        for guild_id, members in all_members.items():
+            if user_id in members:
+                await self.config.member_from_ids(guild_id, user_id).clear()
 
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -49,7 +54,11 @@ class Pupper(commands.Cog):
             "toggle": False,
             "delete_after": 10,
         }
+        default_member = {
+            "pets": 0,  # Total number of successful pets
+        }
         self.config.register_guild(**default_guild)
+        self.config.register_member(**default_member)
 
         # Active petting locks {guild_id: bool}
         self.pets: t.Dict[int, bool] = {}
@@ -208,6 +217,16 @@ class Pupper(commands.Cog):
         self.cache[ctx.guild.id]["borf_msg"] = message
         await ctx.send(f"Pet thanks message set to: `{message}`.")
         await self.save_guild(ctx.guild)
+
+    @commands.guild_only()
+    @commands.command(name="pettop", aliases=["petlb", "petleaderboard"])
+    async def pet_leaderboard(self, ctx, globally: bool = False):
+        """View the petting leaderboard.
+
+        Use `[p]pettop true` to see the global leaderboard across all servers.
+        """
+        view = PupperLeaderboard(self.bot, ctx, self.config, local=not globally)
+        await view.start()
 
     @commands.guild_only()
     @checks.mod_or_permissions(administrator=True)
@@ -371,6 +390,10 @@ class Pupper(commands.Cog):
             bal = await bank.get_balance(user)
             newbal = await bank.set_balance(user, e.max_balance)
             deposit = newbal - bal
+
+        # Track the pet for leaderboard
+        current_pets = await self.config.member(user).pets()
+        await self.config.member(user).pets.set(current_pets + 1)
 
         credits_name = await bank.get_currency_name(message.guild)
         msg = f"{guild_data['borf_msg']} (`+{deposit}` {credits_name})"
