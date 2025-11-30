@@ -3,10 +3,10 @@ import logging
 import zipfile
 from collections import defaultdict
 from contextlib import suppress
-from datetime import datetime
+from datetime import datetime, time
 from io import BytesIO, StringIO
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Optional, Tuple, Union
 
 import chat_exporter
 import discord
@@ -17,9 +17,125 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import pagify, text_to_file
 from redbot.core.utils.mod import is_admin_or_superior
 
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo
+
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
 log = logging.getLogger("red.vrt.tickets.base")
 _ = Translator("Tickets", __file__)
+
+# Day name mapping for working hours
+DAY_NAMES = {
+    0: "monday",
+    1: "tuesday",
+    2: "wednesday",
+    3: "thursday",
+    4: "friday",
+    5: "saturday",
+    6: "sunday",
+}
+
+
+def is_within_working_hours(panel: dict) -> Tuple[bool, Optional[str], Optional[str]]:
+    """Check if the current time is within working hours for a panel.
+
+    Args:
+        panel: The panel configuration dict
+
+    Returns:
+        Tuple of (is_within_hours, today_start_time, today_end_time)
+        - is_within_hours: True if within working hours or no hours set, False otherwise
+        - today_start_time: The start time string for today (e.g., "09:00") or None
+        - today_end_time: The end time string for today (e.g., "17:00") or None
+    """
+    working_hours = panel.get("working_hours", {})
+    if not working_hours:
+        return (True, None, None)
+
+    timezone_str = panel.get("timezone", "UTC")
+    try:
+        tz = ZoneInfo(timezone_str)
+    except Exception:
+        tz = ZoneInfo("UTC")
+
+    now = datetime.now(tz)
+    day_name = DAY_NAMES[now.weekday()]
+
+    day_hours = working_hours.get(day_name)
+    if not day_hours:
+        # No hours set for today - not within working hours
+        return (False, None, None)
+
+    start_str = day_hours.get("start")
+    end_str = day_hours.get("end")
+    if not start_str or not end_str:
+        return (True, None, None)
+
+    try:
+        start_hour, start_min = map(int, start_str.split(":"))
+        end_hour, end_min = map(int, end_str.split(":"))
+
+        start_time = time(start_hour, start_min)
+        end_time = time(end_hour, end_min)
+        current_time = now.time()
+
+        is_within = start_time <= current_time <= end_time
+        return (is_within, start_str, end_str)
+    except (ValueError, AttributeError):
+        return (True, None, None)
+
+
+def format_working_hours_embed(panel: dict, user: discord.Member) -> Optional[discord.Embed]:
+    """Generate an embed for the outside working hours message.
+
+    Args:
+        panel: The panel configuration dict
+        user: The user who opened the ticket
+
+    Returns:
+        Discord embed if there's a custom message, None otherwise
+    """
+    custom_message = panel.get("outside_hours_message", "")
+    working_hours = panel.get("working_hours", {})
+    timezone_str = panel.get("timezone", "UTC")
+
+    try:
+        tz = ZoneInfo(timezone_str)
+    except Exception:
+        tz = ZoneInfo("UTC")
+
+    now = datetime.now(tz)
+    day_name = DAY_NAMES[now.weekday()]
+    day_hours = working_hours.get(day_name, {})
+    start_str = day_hours.get("start", "")
+    end_str = day_hours.get("end", "")
+
+    if not custom_message:
+        # Default message
+        desc = _("You've created a ticket outside of our working hours, so please be aware that our ")
+        desc += _("response time may be slightly delayed.")
+        if start_str and end_str:
+            # Convert 24h to 12h format for display
+            try:
+                start_dt = datetime.strptime(start_str, "%H:%M")
+                end_dt = datetime.strptime(end_str, "%H:%M")
+                start_12h = start_dt.strftime("%I:%M %p")
+                end_12h = end_dt.strftime("%I:%M %p")
+                desc += _(" Our working hours today are `{}` to `{}`.").format(start_12h, end_12h)
+            except ValueError:
+                pass
+    else:
+        desc = custom_message
+
+    embed = discord.Embed(
+        title=_("Outside Working Hours"),
+        description=desc,
+        color=discord.Color.orange(),
+    )
+    embed.set_footer(text=user.name, icon_url=user.display_avatar.url if user.avatar else None)
+    return embed
 
 
 async def can_close(

@@ -14,7 +14,7 @@ from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box, humanize_list, pagify
 
-from .utils import can_close, close_ticket, update_active_overview
+from .utils import can_close, close_ticket, format_working_hours_embed, is_within_working_hours, update_active_overview
 
 _ = Translator("SupportViews", __file__)
 log = logging.getLogger("red.vrt.supportview")
@@ -319,6 +319,18 @@ class SupportButton(Button):
                     color=discord.Color.red(),
                 )
                 return await interaction.response.send_message(embed=em, ephemeral=True)
+
+        # Check working hours
+        within_hours, start_time, end_time = is_within_working_hours(panel)
+        if not within_hours and panel.get("block_outside_hours", False):
+            em = discord.Embed(
+                title=_("Outside Working Hours"),
+                description=_("Tickets cannot be opened outside of working hours. Please try again later."),
+                color=discord.Color.red(),
+            )
+            if start_time and end_time:
+                em.add_field(name=_("Working Hours"), value=f"`{start_time}` - `{end_time}`", inline=False)
+            return await interaction.response.send_message(embed=em, ephemeral=True)
 
         channel: discord.TextChannel = guild.get_channel(panel.get("channel_id", 0))
         if not channel:
@@ -649,6 +661,12 @@ class SupportButton(Button):
             except discord.Forbidden:
                 txt = _("I tried to pin the response message but don't have the manage messages permissions!")
                 asyncio.create_task(channel_or_thread.send(txt))
+
+        # Send outside working hours notice if applicable
+        if not within_hours and panel.get("working_hours"):
+            hours_embed = format_working_hours_embed(panel, user)
+            if hours_embed:
+                await channel_or_thread.send(embed=hours_embed)
 
         async def delete_delay():
             desc = _("Your ticket has been created! {}").format(channel_or_thread.mention)

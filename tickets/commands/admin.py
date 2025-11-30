@@ -1039,7 +1039,15 @@ class AdminCommands(MixinMeta):
             desc += _("`Priority:       `") + f"{info.get('priority', 1)}\n"
             desc += _("`Button Row:     `") + f"{info.get('row')}\n"
             desc += _("`Reason Modal:   `") + f"{info.get('close_reason', False)}\n"
-            desc += _("`Max Claims:     `") + f"{info.get('max_claims', 0)}"
+            desc += _("`Max Claims:     `") + f"{info.get('max_claims', 0)}\n"
+
+            # Working hours info
+            working_hours = info.get("working_hours", {})
+            has_working_hours = bool(working_hours)
+            desc += _("`Working Hours:  `") + (_("Configured") if has_working_hours else _("Not Set")) + "\n"
+            if has_working_hours:
+                desc += _("`Timezone:       `") + f"{info.get('timezone', 'UTC')}\n"
+                desc += _("`Block Outside:  `") + f"{info.get('block_outside_hours', False)}"
 
             em = Embed(
                 title=panel_name,
@@ -1243,6 +1251,227 @@ class AdminCommands(MixinMeta):
             _("Up to {} staff member(s) can claim a single ticket").format(amount)
         )
         await self.initialize(ctx.guild)
+
+    @tickets.command()
+    async def workinghours(
+        self, ctx: commands.Context, panel_name: str, day: str, start_time: str, end_time: str
+    ):
+        """
+        Set working hours for a specific day on a panel
+
+        Times should be in 24-hour format (HH:MM), e.g., 09:00 or 17:30
+        Days: monday, tuesday, wednesday, thursday, friday, saturday, sunday
+
+        **Examples**
+        `[p]tickets workinghours support monday 09:00 17:00`
+        `[p]tickets workinghours support friday 10:00 18:00`
+
+        To remove working hours for a day, use `[p]tickets workinghours <panel> <day> off`
+        """
+        panel_name = panel_name.lower()
+        day = day.lower()
+
+        valid_days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+        if day not in valid_days:
+            return await ctx.send(
+                _("Invalid day! Must be one of: {}").format(", ".join(valid_days))
+            )
+
+        async with self.config.guild(ctx.guild).panels() as panels:
+            if panel_name not in panels:
+                return await ctx.send(_("Panel does not exist!"))
+
+            if "working_hours" not in panels[panel_name]:
+                panels[panel_name]["working_hours"] = {}
+
+            # Check if removing hours
+            if start_time.lower() == "off":
+                if day in panels[panel_name]["working_hours"]:
+                    del panels[panel_name]["working_hours"][day]
+                    return await ctx.send(
+                        _("Working hours for {} on {} have been removed.").format(day.capitalize(), panel_name)
+                    )
+                else:
+                    return await ctx.send(
+                        _("No working hours were set for {} on {}.").format(day.capitalize(), panel_name)
+                    )
+
+            # Validate time format
+            import re
+            time_pattern = re.compile(r"^([01]?[0-9]|2[0-3]):([0-5][0-9])$")
+
+            if not time_pattern.match(start_time):
+                return await ctx.send(
+                    _("Invalid start time format! Use HH:MM (24-hour format), e.g., 09:00 or 17:30")
+                )
+            if not time_pattern.match(end_time):
+                return await ctx.send(
+                    _("Invalid end time format! Use HH:MM (24-hour format), e.g., 09:00 or 17:30")
+                )
+
+            # Normalize times to ensure consistent HH:MM format
+            start_parts = start_time.split(":")
+            end_parts = end_time.split(":")
+            start_time = f"{int(start_parts[0]):02d}:{start_parts[1]}"
+            end_time = f"{int(end_parts[0]):02d}:{end_parts[1]}"
+
+            panels[panel_name]["working_hours"][day] = {
+                "start": start_time,
+                "end": end_time,
+            }
+
+        await ctx.send(
+            _("Working hours for {} on {}: {} to {}").format(
+                day.capitalize(), panel_name, start_time, end_time
+            )
+        )
+
+    @tickets.command()
+    async def timezone(self, ctx: commands.Context, panel_name: str, *, timezone_str: str):
+        """
+        Set the timezone for a panel's working hours
+
+        Use IANA timezone names (e.g., America/New_York, Europe/London, Asia/Tokyo)
+        Default is UTC if not set.
+
+        **Examples**
+        `[p]tickets timezone support America/New_York`
+        `[p]tickets timezone support Europe/London`
+        `[p]tickets timezone support UTC`
+        """
+        panel_name = panel_name.lower()
+
+        # Validate timezone
+        try:
+            from zoneinfo import ZoneInfo
+        except ImportError:
+            from backports.zoneinfo import ZoneInfo
+
+        try:
+            ZoneInfo(timezone_str)
+        except Exception:
+            return await ctx.send(
+                _("Invalid timezone! Use IANA timezone names like `America/New_York`, `Europe/London`, or `UTC`.")
+            )
+
+        async with self.config.guild(ctx.guild).panels() as panels:
+            if panel_name not in panels:
+                return await ctx.send(_("Panel does not exist!"))
+            panels[panel_name]["timezone"] = timezone_str
+
+        await ctx.send(
+            _("Timezone for {} panel set to {}").format(panel_name, timezone_str)
+        )
+
+    @tickets.command()
+    async def blockoutside(self, ctx: commands.Context, panel_name: str):
+        """
+        Toggle blocking ticket creation outside working hours
+
+        When enabled, users cannot create tickets outside of the configured working hours.
+        When disabled (default), users can still create tickets but will see a notice about delayed responses.
+        """
+        panel_name = panel_name.lower()
+
+        async with self.config.guild(ctx.guild).panels() as panels:
+            if panel_name not in panels:
+                return await ctx.send(_("Panel does not exist!"))
+
+            current = panels[panel_name].get("block_outside_hours", False)
+            panels[panel_name]["block_outside_hours"] = not current
+
+            if not current:
+                await ctx.send(
+                    _("Ticket creation is now **blocked** outside of working hours for {}").format(panel_name)
+                )
+            else:
+                await ctx.send(
+                    _("Ticket creation is now **allowed** outside of working hours for {} (with notice)").format(
+                        panel_name
+                    )
+                )
+
+    @tickets.command()
+    async def outsidehoursmsg(self, ctx: commands.Context, panel_name: str, *, message: str = ""):
+        """
+        Set a custom message to display when a ticket is created outside working hours
+
+        Leave message empty to reset to default.
+        The default message will inform users that response times may be delayed.
+
+        **Example**
+        `[p]tickets outsidehoursmsg support Our team is currently offline. We'll respond during business hours!`
+        """
+        panel_name = panel_name.lower()
+
+        async with self.config.guild(ctx.guild).panels() as panels:
+            if panel_name not in panels:
+                return await ctx.send(_("Panel does not exist!"))
+
+            if message:
+                if len(message) > 1000:
+                    return await ctx.send(_("Message must be 1000 characters or less!"))
+                panels[panel_name]["outside_hours_message"] = message
+                await ctx.send(_("Custom outside hours message has been set!"))
+            else:
+                panels[panel_name]["outside_hours_message"] = ""
+                await ctx.send(_("Outside hours message has been reset to default."))
+
+    @tickets.command()
+    async def viewhours(self, ctx: commands.Context, panel_name: str):
+        """View the configured working hours for a panel"""
+        panel_name = panel_name.lower()
+        panels = await self.config.guild(ctx.guild).panels()
+
+        if panel_name not in panels:
+            return await ctx.send(_("Panel does not exist!"))
+
+        panel = panels[panel_name]
+        working_hours = panel.get("working_hours", {})
+        timezone_str = panel.get("timezone", "UTC")
+        block_outside = panel.get("block_outside_hours", False)
+        custom_msg = panel.get("outside_hours_message", "")
+
+        if not working_hours:
+            return await ctx.send(
+                _("No working hours have been configured for {}. Tickets can be opened at any time.").format(
+                    panel_name
+                )
+            )
+
+        # Build embed
+        em = Embed(
+            title=_("Working Hours for {}").format(panel_name),
+            color=ctx.author.color,
+        )
+
+        days_order = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+        hours_text = ""
+        for day in days_order:
+            day_hours = working_hours.get(day)
+            if day_hours:
+                start = day_hours.get("start", "N/A")
+                end = day_hours.get("end", "N/A")
+                hours_text += f"**{day.capitalize()}:** `{start}` - `{end}`\n"
+            else:
+                hours_text += f"**{day.capitalize()}:** _Closed_\n"
+
+        em.add_field(name=_("Schedule"), value=hours_text, inline=False)
+        em.add_field(name=_("Timezone"), value=f"`{timezone_str}`", inline=True)
+        em.add_field(
+            name=_("Block Outside Hours"),
+            value=_("Yes") if block_outside else _("No"),
+            inline=True,
+        )
+
+        if custom_msg:
+            em.add_field(
+                name=_("Custom Message"),
+                value=custom_msg[:200] + ("..." if len(custom_msg) > 200 else ""),
+                inline=False,
+            )
+
+        await ctx.send(embed=em)
 
     @tickets.command()
     async def openrole(
