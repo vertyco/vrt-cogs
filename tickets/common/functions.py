@@ -185,7 +185,7 @@ class Functions(MixinMeta):
         if not within_hours and panel.get("block_outside_hours", False):
             msg = "Tickets cannot be opened outside of working hours."
             if start_time and end_time:
-                msg += f" Working hours today are {start_time} to {end_time}."
+                msg += f" Working hours today are <t:{start_time}:t> to <t:{end_time}:t>."
             return msg
 
         logchannel = guild.get_channel(panel["log_channel"])

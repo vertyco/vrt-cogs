@@ -34,17 +34,17 @@ DAY_NAMES = {
 }
 
 
-def is_within_working_hours(panel: dict) -> Tuple[bool, Optional[str], Optional[str]]:
+def is_within_working_hours(panel: dict) -> Tuple[bool, Optional[int], Optional[int]]:
     """Check if the current time is within working hours for a panel.
 
     Args:
         panel: The panel configuration dict
 
     Returns:
-        Tuple of (is_within_hours, today_start_time, today_end_time)
+        Tuple of (is_within_hours, today_start_timestamp, today_end_timestamp)
         - is_within_hours: True if within working hours or no hours set, False otherwise
-        - today_start_time: The start time string for today (e.g., "09:00") or None
-        - today_end_time: The end time string for today (e.g., "17:00") or None
+        - today_start_timestamp: Unix timestamp for today's start time or None
+        - today_end_timestamp: Unix timestamp for today's end time or None
     """
     working_hours = panel.get("working_hours", {})
     if not working_hours:
@@ -77,8 +77,14 @@ def is_within_working_hours(panel: dict) -> Tuple[bool, Optional[str], Optional[
         end_time = time(end_hour, end_min)
         current_time = now.time()
 
+        # Create datetime objects for today with start/end times for Discord timestamps
+        start_dt = tz.localize(datetime(now.year, now.month, now.day, start_hour, start_min))
+        end_dt = tz.localize(datetime(now.year, now.month, now.day, end_hour, end_min))
+        start_timestamp = int(start_dt.timestamp())
+        end_timestamp = int(end_dt.timestamp())
+
         is_within = start_time <= current_time <= end_time
-        return (is_within, start_str, end_str)
+        return (is_within, start_timestamp, end_timestamp)
     except (ValueError, AttributeError):
         return (True, None, None)
 
@@ -113,14 +119,16 @@ def format_working_hours_embed(panel: dict, user: discord.Member) -> Optional[di
         desc = _("You've created a ticket outside of our working hours, so please be aware that our ")
         desc += _("response time may be slightly delayed.")
         if start_str and end_str:
-            # Convert 24h to 12h format for display
+            # Create Discord timestamps for today's working hours
             try:
-                start_dt = datetime.strptime(start_str, "%H:%M")
-                end_dt = datetime.strptime(end_str, "%H:%M")
-                start_12h = start_dt.strftime("%I:%M %p")
-                end_12h = end_dt.strftime("%I:%M %p")
-                desc += _(" Our working hours today are `{}` to `{}`.").format(start_12h, end_12h)
-            except ValueError:
+                start_hour, start_min = map(int, start_str.split(":"))
+                end_hour, end_min = map(int, end_str.split(":"))
+                start_dt = tz.localize(datetime(now.year, now.month, now.day, start_hour, start_min))
+                end_dt = tz.localize(datetime(now.year, now.month, now.day, end_hour, end_min))
+                start_ts = int(start_dt.timestamp())
+                end_ts = int(end_dt.timestamp())
+                desc += _(" Our working hours today are <t:{}:t> to <t:{}:t>.").format(start_ts, end_ts)
+            except (ValueError, AttributeError):
                 pass
     else:
         desc = custom_message

@@ -329,7 +329,11 @@ class SupportButton(Button):
                 color=discord.Color.red(),
             )
             if start_time and end_time:
-                em.add_field(name=_("Working Hours"), value=f"`{start_time}` - `{end_time}`", inline=False)
+                em.add_field(
+                    name=_("Working Hours"),
+                    value=f"<t:{start_time}:t> - <t:{end_time}:t>",
+                    inline=False,
+                )
             return await interaction.response.send_message(embed=em, ephemeral=True)
 
         channel: discord.TextChannel = guild.get_channel(panel.get("channel_id", 0))
