@@ -424,8 +424,9 @@ class Functions(MixinMeta):
         if messages:
             embeds = []
             for index, einfo in enumerate(messages):
-                # Use custom color if set, otherwise default to user's color
-                embed_color = discord.Color(einfo.get("color")) if einfo.get("color") is not None else user.color
+                # Use custom color if set and valid, otherwise default to user's color
+                color_val = einfo.get("color")
+                embed_color = discord.Color(color_val) if color_val is not None and isinstance(color_val, int) else user.color
                 em = discord.Embed(
                     title=fmt_params(einfo["title"]) if einfo["title"] else None,
                     description=fmt_params(einfo["desc"]),

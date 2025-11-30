@@ -897,9 +897,9 @@ class AdminCommands(MixinMeta):
             desc = _("**Title**\n") + box(msg["title"]) + "\n"
             desc += _("**Description**\n") + box(msg["desc"]) + "\n"
             desc += _("**Footer**\n") + box(msg["footer"]) + "\n"
-            # Display color as hex if it exists
+            # Display color as hex if it exists and is valid
             color_val = msg.get("color")
-            if color_val is not None:
+            if color_val is not None and isinstance(color_val, int):
                 desc += _("**Color**\n") + box(f"#{color_val:06X}") + "\n"
             else:
                 desc += _("**Color**\n") + box(_("Default (user's color)")) + "\n"
@@ -909,7 +909,7 @@ class AdminCommands(MixinMeta):
             em = Embed(
                 title=_("Ticket Messages for: ") + panel_name,
                 description=desc,
-                color=discord.Color(color_val) if color_val else ctx.author.color,
+                color=discord.Color(color_val) if color_val is not None and isinstance(color_val, int) else ctx.author.color,
             )
             # Show image preview if available
             if image_val:
