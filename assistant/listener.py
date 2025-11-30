@@ -27,20 +27,18 @@ class AssistantListener(MixinMeta):
     async def safe_regex_search(self, pattern: str, content: str) -> bool:
         """Safely check if a regex pattern matches content using multiprocessing pool for timeout."""
         try:
+            # Use re.findall which returns a list (picklable) instead of re.search which returns a Match (not picklable)
             process = self.mp_pool.apply_async(
-                re.search,
+                re.findall,
                 args=(pattern, content, re.IGNORECASE),
             )
             task = functools.partial(process.get, timeout=2)
             loop = asyncio.get_running_loop()
             new_task = loop.run_in_executor(None, task)
             result = await asyncio.wait_for(new_task, timeout=5)
-            return result is not None
+            return len(result) > 0
         except (asyncio.TimeoutError, mp.TimeoutError):
             log.warning(f"Regex pattern '{pattern}' took too long to process")
-            return False
-        except re.error:
-            log.warning(f"Invalid trigger regex pattern: {pattern}")
             return False
         except Exception as e:
             log.error(f"Error checking regex pattern: {e}")
