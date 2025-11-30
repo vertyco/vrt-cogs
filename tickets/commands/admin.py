@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 from contextlib import suppress
 from typing import Optional, Union
 
@@ -12,7 +13,7 @@ from redbot.core.utils.chat_formatting import box
 from ..abc import MixinMeta
 from ..common.constants import MODAL_SCHEMA, TICKET_PANEL_SCHEMA
 from ..common.menu import SMALL_CONTROLS, MenuButton, menu
-from ..common.utils import prune_invalid_tickets, update_active_overview
+from ..common.utils import ZoneInfo, prune_invalid_tickets, update_active_overview
 from ..common.views import PanelView, TestButton, confirm, wait_reply
 
 log = logging.getLogger("red.vrt.admincommands")
@@ -1297,7 +1298,6 @@ class AdminCommands(MixinMeta):
                     )
 
             # Validate time format
-            import re
             time_pattern = re.compile(r"^([01]?[0-9]|2[0-3]):([0-5][0-9])$")
 
             if not time_pattern.match(start_time):
@@ -1342,11 +1342,6 @@ class AdminCommands(MixinMeta):
         panel_name = panel_name.lower()
 
         # Validate timezone
-        try:
-            from zoneinfo import ZoneInfo
-        except ImportError:
-            from backports.zoneinfo import ZoneInfo
-
         try:
             ZoneInfo(timezone_str)
         except Exception:

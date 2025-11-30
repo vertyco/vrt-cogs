@@ -134,7 +134,7 @@ def format_working_hours_embed(panel: dict, user: discord.Member) -> Optional[di
         description=desc,
         color=discord.Color.orange(),
     )
-    embed.set_footer(text=user.name, icon_url=user.display_avatar.url if user.avatar else None)
+    embed.set_footer(text=user.name, icon_url=user.display_avatar.url)
     return embed
 
 
