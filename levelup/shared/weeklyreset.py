@@ -191,7 +191,8 @@ class WeeklyReset(MixinMeta):
                     except discord.HTTPException:
                         pass
 
-        conf.weeklysettings.last_winners = [user[0].id for user in top]
+        # Store eligible winners as last_winners (those who received roles)
+        conf.weeklysettings.last_winners = winner_ids
 
         if bonus := conf.weeklysettings.bonus:
             for i in top:
