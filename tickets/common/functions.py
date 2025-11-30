@@ -10,7 +10,7 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import pagify
 
 from ..abc import MixinMeta
-from ..common.utils import update_active_overview
+from ..common.utils import format_working_hours_embed, is_within_working_hours, update_active_overview
 from ..common.views import CloseView, LogView
 
 _ = Translator("SupportViews", __file__)
@@ -179,6 +179,15 @@ class Functions(MixinMeta):
             return "That ticket panel is disabled!"
 
         panel = panels[panel_name]
+
+        # Check working hours
+        within_hours, start_time, end_time = is_within_working_hours(panel)
+        if not within_hours and panel.get("block_outside_hours", False):
+            msg = "Tickets cannot be opened outside of working hours."
+            if start_time and end_time:
+                msg += f" Working hours today are <t:{start_time}:t> to <t:{end_time}:t>."
+            return msg
+
         logchannel = guild.get_channel(panel["log_channel"])
         category = guild.get_channel(panel["category_id"])
         channel = guild.get_channel(panel["channel_id"])
@@ -444,6 +453,12 @@ class Functions(MixinMeta):
             except discord.Forbidden:
                 txt = _("I tried to pin the response message but don't have the manage messages permissions!")
                 asyncio.create_task(channel_or_thread.send(txt))
+
+        # Send outside working hours notice if applicable
+        if not within_hours and panel.get("working_hours"):
+            hours_embed = format_working_hours_embed(panel, user)
+            if hours_embed:
+                await channel_or_thread.send(embed=hours_embed)
 
         if logchannel:
             ts = int(now.timestamp())
