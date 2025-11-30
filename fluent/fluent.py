@@ -14,9 +14,7 @@ from redbot.core.utils.chat_formatting import pagify
 from redbot.core.utils.views import SetApiView
 
 from .abc import CompositeMetaClass
-from .common.api import Result, TranslateManager
-from .common.constants import available_langs
-from .common.models import TranslateButton
+from .common import api, constants, models
 from .views import TranslateMenu
 
 log = logging.getLogger("red.vrt.fluent")
@@ -34,7 +32,7 @@ async def translate_message_ctx(interaction: discord.Interaction, message: disco
     content = message.content or message.embeds[0].description
     if not content:
         return await interaction.edit_original_response(content=_("❌ No content to translate."))
-    res: t.Optional[Result] = await bot.get_cog("Fluent").translate(content, message.guild.preferred_locale.value)
+    res: t.Optional[api.Result] = await bot.get_cog("Fluent").translate(content, message.guild.preferred_locale.value)
     if res is None:
         return await interaction.edit_original_response(content=_("❌ Translation failed."))
     if res.src == res.dest:
@@ -69,7 +67,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "2.5.2"
+    __version__ = "2.5.3"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -109,7 +107,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
         log.info(f"Initializing {len(buttons)} buttons for {guild}")
 
         # {channel_id: {message_id: [buttons]}}
-        button_dict: dict[int, dict[int, list[TranslateButton]]] = defaultdict(dict)
+        button_dict: dict[int, dict[int, list[models.TranslateButton]]] = defaultdict(dict)
         for button in buttons:
             if button.message_id not in button_dict[button.channel_id]:
                 button_dict[button.channel_id][button.message_id] = []
@@ -148,26 +146,26 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
     async def get_channels(self, guild: discord.Guild) -> dict:
         return await self.config.guild(guild).channels()
 
-    async def get_buttons(self, guild: discord.Guild) -> list[TranslateButton]:
+    async def get_buttons(self, guild: discord.Guild) -> list[models.TranslateButton]:
         buttons = await self.config.guild(guild).buttons()
-        button_objs = [TranslateButton.model_validate(b) for b in buttons]
+        button_objs = [models.TranslateButton.model_validate(b) for b in buttons]
         return list(set(button_objs))
 
     @cached(ttl=900)
-    async def translate(self, msg: str, dest: str, force: bool = False) -> t.Optional[Result]:
+    async def translate(self, msg: str, dest: str, force: bool = False) -> t.Optional[api.Result]:
         """Get the translation of a message
 
         Args:
             msg (str): the message to be translated
             dest (str): the target language
-            force (bool, optional): If False, force res back to None if result is same as source text. Defaults to False.
+            force (bool, optional): If False, force res back to None if api.Result is same as source text. Defaults to False.
 
         Returns:
-            t.Optional[Result]: Result object containing source/target lang and translated text
+            t.Optional[api.Result]: api.Result object containing source/target lang and translated text
         """
         deepl_key = await self.bot.get_shared_api_tokens("fluent_deepl")
         openai_key = await self.bot.get_shared_api_tokens("fluent_openai")
-        translator = TranslateManager(
+        translator = api.TranslateManager(
             deepl_key=deepl_key.get("key"),
             openai_key=openai_key.get("key"),
         )
@@ -184,7 +182,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
     @commands.bot_has_permissions(embed_links=True)
     async def translate_command(self, ctx: commands.Context, to_language: str, *, message: t.Optional[str] = None):
         """Translate a message"""
-        translator = TranslateManager()
+        translator = api.TranslateManager()
         lang = await translator.get_lang(to_language)
         if not lang:
             txt = _("The target language `{}` was not found.").format(to_language)
@@ -200,7 +198,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
             return await ctx.send(txt)
 
         try:
-            trans: t.Optional[Result] = await self.translate(message, to_language)
+            trans: t.Optional[api.Result] = await self.translate(message, to_language)
         except Exception as e:
             txt = _("An error occured while translating, Check logs for more info.")
             await ctx.send(txt)
@@ -227,7 +225,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
     async def get_langs(self, current: str):
         return [
             app_commands.Choice(name=i["name"], value=i["name"])
-            for i in available_langs
+            for i in constants.available_langs
             if current.lower() in i["name"].lower()
         ][:25]
 
@@ -252,13 +250,13 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
             if b.message_id == message.id and b.target_lang == target_lang:
                 return await ctx.send(_("That message already has a translation button for that language."))
 
-        translator = TranslateManager()
+        translator = api.TranslateManager()
         lang = await translator.get_lang(target_lang)
         if not lang:
             txt = _("Target language is invalid.")
             return await ctx.send(txt)
 
-        button = TranslateButton(
+        button = models.TranslateButton(
             channel_id=message.channel.id,
             message_id=message.id,
             target_lang=target_lang,
@@ -397,7 +395,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
             )
             return await ctx.send(txt)
 
-        translator = TranslateManager()
+        translator = api.TranslateManager()
         lang1 = await translator.get_lang(language1)
         lang2 = await translator.get_lang(language2)
 
@@ -448,7 +446,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
         if not channel:
             channel = ctx.channel
 
-        translator = TranslateManager()
+        translator = api.TranslateManager()
         lang = await translator.get_lang(target_language)
 
         if not lang:
@@ -520,6 +518,53 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
         for p in pagify(final, page_length=1000):
             await ctx.send(p)
 
+    def _get_translatable_content(self, content: str) -> t.Optional[str]:
+        """Extract translatable content from a message.
+
+        Strips out non-translatable elements and returns the cleaned text,
+        or None if there's nothing worth translating.
+
+        Filters out:
+        - URLs/links
+        - Custom Discord emoji
+        - Discord mentions (@user, #channel, @role)
+        - Code blocks (```multiline``` and `inline`)
+        - Messages with no alphabetic characters
+        - Very short content (less than 2 letters)
+        """
+        text = content.strip()
+
+        # Remove URLs
+        text = constants.URL_PATTERN.sub("", text).strip()
+        if not text:
+            return None
+
+        # Remove custom Discord emoji
+        text = constants.CUSTOM_EMOJI_PATTERN.sub("", text).strip()
+        if not text:
+            return None
+
+        # Remove Discord mentions (@user, #channel, @role)
+        text = constants.DISCORD_MENTION_PATTERN.sub("", text).strip()
+        if not text:
+            return None
+
+        # Remove code blocks (```code``` and `inline code`)
+        text = constants.CODE_BLOCK_PATTERN.sub("", text).strip()
+        if not text:
+            return None
+
+        # Check if remaining content is only numbers/punctuation/whitespace (no letters)
+        if not any(c.isalpha() for c in text):
+            return None
+
+        # Check for very short content (less than 2 letters after filtering)
+        alpha_chars = [c for c in text if c.isalpha()]
+        if len(alpha_chars) < 2:
+            return None
+
+        return text
+
     @commands.Cog.listener("on_message_without_command")
     async def message_handler(self, message: discord.Message):
         if message.author.bot:
@@ -531,6 +576,11 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
         if not message.channel:
             return
         if not message.content.strip():
+            return
+
+        # Get cleaned content (strips URLs, code blocks, mentions, emoji)
+        clean_content = self._get_translatable_content(message.content)
+        if not clean_content:
             return
 
         channels = await self.get_channels(message.guild)
@@ -557,7 +607,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
 
             async with channel.typing():
                 try:
-                    trans: Result = await self.translate(message.content, target_lang, force=True)
+                    trans: api.Result = await self.translate(clean_content, target_lang, force=True)
                 except Exception as e:
                     log.error("Translation failed in 'only' mode", exc_info=e)
                     self.bot._last_exception = e
@@ -568,7 +618,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
                     return
 
                 # If translated text is the same as the source, no need to send
-                if trans.text.lower() == message.content.lower():
+                if trans.text.lower() == clean_content.lower():
                     log.debug("Translated text is the same as the source, no need to send")
                     return
 
@@ -594,7 +644,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
         async with channel.typing():
             # Attempts to translate message into language1.
             try:
-                trans = await self.translate(message.content, lang1, force=True)
+                trans = await self.translate(clean_content, lang1, force=True)
             except Exception as e:
                 log.error("Initial listener translation failed", exc_info=e)
                 self.bot._last_exception = e
@@ -604,7 +654,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
                 log.debug("Auto translation first phase returned None")
                 return
 
-            translator = TranslateManager()
+            translator = api.TranslateManager()
             source = await translator.get_lang(trans.src)
             source = source.split("-")[0].lower() if source else trans.src.lower()
             target = await translator.get_lang(lang1)
@@ -616,7 +666,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
             # If source language was language2, this saves api calls because translating gets the source and translation
             if source == target:
                 try:
-                    trans = await self.translate(message.content, lang2)
+                    trans = await self.translate(clean_content, lang2)
                 except Exception as e:
                     log.error("Secondary listener translation failed", exc_info=e)
                     return
@@ -625,7 +675,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
                     return await channel.send(_("Unable to finish translation, perhaps the API is down."))
 
             # If translated text is the same as the source, no need to send
-            if trans.text.lower() == message.content.lower():
+            if trans.text.lower() == clean_content.lower():
                 log.debug("Translated text is the same as the source, no need to send")
                 return
 
@@ -661,7 +711,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
         await cog.register_function(cog_name="Fluent", schema=schema)
 
     async def get_translation(self, message: str, to_language: str, *args, **kwargs) -> str:
-        translator = TranslateManager()
+        translator = api.TranslateManager()
         lang = await translator.get_lang(to_language)
         if not lang:
             return _("Invalid target language")
