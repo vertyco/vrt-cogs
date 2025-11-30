@@ -747,7 +747,12 @@ class AdminCommands(MixinMeta):
         `{mention}` - This will mention the user
         `{id}` - This is the ID of the user that created the ticket
 
-        The bot will walk you through a few steps to set up the embed
+        The bot will walk you through a few steps to set up the embed including:
+        - Title (optional)
+        - Description (required)
+        - Footer (optional)
+        - Custom color (optional) - hex color code like #FF0000
+        - Image (optional) - URL to an image
         """
         panel_name = panel_name.lower()
         panels = await self.config.guild(ctx.guild).panels()
@@ -808,7 +813,62 @@ class AdminCommands(MixinMeta):
         else:
             footer = None
 
-        embed = {"title": title, "desc": desc, "footer": footer}
+        # CUSTOM COLOR
+        em = Embed(
+            description=_("Would you like this ticket embed to have a custom color?"),
+            color=color,
+        )
+        await msg.edit(embed=em)
+        yes = await confirm(ctx, msg)
+        if yes is None:
+            return
+        embed_color = None
+        if yes:
+            em = Embed(
+                description=_("Enter a hex color code (e.g., #FF0000 for red, #00FF00 for green)"),
+                color=color,
+            )
+            em.set_footer(text=foot)
+            await msg.edit(embed=em)
+            color_input = await wait_reply(ctx, 300)
+            if color_input and color_input.lower().strip() == _("cancel"):
+                em = Embed(description=_("Ticket message addition cancelled"))
+                return await msg.edit(embed=em)
+            if color_input:
+                # Parse the hex color
+                color_input = color_input.strip().lstrip("#")
+                try:
+                    embed_color = int(color_input, 16)
+                    # Validate it's a valid color value
+                    if embed_color < 0 or embed_color > 0xFFFFFF:
+                        em = Embed(description=_("Invalid color value! Using default color."), color=color)
+                        await ctx.send(embed=em, delete_after=5)
+                        embed_color = None
+                except ValueError:
+                    em = Embed(description=_("Invalid hex color format! Using default color."), color=color)
+                    await ctx.send(embed=em, delete_after=5)
+                    embed_color = None
+
+        # IMAGE
+        em = Embed(
+            description=_("Would you like this ticket embed to have an image?"),
+            color=color,
+        )
+        await msg.edit(embed=em)
+        yes = await confirm(ctx, msg)
+        if yes is None:
+            return
+        image = None
+        if yes:
+            em = Embed(description=_("Enter the image URL"), color=color)
+            em.set_footer(text=foot)
+            await msg.edit(embed=em)
+            image = await wait_reply(ctx, 300)
+            if image and image.lower().strip() == _("cancel"):
+                em = Embed(description=_("Ticket message addition cancelled"))
+                return await msg.edit(embed=em)
+
+        embed = {"title": title, "desc": desc, "footer": footer, "color": embed_color, "image": image}
 
         async with self.config.guild(ctx.guild).panels() as panels:
             panels[panel_name]["ticket_messages"].append(embed)
@@ -836,12 +896,24 @@ class AdminCommands(MixinMeta):
         for i, msg in enumerate(messages):
             desc = _("**Title**\n") + box(msg["title"]) + "\n"
             desc += _("**Description**\n") + box(msg["desc"]) + "\n"
-            desc += _("**Footer**\n") + box(msg["footer"])
+            desc += _("**Footer**\n") + box(msg["footer"]) + "\n"
+            # Display color as hex if it exists and is valid
+            color_val = msg.get("color")
+            if color_val is not None and isinstance(color_val, int):
+                desc += _("**Color**\n") + box(f"#{color_val:06X}") + "\n"
+            else:
+                desc += _("**Color**\n") + box(_("Default (user's color)")) + "\n"
+            # Display image if it exists
+            image_val = msg.get("image")
+            desc += _("**Image**\n") + box(image_val if image_val else _("None"))
             em = Embed(
                 title=_("Ticket Messages for: ") + panel_name,
                 description=desc,
-                color=ctx.author.color,
+                color=discord.Color(color_val) if color_val is not None and isinstance(color_val, int) else ctx.author.color,
             )
+            # Show image preview if available
+            if image_val:
+                em.set_image(url=image_val)
             em.set_footer(text=_("Page") + f" {i + 1}/{len(messages)}")
             embeds.append(em)
 
