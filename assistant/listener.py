@@ -1,5 +1,8 @@
 import asyncio
+import functools
 import logging
+import multiprocessing as mp
+import re
 import typing as t
 from io import StringIO
 
@@ -20,6 +23,35 @@ class AssistantListener(MixinMeta):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.responding_to = set()
+
+    async def safe_regex_search(self, pattern: str, content: str) -> bool:
+        """Safely check if a regex pattern matches content using multiprocessing pool for timeout."""
+        try:
+            process = self.mp_pool.apply_async(
+                re.search,
+                args=(pattern, content, re.IGNORECASE),
+            )
+            task = functools.partial(process.get, timeout=2)
+            loop = asyncio.get_running_loop()
+            new_task = loop.run_in_executor(None, task)
+            result = await asyncio.wait_for(new_task, timeout=5)
+            return result is not None
+        except (asyncio.TimeoutError, mp.TimeoutError):
+            log.warning(f"Regex pattern '{pattern}' took too long to process")
+            return False
+        except re.error:
+            log.warning(f"Invalid trigger regex pattern: {pattern}")
+            return False
+        except Exception as e:
+            log.error(f"Error checking regex pattern: {e}")
+            return False
+
+    async def matches_trigger(self, content: str, trigger_phrases: t.List[str]) -> bool:
+        """Check if the message content matches any trigger phrase (regex patterns)."""
+        for pattern in trigger_phrases:
+            if await self.safe_regex_search(pattern, content):
+                return True
+        return False
 
     @commands.Cog.listener("on_message_without_command")
     async def handler(self, message: discord.Message):
@@ -95,9 +127,24 @@ class AssistantListener(MixinMeta):
             # Do not respond to messages that are replies to other messages or mention someone else
             return
 
+        # Check for trigger word matches (this can override other conditions)
+        trigger_matched = False
+        check_trigger = [
+            conf.trigger_enabled,
+            conf.trigger_phrases,
+            channel.id not in conf.trigger_ignore_channels,
+            getattr(channel, "category_id", 0) not in conf.trigger_ignore_channels,
+        ]
+        if all(check_trigger):
+            if await self.matches_trigger(message.content, conf.trigger_phrases):
+                trigger_matched = True
+                if conf.trigger_prompt:
+                    handle_message_kwargs["trigger_prompt"] = conf.trigger_prompt
+
         conditions = [
             (channel.id != conf.channel_id and channel.id not in conf.listen_channels),
             (not bot_mentioned or not conf.mention_respond),
+            not trigger_matched,  # If trigger matched, don't skip
         ]
         check_auto_answer = [
             conf.auto_answer,
@@ -130,6 +177,7 @@ class AssistantListener(MixinMeta):
             not message.content.endswith("?"),
             conf.endswith_questionmark,
             self.bot.user.id not in mention_ids,
+            not trigger_matched,  # If trigger matched, don't skip
         ]
         if all(conditions):
             # Message was in the assistant channel and didn't end with a question mark while the config requires it

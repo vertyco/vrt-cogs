@@ -147,6 +147,11 @@ class MixinMeta(ABC):
 
     @abstractmethod
     async def handle_message(
-        self, message: discord.Message, question: str, conf: GuildSettings, listener: bool = False
+        self,
+        message: discord.Message,
+        question: str,
+        conf: GuildSettings,
+        listener: bool = False,
+        trigger_prompt: str = None,
     ) -> str:
         raise NotImplementedError
