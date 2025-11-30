@@ -314,10 +314,29 @@ class LevelUps(MixinMeta):
             if not conf.weeklysettings.role_all and role_winners:
                 role_winners = [role_winners[0]]
 
-            if member.id in role_winners and weekly_role_id not in user_role_ids:
+            # Check if member has an excluded role
+            excluded_role_ids = set(conf.weeklysettings.excluded_roles)
+            member_has_excluded_role = bool(user_role_ids & excluded_role_ids)
+
+            if member.id in role_winners and weekly_role_id not in user_role_ids and not member_has_excluded_role:
                 to_add.add(weekly_role_id)
-            elif member.id not in role_winners and weekly_role_id in user_role_ids:
+            elif (member.id not in role_winners or member_has_excluded_role) and weekly_role_id in user_role_ids:
                 to_remove.add(weekly_role_id)
+
+        # Handle bonus roles for weekly winners
+        for bonus_role_id in conf.weeklysettings.bonus_roles:
+            role_winners = conf.weeklysettings.last_winners
+            if not conf.weeklysettings.role_all and role_winners:
+                role_winners = [role_winners[0]]
+
+            # Check if member has an excluded role
+            excluded_role_ids = set(conf.weeklysettings.excluded_roles)
+            member_has_excluded_role = bool(user_role_ids & excluded_role_ids)
+
+            if member.id in role_winners and bonus_role_id not in user_role_ids and not member_has_excluded_role:
+                to_add.add(bonus_role_id)
+            elif (member.id not in role_winners or member_has_excluded_role) and bonus_role_id in user_role_ids:
+                to_remove.add(bonus_role_id)
 
         add_roles: t.List[discord.Role] = []
         remove_roles: t.List[discord.Role] = []

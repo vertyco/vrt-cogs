@@ -182,6 +182,8 @@ class WeeklySettings(Base):
     bonus: int = 0  # Bonus exp to award the top X winners
     last_embed: t.Dict[str, t.Any] = {}  # Dict repr of last winner embed
     ping_winners: bool = False  # Mention the winners in the announcement
+    excluded_roles: t.List[int] = []  # Roles excluded from winning the weekly leaderboard role
+    bonus_roles: t.List[int] = []  # Additional roles to award to winners (besides the main role)
 
     @property
     def next_reset(self) -> int:

@@ -77,6 +77,12 @@ class Weekly(MixinMeta):
             description=desc,
             color=await self.bot.get_embed_color(ctx),
         )
+        # Format bonus roles
+        bonus_roles_text = (
+            ", ".join(f"<@&{rid}>" for rid in conf.weeklysettings.bonus_roles)
+            if conf.weeklysettings.bonus_roles
+            else _("None")
+        )
         embed.add_field(
             name=_("Settings"),
             value=_(
@@ -84,6 +90,7 @@ class Weekly(MixinMeta):
                 "`Channel:        `{}\n"
                 "`Ping Winners:   `{}\n"
                 "`Role:           `{}\n"
+                "`Bonus Roles:    `{}\n"
                 "`RoleAllWinners: `{}\n"
                 "`Auto Remove:    `{}\n"
                 "`Bonus Exp:      `{}\n"
@@ -92,6 +99,7 @@ class Weekly(MixinMeta):
                 f"<#{conf.weeklysettings.channel}>" if conf.weeklysettings.channel else _("None"),
                 conf.weeklysettings.ping_winners,
                 f"<@&{conf.weeklysettings.role}>" if conf.weeklysettings.role else _("None"),
+                bonus_roles_text,
                 conf.weeklysettings.role_all,
                 conf.weeklysettings.remove,
                 conf.weeklysettings.bonus,
@@ -103,6 +111,17 @@ class Weekly(MixinMeta):
             value="\n".join(f"{i + 1}. <@{uid}>" for i, uid in enumerate(conf.weeklysettings.last_winners))
             if conf.weeklysettings.last_winners
             else _("No winners yet"),
+            inline=False,
+        )
+        # Format excluded roles
+        excluded_roles_text = (
+            ", ".join(f"<@&{rid}>" for rid in conf.weeklysettings.excluded_roles)
+            if conf.weeklysettings.excluded_roles
+            else _("None")
+        )
+        embed.add_field(
+            name=_("Excluded Roles"),
+            value=excluded_roles_text,
             inline=False,
         )
         status = _(" (Enabled)") if conf.weeklysettings.autoreset else _(" (Disabled)")
@@ -258,4 +277,42 @@ class Weekly(MixinMeta):
         else:
             conf.weeklysettings.on = True
             await ctx.send(_("Weekly stat tracking enabled"))
+        self.save()
+
+    @weeklyset.command(name="excluderole")
+    async def weeklyset_excluderole(self, ctx: commands.Context, *, role: discord.Role):
+        """
+        Add/Remove a role from the weekly winner exclusion list
+
+        Members with these roles won't be eligible for winning the weekly leaderboard role.
+        They will still appear on the leaderboard but won't receive the winner role.
+
+        Use the command with a role already in the exclusion list to remove it
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if role.id in conf.weeklysettings.excluded_roles:
+            conf.weeklysettings.excluded_roles.remove(role.id)
+            await ctx.send(_("Role {} has been removed from the weekly winner exclusion list").format(role.mention))
+        else:
+            conf.weeklysettings.excluded_roles.append(role.id)
+            await ctx.send(_("Role {} has been added to the weekly winner exclusion list").format(role.mention))
+        self.save()
+
+    @weeklyset.command(name="bonusrole")
+    async def weeklyset_bonusrole(self, ctx: commands.Context, *, role: discord.Role):
+        """
+        Add/Remove a bonus role for weekly winners
+
+        These roles will be awarded in addition to the main winner role.
+        This allows assigning multiple roles to winners (e.g., one for icon, one for color).
+
+        Use the command with a role already in the list to remove it
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if role.id in conf.weeklysettings.bonus_roles:
+            conf.weeklysettings.bonus_roles.remove(role.id)
+            await ctx.send(_("Role {} has been removed from the weekly winner bonus roles").format(role.mention))
+        else:
+            conf.weeklysettings.bonus_roles.append(role.id)
+            await ctx.send(_("Role {} has been added to the weekly winner bonus roles").format(role.mention))
         self.save()
