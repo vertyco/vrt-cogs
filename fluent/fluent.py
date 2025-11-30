@@ -376,6 +376,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
                 discord.TextChannel,
                 discord.Thread,
                 discord.ForumChannel,
+                discord.CategoryChannel,
             ]
         ] = None,
     ):
@@ -384,6 +385,8 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
 
         Tip: Language 1 is the first to be converted. For example, if you expect most of the conversation to be
         in english, then make english language 2 to use less api calls.
+
+        You can also specify a category channel to translate all channels within it.
         """
         if not channel:
             channel = ctx.channel
@@ -429,6 +432,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
                 discord.TextChannel,
                 discord.Thread,
                 discord.ForumChannel,
+                discord.CategoryChannel,
             ]
         ] = None,
     ):
@@ -438,6 +442,8 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
         Unlike `[p]fluent add` which translates between two languages,
         this translates all messages to the specified target language
         regardless of the source language.
+
+        You can also specify a category channel to translate all channels within it.
         """
         if not channel:
             channel = ctx.channel
@@ -469,10 +475,11 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
                 discord.TextChannel,
                 discord.Thread,
                 discord.ForumChannel,
+                discord.CategoryChannel,
             ]
         ] = None,
     ):
-        """Remove a channel from Fluent"""
+        """Remove a channel or category from Fluent"""
         if not channel:
             channel = ctx.channel
 
@@ -486,21 +493,26 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
 
     @fluent.command()
     async def view(self, ctx: commands.Context):
-        """View all fluent channels"""
+        """View all fluent channels and categories"""
         channels = await self.config.guild(ctx.guild).channels()
         msg = ""
         for cid, langs in channels.items():
             channel = ctx.guild.get_channel(int(cid))
             if not channel:
                 continue
+            # Determine channel type indicator
+            if isinstance(channel, discord.CategoryChannel):
+                channel_ref = f"📁 {channel.name}"
+            else:
+                channel_ref = channel.mention
             # Handle "only" mode (single target language)
             if "target" in langs:
                 target = langs["target"]
-                msg += f"{channel.mention} `(-> {target})`\n"
+                msg += f"{channel_ref} `(-> {target})`\n"
             else:
                 l1 = langs["lang1"]
                 l2 = langs["lang2"]
-                msg += f"{channel.mention} `({l1} <-> {l2})`\n"
+                msg += f"{channel_ref} `({l1} <-> {l2})`\n"
 
         if not msg:
             return await ctx.send(_("There are no fluent channels at this time."))
@@ -523,10 +535,19 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
 
         channels = await self.get_channels(message.guild)
         channel_id = str(message.channel.id)
-        if channel_id not in channels:
+        
+        # Check if channel is directly configured, or if its parent category is configured
+        channel_config = None
+        if channel_id in channels:
+            channel_config = channels[channel_id]
+        elif hasattr(message.channel, "category_id") and message.channel.category_id:
+            category_id = str(message.channel.category_id)
+            if category_id in channels:
+                channel_config = channels[category_id]
+        
+        if channel_config is None:
             return
 
-        channel_config = channels[channel_id]
         channel = message.channel
 
         # Handle "only" mode - translate all messages to a single target language
