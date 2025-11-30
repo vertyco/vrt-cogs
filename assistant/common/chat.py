@@ -60,6 +60,7 @@ class ChatHandler(MixinMeta):
         listener: bool = False,
         model_override: Optional[str] = None,
         auto_answer: Optional[bool] = False,
+        trigger_prompt: Optional[str] = None,
         **kwargs,
     ):
         outputfile_pattern = r"--outputfile\s+([^\s]+)"
@@ -181,6 +182,7 @@ class ChatHandler(MixinMeta):
                     images=images,
                     model_override=model_override,
                     auto_answer=auto_answer,
+                    trigger_prompt=trigger_prompt,
                 )
             except openai.InternalServerError as e:
                 if e.body and isinstance(e.body, dict):
@@ -273,6 +275,7 @@ class ChatHandler(MixinMeta):
         images: list[str] = None,
         model_override: Optional[str] = None,
         auto_answer: Optional[bool] = False,
+        trigger_prompt: Optional[str] = None,
     ) -> Union[str, None]:
         """Call the API asynchronously"""
         functions = function_calls.copy() if function_calls else []
@@ -321,6 +324,7 @@ class ChatHandler(MixinMeta):
                 images=images,
                 model_override=model_override,
                 auto_answer=auto_answer,
+                trigger_prompt=trigger_prompt,
             )
         finally:
             conversation.cleanup(conf, author)
@@ -340,6 +344,7 @@ class ChatHandler(MixinMeta):
         images: list[str] = None,
         model_override: Optional[str] = None,
         auto_answer: Optional[bool] = False,
+        trigger_prompt: Optional[str] = None,
     ) -> Union[str, None]:
         if isinstance(author, int):
             author = guild.get_member(author)
@@ -424,6 +429,7 @@ class ChatHandler(MixinMeta):
             function_calls=function_calls,
             images=images,
             auto_answer=auto_answer,
+            trigger_prompt=trigger_prompt,
         )
         reply = None
 
@@ -760,6 +766,7 @@ class ChatHandler(MixinMeta):
         function_calls: List[dict],
         images: list[str] | None,
         auto_answer: Optional[bool] = False,
+        trigger_prompt: Optional[str] = None,
     ) -> List[dict]:
         """Prepare content for calling the GPT API
 
@@ -775,6 +782,7 @@ class ChatHandler(MixinMeta):
             function_calls (List[dict]): list of function calls to include in the prompt
             images (list[str] | None): list of image URLs to include in the prompt
             auto_answer (Optional[bool]): whether this is an auto answer response
+            trigger_prompt (Optional[str]): custom prompt to use when triggered by keywords
 
         Returns:
             List[dict]: list of messages prepped for api
@@ -834,6 +842,10 @@ class ChatHandler(MixinMeta):
                 "You may opt to not respond if necessary by calling the `do_not_respond` function.\n"
                 "If you do not have access to functions, you may respond with the exact phrase `do_not_respond`"
             )
+
+        if trigger_prompt:
+            formatted_trigger = format_string(trigger_prompt)
+            initial_prompt += f"\n# TRIGGER RESPONSE:\n{formatted_trigger}"
 
         images = images if model in SUPPORTS_VISION else []
         messages = conversation.prepare_chat(
