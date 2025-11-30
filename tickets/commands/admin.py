@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import re
-from contextlib import suppress
 from typing import Optional, Union
 
 import discord
@@ -33,50 +32,34 @@ class AdminCommands(MixinMeta):
     async def setuphelp(self, ctx: commands.Context):
         """Ticket Setup Guide"""
         desc = (
-            _("To create a support ticket panel, type ")
-            + f"`{ctx.clean_prefix}tickets addpanel"
-            + _(" <panel_name>`")
+            _("To create a support ticket panel, type ") + f"`{ctx.clean_prefix}tickets addpanel" + _(" <panel_name>`")
         )
         em = Embed(
             title=_("Ticket Setup Guide"),
             description=desc,
             color=ctx.author.color,
         )
-        step1 = _(
-            "Set the category ID that new tickets will be created under if using channel tickets.\n"
-        )
-        step1 += f"`{ctx.clean_prefix}tickets category " + _(
-            "<panel_name> <category_id>`"
-        )
+        step1 = _("Set the category ID that new tickets will be created under if using channel tickets.\n")
+        step1 += f"`{ctx.clean_prefix}tickets category " + _("<panel_name> <category_id>`")
         em.add_field(name=_("Step 1"), value=step1, inline=False)
         step2 = _("Set the channel that the bots ticket panel will be located in.\n")
-        step2 += f"`{ctx.clean_prefix}tickets channel " + _(
-            "<panel_name> <channel_id>`"
-        )
+        step2 += f"`{ctx.clean_prefix}tickets channel " + _("<panel_name> <channel_id>`")
         em.add_field(name=_("Step 2"), value=step2, inline=False)
         step3 = _("Set the ID of the bots ticket panel message.\n")
-        step3 += f"`{ctx.clean_prefix}tickets panelmessage " + _(
-            "<panel_name> <message_id>`\n"
-        )
+        step3 += f"`{ctx.clean_prefix}tickets panelmessage " + _("<panel_name> <message_id>`\n")
         step3 += _(
             "At this point the ticket panel will be activated, "
             "all following steps are for extra customization.\n"
             "If you need a message to add the buttons to, you can use the `{}tickets embed` command.\n"
         ).format(ctx.clean_prefix)
-        step3 += _(
-            "If the bot is having trouble finding the message, run the command in the same channel as it."
-        )
+        step3 += _("If the bot is having trouble finding the message, run the command in the same channel as it.")
         em.add_field(name=_("Step 3"), value=step3, inline=False)
         step4 = _("Set the text of the ticket panel button.\n")
-        step4 += f"`{ctx.clean_prefix}tickets buttontext " + _(
-            "<panel_name> <button_text>`"
-        )
+        step4 += f"`{ctx.clean_prefix}tickets buttontext " + _("<panel_name> <button_text>`")
         em.add_field(name=_("Button Text"), value=step4, inline=False)
         step5 = _("Set the ticket panel button color.\n")
         step5 += _("Valid colors are ") + "`red`, `blue`, `green`, and `grey`.\n"
-        step5 += f"`{ctx.clean_prefix}tickets buttoncolor " + _(
-            "<panel_name> <button_color>`"
-        )
+        step5 += f"`{ctx.clean_prefix}tickets buttoncolor " + _("<panel_name> <button_color>`")
         em.add_field(name=_("Button Color"), value=step5, inline=False)
         step6 = _("Set the button emoji for the ticket panel.\n")
         step6 += f"`{ctx.clean_prefix}tickets buttonemoji " + _("<panel_name> <emoji>`")
@@ -90,26 +73,18 @@ class AdminCommands(MixinMeta):
         step8 += f"`{ctx.clean_prefix}tickets addmessage " + _("<panel_name>`")
         em.add_field(name=_("Ticket Messages"), value=step8, inline=False)
 
-        step9 = _(
-            "View and remove a messages the bot sends to the user in their ticket.\n"
-        )
+        step9 = _("View and remove a messages the bot sends to the user in their ticket.\n")
         step9 += f"`{ctx.clean_prefix}tickets viewmessages " + _("<panel_name>`")
         em.add_field(name=_("Remove/View Ticket Messages"), value=step9, inline=False)
 
         step10 = _("Set the naming format for ticket channels that are opened.\n")
-        step10 += f"`{ctx.clean_prefix}tickets ticketname " + _(
-            "<panel_name> <name_format>`"
-        )
+        step10 += f"`{ctx.clean_prefix}tickets ticketname " + _("<panel_name> <name_format>`")
         em.add_field(name=_("Ticket Channel Name"), value=step10, inline=False)
         step11 = _("Set log channel for a ticket panel.\n")
-        step11 += f"`{ctx.clean_prefix}tickets logchannel " + _(
-            "<panel_name> <channel>`"
-        )
+        step11 += f"`{ctx.clean_prefix}tickets logchannel " + _("<panel_name> <channel>`")
         em.add_field(name=_("Log Channel"), value=step11, inline=False)
 
-        tip = _(
-            "Tip: you can create multiple support panels using the same message for a multi-button panel"
-        )
+        tip = _("Tip: you can create multiple support panels using the same message for a multi-button panel")
         em.set_footer(text=tip)
         await ctx.send(embed=em)
 
@@ -126,9 +101,7 @@ class AdminCommands(MixinMeta):
             await self.config.guild(ctx.guild).suspended_msg.set(None)
             return await ctx.send(_("Ticket system is no longer suspended!"))
         if len(message) > 900:
-            return await ctx.send(
-                _("Message is too long! Must be less than 900 characters")
-            )
+            return await ctx.send(_("Message is too long! Must be less than 900 characters"))
         await self.config.guild(ctx.guild).suspended_msg.set(message)
         embed = discord.Embed(
             title=_("Ticket System Suspended"),
@@ -136,9 +109,7 @@ class AdminCommands(MixinMeta):
             color=discord.Color.yellow(),
         )
         await ctx.send(
-            _(
-                "Ticket system is now suspended! Users trying to open a ticket will be met with this message"
-            ),
+            _("Ticket system is now suspended! Users trying to open a ticket will be met with this message"),
             embed=embed,
         )
 
@@ -167,15 +138,11 @@ class AdminCommands(MixinMeta):
         """Set the category ID for a ticket panel"""
         panel_name = panel_name.lower()
         if not category.permissions_for(ctx.me).manage_channels:
-            return await ctx.send(
-                _("I need the `manage channels` permission to set this category")
-            )
+            return await ctx.send(_("I need the `manage channels` permission to set this category"))
         if not category.permissions_for(ctx.me).manage_permissions:
             return await ctx.send(_("I need `manage roles` enabled in this category"))
         if not category.permissions_for(ctx.me).attach_files:
-            return await ctx.send(
-                _("I need the `attach files` permission to set this category")
-            )
+            return await ctx.send(_("I need the `attach files` permission to set this category"))
         if not category.permissions_for(ctx.me).view_channel:
             return await ctx.send(_("I cannot see that category!"))
         if not category.permissions_for(ctx.me).read_message_history:
@@ -207,17 +174,13 @@ class AdminCommands(MixinMeta):
             await ctx.tick()
 
     @tickets.command()
-    async def panelmessage(
-        self, ctx: commands.Context, panel_name: str, message: discord.Message
-    ):
+    async def panelmessage(self, ctx: commands.Context, panel_name: str, message: discord.Message):
         """
         Set the message ID of a ticket panel
         Run this command in the same channel as the ticket panel message
         """
         if message.author.id != self.bot.user.id:
-            return await ctx.send(
-                _("I cannot add buttons to messages sent by other users!")
-            )
+            return await ctx.send(_("I cannot add buttons to messages sent by other users!"))
         if isinstance(
             message.channel,
             (discord.Thread, discord.VoiceChannel, discord.ForumChannel),
@@ -228,31 +191,21 @@ class AdminCommands(MixinMeta):
             if panel_name not in panels:
                 return await ctx.send(_("Panel does not exist!"))
             if not panels[panel_name]["category_id"]:
-                return await ctx.send(
-                    _("Category ID must be set for this panel first!")
-                )
+                return await ctx.send(_("Category ID must be set for this panel first!"))
             current_channel = panels[panel_name]["channel_id"]
             if current_channel and current_channel != message.channel.id:
-                return await ctx.send(
-                    _(
-                        "This message is part of a different channel from the one you set!"
-                    )
-                )
+                return await ctx.send(_("This message is part of a different channel from the one you set!"))
             panels[panel_name]["message_id"] = message.id
             panels[panel_name]["channel_id"] = message.channel.id
             await ctx.tick()
         await self.initialize(ctx.guild)
 
     @tickets.command()
-    async def buttontext(
-        self, ctx: commands.Context, panel_name: str, *, button_text: str
-    ):
+    async def buttontext(self, ctx: commands.Context, panel_name: str, *, button_text: str):
         """Set the button text for a support ticket panel"""
         panel_name = panel_name.lower()
         if len(button_text) > 80:
-            return await ctx.send(
-                _("The text content of a button must be less than 80 characters!")
-            )
+            return await ctx.send(_("The text content of a button must be less than 80 characters!"))
         butt = TestButton(label=button_text)  # hehe, butt
         await ctx.send(
             _("This is what your button will look like with this text!"),
@@ -266,19 +219,13 @@ class AdminCommands(MixinMeta):
         await self.initialize(ctx.guild)
 
     @tickets.command()
-    async def buttoncolor(
-        self, ctx: commands.Context, panel_name: str, *, button_color: str
-    ):
+    async def buttoncolor(self, ctx: commands.Context, panel_name: str, *, button_color: str):
         """Set the button color for a support ticket panel"""
         panel_name = panel_name.lower()
         button_color = button_color.lower()
         valid = ["red", "blue", "green", "grey", "gray"]
         if button_color not in valid:
-            return await ctx.send(
-                button_color
-                + _(" is not valid, must be one of the following\n")
-                + f"`{valid}`"
-            )
+            return await ctx.send(button_color + _(" is not valid, must be one of the following\n") + f"`{valid}`")
         butt = TestButton(style=button_color)  # hehe, butt
         await ctx.send(
             _("This is what your button will look like with this color!"),
@@ -308,10 +255,7 @@ class AdminCommands(MixinMeta):
                 view=butt,
             )
         except Exception as e:
-            return await ctx.send(
-                _("Failed to create test button. Error:\n")
-                + f"{box(str(e), lang='python')}"
-            )
+            return await ctx.send(_("Failed to create test button. Error:\n") + f"{box(str(e), lang='python')}")
         async with self.config.guild(ctx.guild).panels() as panels:
             if panel_name not in panels:
                 return await ctx.send(_("Panel does not exist!"))
@@ -348,9 +292,7 @@ class AdminCommands(MixinMeta):
         await self.initialize(ctx.guild)
 
     @tickets.command()
-    async def ticketname(
-        self, ctx: commands.Context, panel_name: str, *, ticket_name: str
-    ):
+    async def ticketname(self, ctx: commands.Context, panel_name: str, *, ticket_name: str):
         """
         Set the default ticket channel name for a panel
 
@@ -386,24 +328,16 @@ class AdminCommands(MixinMeta):
                 return await ctx.send(_("Set a panel channel first!"))
             channel = ctx.guild.get_channel(cid)
             if not channel.permissions_for(ctx.guild.me).create_private_threads:
-                return await ctx.send(
-                    _("I am missing the `Create Private Threads` permission!")
-                )
+                return await ctx.send(_("I am missing the `Create Private Threads` permission!"))
             if not channel.permissions_for(ctx.guild.me).send_messages_in_threads:
-                return await ctx.send(
-                    _("I am missing the `Send Messages in Threads` permission!")
-                )
+                return await ctx.send(_("I am missing the `Send Messages in Threads` permission!"))
             toggle = panels[panel_name].get("threads", False)
             if toggle:
                 panels[panel_name]["threads"] = False
-                await ctx.send(
-                    _("The {} panel will no longer use threads").format(panel_name)
-                )
+                await ctx.send(_("The {} panel will no longer use threads").format(panel_name))
             else:
                 panels[panel_name]["threads"] = True
-                await ctx.send(
-                    _("The {} panel will now use threads").format(panel_name)
-                )
+                await ctx.send(_("The {} panel will now use threads").format(panel_name))
         await self.initialize(ctx.guild)
 
     @tickets.command()
@@ -416,18 +350,10 @@ class AdminCommands(MixinMeta):
             toggle = panels[panel_name]["close_reason"]
             if toggle:
                 panels[panel_name]["close_reason"] = False
-                await ctx.send(
-                    _("The {} panel will no longer show a close reason modal").format(
-                        panel_name
-                    )
-                )
+                await ctx.send(_("The {} panel will no longer show a close reason modal").format(panel_name))
             else:
                 panels[panel_name]["close_reason"] = True
-                await ctx.send(
-                    _("The {} panel will now show a close reason modal").format(
-                        panel_name
-                    )
-                )
+                await ctx.send(_("The {} panel will now show a close reason modal").format(panel_name))
         await self.initialize(ctx.guild)
 
     @tickets.command()
@@ -457,9 +383,7 @@ class AdminCommands(MixinMeta):
         await self.initialize(ctx.guild)
 
     @tickets.command()
-    async def modaltitle(
-        self, ctx: commands.Context, panel_name: str, *, title: str = ""
-    ):
+    async def modaltitle(self, ctx: commands.Context, panel_name: str, *, title: str = ""):
         """Set a title for a ticket panel's modal"""
         if len(title) > 45:
             return await ctx.send(_("The max length is 45!"))
@@ -517,9 +441,7 @@ class AdminCommands(MixinMeta):
                 # Delete field
                 async with self.config.guild(ctx.guild).panels() as panels:
                     del panels[panel_name]["modals"][field_name]
-                    return await ctx.send(
-                        _("Field for {} panel has been removed!").format(panel_name)
-                    )
+                    return await ctx.send(_("Field for {} panel has been removed!").format(panel_name))
 
             if len(existing) >= 5:
                 txt = _("The most fields a modal can have is 5!")
@@ -538,11 +460,7 @@ class AdminCommands(MixinMeta):
             )
 
         async def cancel(m):
-            await m.edit(
-                embed=discord.Embed(
-                    description=_("Modal field addition cancelled"), color=color
-                )
-            )
+            await m.edit(embed=discord.Embed(description=_("Modal field addition cancelled"), color=color))
 
         foot = _("type 'cancel' to cancel at any time")
         color = ctx.author.color
@@ -553,9 +471,7 @@ class AdminCommands(MixinMeta):
 
         # Label
         em = Embed(
-            description=_(
-                "What would you like the field label to be? (45 chars or less)"
-            ),
+            description=_("What would you like the field label to be? (45 chars or less)"),
             color=color,
         )
         em.set_footer(text=foot)
@@ -673,9 +589,7 @@ class AdminCommands(MixinMeta):
         min_length = 0
         if yes:
             em = Embed(
-                description=_(
-                    "Type the minimum length for this field below (less than 1024)"
-                ),
+                description=_("Type the minimum length for this field below (less than 1024)"),
                 color=color,
             )
             em.set_footer(text=foot)
@@ -689,9 +603,7 @@ class AdminCommands(MixinMeta):
                     color=discord.Color.red(),
                 )
                 return await msg.edit(embed=em)
-            min_length = min(
-                1023, int(min_length)
-            )  # Make sure answer is between 0 and 1023
+            min_length = min(1023, int(min_length))  # Make sure answer is between 0 and 1023
             modal["min_length"] = min_length
             await make_preview(modal, preview)
 
@@ -706,9 +618,7 @@ class AdminCommands(MixinMeta):
             return
         if yes:
             em = Embed(
-                description=_(
-                    "Type the maximum length for this field below (up to 1024)"
-                ),
+                description=_("Type the maximum length for this field below (up to 1024)"),
                 color=color,
             )
             em.set_footer(text=foot)
@@ -722,14 +632,10 @@ class AdminCommands(MixinMeta):
                     color=discord.Color.red(),
                 )
                 return await msg.edit(embed=em)
-            max_length = max(
-                min(1024, int(maxlength)), 1
-            )  # Make sure answer is between 1 and 1024
+            max_length = max(min(1024, int(maxlength)), 1)  # Make sure answer is between 1 and 1024
             if max_length < min_length:
                 em = Embed(
-                    description=_(
-                        "Max length cannot be less than the minimum length 😑"
-                    ),
+                    description=_("Max length cannot be less than the minimum length 😑"),
                     color=discord.Color.red(),
                 )
                 return await msg.edit(embed=em)
@@ -799,27 +705,19 @@ class AdminCommands(MixinMeta):
         panel_name, fieldname = em.footer.text.split("|")
         panels = await self.config.guild(interaction.guild).panels()
         modal = panels[panel_name]["modal"][fieldname]
-        em = Embed(
-            description=_("Editing {} modal field for {}!").format(
-                fieldname, panel_name
-            )
-        )
+        em = Embed(description=_("Editing {} modal field for {}!").format(fieldname, panel_name))
         await interaction.response.send_message(embed=em, ephemeral=True)
         instance.view.stop()
         await self.create_or_edit_modal(instance.view.ctx, panel_name, fieldname, modal)
 
-    async def delete_modal_field(
-        self, instance: MenuButton, interaction: discord.Interaction
-    ):
+    async def delete_modal_field(self, instance: MenuButton, interaction: discord.Interaction):
         index = instance.view.page
         em: Embed = instance.view.pages[index]
         panel_name, fieldname = em.footer.text.split("|")
         async with self.config.guild(interaction.guild).panels() as panels:
             del panels[panel_name]["modal"][fieldname]
 
-        em = Embed(
-            description=_("Modal field has been deleted from ") + f"{panel_name}!"
-        )
+        em = Embed(description=_("Modal field has been deleted from ") + f"{panel_name}!")
         await interaction.response.send_message(embed=em, ephemeral=True)
         del instance.view.pages[index]
         if not len(instance.view.pages):
@@ -926,9 +824,7 @@ class AdminCommands(MixinMeta):
         panels = await self.config.guild(ctx.guild).panels()
         if not panels:
             return await ctx.send(
-                _("There are no panels available!\nUse ")
-                + f"`{ctx.clean_prefix}tset addpanel` "
-                + _("to create one.")
+                _("There are no panels available!\nUse ") + f"`{ctx.clean_prefix}tset addpanel` " + _("to create one.")
             )
         if panel_name not in panels:
             valid = _("Valid panels are: ") + f"`{', '.join(list(panels.keys()))}`"
@@ -955,15 +851,10 @@ class AdminCommands(MixinMeta):
 
     async def delete_panel_message(self, instance, interaction: discord.Interaction):
         index = instance.view.page
-        panel_name = instance.view.pages[index].title.replace(
-            _("Ticket Messages for: "), ""
-        )
+        panel_name = instance.view.pages[index].title.replace(_("Ticket Messages for: "), "")
         async with self.config.guild(interaction.guild).panels() as panels:
             del panels[panel_name]["ticket_messages"][index]
-            em = Embed(
-                description=_("Ticket message has been deleted from ")
-                + f"{panel_name}!"
-            )
+            em = Embed(description=_("Ticket message has been deleted from ") + f"{panel_name}!")
             await interaction.response.send_message(embed=em, ephemeral=True)
             del instance.view.pages[index]
             if not len(instance.view.pages):
@@ -981,34 +872,20 @@ class AdminCommands(MixinMeta):
         panels = await self.config.guild(ctx.guild).panels()
         if not panels:
             return await ctx.send(
-                _("There are no panels available!\nUse ")
-                + f"`{ctx.clean_prefix}tset addpanel` "
-                + _("to create one.")
+                _("There are no panels available!\nUse ") + f"`{ctx.clean_prefix}tset addpanel` " + _("to create one.")
             )
         embeds = []
         pages = len(panels.keys())
         page = 1
         for panel_name, info in panels.items():
-            cat = (
-                self.bot.get_channel(info["category_id"])
-                if info["category_id"]
-                else "None"
-            )
-            channel = (
-                self.bot.get_channel(info["channel_id"])
-                if info["channel_id"]
-                else "None"
-            )
+            cat = self.bot.get_channel(info["category_id"]) if info["category_id"] else "None"
+            channel = self.bot.get_channel(info["channel_id"]) if info["channel_id"] else "None"
             extra = ""
             if alt := info.get("alt_channel"):
                 if alt := self.bot.get_channel(alt):
                     channel = alt
                     extra = _("(alt)")
-            logchannel = (
-                self.bot.get_channel(info["log_channel"])
-                if info["log_channel"]
-                else "None"
-            )
+            logchannel = self.bot.get_channel(info["log_channel"]) if info["log_channel"] else "None"
 
             panel_roles = ""
             for role_id, mention_toggle in info.get("roles", []):
@@ -1119,9 +996,7 @@ class AdminCommands(MixinMeta):
         blacklisted = ""
         if blacklist:
             for uid_or_rid in blacklist:
-                user_or_role = ctx.guild.get_member(uid_or_rid) or ctx.guild.get_role(
-                    uid_or_rid
-                )
+                user_or_role = ctx.guild.get_member(uid_or_rid) or ctx.guild.get_role(uid_or_rid)
                 if user_or_role:
                     blacklisted += f"{user_or_role.mention}-{user_or_role.id}\n"
                 else:
@@ -1132,9 +1007,7 @@ class AdminCommands(MixinMeta):
             color=discord.Color.random(),
         )
         if suproles:
-            embed.add_field(
-                name=_("Support Roles(Mention)"), value=suproles, inline=False
-            )
+            embed.add_field(name=_("Support Roles(Mention)"), value=suproles, inline=False)
         if blacklisted:
             embed.add_field(name=_("Blacklist"), value=blacklisted, inline=False)
 
@@ -1146,16 +1019,16 @@ class AdminCommands(MixinMeta):
 
         embed.add_field(
             name=_("Thread Ticket Auto-Add"),
-            value=_(
-                "Auto-add support and panel roles to tickets that use threads: **{}**"
-            ).format(str(conf["auto_add"])),
+            value=_("Auto-add support and panel roles to tickets that use threads: **{}**").format(
+                str(conf["auto_add"])
+            ),
         )
         if conf["suspended_msg"]:
             embed.add_field(
                 name=_("Suspended Message"),
-                value=_(
-                    "Tickets are currently suspended, users will be met with the following message\n{}"
-                ).format(box(conf["suspended_msg"])),
+                value=_("Tickets are currently suspended, users will be met with the following message\n{}").format(
+                    box(conf["suspended_msg"])
+                ),
                 inline=False,
             )
         await ctx.send(embed=embed)
@@ -1187,9 +1060,7 @@ class AdminCommands(MixinMeta):
             for i in roles.copy():
                 if i[0] == role.id:
                     roles.remove(i)
-                    await ctx.send(
-                        _("{} has been removed from support roles").format(role.name)
-                    )
+                    await ctx.send(_("{} has been removed from support roles").format(role.name))
                     break
             else:
                 roles.append(entry)
@@ -1224,24 +1095,15 @@ class AdminCommands(MixinMeta):
             for i in panels[panel_name]["roles"].copy():
                 if i[0] == role.id:
                     panels[panel_name]["roles"].remove(i)
-                    await ctx.send(
-                        _("{} has been removed from the {} panel roles").format(
-                            role.name, panel_name
-                        )
-                    )
+                    await ctx.send(_("{} has been removed from the {} panel roles").format(role.name, panel_name))
                     break
             else:
                 panels[panel_name]["roles"].append(entry)
-                await ctx.send(
-                    role.name
-                    + _(" has been added to the {} panel roles").format(panel_name)
-                )
+                await ctx.send(role.name + _(" has been added to the {} panel roles").format(panel_name))
         await self.initialize(ctx.guild)
 
     @tickets.command()
-    async def maxclaims(
-        self, ctx: commands.Context, panel_name: str, amount: commands.positive_int
-    ):
+    async def maxclaims(self, ctx: commands.Context, panel_name: str, amount: commands.positive_int):
         """Set how many staff members can claim/join a ticket before the join button is disabled (If using threads)"""
         panel_name = panel_name.lower()
         async with self.config.guild(ctx.guild).panels() as panels:
@@ -1249,15 +1111,11 @@ class AdminCommands(MixinMeta):
                 return await ctx.send(_("Panel does not exist!"))
             panels[panel_name]["max_claims"] = amount
 
-        await ctx.send(
-            _("Up to {} staff member(s) can claim a single ticket").format(amount)
-        )
+        await ctx.send(_("Up to {} staff member(s) can claim a single ticket").format(amount))
         await self.initialize(ctx.guild)
 
     @tickets.command()
-    async def workinghours(
-        self, ctx: commands.Context, panel_name: str, day: str, start_time: str, end_time: str
-    ):
+    async def workinghours(self, ctx: commands.Context, panel_name: str, day: str, start_time: str, end_time: str):
         """
         Set working hours for a specific day on a panel
 
@@ -1275,9 +1133,7 @@ class AdminCommands(MixinMeta):
 
         valid_days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
         if day not in valid_days:
-            return await ctx.send(
-                _("Invalid day! Must be one of: {}").format(", ".join(valid_days))
-            )
+            return await ctx.send(_("Invalid day! Must be one of: {}").format(", ".join(valid_days)))
 
         async with self.config.guild(ctx.guild).panels() as panels:
             if panel_name not in panels:
@@ -1302,13 +1158,9 @@ class AdminCommands(MixinMeta):
             time_pattern = re.compile(r"^([01]?[0-9]|2[0-3]):([0-5][0-9])$")
 
             if not time_pattern.match(start_time):
-                return await ctx.send(
-                    _("Invalid start time format! Use HH:MM (24-hour format), e.g., 09:00 or 17:30")
-                )
+                return await ctx.send(_("Invalid start time format! Use HH:MM (24-hour format), e.g., 09:00 or 17:30"))
             if not time_pattern.match(end_time):
-                return await ctx.send(
-                    _("Invalid end time format! Use HH:MM (24-hour format), e.g., 09:00 or 17:30")
-                )
+                return await ctx.send(_("Invalid end time format! Use HH:MM (24-hour format), e.g., 09:00 or 17:30"))
 
             # Normalize times to ensure consistent HH:MM format
             start_parts = start_time.split(":")
@@ -1322,9 +1174,7 @@ class AdminCommands(MixinMeta):
             }
 
         await ctx.send(
-            _("Working hours for {} on {}: {} to {}").format(
-                day.capitalize(), panel_name, start_time, end_time
-            )
+            _("Working hours for {} on {}: {} to {}").format(day.capitalize(), panel_name, start_time, end_time)
         )
 
     @tickets.command()
@@ -1355,9 +1205,7 @@ class AdminCommands(MixinMeta):
                 return await ctx.send(_("Panel does not exist!"))
             panels[panel_name]["timezone"] = timezone_str
 
-        await ctx.send(
-            _("Timezone for {} panel set to {}").format(panel_name, timezone_str)
-        )
+        await ctx.send(_("Timezone for {} panel set to {}").format(panel_name, timezone_str))
 
     @tickets.command()
     async def blockoutside(self, ctx: commands.Context, panel_name: str):
@@ -1430,9 +1278,7 @@ class AdminCommands(MixinMeta):
 
         if not working_hours:
             return await ctx.send(
-                _("No working hours have been configured for {}. Tickets can be opened at any time.").format(
-                    panel_name
-                )
+                _("No working hours have been configured for {}. Tickets can be opened at any time.").format(panel_name)
             )
 
         # Build embed
@@ -1470,9 +1316,7 @@ class AdminCommands(MixinMeta):
         await ctx.send(embed=em)
 
     @tickets.command()
-    async def openrole(
-        self, ctx: commands.Context, panel_name: str, *, role: discord.Role
-    ):
+    async def openrole(self, ctx: commands.Context, panel_name: str, *, role: discord.Role):
         """
         Add/Remove roles required to open a ticket for a specific panel
 
@@ -1488,17 +1332,12 @@ class AdminCommands(MixinMeta):
             if role.id in panels[panel_name]["required_roles"]:
                 panels[panel_name]["required_roles"].remove(role.id)
                 await ctx.send(
-                    _(
-                        "{} has been removed from the {} panel's required open roles"
-                    ).format(role.name, panel_name)
+                    _("{} has been removed from the {} panel's required open roles").format(role.name, panel_name)
                 )
             else:
                 panels[panel_name]["required_roles"].append(role.id)
                 await ctx.send(
-                    role.name
-                    + _(" has been added to the {} panel's required open roles").format(
-                        panel_name
-                    )
+                    role.name + _(" has been added to the {} panel's required open roles").format(panel_name)
                 )
             await self.initialize(ctx.guild)
 
@@ -1542,9 +1381,7 @@ class AdminCommands(MixinMeta):
             if panel_name not in panels:
                 return await ctx.send(_("Panel does not exist!"))
             panels[panel_name]["priority"] = priority
-            await ctx.send(
-                _("Priority for this panel has been set to {}!").format(priority)
-            )
+            await ctx.send(_("Priority for this panel has been set to {}!").format(priority))
         await self.initialize(ctx.guild)
 
     @tickets.command()
@@ -1571,14 +1408,10 @@ class AdminCommands(MixinMeta):
 
             if count > 4:
                 return await ctx.send(
-                    _(
-                        "This panel message already has the max amount of buttons for that specific row"
-                    )
+                    _("This panel message already has the max amount of buttons for that specific row")
                 )
             panels[panel_name]["row"] = row
-            await ctx.send(
-                _("The row number for this panel has been set to {}!").format(row)
-            )
+            await ctx.send(_("The row number for this panel has been set to {}!").format(row))
         await self.initialize(ctx.guild)
 
     @tickets.command()
@@ -1596,14 +1429,10 @@ class AdminCommands(MixinMeta):
         async with self.config.guild(ctx.guild).blacklist() as bl:
             if user_or_role.id in bl:
                 bl.remove(user_or_role.id)
-                await ctx.send(
-                    user_or_role.name + _(" has been removed from the blacklist")
-                )
+                await ctx.send(user_or_role.name + _(" has been removed from the blacklist"))
             else:
                 bl.append(user_or_role.id)
-                await ctx.send(
-                    user_or_role.name + _(" has been added to the blacklist")
-                )
+                await ctx.send(user_or_role.name + _(" has been added to the blacklist"))
 
     @tickets.command()
     async def noresponse(self, ctx: commands.Context, hours: int):
@@ -1639,9 +1468,7 @@ class AdminCommands(MixinMeta):
             await ctx.send(_("Overview channel has been **Disabled**"))
             await self.config.guild(ctx.guild).overview_channel.set(0)
         else:
-            await ctx.send(
-                _("Overview channel has been set to {}").format(channel.mention)
-            )
+            await ctx.send(_("Overview channel has been set to {}").format(channel.mention))
             await self.config.guild(ctx.guild).overview_channel.set(channel.id)
             conf = await self.config.guild(ctx.guild).all()
             new_id = await update_active_overview(ctx.guild, conf)
@@ -1654,9 +1481,7 @@ class AdminCommands(MixinMeta):
         toggle = await self.config.guild(ctx.guild).overview_mention()
         if toggle:
             await self.config.guild(ctx.guild).overview_mention.set(False)
-            txt = _(
-                "Ticket channels will no longer be mentioned in the active ticket channel"
-            )
+            txt = _("Ticket channels will no longer be mentioned in the active ticket channel")
         else:
             await self.config.guild(ctx.guild).overview_mention.set(True)
             txt = _("Ticket channels now be mentioned in the active ticket channel")
@@ -1671,7 +1496,11 @@ class AdminCommands(MixinMeta):
 
     @tickets.command()
     async def getlink(self, ctx: commands.Context, message: discord.Message):
-        """Refetch the transcript link for a ticket"""
+        """
+        Get a direct download link for a ticket transcript
+
+        The HTML transcript can be downloaded and opened in any web browser.
+        """
         notrans = _("This message does not have a transcript attached!")
         if not message.attachments:
             return await ctx.send(notrans)
@@ -1681,9 +1510,24 @@ class AdminCommands(MixinMeta):
         user_id = attachment.filename.split("-")[-1].split(".")[0]
         if not user_id.isdigit():
             return await ctx.send(notrans)
-        url = f"https://mahto.id/chat-exporter?url={attachment.url}"
-        with suppress(discord.HTTPException):
-            await ctx.channel.send(url, delete_after=3600)
+
+        # Provide direct download link - the HTML is self-contained with embedded images
+        embed = discord.Embed(
+            title=_("Transcript Download"),
+            description=_(
+                "Click the button below to download the transcript.\nThe HTML file can be opened in any web browser."
+            ),
+            color=discord.Color.blue(),
+        )
+        view = discord.ui.View()
+        view.add_item(
+            discord.ui.Button(
+                label=_("Download Transcript"),
+                style=discord.ButtonStyle.link,
+                url=attachment.url,
+            )
+        )
+        await ctx.send(embed=embed, view=view, delete_after=3600)
 
     # TOGGLES --------------------------------------------------------------------------------
     @tickets.command()
@@ -1755,16 +1599,10 @@ class AdminCommands(MixinMeta):
         toggle = await self.config.guild(ctx.guild).auto_add()
         if toggle:
             await self.config.guild(ctx.guild).auto_add.set(False)
-            await ctx.send(
-                _(
-                    "Support and panel roles will no longer be auto-added to thread tickets"
-                )
-            )
+            await ctx.send(_("Support and panel roles will no longer be auto-added to thread tickets"))
         else:
             await self.config.guild(ctx.guild).auto_add.set(True)
-            await ctx.send(
-                _("Support and panel roles will be auto-added to thread tickets")
-            )
+            await ctx.send(_("Support and panel roles will be auto-added to thread tickets"))
 
     @tickets.command()
     async def transcript(self, ctx: commands.Context):
@@ -1791,9 +1629,7 @@ class AdminCommands(MixinMeta):
         toggle = await self.config.guild(ctx.guild).detailed_transcript()
         if toggle:
             await self.config.guild(ctx.guild).detailed_transcript.set(False)
-            await ctx.send(
-                _("Transcripts of closed tickets will no longer be interactive")
-            )
+            await ctx.send(_("Transcripts of closed tickets will no longer be interactive"))
         else:
             await self.config.guild(ctx.guild).detailed_transcript.set(True)
             await ctx.send(_("Transcripts of closed tickets will now be interactive"))
@@ -1947,15 +1783,11 @@ class AdminCommands(MixinMeta):
             await channel.send(embed=embed)
             await msg.edit(content=_("Your embed has been sent!"), embed=None)
         except Exception as e:
-            await ctx.send(
-                _("Failed to send embed!\nException: {}").format(box(str(e), "py"))
-            )
+            await ctx.send(_("Failed to send embed!\nException: {}").format(box(str(e), "py")))
 
     @commands.hybrid_command(name="openfor")
     @commands.mod_or_permissions(manage_messages=True)
-    async def openfor(
-        self, ctx: commands.Context, user: discord.Member, *, panel_name: str
-    ):
+    async def openfor(self, ctx: commands.Context, user: discord.Member, *, panel_name: str):
         """Open a ticket for another user"""
         conf = await self.config.guild(ctx.guild).all()
         panel_name = panel_name.lower()
@@ -1967,9 +1799,7 @@ class AdminCommands(MixinMeta):
         desc = _(
             "Click the button below to open a {} ticket for {}\nThis message will self-cleanup in 2 minutes."
         ).format(panel_name, user.name)
-        embed = discord.Embed(
-            description=desc, color=await self.bot.get_embed_color(ctx)
-        )
+        embed = discord.Embed(description=desc, color=await self.bot.get_embed_color(ctx))
         await ctx.send(embed=embed, view=view, delete_after=120)
         await asyncio.sleep(120)
         if not ctx.interaction:

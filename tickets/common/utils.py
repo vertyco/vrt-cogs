@@ -18,9 +18,59 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import pagify, text_to_file
 from redbot.core.utils.mod import is_admin_or_superior
 
+from .transcript import process_transcript_html
+
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
 log = logging.getLogger("red.vrt.tickets.base")
 _ = Translator("Tickets", __file__)
+
+
+class _MessageProxy:
+    """Proxy wrapper for discord.Message that allows setting the 'interaction' property.
+
+    The chat-exporter library tries to set message.interaction = "" which fails in newer
+    discord.py versions where 'interaction' is a read-only property. This proxy intercepts
+    that assignment while delegating all other attribute access to the wrapped message.
+    """
+
+    __slots__ = ("_message", "_interaction")
+
+    def __init__(self, message: discord.Message):
+        object.__setattr__(self, "_message", message)
+        # Access interaction_metadata instead of deprecated interaction property
+        # This avoids the deprecation warning entirely
+        interaction = getattr(message, "interaction_metadata", None) or getattr(message, "_interaction", None)
+        object.__setattr__(self, "_interaction", interaction)
+
+    @property
+    def interaction(self):
+        return object.__getattribute__(self, "_interaction")
+
+    @interaction.setter
+    def interaction(self, value):
+        object.__setattr__(self, "_interaction", value)
+
+    def __getattr__(self, name: str):
+        return getattr(object.__getattribute__(self, "_message"), name)
+
+    def __setattr__(self, name: str, value):
+        if name in ("_message", "_interaction", "interaction"):
+            object.__setattr__(self, name, value)
+        else:
+            setattr(object.__getattribute__(self, "_message"), name, value)
+
+
+def _patch_messages_for_export(messages: list[discord.Message]) -> list[_MessageProxy]:
+    """Wrap messages in proxy objects that allow chat-exporter to set 'interaction'.
+
+    Args:
+        messages: List of discord.Message objects
+
+    Returns:
+        List of _MessageProxy objects wrapping the original messages
+    """
+    return [_MessageProxy(msg) for msg in messages]
+
 
 # Day name mapping for working hours
 DAY_NAMES = {
@@ -273,16 +323,22 @@ async def close_ticket(
 
     use_exporter = conf.get("detailed_transcript", False)
     is_thread = isinstance(channel, discord.Thread)
-    # exporter_success = False
+    exporter_success = False
 
     if conf["transcript"]:
         temp_message = await channel.send(embed=em)
 
-        if use_exporter:
+        # Fetch history first - we need it for both export methods and attachment collection
+        history = await fetch_channel_history(channel)
+
+        if use_exporter and history:
             try:
-                res = await chat_exporter.export(
+                # Wrap messages in proxy objects that allow chat-exporter to set 'interaction'
+                patched_messages = _patch_messages_for_export(history)
+
+                res = await chat_exporter.raw_export(
                     channel=channel,
-                    limit=None,
+                    messages=patched_messages,
                     tz_info="UTC",
                     guild=guild,
                     bot=bot,
@@ -290,17 +346,25 @@ async def close_ticket(
                     fancy_times=True,
                     support_dev=False,
                 )
-                buffer.write(res)
-                # exporter_success = True
-            except AttributeError:
-                pass
+                if res:
+                    buffer.write(res)
+                    exporter_success = True
+            except Exception as e:
+                # chat-exporter may fail due to Discord.py API changes
+                # Fall back to simple text transcript
+                log.error(f"HTML transcript export failed, falling back to text: {e}", exc_info=e)
+                exporter_success = False
+
+        # If exporter failed or wasn't used, build simple text transcript
+        if not exporter_success:
+            # Update filename to .txt since we're not using HTML
+            filename = f"{member.name}-{member.id}.txt".replace("/", "")
 
         answers = ticket.get("answers")
-        if answers and not use_exporter:
+        if answers and not exporter_success:
             for q, a in answers.items():
                 buffer.write(_("Question: {}\nResponse: {}\n").format(q, a))
 
-        history = await fetch_channel_history(channel)
         filenames = defaultdict(int)
         for msg in history:
             if msg.author.bot:
@@ -318,9 +382,9 @@ async def close_ticket(
                         p = Path(i.filename)
                         i.filename = f"{p.stem}_{filenames[i.filename]}{p.suffix}"
 
-                    files.append({"filename": i.filename, "content": await i.read()})
+                    files.append({"filename": i.filename, "content": await i.read(), "url": i.url})
 
-            if not use_exporter:
+            if not exporter_success:
                 if msg.content:
                     buffer.write(
                         f"{msg.created_at.strftime('%m-%d-%Y %I:%M:%S %p')} - {msg.author.name}: {msg.content}\n"
@@ -336,12 +400,31 @@ async def close_ticket(
     else:
         history = await fetch_channel_history(channel, limit=1)
 
+    # Process HTML transcript: embed images as base64, compress to WebP
+    files_for_zip = files
+    if exporter_success and buffer.getvalue():
+        try:
+            processed_html, files_for_zip, embedded = await process_transcript_html(
+                html=buffer.getvalue(),
+                downloaded_files=files,
+                guild_filesize_limit=guild.filesize_limit,
+            )
+            # Replace buffer content with processed HTML
+            buffer = StringIO()
+            buffer.write(processed_html)
+            if embedded:
+                log.debug(f"Embedded {len(embedded)} files into transcript HTML")
+        except Exception as e:
+            log.error(f"Failed to process transcript HTML: {e}", exc_info=True)
+            # Fall back to original HTML and all files in zip
+            files_for_zip = files
+
     def zip_files():
-        if files:
+        if files_for_zip:
             # Create a zip archive in memory
             zip_buffer = BytesIO()
             with zipfile.ZipFile(zip_buffer, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zip_file:
-                for file_dict in files:
+                for file_dict in files_for_zip:
                     zip_file.writestr(
                         file_dict["filename"],
                         file_dict["content"],
@@ -365,8 +448,6 @@ async def close_ticket(
                 url=jump_url,
             )
         )
-
-    view_label = _("View Transcript")
 
     text = buffer.getvalue()
 
@@ -422,12 +503,6 @@ async def close_ticket(
             else:
                 raise
 
-        # if log_msg and exporter_success:
-        #     url = f"https://mahto.id/chat-exporter?url={log_msg.attachments[0].url}"
-        #     view = discord.ui.View()
-        #     view.add_item(discord.ui.Button(label=view_label, style=discord.ButtonStyle.link, url=url))
-        #     await log_msg.edit(view=view)
-
         # Delete old log msg
         log_msg_id = ticket["logmsg"]
         try:
@@ -445,11 +520,7 @@ async def close_ticket(
         try:
             if text:
                 text_file = text_to_file(text, filename) if text else None
-                dm_msg = await member.send(embed=embed, file=text_file)
-                url = f"https://mahto.id/chat-exporter?url={dm_msg.attachments[0].url}"
-                view = discord.ui.View()
-                view.add_item(discord.ui.Button(label=view_label, style=discord.ButtonStyle.link, url=url))
-                await dm_msg.edit(view=view)
+                await member.send(embed=embed, file=text_file)
             else:
                 await member.send(embed=embed)
 
