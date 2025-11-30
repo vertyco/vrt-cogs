@@ -48,6 +48,11 @@ TICKET_PANEL_SCHEMA = {  # "panel_name" will be the key for the schema
     "max_claims": 0,  # How many cooks in the kitchen (default infinite if 0)
     # Ticker
     "ticket_num": 1,
+    # Working hours settings
+    "working_hours": {},  # (Optional) Dict of day -> {"start": "HH:MM", "end": "HH:MM"} in 24h format
+    "timezone": "UTC",  # (Optional) Timezone for working hours (e.g., "America/New_York")
+    "block_outside_hours": False,  # (Optional) Block ticket creation outside working hours
+    "outside_hours_message": "",  # (Optional) Message to show when ticket is created outside working hours
 }
 # v1.3.10 schema update (Modals)
 MODAL_SCHEMA = {
