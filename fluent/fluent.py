@@ -536,7 +536,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
 
             async with channel.typing():
                 try:
-                    trans = await self.translate(message.content, target_lang)
+                    trans = await self.translate(message.content, target_lang, force=True)
                 except Exception as e:
                     log.error("Translation failed in 'only' mode", exc_info=e)
                     self.bot._last_exception = e
