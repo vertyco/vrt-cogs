@@ -201,7 +201,7 @@ class WeeklyReset(MixinMeta):
 
         conf.weeklysettings.refresh()
         conf.users_weekly.clear()
-        conf.weeklysettings.last_embed = embed.to_dict()
+        conf.weeklysettings.last_embed = dict(embed.to_dict())
         self.save()
         if ctx:
             await ctx.send(_("Weekly stats have been reset."))
