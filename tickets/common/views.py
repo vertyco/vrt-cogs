@@ -638,15 +638,20 @@ class SupportButton(Button):
         if messages:
             embeds = []
             for index, einfo in enumerate(messages):
+                # Use custom color if set, otherwise default to user's color
+                embed_color = discord.Color(einfo.get("color")) if einfo.get("color") is not None else user.color
                 em = discord.Embed(
                     title=fmt_params(einfo["title"]) if einfo["title"] else None,
                     description=fmt_params(einfo["desc"]),
-                    color=user.color,
+                    color=embed_color,
                 )
                 if index == 0:
                     em.set_thumbnail(url=user.display_avatar.url)
                 if einfo["footer"]:
                     em.set_footer(text=fmt_params(einfo["footer"]))
+                # Set image if configured
+                if einfo.get("image"):
+                    em.set_image(url=einfo["image"])
                 embeds.append(em)
 
             msg = await channel_or_thread.send(
