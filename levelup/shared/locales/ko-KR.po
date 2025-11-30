@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2025-08-31 20:23-0400\n"
-"PO-Revision-Date: 2025-09-01 00:32\n"
+"POT-Creation-Date: 2025-11-27 13:02-0500\n"
+"PO-Revision-Date: 2025-11-27 19:08\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -17,7 +17,7 @@ msgstr ""
 "X-Crowdin-File-ID: 174\n"
 "Language: ko_KR\n"
 
-#: levelup\shared\__init__.py:8
+#: levelup\shared\__init__.py:9
 #, docstring
 msgid "\n"
 "    Subclass all shared metaclassed parts of the cog\n\n"
@@ -56,12 +56,12 @@ msgstr ""
 msgid "{} just reached level {}!"
 msgstr ""
 
-#: levelup\shared\levelups.py:235
+#: levelup\shared\levelups.py:245
 #, docstring
 msgid "Ensure a user has the correct level roles based on their level and the guild's settings"
 msgstr ""
 
-#: levelup\shared\levelups.py:245
+#: levelup\shared\levelups.py:255
 msgid "Level Up"
 msgstr ""
 
@@ -80,7 +80,17 @@ msgstr ""
 msgid "Remove XP from a user and check for level ups"
 msgstr ""
 
-#: levelup\shared\profile.py:58
+#: levelup\shared\profile.py:56
+#, docstring
+msgid "Get the XP for a member"
+msgstr ""
+
+#: levelup\shared\profile.py:64
+#, docstring
+msgid "Get the level for a member"
+msgstr ""
+
+#: levelup\shared\profile.py:74
 #, docstring
 msgid "\n"
 "        Get a background for a user's profile in the following priority:\n"
@@ -91,7 +101,7 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: levelup\shared\profile.py:117
+#: levelup\shared\profile.py:133
 #, docstring
 msgid "Fetch a user's banner from Discord's API\n\n"
 "        Args:\n"
@@ -101,7 +111,7 @@ msgid "Fetch a user's banner from Discord's API\n\n"
 "        "
 msgstr ""
 
-#: levelup\shared\profile.py:132
+#: levelup\shared\profile.py:150
 #, docstring
 msgid "\n"
 "        Get a user's profile as an embed or file\n"
@@ -115,43 +125,43 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: levelup\shared\profile.py:187
+#: levelup\shared\profile.py:205
 msgid "Level {}\n"
 msgstr ""
 
-#: levelup\shared\profile.py:189
+#: levelup\shared\profile.py:207
 msgid "Prestige {}\n"
 msgstr ""
 
-#: levelup\shared\profile.py:192
+#: levelup\shared\profile.py:210
 msgid " stars\n"
 msgstr ""
 
-#: levelup\shared\profile.py:193
+#: levelup\shared\profile.py:211
 msgid " messages sent\n"
 msgstr ""
 
-#: levelup\shared\profile.py:194
+#: levelup\shared\profile.py:212
 msgid " in voice\n"
 msgstr ""
 
-#: levelup\shared\profile.py:196
+#: levelup\shared\profile.py:214
 msgid " Exp ({} total)\n"
 msgstr ""
 
-#: levelup\shared\profile.py:210
+#: levelup\shared\profile.py:228
 msgid "{}'s Profile"
 msgstr ""
 
-#: levelup\shared\profile.py:214
+#: levelup\shared\profile.py:232
 msgid "Rank {}, with {}% of the total server Exp"
 msgstr ""
 
-#: levelup\shared\profile.py:219
+#: levelup\shared\profile.py:237
 msgid "Progress"
 msgstr ""
 
-#: levelup\shared\profile.py:344
+#: levelup\shared\profile.py:362
 #, docstring
 msgid "Cached version of get_user_profile"
 msgstr ""
