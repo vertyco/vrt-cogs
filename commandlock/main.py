@@ -29,7 +29,7 @@ class CommandLock(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.0.4"
+    __version__ = "0.0.5"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -72,7 +72,7 @@ class CommandLock(commands.Cog):
             # The allowed channels are channels they cannot access
             err = "There are no channels in which you have permission to use this command."
             await ctx.send(err, **kwargs)
-            return False
+            raise commands.UserFeedbackCheckFailure()
         channel = ctx.channel.parent if isinstance(ctx.channel, discord.Thread) else ctx.channel
         if channel in allowed_channels:
             return True
@@ -87,16 +87,16 @@ class CommandLock(commands.Cog):
         msg = f"{ctx.author.mention}, you can only use this command in the following channels: {mentions}"
         for p in pagify(msg, page_length=1900, delims=[",", "\n"]):
             await ctx.send(p, **kwargs)
-        return False
+        raise commands.UserFeedbackCheckFailure()
 
     async def is_immune(self, ctx: commands.Context) -> bool:
         if (
             isinstance(ctx.command, commands.commands._AlwaysAvailableCommand)
-            or ctx.guild is None
-            or ctx.guild.owner_id == ctx.author.id
-            or await self.bot.is_owner(ctx.author)
-            or not isinstance(ctx.author, discord.Member)
-            or await self.bot.is_admin(ctx.author)
+            # or ctx.guild is None
+            # or ctx.guild.owner_id == ctx.author.id
+            # or await self.bot.is_owner(ctx.author)
+            # or not isinstance(ctx.author, discord.Member)
+            # or await self.bot.is_admin(ctx.author)
         ):
             log.debug("User %s is immune to command locks.", ctx.author)
             return True
