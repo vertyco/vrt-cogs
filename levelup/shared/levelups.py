@@ -311,7 +311,7 @@ class LevelUps(MixinMeta):
 
         # Check if member has an excluded role for weekly winner eligibility
         excluded_role_ids = set(conf.weeklysettings.excluded_roles)
-        member_has_excluded_role = bool(user_role_ids & excluded_role_ids)
+        member_has_excluded_role = bool(set(user_role_ids) & excluded_role_ids)
 
         # Determine role winners based on settings
         role_winners = conf.weeklysettings.last_winners
