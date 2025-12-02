@@ -202,6 +202,8 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
     @commands.bot_has_permissions(embed_links=True)
     async def translate_command(self, ctx: commands.Context, to_language: str, *, message: t.Optional[str] = None):
         """Translate a message"""
+        if ctx.interaction is not None:
+            await ctx.interaction.response.defer()
         translator = api.TranslateManager()
         lang = await translator.get_lang(to_language)
         if not lang:
