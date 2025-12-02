@@ -29,7 +29,7 @@ class CommandLock(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.0.5"
+    __version__ = "0.0.6"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -92,11 +92,11 @@ class CommandLock(commands.Cog):
     async def is_immune(self, ctx: commands.Context) -> bool:
         if (
             isinstance(ctx.command, commands.commands._AlwaysAvailableCommand)
-            # or ctx.guild is None
-            # or ctx.guild.owner_id == ctx.author.id
-            # or await self.bot.is_owner(ctx.author)
-            # or not isinstance(ctx.author, discord.Member)
-            # or await self.bot.is_admin(ctx.author)
+            or ctx.guild is None
+            or ctx.guild.owner_id == ctx.author.id
+            or await self.bot.is_owner(ctx.author)
+            or not isinstance(ctx.author, discord.Member)
+            or await self.bot.is_admin(ctx.author)
         ):
             log.debug("User %s is immune to command locks.", ctx.author)
             return True
