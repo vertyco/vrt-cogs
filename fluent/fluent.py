@@ -67,7 +67,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "2.5.4"
+    __version__ = "2.5.5"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -141,6 +141,26 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
         keep = [b.model_dump() for b in buttons if b not in to_delete]
         await self.config.guild(message.guild).buttons.set(keep)
         log.info(f"Removed {len(to_delete)} buttons for message {message.id}")
+
+    # Make sure to handle when a channel is deleted
+    @commands.Cog.listener()
+    async def on_guild_channel_delete(self, channel: discord.abc.GuildChannel):
+        if not channel.guild:
+            return
+        buttons = await self.get_buttons(channel.guild)
+        if buttons:
+            to_delete = [b for b in buttons if b.channel_id == channel.id]
+            if to_delete:
+                keep = [b.model_dump() for b in buttons if b not in to_delete]
+                await self.config.guild(channel.guild).buttons.set(keep)
+                log.info(f"Removed {len(to_delete)} buttons for channel {channel.id}")
+
+        # Also remove the channel from fluent channels config if it exists
+        async with self.config.guild(channel.guild).channels() as channels:
+            cid = str(channel.id)
+            if cid in channels:
+                del channels[cid]
+                log.info(f"Removed fluent channel config for {channel.id}")
 
     @cached(ttl=10)
     async def get_channels(self, guild: discord.Guild) -> dict:
@@ -607,35 +627,34 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
             target_lang = channel_config["target"]
             log.debug(f"Translating to target language: {target_lang}")
 
-            async with channel.typing():
+            try:
+                trans: api.Result = await self.translate(clean_content, target_lang, force=True)
+            except Exception as e:
+                log.error("Translation failed in 'only' mode", exc_info=e)
+                self.bot._last_exception = e
+                return
+
+            if trans is None:
+                log.debug("Translation returned None")
+                return
+
+            # If translated text is the same as the source, no need to send
+            if trans.text.lower() == clean_content.lower() or trans.src == trans.dest:
+                log.debug("Translated text is the same as the source, no need to send")
+                return
+
+            if message.channel.permissions_for(message.guild.me).embed_links:
+                embed = discord.Embed(description=trans.text, color=message.author.color)
+                embed.set_footer(text=f"{trans.src} -> {trans.dest}")
                 try:
-                    trans: api.Result = await self.translate(clean_content, target_lang, force=True)
-                except Exception as e:
-                    log.error("Translation failed in 'only' mode", exc_info=e)
-                    self.bot._last_exception = e
-                    return
-
-                if trans is None:
-                    log.debug("Translation returned None")
-                    return
-
-                # If translated text is the same as the source, no need to send
-                if trans.text.lower() == clean_content.lower() or trans.src == trans.dest:
-                    log.debug("Translated text is the same as the source, no need to send")
-                    return
-
-                if message.channel.permissions_for(message.guild.me).embed_links:
-                    embed = discord.Embed(description=trans.text, color=message.author.color)
-                    embed.set_footer(text=f"{trans.src} -> {trans.dest}")
-                    try:
-                        await message.reply(embed=embed, mention_author=False)
-                    except (discord.NotFound, AttributeError):
-                        await channel.send(embed=embed)
-                else:
-                    try:
-                        await message.reply(trans.text, mention_author=False)
-                    except (discord.NotFound, AttributeError):
-                        await channel.send(trans.text)
+                    await message.reply(embed=embed, mention_author=False)
+                except (discord.NotFound, AttributeError):
+                    await channel.send(embed=embed)
+            else:
+                try:
+                    await message.reply(trans.text, mention_author=False)
+                except (discord.NotFound, AttributeError):
+                    await channel.send(trans.text)
             return
 
         # Handle bidirectional mode (lang1 <-> lang2)
