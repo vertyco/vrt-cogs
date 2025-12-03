@@ -1,0 +1,129 @@
+name: "Check Cogs Load"
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+# Use concurrency to ensure that we don't run multiple jobs using the same token in parallel.
+# This prevents gateway disconnects and rate limits.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-cogs:
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        python-version: ['3.9', '3.11']
+        os: [ubuntu-latest, ubuntu-24.04-arm]
+
+    runs-on: ${{ matrix.os }}
+    name: Test Cogs (Py ${{ matrix.python-version }} on ${{ matrix.os }})
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Red-DiscordBot
+        run: |
+          set -euo pipefail
+          echo "📦 Installing Red-DiscordBot from PyPI"
+          pip install Red-DiscordBot
+
+      - name: Test cogs via Downloader
+        uses: nntin/d-flows/actions/test-red-discordbot-downloader@v1.1.2
+        with:
+          token: ${{ secrets.DISCORD_BOT_TOKEN }}
+
+  ##################################################################
+  ####     Build validation results for Discord notification    ####
+  ##################################################################
+  build-validation-fields:
+    name: Build Validation Fields
+    runs-on: ubuntu-latest
+    needs: [test-cogs]
+    if: always()
+    outputs:
+      discord_fields: ${{ steps.discord_fields.outputs.fields }}
+      validation_result: ${{ steps.validation_result.outputs.result }}
+
+    steps:
+      - name: Determine validation result
+        id: validation_result
+        run: |
+          TEST_STATUS="${{ needs['test-cogs'].result }}"
+          echo "result=${TEST_STATUS}" >> "$GITHUB_OUTPUT"
+
+      - name: Build Discord Fields
+        id: discord_fields
+        run: |
+          TEST_STATUS="${{ needs['test-cogs'].result }}"
+
+          TEST_EMOJI=$([[ "$TEST_STATUS" == "success" ]] && echo "✅" || echo "❌")
+
+          FIELDS=$(jq -n \
+            --arg test_status "$TEST_EMOJI $TEST_STATUS" \
+            --arg actor "${{ github.actor }}" \
+            --arg pr_number "${{ github.event.pull_request.number }}" \
+            --arg pr_url "${{ github.event.pull_request.html_url }}" \
+            --arg run_url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            '[
+              {"name": "Cog Tests", "value": $test_status, "inline": true},
+              {"name": "PR Details", "value": ("[#" + $pr_number + "](" + $pr_url + ") by @" + $actor), "inline": false},
+              {"name": "Run Details", "value": ("[View Full Run](" + $run_url + ")"), "inline": false}
+            ]')
+
+          delimiter="$(openssl rand -hex 8)"
+          {
+            echo "fields<<${delimiter}"
+            echo "$FIELDS"
+            echo "${delimiter}"
+          } >> "$GITHUB_OUTPUT"
+
+  ##################################################################
+  ####       Display validation results via Step Summary        ####
+  ##################################################################
+  display-validation-summary:
+    name: Display Validation Summary
+    runs-on: ubuntu-latest
+    needs: [test-cogs, build-validation-fields]
+    if: always()
+
+    steps:
+      - name: Write Step Summary
+        uses: nntin/d-flows/actions/step-summary@v1
+        with:
+          title: 'Cog Validation Results'
+          markdown: |
+            | Stage | Status |
+            |-------|--------|
+            | Cog Tests | ${{ needs['test-cogs'].result == 'success' && '✅ Passed' || '❌ Failed' }} |
+          overwrite: false
+
+  # requires: secrets.DISCORD_WEBHOOK_URL to be set in the repository
+  ##################################################################
+  ####         Display validation results via Discord           ####
+  ##################################################################
+  notify-cog-validation:
+    name: Notify Validation Results
+    runs-on: ubuntu-latest
+    needs: [build-validation-fields, display-validation-summary]
+    if: always()
+
+    steps:
+      - name: Send Discord Notification
+        uses: nntin/d-flows/actions/discord-notify@v1
+        with:
+          webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          message_type: 'embed'
+          color: ${{ needs.build-validation-fields.outputs.validation_result == 'success' && '3066993' || '16776960' }}
+          fields: ${{ needs.build-validation-fields.outputs.discord_fields }}
