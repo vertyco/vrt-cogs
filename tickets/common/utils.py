@@ -335,7 +335,7 @@ async def close_ticket(
             try:
                 # Wrap messages in proxy objects that allow chat-exporter to set 'interaction'
                 patched_messages = _patch_messages_for_export(history)
-
+                patched_messages.reverse()
                 res = await chat_exporter.raw_export(
                     channel=channel,
                     messages=patched_messages,
