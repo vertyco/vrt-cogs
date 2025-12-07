@@ -62,9 +62,9 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
         asyncio.create_task(self._startup())
 
     async def cog_unload(self) -> None:
-        self.auto_close.cancel()
         for view in self.views:
             view.stop()
+        self.auto_close.cancel()
 
     async def _startup(self) -> None:
         await self.bot.wait_until_red_ready()
