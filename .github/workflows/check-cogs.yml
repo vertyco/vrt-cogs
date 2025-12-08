@@ -1,48 +1,27 @@
-name: "Check Cogs Load"
+name: "Check Cogs"
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
-  workflow_dispatch:
 
-# Use concurrency to ensure that we don't run multiple jobs using the same token in parallel.
-# This prevents gateway disconnects and rate limits.
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   test-cogs:
-    strategy:
-      fail-fast: false
-      max-parallel: 1
-      matrix:
-        python-version: ['3.9', '3.11']
-        os: [ubuntu-latest, ubuntu-24.04-arm]
-
-    runs-on: ${{ matrix.os }}
-    name: Test Cogs (Py ${{ matrix.python-version }} on ${{ matrix.os }})
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.11"
 
       - name: Install Red-DiscordBot
-        run: |
-          set -euo pipefail
-          echo "📦 Installing Red-DiscordBot from PyPI"
-          pip install Red-DiscordBot
+        run: pip install red-discordbot
 
-      - name: Test cogs via Downloader
-        uses: nntin/d-flows/actions/test-red-discordbot-downloader@v1.1.2
+      - name: Test Cogs
+        uses: nntin/d-flows/actions/test-red-discordbot-downloader@v1
         with:
           token: ${{ secrets.DISCORD_BOT_TOKEN }}
+          repo_url: https://github.com/${{ github.repository }}
+          repo_branch: ${{ github.head_ref || github.ref_name }}
 
   ##################################################################
   ####     Build validation results for Discord notification    ####
@@ -113,17 +92,17 @@ jobs:
   ##################################################################
   ####         Display validation results via Discord           ####
   ##################################################################
-  notify-cog-validation:
-    name: Notify Validation Results
-    runs-on: ubuntu-latest
-    needs: [build-validation-fields, display-validation-summary]
-    if: always()
+  # notify-cog-validation:
+  #   name: Notify Validation Results
+  #   runs-on: ubuntu-latest
+  #   needs: [build-validation-fields, display-validation-summary]
+  #   if: always()
 
-    steps:
-      - name: Send Discord Notification
-        uses: nntin/d-flows/actions/discord-notify@v1
-        with:
-          webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          message_type: 'embed'
-          color: ${{ needs.build-validation-fields.outputs.validation_result == 'success' && '3066993' || '16776960' }}
-          fields: ${{ needs.build-validation-fields.outputs.discord_fields }}
+  #   steps:
+  #     - name: Send Discord Notification
+  #       uses: nntin/d-flows/actions/discord-notify@v1
+  #       with:
+  #         webhook_url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+  #         message_type: 'embed'
+  #         color: ${{ needs.build-validation-fields.outputs.validation_result == 'success' && '3066993' || '16776960' }}
+  #         fields: ${{ needs.build-validation-fields.outputs.discord_fields }}
