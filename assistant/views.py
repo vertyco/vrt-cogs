@@ -192,7 +192,11 @@ class EmbeddingMenu(discord.ui.View):
             return await self.ctx.send(_("Failed to process embedding `{}`\nContent: ```\n{}\n```").format(name, text))
         if name in self.conf.embeddings:
             return await self.ctx.send(_("An embedding with the name `{}` already exists!").format(name))
-        self.conf.embeddings[name] = Embedding(text=text, embedding=embedding, model=self.conf.embed_model)
+        self.conf.embeddings[name] = Embedding(
+            text=text,
+            embedding=embedding,
+            model=self.conf.get_embed_model(self.db.endpoint_override),
+        )
         await asyncio.to_thread(self.conf.sync_embeddings, self.ctx.guild.id)
         await self.get_pages()
         with suppress(discord.NotFound):

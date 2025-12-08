@@ -111,10 +111,11 @@ class API(MixinMeta):
         return message
 
     async def request_embedding(self, text: str, conf: GuildSettings) -> List[float]:
+        embed_model = conf.get_embed_model(self.db.endpoint_override)
         response: CreateEmbeddingResponse = await request_embedding_raw(
             text=text,
             api_key=conf.api_key or "unprotected" if self.db.endpoint_override else conf.api_key,
-            model=conf.embed_model,
+            model=embed_model,
             base_url=self.db.endpoint_override,
         )
 
@@ -331,17 +332,18 @@ class API(MixinMeta):
 
         sample = list(conf.embeddings.values())[0]
         sample_embed = await self.request_embedding(sample.text, conf)
+        target_model = conf.get_embed_model(self.db.endpoint_override)
 
         async def update_embedding(name: str, text: str):
             conf.embeddings[name].embedding = await self.request_embedding(text, conf)
             conf.embeddings[name].update()
-            conf.embeddings[name].model = conf.embed_model
+            conf.embeddings[name].model = target_model
             log.debug(f"Updated embedding: {name}")
 
         synced = 0
         tasks = []
         for name, em in conf.embeddings.items():
-            if conf.embed_model != em.model or len(em.embedding) != len(sample_embed):
+            if target_model != em.model or len(em.embedding) != len(sample_embed):
                 synced += 1
                 tasks.append(update_embedding(name, em.text))
 
@@ -644,7 +646,7 @@ class API(MixinMeta):
                     tokens,
                     len(embedding.embedding),
                     embedding.ai_created,
-                    conf.embed_model,
+                    conf.get_embed_model(self.db.endpoint_override),
                 )
                 val += text
                 fieldname = f"➣ {name}" if place == num else name

@@ -282,7 +282,12 @@ class Assistant(
         embedding = await self.request_embedding(text, conf)
         if not embedding:
             return None
-        conf.embeddings[name] = Embedding(text=text, embedding=embedding, ai_created=ai_created, model=conf.embed_model)
+        conf.embeddings[name] = Embedding(
+            text=text,
+            embedding=embedding,
+            ai_created=ai_created,
+            model=conf.get_embed_model(self.db.endpoint_override),
+        )
         await asyncio.to_thread(conf.sync_embeddings, guild.id)
         asyncio.create_task(self.save_conf())
         return embedding

@@ -1,5 +1,25 @@
 Set up and configure an AI assistant (or chat) cog for your server with one of OpenAI's ChatGPT language models.<br/><br/>Features include configurable prompt injection, dynamic embeddings, custom function calling, and more!<br/><br/>- **[p]assistant**: base command for setting up the assistant<br/>- **[p]chat**: talk with the assistant<br/>- **[p]convostats**: view a user's token usage/conversation message count for the channel<br/>- **[p]clearconvo**: reset your conversation with the assistant in the channel
 
+### Ollama Embedding Setup
+When using Ollama with `[p]assistant endpointoverride http://localhost:11434/v1`:
+
+**Recommended Models:**
+| Model | Dimensions | Notes |
+|-------|------------|-------|
+| `nomic-embed-text` | 768 | Best for general use, high quality |
+| `all-minilm` | 384 | Faster, lower memory usage |
+| `embeddinggemma` | 3072 | Gemma-based, high capacity embeddings |
+
+**Configuration Steps:**
+1. Pull the embedding model: `ollama pull nomic-embed-text`
+2. Set the model: `[p]assistant embedmodel nomic-embed-text`
+3. Verify dimensions match existing embeddings or use `[p]assistant refreshembeds` to resync
+
+**Dimension Compatibility:**
+- If changing models with different dimensions (e.g., 768→384), you MUST run `[p]assistant refreshembeds`
+- This regenerates all embeddings to match the new model's dimensions
+- Memory functions (`create_memory`, `search_memories`) will fail if dimensions mismatch
+
 ## Ollama Compatibility
 - Supported: chat completions, embeddings, memory functions (`create`, `search`, `edit`, `list`, `respond_and_continue`), and `search_web_brave` when a Brave API key is set.
 - Unsupported: image generation and image editing.

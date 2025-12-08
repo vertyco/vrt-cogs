@@ -63,6 +63,7 @@ class Admin(MixinMeta):
 
         conf = self.db.get_conf(ctx.guild)
         model = conf.get_user_model(ctx.author)
+        effective_embed_model = conf.get_embed_model(self.db.endpoint_override)
         system_tokens = await self.count_tokens(conf.system_prompt, model) if conf.system_prompt else 0
         prompt_tokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
 
@@ -77,7 +78,7 @@ class Admin(MixinMeta):
             + _("`OpenAI API Status:   `{}\n").format(status)
             + _("`Draw Command:        `{}\n").format(_("Enabled") if conf.image_command else _("Disabled"))
             + _("`Model:               `{}\n").format(conf.model)
-            + _("`Embed Model:         `{}\n").format(conf.embed_model)
+            + _("`Embed Model:         `{}\n").format(effective_embed_model)
             + _("`Enabled:             `{}\n").format(conf.enabled)
             + _("`Timezone:            `{}\n").format(conf.timezone)
             + _("`Channel:             `{}\n").format(f"<#{conf.channel_id}>" if conf.channel_id else _("Not Set"))
@@ -185,21 +186,48 @@ class Admin(MixinMeta):
             )
 
         types = set(len(i.embedding) for i in conf.embeddings.values())
+        embed_count = len(conf.embeddings)
+        embed_num = humanize_number(embed_count)
 
-        if len(types) == 2:
+        if len(types) >= 2:
             encoded_by = _("Mixed (Please Refresh!)")
         elif len(types) == 1:
             encoded_by = _("Synced!")
         else:
             encoded_by = _("N/A")
 
+        if not types:
+            dimension_label = _("N/A")
+        elif len(types) == 1:
+            dimension_label = _("{} dimensions").format(humanize_number(next(iter(types))))
+        else:
+            dimension_label = _("Mixed dimensions")
+
+        if not embed_count:
+            status_text = _("No embeddings stored")
+        elif len(types) == 1:
+            status_text = _("✅ Compatible with current model")
+        else:
+            status_text = _("⚠️ Mixed dimensions, run `[p]assistant refreshembeds`")
+
         embedding_field = (
-            _("`Top N Embeddings:  `{}\n").format(conf.top_n)
+            _("`Embeddings:         `{} embeddings ({})\n").format(embed_num, dimension_label)
+            + _("`Embedding Status:   `{}\n").format(status_text)
+            + _("`Top N Embeddings:  `{}\n").format(conf.top_n)
             + _("`Min Relatedness:   `{}\n").format(conf.min_relatedness)
             + _("`Embedding Method:  `{}\n").format(conf.embed_method)
             + _("`Encodings:         `{}").format(encoded_by)
         )
-        embed_num = humanize_number(len(conf.embeddings))
+
+        if (
+            self.db.endpoint_override
+            and conf.embed_model == "text-embedding-3-small"
+            and effective_embed_model != conf.embed_model
+        ):
+            embedding_field += "\n" + _(
+                "⚠️ Using OpenAI's default embed model on a custom endpoint, defaulting to `{}`"
+            ).format(effective_embed_model)
+
         embed.add_field(
             name=_("Embeddings ({})").format(embed_num),
             value=embedding_field,
@@ -1408,6 +1436,31 @@ class Admin(MixinMeta):
             "text-embedding-3-small",
             "text-embedding-3-large",
         ]
+
+        if self.db.endpoint_override:
+            suggestions = ["nomic-embed-text", "all-minilm", "embeddinggemma"]
+            if not model:
+                suggested = humanize_list(suggestions)
+                msg = _("Custom endpoint detected. Provide a model name available on your endpoint (e.g. {}).").format(
+                    suggested
+                )
+                return await ctx.send(msg)
+
+            is_valid, note, dimensions = await self._validate_embedding_endpoint(model)
+            if not is_valid:
+                msg = _("Failed to validate embedding model **{}**: {}").format(model, note)
+                msg += "\n" + _("Check model availability on your endpoint (e.g. `ollama list`).")
+                return await ctx.send(msg)
+
+            conf.embed_model = model
+            dim_note = _(" ({} dimensions detected)").format(dimensions) if dimensions else ""
+            success_msg = _("The **{}** model will now be used for embeddings{}").format(model, dim_note)
+            if note:
+                success_msg += f"\n{note}"
+            await ctx.send(success_msg)
+            await self.save_conf()
+            return
+
         if not model or model not in valid:
             return await ctx.send(_("Valid models are:\n{}").format(box(humanize_list(valid))))
         conf.embed_model = model
@@ -1570,6 +1623,7 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         if not await self.can_call_llm(conf, ctx):
             return
+        embed_model = conf.get_embed_model(self.db.endpoint_override)
         attachments = get_attachments(ctx.message)
         if not attachments:
             return await ctx.send(
@@ -1633,7 +1687,7 @@ class Admin(MixinMeta):
                 await ctx.send(_("Failed to process embedding: `{}`").format(name))
                 continue
 
-            conf.embeddings[name] = Embedding(text=text, embedding=query_embedding, model=conf.embed_model)
+            conf.embeddings[name] = Embedding(text=text, embedding=query_embedding, model=embed_model)
             imported += 1
         await asyncio.to_thread(conf.sync_embeddings, ctx.guild.id)
         await message.edit(content=_("{}\n**COMPLETE**").format(message_text))
@@ -1695,6 +1749,7 @@ class Admin(MixinMeta):
         """
         conf = self.db.get_conf(ctx.guild)
         tz = pytz.timezone(conf.timezone)
+        embed_model = conf.get_embed_model(self.db.endpoint_override)
         attachments = get_attachments(ctx.message)
         if not attachments:
             return await ctx.send(
@@ -1765,7 +1820,7 @@ class Admin(MixinMeta):
                     embedding=query_embedding,
                     ai_created=row["ai_created"],
                     created=created_tz,
-                    model=conf.embed_model,
+                    model=embed_model,
                 )
                 imported += 1
 
@@ -2235,6 +2290,20 @@ class Admin(MixinMeta):
             await ctx.send(_("Verbosity has been set to **Low**"))
         await self.save_conf()
 
+    async def _validate_embedding_endpoint(self, model: str) -> Tuple[bool, str, int]:
+        try:
+            client = openai.AsyncOpenAI(api_key="unprotected", base_url=self.db.endpoint_override)
+            response = await client.embeddings.create(input="test", model=model)
+        except openai.AuthenticationError as e:
+            return False, _("Authentication failed: {}").format(e), 0
+        except Exception as e:
+            log.warning("Embedding endpoint validation failed", exc_info=e)
+            return False, str(e), 0
+
+        embedding = response.data[0].embedding if response.data else []
+        dimensions = len(embedding) if embedding else 0
+        return True, "", dimensions
+
     async def _validate_endpoint(self, url: str) -> Tuple[bool, str]:
         try:
             client = openai.AsyncOpenAI(api_key="unprotected", base_url=url)
@@ -2263,9 +2332,29 @@ class Admin(MixinMeta):
         - Using an endpoint override will negate model settings like temperature and custom functions
         - Image generation and editing functions are disabled when using a custom endpoint
         """
+        conf = self.db.get_conf(ctx.guild)
         compat_warning = _(
             "Note: Image generation and editing are not supported when using a custom endpoint."
         )
+
+        def _embedding_warning() -> str:
+            if not conf or not conf.embeddings:
+                return ""
+            dims = {len(em.embedding) for em in conf.embeddings.values()}
+            if not dims:
+                return ""
+            if len(dims) == 1:
+                dim_label = _("{} dimensions").format(humanize_number(next(iter(dims))))
+            else:
+                dim_label = _("mixed dimensions")
+            warning = _("⚠️ Warning: You have {} existing embeddings ({})").format(
+                humanize_number(len(conf.embeddings)),
+                dim_label,
+            )
+            warning += _(
+                "\nIf your new endpoint uses different dimensions, run `[p]assistant refreshembeds` after setting your embedding model."
+            )
+            return warning
 
         if endpoint and self.db.endpoint_override == endpoint:
             msg = _("Endpoint is already set to **{}**").format(endpoint)
@@ -2277,6 +2366,8 @@ class Admin(MixinMeta):
                 return await ctx.send(_("Failed to reach the endpoint: {}").format(validation_note))
             if validation_note:
                 compat_warning += f"\n{validation_note}"
+            if warning := _embedding_warning():
+                compat_warning += f"\n{warning}"
             self.db.endpoint_override = endpoint
             await ctx.send(_("Endpoint has been set to **{}**\n{}").format(endpoint, compat_warning))
         elif endpoint and self.db.endpoint_override:
@@ -2285,6 +2376,8 @@ class Admin(MixinMeta):
                 return await ctx.send(_("Failed to reach the endpoint: {}").format(validation_note))
             if validation_note:
                 compat_warning += f"\n{validation_note}"
+            if warning := _embedding_warning():
+                compat_warning += f"\n{warning}"
             old = self.db.endpoint_override
             self.db.endpoint_override = endpoint
             await ctx.send(_("Endpoint has been changed from **{}** to **{}**\n{}").format(old, endpoint, compat_warning))

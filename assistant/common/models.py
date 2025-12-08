@@ -338,6 +338,12 @@ class GuildSettings(AssistantBaseModel):
                 return self.max_time_role_override[role.id]
         return self.max_retention_time
 
+    def get_embed_model(self, endpoint_override: t.Optional[str] = None) -> str:
+        """Return the configured embed model, falling back to Ollama defaults on custom endpoints."""
+        if endpoint_override and self.embed_model == "text-embedding-3-small":
+            return "nomic-embed-text"
+        return self.embed_model
+
 
 class Conversation(AssistantBaseModel):
     messages: t.List[dict] = []
