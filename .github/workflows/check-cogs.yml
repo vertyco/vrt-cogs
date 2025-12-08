@@ -14,7 +14,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install Red-DiscordBot
-        run: pip install red-discordbot "typing_extensions>=4.15.0"
+        run: pip install red-discordbot==3.5.22 typing-extensions==4.13.2
 
       - name: Test Cogs
         uses: nntin/d-flows/actions/test-red-discordbot-downloader@v1
