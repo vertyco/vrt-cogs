@@ -97,6 +97,10 @@ If a file has no extension it will still try to read it only if it can be decode
         model: t.Literal["dall-e-3", "gpt-image-1"] = "dall-e-3",
     ):
         conf = self.db.get_conf(interaction.guild)
+        if self.db.endpoint_override:
+            return await interaction.response.send_message(
+                _("Image generation is not available when using custom endpoints"), ephemeral=True
+            )
         if not conf.api_key and not self.db.endpoint_override:
             return await interaction.response.send_message(_("The API key is not set up!"), ephemeral=True)
         if not conf.image_command:

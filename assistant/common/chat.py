@@ -417,6 +417,12 @@ class ChatHandler(MixinMeta):
             function_calls = [i for i in function_calls if i["name"] != "edit_image"]
             del function_map["edit_image"]
 
+        if self.db.endpoint_override:
+            for func in ("generate_image", "edit_image"):
+                if func in function_map:
+                    function_calls = [i for i in function_calls if i["name"] != func]
+                    del function_map[func]
+
         messages = await self.prepare_messages(
             message=message,
             guild=guild,

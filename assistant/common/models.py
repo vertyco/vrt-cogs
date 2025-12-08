@@ -476,6 +476,8 @@ class DB(AssistantBaseModel):
     listen_to_bots: bool = False
     brave_api_key: t.Optional[str] = None
     endpoint_override: t.Optional[str] = None
+    endpoint_health_check: bool = False
+    endpoint_health_interval: int = 60
 
     def get_conf(self, guild: t.Union[discord.Guild, int]) -> GuildSettings:
         gid = guild if isinstance(guild, int) else guild.id

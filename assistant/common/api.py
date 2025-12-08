@@ -89,7 +89,7 @@ class API(MixinMeta):
             model=model,
             messages=messages,
             temperature=temperature_override if temperature_override is not None else conf.temperature,
-            api_key=conf.api_key,
+            api_key=conf.api_key or "unprotected" if self.db.endpoint_override else conf.api_key,
             max_tokens=response_tokens,
             functions=functions,
             frequency_penalty=conf.frequency_penalty,
@@ -113,7 +113,7 @@ class API(MixinMeta):
     async def request_embedding(self, text: str, conf: GuildSettings) -> List[float]:
         response: CreateEmbeddingResponse = await request_embedding_raw(
             text=text,
-            api_key=conf.api_key,
+            api_key=conf.api_key or "unprotected" if self.db.endpoint_override else conf.api_key,
             model=conf.embed_model,
             base_url=self.db.endpoint_override,
         )
@@ -232,7 +232,11 @@ class API(MixinMeta):
             enum_item = 3
             func_end = 12
         else:
-            log.warning(f"Incompatible model: {model}")
+            # Custom endpoints (e.g., Ollama) can use arbitrary model names; avoid noisy warnings.
+            if self.db.endpoint_override:
+                log.debug(f"Incompatible model for custom endpoint: {model}")
+            else:
+                log.warning(f"Incompatible model: {model}")
 
         def _count_tokens():
             try:
@@ -306,7 +310,9 @@ class API(MixinMeta):
             return 0
 
     async def can_call_llm(self, conf: GuildSettings, ctx: Optional[commands.Context] = None) -> bool:
-        if not conf.api_key and not self.db.endpoint_override:
+        if self.db.endpoint_override:
+            return True
+        if not conf.api_key:
             if ctx:
                 txt = _("There are no API keys set!\n")
                 if ctx.author.id == ctx.guild.owner_id:
