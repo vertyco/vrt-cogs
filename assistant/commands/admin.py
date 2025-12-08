@@ -2246,7 +2246,7 @@ class Admin(MixinMeta):
         """
         async def _validate_endpoint(url: str) -> Tuple[bool, str]:
             try:
-                client = openai.AsyncOpenAI(api_key="sk-placeholder", base_url=url)
+                client = openai.AsyncOpenAI(api_key="unprotected", base_url=url)
                 await client.models.list()
             except openai.AuthenticationError as e:
                 return True, _("Endpoint responded but authentication failed: {}").format(e)
