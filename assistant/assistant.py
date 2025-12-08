@@ -87,6 +87,8 @@ class Assistant(
 
     async def cog_unload(self):
         self.save_loop.cancel()
+        if self.endpoint_health_loop.is_running():
+            self.endpoint_health_loop.cancel()
         self.mp_pool.close()
         self.bot.dispatch("assistant_cog_remove")
 
@@ -124,6 +126,9 @@ class Assistant(
 
         await asyncio.sleep(30)
         self.save_loop.start()
+        if self.db.endpoint_override and self.db.endpoint_health_check:
+            self.endpoint_health_loop.change_interval(seconds=self.db.endpoint_health_interval)
+            self.endpoint_health_loop.start()
 
     async def save_conf(self):
         if self.saving:
@@ -216,6 +221,32 @@ class Assistant(
         if not self.db.persistent_conversations:
             return
         await self.save_conf()
+
+    @tasks.loop(seconds=60)
+    async def endpoint_health_loop(self):
+        """Monitor endpoint health and update bot presence"""
+        if not self.db.endpoint_override or not self.db.endpoint_health_check:
+            return
+
+        # Set status to idle (yellow) during check
+        await self.bot.change_presence(status=discord.Status.idle)
+
+        # Validate endpoint using the extracted method
+        valid, message = await self._validate_endpoint(self.db.endpoint_override)
+
+        if valid:
+            # Set status to online (green) when healthy
+            await self.bot.change_presence(status=discord.Status.online)
+            log.debug(f"Endpoint health check passed: {self.db.endpoint_override}")
+        else:
+            # Set status to DND (red) when unreachable
+            await self.bot.change_presence(status=discord.Status.dnd)
+            log.warning(f"Endpoint health check failed: {message}")
+
+    @endpoint_health_loop.before_loop
+    async def before_endpoint_health_loop(self):
+        """Wait for bot to be ready before starting health checks"""
+        await self.bot.wait_until_red_ready()
 
     # ------------------ 3rd PARTY ACCESSIBLE METHODS ------------------
     async def add_embedding(

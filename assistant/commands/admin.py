@@ -109,6 +109,14 @@ class Admin(MixinMeta):
             color=ctx.author.color,
         )
 
+        if self.db.endpoint_override:
+            health_status = "🟢 Enabled" if self.db.endpoint_health_check else "⚪ Disabled"
+            embed.add_field(
+                name="Endpoint Health Monitoring",
+                value=f"Status: {health_status}\nInterval: {self.db.endpoint_health_interval}s",
+                inline=True,
+            )
+
         custom_supported = [
             _("Chat completions"),
             _("Embeddings and memory functions"),
@@ -2227,6 +2235,17 @@ class Admin(MixinMeta):
             await ctx.send(_("Verbosity has been set to **Low**"))
         await self.save_conf()
 
+    async def _validate_endpoint(self, url: str) -> Tuple[bool, str]:
+        try:
+            client = openai.AsyncOpenAI(api_key="unprotected", base_url=url)
+            await client.models.list()
+        except openai.AuthenticationError as e:
+            return True, _("Endpoint responded but authentication failed: {}").format(e)
+        except Exception as e:
+            log.warning("Endpoint override validation failed", exc_info=e)
+            return False, str(e)
+        return True, ""
+
     # --------------------------------------------------------------------------------------
     # --------------------------------------------------------------------------------------
     # -------------------------------- OWNER ONLY ------------------------------------------
@@ -2244,17 +2263,6 @@ class Admin(MixinMeta):
         - Using an endpoint override will negate model settings like temperature and custom functions
         - Image generation and editing functions are disabled when using a custom endpoint
         """
-        async def _validate_endpoint(url: str) -> Tuple[bool, str]:
-            try:
-                client = openai.AsyncOpenAI(api_key="unprotected", base_url=url)
-                await client.models.list()
-            except openai.AuthenticationError as e:
-                return True, _("Endpoint responded but authentication failed: {}").format(e)
-            except Exception as e:
-                log.warning("Endpoint override validation failed", exc_info=e)
-                return False, str(e)
-            return True, ""
-
         compat_warning = _(
             "Note: Image generation and editing are not supported when using a custom endpoint."
         )
@@ -2264,7 +2272,7 @@ class Admin(MixinMeta):
             msg += f"\n{compat_warning}"
             return await ctx.send(msg)
         if endpoint and not self.db.endpoint_override:
-            valid, validation_note = await _validate_endpoint(endpoint)
+            valid, validation_note = await self._validate_endpoint(endpoint)
             if not valid:
                 return await ctx.send(_("Failed to reach the endpoint: {}").format(validation_note))
             if validation_note:
@@ -2272,7 +2280,7 @@ class Admin(MixinMeta):
             self.db.endpoint_override = endpoint
             await ctx.send(_("Endpoint has been set to **{}**\n{}").format(endpoint, compat_warning))
         elif endpoint and self.db.endpoint_override:
-            valid, validation_note = await _validate_endpoint(endpoint)
+            valid, validation_note = await self._validate_endpoint(endpoint)
             if not valid:
                 return await ctx.send(_("Failed to reach the endpoint: {}").format(validation_note))
             if validation_note:
@@ -2282,7 +2290,66 @@ class Admin(MixinMeta):
             await ctx.send(_("Endpoint has been changed from **{}** to **{}**\n{}").format(old, endpoint, compat_warning))
         else:
             self.db.endpoint_override = None
+            # Stop health monitoring when endpoint is removed
+            if self.endpoint_health_loop.is_running():
+                self.endpoint_health_loop.cancel()
+                self.db.endpoint_health_check = False
+                await self.bot.change_presence(status=discord.Status.online)
             await ctx.send(_("Endpoint override has been removed!"))
+
+    @assistant.command(name="endpointhealth")
+    @commands.is_owner()
+    async def endpoint_health_monitoring(self, ctx: commands.Context, enabled: bool = None, interval: int = None):
+        """
+        Toggle endpoint health monitoring and set check interval
+
+        **Arguments:**
+        - `enabled`: True to enable, False to disable, omit to view current status
+        - `interval`: Check interval in seconds (default: 60, min: 30, max: 600)
+
+        **Notes:**
+        - Only works when endpoint override is configured
+        - Bot presence will reflect endpoint health: 🟢 Online (healthy), 🔴 DND (down)
+        """
+        if enabled is None and interval is None:
+            # Show current status
+            status = "Enabled" if self.db.endpoint_health_check else "Disabled"
+            msg = f"Endpoint health monitoring: **{status}**\n"
+            msg += f"Check interval: **{self.db.endpoint_health_interval}** seconds\n"
+            if self.db.endpoint_override:
+                msg += f"Monitoring endpoint: **{self.db.endpoint_override}**"
+            else:
+                msg += "⚠️ No endpoint override configured"
+            return await ctx.send(msg)
+
+        if not self.db.endpoint_override:
+            return await ctx.send("❌ Cannot enable health monitoring without an endpoint override configured. Use `[p]assistant endpointoverride` first.")
+
+        if enabled is not None:
+            self.db.endpoint_health_check = enabled
+            if enabled:
+                # Start the loop if not running
+                if not self.endpoint_health_loop.is_running():
+                    self.endpoint_health_loop.change_interval(seconds=self.db.endpoint_health_interval)
+                    self.endpoint_health_loop.start()
+                await ctx.send(f"✅ Endpoint health monitoring **enabled** (checking every {self.db.endpoint_health_interval}s)")
+            else:
+                # Stop the loop if running
+                if self.endpoint_health_loop.is_running():
+                    self.endpoint_health_loop.cancel()
+                    # Reset bot presence to online
+                    await self.bot.change_presence(status=discord.Status.online)
+                await ctx.send("❌ Endpoint health monitoring **disabled**")
+
+        if interval is not None:
+            if interval < 30 or interval > 600:
+                return await ctx.send("⚠️ Interval must be between 30 and 600 seconds")
+            self.db.endpoint_health_interval = interval
+            if self.endpoint_health_loop.is_running():
+                self.endpoint_health_loop.change_interval(seconds=interval)
+            await ctx.send(f"⏱️ Health check interval set to **{interval}** seconds")
+
+        await self.save_conf()
 
     @assistant.command(name="wipecog")
     @commands.is_owner()
