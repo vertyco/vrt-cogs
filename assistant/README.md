@@ -1,5 +1,10 @@
 Set up and configure an AI assistant (or chat) cog for your server with one of OpenAI's ChatGPT language models.<br/><br/>Features include configurable prompt injection, dynamic embeddings, custom function calling, and more!<br/><br/>- **[p]assistant**: base command for setting up the assistant<br/>- **[p]chat**: talk with the assistant<br/>- **[p]convostats**: view a user's token usage/conversation message count for the channel<br/>- **[p]clearconvo**: reset your conversation with the assistant in the channel
 
+## Ollama Compatibility
+- Supported: chat completions, embeddings, memory functions (`create`, `search`, `edit`, `list`, `respond_and_continue`), and `search_web_brave` when a Brave API key is set.
+- Unsupported: image generation and image editing.
+- Configuration: set your OpenAI-compatible endpoint with `[p]assistant endpointoverride <base_url>` (for Ollama: `http://localhost:11434/v1`), pick models available on that endpoint via `[p]assistant model`/`[p]assistant embedmodel`, and add a Brave Search API key with `[p]assistant braveapikey` if you want web search calls.
+
 # /draw (Slash Command)
 Generate an image with AI<br/>
  - Usage: `/draw <prompt> [size] [quality] [style] [model]`

@@ -306,7 +306,9 @@ class API(MixinMeta):
             return 0
 
     async def can_call_llm(self, conf: GuildSettings, ctx: Optional[commands.Context] = None) -> bool:
-        if not conf.api_key and not self.db.endpoint_override:
+        if self.db.endpoint_override:
+            return True
+        if not conf.api_key:
             if ctx:
                 txt = _("There are no API keys set!\n")
                 if ctx.author.id == ctx.guild.owner_id:

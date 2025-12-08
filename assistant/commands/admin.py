@@ -6,7 +6,7 @@ import traceback
 import typing as t
 from datetime import datetime, timezone
 from io import BytesIO
-from typing import List, Union
+from typing import List, Tuple, Union
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import discord
@@ -108,6 +108,26 @@ class Admin(MixinMeta):
             description=desc,
             color=ctx.author.color,
         )
+
+        custom_supported = [
+            _("Chat completions"),
+            _("Embeddings and memory functions"),
+            _("Brave web search"),
+            _("Respond and continue"),
+        ]
+        openai_only = [
+            _("Image generation"),
+            _("Image editing"),
+        ]
+        if self.db.endpoint_override:
+            compat_value = _("Custom endpoint in use.\n`Available:` {}\n`OpenAI-only:` {}").format(
+                humanize_list(custom_supported), humanize_list(openai_only)
+            )
+        else:
+            compat_value = _("OpenAI endpoint in use.\n`Custom endpoints support:` {}\n`Disabled on overrides:` {}").format(
+                humanize_list(custom_supported), humanize_list(openai_only)
+            )
+        embed.add_field(name=_("Endpoint Compatibility"), value=compat_value, inline=False)
 
         name = _("Auto Answer")
         val = _(
@@ -445,7 +465,14 @@ class Admin(MixinMeta):
         key = view.key.strip() if view.key else "none"
 
         try:
-            if key == "none" and conf.api_key:
+            if key == "none" and self.db.endpoint_override:
+                conf.api_key = None
+                await msg.edit(
+                    content=_("Endpoint override is set; an API key is not required."),
+                    embed=None,
+                    view=None,
+                )
+            elif key == "none" and conf.api_key:
                 conf.api_key = None
                 await msg.edit(content=_("OpenAI key has been removed!"), embed=None, view=None)
             elif key == "none" and not conf.api_key:
@@ -2214,17 +2241,45 @@ class Admin(MixinMeta):
 
         **Notes**
         - Using a custom endpoint is not supported!
-        - Using an endpoing override will negate model settings like temperature and custom functions
+        - Using an endpoint override will negate model settings like temperature and custom functions
+        - Image generation and editing functions are disabled when using a custom endpoint
         """
-        if self.db.endpoint_override == endpoint:
-            return await ctx.send(_("Endpoint is already set to **{}**").format(endpoint))
+        async def _validate_endpoint(url: str) -> Tuple[bool, str]:
+            try:
+                client = openai.AsyncOpenAI(api_key="sk-placeholder", base_url=url)
+                await client.models.list()
+            except openai.AuthenticationError as e:
+                return True, _("Endpoint responded but authentication failed: {}").format(e)
+            except Exception as e:
+                log.warning("Endpoint override validation failed", exc_info=e)
+                return False, str(e)
+            return True, ""
+
+        compat_warning = _(
+            "Note: Image generation and editing are not supported when using a custom endpoint."
+        )
+
+        if endpoint and self.db.endpoint_override == endpoint:
+            msg = _("Endpoint is already set to **{}**").format(endpoint)
+            msg += f"\n{compat_warning}"
+            return await ctx.send(msg)
         if endpoint and not self.db.endpoint_override:
+            valid, validation_note = await _validate_endpoint(endpoint)
+            if not valid:
+                return await ctx.send(_("Failed to reach the endpoint: {}").format(validation_note))
+            if validation_note:
+                compat_warning += f"\n{validation_note}"
             self.db.endpoint_override = endpoint
-            await ctx.send(_("Endpoint has been set to **{}**").format(endpoint))
+            await ctx.send(_("Endpoint has been set to **{}**\n{}").format(endpoint, compat_warning))
         elif endpoint and self.db.endpoint_override:
+            valid, validation_note = await _validate_endpoint(endpoint)
+            if not valid:
+                return await ctx.send(_("Failed to reach the endpoint: {}").format(validation_note))
+            if validation_note:
+                compat_warning += f"\n{validation_note}"
             old = self.db.endpoint_override
             self.db.endpoint_override = endpoint
-            await ctx.send(_("Endpoint has been changed from **{}** to **{}**").format(old, endpoint))
+            await ctx.send(_("Endpoint has been changed from **{}** to **{}**\n{}").format(old, endpoint, compat_warning))
         else:
             self.db.endpoint_override = None
             await ctx.send(_("Endpoint override has been removed!"))
