@@ -14,7 +14,10 @@ jobs:
           python-version: "3.11"
 
       - name: Install Red-DiscordBot
-        run: pip install red-discordbot==3.5.22 typing-extensions==4.13.2
+        run: python -m pip install red-discordbot==3.5.22
+
+      - name: Ensure typing_extensions with Sentinel (required by assistant cog)
+        run: python -m pip install "typing_extensions>=4.15.0"
 
       - name: Test Cogs
         uses: nntin/d-flows/actions/test-red-discordbot-downloader@v1
