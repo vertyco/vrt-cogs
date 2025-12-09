@@ -13,7 +13,7 @@ import ollama
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.chat.chat_completion_message import ChatCompletionMessage
 from openai.types.create_embedding_response import CreateEmbeddingResponse
-from ollama import ChatResponse as OllamaChatResponse
+from ollama import ChatResponse as OllamaChatResponse, EmbedResponse
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_number
@@ -174,7 +174,7 @@ class API(MixinMeta):
             )
             return response.data[0].embedding
 
-        if hasattr(response, "embeddings"):
+        if isinstance(response, EmbedResponse):
             embedding = response.embeddings[0] if response.embeddings else []
             conf.update_usage(response.model, 0, 0, 0)
             return embedding
