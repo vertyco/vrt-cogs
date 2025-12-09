@@ -365,6 +365,10 @@ class API(MixinMeta):
             return 0
 
     async def can_call_llm(self, conf: GuildSettings, ctx: Optional[commands.Context] = None) -> bool:
+        ready_event = getattr(self, "ready_event", None)
+        if isinstance(ready_event, asyncio.Event) and not ready_event.is_set():
+            await ready_event.wait()
+
         if self.db.endpoint_override:
             return True
         if not conf.api_key:

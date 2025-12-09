@@ -75,6 +75,8 @@ class Assistant(
         self.config.register_global(db={})
         self.db: DB = DB()
         self.mp_pool = Pool()
+        self.ready_event = asyncio.Event()
+        self.init_task: Optional[asyncio.Task] = None
 
         # {cog_name: {function_name: {"permission_level": "user", "schema": function_json_schema}}}
         self.registry: Dict[str, Dict[str, dict]] = {}
@@ -83,7 +85,7 @@ class Assistant(
         self.first_run = True
 
     async def cog_load(self) -> None:
-        asyncio.create_task(self.init_cog())
+        self.init_task = asyncio.create_task(self.init_cog())
 
     async def cog_unload(self):
         self.save_loop.cancel()
@@ -94,35 +96,45 @@ class Assistant(
 
     async def init_cog(self):
         await self.bot.wait_until_red_ready()
-        start = perf_counter()
-        data = await self.config.db()
+        init_failed = False
         try:
-            self.db = await asyncio.to_thread(DB.model_validate, data)
-        except ValidationError:
-            # Try clearing conversations
-            if "conversations" in data:
-                del data["conversations"]
-            self.db = await asyncio.to_thread(DB.model_validate, data)
+            start = perf_counter()
+            data = await self.config.db()
+            try:
+                self.db = await asyncio.to_thread(DB.model_validate, data)
+            except ValidationError:
+                # Try clearing conversations
+                if "conversations" in data:
+                    del data["conversations"]
+                self.db = await asyncio.to_thread(DB.model_validate, data)
 
-        log.info(f"Config loaded in {round((perf_counter() - start) * 1000, 2)}ms")
-        await asyncio.to_thread(self._cleanup_db)
+            log.info(f"Config loaded in {round((perf_counter() - start) * 1000, 2)}ms")
+            await asyncio.to_thread(self._cleanup_db)
 
-        # Register internal functions
-        await self.register_function(self.qualified_name, GENERATE_IMAGE)
-        await self.register_function(self.qualified_name, EDIT_IMAGE)
-        await self.register_function(self.qualified_name, SEARCH_INTERNET)
-        await self.register_function(self.qualified_name, CREATE_MEMORY)
-        await self.register_function(self.qualified_name, SEARCH_MEMORIES)
-        await self.register_function(self.qualified_name, EDIT_MEMORY)
-        await self.register_function(self.qualified_name, LIST_MEMORIES)
-        await self.register_function(self.qualified_name, RESPOND_AND_CONTINUE)
+            # Register internal functions
+            await self.register_function(self.qualified_name, GENERATE_IMAGE)
+            await self.register_function(self.qualified_name, EDIT_IMAGE)
+            await self.register_function(self.qualified_name, SEARCH_INTERNET)
+            await self.register_function(self.qualified_name, CREATE_MEMORY)
+            await self.register_function(self.qualified_name, SEARCH_MEMORIES)
+            await self.register_function(self.qualified_name, EDIT_MEMORY)
+            await self.register_function(self.qualified_name, LIST_MEMORIES)
+            await self.register_function(self.qualified_name, RESPOND_AND_CONTINUE)
 
-        logging.getLogger("openai").setLevel(logging.WARNING)
-        logging.getLogger("aiocache").setLevel(logging.WARNING)
-        logging.getLogger("httpcore.http11").setLevel(logging.WARNING)
-        logging.getLogger("httpcore.connection").setLevel(logging.WARNING)
-        logging.getLogger("httpx").setLevel(logging.WARNING)
-        self.bot.dispatch("assistant_cog_add", self)
+            logging.getLogger("openai").setLevel(logging.WARNING)
+            logging.getLogger("aiocache").setLevel(logging.WARNING)
+            logging.getLogger("httpcore.http11").setLevel(logging.WARNING)
+            logging.getLogger("httpcore.connection").setLevel(logging.WARNING)
+            logging.getLogger("httpx").setLevel(logging.WARNING)
+            self.bot.dispatch("assistant_cog_add", self)
+        except Exception as e:  # noqa: BLE001
+            init_failed = True
+            log.error("Failed to initialize Assistant cog", exc_info=e)
+        finally:
+            self.ready_event.set()
+
+        if init_failed:
+            return
 
         await asyncio.sleep(30)
         self.save_loop.start()
