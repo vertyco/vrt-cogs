@@ -8,9 +8,12 @@ from typing import List, Optional
 import aiohttp
 import discord
 import tiktoken
+import openai
+import ollama
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.chat.chat_completion_message import ChatCompletionMessage
 from openai.types.create_embedding_response import CreateEmbeddingResponse
+from ollama import ChatResponse as OllamaChatResponse
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_number
@@ -85,47 +88,98 @@ class API(MixinMeta):
             model = "gpt-5.1"
             await self.save_conf()
 
-        response: ChatCompletion = await request_chat_completion_raw(
-            model=model,
-            messages=messages,
-            temperature=temperature_override if temperature_override is not None else conf.temperature,
-            api_key=conf.api_key or "unprotected" if self.db.endpoint_override else conf.api_key,
-            max_tokens=response_tokens,
-            functions=functions,
-            frequency_penalty=conf.frequency_penalty,
-            presence_penalty=conf.presence_penalty,
-            seed=conf.seed,
-            base_url=self.db.endpoint_override,
-            reasoning_effort=conf.reasoning_effort,
-            verbosity=conf.verbosity,
-        )
-        message: ChatCompletionMessage = response.choices[0].message
+        try:
+            response = await request_chat_completion_raw(
+                model=model,
+                messages=messages,
+                temperature=temperature_override if temperature_override is not None else conf.temperature,
+                api_key=conf.api_key or "unprotected" if self.db.endpoint_override else conf.api_key,
+                max_tokens=response_tokens,
+                functions=functions,
+                frequency_penalty=conf.frequency_penalty,
+                presence_penalty=conf.presence_penalty,
+                seed=conf.seed,
+                base_url=self.db.endpoint_override,
+                reasoning_effort=conf.reasoning_effort,
+                verbosity=conf.verbosity,
+            )
+        except openai.OpenAIError as e:
+            log.error("OpenAI chat completion failed", exc_info=e)
+            raise commands.UserFeedbackCheckFailure(_("OpenAI request failed: {}").format(e)) from e
+        except ollama.ResponseError as e:
+            log.error("Ollama chat completion failed", exc_info=e)
+            raise commands.UserFeedbackCheckFailure(_("Ollama request failed: {}").format(e)) from e
+        except ollama.RequestError as e:
+            log.error("Ollama chat request failed", exc_info=e)
+            raise commands.UserFeedbackCheckFailure(_("Ollama request failed: {}").format(e)) from e
 
-        conf.update_usage(
-            response.model,
-            response.usage.total_tokens,
-            response.usage.prompt_tokens,
-            response.usage.completion_tokens,
-        )
+        if isinstance(response, ChatCompletion):
+            message: ChatCompletionMessage = response.choices[0].message
+            conf.update_usage(
+                response.model,
+                response.usage.total_tokens,
+                response.usage.prompt_tokens,
+                response.usage.completion_tokens,
+            )
+        elif isinstance(response, OllamaChatResponse):
+            response_message = getattr(response, "message", {}) or {}
+            role = getattr(response_message, "role", None)
+            content = getattr(response_message, "content", None)
+            if isinstance(response_message, dict):
+                role = role or response_message.get("role")
+                content = content or response_message.get("content")
+            message = ChatCompletionMessage(
+                role=role or "assistant",
+                content=content,
+            )
+            prompt_tokens = getattr(response, "prompt_eval_count", 0) or 0
+            completion_tokens = getattr(response, "eval_count", 0) or 0
+            conf.update_usage(
+                response.model,
+                prompt_tokens + completion_tokens,
+                prompt_tokens,
+                completion_tokens,
+            )
+        else:
+            raise commands.UserFeedbackCheckFailure(_("Unsupported response type from AI client."))
+
         log.debug(f"MESSAGE TYPE: {type(message)}")
         return message
 
     async def request_embedding(self, text: str, conf: GuildSettings) -> List[float]:
         embed_model = conf.get_embed_model(self.db.endpoint_override)
-        response: CreateEmbeddingResponse = await request_embedding_raw(
-            text=text,
-            api_key=conf.api_key or "unprotected" if self.db.endpoint_override else conf.api_key,
-            model=embed_model,
-            base_url=self.db.endpoint_override,
-        )
+        try:
+            response = await request_embedding_raw(
+                text=text,
+                api_key=conf.api_key or "unprotected" if self.db.endpoint_override else conf.api_key,
+                model=embed_model,
+                base_url=self.db.endpoint_override,
+            )
+        except openai.OpenAIError as e:
+            log.error("OpenAI embedding request failed", exc_info=e)
+            raise commands.UserFeedbackCheckFailure(_("OpenAI embedding failed: {}").format(e)) from e
+        except ollama.ResponseError as e:
+            log.error("Ollama embedding request failed", exc_info=e)
+            raise commands.UserFeedbackCheckFailure(_("Ollama embedding failed: {}").format(e)) from e
+        except ollama.RequestError as e:
+            log.error("Ollama embedding request failed", exc_info=e)
+            raise commands.UserFeedbackCheckFailure(_("Ollama embedding failed: {}").format(e)) from e
 
-        conf.update_usage(
-            response.model,
-            response.usage.total_tokens,
-            response.usage.prompt_tokens,
-            0,
-        )
-        return response.data[0].embedding
+        if isinstance(response, CreateEmbeddingResponse):
+            conf.update_usage(
+                response.model,
+                response.usage.total_tokens,
+                response.usage.prompt_tokens,
+                0,
+            )
+            return response.data[0].embedding
+
+        if hasattr(response, "embeddings"):
+            embedding = response.embeddings[0] if response.embeddings else []
+            conf.update_usage(response.model, 0, 0, 0)
+            return embedding
+
+        raise commands.UserFeedbackCheckFailure(_("Unsupported embedding response type from AI client."))
 
     # -------------------------------------------------------
     # -------------------------------------------------------

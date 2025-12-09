@@ -11,6 +11,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 import discord
 import openai
+import ollama
 import orjson
 import pandas as pd
 import pytz
@@ -2292,24 +2293,39 @@ class Admin(MixinMeta):
 
     async def _validate_embedding_endpoint(self, model: str) -> Tuple[bool, str, int]:
         try:
-            client = openai.AsyncOpenAI(api_key="unprotected", base_url=self.db.endpoint_override)
-            response = await client.embeddings.create(input="test", model=model)
+            if self.db.endpoint_override:
+                client = ollama.AsyncClient(host=self.db.endpoint_override)
+                response = await client.embed(model=model, input="test")
+                embedding = response.embeddings[0] if response.embeddings else []
+            else:
+                client = openai.AsyncOpenAI(api_key="unprotected", base_url=self.db.endpoint_override)
+                response = await client.embeddings.create(input="test", model=model)
+                embedding = response.data[0].embedding if response.data else []
         except openai.AuthenticationError as e:
             return False, _("Authentication failed: {}").format(e), 0
+        except ollama.ResponseError as e:
+            log.warning("Embedding endpoint validation failed", exc_info=e)
+            return False, str(e), 0
         except Exception as e:
             log.warning("Embedding endpoint validation failed", exc_info=e)
             return False, str(e), 0
 
-        embedding = response.data[0].embedding if response.data else []
         dimensions = len(embedding) if embedding else 0
         return True, "", dimensions
 
     async def _validate_endpoint(self, url: str) -> Tuple[bool, str]:
         try:
-            client = openai.AsyncOpenAI(api_key="unprotected", base_url=url)
-            await client.models.list()
+            if url:
+                client = ollama.AsyncClient(host=url)
+                await client.list()
+            else:
+                client = openai.AsyncOpenAI(api_key="unprotected", base_url=url)
+                await client.models.list()
         except openai.AuthenticationError as e:
             return True, _("Endpoint responded but authentication failed: {}").format(e)
+        except ollama.ResponseError as e:
+            log.warning("Ollama endpoint override validation failed", exc_info=e)
+            return False, str(e)
         except Exception as e:
             log.warning("Endpoint override validation failed", exc_info=e)
             return False, str(e)
@@ -2325,7 +2341,7 @@ class Admin(MixinMeta):
     @commands.is_owner()
     async def endpoint_override(self, ctx: commands.Context, endpoint: str = None):
         """
-        Override the OpenAI endpoint
+        Override the OpenAI endpoint with Ollama
 
         **Notes**
         - Using a custom endpoint is not supported!
