@@ -219,12 +219,14 @@ If a file has no extension it will still try to read it only if it can be decode
             # Return the new RGB color
             return (green, blue)
 
-        convo_tokens = await self.count_payload_tokens(conversation.messages, conf.get_user_model(user))
+        convo_tokens = await self.count_payload_tokens(
+            conversation.messages, conf.get_chat_model(self.db.endpoint_override, user)
+        )
         g, b = generate_color(messages, conf.get_user_max_retention(ctx.author))
         gg, bb = generate_color(convo_tokens, max_tokens)
         # Whatever limit is more severe get that color
         color = discord.Color.from_rgb(255, min(g, gg), min(b, bb))
-        model = conf.get_user_model(ctx.author)
+        model = conf.get_chat_model(self.db.endpoint_override, ctx.author)
 
         desc = (
             ctx.channel.mention
@@ -603,7 +605,7 @@ If a file has no extension it will still try to read it only if it can be decode
                 self.bot._last_exception = traceback.format_exc()
                 return
 
-        model = conf.get_user_model(ctx.author)
+        model = conf.get_chat_model(self.db.endpoint_override, ctx.author)
         ptokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
         max_tokens = conf.get_user_max_tokens(ctx.author)
         if ptokens > (max_tokens * 0.9):

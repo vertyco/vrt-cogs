@@ -265,10 +265,11 @@ async def ensure_message_compatibility(
     messages: list[dict],
     conf: GuildSettings,
     user: t.Optional[discord.Member],
+    endpoint_override: t.Optional[str] = None,
 ) -> bool:
     cleaned = False
 
-    model = conf.get_user_model(user)
+    model = conf.get_chat_model(endpoint_override, user)
     if model not in NO_DEVELOPER_ROLE:
         return cleaned
 
@@ -281,11 +282,16 @@ async def ensure_message_compatibility(
     return cleaned
 
 
-async def ensure_supports_vision(messages: list[dict], conf: GuildSettings, user: t.Optional[discord.Member]) -> bool:
+async def ensure_supports_vision(
+    messages: list[dict],
+    conf: GuildSettings,
+    user: t.Optional[discord.Member],
+    endpoint_override: t.Optional[str] = None,
+) -> bool:
     """Make sure that if a conversation payload contains images that the model supports vision"""
     cleaned = False
 
-    model = conf.get_user_model(user)
+    model = conf.get_chat_model(endpoint_override, user)
     if model in SUPPORTS_VISION:
         return cleaned
 

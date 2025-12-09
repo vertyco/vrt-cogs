@@ -338,7 +338,9 @@ class GuildSettings(AssistantBaseModel):
                 return self.max_time_role_override[role.id]
         return self.max_retention_time
 
-    def get_chat_model(self, endpoint_override: t.Optional[str] = None, member: t.Optional[discord.Member] = None) -> str:
+    def get_chat_model(
+        self, endpoint_override: t.Optional[str] = None, member: t.Optional[discord.Member] = None
+    ) -> str:
         """Return the configured chat model, applying role overrides and custom endpoint fallbacks."""
         model = self.get_user_model(member)
         if endpoint_override and model == "gpt-5.1":

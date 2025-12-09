@@ -63,7 +63,7 @@ class Admin(MixinMeta):
         send_key = [ctx.guild.owner_id == ctx.author.id, ctx.author.id in self.bot.owner_ids]
 
         conf = self.db.get_conf(ctx.guild)
-        model = conf.get_user_model(ctx.author)
+        model = conf.get_chat_model(self.db.endpoint_override, ctx.author)
         effective_embed_model = conf.get_embed_model(self.db.endpoint_override)
         system_tokens = await self.count_tokens(conf.system_prompt, model) if conf.system_prompt else 0
         prompt_tokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
@@ -614,7 +614,7 @@ class Admin(MixinMeta):
                 return
 
         conf = self.db.get_conf(ctx.guild)
-        model = conf.get_user_model(ctx.author)
+        model = conf.get_chat_model(self.db.endpoint_override, ctx.author)
         ptokens = await self.count_tokens(prompt, model) if prompt else 0
         stokens = await self.count_tokens(conf.system_prompt, model) if conf.system_prompt else 0
         combined = ptokens + stokens
@@ -686,7 +686,7 @@ class Admin(MixinMeta):
             else:
                 await ctx.send(_("No channel prompt set for {}!").format(channel.mention))
             return
-        model = conf.get_user_model(ctx.author)
+        model = conf.get_chat_model(self.db.endpoint_override, ctx.author)
         ptokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
         stokens = await self.count_tokens(system_prompt, model) if system_prompt else 0
         combined = ptokens + stokens
@@ -755,7 +755,7 @@ class Admin(MixinMeta):
                 return
 
         conf = self.db.get_conf(ctx.guild)
-        model = conf.get_user_model(ctx.author)
+        model = conf.get_chat_model(self.db.endpoint_override, ctx.author)
         ptokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
         stokens = await self.count_tokens(system_prompt, model) if system_prompt else 0
 
