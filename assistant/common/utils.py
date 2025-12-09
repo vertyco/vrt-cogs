@@ -512,3 +512,86 @@ async def ensure_tool_consistency(messages: list[dict]) -> bool:
             messages.pop(idx)
 
     return purged
+
+
+def convert_openai_to_ollama_tool(openai_schema: dict) -> dict:
+    """Convert single OpenAI function schema to Ollama tool format."""
+    required_fields = ("name", "description", "parameters")
+    missing = [field for field in required_fields if field not in openai_schema]
+    if missing:
+        raise ValueError(f"Missing required fields: {', '.join(missing)}")
+    return {"type": "function", "function": openai_schema}
+
+
+def is_core_tool(function_name: str) -> bool:
+    """Check if function is a core tool supported by Ollama."""
+    core_tools = {
+        "create_memory",
+        "search_memories",
+        "edit_memory",
+        "list_memories",
+        "search_web_brave",
+    }
+    return function_name.lower() in core_tools if function_name else False
+
+
+def validate_ollama_tool_schema(tool: dict) -> tuple[bool, str]:
+    """Validate Ollama tool schema structure."""
+    if not isinstance(tool, dict):
+        return False, "Tool payload must be a dict"
+    if tool.get("type") != "function":
+        return False, "Tool type must be 'function'"
+
+    func = tool.get("function")
+    if not isinstance(func, dict):
+        return False, "Tool missing function definition"
+
+    for key in ("name", "description", "parameters"):
+        if key not in func:
+            return False, f"Missing function field: {key}"
+
+    params = func.get("parameters")
+    if not isinstance(params, dict):
+        return False, "Parameters must be a dict"
+    if "type" not in params:
+        return False, "Parameters missing type"
+    if "properties" not in params:
+        return False, "Parameters missing properties"
+
+    properties = params.get("properties", {})
+    if isinstance(properties, dict):
+        for prop_name, prop_schema in properties.items():
+            if "enum" in prop_schema and not isinstance(prop_schema["enum"], list):
+                return False, f"Enum for property '{prop_name}' must be a list"
+
+    required = params.get("required")
+    if required is not None:
+        if not isinstance(required, list) or not all(isinstance(item, str) for item in required):
+            return False, "Parameters.required must be a list of strings"
+
+    return True, ""
+
+
+def convert_functions_to_ollama_tools(openai_schemas: list[dict], core_only: bool = True) -> list[dict]:
+    """Convert list of OpenAI schemas to Ollama tools, optionally filtering."""
+    converted_tools = []
+    for schema in openai_schemas:
+        if core_only and not is_core_tool(schema.get("name", "")):
+            continue
+
+        try:
+            tool = convert_openai_to_ollama_tool(schema)
+        except ValueError as exc:
+            log.warning("Skipping tool conversion: %s", exc)
+            continue
+
+        valid, reason = validate_ollama_tool_schema(tool)
+        if not valid:
+            log.warning("Skipping invalid Ollama tool for %s: %s", schema.get("name", "<unknown>"), reason)
+            continue
+
+        converted_tools.append(tool)
+
+    # Integration note: DB.prep_functions will call this when using an Ollama endpoint override,
+    # filtering to core tools and returning the converted payloads.
+    return converted_tools
