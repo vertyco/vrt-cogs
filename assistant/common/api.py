@@ -52,7 +52,7 @@ class API(MixinMeta):
         model_override: Optional[str] = None,
         temperature_override: Optional[float] = None,
     ) -> ChatCompletionMessage:
-        model = model_override or conf.get_user_model(member)
+        model = model_override or conf.get_chat_model(self.db.endpoint_override, member)
 
         max_convo_tokens = self.get_max_tokens(conf, member)
         max_response_tokens = conf.get_user_max_response_tokens(member)

@@ -338,10 +338,17 @@ class GuildSettings(AssistantBaseModel):
                 return self.max_time_role_override[role.id]
         return self.max_retention_time
 
+    def get_chat_model(self, endpoint_override: t.Optional[str] = None, member: t.Optional[discord.Member] = None) -> str:
+        """Return the configured chat model, applying role overrides and custom endpoint fallbacks."""
+        model = self.get_user_model(member)
+        if endpoint_override and model == "gpt-5.1":
+            return "gpt-oss:120b-cloud"
+        return model
+
     def get_embed_model(self, endpoint_override: t.Optional[str] = None) -> str:
         """Return the configured embed model, falling back to Ollama defaults on custom endpoints."""
         if endpoint_override and self.embed_model == "text-embedding-3-small":
-            return "nomic-embed-text"
+            return "qwen3-embedding:4b"
         return self.embed_model
 
 
