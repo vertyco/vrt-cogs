@@ -20,6 +20,7 @@ from tenacity import (
 )
 
 from .constants import NO_DEVELOPER_ROLE, PRICES, SUPPORTS_SEED, SUPPORTS_TOOLS
+from .utils import convert_functions_to_ollama_tools
 
 log = logging.getLogger("red.vrt.assistant.calls")
 
@@ -139,6 +140,13 @@ async def request_chat_completion_raw(
             "seed": seed,
         }
         kwargs["options"] = {k: v for k, v in ollama_options.items() if v is not None}
+
+    if use_ollama and functions:
+        # Convert OpenAI function schemas to Ollama tool format
+        ollama_tools = convert_functions_to_ollama_tools(functions, core_only=True)
+        if ollama_tools:
+            kwargs["tools"] = ollama_tools
+            log.debug(f"Passing {len(ollama_tools)} tools to Ollama: {[t['function']['name'] for t in ollama_tools]}")
 
     add_breadcrumb(
         category="api",
