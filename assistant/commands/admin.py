@@ -31,6 +31,7 @@ from redbot.core.utils.chat_formatting import (
 
 from ..abc import MixinMeta
 from ..common.constants import MODELS, PRICES
+from ..common.calls import list_ollama_models
 from ..common.models import DB, Embedding
 from ..common.utils import get_attachments
 from ..views import CodeMenu, EmbeddingMenu, SetAPI
@@ -63,8 +64,12 @@ class Admin(MixinMeta):
         send_key = [ctx.guild.owner_id == ctx.author.id, ctx.author.id in self.bot.owner_ids]
 
         conf = self.db.get_conf(ctx.guild)
-        model = conf.get_chat_model(self.db.endpoint_override, ctx.author)
-        effective_embed_model = conf.get_embed_model(self.db.endpoint_override)
+        model = conf.get_chat_model(
+            self.db.endpoint_override, ctx.author, self.db.ollama_models or None, self.db.endpoint_is_ollama
+        )
+        effective_embed_model = conf.get_embed_model(
+            self.db.endpoint_override, self.db.ollama_models or None, self.db.endpoint_is_ollama
+        )
         system_tokens = await self.count_tokens(conf.system_prompt, model) if conf.system_prompt else 0
         prompt_tokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
 
@@ -138,6 +143,20 @@ class Admin(MixinMeta):
                 humanize_list(custom_supported), humanize_list(openai_only)
             )
         embed.add_field(name=_("Endpoint Compatibility"), value=compat_value, inline=False)
+
+        if self.db.endpoint_override and self.db.endpoint_is_ollama:
+            scope_label = _("All tools") if conf.ollama_tool_scope == "all" else _("Core tools only")
+            models = self.db.ollama_models or []
+            preview = humanize_list([f"`{m}`" for m in models[:5]]) if models else _("None detected")
+            if models and len(models) > 5:
+                preview += _(" (+{} more)").format(len(models) - 5)
+            embed.add_field(
+                name=_("Ollama Defaults"),
+                value=_(
+                    "`Chat Default: `{}\n`Embed Default: `{}`\n`Tool Scope:  `{}\n`Models:       `{}`"
+                ).format(conf.ollama_chat_fallback, conf.ollama_embed_fallback, scope_label, preview),
+                inline=False,
+            )
 
         name = _("Auto Answer")
         val = _(
@@ -614,7 +633,9 @@ class Admin(MixinMeta):
                 return
 
         conf = self.db.get_conf(ctx.guild)
-        model = conf.get_chat_model(self.db.endpoint_override, ctx.author)
+        model = conf.get_chat_model(
+            self.db.endpoint_override, ctx.author, self.db.ollama_models or None, self.db.endpoint_is_ollama
+        )
         ptokens = await self.count_tokens(prompt, model) if prompt else 0
         stokens = await self.count_tokens(conf.system_prompt, model) if conf.system_prompt else 0
         combined = ptokens + stokens
@@ -686,7 +707,9 @@ class Admin(MixinMeta):
             else:
                 await ctx.send(_("No channel prompt set for {}!").format(channel.mention))
             return
-        model = conf.get_chat_model(self.db.endpoint_override, ctx.author)
+        model = conf.get_chat_model(
+            self.db.endpoint_override, ctx.author, self.db.ollama_models or None, self.db.endpoint_is_ollama
+        )
         ptokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
         stokens = await self.count_tokens(system_prompt, model) if system_prompt else 0
         combined = ptokens + stokens
@@ -755,7 +778,9 @@ class Admin(MixinMeta):
                 return
 
         conf = self.db.get_conf(ctx.guild)
-        model = conf.get_chat_model(self.db.endpoint_override, ctx.author)
+        model = conf.get_chat_model(
+            self.db.endpoint_override, ctx.author, self.db.ollama_models or None, self.db.endpoint_is_ollama
+        )
         ptokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
         stokens = await self.count_tokens(system_prompt, model) if system_prompt else 0
 
@@ -1624,7 +1649,9 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         if not await self.can_call_llm(conf, ctx):
             return
-        embed_model = conf.get_embed_model(self.db.endpoint_override)
+        embed_model = conf.get_embed_model(
+            self.db.endpoint_override, self.db.ollama_models or None, self.db.endpoint_is_ollama
+        )
         attachments = get_attachments(ctx.message)
         if not attachments:
             return await ctx.send(
@@ -1750,7 +1777,9 @@ class Admin(MixinMeta):
         """
         conf = self.db.get_conf(ctx.guild)
         tz = pytz.timezone(conf.timezone)
-        embed_model = conf.get_embed_model(self.db.endpoint_override)
+        embed_model = conf.get_embed_model(
+            self.db.endpoint_override, self.db.ollama_models or None, self.db.endpoint_is_ollama
+        )
         attachments = get_attachments(ctx.message)
         if not attachments:
             return await ctx.send(
@@ -2313,23 +2342,35 @@ class Admin(MixinMeta):
         dimensions = len(embedding) if embedding else 0
         return True, "", dimensions
 
-    async def _validate_endpoint(self, url: str) -> Tuple[bool, str]:
+    async def _validate_endpoint(self, url: str) -> Tuple[bool, str, bool, list[str]]:
+        """Validate the configured endpoint and detect if it's Ollama."""
+        ollama_error = None
         try:
-            if url:
-                client = ollama.AsyncClient(host=url)
-                await client.list()
-            else:
-                client = openai.AsyncOpenAI(api_key="unprotected", base_url=url)
-                await client.models.list()
-        except openai.AuthenticationError as e:
-            return True, _("Endpoint responded but authentication failed: {}").format(e)
-        except ollama.ResponseError as e:
-            log.warning("Ollama endpoint override validation failed", exc_info=e)
-            return False, str(e)
+            models = await list_ollama_models(url)
+            names = []
+            for model in models:
+                if isinstance(model, dict):
+                    names.append(model.get("name") or model.get("model"))
+                else:
+                    names.append(str(model))
+            names = [name for name in names if name]
+            return True, "", True, names
         except Exception as e:
+            ollama_error = e
+            log.debug("Failed Ollama detection for %s: %s", url, e)
+
+        try:
+            client = openai.AsyncOpenAI(api_key="unprotected", base_url=url)
+            response = await client.models.list()
+            names = [m.id for m in getattr(response, "data", [])]
+            return True, "", False, names
+        except openai.AuthenticationError as e:
+            return True, _("Endpoint responded but authentication failed: {}").format(e), False, []
+        except Exception as e:
+            if ollama_error:
+                log.warning("Ollama endpoint override validation failed", exc_info=ollama_error)
             log.warning("Endpoint override validation failed", exc_info=e)
-            return False, str(e)
-        return True, ""
+            return False, str(e), False, []
 
     # --------------------------------------------------------------------------------------
     # --------------------------------------------------------------------------------------
@@ -2377,7 +2418,7 @@ class Admin(MixinMeta):
             msg += f"\n{compat_warning}"
             return await ctx.send(msg)
         if endpoint and not self.db.endpoint_override:
-            valid, validation_note = await self._validate_endpoint(endpoint)
+            valid, validation_note, is_ollama, models = await self._validate_endpoint(endpoint)
             if not valid:
                 return await ctx.send(_("Failed to reach the endpoint: {}").format(validation_note))
             if validation_note:
@@ -2385,9 +2426,11 @@ class Admin(MixinMeta):
             if warning := _embedding_warning():
                 compat_warning += f"\n{warning}"
             self.db.endpoint_override = endpoint
+            self.db.endpoint_is_ollama = is_ollama
+            self.db.ollama_models = models
             await ctx.send(_("Endpoint has been set to **{}**\n{}").format(endpoint, compat_warning))
         elif endpoint and self.db.endpoint_override:
-            valid, validation_note = await self._validate_endpoint(endpoint)
+            valid, validation_note, is_ollama, models = await self._validate_endpoint(endpoint)
             if not valid:
                 return await ctx.send(_("Failed to reach the endpoint: {}").format(validation_note))
             if validation_note:
@@ -2396,15 +2439,20 @@ class Admin(MixinMeta):
                 compat_warning += f"\n{warning}"
             old = self.db.endpoint_override
             self.db.endpoint_override = endpoint
+            self.db.endpoint_is_ollama = is_ollama
+            self.db.ollama_models = models
             await ctx.send(_("Endpoint has been changed from **{}** to **{}**\n{}").format(old, endpoint, compat_warning))
         else:
             self.db.endpoint_override = None
+            self.db.endpoint_is_ollama = False
+            self.db.ollama_models = []
             # Stop health monitoring when endpoint is removed
             if self.endpoint_health_loop.is_running():
                 self.endpoint_health_loop.cancel()
                 self.db.endpoint_health_check = False
                 await self.bot.change_presence(status=discord.Status.online)
             await ctx.send(_("Endpoint override has been removed!"))
+        await self.save_conf()
 
     @assistant.command(name="endpointhealth")
     @commands.is_owner()
@@ -2458,6 +2506,146 @@ class Admin(MixinMeta):
                 self.endpoint_health_loop.change_interval(seconds=interval)
             await ctx.send(f"⏱️ Health check interval set to **{interval}** seconds")
 
+        await self.save_conf()
+
+    @assistant.group(name="ollama")
+    @commands.is_owner()
+    async def ollama_group(self, ctx: commands.Context):
+        """Manage Ollama models when using an endpoint override"""
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help()
+
+    @ollama_group.command(name="list")
+    async def ollama_list_models(self, ctx: commands.Context):
+        """List models available on the configured Ollama host"""
+        if not self.db.endpoint_override:
+            return await ctx.send(
+                _("❌ No Ollama endpoint configured. Set one with `{prefix}assistant endpointoverride`.").format(
+                    prefix=ctx.clean_prefix
+                )
+            )
+        if not self.db.endpoint_is_ollama:
+            await ctx.send(_("⚠️ Endpoint has not been detected as Ollama; attempting to list models anyway."))
+        try:
+            models = await list_ollama_models(self.db.endpoint_override)
+        except Exception as e:  # noqa: BLE001
+            log.error("Failed to list Ollama models", exc_info=e)
+            return await ctx.send(_("Failed to list Ollama models: {}").format(e))
+
+        if not models:
+            return await ctx.send(_("No models found on the Ollama host."))
+
+        def _size_label(bytes_size: int | None) -> str:
+            if not bytes_size:
+                return _("unknown size")
+            mb = bytes_size / (1024 * 1024)
+            if mb >= 1024:
+                gb = mb / 1024
+                return f"{gb:.2f} GB"
+            return f"{mb:.1f} MB"
+
+        names = []
+        lines = []
+        for model in models:
+            name = (model.get("name") or model.get("model") or str(model)) if isinstance(model, dict) else str(model)
+            if not name:
+                continue
+            names.append(name)
+            size = _size_label(model.get("size") if isinstance(model, dict) else None)
+            lines.append(f"- `{name}` ({size})")
+
+        for page in pagify("\n".join(lines), page_length=1200):
+            await ctx.send(page)
+
+        self.db.ollama_models = names
+        await self.save_conf()
+
+    @ollama_group.command(name="pull")
+    async def ollama_pull_model(self, ctx: commands.Context, *, model: str):
+        """Pull an Ollama model onto the configured host"""
+        if not self.db.endpoint_override:
+            return await ctx.send(
+                _("❌ No Ollama endpoint configured. Set one with `{prefix}assistant endpointoverride`.").format(
+                    prefix=ctx.clean_prefix
+                )
+            )
+        if not self.db.endpoint_is_ollama:
+            await ctx.send(_("⚠️ Endpoint has not been detected as Ollama; attempting to pull anyway."))
+        status_msg = await ctx.send(_("Pulling `{}` from Ollama... this may take a while.").format(model))
+        client = ollama.AsyncClient(host=self.db.endpoint_override)
+        try:
+            await client.pull(model)
+            await status_msg.edit(content=_("✅ Pulled `{}` successfully.").format(model))
+        except Exception as e:  # noqa: BLE001
+            log.error("Failed to pull Ollama model %s", model, exc_info=e)
+            return await status_msg.edit(content=_("❌ Failed to pull `{}`: {}").format(model, e))
+
+        try:
+            refreshed = await list_ollama_models(self.db.endpoint_override)
+            self.db.ollama_models = [
+                (m.get("name") or m.get("model")) if isinstance(m, dict) else str(m) for m in refreshed if m
+            ]
+            await self.save_conf()
+        except Exception:
+            # Non-fatal if refresh fails
+            pass
+
+    @ollama_group.command(name="delete", aliases=["rm"])
+    async def ollama_delete_model(self, ctx: commands.Context, *, model: str):
+        """Delete a model from the Ollama host"""
+        if not self.db.endpoint_override:
+            return await ctx.send(
+                _("❌ No Ollama endpoint configured. Set one with `{prefix}assistant endpointoverride`.").format(
+                    prefix=ctx.clean_prefix
+                )
+            )
+        if not self.db.endpoint_is_ollama:
+            await ctx.send(_("⚠️ Endpoint has not been detected as Ollama; attempting to delete anyway."))
+        client = ollama.AsyncClient(host=self.db.endpoint_override)
+        try:
+            await client.delete(model)
+        except Exception as e:  # noqa: BLE001
+            log.error("Failed to delete Ollama model %s", model, exc_info=e)
+            return await ctx.send(_("❌ Failed to delete `{}`: {}").format(model, e))
+
+        await ctx.send(_("🗑️ Deleted `{}` from Ollama.").format(model))
+        try:
+            refreshed = await list_ollama_models(self.db.endpoint_override)
+            self.db.ollama_models = [
+                (m.get("name") or m.get("model")) if isinstance(m, dict) else str(m) for m in refreshed if m
+            ]
+            await self.save_conf()
+        except Exception:
+            pass
+
+    @ollama_group.command(name="defaults")
+    async def ollama_defaults(self, ctx: commands.Context, chat_model: str, embed_model: str = None):
+        """Set fallback chat/embed models when using Ollama"""
+        conf = self.db.get_conf(ctx.guild)
+        if chat_model.lower() == "reset":
+            conf.ollama_chat_fallback = "llama3.1"
+            conf.ollama_embed_fallback = "nomic-embed-text"
+            await ctx.send(_("Ollama defaults reset to `llama3.1` and `nomic-embed-text`."))
+        else:
+            conf.ollama_chat_fallback = chat_model
+            if embed_model:
+                conf.ollama_embed_fallback = embed_model
+            await ctx.send(
+                _("Ollama defaults set. Chat: `{}` | Embed: `{}`").format(
+                    conf.ollama_chat_fallback, conf.ollama_embed_fallback
+                )
+            )
+        await self.save_conf()
+
+    @ollama_group.command(name="toolscope")
+    async def ollama_tool_scope(self, ctx: commands.Context, scope: str):
+        """Control which functions are exposed to Ollama"""
+        scope = scope.lower()
+        if scope not in {"core", "all"}:
+            return await ctx.send(_("Scope must be either `core` or `all`."))
+        conf = self.db.get_conf(ctx.guild)
+        conf.ollama_tool_scope = scope
+        await ctx.send(_("Ollama tool scope updated to **{}**.").format(scope))
         await self.save_conf()
 
     @assistant.command(name="wipecog")

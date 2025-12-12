@@ -244,7 +244,9 @@ class Assistant(
         await self.bot.change_presence(status=discord.Status.idle)
 
         # Validate endpoint using the extracted method
-        valid, message = await self._validate_endpoint(self.db.endpoint_override)
+        valid, message, is_ollama, models = await self._validate_endpoint(self.db.endpoint_override)
+        self.db.endpoint_is_ollama = is_ollama
+        self.db.ollama_models = models
 
         if valid:
             # Set status to online (green) when healthy
@@ -298,7 +300,9 @@ class Assistant(
             text=text,
             embedding=embedding,
             ai_created=ai_created,
-            model=conf.get_embed_model(self.db.endpoint_override),
+            model=conf.get_embed_model(
+                self.db.endpoint_override, self.db.ollama_models or None, self.db.endpoint_is_ollama
+            ),
         )
         await asyncio.to_thread(conf.sync_embeddings, guild.id)
         asyncio.create_task(self.save_conf())

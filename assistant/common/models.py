@@ -11,6 +11,8 @@ from chromadb.errors import ChromaError
 from pydantic import VERSION, BaseModel, Field
 from redbot.core.bot import Red
 
+from .constants import MODELS
+
 log = logging.getLogger("red.vrt.assistant.models")
 
 _chroma_client = chromadb.Client()
@@ -115,6 +117,9 @@ class GuildSettings(AssistantBaseModel):
     trigger_ignore_channels: t.List[int] = []  # Channels to ignore trigger words
 
     image_command: bool = True  # Allow image commands
+    ollama_chat_fallback: str = "llama3.1"
+    ollama_embed_fallback: str = "nomic-embed-text"
+    ollama_tool_scope: str = "core"  # core or all
 
     timezone: str = "UTC"
     temperature: float = 0.0  # 0.0 - 2.0
@@ -441,19 +446,46 @@ class GuildSettings(AssistantBaseModel):
         return self.max_retention_time
 
     def get_chat_model(
-        self, endpoint_override: t.Optional[str] = None, member: t.Optional[discord.Member] = None
+        self,
+        endpoint_override: t.Optional[str] = None,
+        member: t.Optional[discord.Member] = None,
+        available_ollama_models: t.Optional[t.Sequence[str]] = None,
+        is_ollama_endpoint: t.Optional[bool] = True,
     ) -> str:
         """Return the configured chat model, applying role overrides and custom endpoint fallbacks."""
         model = self.get_user_model(member)
-        if endpoint_override and model == "gpt-5.1":
-            return "gpt-oss:120b-cloud"
-        return model
+        if not endpoint_override or is_ollama_endpoint is False:
+            return model
 
-    def get_embed_model(self, endpoint_override: t.Optional[str] = None) -> str:
+        # Respect explicit non-OpenAI models when an override is used
+        if model not in MODELS:
+            return model
+
+        fallback = self.ollama_chat_fallback or model
+        if available_ollama_models:
+            if fallback not in available_ollama_models:
+                fallback = available_ollama_models[0]
+        return fallback
+
+    def get_embed_model(
+        self,
+        endpoint_override: t.Optional[str] = None,
+        available_ollama_models: t.Optional[t.Sequence[str]] = None,
+        is_ollama_endpoint: t.Optional[bool] = True,
+    ) -> str:
         """Return the configured embed model, falling back to Ollama defaults on custom endpoints."""
-        if endpoint_override and self.embed_model == "text-embedding-3-small":
-            return "qwen3-embedding:4b"
-        return self.embed_model
+        if not endpoint_override or is_ollama_endpoint is False:
+            return self.embed_model
+
+        # Keep custom embed model if user explicitly set one
+        if self.embed_model not in {"text-embedding-3-small", "text-embedding-3-large"}:
+            return self.embed_model
+
+        fallback = self.ollama_embed_fallback or self.embed_model
+        if available_ollama_models:
+            if fallback not in available_ollama_models:
+                fallback = available_ollama_models[0]
+        return fallback
 
 
 class Conversation(AssistantBaseModel):
@@ -593,6 +625,8 @@ class DB(AssistantBaseModel):
     listen_to_bots: bool = False
     brave_api_key: t.Optional[str] = None
     endpoint_override: t.Optional[str] = None
+    endpoint_is_ollama: t.Optional[bool] = None
+    ollama_models: t.List[str] = Field(default_factory=list)
     endpoint_health_check: bool = False
     endpoint_health_interval: int = 60
 

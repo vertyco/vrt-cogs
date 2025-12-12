@@ -301,7 +301,9 @@ class AssistantFunctions(MixinMeta):
         conf.embeddings[memory_name].text = memory_text
         conf.embeddings[memory_name].embedding = embedding
         conf.embeddings[memory_name].update()
-        conf.embeddings[memory_name].model = conf.get_embed_model(self.db.endpoint_override)
+        conf.embeddings[memory_name].model = conf.get_embed_model(
+            self.db.endpoint_override, self.db.ollama_models or None, self.db.endpoint_is_ollama
+        )
         await asyncio.to_thread(conf.sync_embeddings, guild.id)
         asyncio.create_task(self.save_conf())
         return "Your memory has been updated!"

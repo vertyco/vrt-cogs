@@ -38,7 +38,17 @@ def _get_ollama_client(base_url: str) -> ollama.AsyncClient:
     return ollama.AsyncClient(host=base_url)
 
 
-def _should_use_ollama(base_url: Optional[str]) -> bool:
+async def list_ollama_models(base_url: str) -> list[dict]:
+    """List Ollama models from the configured host."""
+    client = _get_ollama_client(base_url)
+    response = await client.list()
+    if isinstance(response, dict):
+        return response.get("models", [])
+    return getattr(response, "models", []) or []
+
+
+@cached(ttl=60)
+async def _should_use_ollama(base_url: Optional[str]) -> bool:
     """
     Determine if Ollama client should be used based on endpoint override.
 
@@ -48,7 +58,14 @@ def _should_use_ollama(base_url: Optional[str]) -> bool:
     Returns:
         True if Ollama should be used, False for OpenAI
     """
-    return base_url is not None
+    if not base_url:
+        return False
+    try:
+        await list_ollama_models(base_url)
+        return True
+    except Exception as e:
+        log.debug("Endpoint %s is not responding as Ollama: %s", base_url, e)
+        return False
 
 
 @retry(
@@ -78,8 +95,9 @@ async def request_chat_completion_raw(
     base_url: Optional[str] = None,
     reasoning_effort: Optional[str] = None,
     verbosity: Optional[str] = None,
+    allow_all_ollama_tools: bool = False,
 ) -> t.Union[ChatCompletion, OllamaChatResponse]:
-    use_ollama = _should_use_ollama(base_url)
+    use_ollama = await _should_use_ollama(base_url)
 
     if use_ollama:
         client = _get_ollama_client(base_url)
@@ -88,7 +106,16 @@ async def request_chat_completion_raw(
 
     kwargs = {"model": model, "messages": messages}
 
-    if model in PRICES and base_url is None:
+    if use_ollama:
+        ollama_options = {
+            "temperature": temperature,
+            "num_predict": max_tokens if max_tokens and max_tokens > 0 else None,
+            "frequency_penalty": frequency_penalty,
+            "presence_penalty": presence_penalty,
+            "seed": seed,
+        }
+        kwargs["options"] = {k: v for k, v in ollama_options.items() if v is not None}
+    elif model in PRICES and base_url is None:
         # Using an OpenAI model
         if not model.startswith("o") and "gpt-5" not in model:
             kwargs["temperature"] = temperature
@@ -110,7 +137,12 @@ async def request_chat_completion_raw(
         if seed and model in SUPPORTS_SEED:
             kwargs["seed"] = seed
 
-    if functions and model not in NO_DEVELOPER_ROLE:
+    if use_ollama and functions:
+        ollama_tools = convert_functions_to_ollama_tools(functions, core_only=not allow_all_ollama_tools)
+        if ollama_tools:
+            kwargs["tools"] = ollama_tools
+            log.debug(f"Passing {len(ollama_tools)} tools to Ollama: {[t['function']['name'] for t in ollama_tools]}")
+    elif functions and model not in NO_DEVELOPER_ROLE:
         if model in SUPPORTS_TOOLS:
             tools = []
             for func in functions:
@@ -131,22 +163,6 @@ async def request_chat_completion_raw(
                 if "tool_calls" in message:
                     # Remove the message from the payload
                     del kwargs["messages"][idx]
-    elif use_ollama:
-        ollama_options = {
-            "temperature": temperature,
-            "num_predict": max_tokens if max_tokens and max_tokens > 0 else None,
-            "frequency_penalty": frequency_penalty,
-            "presence_penalty": presence_penalty,
-            "seed": seed,
-        }
-        kwargs["options"] = {k: v for k, v in ollama_options.items() if v is not None}
-
-    if use_ollama and functions:
-        # Convert OpenAI function schemas to Ollama tool format
-        ollama_tools = convert_functions_to_ollama_tools(functions, core_only=True)
-        if ollama_tools:
-            kwargs["tools"] = ollama_tools
-            log.debug(f"Passing {len(ollama_tools)} tools to Ollama: {[t['function']['name'] for t in ollama_tools]}")
 
     add_breadcrumb(
         category="api",
@@ -197,7 +213,7 @@ async def request_embedding_raw(
     model: str,
     base_url: Optional[str] = None,
 ) -> t.Union[CreateEmbeddingResponse, EmbedResponse]:
-    use_ollama = _should_use_ollama(base_url)
+    use_ollama = await _should_use_ollama(base_url)
     client = _get_ollama_client(base_url) if use_ollama else openai.AsyncOpenAI(api_key=api_key or "unprotected" if base_url else api_key, base_url=base_url)
     add_breadcrumb(
         category="api",

@@ -266,10 +266,11 @@ async def ensure_message_compatibility(
     conf: GuildSettings,
     user: t.Optional[discord.Member],
     endpoint_override: t.Optional[str] = None,
+    is_ollama_endpoint: t.Optional[bool] = True,
 ) -> bool:
     cleaned = False
 
-    model = conf.get_chat_model(endpoint_override, user)
+    model = conf.get_chat_model(endpoint_override, user, None, is_ollama_endpoint)
     if model not in NO_DEVELOPER_ROLE:
         return cleaned
 
@@ -287,11 +288,12 @@ async def ensure_supports_vision(
     conf: GuildSettings,
     user: t.Optional[discord.Member],
     endpoint_override: t.Optional[str] = None,
+    is_ollama_endpoint: t.Optional[bool] = True,
 ) -> bool:
     """Make sure that if a conversation payload contains images that the model supports vision"""
     cleaned = False
 
-    model = conf.get_chat_model(endpoint_override, user)
+    model = conf.get_chat_model(endpoint_override, user, None, is_ollama_endpoint)
     if model in SUPPORTS_VISION:
         return cleaned
 

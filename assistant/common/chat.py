@@ -355,7 +355,9 @@ class ChatHandler(MixinMeta):
         query_embedding = []
         user = author if isinstance(author, discord.Member) else guild.get_member(author)
         user_id = author.id if isinstance(author, discord.Member) else author
-        model = conf.get_chat_model(self.db.endpoint_override, user)
+        model = conf.get_chat_model(
+            self.db.endpoint_override, user, self.db.ollama_models or None, self.db.endpoint_is_ollama
+        )
         using_ollama_endpoint = bool(self.db.endpoint_override)
 
         # Ensure the message is not longer than 1048576 characters
@@ -457,8 +459,12 @@ class ChatHandler(MixinMeta):
             if calls >= conf.max_function_calls:
                 function_calls = []
 
-            await ensure_supports_vision(messages, conf, author, self.db.endpoint_override)
-            await ensure_message_compatibility(messages, conf, author, self.db.endpoint_override)
+            await ensure_supports_vision(
+                messages, conf, author, self.db.endpoint_override, self.db.endpoint_is_ollama
+            )
+            await ensure_message_compatibility(
+                messages, conf, author, self.db.endpoint_override, self.db.endpoint_is_ollama
+            )
             if self.db.endpoint_override:
                 # Replace "developer" role with "system" role
                 for i in messages:
@@ -824,7 +830,9 @@ class ChatHandler(MixinMeta):
             system_prompt = format_string(conversation.system_prompt_override or conf.system_prompt)
 
         initial_prompt = format_string(conf.prompt)
-        model = conf.get_chat_model(self.db.endpoint_override, author)
+        model = conf.get_chat_model(
+            self.db.endpoint_override, author, self.db.ollama_models or None, self.db.endpoint_is_ollama
+        )
         current_tokens = await self.count_tokens(message + system_prompt + initial_prompt, model)
         current_tokens += await self.count_payload_tokens(conversation.messages, model)
         current_tokens += await self.count_function_tokens(function_calls, model)

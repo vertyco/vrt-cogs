@@ -195,7 +195,9 @@ class EmbeddingMenu(discord.ui.View):
         self.conf.embeddings[name] = Embedding(
             text=text,
             embedding=embedding,
-            model=self.conf.get_embed_model(self.db.endpoint_override),
+            model=self.conf.get_embed_model(
+                self.db.endpoint_override, self.db.ollama_models or None, self.db.endpoint_is_ollama
+            ),
         )
         await asyncio.to_thread(self.conf.sync_embeddings, self.ctx.guild.id)
         await self.get_pages()
