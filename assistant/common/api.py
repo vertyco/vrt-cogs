@@ -391,6 +391,7 @@ class API(MixinMeta):
         sample = list(conf.embeddings.values())[0]
         sample_embed = await self.request_embedding(sample.text, conf)
         target_model = conf.get_embed_model(self.db.endpoint_override)
+        target_dimension = len(sample_embed)
 
         async def update_embedding(name: str, text: str):
             conf.embeddings[name].embedding = await self.request_embedding(text, conf)
@@ -401,13 +402,21 @@ class API(MixinMeta):
         synced = 0
         tasks = []
         for name, em in conf.embeddings.items():
-            if target_model != em.model or len(em.embedding) != len(sample_embed):
+            if target_model != em.model or len(em.embedding) != target_dimension:
                 synced += 1
                 tasks.append(update_embedding(name, em.text))
 
         if synced:
             await asyncio.gather(*tasks)
-            await asyncio.to_thread(conf.sync_embeddings, guild_id)
+
+        await asyncio.to_thread(
+            conf.sync_embeddings,
+            guild_id,
+            target_dimension=target_dimension,
+            force_reset=bool(synced),
+            target_model=target_model,
+        )
+        if synced:
             await self.save_conf()
         return synced
 
