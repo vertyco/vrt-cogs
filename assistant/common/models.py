@@ -11,6 +11,8 @@ from chromadb.errors import ChromaError
 from pydantic import VERSION, BaseModel, Field
 from redbot.core.bot import Red
 
+from .constants import MODELS
+
 log = logging.getLogger("red.vrt.assistant.models")
 
 _chroma_client = chromadb.Client()
@@ -115,6 +117,9 @@ class GuildSettings(AssistantBaseModel):
     trigger_ignore_channels: t.List[int] = []  # Channels to ignore trigger words
 
     image_command: bool = True  # Allow image commands
+    ollama_chat_fallback: str = "llama3.1"
+    ollama_embed_fallback: str = "nomic-embed-text"
+    ollama_tool_scope: str = "core"  # core or all
 
     timezone: str = "UTC"
     temperature: float = 0.0  # 0.0 - 2.0
@@ -138,69 +143,147 @@ class GuildSettings(AssistantBaseModel):
     function_statuses: t.Dict[str, bool] = {}  # {"function_name": True/False for enabled/disabled}
     functions_called: int = 0
 
-    def sync_embeddings(self, guild_id: int):
-        try:
-            collection = _chroma_client.get_collection(f"assistant-{guild_id}")
-        except ChromaError as e:
-            log.info(f"Failed to get collection for guild {guild_id}: {e}")
+    def sync_embeddings(
+        self,
+        guild_id: int,
+        target_dimension: t.Optional[int] = None,
+        force_reset: bool = False,
+        target_model: t.Optional[str] = None,
+    ):
+        """Sync in-memory embeddings with the Chroma collection, validating dimensions."""
+
+        def _get_collection_dimension(coll) -> t.Optional[int]:
+            try:
+                peek = coll.peek()
+            except ChromaError as e:
+                log.warning(f"Failed to peek collection for guild {guild_id}: {e}")
+                return None
+            embeddings = peek.get("embeddings") if peek else []
+            if embeddings and embeddings[0] is not None:
+                return len(embeddings[0])
+            return None
+
+        collection_name = f"assistant-{guild_id}"
+        # Determine the expected dimension from target override or stored embeddings
+        dim_candidates = (
+            {len(em.embedding) for em in self.embeddings.values() if em.embedding}
+            if target_dimension is None
+            else {target_dimension}
+        )
+        if len(dim_candidates) > 1:
+            log.warning(f"Mixed embedding dimensions detected for guild {guild_id}: {sorted(dim_candidates)}")
+        expected_dimension = next(iter(dim_candidates), None)
+        model_hint = target_model or (next(iter(self.embeddings.values())).model if self.embeddings else self.embed_model)
+
+        # Skip embeddings that do not match the expected dimension to avoid Chroma errors
+        valid_embeddings = self.embeddings
+        if expected_dimension:
+            valid_embeddings = {k: v for k, v in self.embeddings.items() if len(v.embedding) == expected_dimension}
+            skipped = len(self.embeddings) - len(valid_embeddings)
+            if skipped:
+                log.info(
+                    f"Skipping {skipped} embeddings with mismatched dimensions for guild {guild_id}; resync needed."
+                )
+
+        collection = None
+        if force_reset:
+            try:
+                _chroma_client.delete_collection(collection_name)
+            except ChromaError as e:
+                log.warning(f"Failed to delete collection for guild {guild_id}: {e}")
+        else:
+            try:
+                collection = _chroma_client.get_collection(collection_name)
+            except ChromaError as e:
+                log.info(f"Failed to get collection for guild {guild_id}: {e}")
+                collection = None
+
+            if collection:
+                collection_dimension = _get_collection_dimension(collection)
+                collection_model = (collection.metadata or {}).get("model") if hasattr(collection, "metadata") else None
+                if expected_dimension and collection_dimension and expected_dimension != collection_dimension:
+                    log.info(
+                        f"Embedding dimension changed for guild {guild_id}: "
+                        f"{collection_dimension} -> {expected_dimension}. Resetting collection."
+                    )
+                    force_reset = True
+                if collection_model and model_hint and collection_model != model_hint:
+                    log.info(
+                        f"Embedding model changed for guild {guild_id}: {collection_model} -> {model_hint}. "
+                        "Resetting collection."
+                    )
+                    force_reset = True
+
+        if force_reset and collection:
+            try:
+                _chroma_client.delete_collection(collection_name)
+            except ChromaError as e:
+                log.warning(f"Failed to delete collection for guild {guild_id}: {e}")
+            collection = None
+        elif force_reset:
             collection = None
 
         if not collection:
             collection = _chroma_client.create_collection(
-                f"assistant-{guild_id}",
+                collection_name,
                 configuration={"hnsw": {"space": "cosine"}},
+                metadata={
+                    "guild_id": guild_id,
+                    **({"dimension": expected_dimension} if expected_dimension else {}),
+                    **({"model": model_hint} if model_hint else {}),
+                },
             )
-            # Populate the collection with existing embeddings
-            ids = list(self.embeddings.keys())
-            if ids:  # Only add if there are embeddings
-                log.info(f"Populating collection with {len(ids)} existing embeddings for guild {guild_id}")
-                embeddings = [em.embedding for em in self.embeddings.values()]
-                metadatas = [i.model_dump(exclude=["embedding"]) for i in self.embeddings.values()]
-                collection.add(ids=ids, embeddings=embeddings, metadatas=metadatas)
-        else:
-            # Make sure everything in self.embeddings is in the collection
-            ids = list(self.embeddings.keys())
-            collection_data = collection.get()
-            existing_ids = collection_data["ids"] if collection_data["ids"] else []
-            new_ids = [i for i in ids if i not in existing_ids]
-            if new_ids:
-                log.info(f"Adding {len(new_ids)} new embeddings to collection for guild {guild_id}")
-                embeddings = [self.embeddings[i].embedding for i in new_ids]
-                metadatas = [self.embeddings[i].model_dump(exclude=["embedding"]) for i in new_ids]
-                collection.add(ids=new_ids, embeddings=embeddings, metadatas=metadatas)
 
-            # See if there are any embeddings in the collection that are not in self.embeddings
-            missing_ids = [i for i in existing_ids if i not in ids]
-            if missing_ids:
-                log.info(f"Removing {len(missing_ids)} old embeddings from collection for guild {guild_id}")
-                collection.delete(ids=list(set(missing_ids)))
+        if not valid_embeddings:
+            log.info(f"No valid embeddings to sync for guild {guild_id}.")
+            return
 
-            # Make sure that all embeddings match the current text and vector (check for updates)
-            for embed_name, em in self.embeddings.items():
-                if embed_name not in existing_ids:
-                    continue
-                # Get the embedding by ID instead of text for more reliable matching
-                result = collection.get(ids=[embed_name])
+        ids = list(valid_embeddings.keys())
+        collection_data = collection.get()
+        existing_ids = collection_data["ids"] if collection_data["ids"] else []
 
-                if not result["ids"] or not result["embeddings"]:
-                    log.warning(f"Embedding {embed_name} not found in collection for guild {guild_id}. Adding it.")
-                    collection.add(
-                        ids=[embed_name],
-                        embeddings=[em.embedding],
-                        metadatas=[em.model_dump(exclude=["embedding"])],
-                    )
-                else:
-                    existing_embedding = result["embeddings"][0] if result["embeddings"] else []
-                    if existing_embedding != em.embedding:
-                        log.info(f"Updating embedding {embed_name} in collection for guild {guild_id}.")
-                        collection.update(
-                            ids=[embed_name],
-                            embeddings=[em.embedding],
-                            metadatas=[em.model_dump(exclude=["embedding"])],
-                        )
-                    else:
-                        log.debug(f"Embedding {embed_name} is already up-to-date in collection for guild {guild_id}.")
-        log.info(f"Synced embeddings for guild {guild_id} with {len(self.embeddings)} embeddings.")
+        new_ids = [i for i in ids if i not in existing_ids]
+        if new_ids:
+            log.info(f"Adding {len(new_ids)} new embeddings to collection for guild {guild_id}")
+            embeddings = [valid_embeddings[i].embedding for i in new_ids]
+            metadatas = [valid_embeddings[i].model_dump(exclude=["embedding"]) for i in new_ids]
+            collection.add(ids=new_ids, embeddings=embeddings, metadatas=metadatas)
+
+        # Remove any stale entries from the collection
+        missing_ids = [i for i in existing_ids if i not in ids]
+        if missing_ids:
+            log.info(f"Removing {len(missing_ids)} old embeddings from collection for guild {guild_id}")
+            collection.delete(ids=list(set(missing_ids)))
+
+        # Update existing entries when the vector or metadata has changed
+        for embed_name, em in valid_embeddings.items():
+            if embed_name not in existing_ids:
+                continue
+            result = collection.get(ids=[embed_name])
+            if not result["ids"] or not result["embeddings"]:
+                log.warning(f"Embedding {embed_name} not found in collection for guild {guild_id}. Adding it.")
+                collection.add(
+                    ids=[embed_name],
+                    embeddings=[em.embedding],
+                    metadatas=[em.model_dump(exclude=["embedding"])],
+                )
+                continue
+
+            existing_embedding = result["embeddings"][0] if result["embeddings"] else []
+            if existing_embedding != em.embedding:
+                log.info(f"Updating embedding {embed_name} in collection for guild {guild_id}.")
+                collection.update(
+                    ids=[embed_name],
+                    embeddings=[em.embedding],
+                    metadatas=[em.model_dump(exclude=["embedding"])],
+                )
+            else:
+                log.debug(f"Embedding {embed_name} is already up-to-date in collection for guild {guild_id}.")
+
+        log.info(
+            f"Synced embeddings for guild {guild_id} with {len(valid_embeddings)} embeddings "
+            f"(skipped {len(self.embeddings) - len(valid_embeddings)})."
+        )
 
     def get_related_embeddings(
         self,
@@ -222,12 +305,21 @@ class GuildSettings(AssistantBaseModel):
         if not top_n or q_length == 0 or not self.embeddings:
             return []
 
-        if not all(q_length == len(em.embedding) for em in self.embeddings.values()):
+        valid_embeddings = {k: v for k, v in self.embeddings.items() if len(v.embedding) == q_length}
+        skipped = len(self.embeddings) - len(valid_embeddings)
+        if not valid_embeddings:
             log.warning(
-                f"Query embedding length {q_length} does not match all stored embeddings in guild {guild_id}. "
-                "Skipping related embeddings search."
+                f"No embeddings match query dimension {q_length} for guild {guild_id}. "
+                "Triggering resync and skipping related search."
             )
+            self.sync_embeddings(guild_id, target_dimension=q_length, force_reset=True)
             return []
+        if skipped:
+            log.info(
+                f"Found {skipped} embeddings with mismatched dimensions for guild {guild_id}; "
+                "resetting collection to match the query dimension."
+            )
+            self.sync_embeddings(guild_id, target_dimension=q_length, force_reset=True)
 
         try:
             collection = _chroma_client.get_collection(f"assistant-{guild_id}")
@@ -236,19 +328,34 @@ class GuildSettings(AssistantBaseModel):
             collection = None
 
         if not collection:
-            collection = _chroma_client.create_collection(
-                f"assistant-{guild_id}",
-                metadata={"hnsw:space": "cosine", "guild_id": guild_id},
+            self.sync_embeddings(
+                guild_id,
+                target_dimension=q_length,
+                force_reset=True,
+                target_model=next(iter(valid_embeddings.values())).model,
             )
-            # Populate the collection with existing embeddings
-            ids = list(self.embeddings.keys())
-            log.info(f"Populating collection with {len(ids)} existing embeddings for guild {guild_id}")
-            embeddings = [em.embedding for em in self.embeddings.values()]
-            metadatas = [i.model_dump(exclude=["embedding"]) for i in self.embeddings.values()]
-            collection.add(ids=ids, embeddings=embeddings, metadatas=metadatas)
+            try:
+                collection = _chroma_client.get_collection(f"assistant-{guild_id}")
+            except ChromaError as e:
+                log.error(f"Failed to create collection for guild {guild_id}: {e}")
+                return []
 
         start = perf_counter()
-        results = collection.query(query_embeddings=[query_embedding], n_results=top_n_override or self.top_n)
+        try:
+            results = collection.query(query_embeddings=[query_embedding], n_results=top_n_override or self.top_n)
+        except (ChromaError, ValueError) as e:
+            if "dimension" in str(e).lower():
+                log.warning(f"Dimension mismatch when querying embeddings for guild {guild_id}: {e}. Resetting store.")
+                self.sync_embeddings(guild_id, target_dimension=q_length, force_reset=True)
+                try:
+                    collection = _chroma_client.get_collection(f"assistant-{guild_id}")
+                    results = collection.query(query_embeddings=[query_embedding], n_results=top_n_override or self.top_n)
+                except Exception as inner_e:  # noqa: BLE001
+                    log.error(f"Failed to query embeddings after reset for guild {guild_id}: {inner_e}")
+                    return []
+            else:
+                log.error(f"Failed to query embeddings for guild {guild_id}: {e}")
+                return []
         # print(results)
         strings_and_relatedness = []
         for idx in range(len(results["ids"][0])):
@@ -337,6 +444,48 @@ class GuildSettings(AssistantBaseModel):
             if role.id in self.max_time_role_override:
                 return self.max_time_role_override[role.id]
         return self.max_retention_time
+
+    def get_chat_model(
+        self,
+        endpoint_override: t.Optional[str] = None,
+        member: t.Optional[discord.Member] = None,
+        available_ollama_models: t.Optional[t.Sequence[str]] = None,
+        is_ollama_endpoint: t.Optional[bool] = True,
+    ) -> str:
+        """Return the configured chat model, applying role overrides and custom endpoint fallbacks."""
+        model = self.get_user_model(member)
+        if not endpoint_override or is_ollama_endpoint is False:
+            return model
+
+        # Respect explicit non-OpenAI models when an override is used
+        if model not in MODELS:
+            return model
+
+        fallback = self.ollama_chat_fallback or model
+        if available_ollama_models:
+            if fallback not in available_ollama_models:
+                fallback = available_ollama_models[0]
+        return fallback
+
+    def get_embed_model(
+        self,
+        endpoint_override: t.Optional[str] = None,
+        available_ollama_models: t.Optional[t.Sequence[str]] = None,
+        is_ollama_endpoint: t.Optional[bool] = True,
+    ) -> str:
+        """Return the configured embed model, falling back to Ollama defaults on custom endpoints."""
+        if not endpoint_override or is_ollama_endpoint is False:
+            return self.embed_model
+
+        # Keep custom embed model if user explicitly set one
+        if self.embed_model not in {"text-embedding-3-small", "text-embedding-3-large"}:
+            return self.embed_model
+
+        fallback = self.ollama_embed_fallback or self.embed_model
+        if available_ollama_models:
+            if fallback not in available_ollama_models:
+                fallback = available_ollama_models[0]
+        return fallback
 
 
 class Conversation(AssistantBaseModel):
@@ -476,6 +625,8 @@ class DB(AssistantBaseModel):
     listen_to_bots: bool = False
     brave_api_key: t.Optional[str] = None
     endpoint_override: t.Optional[str] = None
+    endpoint_is_ollama: t.Optional[bool] = None
+    ollama_models: t.List[str] = Field(default_factory=list)
     endpoint_health_check: bool = False
     endpoint_health_interval: int = 60
 

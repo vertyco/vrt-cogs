@@ -44,6 +44,7 @@ from .utils import (
     get_params,
     purge_images,
     remove_code_blocks,
+    is_core_tool,
 )
 
 log = logging.getLogger("red.vrt.assistant.chathandler")
@@ -354,7 +355,10 @@ class ChatHandler(MixinMeta):
         query_embedding = []
         user = author if isinstance(author, discord.Member) else guild.get_member(author)
         user_id = author.id if isinstance(author, discord.Member) else author
-        model = conf.get_user_model(user)
+        model = conf.get_chat_model(
+            self.db.endpoint_override, user, self.db.ollama_models or None, self.db.endpoint_is_ollama
+        )
+        using_ollama_endpoint = bool(self.db.endpoint_override)
 
         # Ensure the message is not longer than 1048576 characters
         message = message[:1048576]
@@ -387,6 +391,12 @@ class ChatHandler(MixinMeta):
             "balance": bal,
         }
 
+        if using_ollama_endpoint and function_calls:
+            function_calls = [i for i in function_calls if is_core_tool(i.get("name", ""))]
+            function_map = {k: v for k, v in function_map.items() if is_core_tool(k)}
+            log.debug(f"Filtered to {len(function_calls)} core tools for Ollama endpoint")
+
+        # Function availability filters apply regardless of the endpoint type
         # Don't include if user is not a tutor
         not_tutor = [
             user_id not in conf.tutors,
@@ -418,6 +428,7 @@ class ChatHandler(MixinMeta):
             del function_map["edit_image"]
 
         if self.db.endpoint_override:
+            # Redundant with core tool filtering for Ollama; explicitly skips image tools when overriding endpoints
             for func in ("generate_image", "edit_image"):
                 if func in function_map:
                     function_calls = [i for i in function_calls if i["name"] != func]
@@ -448,8 +459,12 @@ class ChatHandler(MixinMeta):
             if calls >= conf.max_function_calls:
                 function_calls = []
 
-            await ensure_supports_vision(messages, conf, author)
-            await ensure_message_compatibility(messages, conf, author)
+            await ensure_supports_vision(
+                messages, conf, author, self.db.endpoint_override, self.db.endpoint_is_ollama
+            )
+            await ensure_message_compatibility(
+                messages, conf, author, self.db.endpoint_override, self.db.endpoint_is_ollama
+            )
             if self.db.endpoint_override:
                 # Replace "developer" role with "system" role
                 for i in messages:
@@ -528,6 +543,9 @@ class ChatHandler(MixinMeta):
                 log.error("No reply and no function calls???")
                 continue
 
+            if using_ollama_endpoint:
+                log.debug(f"Processing {len(response_functions)} Ollama tool calls")
+
             if len(response_functions) > 1:
                 log.debug(f"Calling {len(response_functions)} functions at once")
 
@@ -591,6 +609,9 @@ class ChatHandler(MixinMeta):
                 else:
                     args = {}
                     parse_success = True
+
+                if using_ollama_endpoint and not parse_success:
+                    log.warning(f"Ollama tool call argument parsing failed for {function_name}: {arguments}")
 
                 if parse_success:
                     data = {
@@ -809,7 +830,9 @@ class ChatHandler(MixinMeta):
             system_prompt = format_string(conversation.system_prompt_override or conf.system_prompt)
 
         initial_prompt = format_string(conf.prompt)
-        model = conf.get_user_model(author)
+        model = conf.get_chat_model(
+            self.db.endpoint_override, author, self.db.ollama_models or None, self.db.endpoint_is_ollama
+        )
         current_tokens = await self.count_tokens(message + system_prompt + initial_prompt, model)
         current_tokens += await self.count_payload_tokens(conversation.messages, model)
         current_tokens += await self.count_function_tokens(function_calls, model)

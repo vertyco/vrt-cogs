@@ -4,7 +4,10 @@ from typing import List, Optional
 
 import httpx
 import openai
+import ollama
 from aiocache import cached
+from ollama import RequestError, ResponseError
+from ollama import ChatResponse as OllamaChatResponse, EmbedResponse
 from openai.types import CreateEmbeddingResponse, Image, ImagesResponse
 from openai.types.chat import ChatCompletion
 from pydantic import BaseModel
@@ -17,8 +20,52 @@ from tenacity import (
 )
 
 from .constants import NO_DEVELOPER_ROLE, PRICES, SUPPORTS_SEED, SUPPORTS_TOOLS
+from .utils import convert_functions_to_ollama_tools
 
 log = logging.getLogger("red.vrt.assistant.calls")
+
+
+def _get_ollama_client(base_url: str) -> ollama.AsyncClient:
+    """
+    Instantiate Ollama AsyncClient with proper host configuration.
+
+    Args:
+        base_url: The Ollama endpoint URL (e.g., "http://localhost:11434")
+
+    Returns:
+        ollama.AsyncClient instance configured with the host
+    """
+    return ollama.AsyncClient(host=base_url)
+
+
+async def list_ollama_models(base_url: str) -> list[dict]:
+    """List Ollama models from the configured host."""
+    client = _get_ollama_client(base_url)
+    response = await client.list()
+    if isinstance(response, dict):
+        return response.get("models", [])
+    return getattr(response, "models", []) or []
+
+
+@cached(ttl=60)
+async def _should_use_ollama(base_url: Optional[str]) -> bool:
+    """
+    Determine if Ollama client should be used based on endpoint override.
+
+    Args:
+        base_url: The base URL for the API endpoint
+
+    Returns:
+        True if Ollama should be used, False for OpenAI
+    """
+    if not base_url:
+        return False
+    try:
+        await list_ollama_models(base_url)
+        return True
+    except Exception as e:
+        log.debug("Endpoint %s is not responding as Ollama: %s", base_url, e)
+        return False
 
 
 @retry(
@@ -27,6 +74,8 @@ log = logging.getLogger("red.vrt.assistant.calls")
             httpx.TimeoutException,
             httpx.ReadTimeout,
             openai.InternalServerError,
+            ollama.RequestError,
+            ollama.ResponseError,
         ]
     ),
     wait=wait_random_exponential(min=1, max=30),
@@ -46,12 +95,27 @@ async def request_chat_completion_raw(
     base_url: Optional[str] = None,
     reasoning_effort: Optional[str] = None,
     verbosity: Optional[str] = None,
-) -> ChatCompletion:
-    client = openai.AsyncOpenAI(api_key=api_key or "unprotected" if base_url else api_key, base_url=base_url)
+    allow_all_ollama_tools: bool = False,
+) -> t.Union[ChatCompletion, OllamaChatResponse]:
+    use_ollama = await _should_use_ollama(base_url)
+
+    if use_ollama:
+        client = _get_ollama_client(base_url)
+    else:
+        client = openai.AsyncOpenAI(api_key=api_key or "unprotected" if base_url else api_key, base_url=base_url)
 
     kwargs = {"model": model, "messages": messages}
 
-    if model in PRICES and base_url is None:
+    if use_ollama:
+        ollama_options = {
+            "temperature": temperature,
+            "num_predict": max_tokens if max_tokens and max_tokens > 0 else None,
+            "frequency_penalty": frequency_penalty,
+            "presence_penalty": presence_penalty,
+            "seed": seed,
+        }
+        kwargs["options"] = {k: v for k, v in ollama_options.items() if v is not None}
+    elif model in PRICES and base_url is None:
         # Using an OpenAI model
         if not model.startswith("o") and "gpt-5" not in model:
             kwargs["temperature"] = temperature
@@ -73,7 +137,12 @@ async def request_chat_completion_raw(
         if seed and model in SUPPORTS_SEED:
             kwargs["seed"] = seed
 
-    if functions and model not in NO_DEVELOPER_ROLE:
+    if use_ollama and functions:
+        ollama_tools = convert_functions_to_ollama_tools(functions, core_only=not allow_all_ollama_tools)
+        if ollama_tools:
+            kwargs["tools"] = ollama_tools
+            log.debug(f"Passing {len(ollama_tools)} tools to Ollama: {[t['function']['name'] for t in ollama_tools]}")
+    elif functions and model not in NO_DEVELOPER_ROLE:
         if model in SUPPORTS_TOOLS:
             tools = []
             for func in functions:
@@ -101,7 +170,23 @@ async def request_chat_completion_raw(
         level="info",
         data=kwargs,
     )
-    response: ChatCompletion = await client.chat.completions.create(**kwargs)
+    try:
+        if use_ollama:
+            response: OllamaChatResponse = await client.chat(**kwargs)
+        else:
+            response = await client.chat.completions.create(**kwargs)
+    except openai.OpenAIError as e:
+        add_breadcrumb(category="api", message="OpenAI chat completion failed", level="error", data={"error": str(e)})
+        log.error("OpenAI chat completion failed", exc_info=e)
+        raise
+    except ResponseError as e:
+        add_breadcrumb(category="api", message="Ollama chat completion failed", level="error", data={"error": str(e)})
+        log.error("Ollama chat completion failed", exc_info=e)
+        raise
+    except RequestError as e:
+        add_breadcrumb(category="api", message="Ollama chat request failed", level="error", data={"error": str(e)})
+        log.error("Ollama chat request failed", exc_info=e)
+        raise
 
     log.debug(f"request_chat_completion_raw: {model} -> {response.model}")
     return response
@@ -114,6 +199,8 @@ async def request_chat_completion_raw(
             httpx.TimeoutException,
             httpx.ReadTimeout,
             openai.InternalServerError,
+            ollama.RequestError,
+            ollama.ResponseError,
         ]
     ),
     wait=wait_random_exponential(min=5, max=30),
@@ -125,15 +212,33 @@ async def request_embedding_raw(
     api_key: str,
     model: str,
     base_url: Optional[str] = None,
-) -> CreateEmbeddingResponse:
-    client = openai.AsyncOpenAI(api_key=api_key or "unprotected" if base_url else api_key, base_url=base_url)
+) -> t.Union[CreateEmbeddingResponse, EmbedResponse]:
+    use_ollama = await _should_use_ollama(base_url)
+    client = _get_ollama_client(base_url) if use_ollama else openai.AsyncOpenAI(api_key=api_key or "unprotected" if base_url else api_key, base_url=base_url)
     add_breadcrumb(
         category="api",
         message="Calling request_embedding_raw",
         level="info",
         data={"text": text},
     )
-    response: CreateEmbeddingResponse = await client.embeddings.create(input=text, model=model)
+    try:
+        if use_ollama:
+            response: EmbedResponse = await client.embed(model=model, input=text)
+        else:
+            response = await client.embeddings.create(input=text, model=model)
+    except openai.OpenAIError as e:
+        add_breadcrumb(category="api", message="OpenAI embedding failed", level="error", data={"error": str(e)})
+        log.error("OpenAI embedding failed", exc_info=e)
+        raise
+    except ResponseError as e:
+        add_breadcrumb(category="api", message="Ollama embedding failed", level="error", data={"error": str(e)})
+        log.error("Ollama embedding failed", exc_info=e)
+        raise
+    except RequestError as e:
+        add_breadcrumb(category="api", message="Ollama embed request failed", level="error", data={"error": str(e)})
+        log.error("Ollama embed request failed", exc_info=e)
+        raise
+
     log.debug(f"request_embedding_raw: {model} -> {response.model}")
     return response
 
@@ -144,6 +249,8 @@ async def request_embedding_raw(
             httpx.TimeoutException,
             httpx.ReadTimeout,
             openai.InternalServerError,
+            ollama.RequestError,
+            ollama.ResponseError,
         ]
     ),
     wait=wait_random_exponential(min=5, max=30),

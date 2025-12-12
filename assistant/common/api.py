@@ -8,9 +8,12 @@ from typing import List, Optional
 import aiohttp
 import discord
 import tiktoken
+import openai
+import ollama
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.chat.chat_completion_message import ChatCompletionMessage
 from openai.types.create_embedding_response import CreateEmbeddingResponse
+from ollama import ChatResponse as OllamaChatResponse, EmbedResponse
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_number
@@ -39,6 +42,18 @@ class API(MixinMeta):
             status = _("Failed to fetch: {}").format(str(e))
         return status
 
+    def _format_ollama_error(self, exc: Exception, model: str) -> str:
+        """Return a helpful, user-facing error for Ollama failures."""
+        endpoint = self.db.endpoint_override or _("unknown endpoint")
+        message = _("Ollama request failed for `{}`").format(model)
+        if self.db.endpoint_override:
+            message += _(" on `{}`").format(endpoint)
+        hint = ""
+        text = str(exc).lower()
+        if "not found" in text or "no such model" in text:
+            hint = _("\nTip: make sure the model is pulled on the Ollama host or use `[p]assistant ollama pull`.")  # fmt: skip
+        return f"{message}: {exc}{hint}"
+
     async def request_response(
         self,
         messages: List[dict],
@@ -49,7 +64,12 @@ class API(MixinMeta):
         model_override: Optional[str] = None,
         temperature_override: Optional[float] = None,
     ) -> ChatCompletionMessage:
-        model = model_override or conf.get_user_model(member)
+        model = model_override or conf.get_chat_model(
+            self.db.endpoint_override,
+            member,
+            self.db.ollama_models or None,
+            self.db.endpoint_is_ollama,
+        )
 
         max_convo_tokens = self.get_max_tokens(conf, member)
         max_response_tokens = conf.get_user_max_response_tokens(member)
@@ -85,46 +105,103 @@ class API(MixinMeta):
             model = "gpt-5.1"
             await self.save_conf()
 
-        response: ChatCompletion = await request_chat_completion_raw(
-            model=model,
-            messages=messages,
-            temperature=temperature_override if temperature_override is not None else conf.temperature,
-            api_key=conf.api_key or "unprotected" if self.db.endpoint_override else conf.api_key,
-            max_tokens=response_tokens,
-            functions=functions,
-            frequency_penalty=conf.frequency_penalty,
-            presence_penalty=conf.presence_penalty,
-            seed=conf.seed,
-            base_url=self.db.endpoint_override,
-            reasoning_effort=conf.reasoning_effort,
-            verbosity=conf.verbosity,
-        )
-        message: ChatCompletionMessage = response.choices[0].message
+        allow_all_ollama_tools = (conf.ollama_tool_scope or "").lower() == "all"
 
-        conf.update_usage(
-            response.model,
-            response.usage.total_tokens,
-            response.usage.prompt_tokens,
-            response.usage.completion_tokens,
-        )
+        try:
+            response = await request_chat_completion_raw(
+                model=model,
+                messages=messages,
+                temperature=temperature_override if temperature_override is not None else conf.temperature,
+                api_key=conf.api_key or "unprotected" if self.db.endpoint_override else conf.api_key,
+                max_tokens=response_tokens,
+                functions=functions,
+                frequency_penalty=conf.frequency_penalty,
+                presence_penalty=conf.presence_penalty,
+                seed=conf.seed,
+                base_url=self.db.endpoint_override,
+                reasoning_effort=conf.reasoning_effort,
+                verbosity=conf.verbosity,
+                allow_all_ollama_tools=allow_all_ollama_tools,
+            )
+        except openai.OpenAIError as e:
+            log.error("OpenAI chat completion failed", exc_info=e)
+            raise commands.UserFeedbackCheckFailure(_("OpenAI request failed: {}").format(e)) from e
+        except ollama.ResponseError as e:
+            log.error("Ollama chat completion failed", exc_info=e)
+            raise commands.UserFeedbackCheckFailure(self._format_ollama_error(e, model)) from e
+        except ollama.RequestError as e:
+            log.error("Ollama chat request failed", exc_info=e)
+            raise commands.UserFeedbackCheckFailure(self._format_ollama_error(e, model)) from e
+
+        if isinstance(response, ChatCompletion):
+            message: ChatCompletionMessage = response.choices[0].message
+            conf.update_usage(
+                response.model,
+                response.usage.total_tokens,
+                response.usage.prompt_tokens,
+                response.usage.completion_tokens,
+            )
+        elif isinstance(response, OllamaChatResponse):
+            response_message = getattr(response, "message", {}) or {}
+            role = getattr(response_message, "role", None)
+            content = getattr(response_message, "content", None)
+            if isinstance(response_message, dict):
+                role = role or response_message.get("role")
+                content = content or response_message.get("content")
+            message = ChatCompletionMessage(
+                role=role or "assistant",
+                content=content,
+            )
+            prompt_tokens = getattr(response, "prompt_eval_count", 0) or 0
+            completion_tokens = getattr(response, "eval_count", 0) or 0
+            conf.update_usage(
+                response.model,
+                prompt_tokens + completion_tokens,
+                prompt_tokens,
+                completion_tokens,
+            )
+        else:
+            raise commands.UserFeedbackCheckFailure(_("Unsupported response type from AI client."))
+
         log.debug(f"MESSAGE TYPE: {type(message)}")
         return message
 
     async def request_embedding(self, text: str, conf: GuildSettings) -> List[float]:
-        response: CreateEmbeddingResponse = await request_embedding_raw(
-            text=text,
-            api_key=conf.api_key or "unprotected" if self.db.endpoint_override else conf.api_key,
-            model=conf.embed_model,
-            base_url=self.db.endpoint_override,
+        embed_model = conf.get_embed_model(
+            self.db.endpoint_override, self.db.ollama_models or None, self.db.endpoint_is_ollama
         )
+        try:
+            response = await request_embedding_raw(
+                text=text,
+                api_key=conf.api_key or "unprotected" if self.db.endpoint_override else conf.api_key,
+                model=embed_model,
+                base_url=self.db.endpoint_override,
+            )
+        except openai.OpenAIError as e:
+            log.error("OpenAI embedding request failed", exc_info=e)
+            raise commands.UserFeedbackCheckFailure(_("OpenAI embedding failed: {}").format(e)) from e
+        except ollama.ResponseError as e:
+            log.error("Ollama embedding request failed", exc_info=e)
+            raise commands.UserFeedbackCheckFailure(self._format_ollama_error(e, embed_model)) from e
+        except ollama.RequestError as e:
+            log.error("Ollama embedding request failed", exc_info=e)
+            raise commands.UserFeedbackCheckFailure(self._format_ollama_error(e, embed_model)) from e
 
-        conf.update_usage(
-            response.model,
-            response.usage.total_tokens,
-            response.usage.prompt_tokens,
-            0,
-        )
-        return response.data[0].embedding
+        if isinstance(response, CreateEmbeddingResponse):
+            conf.update_usage(
+                response.model,
+                response.usage.total_tokens,
+                response.usage.prompt_tokens,
+                0,
+            )
+            return response.data[0].embedding
+
+        if isinstance(response, EmbedResponse):
+            embedding = response.embeddings[0] if response.embeddings else []
+            conf.update_usage(response.model, 0, 0, 0)
+            return embedding
+
+        raise commands.UserFeedbackCheckFailure(_("Unsupported embedding response type from AI client."))
 
     # -------------------------------------------------------
     # -------------------------------------------------------
@@ -310,6 +387,10 @@ class API(MixinMeta):
             return 0
 
     async def can_call_llm(self, conf: GuildSettings, ctx: Optional[commands.Context] = None) -> bool:
+        ready_event = getattr(self, "ready_event", None)
+        if isinstance(ready_event, asyncio.Event) and not ready_event.is_set():
+            await ready_event.wait()
+
         if self.db.endpoint_override:
             return True
         if not conf.api_key:
@@ -331,29 +412,43 @@ class API(MixinMeta):
 
         sample = list(conf.embeddings.values())[0]
         sample_embed = await self.request_embedding(sample.text, conf)
+        target_model = conf.get_embed_model(
+            self.db.endpoint_override, self.db.ollama_models or None, self.db.endpoint_is_ollama
+        )
+        target_dimension = len(sample_embed)
 
         async def update_embedding(name: str, text: str):
             conf.embeddings[name].embedding = await self.request_embedding(text, conf)
             conf.embeddings[name].update()
-            conf.embeddings[name].model = conf.embed_model
+            conf.embeddings[name].model = target_model
             log.debug(f"Updated embedding: {name}")
 
         synced = 0
         tasks = []
         for name, em in conf.embeddings.items():
-            if conf.embed_model != em.model or len(em.embedding) != len(sample_embed):
+            if target_model != em.model or len(em.embedding) != target_dimension:
                 synced += 1
                 tasks.append(update_embedding(name, em.text))
 
         if synced:
             await asyncio.gather(*tasks)
-            await asyncio.to_thread(conf.sync_embeddings, guild_id)
+
+        await asyncio.to_thread(
+            conf.sync_embeddings,
+            guild_id,
+            target_dimension=target_dimension,
+            force_reset=bool(synced),
+            target_model=target_model,
+        )
+        if synced:
             await self.save_conf()
         return synced
 
     def get_max_tokens(self, conf: GuildSettings, user: Optional[discord.Member]) -> int:
         user_max = conf.get_user_max_tokens(user)
-        model = conf.get_user_model(user)
+        model = conf.get_chat_model(
+            self.db.endpoint_override, user, self.db.ollama_models or None, self.db.endpoint_is_ollama
+        )
         max_model_tokens = MODELS.get(model, 4000)
         if not user_max or user_max > max_model_tokens:
             return max_model_tokens
@@ -363,8 +458,11 @@ class API(MixinMeta):
         if not text:
             log.debug("No text to cut by tokens!")
             return text
-        tokens = await self.get_tokens(text, conf.get_user_model(user))
-        return await self.get_text(tokens[: self.get_max_tokens(conf, user)], conf.get_user_model(user))
+        model = conf.get_chat_model(
+            self.db.endpoint_override, user, self.db.ollama_models or None, self.db.endpoint_is_ollama
+        )
+        tokens = await self.get_tokens(text, model)
+        return await self.get_text(tokens[: self.get_max_tokens(conf, user)], model)
 
     async def get_text(self, tokens: list, model: str = "gpt-5.1") -> str:
         """Get text from token list"""
@@ -413,7 +511,9 @@ class API(MixinMeta):
             bool: whether the conversation was degraded
         """
         # Fetch the current model the user is using
-        model = conf.get_user_model(user)
+        model = conf.get_chat_model(
+            self.db.endpoint_override, user, self.db.ollama_models or None, self.db.endpoint_is_ollama
+        )
         # Fetch the max token limit for the current user
         max_tokens = self.get_max_tokens(conf, user)
         # Token count of current conversation
@@ -550,7 +650,9 @@ class API(MixinMeta):
                 }
 
         conf = self.db.get_conf(user.guild)
-        model = conf.get_user_model(user)
+        model = conf.get_chat_model(
+            self.db.endpoint_override, user, self.db.ollama_models or None, self.db.endpoint_is_ollama
+        )
 
         pages = sum(len(v) for v in registry.values())
         page = 1
@@ -615,7 +717,9 @@ class API(MixinMeta):
         embeddings = sorted(conf.embeddings.items(), key=lambda x: x[0])
         embeds = []
         pages = math.ceil(len(embeddings) / 5)
-        model = conf.get_user_model()
+        model = conf.get_chat_model(
+            self.db.endpoint_override, None, self.db.ollama_models or None, self.db.endpoint_is_ollama
+        )
         start = 0
         stop = 5
         for page in range(pages):
@@ -644,7 +748,9 @@ class API(MixinMeta):
                     tokens,
                     len(embedding.embedding),
                     embedding.ai_created,
-                    conf.embed_model,
+                    conf.get_embed_model(
+                        self.db.endpoint_override, self.db.ollama_models or None, self.db.endpoint_is_ollama
+                    ),
                 )
                 val += text
                 fieldname = f"➣ {name}" if place == num else name
