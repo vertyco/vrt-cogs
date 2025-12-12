@@ -75,6 +75,8 @@ class Assistant(
         self.config.register_global(db={})
         self.db: DB = DB()
         self.mp_pool = Pool()
+        self.ready_event = asyncio.Event()
+        self.init_task: Optional[asyncio.Task] = None
 
         # {cog_name: {function_name: {"permission_level": "user", "schema": function_json_schema}}}
         self.registry: Dict[str, Dict[str, dict]] = {}
@@ -83,47 +85,62 @@ class Assistant(
         self.first_run = True
 
     async def cog_load(self) -> None:
-        asyncio.create_task(self.init_cog())
+        self.init_task = asyncio.create_task(self.init_cog())
 
     async def cog_unload(self):
         self.save_loop.cancel()
+        if self.endpoint_health_loop.is_running():
+            self.endpoint_health_loop.cancel()
         self.mp_pool.close()
         self.bot.dispatch("assistant_cog_remove")
 
     async def init_cog(self):
         await self.bot.wait_until_red_ready()
-        start = perf_counter()
-        data = await self.config.db()
+        init_failed = False
         try:
-            self.db = await asyncio.to_thread(DB.model_validate, data)
-        except ValidationError:
-            # Try clearing conversations
-            if "conversations" in data:
-                del data["conversations"]
-            self.db = await asyncio.to_thread(DB.model_validate, data)
+            start = perf_counter()
+            data = await self.config.db()
+            try:
+                self.db = await asyncio.to_thread(DB.model_validate, data)
+            except ValidationError:
+                # Try clearing conversations
+                if "conversations" in data:
+                    del data["conversations"]
+                self.db = await asyncio.to_thread(DB.model_validate, data)
 
-        log.info(f"Config loaded in {round((perf_counter() - start) * 1000, 2)}ms")
-        await asyncio.to_thread(self._cleanup_db)
+            log.info(f"Config loaded in {round((perf_counter() - start) * 1000, 2)}ms")
+            await asyncio.to_thread(self._cleanup_db)
 
-        # Register internal functions
-        await self.register_function(self.qualified_name, GENERATE_IMAGE)
-        await self.register_function(self.qualified_name, EDIT_IMAGE)
-        await self.register_function(self.qualified_name, SEARCH_INTERNET)
-        await self.register_function(self.qualified_name, CREATE_MEMORY)
-        await self.register_function(self.qualified_name, SEARCH_MEMORIES)
-        await self.register_function(self.qualified_name, EDIT_MEMORY)
-        await self.register_function(self.qualified_name, LIST_MEMORIES)
-        await self.register_function(self.qualified_name, RESPOND_AND_CONTINUE)
+            # Register internal functions
+            await self.register_function(self.qualified_name, GENERATE_IMAGE)
+            await self.register_function(self.qualified_name, EDIT_IMAGE)
+            await self.register_function(self.qualified_name, SEARCH_INTERNET)
+            await self.register_function(self.qualified_name, CREATE_MEMORY)
+            await self.register_function(self.qualified_name, SEARCH_MEMORIES)
+            await self.register_function(self.qualified_name, EDIT_MEMORY)
+            await self.register_function(self.qualified_name, LIST_MEMORIES)
+            await self.register_function(self.qualified_name, RESPOND_AND_CONTINUE)
 
-        logging.getLogger("openai").setLevel(logging.WARNING)
-        logging.getLogger("aiocache").setLevel(logging.WARNING)
-        logging.getLogger("httpcore.http11").setLevel(logging.WARNING)
-        logging.getLogger("httpcore.connection").setLevel(logging.WARNING)
-        logging.getLogger("httpx").setLevel(logging.WARNING)
-        self.bot.dispatch("assistant_cog_add", self)
+            logging.getLogger("openai").setLevel(logging.WARNING)
+            logging.getLogger("aiocache").setLevel(logging.WARNING)
+            logging.getLogger("httpcore.http11").setLevel(logging.WARNING)
+            logging.getLogger("httpcore.connection").setLevel(logging.WARNING)
+            logging.getLogger("httpx").setLevel(logging.WARNING)
+            self.bot.dispatch("assistant_cog_add", self)
+        except Exception as e:  # noqa: BLE001
+            init_failed = True
+            log.error("Failed to initialize Assistant cog", exc_info=e)
+        finally:
+            self.ready_event.set()
+
+        if init_failed:
+            return
 
         await asyncio.sleep(30)
         self.save_loop.start()
+        if self.db.endpoint_override and self.db.endpoint_health_check:
+            self.endpoint_health_loop.change_interval(seconds=self.db.endpoint_health_interval)
+            self.endpoint_health_loop.start()
 
     async def save_conf(self):
         if self.saving:
@@ -217,6 +234,34 @@ class Assistant(
             return
         await self.save_conf()
 
+    @tasks.loop(seconds=60)
+    async def endpoint_health_loop(self):
+        """Monitor endpoint health and update bot presence"""
+        if not self.db.endpoint_override or not self.db.endpoint_health_check:
+            return
+
+        # Set status to idle (yellow) during check
+        await self.bot.change_presence(status=discord.Status.idle)
+
+        # Validate endpoint using the extracted method
+        valid, message, is_ollama, models = await self._validate_endpoint(self.db.endpoint_override)
+        self.db.endpoint_is_ollama = is_ollama
+        self.db.ollama_models = models
+
+        if valid:
+            # Set status to online (green) when healthy
+            await self.bot.change_presence(status=discord.Status.online)
+            log.debug(f"Endpoint health check passed: {self.db.endpoint_override}")
+        else:
+            # Set status to DND (red) when unreachable
+            await self.bot.change_presence(status=discord.Status.dnd)
+            log.warning(f"Endpoint health check failed: {message}")
+
+    @endpoint_health_loop.before_loop
+    async def before_endpoint_health_loop(self):
+        """Wait for bot to be ready before starting health checks"""
+        await self.bot.wait_until_red_ready()
+
     # ------------------ 3rd PARTY ACCESSIBLE METHODS ------------------
     async def add_embedding(
         self,
@@ -251,7 +296,14 @@ class Assistant(
         embedding = await self.request_embedding(text, conf)
         if not embedding:
             return None
-        conf.embeddings[name] = Embedding(text=text, embedding=embedding, ai_created=ai_created, model=conf.embed_model)
+        conf.embeddings[name] = Embedding(
+            text=text,
+            embedding=embedding,
+            ai_created=ai_created,
+            model=conf.get_embed_model(
+                self.db.endpoint_override, self.db.ollama_models or None, self.db.endpoint_is_ollama
+            ),
+        )
         await asyncio.to_thread(conf.sync_embeddings, guild.id)
         asyncio.create_task(self.save_conf())
         return embedding

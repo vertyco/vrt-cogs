@@ -22,7 +22,8 @@
     "sentry_sdk",
     "tenacity",
     "tiktoken>=0.9.0",
-    "ujson"
+    "ujson",
+    "ollama==0.6.1"
   ],
   "short": "Advanced AI assistant (or chat) cog for your server with OpenAI's ChatGPT language models",
   "tags": [
