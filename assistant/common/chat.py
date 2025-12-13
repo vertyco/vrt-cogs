@@ -382,6 +382,15 @@ class ChatHandler(MixinMeta):
 
         log.debug(f"Query embedding: {len(query_embedding)}")
 
+        # Check if RAGUtils is available for enhanced retrieval
+        use_rag = False
+        ragutils_cog = self.bot.get_cog("RAGUtils")
+        if ragutils_cog and query_embedding:
+            rag_config = ragutils_cog.get_rag_config(guild.id)
+            if rag_config:
+                use_rag = True
+                log.debug(f"RAG pipeline enabled for guild {guild.id}")
+
         mem = guild.get_member(author) if isinstance(author, int) else author
         bal = humanize_number(await bank.get_balance(mem)) if mem else _("None")
         extras = {
@@ -447,6 +456,7 @@ class ChatHandler(MixinMeta):
             images=images,
             auto_answer=auto_answer,
             trigger_prompt=trigger_prompt,
+            use_rag=use_rag,
         )
         reply = None
 
@@ -794,6 +804,7 @@ class ChatHandler(MixinMeta):
         images: list[str] | None,
         auto_answer: Optional[bool] = False,
         trigger_prompt: Optional[str] = None,
+        use_rag: bool = False,
     ) -> List[dict]:
         """Prepare content for calling the GPT API
 
@@ -810,6 +821,7 @@ class ChatHandler(MixinMeta):
             images (list[str] | None): list of image URLs to include in the prompt
             auto_answer (Optional[bool]): whether this is an auto answer response
             trigger_prompt (Optional[str]): custom prompt to use when triggered by keywords
+            use_rag (bool): whether to use RAG pipeline for enhanced retrieval
 
         Returns:
             List[dict]: list of messages prepped for api
@@ -839,7 +851,18 @@ class ChatHandler(MixinMeta):
 
         max_tokens = self.get_max_tokens(conf, author)
 
-        related = await asyncio.to_thread(conf.get_related_embeddings, guild.id, query_embedding)
+        related = await conf.get_related_embeddings(
+            guild_id=guild.id,
+            query_embedding=query_embedding,
+            use_rag=use_rag,
+            bot=self.bot if use_rag else None,
+            query_text=message if use_rag else None,
+        )
+
+        if use_rag and related:
+            log.debug(f"Retrieved {len(related)} embeddings using RAG pipeline for guild {guild.id}")
+        elif related:
+            log.debug(f"Retrieved {len(related)} embeddings using standard ChromaDB for guild {guild.id}")
 
         embeds: List[str] = []
         # Get related embeddings (Name, text, score, dimensions)
