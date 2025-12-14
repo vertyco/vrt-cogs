@@ -2022,6 +2022,7 @@ class Admin(MixinMeta):
             self.save_conf,
             self.get_embbedding_menu_embeds,
             self.request_embedding,
+            self.db,
         )
         await view.get_pages()
         if not query:

@@ -122,6 +122,7 @@ class EmbeddingMenu(discord.ui.View):
         save_func: Callable,
         fetch_pages: Callable,
         embed_method: Callable,
+        db: DB,
     ):
         super().__init__(timeout=600)
         self.ctx = ctx
@@ -129,6 +130,7 @@ class EmbeddingMenu(discord.ui.View):
         self.save = save_func
         self.fetch_pages = fetch_pages
         self.embed_method = embed_method
+        self.db = db
 
         self.has_skip = True
         self.place = 0
@@ -187,9 +189,18 @@ class EmbeddingMenu(discord.ui.View):
                 )
 
     async def add_embedding(self, name: str, text: str):
-        embedding = await self.embed_method(text, self.conf)
+        try:
+            embedding = await self.embed_method(text, self.conf)
+        except Exception as exc:  # noqa: BLE001
+            log.exception("Failed to generate embedding '%s' for guild %s: %s", name, self.ctx.guild.id, exc)
+            return await self.ctx.send(
+                _("Failed to process embedding `{}`\nContent: ```\n{}\n```").format(name, text)
+            )
         if not embedding:
-            return await self.ctx.send(_("Failed to process embedding `{}`\nContent: ```\n{}\n```").format(name, text))
+            log.warning("Embedding generation returned no data for '%s' in guild %s", name, self.ctx.guild.id)
+            return await self.ctx.send(
+                _("Failed to process embedding `{}`\nContent: ```\n{}\n```").format(name, text)
+            )
         if name in self.conf.embeddings:
             return await self.ctx.send(_("An embedding with the name `{}` already exists!").format(name))
         self.conf.embeddings[name] = Embedding(
@@ -200,6 +211,13 @@ class EmbeddingMenu(discord.ui.View):
             ),
         )
         await asyncio.to_thread(self.conf.sync_embeddings, self.ctx.guild.id)
+        log.info(
+            "Added embedding '%s' (len=%s) for guild %s; total embeddings now %s",
+            name,
+            len(embedding),
+            self.ctx.guild.id,
+            len(self.conf.embeddings),
+        )
         await self.get_pages()
         with suppress(discord.NotFound):
             self.message = await self.message.edit(embed=self.pages[self.page], view=self)

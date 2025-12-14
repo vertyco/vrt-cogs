@@ -160,8 +160,13 @@ class GuildSettings(AssistantBaseModel):
                 log.warning(f"Failed to peek collection for guild {guild_id}: {e}")
                 return None
             embeddings = peek.get("embeddings") if peek else []
-            if embeddings and embeddings[0] is not None:
-                return len(embeddings[0])
+            # Chroma can return numpy arrays; avoid truthiness on arrays to prevent ValueError.
+            if embeddings is not None:
+                try:
+                    if len(embeddings) > 0 and embeddings[0] is not None:
+                        return len(embeddings[0])
+                except Exception as e:  # noqa: BLE001
+                    log.debug("Failed to inspect collection embeddings for guild %s: %s", guild_id, e)
             return None
 
         collection_name = f"assistant-{guild_id}"
