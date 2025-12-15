@@ -1,3 +1,4 @@
+import json
 import logging
 import typing as t
 from typing import List, Optional
@@ -319,11 +320,83 @@ async def create_memory_call(
     messages: t.List[dict],
     api_key: str,
     base_url: Optional[str] = None,
+    model: Optional[str] = None,
 ) -> t.Union[CreateMemoryResponse, None]:
+    """
+    Create a memory entry from messages. Uses structured parsing on OpenAI endpoints and
+    falls back to JSON parsing for custom/Ollama endpoints.
+    """
+
+    use_ollama = await _should_use_ollama(base_url)
+    target_model = model or "gpt-4o-mini"
+
+    def _parse_response_content(content: Optional[str]) -> Optional[CreateMemoryResponse]:
+        if not content:
+            return None
+        try:
+            data = json.loads(content)
+            memory_name = data.get("memory_name") or data.get("title") or data.get("name")
+            memory_content = data.get("memory_content") or data.get("summary") or data.get("content")
+            if not memory_content:
+                memory_content = content
+            return CreateMemoryResponse(memory_name=str(memory_name or memory_content)[:80], memory_content=str(memory_content))
+        except Exception:
+            clean_content = content.strip()
+            if not clean_content:
+                return None
+            fallback_name = clean_content.splitlines()[0][:80]
+            return CreateMemoryResponse(memory_name=fallback_name, memory_content=clean_content)
+
+    formatting_message = {
+        "role": "system",
+        "content": (
+            "Respond strictly with a JSON object: "
+            '{"memory_name": "<short title, max 8 words>", "memory_content": "<concise summary without names>"}'
+        ),
+    }
+    messages_for_json = [*messages, formatting_message]
+
     client = openai.AsyncOpenAI(api_key=api_key or "unprotected" if base_url else api_key, base_url=base_url)
-    response = await client.beta.chat.completions.parse(
-        model="o3",
-        messages=messages,
-        response_format=CreateMemoryResponse,
-    )
-    return response.choices[0].message.parsed
+
+    if not use_ollama:
+        try:
+            response = await client.beta.chat.completions.parse(
+                model=target_model,
+                messages=messages,
+                response_format=CreateMemoryResponse,
+            )
+            return response.choices[0].message.parsed
+        except openai.OpenAIError as e:
+            log.debug("Structured parse failed for create_memory_call, falling back to JSON parsing: %s", e)
+
+        response = await client.chat.completions.create(
+            model=target_model,
+            messages=messages_for_json,
+            response_format={"type": "json_object"},
+        )
+        content = response.choices[0].message.content
+        return _parse_response_content(content)
+
+    # Ollama or other custom endpoint
+    client = _get_ollama_client(base_url) if base_url else _get_ollama_client("http://localhost:11434")
+    response = await client.chat(model=target_model, messages=messages_for_json, format="json")
+    response_message = getattr(response, "message", {}) or {}
+    role = getattr(response_message, "role", None)
+    content = getattr(response_message, "content", None)
+    if isinstance(response_message, dict):
+        role = role or response_message.get("role")
+        content = content or response_message.get("content")
+
+    # Ollama may return a dict in message.content when format="json"
+    if isinstance(content, dict):
+        try:
+            return CreateMemoryResponse.model_validate(content)
+        except Exception:
+            content = json.dumps(content)
+
+    parsed = _parse_response_content(content if isinstance(content, str) else None)
+    if parsed:
+        return parsed
+
+    log.warning("Failed to parse memory response from Ollama (%s)", role or "assistant")
+    return None

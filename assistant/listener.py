@@ -270,7 +270,12 @@ class AssistantListener(MixinMeta):
                 {"role": "developer", "content": REACT_SUMMARY_MESSAGE.strip()},
                 {"role": "user", "content": content.getvalue()},
             ]
-            res = await create_memory_call(messages=messages, api_key=conf.api_key, base_url=self.db.endpoint_override)
+            res = await create_memory_call(
+                messages=messages,
+                api_key=conf.api_key,
+                base_url=self.db.endpoint_override,
+                model=conf.model,
+            )
             if res:
                 embedding = await self.add_embedding(guild, res.memory_name, res.memory_content)
                 if embedding is None:
