@@ -207,6 +207,8 @@ class API(MixinMeta):
             "gpt-5-nano-2025-04-16",
             "gpt-5.1",
             "gpt-5.1-2025-11-13",
+            "gpt-5.2",
+            "gpt-5.2-2025-12-11",
         ]:
             # Set function settings for the above models
             func_init = 7
