@@ -2,6 +2,7 @@ import asyncio
 import contextlib
 import logging
 import re
+import time
 import traceback
 import typing as t
 from datetime import datetime, timezone
@@ -42,6 +43,60 @@ _ = Translator("Assistant", __file__)
 
 @cog_i18n(_)
 class Admin(MixinMeta):
+    async def _sync_qdrant_with_progress(
+        self,
+        ctx: commands.Context,
+        *,
+        force_reset: bool = False,
+        status_message: discord.Message | None = None,
+        base_text: str | None = None,
+    ):
+        """Sync embeddings to Qdrant with optional progress feedback."""
+        ragutils_cog = self.bot.get_cog("RAGUtils")
+        guild = ctx.guild
+        if not guild or not ragutils_cog:
+            return False
+
+        base = base_text or (status_message.content if status_message else _("Syncing embeddings to Qdrant..."))
+        if status_message:
+            try:
+                await status_message.edit(content=base)
+            except discord.HTTPException:
+                status_message = None
+
+        if not status_message:
+            status_message = await ctx.send(base)
+
+        loop = asyncio.get_running_loop()
+        last_update = {"t": 0.0}
+
+        def progress(processed: int, total: int):
+            if not total:
+                return
+            now = time.monotonic()
+            if processed != total and now - last_update["t"] < 1.0:
+                return
+            last_update["t"] = now
+            content = f"{base}\n{_('Qdrant sync')}: {processed}/{total}"
+            fut = asyncio.run_coroutine_threadsafe(status_message.edit(content=content), loop)
+            fut.add_done_callback(lambda f: f.result())
+
+        success, message = await self._maybe_sync_qdrant_embeddings(
+            guild=guild, force_reset=force_reset, progress_callback=progress
+        )
+
+        final_content = base
+        if success:
+            final_content += f"\n✅ {_('Qdrant sync complete')}"
+        else:
+            final_content += f"\n⚠️ {_('Qdrant sync skipped/failed')}: {message}"
+
+        try:
+            await status_message.edit(content=final_content)
+        except discord.HTTPException:
+            pass
+        return success
+
     @commands.group(name="assistant", aliases=["assist"])
     @commands.admin_or_permissions(administrator=True)
     @commands.guild_only()
@@ -1348,6 +1403,11 @@ class Admin(MixinMeta):
             synced = await self.resync_embeddings(conf, ctx.guild.id)
             if synced:
                 await ctx.send(_("{} embeddings have been updated").format(synced))
+                await self._sync_qdrant_with_progress(
+                    ctx,
+                    force_reset=True,
+                    base_text=_("Refreshing embeddings complete; syncing to Qdrant..."),
+                )
             else:
                 await ctx.send(_("No embeddings needed to be refreshed"))
 
@@ -1537,6 +1597,11 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         conf.embeddings = {}
         await ctx.send(_("All embedding data has been wiped!"))
+        await self._sync_qdrant_with_progress(
+            ctx,
+            force_reset=True,
+            base_text=_("Embeddings wiped locally; syncing deletion to Qdrant..."),
+        )
         await self.save_conf()
 
     @assistant.command(name="resetconversations")
@@ -1750,7 +1815,8 @@ class Admin(MixinMeta):
             conf.embeddings[name] = Embedding(text=text, embedding=query_embedding, model=embed_model)
             imported += 1
         await asyncio.to_thread(conf.sync_embeddings, ctx.guild.id)
-        await message.edit(content=_("{}\n**COMPLETE**").format(message_text))
+        base_text = _("{0}\n**COMPLETE**").format(message_text)
+        await self._sync_qdrant_with_progress(ctx, status_message=message, base_text=base_text)
         await ctx.send(_("Successfully imported {} embeddings!").format(humanize_number(imported)))
         await self.save_conf()
 
@@ -1798,6 +1864,7 @@ class Admin(MixinMeta):
                 )
             )
         await asyncio.to_thread(conf.sync_embeddings, ctx.guild.id)
+        await self._sync_qdrant_with_progress(ctx, base_text=_("Imported embeddings; syncing to Qdrant..."))
         await self.save_conf()
 
     @assistant.command(name="importexcel")
@@ -1888,7 +1955,8 @@ class Admin(MixinMeta):
 
             if imported:
                 await asyncio.to_thread(conf.sync_embeddings, ctx.guild.id)
-                await message.edit(content=_("{}\n**COMPLETE**").format(message_text))
+                base_text = _("{0}\n**COMPLETE**").format(message_text)
+                await self._sync_qdrant_with_progress(ctx, status_message=message, base_text=base_text)
                 await ctx.send(_("Successfully imported {} embeddings!").format(humanize_number(imported)))
                 await self.save_conf()
             else:

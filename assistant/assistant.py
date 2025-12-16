@@ -305,6 +305,7 @@ class Assistant(
             ),
         )
         await asyncio.to_thread(conf.sync_embeddings, guild.id)
+        asyncio.create_task(self._sync_qdrant_embeddings(guild))
         asyncio.create_task(self.save_conf())
         return embedding
 

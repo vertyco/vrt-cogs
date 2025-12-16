@@ -29,6 +29,41 @@ _ = Translator("Assistant", __file__)
 
 @cog_i18n(_)
 class API(MixinMeta):
+    async def _maybe_sync_qdrant_embeddings(
+        self,
+        guild: discord.Guild,
+        *,
+        force_reset: bool = False,
+        progress_callback=None,
+    ) -> tuple[bool, str]:
+        ragutils_cog = self.bot.get_cog("RAGUtils")
+        if not ragutils_cog:
+            log.debug("Qdrant sync skipped: RAGUtils not loaded for guild %s", guild.id)
+            return False, "RAGUtils cog not loaded"
+        try:
+            if not ragutils_cog.is_qdrant_enabled(guild.id):
+                return False, "Qdrant not enabled"
+            health = await ragutils_cog.check_backend_health(guild.id)
+        except Exception as e:  # noqa: BLE001
+            log.warning("Qdrant health check failed for guild %s: %s", guild.id, e)
+            return False, f"Health check failed: {e}"
+
+        if health.get("backend") != "qdrant" or health.get("status") != "healthy":
+            return False, f"Backend not ready ({health.get('status')})"
+
+        try:
+            success, message = await ragutils_cog.sync_embeddings_to_qdrant(
+                guild.id, force_reset=force_reset, progress_callback=progress_callback
+            )
+            if success:
+                log.info("Qdrant sync completed for guild %s", guild.id)
+            else:
+                log.warning("Qdrant sync failed for guild %s: %s", guild.id, message)
+            return success, message
+        except Exception as e:  # noqa: BLE001
+            log.warning("Qdrant sync errored for guild %s: %s", guild.id, e)
+            return False, str(e)
+
     async def openai_status(self) -> str:
         try:
             timeout = aiohttp.ClientTimeout(total=5)
@@ -442,6 +477,9 @@ class API(MixinMeta):
         )
         if synced:
             await self.save_conf()
+            guild_obj = self.bot.get_guild(guild_id)
+            if guild_obj:
+                await self._maybe_sync_qdrant_embeddings(guild=guild_obj, force_reset=True)
         return synced
 
     def get_max_tokens(self, conf: GuildSettings, user: Optional[discord.Member]) -> int:

@@ -20,6 +20,34 @@ _ = Translator("Assistant", __file__)
 
 @cog_i18n(_)
 class AssistantFunctions(MixinMeta):
+    async def _sync_qdrant_embeddings(self, guild: discord.Guild, force_reset: bool = False):
+        """Sync embeddings to Qdrant when RAGUtils is available and healthy."""
+        ragutils_cog = self.bot.get_cog("RAGUtils")
+        if not ragutils_cog:
+            return
+        try:
+            health = await ragutils_cog.check_backend_health(guild.id)
+        except Exception as e:  # noqa: BLE001
+            log.warning("Skipping Qdrant sync for guild %s: health check failed (%s)", guild.id, e)
+            return
+
+        backend = health.get("backend")
+        status = health.get("status")
+        if backend != "qdrant" or status != "healthy":
+            log.debug("Skipping Qdrant sync for guild %s: backend=%s status=%s", guild.id, backend, status)
+            return
+
+        try:
+            success, message = await ragutils_cog.sync_embeddings_to_qdrant(guild.id, force_reset)
+        except Exception as e:  # noqa: BLE001
+            log.warning("Qdrant sync errored for guild %s: %s", guild.id, e)
+            return
+
+        if not success:
+            log.warning("Qdrant sync failed for guild %s: %s", guild.id, message)
+        else:
+            log.debug("Qdrant sync succeeded for guild %s", guild.id)
+
     async def edit_image(
         self,
         channel: discord.TextChannel,
@@ -305,6 +333,7 @@ class AssistantFunctions(MixinMeta):
             self.db.endpoint_override, self.db.ollama_models or None, self.db.endpoint_is_ollama
         )
         await asyncio.to_thread(conf.sync_embeddings, guild.id)
+        asyncio.create_task(self._sync_qdrant_embeddings(guild))
         asyncio.create_task(self.save_conf())
         return "Your memory has been updated!"
 
