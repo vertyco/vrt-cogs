@@ -116,9 +116,15 @@ class Admin(MixinMeta):
             color=ctx.author.color,
         )
 
+        def _add_field(name: str, value: str, inline: bool = False):
+            """Add fields while respecting Discord's 1024 char limit per value."""
+            pages = list(pagify(str(value), page_length=1000)) or [""]
+            for idx, page in enumerate(pages):
+                embed.add_field(name=name if idx == 0 else f"{name} (cont.)", value=page, inline=inline)
+
         if self.db.endpoint_override:
             health_status = "🟢 Enabled" if self.db.endpoint_health_check else "⚪ Disabled"
-            embed.add_field(
+            _add_field(
                 name="Endpoint Health Monitoring",
                 value=f"Status: {health_status}\nInterval: {self.db.endpoint_health_interval}s",
                 inline=True,
@@ -142,7 +148,7 @@ class Admin(MixinMeta):
             compat_value = _("OpenAI endpoint in use.\n`Custom endpoints support:` {}\n`Disabled on overrides:` {}").format(
                 humanize_list(custom_supported), humanize_list(openai_only)
             )
-        embed.add_field(name=_("Endpoint Compatibility"), value=compat_value, inline=False)
+        _add_field(name=_("Endpoint Compatibility"), value=compat_value, inline=False)
 
         if self.db.endpoint_override and self.db.endpoint_is_ollama:
             scope_label = _("All tools") if conf.ollama_tool_scope == "all" else _("Core tools only")
@@ -150,7 +156,7 @@ class Admin(MixinMeta):
             preview = humanize_list([f"`{m}`" for m in models[:5]]) if models else _("None detected")
             if models and len(models) > 5:
                 preview += _(" (+{} more)").format(len(models) - 5)
-            embed.add_field(
+            _add_field(
                 name=_("Ollama Defaults"),
                 value=_(
                     "`Chat Default: `{}\n`Embed Default: `{}`\n`Tool Scope:  `{}\n`Models:       `{}`"
@@ -166,7 +172,7 @@ class Admin(MixinMeta):
         val += _("`Status:    `{}\n").format(_("Enabled") if conf.auto_answer else _("Disabled"))
         val += _("`Threshold: `{}\n").format(conf.auto_answer_threshold)
         val += _("`Ignored:   `{}\n").format(humanize_list([f"<#{i}>" for i in conf.auto_answer_ignored_channels]))
-        embed.add_field(name=name, value=val, inline=False)
+        _add_field(name=name, value=val, inline=False)
 
         name = _("Trigger Words")
         val = _("Trigger words allow the bot to respond to messages containing specific keywords or regex patterns.\n")
@@ -174,21 +180,21 @@ class Admin(MixinMeta):
         val += _("`Phrases:   `{}\n").format(len(conf.trigger_phrases))
         val += _("`Ignored:   `{}\n").format(humanize_list([f"<#{i}>" for i in conf.trigger_ignore_channels]) or _("None"))
         val += _("`Has Prompt:`{}\n").format(_("Yes") if conf.trigger_prompt else _("No"))
-        embed.add_field(name=name, value=val, inline=False)
+        _add_field(name=name, value=val, inline=False)
 
         if conf.allow_sys_prompt_override:
             val = _("System prompt override is **Allowed**, users can set a personal system prompt per convo.")
         else:
             val = _("System prompt override is **Disabled**, users cannot set a personal system prompt per convo.")
         val += _("\n*This will be restricted to mods if collaborative conversations are enabled!*")
-        embed.add_field(name=_("System Prompt Overriding"), value=val, inline=False)
+        _add_field(name=_("System Prompt Overriding"), value=val, inline=False)
 
         if conf.channel_prompts:
             valid = [i for i in conf.channel_prompts if ctx.guild.get_channel(i)]
             if len(valid) != len(conf.channel_prompts):
                 conf.channel_prompts = {i: conf.channel_prompts[i] for i in valid}
                 await self.save_conf()
-            embed.add_field(
+            _add_field(
                 name=_("Channel Prompt Overrides"),
                 value=humanize_list([f"<#{i}>" for i in valid]),
                 inline=False,
@@ -199,7 +205,7 @@ class Admin(MixinMeta):
             if len(valid) != len(conf.listen_channels):
                 conf.listen_channels = valid
                 await self.save_conf()
-            embed.add_field(
+            _add_field(
                 name=_("Auto-Reply Channels"),
                 value=humanize_list([f"<#{i}>" for i in valid]),
                 inline=False,
@@ -248,7 +254,7 @@ class Admin(MixinMeta):
                 "⚠️ Using OpenAI's default embed model on a custom endpoint, defaulting to `{}`"
             ).format(effective_embed_model)
 
-        embed.add_field(
+        _add_field(
             name=_("Embeddings ({})").format(embed_num),
             value=embedding_field,
             inline=False,
@@ -261,7 +267,7 @@ class Admin(MixinMeta):
         )
         tutor_field += humanize_list(sorted(mentions))
         if mentions:
-            embed.add_field(name="Tutors", value=tutor_field, inline=False)
+            _add_field(name="Tutors", value=tutor_field, inline=False)
 
         custom_func_field = (
             _("`Function Calling:  `{}\n").format(conf.use_function_calls)
@@ -274,14 +280,14 @@ class Admin(MixinMeta):
                 box(cogs)
             )
 
-        embed.add_field(
+        _add_field(
             name=_("Custom Functions ({})").format(humanize_number(func_count)),
             value=custom_func_field,
             inline=False,
         )
 
         if private and any(send_key):
-            embed.add_field(
+            _add_field(
                 name=_("OpenAI Key"),
                 value=box(conf.api_key) if conf.api_key else _("Not Set"),
                 inline=False,
@@ -290,8 +296,8 @@ class Admin(MixinMeta):
         if conf.regex_blacklist:
             joined = "\n".join(conf.regex_blacklist)
             for p in pagify(joined, page_length=1000):
-                embed.add_field(name=_("Regex Blacklist"), value=box(p), inline=False)
-            embed.add_field(
+                _add_field(name=_("Regex Blacklist"), value=box(p), inline=False)
+            _add_field(
                 name=_("Regex Failure Blocking"),
                 value=_("Block reply if regex replacement fails: **{}**").format(conf.block_failed_regex),
                 inline=False,
@@ -302,7 +308,7 @@ class Admin(MixinMeta):
             if self.db.persistent_conversations
             else _("conversations are stored in memory until reboot or reload")
         )
-        embed.add_field(name=_("Persistent Conversations"), value=persist, inline=False)
+        _add_field(name=_("Persistent Conversations"), value=persist, inline=False)
 
         blacklist = []
         for object_id in conf.blacklist:
@@ -316,7 +322,7 @@ class Admin(MixinMeta):
             else:
                 blacklist.append(f"{object_id}?")
         if blacklist:
-            embed.add_field(name=_("Blacklist"), value=humanize_list(blacklist), inline=False)
+            _add_field(name=_("Blacklist"), value=humanize_list(blacklist), inline=False)
 
         if not private:
             if overrides := conf.role_overrides:
@@ -328,7 +334,7 @@ class Admin(MixinMeta):
                         continue
                     field += f"{role.mention}: `{model}`\n"
                 if field:
-                    embed.add_field(name=_("Model Role Overrides"), value=field, inline=False)
+                    _add_field(name=_("Model Role Overrides"), value=field, inline=False)
 
             if overrides := conf.max_token_role_override:
                 field = ""
@@ -339,7 +345,7 @@ class Admin(MixinMeta):
                         continue
                     field += f"{role.mention}: `{humanize_number(tokens)}`\n"
                 if field:
-                    embed.add_field(name=_("Max Token Role Overrides"), value=field, inline=False)
+                    _add_field(name=_("Max Token Role Overrides"), value=field, inline=False)
 
             if overrides := conf.max_retention_role_override:
                 field = ""
@@ -350,7 +356,7 @@ class Admin(MixinMeta):
                         continue
                     field += f"{role.mention}: `{humanize_number(retention)}`\n"
                 if field:
-                    embed.add_field(name=_("Max Message Retention Role Overrides"), value=field, inline=False)
+                    _add_field(name=_("Max Message Retention Role Overrides"), value=field, inline=False)
 
             if overrides := conf.max_time_role_override:
                 field = ""
@@ -361,7 +367,7 @@ class Admin(MixinMeta):
                         continue
                     field += f"{role.mention}: `{humanize_number(retention_time)}s`\n"
                 if field:
-                    embed.add_field(
+                    _add_field(
                         name=_("Max Message Retention Time Role Overrides"),
                         value=field,
                         inline=False,
@@ -376,7 +382,7 @@ class Admin(MixinMeta):
                         continue
                     field += f"{role.mention}: `{humanize_number(retention_time)}s`\n"
                 if field:
-                    embed.add_field(name=_("Max Response Token Role Overrides"), value=field, inline=False)
+                    _add_field(name=_("Max Response Token Role Overrides"), value=field, inline=False)
 
         if ctx.author.id in self.bot.owner_ids:
             if self.db.brave_api_key:
@@ -386,9 +392,29 @@ class Admin(MixinMeta):
                     "Enables the use of the `search_web_brave` function\n"
                     "Get your API key **[Here](https://brave.com/search/api/)**\n"
                 )
-            embed.add_field(name=_("Brave Websearch API key"), value=value)
+            _add_field(name=_("Brave Websearch API key"), value=value)
 
         embed.set_footer(text=_("Showing settings for {}").format(ctx.guild.name))
+
+        embed_fields = list(embed.fields)
+        embeds_to_send: list[discord.Embed] = []
+        if len(embed_fields) <= 25:
+            embeds_to_send = [embed]
+        else:
+            footer = embed.footer
+            for idx in range(0, len(embed_fields), 25):
+                chunk = embed_fields[idx : idx + 25]
+                cont_index = idx // 25
+                sub = discord.Embed(
+                    title=embed.title if cont_index == 0 else f"{embed.title} (cont. {cont_index})",
+                    description=embed.description if cont_index == 0 else None,
+                    color=embed.color,
+                )
+                for field in chunk:
+                    sub.add_field(name=field.name, value=field.value, inline=field.inline)
+                if footer and footer.text:
+                    sub.set_footer(text=footer.text, icon_url=footer.icon_url)
+                embeds_to_send.append(sub)
 
         files = []
         system_file = (
@@ -409,12 +435,18 @@ class Admin(MixinMeta):
 
         if private:
             try:
-                await ctx.author.send(embed=embed, files=files)
+                if len(embeds_to_send) > 1:
+                    await ctx.author.send(embeds=embeds_to_send, files=files)
+                else:
+                    await ctx.author.send(embed=embeds_to_send[0], files=files)
                 await ctx.send(_("Sent your current settings for this server in DMs!"))
             except discord.Forbidden:
                 await ctx.send(_("You need to allow DMs so I can message you!"))
         else:
-            await ctx.send(embed=embed, files=files)
+            if len(embeds_to_send) > 1:
+                await ctx.send(embeds=embeds_to_send, files=files)
+            else:
+                await ctx.send(embed=embeds_to_send[0], files=files)
 
     @assistant.command(name="usage")
     @commands.bot_has_permissions(embed_links=True)
