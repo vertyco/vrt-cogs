@@ -566,6 +566,7 @@ def _extract_pdf_text(filename: str, file_bytes: bytes) -> str:
     try:
         import fitz  # PyMuPDF
     except ImportError:
+        log.warning("PyMuPDF is not installed; PDF extraction is unavailable.")
         return "[PDF support not available - PyMuPDF not installed]"
 
     content = StringIO()
@@ -603,6 +604,7 @@ def _extract_word_text(filename: str, file_bytes: bytes) -> str:
     try:
         import pypandoc
     except ImportError:
+        log.warning("pypandoc is not installed; Word document extraction is unavailable.")
         return "[Word document support not available - pypandoc not installed]"
 
     content = StringIO()
