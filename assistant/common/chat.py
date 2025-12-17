@@ -40,8 +40,10 @@ from .utils import (
     ensure_tool_consistency,
     extract_code_blocks,
     extract_code_blocks_with_lang,
+    extract_document_text,
     get_attachments,
     get_params,
+    is_document,
     purge_images,
     remove_code_blocks,
 )
@@ -122,15 +124,25 @@ class ChatHandler(MixinMeta):
             if not any(i.filename.lower().endswith(ext) for ext in READ_EXTENSIONS) and has_extension:
                 continue
 
-            text = await i.read()
+            file_bytes = await i.read()
 
-            if isinstance(text, bytes):
+            # Check if this is a document type that needs special extraction
+            if is_document(i.filename):
+                text = await extract_document_text(i.filename, file_bytes)
+                question += f"\n\n### Uploaded Document ({i.filename}):\n{text}\n"
+                continue
+
+            # Handle as text file
+            if isinstance(file_bytes, bytes):
                 try:
-                    text = text.decode()
+                    text = file_bytes.decode()
                 except UnicodeDecodeError:
-                    pass
+                    text = f"[Unable to decode file: {i.filename}]"
                 except Exception as e:
                     log.error(f"Failed to decode content of {i.filename}", exc_info=e)
+                    text = f"[Failed to read file: {i.filename}]"
+            else:
+                text = file_bytes
 
             if i.filename == "message.txt":
                 question += f"\n\n### Uploaded File:\n{text}\n"
