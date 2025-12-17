@@ -15,9 +15,11 @@ from .commands import AssistantCommands
 from .common.api import API
 from .common.chat import ChatHandler
 from .common.constants import (
+    CREATE_FILE,
     CREATE_MEMORY,
     EDIT_IMAGE,
     EDIT_MEMORY,
+    FETCH_URL,
     GENERATE_IMAGE,
     LIST_MEMORIES,
     RESPOND_AND_CONTINUE,
@@ -56,7 +58,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "6.18.14"
+    __version__ = "6.18.16"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -114,6 +116,8 @@ class Assistant(
         await self.register_function(self.qualified_name, EDIT_MEMORY)
         await self.register_function(self.qualified_name, LIST_MEMORIES)
         await self.register_function(self.qualified_name, RESPOND_AND_CONTINUE)
+        await self.register_function(self.qualified_name, FETCH_URL)
+        await self.register_function(self.qualified_name, CREATE_FILE)
 
         logging.getLogger("openai").setLevel(logging.WARNING)
         logging.getLogger("aiocache").setLevel(logging.WARNING)
