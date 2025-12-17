@@ -8,7 +8,7 @@ from io import BytesIO, StringIO
 import aiohttp
 import discord
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import pagify
+from redbot.core.utils.chat_formatting import pagify, text_to_file
 
 from ..abc import MixinMeta
 from ..common import calls, constants, reply
@@ -333,3 +333,87 @@ class AssistantFunctions(MixinMeta):
             for p in pagify(content):
                 await channel.send(p)
         return "Your message has been sent to the user! You can continue working."
+
+    async def fetch_url(self, url: str, *args, **kwargs) -> str:
+        """
+        Fetch the content of a URL and return the text.
+
+        Args:
+            url: The URL to fetch content from
+
+        Returns:
+            The text content of the page, or an error message
+        """
+        log.info(f"Fetching URL: {url}")
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                headers = {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                }
+                async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=30)) as response:
+                    if response.status not in (200, 201):
+                        return f"Failed to fetch URL: HTTP {response.status}"
+
+                    content_type = response.headers.get("Content-Type", "")
+
+                    if "text/html" in content_type:
+                        html = await response.text()
+                        # Basic HTML to text conversion - strip tags
+                        import re
+
+                        # Remove script and style elements
+                        html = re.sub(r"<script[^>]*>.*?</script>", "", html, flags=re.DOTALL | re.IGNORECASE)
+                        html = re.sub(r"<style[^>]*>.*?</style>", "", html, flags=re.DOTALL | re.IGNORECASE)
+                        # Remove HTML tags
+                        text = re.sub(r"<[^>]+>", " ", html)
+                        # Clean up whitespace
+                        text = re.sub(r"\s+", " ", text).strip()
+                        # Decode HTML entities
+                        import html as html_module
+
+                        text = html_module.unescape(text)
+                        # Limit response size
+                        if len(text) > 50000:
+                            text = text[:50000] + "\n\n[Content truncated...]"
+                        return text
+                    elif "application/json" in content_type:
+                        return await response.text()
+                    elif "text/" in content_type:
+                        return await response.text()
+                    else:
+                        return f"Unsupported content type: {content_type}"
+
+        except asyncio.TimeoutError:
+            return "Request timed out after 30 seconds"
+        except Exception as e:
+            log.error(f"Error fetching URL {url}", exc_info=e)
+            return f"Failed to fetch URL: {str(e)}"
+
+    async def create_and_send_file(
+        self,
+        filename: str,
+        content: str,
+        channel: discord.TextChannel,
+        comment: str = None,
+        *args,
+        **kwargs,
+    ) -> str:
+        """
+        Create a file with the provided content and send it to the Slack conversation.
+
+        Args:
+            filename: Name of the file including extension
+            content: Content to write to the file
+            comment: Optional comment to include when sending the file
+            user_id: The ID of the user in the conversation (used for logging)
+            channel_id: The ID of the channel where the file will be sent
+            client: The Slack API client (passed from main.py)
+            initial_response: The initial response message to update with status
+
+        Returns:
+            A message confirming the file was sent
+        """
+        file = text_to_file(content, filename=filename)
+        await channel.send(content=comment, file=file)
+        return "Success"

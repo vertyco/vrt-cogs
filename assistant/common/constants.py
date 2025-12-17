@@ -482,3 +482,40 @@ RESPOND_AND_CONTINUE = {
         "required": ["content"],
     },
 }
+FETCH_URL = {
+    "name": "fetch_url",
+    "description": "Fetch the content of a URL and return the text. Useful for reading documentation, articles, or any web page content.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "url": {
+                "type": "string",
+                "description": "The URL to fetch content from",
+            },
+        },
+        "required": ["url"],
+    },
+}
+CREATE_FILE = {
+    "name": "create_and_send_file",
+    "description": "Create a file with the provided content and send it to the current Slack conversation",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "filename": {
+                "type": "string",
+                "description": "The name of the file including extension (e.g. 'script.py', 'data.json')",
+            },
+            "content": {
+                "type": "string",
+                "description": "The complete content to include in the file",
+            },
+            "comment": {
+                "type": "string",
+                "description": "Optional comment to include when sending the file",
+                "default": "",
+            },
+        },
+        "required": ["filename", "content"],
+    },
+}
