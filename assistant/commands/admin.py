@@ -123,7 +123,9 @@ class Admin(MixinMeta):
         val = _("Trigger words allow the bot to respond to messages containing specific keywords or regex patterns.\n")
         val += _("`Status:    `{}\n").format(_("Enabled") if conf.trigger_enabled else _("Disabled"))
         val += _("`Phrases:   `{}\n").format(len(conf.trigger_phrases))
-        val += _("`Ignored:   `{}\n").format(humanize_list([f"<#{i}>" for i in conf.trigger_ignore_channels]) or _("None"))
+        val += _("`Ignored:   `{}\n").format(
+            humanize_list([f"<#{i}>" for i in conf.trigger_ignore_channels]) or _("None")
+        )
         val += _("`Has Prompt:`{}\n").format(_("Yes") if conf.trigger_prompt else _("No"))
         embed.add_field(name=name, value=val, inline=False)
 
@@ -883,9 +885,7 @@ class Admin(MixinMeta):
         # Warn about overly broad patterns
         broad_patterns = [r".*", r".+", r".", r"^", r"$", r"^.*$", r"^.+$"]
         if phrase in broad_patterns:
-            await ctx.send(
-                _("⚠️ Warning: `{}` is a very broad pattern that may match most messages!").format(phrase)
-            )
+            await ctx.send(_("⚠️ Warning: `{}` is a very broad pattern that may match most messages!").format(phrase))
 
         conf = self.db.get_conf(ctx.guild)
         if phrase in conf.trigger_phrases:
@@ -1963,6 +1963,209 @@ class Admin(MixinMeta):
             view.page = page_index
             break
         await view.start()
+
+    @commands.hybrid_command(name="listfunctions", aliases=["listfuncs", "funclist"])
+    @commands.guild_only()
+    @commands.admin_or_permissions(administrator=True)
+    @commands.bot_has_permissions(embed_links=True)
+    async def list_functions(self, ctx: commands.Context):
+        """
+        List all available functions and their enabled/disabled status
+
+        This provides a quick overview of all custom functions and 3rd party
+        registered functions without having to navigate through the full menu.
+        """
+        if ctx.interaction:
+            await ctx.interaction.response.defer()
+
+        conf = self.db.get_conf(ctx.guild)
+
+        # Gather all functions
+        all_functions: list[tuple[str, str, bool]] = []  # (name, source, enabled)
+
+        # Custom functions from bot owner
+        for func_name in self.db.functions:
+            enabled = conf.function_statuses.get(func_name, False)
+            all_functions.append((func_name, "Custom", enabled))
+
+        # Registry functions from other cogs
+        for cog_name, function_schemas in self.registry.items():
+            cog = self.bot.get_cog(cog_name)
+            if not cog:
+                continue
+            for func_name in function_schemas:
+                enabled = conf.function_statuses.get(func_name, False)
+                all_functions.append((func_name, cog_name, enabled))
+
+        if not all_functions:
+            return await ctx.send(_("No functions have been registered yet!"))
+
+        # Sort by enabled status (enabled first), then by name
+        all_functions.sort(key=lambda x: (not x[2], x[0].lower()))
+
+        # Build embed pages
+        pages: list[discord.Embed] = []
+        enabled_count = sum(1 for f in all_functions if f[2])
+        disabled_count = len(all_functions) - enabled_count
+
+        lines = []
+        for func_name, source, enabled in all_functions:
+            status = "\N{WHITE HEAVY CHECK MARK}" if enabled else "\N{CROSS MARK}"
+            source_txt = f" ({source})" if source != "Custom" else ""
+            lines.append(f"{status} `{func_name}`{source_txt}")
+
+        # Pagify the lines
+        chunks = list(pagify("\n".join(lines), page_length=1500))
+        total_pages = len(chunks)
+        for i, chunk in enumerate(chunks, 1):
+            embed = discord.Embed(
+                title=_("Function List"),
+                description=chunk,
+                color=discord.Color.blue(),
+            )
+            embed.set_footer(
+                text=_("Page {}/{} | {} enabled, {} disabled").format(i, total_pages, enabled_count, disabled_count)
+            )
+            pages.append(embed)
+
+        if len(pages) == 1:
+            return await ctx.send(embed=pages[0])
+
+        # Use simple menu for multiple pages
+        from redbot.core.utils.views import SimpleMenu
+
+        await SimpleMenu(pages, disable_after_timeout=True).start(ctx)
+
+    @commands.hybrid_command(name="togglefunctions", aliases=["togglefuncs"])
+    @app_commands.describe(
+        enable="True to enable, False to disable, or omit to toggle current state",
+        functions="Function names to toggle (comma-separated, or 'all' to toggle all)",
+    )
+    @commands.guild_only()
+    @commands.admin_or_permissions(administrator=True)
+    async def toggle_functions(
+        self,
+        ctx: commands.Context,
+        enable: t.Optional[bool],
+        *,
+        functions: str,
+    ):
+        """
+        Enable or disable multiple functions at once
+
+        **Arguments**
+        - `enable`: True to enable, False to disable. Omit to toggle current state.
+        - `functions`: Comma-separated list of function names, or "all" to affect all functions
+
+        **Examples**
+        - `[p]togglefunctions get_time, get_weather` - Toggle these functions
+        - `[p]togglefunctions True all` - Enable all functions
+        - `[p]togglefunctions False get_time, get_weather` - Disable specific functions
+        """
+        if ctx.interaction:
+            await ctx.interaction.response.defer()
+
+        conf = self.db.get_conf(ctx.guild)
+
+        # Gather all valid function names
+        valid_functions: set[str] = set()
+        for func_name in self.db.functions:
+            valid_functions.add(func_name)
+        for cog_name, function_schemas in self.registry.items():
+            cog = self.bot.get_cog(cog_name)
+            if not cog:
+                continue
+            for func_name in function_schemas:
+                valid_functions.add(func_name)
+
+        if not valid_functions:
+            return await ctx.send(_("No functions have been registered yet!"))
+
+        # Parse the functions argument
+        if functions.lower().strip() == "all":
+            target_functions = valid_functions
+        else:
+            # Split by comma and clean up
+            target_functions = {f.strip() for f in functions.split(",") if f.strip()}
+
+        if not target_functions:
+            return await ctx.send(_("No valid function names provided!"))
+
+        # Validate function names
+        invalid_funcs = target_functions - valid_functions
+        if invalid_funcs:
+            return await ctx.send(
+                _("The following functions do not exist: {}").format(humanize_list(list(invalid_funcs)))
+            )
+
+        # Apply changes
+        enabled_funcs = []
+        disabled_funcs = []
+        for func_name in target_functions:
+            current_state = conf.function_statuses.get(func_name, False)
+            if enable is None:
+                # Toggle
+                new_state = not current_state
+            else:
+                new_state = enable
+
+            conf.function_statuses[func_name] = new_state
+            if new_state:
+                enabled_funcs.append(func_name)
+            else:
+                disabled_funcs.append(func_name)
+
+        await self.save_conf()
+
+        # Build response
+        response_parts = []
+        if enabled_funcs:
+            response_parts.append(
+                _("\N{WHITE HEAVY CHECK MARK} **Enabled** ({}):\n{}").format(
+                    len(enabled_funcs), humanize_list([f"`{f}`" for f in sorted(enabled_funcs)])
+                )
+            )
+        if disabled_funcs:
+            response_parts.append(
+                _("\N{CROSS MARK} **Disabled** ({}):\n{}").format(
+                    len(disabled_funcs), humanize_list([f"`{f}`" for f in sorted(disabled_funcs)])
+                )
+            )
+
+        await ctx.send("\n\n".join(response_parts))
+
+    @toggle_functions.autocomplete("functions")
+    async def toggle_functions_complete(self, interaction: discord.Interaction, current: str):
+        # Check if user is typing multiple functions (after a comma)
+        if "," in current:
+            # Get the last part after the last comma for autocomplete
+            parts = current.rsplit(",", 1)
+            prefix = parts[0] + ", "
+            search_term = parts[1].strip().lower()
+        else:
+            prefix = ""
+            search_term = current.lower()
+
+        # Add "all" as an option
+        entries = ["all"]
+        for key in self.db.functions:
+            entries.append(key)
+        for functions in self.registry.values():
+            for key in functions:
+                entries.append(key)
+
+        # Filter and format choices
+        choices = []
+        for entry in entries:
+            if search_term in entry.lower():
+                display_name = prefix + entry if prefix else entry
+                # Discord limits choice name/value to 100 characters
+                if len(display_name) <= 100:
+                    choices.append(Choice(name=display_name, value=display_name))
+                if len(choices) >= 25:
+                    break
+
+        return choices
 
     @custom_functions.autocomplete("function_name")
     async def custom_func_complete(self, interaction: discord.Interaction, current: str):
