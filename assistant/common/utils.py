@@ -4,8 +4,11 @@ import re
 import sys
 import typing as t
 from datetime import datetime
+from io import BytesIO, StringIO
+from tempfile import NamedTemporaryFile
 
 import discord
+import pandas as pd
 from openai.types.chat.chat_completion_message import ChatCompletionMessage
 from redbot.core import commands, version_info
 from redbot.core.bot import Red
@@ -512,3 +515,121 @@ async def ensure_tool_consistency(messages: list[dict]) -> bool:
             messages.pop(idx)
 
     return purged
+
+
+# -------------------------------------------------------
+# ------------------- DOCUMENT EXTRACTION ---------------
+# -------------------------------------------------------
+DOCUMENT_EXTENSIONS = [".pdf", ".docx", ".xlsx", ".xls"]
+
+
+def is_document(filename: str) -> bool:
+    """Check if a file is a supported document type"""
+    return any(filename.lower().endswith(ext) for ext in DOCUMENT_EXTENSIONS)
+
+
+def get_file_extension(filename: str) -> str:
+    """Get the lowercase file extension from a filename"""
+    if "." not in filename:
+        return ""
+    return "." + filename.rsplit(".", 1)[-1].lower()
+
+
+async def extract_document_text(filename: str, file_bytes: bytes) -> str:
+    """Extract text content from PDF, Word, or Excel files
+
+    Args:
+        filename: The name of the file (used to determine type)
+        file_bytes: The raw bytes of the file
+
+    Returns:
+        Extracted text content or error message
+    """
+    ext = get_file_extension(filename).lower()
+
+    try:
+        if ext == ".pdf":
+            return await asyncio.to_thread(_extract_pdf_text, filename, file_bytes)
+        elif ext in (".docx"):
+            return await asyncio.to_thread(_extract_word_text, filename, file_bytes)
+        elif ext in (".xlsx", ".xls"):
+            return await asyncio.to_thread(_extract_excel_text, filename, file_bytes, ext)
+        else:
+            return f"[Unsupported document type: {ext}]"
+    except Exception as e:
+        log.error(f"Failed to extract text from {filename}", exc_info=e)
+        return f"[Failed to read document: {filename} - {e}]"
+
+
+def _extract_pdf_text(filename: str, file_bytes: bytes) -> str:
+    """Extract text from PDF files using PyMuPDF"""
+    try:
+        import fitz  # PyMuPDF
+    except ImportError:
+        return "[PDF support not available - PyMuPDF not installed]"
+
+    content = StringIO()
+    with fitz.open(stream=file_bytes, filetype="pdf") as doc:
+        if doc.is_encrypted:
+            return f"[Encrypted PDF '{filename}' is not supported]"
+
+        # Check if PDF is scanned (image-based)
+        sample_size = min(3, len(doc))
+        scanned_count = sum(
+            1 for i in range(sample_size) if (p := doc.load_page(i)).get_images() and len(p.get_text().strip()) < 100
+        )
+        if sample_size and scanned_count / sample_size > 0.5:
+            return f"[Scanned PDF '{filename}' detected - OCR not supported]"
+
+        for page_num in range(len(doc)):
+            page = doc.load_page(page_num)
+            page_content = str(page.get_text())
+
+            # Extract and format tables
+            tables = page.find_tables()
+            for table in tables:
+                unformatted_table: str = page.get_text(clip=table.bbox)
+                df = table.to_pandas()
+                formatted_table = df.to_markdown(index=False)
+                page_content = page_content.replace(unformatted_table, formatted_table)
+
+            content.write(page_content + "\n\n")
+
+    return content.getvalue()
+
+
+def _extract_word_text(filename: str, file_bytes: bytes) -> str:
+    """Extract text from Word documents using pypandoc"""
+    try:
+        import pypandoc
+    except ImportError:
+        return "[Word document support not available - pypandoc not installed]"
+
+    content = StringIO()
+    with NamedTemporaryFile(delete=True, suffix=".docx") as tmp:
+        tmp.write(file_bytes)
+        tmp.flush()
+        output = pypandoc.convert_file(
+            source_file=tmp.name,
+            to="plain",
+            format="docx",
+        )
+        content.write(output)
+    return content.getvalue()
+
+
+def _extract_excel_text(filename: str, file_bytes: bytes, ext: str) -> str:
+    """Extract text from Excel files using pandas"""
+    content = StringIO()
+    engine = "openpyxl" if ext == ".xlsx" else "xlrd"
+    excel_file = BytesIO(file_bytes)
+    try:
+        sheets = pd.read_excel(excel_file, sheet_name=None, engine=engine)
+    except ImportError as e:
+        return f"[Excel support not available - {e}]"
+
+    for sheet_name, df in sheets.items():
+        content.write(f"\n\n===== Sheet: {sheet_name} =====\n\n")
+        content.write(df.to_markdown(index=False))
+        content.write("\n")
+    return content.getvalue()

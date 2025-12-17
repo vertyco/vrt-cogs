@@ -305,6 +305,12 @@ READ_EXTENSIONS = [
     ".spec",
     ".sql",
     ".log",
+    # Document types
+    ".pdf",
+    ".docx",
+    ".xlsx",
+    ".xls",
+    ".csv",
 ]
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
 REACT_SUMMARY_MESSAGE = """
