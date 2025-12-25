@@ -35,7 +35,7 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.3.12"
+    __version__ = "0.3.13"
 
     def __init__(self, bot: Red):
         super().__init__()

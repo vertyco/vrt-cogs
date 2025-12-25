@@ -71,6 +71,9 @@ class Listeners(MixinMeta):
         author = before or after
         if author.bot:
             return
+        # Skip if only roles changed
+        if before.roles != after.roles:
+            return
         self.db.refresh_user(author)
 
     @commands.Cog.listener()
