@@ -121,7 +121,8 @@ class ChatHandler(MixinMeta):
                 images.append(image_string)
                 continue
 
-            if not any(i.filename.lower().endswith(ext) for ext in READ_EXTENSIONS) and has_extension:
+            if has_extension and not i.filename.lower().endswith(tuple(READ_EXTENSIONS)):
+                # Skip unsupported file types
                 continue
 
             file_bytes = await i.read()
