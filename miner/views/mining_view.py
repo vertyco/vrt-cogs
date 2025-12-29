@@ -135,7 +135,7 @@ class RockView(discord.ui.View):
             allow_catastrophic = dura_ratio is None or dura_ratio <= constants.OVERSWING_SHATTER_DURA_THRESHOLD
             # Player is swinging too fast so we're going to deduct from their durability
             # Tool break sets them back to previous tool tier
-            overswing_roll = random.uniform(0, 1)
+            overswing_roll = random.uniform(0.0, 1.0)
             # Apply tool shatter resistance to overswing shatter chance
             shatter_chance = self.rocktype.overswing_break_chance * (1 - current_tool.shatter_resistance)
             if allow_catastrophic and overswing_roll < shatter_chance:
