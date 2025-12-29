@@ -14,11 +14,11 @@ ROCK_ORDER: tuple[RockTierName, ...] = ("small", "medium", "large", "meteor", "v
 
 # Pacing
 SWINGS_PER_THRESHOLD: int = 3
-OVERSWING_THRESHOLD_SECONDS: int = 3  # seconds between swings to count as overswing
+OVERSWING_THRESHOLD_SECONDS: int = 3.2  # seconds between swings to count as overswing
 # Fraction of max durability at or below which catastrophic overswing shatters are allowed
-OVERSWING_SHATTER_DURA_THRESHOLD: float = 0.25
+OVERSWING_SHATTER_DURA_THRESHOLD: float = 0.30
 # Durability percentage thresholds where we start warning players about tool condition
-DURABILITY_WARNING_THRESHOLDS: tuple[float, ...] = (0.25, 0.10)
+DURABILITY_WARNING_THRESHOLDS: tuple[float, ...] = (0.30, 0.10)
 
 # Spawning
 ACTIVITY_WINDOW_SECONDS: int = 5 * 60  # Length of sliding window in seconds
@@ -50,7 +50,7 @@ HP_BAR_EMPTY: str = "▱"
 
 # Tool repair cost percentage (e.g., 0.5 = 50% of upgrade cost)
 TOOL_REPAIR_COST_PCT: float = 0.5
-HITS_PER_DURA_LOST: int = 4  # 1 durability lost per 4 hits
+HITS_PER_DURA_LOST: int = 2  # 1 durability lost per 2 hits
 
 # Emojis (adjust to your server assets if needed)
 PICKAXE_EMOJI: str = "\N{PICK}\N{VARIATION SELECTOR-16}"

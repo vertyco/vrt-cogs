@@ -135,11 +135,10 @@ class RockView(discord.ui.View):
             allow_catastrophic = dura_ratio is None or dura_ratio <= constants.OVERSWING_SHATTER_DURA_THRESHOLD
             # Player is swinging too fast so we're going to deduct from their durability
             # Tool break sets them back to previous tool tier
-            if (
-                allow_catastrophic
-                and random.random() < self.rocktype.overswing_break_chance
-                and random.random() >= current_tool.shatter_resistance
-            ):
+            overswing_roll = random.uniform(0, 1)
+            # Apply tool shatter resistance to overswing shatter chance
+            shatter_chance = self.rocktype.overswing_break_chance * (1 - current_tool.shatter_resistance)
+            if allow_catastrophic and overswing_roll < shatter_chance:
                 # Players tool shattered!
                 txt = f"‼️{interaction.user.name} shattered their {current_tool.display_name}!"
                 self.action_window.append(txt)
@@ -147,11 +146,10 @@ class RockView(discord.ui.View):
                 kwargs = {Player.tool: downgraded_tool.key, Player.durability: downgraded_tool.max_durability or 0}
                 await player.update_self(kwargs)
                 self.cog.reset_durability_warnings(player.id)
-
                 # Clear the tool_name cache since they broke their tool
                 await self.cog.db_utils.get_cached_player_tool.cache.delete(f"miner_player_tool:{player.id}")  # type: ignore
                 return
-            if random.random() < self.rocktype.overswing_damage_chance:
+            elif overswing_roll < self.rocktype.overswing_damage_chance:
                 new_durability = max(0, player.durability - self.rocktype.overswing_damage)
                 actual_damage_dealt = self.rocktype.overswing_damage if new_durability else player.durability
                 txt = f"⚠️{interaction.user.name} did {actual_damage_dealt} damage to their pickaxe swinging too hastily"
@@ -159,7 +157,7 @@ class RockView(discord.ui.View):
                 if not new_durability:
                     # Tool was shattered
                     await interaction.followup.send(shatter_txt, ephemeral=True)
-                    kwargs = {Player.tool: downgraded_tool.key, Player.durability: downgraded_tool.max_durability}
+                    kwargs = {Player.tool: downgraded_tool.key, Player.durability: downgraded_tool.max_durability or 0}
                     await player.update_self(kwargs)
                     self.cog.reset_durability_warnings(player.id)
 
