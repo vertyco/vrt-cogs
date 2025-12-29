@@ -253,14 +253,37 @@ class LevelUps(MixinMeta):
             return [], []
         if reason is None:
             reason = _("Level Up")
+
+        add_reasons = reason
+        remove_reasons = reason
+
         conf.levelroles = dict(sorted(conf.levelroles.items(), key=lambda x: x[0], reverse=True))
-        to_add = set()
-        to_remove = set()
-        user_roles = member.roles
-        user_role_ids = [role.id for role in user_roles]
+        to_add: set[discord.Role] = set()
+        to_remove: set[discord.Role] = set()
+
         profile = conf.get_profile(member)
 
         using_prestige = all([profile.prestige, conf.prestigelevel, conf.prestigedata, conf.keep_level_roles])
+
+        # First validate what roles exist and are manageable by the bot
+        valid_roles: set[int] = set()
+        for level_str, role_id in conf.levelroles.items():
+            role = member.guild.get_role(role_id)
+            if not role:
+                log.info(f"Role ID {role_id} for level {level_str} does not exist in guild {member.guild}")
+                continue
+            if role.position >= member.guild.me.top_role.position:
+                log.info(
+                    f"Role ID {role_id} for level {level_str} is higher than bot's top role in guild {member.guild}"
+                )
+                continue
+            valid_roles.add(role_id)
+
+        if len(valid_roles) != len(conf.levelroles):
+            # Some roles are invalid
+            log.info(f"Cleaning up invalid level roles in guild {member.guild.id}")
+            conf.levelroles = {k: v for k, v in conf.levelroles.items() if v in valid_roles}
+            self.save()
 
         if using_prestige:
             # User has prestiges and thus must meet the requirements for any level role inherently
@@ -270,25 +293,35 @@ class LevelUps(MixinMeta):
 
         valid_levels = dict(sorted(valid_levels.items(), key=lambda x: x[0]))
 
+        user_roles = member.roles
+        user_role_ids = [role.id for role in user_roles]
+
         if conf.autoremove:
             # Add highest level role and remove the rest
             highest_role_id = 0
             if valid_levels:
                 highest_role_id = valid_levels[max(list(valid_levels.keys()))]
                 if highest_role_id not in user_role_ids:
-                    to_add.add(highest_role_id)
+                    role = member.guild.get_role(highest_role_id)
+                    add_reasons += f", {role.name} new highest level role"
+                    to_add.add(role)
 
             for role_id in conf.levelroles.values():
                 if role_id != highest_role_id and role_id in user_role_ids:
-                    to_remove.add(role_id)
+                    role = member.guild.get_role(role_id)
+                    remove_reasons += f", {role.name} autoremove setting"
+                    to_remove.add(role)
         else:
             # Ensure user has all roles up to their level
             for level, role_id in conf.levelroles.items():
+                role = member.guild.get_role(role_id)
                 if level <= profile.level or using_prestige:
                     if role_id not in user_role_ids:
-                        to_add.add(role_id)
+                        add_reasons += f", {role.name} level requirement met"
+                        to_add.add(role)
                 elif role_id in user_role_ids:
-                    to_remove.add(role_id)
+                    remove_reasons += f", {role.name} level requirement not met"
+                    to_remove.add(role)
 
         if profile.prestige and conf.prestigedata:
             # Assign prestige roles
@@ -298,16 +331,25 @@ class LevelUps(MixinMeta):
                         continue
                     if pdata.role in user_role_ids:
                         continue
-                    to_add.add(pdata.role)
+                    role = member.guild.get_role(pdata.role)
+                    if not role:
+                        continue
+                    add_reasons += f", {role.name} prestige role"
+                    to_add.add(role)
             else:
                 # Remove all prestige roles except the highest
                 for prestige_level, pdata in conf.prestigedata.items():
+                    role = member.guild.get_role(pdata.role)
+                    if not role:
+                        continue
                     if prestige_level == profile.prestige:
                         if pdata.role not in user_role_ids:
-                            to_add.add(pdata.role)
+                            add_reasons += f", {role.name} prestige role"
+                            to_add.add(role)
                         continue
                     if pdata.role in user_role_ids:
-                        to_remove.add(pdata.role)
+                        remove_reasons += f", {role.name} no longer highest prestige"
+                        to_remove.add(role)
 
         # Check if member has an excluded role for weekly winner eligibility
         excluded_role_ids = set(conf.weeklysettings.excluded_roles)
@@ -326,36 +368,21 @@ class LevelUps(MixinMeta):
 
         # Handle weekly winner roles
         for weekly_role_id in weekly_winner_role_ids:
+            role = member.guild.get_role(weekly_role_id)
+            if not role:
+                continue
             if member.id in role_winners and weekly_role_id not in user_role_ids and not member_has_excluded_role:
-                to_add.add(weekly_role_id)
+                add_reasons += f", {role.name} weekly winner role"
+                to_add.add(role)
             elif (member.id not in role_winners or member_has_excluded_role) and weekly_role_id in user_role_ids:
-                to_remove.add(weekly_role_id)
-
-        add_roles: t.List[discord.Role] = []
-        remove_roles: t.List[discord.Role] = []
-        bad_roles = set()  # Roles that the bot can't manage or cant find
-        for role_id in to_add:
-            role = member.guild.get_role(role_id)
-            if role and role.position < member.guild.me.top_role.position:
-                add_roles.append(role)
-            else:
-                bad_roles.add(role_id)
-        for role_id in to_remove:
-            role = member.guild.get_role(role_id)
-            if role and role.position < member.guild.me.top_role.position:
-                remove_roles.append(role)
-            else:
-                bad_roles.add(role_id)
-
-        if bad_roles:
-            conf.levelroles = {k: v for k, v in conf.levelroles.items() if v not in bad_roles}
-            self.save()
+                remove_reasons += f", {role.name} not a weekly winner"
+                to_remove.add(role)
 
         try:
-            if add_roles:
-                await member.add_roles(*add_roles, reason=reason)
-            if remove_roles:
-                await member.remove_roles(*remove_roles, reason=reason)
+            if to_add:
+                await member.add_roles(*to_add, reason=add_reasons)
+            if to_remove:
+                await member.remove_roles(*to_remove, reason=remove_reasons)
         except discord.HTTPException:
             log.warning(f"Failed to add/remove roles for {member}")
             add_roles = []

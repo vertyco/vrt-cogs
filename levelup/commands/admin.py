@@ -4,16 +4,16 @@ from io import BytesIO
 from time import perf_counter
 
 import discord
-from discord.ext.commands import cooldowns
 from redbot.core import commands
-from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import box, humanize_number, humanize_timedelta, pagify, error, warning, info
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import (
     box,
+    error,
     humanize_number,
     humanize_timedelta,
+    info,
     pagify,
+    warning,
 )
 
 from ..abc import MixinMeta
@@ -769,7 +769,7 @@ class Admin(MixinMeta):
             if profile.xp > 1e308:
                 return await ctx.send(_("That level is too high!"))
             self.save()
-            reason = _("{} set {}'s level to {}").format(ctx.author.name, user.name, level)
+            reason = _("User {} set {}'s level to {}").format(ctx.author.name, user.name, level)
             added, removed = await self.ensure_roles(user, conf, reason)
             if added or removed:
                 txt = _("{}'s level has been set to {} and their roles have been updated").format(user.name, level)
