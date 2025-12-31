@@ -19,7 +19,7 @@ from redbot.core.utils.chat_formatting import (
 from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 from redbot.core.utils.predicates import MessagePredicate
 
-__version__ = "3.5.1"
+__version__ = "3.5.2"
 log = logging.getLogger("red.vrt.hunting")
 
 
@@ -429,17 +429,21 @@ class Hunting(commands.Cog):
         if not conf["bang_words"]:
             await animal_message.add_reaction("\N{COLLISION SYMBOL}")
 
+        escaped = f"The {animal} flew away!"
+        if animal == "penguin":
+            escaped = "The penguin waddled away!"
+
         try:
             done, pending = await asyncio.wait(futures, return_when=asyncio.FIRST_COMPLETED, timeout=timeout)
         except asyncio.TimeoutError:
-            return await channel.send(f"The {animal} flew away!")
+            return await channel.send(escaped)
         try:
             for future in pending:
                 future.cancel()
         except Exception as e:
             log.info(f"Failed to cancel pending futures: {e}")
         if not done:
-            return await channel.send(f"The {animal} flew away!")
+            return await channel.send(escaped)
         res = done.pop().result()
 
         if isinstance(res, discord.Message):
