@@ -385,6 +385,4 @@ class LevelUps(MixinMeta):
                 await member.remove_roles(*to_remove, reason=remove_reasons)
         except discord.HTTPException:
             log.warning(f"Failed to add/remove roles for {member}")
-            add_roles = []
-            remove_roles = []
-        return add_roles, remove_roles
+        return list(to_add), list(to_remove)
