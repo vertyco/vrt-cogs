@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 import zipfile
 from collections import defaultdict
 from contextlib import suppress
@@ -23,6 +24,108 @@ from .transcript import process_transcript_html
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
 log = logging.getLogger("red.vrt.tickets.base")
 _ = Translator("Tickets", __file__)
+
+
+DM_FILESIZE_LIMIT = 8 * 1024 * 1024
+
+
+def _text_size_bytes(text: str) -> int:
+    return len(text.encode("utf-8"))
+
+
+def _is_entity_too_large(exc: discord.HTTPException) -> bool:
+    status = getattr(exc, "status", None)
+    code = getattr(exc, "code", None)
+    if status == 413 or code == 40005:
+        return True
+    s = str(exc)
+    return "Payload Too Large" in s or "Request entity too large" in s
+
+
+_DATA_URI_IMG_RE = re.compile(r"<img\b[^>]*\bsrc=(['\"])data:[^'\"]+\1[^>]*>", re.IGNORECASE)
+_DATA_URI_ATTR_RE = re.compile(r"\b(src|href)=(['\"])data:[^'\"]+\2", re.IGNORECASE)
+_DATA_URI_CSS_RE = re.compile(r"url\((['\"]?)data:[^\)]+\1\)", re.IGNORECASE)
+
+
+def _strip_data_uris_with_placeholders(html: str) -> tuple[str, bool]:
+    """Remove embedded data URIs from HTML and add a banner notice.
+
+    This reduces transcript size when chat-exporter output becomes too large.
+    """
+
+    if "data:" not in html:
+        return html, False
+
+    stripped = _DATA_URI_IMG_RE.sub("<span>[Attachment omitted]</span>", html)
+    stripped = _DATA_URI_ATTR_RE.sub(r"\1=\2about:blank\2", stripped)
+    stripped = _DATA_URI_CSS_RE.sub("url()", stripped)
+
+    banner = (
+        "<p><strong>Note:</strong> One or more attachments were omitted from this transcript "
+        "to stay within Discord upload limits. Refer to the attached zip (if present) for files.</p>"
+    )
+
+    if "<body" in stripped.lower():
+        stripped, n = re.subn(
+            r"(<body[^>]*>)",
+            r"\\1" + banner,
+            stripped,
+            count=1,
+            flags=re.IGNORECASE,
+        )
+        if n == 0:
+            stripped = banner + stripped
+    else:
+        stripped = banner + stripped
+
+    return stripped, True
+
+
+def _truncate_to_bytes(text: str, max_bytes: int, suffix: str) -> str:
+    encoded = text.encode("utf-8")
+    if len(encoded) <= max_bytes:
+        return text
+
+    suffix_bytes = suffix.encode("utf-8")
+    if max_bytes <= len(suffix_bytes):
+        return suffix_bytes[:max_bytes].decode("utf-8", errors="ignore")
+
+    cut = encoded[: max_bytes - len(suffix_bytes)]
+    return cut.decode("utf-8", errors="ignore") + suffix
+
+
+def _fit_transcript_for_upload(
+    content: str,
+    fallback_text: str,
+    filename: str,
+    max_bytes: int,
+) -> tuple[str, str]:
+    """Fit transcript content within an upload limit.
+
+    Prefers keeping the existing format. For HTML, first strips embedded data URIs.
+    If still too large, falls back to a truncated plain text transcript.
+    """
+
+    if not content:
+        return "", filename
+
+    effective_limit = int(max_bytes * 0.95)
+    if _text_size_bytes(content) <= effective_limit:
+        return content, filename
+
+    is_html = filename.lower().endswith(".html")
+    if is_html:
+        stripped, _ = _strip_data_uris_with_placeholders(content)
+        if _text_size_bytes(stripped) <= effective_limit:
+            return stripped, filename
+
+    txt_name = str(Path(filename).with_suffix(".txt").name)
+    truncated = _truncate_to_bytes(
+        fallback_text or "",
+        effective_limit,
+        "\n\n[Transcript truncated due to upload limits]\n",
+    )
+    return truncated, txt_name
 
 
 class _MessageProxy:
@@ -311,6 +414,7 @@ async def close_ticket(
     log_chan: discord.TextChannel = guild.get_channel(panel["log_channel"]) if panel["log_channel"] else None
 
     buffer = StringIO()
+    fallback_buffer = StringIO()
     files: List[dict] = []
     filename = (
         f"{member.name}-{member.id}.html" if conf.get("detailed_transcript") else f"{member.name}-{member.id}.txt"
@@ -361,9 +465,11 @@ async def close_ticket(
             filename = f"{member.name}-{member.id}.txt".replace("/", "")
 
         answers = ticket.get("answers")
-        if answers and not exporter_success:
+        if answers:
             for q, a in answers.items():
-                buffer.write(_("Question: {}\nResponse: {}\n").format(q, a))
+                fallback_buffer.write(_("Question: {}\nResponse: {}\n").format(q, a))
+                if not exporter_success:
+                    buffer.write(_("Question: {}\nResponse: {}\n").format(q, a))
 
         filenames = defaultdict(int)
         for msg in history:
@@ -384,12 +490,16 @@ async def close_ticket(
 
                     files.append({"filename": i.filename, "content": await i.read(), "url": i.url})
 
-            if not exporter_success:
-                if msg.content:
-                    buffer.write(
-                        f"{msg.created_at.strftime('%m-%d-%Y %I:%M:%S %p')} - {msg.author.name}: {msg.content}\n"
-                    )
-                if att:
+            if msg.content:
+                line = f"{msg.created_at.strftime('%m-%d-%Y %I:%M:%S %p')} - {msg.author.name}: {msg.content}\n"
+                fallback_buffer.write(line)
+                if not exporter_success:
+                    buffer.write(line)
+            if att:
+                fallback_buffer.write(_("Files Uploaded:\n"))
+                for i in att:
+                    fallback_buffer.write(f"[{i.filename}]({i.url})\n")
+                if not exporter_success:
                     buffer.write(_("Files Uploaded:\n"))
                     for i in att:
                         buffer.write(f"[{i.filename}]({i.url})\n")
@@ -400,17 +510,29 @@ async def close_ticket(
     else:
         history = await fetch_channel_history(channel, limit=1)
 
+    fallback_text = fallback_buffer.getvalue()
+
     # Process HTML transcript: embed images as base64, compress to WebP
     files_for_zip = files
     if exporter_success and buffer.getvalue():
         try:
+            # Use the guild's upload limit for transcript processing.
+            # DM sends are handled separately later via _fit_transcript_for_upload.
+            transcript_budget = guild.filesize_limit
             processed_html, files_for_zip, embedded = await process_transcript_html(
                 html=buffer.getvalue(),
                 downloaded_files=files,
-                guild_filesize_limit=guild.filesize_limit,
+                guild_filesize_limit=transcript_budget,
             )
             # Replace buffer content with processed HTML
             buffer = StringIO()
+            # Only strip embedded data URIs if the transcript still exceeds the budget.
+            effective_budget = int(transcript_budget * 0.95)
+            if _text_size_bytes(processed_html) > effective_budget:
+                processed_html, stripped = _strip_data_uris_with_placeholders(processed_html)
+                if stripped:
+                    # If we removed embedded attachments, include all downloaded files in the zip.
+                    files_for_zip = files
             buffer.write(processed_html)
             if embedded:
                 log.debug(f"Embedded {len(embedded)} files into transcript HTML")
@@ -450,9 +572,14 @@ async def close_ticket(
         )
 
     text = buffer.getvalue()
+    zip_size = len(zip_bytes) if zip_bytes else 0
 
     if log_chan and ticket["logmsg"]:
-        text_file = text_to_file(text, filename) if text else None
+        upload_limit = guild.filesize_limit
+        fitted_text, fitted_name = _fit_transcript_for_upload(text, fallback_text, filename, upload_limit)
+        fitted_text_size = _text_size_bytes(fitted_text) if fitted_text else 0
+
+        text_file = text_to_file(fitted_text, fitted_name) if fitted_text else None
         zip_file = discord.File(BytesIO(zip_bytes), filename="attachments.zip") if zip_bytes else None
 
         perms = [
@@ -461,15 +588,14 @@ async def close_ticket(
         ]
 
         attachments = []
-        text_file_size = 0
+        used = 0
         if text_file:
-            text_file_size = text_file.__sizeof__()
+            used += fitted_text_size
             attachments.append(text_file)
-        if zip_file and ((zip_file.__sizeof__() + text_file_size) < guild.filesize_limit):
+        if zip_file and zip_size and (used + zip_size) <= upload_limit:
             attachments.append(zip_file)
 
         log_msg: discord.Message = None
-        # attachment://image.webp
         try:
             if all(perms):
                 log_msg = await log_chan.send(embed=embed, files=attachments or None, view=view)
@@ -478,30 +604,9 @@ async def close_ticket(
             elif perms[1]:
                 log_msg = await log_chan.send(backup_text, files=attachments or None, view=view)
         except discord.HTTPException as e:
-            if "Payload Too Large" in str(e) or "Request entity too large" in str(e):
-                text_file = text_to_file(text, filename) if text else None
-                zip_file = discord.File(BytesIO(zip_bytes), filename="attachments.zip") if zip_bytes else None
-                attachments = []
-                text_file_size = 0
-                if text_file:
-                    text_file_size = text_file.__sizeof__()
-                    attachments.append(text_file)
-                if zip_file and ((zip_file.__sizeof__() + text_file_size) < guild.filesize_limit):
-                    attachments.append(zip_file)
-
-                # Pop last element and try again
-                if text_file:
-                    attachments.pop(-1)
-                else:
-                    attachments = None
-                if all(perms):
-                    log_msg = await log_chan.send(embed=embed, files=attachments or None, view=view)
-                elif perms[0]:
-                    log_msg = await log_chan.send(embed=embed, view=view)
-                elif perms[1]:
-                    log_msg = await log_chan.send(backup_text, files=attachments or None, view=view)
-            else:
-                raise
+            # If this still fails, don't crash ticket closing.
+            log.error(f"Failed to send log message: {e}")
+            log_msg = None
 
         # Delete old log msg
         log_msg_id = ticket["logmsg"]
@@ -518,13 +623,16 @@ async def close_ticket(
 
     if conf["dm"]:
         try:
-            if text:
-                text_file = text_to_file(text, filename) if text else None
-                await member.send(embed=embed, file=text_file)
+            dm_upload_limit = DM_FILESIZE_LIMIT
+            dm_embed = embed.copy()
+            dm_text, dm_name = _fit_transcript_for_upload(text, fallback_text, filename, dm_upload_limit)
+            if dm_text:
+                dm_file = text_to_file(dm_text, dm_name)
+                await member.send(embed=dm_embed, file=dm_file)
             else:
-                await member.send(embed=embed)
+                await member.send(embed=dm_embed)
 
-        except discord.Forbidden:
+        except (discord.Forbidden, discord.HTTPException):
             pass
 
     # Delete/close ticket channel
