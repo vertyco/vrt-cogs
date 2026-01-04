@@ -66,10 +66,12 @@ class AssistantListener(MixinMeta):
             return
         # Ignore messages without content
         if not message.content:
-            if not message.embeds:
+            if message.embeds:
+                embed_to_content(message)
+            elif message.attachments:
+                message.content = "[No Content]"
+            else:
                 return
-            # Replace message content with embed content
-            embed_to_content(message)
         # Ignore if channel doesn't exist
         if not message.channel:
             return
