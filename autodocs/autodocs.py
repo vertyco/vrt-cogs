@@ -8,6 +8,7 @@ import discord
 import pandas as pd
 from aiocache import cached
 from discord import app_commands
+from rapidfuzz import fuzz
 from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n, set_contextual_locales_from_guild
@@ -29,7 +30,7 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.1.1"
+    __version__ = "1.1.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -270,6 +271,17 @@ class AutoDocs(commands.Cog):
     ) -> str:
         command = self.bot.get_command(command_name)
         if not command:
+            # Fuzzymatch commands
+            cmd_list = set()
+            for cmd in self.bot.walk_commands():
+                cmd_list.add(cmd.qualified_name)
+            for cog in self.bot.cogs.values():
+                for cmd in cog.walk_app_commands():
+                    cmd_list.add(cmd.qualified_name)
+            matches = [(i.lower(), fuzz.ratio(command_name.lower(), i.lower())) for i in cmd_list]
+            matches.sort(key=lambda x: x[1], reverse=True)
+            if matches and matches[0][1] >= 75:
+                return f"Command not found, did you mean '{matches[0][0]}'?"
             return "Command not found, check valid commands for this cog first"
 
         prefixes = await self.bot.get_valid_prefixes(guild)
@@ -290,7 +302,7 @@ class AutoDocs(commands.Cog):
         if not doc:
             return "The user you are chatting with does not have the required permissions to use that command"
 
-        return f"Cog name: {command.cog.qualified_name}\nCommand:\n{doc}"
+        return f"Cog name: {getattr(command.cog, 'qualified_name', 'Core')}\nCommand:\n{doc}"
 
     async def get_command_names(self, cog_name: str, *args, **kwargs):
         cog = self.bot.get_cog(cog_name)
