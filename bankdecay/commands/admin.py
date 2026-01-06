@@ -205,6 +205,7 @@ class Admin(MixinMeta):
             await ctx.send(txt, file=file)
 
     @bankdecay.command(name="cleanup")
+    @commands.is_owner()
     async def cleanup(self, ctx: commands.Context, confirm: bool):
         """
         Remove users from the config that have no balance
@@ -216,27 +217,35 @@ class Admin(MixinMeta):
         if not confirm:
             txt = _("Not removing users from the config")
             return await ctx.send(txt)
+
         async with ctx.typing():
-            conf = self.db.get_conf(ctx.guild)
             cleaned = 0
-            for uid in conf.users.copy():
-                await asyncio.sleep(0)  # Prevent blocking
-                member = ctx.guild.get_member(uid)
-                if not member:
+            for guild_id in self.db.configs.keys():
+                guild = self.bot.get_guild(guild_id)
+                if not guild:
+                    cleaned += len(self.db.configs[guild_id].users)
+                    del self.db.configs[guild_id]
                     continue
-                try:
-                    balance = await bank.get_balance(member)
-                except TypeError as e:
-                    log.warning(f"Failed to get balance for member {member} in guild {ctx.guild.name}: {e}")
-                    # Manually delete user from config if we can't get their balance
-                    del conf.users[uid]
-                    cleaned += 1
-                    # Also delete from bank config manually
-                    await bank._config.member_from_id(ctx.guild, uid).clear()
-                    continue
-                if balance == 0:
-                    del conf.users[uid]
-                    cleaned += 1
+                conf = self.db.get_conf(guild)
+                for uid in conf.users.keys():
+                    await asyncio.sleep(0)  # Prevent blocking
+                    member = guild.get_member(uid)
+                    if not member:
+                        continue
+                    try:
+                        balance = await bank.get_balance(member)
+                    except TypeError as e:
+                        log.warning(f"Failed to get balance for member {member} in guild {guild.name}: {e}")
+                        # Manually delete user from config if we can't get their balance
+                        del conf.users[uid]
+                        cleaned += 1
+                        # Also delete from bank config manually
+                        await bank._config.member_from_id(guild, uid).clear()
+                        continue
+                    if balance == 0:
+                        del conf.users[uid]
+                        cleaned += 1
+
             if not cleaned:
                 txt = _("No users were removed from the config.")
                 return await ctx.send(txt)
