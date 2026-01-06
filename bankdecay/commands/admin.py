@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import math
 from datetime import datetime, timedelta
@@ -219,6 +220,7 @@ class Admin(MixinMeta):
             conf = self.db.get_conf(ctx.guild)
             cleaned = 0
             for uid in conf.users.copy():
+                await asyncio.sleep(0)  # Prevent blocking
                 member = ctx.guild.get_member(uid)
                 if not member:
                     continue
