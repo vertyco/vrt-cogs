@@ -220,14 +220,14 @@ class Admin(MixinMeta):
 
         async with ctx.typing():
             cleaned = 0
-            for guild_id in self.db.configs.keys():
+            for guild_id in list(self.db.configs.keys()):
                 guild = self.bot.get_guild(guild_id)
                 if not guild:
                     cleaned += len(self.db.configs[guild_id].users)
                     del self.db.configs[guild_id]
                     continue
                 conf = self.db.get_conf(guild)
-                for uid in conf.users.keys():
+                for uid in list(conf.users.keys()):
                     await asyncio.sleep(0)  # Prevent blocking
                     member = guild.get_member(uid)
                     if not member:
