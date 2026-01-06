@@ -228,6 +228,11 @@ class Admin(MixinMeta):
                     balance = await bank.get_balance(member)
                 except TypeError as e:
                     log.warning(f"Failed to get balance for member {member} in guild {ctx.guild.name}: {e}")
+                    # Manually delete user from config if we can't get their balance
+                    del conf.users[uid]
+                    cleaned += 1
+                    # Also delete from bank config manually
+                    await bank._config.member_from_id(ctx.guild, uid).clear()
                     continue
                 if balance == 0:
                     del conf.users[uid]
