@@ -239,8 +239,6 @@ class Admin(MixinMeta):
                         # Manually delete user from config if we can't get their balance
                         del conf.users[uid]
                         cleaned += 1
-                        # Also delete from bank config manually
-                        await bank._config.member_from_id(guild, uid).clear()
                         continue
                     if balance == 0:
                         del conf.users[uid]
