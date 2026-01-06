@@ -206,7 +206,7 @@ class Admin(MixinMeta):
     @bankdecay.command(name="cleanup")
     async def cleanup(self, ctx: commands.Context, confirm: bool):
         """
-        Remove users from the config that are no longer in the server or have no balance
+        Remove users from the config that have no balance
         """
         if await bank.is_global():
             await ctx.send(_("This command is not available when using global bank."))
@@ -221,8 +221,6 @@ class Admin(MixinMeta):
             for uid in conf.users.copy():
                 member = ctx.guild.get_member(uid)
                 if not member:
-                    del conf.users[uid]
-                    cleaned += 1
                     continue
                 try:
                     balance = await bank.get_balance(member)
