@@ -221,7 +221,7 @@ class Admin(MixinMeta):
         async with ctx.typing():
             cleaned = 0
             for guild_id in list(self.db.configs.keys()):
-                guild = self.bot.get_guild(guild_id)
+                guild: discord.Guild = self.bot.get_guild(guild_id)
                 if not guild:
                     cleaned += len(self.db.configs[guild_id].users)
                     del self.db.configs[guild_id]
@@ -235,7 +235,7 @@ class Admin(MixinMeta):
                     try:
                         balance = await bank.get_balance(member)
                     except TypeError as e:
-                        log.warning(f"Failed to get balance for member {member} in guild {guild.name}: {e}")
+                        log.warning(f"Failed to get balance for member {member} ({uid}) in guild {guild.name}: {e}")
                         # Manually delete user from config if we can't get their balance
                         del conf.users[uid]
                         cleaned += 1
