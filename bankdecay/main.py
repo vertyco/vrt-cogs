@@ -35,11 +35,11 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.3.13"
+    __version__ = "0.3.15"
 
     def __init__(self, bot: Red):
         super().__init__()
-        self.bot = bot
+        self.bot: Red = bot
         self.config = Config.get_conf(self, 117, force_registration=True)
         self.config.register_global(db={})
 
@@ -113,34 +113,46 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
 
         # Decayed users: dict[username, amount]
         decayed: t.Dict[str, int] = {}
-        uids = [i for i in conf.users]
-        for user_id in uids:
-            user = guild.get_member(user_id)
-            if not user:
-                # User no longer in guild
+        uids_to_remove = set()  # User IDs to remove from tracking who no longer have a balance
+        for user_id in conf.users.keys():
+            balance = bank_members.get(user_id, 0)
+            if not balance:
+                # Balance is 0, no other checks are needed
+                uids_to_remove.add(user_id)
                 continue
 
-            if any(r.id in conf.ignored_roles for r in user.roles):
-                # Don't decay user balances with roles in the ignore list
-                continue
+            user = self.bot.get_user(user_id)
 
-            last_active = conf.get_user(user).last_active
+            credits_to_remove = math.ceil(balance * conf.percent_decay)
+            new_balance = balance - credits_to_remove
 
+            userdata = conf.users[user_id]
+            last_active = userdata.last_active
             delta = now - last_active
             if delta.days <= conf.inactive_days:
                 continue
 
-            bal = bank_members.get(user_id)
-            # bal = await bank.get_balance(user)
-            if not bal:
-                continue
+            if member := guild.get_member(user_id):
+                # Don't decay user balances with roles in the ignore list
+                if any(r.id in conf.ignored_roles for r in member.roles):
+                    continue
+            else:
+                # User no longer in guild, keep decaying until balance is zero
+                pass
 
-            credits_to_remove = math.ceil(bal * conf.percent_decay)
-            new_bal = bal - credits_to_remove
             if not check_only:
-                await bank.set_balance(user, new_bal)
+                if member:
+                    await bank.set_balance(member, new_balance)
+                else:
+                    # We need to set balance for a user not in guild
+                    await bank._config.member_from_ids(guild.id, user_id).balance.set(new_balance)
 
-            decayed[user.name] = credits_to_remove
+            decayed[user.name if user else str(user_id)] = credits_to_remove
+
+        if uids_to_remove:
+            for uid in uids_to_remove:
+                conf.users.pop(uid, None)
+            log.info(f"Removed {len(uids_to_remove)} users from tracking in guild {guild.name} due to zero balance.")
 
         if check_only:
             return decayed
