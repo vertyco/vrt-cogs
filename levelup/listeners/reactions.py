@@ -60,7 +60,7 @@ class ReactionListener(MixinMeta):
         if conf.weeklysettings.on:
             weekly = conf.get_weekly_profile(msg.author)
             weekly.stars += 1
-        self.save()
+        self.save(False)
         txt = _("{} just gave a star to {}!").format(
             f"**{payload.member.display_name}**",
             f"**{msg.author.display_name}**",

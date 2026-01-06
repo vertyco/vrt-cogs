@@ -77,7 +77,7 @@ class LevelUp(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "4.8.3"
+    __version__ = "4.8.4"
     __contributors__ = [
         "[aikaterna](https://github.com/aikaterna/aikaterna-cogs)",
         "[AAA3A](https://github.com/AAA3A-AAA3A/AAA3A-cogs)",
@@ -174,13 +174,13 @@ class LevelUp(
         log.info(f"Terminated process: {proc.pid}, API is now stopped")
         return True
 
-    def save(self) -> None:
+    def save(self, force: bool = True) -> None:
         async def _save():
             if self.io_lock.locked():
                 # Already saving, skip this
                 return
-            if perf_counter() - self.last_save < 2:
-                # Do not save more than once every 2 seconds
+            if not force and perf_counter() - self.last_save < 30:
+                # Do not save more than once every 30 seconds if not forced
                 return
             if not self.initialized:
                 # Do not save if not initialized, we don't want to overwrite the config with default data

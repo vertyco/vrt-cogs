@@ -29,7 +29,7 @@ class ProfileFormatting(MixinMeta):
         conf = self.db.get_conf(member.guild)
         profile = conf.get_profile(member)
         profile.xp += xp
-        self.save()
+        self.save(False)
         return int(profile.xp)
 
     async def set_xp(self, member: discord.Member, xp: int) -> int:
@@ -39,7 +39,7 @@ class ProfileFormatting(MixinMeta):
         conf = self.db.get_conf(member.guild)
         profile = conf.get_profile(member)
         profile.xp = xp
-        self.save()
+        self.save(False)
         return int(profile.xp)
 
     async def remove_xp(self, member: discord.Member, xp: int) -> int:
@@ -49,7 +49,7 @@ class ProfileFormatting(MixinMeta):
         conf = self.db.get_conf(member.guild)
         profile = conf.get_profile(member)
         profile.xp -= xp
-        self.save()
+        self.save(False)
         return int(profile.xp)
 
     async def get_xp(self, member: discord.Member) -> int:
@@ -295,7 +295,7 @@ class ProfileFormatting(MixinMeta):
             # If this occurs we'll reset the background to default
             if "This content is no longer available." in str(background_bytes):
                 profile.background = "default"
-                self.save()
+                self.save(False)
                 log.warning(
                     f"User {member.name} ({member.id}) has a background that no longer exists! Resetting to default"
                 )
