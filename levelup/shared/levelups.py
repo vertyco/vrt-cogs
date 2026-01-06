@@ -283,7 +283,7 @@ class LevelUps(MixinMeta):
             # Some roles are invalid
             log.info(f"Cleaning up invalid level roles in guild {member.guild.id}")
             conf.levelroles = {k: v for k, v in conf.levelroles.items() if v in valid_roles}
-            self.save()
+            self.save(False)
 
         if using_prestige:
             # User has prestiges and thus must meet the requirements for any level role inherently

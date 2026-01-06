@@ -35,7 +35,7 @@ class WeeklyReset(MixinMeta):
             if ctx:
                 await ctx.send(_("There are no users in the weekly data yet"))
             conf.weeklysettings.refresh()
-            self.save()
+            self.save(False)
             return False
 
         valid_users: t.Dict[discord.Member, ProfileWeekly] = {}
@@ -49,7 +49,7 @@ class WeeklyReset(MixinMeta):
             if ctx:
                 await ctx.send(_("There are no users with XP in the weekly data yet"))
             conf.weeklysettings.refresh()
-            self.save()
+            self.save(False)
             return False
 
         channel = guild.get_channel(conf.weeklysettings.channel) if conf.weeklysettings.channel else None

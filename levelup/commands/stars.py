@@ -58,7 +58,7 @@ class Stars(MixinMeta):
         if conf.weeklysettings.on:
             weekly = conf.get_weekly_profile(user)
             weekly.stars += 1
-        self.save()
+        self.save(False)
         name = user.mention if conf.starmention else f"**{user.display_name}**"
         kwargs = {"ephemeral": True}
         if conf.starmentionautodelete:
