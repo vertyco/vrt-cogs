@@ -45,7 +45,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "3.11.8"
+    __version__ = "3.11.9"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -929,7 +929,7 @@ class XTools(commands.Cog):
 
             return await menu(ctx, pages, DEFAULT_CONTROLS)
 
-    @tasks.loop(seconds=60)
+    @tasks.loop(seconds=300)
     async def status(self):
         try:
             res = await self.microsoft_services_status()
