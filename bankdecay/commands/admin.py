@@ -1,3 +1,4 @@
+import logging
 import math
 from datetime import datetime, timedelta
 from io import StringIO
@@ -12,6 +13,7 @@ from ..common.confirm_view import ConfirmView
 from ..common.models import User
 
 _ = Translator("BankDecay", __file__)
+log = logging.getLogger("red.vrt.bankdecay.admin")
 
 
 @cog_i18n(_)
@@ -213,26 +215,31 @@ class Admin(MixinMeta):
         if not confirm:
             txt = _("Not removing users from the config")
             return await ctx.send(txt)
+        async with ctx.typing():
+            conf = self.db.get_conf(ctx.guild)
+            cleaned = 0
+            for uid in conf.users.copy():
+                member = ctx.guild.get_member(uid)
+                if not member:
+                    del conf.users[uid]
+                    cleaned += 1
+                    continue
+                try:
+                    balance = await bank.get_balance(member)
+                except TypeError as e:
+                    log.warning(f"Failed to get balance for member {member} in guild {ctx.guild.name}: {e}")
+                    continue
+                if balance == 0:
+                    del conf.users[uid]
+                    cleaned += 1
+            if not cleaned:
+                txt = _("No users were removed from the config.")
+                return await ctx.send(txt)
 
-        conf = self.db.get_conf(ctx.guild)
-        global_bank = await bank.is_global()
-        cleaned = 0
-        for uid in conf.users.copy():
-            member = ctx.guild.get_member(uid)
-            if not member:
-                del conf.users[uid]
-                cleaned += 1
-            elif not global_bank and await bank.get_balance(member) == 0:
-                del conf.users[uid]
-                cleaned += 1
-        if not cleaned:
-            txt = _("No users were removed from the config.")
-            return await ctx.send(txt)
-
-        grammar = _("user") if cleaned == 1 else _("users")
-        txt = _("Removed {} from the config.").format(f"{cleaned} {grammar}")
-        await ctx.send(txt)
-        await self.save()
+            grammar = _("user") if cleaned == 1 else _("users")
+            txt = _("Removed {} from the config.").format(f"{cleaned} {grammar}")
+            await ctx.send(txt)
+            await self.save()
 
     @bankdecay.command(name="initialize")
     async def initialize_guild(self, ctx: commands.Context, as_expired: bool):
