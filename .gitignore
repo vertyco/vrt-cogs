@@ -184,19 +184,9 @@ levelup/data/stock/rs-assets/
 
 # WIP cogs
 arkadia/
-fishing/
-osmosis/
 botarena/
-heist/
-upchat/
-petcord/
-whosalt/
-design_docs/
-idlegather/
-locallm/
-bedrocktools/
-kingdoms/
 dungeon/
-llms/
+design_docs/
 v2/
 scratch/
+inkblade/
