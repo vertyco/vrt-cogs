@@ -9,6 +9,7 @@ from io import BytesIO
 import discord
 from discord import app_commands
 from openai import AsyncOpenAI
+from openai.types.responses import Response
 from pydantic import ValidationError
 from redbot.core import Config, commands
 from redbot.core.bot import Red
@@ -28,10 +29,76 @@ log = logging.getLogger("red.vrt.imgen")
 VALID_SIZES = ["auto", "1024x1024", "1536x1024", "1024x1536"]
 VALID_QUALITIES = ["auto", "low", "medium", "high"]
 VALID_FORMATS = ["png", "jpeg", "webp"]
-VALID_MODELS = ["gpt-image-1", "gpt-image-1.5", "gpt-image-1-mini"]
+VALID_MODELS = ["gpt-image-1.5", "gpt-image-1-mini"]
+
+# Cost calculation based on OpenAI pricing (per 1M tokens)
+# https://platform.openai.com/pricing
+# Model -> (text_input, text_cached, text_output, image_input, image_cached, image_output)
+MODEL_PRICING: dict[str, dict[str, float]] = {
+    "gpt-image-1.5": {
+        "text_input": 5.00 / 1_000_000,
+        "text_cached": 1.25 / 1_000_000,
+        "text_output": 10.00 / 1_000_000,
+        "image_input": 8.00 / 1_000_000,
+        "image_cached": 2.00 / 1_000_000,
+        "image_output": 32.00 / 1_000_000,
+    },
+    "gpt-image-1-mini": {
+        "text_input": 2.00 / 1_000_000,
+        "text_cached": 0.20 / 1_000_000,
+        "text_output": 0.0,  # Not specified, likely no text output
+        "image_input": 2.50 / 1_000_000,
+        "image_cached": 0.25 / 1_000_000,
+        "image_output": 8.00 / 1_000_000,
+    },
+}
+
+
+def calculate_cost_from_usage(
+    model: str,
+    input_tokens: int,
+    output_tokens: int,
+    cached_tokens: int = 0,
+    has_image_input: bool = False,
+) -> float:
+    """
+    Calculate the cost in USD based on actual API usage.
+
+    The API returns total token counts. For image generation:
+    - Input tokens are text (prompt) unless reference images are provided
+    - Output tokens are image tokens (the generated image)
+
+    When reference images are provided, input tokens are charged at the
+    image rate since they include the tokenized reference images.
+
+    Args:
+        model: The model used for generation
+        input_tokens: Total input tokens from API response
+        output_tokens: Total output tokens from API response
+        cached_tokens: Cached input tokens from API response
+        has_image_input: Whether reference images were provided (uses image input pricing)
+    """
+    pricing = MODEL_PRICING.get(model, MODEL_PRICING["gpt-image-1.5"])
+
+    # Calculate input cost based on whether images were in the input
+    uncached_input = max(0, input_tokens - cached_tokens)
+
+    if has_image_input:
+        # Reference images provided - use image pricing for input
+        # (This is conservative; actual prompt text is a small fraction)
+        input_cost = (uncached_input * pricing["image_input"]) + (cached_tokens * pricing["image_cached"])
+    else:
+        # Text-only input (just the prompt)
+        input_cost = (uncached_input * pricing["text_input"]) + (cached_tokens * pricing["text_cached"])
+
+    # Output is always image tokens for image generation
+    output_cost = output_tokens * pricing["image_output"]
+
+    return input_cost + output_cost
 
 
 @app_commands.context_menu(name="Edit Image")
+@app_commands.guild_only()
 async def edit_image_context_menu(interaction: discord.Interaction, message: discord.Message):
     """Edit an image from a message using AI."""
     # Check if message has image attachments
@@ -48,17 +115,23 @@ async def edit_image_context_menu(interaction: discord.Interaction, message: dis
         return await interaction.response.send_message("ImGen cog is not loaded.", ephemeral=True)
 
     # Check if user can generate
-    if interaction.guild:
-        conf = cog.db.get_conf(interaction.guild)
-        can_gen, reason = conf.can_generate(interaction.user)
-        if not can_gen:
-            return await interaction.response.send_message(reason, ephemeral=True)
+    conf = cog.db.get_conf(interaction.guild)
+    can_gen, reason = conf.can_generate(interaction.user)
+    if not can_gen:
+        return await interaction.response.send_message(reason, ephemeral=True)
 
     # Use the first image attachment
     image_url = image_attachments[0].url
 
-    # Open the edit modal with the image URL
-    modal = EditImageModal(cog, response_id=None, reference_image_url=image_url)
+    # Open the edit modal with the image URL and config defaults
+    modal = EditImageModal(
+        cog,
+        response_id=None,
+        reference_image_url=image_url,
+        default_model=conf.default_model,
+        default_size=conf.default_size,
+        default_quality=conf.default_quality,
+    )
     await interaction.response.send_modal(modal)
 
 
@@ -71,7 +144,7 @@ class ImGen(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.0.2"
+    __version__ = "1.0.3"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -207,7 +280,7 @@ class ImGen(commands.Cog):
                 kwargs["previous_response_id"] = previous_response_id
 
             # Make the API call
-            response = await client.responses.create(**kwargs)
+            response: Response = await client.responses.create(**kwargs)
 
             # Extract image data
             image_data = None
@@ -228,12 +301,35 @@ class ImGen(commands.Cog):
             file = discord.File(BytesIO(image_bytes), filename=f"generated.{output_format}")
 
             # Determine title based on context
+            is_edit = previous_response_id is not None or reference_images is not None
             if previous_response_id:
                 title = "✏️ Edited Image"
             elif reference_images:
                 title = "🎨 Generated Image (with references)"
             else:
                 title = "🎨 Generated Image"
+
+            # Extract usage from response and calculate cost
+            usage = response.usage
+            input_tokens = usage.input_tokens if usage else 0
+            output_tokens = usage.output_tokens if usage else 0
+            cached_tokens = 0
+
+            if usage:
+                input_details = getattr(usage, "input_tokens_details", None)
+                if input_details:
+                    cached_tokens = getattr(input_details, "cached_tokens", 0) or 0
+
+            # Determine if input included images (reference images or previous response)
+            has_image_input = reference_images is not None or previous_response_id is not None
+
+            cost_usd = calculate_cost_from_usage(
+                model=model,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                cached_tokens=cached_tokens,
+                has_image_input=has_image_input,
+            )
 
             # Create the embed
             embed = create_image_embed(
@@ -260,8 +356,9 @@ class ImGen(commands.Cog):
             if conf.log_channel:
                 log_channel = interaction.guild.get_channel(conf.log_channel)
                 if log_channel and isinstance(log_channel, discord.TextChannel):
+                    log_title = "✏️ Image Edited" if is_edit else "🎨 Image Generated"
                     log_embed = discord.Embed(
-                        title=title,
+                        title=log_title,
                         description=f"**User:** {interaction.user.mention}\n**Prompt:** {prompt[:1000]}{'...' if len(prompt) > 1000 else ''}",
                         color=discord.Color.blue(),
                         timestamp=datetime.now(tz=timezone.utc),
@@ -269,6 +366,11 @@ class ImGen(commands.Cog):
                     log_embed.add_field(name="Model", value=model, inline=True)
                     log_embed.add_field(name="Size", value=size, inline=True)
                     log_embed.add_field(name="Quality", value=quality, inline=True)
+                    log_embed.add_field(
+                        name="Cost",
+                        value=f"${cost_usd:.4f} ({input_tokens:,} in / {output_tokens:,} out)",
+                        inline=True,
+                    )
                     if message:
                         log_embed.add_field(name="Message", value=f"[Jump]({message.jump_url})", inline=True)
                     with suppress(discord.HTTPException):
@@ -352,11 +454,13 @@ class ImGen(commands.Cog):
         image="The main image to edit (required)",
         image2="Additional reference image (optional)",
         image3="Additional reference image (optional)",
+        model="The model to use for editing",
         size="Size of the output image",
         quality="Quality level of the image",
         output_format="Output image format",
     )
     @app_commands.choices(
+        model=[app_commands.Choice(name=m, value=m) for m in VALID_MODELS],
         size=[app_commands.Choice(name=s, value=s) for s in VALID_SIZES],
         quality=[app_commands.Choice(name=q, value=q) for q in VALID_QUALITIES],
         output_format=[app_commands.Choice(name=f, value=f) for f in VALID_FORMATS],
