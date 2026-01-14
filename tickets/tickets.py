@@ -400,6 +400,7 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
 
         # Don't track if this is the ticket owner
         if str(message.author.id) == owner_id:
+            log.debug("Response time: Skipping - author is ticket owner")
             return
 
         # Check if already responded - use "first_response" key presence as indicator
@@ -407,6 +408,7 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
         # In that case, set it to "legacy" to skip future tracking without recording bad data
         if "first_response" not in ticket:
             # Legacy ticket - mark it so we don't keep checking, but don't record time
+            log.debug("Response time: Legacy ticket detected, marking as legacy")
             async with self.config.guild(guild).opened() as opened_data:
                 if owner_id in opened_data and channel_id in opened_data[owner_id]:
                     opened_data[owner_id][channel_id]["first_response"] = "legacy"
@@ -414,11 +416,13 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
 
         if ticket.get("first_response"):
             # Already has a response time recorded (or marked as legacy)
+            log.debug(f"Response time: Skipping - already has first_response: {ticket.get('first_response')}")
             return
 
-        # Check if author is a support staff member
+        # Check if author is a support staff member or has admin perms
         panel_name = ticket.get("panel")
         if not panel_name or panel_name not in conf["panels"]:
+            log.debug(f"Response time: Skipping - panel not found: {panel_name}")
             return
 
         panel = conf["panels"][panel_name]
@@ -429,10 +433,25 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
         author_role_ids = {r.id for r in message.author.roles}
         is_staff = bool(author_role_ids & all_support_roles)
 
+        log.debug(
+            f"Response time: support_roles={support_role_ids}, panel_roles={panel_role_ids}, author_roles={author_role_ids}, is_staff={is_staff}"
+        )
+
+        # Also count as staff if they have admin permissions or are guild owner
         if not is_staff:
+            member = message.author
+            if isinstance(member, discord.Member):
+                is_staff = member.guild_permissions.administrator or member.id == guild.owner_id
+                log.debug(
+                    f"Response time: Checking admin - is_admin={member.guild_permissions.administrator}, is_owner={member.id == guild.owner_id}"
+                )
+
+        if not is_staff:
+            log.debug("Response time: Skipping - author is not staff")
             return
 
         # Record the first response time
+        log.info(f"Response time: Recording response time for ticket {channel_id}")
         await record_response_time(
             config=self.config,
             guild=guild,
