@@ -181,6 +181,8 @@ dbtestnew/
 scratches/*
 levelup/data/tests/
 levelup/data/stock/rs-assets/
+manual_tests.py
+test_outputs/
 
 # WIP cogs
 arkadia/
@@ -190,4 +192,3 @@ design_docs/
 v2/
 scratch/
 inkblade/
-pictools/
