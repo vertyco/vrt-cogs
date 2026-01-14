@@ -27,71 +27,89 @@ QUALITY_OPTIONS = [
 ]
 
 MODEL_OPTIONS = [
-    discord.SelectOption(label="GPT Image 1", value="gpt-image-1", default=True),
-    discord.SelectOption(label="GPT Image 1.5", value="gpt-image-1.5"),
+    discord.SelectOption(label="GPT Image 1.5", value="gpt-image-1.5", default=True),
     discord.SelectOption(label="GPT Image 1 Mini", value="gpt-image-1-mini"),
 ]
 
 
+def _make_model_options(default: str = "gpt-image-1.5") -> list[discord.SelectOption]:
+    """Create model options with the specified default."""
+    models = [
+        ("GPT Image 1.5", "gpt-image-1.5"),
+        ("GPT Image 1 Mini", "gpt-image-1-mini"),
+    ]
+    return [discord.SelectOption(label=label, value=value, default=(value == default)) for label, value in models]
+
+
+def _make_size_options(default: str = "auto") -> list[discord.SelectOption]:
+    """Create size options with the specified default."""
+    sizes = [
+        ("Auto", "auto"),
+        ("1024x1024 (Square)", "1024x1024"),
+        ("1536x1024 (Landscape)", "1536x1024"),
+        ("1024x1536 (Portrait)", "1024x1536"),
+    ]
+    return [discord.SelectOption(label=label, value=value, default=(value == default)) for label, value in sizes]
+
+
+def _make_quality_options(default: str = "auto") -> list[discord.SelectOption]:
+    """Create quality options with the specified default."""
+    qualities = [
+        ("Auto", "auto"),
+        ("Low", "low"),
+        ("Medium", "medium"),
+        ("High", "high"),
+    ]
+    return [discord.SelectOption(label=label, value=value, default=(value == default)) for label, value in qualities]
+
+
 class EditImageModal(discord.ui.Modal):
     """Modal for editing an image with a new prompt and settings dropdowns."""
-
-    prompt_input = discord.ui.TextInput(
-        label="Edit Prompt",
-        placeholder="Describe how you want to modify the image...",
-        style=discord.TextStyle.paragraph,
-        required=True,
-        max_length=4000,
-    )
-
-    model_label = discord.ui.Label(
-        text="Model",
-        component=discord.ui.Select(
-            placeholder="Select model",
-            options=[
-                discord.SelectOption(label="GPT Image 1", value="gpt-image-1", default=True),
-                discord.SelectOption(label="GPT Image 1.5", value="gpt-image-1.5"),
-                discord.SelectOption(label="GPT Image 1 Mini", value="gpt-image-1-mini"),
-            ],
-        ),
-    )
-
-    size_label = discord.ui.Label(
-        text="Size",
-        component=discord.ui.Select(
-            placeholder="Select image size",
-            options=[
-                discord.SelectOption(label="Auto", value="auto", default=True),
-                discord.SelectOption(label="1024x1024 (Square)", value="1024x1024"),
-                discord.SelectOption(label="1536x1024 (Landscape)", value="1536x1024"),
-                discord.SelectOption(label="1024x1536 (Portrait)", value="1024x1536"),
-            ],
-        ),
-    )
-
-    quality_label = discord.ui.Label(
-        text="Quality",
-        component=discord.ui.Select(
-            placeholder="Select image quality",
-            options=[
-                discord.SelectOption(label="Auto", value="auto", default=True),
-                discord.SelectOption(label="Low", value="low"),
-                discord.SelectOption(label="Medium", value="medium"),
-                discord.SelectOption(label="High", value="high"),
-            ],
-        ),
-    )
 
     def __init__(
         self,
         cog: "ImGen",
         response_id: str | None = None,
         reference_image_url: str | None = None,
+        default_model: str = "gpt-image-1.5",
+        default_size: str = "auto",
+        default_quality: str = "auto",
     ):
         super().__init__(title="Edit Image", timeout=300)
         self.cog = cog
         self.response_id = response_id
         self.reference_image_url = reference_image_url
+
+        # Create components with dynamic defaults
+        self.prompt_input = discord.ui.TextInput(
+            label="Edit Prompt",
+            placeholder="Describe how you want to modify the image...",
+            style=discord.TextStyle.paragraph,
+            required=True,
+            max_length=4000,
+        )
+        self.add_item(self.prompt_input)
+
+        model_select = discord.ui.Select(
+            placeholder="Select model",
+            options=_make_model_options(default_model),
+        )
+        self.model_label = discord.ui.Label(text="Model", component=model_select)
+        self.add_item(self.model_label)
+
+        size_select = discord.ui.Select(
+            placeholder="Select image size",
+            options=_make_size_options(default_size),
+        )
+        self.size_label = discord.ui.Label(text="Size", component=size_select)
+        self.add_item(self.size_label)
+
+        quality_select = discord.ui.Select(
+            placeholder="Select image quality",
+            options=_make_quality_options(default_quality),
+        )
+        self.quality_label = discord.ui.Label(text="Quality", component=quality_select)
+        self.add_item(self.quality_label)
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
         # Show visual feedback immediately
@@ -169,14 +187,20 @@ class EditImageButton(
             return
 
         # Check if user can generate
-        if interaction.guild:
-            conf = cog.db.get_conf(interaction.guild)
-            can_gen, reason = conf.can_generate(interaction.user)
-            if not can_gen:
-                await interaction.response.send_message(reason, ephemeral=True)
-                return
+        conf = cog.db.get_conf(interaction.guild)
+        can_gen, reason = conf.can_generate(interaction.user)
+        if not can_gen:
+            await interaction.response.send_message(reason, ephemeral=True)
+            return
 
-        modal = EditImageModal(cog, self.response_id)
+        # Pass config defaults to the modal
+        modal = EditImageModal(
+            cog,
+            self.response_id,
+            default_model=conf.default_model,
+            default_size=conf.default_size,
+            default_quality=conf.default_quality,
+        )
         await interaction.response.send_modal(modal)
 
 
