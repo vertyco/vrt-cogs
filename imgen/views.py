@@ -26,6 +26,12 @@ QUALITY_OPTIONS = [
     discord.SelectOption(label="High", value="high"),
 ]
 
+MODEL_OPTIONS = [
+    discord.SelectOption(label="GPT Image 1", value="gpt-image-1", default=True),
+    discord.SelectOption(label="GPT Image 1.5", value="gpt-image-1.5"),
+    discord.SelectOption(label="GPT Image 1 Mini", value="gpt-image-1-mini"),
+]
+
 
 class EditImageModal(discord.ui.Modal):
     """Modal for editing an image with a new prompt and settings dropdowns."""
@@ -36,6 +42,18 @@ class EditImageModal(discord.ui.Modal):
         style=discord.TextStyle.paragraph,
         required=True,
         max_length=4000,
+    )
+
+    model_label = discord.ui.Label(
+        text="Model",
+        component=discord.ui.Select(
+            placeholder="Select model",
+            options=[
+                discord.SelectOption(label="GPT Image 1", value="gpt-image-1", default=True),
+                discord.SelectOption(label="GPT Image 1.5", value="gpt-image-1.5"),
+                discord.SelectOption(label="GPT Image 1 Mini", value="gpt-image-1-mini"),
+            ],
+        ),
     )
 
     size_label = discord.ui.Label(
@@ -82,10 +100,12 @@ class EditImageModal(discord.ui.Modal):
 
         prompt = self.prompt_input.value
 
-        # Get size and quality from the select components
+        # Get model, size, and quality from the select components
+        model_select = self.model_label.component
         size_select = self.size_label.component
         quality_select = self.quality_label.component
 
+        model = model_select.values[0] if model_select.values else "gpt-image-1"
         size = size_select.values[0] if size_select.values else "auto"
         quality = quality_select.values[0] if quality_select.values else "auto"
 
@@ -103,6 +123,7 @@ class EditImageModal(discord.ui.Modal):
             await self.cog.generate_image(
                 interaction=interaction,
                 prompt=prompt,
+                model=model,
                 previous_response_id=self.response_id,
                 reference_images=reference_images,
                 size=size,
