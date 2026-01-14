@@ -218,3 +218,14 @@ class BaseCommands(MixinMeta):
         embed.set_footer(text=_("Based on the last {} ticket responses").format(sample_size))
 
         await ctx.send(embed=embed)
+
+    @commands.command(name="clearresponsetimes")
+    @commands.guild_only()
+    @commands.admin_or_permissions(administrator=True)
+    async def clear_response_times(self, ctx: commands.Context):
+        """Clear all stored response time data
+
+        Use this if the response time data is inaccurate due to legacy tickets.
+        """
+        await self.config.guild(ctx.guild).response_times.set([])
+        await ctx.send(_("✅ Response time data has been cleared. Fresh data will be collected from new tickets."))
