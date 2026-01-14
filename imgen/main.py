@@ -71,7 +71,7 @@ class ImGen(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.0.1"
+    __version__ = "1.0.2"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -148,7 +148,7 @@ class ImGen(commands.Cog):
         self,
         interaction: discord.Interaction,
         prompt: str,
-        model: str = "gpt-image-1",
+        model: str | None = None,
         size: str = "auto",
         quality: str = "auto",
         output_format: str = "png",
@@ -158,6 +158,7 @@ class ImGen(commands.Cog):
         """Generate or edit an image using OpenAI's Responses API."""
         conf = self.db.get_conf(interaction.guild)
         client = self.get_openai_client(conf)
+        model = model or conf.default_model
 
         if not client:
             await interaction.followup.send(
@@ -310,7 +311,7 @@ class ImGen(commands.Cog):
         image1: discord.Attachment | None = None,
         image2: discord.Attachment | None = None,
         image3: discord.Attachment | None = None,
-        model: str = "gpt-image-1",
+        model: str | None = None,
         size: str = "auto",
         quality: str = "auto",
         output_format: str = "png",
@@ -368,6 +369,7 @@ class ImGen(commands.Cog):
         image: discord.Attachment,
         image2: discord.Attachment | None = None,
         image3: discord.Attachment | None = None,
+        model: str | None = None,
         size: str = "auto",
         quality: str = "auto",
         output_format: str = "png",
@@ -398,7 +400,7 @@ class ImGen(commands.Cog):
         await self.generate_image(
             interaction=interaction,
             prompt=prompt,
-            model="gpt-image-1",
+            model=model,
             size=size,
             quality=quality,
             output_format=output_format,
