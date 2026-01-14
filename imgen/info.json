@@ -1,0 +1,16 @@
+{
+  "author": ["Vertyco"],
+  "description": "Generate and edit images using OpenAI's GPT-Image models. Supports turn-based image editing, reference images, and per-role access control with cooldowns.",
+  "disabled": false,
+  "end_user_data_statement": "This cog stores user cooldown timestamps for rate limiting purposes. This data can be deleted upon request.",
+  "hidden": false,
+  "install_msg": "Thank you for installing ImGen!\n\nTo get started:\n1. Have a server admin run `/imgen api` to configure the OpenAI API key\n2. Optionally set up role-based access with `/imgen addrole`\n3. Use `/makeimage` to generate images or `/editimage` to edit existing ones\n\nNote: Each server needs its own OpenAI API key.",
+  "min_bot_version": "3.5.3",
+  "min_python_version": [3, 10, 0],
+  "permissions": ["embed_links", "attach_files"],
+  "required_cogs": {},
+  "requirements": ["openai", "pydantic>=2.11,<2.12"],
+  "short": "Generate and edit images with OpenAI's GPT-Image models",
+  "tags": ["image", "ai", "openai", "generation", "editing", "gpt"],
+  "type": "COG"
+}
