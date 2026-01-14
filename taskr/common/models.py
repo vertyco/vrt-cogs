@@ -642,7 +642,7 @@ class ScheduledCommand(Base):
         else:
             end = "**None**"
         embed.add_field(
-            name="Time Boudaries",
+            name="Time Boundaries",
             value=("• Start Date: {}\n• End Date: {}\n• Between Time Start: {}\n• Between Time End: {}").format(
                 start,
                 end,

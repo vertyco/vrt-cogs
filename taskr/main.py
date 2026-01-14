@@ -26,7 +26,7 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
     """Schedule bot commands with ease"""
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.0.10"
+    __version__ = "1.0.11"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -194,7 +194,7 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
         try:
             await self._run_task(task)
         except discord.Forbidden:
-            txt = _("A permission error occured while running task {}\nThe task has been disabled").format(
+            txt = _("A permission error occurred while running task {}\nThe task has been disabled").format(
                 f"`{task.name}`"
             )
             await self.send_modlog(self.bot.get_guild(task.guild_id), content=txt)
@@ -248,7 +248,7 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
                 return
         except Exception as e:
             log.exception("Error running task %s", task, exc_info=e)
-            txt = _("An error occured while running task {}: {}\nThe task has been disabled").format(
+            txt = _("An error occurred while running task {}: {}\nThe task has been disabled").format(
                 f"`{task.name}`", str(e)
             )
             await self.send_modlog(guild, content=txt)
