@@ -909,7 +909,9 @@ class AdminCommands(MixinMeta):
             em = Embed(
                 title=_("Ticket Messages for: ") + panel_name,
                 description=desc,
-                color=discord.Color(color_val) if color_val is not None and isinstance(color_val, int) else ctx.author.color,
+                color=discord.Color(color_val)
+                if color_val is not None and isinstance(color_val, int)
+                else ctx.author.color,
             )
             # Show image preview if available
             if image_val:
@@ -1054,6 +1056,7 @@ class AdminCommands(MixinMeta):
         msg += _("`Users can Close:  `") + f"{conf['user_can_close']}\n"
         msg += _("`Users can Manage: `") + f"{conf['user_can_manage']}\n"
         msg += _("`Save Transcripts: `") + f"{conf['transcript']} ({transcript_type})\n"
+        msg += _("`Show Resp. Time:  `") + f"{conf.get('show_response_time', True)}\n"
         msg += _("`Auto Close:       `") + (_("On") if inactive else _("Off")) + "\n"
         msg += _("`NoResponseDelete: `") + no_resp
 
@@ -1675,6 +1678,17 @@ class AdminCommands(MixinMeta):
         else:
             await self.config.guild(ctx.guild).auto_add.set(True)
             await ctx.send(_("Support and panel roles will be auto-added to thread tickets"))
+
+    @tickets.command()
+    async def showresponsetime(self, ctx: commands.Context):
+        """(Toggle) Show average response time to users when they open a ticket"""
+        toggle = await self.config.guild(ctx.guild).show_response_time()
+        if toggle:
+            await self.config.guild(ctx.guild).show_response_time.set(False)
+            await ctx.send(_("Average response time will no longer be shown to users"))
+        else:
+            await self.config.guild(ctx.guild).show_response_time.set(True)
+            await ctx.send(_("Average response time will now be shown to users"))
 
     @tickets.command()
     async def transcript(self, ctx: commands.Context):

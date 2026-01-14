@@ -10,6 +10,9 @@ DEFAULT_GUILD = {
     # Ticket data
     "opened": {},  # All opened tickets {user_id: {channel_id: panel_data_dict}}
     "panels": {},  # All ticket panels
+    # Response time tracking
+    "response_times": [],  # List of response times in seconds (capped at 100 most recent)
+    "show_response_time": True,  # Whether to show average response time to users when they open a ticket
     # Toggles
     "dm": False,  # Whether to DM the user when their ticket is closed
     "user_can_rename": False,  # Ticket opener can rename their ticket channel
@@ -83,4 +86,5 @@ OPENED_TICKET_SCHEMA = {
     "message_id": "Message ID of first message in the ticket sent from the bot",
     "max_claims": int,
     "overview_msg": "Ticket overview message ID (Optional)",
+    "first_response": "datetime ISO string of first staff response or None",
 }

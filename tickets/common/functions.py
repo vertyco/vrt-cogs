@@ -10,7 +10,13 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import pagify
 
 from ..abc import MixinMeta
-from ..common.utils import format_working_hours_embed, is_within_working_hours, update_active_overview
+from ..common.utils import (
+    format_response_time,
+    format_working_hours_embed,
+    get_average_response_time,
+    is_within_working_hours,
+    update_active_overview,
+)
 from ..common.views import CloseView, LogView
 
 _ = Translator("SupportViews", __file__)
@@ -426,7 +432,9 @@ class Functions(MixinMeta):
             for index, einfo in enumerate(messages):
                 # Use custom color if set and valid, otherwise default to user's color
                 color_val = einfo.get("color")
-                embed_color = discord.Color(color_val) if color_val is not None and isinstance(color_val, int) else user.color
+                embed_color = (
+                    discord.Color(color_val) if color_val is not None and isinstance(color_val, int) else user.color
+                )
                 em = discord.Embed(
                     title=fmt_params(einfo["title"]) if einfo["title"] else None,
                     description=fmt_params(einfo["desc"]),
@@ -465,6 +473,18 @@ class Functions(MixinMeta):
             hours_embed = format_working_hours_embed(panel, user)
             if hours_embed:
                 await channel_or_thread.send(embed=hours_embed)
+
+        # Send average response time notice if we have data and it's enabled
+        if conf.get("show_response_time", True):
+            response_times = conf.get("response_times", [])
+            avg_response = get_average_response_time(response_times)
+            if avg_response is not None:
+                formatted_time = format_response_time(avg_response)
+                response_embed = discord.Embed(
+                    description=_("⏱️ Our average staff response time is **{}**.").format(formatted_time),
+                    color=discord.Color.blue(),
+                )
+                await channel_or_thread.send(embed=response_embed)
 
         if logchannel:
             ts = int(now.timestamp())
