@@ -69,15 +69,13 @@ class EditImageModal(discord.ui.Modal):
     def __init__(
         self,
         cog: "ImGen",
-        response_id: str | None = None,
-        reference_image_url: str | None = None,
+        reference_image_url: str,
         default_model: str = "gpt-image-1.5",
         default_size: str = "auto",
         default_quality: str = "auto",
     ):
         super().__init__(title="Edit Image", timeout=300)
         self.cog = cog
-        self.response_id = response_id
         self.reference_image_url = reference_image_url
 
         # Create components with dynamic defaults
@@ -123,26 +121,49 @@ class EditImageModal(discord.ui.Modal):
         size_select = self.size_label.component
         quality_select = self.quality_label.component
 
-        model = model_select.values[0] if model_select.values else "gpt-image-1"
+        model = model_select.values[0] if model_select.values else "gpt-image-1.5"
         size = size_select.values[0] if size_select.values else "auto"
         quality = quality_select.values[0] if quality_select.values else "auto"
 
         try:
-            # If we have a reference image URL (from context menu), download it
-            reference_images = None
-            if self.reference_image_url:
-                import aiohttp
+            # Download the reference image with content type
+            import aiohttp
 
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(self.reference_image_url) as resp:
-                        if resp.status == 200:
-                            reference_images = [await resp.read()]
+            reference_images: list[tuple[str, bytes, str]] = []
+            async with aiohttp.ClientSession() as session:
+                async with session.get(self.reference_image_url) as resp:
+                    if resp.status == 200:
+                        image_bytes = await resp.read()
+                        # Get content type from response or detect from URL
+                        content_type = resp.content_type
+                        if not content_type or content_type == "application/octet-stream":
+                            # Try to detect from URL extension
+                            url_lower = self.reference_image_url.lower()
+                            if ".png" in url_lower:
+                                content_type = "image/png"
+                            elif ".webp" in url_lower:
+                                content_type = "image/webp"
+                            elif ".jpg" in url_lower or ".jpeg" in url_lower:
+                                content_type = "image/jpeg"
+                            else:
+                                # Default to PNG
+                                content_type = "image/png"
+
+                        # Get extension from content type
+                        ext = content_type.split("/")[-1]
+                        if ext == "jpeg":
+                            ext = "jpg"
+
+                        reference_images.append((f"image.{ext}", image_bytes, content_type))
+
+            if not reference_images:
+                await interaction.followup.send("Failed to fetch the image for editing.", ephemeral=True)
+                return
 
             await self.cog.generate_image(
                 interaction=interaction,
                 prompt=prompt,
                 model=model,
-                previous_response_id=self.response_id,
                 reference_images=reference_images,
                 size=size,
                 quality=quality,
@@ -154,17 +175,16 @@ class EditImageModal(discord.ui.Modal):
 
 class EditImageButton(
     discord.ui.DynamicItem[discord.ui.Button],
-    template=r"ImGen:edit:(?P<response_id>[a-zA-Z0-9_-]+)",
+    template=r"ImGen:edit",
 ):
-    """Dynamic button for editing an image using previous response ID."""
+    """Dynamic button for editing an image by fetching the message attachment."""
 
-    def __init__(self, response_id: str = "") -> None:
-        self.response_id = response_id
+    def __init__(self) -> None:
         super().__init__(
             discord.ui.Button(
                 label="Edit",
                 style=discord.ButtonStyle.primary,
-                custom_id=f"ImGen:edit:{response_id}",
+                custom_id="ImGen:edit",
                 emoji="✏️",
             )
         )
@@ -177,7 +197,7 @@ class EditImageButton(
         match: re.Match[str],
         /,
     ):
-        return cls(match["response_id"])
+        return cls()
 
     async def callback(self, interaction: discord.Interaction) -> None:
         bot: Red = interaction.client
@@ -193,22 +213,27 @@ class EditImageButton(
             await interaction.response.send_message(reason, ephemeral=True)
             return
 
+        # Get the image URL from the message embed
+        message = interaction.message
+        if not message or not message.embeds:
+            await interaction.response.send_message("Could not find the image to edit.", ephemeral=True)
+            return
+
+        embed = message.embeds[0]
+        image_url = embed.image.url if embed.image else None
+
+        if not image_url:
+            await interaction.response.send_message("Could not find the image to edit.", ephemeral=True)
+            return
+
         # Pass config defaults to the modal
         modal = EditImageModal(
             cog,
-            self.response_id,
+            reference_image_url=image_url,
             default_model=conf.default_model,
             default_size=conf.default_size,
-            default_quality=conf.default_quality,
         )
         await interaction.response.send_modal(modal)
-
-
-def create_image_view(response_id: str) -> discord.ui.View:
-    """Create a view with the edit button."""
-    view = discord.ui.View(timeout=None)
-    view.add_item(EditImageButton(response_id).item)
-    return view
 
 
 def create_image_embed(

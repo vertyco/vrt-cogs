@@ -9,19 +9,13 @@ from io import BytesIO
 import discord
 from discord import app_commands
 from openai import AsyncOpenAI
-from openai.types.responses import Response
+from openai.types import ImagesResponse
 from pydantic import ValidationError
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 
 from .common.models import DB, GuildSettings, RoleCooldown
-from .views import (
-    EditImageButton,
-    EditImageModal,
-    SetApiKeyView,
-    create_image_embed,
-    create_image_view,
-)
+from .views import EditImageButton, EditImageModal, SetApiKeyView, create_image_embed
 
 log = logging.getLogger("red.vrt.imgen")
 
@@ -30,71 +24,6 @@ VALID_SIZES = ["auto", "1024x1024", "1536x1024", "1024x1536"]
 VALID_QUALITIES = ["auto", "low", "medium", "high"]
 VALID_FORMATS = ["png", "jpeg", "webp"]
 VALID_MODELS = ["gpt-image-1.5", "gpt-image-1-mini"]
-
-# Cost calculation based on OpenAI pricing (per 1M tokens)
-# https://platform.openai.com/pricing
-# Model -> (text_input, text_cached, text_output, image_input, image_cached, image_output)
-MODEL_PRICING: dict[str, dict[str, float]] = {
-    "gpt-image-1.5": {
-        "text_input": 5.00 / 1_000_000,
-        "text_cached": 1.25 / 1_000_000,
-        "text_output": 10.00 / 1_000_000,
-        "image_input": 8.00 / 1_000_000,
-        "image_cached": 2.00 / 1_000_000,
-        "image_output": 32.00 / 1_000_000,
-    },
-    "gpt-image-1-mini": {
-        "text_input": 2.00 / 1_000_000,
-        "text_cached": 0.20 / 1_000_000,
-        "text_output": 0.0,  # Not specified, likely no text output
-        "image_input": 2.50 / 1_000_000,
-        "image_cached": 0.25 / 1_000_000,
-        "image_output": 8.00 / 1_000_000,
-    },
-}
-
-
-def calculate_cost_from_usage(
-    model: str,
-    input_tokens: int,
-    output_tokens: int,
-    cached_tokens: int = 0,
-    has_image_input: bool = False,
-) -> float:
-    """
-    Calculate the cost in USD based on actual API usage.
-
-    The API returns total token counts. For image generation:
-    - Input tokens are text (prompt) unless reference images are provided
-    - Output tokens are image tokens (the generated image)
-
-    When reference images are provided, input tokens are charged at the
-    image rate since they include the tokenized reference images.
-
-    Args:
-        model: The model used for generation
-        input_tokens: Total input tokens from API response
-        output_tokens: Total output tokens from API response
-        cached_tokens: Cached input tokens from API response
-        has_image_input: Whether reference images were provided (uses image input pricing)
-    """
-    pricing = MODEL_PRICING.get(model, MODEL_PRICING["gpt-image-1.5"])
-
-    # Calculate input cost based on whether images were in the input
-    uncached_input = max(0, input_tokens - cached_tokens)
-
-    if has_image_input:
-        # Reference images provided - use image pricing for input
-        # (This is conservative; actual prompt text is a small fraction)
-        input_cost = (uncached_input * pricing["image_input"]) + (cached_tokens * pricing["image_cached"])
-    else:
-        # Text-only input (just the prompt)
-        input_cost = (uncached_input * pricing["text_input"]) + (cached_tokens * pricing["text_cached"])
-
-    # Output is always image tokens for image generation
-    output_cost = output_tokens * pricing["image_output"]
-
-    return input_cost + output_cost
 
 
 @app_commands.context_menu(name="Edit Image")
@@ -126,11 +55,9 @@ async def edit_image_context_menu(interaction: discord.Interaction, message: dis
     # Open the edit modal with the image URL and config defaults
     modal = EditImageModal(
         cog,
-        response_id=None,
         reference_image_url=image_url,
         default_model=conf.default_model,
         default_size=conf.default_size,
-        default_quality=conf.default_quality,
     )
     await interaction.response.send_modal(modal)
 
@@ -144,7 +71,7 @@ class ImGen(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.0.3"
+    __version__ = "1.1.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -225,10 +152,13 @@ class ImGen(commands.Cog):
         size: str = "auto",
         quality: str = "auto",
         output_format: str = "png",
-        reference_images: list[bytes] | None = None,
-        previous_response_id: str | None = None,
+        reference_images: list[tuple[str, bytes, str]] | None = None,
     ) -> bool:
-        """Generate or edit an image using OpenAI's Responses API."""
+        """Generate or edit an image using OpenAI's Images API.
+
+        Args:
+            reference_images: List of tuples (filename, bytes, content_type) for editing
+        """
         conf = self.db.get_conf(interaction.guild)
         client = self.get_openai_client(conf)
         model = model or conf.default_model
@@ -241,95 +171,44 @@ class ImGen(commands.Cog):
             return False
 
         try:
-            # Build the input content
-            if reference_images or previous_response_id:
-                # Multi-turn or image editing mode - use structured input
-                content: list[dict[str, t.Any]] = [{"type": "input_text", "text": prompt}]
+            is_edit = reference_images is not None and len(reference_images) > 0
+            # GPT image models support "auto" for size directly
+            actual_size = size if size != "auto" else "auto"
 
-                # Add reference images if provided
-                if reference_images:
-                    for img_bytes in reference_images:
-                        b64_image = base64.b64encode(img_bytes).decode("utf-8")
-                        content.append(
-                            {
-                                "type": "input_image",
-                                "image_url": f"data:image/png;base64,{b64_image}",
-                            }
-                        )
-
-                input_data: t.Any = [{"role": "user", "content": content}]
+            if is_edit:
+                # Use images.edit endpoint for editing
+                response: ImagesResponse = await client.images.edit(
+                    model=model,
+                    image=reference_images,
+                    prompt=prompt,
+                    size=actual_size,
+                    quality=quality,
+                    output_format=output_format,
+                    n=1,
+                )
+                title = "✏️ Edited Image"
             else:
-                # Simple text prompt
-                input_data = prompt
+                # Use images.generate endpoint for new images
+                response = await client.images.generate(
+                    model=model,
+                    prompt=prompt,
+                    size=actual_size,
+                    quality=quality,
+                    output_format=output_format,
+                    n=1,
+                )
+                title = "🎨 Generated Image"
 
-            # Build kwargs
-            kwargs: dict[str, t.Any] = {
-                "model": "gpt-5.1",  # Model that supports image generation tool
-                "input": input_data,
-                "tools": [
-                    {
-                        "type": "image_generation",
-                        "size": size,
-                        "quality": quality,
-                    }
-                ],
-            }
-
-            # Add previous response ID for turn-based editing
-            if previous_response_id:
-                kwargs["previous_response_id"] = previous_response_id
-
-            # Make the API call
-            response: Response = await client.responses.create(**kwargs)
-
-            # Extract image data
-            image_data = None
-            for output in response.output:
-                if output.type == "image_generation_call":
-                    image_data = output.result
-                    break
-
-            if not image_data:
+            # GPT image models always return base64-encoded images
+            if not response.data or not response.data[0].b64_json:
                 await interaction.followup.send(
                     "No image was generated. The API may have refused the prompt or encountered an error.",
                     ephemeral=True,
                 )
                 return False
 
-            # Decode and prepare the image
-            image_bytes = base64.b64decode(image_data)
+            image_bytes = base64.b64decode(response.data[0].b64_json)
             file = discord.File(BytesIO(image_bytes), filename=f"generated.{output_format}")
-
-            # Determine title based on context
-            is_edit = previous_response_id is not None or reference_images is not None
-            if previous_response_id:
-                title = "✏️ Edited Image"
-            elif reference_images:
-                title = "🎨 Generated Image (with references)"
-            else:
-                title = "🎨 Generated Image"
-
-            # Extract usage from response and calculate cost
-            usage = response.usage
-            input_tokens = usage.input_tokens if usage else 0
-            output_tokens = usage.output_tokens if usage else 0
-            cached_tokens = 0
-
-            if usage:
-                input_details = getattr(usage, "input_tokens_details", None)
-                if input_details:
-                    cached_tokens = getattr(input_details, "cached_tokens", 0) or 0
-
-            # Determine if input included images (reference images or previous response)
-            has_image_input = reference_images is not None or previous_response_id is not None
-
-            cost_usd = calculate_cost_from_usage(
-                model=model,
-                input_tokens=input_tokens,
-                output_tokens=output_tokens,
-                cached_tokens=cached_tokens,
-                has_image_input=has_image_input,
-            )
 
             # Create the embed
             embed = create_image_embed(
@@ -342,8 +221,9 @@ class ImGen(commands.Cog):
             )
             embed.set_image(url=f"attachment://generated.{output_format}")
 
-            # Create view with edit button
-            view = create_image_view(response.id)
+            # Create view with edit button (no response_id needed anymore)
+            view = discord.ui.View(timeout=None)
+            view.add_item(EditImageButton().item)
 
             # Send the image
             message = await interaction.followup.send(embed=embed, file=file, view=view)
@@ -366,11 +246,6 @@ class ImGen(commands.Cog):
                     log_embed.add_field(name="Model", value=model, inline=True)
                     log_embed.add_field(name="Size", value=size, inline=True)
                     log_embed.add_field(name="Quality", value=quality, inline=True)
-                    log_embed.add_field(
-                        name="Cost",
-                        value=f"${cost_usd:.4f} ({input_tokens:,} in / {output_tokens:,} out)",
-                        inline=True,
-                    )
                     if message:
                         log_embed.add_field(name="Message", value=f"[Jump]({message.jump_url})", inline=True)
                     with suppress(discord.HTTPException):
@@ -391,9 +266,6 @@ class ImGen(commands.Cog):
     @app_commands.command(name="makeimage", description="Generate an image from a text prompt")
     @app_commands.describe(
         prompt="Describe the image you want to generate",
-        image1="Reference image (optional)",
-        image2="Additional reference image (optional)",
-        image3="Additional reference image (optional)",
         model="The model to use for generation",
         size="Size of the generated image",
         quality="Quality level of the image",
@@ -410,15 +282,12 @@ class ImGen(commands.Cog):
         self,
         interaction: discord.Interaction,
         prompt: str,
-        image1: discord.Attachment | None = None,
-        image2: discord.Attachment | None = None,
-        image3: discord.Attachment | None = None,
         model: str | None = None,
         size: str = "auto",
         quality: str = "auto",
         output_format: str = "png",
     ):
-        """Generate an image from a text prompt with optional reference images."""
+        """Generate an image from a text prompt."""
         # Check access
         conf = self.db.get_conf(interaction.guild)
         can_gen, reason = conf.can_generate(interaction.user)
@@ -427,17 +296,6 @@ class ImGen(commands.Cog):
 
         await interaction.response.defer()
 
-        # Collect reference images
-        reference_images: list[bytes] = []
-        for attachment in [image1, image2, image3]:
-            if attachment:
-                try:
-                    img_bytes = await attachment.read()
-                    reference_images.append(img_bytes)
-                except Exception as e:
-                    log.warning(f"Failed to read attachment: {e}")
-                    continue
-
         await self.generate_image(
             interaction=interaction,
             prompt=prompt,
@@ -445,7 +303,6 @@ class ImGen(commands.Cog):
             size=size,
             quality=quality,
             output_format=output_format,
-            reference_images=reference_images if reference_images else None,
         )
 
     @app_commands.command(name="editimage", description="Edit an existing image using AI")
@@ -487,13 +344,18 @@ class ImGen(commands.Cog):
 
         await interaction.response.defer()
 
-        # Collect all images
-        reference_images: list[bytes] = []
-        for attachment in [image, image2, image3]:
+        # Collect all images with proper MIME type info
+        reference_images: list[tuple[str, bytes, str]] = []
+        for i, attachment in enumerate([image, image2, image3]):
             if attachment:
                 try:
                     img_bytes = await attachment.read()
-                    reference_images.append(img_bytes)
+                    # Get content type from attachment
+                    content_type = attachment.content_type or "image/png"
+                    ext = content_type.split("/")[-1]
+                    if ext == "jpeg":
+                        ext = "jpg"
+                    reference_images.append((f"image{i}.{ext}", img_bytes, content_type))
                 except Exception as e:
                     log.warning(f"Failed to read attachment: {e}")
                     continue
