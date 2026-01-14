@@ -533,6 +533,7 @@ class Functions(MixinMeta):
                 "has_response": True if answers else False,
                 "message_id": msg.id,
                 "max_claims": data["panels"][panel_name].get("max_claims", 0),
+                "first_response": None,
             }
 
             new_id = await update_active_overview(guild, data)

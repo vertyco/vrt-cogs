@@ -766,6 +766,7 @@ class SupportButton(Button):
                 "has_response": has_response,
                 "message_id": msg.id,
                 "max_claims": data["panels"][self.panel_name].get("max_claims", 0),
+                "first_response": None,
             }
 
             new_id = await update_active_overview(guild, data)
