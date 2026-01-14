@@ -36,7 +36,7 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "2.14.0"
+    __version__ = "2.14.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -402,8 +402,18 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
         if str(message.author.id) == owner_id:
             return
 
-        # Check if already responded
+        # Check if already responded - use "first_response" key presence as indicator
+        # If key doesn't exist at all, this is a ticket from before the feature was added
+        # In that case, set it to "legacy" to skip future tracking without recording bad data
+        if "first_response" not in ticket:
+            # Legacy ticket - mark it so we don't keep checking, but don't record time
+            async with self.config.guild(guild).opened() as opened_data:
+                if owner_id in opened_data and channel_id in opened_data[owner_id]:
+                    opened_data[owner_id][channel_id]["first_response"] = "legacy"
+            return
+
         if ticket.get("first_response"):
+            # Already has a response time recorded (or marked as legacy)
             return
 
         # Check if author is a support staff member
