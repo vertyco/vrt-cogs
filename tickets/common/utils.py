@@ -347,6 +347,81 @@ def get_ticket_owner(opened: dict, channel_id: str) -> Optional[str]:
             return uid
 
 
+def get_average_response_time(response_times: list[float]) -> Optional[float]:
+    """Calculate the average response time from a list of response times.
+
+    Args:
+        response_times: List of response times in seconds
+
+    Returns:
+        Average response time in seconds, or None if no data
+    """
+    if not response_times:
+        return None
+    return sum(response_times) / len(response_times)
+
+
+def format_response_time(seconds: float) -> str:
+    """Format response time in a human-readable way.
+
+    Args:
+        seconds: Response time in seconds
+
+    Returns:
+        Human-readable string (e.g., "5 minutes", "2 hours", "1 day")
+    """
+    if seconds < 60:
+        return _("less than a minute")
+
+    minutes = seconds / 60
+    if minutes < 60:
+        mins = round(minutes)
+        return _("{} minute").format(mins) if mins == 1 else _("{} minutes").format(mins)
+
+    hours = minutes / 60
+    if hours < 24:
+        hrs = round(hours)
+        return _("{} hour").format(hrs) if hrs == 1 else _("{} hours").format(hrs)
+
+    days = hours / 24
+    d = round(days)
+    return _("{} day").format(d) if d == 1 else _("{} days").format(d)
+
+
+async def record_response_time(
+    config: Config,
+    guild: discord.Guild,
+    owner_id: str,
+    channel_id: str,
+    ticket: dict,
+) -> None:
+    """Record staff first response time for a ticket.
+
+    Args:
+        config: Red Config instance
+        guild: Discord guild
+        owner_id: User ID of ticket owner as string
+        channel_id: Channel ID of ticket as string
+        ticket: Ticket data dictionary
+    """
+    now = datetime.now().astimezone()
+    opened_time = datetime.fromisoformat(ticket["opened"])
+    response_seconds = (now - opened_time).total_seconds()
+
+    async with config.guild(guild).all() as data:
+        # Mark ticket as responded
+        if owner_id in data["opened"] and channel_id in data["opened"][owner_id]:
+            data["opened"][owner_id][channel_id]["first_response"] = now.isoformat()
+
+        # Add to response times list (capped at 100 most recent)
+        response_times = data.get("response_times", [])
+        response_times.append(response_seconds)
+        # Keep only the 100 most recent response times
+        if len(response_times) > 100:
+            response_times = response_times[-100:]
+        data["response_times"] = response_times
+
+
 async def close_ticket(
     bot: Red,
     member: Union[discord.Member, discord.User],

@@ -16,7 +16,9 @@ from .common.constants import DEFAULT_GUILD
 from .common.functions import Functions
 from .common.utils import (
     close_ticket,
+    get_ticket_owner,
     prune_invalid_tickets,
+    record_response_time,
     ticket_owner_hastyped,
     update_active_overview,
 )
@@ -34,7 +36,7 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "2.12.3"
+    __version__ = "2.14.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -369,3 +371,62 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
         pruned = await prune_invalid_tickets(guild, conf, self.config)
         if pruned:
             log.info("Pruned old ticket channels")
+
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        """Track staff first response time in tickets."""
+        if not message.guild:
+            return
+        if message.author.bot:
+            return
+        if not isinstance(message.channel, (discord.TextChannel, discord.Thread)):
+            return
+
+        guild = message.guild
+        conf = await self.config.guild(guild).all()
+        opened = conf["opened"]
+        if not opened:
+            return
+
+        # Check if this channel is a ticket
+        channel_id = str(message.channel.id)
+        owner_id = get_ticket_owner(opened, channel_id)
+        if not owner_id:
+            return
+
+        ticket = opened[owner_id].get(channel_id)
+        if not ticket:
+            return
+
+        # Don't track if this is the ticket owner
+        if str(message.author.id) == owner_id:
+            return
+
+        # Check if already responded
+        if ticket.get("first_response"):
+            return
+
+        # Check if author is a support staff member
+        panel_name = ticket.get("panel")
+        if not panel_name or panel_name not in conf["panels"]:
+            return
+
+        panel = conf["panels"][panel_name]
+        support_role_ids = {r[0] for r in conf["support_roles"]}
+        panel_role_ids = {r[0] for r in panel.get("roles", [])}
+        all_support_roles = support_role_ids | panel_role_ids
+
+        author_role_ids = {r.id for r in message.author.roles}
+        is_staff = bool(author_role_ids & all_support_roles)
+
+        if not is_staff:
+            return
+
+        # Record the first response time
+        await record_response_time(
+            config=self.config,
+            guild=guild,
+            owner_id=owner_id,
+            channel_id=channel_id,
+            ticket=ticket,
+        )
