@@ -33,7 +33,7 @@ class GuildSettings(Base):
     user_cooldowns: dict[int, float] = {}
 
     # Default generation settings
-    default_model: str = "gpt-image-1"
+    default_model: str = "gpt-image-1.5"
     default_size: str = "auto"
     default_quality: str = "auto"
 
