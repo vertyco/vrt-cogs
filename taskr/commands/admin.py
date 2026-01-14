@@ -36,7 +36,7 @@ class Admin(MixinMeta):
         return [
             app_commands.Choice(name=x.name, value=x.name)
             for x in self.db.tasks.values()
-            if current.casefold() in x.casefold() and x.guild_id == interaction.guild.id
+            if current.casefold() in x.name.casefold() and x.guild_id == interaction.guild.id
         ][:25]
 
     @commands.hybrid_command(name="tasktimezone")
@@ -104,7 +104,7 @@ class Admin(MixinMeta):
             timezone = self.db.timezone(ctx.guild.id)
             now = datetime.now(pytz.timezone(timezone))
             formatted_time = now.strftime("%A, %B %d, %Y %I:%M%p %Z")
-            interval = self.db.premium_interval if self.is_premium(ctx.guild) else self.db.minimum_interval
+            interval = self.db.premium_interval if await self.is_premium(ctx.guild) else self.db.minimum_interval
             interval_human = humanize_timedelta(seconds=interval) or _("0 seconds")
             details = f"Current user ID: {ctx.author.id}\nCurrent channel ID: {ctx.channel.id}\nMinimum task interval: {interval}"
             messages = [
