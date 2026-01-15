@@ -2,6 +2,35 @@
 
 Backup & Restore tools for Discord servers.<br/><br/>This cog will create a backup of all roles, channels and permission.<br/><br/>When restoring it will do its best to restore the backup as closely as possible, some roles may not be restored due to position hirearchy.
 
+## Features
+
+- **Full Server Backups**: Save roles, channels, emojis, stickers, bans, and server settings
+- **Granular Restore Options**: Choose exactly what to restore from a backup
+- **Cross-Server Restore**: Bot owners can restore backups from one server to another
+- **Auto Backups**: Optionally enable automatic periodic backups
+- **Member Role Restoration**: Optionally restore saved role assignments to members
+- **Only Restore Missing**: Safely recover deleted items without modifying existing ones
+- **Delete Unmatched**: Optionally remove items not present in the backup
+
+## Restore Options
+
+When restoring a backup, you can select from the following options:
+
+| Option | Description |
+|--------|-------------|
+| Server Settings | Name, icon, banner, verification level, etc. |
+| Roles | Role definitions and permissions |
+| Emojis | Custom emojis |
+| Stickers | Custom stickers |
+| Categories | Category channels |
+| Text Channels | Text channels |
+| Voice Channels | Voice channels |
+| Forum Channels | Forum channels |
+| Bans | User bans |
+| Restore Member Roles | Assign saved roles to members |
+| Delete Unmatched | ⚠️ Remove items not in backup |
+| Only Restore Missing | 🆕 Skip existing items, only recreate deleted ones |
+
 # cartographer
  - Usage: `[p]cartographer `
  - Checks: `server_only`

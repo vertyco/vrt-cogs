@@ -101,13 +101,13 @@ class Role(Base):
         stop=stop_after_attempt(5),
         reraise=False,
     )
-    async def restore(self, guild: discord.Guild, buffer: StringIO) -> discord.Role:
+    async def restore(self, guild: discord.Guild, buffer: StringIO, only_missing: bool = False) -> discord.Role:
         supports_emojis = "ROLE_ICONS" in guild.features
         existing: discord.Role | None = guild.get_role(self.id)
         position = max(1, min(self.position, guild.me.top_role.position - 1))
         if existing and existing < guild.me.top_role:
-            if self.is_match(existing):
-                # Role exists and has not changed
+            if self.is_match(existing) or only_missing:
+                # Role exists and has not changed, or only_missing mode - skip update
                 return existing
             if existing.id == guild.default_role.id:
                 log.info("Updating default role %s", self.name)
@@ -344,12 +344,16 @@ class CategoryChannel(ChannelBase):
         reraise=False,
     )
     async def restore(
-        self, guild: discord.Guild, buffer: StringIO, missing_overwrites: dict[str, list[str]] | None = None
+        self,
+        guild: discord.Guild,
+        buffer: StringIO,
+        missing_overwrites: dict[str, list[str]] | None = None,
+        only_missing: bool = False,
     ) -> discord.CategoryChannel:
         existing: discord.CategoryChannel | None = guild.get_channel(self.id)
         if existing:
-            if self.is_match(existing):
-                # Channel exists and has not changed
+            if self.is_match(existing) or only_missing:
+                # Channel exists and has not changed, or only_missing mode - skip update
                 return existing
             log.info("Updating category %s", self.name)
             category = existing
@@ -486,7 +490,11 @@ class TextChannel(ChannelBase):
         reraise=False,
     )
     async def restore(
-        self, guild: discord.Guild, buffer: StringIO, missing_overwrites: dict[str, list[str]] | None = None
+        self,
+        guild: discord.Guild,
+        buffer: StringIO,
+        missing_overwrites: dict[str, list[str]] | None = None,
+        only_missing: bool = False,
     ) -> discord.TextChannel:
         existing: discord.TextChannel | None = guild.get_channel(self.id)
         if not existing:
@@ -497,8 +505,8 @@ class TextChannel(ChannelBase):
                     log.info("Updating ID for channel %s", self.name)
                     break
         if existing:
-            if self.is_match(existing, True):
-                # Channel exists and has not changed
+            if self.is_match(existing, True) or only_missing:
+                # Channel exists and has not changed, or only_missing mode - skip update
                 return existing
             # Update the channel
             log.info("Updating channel %s", self.name)
@@ -513,7 +521,9 @@ class TextChannel(ChannelBase):
                 overwrites=self.get_overwrites(guild, buffer, missing_overwrites),
                 default_auto_archive_duration=self.default_auto_archive_duration,
                 default_thread_slowmode_delay=self.default_thread_slowmode_delay,
-                category=await self.category.restore(guild, buffer, missing_overwrites) if self.category else None,
+                category=await self.category.restore(guild, buffer, missing_overwrites, only_missing)
+                if self.category
+                else None,
             )
         else:
             log.info("Restoring channel %s", self.name)
@@ -527,7 +537,9 @@ class TextChannel(ChannelBase):
                 overwrites=self.get_overwrites(guild, buffer, missing_overwrites),
                 default_auto_archive_duration=self.default_auto_archive_duration,
                 default_thread_slowmode_delay=self.default_thread_slowmode_delay,
-                category=await self.category.restore(guild, buffer, missing_overwrites) if self.category else None,
+                category=await self.category.restore(guild, buffer, missing_overwrites, only_missing)
+                if self.category
+                else None,
             )
             self.id = channel.id
 
@@ -673,7 +685,11 @@ class ForumChannel(ChannelBase):
         reraise=False,
     )
     async def restore(
-        self, guild: discord.Guild, buffer: StringIO, missing_overwrites: dict[str, list[str]] | None = None
+        self,
+        guild: discord.Guild,
+        buffer: StringIO,
+        missing_overwrites: dict[str, list[str]] | None = None,
+        only_missing: bool = False,
     ) -> discord.ForumChannel:
         existing: discord.ForumChannel | None = guild.get_channel(self.id)
         if not existing:
@@ -685,8 +701,8 @@ class ForumChannel(ChannelBase):
                     break
 
         if existing:
-            if self.is_match(existing, True):
-                # Channel exists and has not changed
+            if self.is_match(existing, True) or only_missing:
+                # Channel exists and has not changed, or only_missing mode - skip update
                 return existing
             log.info("Updating forum %s", self.name)
             forum = existing
@@ -700,7 +716,9 @@ class ForumChannel(ChannelBase):
                 default_thread_slowmode_delay=self.default_thread_slowmode_delay,
                 slowmode_delay=self.slowmode_delay,
                 default_sort_order=discord.enums.ForumOrderType(self.default_sort_order),
-                category=await self.category.restore(guild, buffer, missing_overwrites) if self.category else None,
+                category=await self.category.restore(guild, buffer, missing_overwrites, only_missing)
+                if self.category
+                else None,
                 available_tags=[tag.restore(existing) for tag in self.tags],
             )
         else:
@@ -736,7 +754,9 @@ class ForumChannel(ChannelBase):
                 default_auto_archive_duration=self.default_auto_archive_duration,
                 default_thread_slowmode_delay=self.default_thread_slowmode_delay,
                 default_sort_order=discord.enums.ForumOrderType(self.default_sort_order),
-                category=await self.category.restore(guild, buffer, missing_overwrites) if self.category else None,
+                category=await self.category.restore(guild, buffer, missing_overwrites, only_missing)
+                if self.category
+                else None,
                 available_tags=valid_tags,
             )
             self.id = forum.id
@@ -809,7 +829,11 @@ class VoiceChannel(ChannelBase):
         reraise=False,
     )
     async def restore(
-        self, guild: discord.Guild, buffer: StringIO, missing_overwrites: dict[str, list[str]] | None = None
+        self,
+        guild: discord.Guild,
+        buffer: StringIO,
+        missing_overwrites: dict[str, list[str]] | None = None,
+        only_missing: bool = False,
     ) -> discord.VoiceChannel:
         existing: discord.VoiceChannel | None = guild.get_channel(self.id)
         if not existing:
@@ -821,8 +845,8 @@ class VoiceChannel(ChannelBase):
                     break
 
         if existing:
-            if self.is_match(existing, True):
-                # Channel exists and has not changed
+            if self.is_match(existing, True) or only_missing:
+                # Channel exists and has not changed, or only_missing mode - skip update
                 return existing
             log.info("Updating voice channel %s", self.name)
             channel = existing
@@ -833,7 +857,9 @@ class VoiceChannel(ChannelBase):
                 "bitrate": min(self.bitrate, guild.bitrate_limit),
                 "video_quality_mode": discord.enums.VideoQualityMode(self.video_quality_mode),
                 "overwrites": self.get_overwrites(guild, buffer, missing_overwrites),
-                "category": await self.category.restore(guild, buffer, missing_overwrites) if self.category else None,
+                "category": await self.category.restore(guild, buffer, missing_overwrites, only_missing)
+                if self.category
+                else None,
                 "reason": _("Restored from backup"),
             }
             if self.topic:
@@ -850,7 +876,9 @@ class VoiceChannel(ChannelBase):
                 "bitrate": min(self.bitrate, guild.bitrate_limit),
                 "video_quality_mode": discord.enums.VideoQualityMode(self.video_quality_mode),
                 "overwrites": self.get_overwrites(guild, buffer, missing_overwrites),
-                "category": await self.category.restore(guild, buffer, missing_overwrites) if self.category else None,
+                "category": await self.category.restore(guild, buffer, missing_overwrites, only_missing)
+                if self.category
+                else None,
                 "reason": _("Restored from backup"),
             }
             if self.topic:
@@ -907,9 +935,9 @@ class GuildEmojiBackup(Base):
         stop=stop_after_attempt(5),
         reraise=False,
     )
-    async def restore(self, guild: discord.Guild, buffer: StringIO) -> discord.Emoji | None:
+    async def restore(self, guild: discord.Guild, buffer: StringIO, only_missing: bool = False) -> discord.Emoji | None:
         existing = guild.get_emoji(self.id)
-        roles = [await role.restore(guild, buffer) for role in self.roles]
+        roles = [await role.restore(guild, buffer, only_missing=only_missing) for role in self.roles]
         if not existing:
             for emoji in guild.emojis:
                 if emoji.name == self.name:
@@ -918,6 +946,9 @@ class GuildEmojiBackup(Base):
                     log.info("Updating ID for emoji %s", self.name)
                     break
         if existing:
+            if only_missing:
+                # Only restoring missing items, skip updating existing emoji
+                return existing
             if existing.name == self.name and existing.roles == roles:
                 # Emoji exists and has not changed
                 return existing
@@ -963,9 +994,12 @@ class GuildStickerBackup(Base):
         stop=stop_after_attempt(5),
         reraise=False,
     )
-    async def restore(self, guild: discord.Guild) -> discord.Sticker:
+    async def restore(self, guild: discord.Guild, only_missing: bool = False) -> discord.Sticker:
         try:
             sticker = await guild.fetch_sticker(self.id)
+            if only_missing:
+                # Only restoring missing items, skip updating existing sticker
+                return sticker
             if sticker.name == self.name:
                 # Sticker exists and has not changed
                 return sticker
@@ -1274,7 +1308,7 @@ class GuildBackup(Base):
 
             # - Restore the roles
             for role in sorted(self.roles, key=lambda x: x.position, reverse=True):
-                await role.restore(target_guild, results)
+                await role.restore(target_guild, results, only_missing=options.only_missing)
 
         # ---------------------------- EMOJIS ----------------------------
         if (options.emojis and self.emojis) or (options.stickers and self.stickers):
@@ -1309,7 +1343,7 @@ class GuildBackup(Base):
                     results.write(_("Emoji '{}' not restored due to limit\n").format(emoji.name))
                     continue
                 try:
-                    await emoji.restore(target_guild, results)
+                    await emoji.restore(target_guild, results, only_missing=options.only_missing)
                 except discord.HTTPException as e:
                     results.write(f"Error restoring emoji {emoji.name}: {e}\n")
 
@@ -1338,7 +1372,7 @@ class GuildBackup(Base):
                     results.write(_("Sticker '{}' not restored due to limit\n").format(sticker.name))
                     continue
                 try:
-                    await sticker.restore(target_guild)
+                    await sticker.restore(target_guild, only_missing=options.only_missing)
                 except discord.HTTPException as e:
                     results.write(f"Error restoring sticker {sticker.name}: {e}\n")
 
@@ -1400,7 +1434,7 @@ class GuildBackup(Base):
             for channel in all_channels:
                 if isinstance(channel, ForumChannel) and "COMMUNITY" not in target_guild.features:
                     continue
-                await channel.restore(target_guild, results, missing_overwrites)
+                await channel.restore(target_guild, results, missing_overwrites, only_missing=options.only_missing)
 
         # ---------------------------- REMAINING SETTINGS ----------------------------
         if options.server_settings:
