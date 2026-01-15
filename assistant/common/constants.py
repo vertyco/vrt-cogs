@@ -347,7 +347,7 @@ GENERATE_IMAGE = {
             "quality": {
                 "type": "string",
                 "enum": ["standard", "hd", "low", "medium", "high"],
-                "description": "The quality of the image. For dall-e-3, use 'standard' or 'hd'. For gpt-image-1, use 'low', 'medium', or 'high'. Defaults to 'medium'.",
+                "description": "The quality of the image. For dall-e-3, use 'standard' or 'hd'. For gpt-image-1.5, use 'low', 'medium', or 'high'. Defaults to 'medium'.",
             },
             "style": {
                 "type": "string",
@@ -361,8 +361,8 @@ GENERATE_IMAGE = {
             },
             "model": {
                 "type": "string",
-                "enum": ["dall-e-3", "gpt-image-1"],
-                "description": "The model to use for image generation. dall-e-3 is the standard model, gpt-image-1 is a newer model with different pricing. Defaults to 'dall-e-3'",
+                "enum": ["dall-e-3", "gpt-image-1.5"],
+                "description": "The model to use for image generation. dall-e-3 is the standard model, gpt-image-1.5 is a newer model with different pricing. Defaults to 'dall-e-3'",
             },
         },
         "required": ["prompt"],

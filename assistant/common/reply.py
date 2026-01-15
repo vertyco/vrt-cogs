@@ -121,6 +121,7 @@ async def send_reply(
         segments.append(("text", content[last_end:]))
 
     # Process and send each segment appropriately
+    first_message_sent = False
     for idx, (type, text) in enumerate(segments):
         if type == "text":
             # Regular text can use embeds for larger chunks
@@ -131,10 +132,11 @@ async def send_reply(
                     kwargs["embed"] = discord.Embed(description=chunk)
                 else:
                     kwargs["content"] = chunk
-                if idx == 0:
+                if not first_message_sent:
                     kwargs["mention"] = conf.mention
                     kwargs["files"] = files
                     kwargs["as_reply"] = reply
+                    first_message_sent = True
                 await send(**kwargs)
         else:
             # For code blocks, pagify the inner content and wrap each chunk
@@ -146,8 +148,9 @@ async def send_reply(
                 lang_length = 6 + len(lang)
                 for chunk in pagify(code, delims=("\n",), page_length=2000 - lang_length):
                     kwargs = {"content": f"```{lang}\n{chunk}```"}
-                    if idx == 0:
+                    if not first_message_sent:
                         kwargs["mention"] = conf.mention
                         kwargs["files"] = files
                         kwargs["as_reply"] = reply
+                        first_message_sent = True
                     await send(**kwargs)

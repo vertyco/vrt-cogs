@@ -96,7 +96,7 @@ class AssistantFunctions(MixinMeta):
         size: t.Literal["1024x1024", "1792x1024", "1024x1792", "1024x1536", "1536x1024"] = "1024x1024",
         quality: t.Literal["standard", "hd", "low", "medium", "high"] = "medium",
         style: t.Optional[t.Literal["natural", "vivid"]] = "vivid",
-        model: t.Literal["dall-e-3", "gpt-image-1"] = "gpt-image-1",
+        model: t.Literal["dall-e-3", "gpt-image-1.5"] = "gpt-image-1.5",
         *args,
         **kwargs,
     ):

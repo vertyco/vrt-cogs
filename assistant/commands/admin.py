@@ -1900,7 +1900,7 @@ class Admin(MixinMeta):
             ctx,
             conf,
             self.save_conf,
-            self.get_embbedding_menu_embeds,
+            self.get_embedding_menu_embeds,
             self.request_embedding,
         )
         await view.get_pages()

@@ -261,9 +261,6 @@ class AssistantListener(MixinMeta):
             else:
                 content.write(f"{msg.author.name} said: {msg.content}\n")
 
-        for msg in messages:
-            content.write(f"{msg.author.name} said: {msg.content}\n")
-
         success = True
         try:
             messages = [

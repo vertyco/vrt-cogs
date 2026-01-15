@@ -58,7 +58,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "6.20.1"
+    __version__ = "6.20.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -160,7 +160,7 @@ class Assistant(
                 del self.registry[cog_name]
                 cleaned = True
                 continue
-            for function_name in cog_functions:
+            for function_name in list(cog_functions):
                 if not hasattr(cog, function_name):
                     log.debug(f"{cog_name} no longer has function named {function_name}, removing")
                     del self.registry[cog_name][function_name]

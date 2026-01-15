@@ -94,7 +94,7 @@ If a file has no extension it will still try to read it only if it can be decode
         size: t.Literal["1024x1024", "1792x1024", "1024x1792", "1024x1536", "1536x1024"] = "1024x1024",
         quality: t.Literal["low", "medium", "high", "standard", "hd"] = "medium",
         style: t.Literal["natural", "vivid"] = "vivid",
-        model: t.Literal["dall-e-3", "gpt-image-1"] = "dall-e-3",
+        model: t.Literal["dall-e-3", "gpt-image-1.5"] = "dall-e-3",
     ):
         conf = self.db.get_conf(interaction.guild)
         if not conf.api_key and not self.db.endpoint_override:
@@ -103,10 +103,10 @@ If a file has no extension it will still try to read it only if it can be decode
             return await interaction.response.send_message(_("Image generation is disabled!"), ephemeral=True)
 
         # Model-specific parameter validation
-        if model == "gpt-image-1" and quality in ["standard", "hd"]:
-            quality = "medium"  # Default for gpt-image-1 if dall-e-3 quality is provided
+        if model == "gpt-image-1.5" and quality in ["standard", "hd"]:
+            quality = "medium"  # Default for gpt-image-1.5 if dall-e-3 quality is provided
         if model == "dall-e-3" and quality in ["low", "medium", "high"]:
-            quality = "standard"  # Default for dall-e-3 if gpt-image-1 quality is provided
+            quality = "standard"  # Default for dall-e-3 if gpt-image-1.5 quality is provided
 
         color = await self.bot.get_embed_color(interaction.channel)
         embed = discord.Embed(description=_("Generating image..."), color=color)

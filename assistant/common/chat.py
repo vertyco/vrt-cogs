@@ -678,6 +678,8 @@ class ChatHandler(MixinMeta):
                         except discord.HTTPException as e:
                             content = f"discord.HTTPException: {e.text}"
                             function_calls = [i for i in function_calls if i["name"] != function_name]
+                    if content is None and kwargs:
+                        content = _("Result sent!")
 
                 elif isinstance(func_result, bytes):
                     content = func_result.decode()
@@ -708,6 +710,9 @@ class ChatHandler(MixinMeta):
                 if isinstance(content, str):
                     # Ensure response isnt too large
                     content = await self.cut_text_by_tokens(content, conf, author)
+
+                if content is None:
+                    content = _("Result sent!")
 
                 e = {"role": role, "name": function_name, "content": content}
                 if tool_id:

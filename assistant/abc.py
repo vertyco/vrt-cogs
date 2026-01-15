@@ -100,7 +100,7 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_embbedding_menu_embeds(self, conf: GuildSettings, place: int) -> List[discord.Embed]:
+    async def get_embedding_menu_embeds(self, conf: GuildSettings, place: int) -> List[discord.Embed]:
         raise NotImplementedError
 
     # -------------------------------------------------------
