@@ -23,6 +23,9 @@ from tenacity import (
 
 from . import Base
 
+if t.TYPE_CHECKING:
+    from .models import RestoreOptions
+
 PYDANTIC_V2 = parse_version(VERSION) >= parse_version("2.0.0")
 if PYDANTIC_V2:
     from pydantic import field_validator
@@ -285,7 +288,7 @@ class ChannelBase(Base):
             return v
 
     def get_overwrites(
-        self, guild: discord.Guild, buffer: StringIO
+        self, guild: discord.Guild, buffer: StringIO, missing_overwrites: dict[str, list[str]] | None = None
     ) -> dict[discord.Role | discord.Member, discord.PermissionOverwrite]:
         overwrites: dict[discord.Role | discord.Member, discord.PermissionOverwrite] = {}
         for i in self.overwrites:
@@ -293,11 +296,19 @@ class ChannelBase(Base):
             if obj:
                 overwrites[obj] = discord.PermissionOverwrite(**i.values)
             else:
-                txt = _("Channel {} missing role or member overwrite: {} - {}\n").format(
-                    f"{self.name} ({self.id})", f"{i.name} ({i.id})", str(i.values)
-                )
-                log.warning(txt)
-                buffer.write(txt)
+                # Track missing overwrites by name/id to summarize later
+                key = f"{i.name} ({i.id})"
+                if missing_overwrites is not None:
+                    if key not in missing_overwrites:
+                        missing_overwrites[key] = []
+                    missing_overwrites[key].append(self.name)
+                else:
+                    # Legacy behavior if no tracking dict provided
+                    txt = _("Channel {} missing role or member overwrite: {} - {}\n").format(
+                        f"{self.name} ({self.id})", key, str(i.values)
+                    )
+                    log.warning(txt)
+                    buffer.write(txt)
         return overwrites
 
     def is_match(self, channel: discord.abc.GuildChannel) -> bool:
@@ -332,7 +343,9 @@ class CategoryChannel(ChannelBase):
         stop=stop_after_attempt(5),
         reraise=False,
     )
-    async def restore(self, guild: discord.Guild, buffer: StringIO) -> discord.CategoryChannel:
+    async def restore(
+        self, guild: discord.Guild, buffer: StringIO, missing_overwrites: dict[str, list[str]] | None = None
+    ) -> discord.CategoryChannel:
         existing: discord.CategoryChannel | None = guild.get_channel(self.id)
         if existing:
             if self.is_match(existing):
@@ -343,7 +356,7 @@ class CategoryChannel(ChannelBase):
             await category.edit(
                 name=self.name,
                 position=self.position,
-                overwrites=self.get_overwrites(guild, buffer),
+                overwrites=self.get_overwrites(guild, buffer, missing_overwrites),
                 nsfw=self.nsfw,
                 reason=_("Restored from backup"),
             )
@@ -358,7 +371,7 @@ class CategoryChannel(ChannelBase):
                 category = await guild.create_category_channel(
                     name=self.name,
                     position=self.position,
-                    overwrites=self.get_overwrites(guild, buffer),
+                    overwrites=self.get_overwrites(guild, buffer, missing_overwrites),
                     reason=_("Restored from backup"),
                 )
                 self.id = category.id
@@ -472,7 +485,9 @@ class TextChannel(ChannelBase):
         stop=stop_after_attempt(5),
         reraise=False,
     )
-    async def restore(self, guild: discord.Guild, buffer: StringIO) -> discord.TextChannel:
+    async def restore(
+        self, guild: discord.Guild, buffer: StringIO, missing_overwrites: dict[str, list[str]] | None = None
+    ) -> discord.TextChannel:
         existing: discord.TextChannel | None = guild.get_channel(self.id)
         if not existing:
             for channel in guild.text_channels:
@@ -495,10 +510,10 @@ class TextChannel(ChannelBase):
                 topic=self.topic,
                 nsfw=self.nsfw,
                 slowmode_delay=self.slowmode_delay,
-                overwrites=self.get_overwrites(guild, buffer),
+                overwrites=self.get_overwrites(guild, buffer, missing_overwrites),
                 default_auto_archive_duration=self.default_auto_archive_duration,
                 default_thread_slowmode_delay=self.default_thread_slowmode_delay,
-                category=await self.category.restore(guild, buffer) if self.category else None,
+                category=await self.category.restore(guild, buffer, missing_overwrites) if self.category else None,
             )
         else:
             log.info("Restoring channel %s", self.name)
@@ -509,10 +524,10 @@ class TextChannel(ChannelBase):
                 topic=self.topic,
                 nsfw=self.nsfw,
                 slowmode_delay=self.slowmode_delay,
-                overwrites=self.get_overwrites(guild, buffer),
+                overwrites=self.get_overwrites(guild, buffer, missing_overwrites),
                 default_auto_archive_duration=self.default_auto_archive_duration,
                 default_thread_slowmode_delay=self.default_thread_slowmode_delay,
-                category=await self.category.restore(guild, buffer) if self.category else None,
+                category=await self.category.restore(guild, buffer, missing_overwrites) if self.category else None,
             )
             self.id = channel.id
 
@@ -657,7 +672,9 @@ class ForumChannel(ChannelBase):
         stop=stop_after_attempt(5),
         reraise=False,
     )
-    async def restore(self, guild: discord.Guild, buffer: StringIO) -> discord.ForumChannel:
+    async def restore(
+        self, guild: discord.Guild, buffer: StringIO, missing_overwrites: dict[str, list[str]] | None = None
+    ) -> discord.ForumChannel:
         existing: discord.ForumChannel | None = guild.get_channel(self.id)
         if not existing:
             for channel in guild.forums:
@@ -677,13 +694,13 @@ class ForumChannel(ChannelBase):
                 name=self.name,
                 position=self.position,
                 topic=self.topic,
-                overwrites=self.get_overwrites(guild, buffer),
+                overwrites=self.get_overwrites(guild, buffer, missing_overwrites),
                 nsfw=self.nsfw,
                 default_auto_archive_duration=self.default_auto_archive_duration,
                 default_thread_slowmode_delay=self.default_thread_slowmode_delay,
                 slowmode_delay=self.slowmode_delay,
                 default_sort_order=discord.enums.ForumOrderType(self.default_sort_order),
-                category=await self.category.restore(guild, buffer) if self.category else None,
+                category=await self.category.restore(guild, buffer, missing_overwrites) if self.category else None,
                 available_tags=[tag.restore(existing) for tag in self.tags],
             )
         else:
@@ -714,12 +731,12 @@ class ForumChannel(ChannelBase):
                 position=self.position,
                 slowmode_delay=self.slowmode_delay,
                 nsfw=self.nsfw,
-                overwrites=self.get_overwrites(guild, buffer),
+                overwrites=self.get_overwrites(guild, buffer, missing_overwrites),
                 reason=_("Restored from backup"),
                 default_auto_archive_duration=self.default_auto_archive_duration,
                 default_thread_slowmode_delay=self.default_thread_slowmode_delay,
                 default_sort_order=discord.enums.ForumOrderType(self.default_sort_order),
-                category=await self.category.restore(guild, buffer) if self.category else None,
+                category=await self.category.restore(guild, buffer, missing_overwrites) if self.category else None,
                 available_tags=valid_tags,
             )
             self.id = forum.id
@@ -791,7 +808,9 @@ class VoiceChannel(ChannelBase):
         stop=stop_after_attempt(5),
         reraise=False,
     )
-    async def restore(self, guild: discord.Guild, buffer: StringIO) -> discord.VoiceChannel:
+    async def restore(
+        self, guild: discord.Guild, buffer: StringIO, missing_overwrites: dict[str, list[str]] | None = None
+    ) -> discord.VoiceChannel:
         existing: discord.VoiceChannel | None = guild.get_channel(self.id)
         if not existing:
             for channel in guild.voice_channels:
@@ -813,8 +832,8 @@ class VoiceChannel(ChannelBase):
                 "user_limit": self.user_limit,
                 "bitrate": min(self.bitrate, guild.bitrate_limit),
                 "video_quality_mode": discord.enums.VideoQualityMode(self.video_quality_mode),
-                "overwrites": self.get_overwrites(guild, buffer),
-                "category": await self.category.restore(guild, buffer) if self.category else None,
+                "overwrites": self.get_overwrites(guild, buffer, missing_overwrites),
+                "category": await self.category.restore(guild, buffer, missing_overwrites) if self.category else None,
                 "reason": _("Restored from backup"),
             }
             if self.topic:
@@ -830,8 +849,8 @@ class VoiceChannel(ChannelBase):
                 "user_limit": self.user_limit,
                 "bitrate": min(self.bitrate, guild.bitrate_limit),
                 "video_quality_mode": discord.enums.VideoQualityMode(self.video_quality_mode),
-                "overwrites": self.get_overwrites(guild, buffer),
-                "category": await self.category.restore(guild, buffer) if self.category else None,
+                "overwrites": self.get_overwrites(guild, buffer, missing_overwrites),
+                "category": await self.category.restore(guild, buffer, missing_overwrites) if self.category else None,
                 "reason": _("Restored from backup"),
             }
             if self.topic:
@@ -1089,42 +1108,59 @@ class GuildBackup(Base):
             indexes=indexes,
         )
 
-    async def restore(self, target_guild: discord.Guild, ctx: discord.TextChannel) -> str:
-        """Restore a guild backup to a target guild."""
+    async def restore(
+        self,
+        target_guild: discord.Guild,
+        ctx: discord.TextChannel,
+        options: RestoreOptions | None = None,
+    ) -> str:
+        """Restore a guild backup to a target guild.
+
+        Args:
+            target_guild: The guild to restore to
+            ctx: The channel to send status updates to
+            options: Granular restore options. If None, restores everything with delete_unmatched=True (legacy behavior)
+        """
+        # Import here to avoid circular import
+        from .models import RestoreOptions
+
+        if options is None:
+            # Legacy behavior: restore everything and delete unmatched items
+            options = RestoreOptions(delete_unmatched=True)
 
         start = perf_counter()
 
-        def get_status_embed(stage: int) -> discord.Embed:
+        # Calculate total steps based on options
+        steps = []
+        if options.server_settings:
+            steps.append(_("Restoring server settings"))
+        if options.roles and self.roles:
+            steps.append(_("Restoring roles"))
+        if (options.emojis and self.emojis) or (options.stickers and self.stickers):
+            steps.append(_("Restoring emojis and stickers"))
+        if any([options.categories, options.text_channels, options.voice_channels, options.forums]):
+            steps.append(_("Restoring channels"))
+        if options.server_settings:
+            steps.append(_("Restoring AFK settings"))
+            steps.append(_("Restoring system channels"))
+            steps.append(_("Restoring remainder of settings"))
+        if options.restore_member_roles and self.members:
+            steps.append(_("Restoring member roles"))
+        if options.bans and self.bans:
+            steps.append(_("Restoring bans"))
+        steps.append(_("Restoration complete!"))
+        total_steps = len(steps)
+
+        current_step = 0
+
+        def get_status_embed(description: str, complete: bool = False) -> discord.Embed:
+            nonlocal current_step
             embed = discord.Embed(title=_("Restoring backup"), color=discord.Color.blurple())
-            if stage < 8:
+            if not complete:
                 embed.set_thumbnail(url="https://i.imgur.com/l3p6EMX.gif")
-            if stage == 0:
-                embed.description = _("Restoring server settings")
-                embed.set_footer(text=_("Step 1 of 9"))
-            elif stage == 1:
-                embed.description = _("Restoring roles")
-                embed.set_footer(text=_("Step 2 of 9"))
-            elif stage == 2:
-                embed.description = _("Restoring emojis and stickers")
-                embed.set_footer(text=_("Step 3 of 9"))
-            elif stage == 3:
-                embed.description = _("Restoring channels")
-                embed.set_footer(text=_("Step 4 of 9"))
-            elif stage == 4:
-                embed.description = _("Restoring AFK settings")
-                embed.set_footer(text=_("Step 5 of 9"))
-            elif stage == 5:
-                embed.description = _("Restoring system channels")
-                embed.set_footer(text=_("Step 6 of 9"))
-            elif stage == 6:
-                embed.description = _("Restoring remainder of the server settings")
-                embed.set_footer(text=_("Step 7 of 9"))
-            elif stage == 7:
-                embed.description = _("Restoring member roles")
-                embed.set_footer(text=_("Step 8 of 9"))
-            elif stage == 8:
-                embed.description = _("Restoring bans")
-                embed.set_footer(text=_("Step 9 of 9"))
+                current_step += 1
+                embed.description = description
+                embed.set_footer(text=_("Step {} of {}").format(current_step, total_steps - 1))
             else:
                 embed.description = _("Restoration complete!")
                 embed.color = discord.Color.green()
@@ -1135,7 +1171,7 @@ class GuildBackup(Base):
 
         log.info("Restoring backup of %s to %s", self.name, target_guild.name)
         reason = _("Cartographer Restore")
-        message = await ctx.send(embed=get_status_embed(0))
+        message = await ctx.send(embed=get_status_embed(_("Starting restoration...")))
         results = StringIO()
 
         if self.community and self.verification_level < discord.enums.VerificationLevel.medium.value:
@@ -1166,39 +1202,42 @@ class GuildBackup(Base):
 
         log.info("Target guild is community: %s", "COMMUNITY" in target_guild.features)
 
-        update_kwargs = {}
-        if self.name != target_guild.name:
-            update_kwargs["name"] = self.name
-        if self.description != target_guild.description:
-            update_kwargs["description"] = self.description
-        if icon:
-            update_kwargs["icon"] = icon
-        if banner:
-            update_kwargs["banner"] = banner
-        if splash:
-            update_kwargs["splash"] = splash
-        if discovery_splash:
-            update_kwargs["discovery_splash"] = discovery_splash
-        if self.verification_level != target_guild.verification_level.value:
-            update_kwargs["verification_level"] = verification
-        if self.default_notifications != target_guild.default_notifications.value:
-            update_kwargs["default_notifications"] = discord.enums.NotificationLevel(self.default_notifications)
-        if self.explicit_content_filter != target_guild.explicit_content_filter.value:
-            update_kwargs["explicit_content_filter"] = explicit_content_filter
-        if self.preferred_locale != target_guild.preferred_locale.value:
-            update_kwargs["preferred_locale"] = discord.Locale(self.preferred_locale)
-        if self.invites_disabled != target_guild.invites_paused():
-            update_kwargs["invites_disabled"] = self.invites_disabled
-        if self.verification_level == 0 or self.explicit_content_filter == 0:
-            # We must make sure community is disabled if verification is off or explicit content filter is off otherwise it will error
-            update_kwargs["community"] = False
-        if update_kwargs:
-            log.info("Updating server settings with kwargs: %s", update_kwargs)
-            await target_guild.edit(reason=reason, **update_kwargs)
+        # ---------------------------- SERVER SETTINGS ----------------------------
+        if options.server_settings:
+            await message.edit(embed=get_status_embed(_("Restoring server settings")))
+            update_kwargs = {}
+            if self.name != target_guild.name:
+                update_kwargs["name"] = self.name
+            if self.description != target_guild.description:
+                update_kwargs["description"] = self.description
+            if icon:
+                update_kwargs["icon"] = icon
+            if banner:
+                update_kwargs["banner"] = banner
+            if splash:
+                update_kwargs["splash"] = splash
+            if discovery_splash:
+                update_kwargs["discovery_splash"] = discovery_splash
+            if self.verification_level != target_guild.verification_level.value:
+                update_kwargs["verification_level"] = verification
+            if self.default_notifications != target_guild.default_notifications.value:
+                update_kwargs["default_notifications"] = discord.enums.NotificationLevel(self.default_notifications)
+            if self.explicit_content_filter != target_guild.explicit_content_filter.value:
+                update_kwargs["explicit_content_filter"] = explicit_content_filter
+            if self.preferred_locale != target_guild.preferred_locale.value:
+                update_kwargs["preferred_locale"] = discord.Locale(self.preferred_locale)
+            if self.invites_disabled != target_guild.invites_paused():
+                update_kwargs["invites_disabled"] = self.invites_disabled
+            if self.verification_level == 0 or self.explicit_content_filter == 0:
+                # We must make sure community is disabled if verification is off or explicit content filter is off otherwise it will error
+                update_kwargs["community"] = False
+            if update_kwargs:
+                log.info("Updating server settings with kwargs: %s", update_kwargs)
+                await target_guild.edit(reason=reason, **update_kwargs)
 
         # ---------------------------- ROLES ----------------------------
-        if self.roles:
-            await message.edit(embed=get_status_embed(1))
+        if options.roles and self.roles:
+            await message.edit(embed=get_status_embed(_("Restoring roles")))
             # First things first, the bot can't put any roles equal to or above its top role
             # If restoring a backup where the bot's top role isnt the highest role, we'll have to ignore them
             top_role = target_guild.me.top_role
@@ -1217,29 +1256,30 @@ class GuildBackup(Base):
                         break
 
             # Delete any roles that arent in the backup and didn't have a close match
-            updated_backup_ids = {i.id for i in self.roles}
-            for role in target_guild.roles:
-                cases = [
-                    not role.is_assignable(),
-                    role.is_bot_managed(),
-                    role.is_default(),
-                    role.is_premium_subscriber(),
-                    role >= top_role,
-                    role.id in updated_backup_ids,
-                ]
-                if any(cases):
-                    continue
-                log.info("Deleting role %s", role.name)
-                await role.delete(reason=reason)
+            if options.delete_unmatched:
+                updated_backup_ids = {i.id for i in self.roles}
+                for role in target_guild.roles:
+                    cases = [
+                        not role.is_assignable(),
+                        role.is_bot_managed(),
+                        role.is_default(),
+                        role.is_premium_subscriber(),
+                        role >= top_role,
+                        role.id in updated_backup_ids,
+                    ]
+                    if any(cases):
+                        continue
+                    log.info("Deleting role %s", role.name)
+                    await role.delete(reason=reason)
 
             # - Restore the roles
             for role in sorted(self.roles, key=lambda x: x.position, reverse=True):
                 await role.restore(target_guild, results)
 
         # ---------------------------- EMOJIS ----------------------------
-        if self.emojis or self.stickers:
-            await message.edit(embed=get_status_embed(2))
-        if self.emojis:
+        if (options.emojis and self.emojis) or (options.stickers and self.stickers):
+            await message.edit(embed=get_status_embed(_("Restoring emojis and stickers")))
+        if options.emojis and self.emojis:
             # Update the ID of emojis that closely match any of the target guild's emojis
             for idx, emoji in enumerate(self.emojis):
                 current_emoji = target_guild.get_emoji(emoji.id)
@@ -1252,12 +1292,13 @@ class GuildBackup(Base):
                         log.info("Updating ID for emoji %s", emoji.name)
                         break
             # Delete the target guild's emojis that arent in the backup and didn't have a close match
-            updated_emoji_ids = {i.id for i in self.emojis}
-            for emoji in target_guild.emojis:
-                if emoji.id in updated_emoji_ids:
-                    continue
-                await emoji.delete(reason=reason)
-                log.info("Deleted emoji %s", emoji.name)
+            if options.delete_unmatched:
+                updated_emoji_ids = {i.id for i in self.emojis}
+                for emoji in target_guild.emojis:
+                    if emoji.id in updated_emoji_ids:
+                        continue
+                    await emoji.delete(reason=reason)
+                    log.info("Deleted emoji %s", emoji.name)
 
             if len(self.emojis) > target_guild.emoji_limit:
                 results.write(
@@ -1273,7 +1314,7 @@ class GuildBackup(Base):
                     results.write(f"Error restoring emoji {emoji.name}: {e}\n")
 
         # ---------------------------- STICKERS ----------------------------
-        if self.stickers:
+        if options.stickers and self.stickers:
             # Delete stickers that arent in the backup before restoring
             saved_sticker_ids = {i.id for i in self.stickers}
             for sticker in target_guild.stickers:
@@ -1285,8 +1326,9 @@ class GuildBackup(Base):
                         log.info("Updating ID for sticker %s", sticker.name)
                         break
                 else:
-                    await sticker.delete(reason=reason)
-                    log.info("Deleted sticker %s", sticker.name)
+                    if options.delete_unmatched:
+                        await sticker.delete(reason=reason)
+                        log.info("Deleted sticker %s", sticker.name)
             if len(self.stickers) > target_guild.sticker_limit:
                 results.write(
                     _("Backup has more stickers than the target server can hold. Some stickers will not be restored.\n")
@@ -1301,106 +1343,125 @@ class GuildBackup(Base):
                     results.write(f"Error restoring sticker {sticker.name}: {e}\n")
 
         # ---------------------------- CHANNELS ----------------------------
-        await message.edit(embed=get_status_embed(3))
-        all_channels: list[CategoryChannel | TextChannel | VoiceChannel | ForumChannel] = (
-            self.categories + self.text_channels + self.voice_channels + self.forums
-        )
-        # - Sort channels by saved index
-        all_channels.sort(key=lambda x: self.indexes[x.id])
-        # - Update the ID of channels that closely match any of the target guild's channels
-        for idx, channel in enumerate(all_channels):
-            current_channel = target_guild.get_channel(channel.id)
-            if current_channel:
-                # Exact channel already exists
-                continue
-            for existing_channel in target_guild.channels:
-                if channel.is_match(existing_channel):
-                    all_channels[idx].id = existing_channel.id
-                    log.info("Updating ID for channel %s", channel.name)
-                    break
-        # - Delete the target guild's channels that arent in the backup and didn't have a close match
-        updated_channel_ids = {i.id for i in all_channels}
+        restore_channels = any([options.categories, options.text_channels, options.voice_channels, options.forums])
+        if restore_channels:
+            await message.edit(embed=get_status_embed(_("Restoring channels")))
+
+        # Track missing overwrites to summarize at the end instead of spamming
+        missing_overwrites: dict[str, list[str]] = {}
+
+        # Build list of channels to restore based on options
+        all_channels: list[CategoryChannel | TextChannel | VoiceChannel | ForumChannel] = []
+        if options.categories:
+            all_channels.extend(self.categories)
+        if options.text_channels:
+            all_channels.extend(self.text_channels)
+        if options.voice_channels:
+            all_channels.extend(self.voice_channels)
+        if options.forums:
+            all_channels.extend(self.forums)
+
         maybe_delete_later: list[discord.TextChannel] = []
-        for channel in target_guild.channels:
-            if channel.id in updated_channel_ids:
-                continue
-            if channel == ctx:
-                continue
-            if channel in [target_guild.public_updates_channel, target_guild.rules_channel]:
-                maybe_delete_later.append(channel)
-                continue
-            await channel.delete(reason=reason)
-            log.info("Deleted %s channel %s", type(channel), channel.name)
-        # - If the current channel is not in the backup, we will need to offset all channel positions by 1
-        if ctx.id not in updated_channel_ids:
-            await ctx.send(_("This channel isn't part of the backup, it can be deleted after the restore is complete."))
+        if all_channels:
+            # - Sort channels by saved index
+            all_channels.sort(key=lambda x: self.indexes[x.id])
+            # - Update the ID of channels that closely match any of the target guild's channels
+            for idx, channel in enumerate(all_channels):
+                current_channel = target_guild.get_channel(channel.id)
+                if current_channel:
+                    # Exact channel already exists
+                    continue
+                for existing_channel in target_guild.channels:
+                    if channel.is_match(existing_channel):
+                        all_channels[idx].id = existing_channel.id
+                        log.info("Updating ID for channel %s", channel.name)
+                        break
+            # - Delete the target guild's channels that arent in the backup and didn't have a close match
+            if options.delete_unmatched:
+                updated_channel_ids = {i.id for i in all_channels}
+                for channel in target_guild.channels:
+                    if channel.id in updated_channel_ids:
+                        continue
+                    if channel == ctx:
+                        continue
+                    if channel in [target_guild.public_updates_channel, target_guild.rules_channel]:
+                        maybe_delete_later.append(channel)
+                        continue
+                    await channel.delete(reason=reason)
+                    log.info("Deleted %s channel %s", type(channel), channel.name)
+                # - If the current channel is not in the backup, we will need to offset all channel positions by 1
+                if ctx.id not in updated_channel_ids:
+                    await ctx.send(
+                        _("This channel isn't part of the backup, it can be deleted after the restore is complete.")
+                    )
+                    for channel in all_channels:
+                        channel.position += 1
+            # - Channels should already be sorted by position
             for channel in all_channels:
-                channel.position += 1
-        # - Channels should already be sorted by position
-        for channel in all_channels:
-            if isinstance(channel, ForumChannel) and "COMMUNITY" not in target_guild.features:
-                continue
-            await channel.restore(target_guild, results)
+                if isinstance(channel, ForumChannel) and "COMMUNITY" not in target_guild.features:
+                    continue
+                await channel.restore(target_guild, results, missing_overwrites)
 
         # ---------------------------- REMAINING SETTINGS ----------------------------
-        await message.edit(embed=get_status_embed(4))
-        # Restore AFK settings
-        afk_channel: discord.VoiceChannel | None = (
-            target_guild.get_channel(self.afk_channel.id) if self.afk_channel else None
-        )
-        if self.afk_channel and not afk_channel:
-            for channel in target_guild.voice_channels:
-                if self.afk_channel.is_match(channel):
-                    afk_channel = channel
-                    break
-        await message.edit(embed=get_status_embed(5))
-        # Restore system channel
-        system_channel: discord.TextChannel | None = (
-            target_guild.get_channel(self.system_channel.id) if self.system_channel else None
-        )
-        if self.system_channel and not system_channel:
-            for channel in target_guild.text_channels:
-                if self.system_channel.is_match(channel):
-                    system_channel = channel
-                    break
-        # Restore public updates channel
-        public_updates_channel: discord.TextChannel | None = (
-            target_guild.get_channel(self.public_updates.id) if self.public_updates else None
-        )
-        if self.public_updates and not public_updates_channel:
-            for channel in target_guild.text_channels:
-                if self.public_updates.is_match(channel):
-                    public_updates_channel = channel
-                    break
+        if options.server_settings:
+            await message.edit(embed=get_status_embed(_("Restoring AFK settings")))
+            # Restore AFK settings
+            afk_channel: discord.VoiceChannel | None = (
+                target_guild.get_channel(self.afk_channel.id) if self.afk_channel else None
+            )
+            if self.afk_channel and not afk_channel:
+                for channel in target_guild.voice_channels:
+                    if self.afk_channel.is_match(channel):
+                        afk_channel = channel
+                        break
+            await message.edit(embed=get_status_embed(_("Restoring system channels")))
+            # Restore system channel
+            system_channel: discord.TextChannel | None = (
+                target_guild.get_channel(self.system_channel.id) if self.system_channel else None
+            )
+            if self.system_channel and not system_channel:
+                for channel in target_guild.text_channels:
+                    if self.system_channel.is_match(channel):
+                        system_channel = channel
+                        break
+            # Restore public updates channel
+            public_updates_channel: discord.TextChannel | None = (
+                target_guild.get_channel(self.public_updates.id) if self.public_updates else None
+            )
+            if self.public_updates and not public_updates_channel:
+                for channel in target_guild.text_channels:
+                    if self.public_updates.is_match(channel):
+                        public_updates_channel = channel
+                        break
 
-        rules_channel: discord.TextChannel | None = (
-            target_guild.get_channel(self.rules_channel.id) if self.rules_channel else None
-        )
-        if self.rules_channel and not rules_channel:
-            for channel in target_guild.text_channels:
-                if self.rules_channel.is_match(channel):
-                    rules_channel = channel
-                    break
+            rules_channel: discord.TextChannel | None = (
+                target_guild.get_channel(self.rules_channel.id) if self.rules_channel else None
+            )
+            if self.rules_channel and not rules_channel:
+                for channel in target_guild.text_channels:
+                    if self.rules_channel.is_match(channel):
+                        rules_channel = channel
+                        break
 
-        await message.edit(embed=get_status_embed(6))
-        update_kwargs = {}
-        if afk_channel:
-            update_kwargs["afk_channel"] = afk_channel
-        if self.afk_timeout != target_guild.afk_timeout:
-            update_kwargs["afk_timeout"] = self.afk_timeout
-        if system_channel:
-            update_kwargs["system_channel"] = system_channel
-        if rules_channel:
-            update_kwargs["rules_channel"] = rules_channel
-        if public_updates_channel:
-            update_kwargs["public_updates_channel"] = public_updates_channel
-        if self.community and rules_channel and public_updates_channel:
-            update_kwargs["community"] = self.community
-        if update_kwargs:
-            log.info("Updating remaining server settings %s", update_kwargs.keys())
-            await target_guild.edit(reason=reason, **update_kwargs)
+            await message.edit(embed=get_status_embed(_("Restoring remainder of settings")))
+            update_kwargs = {}
+            if afk_channel:
+                update_kwargs["afk_channel"] = afk_channel
+            if self.afk_timeout != target_guild.afk_timeout:
+                update_kwargs["afk_timeout"] = self.afk_timeout
+            if system_channel:
+                update_kwargs["system_channel"] = system_channel
+            if rules_channel:
+                update_kwargs["rules_channel"] = rules_channel
+            if public_updates_channel:
+                update_kwargs["public_updates_channel"] = public_updates_channel
+            if self.community and rules_channel and public_updates_channel:
+                update_kwargs["community"] = self.community
+            if update_kwargs:
+                log.info("Updating remaining server settings %s", update_kwargs.keys())
+                await target_guild.edit(reason=reason, **update_kwargs)
 
-        if maybe_delete_later:
+        if options.delete_unmatched and maybe_delete_later:
             for channel in maybe_delete_later:
                 try:
                     await channel.delete(reason=reason)
@@ -1408,20 +1469,30 @@ class GuildBackup(Base):
                     results.write(f"Failed to delete channel {channel.name}: {e}\n")
 
         # Now that the system channels have been restored and community settings configured, we can restore the forum channels maybe
-        if "COMMUNITY" in target_guild.features:
+        if options.forums and "COMMUNITY" in target_guild.features:
             forums = [i for i in all_channels if isinstance(i, ForumChannel)]
             for forum in forums:
-                await forum.restore(target_guild, results)
+                await forum.restore(target_guild, results, missing_overwrites)
+
+        # Summarize missing overwrites instead of listing each channel individually
+        if missing_overwrites:
+            results.write(_("\n--- Missing Permission Overwrites ---\n"))
+            for role_or_member, channels in missing_overwrites.items():
+                results.write(
+                    _("{} is missing from the server. Skipped overwrites for {} channels: {}\n").format(
+                        role_or_member, len(channels), ", ".join(channels[:10]) + ("..." if len(channels) > 10 else "")
+                    )
+                )
 
         # ---------------------------- MEMBER ROLES ----------------------------
-        if self.members:
-            await message.edit(embed=get_status_embed(7))
+        if options.restore_member_roles and self.members:
+            await message.edit(embed=get_status_embed(_("Restoring member roles")))
             for member in self.members:
                 await member.restore(target_guild, results)
 
         # ---------------------------- BANS ----------------------------
-        if self.bans:
-            await message.edit(embed=get_status_embed(8))
+        if options.bans and self.bans:
+            await message.edit(embed=get_status_embed(_("Restoring bans")))
             existing_ban_ids = [entry.user.id async for entry in target_guild.bans()]
             for ban in self.bans:
                 if ban.user_id in existing_ban_ids:
@@ -1433,5 +1504,5 @@ class GuildBackup(Base):
                 except discord.HTTPException as e:
                     results.write(f"Failed to ban user {user.id}: {e}\n")
 
-        await message.edit(embed=get_status_embed(9))
+        await message.edit(embed=get_status_embed(_("Restoration complete!"), complete=True))
         return results.getvalue()
