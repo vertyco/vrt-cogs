@@ -1,4 +1,5 @@
 import logging
+from dataclasses import dataclass
 from datetime import datetime, timezone
 
 import discord
@@ -13,6 +14,18 @@ class RoleCooldown(Base):
 
     role_id: int
     cooldown_seconds: int = 60  # Seconds between generations
+    allowed_models: list[str] = []
+    allowed_sizes: list[str] = []
+    allowed_qualities: list[str] = []
+
+
+@dataclass
+class AccessLimits:
+    has_access: bool
+    cooldown_seconds: int
+    allowed_models: set[str] | None
+    allowed_sizes: set[str] | None
+    allowed_qualities: set[str] | None
 
 
 class GuildSettings(Base):
@@ -37,6 +50,51 @@ class GuildSettings(Base):
     default_size: str = "auto"
     default_quality: str = "auto"
 
+    def get_access_limits(self, member: discord.Member) -> AccessLimits:
+        """Resolve access limits for a member based on their roles."""
+        if not self.role_cooldowns:
+            return AccessLimits(
+                has_access=True,
+                cooldown_seconds=0,
+                allowed_models=None,
+                allowed_sizes=None,
+                allowed_qualities=None,
+            )
+
+        member_role_ids = {r.id for r in member.roles}
+        applicable = [rc for rid, rc in self.role_cooldowns.items() if rid in member_role_ids]
+
+        if not applicable:
+            return AccessLimits(
+                has_access=False,
+                cooldown_seconds=-1,
+                allowed_models=None,
+                allowed_sizes=None,
+                allowed_qualities=None,
+            )
+
+        cooldown_seconds = min(rc.cooldown_seconds for rc in applicable)
+
+        def resolve_allowed(values: list[list[str]]) -> set[str] | None:
+            if any(not v for v in values):
+                return None
+            merged: set[str] = set()
+            for value_list in values:
+                merged.update(value_list)
+            return merged
+
+        allowed_models = resolve_allowed([rc.allowed_models for rc in applicable])
+        allowed_sizes = resolve_allowed([rc.allowed_sizes for rc in applicable])
+        allowed_qualities = resolve_allowed([rc.allowed_qualities for rc in applicable])
+
+        return AccessLimits(
+            has_access=True,
+            cooldown_seconds=cooldown_seconds,
+            allowed_models=allowed_models,
+            allowed_sizes=allowed_sizes,
+            allowed_qualities=allowed_qualities,
+        )
+
     def get_user_cooldown(self, member: discord.Member) -> int:
         """
         Get the cooldown for a member based on their roles.
@@ -44,18 +102,10 @@ class GuildSettings(Base):
         Returns -1 if user has no allowed roles (when roles are configured).
         Returns 0 if no roles are configured (open access).
         """
-        if not self.role_cooldowns:
-            # No roles configured = open access with no cooldown
-            return 0
-
-        member_role_ids = {r.id for r in member.roles}
-        applicable = [rc for rid, rc in self.role_cooldowns.items() if rid in member_role_ids]
-
-        if not applicable:
-            return -1  # No access - user doesn't have any allowed roles
-
-        # Use the most permissive (lowest cooldown)
-        return min(rc.cooldown_seconds for rc in applicable)
+        access = self.get_access_limits(member)
+        if not access.has_access:
+            return -1
+        return access.cooldown_seconds
 
     def can_generate(self, member: discord.Member) -> tuple[bool, str]:
         """

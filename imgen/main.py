@@ -14,16 +14,28 @@ from pydantic import ValidationError
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 
-from .common.models import DB, GuildSettings, RoleCooldown
-from .views import EditImageButton, EditImageModal, SetApiKeyView, create_image_embed
+from .common.constants import (
+    MODEL_LABELS,
+    MODEL_ORDER,
+    QUALITY_LABELS,
+    QUALITY_ORDER,
+    SIZE_LABELS,
+    SIZE_ORDER,
+    VALID_FORMATS,
+    VALID_MODELS,
+    VALID_QUALITIES,
+    VALID_SIZES,
+)
+from .common.models import DB, AccessLimits, GuildSettings
+from .views import (
+    AccessConfigView,
+    EditImageButton,
+    EditImageModal,
+    SetApiKeyView,
+    create_image_embed,
+)
 
 log = logging.getLogger("red.vrt.imgen")
-
-# Valid options for gpt-image models
-VALID_SIZES = ["auto", "1024x1024", "1536x1024", "1024x1536"]
-VALID_QUALITIES = ["auto", "low", "medium", "high"]
-VALID_FORMATS = ["png", "jpeg", "webp"]
-VALID_MODELS = ["gpt-image-1.5", "gpt-image-1-mini"]
 
 
 @app_commands.context_menu(name="Edit Image")
@@ -49,6 +61,16 @@ async def edit_image_context_menu(interaction: discord.Interaction, message: dis
     if not can_gen:
         return await interaction.response.send_message(reason, ephemeral=True)
 
+    ok, reason, allowed_models, allowed_sizes, allowed_qualities, _access = cog._get_user_option_limits(
+        conf, interaction.user
+    )
+    if not ok:
+        return await interaction.response.send_message(reason, ephemeral=True)
+
+    default_model = conf.default_model if conf.default_model in allowed_models else allowed_models[0]
+    default_size = conf.default_size if conf.default_size in allowed_sizes else allowed_sizes[0]
+    default_quality = conf.default_quality if conf.default_quality in allowed_qualities else allowed_qualities[0]
+
     # Use the first image attachment
     image_url = image_attachments[0].url
 
@@ -56,8 +78,13 @@ async def edit_image_context_menu(interaction: discord.Interaction, message: dis
     modal = EditImageModal(
         cog,
         reference_image_url=image_url,
-        default_model=conf.default_model,
-        default_size=conf.default_size,
+        allowed_models=allowed_models,
+        allowed_sizes=allowed_sizes,
+        allowed_qualities=allowed_qualities,
+        default_model=default_model,
+        default_size=default_size,
+        default_quality=default_quality,
+        default_output_format="png",
     )
     await interaction.response.send_modal(modal)
 
@@ -71,7 +98,7 @@ class ImGen(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.1.0"
+    __version__ = "1.3.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -144,6 +171,132 @@ class ImGen(commands.Cog):
             return None
         return AsyncOpenAI(api_key=conf.api_key)
 
+    def _normalize_allowed(self, allowed: set[str] | None, valid: list[str]) -> list[str]:
+        if allowed is None:
+            return [value for value in valid]
+        return [value for value in valid if value in allowed]
+
+    def _get_user_option_limits(
+        self, conf: GuildSettings, member: discord.Member
+    ) -> tuple[bool, str, list[str], list[str], list[str], AccessLimits]:
+        access = conf.get_access_limits(member)
+        if not access.has_access:
+            return False, "You don't have a role that allows image generation.", [], [], [], access
+
+        allowed_models = self._normalize_allowed(access.allowed_models, MODEL_ORDER)
+        allowed_sizes = self._normalize_allowed(access.allowed_sizes, SIZE_ORDER)
+        allowed_qualities = self._normalize_allowed(access.allowed_qualities, QUALITY_ORDER)
+
+        if access.allowed_sizes is not None:
+            allowed_sizes = [size for size in allowed_sizes if size != "auto"]
+        if access.allowed_qualities is not None:
+            allowed_qualities = [quality for quality in allowed_qualities if quality != "auto"]
+
+        if access.allowed_models is not None and not allowed_models:
+            return (
+                False,
+                "No models are available for your roles. Ask an admin to configure access.",
+                [],
+                [],
+                [],
+                access,
+            )
+        if access.allowed_sizes is not None and not allowed_sizes:
+            return False, "No sizes are available for your roles. Ask an admin to configure access.", [], [], [], access
+        if access.allowed_qualities is not None and not allowed_qualities:
+            return (
+                False,
+                "No quality options are available for your roles. Ask an admin to configure access.",
+                [],
+                [],
+                [],
+                access,
+            )
+
+        return True, "", allowed_models, allowed_sizes, allowed_qualities, access
+
+    def _resolve_request_options(
+        self,
+        conf: GuildSettings,
+        member: discord.Member,
+        model: str | None,
+        size: str | None,
+        quality: str | None,
+    ) -> tuple[bool, str, str, str, str, AccessLimits]:
+        ok, reason, allowed_models, allowed_sizes, allowed_qualities, access = self._get_user_option_limits(
+            conf, member
+        )
+        if not ok:
+            return False, reason, "", "", "", access
+
+        resolved_model = model or conf.default_model
+        if resolved_model not in VALID_MODELS:
+            return False, "Invalid model selection.", "", "", "", access
+
+        if access.allowed_models is not None and resolved_model not in allowed_models:
+            if model is None:
+                if conf.default_model in allowed_models:
+                    resolved_model = conf.default_model
+                elif allowed_models:
+                    resolved_model = allowed_models[0]
+                else:
+                    return (
+                        False,
+                        "No models are available for your roles. Ask an admin to configure access.",
+                        "",
+                        "",
+                        "",
+                        access,
+                    )
+            else:
+                return False, "That model is not available for your role.", "", "", "", access
+
+        resolved_size = size or conf.default_size
+        if resolved_size not in VALID_SIZES:
+            return False, "Invalid size selection.", "", "", "", access
+
+        if access.allowed_sizes is not None:
+            if resolved_size == "auto":
+                if conf.default_size in allowed_sizes:
+                    resolved_size = conf.default_size
+                elif allowed_sizes:
+                    resolved_size = allowed_sizes[0]
+                else:
+                    return (
+                        False,
+                        "No sizes are available for your roles. Ask an admin to configure access.",
+                        "",
+                        "",
+                        "",
+                        access,
+                    )
+            elif resolved_size not in allowed_sizes:
+                return False, "That size is not available for your role.", "", "", "", access
+
+        resolved_quality = quality or conf.default_quality
+        if resolved_quality not in VALID_QUALITIES:
+            return False, "Invalid quality selection.", "", "", "", access
+
+        if access.allowed_qualities is not None:
+            if resolved_quality == "auto":
+                if conf.default_quality in allowed_qualities:
+                    resolved_quality = conf.default_quality
+                elif allowed_qualities:
+                    resolved_quality = allowed_qualities[0]
+                else:
+                    return (
+                        False,
+                        "No quality options are available for your roles. Ask an admin to configure access.",
+                        "",
+                        "",
+                        "",
+                        access,
+                    )
+            elif resolved_quality not in allowed_qualities:
+                return False, "That quality setting is not available for your role.", "", "", "", access
+
+        return True, "", resolved_model, resolved_size, resolved_quality, access
+
     async def generate_image(
         self,
         interaction: discord.Interaction,
@@ -160,8 +313,23 @@ class ImGen(commands.Cog):
             reference_images: List of tuples (filename, bytes, content_type) for editing
         """
         conf = self.db.get_conf(interaction.guild)
+        can_gen, reason = conf.can_generate(interaction.user)
+        if not can_gen:
+            await interaction.followup.send(reason, ephemeral=True)
+            return False
+
+        ok, reason, resolved_model, resolved_size, resolved_quality, _access = self._resolve_request_options(
+            conf,
+            interaction.user,
+            model,
+            size,
+            quality,
+        )
+        if not ok:
+            await interaction.followup.send(reason, ephemeral=True)
+            return False
+
         client = self.get_openai_client(conf)
-        model = model or conf.default_model
 
         if not client:
             await interaction.followup.send(
@@ -173,16 +341,16 @@ class ImGen(commands.Cog):
         try:
             is_edit = reference_images is not None and len(reference_images) > 0
             # GPT image models support "auto" for size directly
-            actual_size = size if size != "auto" else "auto"
+            actual_size = resolved_size if resolved_size != "auto" else "auto"
 
             if is_edit:
                 # Use images.edit endpoint for editing
                 response: ImagesResponse = await client.images.edit(
-                    model=model,
+                    model=resolved_model,
                     image=reference_images,
                     prompt=prompt,
                     size=actual_size,
-                    quality=quality,
+                    quality=resolved_quality,
                     output_format=output_format,
                     n=1,
                 )
@@ -190,10 +358,10 @@ class ImGen(commands.Cog):
             else:
                 # Use images.generate endpoint for new images
                 response = await client.images.generate(
-                    model=model,
+                    model=resolved_model,
                     prompt=prompt,
                     size=actual_size,
-                    quality=quality,
+                    quality=resolved_quality,
                     output_format=output_format,
                     n=1,
                 )
@@ -213,9 +381,9 @@ class ImGen(commands.Cog):
             # Create the embed
             embed = create_image_embed(
                 prompt=prompt,
-                model=model,
-                size=size,
-                quality=quality,
+                model=resolved_model,
+                size=resolved_size,
+                quality=resolved_quality,
                 author=interaction.user,
                 title=title,
             )
@@ -243,9 +411,9 @@ class ImGen(commands.Cog):
                         color=discord.Color.blue(),
                         timestamp=datetime.now(tz=timezone.utc),
                     )
-                    log_embed.add_field(name="Model", value=model, inline=True)
-                    log_embed.add_field(name="Size", value=size, inline=True)
-                    log_embed.add_field(name="Quality", value=quality, inline=True)
+                    log_embed.add_field(name="Model", value=resolved_model, inline=True)
+                    log_embed.add_field(name="Size", value=resolved_size, inline=True)
+                    log_embed.add_field(name="Quality", value=resolved_quality, inline=True)
                     if message:
                         log_embed.add_field(name="Message", value=f"[Jump]({message.jump_url})", inline=True)
                     with suppress(discord.HTTPException):
@@ -263,6 +431,57 @@ class ImGen(commands.Cog):
 
     # ==================== SLASH COMMANDS ====================
 
+    async def _autocomplete_models(
+        self, interaction: discord.Interaction, current: str
+    ) -> list[app_commands.Choice[str]]:
+        conf = self.db.get_conf(interaction.guild)
+        ok, _reason, allowed_models, _allowed_sizes, _allowed_qualities, _access = self._get_user_option_limits(
+            conf, interaction.user
+        )
+        if not ok:
+            return []
+        needle = current.lower()
+        choices = []
+        for value in allowed_models:
+            label = MODEL_LABELS.get(value, value)
+            if needle in value.lower() or needle in label.lower():
+                choices.append(app_commands.Choice(name=label, value=value))
+        return choices[:25]
+
+    async def _autocomplete_sizes(
+        self, interaction: discord.Interaction, current: str
+    ) -> list[app_commands.Choice[str]]:
+        conf = self.db.get_conf(interaction.guild)
+        ok, _reason, _allowed_models, allowed_sizes, _allowed_qualities, _access = self._get_user_option_limits(
+            conf, interaction.user
+        )
+        if not ok:
+            return []
+        needle = current.lower()
+        choices = []
+        for value in allowed_sizes:
+            label = SIZE_LABELS.get(value, value)
+            if needle in value.lower() or needle in label.lower():
+                choices.append(app_commands.Choice(name=label, value=value))
+        return choices[:25]
+
+    async def _autocomplete_qualities(
+        self, interaction: discord.Interaction, current: str
+    ) -> list[app_commands.Choice[str]]:
+        conf = self.db.get_conf(interaction.guild)
+        ok, _reason, _allowed_models, _allowed_sizes, allowed_qualities, _access = self._get_user_option_limits(
+            conf, interaction.user
+        )
+        if not ok:
+            return []
+        needle = current.lower()
+        choices = []
+        for value in allowed_qualities:
+            label = QUALITY_LABELS.get(value, value)
+            if needle in value.lower() or needle in label.lower():
+                choices.append(app_commands.Choice(name=label, value=value))
+        return choices[:25]
+
     @app_commands.command(name="makeimage", description="Generate an image from a text prompt")
     @app_commands.describe(
         prompt="Describe the image you want to generate",
@@ -271,13 +490,11 @@ class ImGen(commands.Cog):
         quality="Quality level of the image",
         output_format="Output image format",
     )
-    @app_commands.choices(
-        model=[app_commands.Choice(name=m, value=m) for m in VALID_MODELS],
-        size=[app_commands.Choice(name=s, value=s) for s in VALID_SIZES],
-        quality=[app_commands.Choice(name=q, value=q) for q in VALID_QUALITIES],
-        output_format=[app_commands.Choice(name=f, value=f) for f in VALID_FORMATS],
-    )
+    @app_commands.choices(output_format=[app_commands.Choice(name=f, value=f) for f in VALID_FORMATS])
     @app_commands.guild_only()
+    @app_commands.autocomplete(model=_autocomplete_models)
+    @app_commands.autocomplete(size=_autocomplete_sizes)
+    @app_commands.autocomplete(quality=_autocomplete_qualities)
     async def makeimage(
         self,
         interaction: discord.Interaction,
@@ -288,12 +505,6 @@ class ImGen(commands.Cog):
         output_format: str = "png",
     ):
         """Generate an image from a text prompt."""
-        # Check access
-        conf = self.db.get_conf(interaction.guild)
-        can_gen, reason = conf.can_generate(interaction.user)
-        if not can_gen:
-            return await interaction.response.send_message(reason, ephemeral=True)
-
         await interaction.response.defer()
 
         await self.generate_image(
@@ -316,13 +527,11 @@ class ImGen(commands.Cog):
         quality="Quality level of the image",
         output_format="Output image format",
     )
-    @app_commands.choices(
-        model=[app_commands.Choice(name=m, value=m) for m in VALID_MODELS],
-        size=[app_commands.Choice(name=s, value=s) for s in VALID_SIZES],
-        quality=[app_commands.Choice(name=q, value=q) for q in VALID_QUALITIES],
-        output_format=[app_commands.Choice(name=f, value=f) for f in VALID_FORMATS],
-    )
+    @app_commands.choices(output_format=[app_commands.Choice(name=f, value=f) for f in VALID_FORMATS])
     @app_commands.guild_only()
+    @app_commands.autocomplete(model=_autocomplete_models)
+    @app_commands.autocomplete(size=_autocomplete_sizes)
+    @app_commands.autocomplete(quality=_autocomplete_qualities)
     async def editimage(
         self,
         interaction: discord.Interaction,
@@ -336,12 +545,6 @@ class ImGen(commands.Cog):
         output_format: str = "png",
     ):
         """Edit an existing image with AI assistance."""
-        # Check access
-        conf = self.db.get_conf(interaction.guild)
-        can_gen, reason = conf.can_generate(interaction.user)
-        if not can_gen:
-            return await interaction.response.send_message(reason, ephemeral=True)
-
         await interaction.response.defer()
 
         # Collect all images with proper MIME type info
@@ -406,17 +609,38 @@ class ImGen(commands.Cog):
         embed.add_field(name="Default Size", value=conf.default_size, inline=True)
         embed.add_field(name="Default Quality", value=conf.default_quality, inline=True)
 
-        # Role cooldowns / access
+        # Role access
         if conf.role_cooldowns:
             role_lines = []
             for rid, rc in conf.role_cooldowns.items():
                 role = interaction.guild.get_role(rid)
-                if role:
-                    cooldown_txt = f"{rc.cooldown_seconds}s" if rc.cooldown_seconds > 0 else "No cooldown"
-                    role_lines.append(f"{role.mention}: {cooldown_txt}")
+                if not role:
+                    continue
+                cooldown_txt = f"{rc.cooldown_seconds}s" if rc.cooldown_seconds > 0 else "No cooldown"
+                models_txt = (
+                    "All models"
+                    if not rc.allowed_models
+                    else ", ".join(MODEL_LABELS.get(value, value) for value in rc.allowed_models)
+                )
+                sizes_txt = (
+                    "All sizes (auto)"
+                    if not rc.allowed_sizes
+                    else ", ".join(SIZE_LABELS.get(value, value) for value in rc.allowed_sizes)
+                )
+                qualities_txt = (
+                    "All qualities (auto)"
+                    if not rc.allowed_qualities
+                    else ", ".join(QUALITY_LABELS.get(value, value) for value in rc.allowed_qualities)
+                )
+                role_lines.append(
+                    f"{role.mention}: {cooldown_txt}\n"
+                    f"• Models: {models_txt}\n"
+                    f"• Sizes: {sizes_txt}\n"
+                    f"• Qualities: {qualities_txt}"
+                )
             embed.add_field(
-                name="Allowed Roles & Cooldowns",
-                value="\n".join(role_lines) if role_lines else "Roles configured but not found",
+                name="Allowed Roles & Access",
+                value="\n\n".join(role_lines) if role_lines else "Roles configured but not found",
                 inline=False,
             )
         else:
@@ -427,6 +651,12 @@ class ImGen(commands.Cog):
             )
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @imgen.command(name="access", description="Manage role-based access rules")
+    async def imgen_access(self, interaction: discord.Interaction):
+        """Open the access management menu."""
+        view = AccessConfigView(self, interaction.guild)
+        await interaction.response.send_message(view=view, ephemeral=True)
 
     @imgen.command(name="api", description="Set the OpenAI API key for this server")
     async def imgen_api(self, interaction: discord.Interaction):
@@ -479,56 +709,6 @@ class ImGen(commands.Cog):
             )
         else:
             await interaction.response.send_message("✅ Generation logging disabled.", ephemeral=True)
-
-    @imgen.command(name="addrole", description="Add a role to the allow list with a cooldown")
-    @app_commands.describe(
-        role="The role to add",
-        cooldown_seconds="Seconds between generations for this role (0 = no cooldown)",
-    )
-    async def imgen_addrole(
-        self,
-        interaction: discord.Interaction,
-        role: discord.Role,
-        cooldown_seconds: int = 60,
-    ):
-        """Add a role that can use image generation."""
-        if cooldown_seconds < 0:
-            return await interaction.response.send_message(
-                "Cooldown must be 0 or greater.",
-                ephemeral=True,
-            )
-
-        conf = self.db.get_conf(interaction.guild)
-        conf.role_cooldowns[role.id] = RoleCooldown(
-            role_id=role.id,
-            cooldown_seconds=cooldown_seconds,
-        )
-        await self.save()
-
-        cooldown_txt = f"with a {cooldown_seconds}s cooldown" if cooldown_seconds > 0 else "with no cooldown"
-        await interaction.response.send_message(
-            f"✅ Added {role.mention} to the allow list {cooldown_txt}.",
-            ephemeral=True,
-        )
-
-    @imgen.command(name="removerole", description="Remove a role from the allow list")
-    @app_commands.describe(role="The role to remove")
-    async def imgen_removerole(self, interaction: discord.Interaction, role: discord.Role):
-        """Remove a role from the access list."""
-        conf = self.db.get_conf(interaction.guild)
-
-        if role.id not in conf.role_cooldowns:
-            return await interaction.response.send_message(
-                f"{role.mention} is not in the allow list.",
-                ephemeral=True,
-            )
-
-        del conf.role_cooldowns[role.id]
-        await self.save()
-        await interaction.response.send_message(
-            f"✅ Removed {role.mention} from the allow list.",
-            ephemeral=True,
-        )
 
     @imgen.command(name="clearroles", description="Clear all role restrictions (open access)")
     async def imgen_clearroles(self, interaction: discord.Interaction):
