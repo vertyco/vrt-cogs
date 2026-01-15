@@ -4,7 +4,7 @@
   "disabled": false,
   "end_user_data_statement": "This cog stores user cooldown timestamps for rate limiting purposes. This data can be deleted upon request.",
   "hidden": false,
-  "install_msg": "Thank you for installing ImGen!\n\nTo get started:\n1. Have a server admin run `/imgen api` to configure the OpenAI API key\n2. Optionally set up role-based access with `/imgen addrole`\n3. Use `/makeimage` to generate images or `/editimage` to edit existing ones\n\nNote: Each server needs its own OpenAI API key.",
+  "install_msg": "Thank you for installing ImGen!\n\nTo get started:\n1. Have a server admin run `/imgen api` to configure the OpenAI API key\n2. Optionally set up role-based access with `/imgen access`\n3. Use `/makeimage` to generate images or `/editimage` to edit existing ones\n\nNote: Each server needs its own OpenAI API key.",
   "min_bot_version": "3.5.3",
   "min_python_version": [3, 10, 0],
   "permissions": ["embed_links", "attach_files"],

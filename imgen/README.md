@@ -30,8 +30,7 @@ Create and edit images with OpenAI's GPT-Image models.
 | `/imgen api` | Set the OpenAI API key for this server |
 | `/imgen clearapi` | Remove the OpenAI API key |
 | `/imgen logchannel [channel]` | Set or clear the logging channel |
-| `/imgen addrole <role> [cooldown]` | Add a role to the allow list with a cooldown |
-| `/imgen removerole <role>` | Remove a role from the allow list |
+| `/imgen access` | Open the role access manager |
 | `/imgen clearroles` | Clear all role restrictions (open access) |
 | `/imgen defaults` | Set default model, size, and quality settings |
 
@@ -53,7 +52,7 @@ Create and edit images with OpenAI's GPT-Image models.
 
 4. **(Optional) Configure access control**:
    - By default, anyone can use image generation
-   - Use `/imgen addrole` to restrict access to specific roles with cooldowns
+   - Use `/imgen access` to restrict access to specific roles with cooldowns and model/size/quality limits
 
 ## Models
 
@@ -100,6 +99,8 @@ ImGen uses a role-based access system:
 - **Roles configured**: Only users with at least one allowed role can generate images
 - **Cooldowns**: Each role can have a cooldown (in seconds) between generations
   - If a user has multiple allowed roles, the shortest cooldown applies
+ - **Model/Size/Quality Access**: Each role can restrict which models, sizes, and quality levels are available
+    - If any restrictions are set for size or quality, `auto` is no longer available
 
 ## Logging
 

@@ -6,61 +6,64 @@ from datetime import datetime, timezone
 import discord
 from redbot.core.bot import Red
 
+from .common.constants import (
+    MODEL_LABELS,
+    QUALITY_LABELS,
+    SIZE_LABELS,
+    VALID_FORMATS,
+    VALID_MODELS,
+    VALID_QUALITIES,
+    VALID_SIZES,
+)
+from .common.models import RoleCooldown
+
 if t.TYPE_CHECKING:
     from .main import ImGen
 
 log = logging.getLogger("red.vrt.imgen.views")
 
-# Options for dropdowns
-SIZE_OPTIONS = [
-    discord.SelectOption(label="Auto", value="auto", default=True),
-    discord.SelectOption(label="1024x1024 (Square)", value="1024x1024"),
-    discord.SelectOption(label="1536x1024 (Landscape)", value="1536x1024"),
-    discord.SelectOption(label="1024x1536 (Portrait)", value="1024x1536"),
-]
 
-QUALITY_OPTIONS = [
-    discord.SelectOption(label="Auto", value="auto", default=True),
-    discord.SelectOption(label="Low", value="low"),
-    discord.SelectOption(label="Medium", value="medium"),
-    discord.SelectOption(label="High", value="high"),
-]
-
-MODEL_OPTIONS = [
-    discord.SelectOption(label="GPT Image 1.5", value="gpt-image-1.5", default=True),
-    discord.SelectOption(label="GPT Image 1 Mini", value="gpt-image-1-mini"),
-]
-
-
-def _make_model_options(default: str = "gpt-image-1.5") -> list[discord.SelectOption]:
+def _make_model_options(default: str, allowed_models: list[str]) -> list[discord.SelectOption]:
     """Create model options with the specified default."""
-    models = [
-        ("GPT Image 1.5", "gpt-image-1.5"),
-        ("GPT Image 1 Mini", "gpt-image-1-mini"),
+    return [
+        discord.SelectOption(
+            label=MODEL_LABELS.get(value, value),
+            value=value,
+            default=(value == default),
+        )
+        for value in allowed_models
     ]
-    return [discord.SelectOption(label=label, value=value, default=(value == default)) for label, value in models]
 
 
-def _make_size_options(default: str = "auto") -> list[discord.SelectOption]:
+def _make_size_options(default: str, allowed_sizes: list[str]) -> list[discord.SelectOption]:
     """Create size options with the specified default."""
-    sizes = [
-        ("Auto", "auto"),
-        ("1024x1024 (Square)", "1024x1024"),
-        ("1536x1024 (Landscape)", "1536x1024"),
-        ("1024x1536 (Portrait)", "1024x1536"),
+    return [
+        discord.SelectOption(
+            label=SIZE_LABELS.get(value, value),
+            value=value,
+            default=(value == default),
+        )
+        for value in allowed_sizes
     ]
-    return [discord.SelectOption(label=label, value=value, default=(value == default)) for label, value in sizes]
 
 
-def _make_quality_options(default: str = "auto") -> list[discord.SelectOption]:
+def _make_quality_options(default: str, allowed_qualities: list[str]) -> list[discord.SelectOption]:
     """Create quality options with the specified default."""
-    qualities = [
-        ("Auto", "auto"),
-        ("Low", "low"),
-        ("Medium", "medium"),
-        ("High", "high"),
+    return [
+        discord.SelectOption(
+            label=QUALITY_LABELS.get(value, value),
+            value=value,
+            default=(value == default),
+        )
+        for value in allowed_qualities
     ]
-    return [discord.SelectOption(label=label, value=value, default=(value == default)) for label, value in qualities]
+
+
+def _make_format_options(default: str = "png") -> list[discord.SelectOption]:
+    """Create output format options with the specified default."""
+    return [
+        discord.SelectOption(label=value.upper(), value=value, default=(value == default)) for value in VALID_FORMATS
+    ]
 
 
 class EditImageModal(discord.ui.Modal):
@@ -70,9 +73,13 @@ class EditImageModal(discord.ui.Modal):
         self,
         cog: "ImGen",
         reference_image_url: str,
+        allowed_models: list[str],
+        allowed_sizes: list[str],
+        allowed_qualities: list[str],
         default_model: str = "gpt-image-1.5",
         default_size: str = "auto",
         default_quality: str = "auto",
+        default_output_format: str = "png",
     ):
         super().__init__(title="Edit Image", timeout=300)
         self.cog = cog
@@ -90,24 +97,31 @@ class EditImageModal(discord.ui.Modal):
 
         model_select = discord.ui.Select(
             placeholder="Select model",
-            options=_make_model_options(default_model),
+            options=_make_model_options(default_model, allowed_models),
         )
         self.model_label = discord.ui.Label(text="Model", component=model_select)
         self.add_item(self.model_label)
 
         size_select = discord.ui.Select(
             placeholder="Select image size",
-            options=_make_size_options(default_size),
+            options=_make_size_options(default_size, allowed_sizes),
         )
         self.size_label = discord.ui.Label(text="Size", component=size_select)
         self.add_item(self.size_label)
 
         quality_select = discord.ui.Select(
             placeholder="Select image quality",
-            options=_make_quality_options(default_quality),
+            options=_make_quality_options(default_quality, allowed_qualities),
         )
         self.quality_label = discord.ui.Label(text="Quality", component=quality_select)
         self.add_item(self.quality_label)
+
+        format_select = discord.ui.Select(
+            placeholder="Select output format",
+            options=_make_format_options(default_output_format),
+        )
+        self.format_label = discord.ui.Label(text="Output Format", component=format_select)
+        self.add_item(self.format_label)
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
         # Show visual feedback immediately
@@ -124,6 +138,8 @@ class EditImageModal(discord.ui.Modal):
         model = model_select.values[0] if model_select.values else "gpt-image-1.5"
         size = size_select.values[0] if size_select.values else "auto"
         quality = quality_select.values[0] if quality_select.values else "auto"
+        format_select = self.format_label.component
+        output_format = format_select.values[0] if format_select.values else "png"
 
         try:
             # Download the reference image with content type
@@ -167,6 +183,7 @@ class EditImageModal(discord.ui.Modal):
                 reference_images=reference_images,
                 size=size,
                 quality=quality,
+                output_format=output_format,
             )
         except Exception as e:
             log.exception("Error editing image", exc_info=e)
@@ -213,6 +230,17 @@ class EditImageButton(
             await interaction.response.send_message(reason, ephemeral=True)
             return
 
+        ok, reason, allowed_models, allowed_sizes, allowed_qualities, _access = cog._get_user_option_limits(
+            conf, interaction.user
+        )
+        if not ok:
+            await interaction.response.send_message(reason, ephemeral=True)
+            return
+
+        default_model = conf.default_model if conf.default_model in allowed_models else allowed_models[0]
+        default_size = conf.default_size if conf.default_size in allowed_sizes else allowed_sizes[0]
+        default_quality = conf.default_quality if conf.default_quality in allowed_qualities else allowed_qualities[0]
+
         # Get the image URL from the message embed
         message = interaction.message
         if not message or not message.embeds:
@@ -230,8 +258,13 @@ class EditImageButton(
         modal = EditImageModal(
             cog,
             reference_image_url=image_url,
-            default_model=conf.default_model,
-            default_size=conf.default_size,
+            allowed_models=allowed_models,
+            allowed_sizes=allowed_sizes,
+            allowed_qualities=allowed_qualities,
+            default_model=default_model,
+            default_size=default_size,
+            default_quality=default_quality,
+            default_output_format="png",
         )
         await interaction.response.send_modal(modal)
 
@@ -263,6 +296,260 @@ def create_image_embed(
     embed.set_footer(text=f"Requested by {author.display_name}", icon_url=author.display_avatar.url)
 
     return embed
+
+
+class RoleAccessModal(discord.ui.Modal):
+    """Modal for adding or updating role-based access."""
+
+    def __init__(self, view: "AccessConfigView"):
+        super().__init__(title="Add or Update Role Access", timeout=300)
+        self.view = view
+
+        role_select = discord.ui.RoleSelect(placeholder="Select role", min_values=1, max_values=1)
+        self.role_label = discord.ui.Label(text="Role", component=role_select)
+        self.add_item(self.role_label)
+
+        self.model_values = list(VALID_MODELS)
+        model_options = [discord.SelectOption(label="All models", value="__all__")]
+        model_options.extend(
+            [discord.SelectOption(label=MODEL_LABELS.get(value, value), value=value) for value in self.model_values]
+        )
+        model_select = discord.ui.Select(
+            placeholder="Allowed models (leave empty for all)",
+            options=model_options,
+            min_values=1,
+            max_values=len(model_options),
+        )
+        self.model_label = discord.ui.Label(text="Models", component=model_select)
+        self.add_item(self.model_label)
+
+        size_values = [value for value in VALID_SIZES if value != "auto"]
+        self.size_values = size_values
+        size_options = [discord.SelectOption(label="All sizes (auto allowed)", value="__all__")]
+        size_options.extend(
+            [discord.SelectOption(label=SIZE_LABELS.get(value, value), value=value) for value in size_values]
+        )
+        size_select = discord.ui.Select(
+            placeholder="Allowed sizes (leave empty for all)",
+            options=size_options,
+            min_values=1,
+            max_values=len(size_options),
+        )
+        self.size_label = discord.ui.Label(text="Sizes", component=size_select)
+        self.add_item(self.size_label)
+
+        quality_values = [value for value in VALID_QUALITIES if value != "auto"]
+        self.quality_values = quality_values
+        quality_options = [discord.SelectOption(label="All qualities (auto allowed)", value="__all__")]
+        quality_options.extend(
+            [discord.SelectOption(label=QUALITY_LABELS.get(value, value), value=value) for value in quality_values]
+        )
+        quality_select = discord.ui.Select(
+            placeholder="Allowed qualities (leave empty for all)",
+            options=quality_options,
+            min_values=1,
+            max_values=len(quality_options),
+        )
+        self.quality_label = discord.ui.Label(text="Qualities", component=quality_select)
+        self.add_item(self.quality_label)
+
+        self.cooldown_input = discord.ui.TextInput(
+            label="Cooldown (seconds)",
+            placeholder="60",
+            default="60",
+            required=True,
+            min_length=1,
+            max_length=6,
+        )
+        self.add_item(self.cooldown_input)
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        role_select = self.role_label.component
+        model_select = self.model_label.component
+        size_select = self.size_label.component
+        quality_select = self.quality_label.component
+
+        role_value = role_select.values[0] if role_select.values else None
+        if role_value is None:
+            await interaction.response.send_message("You must select a role.", ephemeral=True)
+            return
+        if isinstance(role_value, discord.Role):
+            role = role_value
+            role_id = role.id
+        else:
+            try:
+                role_id = int(role_value)
+            except ValueError:
+                await interaction.response.send_message("Invalid role selection.", ephemeral=True)
+                return
+            role = interaction.guild.get_role(role_id)
+
+        try:
+            cooldown = int(self.cooldown_input.value.strip())
+        except ValueError:
+            await interaction.response.send_message("Cooldown must be a number.", ephemeral=True)
+            return
+
+        if cooldown < 0:
+            await interaction.response.send_message("Cooldown must be 0 or greater.", ephemeral=True)
+            return
+
+        conf = self.view.conf
+
+        def normalize(values: list[str], all_values: list[str]) -> list[str]:
+            if "__all__" in values:
+                return []
+            if set(values) == set(all_values):
+                return []
+            return values
+
+        conf.role_cooldowns[role_id] = RoleCooldown(
+            role_id=role_id,
+            cooldown_seconds=cooldown,
+            allowed_models=normalize(list(model_select.values), self.model_values),
+            allowed_sizes=normalize(list(size_select.values), self.size_values),
+            allowed_qualities=normalize(list(quality_select.values), self.quality_values),
+        )
+        await self.view.cog.save()
+
+        self.view.refresh()
+        await interaction.response.edit_message(view=self.view)
+        role_mention = role.mention if role else f"<@&{role_id}>"
+        await interaction.followup.send(
+            f"✅ Updated access for {role_mention}.",
+            ephemeral=True,
+        )
+
+
+class RemoveRoleAccessModal(discord.ui.Modal):
+    """Modal for removing role-based access."""
+
+    def __init__(self, view: "AccessConfigView"):
+        super().__init__(title="Remove Role Access", timeout=300)
+        self.view = view
+
+        role_select = discord.ui.RoleSelect(placeholder="Select role", min_values=1, max_values=1)
+        self.role_label = discord.ui.Label(text="Role", component=role_select)
+        self.add_item(self.role_label)
+
+    async def on_submit(self, interaction: discord.Interaction) -> None:
+        role_select = self.role_label.component
+        role_value = role_select.values[0] if role_select.values else None
+        if role_value is None:
+            await interaction.response.send_message("You must select a role.", ephemeral=True)
+            return
+        if isinstance(role_value, discord.Role):
+            role = role_value
+            role_id = role.id
+        else:
+            try:
+                role_id = int(role_value)
+            except ValueError:
+                await interaction.response.send_message("Invalid role selection.", ephemeral=True)
+                return
+            role = interaction.guild.get_role(role_id)
+
+        conf = self.view.conf
+        if role_id not in conf.role_cooldowns:
+            await interaction.response.send_message("That role is not configured.", ephemeral=True)
+            return
+
+        del conf.role_cooldowns[role_id]
+        await self.view.cog.save()
+
+        self.view.refresh()
+        await interaction.response.edit_message(view=self.view)
+        role_mention = role.mention if role else f"<@&{role_id}>"
+        await interaction.followup.send(
+            f"✅ Removed access for {role_mention}.",
+            ephemeral=True,
+        )
+
+
+class AccessConfigView(discord.ui.LayoutView):
+    row = discord.ui.ActionRow()
+
+    def __init__(self, cog: "ImGen", guild: discord.Guild):
+        super().__init__(timeout=600)
+        self.cog = cog
+        self.guild = guild
+        self.conf = cog.db.get_conf(guild)
+
+        header = discord.ui.TextDisplay("# ImGen Role Access")
+        self.access_text = discord.ui.TextDisplay(self._build_access_text())
+        help_text = discord.ui.TextDisplay("-# Use the buttons below to add, update, or remove role access rules.")
+
+        container = discord.ui.Container(
+            header,
+            discord.ui.Separator(spacing=discord.SeparatorSpacing.small),
+            self.access_text,
+            discord.ui.Separator(spacing=discord.SeparatorSpacing.small),
+            help_text,
+            accent_color=discord.Color.blurple(),
+        )
+        self.add_item(container)
+
+        self.remove_item(self.row)
+        self.add_item(self.row)
+
+    def _build_access_text(self) -> str:
+        if not self.conf.role_cooldowns:
+            return "## Role Access\n-# Open access. Add a role to restrict usage."
+
+        lines = ["## Role Access"]
+        roles: list[tuple[discord.Role, RoleCooldown]] = []
+        for role_id, rc in self.conf.role_cooldowns.items():
+            role = self.guild.get_role(role_id)
+            if role:
+                roles.append((role, rc))
+
+        if not roles:
+            return "## Role Access\n-# Roles configured but not found in this guild."
+
+        roles.sort(key=lambda item: item[0].position, reverse=True)
+        for role, rc in roles:
+            cooldown_txt = "No cooldown" if rc.cooldown_seconds <= 0 else f"{rc.cooldown_seconds}s cooldown"
+            models_txt = (
+                "All models"
+                if not rc.allowed_models
+                else ", ".join(MODEL_LABELS.get(value, value) for value in rc.allowed_models)
+            )
+            sizes_txt = (
+                "All sizes (auto allowed)"
+                if not rc.allowed_sizes
+                else ", ".join(SIZE_LABELS.get(value, value) for value in rc.allowed_sizes)
+            )
+            qualities_txt = (
+                "All qualities (auto allowed)"
+                if not rc.allowed_qualities
+                else ", ".join(QUALITY_LABELS.get(value, value) for value in rc.allowed_qualities)
+            )
+
+            lines.append(
+                f"- {role.mention}: {cooldown_txt}\n"
+                f"  - Models: {models_txt}\n"
+                f"  - Sizes: {sizes_txt}\n"
+                f"  - Qualities: {qualities_txt}"
+            )
+
+        return "\n".join(lines)
+
+    def refresh(self) -> None:
+        self.access_text.content = self._build_access_text()
+
+    @row.button(label="Add/Update", style=discord.ButtonStyle.primary, emoji="➕")
+    async def add_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        await interaction.response.send_modal(RoleAccessModal(self))
+
+    @row.button(label="Remove", style=discord.ButtonStyle.danger, emoji="🗑️")
+    async def remove_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        await interaction.response.send_modal(RemoveRoleAccessModal(self))
+
+    @row.button(label="Close", style=discord.ButtonStyle.secondary, emoji="✅")
+    async def close_button(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        self.stop()
+        await interaction.response.edit_message(view=self)
+        await interaction.delete_original_response()
 
 
 class SetApiKeyModal(discord.ui.Modal):
