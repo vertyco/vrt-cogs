@@ -969,7 +969,7 @@ class GuildEmojiBackup(Base):
 class GuildStickerBackup(Base):
     id: int
     name: str
-    description: str
+    description: str | None = None
     emoji: str
     image: str  # base64 encoded image
     extension: str = "png"
