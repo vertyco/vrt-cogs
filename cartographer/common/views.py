@@ -10,7 +10,7 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box, humanize_timedelta, text_to_file
 
 from .formatting import backup_str, humanize_size
-from .models import DB, GuildSettings
+from .models import DB, GuildSettings, RestoreOptions
 from .serializers import GuildBackup
 
 log = logging.getLogger("red.vrt.cartographer.views")
@@ -24,6 +24,285 @@ e_right10 = "\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE}"
 e_restore = "\N{ANTICLOCKWISE DOWNWARDS AND UPWARDS OPEN CIRCLE ARROWS}"
 e_search = "\N{LEFT-POINTING MAGNIFYING GLASS}"
 e_delete = "\N{WASTEBASKET}\N{VARIATION SELECTOR-16}"
+
+
+# ------------------- RESTORE OPTIONS VIEW -------------------
+
+
+class RestoreSelect(discord.ui.Select):
+    """Select menu for choosing what to restore and behavior options."""
+
+    def __init__(self, options_model: RestoreOptions, backup: GuildBackup):
+        self.options_model = options_model
+        self.backup = backup
+
+        options = [
+            discord.SelectOption(
+                label=_("Server Settings"),
+                value="server_settings",
+                description=_("Name, icon, banner, verification, etc."),
+                default=options_model.server_settings,
+            ),
+            discord.SelectOption(
+                label=_("Roles ({})").format(len(backup.roles)),
+                value="roles",
+                description=_("Role definitions and permissions"),
+                default=options_model.roles,
+            ),
+            discord.SelectOption(
+                label=_("Emojis ({})").format(len(backup.emojis)),
+                value="emojis",
+                description=_("Custom emojis"),
+                default=options_model.emojis,
+            ),
+            discord.SelectOption(
+                label=_("Stickers ({})").format(len(backup.stickers)),
+                value="stickers",
+                description=_("Custom stickers"),
+                default=options_model.stickers,
+            ),
+            discord.SelectOption(
+                label=_("Categories ({})").format(len(backup.categories)),
+                value="categories",
+                description=_("Category channels"),
+                default=options_model.categories,
+            ),
+            discord.SelectOption(
+                label=_("Text Channels ({})").format(len(backup.text_channels)),
+                value="text_channels",
+                description=_("Text channels"),
+                default=options_model.text_channels,
+            ),
+            discord.SelectOption(
+                label=_("Voice Channels ({})").format(len(backup.voice_channels)),
+                value="voice_channels",
+                description=_("Voice channels"),
+                default=options_model.voice_channels,
+            ),
+            discord.SelectOption(
+                label=_("Forum Channels ({})").format(len(backup.forums)),
+                value="forums",
+                description=_("Forum channels"),
+                default=options_model.forums,
+            ),
+            discord.SelectOption(
+                label=_("Bans ({})").format(len(backup.bans)),
+                value="bans",
+                description=_("User bans"),
+                default=options_model.bans,
+            ),
+            discord.SelectOption(
+                label=_("Restore Member Roles ({} members)").format(len(backup.members)),
+                value="restore_member_roles",
+                description=_("Assign saved roles to members"),
+                default=options_model.restore_member_roles,
+            ),
+            discord.SelectOption(
+                label=_("Delete Unmatched Items"),
+                value="delete_unmatched",
+                description=_("⚠️ Remove items not in backup"),
+                default=options_model.delete_unmatched,
+                emoji="⚠️",
+            ),
+        ]
+        super().__init__(
+            placeholder=_("Select what to restore..."),
+            min_values=0,
+            max_values=len(options),
+            options=options,
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        # Reset all to False, then enable selected ones
+        self.options_model.server_settings = "server_settings" in self.values
+        self.options_model.roles = "roles" in self.values
+        self.options_model.emojis = "emojis" in self.values
+        self.options_model.stickers = "stickers" in self.values
+        self.options_model.categories = "categories" in self.values
+        self.options_model.text_channels = "text_channels" in self.values
+        self.options_model.voice_channels = "voice_channels" in self.values
+        self.options_model.forums = "forums" in self.values
+        self.options_model.bans = "bans" in self.values
+        self.options_model.restore_member_roles = "restore_member_roles" in self.values
+        self.options_model.delete_unmatched = "delete_unmatched" in self.values
+
+        # Update the defaults for the select
+        for option in self.options:
+            option.default = option.value in self.values
+
+        await interaction.response.edit_message(embed=self.view.get_embed(), view=self.view)
+
+
+class RestoreOptionsView(discord.ui.View):
+    """View for selecting granular restore options."""
+
+    def __init__(
+        self,
+        author: discord.Member,
+        backup: GuildBackup,
+        guild: discord.Guild,
+    ):
+        super().__init__(timeout=300)
+        self.author = author
+        self.backup = backup
+        self.guild = guild
+        self.options = RestoreOptions()
+        self.confirmed: bool = False
+
+        # Add the select menu
+        self.restore_select = RestoreSelect(self.options, backup)
+        self.add_item(self.restore_select)
+
+    def get_embed(self) -> discord.Embed:
+        embed = discord.Embed(
+            title=_("Restore Options"),
+            description=_("Configure what you want to restore from the backup **{}**").format(self.backup.name),
+            color=discord.Color.blue(),
+        )
+        embed.add_field(
+            name=_("Selected Options"),
+            value=self.options.summary(),
+            inline=False,
+        )
+        if self.options.delete_unmatched:
+            embed.add_field(
+                name=_("⚠️ Warning"),
+                value=_(
+                    "**Delete Unmatched Items** is enabled!\n"
+                    "This will remove roles, channels, emojis, and stickers that are not in the backup."
+                ),
+                inline=False,
+            )
+        embed.set_footer(text=_("Click Confirm to start the restore"))
+        return embed
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.author.id:
+            await interaction.response.send_message(_("This isn't your menu!"), ephemeral=True)
+            return False
+        return True
+
+    @discord.ui.button(label="Confirm", style=discord.ButtonStyle.success, row=2)
+    async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # Check if at least something is selected
+        has_selection = any(
+            [
+                self.options.server_settings,
+                self.options.roles,
+                self.options.emojis,
+                self.options.stickers,
+                self.options.categories,
+                self.options.text_channels,
+                self.options.voice_channels,
+                self.options.forums,
+                self.options.bans,
+                self.options.restore_member_roles,
+            ]
+        )
+        if not has_selection:
+            await interaction.response.send_message(
+                _("Please select at least one thing to restore!"),
+                ephemeral=True,
+            )
+            return
+
+        # Extra confirmation if delete_unmatched is enabled
+        if self.options.delete_unmatched:
+            confirm_view = DeleteUnmatchedConfirm(interaction.user)
+            await interaction.response.send_message(
+                _(
+                    "⚠️ **WARNING: Delete Unmatched Items is ENABLED!** ⚠️\n\n"
+                    "This will **permanently delete** any roles, channels, emojis, and stickers "
+                    "that are not in the backup.\n\n"
+                    "**This action cannot be undone!**\n\n"
+                    "Are you absolutely sure you want to continue?"
+                ),
+                view=confirm_view,
+                ephemeral=True,
+            )
+            await confirm_view.wait()
+            if not confirm_view.confirmed:
+                return
+
+        self.confirmed = True
+        if not interaction.response.is_done():
+            await interaction.response.defer()
+        self.stop()
+
+    @discord.ui.button(label="Select All", style=discord.ButtonStyle.secondary, row=2)
+    async def select_all(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.options.server_settings = True
+        self.options.roles = True
+        self.options.emojis = True
+        self.options.stickers = True
+        self.options.categories = True
+        self.options.text_channels = True
+        self.options.voice_channels = True
+        self.options.forums = True
+        self.options.bans = True
+        self.options.restore_member_roles = True
+        # Update select menu defaults (don't auto-enable delete_unmatched for safety)
+        for option in self.restore_select.options:
+            option.default = option.value != "delete_unmatched"
+        await interaction.response.edit_message(embed=self.get_embed(), view=self)
+
+    @discord.ui.button(label="Deselect All", style=discord.ButtonStyle.secondary, row=2)
+    async def deselect_all(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.options.server_settings = False
+        self.options.roles = False
+        self.options.emojis = False
+        self.options.stickers = False
+        self.options.categories = False
+        self.options.text_channels = False
+        self.options.voice_channels = False
+        self.options.forums = False
+        self.options.bans = False
+        self.options.restore_member_roles = False
+        self.options.delete_unmatched = False
+        # Update select menu defaults
+        for option in self.restore_select.options:
+            option.default = False
+        await interaction.response.edit_message(embed=self.get_embed(), view=self)
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, row=2)
+    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.confirmed = False
+        await interaction.response.edit_message(
+            content=_("Restore cancelled."),
+            embed=None,
+            view=None,
+        )
+        self.stop()
+
+
+# ------------------- OTHER MODALS/VIEWS -------------------
+
+
+class DeleteUnmatchedConfirm(discord.ui.View):
+    """Extra confirmation view for delete_unmatched option."""
+
+    def __init__(self, author: discord.Member | discord.User):
+        super().__init__(timeout=60)
+        self.author = author
+        self.confirmed: bool = False
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.author.id:
+            await interaction.response.send_message(_("This isn't your menu!"), ephemeral=True)
+            return False
+        return True
+
+    @discord.ui.button(label="Yes, Delete Unmatched Items", style=discord.ButtonStyle.danger)
+    async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.confirmed = True
+        await interaction.response.edit_message(content=_("Proceeding with restore..."), view=None)
+        self.stop()
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.secondary)
+    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.confirmed = False
+        await interaction.response.edit_message(content=_("Restore cancelled."), view=None)
+        self.stop()
 
 
 class IntModal(discord.ui.Modal):
@@ -91,10 +370,13 @@ class BackupMenu(discord.ui.View):
         self.ctx = ctx
         self.db = db
         self.backup_dir = backup_dir
+        self.backup_dir.mkdir(parents=True, exist_ok=True)
         self.backups: list[Path] = sorted(self.backup_dir.iterdir(), key=lambda x: x.stat().st_ctime)
 
         self.guild = ctx.guild
         self.conf: GuildSettings = self.db.get_conf(self.guild)
+        # Track which guild's backups we're viewing (may differ from self.guild after switching)
+        self.viewing_guild_id: int = ctx.guild.id
 
         self.message: discord.Message = None
         self.page = 0
@@ -109,6 +391,7 @@ class BackupMenu(discord.ui.View):
             "- Switch Servers: 🔍\n"
             "- Set AutoBackup Interval: ⌛\n"
             "- Delete Backup: 🗑️\n"
+            "- Download Backup: 📤\n"
             "- Print Details: ℹ️\n"
         )
         s_name = _("Settings")
@@ -134,22 +417,31 @@ class BackupMenu(discord.ui.View):
             self.db.backup_stickers,
         )
 
+        self.backup_dir.mkdir(parents=True, exist_ok=True)
         self.backups: list[Path] = sorted(self.backup_dir.iterdir(), key=lambda x: x.stat().st_ctime)
+
+        # Show which guild's backups we're viewing if different from current
+        viewing_note = ""
+        if self.viewing_guild_id != self.guild.id:
+            viewing_guild = self.ctx.bot.get_guild(self.viewing_guild_id)
+            viewing_name = viewing_guild.name if viewing_guild else str(self.viewing_guild_id)
+            viewing_note = _("\n-# Viewing backups from: **{}**").format(viewing_name)
 
         if self.backups:
             self.page = self.page % len(self.backups)
             file: Path = self.backups[self.page]
-            txt = _("## {}\n`Size:    `{}\n`Created: `{}\n").format(
+            txt = _("## {}\n`Size:    `{}\n`Created: `{}\n{}").format(
                 file.stem,
                 humanize_size(file.stat().st_size),
                 f"<t:{int(file.stat().st_ctime)}:f> (<t:{int(file.stat().st_ctime)}:R>)",
+                viewing_note,
             )
             embed = discord.Embed(title=title, description=txt, color=discord.Color.blue())
             embed.add_field(name=s_name, value=settings, inline=False)
             embed.add_field(name=c_name, value=controls, inline=False)
             embed.set_footer(text=_("Page {}").format(f"{self.page + 1}/{len(self.backups)}"))
         else:
-            txt = _("There are no backups for this server yet!")
+            txt = _("There are no backups for this server yet!{}").format(viewing_note)
             embed = discord.Embed(title=title, description=txt, color=discord.Color.blue())
             embed.add_field(name=s_name, value=settings, inline=False)
             embed.add_field(name=c_name, value=controls, inline=False)
@@ -261,27 +553,46 @@ class BackupMenu(discord.ui.View):
             txt = _("No backups to restore!")
             return await interaction.response.send_message(txt, ephemeral=True)
 
-        modal = Confirm()
-        await interaction.response.send_modal(modal)
-        await modal.wait()
-        if modal.confirm is None:
-            return
+        # If viewing another guild's backups, only the owner of that guild can restore from it
+        if self.viewing_guild_id != self.guild.id:
+            viewing_guild = self.ctx.bot.get_guild(self.viewing_guild_id)
+            if not viewing_guild:
+                txt = _("The server you're viewing backups for no longer exists!")
+                return await interaction.response.send_message(txt, ephemeral=True)
+            if viewing_guild.owner_id != interaction.user.id:
+                txt = _("Only the owner of **{}** can restore its backups to another server!").format(
+                    viewing_guild.name
+                )
+                return await interaction.response.send_message(txt, ephemeral=True)
 
-        if not modal.confirm:
-            txt = _("Restore has been cancelled!")
-            return await interaction.followup.send(txt, ephemeral=True)
-
+        # Load the backup first to show options
         self.page %= len(self.backups)
         backup_file = self.backups[self.page]
         backup: GuildBackup = await asyncio.to_thread(
             GuildBackup.model_validate_json, backup_file.read_text(encoding="utf-8")
         )
 
-        txt = _("Your backup is being restored!")
+        # Show the restore options view
+        options_view = RestoreOptionsView(
+            author=interaction.user,
+            backup=backup,
+            guild=self.guild,
+        )
+        await interaction.response.send_message(
+            embed=options_view.get_embed(),
+            view=options_view,
+            ephemeral=True,
+        )
+        await options_view.wait()
+
+        if not options_view.confirmed:
+            return
+
+        txt = _("Your backup is being restored with the selected options!")
         await interaction.followup.send(txt, ephemeral=True)
 
         async with self.ctx.typing():
-            results = await backup.restore(self.guild, interaction.channel)
+            results = await backup.restore(self.guild, interaction.channel, options_view.options)
             if results:
                 txt = _("The following errors occurred while restoring the backup")
                 await interaction.channel.send(txt, file=text_to_file(results, "restore_results.txt"))
@@ -304,14 +615,21 @@ class BackupMenu(discord.ui.View):
         if not guild_member.guild_permissions.administrator:
             txt = _("You can only switch to servers that you are an administrator of!")
             return await interaction.followup.send(txt, ephemeral=True)
-        self.backup_dir = self.backup_dir.parent / modal.entry
-        # self.conf = self.db.get_conf(guild)
+        # Update to view the other guild's backups
+        self.backup_dir = self.backup_dir.parent / str(modal.entry)
+        self.viewing_guild_id = guild.id
+        self.conf = self.db.get_conf(guild)
+        self.page = 0  # Reset to first page
         await self.message.edit(embed=await self.get_page())
 
     @discord.ui.button(style=discord.ButtonStyle.success, emoji="\N{HOURGLASS}", row=1)
     async def interval(self, interaction: discord.Interaction, button: discord.Button):
         if not self.db.allow_auto_backups:
             txt = _("Auto backups have been disabled by the bot owner!")
+            return await interaction.response.send_message(txt, ephemeral=True)
+        # Can only modify settings for the current server
+        if self.viewing_guild_id != self.guild.id:
+            txt = _("You can only modify auto-backup settings for the server you're currently in!")
             return await interaction.response.send_message(txt, ephemeral=True)
         modal = IntModal(_("Auto Backup Interval"), _("Interval Hours"), _("Hours in-between backups"))
         await interaction.response.send_modal(modal)
@@ -321,6 +639,7 @@ class BackupMenu(discord.ui.View):
         self.conf.auto_backup_interval_hours = modal.entry
         txt = _("Auto-backup interval hours has been set to {}").format(modal.entry)
         await interaction.followup.send(txt, ephemeral=True)
+        await self.message.edit(embed=await self.get_page())
 
     @discord.ui.button(style=discord.ButtonStyle.secondary, row=2)
     async def close(self, interaction: discord.Interaction, button: discord.Button):
@@ -332,6 +651,10 @@ class BackupMenu(discord.ui.View):
     async def delete(self, interaction: discord.Interaction, button: discord.Button):
         if not self.backups:
             txt = _("No backups to delete!")
+            return await interaction.response.send_message(txt, ephemeral=True)
+        # Can only delete backups for the current server
+        if self.viewing_guild_id != self.guild.id:
+            txt = _("You can only delete backups for the server you're currently in!")
             return await interaction.response.send_message(txt, ephemeral=True)
 
         backup_file = self.backups[self.page]
@@ -346,13 +669,31 @@ class BackupMenu(discord.ui.View):
         await interaction.response.send_message(txt, ephemeral=True, delete_after=30)
         await self.message.edit(embed=await self.get_page())
 
+    @discord.ui.button(style=discord.ButtonStyle.secondary, emoji="📤", row=2)
+    async def download(self, interaction: discord.Interaction, button: discord.Button):
+        """Download the backup file"""
+        if not self.backups:
+            txt = _("No backups to download!")
+            return await interaction.response.send_message(txt, ephemeral=True)
+        # Can only download backups for the current server
+        if self.viewing_guild_id != self.guild.id:
+            txt = _("You can only download backups for the server you're currently in!")
+            return await interaction.response.send_message(txt, ephemeral=True)
+        await interaction.response.defer(ephemeral=True)
+        backup_file = self.backups[self.page]
+        await interaction.followup.send(
+            _("Here is your backup file:"),
+            file=discord.File(backup_file, filename=backup_file.name),
+            ephemeral=True,
+        )
+
     @discord.ui.button(style=discord.ButtonStyle.secondary, emoji="ℹ️", row=2)
     async def print_details(self, interaction: discord.Interaction, button: discord.Button):
         """Load the backup and show details"""
         if not self.backups:
             txt = _("No backups to get info for!")
             return await interaction.response.send_message(txt, ephemeral=True)
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
         backup_file = self.backups[self.page]
         txt = await asyncio.to_thread(backup_str, backup_file)
         await interaction.followup.send(txt, ephemeral=True)

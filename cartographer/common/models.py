@@ -17,6 +17,59 @@ log = logging.getLogger("red.vrt.cartographer.models")
 _ = Translator("Cartographer", __file__)
 
 
+class RestoreOptions(Base):
+    """Options for granular restore control."""
+
+    # Category toggles - what to restore
+    server_settings: bool = True  # name, description, icon, banner, splash, verification, etc.
+    roles: bool = True
+    emojis: bool = True
+    stickers: bool = True
+    categories: bool = True
+    text_channels: bool = True
+    voice_channels: bool = True
+    forums: bool = True
+    bans: bool = True
+
+    # Behavior options
+    restore_member_roles: bool = True  # Whether to restore role assignments to members
+    delete_unmatched: bool = False  # Whether to delete items not in backup (destructive)
+
+    def summary(self) -> str:
+        """Return a summary of what will be restored."""
+        lines = []
+        if self.server_settings:
+            lines.append(_("✅ Server Settings"))
+        if self.roles:
+            lines.append(_("✅ Roles"))
+        if self.emojis:
+            lines.append(_("✅ Emojis"))
+        if self.stickers:
+            lines.append(_("✅ Stickers"))
+        if self.categories:
+            lines.append(_("✅ Categories"))
+        if self.text_channels:
+            lines.append(_("✅ Text Channels"))
+        if self.voice_channels:
+            lines.append(_("✅ Voice Channels"))
+        if self.forums:
+            lines.append(_("✅ Forum Channels"))
+        if self.bans:
+            lines.append(_("✅ Bans"))
+
+        if self.restore_member_roles:
+            lines.append(_("✅ Member Role Assignments"))
+        else:
+            lines.append(_("❌ Member Role Assignments"))
+
+        if self.delete_unmatched:
+            lines.append(_("⚠️ Delete items not in backup"))
+        else:
+            lines.append(_("➕ Additive restore (keep existing items)"))
+
+        return "\n".join(lines)
+
+
 class GuildSettings(Base):
     auto_backup_interval_hours: int = 0
     last_backup: datetime = Field(default_factory=lambda: datetime.now().astimezone() - timedelta(days=999))
