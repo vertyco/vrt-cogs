@@ -182,7 +182,7 @@ class User(MixinMeta):
 
         profile = conf.get_profile(user)
         new_user_txt = None
-        if user.id == ctx.author.id and profile.show_tutorial:
+        if user.id == ctx.author.id and profile.show_tutorial and conf.show_profile_welcome:
             # New user, tell them about how they can customize their profile
             new_user_txt = _(
                 "Welcome to LevelUp!\n"

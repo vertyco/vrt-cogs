@@ -232,10 +232,11 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         txt = _(
             "**Main**\n"
-            "`System Enabled:  `{}\n"
-            "`Profile Type:    `{}\n"
-            "`Style Override:  `{}\n"
-            "`Include Balance: `{}\n"
+            "`System Enabled:    `{}\n"
+            "`Profile Type:      `{}\n"
+            "`Style Override:    `{}\n"
+            "`Include Balance:   `{}\n"
+            "`Profile Welcome:   `{}\n"
             "**Messages**\n"
             "`Message XP:     `{}\n"
             "`Min Msg Length: `{}\n"
@@ -267,6 +268,7 @@ class Admin(MixinMeta):
             _("Embeds") if conf.use_embeds else _("Images"),
             str(conf.style_override).title(),
             _("Yes") if conf.showbal else _("No"),
+            _("Yes") if conf.show_profile_welcome else _("No"),
             f"{conf.xp[0]} - {conf.xp[1]}",
             conf.min_length,
             utils.humanize_delta(conf.cooldown),
@@ -449,6 +451,20 @@ class Admin(MixinMeta):
         conf.enabled = not conf.enabled
         self.save()
         await ctx.send(_("LevelUp has been {}").format(status))
+
+    @levelset.command(name="profilewelcome")
+    async def toggle_profile_welcome(self, ctx: commands.Context):
+        """
+        Toggle the profile welcome message
+        
+        When enabled, users will see a welcome message with instructions the first time they run the profile command.
+        When disabled, the welcome message will not be shown.
+        """
+        conf = self.db.get_conf(ctx.guild)
+        status = _("**Disabled**") if conf.show_profile_welcome else _("**Enabled**")
+        conf.show_profile_welcome = not conf.show_profile_welcome
+        self.save()
+        await ctx.send(_("Profile welcome message has been {}").format(status))
 
     @levelset.command(name="rolegroup")
     async def add_remove_role_group(self, ctx: commands.Context, role: t.Union[discord.Role, int]):
