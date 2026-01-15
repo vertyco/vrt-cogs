@@ -45,7 +45,7 @@ class Cartographer(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.1.8"
+    __version__ = "1.1.9"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -159,7 +159,7 @@ class Cartographer(commands.Cog):
         - All server verification/security settings
         """
         if ctx.guild.id in self.db.ignored_guilds:
-            txt = _("This server is in the ingored list!")
+            txt = _("This server is in the ignored list!")
             return await ctx.send(txt)
         if self.db.allowed_guilds and ctx.guild.id not in self.db.allowed_guilds:
             txt = _("This server is not in the allowed list!")
@@ -208,7 +208,7 @@ class Cartographer(commands.Cog):
         limit: How many messages to backup per channel (0 for None)
         """
         if ctx.guild.id in self.db.ignored_guilds:
-            txt = _("This server is in the ingored list!")
+            txt = _("This server is in the ignored list!")
             return await ctx.send(txt)
         if self.db.allowed_guilds and ctx.guild.id not in self.db.allowed_guilds:
             txt = _("This server is not in the allowed list!")
@@ -235,7 +235,7 @@ class Cartographer(commands.Cog):
         Restore the latest backup for this server
         """
         if ctx.guild.id in self.db.ignored_guilds:
-            txt = _("This server is in the ingored list!")
+            txt = _("This server is in the ignored list!")
             return await ctx.send(txt)
         if self.db.allowed_guilds and ctx.guild.id not in self.db.allowed_guilds:
             txt = _("This server is not in the allowed list!")

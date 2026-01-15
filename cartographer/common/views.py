@@ -42,7 +42,7 @@ class IntModal(discord.ui.Modal):
         if not self.field.value.isdigit():
             txt = _("That is not a number!")
             return await interaction.response.send_message(txt, ephemeral=True)
-        self.entry = self.field.value
+        self.entry = int(self.field.value)
         await interaction.response.defer()
         self.stop()
 
@@ -139,7 +139,7 @@ class BackupMenu(discord.ui.View):
         if self.backups:
             self.page = self.page % len(self.backups)
             file: Path = self.backups[self.page]
-            txt = _("## {}\n" "`Size:    `{}\n" "`Created: `{}\n").format(
+            txt = _("## {}\n`Size:    `{}\n`Created: `{}\n").format(
                 file.stem,
                 humanize_size(file.stat().st_size),
                 f"<t:{int(file.stat().st_ctime)}:f> (<t:{int(file.stat().st_ctime)}:R>)",
@@ -337,6 +337,10 @@ class BackupMenu(discord.ui.View):
         backup_file = self.backups[self.page]
         backup_file.unlink()
         del self.backups[self.page]
+
+        # Adjust page index if we deleted the last backup in the list
+        if self.backups and self.page >= len(self.backups):
+            self.page = len(self.backups) - 1
 
         txt = _("Backup deleted!")
         await interaction.response.send_message(txt, ephemeral=True, delete_after=30)
