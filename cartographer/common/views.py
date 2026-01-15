@@ -104,10 +104,17 @@ class RestoreSelect(discord.ui.Select):
                 default=options_model.delete_unmatched,
                 emoji="⚠️",
             ),
+            discord.SelectOption(
+                label=_("Only Restore Missing"),
+                value="only_missing",
+                description=_("Skip existing items, only recreate deleted ones"),
+                default=options_model.only_missing,
+                emoji="🆕",
+            ),
         ]
         super().__init__(
             placeholder=_("Select what to restore..."),
-            min_values=0,
+            min_values=1,
             max_values=len(options),
             options=options,
         )
@@ -125,6 +132,7 @@ class RestoreSelect(discord.ui.Select):
         self.options_model.bans = "bans" in self.values
         self.options_model.restore_member_roles = "restore_member_roles" in self.values
         self.options_model.delete_unmatched = "delete_unmatched" in self.values
+        self.options_model.only_missing = "only_missing" in self.values
 
         # Update the defaults for the select
         for option in self.options:

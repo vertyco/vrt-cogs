@@ -34,6 +34,7 @@ class RestoreOptions(Base):
     # Behavior options
     restore_member_roles: bool = True  # Whether to restore role assignments to members
     delete_unmatched: bool = False  # Whether to delete items not in backup (destructive)
+    only_missing: bool = False  # Only restore items that don't exist, don't update existing ones
 
     def summary(self) -> str:
         """Return a summary of what will be restored."""
@@ -66,6 +67,9 @@ class RestoreOptions(Base):
             lines.append(_("⚠️ Delete items not in backup"))
         else:
             lines.append(_("➕ Additive restore (keep existing items)"))
+
+        if self.only_missing:
+            lines.append(_("🆕 Only restore missing items (skip existing)"))
 
         return "\n".join(lines)
 
