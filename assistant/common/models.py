@@ -318,7 +318,7 @@ class GuildSettings(AssistantBaseModel):
         for role in sorted_roles:
             if role.id in self.max_response_token_override:
                 return self.max_response_token_override[role.id]
-        return self.max_tokens
+        return self.max_response_tokens
 
     def get_user_max_retention(self, member: t.Optional[discord.Member] = None) -> int:
         if not member or not self.max_retention_role_override:

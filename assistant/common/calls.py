@@ -156,7 +156,7 @@ async def request_image_raw(
     size: t.Literal["1024x1024", "1792x1024", "1024x1792", "1024x1536", "1536x1024"] = "1024x1024",
     quality: t.Literal["standard", "hd", "low", "medium", "high"] = "standard",
     style: t.Optional[t.Literal["natural", "vivid"]] = "vivid",
-    model: t.Literal["dall-e-3", "gpt-image-1"] = "dall-e-3",
+    model: t.Literal["dall-e-3", "gpt-image-1.5"] = "dall-e-3",
     base_url: Optional[str] = None,
 ) -> Image:
     client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
@@ -173,12 +173,13 @@ async def request_image_raw(
         kwargs["quality"] = quality if quality in ["standard", "hd"] else "standard"
         kwargs["style"] = style
         kwargs["response_format"] = "b64_json"
-    elif model == "gpt-image-1":
+    elif model == "gpt-image-1.5":
         if quality in ["low", "medium", "high"]:
             kwargs["quality"] = quality
         else:
             kwargs["quality"] = "medium"
-        # gpt-image-1 doesn't support style parameter
+        kwargs["response_format"] = "b64_json"
+        # gpt-image-1.5 doesn't support style parameter
 
     response: ImagesResponse = await client.images.generate(**kwargs)
     images: list[Image] = response.data
@@ -188,14 +189,16 @@ async def request_image_raw(
 async def request_image_edit_raw(
     prompt: str,
     api_key: str,
-    images: t.List[str],  # list[data:image/jpeg;base64,...]
+    images: t.List[t.Tuple[str, t.Any, str]],  # list[(filename, BytesIO, mime_type)]
     base_url: Optional[str] = None,
 ) -> Image:
-    assert all(isinstance(image, bytes) for image in images), "All images must be bytes."
+    assert all(isinstance(image, tuple) and len(image) == 3 for image in images), (
+        "All images must be tuples of (filename, file_data, mime_type)."
+    )
     client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
 
     response: ImagesResponse = await client.images.edit(
-        model="gpt-image-1",
+        model="gpt-image-1.5",
         prompt=prompt,
         image=images,
     )

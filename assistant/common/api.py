@@ -607,7 +607,7 @@ class API(MixinMeta):
             )
         return embeds
 
-    async def get_embbedding_menu_embeds(self, conf: GuildSettings, place: int) -> List[discord.Embed]:
+    async def get_embedding_menu_embeds(self, conf: GuildSettings, place: int) -> List[discord.Embed]:
         embeddings = sorted(conf.embeddings.items(), key=lambda x: x[0])
         embeds = []
         pages = math.ceil(len(embeddings) / 5)

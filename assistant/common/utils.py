@@ -159,7 +159,7 @@ async def can_use(message: discord.Message, blacklist: list, respond: bool = Tru
 
 
 def embed_to_content(message: discord.Message) -> None:
-    if not message.embeds or message.content is not None:
+    if not message.embeds and not message.content:
         return
     extracted = ""
     embed = message.embeds[0]
@@ -216,9 +216,12 @@ def json_schema_invalid(schema: dict) -> str:
         if "type" not in schema["parameters"]:
             missing += "- `type` in **parameters**\n"
         if "properties" not in schema["parameters"]:
-            missing = "- `properties` in **parameters**\n"
+            missing += "- `properties` in **parameters**\n"
         if "required" in schema["parameters"].get("properties", []):
             missing += "- `required` key needs to be outside of properties!\n"
+        if "required" in schema["parameters"]:
+            if not isinstance(schema["parameters"]["required"], list):
+                missing += "- `required` must be a list in **parameters**\n"
     return missing
 
 
@@ -307,9 +310,11 @@ async def ensure_supports_vision(messages: list[dict], conf: GuildSettings, user
 async def purge_images(messages: list[dict]) -> bool:
     """Remove all images sourced from URLs from the message payload"""
     cleaned = False
-    for idx, message in enumerate(list(messages)):
-        if isinstance(message["content"], list):
-            for iidx, obj in enumerate(message["content"]):
+    for idx in range(len(messages) - 1, -1, -1):
+        message = messages[idx]
+        if isinstance(message.get("content"), list):
+            for iidx in range(len(message["content"]) - 1, -1, -1):
+                obj = message["content"][iidx]
                 if obj["type"] != "image_url":
                     continue
                 if "data:image/jpeg;base64" in obj["image_url"]["url"]:
