@@ -28,6 +28,7 @@
     "python-decouple",
     "python-dotenv",
     "psutil",
+    "rapidfuzz",
     "requests",
     "tenacity",
     "ujson",
