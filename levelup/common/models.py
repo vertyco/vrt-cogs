@@ -288,6 +288,7 @@ class GuildSettings(Base):
     autoremove: bool = False  # Remove previous role on level up
     style_override: t.Union[str, None] = None  # Override the profile style for this guild
     default_background: str = "default"  # Default background for all users in the guild
+    show_profile_welcome: bool = True  # Show welcome message when user first runs profile command
 
     # Messages
     xp: t.List[int] = [3, 6]  # Min/Max XP per message
