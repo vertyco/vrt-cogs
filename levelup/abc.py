@@ -27,6 +27,7 @@ class MixinMeta(ABC):
         # Cache
         self.db: DB
         self.lastmsg: t.Dict[int, t.Dict[int, float]]
+        self.msg_cache: t.Dict[int, t.Dict[int, t.List[str]]]  # guild_id -> user_id -> list of normalized messages
         self.voice_tracking: t.Dict[int, t.Dict[int, VoiceTracking]]
         self.profile_cache: t.Dict[int, t.Dict[int, t.Tuple[str, bytes]]]
         self.stars: t.Dict[int, t.Dict[int, datetime]]

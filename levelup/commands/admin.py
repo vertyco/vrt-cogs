@@ -230,6 +230,15 @@ class Admin(MixinMeta):
     async def view_settings(self, ctx: commands.Context):
         """View all LevelUP settings"""
         conf = self.db.get_conf(ctx.guild)
+        antispam_status = (
+            _("On ({}% sim, {} hist, {} ratio)").format(
+                conf.antispam.similarity_threshold,
+                conf.antispam.history_size,
+                conf.antispam.min_unique_ratio,
+            )
+            if conf.antispam.enabled
+            else _("Off")
+        )
         txt = _(
             "**Main**\n"
             "`System Enabled:    `{}\n"
@@ -242,6 +251,7 @@ class Admin(MixinMeta):
             "`Min Msg Length: `{}\n"
             "`Cooldown:       `{}\n"
             "`Command XP:     `{}\n"
+            "`Anti-Spam:      `{}\n"
             "**Voice**\n"
             "`Voice XP:         `{} per minute\n"
             "`Ignore Muted:     `{}\n"
@@ -273,6 +283,7 @@ class Admin(MixinMeta):
             conf.min_length,
             utils.humanize_delta(conf.cooldown),
             conf.command_xp,
+            antispam_status,
             humanize_number(conf.voicexp),
             conf.ignore_muted,
             conf.ignore_solo,
@@ -456,7 +467,7 @@ class Admin(MixinMeta):
     async def toggle_profile_welcome(self, ctx: commands.Context):
         """
         Toggle the profile welcome message
-        
+
         When enabled, users will see a welcome message with instructions the first time they run the profile command.
         When disabled, the welcome message will not be shown.
         """
@@ -1300,6 +1311,96 @@ class Admin(MixinMeta):
         conf.xp = [min_xp, max_xp]
         self.save()
         await ctx.send(_("Message XP range has been set to {} - {}").format(min_xp, max_xp))
+
+    @message_group.group(name="antispam")
+    async def antispam_group(self, ctx: commands.Context):
+        """
+        Anti-spam settings for message XP
+
+        These settings help prevent users from gaming the XP system by sending
+        repetitive or similar messages.
+        """
+
+    @antispam_group.command(name="view")
+    async def antispam_view(self, ctx: commands.Context):
+        """View the current anti-spam settings"""
+        conf = self.db.get_conf(ctx.guild)
+        antispam = conf.antispam
+        status = _("Enabled") if antispam.enabled else _("Disabled")
+        txt = _(
+            "## Anti-Spam Settings\n"
+            "- **Status**: {status}\n"
+            "- **Similarity Threshold**: {similarity}%\n"
+            "- **History Size**: {history} messages\n"
+            "- **Min Unique Word Ratio**: {ratio}\n\n"
+            "**What these mean:**\n"
+            "- **Similarity Threshold**: Messages that are this % similar to recent messages won't earn XP\n"
+            "- **History Size**: How many recent messages are checked for similarity\n"
+            "- **Min Unique Word Ratio**: Messages must have at least this ratio of unique words (0.0-1.0)"
+        ).format(
+            status=status,
+            similarity=antispam.similarity_threshold,
+            history=antispam.history_size,
+            ratio=antispam.min_unique_ratio,
+        )
+        await ctx.send(txt)
+
+    @antispam_group.command(name="toggle")
+    async def antispam_toggle(self, ctx: commands.Context):
+        """Toggle anti-spam measures on or off"""
+        conf = self.db.get_conf(ctx.guild)
+        conf.antispam.enabled = not conf.antispam.enabled
+        status = _("**Enabled**") if conf.antispam.enabled else _("**Disabled**")
+        self.save()
+        await ctx.send(_("Anti-spam has been {}").format(status))
+
+    @antispam_group.command(name="similarity")
+    async def antispam_similarity(self, ctx: commands.Context, threshold: int):
+        """
+        Set the similarity threshold for anti-spam (0-100)
+
+        Messages that are this % similar to recent messages won't earn XP.
+        Higher values are more strict (85 = 85% similar messages blocked).
+        Default is 85.
+        """
+        if not 0 <= threshold <= 100:
+            return await ctx.send(_("Threshold must be between 0 and 100"))
+        conf = self.db.get_conf(ctx.guild)
+        conf.antispam.similarity_threshold = threshold
+        self.save()
+        await ctx.send(_("Similarity threshold has been set to {}%").format(threshold))
+
+    @antispam_group.command(name="history")
+    async def antispam_history(self, ctx: commands.Context, size: commands.positive_int):
+        """
+        Set how many messages to remember for similarity checking
+
+        More messages = more thorough checking but slightly more memory usage.
+        Default is 5.
+        """
+        if size > 20:
+            return await ctx.send(_("History size cannot exceed 20 messages"))
+        conf = self.db.get_conf(ctx.guild)
+        conf.antispam.history_size = size
+        self.save()
+        await ctx.send(_("Anti-spam history size has been set to {} messages").format(size))
+
+    @antispam_group.command(name="uniqueratio")
+    async def antispam_unique_ratio(self, ctx: commands.Context, ratio: float):
+        """
+        Set the minimum unique word ratio (0.0-1.0)
+
+        Messages must have at least this ratio of unique words to total words.
+        Lower values are more lenient. Default is 0.4 (40% unique words).
+
+        Example: "hello hello hello world" has 2 unique words out of 4 total = 0.5 ratio
+        """
+        if not 0.0 <= ratio <= 1.0:
+            return await ctx.send(_("Ratio must be between 0.0 and 1.0"))
+        conf = self.db.get_conf(ctx.guild)
+        conf.antispam.min_unique_ratio = ratio
+        self.save()
+        await ctx.send(_("Minimum unique word ratio has been set to {}").format(ratio))
 
     @levelset.group(name="roles")
     async def level_roles(self, ctx: commands.Context):

@@ -212,6 +212,15 @@ class Prestige(Base):
     emoji_url: t.Union[str, None] = None
 
 
+class AntiSpam(Base):
+    """Anti-spam settings for message XP"""
+
+    enabled: bool = True  # Toggle anti-spam measures
+    similarity_threshold: int = 85  # 0-100, how similar messages can be (higher = more strict)
+    history_size: int = 5  # How many messages to remember for comparison
+    min_unique_ratio: float = 0.4  # Minimum ratio of unique words (0.0-1.0)
+
+
 class RoleBonus(Base):
     msg: t.Dict[int, t.List[int]] = {}  # Role_ID: [Min, Max]
     voice: t.Dict[int, t.List[int]] = {}  # Role_ID: [Min, Max]
@@ -295,6 +304,7 @@ class GuildSettings(Base):
     command_xp: bool = False  # Whether to give XP for using commands
     cooldown: int = 60  # Only gives XP every 60 seconds
     min_length: int = 0  # Minimum length of message to be considered eligible for XP gain
+    antispam: AntiSpam = AntiSpam()  # Anti-spam settings for message XP
 
     # command checks and cooldown based on level
     cmd_requirements: t.Dict[str, int] = {}  # command name -> level requirement

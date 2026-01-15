@@ -1,14 +1,86 @@
 import logging
 import random
+import re
+import unicodedata
 from time import perf_counter
 
 import discord
+from rapidfuzz import fuzz
 from redbot.core import commands
 
 from ..abc import MixinMeta
 from ..common import const
 
 log = logging.getLogger("red.vrt.levelup.listeners.messages")
+
+# Patterns for message normalization
+WHITESPACE_PATTERN = re.compile(r"\s+")
+REPEATED_CHARS_PATTERN = re.compile(r"(.)\1{2,}")  # 3+ repeated chars
+URL_PATTERN = re.compile(r"https?://\S+|www\.\S+")
+MENTION_PATTERN = re.compile(r"<[@#!&]?\d+>")
+
+
+def normalize_message(content: str) -> str:
+    """
+    Normalize a message for comparison by:
+    - Lowercasing
+    - Removing URLs, mentions, emojis
+    - Collapsing repeated characters
+    - Stripping extra whitespace
+    - Normalizing unicode
+    """
+    text = content.lower()
+    # Remove URLs
+    text = URL_PATTERN.sub("", text)
+    # Remove mentions
+    text = MENTION_PATTERN.sub("", text)
+    # Remove custom Discord emojis
+    text = const.EMOJI_PATTERN.sub("", text)
+    # Normalize unicode (é -> e, etc.)
+    text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
+    # Collapse repeated characters (hellooooo -> helo)
+    text = REPEATED_CHARS_PATTERN.sub(r"\1", text)
+    # Collapse whitespace
+    text = WHITESPACE_PATTERN.sub(" ", text).strip()
+    return text
+
+
+def get_unique_word_ratio(text: str) -> float:
+    """Calculate the ratio of unique words to total words"""
+    words = text.split()
+    if not words:
+        return 0.0
+    unique = set(words)
+    return len(unique) / len(words)
+
+
+def is_spam_message(
+    normalized: str,
+    history: list[str],
+    similarity_threshold: int,
+    min_unique_ratio: float,
+) -> bool:
+    """
+    Check if a message is spam based on:
+    1. Similarity to recent messages (using rapidfuzz)
+    2. Unique word ratio (low ratio = repetitive content)
+
+    Returns True if the message is considered spam.
+    """
+    # Check unique word ratio first (catches self-contained spam like repeated phrases)
+    if normalized and get_unique_word_ratio(normalized) < min_unique_ratio:
+        log.debug(f"Message failed unique word ratio check: {normalized[:50]}")
+        return True
+
+    # Check similarity against recent messages
+    for past_msg in history:
+        # Use token_set_ratio for better handling of word order variations
+        similarity = fuzz.token_set_ratio(normalized, past_msg)
+        if similarity >= similarity_threshold:
+            log.debug(f"Message too similar ({similarity}%) to recent message")
+            return True
+
+    return False
 
 
 class MessageListener(MixinMeta):
@@ -114,6 +186,30 @@ class MessageListener(MixinMeta):
 
         if not addxp:
             return
+
+        # Anti-spam checks
+        if conf.antispam.enabled:
+            normalized = normalize_message(message.content)
+            # Get or create the message cache for this guild/user
+            guild_cache = self.msg_cache.setdefault(message.guild.id, {})
+            user_history = guild_cache.setdefault(user_id, [])
+
+            # Check if message is spam
+            if is_spam_message(
+                normalized=normalized,
+                history=user_history,
+                similarity_threshold=conf.antispam.similarity_threshold,
+                min_unique_ratio=conf.antispam.min_unique_ratio,
+            ):
+                log.debug(f"Anti-spam: Blocked XP for {message.author.name} in {message.guild.name}")
+                return
+
+            # Add to history (maintain max size)
+            if normalized:  # Only add non-empty normalized messages
+                user_history.append(normalized)
+                # Trim history to configured size
+                while len(user_history) > conf.antispam.history_size:
+                    user_history.pop(0)
 
         self.lastmsg[message.guild.id][user_id] = now
 
