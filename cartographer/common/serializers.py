@@ -10,6 +10,7 @@ from time import perf_counter
 
 import aiohttp
 import discord
+from packaging.version import parse as parse_version
 from pydantic import VERSION, Field
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_timedelta
@@ -20,12 +21,14 @@ from tenacity import (
     wait_random_exponential,
 )
 
-if VERSION > "1.10.15":
+from . import Base
+
+PYDANTIC_V2 = parse_version(VERSION) >= parse_version("2.0.0")
+if PYDANTIC_V2:
     from pydantic import field_validator
 else:
     from pydantic import validator as field_validator
 
-from . import Base
 
 log = logging.getLogger("red.vrt.cartographer.serializers")
 _ = Translator("Cartographer", __file__)
@@ -164,7 +167,7 @@ class Member(Base):
 
         if member.nick != self.nick:
             log.info("Updating nickname for %s", member.display_name)
-            await member.edit(nick=self.nickname, reason=_("Restored from backup"))
+            await member.edit(nick=self.nick, reason=_("Restored from backup"))
 
         # Update the role IDs by closest match, becaue they should be restored by now
         for role in self.roles:
@@ -233,7 +236,7 @@ class Overwrites(Base):
             cls(
                 id=role_mem.id,
                 name=role_mem.name,
-                type=True if isinstance(role_mem, discord.Role) else False,
+                is_role=isinstance(role_mem, discord.Role),
                 values=perms._values,
             )
             for role_mem, perms in obj.overwrites.items()
@@ -266,7 +269,7 @@ class ChannelBase(Base):
 
     # v1.0.0 compatibility
     # Category used to be a string (name) instead of an object
-    if VERSION > "1.10.15":
+    if PYDANTIC_V2:
 
         @field_validator("category", mode="before", check_fields=False)
         def _validate_category(cls, v):
@@ -515,22 +518,25 @@ class TextChannel(ChannelBase):
 
             # Restore messages
             async def _restore_messages():
-                hook = await channel.create_webhook(
-                    name=_("Cartographer Restore"), reason=_("Restoring messages from backup")
-                )
-                for message in self.messages:
-                    embeds = await message.embed_objects()
-                    files = await message.attachment_objects()
-                    if not any([embeds, files, message.content]):
-                        continue
-                    await hook.send(
-                        content=message.content[:2000] if message.content else None,
-                        username=message.username,
-                        avatar_url=message.avatar_url,
-                        embeds=embeds,
-                        files=files,
+                try:
+                    hook = await channel.create_webhook(
+                        name=_("Cartographer Restore"), reason=_("Restoring messages from backup")
                     )
-                    await asyncio.sleep(1)
+                    for message in self.messages:
+                        embeds = await message.embed_objects()
+                        files = await message.attachment_objects()
+                        if not any([embeds, files, message.content]):
+                            continue
+                        await hook.send(
+                            content=message.content[:2000] if message.content else None,
+                            username=message.username,
+                            avatar_url=message.avatar_url,
+                            embeds=embeds,
+                            files=files,
+                        )
+                        await asyncio.sleep(1)
+                except Exception as e:
+                    log.exception("Failed to restore messages for channel %s", self.name, exc_info=e)
 
             if self.messages:
                 asyncio.create_task(_restore_messages())
@@ -788,11 +794,11 @@ class VoiceChannel(ChannelBase):
     async def restore(self, guild: discord.Guild, buffer: StringIO) -> discord.VoiceChannel:
         existing: discord.VoiceChannel | None = guild.get_channel(self.id)
         if not existing:
-            for channel in guild.forums:
+            for channel in guild.voice_channels:
                 if self.is_match(channel):
                     self.id = channel.id
                     existing = channel
-                    log.info("Updating ID for voice hannel %s", self.name)
+                    log.info("Updating ID for voice channel %s", self.name)
                     break
 
         if existing:
@@ -835,22 +841,25 @@ class VoiceChannel(ChannelBase):
 
             # Restore messages
             async def _restore_messages():
-                hook = await channel.create_webhook(
-                    name=_("Cartographer Restore"), reason=_("Restoring messages from backup")
-                )
-                for message in self.messages:
-                    embeds = await message.embed_objects()
-                    files = await message.attachment_objects()
-                    if not any([embeds, files, message.content]):
-                        continue
-                    await hook.send(
-                        content=message.content[:2000] if message.content else None,
-                        username=message.username,
-                        avatar_url=message.avatar_url,
-                        embeds=embeds,
-                        files=files,
+                try:
+                    hook = await channel.create_webhook(
+                        name=_("Cartographer Restore"), reason=_("Restoring messages from backup")
                     )
-                    await asyncio.sleep(1)
+                    for message in self.messages:
+                        embeds = await message.embed_objects()
+                        files = await message.attachment_objects()
+                        if not any([embeds, files, message.content]):
+                            continue
+                        await hook.send(
+                            content=message.content[:2000] if message.content else None,
+                            username=message.username,
+                            avatar_url=message.avatar_url,
+                            embeds=embeds,
+                            files=files,
+                        )
+                        await asyncio.sleep(1)
+                except Exception as e:
+                    log.exception("Failed to restore messages for voice channel %s", self.name, exc_info=e)
 
             if self.messages:
                 asyncio.create_task(_restore_messages())
@@ -1042,9 +1051,7 @@ class GuildBackup(Base):
                 else:
                     log.warning("Unknown channel type: %s", channel)
 
-        bans: list[BanBackup] = []
-        async for ban in guild.bans():
-            bans.append(BanBackup(user_id=ban.user.id, reason=ban.reason))
+        bans: list[BanBackup] = [BanBackup(user_id=ban.user.id, reason=ban.reason) async for ban in guild.bans()]
 
         return cls(
             id=guild.id,
@@ -1072,7 +1079,7 @@ class GuildBackup(Base):
             else None,
             explicit_content_filter=guild.explicit_content_filter.value,
             invites_disabled=guild.invites_paused(),
-            bans=[BanBackup(user_id=i.user.id, reason=i.reason) async for i in guild.bans()],
+            bans=bans,
             roles=[await Role.serialize(i) for i in guild.roles] if backup_roles else [],
             members=[await Member.serialize(i) for i in guild.members] if backup_members else [],
             categories=categories,
@@ -1261,7 +1268,7 @@ class GuildBackup(Base):
                     results.write(_("Emoji '{}' not restored due to limit\n").format(emoji.name))
                     continue
                 try:
-                    await emoji.restore(target_guild)
+                    await emoji.restore(target_guild, results)
                 except discord.HTTPException as e:
                     results.write(f"Error restoring emoji {emoji.name}: {e}\n")
 
