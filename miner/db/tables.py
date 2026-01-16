@@ -1,6 +1,5 @@
 import logging
 
-from discord.ext.commands.core import check
 from piccolo.columns import (
     Array,
     BigInt,
@@ -16,6 +15,7 @@ from piccolo.columns import (
 from piccolo.columns.defaults.timestamptz import TimestamptzNow
 from piccolo.table import Table, sort_table_classes
 from redbot.core import commands
+from redbot.core.commands import check
 
 log = logging.getLogger("red.vrt.miner.db.tables")
 

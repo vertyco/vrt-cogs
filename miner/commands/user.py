@@ -229,8 +229,14 @@ class User(MixinMeta):
         if balance < amount:
             return await ctx.send(f"You do not have enough {resource.title()} to transfer.", ephemeral=True)
 
-        await player.update_self({getattr(Player, resource): balance - amount})
-        await target.update_self({getattr(Player, resource): getattr(target, resource, 0) + amount})
+        # Re-fetch player to prevent race conditions and use atomic update
+        await player.refresh()
+        current_balance = getattr(player, resource, 0) or 0
+        if current_balance < amount:
+            return await ctx.send(f"You no longer have enough {resource.title()} to transfer.", ephemeral=True)
+
+        await player.update_self({getattr(Player, resource): getattr(Player, resource) - amount})
+        await target.update_self({getattr(Player, resource): getattr(Player, resource) + amount})
         await ctx.send(f"Successfully transferred `{humanize_number(amount)}` {resource.title()} to {user.mention}.")
 
     @miner_group.command(
@@ -298,6 +304,24 @@ class User(MixinMeta):
             )
             await msg.edit(content=None, embed=cancel_embed, view=None)
             return
+
+        # Re-fetch player to validate resources haven't changed (Suggestion #2)
+        await player.refresh()
+        missing_after: list[str] = []
+        for resource, cost in (next_tool.upgrade_cost or {}).items():
+            have = getattr(player, resource, 0) or 0
+            if have < cost:
+                missing_after.append(f"`{cost - have}` **{resource.title()}**")
+        if missing_after:
+            fail_embed = discord.Embed(
+                title="Upgrade Failed",
+                description="You no longer have enough resources to complete this upgrade.",
+                color=discord.Color.red(),
+            )
+            fail_embed.add_field(name=":warning: Missing Resources", value="\n".join(missing_after), inline=False)
+            await msg.edit(content=None, embed=fail_embed, view=None)
+            return
+
         # Deduct resources
         update_kwargs = {
             getattr(Player, resource): getattr(Player, resource) - cost
@@ -352,7 +376,7 @@ class User(MixinMeta):
             return await ctx.send("No conversion rate set for that resource.", ephemeral=True)
 
         player = await self.db_utils.get_create_player(ctx.author)
-        resource_balance: int = getattr(player, resource)
+        resource_balance: int = getattr(player, resource, 0) or 0
         creditsname = await bank.get_currency_name(ctx.guild)
         if amount > resource_balance:
             grammar = "that many" if resource == "gems" else "that much"

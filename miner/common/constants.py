@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 # Type aliases
 Resource = t.Literal["stone", "iron", "gems"]
-ToolName = t.Literal["wood", "stone", "iron", "steel"]
+ToolName = t.Literal["wood", "stone", "iron", "steel", "carbide", "diamond"]
 RockTierName = t.Literal["small", "medium", "large", "meteor", "volatile geode"]
 
 RESOURCES: tuple[Resource, ...] = ("stone", "iron", "gems")
@@ -14,7 +14,7 @@ ROCK_ORDER: tuple[RockTierName, ...] = ("small", "medium", "large", "meteor", "v
 
 # Pacing
 SWINGS_PER_THRESHOLD: int = 3
-OVERSWING_THRESHOLD_SECONDS: int = 3.2  # seconds between swings to count as overswing
+OVERSWING_THRESHOLD_SECONDS: float = 3.2  # seconds between swings to count as overswing
 # Fraction of max durability at or below which catastrophic overswing shatters are allowed
 OVERSWING_SHATTER_DURA_THRESHOLD: float = 0.30
 # Durability percentage thresholds where we start warning players about tool condition
