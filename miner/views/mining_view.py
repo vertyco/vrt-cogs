@@ -21,6 +21,8 @@ log = logging.getLogger("red.vrt.miner.views.mining_view")
 
 
 def hp_bar(hp: int, max_hp: int) -> str:
+    if max_hp <= 0:
+        return f"{constants.HP_BAR_EMPTY * constants.HP_BAR_SEGMENTS} 0.0%"
     ratio = hp / max_hp
     width: int = constants.HP_BAR_SEGMENTS
     bar = constants.HP_BAR_FILLED * round(ratio * width) + constants.HP_BAR_EMPTY * round(width - (ratio * width))

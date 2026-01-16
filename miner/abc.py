@@ -18,7 +18,7 @@ class MixinMeta(ABC):
     def __init__(self, *_args):
         self.bot: Red
         self.db: PostgresEngine | None
-        self.db_utils = DBUtils
+        self.db_utils: DBUtils
 
         self.activity: tracker.ActivityTracker
         self.active_guild_rocks: dict[int, int]

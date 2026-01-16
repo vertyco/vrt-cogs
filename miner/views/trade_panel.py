@@ -52,6 +52,7 @@ class TradePanel(discord.ui.View):
 
         self.complete = False
         self.cancelled = False
+        self.validation_failed = False  # True if trade failed due to insufficient resources
 
         self.trader_ready = False
         self.target_ready = False
@@ -74,6 +75,9 @@ class TradePanel(discord.ui.View):
         if self.complete:
             desc = "**Trade Complete**\nThe trade has been settled by both miners for the items below."
             color = discord.Color.green()
+        elif self.validation_failed:
+            desc = "**Trade Failed**\nOne or both miners no longer have the resources they committed to trade."
+            color = discord.Color.red()
         elif self.cancelled:
             desc = "The trade has been cancelled!"
             color = discord.Color.orange()
@@ -124,12 +128,40 @@ class TradePanel(discord.ui.View):
             self.ready_up.disabled = True
             self.update_items.disabled = True
             self.cancel_trade.disabled = True
-            await self.complete_trade()
+            success = await self.complete_trade()
+            if not success:
+                # Trade failed validation - one party no longer has resources
+                self.complete = False
+                self.validation_failed = True
+                self.ready_up.disabled = True
+                self.update_items.disabled = True
+                self.cancel_trade.disabled = True
             self.stop()
 
         await self.message.edit(embed=self.embed(), view=self)
 
-    async def complete_trade(self):
+    async def complete_trade(self) -> bool:
+        """Complete the trade, returning True on success, False if validation fails."""
+        # Re-fetch both players to validate resources (Suggestion #2)
+        await self.trader.refresh()
+        await self.target.refresh()
+
+        # Validate trader has the resources they committed
+        for item, amount in self.trader_items.items():
+            if not amount:
+                continue
+            current = getattr(self.trader, item, 0) or 0
+            if current < amount:
+                return False
+
+        # Validate target has the resources they committed
+        for item, amount in self.target_items.items():
+            if not amount:
+                continue
+            current = getattr(self.target, item, 0) or 0
+            if current < amount:
+                return False
+
         trader_update_kwargs = {}
         target_update_kwargs = {}
         # Transfer items trader has put up
@@ -153,6 +185,7 @@ class TradePanel(discord.ui.View):
         # Update target in the database
         if target_update_kwargs:
             await self.target.update_self(target_update_kwargs)
+        return True
 
     @discord.ui.button(style=discord.ButtonStyle.success, emoji="\N{WHITE HEAVY CHECK MARK}", label="Ready")
     async def ready_up(self, interaction: discord.Interaction, button: discord.Button):
