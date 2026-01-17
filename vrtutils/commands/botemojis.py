@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-import json
 import logging
 import math
 import typing as t
-from base64 import b64encode
 from dataclasses import dataclass
 from pathlib import Path
 
 import discord
-from discord.http import Route
+from discord.state import ConnectionState
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box
 
@@ -81,8 +79,8 @@ class ListEmojiPayload:
     items: t.List[EmojiPayload]
 
     @staticmethod
-    def from_dict(data: t.Dict[str, t.Any]) -> ListEmojiPayload:
-        items = [EmojiPayload.from_dict(item) for item in data.get("items", [])]
+    def from_dict(data: t.Dict[str, t.Any], state: ConnectionState) -> ListEmojiPayload:
+        items = [discord.Emoji(guild=discord.Object(0), state=state, data=item) for item in data.get("items", [])]
         return ListEmojiPayload(items)
 
 
@@ -97,31 +95,25 @@ class EmojiManager(MixinMeta):
     @manage_emojis.command(name="list")
     async def list_emojis(self, ctx: commands.Context):
         """List all existing bot emojis"""
-        app_info = await self.bot.application_info()
-        kwargs = {"application_id": str(app_info.id)}
-        route: Route = Route(method="GET", path="/applications/{application_id}/emojis", **kwargs)
-        data = await self.bot.http.request(route)
-        if not data["items"]:
-            return await ctx.send("No emojis found")
-        emojis = ListEmojiPayload.from_dict(data)
-        emojis.items.sort(key=lambda e: e.name)
+        emojis: list[discord.Emoji] = await self.bot.fetch_application_emojis()
+        emojis.sort(key=lambda e: e.name.lower())
         pages = []
         start = 0
         stop = 10
-        page_count = math.ceil(len(emojis.items) / 10)
+        page_count = math.ceil(len(emojis) / 10)
         for p in range(page_count):
-            stop = min(stop, len(emojis.items))
+            stop = min(stop, len(emojis))
             embed = discord.Embed(title="Bot Emojis", color=await self.bot.get_embed_color(ctx))
             embed.set_footer(text=f"Page {p + 1}/{page_count}")
-            for emoji in emojis.items[start:stop]:
+            for emoji in emojis[start:stop]:
                 value = (
-                    f"• Emoji: {emoji.string()}\n"
+                    f"• Emoji: {emoji}\n"
                     f"• ID: {emoji.id}\n"
                     f"• Roles: {', '.join(emoji.roles) if emoji.roles else 'None'}\n"
                     f"• Animated: {emoji.animated}\n"
                     f"• Managed: {emoji.managed}\n"
                     f"• Available: {emoji.available}\n"
-                    f"• User: {emoji.user.username} ({emoji.user.id})"
+                    f"• User: {emoji.user.name} ({emoji.user.id})"
                 )
                 embed.add_field(name=emoji.name, value=value, inline=False)
             pages.append(embed)
@@ -146,67 +138,71 @@ class EmojiManager(MixinMeta):
             return await ctx.send("Emoji name cannot contain spaces!")
         emoji_name = name or Path(attachments[0].filename).stem
         image = await attachments[0].read()
-        imageb64 = b64encode(image).decode("utf-8")
-        extension = Path(attachments[0].filename).suffix
-        await self._add(ctx, emoji_name, imageb64, extension)
+        try:
+            await self.bot.create_application_emoji(name=emoji_name, image=image)
+            await ctx.send(f"Emoji '{emoji_name}' added!")
+        except discord.HTTPException as e:
+            await ctx.send(f"Failed to add emoji ({e.status}): {e.text}")
 
     @manage_emojis.command(name="fromemoji", aliases=["addfrom", "addemoji"])
     async def add_from_emoji(self, ctx: commands.Context, emoji: t.Union[discord.Emoji, discord.PartialEmoji]):
         """Create a new bot emoji from an existing one"""
         name = emoji.name
         image = await emoji.read()
-        imageb64 = b64encode(image).decode("utf-8")
-        extension = ".gif" if emoji.animated else ".png"
-        await self._add(ctx, name, imageb64, extension)
-
-    async def _add(self, ctx: commands.Context, name: str, imageb64: str, extension: str):
-        app_info = await self.bot.application_info()
-        kwargs = {"application_id": str(app_info.id)}
-        payload = {"name": name, "image": f"data:image/{extension};base64,{imageb64}"}
-        route: Route = Route(method="POST", path="/applications/{application_id}/emojis", **kwargs)
         try:
-            data = await self.bot.http.request(route, json=payload)
-            dump = json.dumps(data, indent=4)
-            await ctx.send(f"Emoji added\n{box(dump, lang='py')}")
-            await ctx.tick()
+            await self.bot.create_application_emoji(name=name, image=image)
+            await ctx.send(f"Emoji '{name}' added!")
         except discord.HTTPException as e:
-            if e.status == 400:
-                return await ctx.send(e.text)
-            return await ctx.send(f"Failed to add emoji ({e.response.status}): {e.text}")
+            await ctx.send(f"Failed to add emoji ({e.status}): {e.text}")
 
     @manage_emojis.command(name="delete")
     async def delete_emoji(self, ctx: commands.Context, emoji_id: int):
         """Delete an bot emoji"""
-        app_info = await self.bot.application_info()
-        kwargs = {"application_id": str(app_info.id), "emoji_id": str(emoji_id)}
-        route: Route = Route(method="DELETE", path="/applications/{application_id}/emojis/{emoji_id}", **kwargs)
         try:
-            await self.bot.http.request(route)
-            await ctx.send("Emoji deleted.")
+            emoji = await self.bot.fetch_application_emoji(emoji_id)
+        except discord.NotFound:
+            return await ctx.send(f"No bot emoji found with ID {emoji_id}")
         except discord.HTTPException as e:
-            await ctx.send(f"Failed to delete emoji ({e.response.status}): {e}")
+            return await ctx.send(f"Failed to fetch emoji ({e.status}): {e}")
+        if not emoji.is_application_owned():
+            return await ctx.send(f"Emoji '{emoji.name}' is not a bot emoji!")
+        try:
+            await emoji.delete(reason=f"Deleted by bot owner {ctx.author} ({ctx.author.id})")
+            await ctx.send(f"Emoji '{emoji.name}' deleted.")
+        except discord.HTTPException as e:
+            await ctx.send(f"Failed to delete emoji ({e.status}): {e}")
 
     @manage_emojis.command(name="edit")
     async def edit_emoji(self, ctx: commands.Context, emoji_id: int, name: str):
         """Edit a bot emoji's name"""
-        app_info = await self.bot.application_info()
-        kwargs = {"application_id": str(app_info.id), "emoji_id": str(emoji_id)}
-        payload = {"name": name}
-        route: Route = Route(method="PATCH", path="/applications/{application_id}/emojis/{emoji_id}", **kwargs)
         try:
-            data = await self.bot.http.request(route, json=payload)
-            dump = json.dumps(data, indent=4)
-            await ctx.send(f"Emoji renamed\n{box(dump, lang='py')}")
+            emoji = await self.bot.fetch_application_emoji(emoji_id)
+        except discord.NotFound:
+            return await ctx.send(f"No bot emoji found with ID {emoji_id}")
         except discord.HTTPException as e:
-            await ctx.send(f"Failed to edit emoji ID {emoji_id} ({e.response.status}): {e}")
+            return await ctx.send(f"Failed to fetch emoji ({e.status}): {e}")
+        if not emoji.is_application_owned():
+            return await ctx.send(f"Emoji ID {emoji_id} is not a bot emoji!")
+        try:
+            await emoji.edit(name=name, reason=f"Renamed by bot owner {ctx.author} ({ctx.author.id})")
+            await ctx.send(f"Emoji ID {emoji_id} renamed to '{name}'.")
+        except discord.HTTPException as e:
+            await ctx.send(f"Failed to edit emoji ID {emoji_id} ({e.status}): {e}")
 
     @manage_emojis.command(name="get")
     async def get_emoji(self, ctx: commands.Context, emoji_id: int):
         """Get details about a bot emoji"""
-        app_info = await self.bot.application_info()
-        kwargs = {"application_id": str(app_info.id), "emoji_id": str(emoji_id)}
-        route: Route = Route(method="GET", path="/applications/{application_id}/emojis/{emoji_id}", **kwargs)
-        data = await self.bot.http.request(route)
-        dump = json.dumps(data, indent=4)
-        emoji = EmojiPayload.from_dict(data)
-        await ctx.send(f"{emoji.string()}\n{box(dump, lang='py')}")
+        try:
+            emoji: discord.Emoji = await self.bot.fetch_application_emoji(emoji_id)
+        except discord.NotFound:
+            return await ctx.send(f"No bot emoji found with ID {emoji_id}")
+        except discord.HTTPException as e:
+            return await ctx.send(f"Failed to fetch emoji ({e.status}): {e}")
+        txt = f"• Emoji: {emoji}\n"
+        txt += f"• ID: {emoji.id}\n"
+        txt += f"• Roles: {', '.join(emoji.roles) if emoji.roles else 'None'}\n"
+        txt += f"• Animated: {emoji.animated}\n"
+        txt += f"• Managed: {emoji.managed}\n"
+        txt += f"• Available: {emoji.available}\n"
+        txt += f"• User: {emoji.user.name} ({emoji.user.id})\n"
+        await ctx.send(box(txt, lang="ini"))
