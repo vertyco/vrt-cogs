@@ -3,11 +3,9 @@ from __future__ import annotations
 import logging
 import math
 import typing as t
-from dataclasses import dataclass
 from pathlib import Path
 
 import discord
-from discord.state import ConnectionState
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box
 
@@ -16,72 +14,6 @@ from ..common.dynamic_menu import DynamicMenu
 from ..common.utils import get_attachments
 
 log = logging.getLogger("red.vrt.vrtutils.botemojis")
-
-
-@dataclass
-class AvatarDeco:
-    asset: str
-    sku_id: str
-    expires_at: t.Optional[t.Any]
-
-    @staticmethod
-    def from_dict(data: t.Dict[str, t.Any]) -> AvatarDeco:
-        return AvatarDeco(**data)
-
-
-@dataclass
-class PayloadUser:
-    id: str
-    username: str
-    avatar: str
-    discriminator: str
-    public_flags: int
-    flags: t.Optional[int] = None
-    bot: t.Optional[bool] = False
-    banner: t.Optional[str] = None
-    accent_color: t.Optional[str] = None
-    global_name: t.Optional[str] = None
-    avatar_decoration_data: t.Optional[AvatarDeco] = None
-    banner_color: t.Optional[str] = None
-    clan: t.Optional[t.Any] = None
-
-    @staticmethod
-    def from_dict(data: t.Dict[str, t.Any]) -> PayloadUser:
-        if "avatar_decoration_data" in data and data["avatar_decoration_data"]:
-            data["avatar_decoration_data"] = AvatarDeco.from_dict(data["avatar_decoration_data"])
-        return PayloadUser(**data)
-
-
-@dataclass
-class EmojiPayload:
-    id: str
-    name: str
-    roles: t.List[str]
-    require_colons: bool
-    managed: bool
-    animated: bool
-    available: bool
-    user: t.Optional[PayloadUser] = None
-
-    @staticmethod
-    def from_dict(data: t.Dict[str, t.Any]) -> EmojiPayload:
-        if "user" in data:
-            data["user"] = PayloadUser.from_dict(data["user"])
-        return EmojiPayload(**data)
-
-    def string(self) -> str:
-        """Format the emoji to render in Discord"""
-        return f"<{'a' if self.animated else ''}:{self.name}:{self.id}>"
-
-
-@dataclass
-class ListEmojiPayload:
-    items: t.List[EmojiPayload]
-
-    @staticmethod
-    def from_dict(data: t.Dict[str, t.Any], state: ConnectionState) -> ListEmojiPayload:
-        items = [discord.Emoji(guild=discord.Object(0), state=state, data=item) for item in data.get("items", [])]
-        return ListEmojiPayload(items)
 
 
 class EmojiManager(MixinMeta):
@@ -99,6 +31,7 @@ class EmojiManager(MixinMeta):
             emojis: list[discord.Emoji] = await self.bot.fetch_application_emojis()
             if not emojis:
                 return await ctx.send("This bot has no emojis.")
+            log.info(f"Fetched {len(emojis)} bot emojis for listing.")
             emojis.sort(key=lambda e: e.name.lower())
             pages = []
             start = 0
