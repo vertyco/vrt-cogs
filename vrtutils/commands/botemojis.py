@@ -95,34 +95,37 @@ class EmojiManager(MixinMeta):
     @manage_emojis.command(name="list")
     async def list_emojis(self, ctx: commands.Context):
         """List all existing bot emojis"""
-        emojis: list[discord.Emoji] = await self.bot.fetch_application_emojis()
-        emojis.sort(key=lambda e: e.name.lower())
-        pages = []
-        start = 0
-        stop = 10
-        page_count = math.ceil(len(emojis) / 10)
-        for p in range(page_count):
-            stop = min(stop, len(emojis))
-            embed = discord.Embed(title="Bot Emojis", color=await self.bot.get_embed_color(ctx))
-            embed.set_footer(text=f"Page {p + 1}/{page_count}")
-            for emoji in emojis[start:stop]:
-                value = (
-                    f"• Emoji: {emoji}\n"
-                    f"• ID: {emoji.id}\n"
-                    f"• Roles: {', '.join(emoji.roles) if emoji.roles else 'None'}\n"
-                    f"• Animated: {emoji.animated}\n"
-                    f"• Managed: {emoji.managed}\n"
-                    f"• Available: {emoji.available}\n"
-                    f"• User: {emoji.user.name} ({emoji.user.id})"
-                )
-                embed.add_field(name=emoji.name, value=value, inline=False)
-            pages.append(embed)
-            start += 10
-            stop += 10
-        menu = DynamicMenu(ctx, pages, ctx.channel)
-        await menu.refresh()
-        await menu.wait()
-        await ctx.tick()
+        async with ctx.typing():
+            emojis: list[discord.Emoji] = await self.bot.fetch_application_emojis()
+            if not emojis:
+                return await ctx.send("This bot has no emojis.")
+            emojis.sort(key=lambda e: e.name.lower())
+            pages = []
+            start = 0
+            stop = 10
+            page_count = math.ceil(len(emojis) / 10)
+            for p in range(page_count):
+                stop = min(stop, len(emojis))
+                embed = discord.Embed(title="Bot Emojis", color=await self.bot.get_embed_color(ctx))
+                embed.set_footer(text=f"Page {p + 1}/{page_count}")
+                for emoji in emojis[start:stop]:
+                    value = (
+                        f"• Emoji: {emoji}\n"
+                        f"• ID: {emoji.id}\n"
+                        f"• Roles: {', '.join(emoji.roles) if emoji.roles else 'None'}\n"
+                        f"• Animated: {emoji.animated}\n"
+                        f"• Managed: {emoji.managed}\n"
+                        f"• Available: {emoji.available}\n"
+                        f"• User: {emoji.user.name} ({emoji.user.id})"
+                    )
+                    embed.add_field(name=emoji.name, value=value, inline=False)
+                pages.append(embed)
+                start += 10
+                stop += 10
+            menu = DynamicMenu(ctx, pages, ctx.channel)
+            await menu.refresh()
+            await menu.wait()
+            await ctx.tick()
 
     @manage_emojis.command(name="add")
     async def add_emoji(self, ctx: commands.Context, name: str = None):
