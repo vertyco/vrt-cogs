@@ -91,7 +91,7 @@ class Functions(MixinMeta):
             buffer.write(f"Default Reaction Emoji: {channel.default_reaction_emoji}\n")
             buffer.write(f"Default Sort Order: {channel.default_sort_order}\n")
             if channel.available_tags:
-                buffer.write(f"Available Tags: {', '.join(channel.available_tags)}\n")
+                buffer.write(f"Available Tags: {', '.join([str(tag) for tag in channel.available_tags])}\n")
         return buffer.getvalue().strip()
 
     async def get_user_info(
