@@ -168,6 +168,14 @@ custom-functions/
 uncomp/
 compress.py
 
+# BotArena stuff
+generate_ai_images.py
+generate_images.py
+center_point_editor.py
+part_offsets.json
+resize_weapons.py
+wiki_dump.html
+botarena/data/*/v*/
 
 # Misc
 copilot-instructions.md
@@ -183,10 +191,10 @@ levelup/data/tests/
 levelup/data/stock/rs-assets/
 manual_tests.py
 test_outputs/
+scratch*
 
 # WIP cogs
 arkadia/
-botarena/
 dungeon/
 design_docs/
 v2/

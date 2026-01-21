@@ -1,0 +1,35 @@
+{
+  "author": ["Vertyco"],
+  "description": "Bot Arena - Build and battle robots! A recreation of the classic Bot Arena 3 flash game with real-time rendered battle videos.",
+  "disabled": false,
+  "end_user_data_statement": "This cog does not store any private data about users.",
+  "hidden": false,
+  "install_msg": "Thank you for installing Bot Arena!\n\nGet started with `[p]botarena` to view the game hub.\nNew players will see a tutorial and receive starter parts.\n\nPlay through the Campaign, build bots, and challenge others in PvP!",
+  "min_bot_version": "3.5.0",
+  "min_python_version": [3, 10, 0],
+  "permissions": [
+    "read_messages",
+    "send_messages",
+    "embed_links",
+    "attach_files"
+  ],
+  "required_cogs": {},
+  "requirements": [
+    "orjson",
+    "pydantic>=2.11,<2.12",
+    "Pillow",
+    "av"
+  ],
+  "short": "Build and battle robots",
+  "tags": [
+    "game",
+    "battle",
+    "robots",
+    "arena",
+    "pvp",
+    "fun",
+    "vert",
+    "botarena"
+  ],
+  "type": "COG"
+}
