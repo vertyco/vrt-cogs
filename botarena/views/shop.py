@@ -158,37 +158,11 @@ class ShopNavigationRow(ui.ActionRow["ShopView"]):
 
         view = await GarageLayout.create(self.view.ctx, self.view.cog, parent=self.view)
         self.view.navigate_to_child(view)
-        files = view.get_image_files()
-        if files:
-            await interaction.response.edit_message(view=view, attachments=files)
-        else:
-            await interaction.response.edit_message(view=view)
+        await view.send(interaction)
 
     @ui.button(label="Back", style=discord.ButtonStyle.danger, emoji="↩️")
     async def back_button(self, interaction: discord.Interaction, button: ui.Button):
-        if self.view.parent:
-            # Reset parent's navigated_away flag so it can handle timeouts again
-            if hasattr(self.view.parent, "_navigated_away"):
-                setattr(self.view.parent, "_navigated_away", False)
-
-            if hasattr(self.view.parent, "get_embed"):
-                # Traditional View with embed
-                embed_method = getattr(self.view.parent, "get_embed")
-                await interaction.response.edit_message(embed=embed_method(), view=self.view.parent, attachments=[])
-            elif isinstance(self.view.parent, ui.LayoutView):
-                # LayoutView parent - rebuild layout to reflect any changes
-                build_layout = getattr(self.view.parent, "_build_layout", None)
-                if build_layout:
-                    self.view.parent.clear_items()
-                    build_layout()
-                await interaction.response.edit_message(view=self.view.parent, attachments=[])
-            else:
-                # Fallback
-                await interaction.response.edit_message(view=self.view.parent, attachments=[])
-        else:
-            await interaction.response.defer()
-            await self.view.message.delete()
-        self.view.stop()
+        await self.view.navigate_back(interaction)
 
 
 class ShopView(BotArenaView):
@@ -239,16 +213,16 @@ class ShopView(BotArenaView):
             return items[self.index]
         return None
 
-    def get_image_file(self) -> t.Optional[discord.File]:
-        """Get a discord.File for the current item's image"""
+    def get_attachments(self) -> list[discord.File]:
+        """Get discord.File objects for this view's thumbnails"""
         item = self._get_current_item()
         if not item:
-            return None
+            return []
 
         image_path = _get_part_image_path(self.category, item.name)
         if image_path and image_path.exists():
-            return discord.File(image_path, filename="part.webp")
-        return None
+            return [discord.File(image_path, filename="part.webp")]
+        return []
 
     def _get_first_time_tip(self, player) -> t.Optional[str]:
         """Get a helpful tip for first-time buyers based on what they own."""
@@ -392,12 +366,7 @@ class ShopView(BotArenaView):
     async def refresh(self, interaction: discord.Interaction):
         self.clear_items()
         self._build_layout()
-
-        image_file = self.get_image_file()
-        if image_file:
-            await interaction.response.edit_message(view=self, attachments=[image_file])
-        else:
-            await interaction.response.edit_message(view=self, attachments=[])
+        await self.send(interaction)
 
 
 class PurchaseConfirmView(discord.ui.View):
@@ -483,11 +452,11 @@ class PurchaseConfirmView(discord.ui.View):
         # Refresh the shop view
         self.shop_view.clear_items()
         self.shop_view._build_layout()
-        image_file = self.shop_view.get_image_file()
-        if image_file:
-            await self.shop_view.message.edit(view=self.shop_view, attachments=[image_file])
+        attachments = self.shop_view.get_attachments()
+        if attachments:
+            await self.shop_view.message.edit(view=self.shop_view, attachments=attachments)
         else:
-            await self.shop_view.message.edit(view=self.shop_view, attachments=[])
+            await self.shop_view.message.edit(view=self.shop_view)
         self.stop()
 
     def _can_build_bot(self, player) -> bool:

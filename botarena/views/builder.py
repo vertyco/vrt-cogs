@@ -203,7 +203,7 @@ class TacticsButtonRow(ui.ActionRow["BotBuilderView"]):
 
         # Show tactics configuration view
         tactics_view = TacticsConfigView(self.view, owned_chassis)
-        await interaction.response.edit_message(view=tactics_view, attachments=[])
+        await interaction.response.edit_message(view=tactics_view)
 
 
 class TacticsConfigView(ui.LayoutView):
@@ -358,8 +358,7 @@ class TacticsControlsRow(ui.ActionRow["TacticsConfigView"]):
         # Return to builder
         self.view.builder_view.clear_items()
         self.view.builder_view._build_layout()
-        files = self.view.builder_view.get_part_files()
-        await interaction.response.edit_message(view=self.view.builder_view, attachments=files)
+        await self.view.builder_view.send(interaction)
         self.view.stop()
 
     @ui.button(label="Reset to Default", style=discord.ButtonStyle.secondary, row=3, custom_id="tactics_reset")
@@ -440,39 +439,24 @@ class BuilderControlsRow(ui.ActionRow["BotBuilderView"]):
 
         # Close or return to parent
         if view.parent:
-            if hasattr(view.parent, "get_embed"):
-                await interaction.message.edit(embed=view.parent.get_embed(), view=view.parent, attachments=[])
-            elif isinstance(view.parent, ui.LayoutView):
-                # LayoutView parent - rebuild layout to reflect changes, then edit
-                view.parent.clear_items()
-                getattr(view.parent, "_build_layout")()
-                await interaction.message.edit(view=view.parent, attachments=[])
+            # Reset parent's navigation flag
+            if isinstance(view.parent, BotArenaView):
+                view.parent._navigated_away = False
+            # Rebuild parent and show it
+            if hasattr(view.parent, "rebuild"):
+                await view.parent.rebuild()
+            attachments = view.parent.get_attachments() if hasattr(view.parent, "get_attachments") else []
+            if attachments:
+                await interaction.message.edit(view=view.parent, attachments=attachments)
             else:
-                # Fallback
-                await interaction.message.edit(view=view.parent, attachments=[])
+                await interaction.message.edit(view=view.parent)
         else:
             self.view.stop()
             await interaction.message.delete()
 
     @ui.button(label="Back", style=discord.ButtonStyle.danger, row=4, custom_id="builder_back")
     async def cancel_button(self, interaction: discord.Interaction, button: ui.Button):
-        if self.view.parent:
-            if hasattr(self.view.parent, "get_embed"):
-                await interaction.response.edit_message(
-                    embed=self.view.parent.get_embed(), view=self.view.parent, attachments=[]
-                )
-            elif isinstance(self.view.parent, ui.LayoutView):
-                # LayoutView parent - rebuild layout to reflect any changes, then edit
-                self.view.parent.clear_items()
-                getattr(self.view.parent, "_build_layout")()
-                await interaction.response.edit_message(view=self.view.parent, attachments=[])
-            else:
-                # Fallback
-                await interaction.response.edit_message(view=self.view.parent, attachments=[])
-        else:
-            await interaction.response.defer()
-            await self.view.message.delete()
-        self.view.stop()
+        await self.view.navigate_back(interaction)
 
 
 class BotBuilderView(BotArenaView):
@@ -669,7 +653,7 @@ class BotBuilderView(BotArenaView):
 
         self.add_item(BuilderControlsRow())
 
-    def get_part_files(self) -> list[discord.File]:
+    def get_attachments(self) -> list[discord.File]:
         """Get discord.File objects for all selected parts"""
         files = []
 
@@ -698,9 +682,7 @@ class BotBuilderView(BotArenaView):
         """Rebuild layout and update message"""
         self.clear_items()
         self._build_layout()
-
-        files = self.get_part_files()
-        await interaction.response.edit_message(view=self, attachments=files)
+        await self.send(interaction)
 
 
 class BotNameModal(discord.ui.Modal, title="Rename Your Bot"):
