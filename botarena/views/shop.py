@@ -247,9 +247,7 @@ class ShopView(BotArenaView):
 
         image_path = _get_part_image_path(self.category, item.name)
         if image_path and image_path.exists():
-            # Use the actual file extension for the filename
-            ext = image_path.suffix  # .webp or .png
-            return discord.File(image_path, filename=f"part{ext}")
+            return discord.File(image_path, filename="part.webp")
         return None
 
     def _get_first_time_tip(self, player) -> t.Optional[str]:
@@ -372,9 +370,7 @@ class ShopView(BotArenaView):
         # Image - use Section with Thumbnail accessory if image exists
         image_path = _get_part_image_path(self.category, item.name)
         if image_path:
-            # Use the actual file extension for the attachment URL
-            ext = image_path.suffix  # .webp or .png
-            thumbnail = ui.Thumbnail(media=f"attachment://part{ext}")
+            thumbnail = ui.Thumbnail(media="attachment://part.webp")
             item_section = ui.Section(*section_items[:3], accessory=thumbnail)  # Section can hold up to 3 TextDisplays
             container.add_item(item_section)
             # Add remaining items directly to container

@@ -89,7 +89,7 @@ def _create_bot_preview_image_sync(chassis_name: str, plating_name: str, weapon_
 
     # Save to BytesIO
     buffer = io.BytesIO()
-    composite.save(buffer, format="PNG")
+    composite.save(buffer, format="WEBP", quality=95)
     buffer.seek(0)
     return buffer
 
@@ -1117,8 +1117,7 @@ class CampaignLayout(BotArenaView):
         """Get the arena background image file for the selected chapter"""
         image_path = find_image_path("", f"arena_chapter_{self.selected_chapter}")
         if image_path and image_path.exists():
-            ext = image_path.suffix  # .webp or .png
-            return discord.File(image_path, filename=f"arena{ext}")
+            return discord.File(image_path, filename="arena.webp")
         return None
 
     async def refresh(self, interaction: discord.Interaction):

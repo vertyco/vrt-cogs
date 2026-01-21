@@ -367,7 +367,7 @@ class ChassisEditorLayout(BotArenaView):
 
         chassis_image_path = find_image_path("chassis", self.chassis.chassis_name)
         if chassis_image_path:
-            chassis_filename = f"{self.chassis.chassis_name.lower().replace(' ', '_')}.png"
+            chassis_filename = f"{self.chassis.chassis_name.lower().replace(' ', '_')}.webp"
             self.image_files.append(discord.File(chassis_image_path, filename=chassis_filename))
             chassis_thumbnail = ui.Thumbnail(media=f"attachment://{chassis_filename}")
             chassis_section = ui.Section(ui.TextDisplay(stats_text), accessory=chassis_thumbnail)
@@ -410,7 +410,7 @@ class ChassisEditorLayout(BotArenaView):
             # Try to add image thumbnail
             image_path = find_image_path("plating", self.chassis.equipped_plating)
             if image_path:
-                filename = f"{self.chassis.equipped_plating.lower().replace(' ', '_')}.png"
+                filename = f"{self.chassis.equipped_plating.lower().replace(' ', '_')}.webp"
                 self.image_files.append(discord.File(image_path, filename=filename))
                 thumbnail = ui.Thumbnail(media=f"attachment://{filename}")
                 section = ui.Section(accessory=thumbnail)
@@ -434,7 +434,7 @@ class ChassisEditorLayout(BotArenaView):
             # Try to add image thumbnail
             image_path = find_image_path("weapons", self.chassis.equipped_weapon)
             if image_path:
-                filename = f"{self.chassis.equipped_weapon.lower().replace(' ', '_')}.png"
+                filename = f"{self.chassis.equipped_weapon.lower().replace(' ', '_')}.webp"
                 self.image_files.append(discord.File(image_path, filename=filename))
                 thumbnail = ui.Thumbnail(media=f"attachment://{filename}")
                 section = ui.Section(accessory=thumbnail)
@@ -1067,7 +1067,7 @@ class InventoryLayout(BotArenaView):
         for item in items[:8]:
             image_path = find_image_path(folder, item.part_name)
             if image_path:
-                filename = f"{item.part_name.lower().replace(' ', '_')}.png"
+                filename = f"{item.part_name.lower().replace(' ', '_')}.webp"
                 files.append(discord.File(image_path, filename=filename))
 
         return files
@@ -1123,7 +1123,7 @@ class InventoryLayout(BotArenaView):
                         image_path = find_image_path(folder, item.part_name)
                         if image_path:
                             thumbnail = ui.Thumbnail(
-                                media=f"attachment://{item.part_name.lower().replace(' ', '_')}.png"
+                                media=f"attachment://{item.part_name.lower().replace(' ', '_')}.webp"
                             )
                             section = ui.Section(accessory=thumbnail)
                             section.add_item(item_text)
@@ -1143,7 +1143,7 @@ class InventoryLayout(BotArenaView):
                         image_path = find_image_path(folder, item.part_name)
                         if image_path:
                             thumbnail = ui.Thumbnail(
-                                media=f"attachment://{item.part_name.lower().replace(' ', '_')}.png"
+                                media=f"attachment://{item.part_name.lower().replace(' ', '_')}.webp"
                             )
                             section = ui.Section(accessory=thumbnail)
                             section.add_item(item_text)
