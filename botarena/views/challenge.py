@@ -11,7 +11,8 @@ import typing as t
 
 import discord
 from discord import ui
-from redbot.core import commands
+from redbot.core import bank, commands
+from redbot.core.errors import BalanceTooHigh
 from redbot.core.utils.chat_formatting import humanize_number
 
 if t.TYPE_CHECKING:
@@ -140,10 +141,17 @@ class BetButtonsRow(ui.ActionRow["ChallengeLayout"]):
 
     @ui.button(label="Set Your Bet", style=discord.ButtonStyle.primary, emoji="💰", row=2)
     async def bet_btn(self, interaction: discord.Interaction, button: ui.Button):
+        currency_name = await bank.get_currency_name(self.view.ctx.guild)
         if interaction.user.id == self.view.challenger.id:
-            await interaction.response.send_modal(BetModal(self.view, is_challenger=True))
+            balance = await bank.get_balance(self.view.challenger)
+            await interaction.response.send_modal(
+                BetModal(self.view, is_challenger=True, balance=balance, currency_name=currency_name)
+            )
         elif interaction.user.id == self.view.opponent.id:
-            await interaction.response.send_modal(BetModal(self.view, is_challenger=False))
+            balance = await bank.get_balance(self.view.opponent)
+            await interaction.response.send_modal(
+                BetModal(self.view, is_challenger=False, balance=balance, currency_name=currency_name)
+            )
         else:
             await interaction.response.send_message("This challenge isn't for you!", ephemeral=True)
 
@@ -151,16 +159,16 @@ class BetButtonsRow(ui.ActionRow["ChallengeLayout"]):
 class BetModal(ui.Modal):
     """Modal for entering bet amount"""
 
-    def __init__(self, view: "ChallengeLayout", is_challenger: bool):
+    def __init__(self, view: "ChallengeLayout", is_challenger: bool, balance: int, currency_name: str):
         super().__init__(title="Set Your Bet")
         self.challenge_view = view
         self.is_challenger = is_challenger
+        self.balance = balance
+        self.currency_name = currency_name
 
-        player = view.challenger_player if is_challenger else view.opponent_player
         current_bet = view.challenger_bet if is_challenger else view.opponent_bet
-
         self.amount_input = ui.TextInput(
-            label=f"Bet Amount (Max: {humanize_number(player.credits)})",
+            label=f"{currency_name} Bet (Max: {humanize_number(balance)})",
             placeholder="Enter amount (0 for no bet)...",
             default=str(current_bet) if current_bet > 0 else "",
             required=True,
@@ -179,10 +187,9 @@ class BetModal(ui.Modal):
             await interaction.response.send_message("❌ Bet cannot be negative!", ephemeral=True)
             return
 
-        player = self.challenge_view.challenger_player if self.is_challenger else self.challenge_view.opponent_player
-        if amount > player.credits:
+        if amount > self.balance:
             await interaction.response.send_message(
-                f"❌ You only have **{humanize_number(player.credits)}** credits!", ephemeral=True
+                f"❌ You only have **{humanize_number(self.balance)}** {self.currency_name}!", ephemeral=True
             )
             return
 
@@ -281,12 +288,19 @@ class ChallengeLayout(BotArenaView):
         # Battle state
         self.battle_in_progress: bool = False
 
+        # Currency name cache
+        self._currency_name: str | None = None
+
         self._build_layout()
 
     def _unready_both(self):
         """Un-ready both players (called when selections change)"""
         self.challenger_ready = False
         self.opponent_ready = False
+
+    async def _build_layout_async(self):
+        """Async portion of layout building - fetches currency name"""
+        self._currency_name = await bank.get_currency_name(self.ctx.guild)
 
     def _get_selected_bots(self, is_challenger: bool) -> list[Bot]:
         """Convert selected chassis IDs to Bot objects"""
@@ -306,6 +320,9 @@ class ChallengeLayout(BotArenaView):
         # Re-fetch player data in case credits changed
         self.challenger_player = self.cog.db.get_player(self.challenger.id)
         self.opponent_player = self.cog.db.get_player(self.opponent.id)
+
+        # Fetch currency name
+        await self._build_layout_async()
 
         self.clear_items()
         self._build_layout()
@@ -334,7 +351,8 @@ class ChallengeLayout(BotArenaView):
 
         # Title with bet info - ping the opponent
         total_pot = self.challenger_bet + self.opponent_bet
-        pot_text = f"\n**💰 Pot:** {humanize_number(total_pot)} credits" if total_pot > 0 else ""
+        currency_name = self._currency_name or "credits"
+        pot_text = f"\n**💰 Pot:** {humanize_number(total_pot)} {currency_name}" if total_pot > 0 else ""
         container.add_item(
             ui.TextDisplay(
                 f"# ⚔️ PvP Challenge!{pot_text}\n**{self.challenger.display_name}** vs {self.opponent.mention}"
@@ -357,7 +375,7 @@ class ChallengeLayout(BotArenaView):
             challenger_text += "*Select your bots below...*\n"
 
         if self.challenger_bet > 0:
-            challenger_text += f"**Bet:** {humanize_number(self.challenger_bet)} credits"
+            challenger_text += f"**Bet:** {humanize_number(self.challenger_bet)} {currency_name}"
 
         container.add_item(ui.TextDisplay(challenger_text))
 
@@ -377,7 +395,7 @@ class ChallengeLayout(BotArenaView):
             opponent_text += "*Select your bots below...*\n"
 
         if self.opponent_bet > 0:
-            opponent_text += f"**Bet:** {humanize_number(self.opponent_bet)} credits"
+            opponent_text += f"**Bet:** {humanize_number(self.opponent_bet)} {currency_name}"
 
         container.add_item(ui.TextDisplay(opponent_text))
 
@@ -417,13 +435,16 @@ class ChallengeLayout(BotArenaView):
                 return
 
             # Verify bet is still affordable
-            if self.challenger_bet > self.challenger_player.credits:
-                await interaction.response.send_message(
-                    f"❌ You no longer have enough credits for your bet! "
-                    f"(Need {humanize_number(self.challenger_bet)}, have {humanize_number(self.challenger_player.credits)})",
-                    ephemeral=True,
-                )
-                return
+            if self.challenger_bet > 0:
+                balance = await bank.get_balance(self.challenger)
+                if self.challenger_bet > balance:
+                    currency_name = await bank.get_currency_name(self.ctx.guild)
+                    await interaction.response.send_message(
+                        f"❌ You no longer have enough {currency_name} for your bet! "
+                        f"(Need {humanize_number(self.challenger_bet)}, have {humanize_number(balance)})",
+                        ephemeral=True,
+                    )
+                    return
 
             self.challenger_ready = not self.challenger_ready
 
@@ -433,13 +454,16 @@ class ChallengeLayout(BotArenaView):
                 return
 
             # Verify bet is still affordable
-            if self.opponent_bet > self.opponent_player.credits:
-                await interaction.response.send_message(
-                    f"❌ You no longer have enough credits for your bet! "
-                    f"(Need {humanize_number(self.opponent_bet)}, have {humanize_number(self.opponent_player.credits)})",
-                    ephemeral=True,
-                )
-                return
+            if self.opponent_bet > 0:
+                balance = await bank.get_balance(self.opponent)
+                if self.opponent_bet > balance:
+                    currency_name = await bank.get_currency_name(self.ctx.guild)
+                    await interaction.response.send_message(
+                        f"❌ You no longer have enough {currency_name} for your bet! "
+                        f"(Need {humanize_number(self.opponent_bet)}, have {humanize_number(balance)})",
+                        ephemeral=True,
+                    )
+                    return
 
             self.opponent_ready = not self.opponent_ready
 
@@ -489,19 +513,29 @@ class ChallengeLayout(BotArenaView):
             self._unready_both()
             return
 
-        # Deduct bets upfront
+        # Deduct bets from Red economy upfront
+        currency_name = await bank.get_currency_name(self.ctx.guild)
         if self.challenger_bet > 0:
-            if self.challenger_player.credits < self.challenger_bet:
+            try:
+                await bank.withdraw_credits(self.challenger, self.challenger_bet)
+            except ValueError:
                 await interaction.response.send_message(
-                    f"❌ {self.challenger.display_name} doesn't have enough credits for their bet!", ephemeral=True
+                    f"❌ {self.challenger.display_name} doesn't have enough {currency_name} for their bet!",
+                    ephemeral=True,
                 )
                 self._unready_both()
                 return
 
         if self.opponent_bet > 0:
-            if self.opponent_player.credits < self.opponent_bet:
+            try:
+                await bank.withdraw_credits(self.opponent, self.opponent_bet)
+            except ValueError:
+                # Refund challenger if opponent can't afford
+                if self.challenger_bet > 0:
+                    await bank.deposit_credits(self.challenger, self.challenger_bet)
                 await interaction.response.send_message(
-                    f"❌ {self.opponent.display_name} doesn't have enough credits for their bet!", ephemeral=True
+                    f"❌ {self.opponent.display_name} doesn't have enough {currency_name} for their bet!",
+                    ephemeral=True,
                 )
                 self._unready_both()
                 return
@@ -563,14 +597,12 @@ class ChallengeLayout(BotArenaView):
             self.challenger_player.pvp_wins += 1
             self.opponent_player.pvp_losses += 1
 
-            # Winner gets the entire pot
+            # Winner gets the entire pot from Red economy
             if total_pot > 0:
-                self.challenger_player.credits += total_pot
-                self.opponent_player.credits -= self.opponent_bet
-                # Challenger already "bet" their money, now they get it back plus opponent's bet
+                await bank.deposit_credits(self.challenger, total_pot)
 
             result_text = f"🏆 **{self.challenger.display_name}** wins!"
-            reward_text = f"Won **{humanize_number(total_pot)}** credits!" if total_pot > 0 else ""
+            reward_text = f"Won **{humanize_number(total_pot)}** {currency_name}!" if total_pot > 0 else ""
             color = discord.Color.green()
 
         elif winner_team == 2:
@@ -579,23 +611,34 @@ class ChallengeLayout(BotArenaView):
             self.opponent_player.pvp_wins += 1
             self.challenger_player.pvp_losses += 1
 
-            # Winner gets the entire pot
+            # Winner gets the entire pot from Red economy
             if total_pot > 0:
-                self.opponent_player.credits += total_pot
-                self.challenger_player.credits -= self.challenger_bet
+                await bank.deposit_credits(self.opponent, total_pot)
 
             result_text = f"🏆 **{self.opponent.display_name}** wins!"
-            reward_text = f"Won **{humanize_number(total_pot)}** credits!" if total_pot > 0 else ""
+            reward_text = f"Won **{humanize_number(total_pot)}** {currency_name}!" if total_pot > 0 else ""
             color = discord.Color.green()
 
         else:
-            # Draw - return bets
+            # Draw - return bets from Red economy
             winner = None
             self.challenger_player.pvp_draws += 1
             self.opponent_player.pvp_draws += 1
 
+            # Return bets to both players
+            if self.challenger_bet > 0:
+                try:
+                    await bank.deposit_credits(self.challenger, self.challenger_bet)
+                except BalanceTooHigh as e:
+                    await bank.set_balance(self.challenger, e.max_balance)
+            if self.opponent_bet > 0:
+                try:
+                    await bank.deposit_credits(self.opponent, self.opponent_bet)
+                except BalanceTooHigh as e:
+                    await bank.set_balance(self.opponent, e.max_balance)
+
             result_text = "🤝 It's a draw!"
-            reward_text = "Bets returned to both players." if total_pot > 0 else ""
+            reward_text = f"{currency_name} bets returned to both players." if total_pot > 0 else ""
             color = discord.Color.gold()
 
         # Count kills
@@ -611,7 +654,7 @@ class ChallengeLayout(BotArenaView):
 
         # Build result view
         title = "⚔️ PvP Battle Results"
-        pot_info = f"\n**💰 Pot:** {humanize_number(total_pot)} credits" if total_pot > 0 else ""
+        pot_info = f"\n**💰 Pot:** {humanize_number(total_pot)} {currency_name}" if total_pot > 0 else ""
         description = f"{result_text}{pot_info}\n{reward_text}" if reward_text else result_text
 
         # Build team summaries
