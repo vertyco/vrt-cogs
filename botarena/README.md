@@ -1,5 +1,17 @@
 Bot Arena - Build and Battle Robots!<br/><br/>Create custom battle bots from chassis, plating, and weapons,<br/>then fight against other players in arena combat.
 
+## Requirements
+
+Battle videos are rendered using PyAV. If you experience rendering issues on Linux, you may need to install ffmpeg:
+
+```bash
+# Ubuntu/Debian
+sudo apt install ffmpeg
+
+# RHEL/CentOS
+sudo yum install ffmpeg
+```
+
 # [p]botarenaset
 Configure Bot Arena settings for this server<br/>
  - Usage: `[p]botarenaset`

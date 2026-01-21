@@ -702,10 +702,20 @@ class BattleRenderer:
         import shutil
         import subprocess
 
-        # Check if ffmpeg is available
-        ffmpeg_path = shutil.which("ffmpeg")
+        # Check if ffmpeg is available - try imageio-ffmpeg first, then system ffmpeg
+        ffmpeg_path = None
+        try:
+            import imageio_ffmpeg
+
+            ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
+        except ImportError:
+            pass
+
         if not ffmpeg_path:
-            raise RuntimeError("ffmpeg not found in PATH")
+            ffmpeg_path = shutil.which("ffmpeg")
+
+        if not ffmpeg_path:
+            raise RuntimeError("ffmpeg not found - install imageio-ffmpeg or system ffmpeg")
 
         # Create temp directory for frames
         with tempfile.TemporaryDirectory() as tmpdir:
