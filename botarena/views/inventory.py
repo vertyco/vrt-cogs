@@ -130,8 +130,7 @@ class EquipPlatingRow(ui.ActionRow["ChassisEditorLayout"]):
         if success:
             view.cog.save()
             await view.refresh()
-            files = view.get_image_files()
-            await interaction.response.edit_message(view=view, attachments=files)
+            await view.send(interaction)
         else:
             await interaction.response.send_message(f"❌ {msg}", ephemeral=True)
 
@@ -193,8 +192,7 @@ class EquipWeaponRow(ui.ActionRow["ChassisEditorLayout"]):
         if success:
             view.cog.save()
             await view.refresh()
-            files = view.get_image_files()
-            await interaction.response.edit_message(view=view, attachments=files)
+            await view.send(interaction)
         else:
             await interaction.response.send_message(f"❌ {msg}", ephemeral=True)
 
@@ -247,7 +245,7 @@ class EditorBotSwitchRow(ui.ActionRow["ChassisEditorLayout"]):
         await interaction.response.defer()
         editor = await ChassisEditorLayout.create(self._view.ctx, self._view.cog, chassis, parent=self._view.parent)
         editor.message = self._view.message
-        files = editor.get_image_files()
+        files = editor.get_attachments()
         await interaction.followup.edit_message(self._view.message.id, view=editor, attachments=files)
         self._view.stop()
 
@@ -287,8 +285,7 @@ class SpawnOrderRow(ui.ActionRow["ChassisEditorLayout"]):
         self._view.chassis.spawn_order = new_order
         self._view.cog.save()
         await self._view.refresh()
-        files = self._view.get_image_files()
-        await interaction.response.edit_message(view=self._view, attachments=files)
+        await self._view.send(interaction)
 
 
 class ChassisEditorLayout(BotArenaView):
@@ -316,7 +313,7 @@ class ChassisEditorLayout(BotArenaView):
         self.clear_items()
         await self._build_layout()
 
-    def get_image_files(self) -> list[discord.File]:
+    def get_attachments(self) -> list[discord.File]:
         """Get the list of image files for attachment"""
         return self.image_files
 
@@ -351,9 +348,10 @@ class ChassisEditorLayout(BotArenaView):
             header_section.add_item(header_text)
         except RuntimeError:
             # No image available, just show text
-            header_section = ui.Section()
-            header_section.add_item(header_text)
-        container.add_item(header_section)
+            header_section = None
+            container.add_item(header_text)
+        if header_section is not None:
+            container.add_item(header_section)
 
         container.add_item(ui.Separator(spacing=discord.SeparatorSpacing.small))
 
@@ -467,7 +465,7 @@ class ChassisEditorLayout(BotArenaView):
 
         async def tactics_callback(interaction: discord.Interaction):
             tactics_view = EditorTacticsView(self)
-            await interaction.response.edit_message(view=tactics_view, attachments=[])
+            await interaction.response.edit_message(view=tactics_view)
 
         tactics_btn.callback = tactics_callback
         action_row.add_item(tactics_btn)
@@ -538,22 +536,7 @@ class ChassisEditorLayout(BotArenaView):
         back_btn = ui.Button(label="Back", style=discord.ButtonStyle.secondary, emoji="↩️")
 
         async def back_callback(interaction: discord.Interaction):
-            if isinstance(self.parent, GarageLayout):
-                # Reset parent's navigated_away flag so it can handle timeouts again
-                if hasattr(self.parent, "_navigated_away"):
-                    self.parent._navigated_away = False
-                # Rebuild parent layout and get its files
-                self.parent.player = self.parent.cog.db.get_player(self.parent.ctx.author.id)
-                self.parent.clear_items()
-                await self.parent._build_layout()
-                files = self.parent.get_image_files()
-                if files:
-                    await interaction.response.edit_message(view=self.parent, attachments=files)
-                else:
-                    await interaction.response.edit_message(view=self.parent, attachments=[])
-            else:
-                await interaction.response.defer()
-            self.stop()
+            await self.navigate_back(interaction)
 
         back_btn.callback = back_callback
         action_row.add_item(back_btn)
@@ -605,8 +588,7 @@ class GarageSelectRow(ui.ActionRow["GarageLayout"]):
 
         editor = await ChassisEditorLayout.create(view.ctx, view.cog, chassis, parent=view)
         view.navigate_to_child(editor)
-        files = editor.get_image_files()
-        await interaction.response.edit_message(view=editor, attachments=files)
+        await editor.send(interaction)
 
 
 class GarageControlsRow(ui.ActionRow["GarageLayout"]):
@@ -617,11 +599,7 @@ class GarageControlsRow(ui.ActionRow["GarageLayout"]):
         view: GarageLayout = self.view
         inv_view = InventoryLayout(view.ctx, view.cog, parent=view)
         view.navigate_to_child(inv_view)
-        files = inv_view.get_image_files()
-        if files:
-            await interaction.response.edit_message(view=inv_view, attachments=files)
-        else:
-            await interaction.response.edit_message(view=inv_view)
+        await inv_view.send(interaction)
 
     @ui.button(label="Shop", style=discord.ButtonStyle.secondary, emoji="🛒")
     async def shop_button(self, interaction: discord.Interaction, button: ui.Button):
@@ -630,11 +608,7 @@ class GarageControlsRow(ui.ActionRow["GarageLayout"]):
         view: GarageLayout = self.view
         shop_view = ShopView(view.ctx, view.cog.db, view.cog.registry, cog=view.cog, parent=view)
         view.navigate_to_child(shop_view)
-        image_file = shop_view.get_image_file()
-        if image_file:
-            await interaction.response.edit_message(view=shop_view, attachments=[image_file])
-        else:
-            await interaction.response.edit_message(view=shop_view, attachments=[])
+        await shop_view.send(interaction)
 
     @ui.button(label="Campaign", style=discord.ButtonStyle.success, emoji="⚔️")
     async def campaign_button(self, interaction: discord.Interaction, button: ui.Button):
@@ -653,43 +627,11 @@ class GarageControlsRow(ui.ActionRow["GarageLayout"]):
             return
         campaign_view = CampaignLayout(view.ctx, view.cog, parent=view)
         view.navigate_to_child(campaign_view)
-        image_file = campaign_view.get_arena_image_file()
-        if image_file:
-            await interaction.response.edit_message(view=campaign_view, attachments=[image_file])
-        else:
-            await interaction.response.edit_message(view=campaign_view)
+        await campaign_view.send(interaction)
 
     @ui.button(label="Back", style=discord.ButtonStyle.secondary, emoji="↩️")
     async def back_button(self, interaction: discord.Interaction, button: ui.Button):
-        view: GarageLayout = self.view
-        if view.parent:
-            # Reset parent's navigated_away flag so it can handle timeouts again
-            if hasattr(view.parent, "_navigated_away"):
-                view.parent._navigated_away = False
-
-            # Check if parent is a LayoutView or traditional View
-            if isinstance(view.parent, ui.LayoutView):
-                # LayoutView - rebuild layout to reflect any changes
-                build_layout = getattr(view.parent, "_build_layout", None)
-                if build_layout:
-                    view.parent.clear_items()
-                    build_layout()
-                await interaction.response.edit_message(view=view.parent, attachments=[])
-            elif hasattr(view.parent, "get_embed"):
-                # Traditional View with embed - need to resend
-                await interaction.response.defer()
-                try:
-                    await view.message.delete()
-                except discord.HTTPException:
-                    pass
-                new_msg = await view.ctx.send(embed=view.parent.get_embed(), view=view.parent)
-                view.parent.message = new_msg
-            else:
-                # Simple View without get_embed
-                await interaction.response.edit_message(view=view.parent, attachments=[])
-        else:
-            await interaction.response.defer()
-        view.stop()
+        await self.view.navigate_back(interaction)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -893,8 +835,7 @@ class EditorTacticsControlsRow(ui.ActionRow["EditorTacticsView"]):
 
         # Return to editor
         await self.view.editor.refresh()
-        files = self.view.editor.get_image_files()
-        await interaction.response.edit_message(view=self.view.editor, attachments=files)
+        await self.view.editor.send(interaction)
         self.view.stop()
 
     @ui.button(label="Reset to Default", style=discord.ButtonStyle.secondary, row=3)
@@ -916,8 +857,7 @@ class RenameChassisModal(ui.Modal, title="Rename Bot"):
         self.editor_view.chassis.custom_name = str(self.name.value)
         self.editor_view.cog.save()
         await self.editor_view.refresh()
-        files = self.editor_view.get_image_files()
-        await interaction.response.edit_message(view=self.editor_view, attachments=files)
+        await self.editor_view.send(interaction)
 
 
 class GarageLayout(BotArenaView):
@@ -1035,7 +975,7 @@ class GarageLayout(BotArenaView):
         # Controls row (Inventory, Back)
         self.add_item(GarageControlsRow())
 
-    def get_image_files(self) -> list[discord.File]:
+    def get_attachments(self) -> list[discord.File]:
         """Get the list of bot image files for attachment"""
         return self.bot_image_files
 
@@ -1058,7 +998,7 @@ class InventoryLayout(BotArenaView):
 
         self._build_layout()
 
-    def get_image_files(self) -> list[discord.File]:
+    def get_attachments(self) -> list[discord.File]:
         """Get discord.File objects for item images in current category"""
         files = []
         items = [p for p in self.player.equipment_inventory if p.part_type == self.category and p.quantity > 0]
@@ -1197,11 +1137,7 @@ class InventoryLayout(BotArenaView):
             self.category = "plating"
             self.selected_item = None
             self.update_display()
-            files = self.get_image_files()
-            if files:
-                await interaction.response.edit_message(view=self, attachments=files)
-            else:
-                await interaction.response.edit_message(view=self, attachments=[])
+            await self.send(interaction)
 
         plating_btn.callback = plating_callback
         action_row.add_item(plating_btn)
@@ -1216,11 +1152,7 @@ class InventoryLayout(BotArenaView):
             self.category = "component"
             self.selected_item = None
             self.update_display()
-            files = self.get_image_files()
-            if files:
-                await interaction.response.edit_message(view=self, attachments=files)
-            else:
-                await interaction.response.edit_message(view=self, attachments=[])
+            await self.send(interaction)
 
         weapons_btn.callback = weapons_callback
         action_row.add_item(weapons_btn)
@@ -1289,19 +1221,7 @@ class InventoryLayout(BotArenaView):
         back_btn = ui.Button(label="Back", style=discord.ButtonStyle.secondary, emoji="↩️")
 
         async def back_callback(interaction: discord.Interaction):
-            if isinstance(self.parent, InventoryLayout):
-                # Refresh the parent's data and rebuild its layout
-                self.parent.player = self.parent.cog.db.get_player(self.parent.ctx.author.id)
-                self.parent.clear_items()
-                await self.parent._build_layout()
-                files = self.parent.get_image_files()
-                if files:
-                    await interaction.response.edit_message(view=self.parent, attachments=files)
-                else:
-                    await interaction.response.edit_message(view=self.parent, attachments=[])
-            else:
-                await interaction.response.defer()
-            self.stop()
+            await self.navigate_back(interaction)
 
         back_btn.callback = back_callback
         action_row.add_item(back_btn)

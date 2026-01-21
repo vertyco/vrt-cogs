@@ -184,7 +184,7 @@ class PartsViewerLayout(ui.LayoutView):
             except discord.HTTPException:
                 pass
 
-    def get_image_files(self) -> list[discord.File]:
+    def get_attachments(self) -> list[discord.File]:
         """Get the list of image files for attachment"""
         files = []
         if self.bot_image_file:
@@ -201,7 +201,7 @@ class PartsViewerLayout(ui.LayoutView):
         """Refresh the view and update the message"""
         await self._generate_images()
         self._build_layout()
-        files = self.get_image_files()
+        files = self.get_attachments()
         await interaction.followup.edit_message(self.message.id, view=self, attachments=files)
 
     async def _generate_images(self):

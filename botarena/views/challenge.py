@@ -18,6 +18,7 @@ if t.TYPE_CHECKING:
     from ..main import BotArena
 
 from ..common.models import Bot, PartsRegistry, PlayerData
+from ..constants import get_random_tip
 from .base import BotArenaView
 from .hub import create_battle_result_view, format_battle_stats
 
@@ -312,8 +313,6 @@ class ChallengeLayout(BotArenaView):
 
     def _build_layout(self):
         if self.battle_in_progress:
-            from ..constants import get_random_tip
-
             challenger_bots = self._get_selected_bots(is_challenger=True)
             opponent_bots = self._get_selected_bots(is_challenger=False)
 

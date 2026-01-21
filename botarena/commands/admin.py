@@ -76,7 +76,7 @@ class AdminCommands(MixinMeta):
         Debug tool for previewing part combinations and weapon offsets.
         """
         view = await PartsViewerLayout.create(self, ctx.author.id)
-        files = view.get_image_files()
+        files = view.get_attachments()
         view.message = await ctx.send(view=view, files=files)
 
     @botarenaset.group(name="telemetry")

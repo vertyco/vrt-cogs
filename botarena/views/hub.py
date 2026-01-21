@@ -32,7 +32,9 @@ from ..common.campaign import (
 )
 from ..common.image_utils import find_image_path, load_image
 from ..common.models import TEAM_COLOR_EMOJIS, TEAM_COLORS, Chassis, Component, Plating
+from ..constants import get_random_tip
 from .base import BotArenaView
+from .shop import _get_part_image_path
 
 log = logging.getLogger("red.vrt.botarena.hub")
 
@@ -448,21 +450,13 @@ class TutorialActionRow(ui.ActionRow["TutorialLayout"]):
 
             view = await GarageLayout.create(self.view.ctx, self.view.cog, parent=self.view)
             self.view.navigate_to_child(view)
-            files = view.get_image_files()
-            if files:
-                await interaction.response.edit_message(view=view, attachments=files)
-            else:
-                await interaction.response.edit_message(view=view)
+            await view.send(interaction)
 
         elif step_id == "start_campaign":
             # Go to Campaign
             view = CampaignLayout(self.view.ctx, self.view.cog, parent=self.view)
             self.view.navigate_to_child(view)
-            image_file = view.get_arena_image_file()
-            if image_file:
-                await interaction.response.edit_message(view=view, attachments=[image_file])
-            else:
-                await interaction.response.edit_message(view=view)
+            await view.send(interaction)
 
         else:
             # Go to Shop with the appropriate category
@@ -478,11 +472,7 @@ class TutorialActionRow(ui.ActionRow["TutorialLayout"]):
                 view._build_layout()
 
             self.view.navigate_to_child(view)
-            image_file = view.get_image_file()
-            if image_file:
-                await interaction.response.edit_message(view=view, attachments=[image_file])
-            else:
-                await interaction.response.edit_message(view=view, attachments=[])
+            await view.send(interaction)
 
     @ui.button(label="Next Step", style=discord.ButtonStyle.success, emoji="➡️")
     async def next_button(self, interaction: discord.Interaction, button: ui.Button):
@@ -792,11 +782,7 @@ class MainMenuRow(ui.ActionRow["GameHubLayout"]):
             return
         view = CampaignLayout(self.view.ctx, self.view.cog, parent=self.view)
         self.view.navigate_to_child(view)
-        image_file = view.get_arena_image_file()
-        if image_file:
-            await interaction.response.edit_message(view=view, attachments=[image_file])
-        else:
-            await interaction.response.edit_message(view=view)
+        await view.send(interaction)
 
     @ui.button(label="Garage", style=discord.ButtonStyle.secondary, emoji="🏠")
     async def bots_button(self, interaction: discord.Interaction, button: ui.Button):
@@ -804,11 +790,7 @@ class MainMenuRow(ui.ActionRow["GameHubLayout"]):
 
         view = await GarageLayout.create(self.view.ctx, self.view.cog, parent=self.view)
         self.view.navigate_to_child(view)
-        files = view.get_image_files()
-        if files:
-            await interaction.response.edit_message(view=view, attachments=files)
-        else:
-            await interaction.response.edit_message(view=view)
+        await view.send(interaction)
 
     @ui.button(label="Shop", style=discord.ButtonStyle.secondary, emoji="🛒")
     async def shop_button(self, interaction: discord.Interaction, button: ui.Button):
@@ -816,11 +798,7 @@ class MainMenuRow(ui.ActionRow["GameHubLayout"]):
 
         view = ShopView(self.view.ctx, self.view.cog.db, self.view.cog.registry, cog=self.view.cog, parent=self.view)
         self.view.navigate_to_child(view)
-        image_file = view.get_image_file()
-        if image_file:
-            await interaction.response.edit_message(view=view, attachments=[image_file])
-        else:
-            await interaction.response.edit_message(view=view, attachments=[])
+        await view.send(interaction)
 
 
 class SecondaryMenuRow(ui.ActionRow["GameHubLayout"]):
@@ -1065,23 +1043,7 @@ class MissionSelectRow(ui.ActionRow["CampaignLayout"]):
 class CampaignNavigationRow(ui.ActionRow["CampaignLayout"]):
     @ui.button(label="Back", style=discord.ButtonStyle.secondary)
     async def back_button(self, interaction: discord.Interaction, button: ui.Button):
-        if self.view.parent:
-            # Reset parent's navigated_away flag so it can handle timeouts again
-            if hasattr(self.view.parent, "_navigated_away"):
-                setattr(self.view.parent, "_navigated_away", False)
-
-            # Rebuild parent layout if it's a LayoutView
-            if isinstance(self.view.parent, ui.LayoutView):
-                build_layout = getattr(self.view.parent, "_build_layout", None)
-                if build_layout:
-                    self.view.parent.clear_items()
-                    build_layout()
-
-            # Navigate back without clearing attachments (parent manages its own)
-            await interaction.response.edit_message(view=self.view.parent)
-        else:
-            await interaction.response.defer()
-        self.view.stop()
+        await self.view.navigate_back(interaction)
 
 
 class CampaignLayout(BotArenaView):
@@ -1113,21 +1075,17 @@ class CampaignLayout(BotArenaView):
         # All missions completed, or none available - default to chapter 1
         return 1
 
-    def get_arena_image_file(self) -> t.Optional[discord.File]:
+    def get_attachments(self) -> list[discord.File]:
         """Get the arena background image file for the selected chapter"""
         image_path = find_image_path("", f"arena_chapter_{self.selected_chapter}")
         if image_path and image_path.exists():
-            return discord.File(image_path, filename="arena.webp")
-        return None
+            return [discord.File(image_path, filename="arena.webp")]
+        return []
 
     async def refresh(self, interaction: discord.Interaction):
         self.clear_items()
         self._build_layout()
-        image_file = self.get_arena_image_file()
-        if image_file:
-            await interaction.response.edit_message(view=self, attachments=[image_file])
-        else:
-            await interaction.response.edit_message(view=self, attachments=[])
+        await self.send(interaction)
 
     def _build_layout(self):
         player = self.cog.db.get_player(self.ctx.author.id)
@@ -1247,16 +1205,7 @@ class MissionActionRow(ui.ActionRow["MissionBriefingLayout"]):
 
     @ui.button(label="Back", style=discord.ButtonStyle.secondary)
     async def back_button(self, interaction: discord.Interaction, button: ui.Button):
-        if self.view.parent:
-            # Reset parent's navigated_away flag so it can handle timeouts again
-            if isinstance(self.view.parent, BotArenaView):
-                self.view.parent._navigated_away = False
-            if isinstance(self.view.parent, ui.LayoutView) and hasattr(self.view.parent, "_build_layout"):
-                self.view.parent.clear_items()
-                getattr(self.view.parent, "_build_layout")()
-            await interaction.response.edit_message(view=self.view.parent)
-        else:
-            self.view.stop()
+        await self.view.navigate_back(interaction)
 
 
 class MissionBriefingLayout(BotArenaView):
@@ -1281,8 +1230,6 @@ class MissionBriefingLayout(BotArenaView):
 
     def _build_layout(self):
         if self.battle_in_progress:
-            from ..constants import get_random_tip
-
             container = ui.Container(accent_colour=discord.Color.orange())
             container.add_item(
                 ui.TextDisplay(
@@ -1763,8 +1710,6 @@ class MissionBriefingLayout(BotArenaView):
                 embed.add_field(name="Weight", value=f"{part.weight}wt", inline=True)
 
             # Find image file using the same helper as shop
-            from .shop import _get_part_image_path
-
             image_path = _get_part_image_path(image_folder, part.name)
 
             if image_path and image_path.exists():
@@ -1811,17 +1756,12 @@ class ProfileNavigationRow(ui.ActionRow["ProfileLayout"]):
     @ui.button(label="Back", style=discord.ButtonStyle.secondary)
     async def back_button(self, interaction: discord.Interaction, button: ui.Button):
         if self.view.parent:
-            # Reset parent's navigated_away flag so it can handle timeouts again
-            if isinstance(self.view.parent, BotArenaView):
-                self.view.parent._navigated_away = False
-            if isinstance(self.view.parent, ui.LayoutView) and hasattr(self.view.parent, "_build_layout"):
-                self.view.parent.clear_items()
-                getattr(self.view.parent, "_build_layout")()
-            await interaction.response.edit_message(view=self.view.parent)
+            await self.view.navigate_back(interaction)
         else:
             view = GameHubLayout(self.view.ctx, self.view.cog)
             view.message = self.view.message
             await interaction.response.edit_message(view=view)
+            self.view.stop()
 
 
 class ProfileLayout(BotArenaView):
@@ -1947,17 +1887,12 @@ class PvPActionsRow(ui.ActionRow["PvPLayout"]):
     @ui.button(label="Back", style=discord.ButtonStyle.secondary)
     async def back_button(self, interaction: discord.Interaction, button: ui.Button):
         if self.view.parent:
-            # Reset parent's navigated_away flag so it can handle timeouts again
-            if isinstance(self.view.parent, BotArenaView):
-                self.view.parent._navigated_away = False
-            if isinstance(self.view.parent, ui.LayoutView) and hasattr(self.view.parent, "_build_layout"):
-                self.view.parent.clear_items()
-                getattr(self.view.parent, "_build_layout")()
-            await interaction.response.edit_message(view=self.view.parent)
+            await self.view.navigate_back(interaction)
         else:
             view = GameHubLayout(self.view.ctx, self.view.cog)
             view.message = self.view.message
             await interaction.response.edit_message(view=view)
+            self.view.stop()
 
 
 class PvPLayout(BotArenaView):
