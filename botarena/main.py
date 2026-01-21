@@ -27,7 +27,7 @@ from .constants import CHASSIS, COMPONENTS, PLATING
 log = logging.getLogger("red.vrt.botarena")
 
 __author__ = "Vertyco"
-__version__ = "1.0.0a"
+__version__ = "1.0.1a"
 
 
 class BotArena(Commands, commands.Cog, metaclass=CompositeMetaClass):
@@ -229,14 +229,26 @@ class BotArena(Commands, commands.Cog, metaclass=CompositeMetaClass):
             stderr_text = stderr.decode() if stderr else ""
             stdout_text = stdout.decode() if stdout else ""
 
+            # Always log stderr if it contains anything substantial (helps debug on Linux)
+            if stderr_text and stderr_text.strip():
+                # Filter out just progress lines but keep anything else
+                error_lines = [
+                    line
+                    for line in stderr_text.split("\n")
+                    if line.strip()
+                    and not line.startswith("Rendering frame")
+                    and not line.startswith("Adding ")
+                    and not line.startswith("Writing video")
+                ]
+                if error_lines:
+                    log.warning(f"Battle subprocess stderr: {chr(10).join(error_lines)}")
+
             if proc.returncode != 0:
-                # Only log actual errors, not progress output
-                if "error" in stderr_text.lower() or "exception" in stderr_text.lower():
-                    log.error(f"Battle subprocess failed: {stderr_text}")
-                else:
-                    log.error(f"Battle subprocess exited with code {proc.returncode}")
-                    if stdout_text:
-                        log.error(f"Stdout: {stdout_text}")
+                log.error(f"Battle subprocess exited with code {proc.returncode}")
+                if stderr_text:
+                    log.error(f"Stderr: {stderr_text}")
+                if stdout_text:
+                    log.error(f"Stdout: {stdout_text}")
                 return None, None
 
             # Parse result from stdout
