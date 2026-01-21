@@ -832,17 +832,6 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         ),
                     ),
                     NPCBot(
-                        name="Guardian",
-                        chassis_name=DURICHAS.name,  # Durichas: 26+22+22=70 (cap 70, maxed!)
-                        plating_name=GAIACORP_EG_SR.name,  # Best available armor
-                        component_name=DARSIK_R200.name,  # High DPM suppressive fire
-                        # Guardian: Protector stance, stays near team and suppresses
-                        tactical_orders=TacticalOrders(
-                            movement_stance=MovementStance.PROTECTOR,
-                            engagement_range=EngagementRange.OPTIMAL,
-                        ),
-                    ),
-                    NPCBot(
                         name="Herald",
                         chassis_name=CLR_Z050.name,  # CLR-Z050: 15+22+18=55 (cap 50, over!)
                         plating_name=GAIACORP_EG_SR.name,  # Heavy armor
@@ -851,6 +840,17 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         tactical_orders=TacticalOrders(
                             movement_stance=MovementStance.PROTECTOR,
                             engagement_range=EngagementRange.MAX,
+                        ),
+                    ),
+                    NPCBot(
+                        name="Guardian",
+                        chassis_name=DURICHAS.name,  # Durichas: 26+22+22=70 (cap 70, maxed!)
+                        plating_name=GAIACORP_EG_SR.name,  # Best available armor
+                        component_name=DARSIK_R200.name,  # High DPM suppressive fire
+                        # Guardian: Protector stance, stays near team and suppresses
+                        tactical_orders=TacticalOrders(
+                            movement_stance=MovementStance.DEFENSIVE,
+                            engagement_range=EngagementRange.OPTIMAL,
                         ),
                     ),
                 ],
