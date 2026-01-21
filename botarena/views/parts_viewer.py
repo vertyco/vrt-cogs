@@ -35,7 +35,7 @@ def _load_part_preview(folder: str, name: str) -> t.Optional[bytes]:
         new_size = (img.width * 2, img.height * 2)
         img = img.resize(new_size, Image.Resampling.NEAREST)
         buffer = io.BytesIO()
-        img.save(buffer, format="PNG")
+        img.save(buffer, format="WEBP", quality=95)
         return buffer.getvalue()
     except (OSError, ValueError):
         # OSError: corrupted image data
@@ -223,7 +223,7 @@ class PartsViewerLayout(ui.LayoutView):
                     orientation=0,  # Facing right
                 )
                 if bot_bytes:
-                    self.bot_image_file = discord.File(io.BytesIO(bot_bytes), filename="bot_preview.png")
+                    self.bot_image_file = discord.File(io.BytesIO(bot_bytes), filename="bot_preview.webp")
             except (OSError, ValueError, KeyError):
                 # OSError: image file issues
                 # ValueError: invalid image parameters
@@ -240,11 +240,11 @@ class PartsViewerLayout(ui.LayoutView):
         chassis_bytes, plating_bytes, weapon_bytes = await asyncio.to_thread(load_parts)
 
         if chassis_bytes:
-            self.chassis_image_file = discord.File(io.BytesIO(chassis_bytes), filename="chassis.png")
+            self.chassis_image_file = discord.File(io.BytesIO(chassis_bytes), filename="chassis.webp")
         if plating_bytes:
-            self.plating_image_file = discord.File(io.BytesIO(plating_bytes), filename="plating.png")
+            self.plating_image_file = discord.File(io.BytesIO(plating_bytes), filename="plating.webp")
         if weapon_bytes:
-            self.weapon_image_file = discord.File(io.BytesIO(weapon_bytes), filename="weapon.png")
+            self.weapon_image_file = discord.File(io.BytesIO(weapon_bytes), filename="weapon.webp")
 
     def _build_layout(self):
         """Build the layout with current part selections"""
@@ -269,7 +269,7 @@ class PartsViewerLayout(ui.LayoutView):
         header_text = ui.TextDisplay("# 🔧 Parts Viewer\n**Combined Preview**")
 
         if self.bot_image_file:
-            bot_thumbnail = ui.Thumbnail(media="attachment://bot_preview.png")
+            bot_thumbnail = ui.Thumbnail(media="attachment://bot_preview.webp")
             header_section = ui.Section(header_text, accessory=bot_thumbnail)
             container.add_item(header_section)
         else:
@@ -281,7 +281,7 @@ class PartsViewerLayout(ui.LayoutView):
         # Chassis section
         chassis_text = ui.TextDisplay(f"**Chassis:** {chassis_name}")
         if self.chassis_image_file:
-            chassis_thumb = ui.Thumbnail(media="attachment://chassis.png")
+            chassis_thumb = ui.Thumbnail(media="attachment://chassis.webp")
             container.add_item(ui.Section(chassis_text, accessory=chassis_thumb))
         else:
             container.add_item(chassis_text)
@@ -289,7 +289,7 @@ class PartsViewerLayout(ui.LayoutView):
         # Plating section
         plating_text = ui.TextDisplay(f"**Plating:** {plating_name}")
         if self.plating_image_file:
-            plating_thumb = ui.Thumbnail(media="attachment://plating.png")
+            plating_thumb = ui.Thumbnail(media="attachment://plating.webp")
             container.add_item(ui.Section(plating_text, accessory=plating_thumb))
         else:
             container.add_item(plating_text)
@@ -297,7 +297,7 @@ class PartsViewerLayout(ui.LayoutView):
         # Weapon section
         weapon_text = ui.TextDisplay(f"**Weapon:** {weapon_name}{mount_text}")
         if self.weapon_image_file:
-            weapon_thumb = ui.Thumbnail(media="attachment://weapon.png")
+            weapon_thumb = ui.Thumbnail(media="attachment://weapon.webp")
             container.add_item(ui.Section(weapon_text, accessory=weapon_thumb))
         else:
             container.add_item(weapon_text)

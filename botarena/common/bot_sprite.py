@@ -208,10 +208,10 @@ def render_bot_sprite_to_bytes(
     tint_intensity: float = 0.4,
     output_size: t.Optional[tuple[int, int]] = None,
 ) -> bytes:
-    """Render a bot sprite and return as PNG bytes.
+    """Render a bot sprite and return as WEBP bytes.
 
     This is a convenience wrapper around render_bot_sprite() that handles
-    output sizing and PNG encoding.
+    output sizing and WEBP encoding.
 
     Args:
         plating_name: Name of the plating to render (required)
@@ -225,7 +225,7 @@ def render_bot_sprite_to_bytes(
         output_size: If specified, resize final image to this (width, height)
 
     Returns:
-        PNG image bytes, or empty bytes if rendering failed.
+        WEBP image bytes, or empty bytes if rendering failed.
     """
     img = render_bot_sprite(
         plating_name=plating_name,

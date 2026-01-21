@@ -67,7 +67,7 @@ def load_image(folder: str, name: str) -> t.Optional[Image.Image]:
 
 
 def load_image_bytes(folder: str, name: str, scale: int = 1) -> t.Optional[bytes]:
-    """Load an image and return as PNG bytes.
+    """Load an image and return as WEBP bytes.
 
     Args:
         folder: Subfolder in data directory
@@ -75,7 +75,7 @@ def load_image_bytes(folder: str, name: str, scale: int = 1) -> t.Optional[bytes
         scale: Scale multiplier (e.g., 2 for 2x size)
 
     Returns:
-        PNG image bytes, or None if not found.
+        WEBP image bytes, or None if not found.
     """
     import io
 

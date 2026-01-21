@@ -611,7 +611,7 @@ class BotBuilderView(BotArenaView):
         # Build sections with individual thumbnails for each part
         # Chassis section
         if chassis_name:
-            chassis_thumb = ui.Thumbnail(media="attachment://chassis.png")
+            chassis_thumb = ui.Thumbnail(media="attachment://chassis.webp")
             chassis_section = ui.Section(ui.TextDisplay(f"**🚗 Chassis**\n{chassis_text}"), accessory=chassis_thumb)
             container.add_item(chassis_section)
         else:
@@ -619,7 +619,7 @@ class BotBuilderView(BotArenaView):
 
         # Plating section
         if plating_name:
-            plating_thumb = ui.Thumbnail(media="attachment://plating.png")
+            plating_thumb = ui.Thumbnail(media="attachment://plating.webp")
             plating_section = ui.Section(ui.TextDisplay(f"**🛡️ Plating**\n{plating_text}"), accessory=plating_thumb)
             container.add_item(plating_section)
         else:
@@ -627,7 +627,7 @@ class BotBuilderView(BotArenaView):
 
         # Weapon section
         if component_name:
-            weapon_thumb = ui.Thumbnail(media="attachment://weapon.png")
+            weapon_thumb = ui.Thumbnail(media="attachment://weapon.webp")
             weapon_section = ui.Section(ui.TextDisplay(f"**⚔️ Weapon**\n{component_text}"), accessory=weapon_thumb)
             container.add_item(weapon_section)
         else:
@@ -678,17 +678,17 @@ class BotBuilderView(BotArenaView):
         component_name = getattr(self, "_component_name", None)
 
         if chassis_name:
-            f = get_part_image_file("chassis", chassis_name, "chassis.png")
+            f = get_part_image_file("chassis", chassis_name, "chassis.webp")
             if f:
                 files.append(f)
 
         if plating_name:
-            f = get_part_image_file("plating", plating_name, "plating.png")
+            f = get_part_image_file("plating", plating_name, "plating.webp")
             if f:
                 files.append(f)
 
         if component_name:
-            f = get_part_image_file("weapon", component_name, "weapon.png")
+            f = get_part_image_file("weapon", component_name, "weapon.webp")
             if f:
                 files.append(f)
 

@@ -173,8 +173,8 @@ SANTRIN = Plating(
     cost=300,
     weight=3,
     description="Lightweight fiberglass plating. Decent protection without compromising speed.",
-    center_x=1.5,
-    center_y=-1.8,
+    center_x=-3.5,
+    center_y=-3.0,
     weapon_mount_x=-3.8,
     weapon_mount_y=-3.2,
 )
@@ -383,8 +383,8 @@ TORRIKA_KJ_557 = Component(
     max_range=50,
     projectile_type=ProjectileType.SHOCKWAVE,
     description="Point-blank devastator using a hydraulic ram. Get close and melt them. DPM: 7722",
-    mount_x=-24.5,
-    mount_y=-2.2,
+    mount_x=-12.8,
+    mount_y=-4.0,
 )
 
 DARSIJ = Component(
