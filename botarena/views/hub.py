@@ -1491,14 +1491,15 @@ class MissionBriefingLayout(BotArenaView):
             # Always award credits for winning
             player.credits += entry_fee_paid + self.mission.credit_reward
 
+            # Always increment campaign_wins for leaderboard progression
+            player.campaign_wins += 1
+
             if is_first_completion:
-                # First completion - increment campaign_wins (leaderboard stat) and unlock parts
-                player.campaign_wins += 1
+                # First completion - unlock mission and parts
                 player.complete_mission(self.mission.id)
                 for part_name in self.mission.unlock_parts:
                     player.unlock_part(part_name)
                     newly_unlocked_parts.append(part_name)
-            # Replays still give credits, just don't increment campaign_wins
         elif is_stalemate:
             player.credits += entry_fee_paid
         else:
