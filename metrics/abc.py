@@ -6,6 +6,7 @@ from piccolo.engine.sqlite import SQLiteEngine
 from redbot.core.bot import Red
 
 from .common.utils import DBUtils
+from .db.tables import GlobalSettings
 
 
 class CompositeMetaClass(CogMeta, ABCMeta):
@@ -29,5 +30,17 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def change_snapshot_interval(self, minutes: int) -> None:
+    def configure_task_intervals(self, settings: GlobalSettings) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def change_economy_interval(self, minutes: int) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def change_member_interval(self, minutes: int) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def change_performance_interval(self, minutes: int) -> None:
         raise NotImplementedError

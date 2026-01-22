@@ -1,5 +1,4 @@
 import logging
-import typing as t
 from datetime import datetime, timedelta
 
 import discord
@@ -10,7 +9,7 @@ from redbot.core.commands import parse_timedelta
 
 from ..db.tables import GlobalSettings, GuildSettings
 
-log = logging.getLogger("red.vrt.common.utils")
+log = logging.getLogger("red.vrt.metrics.utils")
 
 
 def chunk(obj_list: list, chunk_size: int):
@@ -49,11 +48,11 @@ def get_window(delta: timedelta, data_points: int, snapshot_interval_minutes: in
 
 
 def get_timespan(
-    timespan: str = None,
-    start_time: str = None,
-    end_time: str = None,
+    timespan: str | None = None,
+    start_time: str | None = None,
+    end_time: str | None = None,
     timezone: str = "UTC",
-) -> t.Tuple[datetime, datetime]:
+) -> tuple[datetime, datetime]:
     # Used by playergraph and lookback commands
     now = TimestamptzNow().python()
     user_tz = pytz.timezone(timezone)

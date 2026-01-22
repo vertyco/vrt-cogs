@@ -103,7 +103,8 @@ class SetConnectionView(discord.ui.View):
                 try:
                     await interaction.followup.send(txt, ephemeral=True)
                 except discord.HTTPException:
-                    await interaction.channel.send(txt, delete_after=10)
+                    if hasattr(interaction.channel, "send"):
+                        await interaction.channel.send(txt, delete_after=10)  # type: ignore
 
         await interaction.edit_original_response(content="Testing connection...")
         conn = None

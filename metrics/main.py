@@ -14,7 +14,14 @@ from redbot_orm import register_cog
 from .abc import CompositeMetaClass
 from .commands import Commands
 from .common.utils import DBUtils
-from .db.tables import TABLES, GlobalSnapshot, GuildSnapshot
+from .db.tables import (
+    TABLES,
+    GlobalEconomySnapshot,
+    GlobalMemberSnapshot,
+    GlobalPerformanceSnapshot,
+    GuildEconomySnapshot,
+    GuildMemberSnapshot,
+)
 from .tasks import TaskLoops
 
 log = logging.getLogger("red.vrt.metrics")
@@ -25,7 +32,7 @@ class Metrics(Commands, TaskLoops, commands.Cog, metaclass=CompositeMetaClass):
     """Track various metrics about your server."""
 
     __author__ = "Vertyco"
-    __version__ = "0.0.7b"
+    __version__ = "1.0.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -67,25 +74,53 @@ class Metrics(Commands, TaskLoops, commands.Cog, metaclass=CompositeMetaClass):
             else:
                 log.error("Failed to establish database connection", exc_info=e)
                 return
-        global_settings = await self.db_utils.get_create_global_settings()
-        if global_settings.snapshot_interval != 5:
-            self.change_snapshot_interval(global_settings.snapshot_interval)
-        self.start_tasks()
-        asyncio.create_task(self.cleanup())
 
-    async def cleanup(self):
+        # Set up per-metric task intervals
+        global_settings = await self.db_utils.get_create_global_settings()
+        self.configure_task_intervals(global_settings)
+        self.start_tasks()
+        asyncio.create_task(self.cleanup_old_snapshots())
+
+    async def cleanup_old_snapshots(self) -> None:
+        """Remove snapshots older than the configured max age."""
         global_settings = await self.db_utils.get_create_global_settings()
         cutoff = TimestamptzNow().python() - timedelta(days=global_settings.max_snapshot_age_days)
-        globals_deleted = (
-            await GlobalSnapshot.delete().where(GlobalSnapshot.created_on < cutoff).returning(GlobalSnapshot.id)
+
+        economy_deleted = (
+            await GlobalEconomySnapshot.delete()
+            .where(GlobalEconomySnapshot.created_on < cutoff)
+            .returning(GlobalEconomySnapshot.id)
         )
-        guilds_deleted = (
-            await GuildSnapshot.delete().where(GuildSnapshot.created_on < cutoff).returning(GuildSnapshot.id)
+        member_deleted = (
+            await GlobalMemberSnapshot.delete()
+            .where(GlobalMemberSnapshot.created_on < cutoff)
+            .returning(GlobalMemberSnapshot.id)
         )
-        if globals_deleted or guilds_deleted:
-            log.info(
-                f"Cleaned up {len(globals_deleted)} global and {len(guilds_deleted)} guild snapshots older than {cutoff}"
-            )
+        perf_deleted = (
+            await GlobalPerformanceSnapshot.delete()
+            .where(GlobalPerformanceSnapshot.created_on < cutoff)
+            .returning(GlobalPerformanceSnapshot.id)
+        )
+        guild_economy_deleted = (
+            await GuildEconomySnapshot.delete()
+            .where(GuildEconomySnapshot.created_on < cutoff)
+            .returning(GuildEconomySnapshot.id)
+        )
+        guild_member_deleted = (
+            await GuildMemberSnapshot.delete()
+            .where(GuildMemberSnapshot.created_on < cutoff)
+            .returning(GuildMemberSnapshot.id)
+        )
+
+        total_deleted = (
+            len(economy_deleted)
+            + len(member_deleted)
+            + len(perf_deleted)
+            + len(guild_economy_deleted)
+            + len(guild_member_deleted)
+        )
+        if total_deleted:
+            log.info(f"Cleaned up {total_deleted} snapshots older than {cutoff}")
 
     def db_active(self) -> bool:
         if not self.db:

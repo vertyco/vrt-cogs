@@ -10,7 +10,15 @@ from redbot.core.utils.chat_formatting import humanize_number, humanize_timedelt
 
 from ..abc import MixinMeta
 from ..common import plots, utils
-from ..db.tables import GlobalSnapshot, GuildSnapshot, ensure_db_connection
+from ..db.tables import (
+    GlobalEconomySnapshot,
+    GlobalMemberSnapshot,
+    GlobalPerformanceSnapshot,
+    GuildEconomySnapshot,
+    GuildMemberSnapshot,
+    ensure_db_connection,
+)
+from ..views.dashboard import open_metrics_dashboard
 
 
 class User(MixinMeta):
@@ -19,6 +27,12 @@ class User(MixinMeta):
     @ensure_db_connection()
     async def metrics(self, ctx: commands.Context) -> None:
         """View metrics about the bot and server."""
+
+    @metrics.command(name="dashboard", aliases=["dash"])
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    async def metrics_dashboard(self, ctx: commands.Context):
+        """Open the interactive metrics dashboard."""
+        await open_metrics_dashboard(ctx, self)
 
     @metrics.command(name="bank", aliases=["economy"])
     @commands.cooldown(1, 10, commands.BucketType.user)
@@ -41,25 +55,27 @@ class User(MixinMeta):
             return await ctx.send(txt, ephemeral=True)
 
         global_settings = await self.db_utils.get_create_global_settings()
-        interval_minutes = global_settings.snapshot_interval
+        interval_minutes = global_settings.economy_interval
 
         currency_name = await bank.get_currency_name(ctx.guild)
         query_key = "average_balance" if average_balance else "bank_total"
 
         if show_global:
             title = f"Global Bank Metrics ({currency_name})"
-            table = GlobalSnapshot
-            query = GlobalSnapshot.select(
-                GlobalSnapshot.created_on,
-                getattr(GlobalSnapshot, query_key),
-            ).where(getattr(GlobalSnapshot, query_key).is_not_null())
+            table = GlobalEconomySnapshot
+            query = GlobalEconomySnapshot.select(
+                GlobalEconomySnapshot.created_on,
+                getattr(GlobalEconomySnapshot, query_key),
+            ).where(getattr(GlobalEconomySnapshot, query_key).is_not_null())
         else:
             title = f"Bank Metrics for {ctx.guild.name} ({currency_name})"
-            table = GuildSnapshot
-            query = GuildSnapshot.select(
-                GuildSnapshot.created_on,
-                getattr(GuildSnapshot, query_key),
-            ).where((GuildSnapshot.guild == ctx.guild.id) & (getattr(GuildSnapshot, query_key).is_not_null()))
+            table = GuildEconomySnapshot
+            query = GuildEconomySnapshot.select(
+                GuildEconomySnapshot.created_on,
+                getattr(GuildEconomySnapshot, query_key),
+            ).where(
+                (GuildEconomySnapshot.guild == ctx.guild.id) & (getattr(GuildEconomySnapshot, query_key).is_not_null())
+            )
 
         if timespan.lower() == "none":
             timespan = None
@@ -82,7 +98,7 @@ class User(MixinMeta):
         def _prep() -> tuple[discord.Embed, discord.File]:
             df = pd.DataFrame.from_records(data)
             # created_on is in UTC, convert to guild timezone
-            df["created_on"] = df["created_on"].dt.tz_convert(settings.timezone)
+            df["created_on"] = pd.to_datetime(df["created_on"]).dt.tz_convert(settings.timezone)
             df.set_index("created_on", inplace=True)
             df.rename(columns={query_key: currency_name}, inplace=True)
             df.index.rename("Date", inplace=True)
@@ -109,11 +125,14 @@ class User(MixinMeta):
             )
             embed.set_image(url=f"attachment://{file.filename}")
             embed.set_footer(text=f"Timezone: {settings.timezone}")
+            highest = int(df[currency_name].max())
+            lowest = int(df[currency_name].min())
             field = (
                 f"`Current: `{humanize_number(int(df[currency_name].iloc[-1]))}\n"
                 f"`Average: `{humanize_number(int(df[currency_name].mean()))}\n"
-                f"`Highest: `{humanize_number(int(df[currency_name].max()))}\n"
-                f"`Lowest:  `{humanize_number(int(df[currency_name].min()))}"
+                f"`Highest: `{humanize_number(highest)}\n"
+                f"`Lowest:  `{humanize_number(lowest)}\n"
+                f"`Diff:    `{humanize_number(highest - lowest)}"
             )
             embed.add_field(name=f"{dataset_label} Stats", value=field, inline=False)
             return embed, file
@@ -141,7 +160,7 @@ class User(MixinMeta):
             return
 
         global_settings = await self.db_utils.get_create_global_settings()
-        interval_minutes = global_settings.snapshot_interval
+        interval_minutes = global_settings.member_interval
 
         metric_map: dict[str, tuple[str, str, str]] = {
             "total": ("member_total", "Total Members", "#009DFF"),
@@ -157,20 +176,22 @@ class User(MixinMeta):
 
         if show_global:
             title = "Global Member Metrics"
-            table = GlobalSnapshot
-            query = GlobalSnapshot.select(
-                GlobalSnapshot.created_on,
-                getattr(GlobalSnapshot, query_key),
-            ).where(getattr(GlobalSnapshot, query_key).is_not_null())
+            table = GlobalMemberSnapshot
+            query = GlobalMemberSnapshot.select(
+                GlobalMemberSnapshot.created_on,
+                getattr(GlobalMemberSnapshot, query_key),
+            ).where(getattr(GlobalMemberSnapshot, query_key).is_not_null())
         else:
             title = f"Member Metrics for {ctx.guild.name}"
-            table = GuildSnapshot
-            query = GuildSnapshot.select(
-                GuildSnapshot.created_on,
-                getattr(GuildSnapshot, query_key),
-            ).where((GuildSnapshot.guild == ctx.guild.id) & (getattr(GuildSnapshot, query_key).is_not_null()))
+            table = GuildMemberSnapshot
+            query = GuildMemberSnapshot.select(
+                GuildMemberSnapshot.created_on,
+                getattr(GuildMemberSnapshot, query_key),
+            ).where(
+                (GuildMemberSnapshot.guild == ctx.guild.id) & (getattr(GuildMemberSnapshot, query_key).is_not_null())
+            )
 
-        if timespan.lower() == "none":
+        if timespan and timespan.lower() == "none":
             timespan = None
         start_time, end_time = utils.get_timespan(
             timespan=timespan,
@@ -190,7 +211,7 @@ class User(MixinMeta):
 
         def _prep() -> tuple[discord.Embed, discord.File]:
             df = pd.DataFrame.from_records(data)
-            df["created_on"] = df["created_on"].dt.tz_convert(settings.timezone)
+            df["created_on"] = pd.to_datetime(df["created_on"]).dt.tz_convert(settings.timezone)
             df.set_index("created_on", inplace=True)
             df.rename(columns={query_key: dataset_label}, inplace=True)
             df.index.rename("Date", inplace=True)
@@ -216,11 +237,14 @@ class User(MixinMeta):
             )
             embed.set_image(url=f"attachment://{file.filename}")
             embed.set_footer(text=f"Timezone: {settings.timezone}")
+            highest = int(df[dataset_label].max())
+            lowest = int(df[dataset_label].min())
             field = (
                 f"`Current: `{humanize_number(int(df[dataset_label].iloc[-1]))}\n"
                 f"`Average: `{humanize_number(int(df[dataset_label].mean()))}\n"
-                f"`Highest: `{humanize_number(int(df[dataset_label].max()))}\n"
-                f"`Lowest:  `{humanize_number(int(df[dataset_label].min()))}"
+                f"`Highest: `{humanize_number(highest)}\n"
+                f"`Lowest:  `{humanize_number(lowest)}\n"
+                f"`Diff:    `{humanize_number(highest - lowest)}"
             )
             embed.add_field(name=f"{dataset_label} Stats", value=field, inline=False)
             return embed, file
@@ -250,7 +274,7 @@ class User(MixinMeta):
             return
 
         settings = await self.db_utils.get_create_guild_settings(ctx.guild.id)
-        interval_minutes = global_settings.snapshot_interval
+        interval_minutes = global_settings.performance_interval
 
         metric_map: dict[str, tuple[str, str, str, int]] = {
             "latency": ("latency_ms", "Latency (ms)", "ms", 2),
@@ -262,12 +286,12 @@ class User(MixinMeta):
 
         query_key, dataset_label, unit_suffix, decimals = metric_map[metric.lower()]
 
-        query = GlobalSnapshot.select(
-            GlobalSnapshot.created_on,
-            getattr(GlobalSnapshot, query_key),
-        ).where(getattr(GlobalSnapshot, query_key).is_not_null())
+        query = GlobalPerformanceSnapshot.select(
+            GlobalPerformanceSnapshot.created_on,
+            getattr(GlobalPerformanceSnapshot, query_key),
+        ).where(getattr(GlobalPerformanceSnapshot, query_key).is_not_null())
 
-        if timespan.lower() == "none":
+        if timespan and timespan.lower() == "none":
             timespan = None
         start_time, end_time = utils.get_timespan(
             timespan=timespan,
@@ -275,9 +299,11 @@ class User(MixinMeta):
             end_time=end,
             timezone=settings.timezone,
         )
-        query = query.where((GlobalSnapshot.created_on >= start_time) & (GlobalSnapshot.created_on <= end_time))
+        query = query.where(
+            (GlobalPerformanceSnapshot.created_on >= start_time) & (GlobalPerformanceSnapshot.created_on <= end_time)
+        )
 
-        data: list[dict] = await query.order_by(GlobalSnapshot.created_on)
+        data: list[dict] = await query.order_by(GlobalPerformanceSnapshot.created_on)
         if not data:
             return await ctx.send("No data available for the specified timespan.", ephemeral=True)
         if len(data) < 2:
@@ -287,7 +313,7 @@ class User(MixinMeta):
 
         def _prep() -> tuple[discord.Embed, discord.File]:
             df = pd.DataFrame.from_records(data)
-            df["created_on"] = df["created_on"].dt.tz_convert(settings.timezone)
+            df["created_on"] = pd.to_datetime(df["created_on"]).dt.tz_convert(settings.timezone)
             df.set_index("created_on", inplace=True)
             df.rename(columns={query_key: dataset_label}, inplace=True)
             df.index.rename("Date", inplace=True)
@@ -302,6 +328,10 @@ class User(MixinMeta):
             buffer.seek(0)
             file = discord.File(buffer, filename=f"{uuid4()}.png")
             timeframe = humanize_timedelta(timedelta=actual_delta)
+
+            highest = df[dataset_label].max()
+            lowest = df[dataset_label].min()
+            diff = highest - lowest
 
             def format_value(value: float) -> str:
                 if pd.isna(value):
@@ -320,8 +350,9 @@ class User(MixinMeta):
             field = (
                 f"`Current: `{format_value(df[dataset_label].iloc[-1])}\n"
                 f"`Average: `{format_value(df[dataset_label].mean())}\n"
-                f"`Highest: `{format_value(df[dataset_label].max())}\n"
-                f"`Lowest:  `{format_value(df[dataset_label].min())}"
+                f"`Highest: `{format_value(highest)}\n"
+                f"`Lowest:  `{format_value(lowest)}\n"
+                f"`Diff:    `{format_value(diff)}"
             )
             embed.add_field(name=f"{dataset_label} Stats", value=field, inline=False)
             return embed, file
