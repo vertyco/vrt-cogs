@@ -31,7 +31,14 @@ class TableMixin:
     updated_on = Timestamptz(auto_update=TimestamptzNow().python)
 
 
+# =============================================================================
+# Settings Tables
+# =============================================================================
+
+
 class GuildSettings(TableMixin, Table):
+    """Per-guild settings for metrics tracking."""
+
     id = BigInt(primary_key=True)  # Discord Guild ID
     timezone = Text(default="UTC")  # Timezone for the guild
 
@@ -39,57 +46,128 @@ class GuildSettings(TableMixin, Table):
     track_members = Boolean(default=False)  # Whether to track member count
 
 
-class GuildSnapshot(Table):
-    id = Serial(primary_key=True)
+class GlobalSettings(TableMixin, Table):
+    """Global settings for the metrics cog with per-metric intervals."""
+
+    id: Serial
+    key = BigInt(unique=True, default=1)  # Always 1
+
+    # Per-metric capture intervals (in minutes)
+    economy_interval = BigInt(default=10)  # Minutes between economy snapshots
+    member_interval = BigInt(default=15)  # Minutes between member snapshots
+    performance_interval = BigInt(default=3)  # Minutes between performance snapshots
+
+    # Data retention
+    max_snapshot_age_days = BigInt(default=30)  # Max age of snapshots to keep
+
+    # Global tracking toggles
+    track_bank = Boolean(default=False)  # Whether to track bank data globally
+    track_members = Boolean(default=False)  # Whether to track member count globally
+    track_performance = Boolean(default=False)  # Whether to track server performance metrics
+
+
+# =============================================================================
+# Guild-Level Snapshot Tables
+# =============================================================================
+
+
+class GuildEconomySnapshot(Table):
+    """Per-guild economy/bank statistics captured at regular intervals."""
+
+    id: Serial
     created_on = Timestamptz(index=True)
 
     guild = ForeignKey(references=GuildSettings, index=True)
 
-    # Economy stats
-    bank_total = BigInt(default=None, null=True)  # Total bank amount at the time of the snapshot
-    average_balance = BigInt(default=None, null=True)  # Average balance at the time of the snapshot
-
-    # Member stats
-    member_total = BigInt(default=None, null=True)  # Total member count at the time of the snapshot
-    online_members = BigInt(default=None, null=True)  # Number of online members at the time of the snapshot
-    idle_members = BigInt(default=None, null=True)  # Number of idle members at the time of the snapshot
-    dnd_members = BigInt(default=None, null=True)  # Number of DND members at the time of the snapshot
-    offline_members = BigInt(default=None, null=True)  # Number of offline members at the time of the snapshot
+    bank_total = BigInt(null=True)  # Total bank amount across all members
+    average_balance = BigInt(null=True)  # Average balance per member
+    member_count = BigInt(null=True)  # Number of members with bank accounts
 
 
-class GlobalSnapshot(Table):
-    id = Serial(primary_key=True)
+class GuildMemberSnapshot(Table):
+    """Per-guild member statistics captured at regular intervals."""
+
+    id: Serial
     created_on = Timestamptz(index=True)
 
-    # Economy stats
-    bank_total = BigInt(default=None, null=True)  # Total bank amount at the time of the snapshot
-    average_balance = BigInt(default=None, null=True)  # Average balance across all tracked guilds
+    guild = ForeignKey(references=GuildSettings, index=True)
 
-    # Member stats
-    member_total = BigInt(default=None, null=True)  # Total member count at the time of the snapshot
-    online_members = BigInt(default=None, null=True)  # Number of online members at the time of the snapshot
-    idle_members = BigInt(default=None, null=True)  # Number of idle members at the time of the snapshot
-    dnd_members = BigInt(default=None, null=True)  # Number of DND members at the time of the snapshot
-    offline_members = BigInt(default=None, null=True)  # Number of offline members at the time of the snapshot
-
-    # Server performance metrics
-    latency_ms = Float(default=None, null=True)
-    cpu_usage_percent = Float(default=None, null=True)
-    memory_usage_percent = Float(default=None, null=True)
-    active_tasks = BigInt(default=None, null=True)
-    snapshot_duration_seconds = Float(default=None, null=True)  # Duration taken to complete the snapshot
+    member_total = BigInt(null=True)  # Total member count
+    online_members = BigInt(null=True)  # Members with online status
+    idle_members = BigInt(null=True)  # Members with idle status
+    dnd_members = BigInt(null=True)  # Members with DND status
+    offline_members = BigInt(null=True)  # Members with offline/invisible status
 
 
-class GlobalSettings(TableMixin, Table):
+# =============================================================================
+# Global-Level Snapshot Tables
+# =============================================================================
+
+
+class GlobalEconomySnapshot(Table):
+    """Global economy/bank statistics aggregated across all tracked guilds."""
+
     id: Serial
-    key = BigInt(unique=True, default=1)  # Always 1
+    created_on = Timestamptz(index=True)
 
-    snapshot_interval = BigInt(default=5)  # Minutes between snapshots
-    max_snapshot_age_days = BigInt(default=90)  # Max age of snapshots to keep
-
-    track_bank = Boolean(default=False)  # Whether to track bank data
-    track_members = Boolean(default=False)  # Whether to track member count
-    track_performance = Boolean(default=False)  # Whether to include server performance metrics in snapshots
+    bank_total = BigInt(null=True)  # Total bank amount across all guilds
+    average_balance = BigInt(null=True)  # Average balance across all members
+    guild_count = BigInt(null=True)  # Number of guilds tracked
+    member_count = BigInt(null=True)  # Total members with bank accounts
 
 
-TABLES: list[Table] = sort_table_classes([GuildSettings, GuildSnapshot, GlobalSnapshot, GlobalSettings])
+class GlobalMemberSnapshot(Table):
+    """Global member statistics aggregated across all tracked guilds."""
+
+    id: Serial
+    created_on = Timestamptz(index=True)
+
+    guild_count = BigInt(null=True)  # Number of guilds tracked
+    member_total = BigInt(null=True)  # Total member count across all guilds
+    online_members = BigInt(null=True)  # Total online members
+    idle_members = BigInt(null=True)  # Total idle members
+    dnd_members = BigInt(null=True)  # Total DND members
+    offline_members = BigInt(null=True)  # Total offline/invisible members
+
+
+class GlobalPerformanceSnapshot(Table):
+    """Server/bot performance metrics captured at high frequency."""
+
+    id: Serial
+    created_on = Timestamptz(index=True)
+
+    # Bot performance
+    latency_ms = Float(null=True)  # Discord API latency
+    shard_count = BigInt(null=True)  # Number of shards
+
+    # System resources
+    cpu_usage_percent = Float(null=True)  # Bot process CPU usage
+    memory_usage_percent = Float(null=True)  # System memory usage
+    memory_used_mb = Float(null=True)  # Bot process memory used in MB
+
+    # Bot internals
+    active_tasks = BigInt(null=True)  # Number of active asyncio tasks
+    guild_count = BigInt(null=True)  # Number of guilds the bot is in
+
+    # Snapshot metadata
+    snapshot_duration_seconds = Float(null=True)  # Duration to complete this snapshot
+
+
+# =============================================================================
+# Table Registry
+# =============================================================================
+
+TABLES: list[type[Table]] = sort_table_classes(
+    [
+        # Settings
+        GuildSettings,
+        GlobalSettings,
+        # Guild-level snapshots
+        GuildEconomySnapshot,
+        GuildMemberSnapshot,
+        # Global-level snapshots
+        GlobalEconomySnapshot,
+        GlobalMemberSnapshot,
+        GlobalPerformanceSnapshot,
+    ]
+)

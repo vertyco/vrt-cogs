@@ -11,9 +11,17 @@ class TaskLoops(Snapshot, metaclass=CompositeMetaClass):
     """
 
     def start_tasks(self) -> None:
-        if not self.take_snapshot.is_running():
-            self.take_snapshot.start()
+        if not self.economy_snapshot_task.is_running():
+            self.economy_snapshot_task.start()
+        if not self.member_snapshot_task.is_running():
+            self.member_snapshot_task.start()
+        if not self.performance_snapshot_task.is_running():
+            self.performance_snapshot_task.start()
 
     def stop_tasks(self) -> None:
-        if self.take_snapshot.is_running():
-            self.take_snapshot.cancel()
+        if self.economy_snapshot_task.is_running():
+            self.economy_snapshot_task.cancel()
+        if self.member_snapshot_task.is_running():
+            self.member_snapshot_task.cancel()
+        if self.performance_snapshot_task.is_running():
+            self.performance_snapshot_task.cancel()
