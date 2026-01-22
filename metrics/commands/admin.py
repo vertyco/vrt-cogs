@@ -1,4 +1,6 @@
 import asyncio
+import logging
+import statistics
 import typing as t
 from datetime import datetime, timezone
 
@@ -11,7 +13,16 @@ from redbot.core.utils import AsyncIter
 
 from ..abc import MixinMeta
 from ..common import utils
-from ..db.tables import GlobalSnapshot, GuildSnapshot, ensure_db_connection
+from ..db.tables import (
+    GlobalEconomySnapshot,
+    GlobalMemberSnapshot,
+    GlobalPerformanceSnapshot,
+    GuildEconomySnapshot,
+    GuildMemberSnapshot,
+    ensure_db_connection,
+)
+
+log = logging.getLogger("red.vrt.metrics.admin")
 
 
 class Admin(MixinMeta):
@@ -33,8 +44,13 @@ class Admin(MixinMeta):
         embed.add_field(name="Timezone", value=guild_settings.timezone)
         embed.add_field(name="Track Bank", value=str(guild_settings.track_bank))
         embed.add_field(name="Track Members", value=str(guild_settings.track_members))
-        snapshots = await GuildSnapshot.count().where(GuildSnapshot.guild == ctx.guild.id)
-        embed.add_field(name="Data Points", value=str(snapshots))
+
+        # Count data points from new tables
+        economy_count = await GuildEconomySnapshot.count().where(GuildEconomySnapshot.guild == ctx.guild.id)
+        member_count = await GuildMemberSnapshot.count().where(GuildMemberSnapshot.guild == ctx.guild.id)
+
+        embed.add_field(name="Economy Data Points", value=str(economy_count))
+        embed.add_field(name="Member Data Points", value=str(member_count))
         await ctx.send(embed=embed)
 
     @setmetrics.command(name="track")
@@ -57,22 +73,22 @@ class Admin(MixinMeta):
 
     @setmetrics.command(name="timezone")
     @ensure_db_connection()
-    async def set_guild_timezone(self, ctx: commands.Context, timezone: str):
+    async def set_guild_timezone(self, ctx: commands.Context, tz: str):
         """Set the timezone for this server."""
         if not ctx.guild:
             await ctx.send("This command can only be used in a guild.")
             return
         try:
-            pytz.timezone(timezone)
+            pytz.timezone(tz)
         except pytz.UnknownTimeZoneError:
             await ctx.send("Invalid timezone.")
             return
         guild_settings = await self.db_utils.get_create_guild_settings(ctx.guild.id)
-        guild_settings.timezone = timezone
+        guild_settings.timezone = tz
         await guild_settings.save()
-        await ctx.send(f"Timezone for this server has been set to {timezone}.")
+        await ctx.send(f"Timezone for this server has been set to {tz}.")
 
-    @set_guild_timezone.autocomplete("timezone")
+    @set_guild_timezone.autocomplete("tz")
     async def autocomplete_timezone(
         self, interaction: discord.Interaction, current: str
     ) -> list[discord.app_commands.Choice[str]]:
@@ -96,37 +112,61 @@ class Admin(MixinMeta):
         global_settings = await self.db_utils.get_create_global_settings()
         embed = discord.Embed(title="Global Settings", color=await ctx.embed_color())
         embed.add_field(name="DB Engine", value=str(type(self.db).__name__))
-        embed.add_field(name="Snapshot Interval (minutes)", value=str(global_settings.snapshot_interval))
+
+        # Per-metric intervals
+        embed.add_field(name="Economy Interval (min)", value=str(global_settings.economy_interval))
+        embed.add_field(name="Member Interval (min)", value=str(global_settings.member_interval))
+        embed.add_field(name="Performance Interval (min)", value=str(global_settings.performance_interval))
+
         embed.add_field(name="Max Snapshot Age (Days)", value=str(global_settings.max_snapshot_age_days))
         embed.add_field(name="Track Bank", value=str(global_settings.track_bank))
         embed.add_field(name="Track Members", value=str(global_settings.track_members))
         embed.add_field(name="Track Performance", value=str(global_settings.track_performance))
-        snapshots = await GlobalSnapshot.count()
-        embed.add_field(name="Data Points", value=str(snapshots))
+
+        # Count data points from new tables
+        economy_count = await GlobalEconomySnapshot.count()
+        member_count = await GlobalMemberSnapshot.count()
+        performance_count = await GlobalPerformanceSnapshot.count()
+
+        embed.add_field(name="Economy Data Points", value=str(economy_count))
+        embed.add_field(name="Member Data Points", value=str(member_count))
+        embed.add_field(name="Performance Data Points", value=str(performance_count))
         await ctx.send(embed=embed)
 
-    @global_settings.command(name="resolution")
-    async def set_snapshot_interval(self, ctx: commands.Context, minutes: commands.positive_int):
-        """Set the interval in minutes between global snapshots."""
-        if minutes < 1:
-            await ctx.send("Snapshot interval must be at least 1 minute.")
-            return
-        self.change_snapshot_interval(minutes)
+    @global_settings.command(name="economyinterval")
+    async def set_economy_interval(self, ctx: commands.Context, minutes: commands.positive_int):
+        """Set the interval in minutes between economy snapshots."""
+        self.change_economy_interval(minutes)
         global_settings = await self.db_utils.get_create_global_settings()
-        global_settings.snapshot_interval = minutes
+        global_settings.economy_interval = minutes
         await global_settings.save()
-        await ctx.send(f"Global snapshot interval set to {minutes} minutes.")
+        await ctx.send(f"Economy snapshot interval set to {minutes} minutes.")
+
+    @global_settings.command(name="memberinterval")
+    async def set_member_interval(self, ctx: commands.Context, minutes: commands.positive_int):
+        """Set the interval in minutes between member snapshots."""
+        self.change_member_interval(minutes)
+        global_settings = await self.db_utils.get_create_global_settings()
+        global_settings.member_interval = minutes
+        await global_settings.save()
+        await ctx.send(f"Member snapshot interval set to {minutes} minutes.")
+
+    @global_settings.command(name="performanceinterval")
+    async def set_performance_interval(self, ctx: commands.Context, minutes: commands.positive_int):
+        """Set the interval in minutes between performance snapshots."""
+        self.change_performance_interval(minutes)
+        global_settings = await self.db_utils.get_create_global_settings()
+        global_settings.performance_interval = minutes
+        await global_settings.save()
+        await ctx.send(f"Performance snapshot interval set to {minutes} minutes.")
 
     @global_settings.command(name="maxage")
     async def set_max_snapshot_age(self, ctx: commands.Context, days: commands.positive_int):
-        """Set the maximum age in days to keep global snapshots."""
-        if days < 1:
-            await ctx.send("Max snapshot age must be at least 1 day.")
-            return
+        """Set the maximum age in days to keep snapshots."""
         global_settings = await self.db_utils.get_create_global_settings()
         global_settings.max_snapshot_age_days = days
         await global_settings.save()
-        await ctx.send(f"Global max snapshot age set to {days} days.")
+        await ctx.send(f"Max snapshot age set to {days} days.")
 
     @global_settings.command(name="track")
     async def toggle_tracking(self, ctx: commands.Context, metric: t.Literal["bank", "members", "performance"]):
@@ -139,9 +179,288 @@ class Admin(MixinMeta):
         status = "enabled" if not current_value else "disabled"
         await ctx.send(f"Tracking for {metric} has been {status}.")
 
+    @global_settings.command(name="prune")
+    async def prune_outliers(
+        self,
+        ctx: commands.Context,
+        metric: t.Literal["members", "economy", "performance"],
+        scope: t.Literal["global", "guild", "all"] = "all",
+        threshold: float = 3.0,
+        dry_run: bool = True,
+    ):
+        """Prune statistical outliers from the database.
+
+        This detects and removes data points that are anomalous based on standard
+        deviation analysis. For example, if member count suddenly drops to 0 when
+        surrounding data points are ~1000, that's an outlier.
+
+        **Arguments:**
+        - `metric`: Which metric to analyze - "members", "economy", or "performance"
+        - `scope`: Which snapshots to prune - "global", "guild", or "all"
+        - `threshold`: Number of standard deviations from mean to consider outlier (default: 3.0)
+        - `dry_run`: If True (default), only show what would be deleted without deleting
+
+        **Examples:**
+        - `[p]setmetrics global prune members all 3.0 True` - Preview member outliers
+        - `[p]setmetrics global prune economy guild 2.5 False` - Delete guild economy outliers
+        """
+        if threshold <= 0:
+            await ctx.send("Threshold must be a positive number.")
+            return
+
+        async with ctx.typing():
+            results: list[str] = []
+            total_deleted = 0
+
+            if metric == "members":
+                total_deleted += await self._prune_member_outliers(results, scope, threshold, dry_run)
+            elif metric == "economy":
+                total_deleted += await self._prune_economy_outliers(results, scope, threshold, dry_run)
+            elif metric == "performance":
+                if scope == "guild":
+                    results.append("**Performance:** Guild-level performance tracking does not exist.")
+                else:
+                    total_deleted += await self._prune_performance_outliers(results, threshold, dry_run)
+
+            mode = "DRY RUN - " if dry_run else ""
+            embed = discord.Embed(
+                title=f"{mode}Outlier Prune Results ({metric})",
+                description="\n".join(results) if results else "No data to analyze.",
+                color=await ctx.embed_color(),
+            )
+            embed.add_field(
+                name="Threshold",
+                value=f"{threshold} standard deviations",
+                inline=True,
+            )
+            if not dry_run:
+                embed.add_field(name="Total Deleted", value=str(total_deleted), inline=True)
+            if dry_run:
+                embed.set_footer(
+                    text=f"Run with dry_run=False to actually delete: "
+                    f"{ctx.clean_prefix}setmetrics global prune {metric} {scope} {threshold} False"
+                )
+            await ctx.send(embed=embed)
+
+    async def _find_outlier_ids(
+        self,
+        values: list[tuple[int, int | float | None]],
+        threshold: float,
+    ) -> tuple[list[int], float, float, int]:
+        """Find outlier IDs from a list of (id, value) tuples.
+
+        Returns: (outlier_ids, mean, stdev, valid_count)
+        """
+        # Filter out None values for statistics
+        valid_values = [(id_, val) for id_, val in values if val is not None]
+        if len(valid_values) < 3:
+            return [], 0.0, 0.0, len(valid_values)
+
+        just_values = [val for _, val in valid_values]
+        mean = statistics.mean(just_values)
+        stdev = statistics.stdev(just_values)
+
+        if stdev == 0:
+            # No variance, no outliers
+            return [], mean, stdev, len(valid_values)
+
+        outlier_ids = []
+        for id_, val in valid_values:
+            z_score = abs(val - mean) / stdev
+            if z_score > threshold:
+                outlier_ids.append(id_)
+
+        return outlier_ids, mean, stdev, len(valid_values)
+
+    async def _prune_member_outliers(
+        self,
+        results: list[str],
+        scope: str,
+        threshold: float,
+        dry_run: bool,
+    ) -> int:
+        """Prune member count outliers."""
+        total_deleted = 0
+
+        if scope in ("global", "all"):
+            # Get all global member snapshots
+            rows = await GlobalMemberSnapshot.select(
+                GlobalMemberSnapshot.id,
+                GlobalMemberSnapshot.member_total,
+            )
+            values = [(r["id"], r["member_total"]) for r in rows]
+            outlier_ids, mean, stdev, valid_count = await self._find_outlier_ids(values, threshold)
+
+            if outlier_ids:
+                if dry_run:
+                    results.append(
+                        f"**Global Member Snapshots:** Would delete {len(outlier_ids)} outliers "
+                        f"(mean={mean:.1f}, stdev={stdev:.1f}, analyzed {valid_count} points)"
+                    )
+                else:
+                    deleted = (
+                        await GlobalMemberSnapshot.delete()
+                        .where(GlobalMemberSnapshot.id.is_in(outlier_ids))
+                        .returning(GlobalMemberSnapshot.id)
+                    )
+                    total_deleted += len(deleted)
+                    results.append(f"**Global Member Snapshots:** Deleted {len(deleted)} outliers")
+            else:
+                results.append(
+                    f"**Global Member Snapshots:** No outliers found "
+                    f"(mean={mean:.1f}, stdev={stdev:.1f}, analyzed {valid_count} points)"
+                )
+
+        if scope in ("guild", "all"):
+            # Get all guild member snapshots
+            rows = await GuildMemberSnapshot.select(
+                GuildMemberSnapshot.id,
+                GuildMemberSnapshot.member_total,
+            )
+            values = [(r["id"], r["member_total"]) for r in rows]
+            outlier_ids, mean, stdev, valid_count = await self._find_outlier_ids(values, threshold)
+
+            if outlier_ids:
+                if dry_run:
+                    results.append(
+                        f"**Guild Member Snapshots:** Would delete {len(outlier_ids)} outliers "
+                        f"(mean={mean:.1f}, stdev={stdev:.1f}, analyzed {valid_count} points)"
+                    )
+                else:
+                    deleted = (
+                        await GuildMemberSnapshot.delete()
+                        .where(GuildMemberSnapshot.id.is_in(outlier_ids))
+                        .returning(GuildMemberSnapshot.id)
+                    )
+                    total_deleted += len(deleted)
+                    results.append(f"**Guild Member Snapshots:** Deleted {len(deleted)} outliers")
+            else:
+                results.append(
+                    f"**Guild Member Snapshots:** No outliers found "
+                    f"(mean={mean:.1f}, stdev={stdev:.1f}, analyzed {valid_count} points)"
+                )
+
+        return total_deleted
+
+    async def _prune_economy_outliers(
+        self,
+        results: list[str],
+        scope: str,
+        threshold: float,
+        dry_run: bool,
+    ) -> int:
+        """Prune economy/bank total outliers."""
+        total_deleted = 0
+
+        if scope in ("global", "all"):
+            # Get all global economy snapshots
+            rows = await GlobalEconomySnapshot.select(
+                GlobalEconomySnapshot.id,
+                GlobalEconomySnapshot.bank_total,
+            )
+            values = [(r["id"], r["bank_total"]) for r in rows]
+            outlier_ids, mean, stdev, valid_count = await self._find_outlier_ids(values, threshold)
+
+            if outlier_ids:
+                if dry_run:
+                    results.append(
+                        f"**Global Economy Snapshots:** Would delete {len(outlier_ids)} outliers "
+                        f"(mean={mean:.1f}, stdev={stdev:.1f}, analyzed {valid_count} points)"
+                    )
+                else:
+                    deleted = (
+                        await GlobalEconomySnapshot.delete()
+                        .where(GlobalEconomySnapshot.id.is_in(outlier_ids))
+                        .returning(GlobalEconomySnapshot.id)
+                    )
+                    total_deleted += len(deleted)
+                    results.append(f"**Global Economy Snapshots:** Deleted {len(deleted)} outliers")
+            else:
+                results.append(
+                    f"**Global Economy Snapshots:** No outliers found "
+                    f"(mean={mean:.1f}, stdev={stdev:.1f}, analyzed {valid_count} points)"
+                )
+
+        if scope in ("guild", "all"):
+            # Get all guild economy snapshots
+            rows = await GuildEconomySnapshot.select(
+                GuildEconomySnapshot.id,
+                GuildEconomySnapshot.bank_total,
+            )
+            values = [(r["id"], r["bank_total"]) for r in rows]
+            outlier_ids, mean, stdev, valid_count = await self._find_outlier_ids(values, threshold)
+
+            if outlier_ids:
+                if dry_run:
+                    results.append(
+                        f"**Guild Economy Snapshots:** Would delete {len(outlier_ids)} outliers "
+                        f"(mean={mean:.1f}, stdev={stdev:.1f}, analyzed {valid_count} points)"
+                    )
+                else:
+                    deleted = (
+                        await GuildEconomySnapshot.delete()
+                        .where(GuildEconomySnapshot.id.is_in(outlier_ids))
+                        .returning(GuildEconomySnapshot.id)
+                    )
+                    total_deleted += len(deleted)
+                    results.append(f"**Guild Economy Snapshots:** Deleted {len(deleted)} outliers")
+            else:
+                results.append(
+                    f"**Guild Economy Snapshots:** No outliers found "
+                    f"(mean={mean:.1f}, stdev={stdev:.1f}, analyzed {valid_count} points)"
+                )
+
+        return total_deleted
+
+    async def _prune_performance_outliers(
+        self,
+        results: list[str],
+        threshold: float,
+        dry_run: bool,
+    ) -> int:
+        """Prune performance metric outliers (latency-based)."""
+        total_deleted = 0
+
+        # Get all global performance snapshots - use latency as the primary metric
+        rows = await GlobalPerformanceSnapshot.select(
+            GlobalPerformanceSnapshot.id,
+            GlobalPerformanceSnapshot.latency_ms,
+        )
+        values = [(r["id"], r["latency_ms"]) for r in rows]
+        outlier_ids, mean, stdev, valid_count = await self._find_outlier_ids(values, threshold)
+
+        if outlier_ids:
+            if dry_run:
+                results.append(
+                    f"**Global Performance Snapshots:** Would delete {len(outlier_ids)} outliers "
+                    f"(latency mean={mean:.1f}ms, stdev={stdev:.1f}ms, analyzed {valid_count} points)"
+                )
+            else:
+                deleted = (
+                    await GlobalPerformanceSnapshot.delete()
+                    .where(GlobalPerformanceSnapshot.id.is_in(outlier_ids))
+                    .returning(GlobalPerformanceSnapshot.id)
+                )
+                total_deleted += len(deleted)
+                results.append(f"**Global Performance Snapshots:** Deleted {len(deleted)} outliers")
+        else:
+            results.append(
+                f"**Global Performance Snapshots:** No outliers found "
+                f"(latency mean={mean:.1f}ms, stdev={stdev:.1f}ms, analyzed {valid_count} points)"
+            )
+
+        return total_deleted
+
     @global_settings.command(name="importeconomytrack")
     async def import_economytrack_data(self, ctx: commands.Context, overwrite: bool):
-        """Import data from the EconomyTrack cog."""
+        """Import data from the EconomyTrack cog.
+
+        This imports legacy EconomyTrack data into the new GuildEconomySnapshot
+        and GlobalEconomySnapshot tables.
+
+        **Arguments:**
+        - `overwrite`: If True, delete all existing economy data before importing
+        """
         async with ctx.typing():
             path = cog_data_path(self).parent / "EconomyTrack" / "settings.json"
             if not path.exists():
@@ -155,14 +474,17 @@ class Admin(MixinMeta):
 
             et_data = data["117"]
 
-            guild_snapshots: list[GuildSnapshot] = []
-            global_snapshots: list[GlobalSnapshot] = []
+            guild_economy_snapshots: list[GuildEconomySnapshot] = []
+            guild_member_snapshots: list[GuildMemberSnapshot] = []
+            global_economy_snapshots: list[GlobalEconomySnapshot] = []
 
+            # Import global economy data
             async for entry in AsyncIter(et_data.get("GLOBAL", {}).get("data", []), steps=100):
                 timestamp, bank_total = entry
                 timestamp_dt = datetime.fromtimestamp(timestamp, tz=timezone.utc)
-                global_snapshots.append(GlobalSnapshot(created_on=timestamp_dt, bank_total=bank_total))
+                global_economy_snapshots.append(GlobalEconomySnapshot(created_on=timestamp_dt, bank_total=bank_total))
 
+            # Import guild data
             for guild_id_string, guild_data in et_data.get("GUILD", {}).items():
                 guild_id = int(guild_id_string)
                 guild_settings = await self.db_utils.get_create_guild_settings(guild_id)
@@ -171,52 +493,58 @@ class Admin(MixinMeta):
                 guild_settings.track_members = guild_data.get("member_tracking", False)
                 await guild_settings.save()
 
-                guild_snapshots_by_timestamp: dict[float, GuildSnapshot] = {}
-
+                # Import guild economy data
                 async for entry in AsyncIter(guild_data.get("data", []), steps=100):
                     timestamp, bank_total = entry
                     timestamp_dt = datetime.fromtimestamp(timestamp, tz=timezone.utc)
-                    if timestamp in guild_snapshots_by_timestamp:
-                        guild_snapshots_by_timestamp[timestamp].bank_total = bank_total
-                    else:
-                        guild_snapshots_by_timestamp[timestamp] = GuildSnapshot(
+                    guild_economy_snapshots.append(
+                        GuildEconomySnapshot(
                             guild=guild_id,
                             created_on=timestamp_dt,
                             bank_total=bank_total,
                         )
+                    )
 
+                # Import guild member data
                 async for entry in AsyncIter(guild_data.get("member_data", []), steps=100):
                     timestamp, member_total = entry
                     timestamp_dt = datetime.fromtimestamp(timestamp, tz=timezone.utc)
-                    if timestamp in guild_snapshots_by_timestamp:
-                        guild_snapshots_by_timestamp[timestamp].member_total = member_total
-                    else:
-                        guild_snapshots_by_timestamp[timestamp] = GuildSnapshot(
+                    guild_member_snapshots.append(
+                        GuildMemberSnapshot(
                             guild=guild_id,
                             created_on=timestamp_dt,
                             member_total=member_total,
                         )
+                    )
 
-                if guild_snapshots_by_timestamp:
-                    guild_snapshots.extend(guild_snapshots_by_timestamp.values())
-
-            if not guild_snapshots and not global_snapshots:
+            if not guild_economy_snapshots and not guild_member_snapshots and not global_economy_snapshots:
                 return await ctx.send("No data found to import from EconomyTrack config!")
 
-            if overwrite and guild_snapshots:
-                await GuildSnapshot.delete(force=True)
+            # Handle overwrites
+            if overwrite:
+                if guild_economy_snapshots:
+                    await GuildEconomySnapshot.delete(force=True)
+                if guild_member_snapshots:
+                    await GuildMemberSnapshot.delete(force=True)
+                if global_economy_snapshots:
+                    await GlobalEconomySnapshot.delete(force=True)
 
-            if overwrite and global_snapshots:
-                await GlobalSnapshot.delete(force=True)
+            # Insert data in chunks
+            if guild_economy_snapshots:
+                for chunk in utils.chunk(guild_economy_snapshots, 100):
+                    await GuildEconomySnapshot.insert(*chunk)
 
-            if guild_snapshots:
-                for chunk in utils.chunk(guild_snapshots, 100):
-                    await GuildSnapshot.insert(*chunk)
+            if guild_member_snapshots:
+                for chunk in utils.chunk(guild_member_snapshots, 100):
+                    await GuildMemberSnapshot.insert(*chunk)
 
-            if global_snapshots:
-                for chunk in utils.chunk(global_snapshots, 100):
-                    await GlobalSnapshot.insert(*chunk)
+            if global_economy_snapshots:
+                for chunk in utils.chunk(global_economy_snapshots, 100):
+                    await GlobalEconomySnapshot.insert(*chunk)
 
             await ctx.send(
-                f"Imported {len(guild_snapshots)} guild snapshots and {len(global_snapshots)} global snapshots."
+                f"Imported:\n"
+                f"- {len(guild_economy_snapshots)} guild economy snapshots\n"
+                f"- {len(guild_member_snapshots)} guild member snapshots\n"
+                f"- {len(global_economy_snapshots)} global economy snapshots"
             )
