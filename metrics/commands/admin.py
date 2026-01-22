@@ -242,6 +242,66 @@ class Admin(MixinMeta):
                 )
             await ctx.send(embed=embed)
 
+    @global_settings.command(name="prunezero")
+    async def prune_zero_member_snapshots(self, ctx: commands.Context, dry_run: bool = True):
+        """Prune guild member snapshots that have 0 total members.
+
+        These are typically caused by Discord API issues and are not valid data points.
+
+        **Arguments:**
+        - `dry_run`: If True (default), only show what would be deleted without deleting
+
+        **Examples:**
+        - `[p]setmetrics global prunezero True` - Preview zero-member snapshots
+        - `[p]setmetrics global prunezero False` - Delete zero-member snapshots
+        """
+        async with ctx.typing():
+            # Find all snapshots with 0 members
+            zero_snapshots = await GuildMemberSnapshot.select(
+                GuildMemberSnapshot.id,
+                GuildMemberSnapshot.guild,
+                GuildMemberSnapshot.created_on,
+            ).where(GuildMemberSnapshot.member_total == 0)
+
+            count = len(zero_snapshots)
+
+            if count == 0:
+                await ctx.send("No guild member snapshots with 0 members found.")
+                return
+
+            if dry_run:
+                # Group by guild for display
+                guilds: dict[int, int] = {}
+                for snap in zero_snapshots:
+                    guild_id = snap["guild"]
+                    guilds[guild_id] = guilds.get(guild_id, 0) + 1
+
+                lines = [f"**Total:** {count} snapshots with 0 members"]
+                for guild_id, snap_count in sorted(guilds.items(), key=lambda x: x[1], reverse=True)[:10]:
+                    guild = self.bot.get_guild(guild_id)
+                    name = guild.name if guild else f"Unknown ({guild_id})"
+                    lines.append(f"- {name}: {snap_count} snapshots")
+
+                if len(guilds) > 10:
+                    lines.append(f"- ... and {len(guilds) - 10} more guilds")
+
+                embed = discord.Embed(
+                    title="DRY RUN - Zero Member Snapshots",
+                    description="\n".join(lines),
+                    color=await ctx.embed_color(),
+                )
+                embed.set_footer(
+                    text=f"Run with dry_run=False to delete: {ctx.clean_prefix}setmetrics global prunezero False"
+                )
+                await ctx.send(embed=embed)
+            else:
+                deleted = (
+                    await GuildMemberSnapshot.delete()
+                    .where(GuildMemberSnapshot.member_total == 0)
+                    .returning(GuildMemberSnapshot.id)
+                )
+                await ctx.send(f"Deleted {len(deleted)} guild member snapshots with 0 members.")
+
     async def _find_outlier_ids(
         self,
         values: list[tuple[int, int | float | None]],

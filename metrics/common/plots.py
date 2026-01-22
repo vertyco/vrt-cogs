@@ -63,6 +63,7 @@ def render_multi_metric_plot(
 ) -> bytes:
     """
     Render a multi-series plot with multiple metrics on the same graph.
+    Uses dual y-axes when metric scales differ significantly.
 
     Args:
         df: DataFrame with datetime index and metric columns.
@@ -73,8 +74,34 @@ def render_multi_metric_plot(
     Returns:
         PNG image bytes of the rendered graph.
     """
-    fig = go.Figure()
+    from plotly.subplots import make_subplots
+
     x_values = df.index.to_numpy(copy=False)
+
+    # Calculate ranges to determine if we need dual y-axes
+    metric_ranges: dict[str, tuple[float, float]] = {}
+    for metric_key in metric_keys:
+        if metric_key in df.columns:
+            col = df[metric_key].dropna()
+            if len(col) > 0:
+                metric_ranges[metric_key] = (col.min(), col.max())
+
+    # Determine if we need dual y-axes (>10x difference in max values)
+    use_secondary = False
+    secondary_metrics: set[str] = set()
+    if len(metric_ranges) >= 2:
+        max_values = [(k, v[1]) for k, v in metric_ranges.items()]
+        max_values.sort(key=lambda x: x[1], reverse=True)
+        largest_max = max_values[0][1] if max_values[0][1] > 0 else 1
+        for k, max_val in max_values[1:]:
+            if largest_max / (max_val if max_val > 0 else 1) > 10:
+                secondary_metrics.add(k)
+                use_secondary = True
+
+    if use_secondary:
+        fig = make_subplots(specs=[[{"secondary_y": True}]])
+    else:
+        fig = go.Figure()
 
     for metric_key in metric_keys:
         if metric_key not in df.columns:
@@ -82,6 +109,7 @@ def render_multi_metric_plot(
 
         label, color = metric_map.get(metric_key, (metric_key, "#5865F2"))
         raw_values = df[metric_key].to_numpy(copy=False)
+        is_secondary = metric_key in secondary_metrics
 
         # Add raw data trace (faint dotted line)
         fig.add_trace(
@@ -93,7 +121,8 @@ def render_multi_metric_plot(
                 line=dict(color=color, width=1.2, dash="dot"),
                 opacity=0.4,
                 showlegend=False,
-            )
+            ),
+            secondary_y=is_secondary if use_secondary else None,
         )
 
         # Add rolling average trace (solid line)
@@ -104,10 +133,11 @@ def render_multi_metric_plot(
                     x=x_values,
                     y=rolling_values.to_numpy(copy=False),
                     mode="lines",
-                    name=label,
+                    name=label + (" (right)" if is_secondary else ""),
                     line=dict(color=color, width=2.5),
                     opacity=1.0,
-                )
+                ),
+                secondary_y=is_secondary if use_secondary else None,
             )
         else:
             # If not enough data for rolling, just show raw as main
@@ -116,10 +146,11 @@ def render_multi_metric_plot(
                     x=x_values,
                     y=raw_values,
                     mode="lines",
-                    name=label,
+                    name=label + (" (right)" if is_secondary else ""),
                     line=dict(color=color, width=2.5),
                     opacity=1.0,
-                )
+                ),
+                secondary_y=is_secondary if use_secondary else None,
             )
 
     fig.update_layout(
@@ -136,5 +167,7 @@ def render_multi_metric_plot(
     )
     fig.update_xaxes(showgrid=False, tickformat="%b %d\n%Y")
     fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor="rgba(255,255,255,0.1)")
+    if use_secondary:
+        fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor="rgba(255,255,255,0.1)", secondary_y=True)
 
     return fig.to_image(format="png", width=1280, height=720, scale=2)
