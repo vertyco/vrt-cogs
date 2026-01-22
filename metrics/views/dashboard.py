@@ -19,7 +19,7 @@ import discord
 import pandas as pd
 from discord import ui
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import humanize_number
+from redbot.core.utils.chat_formatting import humanize_number, humanize_timedelta
 
 if t.TYPE_CHECKING:
     from ..main import Metrics
@@ -257,6 +257,7 @@ class MetricsDashboardLayout(ui.LayoutView):
         # Cached graph data
         self._graph_file: discord.File | None = None
         self._graph_stats: dict | None = None
+        self._actual_timeframe: str | None = None
 
         self._build_layout()
 
@@ -291,7 +292,10 @@ class MetricsDashboardLayout(ui.LayoutView):
 
         # Current configuration
         scope_text = "🌐 Global" if self.show_global else f"🏠 {self.ctx.guild.name}"
-        time_text = f"⏱️ {self.timespan}"
+        if self._actual_timeframe:
+            time_text = f"⏱️ {self._actual_timeframe}"
+        else:
+            time_text = f"⏱️ {self.timespan}"
         if self.start_time:
             time_text += f" (from {self.start_time})"
         if self.end_time:
@@ -323,13 +327,15 @@ class MetricsDashboardLayout(ui.LayoutView):
                 else:
                     label = PERFORMANCE_METRICS.get(metric_key, (metric_key, ""))[0]
 
+                delta_val = int(stats["delta"])
+                delta_str = f"+{humanize_number(delta_val)}" if delta_val >= 0 else humanize_number(delta_val)
                 stats_lines.append(
                     f"**{label}:** "
                     f"Current: {humanize_number(int(stats['current']))} | "
                     f"Min: {humanize_number(int(stats['lowest']))} | "
                     f"Max: {humanize_number(int(stats['highest']))} | "
                     f"Avg: {humanize_number(int(stats['average']))} | "
-                    f"Δ: {humanize_number(int(stats['diff']))}"
+                    f"Δ: {delta_str}"
                 )
             container.add_item(ui.TextDisplay("\n".join(stats_lines)))
 
@@ -395,10 +401,11 @@ class MetricsDashboardLayout(ui.LayoutView):
         if not data or len(data) < 2:
             self._graph_file = None
             self._graph_stats = None
+            self._actual_timeframe = None
             return
 
         # Generate graph in thread
-        def _prep() -> tuple[discord.File, dict]:
+        def _prep() -> tuple[discord.File, dict, str]:
             df = pd.DataFrame.from_records(data)
             df["created_on"] = pd.to_datetime(df["created_on"]).dt.tz_convert(settings.timezone)
             df.set_index("created_on", inplace=True)
@@ -414,12 +421,14 @@ class MetricsDashboardLayout(ui.LayoutView):
                 if metric_key in df.columns:
                     col = df[metric_key].dropna()
                     if len(col) > 0:
+                        first_val = col.iloc[0]
+                        current_val = col.iloc[-1]
                         stats[metric_key] = {
-                            "current": col.iloc[-1],
+                            "current": current_val,
                             "average": col.mean(),
                             "highest": col.max(),
                             "lowest": col.min(),
-                            "diff": col.max() - col.min(),
+                            "delta": current_val - first_val,
                         }
 
             # Generate multi-metric plot
@@ -433,9 +442,10 @@ class MetricsDashboardLayout(ui.LayoutView):
             buffer.seek(0)
             file = discord.File(buffer, filename=f"{uuid4()}.png")
 
-            return file, stats
+            timeframe = humanize_timedelta(timedelta=actual_delta)
+            return file, stats, timeframe
 
-        self._graph_file, self._graph_stats = await asyncio.to_thread(_prep)
+        self._graph_file, self._graph_stats, self._actual_timeframe = await asyncio.to_thread(_prep)
 
     def _get_metric_map(self) -> dict[str, tuple[str, str]]:
         """Get the appropriate metric map for the current category."""

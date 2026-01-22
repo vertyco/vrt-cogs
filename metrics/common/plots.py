@@ -1,5 +1,6 @@
 import pandas as pd
 from plotly import graph_objects as go
+from plotly.subplots import make_subplots
 
 
 def render_bank_plot(
@@ -74,7 +75,6 @@ def render_multi_metric_plot(
     Returns:
         PNG image bytes of the rendered graph.
     """
-    from plotly.subplots import make_subplots
 
     x_values = df.index.to_numpy(copy=False)
 
