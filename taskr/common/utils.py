@@ -94,6 +94,7 @@ async def invoke_command(
         and (alias_cog := bot.get_cog("Alias")) is not None
         and not await bot.cog_disabled_in_guild(alias_cog, context.guild)
     ):
+        alias_cog = t.cast(t.Any, alias_cog)  # Dynamic cog attributes
         alias = await alias_cog._aliases.get_alias(context.guild, context.invoked_with)
         if alias is not None:
 
@@ -110,6 +111,7 @@ async def invoke_command(
         and (custom_commands_cog := bot.get_cog("CustomCommands")) is not None
         and not await bot.cog_disabled_in_guild(custom_commands_cog, context.guild)
     ):
+        custom_commands_cog = t.cast(t.Any, custom_commands_cog)  # Dynamic cog attributes
         try:
             raw_response, cooldowns = await custom_commands_cog.commandobj.get(
                 message=message, command=context.invoked_with
@@ -142,6 +144,7 @@ async def invoke_command(
         and (tags_cog := bot.get_cog("Tags")) is not None
         and not await bot.cog_disabled_in_guild(tags_cog, context.guild)
     ):
+        tags_cog = t.cast(t.Any, tags_cog)  # Dynamic cog attributes
         tag = tags_cog.get_tag(context.guild, context.invoked_with, check_global=True)
         if tag is not None:
             message.content = f"{context.prefix}invoketag {command}"
@@ -156,3 +159,28 @@ async def invoke_command(
     if context.valid:
         await bot.invoke(context)
     return context
+
+
+async def get_openai_token(bot: Red) -> str | None:
+    """Retrieve OpenAI API token from Red's shared API tokens.
+
+    Checks multiple possible key names and service name variations.
+
+    Returns:
+        The OpenAI API token if found, None otherwise.
+    """
+    # Try the standard openai service first
+    keys = await bot.get_shared_api_tokens("openai")
+    if keys:
+        if token := keys.get("api_key") or keys.get("key"):
+            return token
+
+    # Fallback: search all tokens for services containing "openai"
+    all_tokens = await bot.get_shared_api_tokens()
+    for service_name, tokens in all_tokens.items():
+        tokens: dict = tokens
+        if "openai" in service_name.lower():
+            if token := tokens.get("api_key") or tokens.get("key"):
+                return token
+
+    return None

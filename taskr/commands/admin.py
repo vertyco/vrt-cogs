@@ -80,50 +80,47 @@ class Admin(MixinMeta):
         - Please run the ping command every odd hour at the 30 minute mark from 5am to 8pm
         - Please run the ping command on the 15th of each month at 3pm
         """
+        assert isinstance(ctx.author, discord.Member)
         if len(request) > 1000:
             return await ctx.send(_("Your request is too long, please keep it under 1000 characters."))
+
+        openai_token = await utils.get_openai_token(self.bot)
+        if not openai_token:
+            return await ctx.send(
+                _("No OpenAI token set. Run `[p]set api openai api_key <key>` to set one."), ephemeral=True
+            )
+
         async with ctx.typing():
-            openai_token = None
-            keys = await self.bot.get_shared_api_tokens("openai")
-            if keys and keys.get("api_key"):
-                openai_token = keys["api_key"]
-                if not openai_token and "key" in keys:
-                    openai_token = keys["key"]
-
-            if not openai_token:
-                all_tokens = await self.bot.get_shared_api_tokens()
-                for service_name, tokens in all_tokens.items():
-                    if "openai" in service_name:
-                        openai_token = tokens.get("api_key") or tokens.get("key")  # type: ignore
-
-            if not openai_token:
-                return await ctx.send(
-                    _("No OpenAI token set. run `[p]set api openai key <key>` to set one."), ephemeral=True
-                )
-
             timezone = self.db.timezone(ctx.guild.id)
-            now = datetime.now(pytz.timezone(timezone))
+            tz = pytz.timezone(timezone)
+            now = datetime.now(tz)
             formatted_time = now.strftime("%A, %B %d, %Y %I:%M%p %Z")
-            interval = self.db.premium_interval if await self.is_premium(ctx.guild) else self.db.minimum_interval
-            interval_human = humanize_timedelta(seconds=interval) or _("0 seconds")
-            details = f"Current user ID: {ctx.author.id}\nCurrent channel ID: {ctx.channel.id}\nMinimum task interval: {interval}"
+            is_premium = await self.is_premium(ctx.guild)
+            min_interval = self.db.premium_interval if is_premium else self.db.minimum_interval
+            min_interval_human = humanize_timedelta(seconds=min_interval) or _("0 seconds")
+
             messages = [
                 {"role": "developer", "content": f"The current time is {formatted_time}"},
                 {"role": "developer", "content": C.SYSTEM_PROMPT},
-                {"role": "developer", "content": f"Context:\n{details}"},
+                {
+                    "role": "developer",
+                    "content": f"Context:\nCurrent user ID: {ctx.author.id}\nCurrent channel ID: {ctx.channel.id}\nMinimum task interval: {min_interval}",
+                },
                 {
                     "role": "developer",
                     "content": "Your task is to create a scheduled command using the details provided.",
                 },
                 {"role": "user", "content": request},
             ]
+
             try:
                 client = openai.AsyncClient(api_key=openai_token)
                 response = await client.beta.chat.completions.parse(
-                    model="gpt-5.1",
+                    model="gpt-5-mini",
                     messages=messages,
                     response_format=CommandCreationResponse,
                     reasoning_effort="medium",
+                    timeout=30,
                 )
                 model: CommandCreationResponse = response.choices[0].message.parsed
             except Exception as e:
@@ -133,51 +130,47 @@ class Admin(MixinMeta):
                     ephemeral=True,
                 )
 
+            # Build the scheduled command from AI response
             dump = model.model_dump(mode="json")
             dump["guild_id"] = ctx.guild.id
 
-            chan_or_thread = ctx.guild.get_channel_or_thread(dump.get("channel_id", 0))
-            if chan_or_thread and not chan_or_thread.permissions_for(ctx.author).send_messages:
+            # Validate and sanitize channel_id
+            channel_id = dump.get("channel_id", 0)
+            channel = ctx.guild.get_channel_or_thread(channel_id) if channel_id else None
+            if not channel or not channel.permissions_for(ctx.author).send_messages:
                 dump["channel_id"] = ctx.channel.id
-            elif not chan_or_thread:
-                dump["channel_id"] = ctx.channel.id
+                channel = ctx.channel
 
-            cmd_author = ctx.guild.get_member(dump.get("author_id", 0))
-            if cmd_author and cmd_author.top_role > ctx.author.top_role:
+            # Validate and sanitize author_id
+            author_id = dump.get("author_id", 0)
+            cmd_author = ctx.guild.get_member(author_id) if author_id else None
+            if not cmd_author or cmd_author.top_role > ctx.author.top_role:
                 dump["author_id"] = ctx.author.id
-            elif not cmd_author:
-                dump["author_id"] = ctx.author.id
+                cmd_author = ctx.author
 
-            if "start_date" in dump and dump["start_date"]:
-                try:
-                    parsed_date = parser.parse(dump["start_date"])
-                    dump["start_date"] = parsed_date.isoformat()
-                except ValueError:
-                    return await ctx.send(_("The start date provided by the AI model is not valid."), ephemeral=True)
-            if "end_date" in dump and dump["end_date"]:
-                try:
-                    parsed_date = parser.parse(dump["end_date"])
-                    dump["end_date"] = parsed_date.isoformat()
-                except ValueError:
-                    return await ctx.send(_("The end date provided by the AI model is not valid."), ephemeral=True)
-            if "between_time_start" in dump and dump["between_time_start"]:
-                try:
-                    parsed_time = parser.parse(dump["between_time_start"])
-                    dump["between_time_start"] = parsed_time.strftime("%H:%M")
-                except ValueError:
-                    return await ctx.send(
-                        _("The between time start provided by the AI model is not valid, use HH:MM format."),
-                        ephemeral=True,
-                    )
-            if "between_time_end" in dump and dump["between_time_end"]:
-                try:
-                    parsed_time = parser.parse(dump["between_time_end"])
-                    dump["between_time_end"] = parsed_time.strftime("%H:%M")
-                except ValueError:
-                    return await ctx.send(
-                        _("The between time end provided by the AI model is not valid, use HH:MM format."),
-                        ephemeral=True,
-                    )
+            # Parse date fields
+            for date_field in ("start_date", "end_date"):
+                if value := dump.get(date_field):
+                    try:
+                        dump[date_field] = parser.parse(value).isoformat()
+                    except ValueError:
+                        return await ctx.send(
+                            _("The {} provided by the AI model is not valid.").format(date_field.replace("_", " ")),
+                            ephemeral=True,
+                        )
+
+            # Parse time fields
+            for time_field in ("between_time_start", "between_time_end"):
+                if value := dump.get(time_field):
+                    try:
+                        dump[time_field] = parser.parse(value).strftime("%H:%M")
+                    except ValueError:
+                        return await ctx.send(
+                            _("The {} provided by the AI model is not valid, use HH:MM format.").format(
+                                time_field.replace("_", " ")
+                            ),
+                            ephemeral=True,
+                        )
 
             try:
                 command = ScheduledCommand.model_validate(dump)
@@ -190,51 +183,52 @@ class Admin(MixinMeta):
                     ephemeral=True,
                 )
 
-            if not command.is_safe(self.db.timezone(ctx.guild.id), interval):
+            # Validate command safety
+            if not command.is_safe(timezone, min_interval):
                 err = _("The command generated by the AI model is not safe to run.")
-                min_interval_msg = _("The minimum interval between tasks is {}.").format(interval_human)
-                # Include details as to why its not safe
-                humanized = command.humanize()
-                err = f"{err}\n{min_interval_msg}\nWould run: `{humanized}`"
+                err += _("\nThe minimum interval between tasks is {}.").format(min_interval_human)
+                err += _("\nWould run: `{}`").format(command.humanize())
                 if model.user_comment:
-                    err = f"{err}\nAI Comment: {model.user_comment}"
+                    err += _("\nAI Comment: {}").format(model.user_comment)
                 return await ctx.send(err, ephemeral=True)
 
             log.debug("AI Generated Command: %s", command.model_dump_json(indent=2))
 
-            command_channel = ctx.guild.get_channel_or_thread(command.channel_id)
-            command_author = ctx.guild.get_member(command.author_id)
-
-            user_perms = command_channel.permissions_for(ctx.author)
-            bot_perms = command_channel.permissions_for(ctx.guild.me)
+            # Validate command permissions
+            user_perms = channel.permissions_for(ctx.author)
+            bot_perms = channel.permissions_for(ctx.guild.me)
             context = await utils.invoke_command(
                 bot=self.bot,
-                author=command_author,
-                channel=command_channel,
+                author=cmd_author,
+                channel=channel,
                 command=command.command,
                 message=ctx.message,
                 invoke=False,
             )
+
             try:
                 if not context.valid:
                     return await ctx.send(_("This command does not exist."), ephemeral=True)
-                elif (
+                if (
                     not await discord.utils.async_all([check(context) for check in context.command.checks])
                     or not user_perms.send_messages
                     or not bot_perms.send_messages
                 ):
                     return await ctx.send(_("You do not have permission to run this command."), ephemeral=True)
-                elif context.command.qualified_name in ("shutdown", "restart", "reload", "unload", "load"):
+                if context.command.qualified_name in ("shutdown", "restart", "reload", "unload", "load"):
                     return await ctx.send(_("This command cannot be scheduled."), ephemeral=True)
             except Exception as e:
                 log.error("Failed to validate command permissions", exc_info=e)
                 return await ctx.send(
                     _("Failed to validate command permissions, please check the logs for more info."), ephemeral=True
                 )
+
+            # Save and display result
             self.db.add_task(command)
             self.save()
+
             txt = _("Scheduled command created successfully.")
             if model.user_comment:
-                txt += f"\nAI Comment: {model.user_comment}"
+                txt += _("\nAI Comment: {}").format(model.user_comment)
             await ctx.send(txt, ephemeral=True)
             await TaskMenu(ctx, command.name).start()
