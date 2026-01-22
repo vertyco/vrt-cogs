@@ -58,7 +58,7 @@ class GlobalSettings(TableMixin, Table):
     performance_interval = BigInt(default=3)  # Minutes between performance snapshots
 
     # Data retention
-    max_snapshot_age_days = BigInt(default=30)  # Max age of snapshots to keep
+    max_snapshot_age_days = BigInt(default=3600)  # Max age of snapshots to keep
 
     # Global tracking toggles
     track_bank = Boolean(default=False)  # Whether to track bank data globally

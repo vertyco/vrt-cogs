@@ -61,6 +61,7 @@ PERFORMANCE_METRICS = {
     "active_tasks": ("Active Tasks", "#DDA0DD"),
 }
 
+LOADING = "https://upload.wikimedia.org/wikipedia/commons/a/ad/YouTube_loading_symbol_3_%28transparent%29.gif"
 
 # =============================================================================
 # Modals
@@ -347,7 +348,19 @@ class MetricsDashboardLayout(ui.LayoutView):
     async def refresh(self, interaction: discord.Interaction, regenerate_graph: bool = False):
         """Refresh the dashboard view."""
         if regenerate_graph or self._graph_file is None:
+            # Show loading indicator
             await interaction.response.defer()
+            loading_view = ui.LayoutView()
+            loading_container = ui.Container(accent_colour=discord.Color.blue())
+            loading_thumbnail = ui.Thumbnail(media=LOADING)
+            loading_section = ui.Section(
+                ui.TextDisplay("# 📊 Generating Graph...\nPlease wait while the metrics are being processed."),
+                accessory=loading_thumbnail,
+            )
+            loading_container.add_item(loading_section)
+            loading_view.add_item(loading_container)
+            await interaction.edit_original_response(view=loading_view, attachments=[])
+
             await self._generate_graph()
         self._build_layout()
         files = [self._graph_file] if self._graph_file else []
@@ -468,10 +481,22 @@ class MetricsDashboardLayout(ui.LayoutView):
 
 async def open_metrics_dashboard(ctx: commands.Context, cog: "Metrics") -> None:
     """Open the interactive metrics dashboard."""
+    # Show loading indicator
+    loading_view = ui.LayoutView()
+    loading_container = ui.Container(accent_colour=discord.Color.blue())
+    loading_thumbnail = ui.Thumbnail(media=LOADING)
+    loading_section = ui.Section(
+        ui.TextDisplay("# 📊 Generating Dashboard...\nPlease wait while the metrics are being processed."),
+        accessory=loading_thumbnail,
+    )
+    loading_container.add_item(loading_section)
+    loading_view.add_item(loading_container)
+    msg = await ctx.send(view=loading_view)
+
     view = MetricsDashboardLayout(ctx, cog)
     await view._generate_graph()  # Generate initial graph
     view._build_layout()
 
     files = [view._graph_file] if view._graph_file else []
-    msg = await ctx.send(view=view, files=files)
+    await msg.edit(view=view, attachments=files)
     view.message = msg
