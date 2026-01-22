@@ -143,6 +143,11 @@ class Snapshot(MixinMeta):
                 continue
 
             member_total = guild.member_count or 0
+            # Skip guilds with 0 members (likely a Discord API issue)
+            if member_total == 0:
+                log.debug(f"Skipping guild {guild.id} ({guild.name}) - 0 members reported")
+                continue
+
             online_members, idle_members, dnd_members, offline_members = 0, 0, 0, 0
 
             async for member in AsyncIter(guild.members):

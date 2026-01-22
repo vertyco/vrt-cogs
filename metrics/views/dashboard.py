@@ -249,8 +249,8 @@ class MetricsDashboardLayout(ui.LayoutView):
         # State
         self.selected_category: str = "members"
         self.selected_metrics: list[str] = ["member_total", "online_members", "offline_members"]
-        self.show_global: bool = True
-        self.timespan: str = "12h"
+        self.show_global: bool = False  # Default to guild scope
+        self.timespan: str = "24h"
         self.start_time: str | None = None
         self.end_time: str | None = None
 
@@ -326,6 +326,8 @@ class MetricsDashboardLayout(ui.LayoutView):
                 stats_lines.append(
                     f"**{label}:** "
                     f"Current: {humanize_number(int(stats['current']))} | "
+                    f"Min: {humanize_number(int(stats['lowest']))} | "
+                    f"Max: {humanize_number(int(stats['highest']))} | "
                     f"Avg: {humanize_number(int(stats['average']))} | "
                     f"Δ: {humanize_number(int(stats['diff']))}"
                 )

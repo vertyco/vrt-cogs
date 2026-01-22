@@ -32,7 +32,7 @@ class Metrics(Commands, TaskLoops, commands.Cog, metaclass=CompositeMetaClass):
     """Track various metrics about your server."""
 
     __author__ = "Vertyco"
-    __version__ = "1.0.0"
+    __version__ = "1.0.1"
 
     def __init__(self, bot: Red):
         super().__init__()
