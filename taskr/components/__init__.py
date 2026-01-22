@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 import logging
+import typing as t
 
 import discord
 from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 
-from ..abc import MixinMeta
-from ..common.models import DB
+if t.TYPE_CHECKING:
+    from ..abc import MixinMeta
+    from ..common.models import DB
 
 _ = Translator("Taskr", __file__)
 log = logging.getLogger("red.vrt.taskr.components")
@@ -18,21 +20,22 @@ class BaseMenu(discord.ui.View):
     def __init__(
         self,
         ctx: commands.Context,
-        message: discord.Message = None,
+        message: discord.Message | None = None,
         timeout: int = 240,
         delete_on_timeout: bool = False,
     ):
         super().__init__(timeout=timeout)
-        self.cog: MixinMeta = ctx.cog
+        # These casts are safe because this view is only used within guild commands from this cog
+        self.cog = t.cast("MixinMeta", ctx.cog)
         self.db: DB = self.cog.db
         self.bot: Red = ctx.bot
-        self.guild: discord.Guild = ctx.guild
+        self.guild: discord.Guild = t.cast(discord.Guild, ctx.guild)
         self.ctx: commands.Context = ctx
 
         self.interaction = ctx.interaction
-        self.author: discord.User | discord.Member = ctx.author
-        self.channel: discord.TextChannel | discord.ForumChannel | discord.Thread = ctx.channel
-        self.message: discord.Message = message
+        self.author = t.cast(discord.Member, ctx.author)
+        self.channel = t.cast(discord.TextChannel | discord.Thread, ctx.channel)
+        self.message: discord.Message | None = message
 
         self.delete_on_timeout = delete_on_timeout
 

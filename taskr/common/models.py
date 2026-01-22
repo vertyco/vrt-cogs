@@ -133,8 +133,8 @@ class ScheduledCommand(Base):
         parts = []
 
         # Handle the interval and interval_unit
-        interval = self.interval
-        unit = self.interval_unit.lower()
+        interval = self.interval or 1
+        unit = (self.interval_unit or "minutes").lower()
 
         if interval == 1:
             if unit.endswith("s"):
@@ -195,7 +195,7 @@ class ScheduledCommand(Base):
             time_str = self._format_time(self.hour or "*", self.minute or "0")
             parts.append(time_str)
         else:
-            parts.append("At every hour")
+            parts.append("At every minute")
 
         # Handle months of year
         months_of_year_phrase = self._parse_months_of_year(self.months_of_year)
@@ -492,39 +492,71 @@ class ScheduledCommand(Base):
         tokens = days_of_month.lower().split(",")
         for token in tokens:
             token = token.strip()
-            if token == "last":
-                days.append("the last day of the month")
-            elif any(i in token for i in ("th", "st", "nd", "rd")):
-                # Handle ordinal days, e.g., "1st fri"
-                ordinal, day = token.split(" ")
-                ordinal = ordinal.lower()
-                day = day.lower()
-                day_name = day.capitalize()
-                day_name = DAYS_OF_WEEK.get(day, day_name)
-                if ordinal == "last":
-                    days.append(f"the last {day_name} of the month")
+            if not token:
+                continue
+            try:
+                if token == "last":
+                    days.append("the last day of the month")
+                elif any(i in token for i in ("th", "st", "nd", "rd")) and " " in token:
+                    # Handle ordinal days, e.g., "1st fri"
+                    parts = token.split(" ", 1)
+                    if len(parts) != 2:
+                        days.append(f"'{token}'")
+                        continue
+                    ordinal, day = parts
+                    ordinal = ordinal.lower()
+                    day = day.lower()
+                    day_name = DAYS_OF_WEEK.get(day, day.capitalize())
+                    if ordinal == "last":
+                        days.append(f"the last {day_name} of the month")
+                    else:
+                        days.append(f"the {ordinal} {day_name} of the month")
+                elif "-" in token and "/" in token:
+                    # Handle range with step, e.g., '1-31/3' (every 3rd day from 1st to 31st)
+                    range_part, step_str = token.split("/", 1)
+                    start_str, end_str = range_part.split("-", 1)
+                    start_day = int(start_str)
+                    end_day = int(end_str)
+                    step = int(step_str)
+                    if step == 2:
+                        days.append(
+                            f"every other day from the {self._ordinal(start_day)} to the {self._ordinal(end_day)} of the month"
+                        )
+                    else:
+                        days.append(
+                            f"every {step} days from the {self._ordinal(start_day)} to the {self._ordinal(end_day)} of the month"
+                        )
+                elif "-" in token:
+                    # Handle ranges, e.g., '1-7'
+                    start_str, end_str = token.split("-", 1)
+                    start_day = int(start_str)
+                    end_day = int(end_str)
+                    days.append(
+                        f"every day from the {self._ordinal(start_day)} to the {self._ordinal(end_day)} of the month"
+                    )
+                elif "/" in token:
+                    # Handle steps, e.g., '1/2' or '*/3'
+                    base_str, step_str = token.split("/", 1)
+                    step = int(step_str)
+                    if base_str in ("", "*"):
+                        if step == 2:
+                            days.append("every other day")
+                        else:
+                            days.append(f"every {step} days")
+                    else:
+                        base = int(base_str)
+                        if step == 2:
+                            days.append(f"every other day starting from the {self._ordinal(base)}")
+                        else:
+                            days.append(f"every {step} days starting from the {self._ordinal(base)}")
                 else:
-                    days.append(f"the {ordinal} {day_name} of the month")
-            elif "-" in token:
-                # Handle ranges, e.g., '1-7'
-                start_day, end_day = token.split("-")
-                start_day = int(start_day)
-                end_day = int(end_day)
-                days.append(
-                    f"every day from the {self._ordinal(start_day)} to the {self._ordinal(end_day)} of the month"
-                )
-            elif "/" in token:
-                # Handle steps, e.g., '1/2'
-                base, step = token.split("/")
-                base = int(base)
-                step = int(step)
-                if step == 2:
-                    days.append(f"every other day starting from the {self._ordinal(base)}")
-                else:
-                    days.append(f"every {step} days starting from the {self._ordinal(base)}")
-            else:
-                day = int(token)
-                days.append(f"the {self._ordinal(day)} day of the month")
+                    day = int(token)
+                    days.append(f"the {self._ordinal(day)} day of the month")
+            except (ValueError, IndexError):
+                # If parsing fails, just include the raw token
+                days.append(f"'{token}'")
+        if not days:
+            return None
         if len(days) > 1:
             return ", ".join(days[:-1]) + f" and {days[-1]}"
         else:
@@ -538,34 +570,50 @@ class ScheduledCommand(Base):
         tokens = months_of_year.split(",")
         for token in tokens:
             token = token.strip()
-            if "-" in token and "/" in token:
-                # e.g., '1-12/3'
-                range_part, step = token.split("/")
-                start_month, end_month = range_part.split("-")
-                step = int(step)
-                start_index = int(start_month)
-                end_index = int(end_month)
-                month_nums = list(range(start_index, end_index + 1, step))
-                months.extend([MONTHS_OF_YEAR[str(m)] for m in month_nums])
-            elif "/" in token:
-                # e.g., '1/2'
-                base, step = token.split("/")
-                base = int(base)
-                step = int(step)
-                months_in_year = 12
-                month_nums = list(range(base, months_in_year + 1, step))
-                months.extend([MONTHS_OF_YEAR[str(m)] for m in month_nums])
-            elif "-" in token:
-                # e.g., '1-3'
-                start_month, end_month = token.split("-")
-                start_index = int(start_month)
-                end_index = int(end_month)
-                month_nums = list(range(start_index, end_index + 1))
-                months.extend([MONTHS_OF_YEAR[str(m)] for m in month_nums])
-            else:
-                month_name = MONTHS_OF_YEAR.get(token, f"Month {token}")
-                months.append(month_name)
+            if not token:
+                continue
+            try:
+                if "-" in token and "/" in token:
+                    # e.g., '1-12/3'
+                    range_part, step_str = token.split("/", 1)
+                    start_str, end_str = range_part.split("-", 1)
+                    step = int(step_str)
+                    start_index = int(start_str)
+                    end_index = int(end_str)
+                    month_nums = list(range(start_index, end_index + 1, step))
+                    for m in month_nums:
+                        if 1 <= m <= 12:
+                            months.append(MONTHS_OF_YEAR[str(m)])
+                elif "/" in token:
+                    # e.g., '1/2' or '*/3'
+                    base_str, step_str = token.split("/", 1)
+                    step = int(step_str)
+                    if base_str in ("", "*"):
+                        month_nums = list(range(1, 13, step))
+                    else:
+                        base = int(base_str)
+                        month_nums = list(range(base, 13, step))
+                    for m in month_nums:
+                        if 1 <= m <= 12:
+                            months.append(MONTHS_OF_YEAR[str(m)])
+                elif "-" in token:
+                    # e.g., '1-3'
+                    start_str, end_str = token.split("-", 1)
+                    start_index = int(start_str)
+                    end_index = int(end_str)
+                    month_nums = list(range(start_index, end_index + 1))
+                    for m in month_nums:
+                        if 1 <= m <= 12:
+                            months.append(MONTHS_OF_YEAR[str(m)])
+                else:
+                    month_name = MONTHS_OF_YEAR.get(token, f"Month {token}")
+                    months.append(month_name)
+            except (ValueError, KeyError):
+                # If parsing fails, include the raw token
+                months.append(f"'{token}'")
 
+        if not months:
+            return None
         if len(months) == 12:
             return None  # Every month
         elif len(months) > 1:

@@ -490,7 +490,7 @@ class TaskMenu(BaseMenu):
         # Update
         schedule.name = name
         schedule.author_id = command_author.id
-        schedule.channel_id = channel_id
+        schedule.channel_id = channel_id or 0
         schedule.command = command
         await self.message.edit(embed=await self.get_page(), view=self)
         if schedule.enabled:
@@ -901,19 +901,7 @@ class TaskMenu(BaseMenu):
 
     @discord.ui.button(emoji=C.WAND, style=discord.ButtonStyle.secondary, row=4)
     async def ai_helper(self, interaction: discord.Interaction, button: discord.ui.Button):
-        openai_token = None
-        keys = await self.bot.get_shared_api_tokens("openai")
-        if keys and keys.get("api_key"):
-            openai_token = keys["api_key"]
-            if not openai_token and "key" in keys:
-                openai_token = keys["key"]
-
-        if not openai_token:
-            all_tokens = await self.bot.get_shared_api_tokens()
-            for service_name, tokens in all_tokens.items():
-                if "openai" in service_name:
-                    openai_token = tokens.get("api_key") or tokens.get("key")  # type: ignore
-
+        openai_token = await utils.get_openai_token(self.bot)
         if not openai_token:
             return await interaction.response.send_message(
                 _("OpenAI API key is not set, cannot use AI helper."), ephemeral=True
@@ -932,49 +920,59 @@ class TaskMenu(BaseMenu):
         await modal.wait()
         if not modal.inputs:
             return
+
         request = modal.inputs["request"]
         msg = await interaction.followup.send(
             _("Generating cron expression...\n{}").format(box(request)),
             ephemeral=True,
             wait=True,
         )
+
         schedule = self.tasks[self.page]
-        now = datetime.now(pytz.timezone(self.timezone))
+        tz = pytz.timezone(self.timezone)
+        now = datetime.now(tz)
         formatted_time = now.strftime("%A, %B %d, %Y %I:%M%p %Z")
 
-        existing_settings = []
-        for k, v in schedule.model_dump(
-            mode="json",
-            exclude_defaults=True,
-            exclude={
-                "id",
-                "created_on",
-                "last_run",
-                "name",
-                "guild_id",
-                "channel_id",
-                "author_id",
-                "command",
-                "enabled",
-            },
-        ).items():
-            existing_settings.append(f"- {k}: {v}")
-        interval = self.db.premium_interval if self.is_premium(self.guild) else self.db.minimum_interval
-        details = f"Current user ID: {self.author.id}\nMinimum task interval: {interval}"
+        # Build existing settings context for the AI
+        existing_settings = [
+            f"- {k}: {v}"
+            for k, v in schedule.model_dump(
+                mode="json",
+                exclude_defaults=True,
+                exclude={
+                    "id",
+                    "created_on",
+                    "last_run",
+                    "name",
+                    "guild_id",
+                    "channel_id",
+                    "author_id",
+                    "command",
+                    "enabled",
+                },
+            ).items()
+        ]
+
+        min_interval = self.db.premium_interval if self.is_premium else self.db.minimum_interval
         messages = [
             {"role": "developer", "content": f"The current time is {formatted_time}"},
             {"role": "developer", "content": C.SYSTEM_PROMPT},
             {"role": "developer", "content": "Existing schedule settings:\n" + "\n".join(existing_settings)},
-            {"role": "developer", "content": f"Context:\n{details}"},
+            {
+                "role": "developer",
+                "content": f"Context:\nCurrent user ID: {self.author.id}\nMinimum task interval: {min_interval}",
+            },
             {"role": "user", "content": request},
         ]
+
         try:
             client = openai.AsyncClient(api_key=openai_token)
             response = await client.beta.chat.completions.parse(
-                model="gpt-5.1",
+                model="gpt-5-mini",
                 messages=messages,
                 response_format=ai_responses.CronDataResponse,
                 reasoning_effort="medium",
+                timeout=30,
             )
             model: ai_responses.CronDataResponse = response.choices[0].message.parsed
         except Exception as e:
@@ -982,112 +980,78 @@ class TaskMenu(BaseMenu):
             return await interaction.followup.send(
                 _("AI failed to generate cron expression, please try again."), ephemeral=True
             )
+
         if not model:
-            log.error(f"Failed to get cron expression from AI model: {response}\nQuestion: {request}")
-            if msg:
-                with suppress(discord.HTTPException):
-                    await msg.delete()
+            log.error("Failed to get cron expression from AI model: %s\nQuestion: %s", response, request)
+            with suppress(discord.HTTPException):
+                await msg.delete()
             return await interaction.followup.send(_("Failed to get cron expression from AI model."), ephemeral=True)
-        # log.debug("AI model dump: %s", model.model_dump_json(indent=2))
+
+        # Apply interval settings directly
         schedule.interval = model.interval
         schedule.interval_unit = model.interval_unit
-        if model.hour:
-            try:
-                CronTrigger.from_crontab(f"* {model.hour} * * *")
-                schedule.hour = model.hour
-            except ValueError:
-                schedule.hour = None
-        else:
-            schedule.hour = None
-        if model.minute:
-            try:
-                CronTrigger.from_crontab(f"{model.minute} * * * *")
-                schedule.minute = model.minute
-            except ValueError:
-                schedule.minute = None
-        else:
-            schedule.minute = None
-        if model.second:
-            try:
-                CronTrigger(second=model.second)
-                schedule.second = model.second
-            except ValueError:
-                schedule.second = None
-        else:
-            schedule.second = None
-        if model.days_of_week:
-            try:
-                CronTrigger(day_of_week=model.days_of_week)
-                schedule.days_of_week = model.days_of_week
-            except ValueError:
-                schedule.days_of_week = None
-        else:
-            schedule.days_of_week = None
-        if model.days_of_month:
-            try:
-                CronTrigger(day=model.days_of_month)
-                schedule.days_of_month = model.days_of_month
-            except ValueError:
-                schedule.days_of_month = None
-        else:
-            schedule.days_of_month = None
-        if model.months_of_year:
-            try:
-                CronTrigger(month=model.months_of_year)
-                schedule.months_of_year = model.months_of_year
-            except ValueError:
-                schedule.months_of_year = None
-        else:
-            schedule.months_of_year = None
-        if model.start_date:
-            try:
-                start_date = parser.parse(model.start_date)
-                if start_date.tzinfo is None:
-                    start_date = start_date.astimezone(pytz.timezone(self.timezone))
-                schedule.start_date = start_date
-            except ValueError:
-                schedule.start_date = None
-        else:
-            schedule.start_date = None
-        if model.end_date:
-            try:
-                end_date = parser.parse(model.end_date)
-                if end_date.tzinfo is None:
-                    end_date = end_date.astimezone(pytz.timezone(self.timezone))
-                schedule.end_date = end_date
-            except ValueError:
-                schedule.end_date = None
-        else:
-            schedule.end_date = None
-        if model.between_time_start:
-            try:
-                between_time_start = parser.parse(model.between_time_start).time()
-                schedule.between_time_start = between_time_start
-            except ValueError:
-                schedule.between_time_start = None
-        else:
-            schedule.between_time_start = None
-        if model.between_time_end:
-            try:
-                between_time_end = parser.parse(model.between_time_end).time()
-                schedule.between_time_end = between_time_end
-            except ValueError:
-                schedule.between_time_end = None
-        else:
-            schedule.between_time_end = None
+
+        # Validate and apply cron fields with proper error handling
+        cron_validations = [
+            ("hour", model.hour, lambda v: CronTrigger.from_crontab(f"* {v} * * *")),
+            ("minute", model.minute, lambda v: CronTrigger.from_crontab(f"{v} * * * *")),
+            ("second", model.second, lambda v: CronTrigger(second=v)),
+            ("days_of_week", model.days_of_week, lambda v: CronTrigger(day_of_week=v)),
+            ("days_of_month", model.days_of_month, lambda v: CronTrigger(day=v)),
+            ("months_of_year", model.months_of_year, lambda v: CronTrigger(month=v)),
+        ]
+
+        for field_name, value, validator in cron_validations:
+            if value:
+                try:
+                    validator(value)
+                    setattr(schedule, field_name, value)
+                except ValueError:
+                    setattr(schedule, field_name, None)
+            else:
+                setattr(schedule, field_name, None)
+
+        # Parse date fields
+        for field_name, value in [("start_date", model.start_date), ("end_date", model.end_date)]:
+            if value:
+                try:
+                    parsed = parser.parse(value)
+                    if parsed.tzinfo is None:
+                        parsed = tz.localize(parsed)
+                    setattr(schedule, field_name, parsed)
+                except ValueError:
+                    setattr(schedule, field_name, None)
+            else:
+                setattr(schedule, field_name, None)
+
+        # Parse time fields
+        for field_name, value in [
+            ("between_time_start", model.between_time_start),
+            ("between_time_end", model.between_time_end),
+        ]:
+            if value:
+                try:
+                    setattr(schedule, field_name, parser.parse(value).time())
+                except ValueError:
+                    setattr(schedule, field_name, None)
+            else:
+                setattr(schedule, field_name, None)
+
+        # Validate the final schedule
         try:
             schedule.embed(self.timezone)
             schedule.trigger(self.timezone)
         except Exception as e:
-            log.error("Failed to compile schedule\nAI response: {}".format(model.model_dump_json(indent=2)), exc_info=e)
+            log.error("Failed to compile schedule\nAI response: %s", model.model_dump_json(indent=2), exc_info=e)
             txt = _("AI failed to compile schedule, please check the cron expression.\n{}").format(str(e))
             if model.user_comment:
                 txt += _("\nAI Comment: {}").format(model.user_comment)
             return await interaction.followup.send(txt, ephemeral=True)
+
         await self.message.edit(embed=await self.get_page(), view=self)
-        if msg:
-            with suppress(discord.HTTPException):
-                await msg.delete()
+        with suppress(discord.HTTPException):
+            await msg.delete()
+
         txt = _("Scheduled command updated from the following request:\n{}").format(box(request))
         if model.user_comment:
             txt += _("\nAI Comment: {}").format(model.user_comment)
