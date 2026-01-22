@@ -333,39 +333,41 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                 weight_limit=45,
                 enemies=[
                     NPCBot(
-                        name="Spade",
-                        chassis_name=SMARTMOVE.name,  # Smartmove: 10+6+8=24 (cap 30)
-                        plating_name=OVERWATCH_R200.name,
-                        component_name=DARSIJ.name,  # Upgraded - chapter boss should be tougher
-                        # Spade: Leader, aggressive assault
-                        tactical_orders=TacticalOrders(
-                            movement_stance=MovementStance.AGGRESSIVE,
-                            engagement_range=EngagementRange.OPTIMAL,
-                        ),
-                    ),
-                    NPCBot(
                         name="Diamond",
-                        chassis_name=DLZ_250.name,  # DLZ-250: 8+6+5=19 (cap 22)
+                        chassis_name=DLZ_100.name,  # DLZ-100: 5+6+3=14 (cap 16)
                         plating_name=OVERWATCH_R200.name,
-                        component_name=RAPTOR_DT_02.name,
-                        # Diamond: Flanker, focus fire with team
+                        component_name=RAPTOR_DT_01.name,
                         tactical_orders=TacticalOrders(
                             movement_stance=MovementStance.FLANKING,
                             engagement_range=EngagementRange.OPTIMAL,
                         ),
                     ),
                     NPCBot(
-                        name="Club",
-                        chassis_name=DLZ_100.name,  # DLZ-100: 5+6+5=16 (cap 16, maxed!)
+                        name="Spade",
+                        chassis_name=SMARTMOVE.name,  # Smartmove: 10+6+8=24 (cap 30)
                         plating_name=OVERWATCH_R200.name,
-                        component_name=RAPTOR_DT_02.name,  # Upgraded from Raptor DT-01
+                        component_name=DARSIJ.name,
+                        tactical_orders=TacticalOrders(
+                            movement_stance=MovementStance.DEFENSIVE,
+                            engagement_range=EngagementRange.OPTIMAL,
+                        ),
+                    ),
+                    NPCBot(
+                        name="Club",
+                        chassis_name=DLZ_100.name,  # DLZ-100: 5+6+3=14 (cap 16)
+                        plating_name=OVERWATCH_R200.name,
+                        component_name=RAPTOR_DT_01.name,
+                        tactical_orders=TacticalOrders(
+                            movement_stance=MovementStance.FLANKING,
+                            engagement_range=EngagementRange.OPTIMAL,
+                        ),
                     ),
                 ],
                 credit_reward=4500,
                 entry_fee=1500,
                 required_mission="1-4",
                 unlock_parts=[SMARTMOVE.name, OVERWATCH_R760.name],
-                briefing="Spade's Battle Royale - three against one! Watch out for Spade's heavy Smartmove chassis!",
+                briefing="Spade's Battle Royale - the deadly trio! Watch out for Spade's heavy Smartmove chassis!",
                 victory_text="Rookie Circuit complete! Smartmove chassis and Overwatch R760 are now available!",
                 defeat_text="Outnumbered and outgunned. Focus on one target at a time!",
             ),
