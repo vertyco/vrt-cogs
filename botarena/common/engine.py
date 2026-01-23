@@ -119,6 +119,35 @@ class Vector2:
     def to_int_tuple(self) -> tuple[int, int]:
         return (int(self.x), int(self.y))
 
+    def dot(self, other: "Vector2") -> float:
+        """Dot product with another vector"""
+        return self.x * other.x + self.y * other.y
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# THREAT TRACKING
+# Tracks damage sources and enables smarter target prioritization
+# ─────────────────────────────────────────────────────────────────────────────
+@dataclass
+class ThreatEntry:
+    """Tracks threat from a single enemy"""
+
+    enemy_id: str
+    damage_received: int = 0  # Total damage taken from this enemy
+    last_hit_time: float = 0.0  # When we were last hit by this enemy
+    times_hit: int = 0  # Number of times hit by this enemy
+
+    def get_threat_score(self, current_time: float, decay_rate: float = 0.1) -> float:
+        """Calculate current threat score with time decay.
+
+        Recent damage is weighted more heavily than old damage.
+        Score decays over time so bots don't hold grudges forever.
+        """
+        time_since_hit = current_time - self.last_hit_time
+        decay_factor = math.exp(-decay_rate * time_since_hit)
+        # Base threat on damage, boosted by hit frequency
+        return self.damage_received * decay_factor * (1 + self.times_hit * 0.1)
+
 
 @dataclass
 class BotRuntimeState:
@@ -185,16 +214,39 @@ class BotRuntimeState:
     wall_escape_timer: float = 0.0  # Time remaining in wall escape mode
     last_wall_contact: float = 0.0  # Time of last wall contact
 
+    # Threat tracking - for smarter target selection
+    threat_map: dict[str, ThreatEntry] = field(default_factory=dict)  # enemy_id -> threat info
+    last_damage_time: float = 0.0  # When this bot last took damage (for reactive dodging)
+    last_damage_source: t.Optional[str] = None  # Who dealt the last damage
+
     # Statistics
     damage_dealt: int = 0
     damage_taken: int = 0
     kills: int = 0
 
-    def take_damage(self, damage: int) -> int:
-        """Apply damage, return actual damage dealt"""
+    def take_damage(self, damage: int, source_id: t.Optional[str] = None, current_time: float = 0.0) -> int:
+        """Apply damage, return actual damage dealt.
+
+        Args:
+            damage: Amount of damage to apply
+            source_id: ID of the bot that dealt the damage (for threat tracking)
+            current_time: Current simulation time (for threat decay)
+        """
         actual = min(damage, self.health)
         self.health -= actual
         self.damage_taken += actual
+
+        # Track threat from damage source
+        if source_id and actual > 0:
+            self.last_damage_time = current_time
+            self.last_damage_source = source_id
+            if source_id not in self.threat_map:
+                self.threat_map[source_id] = ThreatEntry(enemy_id=source_id)
+            threat = self.threat_map[source_id]
+            threat.damage_received += actual
+            threat.last_hit_time = current_time
+            threat.times_hit += 1
+
         if self.health <= 0:
             self.health = 0
             self.is_alive = False
@@ -229,6 +281,50 @@ class BotRuntimeState:
             return self.max_range * 0.92
         else:  # TACTICAL
             return (self.min_range + self.max_range) / 2
+
+    def get_target_reevaluation_interval(self) -> float:
+        """Get how often this bot should re-evaluate targets based on intelligence.
+
+        Higher intelligence = more frequent target checks = more adaptive behavior.
+        Range: 1.2s (intel 10) to 2.8s (intel 1)
+        """
+        # Intelligence ranges from 1-10, map to 2.8s down to 1.2s
+        return 3.0 - (self.intelligence / 10.0) * 1.6
+
+    def get_highest_threat(self, current_time: float) -> t.Optional[str]:
+        """Get the enemy that poses the highest threat to this bot.
+
+        Returns None if no threats recorded.
+        """
+        if not self.threat_map:
+            return None
+
+        best_threat_id = None
+        best_score = 0.0
+
+        for enemy_id, threat in self.threat_map.items():
+            score = threat.get_threat_score(current_time)
+            if score > best_score:
+                best_score = score
+                best_threat_id = enemy_id
+
+        # Only return if threat is significant (score > 10)
+        return best_threat_id if best_score > 10 else None
+
+    def was_recently_damaged(self, current_time: float, threshold: float = 0.5) -> bool:
+        """Check if this bot took damage recently (for reactive dodging).
+
+        Args:
+            current_time: Current simulation time
+            threshold: Time window in seconds to consider "recent"
+        """
+        return current_time - self.last_damage_time < threshold
+
+    def get_health_percentage(self) -> float:
+        """Get current health as a percentage (0.0 to 1.0)"""
+        if self.max_health <= 0:
+            return 0.0
+        return self.health / self.max_health
 
     def to_frame_data(self) -> dict:
         """Export state for frame capture"""
@@ -308,7 +404,15 @@ class BattleEngine:
 
     Runs a physics-based simulation with continuous movement and combat.
     All times are in seconds, positions in pixels.
+
+    STALEMATE PREVENTION:
+    If no damage is dealt for a prolonged period, bots become increasingly
+    aggressive to force engagement and prevent infinite standoffs.
     """
+
+    # Stalemate prevention thresholds
+    STALEMATE_WARNING_TIME = 8.0  # Seconds without damage before bots get antsy
+    STALEMATE_FORCE_TIME = 15.0  # Seconds without damage before forced aggression
 
     def __init__(self, config: BattleConfig = None):
         self.config = config or BattleConfig()
@@ -320,7 +424,7 @@ class BattleEngine:
         self.dt: float = 1.0 / self.config.fps
         self.events: list[dict] = []  # Events for current frame
 
-        self.last_damage_time: float = 0.0  # For battle statistics
+        self.last_damage_time: float = 0.0  # For stalemate detection
 
         # Wall collision constants
         self.wall_margin: float = 50.0  # Distance from edge to consider "against wall"
@@ -475,6 +579,7 @@ class BattleEngine:
 
             # Update all systems
             self._update_ai()
+            self._update_stalemate_prevention()  # Check for stalemate and modify behaviors
             self._update_movement()
             self._update_weapon_orientation()
             self._update_projectiles()
@@ -492,16 +597,91 @@ class BattleEngine:
 
         return self._build_result()
 
+    def _get_stalemate_aggression_bonus(self) -> float:
+        """Calculate how aggressive bots should become based on stalemate duration.
+
+        Returns a value from 0.0 (normal) to 1.0 (maximum aggression).
+        """
+        time_without_damage = self.current_time - self.last_damage_time
+
+        if time_without_damage < self.STALEMATE_WARNING_TIME:
+            return 0.0
+
+        # Ramp up aggression between warning and force time
+        progress = (time_without_damage - self.STALEMATE_WARNING_TIME) / (
+            self.STALEMATE_FORCE_TIME - self.STALEMATE_WARNING_TIME
+        )
+        return min(1.0, progress)
+
+    def _update_stalemate_prevention(self):
+        """Modify bot behaviors if a stalemate is detected.
+
+        When no damage has been dealt for a while:
+        1. Reduce commitment timers (more frequent repositioning)
+        2. Decrease preferred ranges (close the distance)
+        3. Eventually force all bots to become AGGRESSIVE
+        """
+        aggression_bonus = self._get_stalemate_aggression_bonus()
+
+        if aggression_bonus <= 0:
+            return  # No stalemate, normal behavior
+
+        for bot in self.bots.values():
+            if not bot.is_alive:
+                continue
+            if bot.is_healer:
+                continue  # Don't force healers to be aggressive
+
+            # Reduce commitment timers to force more frequent repositioning
+            if bot.commitment_timer > 0.5:
+                reduction = aggression_bonus * 0.5  # Up to 50% reduction
+                bot.commitment_timer *= 1.0 - reduction
+
+            # At maximum aggression, force bots to close distance
+            if aggression_bonus >= 0.8:
+                # Calculate distance to nearest enemy
+                nearest_enemy = self._find_nearest_enemy(bot)
+                if nearest_enemy:
+                    dist = bot.position.distance_to(nearest_enemy.position)
+                    # If too far, override target position to move closer
+                    if dist > bot.max_range * 0.6:
+                        # Set target position closer to enemy
+                        direction = (nearest_enemy.position - bot.position).normalized()
+                        close_distance = bot.min_range * 1.3 if bot.min_range > 0 else 100
+                        bot.target_position = nearest_enemy.position - direction * close_distance
+                        bot.commitment_timer = 0.3  # Short commitment to reassess quickly
+
     def _update_ai(self):
-        """Update bot AI - target selection and decision making"""
+        """Update bot AI - target selection and decision making.
+
+        Intelligence affects how often bots re-evaluate targets:
+        - High intel (10): Re-evaluates every 1.4s - very adaptive
+        - Low intel (1): Re-evaluates every 2.8s - slow to adapt
+
+        Bots also force re-evaluation when:
+        - They have no target
+        - Current target died
+        - They took damage from a different enemy (reactive targeting)
+        """
         for bot in self.bots.values():
             if not bot.is_alive:
                 continue
 
-            # Target re-evaluation: check every 2 seconds if current target is still optimal
-            # If a closer, in-range enemy appears, switch targets
+            # Calculate intelligence-scaled re-evaluation interval
+            reevaluation_interval = bot.get_target_reevaluation_interval()
             time_since_target_check = self.current_time - bot.last_target_check
-            should_reevaluate = time_since_target_check >= 2.0
+
+            # Force re-evaluation conditions
+            should_reevaluate = time_since_target_check >= reevaluation_interval
+
+            # React to being hit by a NEW enemy (not our current target)
+            if bot.was_recently_damaged(self.current_time, threshold=0.3):
+                if bot.last_damage_source and bot.last_damage_source != bot.target_id:
+                    # We're being attacked by someone we're not targeting!
+                    # Higher intelligence = more likely to react
+                    react_chance = 0.3 + (bot.intelligence / 10.0) * 0.5  # 30-80% chance
+                    if random.random() < react_chance:
+                        should_reevaluate = True
 
             if should_reevaluate or not bot.target_id:
                 bot.target_id = self._find_best_target(bot)
@@ -565,24 +745,43 @@ class BattleEngine:
     def _select_by_priority(
         self, bot: BotRuntimeState, candidates: list[BotRuntimeState], priority: TargetPriority
     ) -> t.Optional[str]:
-        """Select target from candidates based on priority (3 options)"""
+        """Select target from candidates based on priority with threat weighting.
+
+        Threat weighting: Bots remember who hurt them and factor that into targeting.
+        Higher intelligence = better threat assessment and less random noise.
+        """
         if not candidates:
             return None
 
+        # Get threat scores for all candidates
+        def get_threat_bonus(enemy_id: str) -> float:
+            """Get threat bonus for an enemy (higher = more threatening)"""
+            if enemy_id not in bot.threat_map:
+                return 0.0
+            threat = bot.threat_map[enemy_id]
+            # Scale threat influence by intelligence (smarter bots remember better)
+            intel_factor = bot.intelligence / 10.0
+            return threat.get_threat_score(self.current_time) * intel_factor * 0.5
+
         if priority == TargetPriority.WEAKEST:
             # Sort by health (lowest first), with intelligence-based noise
+            # Threat bonus makes us prefer enemies who hurt us (revenge targeting)
             def score(c: BotRuntimeState) -> float:
                 noise = random.uniform(0, 20) * (10 - bot.intelligence) / 10
-                return c.health + noise
+                threat_bonus = get_threat_bonus(c.bot_id)
+                # Lower score = higher priority, so subtract threat bonus
+                return c.health + noise - threat_bonus
 
             target = min(candidates, key=score)
 
         else:  # CLOSEST (default) or FOCUS_FIRE fallback
-            # Sort by distance (closest first), with noise
+            # Sort by distance (closest first), with noise and threat weighting
             def score(c: BotRuntimeState) -> float:
                 dist = bot.position.distance_to(c.position)
                 noise = random.uniform(0, 50) * (10 - bot.intelligence) / 10
-                return dist + noise
+                threat_bonus = get_threat_bonus(c.bot_id)
+                # Lower score = higher priority, so subtract threat bonus from distance
+                return dist + noise - threat_bonus
 
             target = min(candidates, key=score)
 
@@ -678,13 +877,27 @@ class BattleEngine:
     def _calculate_target_position(self, bot: BotRuntimeState, target: BotRuntimeState) -> Vector2:
         """Calculate where this bot wants to be based on its behavior.
 
-        Position-based system - no angles, just "where do I want to stand?"
+        Position-based system with team awareness and wall avoidance.
 
-        AGGRESSIVE: Position just outside min_range, directly toward target
-        DEFENSIVE: Position at max_range, directly away from target
-        TACTICAL: Position at optimal range, with some lateral offset
+        Features:
+        - AGGRESSIVE: Position just outside min_range, directly toward target
+        - DEFENSIVE: Position at max_range, directly away from target
+        - TACTICAL: Position at optimal range, with some lateral offset
+        - Wall avoidance: Penalize positions near arena edges
+        - Spread awareness: Offset from allies targeting same enemy
+        - Weapon archetype modifiers: Snipers prefer clear sightlines, brawlers flank
+        - Stalemate prevention: Reduce ranges when no damage dealt for a while
         """
         preferred_range = bot.get_preferred_range()
+
+        # ─────────────────────────────────────────────────────────────────────
+        # STALEMATE PREVENTION: Reduce preferred range if stalemate detected
+        # ─────────────────────────────────────────────────────────────────────
+        aggression_bonus = self._get_stalemate_aggression_bonus()
+        if aggression_bonus > 0 and not bot.is_healer:
+            # Reduce preferred range by up to 40% during stalemate
+            range_reduction = aggression_bonus * 0.4
+            preferred_range *= 1.0 - range_reduction
 
         # Direction from bot to target
         dx = target.position.x - bot.position.x
@@ -693,30 +906,113 @@ class BattleEngine:
         dir_x = dx / dist
         dir_y = dy / dist
 
-        # Calculate ideal distance based on behavior
+        # Perpendicular vector for lateral movement
+        perp_x = -dir_y
+        perp_y = dir_x
+
+        # Calculate ideal distance based on behavior (modified by stalemate)
         if bot.behavior == AIBehavior.AGGRESSIVE:
             # Want to be just outside min_range
             ideal_distance = bot.min_range * 1.15 if bot.min_range > 0 else preferred_range
         elif bot.behavior == AIBehavior.DEFENSIVE:
-            # Want to be at max range
-            ideal_distance = bot.max_range * 0.92
+            # Want to be at max range (reduced during stalemate)
+            base_defensive_range = bot.max_range * 0.92
+            ideal_distance = base_defensive_range * (1.0 - aggression_bonus * 0.3)
         else:  # TACTICAL
             # Want to be at optimal range
             ideal_distance = preferred_range
 
-        # Target position is along the line to enemy at ideal distance
-        target_x = target.position.x - dir_x * ideal_distance
-        target_y = target.position.y - dir_y * ideal_distance
+        # Base target position along the line to enemy at ideal distance
+        base_x = target.position.x - dir_x * ideal_distance
+        base_y = target.position.y - dir_y * ideal_distance
 
-        # Add small random offset for TACTICAL to create repositioning
+        # ─────────────────────────────────────────────────────────────────────
+        # SPREAD AWARENESS: Avoid stacking on allies targeting the same enemy
+        # ─────────────────────────────────────────────────────────────────────
+        spread_offset_x = 0.0
+        spread_offset_y = 0.0
+
+        allies_targeting_same = []
+        for ally in self.bots.values():
+            if ally.bot_id == bot.bot_id:
+                continue
+            if ally.team != bot.team:
+                continue
+            if not ally.is_alive:
+                continue
+            if ally.target_id == target.bot_id:
+                allies_targeting_same.append(ally)
+
+        if allies_targeting_same:
+            # Calculate offset to spread out from allies
+            for ally in allies_targeting_same:
+                ally_to_base = Vector2(base_x - ally.position.x, base_y - ally.position.y)
+                dist_to_ally = ally_to_base.magnitude()
+                if dist_to_ally < 120:  # Too close to ally's position
+                    # Push away from ally along perpendicular axis
+                    if dist_to_ally > 0:
+                        push_dir = ally_to_base.normalized()
+                    else:
+                        # Same position - pick random direction
+                        push_dir = Vector2(perp_x, perp_y) * random.choice([-1, 1])
+                    spread_offset_x += push_dir.x * (120 - dist_to_ally) * 0.5
+                    spread_offset_y += push_dir.y * (120 - dist_to_ally) * 0.5
+
+        # ─────────────────────────────────────────────────────────────────────
+        # WEAPON ARCHETYPE MODIFIERS
+        # ─────────────────────────────────────────────────────────────────────
+        archetype_offset_x = 0.0
+        archetype_offset_y = 0.0
+
+        if bot.weapon_archetype == "SNIPER":
+            # Snipers prefer positions with clear sightlines - slight lateral offset
+            # to avoid being directly in front of melee allies
+            lateral_offset = random.uniform(30, 80) * random.choice([-1, 1])
+            archetype_offset_x += perp_x * lateral_offset
+            archetype_offset_y += perp_y * lateral_offset
+        elif bot.weapon_archetype == "BRAWLER":
+            # Brawlers try to flank - approach from angles
+            if bot.behavior == AIBehavior.AGGRESSIVE:
+                flank_offset = random.uniform(20, 60) * random.choice([-1, 1])
+                archetype_offset_x += perp_x * flank_offset
+                archetype_offset_y += perp_y * flank_offset
+
+        # Add offsets for TACTICAL behavior repositioning
+        tactical_offset_x = 0.0
+        tactical_offset_y = 0.0
         if bot.behavior == AIBehavior.TACTICAL:
-            perpendicular_x = -dir_y
-            perpendicular_y = dir_x
             offset = random.uniform(-50, 50)
-            target_x += perpendicular_x * offset
-            target_y += perpendicular_y * offset
+            tactical_offset_x = perp_x * offset
+            tactical_offset_y = perp_y * offset
 
-        # Clamp to arena bounds
+        # Combine all offsets
+        target_x = base_x + spread_offset_x + archetype_offset_x + tactical_offset_x
+        target_y = base_y + spread_offset_y + archetype_offset_y + tactical_offset_y
+
+        # ─────────────────────────────────────────────────────────────────────
+        # WALL AVOIDANCE: Push position away from walls
+        # ─────────────────────────────────────────────────────────────────────
+        wall_margin = 100.0  # Distance from wall to start avoiding
+        wall_push_strength = 0.7  # How strongly to push away from walls
+
+        # Left wall
+        if target_x < wall_margin:
+            push = (wall_margin - target_x) * wall_push_strength
+            target_x += push
+        # Right wall
+        elif target_x > self.config.arena_width - wall_margin:
+            push = (target_x - (self.config.arena_width - wall_margin)) * wall_push_strength
+            target_x -= push
+        # Top wall
+        if target_y < wall_margin:
+            push = (wall_margin - target_y) * wall_push_strength
+            target_y += push
+        # Bottom wall
+        elif target_y > self.config.arena_height - wall_margin:
+            push = (target_y - (self.config.arena_height - wall_margin)) * wall_push_strength
+            target_y -= push
+
+        # Final clamp to arena bounds (hard limit)
         margin = 60.0
         target_x = max(margin, min(self.config.arena_width - margin, target_x))
         target_y = max(margin, min(self.config.arena_height - margin, target_y))
@@ -725,6 +1021,12 @@ class BattleEngine:
 
     def _maybe_dodge(self, bot: BotRuntimeState, target: BotRuntimeState):
         """Check if bot should initiate a dodge maneuver.
+
+        REACTIVE DODGING: Dodges are triggered by:
+        1. Taking recent damage (pain response)
+        2. Incoming projectiles heading toward this bot
+        3. Random chance (baseline evasion, intelligence-scaled)
+        4. Low health (survival instinct)
 
         Dodges are quick perpendicular bursts that provide evasion
         without the infinite orbit problem of continuous strafing.
@@ -737,15 +1039,121 @@ class BattleEngine:
         if bot.dodge_timer > 0:
             return
 
-        # Random chance to dodge (intelligence affects frequency)
-        dodge_chance = 0.02 + (bot.intelligence / 100.0) * 0.03  # 2-5% per frame
-        if random.random() > dodge_chance:
+        # ─────────────────────────────────────────────────────────────────────
+        # REACTIVE DODGE TRIGGERS
+        # ─────────────────────────────────────────────────────────────────────
+        dodge_triggered = False
+        dodge_direction = random.choice([-1, 1])
+
+        # 1. PAIN RESPONSE: Just took damage - dodge away!
+        if bot.was_recently_damaged(self.current_time, threshold=0.25):
+            # Higher intelligence = more likely to react to pain
+            pain_dodge_chance = 0.15 + (bot.intelligence / 10.0) * 0.35  # 15-50%
+            if random.random() < pain_dodge_chance:
+                dodge_triggered = True
+                # Try to dodge away from damage source
+                if bot.last_damage_source and bot.last_damage_source in self.bots:
+                    attacker = self.bots[bot.last_damage_source]
+                    if attacker.is_alive:
+                        # Dodge perpendicular to attacker's direction
+                        to_attacker = attacker.position - bot.position
+                        if to_attacker.magnitude() > 0:
+                            # Pick perpendicular direction randomly
+                            dodge_direction = 1 if random.random() > 0.5 else -1
+
+        # 2. INCOMING PROJECTILES: Check if any projectiles are heading our way
+        if not dodge_triggered:
+            incoming_threat = self._check_incoming_projectiles(bot)
+            if incoming_threat:
+                # Intelligence affects reaction to incoming fire
+                projectile_dodge_chance = 0.1 + (bot.intelligence / 10.0) * 0.4  # 10-50%
+                if random.random() < projectile_dodge_chance:
+                    dodge_triggered = True
+                    # Pick a perpendicular direction randomly to evade
+                    dodge_direction = random.choice([-1, 1])
+
+        # 3. LOW HEALTH SURVIVAL: More likely to dodge when hurt
+        if not dodge_triggered:
+            health_pct = bot.get_health_percentage()
+            if health_pct < 0.4:  # Below 40% health
+                # Desperate dodging - low health makes bots more evasive
+                survival_dodge_chance = 0.05 * (1.0 - health_pct)  # Up to 3% per frame
+                if random.random() < survival_dodge_chance:
+                    dodge_triggered = True
+
+        # 4. BASELINE RANDOM DODGE: Intelligence-scaled evasion
+        if not dodge_triggered:
+            # Base chance + intelligence bonus
+            base_chance = 0.015 + (bot.intelligence / 100.0) * 0.025  # 1.5-4% per frame
+            if random.random() < base_chance:
+                dodge_triggered = True
+
+        if not dodge_triggered:
             return
 
-        # Initiate dodge!
-        bot.dodge_direction = random.choice([-1, 1])
-        bot.dodge_duration = 0.25  # 250ms dodge
-        bot.dodge_timer = random.uniform(1.0, 3.0)  # Cooldown before next dodge
+        # ─────────────────────────────────────────────────────────────────────
+        # EXECUTE DODGE
+        # ─────────────────────────────────────────────────────────────────────
+        bot.dodge_direction = dodge_direction
+        bot.dodge_duration = 0.2 + (bot.agility * 0.1)  # 200-300ms based on agility
+
+        # Cooldown scales inversely with intelligence (smarter = can dodge more often)
+        base_cooldown = 2.0 - (bot.intelligence / 10.0) * 0.8  # 1.2-2.0s base
+        bot.dodge_timer = base_cooldown + random.uniform(-0.3, 0.5)
+
+    def _check_incoming_projectiles(self, bot: BotRuntimeState) -> t.Optional[Projectile]:
+        """Check if any enemy projectiles are heading toward this bot.
+
+        Returns the most threatening projectile, or None if clear.
+        """
+        threat_radius = 80.0  # How close a projectile needs to pass to be threatening
+        prediction_time = 0.5  # Look ahead time in seconds
+
+        for proj in self.projectiles:
+            if not proj.alive:
+                continue
+            if proj.is_heal:
+                continue  # Ignore healing projectiles
+            if proj.shooter_id == bot.bot_id:
+                continue  # Ignore our own projectiles
+
+            # Check if shooter is enemy
+            shooter = self.bots.get(proj.shooter_id)
+            if shooter and shooter.team == bot.team:
+                continue  # Friendly fire projectile
+
+            # Predict where projectile will be
+            future_pos = proj.position + proj.velocity * prediction_time
+
+            # Check if projectile path comes close to bot
+            # Using point-to-line-segment distance
+            proj_start = proj.position
+            proj_end = future_pos
+
+            dx = proj_end.x - proj_start.x
+            dy = proj_end.y - proj_start.y
+            line_len_sq = dx * dx + dy * dy
+
+            if line_len_sq == 0:
+                continue
+
+            # Parameter t for closest point on line segment
+            t = max(
+                0, min(1, ((bot.position.x - proj_start.x) * dx + (bot.position.y - proj_start.y) * dy) / line_len_sq)
+            )
+
+            # Closest point on projectile path
+            closest_x = proj_start.x + t * dx
+            closest_y = proj_start.y + t * dy
+
+            # Distance from bot to closest point
+            dist_sq = (bot.position.x - closest_x) ** 2 + (bot.position.y - closest_y) ** 2
+
+            if dist_sq < threat_radius * threat_radius:
+                # This projectile is a threat!
+                return proj
+
+        return None
 
     def _move_toward_position(self, bot: BotRuntimeState, target: BotRuntimeState):
         """Move bot toward its target_position, handling dodges and walls."""
@@ -826,13 +1234,22 @@ class BattleEngine:
         self._apply_movement(bot, move_vec)
 
     def _find_lowest_health_ally(self, bot: BotRuntimeState) -> t.Optional[BotRuntimeState]:
-        """Find the ally with the lowest health percentage (excluding self).
+        """Find the best ally to heal using triage logic.
 
-        Returns None if no valid ally is found.
-        Always returns an ally if one exists (even at full health) to support protector behavior.
+        TRIAGE PRIORITIES (in order):
+        1. Critical allies (<30% health) - emergency healing needed
+        2. Damaged allies (<70% health) - standard healing
+        3. High-value allies (high DPS) - prefer healing damage dealers
+        4. Nearest damaged ally - if equal priority, heal closest
+
+        Ignores:
+        - Full health allies (100%)
+        - Nearly-full allies (>90%) unless no other options
+        - Self
+
+        Returns None if no ally needs healing.
         """
-        lowest_ally: t.Optional[BotRuntimeState] = None
-        lowest_health_pct: float = float("inf")  # Start high so ANY ally will be selected
+        candidates: list[tuple[float, BotRuntimeState]] = []
 
         for other in self.bots.values():
             if other.bot_id == bot.bot_id:
@@ -842,12 +1259,48 @@ class BattleEngine:
             if other.team != bot.team:
                 continue
 
-            health_pct = other.health / other.max_health if other.max_health > 0 else 1.0
-            if health_pct < lowest_health_pct:
-                lowest_health_pct = health_pct
-                lowest_ally = other
+            health_pct = other.get_health_percentage()
 
-        return lowest_ally
+            # Skip full health allies
+            if health_pct >= 0.98:
+                continue
+
+            # Calculate priority score (LOWER = higher priority)
+            score = 0.0
+
+            # Health urgency (main factor)
+            if health_pct < 0.3:
+                score = 0  # CRITICAL - highest priority
+            elif health_pct < 0.5:
+                score = 100  # Urgent
+            elif health_pct < 0.7:
+                score = 200  # Standard
+            elif health_pct < 0.9:
+                score = 300  # Low priority
+            else:
+                score = 400  # Very low priority (nearly full)
+
+            # Add health percentage as tiebreaker (lower health = lower score = higher priority)
+            score += health_pct * 50
+
+            # Bonus for high-DPS allies (prefer keeping damage dealers alive)
+            # Higher damage_per_shot * shots_per_second = higher DPS
+            ally_dps = other.damage_per_shot * other.shots_per_second
+            if ally_dps > 30:  # High DPS threshold
+                score -= 25  # Priority boost
+
+            # Slight bonus for closer allies (easier to reach)
+            distance = bot.position.distance_to(other.position)
+            score += distance * 0.05  # Small distance penalty
+
+            candidates.append((score, other))
+
+        if not candidates:
+            return None
+
+        # Sort by score (lowest first) and return best candidate
+        candidates.sort(key=lambda x: x[0])
+        return candidates[0][1]
 
     def _find_nearest_enemy(self, bot: BotRuntimeState) -> t.Optional[BotRuntimeState]:
         """Find the nearest enemy to this bot."""
@@ -871,123 +1324,200 @@ class BattleEngine:
 
     def _protector_movement(self, bot: BotRuntimeState, target: BotRuntimeState):
         """
-        PROTECTOR movement - stay CLOSE to lowest-health ally and position BEHIND them.
+        PROTECTOR/HEALER movement with smart positioning and self-preservation.
 
-        Ideal for healer bots. The protector:
-        1. Finds the ally with the lowest health percentage
-        2. Stays VERY close to that ally (tight follow distance)
-        3. Positions so the ally is BETWEEN them and enemies (hides behind ally)
-        4. Follows ally movement CLOSELY - mirrors their movement
-        5. Prioritizes ally survival over self-preservation
+        BEHAVIOR PRIORITIES:
+        1. SELF-PRESERVATION: If healer is low health, prioritize survival
+        2. ANTICIPATION: Position near allies about to engage (frontline support)
+        3. PROTECTION: Stay behind ally relative to enemies
+        4. RANGE MANAGEMENT: Stay within healing range but not too close
 
-        Key behavior differences:
-        - MUCH closer follow distance than other behaviors
-        - Aggressive repositioning to stay behind ally
-        - High speed to keep up with ally movement
-        - Doesn't care about enemy range, only ally position
+        Key intelligence-based differences:
+        - Higher intel = better threat awareness and positioning
+        - Higher intel = smarter triage (handled in target selection)
         """
-        # Find the ally to protect (lowest health)
-        ally_to_protect = self._find_lowest_health_ally(bot)
+        # Find the ally to protect/heal using triage
+        ally_to_heal = self._find_lowest_health_ally(bot)
 
-        if not ally_to_protect:
-            # No ally to protect - wander toward center
-            self._wander_movement(bot)
-            return
+        # ─────────────────────────────────────────────────────────────────────
+        # SELF-PRESERVATION CHECK
+        # If healer is critically low, prioritize survival over healing
+        # ─────────────────────────────────────────────────────────────────────
+        healer_health_pct = bot.get_health_percentage()
+        is_in_danger = healer_health_pct < 0.35
+
+        if is_in_danger:
+            nearest_enemy = self._find_nearest_enemy(bot)
+            if nearest_enemy:
+                enemy_dist = bot.position.distance_to(nearest_enemy.position)
+                # If enemy is close and we're low, RUN AWAY
+                if enemy_dist < bot.max_range * 0.8:
+                    self._flee_from_enemy(bot, nearest_enemy)
+                    return
+
+        if not ally_to_heal:
+            # No ally needs healing - find someone to support proactively
+            # Stay near the ally most likely to take damage (closest to enemies)
+            ally_to_heal = self._find_frontline_ally(bot)
+
+            if not ally_to_heal:
+                # No allies at all - wander toward center
+                self._wander_movement(bot)
+                return
 
         # Find nearest enemy for positioning calculations
         nearest_enemy = self._find_nearest_enemy(bot)
 
-        # Calculate desired position: BEHIND ally relative to enemy
-        ally_pos = ally_to_protect.position
+        # Calculate desired position
+        ally_pos = ally_to_heal.position
         bot_to_ally_dist = bot.position.distance_to(ally_pos)
 
-        # TIGHT follow distance - stay very close to ally!
-        # Use 40-60 pixels ideally, never more than 50% of healing range
-        ideal_ally_distance = min(55, max(bot.min_range * 0.5, 40))
-        max_ally_distance = min(bot.max_range * 0.4, 150)  # MUCH tighter max distance
+        # Healing range management - stay within range but not too close
+        # Ideal distance is 60-70% of max healing range
+        ideal_ally_distance = max(50, bot.max_range * 0.6)
+        max_ally_distance = bot.max_range * 0.85
 
         if nearest_enemy:
             enemy_pos = nearest_enemy.position
-            # Vector from enemy to ally
+            # Vector from enemy to ally (direction of "behind ally")
             enemy_to_ally = ally_pos - enemy_pos
             enemy_to_ally_dist = enemy_to_ally.magnitude()
 
             if enemy_to_ally_dist > 0:
-                # Normalize and scale to get position DIRECTLY behind ally
                 direction = enemy_to_ally.normalized()
-                # Target position is behind ally (on the opposite side from enemy)
-                # Position closer to ally than before
+                # Position behind ally but maintain healing distance
                 target_pos = ally_pos + direction * ideal_ally_distance
+
+                # ─── SMART POSITIONING: Avoid walls ───
+                # Check if target position is near a wall and adjust
+                target_pos = self._adjust_position_for_walls(target_pos, ideal_ally_distance * 0.5)
             else:
-                # Enemy and ally at same position (rare), just stay near ally
                 target_pos = ally_pos
         else:
-            # No enemy visible - stay directly behind ally based on ally's facing
-            rad = math.radians(ally_to_protect.orientation + 180)
+            # No enemy visible - position behind ally based on their facing
+            rad = math.radians(ally_to_heal.orientation + 180)
             target_pos = ally_pos + Vector2(math.cos(rad), math.sin(rad)) * ideal_ally_distance
 
         # Calculate movement direction to reach target position
         to_target = target_pos - bot.position
         target_distance = to_target.magnitude()
 
-        if target_distance < 10:  # Slightly larger tolerance
-            # Already at target position - face threats but stay ready to move
-            if nearest_enemy:
-                target_angle = bot.position.angle_to(nearest_enemy.position)
-            else:
-                target_angle = bot.position.angle_to(ally_pos)
-            # Small random offset to not be a sitting duck
-            jitter_angle = (target_angle + random.uniform(-15, 15)) % 360
-            self._rotate_chassis_towards(bot, jitter_angle, speed_mult=0.3)
+        if target_distance < 15:
+            # At target position - face toward ally for healing shots
+            target_angle = bot.position.angle_to(ally_pos)
+            self._rotate_chassis_towards(bot, target_angle, speed_mult=0.5)
             bot.is_turning = False
 
-            # Tiny movement to avoid being stationary
+            # Small movement to avoid being stationary
             rad = math.radians(bot.orientation)
-            move_vec = Vector2(math.cos(rad), math.sin(rad)) * (bot.speed * 0.1 * self.dt)
+            move_vec = Vector2(math.cos(rad), math.sin(rad)) * (bot.speed * 0.08 * self.dt)
             self._apply_movement(bot, move_vec)
             return
 
-        # Move toward target position - URGENCY based on distance from ally
+        # Move toward target position
         desired_angle = bot.position.angle_to(target_pos)
 
-        # Speed depends on urgency - HIGHER speeds than before for tight following
+        # Speed based on urgency
         if bot_to_ally_dist > max_ally_distance:
-            # WAY too far from ally - SPRINT to catch up!
-            speed_mult = 1.0
-        elif bot_to_ally_dist > ideal_ally_distance * 2:
-            # Getting too far - fast catch up
-            speed_mult = 0.95
+            speed_mult = 1.0  # Sprint to catch up
+        elif bot_to_ally_dist > ideal_ally_distance * 1.5:
+            speed_mult = 0.9
         elif target_distance > ideal_ally_distance:
-            # Need to reposition to get behind ally
-            speed_mult = 0.85
-        elif target_distance > 30:
-            # Close but adjusting
-            speed_mult = 0.7
+            speed_mult = 0.75
         else:
-            # Fine tuning position
             speed_mult = 0.5
 
-        # Execute agile movement towards calculated position
-        bot.target_orientation = desired_angle
-
+        # Apply agility penalty for turning
         angle_diff = abs((desired_angle - bot.orientation + 180) % 360 - 180)
         angle_penalty = min(1.0, angle_diff / 90.0)
         effective_speed_mult = speed_mult * (1.0 - angle_penalty * (1.0 - bot.agility))
+        effective_speed_mult = max(0.3, effective_speed_mult)
 
-        # Higher minimum speed for protectors - they need to keep up
-        if angle_diff < 120:
-            effective_speed_mult = max(0.35, effective_speed_mult)
+        bot.is_turning = angle_diff > 30
 
-        bot.is_turning = angle_diff > 25  # More tolerant of angle differences
-
-        # Rotate toward target - faster rotation for protectors
-        turn_speed_mult = 1.2 + (1.0 - effective_speed_mult) * 0.5
-        self._rotate_chassis_towards(bot, desired_angle, speed_mult=turn_speed_mult)
-
-        # Move
+        # Rotate and move
+        self._rotate_chassis_towards(bot, desired_angle, speed_mult=1.2)
         rad = math.radians(bot.orientation)
         move_vec = Vector2(math.cos(rad), math.sin(rad)) * (bot.speed * effective_speed_mult * self.dt)
         self._apply_movement(bot, move_vec)
+
+    def _find_frontline_ally(self, bot: BotRuntimeState) -> t.Optional[BotRuntimeState]:
+        """Find the ally closest to enemies (frontline) for proactive support.
+
+        Used when no ally needs healing - positions healer near action.
+        """
+        nearest_enemy = self._find_nearest_enemy(bot)
+        if not nearest_enemy:
+            return None
+
+        closest_to_enemy: t.Optional[BotRuntimeState] = None
+        closest_dist = float("inf")
+
+        for ally in self.bots.values():
+            if ally.bot_id == bot.bot_id:
+                continue
+            if ally.team != bot.team:
+                continue
+            if not ally.is_alive:
+                continue
+
+            dist = ally.position.distance_to(nearest_enemy.position)
+            if dist < closest_dist:
+                closest_dist = dist
+                closest_to_enemy = ally
+
+        return closest_to_enemy
+
+    def _flee_from_enemy(self, bot: BotRuntimeState, enemy: BotRuntimeState):
+        """Emergency flee behavior for low-health healers.
+
+        Moves directly away from the threatening enemy.
+        """
+        # Direction away from enemy
+        flee_vec = bot.position - enemy.position
+        flee_dist = flee_vec.magnitude()
+
+        if flee_dist > 0:
+            flee_dir = flee_vec.normalized()
+            desired_angle = math.degrees(math.atan2(flee_dir.y, flee_dir.x)) % 360
+        else:
+            # On top of enemy - pick random direction
+            desired_angle = random.uniform(0, 360)
+
+        # Rotate toward flee direction
+        self._rotate_chassis_towards(bot, desired_angle, speed_mult=1.5)
+
+        # Move at max speed
+        rad = math.radians(bot.orientation)
+        move_vec = Vector2(math.cos(rad), math.sin(rad)) * (bot.speed * self.dt)
+        self._apply_movement(bot, move_vec)
+
+    def _adjust_position_for_walls(self, pos: Vector2, margin: float) -> Vector2:
+        """Adjust a position to avoid being too close to walls.
+
+        Args:
+            pos: Desired position
+            margin: Minimum distance from walls
+
+        Returns:
+            Adjusted position pushed away from walls if necessary
+        """
+        adjusted_x = pos.x
+        adjusted_y = pos.y
+
+        wall_buffer = margin + 60.0  # Extra buffer beyond margin
+
+        if adjusted_x < wall_buffer:
+            adjusted_x = wall_buffer
+        elif adjusted_x > self.config.arena_width - wall_buffer:
+            adjusted_x = self.config.arena_width - wall_buffer
+
+        if adjusted_y < wall_buffer:
+            adjusted_y = wall_buffer
+        elif adjusted_y > self.config.arena_height - wall_buffer:
+            adjusted_y = self.config.arena_height - wall_buffer
+
+        return Vector2(adjusted_x, adjusted_y)
 
     def _rotate_chassis_towards(self, bot: BotRuntimeState, target_angle: float, speed_mult: float = 1.0):
         """Rotate chassis towards target angle.
@@ -1222,7 +1752,8 @@ class BattleEngine:
                 collision = False
                 if self.collision_manager is not None:
                     # Pixel-perfect collision: check if projectile hits non-transparent pixel
-                    collision = self.collision_manager.check_collision(
+                    # Returns None if no mask is available for this bot
+                    pixel_collision = self.collision_manager.check_collision(
                         proj.position.x,
                         proj.position.y,
                         bot.bot_id,
@@ -1230,8 +1761,13 @@ class BattleEngine:
                         bot.position.y,
                         bot.orientation,
                     )
+                    if pixel_collision is not None:
+                        collision = pixel_collision
+                    else:
+                        # No mask available, fall back to circular collision
+                        collision = proj.position.distance_to(bot.position) < self.config.bot_radius
                 else:
-                    # Fallback: simple circular collision
+                    # No collision manager, use simple circular collision
                     collision = proj.position.distance_to(bot.position) < self.config.bot_radius
 
                 if collision:
@@ -1263,6 +1799,7 @@ class BattleEngine:
                     # Damage projectiles hit ANY bot they touch (including teammates blocking)
                     if is_friendly_fire:
                         # Teammate blocked the shot - reduced friendly fire damage (25%)
+                        # Don't track threat for friendly fire
                         actual = hit_bot.take_damage(proj.damage // 4)
                         self.events.append(
                             {
@@ -1273,8 +1810,10 @@ class BattleEngine:
                             }
                         )
                     else:
-                        # Enemy hit - full damage
-                        actual = hit_bot.take_damage(proj.damage)
+                        # Enemy hit - full damage with threat tracking
+                        actual = hit_bot.take_damage(
+                            proj.damage, source_id=proj.shooter_id, current_time=self.current_time
+                        )
                         if actual > 0:
                             self.last_damage_time = self.current_time
                         if proj.shooter_id in self.bots:
@@ -1393,7 +1932,9 @@ class BattleEngine:
                         }
                     )
                 else:
-                    actual = target.take_damage(bot.damage_per_shot)
+                    actual = target.take_damage(
+                        bot.damage_per_shot, source_id=bot.bot_id, current_time=self.current_time
+                    )
                     if actual > 0:
                         self.last_damage_time = self.current_time
                     bot.damage_dealt += actual
