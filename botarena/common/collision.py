@@ -188,7 +188,7 @@ class CollisionManager:
         bot_x: float,
         bot_y: float,
         bot_angle: float,
-    ) -> bool:
+    ) -> t.Optional[bool]:
         """
         Check if a projectile at (proj_x, proj_y) collides with the given bot.
 
@@ -202,10 +202,12 @@ class CollisionManager:
 
         Returns:
             True if the projectile collides with a non-transparent pixel of the bot
+            False if the projectile does not collide
+            None if no collision mask is available (caller should use fallback collision)
         """
         mask = self._masks.get(bot_id)
-        if mask is None:
-            return False
+        if mask is None or mask._base_mask is None:
+            return None  # Signal caller to use fallback collision
 
         return mask.check_point_collision(proj_x, proj_y, bot_x, bot_y, bot_angle, self._scale)
 
