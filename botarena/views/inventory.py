@@ -6,7 +6,6 @@ Provides views for managing chassis (bots), equipment, and part sales.
 
 from __future__ import annotations
 
-import asyncio
 import io
 import typing as t
 import uuid
@@ -517,8 +516,8 @@ class ChassisEditorLayout(BotArenaView):
 
                 # Return to parent view
                 if isinstance(self.parent, GarageLayout):
-                    self.parent.update_display()
-                    await self.message.edit(view=self.parent)
+                    await self.parent.update_display()
+                    await self.message.edit(view=self.parent, attachments=self.parent.bot_image_files)
                 self.stop()
 
             # Show confirmation prompt
@@ -887,11 +886,11 @@ class GarageLayout(BotArenaView):
         await instance._build_layout()
         return instance
 
-    def update_display(self):
+    async def update_display(self):
         """Update the display after changes"""
         self.player = self.cog.db.get_player(self.ctx.author.id)
         self.clear_items()
-        asyncio.create_task(self._build_layout())
+        await self._build_layout()
 
     async def _build_layout(self):
         """Build the container layout showing all bots with images"""
