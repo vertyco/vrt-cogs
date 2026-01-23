@@ -713,10 +713,7 @@ class BattleEngine:
             else:
                 if other.team == bot.team:
                     continue
-                # Only consider targets within weapon range
-                distance = bot.position.distance_to(other.position)
-                if distance > bot.max_range:
-                    continue  # Target is out of range, skip
+                # Consider ALL enemies regardless of range - bots will move toward out-of-range targets
                 candidates.append(other)
 
         if not candidates:
