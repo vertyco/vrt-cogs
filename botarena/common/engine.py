@@ -476,7 +476,6 @@ class BattleEngine:
             # Update all systems
             self._update_ai()
             self._update_movement()
-            self._separate_overlapping_bots()  # Push apart any bots that got stuck together
             self._update_weapon_orientation()
             self._update_projectiles()
             self._update_combat()
@@ -1126,68 +1125,13 @@ class BattleEngine:
             bot.wall_escape_timer = self.wall_escape_duration
             bot.last_wall_contact = self.current_time
 
-        # Collision checking - but ALLOW movement that separates overlapping bots
-        min_separation = self.config.bot_radius * 2.2
+        # Collision checking
         for other in self.bots.values():
             if other.bot_id != bot.bot_id and other.is_alive:
-                current_dist = bot.position.distance_to(other.position)
-                new_dist = new_pos.distance_to(other.position)
-
-                # If we're already overlapping, only allow movement that increases distance
-                if current_dist < min_separation:
-                    if new_dist <= current_dist:
-                        return  # Movement would make overlap worse or same, reject
-                    # Movement increases distance - allow it even if still overlapping
-                elif new_dist < min_separation:
-                    return  # Would create new overlap, reject
+                if new_pos.distance_to(other.position) < self.config.bot_radius * 2.2:
+                    return  # Collision, don't move
 
         bot.position = new_pos
-
-    def _separate_overlapping_bots(self):
-        """Push apart any bots that are overlapping.
-
-        This prevents the "melee blob" problem where bots get stuck
-        in a clump and can't escape because movement is blocked.
-        """
-        min_separation = self.config.bot_radius * 2.2
-        separation_force = 8.0  # Pixels per frame to push apart
-        arena_buffer = 40.0
-
-        # Check all pairs of bots for overlap
-        bot_list = [b for b in self.bots.values() if b.is_alive]
-
-        for i, bot_a in enumerate(bot_list):
-            for bot_b in bot_list[i + 1 :]:
-                dist = bot_a.position.distance_to(bot_b.position)
-
-                if dist < min_separation and dist > 0.1:
-                    # Calculate push direction (away from each other)
-                    dx = bot_b.position.x - bot_a.position.x
-                    dy = bot_b.position.y - bot_a.position.y
-
-                    # Normalize
-                    dx /= dist
-                    dy /= dist
-
-                    # Calculate overlap amount
-                    overlap = min_separation - dist
-                    push = min(overlap * 0.5, separation_force)
-
-                    # Push both bots apart equally
-                    new_a_x = bot_a.position.x - dx * push
-                    new_a_y = bot_a.position.y - dy * push
-                    new_b_x = bot_b.position.x + dx * push
-                    new_b_y = bot_b.position.y + dy * push
-
-                    # Clamp to arena bounds
-                    min_bound = self.config.bot_radius + arena_buffer
-                    max_x = self.config.arena_width - self.config.bot_radius - arena_buffer
-                    max_y = self.config.arena_height - self.config.bot_radius - arena_buffer
-
-                    bot_a.position.x = max(min_bound, min(max_x, new_a_x))
-                    bot_a.position.y = max(min_bound, min(max_y, new_a_y))
-                    bot_b.position.x = max(min_bound, min(max_x, new_b_x))
-                    bot_b.position.y = max(min_bound, min(max_y, new_b_y))
 
     def _friendly_in_line_of_fire(self, shooter: BotRuntimeState, target: BotRuntimeState) -> bool:
         """Check if any friendly bot is between shooter and target.
