@@ -159,7 +159,7 @@ class EquipWeaponRow(ui.ActionRow["ChassisEditorLayout"]):
                 c = self.registry.get_component(part.part_name)
                 # Only add if it's a valid component in the registry
                 if c:
-                    desc = f"💥{c.damage_per_shot}dmg | 🔥{c.shots_per_minute:.0f}/m | ↔️{c.min_range}-{c.max_range} | x{part.quantity}"
+                    desc = f"💥{c.damage_per_shot}dmg | 🔥{c.shots_per_minute:.0f}/m | ⚖️{c.weight}wt | ↔️{c.min_range}-{c.max_range} | x{part.quantity}"
                     options.append(
                         discord.SelectOption(
                             label=part.part_name,
@@ -427,7 +427,7 @@ class ChassisEditorLayout(BotArenaView):
             w = self.cog.registry.get_component(self.chassis.equipped_weapon)
             weapon_text = f"⚔️ **{self.chassis.equipped_weapon}**"
             if w:
-                weapon_text += f"\n-# DMG: {w.damage_per_shot} | ROF: {w.shots_per_minute}/min"
+                weapon_text += f"\n-# DMG: {w.damage_per_shot} | ROF: {w.shots_per_minute}/min | Weight: {w.weight}"
                 if w.description:
                     weapon_text += f"\n-# *{w.description}*"
             weapon_display = ui.TextDisplay(weapon_text)
