@@ -1037,7 +1037,7 @@ class MissionSelectRow(ui.ActionRow["CampaignLayout"]):
         # Show mission briefing and bot selection
         view = MissionBriefingLayout(self.view.ctx, self.view.cog, mission, parent=self.view)
         self.view.navigate_to_child(view)
-        await interaction.response.edit_message(view=view)
+        await view.send(interaction)
 
 
 class CampaignNavigationRow(ui.ActionRow["CampaignLayout"]):
