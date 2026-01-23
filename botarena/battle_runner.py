@@ -48,7 +48,6 @@ from botarena.common.engine import (  # noqa
     AIBehavior,
     BattleConfig,
     BattleEngine,
-    EngagementRange,
     TargetPriority,
 )
 from botarena.common.renderer import BattleRenderer  # noqa
@@ -149,17 +148,9 @@ def _add_bot_from_data(engine: BattleEngine, bot_data: dict, team: int):
     # Extract tactical orders if present (handle None case)
     tactical_orders = bot_data.get("tactical_orders") or {}
 
-    # Map movement stance to AI behavior
-    stance_to_behavior = {
-        "aggressive": "aggressive",
-        "defensive": "defensive",
-        "kiting": "kiting",
-        "hold": "hold",
-        "flanking": "flanker",
-        "protector": "protector",
-    }
+    # Map movement stance to AI behavior (1:1 mapping now - 3 behaviors)
     movement_stance = tactical_orders.get("movement_stance", "aggressive")
-    behavior_str = stance_to_behavior.get(movement_stance, "tactical")
+    behavior_str = movement_stance  # Direct mapping - aggressive, defensive, tactical
 
     # Get the AIBehavior enum
     behavior = None
@@ -167,22 +158,20 @@ def _add_bot_from_data(engine: BattleEngine, bot_data: dict, team: int):
         if member.value == behavior_str:
             behavior = member
             break
+    # Default to TACTICAL if not found
+    if behavior is None:
+        behavior = AIBehavior.TACTICAL
 
-    # Get target priority
+    # Get target priority (simplified to 3 options, default to CLOSEST for invalid values)
     target_priority_str = tactical_orders.get("target_priority", "closest")
     target_priority = None
     for member in TargetPriority:
         if member.value == target_priority_str:
             target_priority = member
             break
-
-    # Get engagement range
-    engagement_range_str = tactical_orders.get("engagement_range", "auto")
-    engagement_range = None
-    for member in EngagementRange:
-        if member.value == engagement_range_str:
-            engagement_range = member
-            break
+    # Default to CLOSEST if not found (handles legacy strongest/furthest values)
+    if target_priority is None:
+        target_priority = TargetPriority.CLOSEST
 
     engine.add_bot(
         bot_id=bot_data.get("id", ""),
@@ -203,7 +192,6 @@ def _add_bot_from_data(engine: BattleEngine, bot_data: dict, team: int):
         agility=chassis.get("agility", 0.5),
         behavior=behavior,
         target_priority=target_priority,
-        engagement_range=engagement_range,
         projectile_type=component.get("projectile_type", "bullet"),
         muzzle_offset=component.get("render_offset_x", 92.0),  # Use weapon's render offset as muzzle position
         turret_rotation_speed=chassis.get("turret_rotation_speed", 20.0),  # Turret rotation determined by chassis

@@ -191,54 +191,67 @@ class ComponentType(str, Enum):
 # TACTICAL ORDERS - Pre-battle configuration for bot AI behavior
 # ─────────────────────────────────────────────────────────────────────────────
 class MovementStance(str, Enum):
-    """How the bot moves during combat"""
+    """How the bot moves during combat - simplified to 3 core behaviors"""
 
-    AGGRESSIVE = "aggressive"  # Rush to close range, prioritize closing distance
-    DEFENSIVE = "defensive"  # Maintain max effective range, retreat if approached
-    KITING = "kiting"  # Attack while backing away, good for ranged vs melee
-    HOLD = "hold"  # Minimal movement, stay in position, rotate to track
-    FLANKING = "flanking"  # Circle around targets, attack from sides
-    PROTECTOR = "protector"  # Stay close to low-health allies, hide behind them
+    AGGRESSIVE = "aggressive"  # Close distance, stay in enemy's face
+    DEFENSIVE = "defensive"  # Maintain max range, retreat when approached
+    TACTICAL = "tactical"  # Balanced - optimal range with repositioning
 
 
 class TargetPriority(str, Enum):
-    """Who the bot targets"""
+    """Who the bot targets - simplified to 3 meaningful options"""
 
     FOCUS_FIRE = "focus_fire"  # Attack same target as teammates (coordinated)
     WEAKEST = "weakest"  # Target lowest HP enemy (finish kills)
-    STRONGEST = "strongest"  # Target highest HP enemy (biggest threat)
-    CLOSEST = "closest"  # Attack nearest enemy (reactive)
-    FURTHEST = "furthest"  # Attack furthest enemy (snipers)
-
-
-class EngagementRange(str, Enum):
-    """Override for preferred engagement distance"""
-
-    AUTO = "auto"  # AI manages based on weapon stats and behavior
-    CLOSE = "close"  # Force close range engagement (inside min_range + 20%)
-    OPTIMAL = "optimal"  # Stay at weapon's optimal range (midpoint of min/max)
-    MAX = "max"  # Force maximum range engagement
+    CLOSEST = "closest"  # Attack nearest enemy (reactive, default)
 
 
 class TacticalOrders(ArenaBaseModel):
     """Pre-battle orders that control bot AI behavior.
 
-    These allow players to customize how their bots fight without
-    needing real-time control during battle.
+    - Movement Stance: How the bot positions itself (3 options)
+    - Target Priority: Who the bot attacks (3 options)
+
+    Total combinations: 9 (manageable for players to understand)
     """
 
     movement_stance: MovementStance = MovementStance.AGGRESSIVE
     target_priority: TargetPriority = TargetPriority.CLOSEST
-    engagement_range: EngagementRange = EngagementRange.AUTO
+
+    @field_validator("movement_stance", mode="before")
+    @classmethod
+    def migrate_legacy_stance(cls, v: t.Any) -> t.Any:
+        """Convert legacy movement stance values to new defaults."""
+        if isinstance(v, str):
+            # Map legacy stances to their closest equivalents
+            legacy_mapping = {
+                "kiting": "tactical",  # Kiting → Tactical (balanced)
+                "flanking": "aggressive",  # Flanking → Aggressive
+                "hold": "defensive",  # Hold → Defensive
+                "protector": "defensive",  # Protector → Defensive
+            }
+            return legacy_mapping.get(v, v)
+        return v
+
+    @field_validator("target_priority", mode="before")
+    @classmethod
+    def migrate_legacy_priority(cls, v: t.Any) -> t.Any:
+        """Convert legacy target priority values to new defaults."""
+        if isinstance(v, str):
+            # Map legacy priorities to their closest equivalents
+            legacy_mapping = {
+                "strongest": "closest",  # Strongest → Closest (default)
+                "furthest": "closest",  # Furthest → Closest (default)
+            }
+            return legacy_mapping.get(v, v)
+        return v
 
     def get_summary(self) -> str:
         """Get a brief summary of the orders"""
         stance_icons = {
             MovementStance.AGGRESSIVE: "⚔️",
             MovementStance.DEFENSIVE: "🛡️",
-            MovementStance.KITING: "🏃",
-            MovementStance.HOLD: "🎯",
-            MovementStance.FLANKING: "🔄",
+            MovementStance.TACTICAL: "⚖️",
         }
         return f"{stance_icons.get(self.movement_stance, '•')} {self.movement_stance.value.title()}"
 

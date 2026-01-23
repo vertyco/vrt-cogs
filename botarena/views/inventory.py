@@ -20,7 +20,6 @@ if t.TYPE_CHECKING:
 
 from ..common.image_utils import find_image_path
 from ..common.models import (
-    EngagementRange,
     MovementStance,
     OwnedChassis,
     PartsRegistry,
@@ -388,8 +387,7 @@ class ChassisEditorLayout(BotArenaView):
         spawn_order_text = f"Position {self.chassis.spawn_order}" if self.chassis.spawn_order > 0 else "Default"
         tactics_text = (
             f"**⚔️ Tactics:** {orders.movement_stance.value.title()} | "
-            f"{orders.target_priority.value.replace('_', ' ').title()} | "
-            f"{orders.engagement_range.value.title()}\n"
+            f"{orders.target_priority.value.replace('_', ' ').title()}\n"
             f"**🎯 Spawn Order:** {spawn_order_text}"
         )
         container.add_item(ui.TextDisplay(tactics_text))
@@ -640,28 +638,28 @@ class GarageControlsRow(ui.ActionRow["GarageLayout"]):
 # TACTICS CONFIGURATION FOR CHASSIS EDITOR
 # ─────────────────────────────────────────────────────────────────────────────
 # Info dicts for tactics display
-STANCE_INFO = {
-    MovementStance.AGGRESSIVE: ("⚔️", "Rush towards enemies, close distance quickly"),
-    MovementStance.DEFENSIVE: ("🛡️", "Maintain distance, retreat when approached"),
-    MovementStance.KITING: ("🏃", "Circle enemies, stay at optimal range"),
-    MovementStance.HOLD: ("🚫", "Hold position, don't move towards enemies"),
-    MovementStance.FLANKING: ("🔄", "Try to get behind enemy lines"),
-    MovementStance.PROTECTOR: ("💚", "Stay near low-health allies, shield them"),
+STANCE_INFO: dict[MovementStance, dict] = {
+    MovementStance.AGGRESSIVE: {
+        "emoji": "⚔️",
+        "title": "Aggressive",
+        "desc": "Close distance aggressively and stay in the enemy's face. Best for melee and close-range builds.",
+    },
+    MovementStance.DEFENSIVE: {
+        "emoji": "🛡️",
+        "title": "Defensive",
+        "desc": "Maintain maximum effective range and retreat when approached. Best for ranged builds.",
+    },
+    MovementStance.TACTICAL: {
+        "emoji": "⚖️",
+        "title": "Tactical",
+        "desc": "Balanced behavior - maintain optimal range with smart repositioning. Good all-around choice.",
+    },
 }
 
 TARGET_INFO = {
-    TargetPriority.FOCUS_FIRE: ("🎯", "Attack what your team is attacking"),
-    TargetPriority.WEAKEST: ("💔", "Target enemies with lowest health"),
-    TargetPriority.STRONGEST: ("💪", "Target enemies with highest health"),
-    TargetPriority.CLOSEST: ("📍", "Target the nearest enemy"),
-    TargetPriority.FURTHEST: ("📏", "Target the furthest enemy"),
-}
-
-RANGE_INFO = {
-    EngagementRange.AUTO: ("🤖", "Let AI decide based on weapon type"),
-    EngagementRange.CLOSE: ("🔥", "Get in close, minimum range"),
-    EngagementRange.OPTIMAL: ("⚖️", "Maintain mid-range for balance"),
-    EngagementRange.MAX: ("🎯", "Stay at maximum weapon range"),
+    TargetPriority.FOCUS_FIRE: ("🎯", "Attack what your team is attacking (coordinated)"),
+    TargetPriority.WEAKEST: ("💔", "Target enemies with lowest health (finish kills)"),
+    TargetPriority.CLOSEST: ("📍", "Target the nearest enemy (reactive)"),
 }
 
 
@@ -704,25 +702,23 @@ class EditorTacticsView(ui.LayoutView):
         container.add_item(ui.TextDisplay(f"# ⚔️ Tactical Orders\n**Configuring: {self.chassis.display_name}**"))
 
         # Current orders summary
-        stance_icon, stance_desc = STANCE_INFO.get(orders.movement_stance, ("?", "Unknown"))
+        stance_data = STANCE_INFO.get(orders.movement_stance, {"emoji": "?", "title": "Unknown", "desc": "Unknown"})
+        stance_icon, stance_desc = stance_data["emoji"], stance_data["desc"]
         target_icon, target_desc = TARGET_INFO.get(orders.target_priority, ("?", "Unknown"))
-        range_icon, range_desc = RANGE_INFO.get(orders.engagement_range, ("?", "Unknown"))
 
         current_orders = (
             f"**Movement Stance:** {stance_icon} {orders.movement_stance.value.replace('_', ' ').title()}\n"
             f"*{stance_desc}*\n\n"
             f"**Target Priority:** {target_icon} {orders.target_priority.value.replace('_', ' ').title()}\n"
-            f"*{target_desc}*\n\n"
-            f"**Engagement Range:** {range_icon} {orders.engagement_range.value.replace('_', ' ').title()}\n"
-            f"*{range_desc}*"
+            f"*{target_desc}*"
         )
         container.add_item(ui.TextDisplay(current_orders))
         container.add_item(ui.Separator(spacing=discord.SeparatorSpacing.small))
         container.add_item(
             ui.TextDisplay(
                 "💡 **Tip:** Tactics affect how your bot fights!\n"
-                "• **Snipers** work best with Defensive + Furthest + Max Range\n"
-                "• **Brawlers** excel with Aggressive + Closest + Close Range\n"
+                "• **Snipers** work best with Defensive stance\n"
+                "• **Brawlers** excel with Aggressive + Closest\n"
                 "• **Team play** benefits from Focus Fire targeting"
             )
         )
@@ -730,7 +726,6 @@ class EditorTacticsView(ui.LayoutView):
         self.add_item(container)
         self.add_item(EditorStanceSelectRow(orders.movement_stance))
         self.add_item(EditorTargetSelectRow(orders.target_priority))
-        self.add_item(EditorRangeSelectRow(orders.engagement_range))
         self.add_item(EditorTacticsControlsRow())
 
     async def refresh(self, interaction: discord.Interaction):
@@ -750,12 +745,11 @@ class EditorStanceSelectRow(ui.ActionRow["EditorTacticsView"]):
 
     def _setup_options(self):
         options = []
-        for stance in MovementStance:
-            icon, desc = STANCE_INFO.get(stance, ("?", stance.value))
+        for stance, info in STANCE_INFO.items():
             options.append(
                 discord.SelectOption(
-                    label=f"{icon} {stance.value.replace('_', ' ').title()}",
-                    description=desc[:100],
+                    label=f"{info['emoji']} {info['title']}",
+                    description=info["desc"][:100],
                     value=stance.value,
                     default=stance == self._current,
                 )
@@ -798,39 +792,10 @@ class EditorTargetSelectRow(ui.ActionRow["EditorTacticsView"]):
         await self.view.refresh(interaction)
 
 
-class EditorRangeSelectRow(ui.ActionRow["EditorTacticsView"]):
-    """Dropdown for selecting engagement range"""
-
-    def __init__(self, current: EngagementRange):
-        super().__init__()
-        self._current = current
-        self._setup_options()
-
-    def _setup_options(self):
-        options = []
-        for eng_range in EngagementRange:
-            icon, desc = RANGE_INFO.get(eng_range, ("?", eng_range.value))
-            options.append(
-                discord.SelectOption(
-                    label=f"{icon} {eng_range.value.replace('_', ' ').title()}",
-                    description=desc[:100],
-                    value=eng_range.value,
-                    default=eng_range == self._current,
-                )
-            )
-        self.range_select.options = options
-
-    @ui.select(row=2, placeholder="Engagement Range...")
-    async def range_select(self, interaction: discord.Interaction, select: ui.Select):
-        new_range = EngagementRange(select.values[0])
-        self.view.chassis.tactical_orders.engagement_range = new_range
-        await self.view.refresh(interaction)
-
-
 class EditorTacticsControlsRow(ui.ActionRow["EditorTacticsView"]):
     """Control buttons for tactics view"""
 
-    @ui.button(label="Save & Back", style=discord.ButtonStyle.success, row=3)
+    @ui.button(label="Save & Back", style=discord.ButtonStyle.success, row=2)
     async def save_button(self, interaction: discord.Interaction, button: ui.Button):
         # Save changes
         self.view.cog.save()
@@ -840,7 +805,7 @@ class EditorTacticsControlsRow(ui.ActionRow["EditorTacticsView"]):
         await self.view.editor.send(interaction)
         self.view.stop()
 
-    @ui.button(label="Reset to Default", style=discord.ButtonStyle.secondary, row=3)
+    @ui.button(label="Reset to Default", style=discord.ButtonStyle.secondary, row=2)
     async def reset_button(self, interaction: discord.Interaction, button: ui.Button):
         # Reset to defaults
         self.view.chassis.tactical_orders = TacticalOrders()
@@ -935,9 +900,7 @@ class GarageLayout(BotArenaView):
                 # Tactics summary
                 orders = chassis.tactical_orders
                 tactics_str = (
-                    f"{orders.movement_stance.value.title()} | "
-                    f"{orders.target_priority.value.replace('_', ' ').title()} | "
-                    f"{orders.engagement_range.value.title()}"
+                    f"{orders.movement_stance.value.title()} | {orders.target_priority.value.replace('_', ' ').title()}"
                 )
 
                 # Build bot card text
