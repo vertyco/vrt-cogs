@@ -373,7 +373,7 @@ class BattleEngine:
         # Stalemate detection - forces engagement when bots circle too long
         self.last_damage_time: float = 0.0
         self.stalemate_mode: bool = False
-        self.stalemate_threshold: float = 8.0  # Seconds without damage before forcing engagement
+        self.stalemate_threshold: float = 5.0  # Seconds without damage before forcing engagement
 
         # Corner-lock detection - when bots cluster together and can't shoot due to min range
         self.corner_lock_mode: bool = False
@@ -639,19 +639,17 @@ class BattleEngine:
         Detect if bots are corner-locked (clustered together unable to shoot).
 
         Returns True if:
-        - Multiple bots are clustered close together (within min_range of each other)
-        - At least some bots are against walls
-        - No bots can currently shoot due to range restrictions
+        - Bots are very close together (potential min_range issues)
+        - At least one bot is against a wall
+        - Bots can't shoot each other due to range restrictions
         """
         alive_bots = [b for b in self.bots.values() if b.is_alive]
         if len(alive_bots) < 2:
             return False
 
-        # Check how many bots are clustered together
-        cluster_threshold = 250  # Distance to consider "clustered" - increased from 150
-        clustered_count = 0
+        # Check for dangerous clustering
         against_wall_count = 0
-        unable_to_shoot_count = 0
+        mutual_deadlock_count = 0  # Both bots can't shoot each other
 
         for bot in alive_bots:
             # Check if against wall
@@ -659,26 +657,24 @@ class BattleEngine:
             if against_wall:
                 against_wall_count += 1
 
-            # Check if clustered with enemies (within min_range)
+            # Check for mutual deadlocks with enemies
             for other in alive_bots:
-                if other.bot_id == bot.bot_id:
+                if other.bot_id == bot.bot_id or other.team == bot.team:
                     continue
-                if other.team == bot.team:
-                    continue  # Only check enemies
 
                 distance = bot.position.distance_to(other.position)
-                if distance < cluster_threshold:
-                    clustered_count += 1
 
-                # Check if this bot can't shoot this enemy due to min_range
-                if distance < bot.min_range:
-                    unable_to_shoot_count += 1
+                # Check if BOTH bots are inside each other's min_range (deadlock)
+                bot_cant_shoot = distance < bot.min_range
+                other_cant_shoot = distance < other.min_range
+
+                if bot_cant_shoot and other_cant_shoot:
+                    mutual_deadlock_count += 1
 
         # Corner-lock detected if:
-        # - Multiple bots are clustered (clustered_count >= 2 pairs)
-        # - At least one bot is against a wall
-        # - Multiple bots can't shoot due to min_range
-        return clustered_count >= 2 and against_wall_count >= 1 and unable_to_shoot_count >= 2
+        # - Any mutual deadlock exists (both can't shoot)
+        # - OR multiple bots against wall with close proximity
+        return mutual_deadlock_count >= 1 or (against_wall_count >= 2)
 
     def _get_dispersal_direction(self, bot: BotRuntimeState) -> tuple[float, float]:
         """
@@ -693,20 +689,22 @@ class BattleEngine:
         if not alive_bots:
             return bot.orientation, 0.5
 
-        # Calculate centroid of nearby bots (all bots, not just enemies)
+        # Calculate centroid of nearby bots - prioritize enemies
         nearby_x = 0.0
         nearby_y = 0.0
         nearby_count = 0
+        enemy_weight = 2.0  # Weight enemies more heavily
 
         for other in alive_bots:
             distance = bot.position.distance_to(other.position)
-            if distance < 200:  # Consider "nearby"
-                nearby_x += other.position.x
-                nearby_y += other.position.y
-                nearby_count += 1
+            if distance < 300:  # Consider "nearby" - increased range
+                weight = enemy_weight if other.team != bot.team else 1.0
+                nearby_x += other.position.x * weight
+                nearby_y += other.position.y * weight
+                nearby_count += weight
 
         if nearby_count > 0:
-            # Move AWAY from centroid of nearby bots
+            # Move AWAY from weighted centroid (prioritizes escaping enemies)
             centroid_x = nearby_x / nearby_count
             centroid_y = nearby_y / nearby_count
             away_angle = math.degrees(math.atan2(bot.position.y - centroid_y, bot.position.x - centroid_x)) % 360
@@ -716,14 +714,14 @@ class BattleEngine:
             center_y = self.config.arena_height / 2
             away_angle = math.degrees(math.atan2(center_y - bot.position.y, center_x - bot.position.x)) % 360
 
-        # Blend with wall escape if against wall
+        # Blend with wall escape if against wall - wall escape takes priority
         against_wall, walls_hit = self._is_against_wall(bot)
         if against_wall:
             wall_escape_angle, _ = self._get_wall_escape_vector(bot, walls_hit)
-            # Average the two directions
-            away_angle = (away_angle + wall_escape_angle) / 2
+            # Wall escape is primary, disperse direction is secondary
+            away_angle = (wall_escape_angle * 0.7 + away_angle * 0.3) % 360
 
-        return away_angle, 0.9  # High speed to disperse quickly
+        return away_angle, 1.0  # FULL speed to disperse - this is an emergency!
 
     def _find_best_target(self, bot: BotRuntimeState) -> t.Optional[str]:
         """Find the best target for this bot based on tactical orders"""
@@ -1019,43 +1017,49 @@ class BattleEngine:
 
         # =========================================================================
         # FLEE MODE - PRIORITY OVERRIDE WHEN INSIDE MIN_RANGE
-        # When a bot is too close to fire (inside min_range), it enters FLEE mode.
-        # Non-aggressive bots get a retreat bonus - they're trying to escape!
-        # Aggressive bots still back up but don't get the bonus (they want to stay close).
+        # When a bot is too close to fire (inside min_range), it MUST retreat.
+        # ALL bots retreat at high speed - staying in the death zone is never good.
+        # The difference is HOW they retreat (direction/pattern).
         # =========================================================================
         if distance < bot.min_range * 0.95:  # Small buffer to prevent jitter
-            # Calculate retreat angle (directly away from target)
+            # Calculate retreat angle - directly away from target
             retreat_angle = (target_angle + 180) % 360
 
-            # Add strafe to avoid getting stuck and make movement less predictable
-            strafe_offset = 25 * bot.strafe_direction
+            # Urgency scales with how deep inside min_range we are
+            urgency = 1.0 - (distance / bot.min_range)  # 0-1, higher = more urgent
+
+            # ALL bots retreat at high speed when they can't shoot
+            # Base speed is always high - being in the death zone is bad for everyone
+            base_speed = 0.85 + (0.15 * urgency)  # 0.85 to 1.0
+
+            # Strafe pattern varies by behavior - how they escape
+            if bot.behavior == AIBehavior.AGGRESSIVE:
+                # Aggressive: Retreat but try to circle around to stay close
+                # Wide strafe angle to orbit rather than directly flee
+                strafe_offset = 45 * bot.strafe_direction
+                speed = base_speed  # Full speed retreat to get back in range ASAP
+            elif bot.behavior in (AIBehavior.DEFENSIVE, AIBehavior.SNIPER, AIBehavior.KITING):
+                # Defensive/ranged: Direct retreat with slight evasion
+                strafe_offset = 15 * bot.strafe_direction
+                speed = base_speed * 1.15  # Bonus speed to create distance
+            elif bot.behavior == AIBehavior.FLANKER:
+                # Flanker: Wide strafe to spiral outward
+                strafe_offset = 60 * bot.strafe_direction
+                speed = base_speed
+            else:
+                # Tactical/others: Moderate strafe
+                strafe_offset = 25 * bot.strafe_direction
+                speed = base_speed
+
             final_angle = (retreat_angle + strafe_offset) % 360
 
-            # Base speed: urgent retreat based on how deep inside min_range
-            urgency = 1.0 - (distance / bot.min_range)  # 0-1, higher = more urgent
-            base_speed = 0.75 + (0.25 * urgency)  # 0.75 to 1.0
-
-            # FLEE BONUS: Non-aggressive behaviors get retreat speed bonus
-            # This helps ranged bots escape close-range attackers
-            if bot.behavior == AIBehavior.AGGRESSIVE:
-                # Aggressive bots back up reluctantly - no bonus
-                flee_bonus = 1.0
-            elif bot.behavior in (AIBehavior.DEFENSIVE, AIBehavior.SNIPER, AIBehavior.KITING):
-                # Defensive/ranged behaviors get significant flee bonus
-                flee_bonus = 1.35  # +35% retreat speed
-            else:
-                # All other behaviors get moderate flee bonus
-                flee_bonus = 1.20  # +20% retreat speed
-
-            speed = base_speed * flee_bonus
-
-            # Apply weapon archetype modifier on top of flee bonus
+            # Weapon archetype bonus (stacks)
             if bot.weapon_archetype == "SNIPER":
-                speed *= 1.20  # +20% additional retreat speed
+                speed *= 1.15
             elif bot.weapon_archetype == "RIFLE":
-                speed *= 1.10  # +10% additional retreat speed
+                speed *= 1.08
 
-            return final_angle, min(1.6, speed)  # Cap at 1.6x to prevent teleporting
+            return final_angle, min(1.5, speed)
 
         # =========================================================================
         # TOO FAR - outside maximum range (except HOLD stance which stays put)
@@ -1133,25 +1137,37 @@ class BattleEngine:
                 return (target_angle + 180 + (55 * bot.strafe_direction)) % 360, 0.85
 
         # =========================================================================
-        # AGGRESSIVE BEHAVIOR - DIRECT CHARGE
-        # Rush DIRECTLY at enemies at FULL speed, minimal deviation
-        # Prefer extremely close range (inside 30% of weapon range)
+        # AGGRESSIVE BEHAVIOR - SMART AGGRESSION
+        # Charge at enemies but maintain optimal combat range (just outside min_range).
+        # Key insight: Being inside min_range is bad for EVERYONE, including aggressors.
+        # Smart aggressive bots stay at the edge of their firing range, not inside it.
         # =========================================================================
         if bot.behavior == AIBehavior.AGGRESSIVE:
-            if distance > preferred_range:
-                # CHARGE! Direct approach at full speed!
-                # Only 5-10 degree deviation to stay slightly unpredictable
-                return (target_angle + 8 * bot.strafe_direction) % 360, 1.0
-            elif distance < bot.min_range * 0.85:
-                # Inside min range - back up just enough
-                return (target_angle + 180) % 360, 0.6
-            elif distance < preferred_range * 0.5:
-                # Perfect close range - stay aggressive with movement to avoid becoming sitting duck
-                # Changed from 0.4 to 0.75 to maintain mobility during combat
-                return (target_angle + 15 * bot.strafe_direction) % 360, 0.75
+            # Check if target is against a wall - don't pin them there
+            target_against_wall, _ = self._is_against_wall(target)
+
+            # Optimal range is just outside min_range - maximum pressure while still shooting
+            optimal_close_range = bot.min_range * 1.15 if bot.min_range > 0 else preferred_range * 0.3
+
+            if distance > bot.max_range:
+                # Out of range - CHARGE at full speed with slight angle
+                return (target_angle + 10 * bot.strafe_direction) % 360, 1.0
+            elif distance > preferred_range:
+                # In range but not close enough - approach aggressively
+                return (target_angle + 8 * bot.strafe_direction) % 360, 0.95
+            elif distance < optimal_close_range:
+                # Too close! Back up to optimal range while circling
+                # This prevents the corner-lock situation
+                retreat_angle = (target_angle + 180 + 40 * bot.strafe_direction) % 360
+                return retreat_angle, 0.8
+            elif target_against_wall and distance < preferred_range * 0.7:
+                # Target is cornered - orbit instead of pushing further
+                # This prevents pinning enemies and causing stalemate
+                return (target_angle + 75 * bot.strafe_direction) % 360, 0.85
             else:
-                # Getting close but not there yet - keep pushing forward!
-                return (target_angle + 12 * bot.strafe_direction) % 360, 0.85
+                # Perfect aggressive range - circle tightly while maintaining pressure
+                # Stay mobile to avoid being an easy target
+                return (target_angle + 25 * bot.strafe_direction) % 360, 0.8
 
         # =========================================================================
         # DEFENSIVE BEHAVIOR - MAXIMUM RANGE MAINTENANCE

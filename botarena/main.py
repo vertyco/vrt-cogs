@@ -27,7 +27,7 @@ from .constants import CHASSIS, COMPONENTS, PLATING
 log = logging.getLogger("red.vrt.botarena")
 
 __author__ = "Vertyco"
-__version__ = "1.2.2a"
+__version__ = "1.2.3a"
 
 
 class BotArena(Commands, commands.Cog, metaclass=CompositeMetaClass):
