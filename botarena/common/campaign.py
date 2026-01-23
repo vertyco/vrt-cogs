@@ -66,14 +66,7 @@ from ..constants.parts import (  # Chassis; Plating; Components
     ZENI_PRZ_2,
     ZINTEK,
 )
-from .models import (
-    ArenaBaseModel,
-    Bot,
-    EngagementRange,
-    MovementStance,
-    PartsRegistry,
-    TacticalOrders,
-)
+from .models import ArenaBaseModel, Bot, MovementStance, PartsRegistry, TacticalOrders
 
 
 class Difficulty(str, Enum):
@@ -230,7 +223,7 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         plating_name=CHROMITREX.name,
                         component_name=KEDRON.name,
                         # Junkrat with Kedron: Close-range ambusher
-                        tactical_orders=TacticalOrders(engagement_range=EngagementRange.CLOSE),
+                        tactical_orders=TacticalOrders(movement_stance=MovementStance.AGGRESSIVE),
                     ),
                 ],
                 credit_reward=650,
@@ -262,7 +255,6 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         # Chrome: Defensive, stays at optimal range
                         tactical_orders=TacticalOrders(
                             movement_stance=MovementStance.DEFENSIVE,
-                            engagement_range=EngagementRange.OPTIMAL,
                         ),
                     ),
                     NPCBot(
@@ -270,10 +262,9 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         chassis_name=DLZ_100.name,  # DLZ-100: 5+6+5=16 (cap 16)
                         plating_name=OVERWATCH_R200.name,
                         component_name=RAPTOR_DT_02.name,
-                        # Tek: Flanking harasser
+                        # Tek: Aggressive harasser
                         tactical_orders=TacticalOrders(
-                            movement_stance=MovementStance.FLANKING,
-                            engagement_range=EngagementRange.OPTIMAL,
+                            movement_stance=MovementStance.AGGRESSIVE,
                         ),
                     ),
                 ],
@@ -302,10 +293,9 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         chassis_name=DLZ_250.name,  # DLZ-250: 8+6+8=22 (cap 22, maxed!)
                         plating_name=OVERWATCH_R200.name,
                         component_name=DARSIJ.name,
-                        # Masher: Kiting machine gunner, stays at range
+                        # Masher: Defensive machine gunner, stays at range
                         tactical_orders=TacticalOrders(
-                            movement_stance=MovementStance.KITING,
-                            engagement_range=EngagementRange.MAX,
+                            movement_stance=MovementStance.DEFENSIVE,
                         ),
                     ),
                     NPCBot(
@@ -342,8 +332,7 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         plating_name=OVERWATCH_R200.name,
                         component_name=RAPTOR_DT_01.name,
                         tactical_orders=TacticalOrders(
-                            movement_stance=MovementStance.FLANKING,
-                            engagement_range=EngagementRange.OPTIMAL,
+                            movement_stance=MovementStance.AGGRESSIVE,
                         ),
                     ),
                     NPCBot(
@@ -353,7 +342,6 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         component_name=DARSIJ.name,
                         tactical_orders=TacticalOrders(
                             movement_stance=MovementStance.DEFENSIVE,
-                            engagement_range=EngagementRange.OPTIMAL,
                         ),
                     ),
                     NPCBot(
@@ -362,8 +350,7 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         plating_name=OVERWATCH_R200.name,
                         component_name=RAPTOR_DT_01.name,
                         tactical_orders=TacticalOrders(
-                            movement_stance=MovementStance.FLANKING,
-                            engagement_range=EngagementRange.OPTIMAL,
+                            movement_stance=MovementStance.AGGRESSIVE,
                         ),
                     ),
                 ],
@@ -444,17 +431,16 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         plating_name=OVERWATCH_R760.name,
                         component_name=TORRIKA_KR_2.name,
                         # Mechanic: Heavy brawler, aggressive combat (Torrika KR-2 min_range=30)
-                        tactical_orders=TacticalOrders(engagement_range=EngagementRange.OPTIMAL),
+                        tactical_orders=TacticalOrders(movement_stance=MovementStance.TACTICAL),
                     ),
                     NPCBot(
                         name="Welder",
                         chassis_name=SMARTMOVE.name,  # Smartmove: 10+8+10=28 (cap 30)
                         plating_name=GAIACORP_LB_MK2.name,
                         component_name=TORRIKA_KR_2.name,
-                        # Welder: Flanking assassin, targets weak (Torrika KR-2 min_range=30)
+                        # Welder: Aggressive assassin, targets weak (Torrika KR-2 min_range=30)
                         tactical_orders=TacticalOrders(
-                            movement_stance=MovementStance.FLANKING,
-                            engagement_range=EngagementRange.OPTIMAL,
+                            movement_stance=MovementStance.AGGRESSIVE,
                         ),
                     ),
                 ],
@@ -480,13 +466,12 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                 enemies=[
                     NPCBot(
                         name="Scrap-1",
-                        chassis_name=DLZ_250.name,  # DLZ-250: 8+6+8=22 (cap 22, maxed!) - flanking threat
+                        chassis_name=DLZ_250.name,  # DLZ-250: 8+6+8=22 (cap 22, maxed!) - aggressive threat
                         plating_name=OVERWATCH_R200.name,
                         component_name=DARSIJ.name,
-                        # Scrap-1: Flanking damage dealer with machine gun
+                        # Scrap-1: Aggressive damage dealer with machine gun
                         tactical_orders=TacticalOrders(
-                            movement_stance=MovementStance.FLANKING,
-                            engagement_range=EngagementRange.OPTIMAL,
+                            movement_stance=MovementStance.AGGRESSIVE,
                         ),
                     ),
                     NPCBot(
@@ -497,7 +482,6 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         # Scrapper: Main threat, aggressive finisher (Torrika KR-2 min_range=30)
                         tactical_orders=TacticalOrders(
                             movement_stance=MovementStance.AGGRESSIVE,
-                            engagement_range=EngagementRange.OPTIMAL,
                         ),
                     ),
                     NPCBot(
@@ -507,8 +491,7 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         component_name=ZENI_PRS.name,
                         # Scrap-2: Healer support, stays back and keeps team alive
                         tactical_orders=TacticalOrders(
-                            movement_stance=MovementStance.PROTECTOR,
-                            engagement_range=EngagementRange.MAX,
+                            movement_stance=MovementStance.DEFENSIVE,
                         ),
                     ),
                 ],
@@ -548,10 +531,9 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         chassis_name=CLR_Z050.name,  # CLR-Z050: 15+12+10=37 (cap 50) - healer
                         plating_name=GAIACORP_SC_RS.name,
                         component_name=ZENI_PRS.name,
-                        # Medic: Protector stance, stays with team
+                        # Medic: Defensive stance, stays with team
                         tactical_orders=TacticalOrders(
-                            movement_stance=MovementStance.PROTECTOR,
-                            engagement_range=EngagementRange.MAX,
+                            movement_stance=MovementStance.DEFENSIVE,
                         ),
                     ),
                     NPCBot(
@@ -562,7 +544,6 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         # Gladiator-1: Aggressive brawler
                         tactical_orders=TacticalOrders(
                             movement_stance=MovementStance.AGGRESSIVE,
-                            engagement_range=EngagementRange.CLOSE,
                         ),
                     ),
                     NPCBot(
@@ -570,10 +551,9 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         chassis_name=CLR_Z050.name,  # CLR-Z050: 15+9+7=31 (cap 50)
                         plating_name=OVERWATCH_R760.name,
                         component_name=TORRIKA_KJ_557.name,
-                        # Gladiator-2: Flanking bruiser
+                        # Gladiator-2: Aggressive bruiser
                         tactical_orders=TacticalOrders(
-                            movement_stance=MovementStance.FLANKING,
-                            engagement_range=EngagementRange.CLOSE,
+                            movement_stance=MovementStance.AGGRESSIVE,
                         ),
                     ),
                 ],
@@ -603,10 +583,9 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         chassis_name=CLR_Z050.name,  # CLR-Z050: 15+12+5=32 (cap 50)
                         plating_name=GAIACORP_SC_RS.name,
                         component_name=RAPTOR_DT_02.name,
-                        # Tactician-1: Kiting support, focus fire
+                        # Tactician-1: Defensive support, focus fire
                         tactical_orders=TacticalOrders(
-                            movement_stance=MovementStance.KITING,
-                            engagement_range=EngagementRange.MAX,
+                            movement_stance=MovementStance.DEFENSIVE,
                         ),
                     ),
                     NPCBot(
@@ -617,7 +596,6 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         # Tactician-2: Defensive anchor
                         tactical_orders=TacticalOrders(
                             movement_stance=MovementStance.DEFENSIVE,
-                            engagement_range=EngagementRange.OPTIMAL,
                         ),
                     ),
                     NPCBot(
@@ -627,8 +605,7 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         component_name=DARSIK_B301_1.name,
                         # Heavy: Massive firepower (Darsik B301-1 min_range=30)
                         tactical_orders=TacticalOrders(
-                            movement_stance=MovementStance.KITING,
-                            engagement_range=EngagementRange.OPTIMAL,
+                            movement_stance=MovementStance.DEFENSIVE,
                         ),
                     ),
                 ],
@@ -702,10 +679,9 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         chassis_name=CLR_Z050.name,  # CLR-Z050: 15+12+18=45 (cap 50)
                         plating_name=GAIACORP_SC_RS.name,
                         component_name=ZENI_PRZ_2.name,  # Upgraded healer - serious threat
-                        # Healer: Protector stance, stays behind Forge and heals
+                        # Healer: Defensive stance, stays behind Forge and heals
                         tactical_orders=TacticalOrders(
-                            movement_stance=MovementStance.PROTECTOR,
-                            engagement_range=EngagementRange.MAX,
+                            movement_stance=MovementStance.DEFENSIVE,
                         ),
                     ),
                     NPCBot(
@@ -714,7 +690,7 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         plating_name=GAIACORP_EG_PR.name,  # Good armor
                         component_name=CIRCES.name,  # Hard-hitting weapon (min_range=50)
                         # Forge: Aggressive tank, draws fire while healer supports
-                        tactical_orders=TacticalOrders(engagement_range=EngagementRange.OPTIMAL),
+                        tactical_orders=TacticalOrders(movement_stance=MovementStance.TACTICAL),
                     ),
                 ],  # Reduced from 3 to 2 - Durichas with Circes + healer is plenty
                 credit_reward=26000,
@@ -743,7 +719,7 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         plating_name=OVERWATCH_Z.name,  # Good but not best armor
                         component_name=CIRCES.name,  # High damage plasma (min_range=50)
                         # Kamikaze-1: All-out aggression, no retreat
-                        tactical_orders=TacticalOrders(engagement_range=EngagementRange.OPTIMAL),
+                        tactical_orders=TacticalOrders(movement_stance=MovementStance.TACTICAL),
                     ),
                     NPCBot(
                         name="Kamikaze-2",
@@ -751,7 +727,7 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         plating_name=GAIACORP_EG_PR.name,  # Slightly weaker armor
                         component_name=DARSIK_B301_1.name,  # Rapid fire (min_range=30)
                         # Kamikaze-2: Aggressive flanker, spray and pray
-                        tactical_orders=TacticalOrders(engagement_range=EngagementRange.OPTIMAL),
+                        tactical_orders=TacticalOrders(movement_stance=MovementStance.TACTICAL),
                     ),
                 ],
                 credit_reward=30000,
@@ -783,7 +759,6 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         # Executioner: Defensive sniper, methodical kills
                         tactical_orders=TacticalOrders(
                             movement_stance=MovementStance.DEFENSIVE,
-                            engagement_range=EngagementRange.MAX,
                         ),
                     ),
                     NPCBot(
@@ -792,7 +767,7 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         plating_name=OVERWATCH_Z.name,  # Good armor, not max
                         component_name=CIRCES.name,  # min_range=50
                         # Headsman: Aggressive enforcer, protects Executioner
-                        tactical_orders=TacticalOrders(engagement_range=EngagementRange.OPTIMAL),
+                        tactical_orders=TacticalOrders(movement_stance=MovementStance.TACTICAL),
                     ),
                 ],
                 credit_reward=35000,
@@ -831,10 +806,9 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         chassis_name=DELIVERANCE.name,  # Deliverance: 30+25+30=85 (cap 85, MAXED!)
                         plating_name=SHRED_MK3.name,
                         component_name=SCREAM_SHARD.name,  # The ultimate weapon - this is the FINAL boss
-                        # Champion: Elite kiting master, methodical destruction
+                        # Champion: Elite defensive master, methodical destruction
                         tactical_orders=TacticalOrders(
-                            movement_stance=MovementStance.KITING,
-                            engagement_range=EngagementRange.MAX,
+                            movement_stance=MovementStance.DEFENSIVE,
                         ),
                     ),
                     NPCBot(
@@ -844,8 +818,7 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         component_name=ZENI_PRZ_2.name,  # Healer support - keeps Champion alive
                         # Herald: Dedicated healer, stays back and supports
                         tactical_orders=TacticalOrders(
-                            movement_stance=MovementStance.PROTECTOR,
-                            engagement_range=EngagementRange.MAX,
+                            movement_stance=MovementStance.DEFENSIVE,
                         ),
                     ),
                     NPCBot(
@@ -856,7 +829,6 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         # Guardian: Protector stance, stays near team and suppresses
                         tactical_orders=TacticalOrders(
                             movement_stance=MovementStance.DEFENSIVE,
-                            engagement_range=EngagementRange.OPTIMAL,
                         ),
                     ),
                 ],

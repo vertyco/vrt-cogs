@@ -11,7 +11,7 @@ BATTLE_TIPS: list[str] = [
     "💡 **Tip:** Heavier bots move slower but can carry bigger weapons!",
     "💡 **Tip:** Use defensive stance for ranged bots to keep distance.",
     "💡 **Tip:** Aggressive stance works best for close-range weapons.",
-    "💡 **Tip:** Flanking stance is great for surrounding enemies!",
+    "💡 **Tip:** Tactical stance balances range with smart repositioning!",
     "💡 **Tip:** Focus Fire targeting helps your team coordinate attacks.",
     "💡 **Tip:** Light chassis have higher agility for better maneuverability.",
     "💡 **Tip:** Healers can keep your team alive longer in tough fights!",
@@ -33,10 +33,7 @@ BATTLE_TIPS: list[str] = [
     "💡 **Tip:** Shockwave weapons are devastating at close range.",
     "💡 **Tip:** Target Priority affects which enemy your bot attacks first.",
     "💡 **Tip:** 'Weakest' targeting helps finish off damaged enemies quickly.",
-    "💡 **Tip:** 'Strongest' targeting takes out the biggest threat first.",
-    "💡 **Tip:** Kiting stance is perfect for hit-and-run tactics.",
-    "💡 **Tip:** Protector stance keeps your bot near wounded allies.",
-    "💡 **Tip:** Hold stance minimizes movement - good for snipers.",
+    "💡 **Tip:** 'Closest' targeting is reactive - engage the nearest threat.",
     "💡 **Tip:** Match your tactics to your weapon's strengths!",
 ]
 
