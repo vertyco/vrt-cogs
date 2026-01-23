@@ -1,9 +1,12 @@
 """
 Bot Arena - Pixel-Perfect Collision Detection
 
-This module provides collision detection based on actual bot images rather than
-simple circular hitboxes. Projectiles only register hits when they touch
-non-transparent pixels of the target bot.
+This module provides collision detection based on actual bot plating images rather
+than simple circular hitboxes. Projectiles only register hits when they touch
+non-transparent pixels of the target bot's plating.
+
+Note: Weapons are NOT included in collision detection because they rotate
+independently from the chassis (weapon_orientation vs bot orientation).
 """
 
 import typing as t
@@ -17,28 +20,29 @@ from .image_utils import load_image
 
 class CollisionMask:
     """
-    A collision mask for a bot, based on plating + weapon images.
+    A collision mask for a bot, based on the plating image only.
 
     The mask stores which pixels are "solid" (non-transparent) and can be
-    queried at any rotation angle. This matches the visual rendering which
-    uses plating as the base layer with weapon on top.
+    queried at any rotation angle. We use plating-only because:
+    1. Weapons rotate independently from the chassis (different orientation)
+    2. Weapons are mounted at an offset, not centered
+    3. User expectation: hitbox = plating shape
     """
 
     def __init__(self, plating_name: str, weapon_name: t.Optional[str] = None):
         """
-        Create a collision mask for a bot with the given plating and weapon.
+        Create a collision mask for a bot with the given plating.
 
         Args:
             plating_name: Name of the plating (e.g., "Zintek")
-            weapon_name: Name of the weapon (optional)
+            weapon_name: Ignored (kept for API compatibility)
         """
         self.plating_name = plating_name
-        self.weapon_name = weapon_name
+        self.weapon_name = weapon_name  # Stored but not used for collision
 
-        # Load and combine plating + weapon into a single mask
+        # Load plating-only mask
         self._base_mask: t.Optional[np.ndarray] = None
         self._base_size: tuple[int, int] = (0, 0)
-        self._center: tuple[float, float] = (0, 0)
         self._load_mask()
 
         # Cache of rotated masks (angle -> mask array)
@@ -46,44 +50,26 @@ class CollisionMask:
         self._rotated_cache: dict[int, np.ndarray] = {}
 
     def _load_mask(self):
-        """Load the plating (and optionally weapon) image and create a collision mask."""
+        """Load the plating image and create a collision mask.
+
+        Note: Weapon is NOT included in the collision mask because:
+        - Weapon rotates independently (weapon_orientation vs chassis orientation)
+        - Weapon is positioned at a mount point offset, not centered
+        - This would require passing weapon_orientation to each collision check
+
+        The plating-only mask correctly represents the bot's "body" hitbox.
+        """
         plating_img = load_image("plating", self.plating_name)
         if not plating_img:
             return
 
         try:
-            # Apply weapon if available
-            if self.weapon_name:
-                weapon_img = load_image("weapons", self.weapon_name)
-                if weapon_img:
-                    # Create a canvas large enough for both plating and weapon
-                    # Weapon may extend beyond plating bounds
-                    max_dim = max(plating_img.width, plating_img.height, weapon_img.width, weapon_img.height)
-                    canvas_size = max_dim * 2  # Extra space for weapon offset
-                    canvas = Image.new("RGBA", (canvas_size, canvas_size), (0, 0, 0, 0))
-
-                    # Paste plating centered
-                    paste_x = (canvas_size - plating_img.width) // 2
-                    paste_y = (canvas_size - plating_img.height) // 2
-                    canvas.paste(plating_img, (paste_x, paste_y), plating_img)
-
-                    # Paste weapon centered (same position - weapon mount handled at runtime)
-                    weapon_x = (canvas_size - weapon_img.width) // 2
-                    weapon_y = (canvas_size - weapon_img.height) // 2
-                    canvas.paste(weapon_img, (weapon_x, weapon_y), weapon_img)
-
-                    # Crop to content
-                    bbox = canvas.getbbox()
-                    if bbox:
-                        plating_img = canvas.crop(bbox)
-
             # Extract alpha channel as numpy array
             alpha = np.array(plating_img.split()[-1])
 
             # Create binary mask: 1 where alpha > threshold (128), 0 elsewhere
             self._base_mask = (alpha > 128).astype(np.uint8)
             self._base_size = plating_img.size
-            self._center = (plating_img.width / 2, plating_img.height / 2)
 
         except (OSError, ValueError, IndexError):
             # OSError: image file issues
@@ -231,5 +217,8 @@ class CollisionManager:
 # Module-level cache for collision masks (shared across battles)
 @lru_cache(maxsize=64)
 def get_collision_mask(plating_name: str, weapon_name: t.Optional[str] = None) -> CollisionMask:
-    """Get a cached collision mask for the given plating/weapon combo."""
+    """Get a cached collision mask for the given plating.
+
+    Note: weapon_name is kept for API compatibility but not used for collision.
+    """
     return CollisionMask(plating_name, weapon_name)
