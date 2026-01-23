@@ -152,6 +152,7 @@ class BotRuntimeState:
     max_health: int
     speed: float  # pixels per second
     rotation_speed: float  # degrees per second
+    turret_rotation_speed: float  # degrees per second for weapon turret (separate from chassis)
     intelligence: int
 
     # Weapon stats (SCALED for arena - see RANGE_SCALE_FACTOR)
@@ -408,6 +409,7 @@ class BattleEngine:
         engagement_range: t.Optional[EngagementRange] = None,
         projectile_type: str = "bullet",
         muzzle_offset: float = 50.0,
+        turret_rotation_speed: float = 15.0,
     ):
         """Add a bot to the simulation.
 
@@ -447,6 +449,7 @@ class BattleEngine:
             max_health=max_health,
             speed=speed,
             rotation_speed=rotation_speed,
+            turret_rotation_speed=turret_rotation_speed,
             intelligence=intelligence,
             damage_per_shot=damage_per_shot,
             shots_per_second=shots_per_second,
@@ -490,6 +493,11 @@ class BattleEngine:
                 bot.orientation = 90  # chassis facing down
                 bot.weapon_orientation = 90  # weapon also facing down initially
                 bot.target_orientation = 90
+                # Set strafe direction based on spawn side - left spawns circle left, right spawns circle right
+                if bot.position.x < self.config.arena_width / 2:
+                    bot.strafe_direction = -1  # Circle left (counter-clockwise)
+                else:
+                    bot.strafe_direction = 1  # Circle right (clockwise)
 
         # Team 2 starts at bottom, facing up
         if team2:
@@ -499,6 +507,11 @@ class BattleEngine:
                 bot.orientation = 270  # chassis facing up
                 bot.weapon_orientation = 270  # weapon also facing up initially
                 bot.target_orientation = 270
+                # Set strafe direction based on spawn side - left spawns circle left, right spawns circle right
+                if bot.position.x < self.config.arena_width / 2:
+                    bot.strafe_direction = -1  # Circle left (counter-clockwise)
+                else:
+                    bot.strafe_direction = 1  # Circle right (clockwise)
 
     def run(self) -> dict:
         """
@@ -700,6 +713,10 @@ class BattleEngine:
             else:
                 if other.team == bot.team:
                     continue
+                # Only consider targets within weapon range
+                distance = bot.position.distance_to(other.position)
+                if distance > bot.max_range:
+                    continue  # Target is out of range, skip
                 candidates.append(other)
 
         if not candidates:
@@ -795,11 +812,8 @@ class BattleEngine:
         angle_diff = (target_angle - bot.weapon_orientation + 360) % 360
         if angle_diff > 180:
             angle_diff -= 360
-
-        # Weapon rotates faster than chassis - 2.5x base speed plus flat bonus
-        # This ensures weapons can track targets even during evasive maneuvers
-        weapon_rotation_bonus = 6.0  # degrees per second bonus
-        effective_rotation = (bot.rotation_speed * 2.5) + weapon_rotation_bonus
+        # Use dedicated turret rotation speed (separate from chassis rotation)
+        effective_rotation = bot.turret_rotation_speed
 
         max_rotation = effective_rotation * self.dt
         if abs(angle_diff) <= max_rotation:
@@ -960,6 +974,44 @@ class BattleEngine:
         # Forces bots to spread apart when they're clustered and can't shoot.
         if self.dispersal_mode:
             return self._get_dispersal_direction(bot)
+
+        # =========================================================================
+        # RANGE ENFORCEMENT - PRIORITY OVERRIDE
+        # Regardless of stance, bots must maintain fireable range:
+        # - Inside min_range: MUST back away (can't shoot)
+        # - Outside max_range: Close in (except HOLD stance)
+        # This takes priority over stance-specific movement!
+        # =========================================================================
+
+        # TOO CLOSE - inside minimum range, must back away!
+        if distance < bot.min_range * 0.95:  # Small buffer to prevent jitter
+            # Calculate retreat angle (directly away from target)
+            retreat_angle = (target_angle + 180) % 360
+
+            # Add some strafe to avoid getting stuck
+            strafe_offset = 20 * bot.strafe_direction
+            final_angle = (retreat_angle + strafe_offset) % 360
+
+            # Speed based on how badly out of range we are
+            urgency = 1.0 - (distance / bot.min_range)  # 0-1, higher = more urgent
+            speed = 0.7 + (0.3 * urgency)  # 0.7 to 1.0
+
+            return final_angle, speed
+
+        # TOO FAR - outside maximum range (except HOLD stance which stays put)
+        if distance > bot.max_range * 1.05 and bot.behavior != AIBehavior.HOLD:
+            # Approach target to get in range
+            approach_angle = target_angle
+
+            # Add slight strafe to approach at angle (more interesting)
+            strafe_offset = 15 * bot.strafe_direction
+            final_angle = (approach_angle + strafe_offset) % 360
+
+            # Speed based on how far out of range
+            overshoot = (distance - bot.max_range) / bot.max_range  # How far past max
+            speed = min(1.0, 0.6 + (0.4 * overshoot))  # 0.6 to 1.0
+
+            return final_angle, speed
 
         # STALEMATE MODE: Override normal behavior - charge directly at target!
         # This forces engagement when bots have been circling too long without dealing damage.

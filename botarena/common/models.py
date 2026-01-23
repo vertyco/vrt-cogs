@@ -253,6 +253,7 @@ class Chassis(ArenaBaseModel):
     weight_class: WeightClass
     speed: int  # Pixels per update cycle
     rotation_speed: int  # Degrees per update cycle
+    turret_rotation_speed: int = 20  # Degrees per update cycle for weapon turret
     cost: int
     weight_capacity: int
     self_weight: int

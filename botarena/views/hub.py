@@ -1155,15 +1155,41 @@ class SelectBotRow(ui.ActionRow["MissionBriefingLayout"]):
     def __init__(self, player, selected_bots, registry: "PartsRegistry"):
         super().__init__()
         options = []
+
+        # Build list with spawn order for position calculation
+        selected_chassis = []
+        for bot_id in selected_bots:
+            chassis = player.get_chassis_by_id(bot_id)
+            if chassis:
+                order = chassis.spawn_order if chassis.spawn_order > 0 else 999
+                selected_chassis.append((order, chassis))
+        selected_chassis.sort(key=lambda x: x[0])
+
+        # Calculate position labels
+        position_labels = (
+            ["Left", "Middle", "Right"]
+            if len(selected_chassis) == 3
+            else ["Left", "Right"]
+            if len(selected_chassis) == 2
+            else ["Center"]
+        )
+        position_map = {
+            chassis.id: position_labels[idx]
+            for idx, (_, chassis) in enumerate(selected_chassis)
+            if idx < len(position_labels)
+        }
+
         for chassis in player.get_battle_ready_bots():
             bot = chassis.to_bot(registry)
             if bot:
                 is_selected = chassis.id in selected_bots
+                # Add position label if this bot is selected
+                pos_prefix = f"[{position_map[chassis.id]}] " if chassis.id in position_map else ""
                 # Show HP, weight, weapon name, damage, and speed
                 desc = f"⚖️{bot.total_weight}wt | ❤️{bot.total_shielding} | ⚔️{bot.component.name} ({bot.component.damage_per_shot}dmg)"
                 options.append(
                     discord.SelectOption(
-                        label=chassis.display_name,
+                        label=f"{pos_prefix}{chassis.display_name}",
                         description=desc[:100],
                         value=chassis.id,
                         default=is_selected,
@@ -1321,21 +1347,41 @@ class MissionBriefingLayout(BotArenaView):
         # Selected Squad Status
         if self.selected_bots:
             squad_lines = []
-            for bot_id in self.selected_bots:
+
+            # Build list with spawn order info for sorting
+            bots_with_order = []
+            for idx, bot_id in enumerate(self.selected_bots):
                 chassis = player.get_chassis_by_id(bot_id)
                 if chassis:
-                    bot = chassis.to_bot(self.cog.registry)
-                    if bot:
-                        # Full loadout: Name, HP, Weight bar, Plating, Weapon with stats
-                        weight_display = chassis.get_weight_display(self.cog.registry)
-                        squad_lines.append(
-                            f"• **{chassis.display_name}** ❤️{bot.total_shielding} | ⚡{bot.chassis.speed}\n"
-                            f"-# ⚖️ {weight_display}\n"
-                            f"-# 🛡️ {bot.plating.name} (+{bot.plating.shielding}) | "
-                            f"⚔️ {bot.component.name} ({bot.component.damage_per_shot}dmg)"
-                        )
-                    else:
-                        squad_lines.append(f"• {chassis.display_name}")
+                    order = chassis.spawn_order if chassis.spawn_order > 0 else 999
+                    bots_with_order.append((order, idx, chassis))
+
+            # Sort by spawn_order, then by selection order
+            bots_with_order.sort(key=lambda x: (x[0], x[1]))
+
+            # Position labels based on sorted count
+            position_labels = (
+                ["Left", "Middle", "Right"]
+                if len(bots_with_order) == 3
+                else ["Left", "Right"]
+                if len(bots_with_order) == 2
+                else ["Center"]
+            )
+
+            for pos_idx, (_, _, chassis) in enumerate(bots_with_order):
+                bot = chassis.to_bot(self.cog.registry)
+                pos_label = position_labels[pos_idx] if pos_idx < len(position_labels) else f"Pos {pos_idx + 1}"
+                if bot:
+                    # Full loadout: Position, Name, HP, Weight bar, Plating, Weapon with stats
+                    weight_display = chassis.get_weight_display(self.cog.registry)
+                    squad_lines.append(
+                        f"**[{pos_label}]** **{chassis.display_name}** ❤️{bot.total_shielding} | ⚡{bot.chassis.speed}\n"
+                        f"-# ⚖️ {weight_display}\n"
+                        f"-# 🛡️ {bot.plating.name} (+{bot.plating.shielding}) | "
+                        f"⚔️ {bot.component.name} ({bot.component.damage_per_shot}dmg)"
+                    )
+                else:
+                    squad_lines.append(f"**[{pos_label}]** {chassis.display_name}")
 
             squad_text = "\n".join(squad_lines)
 
@@ -1456,13 +1502,14 @@ class MissionBriefingLayout(BotArenaView):
         self.battle_in_progress = True
         await self.refresh(interaction)
 
-        # Run battle with player's team color and chapter-specific arena
+        # Run battle with player's team color and mission-specific arena
         video_path, result = await self.cog.run_battle_subprocess(
             team1=my_bots,
             team2=enemy_bots,
             output_format="mp4",
             team1_color=player.team_color,
             chapter=self.mission.chapter,
+            mission_id=self.mission.id,
         )
 
         if not result or not video_path:

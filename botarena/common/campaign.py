@@ -144,6 +144,10 @@ class Mission(ArenaBaseModel):
     victory_text: str = ""
     defeat_text: str = ""
 
+    # Theme for arena background (e.g., "junkyard", "colosseum")
+    # If empty, falls back to chapter-based or default arena
+    arena_theme: str = ""
+
 
 class Chapter(ArenaBaseModel):
     """A campaign chapter containing multiple arenas"""
