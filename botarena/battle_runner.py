@@ -98,6 +98,7 @@ def run_battle_from_json(input_data: dict, output_path: str, format: str = "gif"
     team1_color = config_data.get("team1_color", "blue")
     team2_color = config_data.get("team2_color", "red")
     chapter = config_data.get("chapter")  # Campaign chapter for arena background
+    mission_id = config_data.get("mission_id")  # Mission ID for mission-specific arena
     renderer = BattleRenderer(
         width=config.arena_width,
         height=config.arena_height,
@@ -107,6 +108,7 @@ def run_battle_from_json(input_data: dict, output_path: str, format: str = "gif"
         team2_color=team2_color,
         parts_registry=parts_registry,
         chapter=chapter,
+        mission_id=mission_id,
     )
 
     output_path = Path(output_path)
@@ -204,6 +206,7 @@ def _add_bot_from_data(engine: BattleEngine, bot_data: dict, team: int):
         engagement_range=engagement_range,
         projectile_type=component.get("projectile_type", "bullet"),
         muzzle_offset=component.get("render_offset_x", 92.0),  # Use weapon's render offset as muzzle position
+        turret_rotation_speed=chassis.get("turret_rotation_speed", 20.0),  # Turret rotation determined by chassis
     )
 
 

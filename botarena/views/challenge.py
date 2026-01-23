@@ -303,18 +303,24 @@ class ChallengeLayout(BotArenaView):
         self._currency_name = await bank.get_currency_name(self.ctx.guild)
 
     def _get_selected_bots(self, is_challenger: bool) -> list[Bot]:
-        """Convert selected chassis IDs to Bot objects"""
+        """Convert selected chassis IDs to Bot objects, sorted by spawn order"""
         player = self.challenger_player if is_challenger else self.opponent_player
         bot_ids = self.challenger_bot_ids if is_challenger else self.opponent_bot_ids
 
-        bots = []
-        for chassis_id in bot_ids:
+        bots_with_order = []  # (spawn_order, selection_index, bot) tuples
+        for idx, chassis_id in enumerate(bot_ids):
             chassis = player.get_chassis_by_id(chassis_id)
             if chassis:
                 bot = chassis.to_bot(self.cog.registry)
                 if bot:
-                    bots.append(bot)
-        return bots
+                    # spawn_order: user-defined (1-7, 0=default)
+                    # Use 999 for default (0) so they sort last
+                    order = chassis.spawn_order if chassis.spawn_order > 0 else 999
+                    bots_with_order.append((order, idx, bot))
+
+        # Sort by spawn_order, then by original selection order
+        bots_with_order.sort(key=lambda x: (x[0], x[1]))
+        return [bot for _, _, bot in bots_with_order]
 
     async def refresh(self, interaction: discord.Interaction):
         # Re-fetch player data in case credits changed
@@ -369,8 +375,11 @@ class ChallengeLayout(BotArenaView):
         challenger_text += "\n"
 
         if challenger_bots:
-            for bot in challenger_bots:
-                challenger_text += f"• {bot.name} (HP: {bot.total_shielding}, {bot.component.name})\n"
+            # Position labels based on bot count
+            pos_labels = ["Left", "Middle", "Right"] if len(challenger_bots) == 3 else ["Left", "Right"] if len(challenger_bots) == 2 else ["Center"]
+            for idx, bot in enumerate(challenger_bots):
+                pos = pos_labels[idx] if idx < len(pos_labels) else f"Pos {idx + 1}"
+                challenger_text += f"**[{pos}]** {bot.name} (HP: {bot.total_shielding}, {bot.component.name})\n"
         else:
             challenger_text += "*Select your bots below...*\n"
 
@@ -389,8 +398,11 @@ class ChallengeLayout(BotArenaView):
         opponent_text += "\n"
 
         if opponent_bots:
-            for bot in opponent_bots:
-                opponent_text += f"• {bot.name} (HP: {bot.total_shielding}, {bot.component.name})\n"
+            # Position labels based on bot count
+            pos_labels = ["Left", "Middle", "Right"] if len(opponent_bots) == 3 else ["Left", "Right"] if len(opponent_bots) == 2 else ["Center"]
+            for idx, bot in enumerate(opponent_bots):
+                pos = pos_labels[idx] if idx < len(pos_labels) else f"Pos {idx + 1}"
+                opponent_text += f"**[{pos}]** {bot.name} (HP: {bot.total_shielding}, {bot.component.name})\n"
         else:
             opponent_text += "*Select your bots below...*\n"
 
@@ -551,6 +563,7 @@ class ChallengeLayout(BotArenaView):
             output_format="mp4",
             team1_color=self.challenger_player.team_color,
             team2_color=self.opponent_player.team_color,
+            mission_id="pvp",  # Use PvP arena background
         )
 
         self.battle_in_progress = False

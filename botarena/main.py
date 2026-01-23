@@ -27,7 +27,7 @@ from .constants import CHASSIS, COMPONENTS, PLATING
 log = logging.getLogger("red.vrt.botarena")
 
 __author__ = "Vertyco"
-__version__ = "1.1.2a"
+__version__ = "1.2.0a"
 
 
 class BotArena(Commands, commands.Cog, metaclass=CompositeMetaClass):
@@ -157,6 +157,7 @@ class BotArena(Commands, commands.Cog, metaclass=CompositeMetaClass):
         team1_color: str = "blue",
         team2_color: str = "red",
         chapter: t.Optional[int] = None,
+        mission_id: t.Optional[str] = None,
     ) -> tuple[t.Optional[Path], t.Optional[dict]]:
         """
         Run a battle in a subprocess and return the video path and results.
@@ -169,6 +170,7 @@ class BotArena(Commands, commands.Cog, metaclass=CompositeMetaClass):
             team1_color: Color name for team 1 (player's team)
             team2_color: Color name for team 2 (enemy team)
             chapter: Campaign chapter number (1-5) for chapter-specific arena backgrounds
+            mission_id: Mission ID for mission-specific arena backgrounds (e.g., "1-1")
 
         Returns:
             Tuple of (video_path, battle_result) or (None, None) on error
@@ -193,6 +195,8 @@ class BotArena(Commands, commands.Cog, metaclass=CompositeMetaClass):
         }
         if chapter:
             default_config["chapter"] = chapter
+        if mission_id:
+            default_config["mission_id"] = mission_id
         if config:
             default_config.update(config)
 

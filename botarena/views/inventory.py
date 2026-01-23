@@ -260,6 +260,8 @@ class SpawnOrderRow(ui.ActionRow["ChassisEditorLayout"]):
 
     def _setup_options(self):
         current_order = self._view.chassis.spawn_order
+        # Position labels: 1=Left, 2=Middle, 3=Right (matches battle spawn positions)
+        position_labels = {1: "Left", 2: "Middle", 3: "Right"}
         options = [
             discord.SelectOption(
                 label="Default (spawn last)",
@@ -269,10 +271,11 @@ class SpawnOrderRow(ui.ActionRow["ChassisEditorLayout"]):
             )
         ]
         for i in range(1, 4):  # 1-3 (max bots in a fight)
+            pos_label = position_labels.get(i, f"Position {i}")
             options.append(
                 discord.SelectOption(
-                    label=f"Position {i}",
-                    description=f"Spawn in position {i} on the battlefield",
+                    label=f"{pos_label} [{i}]",
+                    description=f"Spawn on the {pos_label.lower()} side of the battlefield",
                     value=str(i),
                     default=current_order == i,
                 )

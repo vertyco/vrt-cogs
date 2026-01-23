@@ -127,6 +127,7 @@ class BattleRenderer:
         team2_color: str = "red",
         parts_registry: t.Optional["PartsRegistry"] = None,
         chapter: t.Optional[int] = None,
+        mission_id: t.Optional[str] = None,
     ):
         """
         Initialize the renderer.
@@ -140,6 +141,7 @@ class BattleRenderer:
             team2_color: Color name for team 2 (enemy team)
             parts_registry: Optional registry for looking up component render offsets
             chapter: Campaign chapter number (1-5) for chapter-specific arena backgrounds
+            mission_id: Mission ID for mission-specific arena backgrounds (e.g., "1-1")
         """
         self.arena_width = width
         self.arena_height = height
@@ -149,6 +151,7 @@ class BattleRenderer:
         self.fps = fps
         self.parts_registry = parts_registry
         self.chapter = chapter
+        self.mission_id = mission_id
 
         # Set team colors from color names
         self.team1_color = TEAM_COLORS.get(team1_color, DEFAULT_TEAM1_COLOR)
@@ -178,11 +181,15 @@ class BattleRenderer:
     def _load_arena_background(self):
         """Load and scale the arena background image if available.
 
-        If a chapter is specified, tries to load chapter-specific arena first,
-        then falls back to legacy arena_background.
+        Tries to load arena backgrounds in this order:
+        1. Mission-specific: arena_mission_{mission_id} (e.g., arena_mission_1-1.webp)
+        2. Chapter-specific: arena_chapter_{chapter} (e.g., arena_chapter_1.webp)
+        3. Legacy fallback: arena_background
         """
-        # Build list of filenames to try (chapter-specific first, then fallback)
+        # Build list of filenames to try (most specific first, then fallbacks)
         filenames_to_try = []
+        if self.mission_id:
+            filenames_to_try.append(f"arena_mission_{self.mission_id}")
         if self.chapter:
             filenames_to_try.append(f"arena_chapter_{self.chapter}")
         filenames_to_try.append("arena_background")  # Legacy fallback
