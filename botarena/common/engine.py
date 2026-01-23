@@ -1207,25 +1207,38 @@ class BattleEngine:
         self._apply_movement(bot, move_vec)
 
     def _wander_movement(self, bot: BotRuntimeState):
-        """Wander toward arena center when no target"""
-        center_x = self.config.arena_width / 2
-        center_y = self.config.arena_height / 2
+        """Wander toward arena center when no target.
 
-        # Add some randomness
-        target_x = center_x + random.uniform(-100, 100)
-        target_y = center_y + random.uniform(-100, 100)
+        Uses commitment system to avoid jittery orientation changes.
+        """
+        # Check if we need a new wander target
+        # Re-use commitment_timer for wandering consistency
+        if bot.commitment_timer <= 0 or bot.target_position is None:
+            center_x = self.config.arena_width / 2
+            center_y = self.config.arena_height / 2
 
-        dx = target_x - bot.position.x
-        dy = target_y - bot.position.y
+            # Add some randomness to the center target
+            target_x = center_x + random.uniform(-100, 100)
+            target_y = center_y + random.uniform(-100, 100)
+
+            bot.target_position = Vector2(target_x, target_y)
+            # Longer commitment when wandering - smooth movement
+            bot.commitment_timer = random.uniform(1.5, 3.0)
+
+        # Use the committed target position
+        dx = bot.target_position.x - bot.position.x
+        dy = bot.target_position.y - bot.position.y
         distance = math.sqrt(dx * dx + dy * dy)
 
         if distance < 50:
-            # Near center, just rotate randomly
-            bot.target_orientation = (bot.orientation + random.uniform(-30, 30)) % 360
+            # Near target, pick a new random direction smoothly
+            if bot.commitment_timer <= 0:
+                bot.target_orientation = (bot.orientation + random.uniform(-45, 45)) % 360
+                bot.commitment_timer = random.uniform(1.0, 2.0)
             self._rotate_chassis_towards(bot, bot.target_orientation)
             return
 
-        # Move toward center
+        # Move toward committed target
         desired_angle = math.degrees(math.atan2(dy, dx)) % 360
         self._rotate_chassis_towards(bot, desired_angle)
 
