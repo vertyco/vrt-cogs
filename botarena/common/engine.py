@@ -373,7 +373,7 @@ class BattleEngine:
         # Stalemate detection - forces engagement when bots circle too long
         self.last_damage_time: float = 0.0
         self.stalemate_mode: bool = False
-        self.stalemate_threshold: float = 5.0  # Seconds without damage before forcing engagement
+        self.stalemate_threshold: float = 3.0  # Seconds without damage before forcing engagement
 
         # Corner-lock detection - when bots cluster together and can't shoot due to min range
         self.corner_lock_mode: bool = False
@@ -485,7 +485,7 @@ class BattleEngine:
             agility=max(0.0, min(1.0, agility)),  # Clamp to 0-1
             weapon_archetype=weapon_archetype,
             strafe_direction=random.choice([1, -1]),
-            strafe_timer=random.uniform(1.0, 3.0),
+            strafe_timer=random.uniform(0.5, 4.0),
             wander_angle=random.uniform(-30, 30),
             wander_timer=random.uniform(0.5, 2.0),
         )
@@ -873,7 +873,7 @@ class BattleEngine:
 
             if bot.strafe_timer <= 0:
                 bot.strafe_direction *= -1
-                bot.strafe_timer = random.uniform(0.8, 2.0)  # Shorter strafe intervals
+                bot.strafe_timer = random.uniform(1.0, 5.0)  # Longer, more varied intervals
 
             if bot.wander_timer <= 0:
                 bot.wander_angle = random.uniform(-60, 60)  # Larger wander angles
@@ -890,28 +890,14 @@ class BattleEngine:
                 continue
 
             # Execute behavior-specific movement
-            # All behaviors now use the unified agile movement system
-            # which respects tactical orders for preferred range
-            if bot.behavior == AIBehavior.AGGRESSIVE:
-                self._aggressive_movement(bot, target)
-            elif bot.behavior == AIBehavior.DEFENSIVE:
-                self._defensive_movement(bot, target)
-            elif bot.behavior == AIBehavior.FLANKER:
-                self._flanker_movement(bot, target)
-            elif bot.behavior == AIBehavior.SNIPER:
-                self._sniper_movement(bot, target)
-            elif bot.behavior == AIBehavior.BERSERKER:
-                self._berserker_movement(bot, target)
-            elif bot.behavior == AIBehavior.KITING:
-                self._execute_agile_movement(bot, target)
-            elif bot.behavior == AIBehavior.HOLD:
-                self._execute_agile_movement(bot, target)
-            elif bot.behavior == AIBehavior.PROTECTOR:
+            # Most behaviors use the unified agile movement system
+            # which calculates direction based on behavior in _calculate_desired_direction
+            if bot.behavior == AIBehavior.PROTECTOR:
+                # Protector has special ally-following logic
                 self._protector_movement(bot, target)
-            elif bot.behavior == AIBehavior.TACTICAL:
-                self._tactical_movement(bot, target)
             else:
-                self._tactical_movement(bot, target)
+                # All other behaviors use the unified system
+                self._execute_agile_movement(bot, target)
 
     def _wander_movement(self, bot: BotRuntimeState):
         """Random wandering when no target - stop-turn-move pattern"""
@@ -1016,50 +1002,18 @@ class BattleEngine:
             return self._get_dispersal_direction(bot)
 
         # =========================================================================
-        # FLEE MODE - PRIORITY OVERRIDE WHEN INSIDE MIN_RANGE
-        # When a bot is too close to fire (inside min_range), it MUST retreat.
-        # ALL bots retreat at high speed - staying in the death zone is never good.
-        # The difference is HOW they retreat (direction/pattern).
+        # FLEE MODE - DIRECT RETREAT WHEN INSIDE MIN_RANGE
+        # No fancy maneuvering - just get out FAST. Strafing slows down escape.
         # =========================================================================
         if distance < bot.min_range * 0.95:  # Small buffer to prevent jitter
-            # Calculate retreat angle - directly away from target
+            # Direct retreat - no strafe offset
             retreat_angle = (target_angle + 180) % 360
 
             # Urgency scales with how deep inside min_range we are
             urgency = 1.0 - (distance / bot.min_range)  # 0-1, higher = more urgent
+            speed = 0.9 + (0.1 * urgency)  # 0.9 to 1.0
 
-            # ALL bots retreat at high speed when they can't shoot
-            # Base speed is always high - being in the death zone is bad for everyone
-            base_speed = 0.85 + (0.15 * urgency)  # 0.85 to 1.0
-
-            # Strafe pattern varies by behavior - how they escape
-            if bot.behavior == AIBehavior.AGGRESSIVE:
-                # Aggressive: Retreat but try to circle around to stay close
-                # Wide strafe angle to orbit rather than directly flee
-                strafe_offset = 45 * bot.strafe_direction
-                speed = base_speed  # Full speed retreat to get back in range ASAP
-            elif bot.behavior in (AIBehavior.DEFENSIVE, AIBehavior.SNIPER, AIBehavior.KITING):
-                # Defensive/ranged: Direct retreat with slight evasion
-                strafe_offset = 15 * bot.strafe_direction
-                speed = base_speed * 1.15  # Bonus speed to create distance
-            elif bot.behavior == AIBehavior.FLANKER:
-                # Flanker: Wide strafe to spiral outward
-                strafe_offset = 60 * bot.strafe_direction
-                speed = base_speed
-            else:
-                # Tactical/others: Moderate strafe
-                strafe_offset = 25 * bot.strafe_direction
-                speed = base_speed
-
-            final_angle = (retreat_angle + strafe_offset) % 360
-
-            # Weapon archetype bonus (stacks)
-            if bot.weapon_archetype == "SNIPER":
-                speed *= 1.15
-            elif bot.weapon_archetype == "RIFLE":
-                speed *= 1.08
-
-            return final_angle, min(1.5, speed)
+            return retreat_angle, speed
 
         # =========================================================================
         # TOO FAR - outside maximum range (except HOLD stance which stays put)
@@ -1084,18 +1038,27 @@ class BattleEngine:
 
             return final_angle, speed
 
-        # STALEMATE MODE: Override normal behavior - charge directly at target!
-        # This forces engagement when bots have been circling too long without dealing damage.
+        # STALEMATE MODE: Force engagement with ASYMMETRIC behavior!
+        # Team 1 charges aggressively, Team 2 holds ground - breaks the symmetric dance.
         if self.stalemate_mode:
-            if distance > preferred_range:
-                # Charge straight at target at full speed
-                return target_angle, 1.0
-            elif distance < bot.min_range:
-                # Too close - back away slightly with strafe
-                return (target_angle + 160 * bot.strafe_direction) % 360, 0.6
+            if bot.team == 1:
+                # Team 1: CHARGE! Direct approach with minimal angle
+                if distance > bot.min_range * 1.1:
+                    return (target_angle + 5 * bot.strafe_direction) % 360, 1.0
+                else:
+                    # Inside min range - orbit to get out
+                    return (target_angle + 70 * bot.strafe_direction) % 360, 0.9
             else:
-                # In range - maintain position with slight forward pressure
-                return (target_angle + 30 * bot.strafe_direction) % 360, 0.8
+                # Team 2: HOLD GROUND and let them come to us
+                if distance < bot.min_range:
+                    # Too close - retreat
+                    return (target_angle + 180) % 360, 0.8
+                elif distance > bot.max_range:
+                    # Out of range - close in but slowly
+                    return target_angle, 0.5
+                else:
+                    # In range - slow strafe, let team 1 close
+                    return (target_angle + 40 * bot.strafe_direction) % 360, 0.4
 
         # =========================================================================
         # HOLD BEHAVIOR - STATIONARY TURRET
@@ -1219,8 +1182,8 @@ class BattleEngine:
                 # Out of range - carefully approach at wide angle
                 return (target_angle + 35 * bot.strafe_direction) % 360, 0.5
             else:
-                # At preferred max range - wide evasive strafing
-                return (target_angle + 90 * bot.strafe_direction) % 360, 0.7
+                # At preferred max range - evasive strafing with slight convergence
+                return (target_angle + 75 * bot.strafe_direction) % 360, 0.7
 
         # =========================================================================
         # FLANKING BEHAVIOR - CONSTANT PERPENDICULAR CIRCLING
@@ -1241,9 +1204,9 @@ class BattleEngine:
                 # Outside preferred - spiral inward faster with 70-75 degree angle
                 return (target_angle + 73 * bot.strafe_direction) % 360, 0.95
             else:
-                # PERFECT flanking range - spiral inward slowly with 85 degree angle
-                # Changed from 90° to 85° to create slow spiral instead of infinite orbit
-                return (target_angle + 85 * bot.strafe_direction) % 360, 1.0
+                # PERFECT flanking range - spiral inward with 70 degree angle
+                # Creates meaningful convergence instead of near-infinite orbit
+                return (target_angle + 70 * bot.strafe_direction) % 360, 1.0
 
         # =========================================================================
         # SNIPER BEHAVIOR - MAXIMUM RANGE, MINIMAL MOVEMENT
@@ -1309,32 +1272,8 @@ class BattleEngine:
                 # Outside preferred - close in while strafing
                 return (target_angle + 40 * bot.strafe_direction) % 360, 0.75
             else:
-                # Perfect range - active perpendicular strafe
-                return (target_angle + 85 * bot.strafe_direction) % 360, 0.7
-
-    def _aggressive_movement(self, bot: BotRuntimeState, target: BotRuntimeState):
-        """Aggressive movement with agility-based turning"""
-        self._execute_agile_movement(bot, target)
-
-    def _defensive_movement(self, bot: BotRuntimeState, target: BotRuntimeState):
-        """Defensive movement with agility-based turning"""
-        self._execute_agile_movement(bot, target)
-
-    def _flanker_movement(self, bot: BotRuntimeState, target: BotRuntimeState):
-        """Flanker movement with agility-based turning"""
-        self._execute_agile_movement(bot, target)
-
-    def _sniper_movement(self, bot: BotRuntimeState, target: BotRuntimeState):
-        """Sniper movement with agility-based turning"""
-        self._execute_agile_movement(bot, target)
-
-    def _berserker_movement(self, bot: BotRuntimeState, target: BotRuntimeState):
-        """Berserker movement with agility-based turning"""
-        self._execute_agile_movement(bot, target)
-
-    def _tactical_movement(self, bot: BotRuntimeState, target: BotRuntimeState):
-        """Tactical movement with agility-based turning"""
-        self._execute_agile_movement(bot, target)
+                # Perfect range - active strafe with inward pressure
+                return (target_angle + 65 * bot.strafe_direction) % 360, 0.7
 
     def _find_lowest_health_ally(self, bot: BotRuntimeState) -> t.Optional[BotRuntimeState]:
         """Find the ally with the lowest health percentage (excluding self).
