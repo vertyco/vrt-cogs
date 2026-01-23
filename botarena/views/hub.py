@@ -1075,13 +1075,6 @@ class CampaignLayout(BotArenaView):
         # All missions completed, or none available - default to chapter 1
         return 1
 
-    def get_attachments(self) -> list[discord.File]:
-        """Get the arena background image file for the selected chapter"""
-        image_path = find_image_path("", f"arena_chapter_{self.selected_chapter}")
-        if image_path and image_path.exists():
-            return [discord.File(image_path, filename="arena.webp")]
-        return []
-
     async def refresh(self, interaction: discord.Interaction):
         self.clear_items()
         self._build_layout()
@@ -1095,23 +1088,12 @@ class CampaignLayout(BotArenaView):
 
         container = ui.Container(accent_colour=discord.Color.green() if completed == total else discord.Color.blue())
 
-        # Arena image thumbnail with chapter title in a Section
-        image_path = find_image_path("", f"arena_chapter_{self.selected_chapter}")
-        if image_path and image_path.exists():
-            ext = image_path.suffix
-            thumbnail = ui.Thumbnail(media=f"attachment://arena{ext}")
-            title_section = ui.Section(
-                ui.TextDisplay(f"# 📖 Chapter {chapter.id}: {chapter.name}"),
-                ui.TextDisplay(f"*{chapter.description}*\n-# Player: {self.ctx.author.mention}"),
-                accessory=thumbnail,
+        # Chapter title section (no image)
+        container.add_item(
+            ui.TextDisplay(
+                f"# 📖 Chapter {chapter.id}: {chapter.name}\n*{chapter.description}*\n-# Player: {self.ctx.author.mention}"
             )
-            container.add_item(title_section)
-        else:
-            container.add_item(
-                ui.TextDisplay(
-                    f"# 📖 Chapter {chapter.id}: {chapter.name}\n*{chapter.description}*\n-# Player: {self.ctx.author.mention}"
-                )
-            )
+        )
 
         container.add_item(ui.Separator(spacing=discord.SeparatorSpacing.small))
 
@@ -1249,6 +1231,13 @@ class MissionBriefingLayout(BotArenaView):
 
         self._build_layout()
 
+    def get_attachments(self) -> list[discord.File]:
+        """Get the mission-specific arena background image file"""
+        image_path = find_image_path("", f"arena_mission_{self.mission.id}")
+        if image_path and image_path.exists():
+            return [discord.File(image_path, filename="arena.webp")]
+        return []
+
     async def refresh(self, interaction: discord.Interaction):
         self.clear_items()
         self._build_layout()
@@ -1286,11 +1275,26 @@ class MissionBriefingLayout(BotArenaView):
         can_afford = player.credits >= self.mission.entry_fee
 
         container = ui.Container(accent_colour=discord.Color.red() if is_overweight else discord.Color.orange())
-        container.add_item(
-            ui.TextDisplay(
-                f"# 📋 Mission: {self.mission.name}\n{self.mission.briefing or self.mission.description}\n-# Player: {self.ctx.author.mention}"
+
+        # Mission title with arena image thumbnail
+        image_path = find_image_path("", f"arena_mission_{self.mission.id}")
+        if image_path and image_path.exists():
+            ext = image_path.suffix
+            thumbnail = ui.Thumbnail(media=f"attachment://arena{ext}")
+            title_section = ui.Section(
+                ui.TextDisplay(f"# 📋 Mission: {self.mission.name}"),
+                ui.TextDisplay(
+                    f"{self.mission.briefing or self.mission.description}\n-# Player: {self.ctx.author.mention}"
+                ),
+                accessory=thumbnail,
             )
-        )
+            container.add_item(title_section)
+        else:
+            container.add_item(
+                ui.TextDisplay(
+                    f"# 📋 Mission: {self.mission.name}\n{self.mission.briefing or self.mission.description}\n-# Player: {self.ctx.author.mention}"
+                )
+            )
 
         container.add_item(ui.Separator(spacing=discord.SeparatorSpacing.small))
 
