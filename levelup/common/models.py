@@ -128,7 +128,7 @@ class Profile(Base):
 
     # Profile customization
     style: str = "default"  # Can be default, minimal, gaming, or runescape
-    background: str = "default"  # Can be default, random, filename, or URL
+    background: str = "default"  # Can be default, random, filename, URL, or b64:<data>
     namecolor: t.Union[str, None] = None  # Hex color
     statcolor: t.Union[str, None] = None  # Hex color
     barcolor: t.Union[str, None] = None  # Hex color

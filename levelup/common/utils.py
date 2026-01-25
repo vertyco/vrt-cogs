@@ -38,8 +38,17 @@ TENOR_REGEX: t.Pattern[str] = re.compile(r"https:\/\/tenor\.com\/view\/(?P<image
 EMOJI_REGEX: t.Pattern = re.compile(r"(<(?P<animated>a)?:[a-zA-Z0-9\_]+:([0-9]+)>)")
 MENTION_REGEX: t.Pattern = re.compile(r"<@!?([0-9]+)>")
 ID_REGEX: t.Pattern = re.compile(r"[0-9]{17,}")
+# Discord attachment URLs that expire
+DISCORD_ATTACHMENT_PATTERN: t.Pattern = re.compile(
+    r"^https?://(?:cdn|media)\.discordapp\.(?:com|net)/attachments/", flags=re.I
+)
 
 VALID_CONTENT_TYPES = ("image/png", "image/jpeg", "image/jpg", "image/gif")
+
+
+def is_discord_attachment_url(url: str) -> bool:
+    """Check if a URL is a Discord attachment URL (which expires)."""
+    return bool(DISCORD_ATTACHMENT_PATTERN.match(url))
 
 
 def string_to_rgb(color: str, as_discord_color: bool = False) -> t.Union[t.Tuple[int, int, int], discord.Color]:
