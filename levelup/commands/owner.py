@@ -1,5 +1,7 @@
 import asyncio
+import os
 import random
+import typing as t
 from io import BytesIO, StringIO
 
 import discord
@@ -91,21 +93,38 @@ class Owner(MixinMeta):
             else:
                 ignored_servers.write(_("{} (Bot not in server)\n").format(guild_id))
 
-        # Imgen API section
+        # External API section
         txt = _(
-            "*If an internal API port is specified, the bot will spin up subprocesses to handle image generation.*\n"
-            "- **Internal API Port:** {}\n"
             "*If an external API URL is specified, the bot will use that URL for image generation.*\n"
             "- **External API URL:** {}\n"
         ).format(
-            self.db.internal_api_port or _("Not Using"),
             self.db.external_api_url or _("Not Using"),
         )
         embed.add_field(
-            name=_("API Settings"),
+            name=_("External API Settings"),
             value=txt,
             inline=False,
         )
+
+        # Managed API section
+        if self.db.managed_api:
+            api_status = _("Running") if self._managed_api_process else _("Stopped")
+            workers = self.db.managed_api_workers or max(1, (os.cpu_count() or 4) // 2)
+            workers_display = f"{workers} (auto)" if self.db.managed_api_workers == 0 else str(workers)
+            txt = _(
+                "*The bot manages a local uvicorn API process for high-performance image generation.*\n"
+                "- **Status:** {}\n"
+                "- **Port:** {}\n"
+                "- **Workers:** {}\n"
+            ).format(api_status, self.db.managed_api_port, workers_display)
+        else:
+            txt = _("*Managed local API is disabled. Using subprocess per request.*")
+        embed.add_field(
+            name=_("Managed Local API"),
+            value=txt,
+            inline=False,
+        )
+
         status = _("Enabled") if self.db.auto_cleanup else _("Disabled")
         embed.add_field(
             name=_("Auto-Cleanup ({})").format(status),
@@ -150,68 +169,103 @@ class Owner(MixinMeta):
                 await ctx.send(_("Purged {} guilds from the database.").format(len(bad_keys)))
         self.save()
 
-    @lvlowner.command(name="internalapi")
-    async def set_internal_api(self, ctx: commands.Context, port: int):
-        """
-        Enable internal API for parallel image generation
-
-        Setting a port will spin up a detatched but cog-managed FastAPI server to handle image generation.
-        The process ID will be attached to the bot object and persist through reloads.
-
-        **USE AT YOUR OWN RISK!!!**
-        Using the internal API will spin up multiple subprocesses to handle bulk image generation.
-        If your bot crashes, the API subprocess will not be killed and will need to be manually terminated!
-        It is HIGHLY reccommended to host the api separately!
-
-        Set to 0 to disable the internal API
-
-        **Notes**
-        - This will spin up a 1 worker per core on the bot's cpu.
-        - If the API fails, the cog will fall back to the default image generation method.
-        """
-        if port:
-            if self.db.internal_api_port == port:
-                return await ctx.send(_("Internal API port already set to {}, no change.").format(port))
-            self.db.internal_api_port = port
-            if self.api_proc:
-                # Changing port so stop and start the server
-                await ctx.send(_("Internal API port changed to {}, Restarting workers").format(port))
-                await self.stop_api()
-                await self.start_api()
-            else:
-                await ctx.send(_("Internal API port set to {}, Spinning up workers").format(port))
-                await self.start_api()
-        else:
-            self.db.internal_api_port = port
-            await ctx.send(_("Internal API disabled, shutting down workers."))
-            await self.stop_api()
-        self.save()
-
     @lvlowner.command(name="externalapi")
     async def set_external_api(self, ctx: commands.Context, url: str):
         """
         Set the external API URL for image generation
 
-        Set to an `none` to disable the external API
+        Set to `none` to disable the external API
 
         **Notes**
-        - If the API fails, the cog will fall back to the default image generation method.
+        - If the API fails, the cog will fall back to subprocess image generation.
         """
         if url == "none":
-            txt = _("External API disabled")
             self.db.external_api_url = ""
             self.save()
-            # If interal api is set, start it up
-            if self.db.internal_api_port:
-                await self.start_api()
-                txt += _("\nInternal API started since port was set.")
-            return await ctx.send(txt)
+            return await ctx.send(_("External API disabled"))
         if not url.startswith("http"):
             return await ctx.send(_("Invalid URL"))
 
         self.db.external_api_url = url
         await ctx.send(_("External API URL set to `{}`").format(url))
         self.save()
+
+    @lvlowner.command(name="managedapi")
+    async def toggle_managed_api(self, ctx: commands.Context, port: t.Optional[int] = None):
+        """
+        Toggle the managed local API for high-performance image generation
+
+        The managed API runs uvicorn locally, providing much higher throughput than
+        the subprocess method while requiring no external setup.
+
+        **Arguments**
+        - `port`: Optional port number (default 6789). Only used when enabling.
+
+        **Notes**
+        - The managed API is automatically started on cog load and stopped on unload.
+        - If the managed API fails, the cog falls back to subprocess generation.
+        - This takes precedence over subprocess but not over an external API URL.
+        """
+        if self.db.managed_api:
+            # Disable
+            await self._stop_managed_api()
+            self.db.managed_api = False
+            await ctx.send(_("Managed local API disabled. Now using subprocess for image generation."))
+        else:
+            # Enable
+            if port is not None:
+                if not 1024 <= port <= 65535:
+                    return await ctx.send(_("Port must be between 1024 and 65535."))
+                self.db.managed_api_port = port
+
+            self.db.managed_api = True
+            self.save()
+
+            async with ctx.typing():
+                success = await self._start_managed_api()
+
+            if success:
+                await ctx.send(
+                    _(
+                        "Managed local API enabled on port {}. Image generation will use the persistent API process."
+                    ).format(self.db.managed_api_port)
+                )
+            else:
+                self.db.managed_api = False
+                await ctx.send(_("Failed to start managed API. Check logs for details. Falling back to subprocess."))
+        self.save()
+
+    @lvlowner.command(name="apiworkers")
+    async def set_api_workers(self, ctx: commands.Context, workers: int):
+        """
+        Set the number of workers for the managed API
+
+        **Arguments**
+        - `workers`: Number of uvicorn workers (1-32). Set to 0 for auto (cpu_count // 2).
+
+        **Notes**
+        - Changes take effect after restarting the managed API.
+        - More workers = more concurrent requests, but more memory usage.
+        - Recommended: 1 worker per 2 CPU cores.
+        """
+        if workers < 0 or workers > 32:
+            return await ctx.send(_("Workers must be between 0 and 32. Use 0 for auto-detection."))
+
+        self.db.managed_api_workers = workers
+        self.save()
+
+        if workers == 0:
+            auto_workers = max(1, (os.cpu_count() or 4) // 2)
+            await ctx.send(_("API workers set to auto ({} workers based on CPU count).").format(auto_workers))
+        else:
+            await ctx.send(_("API workers set to {}.").format(workers))
+
+        if self.db.managed_api and self._managed_api_process is not None:
+            await ctx.send(
+                _("Restart the managed API with `{}lvlowner managedapi` (twice) for changes to take effect.").format(
+                    ctx.clean_prefix
+                )
+            )
 
     @lvlowner.command(name="rendergifs", aliases=["rendergif", "gif"])
     async def toggle_gif_rendering(self, ctx: commands.Context):

@@ -21,22 +21,26 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE."""
 
 import asyncio
+import json
 import logging
-import multiprocessing as mp
+import os
 import sys
+import tempfile
 import typing as t
 from collections import defaultdict
 from contextlib import suppress
 from datetime import datetime
+from pathlib import Path
 from time import perf_counter
+from uuid import uuid4
 
+import aiohttp
 import discord
 import orjson
-import psutil
 from pydantic import ValidationError
 from redbot.core import commands
 from redbot.core.bot import Red
-from redbot.core.data_manager import bundled_data_path, cog_data_path
+from redbot.core.data_manager import bundled_data_path, cog_data_path, core_data_path
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_list
 
@@ -45,7 +49,6 @@ from .commands import Commands
 from .commands.user import view_profile_context
 from .common.models import DB, VoiceTracking, run_migrations
 from .dashboard.integration import DashboardIntegration
-from .generator import api
 from .generator.tenor.converter import TenorAPI
 from .listeners import Listeners
 from .shared import SharedFunctions
@@ -77,7 +80,7 @@ class LevelUp(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "4.9.0"
+    __version__ = "5.0.0"
     __contributors__ = [
         "[aikaterna](https://github.com/aikaterna/aikaterna-cogs)",
         "[AAA3A](https://github.com/AAA3A-AAA3A/AAA3A-cogs)",
@@ -117,17 +120,25 @@ class LevelUp(
         self.initialized: bool = False
 
         # Tenor API
-        self.tenor: TenorAPI = None
+        self.tenor: t.Optional[TenorAPI] = None
 
-        # Internal Profile Generator API
-        self.api_proc: t.Union[asyncio.subprocess.Process, mp.Process, None] = None
+        # Temp directory for subprocess communication
+        self.temp_dir = Path(tempfile.gettempdir()) / "levelup"
+
+        # Semaphore to limit concurrent image generation subprocesses
+        # Prevents resource exhaustion during burst activity (e.g., raid level-ups)
+        self._subprocess_semaphore = asyncio.Semaphore(os.cpu_count() or 4)
+
+        # Managed API process
+        self._managed_api_process: t.Optional[asyncio.subprocess.Process] = None
+        self._managed_api_pid_file = self.temp_dir / "managed_api.pid"
+        self._api_log_handle: t.Optional[t.IO[str]] = None
 
     async def cog_load(self) -> None:
-        if hasattr(self.bot, "_levelup_internal_api"):
-            self.api_proc = self.bot._levelup_internal_api
-        else:
-            self.bot._levelup_internal_api = None
+        self.temp_dir.mkdir(exist_ok=True)
         self.bot.tree.add_command(view_profile_context)
+        # Kill any orphaned managed API process from a previous crash
+        await self._cleanup_orphaned_api()
         asyncio.create_task(self.initialize())
 
     async def cog_unload(self) -> None:
@@ -135,45 +146,288 @@ class LevelUp(
         self.bot.remove_before_invoke_hook(self.level_check)
         self.bot.remove_before_invoke_hook(self.cooldown_check)
         self.stop_levelup_tasks()
+        # Stop managed API process
+        await self._stop_managed_api()
 
-    async def start_api(self) -> bool:
-        if not self.db.internal_api_port:
-            return False
-        if self.api_proc is not None:
-            return False
+    async def run_profile_subprocess(
+        self,
+        request_data: dict,
+    ) -> t.Tuple[t.Optional[Path], t.Optional[dict]]:
+        """
+        Run profile/levelup image generation in a subprocess.
+
+        This isolates heavy PIL processing from the bot's event loop.
+
+        Args:
+            request_data: Dictionary with generation parameters (ProfileRequest or LevelUpRequest schema)
+
+        Returns:
+            Tuple of (output_path, result_dict) or (None, None) on error
+        """
+        request_id = str(uuid4())[:8]
+        input_file = self.temp_dir / f"request_{request_id}.json"
+        output_file = self.temp_dir / f"output_{request_id}.webp"
+
+        # Add custom fonts directory to request so subprocess can find them
+        request_data["custom_fonts_dir"] = str(self.custom_fonts)
+
+        # Write input JSON
+        await asyncio.to_thread(input_file.write_text, json.dumps(request_data), encoding="utf-8")
+
         try:
-            log_dir = self.cog_path / "APILogs"
-            log_dir.mkdir(exist_ok=True, parents=True)
-            proc = await api.run(port=self.db.internal_api_port, log_dir=log_dir)
-            self.api_proc = proc
-            self.bot._levelup_internal_api = proc
-            log.debug(f"API Process started: {proc.pid}")
-            return True
-        except Exception as e:
-            if "Port already in use" in str(e):
-                log.error(
-                    "Port already in use, Internal API cannot be started, either change the port or restart the bot instance."
+            # Limit concurrent subprocesses to prevent resource exhaustion
+            async with self._subprocess_semaphore:
+                # Run subprocess
+                runner_path = Path(__file__).parent / "generator" / "profile_runner.py"
+                cmd = [sys.executable, str(runner_path), str(input_file), str(output_file)]
+
+                log.debug(f"Running profile subprocess: {' '.join(cmd)}")
+
+                proc = await asyncio.create_subprocess_exec(
+                    *cmd,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
                 )
+
+                stdout, stderr = await proc.communicate()
+            stderr_text = stderr.decode() if stderr else ""
+            stdout_text = stdout.decode() if stdout else ""
+
+            # Log any errors from subprocess
+            if stderr_text and stderr_text.strip():
+                log.warning(f"Profile subprocess stderr: {stderr_text.strip()}")
+
+            if proc.returncode != 0:
+                log.error(f"Profile subprocess exited with code {proc.returncode}")
+                if stdout_text:
+                    log.error(f"Stdout: {stdout_text}")
+                return None, None
+
+            # Parse result from stdout
+            try:
+                result = json.loads(stdout_text)
+            except json.JSONDecodeError as e:
+                log.error(f"Failed to parse profile result JSON: {e}")
+                log.error(f"Stdout was: {stdout_text[:500]}")
+                return None, None
+
+            if not result.get("success"):
+                log.error(f"Profile generation failed: {result.get('error', 'Unknown error')}")
+                return None, None
+
+            # Get output path from result
+            actual_output = Path(result.get("output_path", str(output_file)))
+
+            if actual_output.exists():
+                return actual_output, result
+            elif output_file.exists():
+                return output_file, result
             else:
-                log.error("Failed to start internal API", exc_info=e)
+                log.error(f"Profile output file not created at {output_file}")
+                return None, None
+
+        except Exception as e:
+            log.exception(f"Failed to run profile subprocess: {e}")
+            return None, None
+        finally:
+            # Clean up input file
+            if input_file.exists():
+                try:
+                    input_file.unlink()
+                except Exception:
+                    pass
+
+    async def _kill_process_tree(self, pid: int) -> None:
+        """Kill a process and all its children using psutil (cross-platform)"""
+        import psutil
+
+        def _kill_tree():
+            try:
+                parent = psutil.Process(pid)
+            except psutil.NoSuchProcess:
+                return
+
+            # Get all children recursively BEFORE killing anything
+            children = parent.children(recursive=True)
+
+            # Kill children first (deepest first by reversing)
+            for child in reversed(children):
+                try:
+                    child.kill()
+                except psutil.NoSuchProcess:
+                    pass
+
+            # Now kill the parent
+            try:
+                parent.kill()
+                parent.wait(timeout=5)
+            except (psutil.NoSuchProcess, psutil.TimeoutExpired):
+                pass
+
+        await asyncio.to_thread(_kill_tree)
+
+    async def _cleanup_orphaned_api(self) -> None:
+        """Kill any orphaned managed API process from a previous crash"""
+        if not self._managed_api_pid_file.exists():
+            return
+
+        try:
+            pid = int(self._managed_api_pid_file.read_text().strip())
+            log.warning(f"Found orphaned managed API process (PID {pid}), cleaning up...")
+            await self._kill_process_tree(pid)
+            log.info(f"Orphaned API process tree {pid} cleaned up")
+        except (ValueError, OSError, FileNotFoundError) as e:
+            log.debug(f"Could not clean up orphaned API: {e}")
+        finally:
+            with suppress(FileNotFoundError):
+                self._managed_api_pid_file.unlink()
+
+    async def _start_managed_api(self) -> bool:
+        """Start the managed local API process"""
+        if self._managed_api_process is not None:
+            return True  # Already running
+
+        port = self.db.managed_api_port
+
+        # Set up environment for the subprocess
+        env = os.environ.copy()
+        env["LEVELUP_CUSTOM_FONTS_DIR"] = str(self.custom_fonts)
+
+        # Add the cog's parent directory to PYTHONPATH so uvicorn can import levelup
+        cog_parent = str(Path(__file__).parent.parent)
+        existing_pythonpath = env.get("PYTHONPATH", "")
+        env["PYTHONPATH"] = f"{cog_parent}{os.pathsep}{existing_pythonpath}" if existing_pythonpath else cog_parent
+
+        # Create log file in Red's logs directory
+        logs_dir = core_data_path() / "logs"
+        logs_dir.mkdir(exist_ok=True)
+        api_log_file = logs_dir / "levelup_api.log"
+        num_workers = self.db.managed_api_workers or max(1, (os.cpu_count() or 4) // 2)
+
+        try:
+            log.info(f"Starting managed API on port {port} with {num_workers} workers...")
+            log.info(f"API logs will be written to: {api_log_file}")
+
+            # Open log file for subprocess output
+            self._api_log_handle = open(api_log_file, "a", encoding="utf-8")
+
+            # On Unix, start in new process group so we can kill all workers together
+            kwargs: dict = {
+                "stdout": self._api_log_handle,
+                "stderr": self._api_log_handle,
+                "env": env,
+            }
+            if not IS_WINDOWS:
+                kwargs["start_new_session"] = True
+
+            self._managed_api_process = await asyncio.create_subprocess_exec(
+                sys.executable,
+                "-m",
+                "uvicorn",
+                "levelup.generator.api:app",
+                "--host",
+                "127.0.0.1",
+                "--port",
+                str(port),
+                "--workers",
+                str(num_workers),
+                "--log-level",
+                "info",
+                **kwargs,
+            )
+
+            # Write PID file for orphan detection
+            self._managed_api_pid_file.write_text(str(self._managed_api_process.pid))
+
+            # Wait for API to become ready by polling the health endpoint
+            api_url = f"http://127.0.0.1:{port}"
+            max_attempts = 30  # 30 seconds max wait
+            for attempt in range(max_attempts):
+                # Check if process died
+                if self._managed_api_process.returncode is not None:
+                    log.error(f"Managed API process died. Check {api_log_file} for details")
+                    self._managed_api_process = None
+                    self._close_api_log()
+                    return False
+
+                # Try to connect to health endpoint
+                try:
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(f"{api_url}/health", timeout=aiohttp.ClientTimeout(total=1)) as resp:
+                            if resp.status == 200:
+                                log.info(
+                                    f"Managed API ready after {attempt + 1}s (PID {self._managed_api_process.pid})"
+                                )
+                                return True
+                except (aiohttp.ClientError, asyncio.TimeoutError):
+                    pass  # Not ready yet
+
+                await asyncio.sleep(1)
+
+            # Timed out waiting for API
+            log.error(f"Managed API failed to become ready after {max_attempts}s. Check {api_log_file}")
+            await self._stop_managed_api()
             return False
 
-    async def stop_api(self) -> bool:
-        proc: t.Union[asyncio.subprocess.Process, mp.Process, None] = self.api_proc
-        self.api_proc = None
-        self.bot._levelup_internal_api = None
-        if proc is None:
+        except Exception as e:
+            log.exception(f"Failed to start managed API: {e}")
+            self._managed_api_process = None
+            self._close_api_log()
             return False
+
+    def _close_api_log(self) -> None:
+        """Close the API log file handle if open"""
+        if hasattr(self, "_api_log_handle") and self._api_log_handle:
+            try:
+                self._api_log_handle.close()
+            except Exception:
+                pass
+            self._api_log_handle = None
+
+    async def _stop_managed_api(self) -> None:
+        """Stop the managed local API process gracefully"""
+        if self._managed_api_process is None:
+            # Clean up PID file anyway in case of inconsistent state
+            with suppress(FileNotFoundError):
+                self._managed_api_pid_file.unlink()
+            self._close_api_log()
+            return
+
+        pid = self._managed_api_process.pid
+        log.info(f"Stopping managed API (PID {pid})...")
+
         try:
-            parent = psutil.Process(proc.pid)
-        except psutil.NoSuchProcess:
-            return False
-        for child in parent.children(recursive=True):
-            log.info(f"Killing child process: {child.pid}")
-            child.kill()
-        proc.terminate()
-        log.info(f"Terminated process: {proc.pid}, API is now stopped")
-        return True
+            await self._kill_process_tree(pid)
+            # Also wait on our process handle to clean up
+            try:
+                await asyncio.wait_for(self._managed_api_process.wait(), timeout=2.0)
+            except asyncio.TimeoutError:
+                self._managed_api_process.kill()
+                await self._managed_api_process.wait()
+            log.info("Managed API stopped")
+
+        except Exception as e:
+            log.error(f"Error stopping managed API: {e}")
+        finally:
+            self._managed_api_process = None
+            self._close_api_log()
+            with suppress(FileNotFoundError):
+                self._managed_api_pid_file.unlink()
+
+    def get_api_url(self) -> t.Optional[str]:
+        """Get the active API URL (external, managed local, or None for subprocess)"""
+        # External API takes priority
+        if self.db.external_api_url:
+            return self.db.external_api_url
+        # Managed local API - check process is not None AND still running (returncode is None while alive)
+        if (
+            self.db.managed_api
+            and self._managed_api_process is not None
+            and self._managed_api_process.returncode is None
+        ):
+            return f"http://127.0.0.1:{self.db.managed_api_port}"
+        # Fall back to subprocess (return None)
+        return None
 
     def save(self, force: bool = True) -> None:
         async def _save():
@@ -256,8 +510,10 @@ class LevelUp(
         self.custom_backgrounds.mkdir(exist_ok=True)
         logging.getLogger("PIL").setLevel(logging.WARNING)
         await self.load_tenor()
-        if self.db.internal_api_port and not self.db.external_api_url:
-            await self.start_api()
+
+        # Start managed API if enabled
+        if self.db.managed_api:
+            await self._start_managed_api()
 
     async def load_tenor(self) -> None:
         tokens = await self.bot.get_shared_api_tokens("tenor")

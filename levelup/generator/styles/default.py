@@ -52,7 +52,7 @@ except ImportError:
     if helpers_path.exists():
         spec = importlib.util.spec_from_file_location("pilmojisrc.helpers", helpers_path)
         helpers = importlib.util.module_from_spec(spec)
-        pilmojisrc.helpers = helpers
+        setattr(pilmojisrc, "helpers", helpers)
         sys.modules["pilmojisrc.helpers"] = helpers
         spec.loader.exec_module(helpers)
     else:
@@ -63,7 +63,7 @@ except ImportError:
     if core_path.exists():
         spec = importlib.util.spec_from_file_location("pilmojisrc.core", core_path)
         core = importlib.util.module_from_spec(spec)
-        pilmojisrc.core = core
+        setattr(pilmojisrc, "core", core)
         sys.modules["pilmojisrc.core"] = core
         spec.loader.exec_module(core)
         Pilmoji = core.Pilmoji
@@ -492,7 +492,7 @@ def generate_default_profile(
         avg_duration = imgtools.get_avg_duration(pfp)
         log.debug(f"Rendering pfp as gif with avg duration of {avg_duration}ms")
         frames: t.List[Image.Image] = []
-        for frame in range(pfp.n_frames):
+        for frame in range(getattr(pfp, "n_frames", 1)):
             pfp.seek(frame)
             # Prepare copies of the card, stats, and pfp
             card_frame = card.copy()
@@ -533,7 +533,7 @@ def generate_default_profile(
         pfp = pfp.resize(desired_pfp_size, Image.Resampling.LANCZOS)
         # Crop the profile image into a circle
         pfp = imgtools.make_profile_circle(pfp)
-        for frame in range(card.n_frames):
+        for frame in range(getattr(card, "n_frames", 1)):
             card.seek(frame)
             # Prepare copies of the card and stats
             card_frame = card.copy()
@@ -588,14 +588,16 @@ def generate_default_profile(
         log.debug(f"Combined duration is more than 20% offset from the max duration ({max_duration}ms)")
         combined_duration = max_duration
 
-    total_pfp_duration = pfp.n_frames * pfp_duration  # example: 2250ms
-    total_card_duration = card.n_frames * card_duration  # example: 3300ms
+    pfp_frame_count = getattr(pfp, "n_frames", 1)
+    card_frame_count = getattr(card, "n_frames", 1)
+    total_pfp_duration = pfp_frame_count * pfp_duration  # example: 2250ms
+    total_card_duration = card_frame_count * card_duration  # example: 3300ms
     # Total duration for the combined animation cycle (LCM of 2250 and 3300)
     total_duration = math.lcm(total_pfp_duration, total_card_duration)  # example: 9900ms
     num_combined_frames = total_duration // combined_duration
 
     # The maximum frame count should be no more than 20% offset from the image with the highest frame count to avoid filesize bloat
-    max_frame_count = max(pfp.n_frames, card.n_frames) * 1.2
+    max_frame_count = max(pfp_frame_count, card_frame_count) * 1.2
     max_frame_count = min(round(max_frame_count), num_combined_frames)
     log.debug(f"Max frame count: {max_frame_count}")
     # Create a list to store the combined frames
@@ -604,8 +606,8 @@ def generate_default_profile(
         time = frame_num * combined_duration
 
         # Calculate the frame index for both the card and pfp
-        card_frame_index = (time // card_duration) % card.n_frames
-        pfp_frame_index = (time // pfp_duration) % pfp.n_frames
+        card_frame_index = (time // card_duration) % card_frame_count
+        pfp_frame_index = (time // pfp_duration) % pfp_frame_count
 
         # Get the frames for the card and pfp
         card_frame = ImageSequence.Iterator(card)[card_frame_index]

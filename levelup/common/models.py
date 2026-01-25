@@ -48,7 +48,7 @@ class Base(BaseModel):
         return self.json(**kwargs)
 
     @classmethod
-    def from_file(cls, path: Path) -> Base:
+    def from_file(cls, path: Path) -> t.Self:
         if not path.exists():
             raise FileNotFoundError(f"File not found: {path}")
         if not path.is_file():
@@ -373,8 +373,10 @@ class DB(Base):
     cache_seconds: int = 0  # How long generated profile images should be cached, 0 to disable
     render_gifs: bool = False  # Whether to render profiles as gifs
     force_embeds: bool = False  # Globally force embeds for leveling
-    internal_api_port: int = 0  # If specified, starts internal api subprocess
-    external_api_url: str = ""  # If specified, overrides internal api
+    external_api_url: str = ""  # If specified, uses external API for image generation
+    managed_api: bool = False  # If True, cog manages a local uvicorn API process
+    managed_api_port: int = 6789  # Port for the managed local API
+    managed_api_workers: int = 0  # Number of uvicorn workers (0 = auto: cpu_count // 2)
     auto_cleanup: bool = False  # If True, will clean up configs of old guilds
     ignore_bots: bool = True  # Ignore bots completely
 
