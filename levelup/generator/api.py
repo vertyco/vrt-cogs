@@ -304,7 +304,7 @@ async def generate_levelup_image(request: LevelUpRequest) -> ImageResponse:
 
 def _parse_color(color_str: str) -> t.Tuple[int, int, int] | None:
     """Parse color string like '(255, 255, 255)' to tuple."""
-    if not color_str or not isinstance(color_str, str):
+    if not color_str or not isinstance(color_str, str) or color_str == "None":
         return None
     try:
         parts = [int(x) for x in color_str.strip("()").split(", ")]
