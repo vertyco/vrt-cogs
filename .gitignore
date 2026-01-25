@@ -192,6 +192,7 @@ levelup/data/stock/rs-assets/
 manual_tests.py
 test_outputs/
 scratch*
+TODO.md
 
 # WIP cogs
 arkadia/
