@@ -146,27 +146,61 @@ class LevelUps(MixinMeta):
             if color == (0, 0, 0):
                 color = utils.string_to_rgb(profile.namecolor) if profile.namecolor else None
 
-            payload = aiohttp.FormData()
-            if self.db.external_api_url or (self.db.internal_api_port and self.api_proc):
-                banner = await self.get_profile_background(member.id, profile, try_return_url=True)
-                avatar = member.display_avatar.url
-                payload.add_field(
-                    "background_bytes", BytesIO(banner) if isinstance(banner, bytes) else banner, filename="data"
-                )
-                payload.add_field("avatar_bytes", avatar)
-                payload.add_field("level", str(profile.level))
-                payload.add_field("color", str(color))
-                payload.add_field("font_path", font)
-                payload.add_field("render_gif", str(self.db.render_gifs))
+            # Build request data for subprocess/API
+            request_data = {
+                "request_type": "levelup",
+                "level": profile.level,
+                "render_gif": self.db.render_gifs,
+                "avatar_url": str(member.display_avatar.url),
+            }
 
-            else:
-                avatar = await member.display_avatar.read()
-                banner = await self.get_profile_background(member.id, profile)
+            # Get background URL
+            banner = await self.get_profile_background(member.id, profile, try_return_url=True)
+            if isinstance(banner, str):
+                request_data["background_url"] = banner
+            elif isinstance(banner, bytes):
+                request_data["background_b64"] = base64.b64encode(banner).decode("utf-8")
+
+            if color:
+                request_data["color"] = color
+
+            # Extract font name and include bytes if custom font
+            if font:
+                from pathlib import Path
+
+                font_path = Path(font)
+                request_data["font_name"] = font_path.name
+                # Check if it's a custom font (not bundled) and include bytes for external API
+                if font_path.parent == self.custom_fonts and font_path.exists():
+                    font_bytes = await asyncio.to_thread(font_path.read_bytes)
+                    request_data["font_b64"] = base64.b64encode(font_bytes).decode("utf-8")
 
             img_bytes, animated = None, None
-            if external_url := self.db.external_api_url:
+
+            # Try API first if configured (external or managed local)
+            if api_url := self.get_api_url():
                 try:
-                    url = f"{external_url}/levelup"
+                    # Build FormData payload for legacy endpoint compatibility
+                    payload = aiohttp.FormData()
+                    payload.add_field("level", str(profile.level))
+                    payload.add_field("render_gif", str(self.db.render_gifs))
+                    if color:
+                        payload.add_field("color", str(color))
+                    if font:
+                        payload.add_field("font_path", font)
+
+                    # Handle background
+                    if "background_url" in request_data:
+                        payload.add_field("background_bytes", request_data["background_url"])
+                    elif "background_b64" in request_data:
+                        payload.add_field(
+                            "background_bytes", base64.b64decode(request_data["background_b64"]), filename="data"
+                        )
+
+                    # Handle avatar
+                    payload.add_field("avatar_bytes", request_data["avatar_url"])
+
+                    url = f"{api_url}/levelup"
                     async with aiohttp.ClientSession() as session:
                         async with session.post(url, data=payload) as response:
                             if response.status == 200:
@@ -174,31 +208,39 @@ class LevelUps(MixinMeta):
                                 img_b64, animated = data["b64"], data["animated"]
                                 img_bytes = base64.b64decode(img_b64)
                 except Exception as e:
-                    log.error("Failed to fetch levelup image from external API", exc_info=e)
-            elif self.db.internal_api_port and self.api_proc:
-                try:
-                    url = f"http://127.0.0.1:{self.db.internal_api_port}/levelup"
-                    async with aiohttp.ClientSession() as session:
-                        async with session.post(url, data=payload) as response:
-                            if response.status == 200:
-                                data = await response.json()
-                                img_b64, animated = data["b64"], data["animated"]
-                                img_bytes = base64.b64decode(img_b64)
-                except Exception as e:
-                    log.error("Failed to fetch levelup image from internal API", exc_info=e)
+                    log.error("Failed to fetch levelup image from API", exc_info=e)
 
-            def _run() -> t.Tuple[bytes, bool]:
-                img_bytes, animated = levelalert.generate_level_img(
-                    background_bytes=banner,
-                    avatar_bytes=avatar,
-                    level=profile.level,
-                    color=color,
-                    font_path=font,
-                    render_gif=self.db.render_gifs,
-                )
-                return img_bytes, animated
-
+            # Try subprocess if API failed or not configured
             if not img_bytes:
+                output_path, result = await self.run_profile_subprocess(request_data)
+
+                if output_path and result:
+                    img_bytes = output_path.read_bytes()
+                    animated = result.get("animated", False)
+                    # Clean up output file
+                    try:
+                        output_path.unlink()
+                    except Exception:
+                        pass
+
+            # Final fallback - run in-process
+            if not img_bytes:
+                log.warning("Subprocess failed for levelup image, falling back to in-process generation")
+                avatar = await member.display_avatar.read()
+                if isinstance(banner, str):
+                    banner = await utils.get_content_from_url(banner)
+
+                def _run() -> t.Tuple[bytes, bool]:
+                    img_bytes, animated = levelalert.generate_level_img(
+                        background_bytes=banner,
+                        avatar_bytes=avatar,
+                        level=profile.level,
+                        color=color,
+                        font_path=font,
+                        render_gif=self.db.render_gifs,
+                    )
+                    return img_bytes, animated
+
                 img_bytes, animated = await asyncio.to_thread(_run)
 
             ext = "gif" if animated else "webp"

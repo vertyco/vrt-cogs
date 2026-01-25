@@ -8,6 +8,7 @@ from time import perf_counter
 
 import aiohttp
 import discord
+from discord.http import Route
 from redbot.core import bank
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box, humanize_number
@@ -138,7 +139,7 @@ class ProfileFormatting(MixinMeta):
         Returns:
             t.Optional[str]: The URL of the user's banner image, or None if no banner is found
         """
-        req = await self.bot.http.request(discord.http.Route("GET", "/users/{uid}", uid=user_id))
+        req = await self.bot.http.request(Route("GET", "/users/{uid}", uid=user_id))
         if banner_id := req.get("banner"):
             return f"https://cdn.discordapp.com/banners/{user_id}/{banner_id}?size=1024"
 
@@ -237,12 +238,16 @@ class ProfileFormatting(MixinMeta):
             embed.add_field(name=_("Progress"), value=box(bar, lang="python"), inline=False)
             return embed
 
-        kwargs = {
+        profile_style = conf.style_override or profile.style
+
+        # Build request data for image generation
+        request_data = {
+            "style": profile_style,
             "username": member.display_name if profile.show_displayname else member.name,
             "status": str(member.status).strip(),
             "level": profile.level,
             "messages": profile.messages,
-            "voicetime": profile.voice,
+            "voicetime": int(profile.voice),
             "stars": profile.stars,
             "prestige": profile.prestige,
             "previous_xp": last_level_xp,
@@ -250,74 +255,77 @@ class ProfileFormatting(MixinMeta):
             "next_xp": next_level_xp,
             "position": stat["position"],
             "blur": profile.blur,
-            "base_color": member.color.to_rgb() if member.color.to_rgb() != (0, 0, 0) else None,
-            "user_color": utils.string_to_rgb(profile.namecolor) if profile.namecolor else None,
-            "stat_color": utils.string_to_rgb(profile.statcolor) if profile.statcolor else None,
-            "level_bar_color": utils.string_to_rgb(profile.barcolor) if profile.barcolor else None,
             "render_gif": self.db.render_gifs,
-            "reraise": reraise,
         }
 
-        profile_style = conf.style_override or profile.style
-        if self.db.external_api_url or (self.db.internal_api_port and self.api_proc):
-            # We'll use the external/internal API, try to get URLs instead for faster http requests
-            kwargs["avatar_bytes"] = member.display_avatar.url
-            if profile_style != "runescape":
-                kwargs["background_bytes"] = await self.get_profile_background(
-                    member.id, profile, try_return_url=True, guild_id=guild.id
-                )
-                if pdata and pdata.emoji_url:
-                    kwargs["prestige_emoji"] = pdata.emoji_url
-                if member.top_role.icon:
-                    kwargs["role_icon"] = member.top_role.icon.url
-        else:
-            kwargs["avatar_bytes"] = await member.display_avatar.read()
-            if profile_style != "runescape":
-                kwargs["background_bytes"] = await self.get_profile_background(member.id, profile, guild_id=guild.id)
-                if pdata and pdata.emoji_url:
-                    emoji_bytes = await utils.get_content_from_url(pdata.emoji_url)
-                    kwargs["prestige_emoji"] = emoji_bytes
-                if member.top_role.icon:
-                    kwargs["role_icon"] = await member.top_role.icon.read()
+        # Add colors
+        if member.color.to_rgb() != (0, 0, 0):
+            request_data["base_color"] = member.color.to_rgb()
+        if profile.namecolor:
+            request_data["user_color"] = utils.string_to_rgb(profile.namecolor)
+        if profile.statcolor:
+            request_data["stat_color"] = utils.string_to_rgb(profile.statcolor)
+        if profile.barcolor:
+            request_data["level_bar_color"] = utils.string_to_rgb(profile.barcolor)
 
+        # Add font name and bytes if custom font
         if profile.font:
-            if (self.fonts / profile.font).exists():
-                kwargs["font_path"] = str(self.fonts / profile.font)
-            elif (self.custom_fonts / profile.font).exists():
-                kwargs["font_path"] = str(self.custom_fonts / profile.font)
+            request_data["font_name"] = profile.font
+            # Check if it's a custom font (not bundled) and include bytes for external API
+            custom_font_path = self.custom_fonts / profile.font
+            if custom_font_path.exists():
+                font_bytes = await asyncio.to_thread(custom_font_path.read_bytes)
+                request_data["font_b64"] = base64.b64encode(font_bytes).decode("utf-8")
 
+        # Add balance if enabled
         if conf.showbal:
-            kwargs["balance"] = await bank.get_balance(member)
-            kwargs["currency_name"] = await bank.get_currency_name(guild)
+            request_data["balance"] = await bank.get_balance(member)
+            request_data["currency_name"] = await bank.get_currency_name(guild)
 
-        if background_bytes := kwargs.get("background_bytes"):
-            # Sometimes discord's CDN returns b'This content is no longer available.'
-            # If this occurs we'll reset the background to default
-            if "This content is no longer available." in str(background_bytes):
-                profile.background = "default"
-                self.save(False)
-                log.warning(
-                    f"User {member.name} ({member.id}) has a background that no longer exists! Resetting to default"
-                )
-                kwargs["background_bytes"] = await self.get_profile_background(member.id, profile)
+        # Prestige emoji
+        if pdata and pdata.emoji_url:
+            request_data["prestige_emoji_url"] = pdata.emoji_url
 
-        endpoints = {
-            "default": "fullprofile",
-            "runescape": "runescape",
-        }
-        payload = aiohttp.FormData()
-        if self.db.external_api_url or (self.db.internal_api_port and self.api_proc):
-            for key, value in kwargs.items():
-                if value is None:
-                    continue
-                if isinstance(value, bytes):
-                    payload.add_field(key, value, filename="data")
-                else:
-                    payload.add_field(key, str(value))
+        # Role icon
+        if profile_style != "runescape" and member.top_role.icon:
+            request_data["role_icon_url"] = member.top_role.icon.url
 
-        if external_url := self.db.external_api_url:
+        # Get background URL/bytes
+        if profile_style != "runescape":
+            background = await self.get_profile_background(member.id, profile, try_return_url=True, guild_id=guild.id)
+            if isinstance(background, str):
+                request_data["background_url"] = background
+            elif isinstance(background, bytes):
+                # Sometimes discord's CDN returns error message
+                if b"This content is no longer available" in background:
+                    profile.background = "default"
+                    self.save(False)
+                    log.warning(f"User {member.name} ({member.id}) has invalid background! Resetting to default")
+                    background = await self.get_profile_background(member.id, profile, guild_id=guild.id)
+                request_data["background_b64"] = base64.b64encode(background).decode("utf-8")
+
+        # Always use avatar URL (external API and subprocess both support URL fetching)
+        request_data["avatar_url"] = str(member.display_avatar.url)
+
+        # Try API first if configured (external or managed local)
+        if api_url := self.get_api_url():
+            endpoints = {"default": "fullprofile", "runescape": "runescape"}
             try:
-                url = f"{external_url}/{endpoints[profile_style]}"
+                # Build FormData payload for legacy endpoint compatibility
+                payload = aiohttp.FormData()
+                for key, value in request_data.items():
+                    if value is None:
+                        continue
+                    if key.endswith("_b64"):
+                        # Decode and send as file for legacy endpoints
+                        payload.add_field(key.replace("_b64", "_bytes"), base64.b64decode(value), filename="data")
+                    elif key.endswith("_url"):
+                        # Send URL as the bytes field name for legacy endpoints
+                        payload.add_field(key.replace("_url", "_bytes"), str(value))
+                    else:
+                        payload.add_field(key, str(value))
+
+                url = f"{api_url}/{endpoints[profile_style]}"
                 async with aiohttp.ClientSession() as session:
                     async with session.post(url, data=payload) as response:
                         if response.status == 200:
@@ -326,25 +334,71 @@ class ProfileFormatting(MixinMeta):
                             img_bytes = base64.b64decode(img_b64)
                             ext = "gif" if animated else "webp"
                             return discord.File(BytesIO(img_bytes), filename=f"profile.{ext}")
-                        log.error(f"Failed to fetch profile from external API: {response.status}")
+                        log.error(f"Failed to fetch profile from API: {response.status}")
             except Exception as e:
-                log.error("Failed to fetch profile from external API", exc_info=e)
-        elif self.db.internal_api_port and self.api_proc:
-            try:
-                url = f"http://127.0.0.1:{self.db.internal_api_port}/{endpoints[profile_style]}"
-                async with aiohttp.ClientSession(trust_env=True) as session:
-                    async with session.post(url, data=payload, ssl=False) as response:
-                        if response.status == 200:
-                            data = await response.json()
-                            img_b64, animated = data["b64"], data["animated"]
-                            img_bytes = base64.b64decode(img_b64)
-                            ext = "gif" if animated else "webp"
-                            return discord.File(BytesIO(img_bytes), filename=f"profile.{ext}")
-                        log.error(f"Failed to fetch profile from internal API: {response.status}")
-            except Exception as e:
-                log.error("Failed to fetch profile from internal API", exc_info=e)
+                log.error("Failed to fetch profile from API, falling back to subprocess", exc_info=e)
 
-        # By default we'll use the bundled generator
+        # Use subprocess for image generation
+        output_path, result = await self.run_profile_subprocess(request_data)
+
+        if output_path and result:
+            img_bytes = output_path.read_bytes()
+            ext = result.get("format", "webp")
+            # Clean up output file
+            try:
+                output_path.unlink()
+            except Exception:
+                pass
+            return discord.File(BytesIO(img_bytes), filename=f"profile.{ext}")
+
+        # Final fallback - run in-process (should rarely happen)
+        log.warning("Subprocess failed, falling back to in-process generation")
+
+        # Prepare kwargs for direct generator call
+        kwargs = {
+            "username": request_data["username"],
+            "status": request_data["status"],
+            "level": request_data["level"],
+            "messages": request_data["messages"],
+            "voicetime": request_data["voicetime"],
+            "stars": request_data["stars"],
+            "prestige": request_data["prestige"],
+            "previous_xp": request_data["previous_xp"],
+            "current_xp": request_data["current_xp"],
+            "next_xp": request_data["next_xp"],
+            "position": request_data["position"],
+            "blur": request_data["blur"],
+            "render_gif": request_data["render_gif"],
+            "reraise": reraise,
+        }
+
+        if "base_color" in request_data:
+            kwargs["base_color"] = request_data["base_color"]
+        if "user_color" in request_data:
+            kwargs["user_color"] = request_data["user_color"]
+        if "stat_color" in request_data:
+            kwargs["stat_color"] = request_data["stat_color"]
+        if "level_bar_color" in request_data:
+            kwargs["level_bar_color"] = request_data["level_bar_color"]
+        if "balance" in request_data:
+            kwargs["balance"] = request_data["balance"]
+            kwargs["currency_name"] = request_data.get("currency_name", "Credits")
+
+        # Fetch assets for in-process fallback
+        kwargs["avatar_bytes"] = await member.display_avatar.read()
+        if profile_style != "runescape":
+            kwargs["background_bytes"] = await self.get_profile_background(member.id, profile, guild_id=guild.id)
+            if pdata and pdata.emoji_url:
+                kwargs["prestige_emoji"] = await utils.get_content_from_url(pdata.emoji_url)
+            if member.top_role.icon:
+                kwargs["role_icon"] = await member.top_role.icon.read()
+
+        if profile.font:
+            if (self.fonts / profile.font).exists():
+                kwargs["font_path"] = str(self.fonts / profile.font)
+            elif (self.custom_fonts / profile.font).exists():
+                kwargs["font_path"] = str(self.custom_fonts / profile.font)
+
         funcs = {
             "default": default.generate_default_profile,
             "runescape": runescape.generate_runescape_profile,

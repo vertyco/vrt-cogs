@@ -1,5 +1,4 @@
 import asyncio
-import multiprocessing as mp
 import typing as t
 from abc import ABC, ABCMeta, abstractmethod
 from datetime import datetime
@@ -46,21 +45,36 @@ class MixinMeta(ABC):
         self.last_save: float
 
         # Tenor
-        self.tenor: TenorAPI
+        self.tenor: t.Optional[TenorAPI]
 
-        # Internal API
-        self.api_proc: t.Union[asyncio.subprocess.Process, mp.Process]
+        # Temp directory for subprocess communication
+        self.temp_dir: Path
+
+        # Managed API process
+        self._managed_api_process: t.Optional[asyncio.subprocess.Process]
+        self._subprocess_semaphore: asyncio.Semaphore
 
     @abstractmethod
     def save(self) -> None:
         raise NotImplementedError
 
     @abstractmethod
-    async def start_api(self) -> bool:
+    def get_api_url(self) -> t.Optional[str]:
         raise NotImplementedError
 
     @abstractmethod
-    async def stop_api(self) -> bool:
+    async def run_profile_subprocess(
+        self,
+        request_data: dict,
+    ) -> t.Tuple[t.Optional[Path], t.Optional[dict]]:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def _start_managed_api(self) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def _stop_managed_api(self) -> None:
         raise NotImplementedError
 
     @abstractmethod

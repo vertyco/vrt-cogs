@@ -58,6 +58,7 @@ def string_to_rgb(color: str, as_discord_color: bool = False) -> t.Union[t.Tuple
         return r, g, b
     elif color in COLORS:
         color = COLORS[color]
+
     color = color.strip("#")
     r = int(color[:2], 16)
     g = int(color[2:4], 16)
