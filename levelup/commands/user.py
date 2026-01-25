@@ -529,12 +529,18 @@ class User(MixinMeta):
             await ctx.send(txt, file=file)
 
     @set_profile.command(name="style")
-    async def toggle_profile_style(self, ctx: commands.Context, style: t.Literal["default", "runescape"]):
+    async def toggle_profile_style(
+        self,
+        ctx: commands.Context,
+        style: t.Literal["default", "runescape", "minimal", "gaming"],
+    ):
         """
         Set your profile image style
 
         - `default` is the default profile style, very customizable
         - `runescape` is a runescape style profile, less customizable but more nostalgic
+        - `minimal` - a minimal profile style focused on stats
+        - `gaming` - a gaming themed profile style with a HUD look
         - (WIP) - more to come
 
         """

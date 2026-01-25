@@ -15,7 +15,10 @@ class ProfileRequest(BaseModel):
     """Request schema for profile image generation."""
 
     # Profile style
-    style: str = Field(default="default", description="Profile style: 'default' or 'runescape'")
+    style: str = Field(
+        default="default",
+        description="Profile style: 'default', 'minimal', 'gaming', or 'runescape'",
+    )
 
     # User data
     username: str = Field(default="User", description="Username to display")

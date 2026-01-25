@@ -16,7 +16,7 @@ from redbot.core.utils.chat_formatting import box, humanize_number
 from ..abc import MixinMeta
 from ..common import formatter, utils
 from ..common.models import Profile
-from ..generator.styles import default, runescape
+from ..generator.styles import default, gaming, minimal, runescape
 
 log = logging.getLogger("red.vrt.levelup.shared.profile")
 _ = Translator("LevelUp", __file__)
@@ -309,7 +309,12 @@ class ProfileFormatting(MixinMeta):
 
         # Try API first if configured (external or managed local)
         if api_url := self.get_api_url():
-            endpoints = {"default": "fullprofile", "runescape": "runescape"}
+            endpoints = {
+                "default": "fullprofile",
+                "minimal": "fullprofile",
+                "gaming": "fullprofile",
+                "runescape": "runescape",
+            }
             try:
                 # Build FormData payload for legacy endpoint compatibility
                 payload = aiohttp.FormData()
@@ -401,6 +406,8 @@ class ProfileFormatting(MixinMeta):
 
         funcs = {
             "default": default.generate_default_profile,
+            "minimal": minimal.generate_minimal_profile,
+            "gaming": gaming.generate_gaming_profile,
             "runescape": runescape.generate_runescape_profile,
         }
 

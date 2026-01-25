@@ -85,6 +85,8 @@ def generate_profile(input_data: dict, output_path: Path) -> dict:
     # Import here to avoid loading PIL until needed
     from levelup.generator import imgtools
     from levelup.generator.styles.default import generate_default_profile
+    from levelup.generator.styles.gaming import generate_gaming_profile
+    from levelup.generator.styles.minimal import generate_minimal_profile
     from levelup.generator.styles.runescape import generate_runescape_profile
 
     style = input_data.get("style", "default")
@@ -111,6 +113,7 @@ def generate_profile(input_data: dict, output_path: Path) -> dict:
     if not font_path and (font_b64 := input_data.get("font_b64")):
         try:
             import tempfile
+
             font_bytes = base64.b64decode(font_b64)
             # Create temp file with .ttf extension
             fd, temp_font_path = tempfile.mkstemp(suffix=".ttf")
@@ -162,6 +165,8 @@ def generate_profile(input_data: dict, output_path: Path) -> dict:
     # Select generator based on style
     generators = {
         "default": generate_default_profile,
+        "minimal": generate_minimal_profile,
+        "gaming": generate_gaming_profile,
         "runescape": generate_runescape_profile,
     }
 
@@ -206,6 +211,7 @@ def generate_levelup(input_data: dict, output_path: Path) -> dict:
     if not font_path and (font_b64 := input_data.get("font_b64")):
         try:
             import tempfile
+
             font_bytes = base64.b64decode(font_b64)
             fd, temp_font_path = tempfile.mkstemp(suffix=".ttf")
             with os.fdopen(fd, "wb") as f:

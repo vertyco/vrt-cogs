@@ -1,8 +1,8 @@
 import re
 
 EMOJI_PATTERN = re.compile(r"(<a?)?:\w+:(\d{18}>)?")
-PROFILE_TYPES = ["default", "runescape"]
-STATIC_FONT_STYLES = ["runescape"]
+PROFILE_TYPES = ["default", "minimal", "gaming", "runescape"]
+STATIC_FONT_STYLES = ["runescape", "gaming"]
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
 COLORS = {
     "cloudy blue": "#acc2d9",

@@ -33,6 +33,8 @@ try:
     from . import imgtools
     from .levelalert import generate_level_img
     from .styles.default import generate_default_profile
+    from .styles.gaming import generate_gaming_profile
+    from .styles.minimal import generate_minimal_profile
     from .styles.runescape import generate_runescape_profile
 
     _RUNNING_AS_SERVICE = False
@@ -40,6 +42,8 @@ except ImportError:
     import imgtools
     from levelalert import generate_level_img
     from styles.default import generate_default_profile
+    from styles.gaming import generate_gaming_profile
+    from styles.minimal import generate_minimal_profile
     from styles.runescape import generate_runescape_profile
 
     _RUNNING_AS_SERVICE = True
@@ -237,6 +241,8 @@ async def generate_profile(request: ProfileRequest) -> ImageResponse:
     # Select generator
     generators = {
         "default": generate_default_profile,
+        "minimal": generate_minimal_profile,
+        "gaming": generate_gaming_profile,
         "runescape": generate_runescape_profile,
     }
     generator = generators.get(request.style, generate_default_profile)

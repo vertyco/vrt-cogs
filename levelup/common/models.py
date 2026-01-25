@@ -127,7 +127,7 @@ class Profile(Base):
     ignore_level_up_notification: bool = False  # if true level up notifications will not be announced for this user
 
     # Profile customization
-    style: str = "default"  # Can be default, runescape... (WIP)
+    style: str = "default"  # Can be default, minimal, gaming, or runescape
     background: str = "default"  # Can be default, random, filename, or URL
     namecolor: t.Union[str, None] = None  # Hex color
     statcolor: t.Union[str, None] = None  # Hex color
