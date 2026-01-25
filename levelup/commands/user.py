@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import logging
 import typing as t
 from contextlib import suppress
@@ -288,6 +289,8 @@ class User(MixinMeta):
         """View your profile settings"""
         conf = self.db.get_conf(ctx.guild)
         profile = conf.get_profile(ctx.author)
+        # Display "Stored Image" for base64 backgrounds
+        bg_display = _("Stored Image") if profile.background.startswith("b64:") else profile.background
         if not conf.use_embeds:
             desc = _(
                 "`Profile Style:   `{}\n"
@@ -300,7 +303,7 @@ class User(MixinMeta):
                 profile.show_displayname,
                 _("Enabled") if profile.blur else _("Disabled"),
                 str(profile.font).title(),
-                profile.background,
+                bg_display,
             )
         else:
             desc = _("`Show Nickname:   `{}\n").format(profile.show_displayname)
@@ -317,6 +320,11 @@ class User(MixinMeta):
         if not conf.use_embeds:
             if bg.startswith("http"):
                 embed.set_image(url=bg)
+            elif bg.startswith("b64:"):
+                # Decode base64 and attach as file
+                image_data = base64.b64decode(bg[4:])
+                file = discord.File(BytesIO(image_data), filename="background.png")
+                embed.set_image(url="attachment://background.png")
             elif bg not in ("default", "random"):
                 available = list(self.backgrounds.iterdir()) + list(self.custom_backgrounds.iterdir())
                 for path in available:
@@ -767,7 +775,10 @@ class User(MixinMeta):
         if url is None:
             if attachments[0].size > ctx.guild.filesize_limit:
                 return await ctx.send(_("That image is too large for this server's upload limit!"))
-            profile.background = attachments[0].url
+            # Discord attachment URLs expire, so download and store as base64
+            image_bytes = await attachments[0].read()
+
+            profile.background = "b64:" + base64.b64encode(image_bytes).decode("utf-8")
             try:
                 file: discord.File = await self.get_user_profile(ctx.author, reraise=True)
                 if file.__sizeof__() > ctx.guild.filesize_limit:
@@ -792,7 +803,17 @@ class User(MixinMeta):
                 await ctx.send(txt)
             log.debug("Sanitizing link")
             url = await sanitize_url(url, ctx)
-            profile.background = url
+
+            # Check if this is a Discord attachment URL (which expires)
+            if utils.is_discord_attachment_url(url):
+                image_bytes = await utils.get_content_from_url(url)
+                if not image_bytes:
+                    return await ctx.send(_("Failed to download the image from that URL!"))
+
+                profile.background = "b64:" + base64.b64encode(image_bytes).decode("utf-8")
+            else:
+                profile.background = url
+
             try:
                 file: discord.File = await self.get_user_profile(ctx.author, reraise=True)
                 if file.__sizeof__() > ctx.guild.filesize_limit:
