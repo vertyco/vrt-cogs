@@ -61,8 +61,6 @@ class Snapshot(MixinMeta):
                 return
 
             global_config: GlobalSettings = await self.db_utils.get_create_global_settings()
-            if not global_config.track_bank:
-                return
 
             is_global = await bank.is_global()
             global_bank_balances: dict[int, int] = defaultdict(int)
@@ -108,6 +106,8 @@ class Snapshot(MixinMeta):
             if guild_snapshots:
                 await GuildEconomySnapshot.insert(*guild_snapshots)
 
+            if not global_config.track_bank:
+                return
             # Global economy snapshot
             if global_bank_balances:
                 global_bank_total = sum(global_bank_balances.values())
