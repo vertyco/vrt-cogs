@@ -139,8 +139,6 @@ class Snapshot(MixinMeta):
                 return
 
             global_config: GlobalSettings = await self.db_utils.get_create_global_settings()
-            if not global_config.track_members:
-                return
 
             # Guild-level member snapshots
             guild_snapshots: list[GuildMemberSnapshot] = []
@@ -183,6 +181,9 @@ class Snapshot(MixinMeta):
 
             if guild_snapshots:
                 await GuildMemberSnapshot.insert(*guild_snapshots)
+
+            if not global_config.track_members:
+                return
 
             # Global member snapshot
             members: dict[int, discord.Member] = {}
