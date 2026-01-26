@@ -125,12 +125,13 @@ class Snapshot(MixinMeta):
     @economy_snapshot_task.before_loop
     async def before_economy_snapshot(self) -> None:
         await self.bot.wait_until_red_ready()
+        log.info("Economy snapshot task is starting...")
 
     # =========================================================================
     # Member Snapshot Task
     # =========================================================================
 
-    @tasks.loop(minutes=15)
+    @tasks.loop(minutes=10)
     async def member_snapshot_task(self) -> None:
         """Capture member statistics."""
         try:
@@ -218,6 +219,7 @@ class Snapshot(MixinMeta):
     @member_snapshot_task.before_loop
     async def before_member_snapshot(self) -> None:
         await self.bot.wait_until_red_ready()
+        log.info("Member snapshot task is starting...")
 
     # =========================================================================
     # Performance Snapshot Task
@@ -262,3 +264,4 @@ class Snapshot(MixinMeta):
     @performance_snapshot_task.before_loop
     async def before_performance_snapshot(self) -> None:
         await self.bot.wait_until_red_ready()
+        log.info("Performance snapshot task is starting...")
