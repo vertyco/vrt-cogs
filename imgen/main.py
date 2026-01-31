@@ -21,10 +21,13 @@ from .common.constants import (
     QUALITY_ORDER,
     SIZE_LABELS,
     SIZE_ORDER,
+    TIER_PRESETS,
     VALID_FORMATS,
     VALID_MODELS,
     VALID_QUALITIES,
     VALID_SIZES,
+    format_cost,
+    get_generation_cost,
 )
 from .common.models import DB, AccessLimits, GuildSettings
 from .views import (
@@ -98,7 +101,7 @@ class ImGen(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.3.0"
+    __version__ = "1.4.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -414,6 +417,10 @@ class ImGen(commands.Cog):
                     log_embed.add_field(name="Model", value=resolved_model, inline=True)
                     log_embed.add_field(name="Size", value=resolved_size, inline=True)
                     log_embed.add_field(name="Quality", value=resolved_quality, inline=True)
+                    # Add cost to log
+                    cost = get_generation_cost(resolved_model, resolved_quality, resolved_size)
+                    if cost > 0:
+                        log_embed.add_field(name="Cost", value=format_cost(cost), inline=True)
                     if message:
                         log_embed.add_field(name="Message", value=f"[Jump]({message.jump_url})", inline=True)
                     with suppress(discord.HTTPException):
@@ -632,11 +639,34 @@ class ImGen(commands.Cog):
                     if not rc.allowed_qualities
                     else ", ".join(QUALITY_LABELS.get(value, value) for value in rc.allowed_qualities)
                 )
+
+                # Calculate cost range
+                models = rc.allowed_models or VALID_MODELS
+                sizes = rc.allowed_sizes or [s for s in VALID_SIZES if s != "auto"]
+                qualities = rc.allowed_qualities or [q for q in VALID_QUALITIES if q != "auto"]
+                costs: list[float] = []
+                for model in models:
+                    for quality in qualities:
+                        for size in sizes:
+                            cost = get_generation_cost(model, quality, size)
+                            if cost > 0:
+                                costs.append(cost)
+                if costs:
+                    min_cost, max_cost = min(costs), max(costs)
+                    cost_txt = (
+                        format_cost(min_cost)
+                        if min_cost == max_cost
+                        else f"{format_cost(min_cost)} - {format_cost(max_cost)}"
+                    )
+                else:
+                    cost_txt = "N/A"
+
                 role_lines.append(
                     f"{role.mention}: {cooldown_txt}\n"
                     f"• Models: {models_txt}\n"
                     f"• Sizes: {sizes_txt}\n"
-                    f"• Qualities: {qualities_txt}"
+                    f"• Qualities: {qualities_txt}\n"
+                    f"• Cost/image: {cost_txt}"
                 )
             embed.add_field(
                 name="Allowed Roles & Access",
@@ -771,3 +801,123 @@ class ImGen(commands.Cog):
             "✅ Updated default settings:\n" + "\n".join(changes),
             ephemeral=True,
         )
+
+    @imgen.command(name="tiers", description="View available subscription tier presets")
+    async def imgen_tiers(self, interaction: discord.Interaction):
+        """View available tier presets and their configurations."""
+        conf = self.db.get_conf(interaction.guild)
+
+        # Build a mapping of tier -> roles that match it
+        tier_roles: dict[str, list[discord.Role]] = {tid: [] for tid in TIER_PRESETS}
+        for role_id, rc in conf.role_cooldowns.items():
+            role = interaction.guild.get_role(role_id)
+            if not role:
+                continue
+            # Check which tier this role matches
+            for tid, tier in TIER_PRESETS.items():
+                if (
+                    set(rc.allowed_models or []) == set(tier.models)
+                    and set(rc.allowed_qualities or []) == set(tier.qualities)
+                    and set(rc.allowed_sizes or []) == set(tier.sizes)
+                    and rc.cooldown_seconds == tier.cooldown_seconds
+                ):
+                    tier_roles[tid].append(role)
+                    break
+
+        embed = discord.Embed(
+            title="🎨 Subscription Tier Presets",
+            description=(
+                "Use `/imgen tier` to apply a preset to a role.\n"
+                "These presets provide balanced access levels for subscription tiers."
+            ),
+            color=discord.Color.blue(),
+            timestamp=datetime.now(tz=timezone.utc),
+        )
+
+        for tier_id, tier in TIER_PRESETS.items():
+            min_cost, max_cost = tier.get_cost_range()
+            cost_txt = (
+                format_cost(min_cost) if min_cost == max_cost else f"{format_cost(min_cost)} - {format_cost(max_cost)}"
+            )
+
+            models_txt = ", ".join(MODEL_LABELS.get(m, m) for m in tier.models)
+            qualities_txt = ", ".join(QUALITY_LABELS.get(q, q) for q in tier.qualities)
+            sizes_txt = ", ".join(SIZE_LABELS.get(s, s) for s in tier.sizes)
+
+            cooldown_txt = (
+                f"{tier.cooldown_seconds}s" if tier.cooldown_seconds < 60 else f"{tier.cooldown_seconds // 60}m"
+            )
+
+            # Show roles configured for this tier
+            roles_txt = ""
+            if tier_roles[tier_id]:
+                role_mentions = ", ".join(r.mention for r in tier_roles[tier_id])
+                roles_txt = f"\n**Roles:** {role_mentions}"
+
+            value = (
+                f"*{tier.description}*\n"
+                f"**Models:** {models_txt}\n"
+                f"**Qualities:** {qualities_txt}\n"
+                f"**Sizes:** {sizes_txt}\n"
+                f"**Cooldown:** {cooldown_txt}\n"
+                f"**Cost/image:** {cost_txt}"
+                f"{roles_txt}"
+            )
+            embed.add_field(name=f"{tier.emoji} {tier.name} (`{tier_id}`)", value=value, inline=False)
+
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @imgen.command(name="tier", description="Apply a subscription tier preset to a role")
+    @app_commands.describe(
+        role="The role to configure",
+        tier="The tier preset to apply",
+    )
+    @app_commands.choices(
+        tier=[app_commands.Choice(name=f"{t.emoji} {t.name}", value=tid) for tid, t in TIER_PRESETS.items()]
+    )
+    async def imgen_tier(
+        self,
+        interaction: discord.Interaction,
+        role: discord.Role,
+        tier: str,
+    ):
+        """Apply a subscription tier preset to a role."""
+        from .common.models import RoleCooldown
+
+        preset = TIER_PRESETS.get(tier)
+        if not preset:
+            return await interaction.response.send_message("Invalid tier selected.", ephemeral=True)
+
+        conf = self.db.get_conf(interaction.guild)
+        conf.role_cooldowns[role.id] = RoleCooldown(
+            role_id=role.id,
+            cooldown_seconds=preset.cooldown_seconds,
+            allowed_models=preset.models,
+            allowed_sizes=preset.sizes,
+            allowed_qualities=preset.qualities,
+        )
+        await self.save()
+
+        min_cost, max_cost = preset.get_cost_range()
+        cost_txt = (
+            format_cost(min_cost) if min_cost == max_cost else f"{format_cost(min_cost)} - {format_cost(max_cost)}"
+        )
+
+        embed = discord.Embed(
+            title=f"{preset.emoji} Applied {preset.name} Tier",
+            description=f"Successfully applied the **{preset.name}** tier to {role.mention}.",
+            color=discord.Color.green(),
+        )
+        embed.add_field(
+            name="Configuration",
+            value=(
+                f"**Models:** {', '.join(MODEL_LABELS.get(m, m) for m in preset.models)}\n"
+                f"**Qualities:** {', '.join(QUALITY_LABELS.get(q, q) for q in preset.qualities)}\n"
+                f"**Sizes:** {', '.join(SIZE_LABELS.get(s, s) for s in preset.sizes)}\n"
+                f"**Cooldown:** {preset.cooldown_seconds}s\n"
+                f"**Cost/image:** {cost_txt}"
+            ),
+            inline=False,
+        )
+
+        await interaction.response.send_message(embed=embed, ephemeral=True)
