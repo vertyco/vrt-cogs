@@ -193,6 +193,7 @@ manual_tests.py
 test_outputs/
 scratch*
 TODO.md
+MIGRATION*
 
 # WIP cogs
 arkadia/
