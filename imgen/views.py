@@ -14,6 +14,8 @@ from .common.constants import (
     VALID_MODELS,
     VALID_QUALITIES,
     VALID_SIZES,
+    format_cost,
+    get_generation_cost,
 )
 from .common.models import RoleCooldown
 
@@ -293,6 +295,11 @@ def create_image_embed(
     embed.add_field(name="Size", value=size, inline=True)
     embed.add_field(name="Quality", value=quality, inline=True)
 
+    # Add cost field
+    cost = get_generation_cost(model, quality, size)
+    if cost > 0:
+        embed.add_field(name="Cost", value=format_cost(cost), inline=True)
+
     embed.set_footer(text=f"Requested by {author.display_name}", icon_url=author.display_avatar.url)
 
     return embed
@@ -525,11 +532,33 @@ class AccessConfigView(discord.ui.LayoutView):
                 else ", ".join(QUALITY_LABELS.get(value, value) for value in rc.allowed_qualities)
             )
 
+            # Calculate cost range for this role's configuration
+            models = rc.allowed_models or VALID_MODELS
+            sizes = rc.allowed_sizes or [s for s in VALID_SIZES if s != "auto"]
+            qualities = rc.allowed_qualities or [q for q in VALID_QUALITIES if q != "auto"]
+            costs: list[float] = []
+            for model in models:
+                for quality in qualities:
+                    for size in sizes:
+                        cost = get_generation_cost(model, quality, size)
+                        if cost > 0:
+                            costs.append(cost)
+            if costs:
+                min_cost, max_cost = min(costs), max(costs)
+                cost_txt = (
+                    format_cost(min_cost)
+                    if min_cost == max_cost
+                    else f"{format_cost(min_cost)} - {format_cost(max_cost)}"
+                )
+            else:
+                cost_txt = "N/A"
+
             lines.append(
                 f"- {role.mention}: {cooldown_txt}\n"
                 f"  - Models: {models_txt}\n"
                 f"  - Sizes: {sizes_txt}\n"
-                f"  - Qualities: {qualities_txt}"
+                f"  - Qualities: {qualities_txt}\n"
+                f"  - Cost/image: {cost_txt}"
             )
 
         return "\n".join(lines)
