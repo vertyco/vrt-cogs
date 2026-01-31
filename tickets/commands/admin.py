@@ -11,8 +11,8 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box
 
 from ..abc import MixinMeta
-from ..common.constants import MODAL_SCHEMA, TICKET_PANEL_SCHEMA
 from ..common.menu import SMALL_CONTROLS, MenuButton, menu
+from ..common.models import DayHours, ModalField, Panel, TicketMessage
 from ..common.utils import prune_invalid_tickets, update_active_overview
 from ..common.views import PanelView, TestButton, confirm, wait_reply
 
@@ -94,15 +94,17 @@ class AdminCommands(MixinMeta):
         Suspend the ticket system
         If a suspension message is set, any user that tries to open a ticket will receive this message
         """
-        suspended = await self.config.guild(ctx.guild).suspended_msg()
-        if message is None and suspended is None:
+        conf = self.db.get_conf(ctx.guild)
+        if message is None and conf.suspended_msg is None:
             return await ctx.send_help()
         if not message:
-            await self.config.guild(ctx.guild).suspended_msg.set(None)
+            conf.suspended_msg = None
+            await self.save()
             return await ctx.send(_("Ticket system is no longer suspended!"))
         if len(message) > 900:
             return await ctx.send(_("Message is too long! Must be less than 900 characters"))
-        await self.config.guild(ctx.guild).suspended_msg.set(message)
+        conf.suspended_msg = message
+        await self.save()
         embed = discord.Embed(
             title=_("Ticket System Suspended"),
             description=message,
@@ -122,10 +124,11 @@ class AdminCommands(MixinMeta):
             description=_("Your panel has been added and will need to be configured."),
             color=ctx.author.color,
         )
-        async with self.config.guild(ctx.guild).panels() as panels:
-            if panel_name in panels:
-                return await ctx.send(_("Panel already exists!"))
-            panels[panel_name] = TICKET_PANEL_SCHEMA
+        conf = self.db.get_conf(ctx.guild)
+        if panel_name in conf.panels:
+            return await ctx.send(_("Panel already exists!"))
+        conf.panels[panel_name] = Panel()
+        await self.save()
         await ctx.send(embed=em)
 
     @tickets.command()
@@ -147,12 +150,13 @@ class AdminCommands(MixinMeta):
             return await ctx.send(_("I cannot see that category!"))
         if not category.permissions_for(ctx.me).read_message_history:
             return await ctx.send(_("I cannot see message history in that category!"))
-        async with self.config.guild(ctx.guild).panels() as panels:
-            if panel_name not in panels:
-                return await ctx.send(_("Panel does not exist!"))
-            panels[panel_name]["category_id"] = category.id
-            await ctx.tick()
-            await ctx.send(_("New tickets will now be opened under that category!"))
+        conf = self.db.get_conf(ctx.guild)
+        if panel_name not in conf.panels:
+            return await ctx.send(_("Panel does not exist!"))
+        conf.panels[panel_name].category_id = category.id
+        await self.save()
+        await ctx.tick()
+        await ctx.send(_("New tickets will now be opened under that category!"))
 
     @tickets.command()
     async def channel(
@@ -167,11 +171,12 @@ class AdminCommands(MixinMeta):
             return await ctx.send(_("I cannot see that channel!"))
         if not channel.permissions_for(ctx.guild.me).read_message_history:
             return await ctx.send(_("I cannot see message history in that channel!"))
-        async with self.config.guild(ctx.guild).panels() as panels:
-            if panel_name not in panels:
-                return await ctx.send(_("Panel does not exist!"))
-            panels[panel_name]["channel_id"] = channel.id
-            await ctx.tick()
+        conf = self.db.get_conf(ctx.guild)
+        if panel_name not in conf.panels:
+            return await ctx.send(_("Panel does not exist!"))
+        conf.panels[panel_name].channel_id = channel.id
+        await self.save()
+        await ctx.tick()
 
     @tickets.command()
     async def panelmessage(self, ctx: commands.Context, panel_name: str, message: discord.Message):
@@ -187,17 +192,18 @@ class AdminCommands(MixinMeta):
         ):
             return await ctx.send(_("Channel of message must be a TEXT CHANNEL!"))
         panel_name = panel_name.lower()
-        async with self.config.guild(ctx.guild).panels() as panels:
-            if panel_name not in panels:
-                return await ctx.send(_("Panel does not exist!"))
-            if not panels[panel_name]["category_id"]:
-                return await ctx.send(_("Category ID must be set for this panel first!"))
-            current_channel = panels[panel_name]["channel_id"]
-            if current_channel and current_channel != message.channel.id:
-                return await ctx.send(_("This message is part of a different channel from the one you set!"))
-            panels[panel_name]["message_id"] = message.id
-            panels[panel_name]["channel_id"] = message.channel.id
-            await ctx.tick()
+        conf = self.db.get_conf(ctx.guild)
+        if panel_name not in conf.panels:
+            return await ctx.send(_("Panel does not exist!"))
+        panel = conf.panels[panel_name]
+        if not panel.category_id:
+            return await ctx.send(_("Category ID must be set for this panel first!"))
+        if panel.channel_id and panel.channel_id != message.channel.id:
+            return await ctx.send(_("This message is part of a different channel from the one you set!"))
+        panel.message_id = message.id
+        panel.channel_id = message.channel.id
+        await self.save()
+        await ctx.tick()
         await self.initialize(ctx.guild)
 
     @tickets.command()
@@ -211,11 +217,12 @@ class AdminCommands(MixinMeta):
             _("This is what your button will look like with this text!"),
             view=butt,
         )
-        async with self.config.guild(ctx.guild).panels() as panels:
-            if panel_name not in panels:
-                return await ctx.send(_("Panel does not exist!"))
-            panels[panel_name]["button_text"] = button_text
-            await ctx.tick()
+        conf = self.db.get_conf(ctx.guild)
+        if panel_name not in conf.panels:
+            return await ctx.send(_("Panel does not exist!"))
+        conf.panels[panel_name].button_text = button_text
+        await self.save()
+        await ctx.tick()
         await self.initialize(ctx.guild)
 
     @tickets.command()
@@ -231,11 +238,12 @@ class AdminCommands(MixinMeta):
             _("This is what your button will look like with this color!"),
             view=butt,
         )
-        async with self.config.guild(ctx.guild).panels() as panels:
-            if panel_name not in panels:
-                return await ctx.send(_("Panel does not exist!"))
-            panels[panel_name]["button_color"] = button_color
-            await ctx.tick()
+        conf = self.db.get_conf(ctx.guild)
+        if panel_name not in conf.panels:
+            return await ctx.send(_("Panel does not exist!"))
+        conf.panels[panel_name].button_color = button_color
+        await self.save()
+        await ctx.tick()
         await self.initialize(ctx.guild)
 
     @tickets.command()
@@ -256,11 +264,12 @@ class AdminCommands(MixinMeta):
             )
         except Exception as e:
             return await ctx.send(_("Failed to create test button. Error:\n") + f"{box(str(e), lang='python')}")
-        async with self.config.guild(ctx.guild).panels() as panels:
-            if panel_name not in panels:
-                return await ctx.send(_("Panel does not exist!"))
-            panels[panel_name]["button_emoji"] = str(emoji)
-            await ctx.tick()
+        conf = self.db.get_conf(ctx.guild)
+        if panel_name not in conf.panels:
+            return await ctx.send(_("Panel does not exist!"))
+        conf.panels[panel_name].button_emoji = str(emoji)
+        await self.save()
+        await ctx.tick()
         await self.initialize(ctx.guild)
 
     @tickets.command()
@@ -275,19 +284,18 @@ class AdminCommands(MixinMeta):
         Disabled panels will still show the button but it will be disabled
         """
         panel_name = panel_name.lower()
-        async with self.config.guild(ctx.guild).panels() as panels:
-            if panel_name not in panels:
-                return await ctx.send(_("Panel does not exist!"))
-            if "disabled" not in panels[panel_name]:
-                panels[panel_name]["disabled"] = False
-
-            if panels[panel_name]["disabled"]:
-                panels[panel_name]["disabled"] = False
-                txt = _("Panel **Enabled**")
-            else:
-                panels[panel_name]["disabled"] = True
-                txt = _("Panel **Disabled**")
-            await ctx.send(txt)
+        conf = self.db.get_conf(ctx.guild)
+        if panel_name not in conf.panels:
+            return await ctx.send(_("Panel does not exist!"))
+        panel = conf.panels[panel_name]
+        if panel.disabled:
+            panel.disabled = False
+            txt = _("Panel **Enabled**")
+        else:
+            panel.disabled = True
+            txt = _("Panel **Disabled**")
+        await self.save()
+        await ctx.send(txt)
         await asyncio.sleep(3)
         await self.initialize(ctx.guild)
 
@@ -309,51 +317,53 @@ class AdminCommands(MixinMeta):
         """
         panel_name = panel_name.lower()
         ticket_name = ticket_name.lower()
-        async with self.config.guild(ctx.guild).panels() as panels:
-            if panel_name not in panels:
-                return await ctx.send(_("Panel does not exist!"))
-            panels[panel_name]["ticket_name"] = ticket_name
-            await ctx.tick()
+        conf = self.db.get_conf(ctx.guild)
+        if panel_name not in conf.panels:
+            return await ctx.send(_("Panel does not exist!"))
+        conf.panels[panel_name].ticket_name = ticket_name
+        await self.save()
+        await ctx.tick()
         await self.initialize(ctx.guild)
 
     @tickets.command()
     async def usethreads(self, ctx: commands.Context, panel_name: str):
         """Toggle whether a certain panel uses threads or channels"""
         panel_name = panel_name.lower()
-        async with self.config.guild(ctx.guild).panels() as panels:
-            if panel_name not in panels:
-                return await ctx.send(_("Panel does not exist!"))
-            cid = panels[panel_name]["channel_id"]
-            if not cid:
-                return await ctx.send(_("Set a panel channel first!"))
-            channel = ctx.guild.get_channel(cid)
-            if not channel.permissions_for(ctx.guild.me).create_private_threads:
-                return await ctx.send(_("I am missing the `Create Private Threads` permission!"))
-            if not channel.permissions_for(ctx.guild.me).send_messages_in_threads:
-                return await ctx.send(_("I am missing the `Send Messages in Threads` permission!"))
-            toggle = panels[panel_name].get("threads", False)
-            if toggle:
-                panels[panel_name]["threads"] = False
-                await ctx.send(_("The {} panel will no longer use threads").format(panel_name))
-            else:
-                panels[panel_name]["threads"] = True
-                await ctx.send(_("The {} panel will now use threads").format(panel_name))
+        conf = self.db.get_conf(ctx.guild)
+        if panel_name not in conf.panels:
+            return await ctx.send(_("Panel does not exist!"))
+        panel = conf.panels[panel_name]
+        if not panel.channel_id:
+            return await ctx.send(_("Set a panel channel first!"))
+        channel = ctx.guild.get_channel(panel.channel_id)
+        if not channel.permissions_for(ctx.guild.me).create_private_threads:
+            return await ctx.send(_("I am missing the `Create Private Threads` permission!"))
+        if not channel.permissions_for(ctx.guild.me).send_messages_in_threads:
+            return await ctx.send(_("I am missing the `Send Messages in Threads` permission!"))
+        if panel.threads:
+            panel.threads = False
+            await ctx.send(_("The {} panel will no longer use threads").format(panel_name))
+        else:
+            panel.threads = True
+            await ctx.send(_("The {} panel will now use threads").format(panel_name))
+        await self.save()
         await self.initialize(ctx.guild)
 
     @tickets.command()
     async def closemodal(self, ctx: commands.Context, panel_name: str):
         """Throw a modal when the close button is clicked to enter a reason"""
         panel_name = panel_name.lower()
-        async with self.config.guild(ctx.guild).panels() as panels:
-            if "close_reason" not in panels[panel_name]:
-                panels[panel_name]["close_reason"] = False
-            toggle = panels[panel_name]["close_reason"]
-            if toggle:
-                panels[panel_name]["close_reason"] = False
-                await ctx.send(_("The {} panel will no longer show a close reason modal").format(panel_name))
-            else:
-                panels[panel_name]["close_reason"] = True
-                await ctx.send(_("The {} panel will now show a close reason modal").format(panel_name))
+        conf = self.db.get_conf(ctx.guild)
+        if panel_name not in conf.panels:
+            return await ctx.send(_("Panel does not exist!"))
+        panel = conf.panels[panel_name]
+        if panel.close_reason:
+            panel.close_reason = False
+            await ctx.send(_("The {} panel will no longer show a close reason modal").format(panel_name))
+        else:
+            panel.close_reason = True
+            await ctx.send(_("The {} panel will now show a close reason modal").format(panel_name))
+        await self.save()
         await self.initialize(ctx.guild)
 
     @tickets.command()
@@ -375,11 +385,12 @@ class AdminCommands(MixinMeta):
             return await ctx.send(_("I cannot embed links in that channel!"))
         if not channel.permissions_for(ctx.guild.me).attach_files:
             return await ctx.send(_("I cannot attach files in that channel!"))
-        async with self.config.guild(ctx.guild).panels() as panels:
-            if panel_name not in panels:
-                return await ctx.send(_("Panel does not exist!"))
-            panels[panel_name]["log_channel"] = channel.id
-            await ctx.tick()
+        conf = self.db.get_conf(ctx.guild)
+        if panel_name not in conf.panels:
+            return await ctx.send(_("Panel does not exist!"))
+        conf.panels[panel_name].log_channel = channel.id
+        await self.save()
+        await ctx.tick()
         await self.initialize(ctx.guild)
 
     @tickets.command()
@@ -388,16 +399,17 @@ class AdminCommands(MixinMeta):
         if len(title) > 45:
             return await ctx.send(_("The max length is 45!"))
         panel_name = panel_name.lower()
-        async with self.config.guild(ctx.guild).panels() as panels:
-            if panel_name not in panels:
-                return await ctx.send(_("Panel does not exist!"))
-            if title:
-                panels[panel_name]["modal_title"] = title
-                await ctx.send(_("Modal title set!"))
-            else:
-                panels[panel_name]["modal_title"] = ""
-                await ctx.send(_("Modal title removed!"))
-            await self.initialize(ctx.guild)
+        conf = self.db.get_conf(ctx.guild)
+        if panel_name not in conf.panels:
+            return await ctx.send(_("Panel does not exist!"))
+        if title:
+            conf.panels[panel_name].modal_title = title
+            await ctx.send(_("Modal title set!"))
+        else:
+            conf.panels[panel_name].modal_title = ""
+            await ctx.send(_("Modal title removed!"))
+        await self.save()
+        await self.initialize(ctx.guild)
 
     @tickets.command()
     async def addmodal(self, ctx: commands.Context, panel_name: str, field_name: str):
@@ -432,16 +444,16 @@ class AdminCommands(MixinMeta):
     ):
         if not existing_modal:
             # User wants to add or delete a field
-            panels = await self.config.guild(ctx.guild).panels()
-            if panel_name not in panels:
+            conf = self.db.get_conf(ctx.guild)
+            if panel_name not in conf.panels:
                 return await ctx.send(_("Panel does not exist!"))
 
-            existing = panels[panel_name].get("modals", {})
+            existing = conf.panels[panel_name].modal
             if field_name in existing:
                 # Delete field
-                async with self.config.guild(ctx.guild).panels() as panels:
-                    del panels[panel_name]["modals"][field_name]
-                    return await ctx.send(_("Field for {} panel has been removed!").format(panel_name))
+                del conf.panels[panel_name].modal[field_name]
+                await self.save()
+                return await ctx.send(_("Field for {} panel has been removed!").format(panel_name))
 
             if len(existing) >= 5:
                 txt = _("The most fields a modal can have is 5!")
@@ -465,7 +477,7 @@ class AdminCommands(MixinMeta):
         foot = _("type 'cancel' to cancel at any time")
         color = ctx.author.color
 
-        modal = MODAL_SCHEMA.copy() if not existing_modal else existing_modal
+        modal = ModalField(label="").model_dump() if not existing_modal else existing_modal
         if preview:
             await make_preview(modal, preview)
 
@@ -643,13 +655,9 @@ class AdminCommands(MixinMeta):
             modal["max_length"] = max_length  # Make sure answer is between 1 and 1024
             await make_preview(modal, preview)
 
-        async with self.config.guild(ctx.guild).panels() as panels:
-            # v1.3.10 schema update (Modals)
-            if "modal" not in panels[panel_name]:
-                panels[panel_name]["modal"] = {}
-            if isinstance(panels[panel_name]["modal"], list):
-                panels[panel_name]["modal"] = {}
-            panels[panel_name]["modal"][field_name] = modal
+        conf = self.db.get_conf(ctx.guild)
+        conf.panels[panel_name].modal[field_name] = ModalField.load(modal)
+        await self.save()
 
         await ctx.tick()
         desc = _("Your modal field has been added!")
@@ -666,22 +674,22 @@ class AdminCommands(MixinMeta):
     async def viewmodal(self, ctx: commands.Context, panel_name: str):
         """View/Delete a ticket message for a support ticket panel"""
         panel_name = panel_name.lower()
-        panels = await self.config.guild(ctx.guild).panels()
-        if panel_name not in panels:
+        conf = self.db.get_conf(ctx.guild)
+        if panel_name not in conf.panels:
             return await ctx.send(_("Panel does not exist!"))
-        modal = panels[panel_name].get("modal", {})
+        modal = conf.panels[panel_name].modal
         if not modal:
             return await ctx.send(_("This panel does not have any modal fields set!"))
         embeds = []
         for i, fieldname in enumerate(list(modal.keys())):
             info = modal[fieldname]
-            txt = _("`Label: `{}\n").format(info["label"])
-            txt += _("`Style: `{}\n").format(info["style"])
-            txt += _("`Placeholder: `{}\n").format(info["placeholder"])
-            txt += _("`Default:     `{}\n").format(info["default"])
-            txt += _("`Required:    `{}\n").format(info["required"])
-            txt += _("`Min Length:  `{}\n").format(info["min_length"])
-            txt += _("`Max Length:  `{}\n").format(info["max_length"])
+            txt = _("`Label: `{}\n").format(info.label)
+            txt += _("`Style: `{}\n").format(info.style)
+            txt += _("`Placeholder: `{}\n").format(info.placeholder)
+            txt += _("`Default:     `{}\n").format(info.default)
+            txt += _("`Required:    `{}\n").format(info.required)
+            txt += _("`Min Length:  `{}\n").format(info.min_length)
+            txt += _("`Max Length:  `{}\n").format(info.max_length)
 
             desc = f"**{fieldname}**\n{txt}\n"
             desc += _("Page") + f" `{i + 1}/{len(list(modal.keys()))}`"
@@ -703,8 +711,8 @@ class AdminCommands(MixinMeta):
         index = instance.view.page
         em: Embed = instance.view.pages[index]
         panel_name, fieldname = em.footer.text.split("|")
-        panels = await self.config.guild(interaction.guild).panels()
-        modal = panels[panel_name]["modal"][fieldname]
+        conf = self.db.get_conf(interaction.guild)
+        modal = conf.panels[panel_name].modal[fieldname].dump()
         em = Embed(description=_("Editing {} modal field for {}!").format(fieldname, panel_name))
         await interaction.response.send_message(embed=em, ephemeral=True)
         instance.view.stop()
@@ -714,8 +722,9 @@ class AdminCommands(MixinMeta):
         index = instance.view.page
         em: Embed = instance.view.pages[index]
         panel_name, fieldname = em.footer.text.split("|")
-        async with self.config.guild(interaction.guild).panels() as panels:
-            del panels[panel_name]["modal"][fieldname]
+        conf = self.db.get_conf(interaction.guild)
+        del conf.panels[panel_name].modal[fieldname]
+        await self.save()
 
         em = Embed(description=_("Modal field has been deleted from ") + f"{panel_name}!")
         await interaction.response.send_message(embed=em, ephemeral=True)
@@ -755,8 +764,8 @@ class AdminCommands(MixinMeta):
         - Image (optional) - URL to an image
         """
         panel_name = panel_name.lower()
-        panels = await self.config.guild(ctx.guild).panels()
-        if panel_name not in panels:
+        conf = self.db.get_conf(ctx.guild)
+        if panel_name not in conf.panels:
             return await ctx.send(_("Panel does not exist!"))
         foot = _("type 'cancel' to cancel the setup")
         color = ctx.author.color
@@ -870,41 +879,42 @@ class AdminCommands(MixinMeta):
 
         embed = {"title": title, "desc": desc, "footer": footer, "color": embed_color, "image": image}
 
-        async with self.config.guild(ctx.guild).panels() as panels:
-            panels[panel_name]["ticket_messages"].append(embed)
-            await ctx.tick()
-            em = Embed(description=_("Your ticket message has been added!"))
-            await msg.edit(embed=em)
+        conf = self.db.get_conf(ctx.guild)
+        conf.panels[panel_name].ticket_messages.append(TicketMessage.load(embed))
+        await self.save()
+        await ctx.tick()
+        em = Embed(description=_("Your ticket message has been added!"))
+        await msg.edit(embed=em)
         await self.initialize(ctx.guild)
 
     @tickets.command()
     async def viewmessages(self, ctx: commands.Context, panel_name: str):
         """View/Delete a ticket message for a support ticket panel"""
         panel_name = panel_name.lower()
-        panels = await self.config.guild(ctx.guild).panels()
-        if not panels:
+        conf = self.db.get_conf(ctx.guild)
+        if not conf.panels:
             return await ctx.send(
                 _("There are no panels available!\nUse ") + f"`{ctx.clean_prefix}tset addpanel` " + _("to create one.")
             )
-        if panel_name not in panels:
-            valid = _("Valid panels are: ") + f"`{', '.join(list(panels.keys()))}`"
+        if panel_name not in conf.panels:
+            valid = _("Valid panels are: ") + f"`{', '.join(list(conf.panels.keys()))}`"
             return await ctx.send(_("Panel does not exist!") + "\n" + valid)
-        messages = panels[panel_name]["ticket_messages"]
+        messages = conf.panels[panel_name].ticket_messages
         if not messages:
             return await ctx.send(_("This panel does not have any messages added!"))
         embeds = []
         for i, msg in enumerate(messages):
-            desc = _("**Title**\n") + box(msg["title"]) + "\n"
-            desc += _("**Description**\n") + box(msg["desc"]) + "\n"
-            desc += _("**Footer**\n") + box(msg["footer"]) + "\n"
+            desc = _("**Title**\n") + box(msg.title) + "\n"
+            desc += _("**Description**\n") + box(msg.desc) + "\n"
+            desc += _("**Footer**\n") + box(msg.footer) + "\n"
             # Display color as hex if it exists and is valid
-            color_val = msg.get("color")
+            color_val = msg.color
             if color_val is not None and isinstance(color_val, int):
                 desc += _("**Color**\n") + box(f"#{color_val:06X}") + "\n"
             else:
                 desc += _("**Color**\n") + box(_("Default (user's color)")) + "\n"
             # Display image if it exists
-            image_val = msg.get("image")
+            image_val = msg.image
             desc += _("**Image**\n") + box(image_val if image_val else _("None"))
             em = Embed(
                 title=_("Ticket Messages for: ") + panel_name,
@@ -926,81 +936,81 @@ class AdminCommands(MixinMeta):
     async def delete_panel_message(self, instance, interaction: discord.Interaction):
         index = instance.view.page
         panel_name = instance.view.pages[index].title.replace(_("Ticket Messages for: "), "")
-        async with self.config.guild(interaction.guild).panels() as panels:
-            del panels[panel_name]["ticket_messages"][index]
-            em = Embed(description=_("Ticket message has been deleted from ") + f"{panel_name}!")
-            await interaction.response.send_message(embed=em, ephemeral=True)
-            del instance.view.pages[index]
-            if not len(instance.view.pages):
-                em = Embed(description="There are no more messages for this panel")
-                return await interaction.followup.send(embed=em, ephemeral=True)
-            instance.view.page += 1
-            instance.view.page %= len(instance.view.pages)
-            for i, embed in enumerate(instance.view.pages):
-                embed.set_footer(text=f"{i + 1}/{len(instance.view.pages)}")
-            await instance.view.handle_page(interaction.response.edit_message)
+        conf = self.db.get_conf(interaction.guild)
+        del conf.panels[panel_name].ticket_messages[index]
+        await self.save()
+        em = Embed(description=_("Ticket message has been deleted from ") + f"{panel_name}!")
+        await interaction.response.send_message(embed=em, ephemeral=True)
+        del instance.view.pages[index]
+        if not len(instance.view.pages):
+            em = Embed(description="There are no more messages for this panel")
+            return await interaction.followup.send(embed=em, ephemeral=True)
+        instance.view.page += 1
+        instance.view.page %= len(instance.view.pages)
+        for i, embed in enumerate(instance.view.pages):
+            embed.set_footer(text=f"{i + 1}/{len(instance.view.pages)}")
+        await instance.view.handle_page(interaction.response.edit_message)
 
     @tickets.command()
     async def panels(self, ctx: commands.Context):
         """View/Delete currently configured support ticket panels"""
-        panels = await self.config.guild(ctx.guild).panels()
-        if not panels:
+        conf = self.db.get_conf(ctx.guild)
+        if not conf.panels:
             return await ctx.send(
                 _("There are no panels available!\nUse ") + f"`{ctx.clean_prefix}tset addpanel` " + _("to create one.")
             )
         embeds = []
-        pages = len(panels.keys())
+        pages = len(conf.panels.keys())
         page = 1
-        for panel_name, info in panels.items():
-            cat = self.bot.get_channel(info["category_id"]) if info["category_id"] else "None"
-            channel = self.bot.get_channel(info["channel_id"]) if info["channel_id"] else "None"
+        for panel_name, panel in conf.panels.items():
+            cat = self.bot.get_channel(panel.category_id) if panel.category_id else "None"
+            channel = self.bot.get_channel(panel.channel_id) if panel.channel_id else "None"
             extra = ""
-            if alt := info.get("alt_channel"):
-                if alt := self.bot.get_channel(alt):
+            if panel.alt_channel:
+                if alt := self.bot.get_channel(panel.alt_channel):
                     channel = alt
                     extra = _("(alt)")
-            logchannel = self.bot.get_channel(info["log_channel"]) if info["log_channel"] else "None"
+            logchannel = self.bot.get_channel(panel.log_channel) if panel.log_channel else "None"
 
             panel_roles = ""
-            for role_id, mention_toggle in info.get("roles", []):
+            for role_id, mention_toggle in panel.roles:
                 role = ctx.guild.get_role(role_id)
                 if not role:
                     continue
                 panel_roles += f"{role.mention}({mention_toggle})\n"
 
             open_roles = ""
-            for role_id in info.get("required_roles", []):
+            for role_id in panel.required_roles:
                 role = ctx.guild.get_role(role_id)
                 if not role:
                     continue
                 open_roles += f"{role.mention}\n"
 
-            desc = _("`Disabled:       `") + f"{info.get('disabled', False)}\n"
+            desc = _("`Disabled:       `") + f"{panel.disabled}\n"
             desc += _("`Category:       `") + f"{cat}\n"
             desc += _("`Channel:        `") + f"{channel}{extra}\n"
-            desc += _("`MessageID:      `") + f"{info['message_id']}\n"
-            desc += _("`ButtonText:     `") + f"{info['button_text']}\n"
-            desc += _("`ButtonColor:    `") + f"{info['button_color']}\n"
-            desc += _("`ButtonEmoji:    `") + f"{info['button_emoji']}\n"
-            desc += _("`TicketNum:      `") + f"{info['ticket_num']}\n"
-            desc += _("`Use Threads:    `") + f"{info.get('threads', False)}\n"
-            desc += _("`TicketMessages: `") + f"{len(info['ticket_messages'])}\n"
-            desc += _("`TicketName:     `") + f"{info['ticket_name']}\n"
-            desc += _("`Modal Fields:   `") + f"{len(info.get('modal', {}))}\n"
-            desc += _("`Modal Title:    `") + f"{info.get('modal_title', 'None')}\n"
+            desc += _("`MessageID:      `") + f"{panel.message_id}\n"
+            desc += _("`ButtonText:     `") + f"{panel.button_text}\n"
+            desc += _("`ButtonColor:    `") + f"{panel.button_color}\n"
+            desc += _("`ButtonEmoji:    `") + f"{panel.button_emoji}\n"
+            desc += _("`TicketNum:      `") + f"{panel.ticket_num}\n"
+            desc += _("`Use Threads:    `") + f"{panel.threads}\n"
+            desc += _("`TicketMessages: `") + f"{len(panel.ticket_messages)}\n"
+            desc += _("`TicketName:     `") + f"{panel.ticket_name}\n"
+            desc += _("`Modal Fields:   `") + f"{len(panel.modal)}\n"
+            desc += _("`Modal Title:    `") + f"{panel.modal_title or 'None'}\n"
             desc += _("`LogChannel:     `") + f"{logchannel}\n"
-            desc += _("`Priority:       `") + f"{info.get('priority', 1)}\n"
-            desc += _("`Button Row:     `") + f"{info.get('row')}\n"
-            desc += _("`Reason Modal:   `") + f"{info.get('close_reason', False)}\n"
-            desc += _("`Max Claims:     `") + f"{info.get('max_claims', 0)}\n"
+            desc += _("`Priority:       `") + f"{panel.priority}\n"
+            desc += _("`Button Row:     `") + f"{panel.row}\n"
+            desc += _("`Reason Modal:   `") + f"{panel.close_reason}\n"
+            desc += _("`Max Claims:     `") + f"{panel.max_claims}\n"
 
             # Working hours info
-            working_hours = info.get("working_hours", {})
-            has_working_hours = bool(working_hours)
+            has_working_hours = bool(panel.working_hours)
             desc += _("`Working Hours:  `") + (_("Configured") if has_working_hours else _("Not Set")) + "\n"
             if has_working_hours:
-                desc += _("`Timezone:       `") + f"{info.get('timezone', 'UTC')}\n"
-                desc += _("`Block Outside:  `") + f"{info.get('block_outside_hours', False)}"
+                desc += _("`Timezone:       `") + f"{panel.timezone}\n"
+                desc += _("`Block Outside:  `") + f"{panel.block_outside_hours}"
 
             em = Embed(
                 title=panel_name,
@@ -1021,56 +1031,54 @@ class AdminCommands(MixinMeta):
     async def delete_panel(self, instance, interaction: discord.Interaction):
         index = instance.view.page
         panel_name = instance.view.pages[index].title
-        async with self.config.guild(interaction.guild).panels() as panels:
-            del panels[panel_name]
-            em = Embed(description=panel_name + _(" panel has been deleted!"))
-            await interaction.response.send_message(embed=em, ephemeral=True)
-            del instance.view.pages[index]
-            instance.view.page += 1
-            instance.view.page %= len(instance.view.pages)
-            for i, embed in enumerate(instance.view.pages):
-                embed.set_footer(text=f"{i + 1}/{len(instance.view.pages)}")
-            if not instance.view.pages:
-                em = Embed(description=_("There are no more panels configured!"))
-                await interaction.response.edit_message(embed=em, view=None)
-                await interaction.response.defer()
-                instance.view.stop()
+        conf = self.db.get_conf(interaction.guild)
+        del conf.panels[panel_name]
+        await self.save()
+        em = Embed(description=panel_name + _(" panel has been deleted!"))
+        await interaction.response.send_message(embed=em, ephemeral=True)
+        del instance.view.pages[index]
+        instance.view.page += 1
+        instance.view.page %= len(instance.view.pages)
+        for i, embed in enumerate(instance.view.pages):
+            embed.set_footer(text=f"{i + 1}/{len(instance.view.pages)}")
+        if not instance.view.pages:
+            em = Embed(description=_("There are no more panels configured!"))
+            await interaction.response.edit_message(embed=em, view=None)
+            await interaction.response.defer()
+            instance.view.stop()
 
     @tickets.command(name="view")
     async def view_settings(self, ctx: commands.Context):
         """View support ticket settings"""
-        conf = await self.config.guild(ctx.guild).all()
-        inactive = conf["inactive"]
+        conf = self.db.get_conf(ctx.guild)
+        inactive = conf.inactive
         plural = _("hours")
         singular = _("hour")
         no_resp = f"{inactive} {singular if inactive == 1 else plural}"
         if not inactive:
             no_resp = _("Disabled")
 
-        detailed = conf.get("detailed_transcript", False)
-        transcript_type = _("Detailed") if detailed else _("Simple")
+        transcript_type = _("Detailed") if conf.detailed_transcript else _("Simple")
 
-        msg = _("`Max Tickets:      `") + f"{conf['max_tickets']}\n"
-        msg += _("`DM Alerts:        `") + f"{conf['dm']}\n"
-        msg += _("`Users can Rename: `") + f"{conf['user_can_rename']}\n"
-        msg += _("`Users can Close:  `") + f"{conf['user_can_close']}\n"
-        msg += _("`Users can Manage: `") + f"{conf['user_can_manage']}\n"
-        msg += _("`Save Transcripts: `") + f"{conf['transcript']} ({transcript_type})\n"
-        msg += _("`Show Resp. Time:  `") + f"{conf.get('show_response_time', True)}\n"
+        msg = _("`Max Tickets:      `") + f"{conf.max_tickets}\n"
+        msg += _("`DM Alerts:        `") + f"{conf.dm}\n"
+        msg += _("`Users can Rename: `") + f"{conf.user_can_rename}\n"
+        msg += _("`Users can Close:  `") + f"{conf.user_can_close}\n"
+        msg += _("`Users can Manage: `") + f"{conf.user_can_manage}\n"
+        msg += _("`Save Transcripts: `") + f"{conf.transcript} ({transcript_type})\n"
+        msg += _("`Show Resp. Time:  `") + f"{conf.show_response_time}\n"
         msg += _("`Auto Close:       `") + (_("On") if inactive else _("Off")) + "\n"
         msg += _("`NoResponseDelete: `") + no_resp
 
-        support = conf["support_roles"]
         suproles = ""
-        if support:
-            for role_id, mention_toggle in support:
+        if conf.support_roles:
+            for role_id, mention_toggle in conf.support_roles:
                 role = ctx.guild.get_role(role_id)
                 if role:
                     suproles += f"{role.mention}({mention_toggle})\n"
-        blacklist = conf["blacklist"]
         blacklisted = ""
-        if blacklist:
-            for uid_or_rid in blacklist:
+        if conf.blacklist:
+            for uid_or_rid in conf.blacklist:
                 user_or_role = ctx.guild.get_member(uid_or_rid) or ctx.guild.get_role(uid_or_rid)
                 if user_or_role:
                     blacklisted += f"{user_or_role.mention}-{user_or_role.id}\n"
@@ -1086,7 +1094,7 @@ class AdminCommands(MixinMeta):
         if blacklisted:
             embed.add_field(name=_("Blacklist"), value=blacklisted, inline=False)
 
-        if conf["thread_close"]:
+        if conf.thread_close:
             txt = _("Thread tickets will be closed/archived rather than deleted")
         else:
             txt = _("Thread tickets will be deleted instead of closed/archived")
@@ -1094,15 +1102,13 @@ class AdminCommands(MixinMeta):
 
         embed.add_field(
             name=_("Thread Ticket Auto-Add"),
-            value=_("Auto-add support and panel roles to tickets that use threads: **{}**").format(
-                str(conf["auto_add"])
-            ),
+            value=_("Auto-add support and panel roles to tickets that use threads: **{}**").format(str(conf.auto_add)),
         )
-        if conf["suspended_msg"]:
+        if conf.suspended_msg:
             embed.add_field(
                 name=_("Suspended Message"),
                 value=_("Tickets are currently suspended, users will be met with the following message\n{}").format(
-                    box(conf["suspended_msg"])
+                    box(conf.suspended_msg)
                 ),
                 inline=False,
             )
@@ -1113,7 +1119,9 @@ class AdminCommands(MixinMeta):
         """Set the max tickets a user can have open at one time of any kind"""
         if not amount:
             return await ctx.send(_("Max ticket amount must be greater than 0!"))
-        await self.config.guild(ctx.guild).max_tickets.set(amount)
+        conf = self.db.get_conf(ctx.guild)
+        conf.max_tickets = amount
+        await self.save()
         await ctx.tick()
 
     @tickets.command()
@@ -1130,16 +1138,17 @@ class AdminCommands(MixinMeta):
 
         To remove a role, simply run this command with it again to remove it
         """
-        entry = [role.id, mention]
-        async with self.config.guild(ctx.guild).support_roles() as roles:
-            for i in roles.copy():
-                if i[0] == role.id:
-                    roles.remove(i)
-                    await ctx.send(_("{} has been removed from support roles").format(role.name))
-                    break
-            else:
-                roles.append(entry)
-                await ctx.send(role.name + _(" has been added to support roles"))
+        conf = self.db.get_conf(ctx.guild)
+        entry = (role.id, mention)
+        for i, (rid, _mention) in enumerate(conf.support_roles):
+            if rid == role.id:
+                conf.support_roles.pop(i)
+                await ctx.send(_("{} has been removed from support roles").format(role.name))
+                break
+        else:
+            conf.support_roles.append(entry)
+            await ctx.send(role.name + _(" has been added to support roles"))
+        await self.save()
         await self.initialize(ctx.guild)
 
     @tickets.command()
@@ -1161,31 +1170,31 @@ class AdminCommands(MixinMeta):
         Use this role type if you want to isolate specific groups to a certain panel.
         """
         panel_name = panel_name.lower()
-        entry = [role.id, mention]
-        async with self.config.guild(ctx.guild).panels() as panels:
-            if panel_name not in panels:
-                return await ctx.send(_("Panel does not exist!"))
-            if "roles" not in panels[panel_name]:
-                panels[panel_name]["roles"] = []
-            for i in panels[panel_name]["roles"].copy():
-                if i[0] == role.id:
-                    panels[panel_name]["roles"].remove(i)
-                    await ctx.send(_("{} has been removed from the {} panel roles").format(role.name, panel_name))
-                    break
-            else:
-                panels[panel_name]["roles"].append(entry)
-                await ctx.send(role.name + _(" has been added to the {} panel roles").format(panel_name))
+        conf = self.db.get_conf(ctx.guild)
+        if panel_name not in conf.panels:
+            return await ctx.send(_("Panel does not exist!"))
+        panel = conf.panels[panel_name]
+        entry = (role.id, mention)
+        for i, (rid, _mention) in enumerate(panel.roles):
+            if rid == role.id:
+                panel.roles.pop(i)
+                await ctx.send(_("{} has been removed from the {} panel roles").format(role.name, panel_name))
+                break
+        else:
+            panel.roles.append(entry)
+            await ctx.send(role.name + _(" has been added to the {} panel roles").format(panel_name))
+        await self.save()
         await self.initialize(ctx.guild)
 
     @tickets.command()
     async def maxclaims(self, ctx: commands.Context, panel_name: str, amount: commands.positive_int):
         """Set how many staff members can claim/join a ticket before the join button is disabled (If using threads)"""
         panel_name = panel_name.lower()
-        async with self.config.guild(ctx.guild).panels() as panels:
-            if panel_name not in panels:
-                return await ctx.send(_("Panel does not exist!"))
-            panels[panel_name]["max_claims"] = amount
-
+        conf = self.db.get_conf(ctx.guild)
+        if panel_name not in conf.panels:
+            return await ctx.send(_("Panel does not exist!"))
+        conf.panels[panel_name].max_claims = amount
+        await self.save()
         await ctx.send(_("Up to {} staff member(s) can claim a single ticket").format(amount))
         await self.initialize(ctx.guild)
 
@@ -1210,43 +1219,38 @@ class AdminCommands(MixinMeta):
         if day not in valid_days:
             return await ctx.send(_("Invalid day! Must be one of: {}").format(", ".join(valid_days)))
 
-        async with self.config.guild(ctx.guild).panels() as panels:
-            if panel_name not in panels:
-                return await ctx.send(_("Panel does not exist!"))
+        conf = self.db.get_conf(ctx.guild)
+        if panel_name not in conf.panels:
+            return await ctx.send(_("Panel does not exist!"))
+        panel = conf.panels[panel_name]
 
-            if "working_hours" not in panels[panel_name]:
-                panels[panel_name]["working_hours"] = {}
+        # Check if removing hours
+        if start_time.lower() == "off":
+            if day in panel.working_hours:
+                del panel.working_hours[day]
+                await self.save()
+                return await ctx.send(
+                    _("Working hours for {} on {} have been removed.").format(day.capitalize(), panel_name)
+                )
+            else:
+                return await ctx.send(_("No working hours were set for {} on {}.").format(day.capitalize(), panel_name))
 
-            # Check if removing hours
-            if start_time.lower() == "off":
-                if day in panels[panel_name]["working_hours"]:
-                    del panels[panel_name]["working_hours"][day]
-                    return await ctx.send(
-                        _("Working hours for {} on {} have been removed.").format(day.capitalize(), panel_name)
-                    )
-                else:
-                    return await ctx.send(
-                        _("No working hours were set for {} on {}.").format(day.capitalize(), panel_name)
-                    )
+        # Validate time format
+        time_pattern = re.compile(r"^([01]?[0-9]|2[0-3]):([0-5][0-9])$")
 
-            # Validate time format
-            time_pattern = re.compile(r"^([01]?[0-9]|2[0-3]):([0-5][0-9])$")
+        if not time_pattern.match(start_time):
+            return await ctx.send(_("Invalid start time format! Use HH:MM (24-hour format), e.g., 09:00 or 17:30"))
+        if not time_pattern.match(end_time):
+            return await ctx.send(_("Invalid end time format! Use HH:MM (24-hour format), e.g., 09:00 or 17:30"))
 
-            if not time_pattern.match(start_time):
-                return await ctx.send(_("Invalid start time format! Use HH:MM (24-hour format), e.g., 09:00 or 17:30"))
-            if not time_pattern.match(end_time):
-                return await ctx.send(_("Invalid end time format! Use HH:MM (24-hour format), e.g., 09:00 or 17:30"))
+        # Normalize times to ensure consistent HH:MM format
+        start_parts = start_time.split(":")
+        end_parts = end_time.split(":")
+        start_time = f"{int(start_parts[0]):02d}:{start_parts[1]}"
+        end_time = f"{int(end_parts[0]):02d}:{end_parts[1]}"
 
-            # Normalize times to ensure consistent HH:MM format
-            start_parts = start_time.split(":")
-            end_parts = end_time.split(":")
-            start_time = f"{int(start_parts[0]):02d}:{start_parts[1]}"
-            end_time = f"{int(end_parts[0]):02d}:{end_parts[1]}"
-
-            panels[panel_name]["working_hours"][day] = {
-                "start": start_time,
-                "end": end_time,
-            }
+        panel.working_hours[day] = DayHours(start=start_time, end=end_time)
+        await self.save()
 
         await ctx.send(
             _("Working hours for {} on {}: {} to {}").format(day.capitalize(), panel_name, start_time, end_time)
@@ -1275,10 +1279,11 @@ class AdminCommands(MixinMeta):
                 _("Invalid timezone! Use IANA timezone names like `America/New_York`, `Europe/London`, or `UTC`.")
             )
 
-        async with self.config.guild(ctx.guild).panels() as panels:
-            if panel_name not in panels:
-                return await ctx.send(_("Panel does not exist!"))
-            panels[panel_name]["timezone"] = timezone_str
+        conf = self.db.get_conf(ctx.guild)
+        if panel_name not in conf.panels:
+            return await ctx.send(_("Panel does not exist!"))
+        conf.panels[panel_name].timezone = timezone_str
+        await self.save()
 
         await ctx.send(_("Timezone for {} panel set to {}").format(panel_name, timezone_str))
 
@@ -1292,23 +1297,19 @@ class AdminCommands(MixinMeta):
         """
         panel_name = panel_name.lower()
 
-        async with self.config.guild(ctx.guild).panels() as panels:
-            if panel_name not in panels:
-                return await ctx.send(_("Panel does not exist!"))
+        conf = self.db.get_conf(ctx.guild)
+        if panel_name not in conf.panels:
+            return await ctx.send(_("Panel does not exist!"))
+        panel = conf.panels[panel_name]
+        panel.block_outside_hours = not panel.block_outside_hours
+        await self.save()
 
-            current = panels[panel_name].get("block_outside_hours", False)
-            panels[panel_name]["block_outside_hours"] = not current
-
-            if not current:
-                await ctx.send(
-                    _("Ticket creation is now **blocked** outside of working hours for {}").format(panel_name)
-                )
-            else:
-                await ctx.send(
-                    _("Ticket creation is now **allowed** outside of working hours for {} (with notice)").format(
-                        panel_name
-                    )
-                )
+        if panel.block_outside_hours:
+            await ctx.send(_("Ticket creation is now **blocked** outside of working hours for {}").format(panel_name))
+        else:
+            await ctx.send(
+                _("Ticket creation is now **allowed** outside of working hours for {} (with notice)").format(panel_name)
+            )
 
     @tickets.command()
     async def outsidehoursmsg(self, ctx: commands.Context, panel_name: str, *, message: str = ""):
@@ -1323,33 +1324,32 @@ class AdminCommands(MixinMeta):
         """
         panel_name = panel_name.lower()
 
-        async with self.config.guild(ctx.guild).panels() as panels:
-            if panel_name not in panels:
-                return await ctx.send(_("Panel does not exist!"))
+        conf = self.db.get_conf(ctx.guild)
+        if panel_name not in conf.panels:
+            return await ctx.send(_("Panel does not exist!"))
+        panel = conf.panels[panel_name]
 
-            if message:
-                if len(message) > 1000:
-                    return await ctx.send(_("Message must be 1000 characters or less!"))
-                panels[panel_name]["outside_hours_message"] = message
-                await ctx.send(_("Custom outside hours message has been set!"))
-            else:
-                panels[panel_name]["outside_hours_message"] = ""
-                await ctx.send(_("Outside hours message has been reset to default."))
+        if message:
+            if len(message) > 1000:
+                return await ctx.send(_("Message must be 1000 characters or less!"))
+            panel.outside_hours_message = message
+            await ctx.send(_("Custom outside hours message has been set!"))
+        else:
+            panel.outside_hours_message = ""
+            await ctx.send(_("Outside hours message has been reset to default."))
+        await self.save()
 
     @tickets.command()
     async def viewhours(self, ctx: commands.Context, panel_name: str):
         """View the configured working hours for a panel"""
         panel_name = panel_name.lower()
-        panels = await self.config.guild(ctx.guild).panels()
+        conf = self.db.get_conf(ctx.guild)
 
-        if panel_name not in panels:
+        if panel_name not in conf.panels:
             return await ctx.send(_("Panel does not exist!"))
 
-        panel = panels[panel_name]
-        working_hours = panel.get("working_hours", {})
-        timezone_str = panel.get("timezone", "UTC")
-        block_outside = panel.get("block_outside_hours", False)
-        custom_msg = panel.get("outside_hours_message", "")
+        panel = conf.panels[panel_name]
+        working_hours = panel.working_hours
 
         if not working_hours:
             return await ctx.send(
@@ -1367,24 +1367,22 @@ class AdminCommands(MixinMeta):
         for day in days_order:
             day_hours = working_hours.get(day)
             if day_hours:
-                start = day_hours.get("start", "N/A")
-                end = day_hours.get("end", "N/A")
-                hours_text += f"**{day.capitalize()}:** `{start}` - `{end}`\n"
+                hours_text += f"**{day.capitalize()}:** `{day_hours.start}` - `{day_hours.end}`\n"
             else:
                 hours_text += f"**{day.capitalize()}:** _Closed_\n"
 
         em.add_field(name=_("Schedule"), value=hours_text, inline=False)
-        em.add_field(name=_("Timezone"), value=f"`{timezone_str}`", inline=True)
+        em.add_field(name=_("Timezone"), value=f"`{panel.timezone}`", inline=True)
         em.add_field(
             name=_("Block Outside Hours"),
-            value=_("Yes") if block_outside else _("No"),
+            value=_("Yes") if panel.block_outside_hours else _("No"),
             inline=True,
         )
 
-        if custom_msg:
+        if panel.outside_hours_message:
             em.add_field(
                 name=_("Custom Message"),
-                value=custom_msg[:200] + ("..." if len(custom_msg) > 200 else ""),
+                value=panel.outside_hours_message[:200] + ("..." if len(panel.outside_hours_message) > 200 else ""),
                 inline=False,
             )
 
@@ -1398,23 +1396,21 @@ class AdminCommands(MixinMeta):
         Specify the same role to remove it
         """
         panel_name = panel_name.lower()
-        async with self.config.guild(ctx.guild).panels() as panels:
-            if panel_name not in panels:
-                return await ctx.send(_("Panel does not exist!"))
-            if "required_roles" not in panels[panel_name]:
-                panels[panel_name]["required_roles"] = []
+        conf = self.db.get_conf(ctx.guild)
+        if panel_name not in conf.panels:
+            return await ctx.send(_("Panel does not exist!"))
+        panel = conf.panels[panel_name]
 
-            if role.id in panels[panel_name]["required_roles"]:
-                panels[panel_name]["required_roles"].remove(role.id)
-                await ctx.send(
-                    _("{} has been removed from the {} panel's required open roles").format(role.name, panel_name)
-                )
-            else:
-                panels[panel_name]["required_roles"].append(role.id)
-                await ctx.send(
-                    role.name + _(" has been added to the {} panel's required open roles").format(panel_name)
-                )
-            await self.initialize(ctx.guild)
+        if role.id in panel.required_roles:
+            panel.required_roles.remove(role.id)
+            await ctx.send(
+                _("{} has been removed from the {} panel's required open roles").format(role.name, panel_name)
+            )
+        else:
+            panel.required_roles.append(role.id)
+            await ctx.send(role.name + _(" has been added to the {} panel's required open roles").format(panel_name))
+        await self.save()
+        await self.initialize(ctx.guild)
 
     @tickets.command()
     async def altchannel(
@@ -1435,15 +1431,17 @@ class AdminCommands(MixinMeta):
         To remove the alt channel, specify the existing one
         """
         panel_name = panel_name.lower()
-        async with self.config.guild(ctx.guild).panels() as panels:
-            if panel_name not in panels:
-                return await ctx.send(_("Panel does not exist!"))
-            panel = panels[panel_name]
-            if panel.get("alt_channel", 0) == channel.id:
-                panel["alt_channel"] = 0
-                return await ctx.send(_("Alt channel has been removed for this panel!"))
-            panel["alt_channel"] = channel.id
-            await ctx.send(_("Alt channel has been set to {}!").format(channel.name))
+        conf = self.db.get_conf(ctx.guild)
+        if panel_name not in conf.panels:
+            return await ctx.send(_("Panel does not exist!"))
+        panel = conf.panels[panel_name]
+        if panel.alt_channel == channel.id:
+            panel.alt_channel = 0
+            await self.save()
+            return await ctx.send(_("Alt channel has been removed for this panel!"))
+        panel.alt_channel = channel.id
+        await self.save()
+        await ctx.send(_("Alt channel has been set to {}!").format(channel.name))
         await self.initialize(ctx.guild)
 
     @tickets.command()
@@ -1452,11 +1450,12 @@ class AdminCommands(MixinMeta):
         if priority < 1 or priority > 25:
             return await ctx.send(_("Priority needs to be between 1 and 25"))
         panel_name = panel_name.lower()
-        async with self.config.guild(ctx.guild).panels() as panels:
-            if panel_name not in panels:
-                return await ctx.send(_("Panel does not exist!"))
-            panels[panel_name]["priority"] = priority
-            await ctx.send(_("Priority for this panel has been set to {}!").format(priority))
+        conf = self.db.get_conf(ctx.guild)
+        if panel_name not in conf.panels:
+            return await ctx.send(_("Panel does not exist!"))
+        conf.panels[panel_name].priority = priority
+        await self.save()
+        await ctx.send(_("Priority for this panel has been set to {}!").format(priority))
         await self.initialize(ctx.guild)
 
     @tickets.command()
@@ -1465,28 +1464,27 @@ class AdminCommands(MixinMeta):
         if row < 0 or row > 4:
             return await ctx.send(_("Row needs to be between 0 and 4"))
         panel_name = panel_name.lower()
-        async with self.config.guild(ctx.guild).panels() as panels:
-            if panel_name not in panels:
-                return await ctx.send(_("Panel does not exist!"))
+        conf = self.db.get_conf(ctx.guild)
+        if panel_name not in conf.panels:
+            return await ctx.send(_("Panel does not exist!"))
 
-            panel = panels[panel_name]
-            panel_key = f"{panel['channel_id']}{panel['message_id']}"
-            count = 0
-            for i in panels.values():
-                panel_key2 = f"{i['channel_id']}{i['message_id']}"
-                if panel_key != panel_key2:
-                    continue
-                if not i["row"]:
-                    continue
-                if i["row"] == row:
-                    count += 1
+        panel = conf.panels[panel_name]
+        panel_key = f"{panel.channel_id}{panel.message_id}"
+        count = 0
+        for p in conf.panels.values():
+            panel_key2 = f"{p.channel_id}{p.message_id}"
+            if panel_key != panel_key2:
+                continue
+            if not p.row:
+                continue
+            if p.row == row:
+                count += 1
 
-            if count > 4:
-                return await ctx.send(
-                    _("This panel message already has the max amount of buttons for that specific row")
-                )
-            panels[panel_name]["row"] = row
-            await ctx.send(_("The row number for this panel has been set to {}!").format(row))
+        if count > 4:
+            return await ctx.send(_("This panel message already has the max amount of buttons for that specific row"))
+        panel.row = row
+        await self.save()
+        await ctx.send(_("The row number for this panel has been set to {}!").format(row))
         await self.initialize(ctx.guild)
 
     @tickets.command()
@@ -1501,13 +1499,14 @@ class AdminCommands(MixinMeta):
 
         Users and roles in the blacklist will not be able to create a ticket
         """
-        async with self.config.guild(ctx.guild).blacklist() as bl:
-            if user_or_role.id in bl:
-                bl.remove(user_or_role.id)
-                await ctx.send(user_or_role.name + _(" has been removed from the blacklist"))
-            else:
-                bl.append(user_or_role.id)
-                await ctx.send(user_or_role.name + _(" has been added to the blacklist"))
+        conf = self.db.get_conf(ctx.guild)
+        if user_or_role.id in conf.blacklist:
+            conf.blacklist.remove(user_or_role.id)
+            await ctx.send(user_or_role.name + _(" has been removed from the blacklist"))
+        else:
+            conf.blacklist.append(user_or_role.id)
+            await ctx.send(user_or_role.name + _(" has been added to the blacklist"))
+        await self.save()
 
     @tickets.command()
     async def noresponse(self, ctx: commands.Context, hours: int):
@@ -1524,7 +1523,9 @@ class AdminCommands(MixinMeta):
         - 168 hours (1 week)
         Tickets will default to the closest value you select.
         """
-        await self.config.guild(ctx.guild).inactive.set(hours)
+        conf = self.db.get_conf(ctx.guild)
+        conf.inactive = hours
+        await self.save()
         await ctx.tick()
 
     @tickets.command()
@@ -1539,26 +1540,27 @@ class AdminCommands(MixinMeta):
 
         The overview message shows all active tickets across all configured panels for a server.
         """
+        conf = self.db.get_conf(ctx.guild)
         if not channel:
             await ctx.send(_("Overview channel has been **Disabled**"))
-            await self.config.guild(ctx.guild).overview_channel.set(0)
+            conf.overview_channel = 0
         else:
             await ctx.send(_("Overview channel has been set to {}").format(channel.mention))
-            await self.config.guild(ctx.guild).overview_channel.set(channel.id)
-            conf = await self.config.guild(ctx.guild).all()
-            new_id = await update_active_overview(ctx.guild, conf)
+            conf.overview_channel = channel.id
+            new_id = await update_active_overview(ctx.guild, conf, self)
             if new_id:
-                await self.config.guild(ctx.guild).overview_msg.set(new_id)
+                conf.overview_msg = new_id
+        await self.save()
 
     @tickets.command()
     async def overviewmention(self, ctx: commands.Context):
         """Toggle whether channels are mentioned in the active ticket overview"""
-        toggle = await self.config.guild(ctx.guild).overview_mention()
-        if toggle:
-            await self.config.guild(ctx.guild).overview_mention.set(False)
+        conf = self.db.get_conf(ctx.guild)
+        conf.overview_mention = not conf.overview_mention
+        await self.save()
+        if not conf.overview_mention:
             txt = _("Ticket channels will no longer be mentioned in the active ticket channel")
         else:
-            await self.config.guild(ctx.guild).overview_mention.set(True)
             txt = _("Ticket channels now be mentioned in the active ticket channel")
         await ctx.send(txt)
 
@@ -1566,8 +1568,8 @@ class AdminCommands(MixinMeta):
     async def cleanup(self, ctx: commands.Context):
         """Cleanup tickets that no longer exist"""
         async with ctx.typing():
-            conf = await self.config.guild(ctx.guild).all()
-            await prune_invalid_tickets(ctx.guild, conf, self.config, ctx)
+            conf = self.db.get_conf(ctx.guild)
+            await prune_invalid_tickets(ctx.guild, conf, self, ctx)
 
     @tickets.command()
     async def getlink(self, ctx: commands.Context, message: discord.Message):
@@ -1608,46 +1610,46 @@ class AdminCommands(MixinMeta):
     @tickets.command()
     async def dm(self, ctx: commands.Context):
         """(Toggle) The bot sending DM's for ticket alerts"""
-        toggle = await self.config.guild(ctx.guild).dm()
-        if toggle:
-            await self.config.guild(ctx.guild).dm.set(False)
-            await ctx.send(_("DM alerts have been **Disabled**"))
-        else:
-            await self.config.guild(ctx.guild).dm.set(True)
+        conf = self.db.get_conf(ctx.guild)
+        conf.dm = not conf.dm
+        await self.save()
+        if conf.dm:
             await ctx.send(_("DM alerts have been **Enabled**"))
+        else:
+            await ctx.send(_("DM alerts have been **Disabled**"))
 
     @tickets.command()
     async def threadclose(self, ctx: commands.Context):
         """(Toggle) Thread tickets being closed & archived instead of deleted"""
-        toggle = await self.config.guild(ctx.guild).thread_close()
-        if toggle:
-            await self.config.guild(ctx.guild).thread_close.set(False)
-            await ctx.send(_("Closed ticket threads will be **Deleted**"))
-        else:
-            await self.config.guild(ctx.guild).thread_close.set(True)
+        conf = self.db.get_conf(ctx.guild)
+        conf.thread_close = not conf.thread_close
+        await self.save()
+        if conf.thread_close:
             await ctx.send(_("Closed ticket threads will be **Closed & Archived**"))
+        else:
+            await ctx.send(_("Closed ticket threads will be **Deleted**"))
 
     @tickets.command()
     async def selfrename(self, ctx: commands.Context):
         """(Toggle) If users can rename their own tickets"""
-        toggle = await self.config.guild(ctx.guild).user_can_rename()
-        if toggle:
-            await self.config.guild(ctx.guild).user_can_rename.set(False)
-            await ctx.send(_("User can no longer rename their support channel"))
-        else:
-            await self.config.guild(ctx.guild).user_can_rename.set(True)
+        conf = self.db.get_conf(ctx.guild)
+        conf.user_can_rename = not conf.user_can_rename
+        await self.save()
+        if conf.user_can_rename:
             await ctx.send(_("User can now rename their support channel"))
+        else:
+            await ctx.send(_("User can no longer rename their support channel"))
 
     @tickets.command()
     async def selfclose(self, ctx: commands.Context):
         """(Toggle) If users can close their own tickets"""
-        toggle = await self.config.guild(ctx.guild).user_can_close()
-        if toggle:
-            await self.config.guild(ctx.guild).user_can_close.set(False)
-            await ctx.send(_("User can no longer close their support ticket channel"))
-        else:
-            await self.config.guild(ctx.guild).user_can_close.set(True)
+        conf = self.db.get_conf(ctx.guild)
+        conf.user_can_close = not conf.user_can_close
+        await self.save()
+        if conf.user_can_close:
             await ctx.send(_("User can now close their support ticket channel"))
+        else:
+            await ctx.send(_("User can no longer close their support ticket channel"))
 
     @tickets.command()
     async def selfmanage(self, ctx: commands.Context):
@@ -1656,13 +1658,13 @@ class AdminCommands(MixinMeta):
 
         Users will be able to add/remove others to their support ticket
         """
-        toggle = await self.config.guild(ctx.guild).user_can_manage()
-        if toggle:
-            await self.config.guild(ctx.guild).user_can_manage.set(False)
-            await ctx.send(_("User can no longer manage their support ticket channel"))
-        else:
-            await self.config.guild(ctx.guild).user_can_manage.set(True)
+        conf = self.db.get_conf(ctx.guild)
+        conf.user_can_manage = not conf.user_can_manage
+        await self.save()
+        if conf.user_can_manage:
             await ctx.send(_("User can now manage their support ticket channel"))
+        else:
+            await ctx.send(_("User can no longer manage their support ticket channel"))
 
     @tickets.command()
     async def autoadd(self, ctx: commands.Context):
@@ -1671,24 +1673,24 @@ class AdminCommands(MixinMeta):
 
         Adding a user to a thread pings them, so this is off by default
         """
-        toggle = await self.config.guild(ctx.guild).auto_add()
-        if toggle:
-            await self.config.guild(ctx.guild).auto_add.set(False)
-            await ctx.send(_("Support and panel roles will no longer be auto-added to thread tickets"))
-        else:
-            await self.config.guild(ctx.guild).auto_add.set(True)
+        conf = self.db.get_conf(ctx.guild)
+        conf.auto_add = not conf.auto_add
+        await self.save()
+        if conf.auto_add:
             await ctx.send(_("Support and panel roles will be auto-added to thread tickets"))
+        else:
+            await ctx.send(_("Support and panel roles will no longer be auto-added to thread tickets"))
 
     @tickets.command()
     async def showresponsetime(self, ctx: commands.Context):
         """(Toggle) Show average response time to users when they open a ticket"""
-        toggle = await self.config.guild(ctx.guild).show_response_time()
-        if toggle:
-            await self.config.guild(ctx.guild).show_response_time.set(False)
-            await ctx.send(_("Average response time will no longer be shown to users"))
-        else:
-            await self.config.guild(ctx.guild).show_response_time.set(True)
+        conf = self.db.get_conf(ctx.guild)
+        conf.show_response_time = not conf.show_response_time
+        await self.save()
+        if conf.show_response_time:
             await ctx.send(_("Average response time will now be shown to users"))
+        else:
+            await ctx.send(_("Average response time will no longer be shown to users"))
 
     @tickets.command()
     async def transcript(self, ctx: commands.Context):
@@ -1697,13 +1699,13 @@ class AdminCommands(MixinMeta):
 
         Closed tickets will have their transcripts uploaded to the log channel
         """
-        toggle = await self.config.guild(ctx.guild).transcript()
-        if toggle:
-            await self.config.guild(ctx.guild).transcript.set(False)
-            await ctx.send(_("Transcripts of closed tickets will no longer be saved"))
-        else:
-            await self.config.guild(ctx.guild).transcript.set(True)
+        conf = self.db.get_conf(ctx.guild)
+        conf.transcript = not conf.transcript
+        await self.save()
+        if conf.transcript:
             await ctx.send(_("Transcripts of closed tickets will now be saved"))
+        else:
+            await ctx.send(_("Transcripts of closed tickets will no longer be saved"))
 
     @tickets.command(aliases=["intertrans", "itrans", "itranscript"])
     async def interactivetranscript(self, ctx: commands.Context):
@@ -1712,13 +1714,13 @@ class AdminCommands(MixinMeta):
 
         Transcripts will be an interactive html file to visualize the conversation from your browser.
         """
-        toggle = await self.config.guild(ctx.guild).detailed_transcript()
-        if toggle:
-            await self.config.guild(ctx.guild).detailed_transcript.set(False)
-            await ctx.send(_("Transcripts of closed tickets will no longer be interactive"))
-        else:
-            await self.config.guild(ctx.guild).detailed_transcript.set(True)
+        conf = self.db.get_conf(ctx.guild)
+        conf.detailed_transcript = not conf.detailed_transcript
+        await self.save()
+        if conf.detailed_transcript:
             await ctx.send(_("Transcripts of closed tickets will now be interactive"))
+        else:
+            await ctx.send(_("Transcripts of closed tickets will no longer be interactive"))
 
     @tickets.command()
     async def updatemessage(
@@ -1875,13 +1877,13 @@ class AdminCommands(MixinMeta):
     @commands.mod_or_permissions(manage_messages=True)
     async def openfor(self, ctx: commands.Context, user: discord.Member, *, panel_name: str):
         """Open a ticket for another user"""
-        conf = await self.config.guild(ctx.guild).all()
+        conf = self.db.get_conf(ctx.guild)
         panel_name = panel_name.lower()
-        if panel_name not in conf["panels"]:
+        if panel_name not in conf.panels:
             return await ctx.send(_("Panel does not exist!"))
-        panel = conf["panels"][panel_name]
-        # Create a custom temp view by manipulting the panel
-        view = PanelView(self.bot, ctx.guild, self.config, [panel], mock_user=user)
+        panel = conf.panels[panel_name]
+        # Create a custom temp view by manipulating the panel
+        view = PanelView(self.bot, ctx.guild, self, [panel], mock_user=user)
         desc = _(
             "Click the button below to open a {} ticket for {}\nThis message will self-cleanup in 2 minutes."
         ).format(panel_name, user.name)

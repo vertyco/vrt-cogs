@@ -30,17 +30,17 @@ class BaseCommands(MixinMeta):
     @commands.guild_only()
     async def add_user_to_ticket(self, ctx: commands.Context, *, user: discord.Member):
         """Add a user to your ticket"""
-        conf = await self.config.guild(ctx.guild).all()
-        opened = conf["opened"]
-        owner_id = get_ticket_owner(opened, str(ctx.channel.id))
+        conf = self.db.get_conf(ctx.guild)
+        opened = conf.opened
+        owner_id = get_ticket_owner(opened, ctx.channel.id)
         if not owner_id:
             return await ctx.send(_("This is not a ticket channel, or it has been removed from config"))
 
-        panel_name = opened[owner_id][str(ctx.channel.id)]["panel"]
-        panel_roles = conf["panels"][panel_name]["roles"]
+        panel_name = opened[owner_id][ctx.channel.id].panel
+        panel_roles = conf.panels[panel_name].roles
         user_roles = [r.id for r in ctx.author.roles]
 
-        support_roles = [i[0] for i in conf["support_roles"]]
+        support_roles = [i[0] for i in conf.support_roles]
         support_roles.extend([i[0] for i in panel_roles])
 
         # If a mod tries
@@ -51,7 +51,7 @@ class BaseCommands(MixinMeta):
             can_add = True
         elif await is_admin_or_superior(self.bot, ctx.author):
             can_add = True
-        elif owner_id == str(ctx.author.id) and conf["user_can_manage"]:
+        elif owner_id == ctx.author.id and conf.user_can_manage:
             can_add = True
 
         if not can_add:
@@ -74,17 +74,17 @@ class BaseCommands(MixinMeta):
     @commands.guild_only()
     async def rename_ticket(self, ctx: commands.Context, *, new_name: str):
         """Rename your ticket channel"""
-        conf = await self.config.guild(ctx.guild).all()
-        opened = conf["opened"]
-        owner_id = get_ticket_owner(opened, str(ctx.channel.id))
+        conf = self.db.get_conf(ctx.guild)
+        opened = conf.opened
+        owner_id = get_ticket_owner(opened, ctx.channel.id)
         if not owner_id:
             return await ctx.send(_("This is not a ticket channel, or it has been removed from config"))
 
-        panel_name = opened[owner_id][str(ctx.channel.id)]["panel"]
-        panel_roles = conf["panels"][panel_name]["roles"]
+        panel_name = opened[owner_id][ctx.channel.id].panel
+        panel_roles = conf.panels[panel_name].roles
         user_roles = [r.id for r in ctx.author.roles]
 
-        support_roles = [i[0] for i in conf["support_roles"]]
+        support_roles = [i[0] for i in conf.support_roles]
         support_roles.extend([i[0] for i in panel_roles])
 
         can_rename = False
@@ -94,7 +94,7 @@ class BaseCommands(MixinMeta):
             can_rename = True
         elif await is_admin_or_superior(self.bot, ctx.author):
             can_rename = True
-        elif owner_id == str(ctx.author.id) and conf["user_can_rename"]:
+        elif owner_id == ctx.author.id and conf.user_can_rename:
             can_rename = True
 
         if not can_rename:
@@ -127,8 +127,8 @@ class BaseCommands(MixinMeta):
         `[p]close 1h` - closes in 1 hour with no reason attached
         `[p]close 1m thanks for helping!` - closes in 1 minute with reason "thanks for helping!"
         """
-        conf = await self.config.guild(ctx.guild).all()
-        owner_id = get_ticket_owner(conf["opened"], str(ctx.channel.id))
+        conf = self.db.get_conf(ctx.guild)
+        owner_id = get_ticket_owner(conf.opened, ctx.channel.id)
         if not owner_id:
             return await ctx.send(
                 _(
@@ -168,8 +168,8 @@ class BaseCommands(MixinMeta):
                     await msg.edit(content=cancelled)
                     return
 
-                conf = await self.config.guild(ctx.guild).all()
-                owner_id = get_ticket_owner(conf["opened"], str(ctx.channel.id))
+                conf = self.db.get_conf(ctx.guild)
+                owner_id = get_ticket_owner(conf.opened, ctx.channel.id)
                 if not owner_id:
                     # Ticket already closed...
                     return
@@ -183,16 +183,16 @@ class BaseCommands(MixinMeta):
             channel=ctx.channel,
             conf=conf,
             reason=reason,
-            closedby=ctx.author.name,
-            config=self.config,
+            closedby=ctx.author.id,
+            cog=self,
         )
 
     @commands.hybrid_command(name="responsetime", description="View average staff response time for tickets")
     @commands.guild_only()
     async def response_time(self, ctx: commands.Context):
         """View the average staff response time for tickets in this server"""
-        conf = await self.config.guild(ctx.guild).all()
-        response_times = conf.get("response_times", [])
+        conf = self.db.get_conf(ctx.guild)
+        response_times = conf.response_times
         avg_response = get_average_response_time(response_times)
 
         if avg_response is None:
@@ -227,5 +227,7 @@ class BaseCommands(MixinMeta):
 
         Use this if the response time data is inaccurate due to legacy tickets.
         """
-        await self.config.guild(ctx.guild).response_times.set([])
+        conf = self.db.get_conf(ctx.guild)
+        conf.response_times = []
+        await self.save()
         await ctx.send(_("✅ Response time data has been cleared. Fresh data will be collected from new tickets."))
