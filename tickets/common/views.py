@@ -1,19 +1,22 @@
 import asyncio
 import contextlib
 import logging
+import typing as t
 from datetime import datetime
-from typing import Any, Dict, Optional, Union
 
 import discord
 import numpy as np
 from discord import ButtonStyle, Interaction, TextStyle
 from discord.ui import Button, Modal, TextInput, View
 from discord.ui.item import Item
-from redbot.core import Config, commands
+from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box, humanize_list, pagify
 
+from ..abc import MixinMeta
+from .analytics import record_ticket_claimed, record_ticket_opened
+from .models import GuildSettings, ModalField, OpenedTicket, Panel
 from .utils import (
     can_close,
     close_ticket,
@@ -30,9 +33,9 @@ log = logging.getLogger("red.vrt.supportview")
 
 async def wait_reply(
     ctx: commands.Context,
-    timeout: Optional[int] = 60,
-    delete: Optional[bool] = True,
-) -> Optional[str]:
+    timeout: int | None = 60,
+    delete: bool | None = True,
+) -> str | None:
     def check(message: discord.Message):
         return message.author == ctx.author and message.channel == ctx.channel
 
@@ -72,9 +75,9 @@ def get_modal_style(styletype: str) -> TextStyle:
 
 
 class Confirm(View):
-    def __init__(self, ctx):
-        self.ctx = ctx
-        self.value = None
+    def __init__(self, ctx: commands.Context):
+        self.ctx: commands.Context = ctx
+        self.value: bool | None = None
         super().__init__(timeout=60)
 
     async def interaction_check(self, interaction: Interaction):
@@ -105,9 +108,9 @@ class Confirm(View):
         self.stop()
 
 
-async def confirm(ctx, msg: discord.Message):
+async def confirm(ctx: commands.Context, msg: discord.Message) -> bool | None:
     try:
-        view = Confirm(ctx)
+        view: Confirm = Confirm(ctx)
         await msg.edit(view=view)
         await view.wait()
         if view.value is None:
@@ -125,7 +128,7 @@ class TestButton(View):
         self,
         style: str = "grey",
         label: str = "Button Test",
-        emoji: Union[discord.Emoji, discord.PartialEmoji, str] = None,
+        emoji: discord.Emoji | discord.PartialEmoji | str | None = None,
     ):
         super().__init__()
         style = get_color(style)
@@ -135,9 +138,9 @@ class TestButton(View):
 
 class CloseReasonModal(Modal):
     def __init__(self):
-        self.reason = None
+        self.reason: str | None = None
         super().__init__(title=_("Closing your ticket"), timeout=120)
-        self.field = TextInput(
+        self.field: TextInput = TextInput(
             label=_("Reason for closing"),
             style=TextStyle.short,
             required=True,
@@ -155,19 +158,19 @@ class CloseView(View):
     def __init__(
         self,
         bot: Red,
-        config: Config,
+        cog: "MixinMeta",
         owner_id: int,
-        channel: Union[discord.TextChannel, discord.Thread],
+        channel: discord.TextChannel | discord.Thread,
     ):
         super().__init__(timeout=None)
         self.bot = bot
-        self.config = config
+        self.cog = cog
         self.owner_id = owner_id
         self.channel = channel
 
         self.closeticket.custom_id = str(channel.id)
 
-    async def on_error(self, interaction: Interaction, error: Exception, item: Item[Any]):
+    async def on_error(self, interaction: Interaction, error: Exception, item: Item[t.Any]):
         log.warning(
             f"View failed for user ticket {self.owner_id} in channel {self.channel.name} in {self.channel.guild.name}",
             exc_info=error,
@@ -182,11 +185,11 @@ class CloseView(View):
         if not user:
             return
 
-        conf = await self.config.guild(interaction.guild).all()
+        conf = self.cog.db.get_conf(interaction.guild)
         txt = _("This ticket has already been closed! Please delete it manually.")
-        if str(self.owner_id) not in conf["opened"]:
+        if self.owner_id not in conf.opened:
             return await interaction.response.send_message(txt, ephemeral=True)
-        if str(self.channel.id) not in conf["opened"][str(self.owner_id)]:
+        if self.channel.id not in conf.opened[self.owner_id]:
             return await interaction.response.send_message(txt, ephemeral=True)
 
         allowed = await can_close(
@@ -202,8 +205,8 @@ class CloseView(View):
                 _("You do not have permissions to close this ticket"),
                 ephemeral=True,
             )
-        panel_name = conf["opened"][str(self.owner_id)][str(self.channel.id)]["panel"]
-        requires_reason = conf["panels"][panel_name].get("close_reason", True)
+        panel_name = conf.opened[self.owner_id][self.channel.id].panel
+        requires_reason = conf.panels[panel_name].close_reason
         reason = None
         if requires_reason:
             modal = CloseReasonModal()
@@ -215,7 +218,9 @@ class CloseView(View):
                 try:
                     await interaction.followup.send(txt, ephemeral=True)
                 except discord.NotFound:
-                    await interaction.channel.send(txt, delete_after=10)
+                    channel = interaction.channel
+                    if channel and isinstance(channel, discord.abc.Messageable):
+                        await channel.send(txt, delete_after=10)
                 return
 
             await modal.wait()
@@ -225,9 +230,9 @@ class CloseView(View):
             await interaction.followup.send(_("Closing..."), ephemeral=True)
         else:
             await interaction.response.send_message(_("Closing..."), ephemeral=True)
-        owner = self.channel.guild.get_member(int(self.owner_id))
+        owner = self.channel.guild.get_member(self.owner_id)
         if not owner:
-            owner = await self.bot.fetch_user(int(self.owner_id))
+            owner = await self.bot.fetch_user(self.owner_id)
         await close_ticket(
             bot=self.bot,
             member=owner,
@@ -235,30 +240,30 @@ class CloseView(View):
             channel=self.channel,
             conf=conf,
             reason=reason,
-            closedby=interaction.user.name,
-            config=self.config,
+            closedby=interaction.user.id,
+            cog=self.cog,
         )
 
 
 class TicketModal(Modal):
-    def __init__(self, title: str, data: dict):
+    def __init__(self, title: str, data: dict[str, ModalField]):
         super().__init__(title=title, timeout=300)
-        self.fields = {}
-        self.inputs: Dict[str, TextInput] = {}
-        self.labels: Dict[str, str] = {}  # Store labels separately to avoid deprecation warning
+        self.fields: dict[str, dict[str, str]] = {}
+        self.inputs: dict[str, TextInput] = {}
+        self.labels: dict[str, str] = {}  # Store labels separately to avoid deprecation warning
         for key, info in data.items():
-            field = TextInput(
-                label=info["label"],
-                style=get_modal_style(info["style"]),
-                placeholder=info["placeholder"],
-                default=info["default"],
-                required=info["required"],
-                min_length=info["min_length"],
-                max_length=info["max_length"],
+            field: TextInput = TextInput(
+                label=info.label,
+                style=get_modal_style(info.style),
+                placeholder=info.placeholder,
+                default=info.default,
+                required=info.required,
+                min_length=info.min_length,
+                max_length=info.max_length,
             )
             self.add_item(field)
             self.inputs[key] = field
-            self.labels[key] = info["label"]
+            self.labels[key] = info.label
 
     async def on_submit(self, interaction: discord.Interaction):
         for k, v in self.inputs.items():
@@ -269,17 +274,24 @@ class TicketModal(Modal):
 
 
 class SupportButton(Button):
-    def __init__(self, panel: dict, mock_user: discord.Member = None):
+    def __init__(self, panel_name: str, panel: Panel, mock_user: discord.Member | None = None):
+        """Create a support button.
+
+        Args:
+            panel_name: Name of the panel
+            panel: Panel model
+            mock_user: Optional user to create ticket for (for testing)
+        """
         super().__init__(
-            style=get_color(panel["button_color"]),
-            label=panel["button_text"],
-            custom_id=panel["name"],
-            emoji=panel["button_emoji"],
-            row=panel.get("row"),
-            disabled=panel.get("disabled", False),
+            style=get_color(panel.button_color),
+            label=panel.button_text,
+            custom_id=panel_name,
+            emoji=panel.button_emoji,
+            row=panel.row,
+            disabled=panel.disabled,
         )
-        self.panel_name = panel["name"]
-        self.mock_user = mock_user
+        self.panel_name: str = panel_name
+        self.mock_user: discord.Member | None = mock_user
 
     async def callback(self, interaction: Interaction):
         try:
@@ -290,22 +302,22 @@ class SupportButton(Button):
             log.exception(f"Failed to create ticket in {guild} for {user}", exc_info=e)
 
     async def create_ticket(self, interaction: Interaction):
-        guild = interaction.guild
-        user = self.mock_user or guild.get_member(interaction.user.id)
+        guild: discord.Guild | None = interaction.guild
+        user: discord.Member | None = self.mock_user or guild.get_member(interaction.user.id) if guild else None
         if not isinstance(interaction.channel, discord.TextChannel) or not guild:
             return
 
         roles = [r.id for r in user.roles]
-        conf = await self.view.config.guild(guild).all()
-        if conf["suspended_msg"]:
+        conf: GuildSettings = self.view.cog.db.get_conf(guild)
+        if conf.suspended_msg:
             em = discord.Embed(
                 title=_("Ticket System Suspended"),
-                description=conf["suspended_msg"],
+                description=conf.suspended_msg,
                 color=discord.Color.yellow(),
             )
             return await interaction.response.send_message(embed=em, ephemeral=True)
 
-        for rid_uid in conf["blacklist"]:
+        for rid_uid in conf.blacklist:
             if rid_uid == user.id:
                 em = discord.Embed(
                     description=_("You been blacklisted from creating tickets!"),
@@ -319,20 +331,20 @@ class SupportButton(Button):
                 )
                 return await interaction.response.send_message(embed=em, ephemeral=True)
 
-        panel = conf["panels"][self.panel_name]
-        if required_roles := panel.get("required_roles", []):
+        panel: Panel = conf.panels[self.panel_name]
+        if required_roles := panel.required_roles:
             if not any(r.id in required_roles for r in user.roles):
-                roles = [guild.get_role(i).mention for i in required_roles if guild.get_role(i)]
+                roles_list = [guild.get_role(i).mention for i in required_roles if guild.get_role(i)]
                 em = discord.Embed(
                     description=_("You must have one of the following roles to open this ticket: ")
-                    + humanize_list(roles),
+                    + humanize_list(roles_list),
                     color=discord.Color.red(),
                 )
                 return await interaction.response.send_message(embed=em, ephemeral=True)
 
         # Check working hours
         within_hours, start_time, end_time = is_within_working_hours(panel)
-        if not within_hours and panel.get("block_outside_hours", False):
+        if not within_hours and panel.block_outside_hours:
             em = discord.Embed(
                 title=_("Outside Working Hours"),
                 description=_("Tickets cannot be opened outside of working hours. Please try again later."),
@@ -346,13 +358,13 @@ class SupportButton(Button):
                 )
             return await interaction.response.send_message(embed=em, ephemeral=True)
 
-        channel: discord.TextChannel = guild.get_channel(panel.get("channel_id", 0))
+        channel: discord.TextChannel = guild.get_channel(panel.channel_id or 0)
         if not channel:
             channel = interaction.channel
 
-        max_tickets = conf["max_tickets"]
-        opened = conf["opened"]
-        uid = str(user.id)
+        max_tickets = conf.max_tickets
+        opened = conf.opened
+        uid = user.id
         if uid in opened and max_tickets <= len(opened[uid]):
             channels = "\n".join([f"<#{i}>" for i in opened[uid]])
             em = discord.Embed(
@@ -361,7 +373,7 @@ class SupportButton(Button):
             )
             return await interaction.response.send_message(embed=em, ephemeral=True)
 
-        category = guild.get_channel(panel["category_id"]) if panel["category_id"] else None
+        category = guild.get_channel(panel.category_id) if panel.category_id else None
         if not category:
             em = discord.Embed(
                 description=_("The category for this support panel cannot be found!\nplease contact an admin!"),
@@ -377,13 +389,13 @@ class SupportButton(Button):
             )
             return await interaction.response.send_message(embed=em, ephemeral=True)
 
-        user_can_close = conf["user_can_close"]
-        logchannel = guild.get_channel(panel["log_channel"]) if panel["log_channel"] else None
+        user_can_close = conf.user_can_close
+        logchannel = guild.get_channel(panel.log_channel) if panel.log_channel else None
 
         # Throw modal before creating ticket if the panel has one
         form_embed = discord.Embed()
-        modal = panel.get("modal")
-        panel_title = panel.get("modal_title", None) or "{} Ticket".format(self.panel_name)
+        modal = panel.modal
+        panel_title = panel.modal_title or "{} Ticket".format(self.panel_name)
         answers = {}
         has_response = False
         if modal:
@@ -458,14 +470,14 @@ class SupportButton(Button):
         support_mentions = []
         panel_roles = []
         panel_mentions = []
-        for role_id, mention_toggle in conf["support_roles"]:
+        for role_id, mention_toggle in conf.support_roles:
             role = guild.get_role(role_id)
             if not role:
                 continue
             support_roles.append(role)
             if mention_toggle:
                 support_mentions.append(role.mention)
-        for role_id, mention_toggle in panel.get("roles", []):
+        for role_id, mention_toggle in panel.roles:
             role = guild.get_role(role_id)
             if not role:
                 continue
@@ -484,9 +496,9 @@ class SupportButton(Button):
         for role in support_roles:
             overwrite[role] = can_read_send
 
-        num = panel["ticket_num"]
+        num = panel.ticket_num
         now = datetime.now().astimezone()
-        name_fmt = panel["ticket_name"]
+        name_fmt = panel.ticket_name
         params = {
             "num": str(num),
             "user": user.name,
@@ -499,8 +511,8 @@ class SupportButton(Button):
         channel_name = name_fmt.format(**params) if name_fmt else user.name
         default_channel_name = f"{self.panel_name}-{num}"
         try:
-            if panel.get("threads"):
-                if alt_cid := panel.get("alt_channel"):
+            if panel.threads:
+                if alt_cid := panel.alt_channel:
                     alt_channel = guild.get_channel(alt_cid)
                     if alt_channel and isinstance(alt_channel, discord.TextChannel):
                         channel = alt_channel
@@ -510,7 +522,7 @@ class SupportButton(Button):
                         "I don't have permissions to create threads!", ephemeral=True
                     )
 
-                archive = round(conf["inactive"] * 60)
+                archive = round(conf.inactive * 60)
                 arr = np.asarray([60, 1440, 4320, 10080])
                 index = (np.abs(arr - archive)).argmin()
                 auto_archive_duration = int(arr[index])
@@ -521,7 +533,7 @@ class SupportButton(Button):
                         name=channel_name,
                         auto_archive_duration=auto_archive_duration,  # type: ignore
                         reason=reason,
-                        invitable=conf["user_can_manage"],
+                        invitable=conf.user_can_manage,
                     )
                 except discord.Forbidden:
                     return await interaction.followup.send(
@@ -533,7 +545,7 @@ class SupportButton(Button):
                             name=default_channel_name,
                             auto_archive_duration=auto_archive_duration,
                             reason=reason,
-                            invitable=conf["user_can_manage"],
+                            invitable=conf.user_can_manage,
                         )
                         await channel_or_thread.send(
                             _(
@@ -545,12 +557,12 @@ class SupportButton(Button):
                 asyncio.create_task(channel_or_thread.add_user(interaction.user))
                 if self.mock_user:
                     asyncio.create_task(channel_or_thread.add_user(self.mock_user))
-                if conf["auto_add"] and not support_mentions:
+                if conf.auto_add and not support_mentions:
                     for role in support_roles:
                         for member in role.members:
                             asyncio.create_task(channel_or_thread.add_user(member))
             else:
-                if alt_cid := panel.get("alt_channel"):
+                if alt_cid := panel.alt_channel:
                     alt_channel = guild.get_channel(alt_cid)
                     if alt_channel and isinstance(alt_channel, discord.CategoryChannel):
                         category = alt_channel
@@ -607,7 +619,7 @@ class SupportButton(Button):
         if user_can_close:
             default_message += _("\nYou or an admin can close this with the `{}close` command").format(prefix)
 
-        messages = panel["ticket_messages"]
+        messages = panel.ticket_messages
         params = {
             "username": user.name,
             "displayname": user.display_name,
@@ -624,39 +636,39 @@ class SupportButton(Button):
                 text = text.replace("{" + str(k) + "}", str(v))
             return text
 
-        content = "" if panel.get("threads") else user.mention
+        content = "" if panel.threads else user.mention
         if support_mentions:
-            if not panel.get("threads"):
+            if not panel.threads:
                 support_mentions.append(user.mention)
             content = " ".join(support_mentions)
 
         allowed_mentions = discord.AllowedMentions(roles=True)
         close_view = CloseView(
             self.view.bot,
-            self.view.config,
+            self.view.cog,
             user.id,
             channel_or_thread,
         )
         if messages:
-            embeds = []
+            embeds: list[discord.Embed] = []
             for index, einfo in enumerate(messages):
                 # Use custom color if set and valid, otherwise default to user's color
-                color_val = einfo.get("color")
+                color_val = einfo.color
                 embed_color = (
                     discord.Color(color_val) if color_val is not None and isinstance(color_val, int) else user.color
                 )
                 em = discord.Embed(
-                    title=fmt_params(einfo["title"]) if einfo["title"] else None,
-                    description=fmt_params(einfo["desc"]),
+                    title=fmt_params(einfo.title) if einfo.title else None,
+                    description=fmt_params(einfo.desc),
                     color=embed_color,
                 )
                 if index == 0:
                     em.set_thumbnail(url=user.display_avatar.url)
-                if einfo["footer"]:
-                    em.set_footer(text=fmt_params(einfo["footer"]))
+                if einfo.footer:
+                    em.set_footer(text=fmt_params(einfo.footer))
                 # Set image if configured
-                if einfo.get("image"):
-                    em.set_image(url=einfo["image"])
+                if einfo.image:
+                    em.set_image(url=einfo.image)
                 embeds.append(em)
 
             msg = await channel_or_thread.send(
@@ -685,14 +697,14 @@ class SupportButton(Button):
                 asyncio.create_task(channel_or_thread.send(txt))
 
         # Send outside working hours notice if applicable
-        if not within_hours and panel.get("working_hours"):
+        if not within_hours and panel.working_hours:
             hours_embed = format_working_hours_embed(panel, user)
             if hours_embed:
                 await channel_or_thread.send(embed=hours_embed)
 
         # Send average response time notice if we have data and it's enabled
-        if conf.get("show_response_time", True):
-            response_times = conf.get("response_times", [])
+        if conf.show_response_time:
+            response_times = conf.response_times
             avg_response = get_average_response_time(response_times)
             if avg_response is not None:
                 formatted_time = format_response_time(avg_response)
@@ -711,7 +723,8 @@ class SupportButton(Button):
                     await existing_msg.delete(delay=30)
                 else:
                     msg = await interaction.followup.send(embed=em, ephemeral=True)
-                    await msg.delete(delay=30)
+                    if msg:
+                        await msg.delete(delay=30)
 
         asyncio.create_task(delete_delay())
 
@@ -748,30 +761,54 @@ class SupportButton(Button):
             for question, answer in answers.items():
                 em.add_field(name=f"__{question}__", value=answer, inline=False)
 
-            view = LogView(guild, channel_or_thread, panel.get("max_claims", 0))
+            view = LogView(guild, channel_or_thread, panel.max_claims, cog=self.view.cog)
             log_message = await logchannel.send(embed=em, view=view)
         else:
             log_message = None
 
-        async with self.view.config.guild(guild).all() as data:
-            data["panels"][self.panel_name]["ticket_num"] += 1
-            if uid not in data["opened"]:
-                data["opened"][uid] = {}
-            data["opened"][uid][str(channel_or_thread.id)] = {
-                "panel": self.panel_name,
-                "opened": now.isoformat(),
-                "pfp": str(user.display_avatar.url) if user.avatar else None,
-                "logmsg": log_message.id if log_message else None,
-                "answers": answers,
-                "has_response": has_response,
-                "message_id": msg.id,
-                "max_claims": data["panels"][self.panel_name].get("max_claims", 0),
-                "first_response": None,
-            }
+        # Update the config and save - if this fails, clean up the ticket channel
+        try:
+            panel.ticket_num += 1
+            cid = channel_or_thread.id
+            if uid not in conf.opened:
+                conf.opened[uid] = {}
+            conf.opened[uid][cid] = OpenedTicket(
+                panel=self.panel_name,
+                opened=now,
+                pfp=str(user.display_avatar.url) if user.avatar else None,
+                logmsg=log_message.id if log_message else None,
+                answers=answers,
+                has_response=has_response,
+                message_id=msg.id,
+                max_claims=panel.max_claims,
+                first_response=None,
+            )
 
-            new_id = await update_active_overview(guild, data)
+            # Record analytics for ticket opened
+            record_ticket_opened(conf, uid, self.panel_name, cid)
+
+            new_id = await update_active_overview(guild, conf)
             if new_id:
-                data["overview_msg"] = new_id
+                conf.overview_msg = new_id
+
+            await self.view.cog.save()
+        except Exception as e:
+            log.error(f"Failed to save ticket config for {user.name}, cleaning up channel", exc_info=e)
+            # Clean up the Discord resources since we failed to save
+            with contextlib.suppress(discord.HTTPException, discord.Forbidden):
+                if isinstance(channel_or_thread, discord.Thread):
+                    await channel_or_thread.delete()
+                else:
+                    await channel_or_thread.delete(reason="Failed to save ticket configuration")
+            # Clean up log message if it exists
+            if log_message:
+                with contextlib.suppress(discord.HTTPException, discord.Forbidden):
+                    await log_message.delete()
+            # Notify user
+            error_msg = _("There was an error saving your ticket. The channel has been cleaned up. Please try again.")
+            with contextlib.suppress(discord.HTTPException):
+                await interaction.followup.send(error_msg, ephemeral=True)
+            return
 
 
 class PanelView(View):
@@ -779,24 +816,24 @@ class PanelView(View):
         self,
         bot: Red,
         guild: discord.Guild,
-        config: Config,
-        panels: list,  # List of support panels that have the same message/channel ID
-        mock_user: Optional[discord.Member] = None,
-        timeout: Optional[int] = None,
+        cog: "MixinMeta",
+        panels: list[tuple[str, Panel]],
+        mock_user: discord.Member | None = None,
+        timeout: int | None = None,
     ):
         super().__init__(timeout=timeout)
-        self.bot = bot
-        self.guild = guild
-        self.config = config
-        self.panels = panels
-        for panel in self.panels:
-            self.add_item(SupportButton(panel, mock_user=mock_user))
+        self.bot: Red = bot
+        self.guild: discord.Guild = guild
+        self.cog: "MixinMeta" = cog
+        self.panels: list[tuple[str, Panel]] = panels
+        for panel_name, panel in self.panels:
+            self.add_item(SupportButton(panel_name, panel, mock_user=mock_user))
 
     async def start(self):
-        chan = self.guild.get_channel(self.panels[0]["channel_id"])
+        chan = self.guild.get_channel(self.panels[0][1].channel_id)
         if not isinstance(chan, discord.TextChannel):
             return
-        message = await chan.fetch_message(self.panels[0]["message_id"])
+        message = await chan.fetch_message(self.panels[0][1].message_id)
         await message.edit(view=self)
 
 
@@ -804,15 +841,17 @@ class LogView(View):
     def __init__(
         self,
         guild: discord.Guild,
-        channel: Union[discord.TextChannel, discord.Thread],
+        channel: discord.TextChannel | discord.Thread,
         max_claims: int,
+        cog: "MixinMeta",
     ):
         super().__init__(timeout=None)
-        self.guild = guild
-        self.channel = channel
-        self.max_claims = max_claims
+        self.guild: discord.Guild = guild
+        self.channel: discord.TextChannel | discord.Thread = channel
+        self.max_claims: int = max_claims
+        self.cog: "MixinMeta" = cog
 
-        self.added = set()
+        self.added: set[int] = set()
         self.join_ticket.custom_id = str(channel.id)
 
     @discord.ui.button(label="Join Ticket", style=ButtonStyle.green)
@@ -848,6 +887,12 @@ class LogView(View):
         else:
             await self.channel.add_user(user)
         self.added.add(user.id)
+
+        # Track claim analytics
+        conf = self.cog.db.get_conf(self.guild)
+        record_ticket_claimed(conf, user.id, self.channel.id)
+        await self.cog.save()
+
         await interaction.response.send_message(
             _("You have been added to the ticket **{}**").format(self.channel.name),
             ephemeral=True,

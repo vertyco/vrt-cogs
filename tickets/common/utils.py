@@ -1,24 +1,27 @@
 import asyncio
 import logging
 import re
+import typing as t
 import zipfile
 from collections import defaultdict
 from contextlib import suppress
 from datetime import datetime, time
 from io import BytesIO, StringIO
 from pathlib import Path
-from typing import List, Optional, Tuple, Union
 
 import chat_exporter
 import discord
 import pytz
 from discord.utils import escape_markdown
-from redbot.core import Config, commands
+from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import pagify, text_to_file
 from redbot.core.utils.mod import is_admin_or_superior
 
+from ..abc import MixinMeta
+from .analytics import record_ticket_closed
+from .models import GuildSettings, OpenedTicket, Panel
 from .transcript import process_transcript_html
 
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
@@ -187,11 +190,11 @@ DAY_NAMES = {
 }
 
 
-def is_within_working_hours(panel: dict) -> Tuple[bool, Optional[int], Optional[int]]:
+def is_within_working_hours(panel: "Panel") -> tuple[bool, int | None, int | None]:
     """Check if the current time is within working hours for a panel.
 
     Args:
-        panel: The panel configuration dict
+        panel: The panel configuration model
 
     Returns:
         Tuple of (is_within_hours, today_start_timestamp, today_end_timestamp)
@@ -199,11 +202,11 @@ def is_within_working_hours(panel: dict) -> Tuple[bool, Optional[int], Optional[
         - today_start_timestamp: Unix timestamp for today's start time or None
         - today_end_timestamp: Unix timestamp for today's end time or None
     """
-    working_hours = panel.get("working_hours", {})
+    working_hours = panel.working_hours
     if not working_hours:
         return (True, None, None)
 
-    timezone_str = panel.get("timezone", "UTC")
+    timezone_str = panel.timezone
     try:
         tz = pytz.timezone(timezone_str)
     except Exception:
@@ -217,8 +220,8 @@ def is_within_working_hours(panel: dict) -> Tuple[bool, Optional[int], Optional[
         # No hours set for today - not within working hours
         return (False, None, None)
 
-    start_str = day_hours.get("start")
-    end_str = day_hours.get("end")
+    start_str = day_hours.start
+    end_str = day_hours.end
     if not start_str or not end_str:
         return (True, None, None)
 
@@ -242,19 +245,19 @@ def is_within_working_hours(panel: dict) -> Tuple[bool, Optional[int], Optional[
         return (True, None, None)
 
 
-def format_working_hours_embed(panel: dict, user: discord.Member) -> Optional[discord.Embed]:
+def format_working_hours_embed(panel: "Panel", user: discord.Member) -> discord.Embed | None:
     """Generate an embed for the outside working hours message.
 
     Args:
-        panel: The panel configuration dict
+        panel: The panel configuration model
         user: The user who opened the ticket
 
     Returns:
         Discord embed if there's a custom message, None otherwise
     """
-    custom_message = panel.get("outside_hours_message", "")
-    working_hours = panel.get("working_hours", {})
-    timezone_str = panel.get("timezone", "UTC")
+    custom_message = panel.outside_hours_message
+    working_hours = panel.working_hours
+    timezone_str = panel.timezone
 
     try:
         tz = pytz.timezone(timezone_str)
@@ -263,9 +266,9 @@ def format_working_hours_embed(panel: dict, user: discord.Member) -> Optional[di
 
     now = datetime.now(tz)
     day_name = DAY_NAMES[now.weekday()]
-    day_hours = working_hours.get(day_name, {})
-    start_str = day_hours.get("start", "")
-    end_str = day_hours.get("end", "")
+    day_hours = working_hours.get(day_name)
+    start_str = day_hours.start if day_hours else ""
+    end_str = day_hours.end if day_hours else ""
 
     if not custom_message:
         # Default message
@@ -298,21 +301,21 @@ def format_working_hours_embed(panel: dict, user: discord.Member) -> Optional[di
 async def can_close(
     bot: Red,
     guild: discord.Guild,
-    channel: Union[discord.TextChannel, discord.Thread],
+    channel: discord.TextChannel | discord.Thread,
     author: discord.Member,
     owner_id: int,
-    conf: dict,
+    conf: "GuildSettings",
 ):
-    if str(owner_id) not in conf["opened"]:
+    if owner_id not in conf.opened:
         return False
-    if str(channel.id) not in conf["opened"][str(owner_id)]:
+    if channel.id not in conf.opened[owner_id]:
         return False
 
-    panel_name = conf["opened"][str(owner_id)][str(channel.id)]["panel"]
-    panel_roles = conf["panels"][panel_name]["roles"]
+    panel_name = conf.opened[owner_id][channel.id].panel
+    panel_roles = conf.panels[panel_name].roles
     user_roles = [r.id for r in author.roles]
 
-    support_roles = [i[0] for i in conf["support_roles"]]
+    support_roles = [i[0] for i in conf.support_roles]
     support_roles.extend([i[0] for i in panel_roles])
 
     can_close = False
@@ -322,12 +325,12 @@ async def can_close(
         can_close = True
     elif await is_admin_or_superior(bot, author):
         can_close = True
-    elif str(owner_id) == str(author.id) and conf["user_can_close"]:
+    elif owner_id == author.id and conf.user_can_close:
         can_close = True
     return can_close
 
 
-async def fetch_channel_history(channel: discord.TextChannel, limit: int | None = None) -> List[discord.Message]:
+async def fetch_channel_history(channel: discord.TextChannel, limit: int | None = None) -> list[discord.Message]:
     history = []
     async for msg in channel.history(oldest_first=True, limit=limit):
         history.append(msg)
@@ -341,13 +344,23 @@ async def ticket_owner_hastyped(channel: discord.TextChannel, user: discord.Memb
     return False
 
 
-def get_ticket_owner(opened: dict, channel_id: str) -> Optional[str]:
+def get_ticket_owner(opened: dict[int, dict[int, "OpenedTicket"]], channel_id: int) -> int | None:
+    """Get the owner ID of a ticket channel.
+
+    Args:
+        opened: Dict mapping user IDs to their open tickets
+        channel_id: The channel ID to look up
+
+    Returns:
+        The user ID of the ticket owner, or None if not found
+    """
     for uid, tickets in opened.items():
         if channel_id in tickets:
             return uid
+    return None
 
 
-def get_average_response_time(response_times: list[float]) -> Optional[float]:
+def get_average_response_time(response_times: list[float]) -> float | None:
     """Calculate the average response time from a list of response times.
 
     Args:
@@ -389,64 +402,67 @@ def format_response_time(seconds: float) -> str:
 
 
 async def record_response_time(
-    config: Config,
+    cog: "MixinMeta",
     guild: discord.Guild,
-    owner_id: str,
-    channel_id: str,
-    ticket: dict,
+    channel_id: int,
+    ticket: "OpenedTicket",
+    staff_id: int,
 ) -> None:
     """Record staff first response time for a ticket.
 
     Args:
-        config: Red Config instance
+        cog: The Tickets cog instance
         guild: Discord guild
-        owner_id: User ID of ticket owner as string
-        channel_id: Channel ID of ticket as string
-        ticket: Ticket data dictionary
+        channel_id: Channel ID of ticket
+        ticket: OpenedTicket model
+        staff_id: User ID of staff member who responded
     """
-    now = datetime.now().astimezone()
-    opened_time = datetime.fromisoformat(ticket["opened"])
-    response_seconds = (now - opened_time).total_seconds()
+    from .analytics import record_staff_first_response
 
-    async with config.guild(guild).all() as data:
-        # Mark ticket as responded
-        if owner_id in data["opened"] and channel_id in data["opened"][owner_id]:
-            data["opened"][owner_id][channel_id]["first_response"] = now.isoformat()
+    conf = cog.db.get_conf(guild)
 
-        # Add to response times list (capped at 100 most recent)
-        response_times = data.get("response_times", [])
-        response_times.append(response_seconds)
-        # Keep only the 100 most recent response times
-        if len(response_times) > 100:
-            response_times = response_times[-100:]
-        data["response_times"] = response_times
+    # Record full analytics (this also sets ticket.first_response)
+    record_staff_first_response(conf, ticket, staff_id, channel_id)
+
+    await cog.save()
 
 
 async def close_ticket(
     bot: Red,
-    member: Union[discord.Member, discord.User],
+    member: discord.Member | discord.User,
     guild: discord.Guild,
-    channel: Union[discord.TextChannel, discord.Thread],
-    conf: dict,
+    channel: discord.TextChannel | discord.Thread,
+    conf: "GuildSettings",
     reason: str | None,
-    closedby: str,
-    config: Config,
+    closedby: int,
+    cog: "MixinMeta",
 ) -> None:
-    opened = conf["opened"]
+    """Close a ticket.
+
+    Args:
+        bot: The Red bot instance
+        member: The member who owns the ticket
+        guild: The guild the ticket is in
+        channel: The ticket channel
+        conf: Guild settings model
+        reason: Reason for closing
+        closedby: User ID of who closed the ticket
+        cog: The Tickets cog instance
+    """
+    opened = conf.opened
     if not opened:
         return
-    uid = str(member.id)
-    cid = str(channel.id)
+    uid = member.id
+    cid = channel.id
     if uid not in opened:
         return
     if cid not in opened[uid]:
         return
 
     ticket = opened[uid][cid]
-    pfp = ticket["pfp"]
-    panel_name = ticket["panel"]
-    panel = conf["panels"][panel_name]
-    panel.get("threads")
+    pfp = ticket.pfp
+    panel_name = ticket.panel
+    panel = conf.panels[panel_name]
 
     if not channel.permissions_for(guild.me).manage_channels and isinstance(channel, discord.TextChannel):
         await channel.send(_("I am missing the `Manage Channels` permission to close this ticket!"))
@@ -455,9 +471,12 @@ async def close_ticket(
         await channel.send(_("I am missing the `Manage Threads` permission to close this ticket!"))
         return
 
-    opened = int(datetime.fromisoformat(ticket["opened"]).timestamp())
-    closed = int(datetime.now().timestamp())
-    closer_name = escape_markdown(closedby)
+    # Get closer name
+    closer = guild.get_member(closedby) or bot.get_user(closedby)
+    closer_name = escape_markdown(closer.name if closer else str(closedby))
+
+    opened_ts = int(ticket.opened.timestamp())
+    closed_ts = int(datetime.now().timestamp())
 
     desc = _(
         "Ticket created by **{}-{}** has been closed.\n"
@@ -470,12 +489,12 @@ async def close_ticket(
         member.name,
         member.id,
         panel_name,
-        opened,
-        closed,
+        opened_ts,
+        closed_ts,
         closer_name,
         str(reason),
     )
-    if isinstance(channel, discord.Thread) and conf["thread_close"]:
+    if isinstance(channel, discord.Thread) and conf.thread_close:
         desc += _("`Thread:    `{}\n").format(channel.mention)
 
     backup_text = _("Ticket Closed\n{}\nCurrently missing permissions to send embeds to this channel!").format(desc)
@@ -486,25 +505,23 @@ async def close_ticket(
         color=discord.Color.green(),
     )
     embed.set_thumbnail(url=pfp)
-    log_chan: discord.TextChannel = guild.get_channel(panel["log_channel"]) if panel["log_channel"] else None
+    log_chan: discord.TextChannel = guild.get_channel(panel.log_channel) if panel.log_channel else None
 
     buffer = StringIO()
     fallback_buffer = StringIO()
-    files: List[dict] = []
-    filename = (
-        f"{member.name}-{member.id}.html" if conf.get("detailed_transcript") else f"{member.name}-{member.id}.txt"
-    )
+    files: list[dict] = []
+    filename = f"{member.name}-{member.id}.html" if conf.detailed_transcript else f"{member.name}-{member.id}.txt"
     filename = filename.replace("/", "")
 
     # Prep embed in case we're exporting a transcript
     em = discord.Embed(color=member.color)
     em.set_author(name=_("Archiving Ticket..."), icon_url=LOADING)
 
-    use_exporter = conf.get("detailed_transcript", False)
+    use_exporter = conf.detailed_transcript
     is_thread = isinstance(channel, discord.Thread)
     exporter_success = False
 
-    if conf["transcript"]:
+    if conf.transcript:
         temp_message = await channel.send(embed=em)
 
         # Fetch history first - we need it for both export methods and attachment collection
@@ -539,7 +556,7 @@ async def close_ticket(
             # Update filename to .txt since we're not using HTML
             filename = f"{member.name}-{member.id}.txt".replace("/", "")
 
-        answers = ticket.get("answers")
+        answers = ticket.answers
         if answers:
             for q, a in answers.items():
                 fallback_buffer.write(_("Question: {}\nResponse: {}\n").format(q, a))
@@ -556,7 +573,7 @@ async def close_ticket(
             att: list[discord.Attachment] = []
             for i in msg.attachments:
                 att.append(i)
-                if i.size < guild.filesize_limit and (not is_thread or conf["thread_close"]):
+                if i.size < guild.filesize_limit and (not is_thread or conf.thread_close):
                     filenames[i.filename] += 1
                     if filenames[i.filename] > 1:
                         # Increment filename count to avoid overwriting
@@ -635,7 +652,7 @@ async def close_ticket(
 
     # Send off new messages
     view = None
-    if history and is_thread and conf["thread_close"]:
+    if history and is_thread and conf.thread_close:
         jump_url = history[0].jump_url
         view = discord.ui.View()
         view.add_item(
@@ -649,7 +666,7 @@ async def close_ticket(
     text = buffer.getvalue()
     zip_size = len(zip_bytes) if zip_bytes else 0
 
-    if log_chan and ticket["logmsg"]:
+    if log_chan and ticket.logmsg:
         upload_limit = guild.filesize_limit
         fitted_text, fitted_name = _fit_transcript_for_upload(text, fallback_text, filename, upload_limit)
         fitted_text_size = _text_size_bytes(fitted_text) if fitted_text else 0
@@ -684,7 +701,7 @@ async def close_ticket(
             log_msg = None
 
         # Delete old log msg
-        log_msg_id = ticket["logmsg"]
+        log_msg_id = ticket.logmsg
         try:
             log_msg = await log_chan.fetch_message(log_msg_id)
         except discord.HTTPException:
@@ -696,7 +713,7 @@ async def close_ticket(
             except Exception as e:
                 log.warning(f"Failed to auto-delete log message: {e}")
 
-    if conf["dm"]:
+    if conf.dm:
         try:
             dm_upload_limit = DM_FILESIZE_LIMIT
             dm_embed = embed.copy()
@@ -710,55 +727,73 @@ async def close_ticket(
         except (discord.Forbidden, discord.HTTPException):
             pass
 
+    # Mark channel as being closed to prevent race condition with delete listeners
+    cog.closing_channels.add(cid)
+
     # Delete/close ticket channel
-    if is_thread and conf["thread_close"]:
-        try:
-            await channel.edit(archived=True, locked=True)
-        except Exception as e:
-            log.error("Failed to archive thread ticket", exc_info=e)
-    else:
-        try:
-            await channel.delete()
-        except discord.DiscordServerError:
-            await asyncio.sleep(3)
+    try:
+        if is_thread and conf.thread_close:
+            try:
+                await channel.edit(archived=True, locked=True)
+            except Exception as e:
+                log.error("Failed to archive thread ticket", exc_info=e)
+        else:
             try:
                 await channel.delete()
-            except Exception as e:
-                log.error("Failed to delete ticket channel", exc_info=e)
+            except discord.DiscordServerError:
+                await asyncio.sleep(3)
+                try:
+                    await channel.delete()
+                except Exception as e:
+                    log.error("Failed to delete ticket channel", exc_info=e)
+    finally:
+        # Always remove from closing set
+        cog.closing_channels.discard(cid)
 
-    async with config.guild(guild).all() as conf:
-        tickets = conf["opened"]
-        if uid not in tickets:
-            return
-        if cid not in tickets[uid]:
-            return
-        del tickets[uid][cid]
-        # If user has no more tickets, clean up their key from the config
-        if not tickets[uid]:
-            del tickets[uid]
+    # Record analytics BEFORE removing the ticket from conf.opened
+    record_ticket_closed(conf, ticket, cid, uid, closedby)
 
-        new_id = await update_active_overview(guild, conf)
-        if new_id:
-            conf["overview_msg"] = new_id
+    # Update the config
+    if uid in conf.opened:
+        if cid in conf.opened[uid]:
+            del conf.opened[uid][cid]
+        # If user has no more tickets, clean up their key
+        if not conf.opened[uid]:
+            del conf.opened[uid]
+
+    new_id = await update_active_overview(guild, conf)
+    if new_id:
+        conf.overview_msg = new_id
+
+    await cog.save()
 
 
 async def prune_invalid_tickets(
     guild: discord.Guild,
-    conf: dict,
-    config: Config,
-    ctx: Optional[commands.Context] = None,
+    conf: "GuildSettings",
+    ctx: commands.Context | None = None,
 ) -> bool:
-    opened_tickets = conf["opened"]
+    """Prune tickets for channels that no longer exist.
+
+    Args:
+        guild: The Discord guild
+        conf: Guild settings model
+        ctx: Optional command context for sending messages
+
+    Returns:
+        True if any tickets were pruned, False otherwise
+    """
+    opened_tickets = conf.opened
     if not opened_tickets:
         if ctx:
             await ctx.send(_("There are no tickets stored in the database."))
         return False
 
-    users_to_remove = []
-    tickets_to_remove = []
+    users_to_remove: list[int] = []
+    tickets_to_remove: list[tuple[int, int]] = []
     count = 0
-    for user_id, tickets in opened_tickets.items():
-        member = guild.get_member(int(user_id))
+    for user_id, tickets in list(opened_tickets.items()):
+        member = guild.get_member(user_id)
         if not member:
             count += len(list(tickets.keys()))
             users_to_remove.append(user_id)
@@ -771,23 +806,23 @@ async def prune_invalid_tickets(
             log.info(f"Cleaning member {member} for having no tickets opened")
             continue
 
-        for channel_id, ticket in tickets.items():
-            if guild.get_channel_or_thread(int(channel_id)):
+        for channel_id, ticket in list(tickets.items()):
+            if guild.get_channel_or_thread(channel_id):
                 continue
 
             count += 1
             log.info(f"Ticket channel {channel_id} no longer exists for {member}")
             tickets_to_remove.append((user_id, channel_id))
 
-            panel = conf["panels"].get(ticket["panel"])
+            panel = conf.panels.get(ticket.panel)
             if not panel:
                 # Panel has been deleted
                 continue
-            log_message_id = ticket["logmsg"]
-            log_channel_id = panel["log_channel"]
+            log_message_id = ticket.logmsg
+            log_channel_id = panel.log_channel
             if log_channel_id and log_message_id:
                 log_channel = guild.get_channel(log_channel_id)
-                if log_channel:
+                if log_channel and isinstance(log_channel, discord.TextChannel):
                     try:
                         log_message = await log_channel.fetch_message(log_message_id)
                         await log_message.delete()
@@ -795,17 +830,16 @@ async def prune_invalid_tickets(
                         pass
 
     if users_to_remove or tickets_to_remove:
-        async with config.guild(guild).opened() as opened:
-            for uid in users_to_remove:
-                del opened[uid]
-            for uid, cid in tickets_to_remove:
-                if uid not in opened:
-                    # User was already removed
-                    continue
-                if cid not in opened[uid]:
-                    # Ticket was already removed
-                    continue
-                del opened[uid][cid]
+        for uid in users_to_remove:
+            del conf.opened[uid]
+        for uid, cid in tickets_to_remove:
+            if uid not in conf.opened:
+                # User was already removed
+                continue
+            if cid not in conf.opened[uid]:
+                # Ticket was already removed
+                continue
+            del conf.opened[uid][cid]
 
     grammar = _("ticket") if count == 1 else _("tickets")
     if count and ctx:
@@ -819,19 +853,22 @@ async def prune_invalid_tickets(
     return True if count else False
 
 
-def prep_overview_text(guild: discord.Guild, opened: dict, mention: bool = False) -> str:
-    active = []
+def prep_overview_text(
+    guild: discord.Guild, opened: dict[int, dict[int, "OpenedTicket"]], mention: bool = False
+) -> str:
+    """Prepare the text for the ticket overview panel."""
+    active: list[list[t.Any]] = []
     for uid, opened_tickets in opened.items():
-        member = guild.get_member(int(uid))
+        member = guild.get_member(uid)
         if not member:
             continue
         for ticket_channel_id, ticket_info in opened_tickets.items():
-            channel = guild.get_channel_or_thread(int(ticket_channel_id))
+            channel = guild.get_channel_or_thread(ticket_channel_id)
             if not channel:
                 continue
 
-            open_time_obj = datetime.fromisoformat(ticket_info["opened"])
-            panel_name = ticket_info["panel"]
+            open_time_obj = ticket_info.opened
+            panel_name = ticket_info.panel
 
             entry = [
                 channel.mention if mention else channel.name,
@@ -853,25 +890,25 @@ def prep_overview_text(guild: discord.Guild, opened: dict, mention: bool = False
     return desc
 
 
-async def update_active_overview(guild: discord.Guild, conf: dict) -> Optional[int]:
+async def update_active_overview(guild: discord.Guild, conf: "GuildSettings") -> int | None:
     """Update active ticket overview
 
     Args:
-        guild (discord.Guild): discord server
-        conf (dict): settings for the guild
+        guild: discord server
+        conf: settings for the guild
 
     Returns:
-        int: Message ID of the overview panel
+        Message ID of the overview panel if created/updated
     """
-    if not conf["overview_channel"]:
+    if not conf.overview_channel:
         return
-    channel: discord.TextChannel = guild.get_channel(conf["overview_channel"])
+    channel: discord.TextChannel = guild.get_channel(conf.overview_channel)
     if not channel:
         return
     if not channel.permissions_for(guild.me).send_messages:
         return
 
-    txt = prep_overview_text(guild, conf["opened"], conf.get("overview_mention", False))
+    txt = prep_overview_text(guild, conf.opened, conf.overview_mention)
     title = _("Ticket Overview")
     embeds = []
     attachments = []
@@ -905,7 +942,7 @@ async def update_active_overview(guild: discord.Guild, conf: dict) -> Optional[i
         attachments = [file]
 
     message = None
-    if msg_id := conf["overview_msg"]:
+    if msg_id := conf.overview_msg:
         try:
             message = await channel.fetch_message(msg_id)
         except (discord.NotFound, discord.HTTPException):

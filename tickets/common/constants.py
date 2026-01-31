@@ -1,3 +1,4 @@
+# This file has been deprecated and is kept for reference only.
 DEFAULT_GUILD = {
     # Settings
     "support_roles": [],  # Role ids that have access to all tickets
