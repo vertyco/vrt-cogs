@@ -738,6 +738,26 @@ async def run_migrations(data: dict[str, t.Any], config: Config) -> tuple[DB, bo
         if not conf:
             continue
 
+        # Sanitize opened tickets - fix invalid first_response values
+        opened: dict[str, t.Any] = conf.get("opened", {})
+        for uid, tickets in opened.items():
+            if not isinstance(tickets, dict):
+                continue
+            for cid, ticket in tickets.items():
+                if not isinstance(ticket, dict):
+                    continue
+                # Fix invalid first_response values (e.g., "legacy" string)
+                first_response = ticket.get("first_response")
+                if first_response is not None and not isinstance(first_response, (int, float)):
+                    # If it's not a valid timestamp or None, clear it
+                    if isinstance(first_response, str):
+                        # Try to parse as ISO datetime string, otherwise set to None
+                        try:
+                            datetime.fromisoformat(first_response.replace("Z", "+00:00"))
+                        except (ValueError, AttributeError):
+                            ticket["first_response"] = None
+                            migrated = True
+
         panels: dict[str, t.Any] = conf.get("panels", {})
         for panel_name, panel in panels.items():
             # Convert modal from list to dict if needed (old schema)
