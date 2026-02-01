@@ -47,6 +47,10 @@ class MixinMeta(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
+    async def close_sentry(self) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
     async def get_dsn(self, api_tokens: t.Optional[dict[str, str]] = None) -> str:
         raise NotImplementedError
 

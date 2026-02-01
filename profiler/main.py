@@ -35,7 +35,7 @@ class Profiler(Owner, Profiling, Wrapper, Listeners, commands.Cog, metaclass=Com
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.6.3"
+    __version__ = "1.7.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -141,6 +141,9 @@ class Profiler(Owner, Profiling, Wrapper, Listeners, commands.Cog, metaclass=Com
     async def start_sentry(self, dsn: str) -> None:
         await self.close_sentry()
         if not dsn:
+            return
+        if not self.db.sentry_enabled:
+            log.info("Sentry is disabled, skipping initialization")
             return
         log.info("Initializing Sentry with DSN %s", dsn)
         sentry_sdk.init(
