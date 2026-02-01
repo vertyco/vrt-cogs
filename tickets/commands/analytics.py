@@ -124,15 +124,15 @@ class AnalyticsCommands(MixinMeta):
     async def staffboard(
         self,
         ctx: commands.Context,
-        metric: str = "closed",
+        metric: str = "response",
         timespan: commands.TimedeltaConverter = None,
     ):
         """
         View staff leaderboard for a specific metric.
 
         **Metrics:**
-        - `closed` - Most tickets closed
         - `response` - Fastest average response time
+        - `closed` - Most tickets closed
         - `claimed` - Most tickets claimed
         - `messages` - Most messages sent
         - `resolution` - Fastest average resolution time
@@ -142,8 +142,8 @@ class AnalyticsCommands(MixinMeta):
         - `[timespan]` - Time period to filter (e.g., 7d, 24h, 2w)
 
         **Examples:**
-        - `[p]ticketstats staffboard closed`
-        - `[p]ticketstats staffboard response 7d`
+        - `[p]ticketstats staffboard response`
+        - `[p]ticketstats staffboard closed 7d`
         """
         conf = self.db.get_conf(ctx.guild)
         valid_metrics = ["closed", "response", "claimed", "messages", "resolution"]
