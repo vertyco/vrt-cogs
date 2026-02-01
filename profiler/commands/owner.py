@@ -16,7 +16,7 @@ from sentry_sdk import profiler
 
 from ..abc import MixinMeta
 from ..common.formatting import humanize_size
-from ..common.mem_profiler import profile_memory
+from ..common.mem_profiler import profile_cog_memory, profile_memory
 from ..common.models import IGNORED_COGS
 from ..views.profile_menu import ProfileMenu
 
@@ -82,7 +82,8 @@ class Owner(MixinMeta):
         # DATA RETENTION
         txt += f"- Data retention is set to **{self.db.delta} {'hour' if self.db.delta == 1 else 'hours'}**\n"
 
-        # SENTRY PROFILING
+        # SENTRY
+        txt += f"- Sentry: **{'Enabled' if self.db.sentry_enabled else 'Disabled'}**\n"
         txt += f"- Sentry Profiling: **{'Enabled' if self.db.sentry_profiler else 'Disabled'}**\n"
 
         # CONFIG SIZE
@@ -523,8 +524,26 @@ class Owner(MixinMeta):
         view = ProfileMenu(ctx, self)
         await view.start()
 
+    @profiler.command(name="sentry")
+    async def toggle_sentry_enabled(self, ctx: commands.Context):
+        """
+        Toggle Sentry integration on/off
+
+        When disabled, Sentry will not initialize even if a DSN is configured.
+        This is useful if you want to temporarily disable error tracking without
+        removing the DSN configuration.
+        """
+        self.db.sentry_enabled = not self.db.sentry_enabled
+        await self.save()
+        if self.db.sentry_enabled:
+            await ctx.send("Sentry is now **Enabled**. Initializing...")
+            await self.start_sentry(await self.get_dsn())
+        else:
+            await ctx.send("Sentry is now **Disabled**. Closing connection...")
+            await self.close_sentry()
+
     @profiler.command(name="sentryprofiling")
-    async def toggle_sentry(self, ctx: commands.Context):
+    async def toggle_sentry_profiling(self, ctx: commands.Context):
         """
         Toggle Sentry profiling integration
 
@@ -534,6 +553,8 @@ class Owner(MixinMeta):
         # Check sentry version
         if "sentry_sdk" not in sys.modules:
             return await ctx.send("Sentry SDK is not installed or configured in your bot.")
+        if not self.db.sentry_enabled:
+            return await ctx.send("Sentry is disabled. Enable it first with the `sentry` command.")
         if not sentry_sdk.Hub.current.client:
             return await ctx.send("Sentry SDK is not initialized in your bot.")
         if not hasattr(profiler, "start_profiler"):
@@ -542,6 +563,26 @@ class Owner(MixinMeta):
         await self.save()
         await ctx.send(f"Sentry profiling is now **{self.db.sentry_profiler}**")
         await self.start_sentry(await self.get_dsn())
+
+    @profiler.command(name="cogmem")
+    async def view_cog_memory_profile(self, ctx: commands.Context, limit: int = 25):
+        """
+        Profile memory usage per cog
+
+        Shows estimated RAM consumption for each loaded cog, sorted by size.
+        Uses deep object traversal to calculate the total memory footprint
+        of each cog instance including all referenced objects.
+
+        **Note**: This is an estimate. Objects shared between cogs may be
+        counted multiple times, and some internal Python objects may not
+        be fully accounted for.
+
+        **Arguments**:
+        - `limit`: Maximum number of cogs to display (default: 25)
+        """
+        async with ctx.typing():
+            result = await asyncio.to_thread(profile_cog_memory, self.bot, limit)
+        await ctx.send(f"## Cog Memory Usage\n{box(result, lang='py')}")
 
     @profiler.command(name="sentrydsn")
     async def set_sentry_dsn(self, ctx: commands.Context, dsn: str):
