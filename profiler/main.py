@@ -7,11 +7,8 @@ from discord.ext import tasks
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from sentry_sdk import profiler
-from sentry_sdk.integrations.aiohttp import AioHttpIntegration
 from sentry_sdk.integrations.asyncio import AsyncioIntegration
-from sentry_sdk.integrations.httpx import HttpxIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
-from sentry_sdk.integrations.openai import OpenAIIntegration
 from sentry_sdk.integrations.socket import SocketIntegration
 
 from .abc import CompositeMetaClass
@@ -145,11 +142,8 @@ class Profiler(Owner, Profiling, Wrapper, Listeners, commands.Cog, metaclass=Com
         sentry_sdk.init(
             dsn=dsn,
             integrations=[
-                AioHttpIntegration(),
                 AsyncioIntegration(),
-                HttpxIntegration(),
                 LoggingIntegration(event_level=logging.ERROR),
-                OpenAIIntegration(),
                 SocketIntegration(),
             ],
             include_local_variables=True,
