@@ -4,7 +4,7 @@ import sys
 import typing as t
 from inspect import isframe
 
-from pympler import asizeof, muppy, summary
+from pympler import muppy, summary
 from pympler.util import stringutils
 from tabulate import tabulate
 
@@ -53,74 +53,66 @@ def profile_memory(limit: int = 15) -> str:
     return tabulate(rows, headers=["types", "objects", "total size"])
 
 
-def _get_cog_size(cog_instance: t.Any) -> int:
-    """Get the size of a cog instance with fallback methods.
+def _sizeof_recursive(obj: t.Any, seen: t.Set[int], depth: int = 0, max_depth: int = 30) -> int:
+    """Recursively calculate the size of an object and its references.
 
-    Primary method uses pympler.asizeof for deep traversal.
-    Falls back to a manual traversal of __dict__ if that fails.
+    Args:
+        obj: The object to measure
+        seen: Set of object ids already counted (shared across calls)
+        depth: Current recursion depth
+        max_depth: Maximum recursion depth to prevent infinite loops
+
+    Returns:
+        Size in bytes of newly seen objects only
     """
+    if depth > max_depth:
+        return 0
+
+    obj_id = id(obj)
+    if obj_id in seen:
+        return 0
+    seen.add(obj_id)
+
+    size = 0
     try:
-        # Use asizeof for deep size calculation
-        # limit=50 prevents infinite recursion on circular references
-        # code=True includes bytecode size for methods
-        return asizeof.asizeof(cog_instance, limit=50, code=True)
-    except Exception:
+        size = sys.getsizeof(obj)
+    except (TypeError, ValueError):
+        return 0
+
+    # Handle common container types
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            size += _sizeof_recursive(k, seen, depth + 1, max_depth)
+            size += _sizeof_recursive(v, seen, depth + 1, max_depth)
+    elif isinstance(obj, (list, tuple, set, frozenset)):
+        for item in obj:
+            size += _sizeof_recursive(item, seen, depth + 1, max_depth)
+    elif isinstance(obj, (str, bytes, bytearray, int, float, bool, type(None))):
+        # Primitives - already counted by getsizeof, no children
         pass
-
-    # Fallback: manually traverse __dict__ and sum sizes
-    # This is less accurate but handles Pydantic edge cases
-    total = sys.getsizeof(cog_instance)
-    seen: t.Set[int] = {id(cog_instance)}
-
-    def _sizeof_fallback(obj: t.Any, depth: int = 0) -> int:
-        if depth > 20 or id(obj) in seen:
-            return 0
-        seen.add(id(obj))
-
-        size = 0
+    elif hasattr(obj, "__dict__") and not isinstance(obj, type):
+        # Instance objects - traverse __dict__
         try:
-            size = sys.getsizeof(obj)
-        except (TypeError, ValueError):
-            return 0
-
-        # Handle common container types
-        if isinstance(obj, dict):
-            for k, v in obj.items():
-                size += _sizeof_fallback(k, depth + 1)
-                size += _sizeof_fallback(v, depth + 1)
-        elif isinstance(obj, (list, tuple, set, frozenset)):
-            for item in obj:
-                size += _sizeof_fallback(item, depth + 1)
-        elif hasattr(obj, "__dict__") and not isinstance(obj, type):
-            # Skip class objects, only traverse instances
+            for v in obj.__dict__.values():
+                size += _sizeof_recursive(v, seen, depth + 1, max_depth)
+        except Exception:
+            pass
+    elif hasattr(obj, "__slots__"):
+        for slot in getattr(obj, "__slots__", []):
             try:
-                for v in obj.__dict__.values():
-                    size += _sizeof_fallback(v, depth + 1)
-            except Exception:
+                size += _sizeof_recursive(getattr(obj, slot), seen, depth + 1, max_depth)
+            except AttributeError:
                 pass
-        elif hasattr(obj, "__slots__"):
-            for slot in obj.__slots__:
-                try:
-                    size += _sizeof_fallback(getattr(obj, slot), depth + 1)
-                except AttributeError:
-                    pass
 
-        return size
-
-    # Traverse cog's __dict__
-    if hasattr(cog_instance, "__dict__"):
-        for value in cog_instance.__dict__.values():
-            total += _sizeof_fallback(value)
-
-    return total
+    return size
 
 
 def profile_cog_memory(bot: "Red", limit: int = 25) -> str:
     """Profile memory usage per cog.
 
-    Uses pympler's asizeof to calculate the deep size of each cog instance,
-    traversing all objects reachable from the cog. Falls back to a simpler
-    traversal method if asizeof fails (e.g., with Pydantic models).
+    Calculates the unique memory footprint of each cog by tracking object IDs
+    across all cogs. Shared objects (like self.bot) are only counted once,
+    attributed to whichever cog is processed first.
 
     Args:
         bot: The Red bot instance
@@ -131,10 +123,33 @@ def profile_cog_memory(bot: "Red", limit: int = 25) -> str:
     """
     gc.collect()
 
+    # Shared seen set - objects are only counted once across ALL cogs
+    seen: t.Set[int] = set()
+
+    # Pre-mark the bot instance as seen so it's not counted for any cog
+    # This gives a cleaner picture of what each cog uniquely owns
+    seen.add(id(bot))
+
     cog_sizes: t.List[t.Tuple[str, int]] = []
     for cog_name, cog_instance in bot.cogs.items():
         try:
-            size = _get_cog_size(cog_instance)
+            # Mark the cog instance itself
+            cog_id = id(cog_instance)
+            if cog_id in seen:
+                cog_sizes.append((cog_name, 0))
+                continue
+            seen.add(cog_id)
+
+            size = sys.getsizeof(cog_instance)
+
+            # Traverse only the cog's __dict__ (its instance attributes)
+            if hasattr(cog_instance, "__dict__"):
+                for attr_name, attr_value in cog_instance.__dict__.items():
+                    # Skip self.bot since we pre-marked it
+                    if attr_name == "bot":
+                        continue
+                    size += _sizeof_recursive(attr_value, seen)
+
             cog_sizes.append((cog_name, size))
         except Exception as e:
             log.debug(f"Failed to get size of cog {cog_name}: {e}")
