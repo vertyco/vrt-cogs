@@ -1883,7 +1883,7 @@ class AdminCommands(MixinMeta):
             return await ctx.send(_("Panel does not exist!"))
         panel = conf.panels[panel_name]
         # Create a custom temp view by manipulating the panel
-        view = PanelView(self.bot, ctx.guild, self, [panel], mock_user=user)
+        view = PanelView(self.bot, ctx.guild, self, [(panel_name, panel)], mock_user=user)
         desc = _(
             "Click the button below to open a {} ticket for {}\nThis message will self-cleanup in 2 minutes."
         ).format(panel_name, user.name)
