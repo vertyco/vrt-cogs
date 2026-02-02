@@ -566,7 +566,7 @@ class Owner(MixinMeta):
         await self.start_sentry(await self.get_dsn())
 
     @profiler.command(name="cogmem")
-    async def view_cog_memory_profile(self, ctx: commands.Context, limit: int = 25):
+    async def view_cog_memory_profile(self, ctx: commands.Context, limit: int = 0):
         """
         Profile memory usage per cog
 
@@ -579,7 +579,7 @@ class Owner(MixinMeta):
         be fully accounted for.
 
         **Arguments**:
-        - `limit`: Maximum number of cogs to display (default: 25)
+        - `limit`: Maximum number of cogs to display (default: all)
         """
         async with ctx.typing():
             result = await asyncio.to_thread(profile_cog_memory, self.bot, limit)
