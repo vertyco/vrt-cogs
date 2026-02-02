@@ -9,7 +9,6 @@ from redbot.core.bot import Red
 from sentry_sdk import profiler
 from sentry_sdk.integrations.aiohttp import AioHttpIntegration
 from sentry_sdk.integrations.asyncio import AsyncioIntegration
-from sentry_sdk.integrations.asyncpg import AsyncPGIntegration
 from sentry_sdk.integrations.httpx import HttpxIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk.integrations.openai import OpenAIIntegration
@@ -35,7 +34,7 @@ class Profiler(Owner, Profiling, Wrapper, Listeners, commands.Cog, metaclass=Com
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.7.1"
+    __version__ = "1.7.2"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -148,7 +147,6 @@ class Profiler(Owner, Profiling, Wrapper, Listeners, commands.Cog, metaclass=Com
             integrations=[
                 AioHttpIntegration(),
                 AsyncioIntegration(),
-                AsyncPGIntegration(),
                 HttpxIntegration(),
                 LoggingIntegration(event_level=logging.ERROR),
                 OpenAIIntegration(),
