@@ -130,11 +130,8 @@ class Profiler(Owner, Profiling, Wrapper, Listeners, commands.Cog, metaclass=Com
             await self.save()
 
     async def close_sentry(self) -> None:
-        try:
-            client: sentry_sdk.Client = sentry_sdk.Hub.current.client  # type: ignore
-        except KeyError:
-            client = None
-        if client is not None:
+        client = sentry_sdk.get_client()
+        if client.is_active():
             profiler.stop_profiler()
             client.close(timeout=0)
 

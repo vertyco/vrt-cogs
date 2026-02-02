@@ -555,7 +555,8 @@ class Owner(MixinMeta):
             return await ctx.send("Sentry SDK is not installed or configured in your bot.")
         if not self.db.sentry_enabled:
             return await ctx.send("Sentry is disabled. Enable it first with the `sentry` command.")
-        if not sentry_sdk.Hub.current.client:
+        client = sentry_sdk.get_client()
+        if not client.is_active():
             return await ctx.send("Sentry SDK is not initialized in your bot.")
         if not hasattr(profiler, "start_profiler"):
             return await ctx.send("Your version of Sentry SDK does not support profiling. Please update it.")
@@ -582,7 +583,10 @@ class Owner(MixinMeta):
         """
         async with ctx.typing():
             result = await asyncio.to_thread(profile_cog_memory, self.bot, limit)
-        await ctx.send(f"## Cog Memory Usage\n{box(result, lang='py')}")
+        pages = list(pagify(result, page_length=1900))
+        for i, page in enumerate(pages):
+            header = "## Cog Memory Usage\n" if i == 0 else ""
+            await ctx.send(f"{header}{box(page, lang='py')}")
 
     @profiler.command(name="sentrydsn")
     async def set_sentry_dsn(self, ctx: commands.Context, dsn: str):
@@ -607,9 +611,10 @@ class Owner(MixinMeta):
         """
         if not hasattr(profiler, "start_profiler"):
             return await ctx.send("Your version of Sentry SDK does not support profiling. Please update it.")
-        if not sentry_sdk.Hub.current.client:
+        client = sentry_sdk.get_client()
+        if not client.is_active():
             return await ctx.send("Sentry SDK is not initialized in your bot.")
-        dsn = sentry_sdk.Hub.current.client.options.get("dsn")
+        dsn = client.options.get("dsn")
         if not dsn:
             return await ctx.send("Sentry DSN is not configured.")
         await ctx.send(f"Sentry DSN configured with DSN: `{dsn}`")
