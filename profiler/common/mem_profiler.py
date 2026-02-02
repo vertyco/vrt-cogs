@@ -6,10 +6,8 @@ from inspect import isframe
 
 from pympler import muppy, summary
 from pympler.util import stringutils
+from redbot.core.bot import Red
 from tabulate import tabulate
-
-if t.TYPE_CHECKING:
-    from redbot.core.bot import Red
 
 log = logging.getLogger("red.vrt.profiler.mem_profiler")
 
@@ -107,7 +105,7 @@ def _sizeof_recursive(obj: t.Any, seen: t.Set[int], depth: int = 0, max_depth: i
     return size
 
 
-def profile_cog_memory(bot: "Red", limit: int = 25) -> str:
+def profile_cog_memory(bot: Red, limit: int = 25) -> str:
     """Profile memory usage per cog.
 
     Calculates the unique memory footprint of each cog by tracking object IDs
@@ -145,8 +143,8 @@ def profile_cog_memory(bot: "Red", limit: int = 25) -> str:
             # Traverse only the cog's __dict__ (its instance attributes)
             if hasattr(cog_instance, "__dict__"):
                 for attr_name, attr_value in cog_instance.__dict__.items():
-                    # Skip self.bot since we pre-marked it
-                    if attr_name == "bot":
+                    # Skip any bot instance references
+                    if isinstance(attr_value, Red):
                         continue
                     size += _sizeof_recursive(attr_value, seen)
 
