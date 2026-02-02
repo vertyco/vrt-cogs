@@ -56,12 +56,12 @@ def _sizeof_recursive(obj: t.Any, seen: t.Set[int], depth: int = 0, max_depth: i
 
     Args:
         obj: The object to measure
-        seen: Set of object ids already counted (shared across calls)
+        seen: Set of object ids already counted (for cycle detection)
         depth: Current recursion depth
         max_depth: Maximum recursion depth to prevent infinite loops
 
     Returns:
-        Size in bytes of newly seen objects only
+        Size in bytes of the object and its children
     """
     if depth > max_depth:
         return 0
@@ -105,49 +105,83 @@ def _sizeof_recursive(obj: t.Any, seen: t.Set[int], depth: int = 0, max_depth: i
     return size
 
 
-def profile_cog_memory(bot: Red, limit: int = 25) -> str:
+def _get_excluded_ids(bot: Red) -> t.Set[int]:
+    """Get IDs of objects that should be excluded from cog memory counting.
+
+    This includes the bot instance and its direct attributes to avoid
+    counting shared infrastructure.
+    """
+    excluded: t.Set[int] = {id(bot)}
+
+    # Exclude bot's direct attributes (guilds, users, channels, etc.)
+    if hasattr(bot, "__dict__"):
+        for attr_value in bot.__dict__.values():
+            excluded.add(id(attr_value))
+
+    return excluded
+
+
+def _measure_cog(cog_instance: t.Any, excluded_ids: t.Set[int]) -> int:
+    """Measure the memory footprint of a single cog.
+
+    Each cog is measured independently with its own seen set,
+    but with shared bot-related objects pre-excluded.
+
+    Args:
+        cog_instance: The cog to measure
+        excluded_ids: Set of object IDs to skip (bot and its attributes)
+
+    Returns:
+        Size in bytes
+    """
+    # Fresh seen set for this cog, pre-populated with exclusions
+    seen: t.Set[int] = excluded_ids.copy()
+
+    cog_id = id(cog_instance)
+    if cog_id in seen:
+        return 0
+    seen.add(cog_id)
+
+    size = sys.getsizeof(cog_instance)
+
+    # Traverse the cog's __dict__ (its instance attributes)
+    if hasattr(cog_instance, "__dict__"):
+        for attr_name, attr_value in cog_instance.__dict__.items():
+            # Skip bot references by isinstance check
+            if isinstance(attr_value, Red):
+                continue
+            size += _sizeof_recursive(attr_value, seen, depth=0, max_depth=50)
+
+    return size
+
+
+def profile_cog_memory(bot: Red, limit: int = 0) -> str:
     """Profile memory usage per cog.
 
-    Calculates the unique memory footprint of each cog by tracking object IDs
-    across all cogs. Shared objects (like self.bot) are only counted once,
-    attributed to whichever cog is processed first.
+    Each cog is measured independently to show its full memory footprint.
+    The bot instance and its direct attributes are excluded to avoid
+    counting shared infrastructure.
+
+    Note: Shared objects between cogs (like Config internals) may be
+    counted multiple times. This is intentional - it shows the memory
+    each cog is "responsible for" rather than unique bytes.
 
     Args:
         bot: The Red bot instance
-        limit: Maximum number of cogs to display
+        limit: Maximum number of cogs to display (0 for all)
 
     Returns:
         A formatted table string showing cog memory usage
     """
     gc.collect()
 
-    # Shared seen set - objects are only counted once across ALL cogs
-    seen: t.Set[int] = set()
-
-    # Pre-mark the bot instance as seen so it's not counted for any cog
-    # This gives a cleaner picture of what each cog uniquely owns
-    seen.add(id(bot))
+    # Get IDs to exclude (bot and its direct children)
+    excluded_ids = _get_excluded_ids(bot)
 
     cog_sizes: t.List[t.Tuple[str, int]] = []
     for cog_name, cog_instance in bot.cogs.items():
         try:
-            # Mark the cog instance itself
-            cog_id = id(cog_instance)
-            if cog_id in seen:
-                cog_sizes.append((cog_name, 0))
-                continue
-            seen.add(cog_id)
-
-            size = sys.getsizeof(cog_instance)
-
-            # Traverse only the cog's __dict__ (its instance attributes)
-            if hasattr(cog_instance, "__dict__"):
-                for attr_name, attr_value in cog_instance.__dict__.items():
-                    # Skip any bot instance references
-                    if isinstance(attr_value, Red):
-                        continue
-                    size += _sizeof_recursive(attr_value, seen)
-
+            size = _measure_cog(cog_instance, excluded_ids)
             cog_sizes.append((cog_name, size))
         except Exception as e:
             log.debug(f"Failed to get size of cog {cog_name}: {e}")
@@ -156,14 +190,17 @@ def profile_cog_memory(bot: Red, limit: int = 25) -> str:
     # Sort by size descending
     cog_sizes.sort(key=lambda x: x[1], reverse=True)
 
+    # Apply limit (0 means all)
+    display_cogs = cog_sizes if limit <= 0 else cog_sizes[:limit]
+
     rows = []
     total_size = 0
-    for cog_name, size in cog_sizes[:limit]:
+    for cog_name, size in display_cogs:
         total_size += size
         rows.append([cog_name, stringutils.pp(size)])
 
     # Add total row
     rows.append(["─" * 20, "─" * 10])
-    rows.append(["TOTAL (shown)", stringutils.pp(total_size)])
+    rows.append(["TOTAL", stringutils.pp(total_size)])
 
     return tabulate(rows, headers=["Cog", "Memory"])
