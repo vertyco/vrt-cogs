@@ -689,3 +689,41 @@ class AnalyticsCommands(MixinMeta):
                     "Invalid target. Use `staff`, `user`, `server`, `responsetime`, or `all`.\nExample: `[p]ticketstats reset server`"
                 )
             )
+
+    @ticketstats.command(name="responsetime", aliases=["avgresponse"])
+    async def response_time(self, ctx: commands.Context):
+        """
+        View the average staff response time for tickets.
+
+        This shows the average time it takes for staff to send their first
+        response in a ticket, based on the last 100 tickets.
+        """
+        from ..common.utils import format_response_time, get_average_response_time
+
+        conf = self.db.get_conf(ctx.guild)
+        response_times = conf.response_times
+        avg_response = get_average_response_time(response_times)
+
+        if avg_response is None:
+            return await ctx.send(_("No response time data available yet."))
+
+        formatted_time = format_response_time(avg_response)
+        sample_size = len(response_times)
+
+        embed = discord.Embed(
+            title=_("📊 Ticket Response Time"),
+            color=discord.Color.blue(),
+        )
+        embed.add_field(
+            name=_("Average Response Time"),
+            value=f"**{formatted_time}**",
+            inline=False,
+        )
+        embed.add_field(
+            name=_("Sample Size"),
+            value=_("{} tickets").format(sample_size),
+            inline=False,
+        )
+        embed.set_footer(text=_("Based on the last {} ticket responses").format(sample_size))
+
+        await ctx.send(embed=embed)

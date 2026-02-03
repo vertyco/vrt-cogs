@@ -11,13 +11,7 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.mod import is_admin_or_superior
 
 from ..abc import MixinMeta
-from ..common.utils import (
-    can_close,
-    close_ticket,
-    format_response_time,
-    get_average_response_time,
-    get_ticket_owner,
-)
+from ..common.utils import can_close, close_ticket, get_ticket_owner
 
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
 log = logging.getLogger("red.vrt.tickets.base")
@@ -186,48 +180,3 @@ class BaseCommands(MixinMeta):
             closedby=ctx.author.id,
             cog=self,
         )
-
-    @commands.hybrid_command(name="responsetime", description="View average staff response time for tickets")
-    @commands.guild_only()
-    async def response_time(self, ctx: commands.Context):
-        """View the average staff response time for tickets in this server"""
-        conf = self.db.get_conf(ctx.guild)
-        response_times = conf.response_times
-        avg_response = get_average_response_time(response_times)
-
-        if avg_response is None:
-            return await ctx.send(_("No response time data available yet."))
-
-        formatted_time = format_response_time(avg_response)
-        sample_size = len(response_times)
-
-        embed = discord.Embed(
-            title=_("📊 Ticket Response Time"),
-            color=discord.Color.blue(),
-        )
-        embed.add_field(
-            name=_("Average Response Time"),
-            value=f"**{formatted_time}**",
-            inline=False,
-        )
-        embed.add_field(
-            name=_("Sample Size"),
-            value=_("{} tickets").format(sample_size),
-            inline=False,
-        )
-        embed.set_footer(text=_("Based on the last {} ticket responses").format(sample_size))
-
-        await ctx.send(embed=embed)
-
-    @commands.command(name="clearresponsetimes")
-    @commands.guild_only()
-    @commands.admin_or_permissions(administrator=True)
-    async def clear_response_times(self, ctx: commands.Context):
-        """Clear all stored response time data
-
-        Use this if the response time data is inaccurate due to legacy tickets.
-        """
-        conf = self.db.get_conf(ctx.guild)
-        conf.response_times = []
-        await self.save()
-        await ctx.send(_("✅ Response time data has been cleared. Fresh data will be collected from new tickets."))
