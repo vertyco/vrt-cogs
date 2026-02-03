@@ -595,11 +595,13 @@ class AnalyticsCommands(MixinMeta):
         - `staff <user>` - Reset a specific staff member's stats
         - `user <user>` - Reset a specific user's ticket stats
         - `server` - Reset all server-wide stats
-        - `all` - Reset ALL statistics (staff, user, and server)
+        - `responsetime` - Reset the response time data shown on ticket panels
+        - `all` - Reset ALL statistics (staff, user, server, and response times)
 
         **Examples:**
         - `[p]ticketstats reset staff @User`
         - `[p]ticketstats reset server`
+        - `[p]ticketstats reset responsetime`
         - `[p]ticketstats reset all`
         """
         from ..common.views import confirm
@@ -646,10 +648,28 @@ class AnalyticsCommands(MixinMeta):
             await self.save()
             await ctx.send(_("✅ Server statistics have been reset."))
 
+        elif target == "responsetime" or target == "responsetimes":
+            current_count = len(conf.response_times)
+            if current_count == 0:
+                return await ctx.send(_("There are no response times recorded."))
+
+            confirmed = await confirm(
+                ctx,
+                _(
+                    "Reset the **response time** data shown on ticket panels? This will clear {} response time samples."
+                ).format(current_count),
+            )
+            if not confirmed:
+                return await ctx.send(_("Cancelled."))
+
+            conf.response_times = []
+            await self.save()
+            await ctx.send(_("✅ Response time data has been reset. New response times will be tracked going forward."))
+
         elif target == "all":
             confirmed = await confirm(
                 ctx,
-                _("⚠️ This will reset **ALL** statistics (staff, user, and server). Are you sure?"),
+                _("⚠️ This will reset **ALL** statistics (staff, user, server, and response times). Are you sure?"),
             )
             if not confirmed:
                 return await ctx.send(_("Cancelled."))
@@ -659,10 +679,13 @@ class AnalyticsCommands(MixinMeta):
             conf.staff_stats = {}
             conf.user_stats = {}
             conf.server_stats = ServerStats()
+            conf.response_times = []
             await self.save()
             await ctx.send(_("✅ All statistics have been reset."))
 
         else:
             await ctx.send(
-                _("Invalid target. Use `staff`, `user`, `server`, or `all`.\nExample: `[p]ticketstats reset server`")
+                _(
+                    "Invalid target. Use `staff`, `user`, `server`, `responsetime`, or `all`.\nExample: `[p]ticketstats reset server`"
+                )
             )

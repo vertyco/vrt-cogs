@@ -775,6 +775,11 @@ async def prune_invalid_tickets(
 ) -> bool:
     """Prune tickets for channels that no longer exist.
 
+    This function records closing analytics for pruned tickets to maintain
+    accurate statistics when tickets are cleaned up due to:
+    - Member leaving while bot was down
+    - Channel being deleted externally
+
     Args:
         guild: The Discord guild
         conf: Guild settings model
@@ -790,14 +795,18 @@ async def prune_invalid_tickets(
         return False
 
     users_to_remove: list[int] = []
-    tickets_to_remove: list[tuple[int, int]] = []
+    tickets_to_remove: list[tuple[int, int, OpenedTicket]] = []  # (user_id, channel_id, ticket)
     count = 0
+
     for user_id, tickets in list(opened_tickets.items()):
         member = guild.get_member(user_id)
         if not member:
-            count += len(list(tickets.keys()))
+            # Member has left the server - record analytics for all their tickets
+            for channel_id, ticket in tickets.items():
+                count += 1
+                tickets_to_remove.append((user_id, channel_id, ticket))
+                log.info(f"Cleaning up ticket {channel_id} for user {user_id} who left")
             users_to_remove.append(user_id)
-            log.info(f"Cleaning up user {user_id}'s tickets for leaving")
             continue
 
         if not tickets:
@@ -812,7 +821,7 @@ async def prune_invalid_tickets(
 
             count += 1
             log.info(f"Ticket channel {channel_id} no longer exists for {member}")
-            tickets_to_remove.append((user_id, channel_id))
+            tickets_to_remove.append((user_id, channel_id, ticket))
 
             panel = conf.panels.get(ticket.panel)
             if not panel:
@@ -829,10 +838,19 @@ async def prune_invalid_tickets(
                     except (discord.NotFound, discord.Forbidden):
                         pass
 
+    # Record analytics for pruned tickets before removing them
+    if tickets_to_remove:
+        bot_id = guild.me.id if guild.me else 0
+        for uid, cid, ticket in tickets_to_remove:
+            # Record closing analytics (bot is the "closer" for pruned tickets)
+            record_ticket_closed(conf, ticket, cid, uid, bot_id)
+
+    # Now remove the tickets from opened
     if users_to_remove or tickets_to_remove:
         for uid in users_to_remove:
-            del conf.opened[uid]
-        for uid, cid in tickets_to_remove:
+            if uid in conf.opened:
+                del conf.opened[uid]
+        for uid, cid, __ in tickets_to_remove:
             if uid not in conf.opened:
                 # User was already removed
                 continue
