@@ -108,10 +108,26 @@ class Confirm(View):
         self.stop()
 
 
-async def confirm(ctx: commands.Context, msg: discord.Message) -> bool | None:
+async def confirm(ctx: commands.Context, message: str | discord.Message) -> bool | None:
+    """Show a confirmation dialog with Yes/No buttons.
+
+    Args:
+        ctx: The command context
+        message: Either a string to send as a new message, or an existing Message to edit
+
+    Returns:
+        True if confirmed, False if denied, None if timed out
+    """
     try:
         view: Confirm = Confirm(ctx)
-        await msg.edit(view=view)
+
+        # Handle both string messages and existing Message objects
+        if isinstance(message, str):
+            msg = await ctx.send(message, view=view)
+        else:
+            msg = message
+            await msg.edit(view=view)
+
         await view.wait()
         if view.value is None:
             await msg.delete()
