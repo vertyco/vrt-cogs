@@ -12,6 +12,7 @@ from redbot.core.i18n import Translator, cog_i18n
 
 from .abc import CompositeMetaClass
 from .commands import TicketCommands
+from .common.analytics import record_staff_message, record_user_message
 from .common.functions import Functions
 from .common.models import DB, GuildSettings, migrate_from_old_config, run_migrations
 from .common.utils import (
@@ -36,7 +37,7 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "3.0.1"
+    __version__ = "3.0.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -383,7 +384,7 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        """Track staff first response time in tickets."""
+        """Track staff first response time and message counts in tickets."""
         if not message.guild:
             return
         if message.author.bot:
@@ -409,21 +410,16 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
         if not ticket:
             return
 
-        # Don't track if this is the ticket owner
+        # Track user messages (ticket owner)
         if message.author.id == owner_id:
-            log.debug("Response time: Skipping - author is ticket owner")
-            return
-
-        # Check if already responded
-        if ticket.first_response is not None:
-            # Already has a response time recorded
-            log.debug(f"Response time: Skipping - already has first_response: {ticket.first_response}")
+            record_user_message(conf, owner_id)
+            await self.save()
             return
 
         # Check if author is a support staff member or has admin perms
         panel_name = ticket.panel
         if not panel_name or panel_name not in conf.panels:
-            log.debug(f"Response time: Skipping - panel not found: {panel_name}")
+            log.debug(f"Message tracking: Skipping - panel not found: {panel_name}")
             return
 
         panel = conf.panels[panel_name]
@@ -434,29 +430,29 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
         author_role_ids = {r.id for r in message.author.roles}
         is_staff = bool(author_role_ids & all_support_roles)
 
-        log.debug(
-            f"Response time: support_roles={support_role_ids}, panel_roles={panel_role_ids}, author_roles={author_role_ids}, is_staff={is_staff}"
-        )
-
         # Also count as staff if they have admin permissions or are guild owner
         if not is_staff:
             member = message.author
             if isinstance(member, discord.Member):
                 is_staff = member.guild_permissions.administrator or member.id == guild.owner_id
-                log.debug(
-                    f"Response time: Checking admin - is_admin={member.guild_permissions.administrator}, is_owner={member.id == guild.owner_id}"
-                )
 
         if not is_staff:
-            log.debug("Response time: Skipping - author is not staff")
+            # Non-staff, non-owner message (maybe someone added to ticket)
             return
 
-        # Record the first response time
-        log.info(f"Response time: Recording response time for ticket {channel_id}")
-        await record_response_time(
-            cog=self,
-            guild=guild,
-            channel_id=channel_id,
-            ticket=ticket,
-            staff_id=message.author.id,
-        )
+        # Record staff message for analytics (tracks messages_sent, tickets_messaged_in)
+        record_staff_message(conf, message.author.id, channel_id)
+
+        # Record the first response time (only if no first response yet)
+        if ticket.first_response is None:
+            log.info(f"Response time: Recording first response for ticket {channel_id}")
+            await record_response_time(
+                cog=self,
+                guild=guild,
+                channel_id=channel_id,
+                ticket=ticket,
+                staff_id=message.author.id,
+            )
+        else:
+            # Just save for the message tracking
+            await self.save()
