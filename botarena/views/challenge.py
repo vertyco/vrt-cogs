@@ -376,7 +376,13 @@ class ChallengeLayout(BotArenaView):
 
         if challenger_bots:
             # Position labels based on bot count
-            pos_labels = ["Left", "Middle", "Right"] if len(challenger_bots) == 3 else ["Left", "Right"] if len(challenger_bots) == 2 else ["Center"]
+            pos_labels = (
+                ["Left", "Middle", "Right"]
+                if len(challenger_bots) == 3
+                else ["Left", "Right"]
+                if len(challenger_bots) == 2
+                else ["Center"]
+            )
             for idx, bot in enumerate(challenger_bots):
                 pos = pos_labels[idx] if idx < len(pos_labels) else f"Pos {idx + 1}"
                 challenger_text += f"**[{pos}]** {bot.name} (HP: {bot.total_shielding}, {bot.component.name})\n"
@@ -399,7 +405,13 @@ class ChallengeLayout(BotArenaView):
 
         if opponent_bots:
             # Position labels based on bot count
-            pos_labels = ["Left", "Middle", "Right"] if len(opponent_bots) == 3 else ["Left", "Right"] if len(opponent_bots) == 2 else ["Center"]
+            pos_labels = (
+                ["Left", "Middle", "Right"]
+                if len(opponent_bots) == 3
+                else ["Left", "Right"]
+                if len(opponent_bots) == 2
+                else ["Center"]
+            )
             for idx, bot in enumerate(opponent_bots):
                 pos = pos_labels[idx] if idx < len(pos_labels) else f"Pos {idx + 1}"
                 opponent_text += f"**[{pos}]** {bot.name} (HP: {bot.total_shielding}, {bot.component.name})\n"
@@ -557,7 +569,7 @@ class ChallengeLayout(BotArenaView):
         await self.refresh(interaction)
 
         # Run battle
-        video_path, result = await self.cog.run_battle_subprocess(
+        video_path, result, error = await self.cog.run_battle_subprocess(
             team1=challenger_bots,
             team2=opponent_bots,
             output_format="mp4",
@@ -569,7 +581,8 @@ class ChallengeLayout(BotArenaView):
         self.battle_in_progress = False
 
         if not result or not video_path:
-            await self.message.channel.send("❌ Battle Error: An error occurred.", delete_after=10)
+            error_msg = error or "Unknown error occurred"
+            await self.message.channel.send(f"❌ **Battle Error**\n```\n{error_msg}\n```", delete_after=30)
             self._unready_both()
             await self.refresh(interaction)
             return
