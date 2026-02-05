@@ -436,8 +436,8 @@ class AnalyticsCommands(MixinMeta):
             hour_lines = []
             for hour in range(24):
                 count = hourly.get(hour, 0)
-                bar_len = int((count / max_hourly) * 10) if max_hourly > 0 else 0
-                bar = "█" * bar_len + "░" * (10 - bar_len)
+                bar_len = min(10, int((count / max_hourly) * 10)) if max_hourly > 0 else 0
+                bar = "▰" * bar_len + "▱" * (10 - bar_len)
                 hour_12 = hour % 12 or 12
                 am_pm = "AM" if hour < 12 else "PM"
                 hour_lines.append(f"`{hour_12:2}{am_pm}` {bar} {count}")
@@ -454,8 +454,8 @@ class AnalyticsCommands(MixinMeta):
             day_lines = []
             for day in range(7):
                 count = daily.get(day, 0)
-                bar_len = int((count / max_daily) * 15) if max_daily > 0 else 0
-                bar = "█" * bar_len + "░" * (15 - bar_len)
+                bar_len = min(15, int((count / max_daily) * 15)) if max_daily > 0 else 0
+                bar = "▰" * bar_len + "▱" * (15 - bar_len)
                 day_lines.append(f"`{DAY_NAMES[day][:3]}` {bar} {count}")
 
             embed.add_field(

@@ -892,13 +892,8 @@ class LogView(View):
             self.channel.permissions_for(user).send_messages,
         ]
         if isinstance(self.channel, discord.TextChannel):
-            if all(perms):
-                return await interaction.response.send_message(
-                    _("You already have access to the ticket **{}**!").format(self.channel.name),
-                    ephemeral=True,
-                    delete_after=60,
-                )
-            await self.channel.set_permissions(user, read_messages=True, send_messages=True)
+            if not all(perms):
+                await self.channel.set_permissions(user, read_messages=True, send_messages=True)
             await self.channel.send(_("{} was added to the ticket").format(str(user)))
         else:
             await self.channel.add_user(user)
