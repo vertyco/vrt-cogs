@@ -440,7 +440,7 @@ class AnalyticsCommands(MixinMeta):
                 bar = "▰" * bar_len + "▱" * (10 - bar_len)
                 hour_12 = hour % 12 or 12
                 am_pm = "AM" if hour < 12 else "PM"
-                hour_lines.append(f"`{hour_12:2}{am_pm}` {bar} {count}")
+                hour_lines.append(f"`{hour_12:2}{am_pm}` `{bar}` {count}")
 
             # Split into two columns for readability
             col1 = "\n".join(hour_lines[:12])
@@ -456,7 +456,7 @@ class AnalyticsCommands(MixinMeta):
                 count = daily.get(day, 0)
                 bar_len = min(15, int((count / max_daily) * 15)) if max_daily > 0 else 0
                 bar = "▰" * bar_len + "▱" * (15 - bar_len)
-                day_lines.append(f"`{DAY_NAMES[day][:3]}` {bar} {count}")
+                day_lines.append(f"`{DAY_NAMES[day][:3]}` `{bar}` {count}")
 
             embed.add_field(
                 name=_("📅 Daily Distribution"),
