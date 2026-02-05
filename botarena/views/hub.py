@@ -1507,7 +1507,7 @@ class MissionBriefingLayout(BotArenaView):
         await self.refresh(interaction)
 
         # Run battle with player's team color and mission-specific arena
-        video_path, result = await self.cog.run_battle_subprocess(
+        video_path, result, error = await self.cog.run_battle_subprocess(
             team1=my_bots,
             team2=enemy_bots,
             output_format="mp4",
@@ -1524,7 +1524,8 @@ class MissionBriefingLayout(BotArenaView):
             # Interaction already responded, use message.edit instead
             if self.message:
                 await self.message.edit(view=self)
-            await interaction.followup.send("❌ Battle Error: An error occurred.", ephemeral=True)
+            error_msg = error or "Unknown error occurred"
+            await interaction.followup.send(f"❌ **Battle Error**\n```\n{error_msg}\n```", ephemeral=True)
             return
 
         # Process result (same logic as before)

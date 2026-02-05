@@ -27,7 +27,7 @@ from .constants import CHASSIS, COMPONENTS, PLATING
 log = logging.getLogger("red.vrt.botarena")
 
 __author__ = "Vertyco"
-__version__ = "1.3.2a"
+__version__ = "1.3.3a"
 
 
 class BotArena(Commands, commands.Cog, metaclass=CompositeMetaClass):
@@ -158,7 +158,7 @@ class BotArena(Commands, commands.Cog, metaclass=CompositeMetaClass):
         team2_color: str = "red",
         chapter: t.Optional[int] = None,
         mission_id: t.Optional[str] = None,
-    ) -> tuple[t.Optional[Path], t.Optional[dict]]:
+    ) -> tuple[t.Optional[Path], t.Optional[dict], t.Optional[str]]:
         """
         Run a battle in a subprocess and return the video path and results.
 
@@ -173,7 +173,9 @@ class BotArena(Commands, commands.Cog, metaclass=CompositeMetaClass):
             mission_id: Mission ID for mission-specific arena backgrounds (e.g., "1-1")
 
         Returns:
-            Tuple of (video_path, battle_result) or (None, None) on error
+            Tuple of (video_path, battle_result, error_message)
+            On success: (Path, dict, None)
+            On error: (None, None, error_string)
         """
         # Create temp files for input/output
         battle_id = str(uuid4())[:8]
@@ -253,7 +255,14 @@ class BotArena(Commands, commands.Cog, metaclass=CompositeMetaClass):
                     log.error(f"Stderr: {stderr_text}")
                 if stdout_text:
                     log.error(f"Stdout: {stdout_text}")
-                return None, None
+                # Extract meaningful error from stderr or provide generic message
+                error_msg = f"Battle process failed (exit code {proc.returncode})"
+                if stderr_text:
+                    # Get the last non-empty line of stderr for a concise error
+                    error_lines = [i.strip() for i in stderr_text.split("\n") if i.strip()]
+                    if error_lines:
+                        error_msg = error_lines[-1][:200]  # Truncate to reasonable length
+                return None, None, error_msg
 
             # Parse result from stdout
             try:
@@ -261,26 +270,26 @@ class BotArena(Commands, commands.Cog, metaclass=CompositeMetaClass):
             except json.JSONDecodeError as e:
                 log.error(f"Failed to parse battle result JSON: {e}")
                 log.error(f"Stdout was: {stdout_text[:500]}")
-                return None, None
+                return None, None, f"Failed to parse battle results: {e}"
 
             if "error" in result:
                 log.error(f"Battle error: {result['error']}")
-                return None, None
+                return None, None, result["error"]
 
             # Get actual output path (might differ if fallback was used)
             actual_output = Path(result.get("output_path", str(output_file)))
 
             if actual_output.exists():
-                return actual_output, result
+                return actual_output, result, None
             elif output_file.exists():
-                return output_file, result
+                return output_file, result, None
             else:
                 log.error(f"Battle output file not created at {output_file}")
-                return None, None
+                return None, None, "Battle video file was not created"
 
         except Exception as e:
             log.exception(f"Failed to run battle subprocess: {e}")
-            return None, None
+            return None, None, f"Battle subprocess error: {type(e).__name__}: {e}"
         finally:
             # Clean up input file
             if input_file.exists():
