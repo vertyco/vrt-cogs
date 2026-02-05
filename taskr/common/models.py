@@ -642,6 +642,12 @@ class ScheduledCommand(Base):
         embed.add_field(name="Target Info", value=value, inline=False)
 
         ts = int(self.created_on.timestamp())
+        try:
+            trigger_str = str(self.trigger(timezone))
+            next_runs = self.next_x_runs(3, timezone)
+        except ValueError as e:
+            trigger_str = f"**Invalid Configuration:** {e}"
+            next_runs = "**Unable to calculate due to invalid configuration**"
         value = _(
             "This command will run: {} ({})\n"
             "• Timezone: **{}**\n"
@@ -650,12 +656,12 @@ class ScheduledCommand(Base):
             "Next 3 runtimes:\n{}"
         ).format(
             self.humanize(),
-            str(self.trigger(timezone)),
+            trigger_str,
             timezone,
             ts,
             ts,
             self.last_run_discord(),
-            self.next_x_runs(3, timezone),
+            next_runs,
         )
         embed.add_field(
             name="Runtime Info",

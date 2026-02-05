@@ -24,6 +24,83 @@ from .dynamic_modal import DynamicModal
 log = logging.getLogger("red.vrt.taskr.task_menu")
 _ = Translator("Taskr", __file__)
 
+# Units compatible with "between times" feature
+BETWEEN_TIME_UNITS = {"hours", "minutes"}
+# All valid interval units
+ALL_INTERVAL_UNITS = ["seconds", "minutes", "hours", "days", "weeks", "months", "years"]
+
+
+class IntervalModal(ui.Modal, title=_("Edit Interval")):
+    """Modal for configuring interval with a dropdown for unit selection."""
+
+    interval_input = ui.TextInput(
+        label=_("Interval"),
+        style=discord.TextStyle.short,
+        placeholder=_("every N units, ex: 5"),
+        required=False,
+        max_length=10,
+    )
+
+    def __init__(self, schedule: ScheduledCommand):
+        super().__init__()
+        self.schedule = schedule
+        self.inputs: dict[str, int | str | None] = {}
+
+        # Set defaults
+        self.interval_input.default = str(schedule.interval) if schedule.interval else None
+
+        # Check if between times are configured
+        has_between_time = bool(schedule.between_time_start and schedule.between_time_end)
+
+        # Build unit select options - start with None option
+        options = [
+            discord.SelectOption(
+                label=_("None (clear unit)"),
+                value="none",
+                default=(schedule.interval_unit is None),
+            )
+        ]
+        for unit in ALL_INTERVAL_UNITS:
+            if has_between_time and unit not in BETWEEN_TIME_UNITS:
+                continue
+            options.append(
+                discord.SelectOption(
+                    label=unit.capitalize(),
+                    value=unit,
+                    default=(unit == schedule.interval_unit),
+                )
+            )
+
+        # Add the unit select with Label
+        placeholder = _("Select interval unit...")
+        if has_between_time:
+            placeholder = _("Only hours/minutes (between times set)")
+
+        self.unit_label = ui.Label(
+            text=_("Unit"),
+            component=discord.ui.Select(
+                placeholder=placeholder,
+                options=options,
+                min_values=1,
+                max_values=1,
+            ),
+        )
+        self.add_item(self.unit_label)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+
+        interval = self.interval_input.value
+        unit_select: discord.ui.Select = self.unit_label.component  # type: ignore
+        unit_value = unit_select.values[0] if unit_select.values else None
+        # Handle "none" option to clear the unit
+        unit = None if unit_value == "none" else unit_value
+
+        self.inputs["interval"] = int(interval) if interval and interval.isdigit() else None
+        self.inputs["unit"] = unit
+        self.inputs["interval_raw"] = interval  # For validation
+        self.stop()
+
 
 class ConfigScheduleModal(ui.Modal, title=_("Edit Scheduled Command")):
     name = ui.TextInput(label=_("Scheduled Command Name"), max_length=45)
@@ -503,40 +580,34 @@ class TaskMenu(BaseMenu):
         if not self.tasks:
             return await interaction.response.send_message(_("No scheduled commands to configure."), ephemeral=True)
         schedule = self.tasks[self.page]
-        fields = {
-            "interval": {
-                "label": _("Interval"),
-                "style": discord.TextStyle.short,
-                "placeholder": _("every N units, ex: 5"),
-                "default": str(schedule.interval) if schedule.interval else None,
-                "required": False,
-            },
-            "units": {
-                "label": _("Units"),
-                "style": discord.TextStyle.short,
-                "placeholder": _("ex: seconds, minutes, hours, days, weeks, months, years"),
-                "default": schedule.interval_unit,
-                "required": False,
-            },
-        }
-        modal = DynamicModal(_("Edit Scheduled Command Interval"), fields, timeout=600)
+
+        modal = IntervalModal(schedule)
         await interaction.response.send_modal(modal)
         await modal.wait()
         if not modal.inputs:
             return
-        interval = modal.inputs["interval"]
-        units = modal.inputs["units"]
-        valid_units = ["seconds", "minutes", "hours", "days", "weeks", "months", "years"]
-        # Validate
-        if interval and not interval.isdigit():
+
+        interval_raw = modal.inputs.get("interval_raw")
+        interval = modal.inputs.get("interval")
+        unit = modal.inputs.get("unit")
+
+        # Validate interval is a number if provided
+        if interval_raw and not str(interval_raw).isdigit():
             return await interaction.followup.send(_("Interval must be a number."), ephemeral=True)
-        interval = int(interval) if interval else None
-        if units and units.lower() not in valid_units:
-            return await interaction.followup.send(_("Units must be one of {}.").format(valid_units), ephemeral=True)
-        units = units.lower() if units else None
-        # Update
-        schedule.interval = interval
-        schedule.interval_unit = units
+
+        # Update (cast to correct types)
+        schedule.interval = int(interval) if interval is not None else None
+        schedule.interval_unit = str(unit) if unit is not None else None
+
+        # Validate the trigger can be built
+        try:
+            schedule.trigger(self.timezone)
+        except ValueError as e:
+            return await interaction.followup.send(
+                _("Invalid configuration: {}").format(str(e)),
+                ephemeral=True,
+            )
+
         if not schedule.is_safe(
             self.timezone, self.db.premium_interval if self.is_premium else self.db.minimum_interval
         ):
@@ -544,6 +615,7 @@ class TaskMenu(BaseMenu):
             await self.message.edit(embed=await self.get_page(), view=self)
             await interaction.followup.send(_("Scheduled command interval is not safe."), ephemeral=True)
             return
+
         await self.message.edit(embed=await self.get_page(), view=self)
         await interaction.followup.send(_("Scheduled command interval updated."), ephemeral=True)
         self.cog.save()
@@ -809,11 +881,35 @@ class TaskMenu(BaseMenu):
                 between_time_end = parser.parse(between_time_end).time()
             except ValueError:
                 return await interaction.followup.send(_("Between time end is invalid!"), ephemeral=True)
+
+        # Validate: between times require compatible interval unit
+        if between_time_start and between_time_end:
+            current_unit = (schedule.interval_unit or "").lower()
+            if schedule.interval and current_unit and current_unit not in BETWEEN_TIME_UNITS:
+                return await interaction.followup.send(
+                    _(
+                        "Cannot set 'between times' when interval unit is **{}**.\n"
+                        "Between times only work with **hours** or **minutes** intervals.\n"
+                        "Please update your interval unit first, or leave between times empty."
+                    ).format(current_unit),
+                    ephemeral=True,
+                )
+
         # Update
         schedule.start_date = start_date
         schedule.end_date = end_date
         schedule.between_time_start = between_time_start
         schedule.between_time_end = between_time_end
+
+        # Validate the trigger can be built
+        try:
+            schedule.trigger(self.timezone)
+        except ValueError as e:
+            return await interaction.followup.send(
+                _("Invalid configuration: {}").format(str(e)),
+                ephemeral=True,
+            )
+
         await self.message.edit(embed=await self.get_page(), view=self)
         await interaction.followup.send(_("Scheduled command times updated."), ephemeral=True)
         self.cog.save()
