@@ -7,6 +7,7 @@ from redbot.core.utils.chat_formatting import humanize_timedelta
 
 from ..abc import MixinMeta
 from ..common.models import (
+    GuildSettings,
     get_server_stats_for_timespan,
     get_staff_stats_for_timespan,
     get_user_stats_for_timespan,
@@ -340,7 +341,7 @@ class AnalyticsCommands(MixinMeta):
         - `[p]ticketstats server`
         - `[p]ticketstats server 7d`
         """
-        conf = self.db.get_conf(ctx.guild)
+        conf: GuildSettings = self.db.get_conf(ctx.guild)
         stats = conf.server_stats
 
         timespan_text = humanize_timedelta(timedelta=timespan) if timespan else _("All Time")
@@ -389,8 +390,14 @@ class AnalyticsCommands(MixinMeta):
             usage = "\n".join(f"**{name}:** {count}" for name, count in sorted_panels)
             embed.add_field(name=_("📋 Top Panels"), value=usage, inline=True)
 
-        # Staff count
-        active_staff = len([s for s in conf.staff_stats.values() if s.tickets_closed > 0])
+        # Staff count - count any staff with activity (closed, claimed, messaged, or responded)
+        active_staff = len(
+            [
+                s
+                for s in conf.staff_stats.values()
+                if s.tickets_closed > 0 or s.tickets_claimed > 0 or s.messages_sent > 0 or s.response_count > 0
+            ]
+        )
         embed.add_field(name=_("👥 Active Staff"), value=str(active_staff), inline=True)
 
         await ctx.send(embed=embed)
