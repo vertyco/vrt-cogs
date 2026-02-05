@@ -37,17 +37,21 @@ import json
 import sys
 from pathlib import Path
 
-# Add the botarena directory itself to path so we can import submodules directly
-# WITHOUT going through botarena/__init__.py (which imports redbot and causes circular imports)
+# Add parent directory to path so we can import botarena modules
 _THIS_DIR = Path(__file__).parent
-if str(_THIS_DIR) not in sys.path:
-    sys.path.insert(0, str(_THIS_DIR))
+_PARENT_DIR = _THIS_DIR.parent
+if str(_PARENT_DIR) not in sys.path:
+    sys.path.insert(0, str(_PARENT_DIR))
 
-# Import directly from submodules to avoid botarena/__init__.py
-# This prevents circular imports when running as a standalone subprocess
-from common.engine import AIBehavior, BattleConfig, BattleEngine, TargetPriority  # noqa
-from common.renderer import BattleRenderer  # noqa
-from constants.parts import build_registry  # noqa
+# Now we can import from botarena package
+from botarena.common.engine import (  # noqa
+    AIBehavior,
+    BattleConfig,
+    BattleEngine,
+    TargetPriority,
+)
+from botarena.common.renderer import BattleRenderer  # noqa
+from botarena.constants.parts import build_registry  # noqa
 
 
 def run_battle_from_json(input_data: dict, output_path: str, format: str = "gif") -> dict:
