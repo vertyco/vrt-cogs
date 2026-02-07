@@ -223,7 +223,7 @@ class ChatHandler(MixinMeta):
                 prefix = (await self.bot.get_valid_prefixes(message.guild))[0]
                 log.error(f"API Error (From listener: {listener})", exc_info=e)
                 status = await self.openai_status()
-                self.bot._last_exception = f"{traceback.format_exc()}\nAPI Status: {status}"
+                self.bot._last_exception = f"{traceback.format_exc()}\nAPI Status: {status}"  # type: ignore
                 reply = _("Uh oh, something went wrong! Bot owner can use `{}` to view the error.").format(
                     f"{prefix}traceback"
                 )
@@ -375,8 +375,9 @@ class ChatHandler(MixinMeta):
         # Determine if we should embed the user's message
         message_tokens = await self.count_tokens(message, model)
         words = message.split(" ")
+        has_embeds = await self.embedding_store.has_embeddings(guild.id)
         get_embed_conditions = [
-            conf.embeddings,  # We actually have embeddings to compare with
+            has_embeds,  # We actually have embeddings to compare with
             len(words) > 1,  # Message is long enough
             conf.top_n,  # Top n is greater than 0
             message_tokens < 8191,
@@ -410,15 +411,15 @@ class ChatHandler(MixinMeta):
             function_calls = [i for i in function_calls if i["name"] != "create_memory"]
             del function_map["create_memory"]
 
-        if "edit_memory" in function_map and (not conf.embeddings or all(not_tutor)):
+        if "edit_memory" in function_map and (not has_embeds or all(not_tutor)):
             function_calls = [i for i in function_calls if i["name"] != "edit_memory"]
             del function_map["edit_memory"]
 
         # Don't include if there are no embeddings
-        if "search_memories" in function_map and not conf.embeddings:
+        if "search_memories" in function_map and not has_embeds:
             function_calls = [i for i in function_calls if i["name"] != "search_memories"]
             del function_map["search_memories"]
-        if "list_memories" in function_map and not conf.embeddings:
+        if "list_memories" in function_map and not has_embeds:
             function_calls = [i for i in function_calls if i["name"] != "list_memories"]
             del function_map["list_memories"]
 
@@ -828,7 +829,12 @@ class ChatHandler(MixinMeta):
 
         max_tokens = self.get_max_tokens(conf, author)
 
-        related = await asyncio.to_thread(conf.get_related_embeddings, guild.id, query_embedding)
+        related = await self.embedding_store.get_related(
+            guild_id=guild.id,
+            query_embedding=query_embedding,
+            top_n=conf.top_n,
+            min_relatedness=conf.min_relatedness,
+        )
 
         embeds: List[str] = []
         # Get related embeddings (Name, text, score, dimensions)
@@ -853,6 +859,14 @@ class ChatHandler(MixinMeta):
                 message += f"\n\n# RELATED EMBEDDINGS\n{embeds[0]}"
                 if len(embeds) > 1:
                     system_prompt += f"\n\n# RELATED EMBEDDINGS\n{''.join(embeds[1:])}"
+
+        # Inject user memories if available
+        if author:
+            memory_key = f"{guild.id}-{author.id}"
+            user_memory = self.db.user_memories.get(memory_key)
+            if user_memory and user_memory.facts:
+                facts_text = "\n".join(f"- {fact}" for fact in user_memory.facts)
+                system_prompt += f"\n\n[Known facts about {author.display_name}]\n{facts_text}"
 
         if auto_answer:
             initial_prompt += (

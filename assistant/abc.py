@@ -3,11 +3,13 @@ from multiprocessing.pool import Pool
 from typing import Callable, Dict, List, Optional, Union
 
 import discord
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from discord.ext.commands.cog import CogMeta
 from openai.types.chat.chat_completion_message import ChatCompletionMessage
 from redbot.core import commands
 from redbot.core.bot import Red
 
+from .common.embedding_store import EmbeddingStore
 from .common.models import DB, GuildSettings
 
 
@@ -23,6 +25,12 @@ class MixinMeta(ABC):
         self.db: DB
         self.mp_pool: Pool
         self.registry: Dict[str, Dict[str, dict]]
+        self.embedding_store: EmbeddingStore
+        self.scheduler: AsyncIOScheduler
+
+    @abstractmethod
+    async def _fire_reminder(self, reminder_id: str) -> None:
+        raise NotImplementedError
 
     @abstractmethod
     async def openai_status(self) -> str:

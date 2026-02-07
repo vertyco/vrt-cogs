@@ -525,3 +525,90 @@ CREATE_FILE = {
         "required": ["filename", "content"],
     },
 }
+
+CREATE_REMINDER = {
+    "name": "create_reminder",
+    "description": "Create a reminder for the user. The reminder will ping the user (or DM them) at the specified time.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "message": {
+                "type": "string",
+                "description": "The reminder message to send to the user",
+            },
+            "remind_in": {
+                "type": "string",
+                "description": "How long until the reminder fires. Examples: '5 minutes', '2 hours', '1 day', '1 day 3 hours', '30 seconds'",
+            },
+            "dm": {
+                "type": "boolean",
+                "description": "Whether to send the reminder as a DM instead of pinging in the channel. Defaults to False.",
+                "default": False,
+            },
+        },
+        "required": ["message", "remind_in"],
+    },
+}
+
+CANCEL_REMINDER = {
+    "name": "cancel_reminder",
+    "description": "Cancel an existing reminder by its ID.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "reminder_id": {
+                "type": "string",
+                "description": "The unique ID of the reminder to cancel",
+            },
+        },
+        "required": ["reminder_id"],
+    },
+}
+
+LIST_REMINDERS = {
+    "name": "list_reminders",
+    "description": "List all pending reminders for the user.",
+    "parameters": {
+        "type": "object",
+        "properties": {},
+    },
+}
+
+REMEMBER_USER = {
+    "name": "remember_user",
+    "description": "Remember a fact or preference about the user for future conversations. Use this when the user tells you something about themselves, their preferences, or asks you to remember something.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "fact": {
+                "type": "string",
+                "description": "The fact to remember about the user. Should be concise and informative, e.g. 'Prefers Python over JavaScript' or 'Timezone is EST'",
+            },
+        },
+        "required": ["fact"],
+    },
+}
+
+RECALL_USER = {
+    "name": "recall_user",
+    "description": "Retrieve all remembered facts about the user. Use this to check what you know about the user.",
+    "parameters": {
+        "type": "object",
+        "properties": {},
+    },
+}
+
+FORGET_USER = {
+    "name": "forget_user",
+    "description": "Remove a specific fact from the user's memory. Use the fact index (starting from 1) or the exact text of the fact to remove.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "fact_index_or_text": {
+                "type": "string",
+                "description": "Either the index number of the fact to remove (e.g. '1', '2') or the exact text of the fact to remove",
+            },
+        },
+        "required": ["fact_index_or_text"],
+    },
+}

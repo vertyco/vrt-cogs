@@ -3,6 +3,7 @@ import inspect
 import json
 import logging
 import math
+from datetime import datetime
 from typing import List, Optional
 
 import aiohttp
@@ -318,34 +319,88 @@ class API(MixinMeta):
         return True
 
     async def resync_embeddings(self, conf: GuildSettings, guild_id: int) -> int:
-        """Update embeds to match current dimensions
+        """Re-embed all entries using the current embedding model.
 
-        Takes a sample using current embed method, the updates the rest to match dimensions
+        Handles dimension mismatches by recreating the collection.
         """
-        if not conf.embeddings:
+        all_data = await self.embedding_store.get_all_with_embeddings(guild_id)
+        if not all_data:
             return 0
 
-        sample = list(conf.embeddings.values())[0]
-        sample_embed = await self.request_embedding(sample.text, conf)
+        # Check which entries need re-embedding
+        entries_to_sync: list[tuple[str, str]] = []  # (name, text)
+        sample_embed = None
+        for name, meta in all_data.items():
+            if meta.get("model") != conf.embed_model or not meta.get("embedding"):
+                entries_to_sync.append((name, meta.get("text", "")))
+            elif sample_embed is None:
+                sample_embed = meta["embedding"]
 
-        async def update_embedding(name: str, text: str):
-            conf.embeddings[name].embedding = await self.request_embedding(text, conf)
-            conf.embeddings[name].update()
-            conf.embeddings[name].model = conf.embed_model
-            log.debug(f"Updated embedding: {name}")
+        # If nothing needs syncing, check if dimensions match by getting a sample
+        if not entries_to_sync:
+            return 0
 
-        synced = 0
-        tasks = []
-        for name, em in conf.embeddings.items():
-            if conf.embed_model != em.model or len(em.embedding) != len(sample_embed):
-                synced += 1
-                tasks.append(update_embedding(name, em.text))
+        # Get a reference embedding to check dimensions
+        if sample_embed is None:
+            first_name, first_text = entries_to_sync[0]
+            sample_embed = await self.request_embedding(first_text, conf)
+            if not sample_embed:
+                return 0
 
-        if synced:
-            await asyncio.gather(*tasks)
-            await asyncio.to_thread(conf.sync_embeddings, guild_id)
-            await self.save_conf()
-        return synced
+        # Check if we need to recreate (dimension change)
+        existing_dims = next(
+            (len(meta["embedding"]) for meta in all_data.values() if meta.get("embedding")),
+            0,
+        )
+        new_dims = len(sample_embed) if sample_embed else 0
+        dimension_changed = existing_dims > 0 and new_dims > 0 and existing_dims != new_dims
+
+        if dimension_changed:
+            # Dimensions changed — must re-embed everything and recreate collection
+            entries_to_sync = [(name, meta.get("text", "")) for name, meta in all_data.items()]
+
+        # Re-embed in parallel
+        results: dict[str, list[float]] = {}
+
+        async def _embed(name: str, text: str):
+            vec = await self.request_embedding(text, conf)
+            if vec:
+                results[name] = vec
+
+        await asyncio.gather(*[_embed(n, t) for n, t in entries_to_sync])
+
+        if not results:
+            return 0
+
+        if dimension_changed:
+            # Recreate collection and re-add everything
+            await self.embedding_store.recreate_collection(guild_id)
+            for name, meta in all_data.items():
+                vec = results.get(name, meta.get("embedding", []))
+                if not vec:
+                    continue
+                await self.embedding_store.add(
+                    guild_id,
+                    name,
+                    meta.get("text", ""),
+                    vec,
+                    conf.embed_model,
+                    meta.get("ai_created", False),
+                )
+        else:
+            # Just update the changed entries
+            for name, vec in results.items():
+                meta = all_data[name]
+                await self.embedding_store.update(
+                    guild_id,
+                    name,
+                    meta.get("text", ""),
+                    vec,
+                    conf.embed_model,
+                )
+
+        await self.save_conf()
+        return len(results)
 
     def get_max_tokens(self, conf: GuildSettings, user: Optional[discord.Member]) -> int:
         user_max = conf.get_user_max_tokens(user)
@@ -526,7 +581,11 @@ class API(MixinMeta):
     # -------------------------------------------------------
     # -------------------------------------------------------
     async def get_function_menu_embeds(self, user: discord.Member) -> List[discord.Embed]:
-        func_dump = {k: v.model_dump(exclude_defaults=False) for k, v in self.db.functions.items()}
+        func_dump = {}
+        for k, v in self.db.functions.items():
+            d = v.model_dump(exclude_defaults=False)
+            d.setdefault("required_permissions", [])
+            func_dump[k] = d
         registry = {"Assistant-Custom": func_dump}
         for cog_name, function_schemas in self.registry.items():
             cog = self.bot.get_cog(cog_name)
@@ -543,6 +602,7 @@ class API(MixinMeta):
                     "code": inspect.getsource(function_obj),
                     "jsonschema": function_schema,
                     "permission_level": data["permission_level"],
+                    "required_permissions": list(data.get("required_permissions", [])),
                 }
 
         conf = self.db.get_conf(user.guild)
@@ -590,7 +650,10 @@ class API(MixinMeta):
                     schema_text += box(data["jsonschema"]["description"], "json")
                     code_text = box(_("Hidden..."))
 
-                embed.add_field(name=_("Permission Level"), value=data["permission_level"].capitalize(), inline=False)
+                perm_text = data["permission_level"].capitalize()
+                if data.get("required_permissions"):
+                    perm_text += _("\nRequired: {}").format(", ".join(f"`{p}`" for p in data["required_permissions"]))
+                embed.add_field(name=_("Permission Level"), value=perm_text, inline=False)
                 embed.add_field(name=_("Schema"), value=schema_text, inline=False)
                 embed.add_field(name=_("Code"), value=code_text, inline=False)
 
@@ -607,8 +670,9 @@ class API(MixinMeta):
             )
         return embeds
 
-    async def get_embedding_menu_embeds(self, conf: GuildSettings, place: int) -> List[discord.Embed]:
-        embeddings = sorted(conf.embeddings.items(), key=lambda x: x[0])
+    async def get_embedding_menu_embeds(self, guild_id: int, conf: GuildSettings, place: int) -> List[discord.Embed]:
+        all_meta = await self.embedding_store.get_all_metadata(guild_id)
+        embeddings = sorted(all_meta.items(), key=lambda x: x[0])
         embeds = []
         pages = math.ceil(len(embeddings) / 5)
         model = conf.get_user_model()
@@ -620,27 +684,32 @@ class API(MixinMeta):
             embed.set_footer(text=_("Page {}/{}").format(page + 1, pages))
             num = 0
             for i in range(start, stop):
-                name, embedding = embeddings[i]
-                tokens = await self.count_tokens(embedding.text, model)
-                text = (
-                    box(f"{embedding.text[:30].strip()}...")
-                    if len(embedding.text) > 33
-                    else box(embedding.text.strip())
+                name, meta = embeddings[i]
+                raw_text = meta.get("text", "")
+                tokens = await self.count_tokens(raw_text, model)
+                text = box(f"{raw_text[:30].strip()}...") if len(raw_text) > 33 else box(raw_text.strip())
+
+                created_str = meta.get("created", "")
+                modified_str = meta.get("modified", "")
+                dimensions = meta.get("dimensions", 0)
+                ai_created = meta.get("ai_created", False)
+                emb_model = meta.get("model", conf.embed_model)
+
+                # Format timestamps
+                created_display = (
+                    f"<t:{int(datetime.fromisoformat(created_str).timestamp())}:R>" if created_str else "Unknown"
                 )
-                val = _(
-                    "`Created:    `{}\n"
-                    "`Modified:   `{}\n"
-                    "`Tokens:     `{}\n"
-                    "`Dimensions: `{}\n"
-                    "`AI Created: `{}\n"
-                    "`Model:      `{}\n"
-                ).format(
-                    embedding.created_at(),
-                    embedding.modified_at(relative=True),
-                    tokens,
-                    len(embedding.embedding),
-                    embedding.ai_created,
-                    conf.embed_model,
+                modified_display = (
+                    f"<t:{int(datetime.fromisoformat(modified_str).timestamp())}:R>" if modified_str else "Unknown"
+                )
+
+                val = (
+                    f"`Created:    `{created_display}\n"
+                    f"`Modified:   `{modified_display}\n"
+                    f"`Tokens:     `{tokens}\n"
+                    f"`Dimensions: `{dimensions}\n"
+                    f"`AI Created: `{ai_created}\n"
+                    f"`Model:      `{emb_model}\n"
                 )
                 val += text
                 fieldname = f"➣ {name}" if place == num else name

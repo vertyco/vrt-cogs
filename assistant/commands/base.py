@@ -1,4 +1,3 @@
-import asyncio
 import json
 import logging
 import traceback
@@ -596,7 +595,7 @@ If a file has no extension it will still try to read it only if it can be decode
                 )
                 await ctx.send(txt)
                 log.error("Failed to parse conversation prompt", exc_info=e)
-                self.bot._last_exception = traceback.format_exc()
+                self.bot._last_exception = traceback.format_exc()  # type: ignore
                 return
 
         model = conf.get_user_model(ctx.author)
@@ -705,7 +704,7 @@ If a file has no extension it will still try to read it only if it can be decode
         You can use this to fine-tune the minimum relatedness for your assistant
         """
         conf = self.db.get_conf(ctx.guild)
-        if not conf.embeddings:
+        if not await self.embedding_store.has_embeddings(ctx.guild.id):
             return await ctx.send(_("You do not have any embeddings configured!"))
         if not conf.top_n:
             return await ctx.send(_("Top N is set to 0 so no embeddings will be returned"))
@@ -716,8 +715,11 @@ If a file has no extension it will still try to read it only if it can be decode
             if not query_embedding:
                 return await ctx.send(_("Failed to get embedding for your query"))
 
-            embeddings = await asyncio.to_thread(
-                conf.get_related_embeddings, ctx.guild.id, query_embedding, relatedness_override=0.1
+            embeddings = await self.embedding_store.get_related(
+                guild_id=ctx.guild.id,
+                query_embedding=query_embedding,
+                top_n=conf.top_n,
+                min_relatedness=0.1,
             )
             if not embeddings:
                 return await ctx.send(_("No embeddings could be related to this query with the current settings"))

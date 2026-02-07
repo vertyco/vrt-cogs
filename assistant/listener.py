@@ -157,12 +157,11 @@ class AssistantListener(MixinMeta):
             if is_question(message.content):
                 # Check if any embeddings match above the threshold
                 embedding = await self.request_embedding(message.content, conf)
-                related = await asyncio.to_thread(
-                    conf.get_related_embeddings,
+                related = await self.embedding_store.get_related(
                     guild_id=message.guild.id,
                     query_embedding=embedding,
-                    top_n_override=1,
-                    relatedness_override=conf.auto_answer_threshold,
+                    top_n=1,
+                    min_relatedness=conf.auto_answer_threshold,
                 )
                 conditions.append(len(related) == 0)
                 if len(related) > 0:
