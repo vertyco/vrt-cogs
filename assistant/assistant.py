@@ -239,7 +239,6 @@ class Assistant(
                 continue
             count = await self.embedding_store.migrate_from_config(guild_id, conf.embeddings)
             if count:
-                log.info(f"Migrated {count} embeddings for guild {guild_id} from Config to ChromaDB")
                 conf.embeddings.clear()
                 migrated_any = True
         if migrated_any:
