@@ -3,16 +3,25 @@ import json
 import logging
 import typing as t
 from base64 import b64decode
+from datetime import datetime, timezone
 from io import BytesIO, StringIO
+from uuid import uuid4
 
 import aiohttp
 import discord
+from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import pagify, text_to_file
 
 from ..abc import MixinMeta
 from ..common import calls, constants, reply
-from .models import Conversation, EmbeddingEntryExists, GuildSettings
+from .models import (
+    Conversation,
+    EmbeddingEntryExists,
+    GuildSettings,
+    Reminder,
+    UserMemory,
+)
 
 log = logging.getLogger("red.vrt.assistant.functions")
 _ = Translator("Assistant", __file__)
@@ -30,6 +39,7 @@ class AssistantFunctions(MixinMeta):
         **kwargs,
     ):
         """Edit an image using the provided base64 encoded image and prompt."""
+
         images: list[str] = conversation.get_images()
         if not images:
             return "This conversation has no images to edit!"
@@ -250,23 +260,23 @@ class AssistantFunctions(MixinMeta):
         if amount < 1:
             return "Amount needs to be more than 1"
 
-        if not conf.embeddings:
+        if not await self.embedding_store.has_embeddings(guild.id):
             return "There are no memories saved!"
 
-        if search_query in conf.embeddings:
-            embed = conf.embeddings[search_query]
-            return f"Found a memory name that matches exactly: {embed.text}"
+        # Check for exact name match
+        exact = await self.embedding_store.get(guild.id, search_query)
+        if exact:
+            return f"Found a memory name that matches exactly: {exact.get('text', '')}"
 
         query_embedding = await self.request_embedding(search_query, conf)
         if not query_embedding:
             return f"Failed to get memory for your the query '{search_query}'"
 
-        embeddings = await asyncio.to_thread(
-            conf.get_related_embeddings,
+        embeddings = await self.embedding_store.get_related(
             guild_id=guild.id,
             query_embedding=query_embedding,
-            top_n_override=amount,
-            relatedness_override=0.5,
+            top_n=amount,
+            min_relatedness=0.5,
         )
         if not embeddings:
             return f"No embeddings could be found related to the search query '{search_query}'"
@@ -292,30 +302,34 @@ class AssistantFunctions(MixinMeta):
         if not any([role.id in conf.tutors for role in user.roles]) and user.id not in conf.tutors:
             return f"User {user.display_name} is not recognized as a tutor!"
 
-        if memory_name not in conf.embeddings:
+        if not await self.embedding_store.exists(guild.id, memory_name):
             return "A memory with that name does not exist!"
         embedding = await self.request_embedding(memory_text, conf)
         if not embedding:
             return "Could not update the memory!"
 
-        conf.embeddings[memory_name].text = memory_text
-        conf.embeddings[memory_name].embedding = embedding
-        conf.embeddings[memory_name].update()
-        conf.embeddings[memory_name].model = conf.embed_model
-        await asyncio.to_thread(conf.sync_embeddings, guild.id)
+        await self.embedding_store.update(
+            guild.id,
+            memory_name,
+            memory_text,
+            embedding,
+            conf.embed_model,
+        )
         asyncio.create_task(self.save_conf())
         return "Your memory has been updated!"
 
     async def list_memories(
         self,
         conf: GuildSettings,
+        guild: discord.Guild,
         *args,
         **kwargs,
     ):
         """List all embeddings"""
-        if not conf.embeddings:
+        metadata = await self.embedding_store.get_all_metadata(guild.id)
+        if not metadata:
             return "You have no memories available!"
-        joined = "\n".join([i for i in conf.embeddings])
+        joined = "\n".join(metadata.keys())
         return joined
 
     async def respond_and_continue(
@@ -417,3 +431,176 @@ class AssistantFunctions(MixinMeta):
         file = text_to_file(content, filename=filename)
         await channel.send(content=comment, file=file)
         return "Success"
+
+    async def create_reminder(
+        self,
+        guild: discord.Guild,
+        channel: discord.TextChannel,
+        user: discord.Member,
+        message: str,
+        remind_in: str,
+        dm: bool = False,
+        *args,
+        **kwargs,
+    ) -> str:
+        """Create a reminder for the user."""
+        try:
+            delta = commands.parse_timedelta(remind_in)
+        except commands.BadArgument:
+            return f"Could not parse duration from: {remind_in}. Use formats like '30m', '2h', '1d', '1w2d3h'."
+        now = datetime.now(tz=timezone.utc)
+        remind_at = now + delta
+
+        reminder_id = str(uuid4())[:8]
+        reminder = Reminder(
+            id=reminder_id,
+            guild_id=guild.id,
+            channel_id=channel.id,
+            user_id=user.id,
+            message=message,
+            created_at=now,
+            remind_at=remind_at,
+            dm=dm,
+        )
+        self.db.reminders[reminder_id] = reminder
+        asyncio.create_task(self.save_conf())
+
+        # Schedule with APScheduler
+        self.scheduler.add_job(
+            self._fire_reminder,
+            "date",
+            run_date=remind_at,
+            args=[reminder_id],
+            id=f"reminder_{reminder_id}",
+            replace_existing=True,
+        )
+
+        timestamp = int(remind_at.timestamp())
+        return f"Reminder created! ID: `{reminder_id}`. I'll remind you <t:{timestamp}:R> (<t:{timestamp}:f>)."
+
+    async def cancel_reminder(
+        self,
+        guild: discord.Guild,
+        user: discord.Member,
+        reminder_id: str,
+        *args,
+        **kwargs,
+    ) -> str:
+        """Cancel an existing reminder."""
+        reminder = self.db.reminders.get(reminder_id)
+        if not reminder:
+            return f"No reminder found with ID `{reminder_id}`."
+        if reminder.user_id != user.id:
+            return "You can only cancel your own reminders."
+
+        # Remove from scheduler
+        job_id = f"reminder_{reminder_id}"
+        job = self.scheduler.get_job(job_id)
+        if job:
+            job.remove()
+
+        # Remove from storage
+        del self.db.reminders[reminder_id]
+        asyncio.create_task(self.save_conf())
+        return f"Reminder `{reminder_id}` has been cancelled."
+
+    async def list_reminders(
+        self,
+        guild: discord.Guild,
+        user: discord.Member,
+        *args,
+        **kwargs,
+    ) -> str:
+        """List all pending reminders for the user."""
+        user_reminders = [r for r in self.db.reminders.values() if r.user_id == user.id]
+        if not user_reminders:
+            return "You have no pending reminders."
+
+        user_reminders.sort(key=lambda r: r.remind_at)
+        lines = []
+        for r in user_reminders:
+            timestamp = int(r.remind_at.timestamp())
+            dm_indicator = " (DM)" if r.dm else ""
+            lines.append(
+                f"- `{r.id}`: <t:{timestamp}:R> - {r.message[:50]}{'...' if len(r.message) > 50 else ''}{dm_indicator}"
+            )
+
+        return "**Your reminders:**\n" + "\n".join(lines)
+
+    def _get_user_memory_key(self, guild_id: int, user_id: int) -> str:
+        """Get the key for storing user memory."""
+        return f"{guild_id}-{user_id}"
+
+    async def remember_user(
+        self,
+        guild: discord.Guild,
+        user: discord.Member,
+        fact: str,
+        *args,
+        **kwargs,
+    ) -> str:
+        """Remember a fact about the user."""
+        key = self._get_user_memory_key(guild.id, user.id)
+        if key not in self.db.user_memories:
+            self.db.user_memories[key] = UserMemory(
+                user_id=user.id,
+                guild_id=guild.id,
+            )
+
+        memory = self.db.user_memories[key]
+        memory.facts.append(fact)
+        memory.updated_at = datetime.now(tz=timezone.utc)
+        asyncio.create_task(self.save_conf())
+        return f"I'll remember that about {user.display_name}: {fact}"
+
+    async def recall_user(
+        self,
+        guild: discord.Guild,
+        user: discord.Member,
+        *args,
+        **kwargs,
+    ) -> str:
+        """Retrieve all remembered facts about the user."""
+        key = self._get_user_memory_key(guild.id, user.id)
+        memory = self.db.user_memories.get(key)
+        if not memory or not memory.facts:
+            return f"I don't have any stored facts about {user.display_name}."
+
+        lines = [f"{i + 1}. {fact}" for i, fact in enumerate(memory.facts)]
+        return f"**Known facts about {user.display_name}:**\n" + "\n".join(lines)
+
+    async def forget_user(
+        self,
+        guild: discord.Guild,
+        user: discord.Member,
+        fact_index_or_text: str,
+        *args,
+        **kwargs,
+    ) -> str:
+        """Remove a specific fact from the user's memory."""
+        key = self._get_user_memory_key(guild.id, user.id)
+        memory = self.db.user_memories.get(key)
+        if not memory or not memory.facts:
+            return f"I don't have any stored facts about {user.display_name}."
+
+        # Try to parse as an index first
+        try:
+            index = int(fact_index_or_text) - 1  # Convert to 0-based index
+            if 0 <= index < len(memory.facts):
+                removed_fact = memory.facts.pop(index)
+                memory.updated_at = datetime.now(tz=timezone.utc)
+                asyncio.create_task(self.save_conf())
+                return f"Removed fact: {removed_fact}"
+            return f"Invalid index. Please use a number between 1 and {len(memory.facts)}."
+        except ValueError:
+            pass
+
+        # Try to match by text
+        for i, fact in enumerate(memory.facts):
+            if fact_index_or_text.lower() in fact.lower():
+                removed_fact = memory.facts.pop(i)
+                memory.updated_at = datetime.now(tz=timezone.utc)
+                asyncio.create_task(self.save_conf())
+                return f"Removed fact: {removed_fact}"
+
+        return f"Could not find a fact matching '{fact_index_or_text}'."

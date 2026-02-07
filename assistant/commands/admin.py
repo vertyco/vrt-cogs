@@ -30,7 +30,7 @@ from redbot.core.utils.chat_formatting import (
 
 from ..abc import MixinMeta
 from ..common.constants import MODELS, PRICES
-from ..common.models import DB, Embedding
+from ..common.models import DB
 from ..common.utils import get_attachments
 from ..views import CodeMenu, EmbeddingMenu, SetAPI
 
@@ -158,7 +158,8 @@ class Admin(MixinMeta):
                 inline=False,
             )
 
-        types = set(len(i.embedding) for i in conf.embeddings.values())
+        all_meta = await self.embedding_store.get_all_metadata(ctx.guild.id)
+        types = set(meta.get("dimensions", 0) for meta in all_meta.values())
 
         if len(types) == 2:
             encoded_by = _("Mixed (Please Refresh!)")
@@ -173,7 +174,7 @@ class Admin(MixinMeta):
             + _("`Embedding Method:  `{}\n").format(conf.embed_method)
             + _("`Encodings:         `{}").format(encoded_by)
         )
-        embed_num = humanize_number(len(conf.embeddings))
+        embed_num = humanize_number(len(all_meta))
         embed.add_field(
             name=_("Embeddings ({})").format(embed_num),
             value=embedding_field,
@@ -548,7 +549,7 @@ class Admin(MixinMeta):
                 )
                 await ctx.send(txt)
                 log.error("Failed to parse initial prompt", exc_info=e)
-                self.bot._last_exception = traceback.format_exc()
+                self.bot._last_exception = traceback.format_exc()  # type: ignore
                 return
 
         conf = self.db.get_conf(ctx.guild)
@@ -614,7 +615,7 @@ class Admin(MixinMeta):
                 )
                 await ctx.send(txt)
                 log.error("Failed to parse initial prompt", exc_info=e)
-                self.bot._last_exception = traceback.format_exc()
+                self.bot._last_exception = traceback.format_exc()  # type: ignore
                 return
         if system_prompt is None:
             if channel.id in conf.channel_prompts:
@@ -689,7 +690,7 @@ class Admin(MixinMeta):
                 )
                 await ctx.send(txt)
                 log.error("Failed to parse initial prompt", exc_info=e)
-                self.bot._last_exception = traceback.format_exc()
+                self.bot._last_exception = traceback.format_exc()  # type: ignore
                 return
 
         conf = self.db.get_conf(ctx.guild)
@@ -941,7 +942,7 @@ class Admin(MixinMeta):
                 )
                 await ctx.send(txt)
                 log.error("Failed to parse trigger prompt", exc_info=e)
-                self.bot._last_exception = traceback.format_exc()
+                self.bot._last_exception = traceback.format_exc()  # type: ignore
                 return
 
         conf = self.db.get_conf(ctx.guild)
@@ -1389,7 +1390,8 @@ class Admin(MixinMeta):
         if not yes_or_no:
             return await ctx.send(_("Not wiping embedding data"))
         conf = self.db.get_conf(ctx.guild)
-        conf.embeddings = {}
+        conf.embeddings = {}  # Clear any leftover migration data
+        await self.embedding_store.delete_all(ctx.guild.id)
         await ctx.send(_("All embedding data has been wiped!"))
         await self.save_conf()
 
@@ -1581,9 +1583,10 @@ class Admin(MixinMeta):
                 continue
             name = str(row[0])
             proc = _("processing")
-            if name in conf.embeddings:
+            if await self.embedding_store.exists(ctx.guild.id, name):
                 proc = _("overwriting")
-                if row[1] == conf.embeddings[name].text or not overwrite:
+                existing = await self.embedding_store.get(ctx.guild.id, name)
+                if (existing and existing.get("text") == str(row[1])) or not overwrite:
                     continue
             text = str(row[1])[:4000]
             if index and (index + 1) % split_by == 0:
@@ -1598,9 +1601,8 @@ class Admin(MixinMeta):
                 await ctx.send(_("Failed to process embedding: `{}`").format(name))
                 continue
 
-            conf.embeddings[name] = Embedding(text=text, embedding=query_embedding, model=conf.embed_model)
+            await self.embedding_store.add(ctx.guild.id, name, text, query_embedding, conf.embed_model)
             imported += 1
-        await asyncio.to_thread(conf.sync_embeddings, ctx.guild.id)
         await message.edit(content=_("{}\n**COMPLETE**").format(message_text))
         await ctx.send(_("Successfully imported {} embeddings!").format(humanize_number(imported)))
         await self.save_conf()
@@ -1632,12 +1634,28 @@ class Admin(MixinMeta):
                     continue
                 try:
                     for name, em in embeddings.items():
-                        if not overwrite and name in conf.embeddings:
+                        if not overwrite and await self.embedding_store.exists(ctx.guild.id, name):
                             continue
-                        conf.embeddings[name] = Embedding.model_validate(em)
-                        conf.embeddings[name].text = conf.embeddings[name].text[:4000]
+                        text = str(em.get("text", ""))[:4000]
+                        embedding_vec = em.get("embedding", [])
+                        model = em.get("model", conf.embed_model)
+                        ai_created = em.get("ai_created", False)
+                        if not embedding_vec:
+                            # Re-embed if no vector present
+                            embedding_vec = await self.request_embedding(text, conf)
+                            model = conf.embed_model
+                        if not embedding_vec:
+                            continue
+                        await self.embedding_store.add(
+                            ctx.guild.id,
+                            name[:100],
+                            text,
+                            embedding_vec,
+                            model,
+                            ai_created,
+                        )
                         imported += 1
-                except ValidationError:
+                except (ValidationError, KeyError, TypeError):
                     await ctx.send(
                         _("Failed to import **{}** because it contains invalid formatting!").format(attachment.filename)
                     )
@@ -1648,7 +1666,6 @@ class Admin(MixinMeta):
                     humanize_list(files), humanize_number(imported)
                 )
             )
-        await asyncio.to_thread(conf.sync_embeddings, ctx.guild.id)
         await self.save_conf()
 
     @assistant.command(name="importexcel")
@@ -1659,7 +1676,6 @@ class Admin(MixinMeta):
             overwrite (bool): overwrite embeddings with existing entry names
         """
         conf = self.db.get_conf(ctx.guild)
-        tz = pytz.timezone(conf.timezone)
         attachments = get_attachments(ctx.message)
         if not attachments:
             return await ctx.send(
@@ -1706,11 +1722,11 @@ class Admin(MixinMeta):
                 name = row["name"]
                 text = row["text"]
                 proc = _("processing")
-                if name in conf.embeddings:
+                if await self.embedding_store.exists(ctx.guild.id, name):
                     proc = _("overwriting")
-                    if not overwrite or conf.embeddings[name].text == text:
+                    existing = await self.embedding_store.get(ctx.guild.id, name)
+                    if not overwrite or (existing and existing.get("text") == text):
                         continue
-                created_tz = pd.to_datetime(row["created"]).tz_localize(tz)
 
                 if index and (index + 1) % split_by == 0:
                     with contextlib.suppress(discord.DiscordServerError):
@@ -1725,17 +1741,17 @@ class Admin(MixinMeta):
                     await ctx.send(_("Failed to process embedding: `{}`").format(name))
                     continue
 
-                conf.embeddings[name] = Embedding(
-                    text=text,
-                    embedding=query_embedding,
-                    ai_created=row["ai_created"],
-                    created=created_tz,
-                    model=conf.embed_model,
+                await self.embedding_store.add(
+                    ctx.guild.id,
+                    name,
+                    text,
+                    query_embedding,
+                    conf.embed_model,
+                    bool(row["ai_created"]),
                 )
                 imported += 1
 
             if imported:
-                await asyncio.to_thread(conf.sync_embeddings, ctx.guild.id)
                 await message.edit(content=_("{}\n**COMPLETE**").format(message_text))
                 await ctx.send(_("Successfully imported {} embeddings!").format(humanize_number(imported)))
                 await self.save_conf()
@@ -1751,8 +1767,8 @@ class Admin(MixinMeta):
 
         **Note:** csv exports do not include the embedding values
         """
-        conf = self.db.get_conf(ctx.guild)
-        if not conf.embeddings:
+        all_meta = await self.embedding_store.get_all_metadata(ctx.guild.id)
+        if not all_meta:
             return await ctx.send(_("There are no embeddings to export!"))
 
         columns = {
@@ -1764,9 +1780,13 @@ class Admin(MixinMeta):
 
         def _get_file() -> discord.File:
             rows = []
-            for name, em in conf.embeddings.items():
-                created_utc_naive = em.created.astimezone(timezone.utc).replace(tzinfo=None)
-                rows.append([name, em.text, created_utc_naive, em.ai_created])
+            for name, meta in all_meta.items():
+                created_str = meta.get("created", "")
+                try:
+                    created_dt = datetime.fromisoformat(created_str).astimezone(timezone.utc).replace(tzinfo=None)
+                except (ValueError, TypeError):
+                    created_dt = datetime.now(tz=timezone.utc).replace(tzinfo=None)
+                rows.append([name, meta.get("text", ""), created_dt, meta.get("ai_created", False)])
             df = pd.DataFrame(rows, columns=columns.keys())
 
             # Convert the columns to the specified types
@@ -1794,14 +1814,14 @@ class Admin(MixinMeta):
 
         **Note:** csv exports do not include the embedding values
         """
-        conf = self.db.get_conf(ctx.guild)
-        if not conf.embeddings:
+        all_meta = await self.embedding_store.get_all_metadata(ctx.guild.id)
+        if not all_meta:
             return await ctx.send(_("There are no embeddings to export!"))
         async with ctx.typing():
             columns = ["name", "text"]
             rows = []
-            for name, em in conf.embeddings.items():
-                rows.append([name, em.text])
+            for name, meta in all_meta.items():
+                rows.append([name, meta.get("text", "")])
             df = pd.DataFrame(rows, columns=columns)
             df_buffer = BytesIO()
             df.to_csv(df_buffer, index=False)
@@ -1838,12 +1858,12 @@ class Admin(MixinMeta):
     @commands.bot_has_permissions(attach_files=True)
     async def export_embeddings_json(self, ctx: commands.Context):
         """Export embeddings to a json file"""
-        conf = self.db.get_conf(ctx.guild)
-        if not conf.embeddings:
+        all_data = await self.embedding_store.get_all_with_embeddings(ctx.guild.id)
+        if not all_data:
             return await ctx.send(_("There are no embeddings to export!"))
 
         async with ctx.typing():
-            dump = {name: em.model_dump() for name, em in conf.embeddings.items()}
+            dump = {name: meta for name, meta in all_data.items()}
             json_buffer = BytesIO(orjson.dumps(dump))
             file = discord.File(json_buffer, filename="embeddings_export.json")
 
@@ -1902,6 +1922,8 @@ class Admin(MixinMeta):
             self.save_conf,
             self.get_embedding_menu_embeds,
             self.request_embedding,
+            self.embedding_store,
+            ctx.guild.id,
         )
         await view.get_pages()
         if not query:
@@ -2545,8 +2567,8 @@ class Admin(MixinMeta):
         if not yes_or_no:
             return await ctx.send(_("Not wiping embedding data"))
         for guild_id, conf in self.db.configs.items():
-            conf.embeddings = {}
-            await asyncio.to_thread(conf.sync_embeddings, guild_id)
+            conf.embeddings = {}  # Clear any leftover migration data
+            await self.embedding_store.delete_all(guild_id)
         await ctx.send(_("All embedding data has been wiped for all servers!"))
         await self.save_conf()
 

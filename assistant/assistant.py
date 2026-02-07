@@ -1,33 +1,43 @@
 import asyncio
 import logging
+from datetime import datetime, timezone
 from multiprocessing.pool import Pool
 from time import perf_counter
 from typing import Callable, Dict, List, Literal, Optional, Union
 
 import discord
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from discord.ext import tasks
 from pydantic import ValidationError
 from redbot.core import Config, commands
 from redbot.core.bot import Red
+from redbot.core.data_manager import cog_data_path
 
 from .abc import CompositeMetaClass
 from .commands import AssistantCommands
 from .common.api import API
 from .common.chat import ChatHandler
 from .common.constants import (
+    CANCEL_REMINDER,
     CREATE_FILE,
     CREATE_MEMORY,
+    CREATE_REMINDER,
     EDIT_IMAGE,
     EDIT_MEMORY,
     FETCH_URL,
+    FORGET_USER,
     GENERATE_IMAGE,
     LIST_MEMORIES,
+    LIST_REMINDERS,
+    RECALL_USER,
+    REMEMBER_USER,
     RESPOND_AND_CONTINUE,
     SEARCH_INTERNET,
     SEARCH_MEMORIES,
 )
+from .common.embedding_store import EmbeddingStore
 from .common.functions import AssistantFunctions
-from .common.models import DB, Embedding, EmbeddingEntryExists, NoAPIKey
+from .common.models import DB, EmbeddingEntryExists, NoAPIKey
 from .common.utils import json_schema_invalid
 from .listener import AssistantListener
 
@@ -58,7 +68,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "6.20.2"
+    __version__ = "7.0.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -77,8 +87,10 @@ class Assistant(
         self.config.register_global(db={})
         self.db: DB = DB()
         self.mp_pool = Pool()
+        self.embedding_store = EmbeddingStore(cog_data_path(self))
+        self.scheduler = AsyncIOScheduler()
 
-        # {cog_name: {function_name: {"permission_level": "user", "schema": function_json_schema}}}
+        # {cog_name: {function_name: {"permission_level": "user", "schema": function_json_schema, "required_permissions": []}}}
         self.registry: Dict[str, Dict[str, dict]] = {}
 
         self.saving = False
@@ -89,6 +101,7 @@ class Assistant(
 
     async def cog_unload(self):
         self.save_loop.cancel()
+        self.scheduler.shutdown(wait=False)
         self.mp_pool.close()
         self.bot.dispatch("assistant_cog_remove")
 
@@ -105,7 +118,9 @@ class Assistant(
             self.db = await asyncio.to_thread(DB.model_validate, data)
 
         log.info(f"Config loaded in {round((perf_counter() - start) * 1000, 2)}ms")
-        await asyncio.to_thread(self._cleanup_db)
+        await self.embedding_store.initialize()
+        await self._cleanup_db()
+        await self._migrate_embeddings()
 
         # Register internal functions
         await self.register_function(self.qualified_name, GENERATE_IMAGE)
@@ -118,6 +133,16 @@ class Assistant(
         await self.register_function(self.qualified_name, RESPOND_AND_CONTINUE)
         await self.register_function(self.qualified_name, FETCH_URL)
         await self.register_function(self.qualified_name, CREATE_FILE)
+        await self.register_function(self.qualified_name, CREATE_REMINDER)
+        await self.register_function(self.qualified_name, CANCEL_REMINDER)
+        await self.register_function(self.qualified_name, LIST_REMINDERS)
+        await self.register_function(self.qualified_name, REMEMBER_USER)
+        await self.register_function(self.qualified_name, RECALL_USER)
+        await self.register_function(self.qualified_name, FORGET_USER)
+
+        # Start scheduler and reschedule existing reminders
+        self.scheduler.start()
+        await self._reschedule_reminders()
 
         logging.getLogger("openai").setLevel(logging.WARNING)
         logging.getLogger("aiocache").setLevel(logging.WARNING)
@@ -147,10 +172,10 @@ class Assistant(
             log.error("Failed to save config", exc_info=e)
         finally:
             self.saving = False
-        if not self.db.persistent_conversations and self.save_loop.is_running():
-            self.save_loop.cancel()
+        if not self.db.persistent_conversations and self.save_loop.is_running():  # type: ignore
+            self.save_loop.cancel()  # type: ignore
 
-    def _cleanup_db(self):
+    async def _cleanup_db(self):
         cleaned = False
         # Cleanup registry if any cogs no longer exist
         for cog_name, cog_functions in self.registry.copy().items():
@@ -172,6 +197,7 @@ class Assistant(
             if not guild:
                 log.debug("Cleaning up guild")
                 del self.db.configs[guild_id]
+                await self.embedding_store.delete_all(guild_id)
                 cleaned = True
                 continue
             conf = self.db.get_conf(guild_id)
@@ -202,18 +228,85 @@ class Assistant(
                     conf.blacklist.remove(obj_id)
                     cleaned = True
 
-            # Ensure embedding entry names arent too long
-            new_embeddings = {}
-            for entry_name, embedding in conf.embeddings.items():
-                if len(entry_name) > 100:
-                    log.debug(f"Embed entry more than 100 characters, truncating: {entry_name}")
-                    cleaned = True
-                new_embeddings[entry_name[:100]] = embedding
-            conf.embeddings = new_embeddings
-            conf.sync_embeddings(guild_id)
-
         health = "BAD (Cleaned)" if cleaned else "GOOD"
         log.info(f"Config health: {health}")
+
+    async def _migrate_embeddings(self):
+        """One-time migration: move embeddings from Config to persistent ChromaDB."""
+        migrated_any = False
+        for guild_id, conf in self.db.configs.items():
+            if not conf.embeddings:
+                continue
+            count = await self.embedding_store.migrate_from_config(guild_id, conf.embeddings)
+            if count:
+                log.info(f"Migrated {count} embeddings for guild {guild_id} from Config to ChromaDB")
+                conf.embeddings.clear()
+                migrated_any = True
+        if migrated_any:
+            log.info("Embedding migration complete. Saving config now.")
+            await self.save_conf()
+
+    async def _reschedule_reminders(self):
+        """Reschedule all pending reminders on cog load."""
+        now = datetime.now(tz=timezone.utc)
+        expired_ids = []
+
+        for reminder_id, reminder in self.db.reminders.items():
+            if reminder.remind_at <= now:
+                # Fire immediately if past due
+                expired_ids.append(reminder_id)
+            else:
+                # Schedule for the future
+                self.scheduler.add_job(
+                    self._fire_reminder,
+                    "date",
+                    run_date=reminder.remind_at,
+                    args=[reminder_id],
+                    id=f"reminder_{reminder_id}",
+                    replace_existing=True,
+                )
+
+        # Fire expired reminders
+        for reminder_id in expired_ids:
+            asyncio.create_task(self._fire_reminder(reminder_id))
+
+        if self.db.reminders:
+            log.info(f"Rescheduled {len(self.db.reminders)} reminders ({len(expired_ids)} expired)")
+
+    async def _fire_reminder(self, reminder_id: str):
+        """Fire a reminder and clean it up."""
+        reminder = self.db.reminders.get(reminder_id)
+        if not reminder:
+            return
+
+        guild = self.bot.get_guild(reminder.guild_id)
+        if not guild:
+            del self.db.reminders[reminder_id]
+            return
+
+        user = guild.get_member(reminder.user_id)
+        if not user:
+            del self.db.reminders[reminder_id]
+            return
+
+        try:
+            if reminder.dm:
+                await user.send(f"⏰ **Reminder:** {reminder.message}")
+            else:
+                channel = guild.get_channel(reminder.channel_id)
+                if channel and hasattr(channel, "send"):
+                    await channel.send(f"⏰ {user.mention} **Reminder:** {reminder.message}")
+                else:
+                    # Fall back to DM if channel no longer exists or is not messageable
+                    await user.send(f"⏰ **Reminder:** {reminder.message}")
+        except discord.Forbidden:
+            log.warning(f"Could not send reminder {reminder_id} to user {user.id}")
+        except Exception as e:
+            log.error(f"Error firing reminder {reminder_id}", exc_info=e)
+
+        # Clean up
+        del self.db.reminders[reminder_id]
+        asyncio.create_task(self.save_conf())
 
     @tasks.loop(minutes=30)
     async def save_loop(self):
@@ -249,14 +342,20 @@ class Assistant(
 
         conf = self.db.get_conf(guild)
 
-        if name in conf.embeddings and not overwrite:
+        if await self.embedding_store.exists(guild.id, name) and not overwrite:
             raise EmbeddingEntryExists(f"The entry name '{name}' already exists!")
 
         embedding = await self.request_embedding(text, conf)
         if not embedding:
             return None
-        conf.embeddings[name] = Embedding(text=text, embedding=embedding, ai_created=ai_created, model=conf.embed_model)
-        await asyncio.to_thread(conf.sync_embeddings, guild.id)
+        await self.embedding_store.add(
+            guild.id,
+            name,
+            text,
+            embedding,
+            conf.embed_model,
+            ai_created,
+        )
         asyncio.create_task(self.save_conf())
         return embedding
 
@@ -334,6 +433,7 @@ class Assistant(
         cog_name: str,
         schema: dict,
         permission_level: Literal["user", "mod", "admin", "owner"] = "user",
+        required_permissions: Optional[List[str]] = None,
     ) -> bool:
         """Allow 3rd party cogs to register their functions for the model to use
 
@@ -341,6 +441,7 @@ class Assistant(
             cog_name (str): the name of the cog registering the function
             schema (dict): JSON schema representation of the command (see https://json-schema.org/understanding-json-schema/)
             permission_level (str): the permission level required to call the function (user, mod, admin, owner)
+            required_permissions (list[str]): Discord permission names required (e.g. ["manage_messages", "kick_members"])
 
         Returns:
             bool: True if function was successfully registered
@@ -376,11 +477,22 @@ class Assistant(
             log.info(fail(f"Cog does not have a function called {function_name}"))
             return False
 
+        if required_permissions:
+            valid_flags = set(discord.Permissions.VALID_FLAGS)
+            invalid = [p for p in required_permissions if p not in valid_flags]
+            if invalid:
+                log.info(fail(f"Invalid permission names: {', '.join(invalid)}"))
+                return False
+
         if cog_name not in self.registry:
             self.registry[cog_name] = {}
 
         log.info(f"The {cog_name} cog registered a function object: {function_name}")
-        self.registry[cog_name][function_name] = {"permission_level": permission_level, "schema": schema}
+        self.registry[cog_name][function_name] = {
+            "permission_level": permission_level,
+            "schema": schema,
+            "required_permissions": required_permissions or [],
+        }
         return True
 
     async def unregister_function(self, cog_name: str, function_name: str) -> None:

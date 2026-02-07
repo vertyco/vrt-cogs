@@ -12,7 +12,7 @@ from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box, pagify, text_to_file
 
-from .common.models import DB, CustomFunction, Embedding, GuildSettings
+from .common.models import DB, CustomFunction, GuildSettings
 from .common.utils import (
     code_string_valid,
     extract_code_blocks,
@@ -122,6 +122,8 @@ class EmbeddingMenu(discord.ui.View):
         save_func: Callable,
         fetch_pages: Callable,
         embed_method: Callable,
+        embedding_store,
+        guild_id: int,
     ):
         super().__init__(timeout=600)
         self.ctx = ctx
@@ -129,6 +131,8 @@ class EmbeddingMenu(discord.ui.View):
         self.save = save_func
         self.fetch_pages = fetch_pages
         self.embed_method = embed_method
+        self.embedding_store = embedding_store
+        self.guild_id = guild_id
 
         self.has_skip = True
         self.place = 0
@@ -151,7 +155,7 @@ class EmbeddingMenu(discord.ui.View):
         return await super().on_timeout()
 
     async def get_pages(self) -> None:
-        self.pages = await self.fetch_pages(self.conf, self.place)
+        self.pages = await self.fetch_pages(self.guild_id, self.conf, self.place)
         if len(self.pages) > 30 and not self.has_skip:
             self.add_item(self.left10)
             self.add_item(self.right10)
@@ -190,15 +194,13 @@ class EmbeddingMenu(discord.ui.View):
         embedding = await self.embed_method(text, self.conf)
         if not embedding:
             return await self.ctx.send(_("Failed to process embedding `{}`\nContent: ```\n{}\n```").format(name, text))
-        if name in self.conf.embeddings:
+        if await self.embedding_store.exists(self.guild_id, name):
             return await self.ctx.send(_("An embedding with the name `{}` already exists!").format(name))
-        self.conf.embeddings[name] = Embedding(text=text, embedding=embedding, model=self.conf.embed_model)
-        await asyncio.to_thread(self.conf.sync_embeddings, self.ctx.guild.id)
+        await self.embedding_store.add(self.guild_id, name, text, embedding, self.conf.embed_model)
         await self.get_pages()
         with suppress(discord.NotFound):
             self.message = await self.message.edit(embed=self.pages[self.page], view=self)
         await self.ctx.send(_("Your embedding labeled `{}` has been processed!").format(name))
-        await self.save()
 
     async def start(self):
         self.message = await self.ctx.send(embed=self.pages[self.page], view=self)
@@ -212,8 +214,10 @@ class EmbeddingMenu(discord.ui.View):
             return await interaction.response.send_message(_("No embeddings to inspect!"), ephemeral=True)
         await interaction.response.defer()
         name = self.pages[self.page].fields[self.place].name.replace("➣ ", "", 1)
-        embedding = self.conf.embeddings[name]
-        for p in pagify(embedding.text, page_length=4000):
+        meta = await self.embedding_store.get(self.guild_id, name)
+        if not meta:
+            return await interaction.followup.send(_("Embedding not found!"), ephemeral=True)
+        for p in pagify(meta.get("text", ""), page_length=4000):
             embed = discord.Embed(description=p)
             await interaction.followup.send(embed=embed, ephemeral=True)
 
@@ -232,8 +236,9 @@ class EmbeddingMenu(discord.ui.View):
         if not self.pages[self.page].fields:
             return await interaction.response.send_message(_("No embeddings to edit!"), ephemeral=True)
         name = self.pages[self.page].fields[self.place].name.replace("➣ ", "", 1)
-        embedding_obj = self.conf.embeddings[name]
-        modal = EmbeddingModal(title="Edit embedding", name=name, text=embedding_obj.text[:4000])
+        meta = await self.embedding_store.get(self.guild_id, name)
+        existing_text = meta.get("text", "") if meta else ""
+        modal = EmbeddingModal(title="Edit embedding", name=name, text=existing_text[:4000])
         await interaction.response.send_modal(modal)
         await modal.wait()
         if not modal.name or not modal.text:
@@ -243,17 +248,12 @@ class EmbeddingMenu(discord.ui.View):
             return await interaction.followup.send(
                 _("Failed to edit that embedding, please try again later"), ephemeral=True
             )
-        embedding_obj.text = modal.text
-        embedding_obj.embedding = embedding
-        embedding_obj.update()
-        self.conf.embeddings[modal.name] = embedding_obj
         if modal.name != name:
-            del self.conf.embeddings[name]
-        await asyncio.to_thread(self.conf.sync_embeddings, self.ctx.guild.id)
+            await self.embedding_store.delete(self.guild_id, name)
+        await self.embedding_store.update(self.guild_id, modal.name, modal.text, embedding, self.conf.embed_model)
         await self.get_pages()
         await self.message.edit(embed=self.pages[self.page], view=self)
         await interaction.followup.send(_("Your embedding has been modified!"), ephemeral=True)
-        await self.save()
 
     @discord.ui.button(
         style=discord.ButtonStyle.secondary,
@@ -318,11 +318,10 @@ class EmbeddingMenu(discord.ui.View):
             return await interaction.response.send_message(_("No embeddings to delete!"), ephemeral=True)
         name = self.pages[self.page].fields[self.place].name.replace("➣ ", "", 1)
         await interaction.response.send_message(_("Deleted `{}` embedding.").format(name), ephemeral=True)
-        del self.conf.embeddings[name]
+        await self.embedding_store.delete(self.guild_id, name)
         await self.get_pages()
         self.page %= len(self.pages)
         self.message = await self.message.edit(embed=self.pages[self.page], view=self)
-        await self.save()
 
     @discord.ui.button(
         style=discord.ButtonStyle.secondary,
@@ -342,7 +341,7 @@ class EmbeddingMenu(discord.ui.View):
         row=3,
     )
     async def search(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if not self.conf.embeddings:
+        if not await self.embedding_store.has_embeddings(self.guild_id):
             return await interaction.response.send_message(_("No embeddings to search!"), ephemeral=True)
         modal = SearchModal(_("Search for an embedding"))
         await interaction.response.send_modal(modal)
@@ -350,24 +349,22 @@ class EmbeddingMenu(discord.ui.View):
         if modal.query is None:
             return
         query = modal.query.lower()
+        all_meta = await self.embedding_store.get_all_metadata(self.guild_id)
+        matches: List[Tuple[str, int]] = []
+        for name, meta in all_meta.items():
+            text = meta.get("text", "")
+            if query == name.lower():
+                matches.append((name, 100))
+                break
+            if query in text.lower():
+                matches.append((name, 98))
+                continue
+            matches.append((name, fuzz.ratio(query, name.lower())))
+            matches.append((name, fuzz.ratio(query, text.lower())))
+        if len(matches) > 1:
+            matches.sort(key=lambda x: x[1], reverse=True)
 
-        def _get_matches():
-            matches: List[Tuple[int, int]] = []
-            for name, embedding in self.conf.embeddings.items():
-                if query == name.lower():
-                    matches.append((name, 100))
-                    break
-                if query in embedding.text.lower():
-                    matches.append((name, 98))
-                    continue
-                matches.append((name, fuzz.ratio(query, name.lower())))
-                matches.append((name, fuzz.ratio(query, embedding.text.lower())))
-            if len(matches) > 1:
-                matches.sort(key=lambda x: x[1], reverse=True)
-
-            return matches
-
-        sorted_embeddings = await asyncio.to_thread(_get_matches)
+        sorted_embeddings = matches
         embedding_name = sorted_embeddings[0][0]
         await interaction.followup.send(_("Search result: **{}**").format(embedding_name), ephemeral=True)
         for page_index, embed in enumerate(self.pages):
