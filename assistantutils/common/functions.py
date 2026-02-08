@@ -240,8 +240,23 @@ class Functions(MixinMeta):
                 added += 1
             elif message.embeds:
                 for embed in message.embeds:
-                    buffer.write(f"{timestamp} - {message.author.name}(ID: {message.id}): [Embed]{embed.to_dict()}\n")
-                    added += 1
+                    # Format embed more cleanly for AI parsing
+                    embed_parts = []
+                    if embed.author and embed.author.name:
+                        embed_parts.append(f"Author: {embed.author.name}")
+                    if embed.title:
+                        embed_parts.append(f"Title: {embed.title}")
+                    if embed.description:
+                        embed_parts.append(f"Description: {embed.description}")
+                    for field in embed.fields:
+                        embed_parts.append(f"{field.name}: {field.value}")
+                    if embed.footer and embed.footer.text:
+                        embed_parts.append(f"Footer: {embed.footer.text}")
+
+                    if embed_parts:
+                        embed_text = " | ".join(embed_parts)
+                        buffer.write(f"{timestamp} - {message.author.name}(ID: {message.id}): [Embed] {embed_text}\n")
+                        added += 1
 
         final = buffer.getvalue().strip()
         if not final:
@@ -577,26 +592,54 @@ class Functions(MixinMeta):
         searched = 0
         async for message in channel.history(limit=min(limit, 500)):
             searched += 1
-            content = message.content
-            if not content:
+
+            # Build searchable content from message content + embeds
+            searchable_parts = []
+            if message.content:
+                searchable_parts.append(message.content)
+
+            # Extract text from embeds
+            for embed in message.embeds:
+                if embed.title:
+                    searchable_parts.append(embed.title)
+                if embed.description:
+                    searchable_parts.append(embed.description)
+                if embed.author and embed.author.name:
+                    searchable_parts.append(embed.author.name)
+                if embed.footer and embed.footer.text:
+                    searchable_parts.append(embed.footer.text)
+                for field in embed.fields:
+                    if field.name:
+                        searchable_parts.append(field.name)
+                    if field.value:
+                        searchable_parts.append(field.value)
+
+            if not searchable_parts:
                 continue
+
+            combined_content = "\n".join(searchable_parts)
 
             match_found = False
             if use_regex and pattern:
-                if pattern.search(content):
+                if pattern.search(combined_content):
                     match_found = True
             else:
-                if query.lower() in content.lower():
+                if query.lower() in combined_content.lower():
                     match_found = True
 
             if match_found:
                 timestamp = message.created_at.strftime("%Y-%m-%d %H:%M:%S")
                 jump_url = message.jump_url
-                preview = content[:200] + "..." if len(content) > 200 else content
-                matches.append(f"[{timestamp}]({jump_url}) **{message.author.name}**: {preview}")
 
-                if len(matches) >= 10:  # Limit to 10 results
-                    break
+                # Build full content from message content or embed
+                if message.content:
+                    content_text = message.content
+                elif message.embeds and message.embeds[0].description:
+                    content_text = f"[Embed] {message.embeds[0].description}"
+                else:
+                    content_text = "[Embed with no description]"
+
+                matches.append(f"[{timestamp}]({jump_url}) **{message.author.name}**: {content_text}")
 
         if not matches:
             return f"No messages found matching '{query}' in the last {searched} messages."
@@ -674,6 +717,69 @@ class Functions(MixinMeta):
         context.author = user
         context.guild = guild
         context.channel = channel
+
+        # Handle Red's Alias cog
+        if (
+            not context.valid
+            and context.prefix is not None
+            and (alias_cog := bot.get_cog("Alias")) is not None
+            and not await bot.cog_disabled_in_guild(alias_cog, guild)
+        ):
+            alias = await alias_cog._aliases.get_alias(guild, context.invoked_with)
+            if alias is not None:
+
+                async def alias_callback(__, ctx: commands.Context):
+                    await alias_cog.call_alias(ctx.message, ctx.prefix, alias)
+
+                context.command = commands.command(name=command)(alias_callback)
+                context.command.cog = alias_cog
+                context.command.params.clear()
+                context.command.requires.ready_event.set()
+
+        # Handle Red's CustomCommands cog
+        if (
+            not context.valid
+            and context.prefix is not None
+            and (cc_cog := bot.get_cog("CustomCommands")) is not None
+            and not await bot.cog_disabled_in_guild(cc_cog, guild)
+        ):
+            try:
+                raw_response, cooldowns = await cc_cog.commandobj.get(message=message, command=context.invoked_with)
+                if isinstance(raw_response, list):
+                    import random
+
+                    raw_response = random.choice(raw_response)
+
+                async def cc_callback(__, ctx: commands.Context):
+                    try:
+                        if cooldowns:
+                            cc_cog.test_cooldowns(context, context.invoked_with, cooldowns)
+                    except Exception:
+                        return
+                    del ctx.args[0]
+                    await cc_cog.cc_command(*ctx.args, **ctx.kwargs, raw_response=raw_response)
+
+                context.command = commands.command(name=command)(cc_callback)
+                context.command.cog = cc_cog
+                context.command.requires.ready_event.set()
+                context.command.params = cc_cog.prepare_args(raw_response)
+            except Exception:
+                pass
+
+        # Handle Phen/Lemon's Tags cog
+        if (
+            not context.valid
+            and context.prefix is not None
+            and (tags_cog := bot.get_cog("Tags")) is not None
+            and not await bot.cog_disabled_in_guild(tags_cog, guild)
+        ):
+            tag = tags_cog.get_tag(guild, context.invoked_with, check_global=True)
+            if tag is not None:
+                message.content = f"{context.prefix}invoketag {command}"
+                context = await bot.get_context(message)
+                context.author = user
+                context.guild = guild
+                context.channel = channel
 
         if not context.valid:
             return f"Invalid command: `{command}`. The command was not found or is not available."
