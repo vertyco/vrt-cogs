@@ -37,7 +37,7 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "3.0.3"
+    __version__ = "3.0.5"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -412,7 +412,7 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
 
         # Track user messages (ticket owner)
         if message.author.id == owner_id:
-            record_user_message(conf, owner_id)
+            record_user_message(conf, owner_id, ticket.panel)
             await self.save()
             return
 
@@ -441,7 +441,7 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
             return
 
         # Record staff message for analytics (tracks messages_sent, tickets_messaged_in)
-        record_staff_message(conf, message.author.id, channel_id)
+        record_staff_message(conf, message.author.id, channel_id, panel_name)
 
         # Record the first response time (only if no first response yet)
         if ticket.first_response is None:

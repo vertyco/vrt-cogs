@@ -409,6 +409,7 @@ class GuildSettings(Base):
     staff_stats: dict[int, StaffStats] = {}  # {user_id: StaffStats}
     user_stats: dict[int, UserStats] = {}  # {user_id: UserStats}
     server_stats: ServerStats = Field(default_factory=ServerStats)
+    analytics_blacklist: list[str] = []  # Panel names excluded from telemetry
 
     # === Data Retention ===
     data_retention_days: int = 90  # Days to keep event data (0 = unlimited)
@@ -440,6 +441,10 @@ class GuildSettings(Base):
         if member.id in self.blacklist:
             return True
         return any(r.id in self.blacklist for r in member.roles)
+
+    def is_panel_analytics_blacklisted(self, panel_name: str) -> bool:
+        """Check if a panel is excluded from analytics tracking"""
+        return panel_name.lower() in self.analytics_blacklist
 
     def is_support_staff(self, member: discord.Member, panel: Panel | None = None) -> bool:
         """Check if member is support staff (global or panel-specific)"""

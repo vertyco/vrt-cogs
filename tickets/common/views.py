@@ -901,7 +901,12 @@ class LogView(View):
 
         # Track claim analytics
         conf = self.cog.db.get_conf(self.guild)
-        record_ticket_claimed(conf, user.id, self.channel.id)
+        panel_name = ""
+        for _uid, tickets in conf.opened.items():
+            if self.channel.id in tickets:
+                panel_name = tickets[self.channel.id].panel
+                break
+        record_ticket_claimed(conf, user.id, self.channel.id, panel_name)
         await self.cog.save()
 
         await interaction.response.send_message(

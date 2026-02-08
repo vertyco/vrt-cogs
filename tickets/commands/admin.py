@@ -1094,6 +1094,10 @@ class AdminCommands(MixinMeta):
         if blacklisted:
             embed.add_field(name=_("Blacklist"), value=blacklisted, inline=False)
 
+        if conf.analytics_blacklist:
+            bl_panels = ", ".join(f"`{p}`" for p in conf.analytics_blacklist)
+            embed.add_field(name=_("Analytics Blacklist"), value=bl_panels, inline=False)
+
         if conf.thread_close:
             txt = _("Thread tickets will be closed/archived rather than deleted")
         else:
@@ -1691,6 +1695,37 @@ class AdminCommands(MixinMeta):
             await ctx.send(_("Average response time will now be shown to users"))
         else:
             await ctx.send(_("Average response time will no longer be shown to users"))
+
+    @tickets.command()
+    async def analyticsblacklist(self, ctx: commands.Context, *, panel_name: str):
+        """Toggle a panel's exclusion from analytics/telemetry tracking.
+
+        Panels on the analytics blacklist will not have any ticket events
+        (opens, closes, claims, messages, response times) recorded.
+
+        **Arguments:**
+        - `<panel_name>` - The panel name to toggle
+
+        **Examples:**
+        - `[p]tickets analyticsblacklist apply` - Exclude "apply" panel from analytics
+        - `[p]tickets analyticsblacklist apply` - Run again to re-include it
+        """
+        conf = self.db.get_conf(ctx.guild)
+        panel_name = panel_name.lower()
+        if panel_name not in conf.panels:
+            return await ctx.send(_("Panel does not exist!"))
+        if panel_name in conf.analytics_blacklist:
+            conf.analytics_blacklist.remove(panel_name)
+            await self.save()
+            await ctx.send(
+                _("The **{}** panel will now be tracked by analytics.").format(panel_name)
+            )
+        else:
+            conf.analytics_blacklist.append(panel_name)
+            await self.save()
+            await ctx.send(
+                _("The **{}** panel will no longer be tracked by analytics.").format(panel_name)
+            )
 
     @tickets.command()
     async def transcript(self, ctx: commands.Context):
