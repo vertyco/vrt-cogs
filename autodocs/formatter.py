@@ -36,7 +36,7 @@ IGNORE = [
 ]
 
 
-def is_block_start_or_end(line: str) -> bool:
+def _is_block_start_or_end(line: str) -> bool:
     return line.startswith("```")
 
 
@@ -58,7 +58,7 @@ class CustomCmdFmt:
         extended_info: bool,
         privilege_level: str,
         embedding_style: bool = False,
-        min_privilage_level: str = "user",
+        min_privilege_level: str = "user",
     ):
         self.bot = bot
         self.cmd = cmd
@@ -67,16 +67,10 @@ class CustomCmdFmt:
         self.extended_info = extended_info
         self.privilege_level = privilege_level
         self.embedding_style = embedding_style
-        self.min_privilage_level = min_privilage_level
+        self.min_privilege_level = min_privilege_level
 
         self.is_slash: bool = isinstance(cmd, SlashCommand)
-        self.is_hybrid: bool = any(
-            [
-                isinstance(cmd, HybridGroup),
-                isinstance(cmd, HybridCommand),
-                isinstance(cmd, HybridAppCommand),
-            ]
-        )
+        self.is_hybrid: bool = isinstance(cmd, (HybridGroup, HybridCommand, HybridAppCommand))
 
         try:
             self.checks: str = humanize_list([i.__qualname__.split(".")[0] for i in cmd.checks]).strip()
@@ -84,19 +78,19 @@ class CustomCmdFmt:
             self.checks = ""
 
         self.name: str = cmd.qualified_name
-        self.hashes: str = len(self.name.split(" ")) * "#"
+        self.hashes: str = (len(self.name.split(" ")) + 1) * "#"
 
         if self.is_slash:
             try:
                 self.options = cmd.to_dict()["options"]
             except TypeError:
                 self.options = cmd.to_dict(self.bot.tree)["options"]
-            self.desc: str = cmd.description
+            self.desc: str = cmd.description or ""
         else:
             try:
-                self.desc: str = cmd.help
+                self.desc: str = cmd.help or ""
             except AttributeError:
-                self.desc: str = cmd.description
+                self.desc: str = cmd.description or ""
             try:
                 self.perms = self.cmd.requires
                 cd = cmd.cooldown
@@ -116,7 +110,7 @@ class CustomCmdFmt:
             lines = self.desc.split("\n")
             inside_code_block = False
             for i, line in enumerate(lines):
-                if is_block_start_or_end(line):
+                if _is_block_start_or_end(line):
                     inside_code_block = not inside_code_block
                 elif not inside_code_block and line:
                     lines[i] = line + "<br/>"
@@ -128,18 +122,19 @@ class CustomCmdFmt:
         COMMAND = _("Command")
         prefix = self.prefix if self.prefix else "[p]"
         if self.is_slash:
-            doc = f"{self.hashes} /{self.name} ({SLASH} {COMMAND})\n"
+            doc = f"{self.hashes} /{self.name} ({SLASH} {COMMAND})\n\n"
         elif self.is_hybrid:
             HYBRID = _("Hybrid")
-            doc = f"{self.hashes} {prefix}{self.name} ({HYBRID} {COMMAND})\n"
+            doc = f"{self.hashes} {prefix}{self.name} ({HYBRID} {COMMAND})\n\n"
         else:
-            doc = f"{self.hashes} {prefix}{self.name}\n"
+            doc = f"{self.hashes} {prefix}{self.name}\n\n"
 
         if self.embedding_style:
-            doc = doc.replace("#", "").strip() + "\n"
+            doc = doc.lstrip("#").strip() + "\n"
 
         # Get command docstring
-        doc += f"{self.desc.strip()}\n"
+        if self.desc.strip():
+            doc += f"{self.desc.strip()}\n\n"
 
         USAGE = _("Usage")
         CHECKS = _("Checks")
@@ -195,7 +190,7 @@ class CustomCmdFmt:
                 doc += f" - {SLASH} {USAGE}: `{usage}`\n"
 
             limit = PRIVILEGES[self.privilege_level]
-            minimum = PRIVILEGES[self.min_privilage_level]
+            minimum = PRIVILEGES[self.min_privilege_level]
             if perms := self.perms:
                 priv = perms.privilege_level
                 if priv:
@@ -318,11 +313,16 @@ class CustomCmdFmt:
                     pass
 
             if ext:
-                doc += _("Extended Arg Info\n") + ext
+                EXTENDED = _("Extended Arg Info")
+                doc += f"\n{EXTENDED}\n\n{ext}"
 
         if self.prefix:
             doc = doc.replace("[p]", self.prefix)
         if self.replace_botname:
             doc = doc.replace("[botname]", self.bot.user.display_name)
-        doc = doc.replace("guild", "server")
+
+        # Ensure spacing between commands
+        if not doc.endswith("\n\n"):
+            doc += "\n"
+
         return doc

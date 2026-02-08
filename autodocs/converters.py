@@ -59,7 +59,7 @@ from redbot.core.utils.chat_formatting import box
 _ = Translator("AutoDocs", __file__)
 
 
-def get_converter_docstring(object):
+def get_converter_docstring(converter):
     types = {
         "str": _('A single word, if not using slash and multiple words are necessary use a quote e.g "Hello world".'),
         "int": _("A number without decimal places."),
@@ -107,7 +107,7 @@ def get_converter_docstring(object):
         AppCommandOptionType.role: RoleConverter.__doc__,
         AppCommandOptionType.attachment: Attachment.__doc__,
     }
-    return CONVERTERS.get(object)
+    return CONVERTERS.get(converter)
 
 
 CLASSCONVERTER = {

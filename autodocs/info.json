@@ -16,6 +16,8 @@
   "permissions": [],
   "required_cogs": {},
   "requirements": [
+    "aiocache",
+    "rapidfuzz",
     "ujson",
     "msgpack",
     "pandas"

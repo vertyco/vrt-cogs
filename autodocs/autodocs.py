@@ -1,7 +1,8 @@
+import asyncio
 import functools
 import logging
 from io import BytesIO
-from typing import List, Literal, Optional, Tuple
+from typing import Literal
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import discord
@@ -30,9 +31,9 @@ class AutoDocs(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.1.2"
+    __version__ = "1.2.0"
 
-    def format_help_for_context(self, ctx):
+    def format_help_for_context(self, ctx) -> str:
         helpcmd = super().format_help_for_context(ctx)
         txt = _("{}\nCog Version: {}\nAuthor: {}").format(helpcmd, self.__version__, self.__author__)
         return txt
@@ -53,33 +54,36 @@ class AutoDocs(commands.Cog):
         include_hidden: bool,
         include_help: bool,
         max_privilege_level: str,
-        min_privilage_level: str = "user",
+        min_privilege_level: str = "user",
         embedding_style: bool = False,
-    ) -> Tuple[str, pd.DataFrame]:
+    ) -> tuple[str, pd.DataFrame]:
         columns = [_("name"), _("text")]
         rows = []
         cog_name = cog.qualified_name
 
-        docs = ""
+        if embedding_style:
+            docs = ""
+        else:
+            docs = f"# {cog_name}\n\n"
         cog_help = cog.help.strip() if cog.help else ""
         if not embedding_style:
             cog_help = cog_help.replace("\n", "<br/>")
 
         if cog_help and include_help:
-            docs = cog_help + "\n\n"
+            docs += cog_help + "\n\n"
             entry_name = _("{} cog description").format(cog_name)
             rows.append([entry_name, f"{entry_name}\n{cog_help}"])
 
         for cmd in cog.walk_app_commands():
             c = CustomCmdFmt(
-                self.bot,
-                cmd,
-                prefix,
-                replace_botname,
-                extended_info,
-                max_privilege_level,
-                embedding_style,
-                min_privilage_level,
+                bot=self.bot,
+                cmd=cmd,
+                prefix=prefix,
+                replace_botname=replace_botname,
+                extended_info=extended_info,
+                privilege_level=max_privilege_level,
+                embedding_style=embedding_style,
+                min_privilege_level=min_privilege_level,
             )
             doc = c.get_doc()
             if not doc:
@@ -93,25 +97,21 @@ class AutoDocs(commands.Cog):
             if cmd.hidden and not include_hidden:
                 continue
             c = CustomCmdFmt(
-                self.bot,
-                cmd,
-                prefix,
-                replace_botname,
-                extended_info,
-                max_privilege_level,
-                embedding_style,
-                min_privilage_level,
+                bot=self.bot,
+                cmd=cmd,
+                prefix=prefix,
+                replace_botname=replace_botname,
+                extended_info=extended_info,
+                privilege_level=max_privilege_level,
+                embedding_style=embedding_style,
+                min_privilege_level=min_privilege_level,
             )
             doc = c.get_doc()
             if doc is None:
                 ignored.append(cmd.qualified_name)
             if not doc:
                 continue
-            skip = False
-            for i in ignored:
-                if i in cmd.qualified_name:
-                    skip = True
-            if skip:
+            if any(i in cmd.qualified_name for i in ignored):
                 continue
             docs += doc
             csv_name = f"{c.name} command for {cog_name} cog"
@@ -127,7 +127,7 @@ class AutoDocs(commands.Cog):
         extended_info=_("Include extra info like converters and their docstrings"),
         include_hidden=_("Include hidden commands"),
         max_privilege_level=_("Hide commands above specified privilege level (user, mod, admin, guildowner, botowner)"),
-        min_privilage_level=_("Hide commands below specified privilege level (user, mod, admin, guildowner, botowner)"),
+        min_privilege_level=_("Hide commands below specified privilege level (user, mod, admin, guildowner, botowner)"),
         csv_export=_("Include a csv with each command isolated per row"),
     )
     @commands.is_owner()
@@ -137,14 +137,14 @@ class AutoDocs(commands.Cog):
         self,
         ctx: commands.Context,
         cog_name: str,
-        replace_prefix: Optional[bool] = False,
-        replace_botname: Optional[bool] = False,
-        extended_info: Optional[bool] = False,
-        include_hidden: Optional[bool] = False,
-        include_help: Optional[bool] = True,
+        replace_prefix: bool = False,
+        replace_botname: bool = False,
+        extended_info: bool = False,
+        include_hidden: bool = False,
+        include_help: bool = True,
         max_privilege_level: Literal["user", "mod", "admin", "guildowner", "botowner"] = "botowner",
-        min_privilage_level: Literal["user", "mod", "admin", "guildowner", "botowner"] = "user",
-        csv_export: Optional[bool] = False,
+        min_privilege_level: Literal["user", "mod", "admin", "guildowner", "botowner"] = "user",
+        csv_export: bool = False,
     ):
         """
         Create a Markdown docs page for a cog and send to discord
@@ -157,7 +157,7 @@ class AutoDocs(commands.Cog):
         `include_hidden:      `(bool) If True, includes hidden commands
         `include_help:        `(bool) If True, includes the cog help text at the top of the docs
         `max_privilege_level: `(str) Hide commands above specified privilege level
-        `min_privilage_level: `(str) Hide commands below specified privilege level
+        `min_privilege_level: `(str) Hide commands below specified privilege level
         - (user, mod, admin, guildowner, botowner)
         `csv_export:          `(bool) Include a csv with each command isolated per row for use as embeddings
 
@@ -188,10 +188,10 @@ class AutoDocs(commands.Cog):
                             include_hidden,
                             include_help,
                             max_privilege_level,
-                            min_privilage_level,
-                            csv_export,
+                            min_privilege_level,
+                            embedding_style=csv_export,
                         )
-                        docs, df = await self.bot.loop.run_in_executor(None, partial_func)
+                        docs, df = await asyncio.to_thread(partial_func)
                         filename = f"{folder_name}/{cog.qualified_name}.md"
 
                         if csv_export:
@@ -228,10 +228,10 @@ class AutoDocs(commands.Cog):
                     include_hidden,
                     include_help,
                     max_privilege_level,
-                    min_privilage_level,
-                    csv_export,
+                    min_privilege_level,
+                    embedding_style=csv_export,
                 )
-                docs, df = await self.bot.loop.run_in_executor(None, partial_func)
+                docs, df = await asyncio.to_thread(partial_func)
                 if csv_export:
                     buffer = BytesIO()
                     df.to_csv(buffer, index=False)
@@ -243,28 +243,24 @@ class AutoDocs(commands.Cog):
                     buffer.seek(0)
                 file = discord.File(buffer)
                 txt = _("Here are your docs for {}!").format(cog.qualified_name)
-            if file.__sizeof__() > ctx.guild.filesize_limit:
+            if buffer.getbuffer().nbytes > ctx.guild.filesize_limit:
                 await ctx.send("File size too large!")
             else:
                 await ctx.send(txt, file=file)
 
-    @cached(ttl=8)
-    async def get_coglist(self, string: str) -> List[app_commands.Choice]:
-        cogs = set("all")
+    @cached(ttl=30)
+    async def get_coglist(self, string: str) -> list[app_commands.Choice]:
+        cogs = {"all"}
         for cmd in self.bot.walk_commands():
             cogs.add(str(cmd.cog_name).strip())
-        return [app_commands.Choice(name=i, value=i) for i in cogs if string.lower() in i.lower()][:25]
+        return [app_commands.Choice(name=i, value=i) for i in sorted(cogs) if string.lower() in i.lower()][:25]
 
     @makedocs.autocomplete("cog_name")
-    async def get_cog_names(self, inter: discord.Interaction, current: str):
+    async def get_cog_names(self, inter: discord.Interaction, current: str) -> list[app_commands.Choice]:
         return await self.get_coglist(current)
 
     # ------------------------------------------------------------------------
-    # ------------------------------------------------------------------------
-    # ------------------------------------------------------------------------
     # ------------------- ASSISTANT FUNCTION REGISTRATION --------------------
-    # ------------------------------------------------------------------------
-    # ------------------------------------------------------------------------
     # ------------------------------------------------------------------------
     async def get_command_info(
         self, guild: discord.Guild, user: discord.Member, command_name: str, *args, **kwargs
@@ -304,7 +300,7 @@ class AutoDocs(commands.Cog):
 
         return f"Cog name: {getattr(command.cog, 'qualified_name', 'Core')}\nCommand:\n{doc}"
 
-    async def get_command_names(self, cog_name: str, *args, **kwargs):
+    async def get_command_names(self, cog_name: str, *args, **kwargs) -> str:
         cog = self.bot.get_cog(cog_name)
         if not cog:
             return "Could not find that cog, check loaded cogs first"
@@ -312,7 +308,7 @@ class AutoDocs(commands.Cog):
         joined = "\n".join(names)
         return f"Available commands for the {cog_name} cog:\n{joined}"
 
-    async def get_cog_info(self, cog_name: str, *args, **kwargs):
+    async def get_cog_info(self, cog_name: str, *args, **kwargs) -> str:
         cog = self.bot.get_cog(cog_name)
         if not cog:
             return "Could not find that cog, check loaded cogs first"
@@ -320,71 +316,63 @@ class AutoDocs(commands.Cog):
             return f"Description of the {cog_name} cog: {desc}"
         return "This cog has no description"
 
-    async def get_cog_list(self, *args, **kwargs):
-        joined = "\n".join([i for i in self.bot.cogs])
+    async def get_cog_list(self, *args, **kwargs) -> str:
+        joined = "\n".join(self.bot.cogs)
         return f"Currently loaded cogs:\n{joined}"
 
     @commands.Cog.listener()
     async def on_assistant_cog_add(self, cog: commands.Cog):
         """Registers a command with Assistant enabling it to access to command docs"""
-        schemas = []
-
-        schema = {
-            "name": "get_command_info",
-            "description": "Get info about a specific command",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "command_name": {
-                        "type": "string",
-                        "description": "name of the command",
+        schemas = [
+            {
+                "name": "get_command_info",
+                "description": "Get info about a specific command",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "command_name": {
+                            "type": "string",
+                            "description": "name of the command",
+                        },
                     },
+                    "required": ["command_name"],
                 },
-                "required": ["command_name"],
             },
-        }
-        schemas.append(schema)
-
-        schema = {
-            "name": "get_command_names",
-            "description": "Get a list of commands for a cog",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "cog_name": {
-                        "type": "string",
-                        "description": "name of the cog, case sensitive",
-                    }
+            {
+                "name": "get_command_names",
+                "description": "Get a list of commands for a cog",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "cog_name": {
+                            "type": "string",
+                            "description": "name of the cog, case sensitive",
+                        }
+                    },
+                    "required": ["cog_name"],
                 },
-                "required": ["cog_name"],
             },
-        }
-        schemas.append(schema)
-
-        schema = {
-            "name": "get_cog_info",
-            "description": "Get the description for a cog",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "cog_name": {
-                        "type": "string",
-                        "description": "name of the cog, case sensitive",
-                    }
+            {
+                "name": "get_cog_info",
+                "description": "Get the description for a cog",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "cog_name": {
+                            "type": "string",
+                            "description": "name of the cog, case sensitive",
+                        }
+                    },
+                    "required": ["cog_name"],
                 },
-                "required": ["cog_name"],
             },
-        }
-        schemas.append(schema)
-
-        schema = {
-            "name": "get_cog_list",
-            "description": "Get a list of currently loaded cogs by name",
-            "parameters": {
-                "type": "object",
-                "properties": {},
+            {
+                "name": "get_cog_list",
+                "description": "Get a list of currently loaded cogs by name",
+                "parameters": {
+                    "type": "object",
+                    "properties": {},
+                },
             },
-        }
-        schemas.append(schema)
-
+        ]
         await cog.register_functions(self.qualified_name, schemas)
