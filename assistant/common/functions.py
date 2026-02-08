@@ -9,9 +9,10 @@ from uuid import uuid4
 
 import aiohttp
 import discord
+from duckduckgo_search import DDGS
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import pagify, text_to_file
+from redbot.core.utils.chat_formatting import pagify
 
 from ..abc import MixinMeta
 from ..common import calls, constants, reply
@@ -151,18 +152,17 @@ class AssistantFunctions(MixinMeta):
         }
         return payload
 
-    async def search_web_brave(
+    async def _search_brave(
         self,
         guild: discord.Guild,
         query: str,
         num_results: int = 5,
-        *args,
-        **kwargs,
-    ):
+    ) -> str | None:
+        """Search using Brave API. Returns None if API key is not set or request fails."""
         if not self.db.brave_api_key:
-            return "Error: Brave API key is not set!"
-        url = "https://api.search.brave.com/res/v1/web/search"
+            return None
 
+        url = "https://api.search.brave.com/res/v1/web/search"
         headers = {
             "Accept": "application/json",
             "Accept-Encoding": "gzip",
@@ -177,42 +177,93 @@ class AssistantFunctions(MixinMeta):
             "count": num_results,
             "safesearch": "off",
         }
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, headers=headers, params=params) as response:
-                if response.status != 200:
-                    return f"Error: Unable to fetch results, status code {response.status}"
 
-                data = await response.json()
-                tmp = StringIO()
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=headers, params=params) as response:
+                    if response.status != 200:
+                        log.warning(f"Brave search failed with status {response.status}, falling back to DuckDuckGo")
+                        return None
 
-                web = data.get("web", {}).get("results", [])
-                if web:
-                    tmp.write("# Web Results\n")
-                    for result in web:
-                        tmp.write(
-                            f"## {result.get('title', 'N/A')}\n"
-                            f"- Description: {result.get('description', 'N/A')}\n"
-                            f"- Link: {result.get('url', 'N/A')}\n"
-                            f"- Age: {result.get('age', 'N/A')}\n"
-                            f"- Page age: {result.get('page_age', 'N/A')}\n"
-                        )
-                        if profile := result.get("profile"):
-                            tmp.write(f"- Source: {profile.get('long_name', 'N/A')}\n")
+                    data = await response.json()
+                    tmp = StringIO()
 
-                videos = data.get("videos", {}).get("results", [])
-                if videos:
-                    tmp.write("# Video Results\n")
-                    for video in videos:
-                        tmp.write(
-                            f"## {video.get('title', 'N/A')}\n"
-                            f"- Description: {video.get('description', 'N/A')}\n"
-                            f"- URL: {video.get('url', 'N/A')}\n"
-                        )
+                    web = data.get("web", {}).get("results", [])
+                    if web:
+                        tmp.write("# Web Results\n")
+                        for result in web:
+                            tmp.write(
+                                f"## {result.get('title', 'N/A')}\n"
+                                f"- Description: {result.get('description', 'N/A')}\n"
+                                f"- Link: {result.get('url', 'N/A')}\n"
+                                f"- Age: {result.get('age', 'N/A')}\n"
+                                f"- Page age: {result.get('page_age', 'N/A')}\n"
+                            )
+                            if profile := result.get("profile"):
+                                tmp.write(f"- Source: {profile.get('long_name', 'N/A')}\n")
 
-                if not tmp.getvalue():
-                    return "No results found"
+                    videos = data.get("videos", {}).get("results", [])
+                    if videos:
+                        tmp.write("# Video Results\n")
+                        for video in videos:
+                            tmp.write(
+                                f"## {video.get('title', 'N/A')}\n"
+                                f"- Description: {video.get('description', 'N/A')}\n"
+                                f"- URL: {video.get('url', 'N/A')}\n"
+                            )
 
-                return tmp.getvalue()
+                    result = tmp.getvalue()
+                    if not result:
+                        return None
+                    return result
+        except Exception as e:
+            log.warning(f"Brave search error: {e}, falling back to DuckDuckGo")
+            return None
+
+    async def _search_duckduckgo(self, query: str, num_results: int = 5) -> str:
+        """Search using DuckDuckGo. Fallback option that doesn't require an API key."""
+
+        def _search():
+            with DDGS() as ddgs:
+                return list(ddgs.text(query, max_results=num_results))
+
+        try:
+            res: list[dict] = await asyncio.to_thread(_search)
+            if not res:
+                return "No results found"
+
+            tmp = StringIO()
+            tmp.write("# Web Results\n")
+            for result in res:
+                tmp.write(
+                    f"## {result.get('title', 'N/A')}\n"
+                    f"- Description: {result.get('body', 'N/A')}\n"
+                    f"- Link: {result.get('href', 'N/A')}\n"
+                )
+            return tmp.getvalue()
+        except Exception as e:
+            log.error(f"DuckDuckGo search error: {e}")
+            return f"Error: Search failed - {e}"
+
+    async def search_web_brave(
+        self,
+        guild: discord.Guild,
+        query: str,
+        num_results: int = 5,
+        *args,
+        **kwargs,
+    ):
+        """
+        Search the web for information. Uses Brave Search API if configured,
+        otherwise falls back to DuckDuckGo.
+        """
+        # Try Brave first if API key is set
+        result = await self._search_brave(guild, query, num_results)
+        if result:
+            return result
+
+        # Fallback to DuckDuckGo
+        return await self._search_duckduckgo(query, num_results)
 
     async def create_memory(
         self,
@@ -348,89 +399,35 @@ class AssistantFunctions(MixinMeta):
                 await channel.send(p)
         return "Your message has been sent to the user! You can continue working."
 
-    async def fetch_url(self, url: str, *args, **kwargs) -> str:
-        """
-        Fetch the content of a URL and return the text.
-
-        Args:
-            url: The URL to fetch content from
-
-        Returns:
-            The text content of the page, or an error message
-        """
-        log.info(f"Fetching URL: {url}")
-
-        try:
-            async with aiohttp.ClientSession() as session:
-                headers = {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-                }
-                async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=30)) as response:
-                    if response.status not in (200, 201):
-                        return f"Failed to fetch URL: HTTP {response.status}"
-
-                    content_type = response.headers.get("Content-Type", "")
-
-                    if "text/html" in content_type:
-                        html = await response.text()
-                        # Basic HTML to text conversion - strip tags
-                        import re
-
-                        # Remove script and style elements
-                        html = re.sub(r"<script[^>]*>.*?</script>", "", html, flags=re.DOTALL | re.IGNORECASE)
-                        html = re.sub(r"<style[^>]*>.*?</style>", "", html, flags=re.DOTALL | re.IGNORECASE)
-                        # Remove HTML tags
-                        text = re.sub(r"<[^>]+>", " ", html)
-                        # Clean up whitespace
-                        text = re.sub(r"\s+", " ", text).strip()
-                        # Decode HTML entities
-                        import html as html_module
-
-                        text = html_module.unescape(text)
-                        # Limit response size
-                        if len(text) > 50000:
-                            text = text[:50000] + "\n\n[Content truncated...]"
-                        return text
-                    elif "application/json" in content_type:
-                        return await response.text()
-                    elif "text/" in content_type:
-                        return await response.text()
-                    else:
-                        return f"Unsupported content type: {content_type}"
-
-        except asyncio.TimeoutError:
-            return "Request timed out after 30 seconds"
-        except Exception as e:
-            log.error(f"Error fetching URL {url}", exc_info=e)
-            return f"Failed to fetch URL: {str(e)}"
-
-    async def create_and_send_file(
+    async def think_and_plan(
         self,
-        filename: str,
-        content: str,
-        channel: discord.TextChannel,
-        comment: str = None,
+        task_summary: str,
+        steps: list[str],
+        considerations: str = None,
         *args,
         **kwargs,
     ) -> str:
         """
-        Create a file with the provided content and send it to the Slack conversation.
+        Break down a complex task into smaller steps for planning purposes.
+        This tool helps the model organize its approach before executing.
 
         Args:
-            filename: Name of the file including extension
-            content: Content to write to the file
-            comment: Optional comment to include when sending the file
-            user_id: The ID of the user in the conversation (used for logging)
-            channel_id: The ID of the channel where the file will be sent
-            client: The Slack API client (passed from main.py)
-            initial_response: The initial response message to update with status
+            task_summary: Brief summary of the overall task
+            steps: Ordered list of steps to complete the task
+            considerations: Optional notes about edge cases or issues
 
         Returns:
-            A message confirming the file was sent
+            A formatted plan that becomes part of the conversation context
         """
-        file = text_to_file(content, filename=filename)
-        await channel.send(content=comment, file=file)
-        return "Success"
+        plan = f"**Task:** {task_summary}\n\n**Plan:**\n"
+        for i, step in enumerate(steps, 1):
+            plan += f"{i}. {step}\n"
+
+        if considerations:
+            plan += f"\n**Considerations:** {considerations}\n"
+
+        plan += "\n---\nPlan created. Now proceeding with execution..."
+        return plan
 
     async def create_reminder(
         self,

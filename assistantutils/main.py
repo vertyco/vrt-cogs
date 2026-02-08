@@ -27,7 +27,7 @@ class AssistantUtils(Functions, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.0.3"
+    __version__ = "1.1.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -39,11 +39,22 @@ class AssistantUtils(Functions, commands.Cog, metaclass=CompositeMetaClass):
 
     @commands.Cog.listener()
     async def on_assistant_cog_add(self, cog: MockAssistantCog):
+        # Discord info tools
         await cog.register_function(self.qualified_name, schemas.GET_CHANNEL_LIST)
         await cog.register_function(self.qualified_name, schemas.GET_CHANNEL_INFO)
         await cog.register_function(self.qualified_name, schemas.GET_USER_INFO)
+        await cog.register_function(self.qualified_name, schemas.GET_ROLE_INFO)
+        await cog.register_function(self.qualified_name, schemas.GET_SERVER_INFO)
+        # Web/utility tools
         await cog.register_function(self.qualified_name, schemas.SEARCH_INTERNET)
+        await cog.register_function(self.qualified_name, schemas.FETCH_URL)
         await cog.register_function(self.qualified_name, schemas.FETCH_CHANNEL_HISTORY)
+        # Datetime tools
         await cog.register_function(self.qualified_name, schemas.CONVERT_DATETIME_TIMESTAMP)
         await cog.register_function(self.qualified_name, schemas.GET_DISCORD_TIMESTAMP_FORMAT)
+        # Action tools
+        await cog.register_function(self.qualified_name, schemas.CREATE_AND_SEND_FILE)
+        await cog.register_function(self.qualified_name, schemas.ADD_REACTION)
+        await cog.register_function(self.qualified_name, schemas.SEARCH_MESSAGES)
+        await cog.register_function(self.qualified_name, schemas.RUN_COMMAND)
         log.info("Functions have been registered")

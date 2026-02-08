@@ -386,7 +386,7 @@ EDIT_IMAGE = {
 
 SEARCH_INTERNET = {
     "name": "search_web_brave",
-    "description": "Search the web for current information on a topic using the Brave Search API.",
+    "description": "Search the web for current information on a topic. Uses Brave Search API if configured, otherwise falls back to DuckDuckGo.",
     "parameters": {
         "type": "object",
         "properties": {
@@ -466,6 +466,29 @@ LIST_MEMORIES = {
         "properties": {},
     },
 }
+THINK_AND_PLAN = {
+    "name": "think_and_plan",
+    "description": "Use this to break down complex tasks into smaller steps before executing them. This helps you organize your approach and ensure you don't miss important details. Call this BEFORE starting work on complex multi-step tasks.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "task_summary": {
+                "type": "string",
+                "description": "A brief summary of the overall task or goal (1-2 sentences)",
+            },
+            "steps": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "An ordered list of specific steps to complete the task. Each step should be actionable and clear.",
+            },
+            "considerations": {
+                "type": "string",
+                "description": "Any important considerations, edge cases, or potential issues to watch out for",
+            },
+        },
+        "required": ["task_summary", "steps"],
+    },
+}
 DO_NOT_RESPOND_SCHEMA = {
     "name": "do_not_respond",
     "description": "Call this function if you do not want to or do not need to respond to the user.",
@@ -486,43 +509,6 @@ RESPOND_AND_CONTINUE = {
             },
         },
         "required": ["content"],
-    },
-}
-FETCH_URL = {
-    "name": "fetch_url",
-    "description": "Fetch the content of a URL and return the text. Useful for reading documentation, articles, or any web page content.",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "url": {
-                "type": "string",
-                "description": "The URL to fetch content from",
-            },
-        },
-        "required": ["url"],
-    },
-}
-CREATE_FILE = {
-    "name": "create_and_send_file",
-    "description": "Create a file with the provided content and send it to the current Slack conversation",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "filename": {
-                "type": "string",
-                "description": "The name of the file including extension (e.g. 'script.py', 'data.json')",
-            },
-            "content": {
-                "type": "string",
-                "description": "The complete content to include in the file",
-            },
-            "comment": {
-                "type": "string",
-                "description": "Optional comment to include when sending the file",
-                "default": "",
-            },
-        },
-        "required": ["filename", "content"],
     },
 }
 

@@ -407,6 +407,12 @@ class ChatHandler(MixinMeta):
             not any([role.id in conf.tutors for role in user.roles]),
         ]
 
+        # Don't include if user is not a planner
+        not_planner = [
+            user_id not in conf.planners,
+            not any([role.id in conf.planners for role in user.roles]),
+        ]
+
         if "create_memory" in function_map and all(not_tutor):
             function_calls = [i for i in function_calls if i["name"] != "create_memory"]
             del function_map["create_memory"]
@@ -423,9 +429,10 @@ class ChatHandler(MixinMeta):
             function_calls = [i for i in function_calls if i["name"] != "list_memories"]
             del function_map["list_memories"]
 
-        if "search_web_brave" in function_map and not self.db.brave_api_key:
-            function_calls = [i for i in function_calls if i["name"] != "search_web_brave"]
-            del function_map["search_web_brave"]
+        # Don't include think_and_plan if user is not a planner (and planners list is not empty)
+        if "think_and_plan" in function_map and conf.planners and all(not_planner):
+            function_calls = [i for i in function_calls if i["name"] != "think_and_plan"]
+            del function_map["think_and_plan"]
 
         if "edit_image" in function_map and (not conversation.get_images() and not images):
             function_calls = [i for i in function_calls if i["name"] != "edit_image"]
