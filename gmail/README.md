@@ -1,7 +1,11 @@
+# Gmail
+
 Send emails using your Gmail account.<br/><br/>Use `[p]gmailhelp` for help getting started.
 
-# /email (Slash Command)
+## /email (Slash Command)
+
 Send an email<br/>
+
  - Usage: `/email <sender> <recipient> <subject> <message> [attachment1] [attachment2] [attachment3]`
  - `sender:` (Required) …
  - `recipient:` (Required) …
@@ -12,40 +16,62 @@ Send an email<br/>
  - `attachment3:` (Optional) …
 
  - Checks: `Server Only`
-# [p]email
+
+## [p]email
+
 Send an email<br/>
 
 Attach files to the command to send them as attachments<br/>
+
  - Usage: `[p]email <sender> <recipient> <subject> <message>`
- - Checks: `server_only`
-# [p]addemail
+ - Checks: `guild_only`
+
+## [p]addemail
+
 Add an email account<br/>
+
  - Usage: `[p]addemail`
  - Restricted to: `GUILD_OWNER`
  - Aliases: `addgmail`
- - Checks: `server_only`
-# [p]editemail
+ - Checks: `guild_only`
+
+## [p]editemail
+
 Edit an email account<br/>
+
  - Usage: `[p]editemail <email>`
  - Restricted to: `GUILD_OWNER`
  - Aliases: `editgmail`
- - Checks: `server_only`
-# [p]deleteemail
+ - Checks: `guild_only`
+
+## [p]deleteemail
+
 Delete an email account<br/>
+
  - Usage: `[p]deleteemail <email>`
  - Restricted to: `GUILD_OWNER`
- - Checks: `server_only`
-# [p]gmailroles
+ - Checks: `guild_only`
+
+## [p]gmailroles
+
 Set the roles allowed to send emails<br/>
+
  - Usage: `[p]gmailroles <roles>`
  - Restricted to: `GUILD_OWNER`
- - Checks: `server_only`
-# [p]gmailsettings
+ - Checks: `guild_only`
+
+## [p]gmailsettings
+
 View the email settings for the server<br/>
+
  - Usage: `[p]gmailsettings`
- - Checks: `server_only`
-# [p]gmailhelp
+ - Checks: `guild_only`
+
+## [p]gmailhelp
+
 Get instructions for setting up Gmail<br/>
+
  - Usage: `[p]gmailhelp`
  - Aliases: `gmailsetup`
- - Checks: `server_only`
+ - Checks: `guild_only`
+

@@ -1,125 +1,99 @@
 # ImGen
 
-Create and edit images with OpenAI's GPT-Image models.
+Create and edit images with OpenAI's GPT-Image models.<br/><br/>Generate images from text prompts or edit existing images using AI.<br/>Supports turn-based editing where you can iteratively refine images.
 
-## Features
+## /makeimage (Slash Command)
 
-- **AI Image Generation**: Generate images from text prompts using OpenAI's latest GPT-Image models
-- **Reference-Based Generation**: Include reference images to guide the generation
-- **Turn-Based Editing**: Iteratively refine generated images with an "Edit" button
-- **Context Menu Editing**: Right-click any message with an image to edit it with AI
-- **Per-Server Configuration**: Each server has its own API key and settings
-- **Role-Based Access Control**: Restrict image generation to specific roles with configurable cooldowns
-- **Generation Logging**: Log all generations to a designated channel
+Generate an image from a text prompt<br/>
 
-## Commands
+ - Usage: `/makeimage <prompt> [model] [size] [quality] [output_format]`
+ - `prompt:` (Required) Describe the image you want to generate
+ - `model:` (Optional) The model to use for generation
+ - `size:` (Optional) Size of the generated image
+ - `quality:` (Optional) Quality level of the image
+ - `output_format:` (Optional) Output image format
 
-### User Commands
+ - Checks: `Server Only`
 
-| Command | Description |
-|---------|-------------|
-| `/makeimage` | Generate an image from a text prompt with optional reference images |
-| `/editimage` | Edit an existing image using AI |
-| `Edit Image` (context menu) | Right-click a message → Apps → Edit Image |
+## /editimage (Slash Command)
 
-### Admin Commands (`/imgen`)
+Edit an existing image using AI<br/>
 
-| Command | Description |
-|---------|-------------|
-| `/imgen view` | View current ImGen settings |
-| `/imgen api` | Set the OpenAI API key for this server |
-| `/imgen clearapi` | Remove the OpenAI API key |
-| `/imgen logchannel [channel]` | Set or clear the logging channel |
-| `/imgen access` | Open the role access manager |
-| `/imgen clearroles` | Clear all role restrictions (open access) |
-| `/imgen defaults` | Set default model, size, and quality settings |
+ - Usage: `/editimage <prompt> <image> [image2] [image3] [model] [size] [quality] [output_format]`
+ - `prompt:` (Required) Describe how you want to modify the image
+ - `image:` (Required) The main image to edit (required)
+ - `image2:` (Optional) Additional reference image (optional)
+ - `image3:` (Optional) Additional reference image (optional)
+ - `model:` (Optional) The model to use for editing
+ - `size:` (Optional) Size of the output image
+ - `quality:` (Optional) Quality level of the image
+ - `output_format:` (Optional) Output image format
 
-## Setup
+ - Checks: `Server Only`
 
-1. **Install the cog**:
-   ```
-   [p]cog install vrt-cogs imgen
-   ```
+## [p]imgen
 
-2. **Load the cog**:
-   ```
-   [p]load imgen
-   ```
+Configure ImGen settings<br/>
 
-3. **Set your OpenAI API key**:
-   - Run `/imgen api` and click the button to enter your key
-   - Get an API key from [OpenAI Platform](https://platform.openai.com/api-keys)
+ - Usage: `[p]imgen`
 
-4. **(Optional) Configure access control**:
-   - By default, anyone can use image generation
-   - Use `/imgen access` to restrict access to specific roles with cooldowns and model/size/quality limits
+### /imgen view (Slash Command)
 
-## Models
+View current ImGen settings<br/>
 
-ImGen supports the following GPT-Image models:
+ - Usage: `/imgen view`
 
-| Model | Description |
-|-------|-------------|
-| `gpt-image-1` | Standard GPT-Image model (default) |
-| `gpt-image-1.5` | Newer GPT-Image model with improvements |
-| `gpt-image-1-mini` | Faster, more economical variant |
+### /imgen access (Slash Command)
 
-## Size Options
+Manage role-based access rules<br/>
 
-| Size | Aspect Ratio |
-|------|--------------|
-| `auto` | Automatically determined (default) |
-| `1024x1024` | Square |
-| `1536x1024` | Landscape |
-| `1024x1536` | Portrait |
+ - Usage: `/imgen access`
 
-## Quality Options
+### /imgen api (Slash Command)
 
-| Quality | Description |
-|---------|-------------|
-| `auto` | Automatically determined (default) |
-| `low` | Faster generation, lower quality |
-| `medium` | Balanced quality and speed |
-| `high` | Best quality, slower generation |
+Set the OpenAI API key for this server<br/>
 
-## Turn-Based Editing
+ - Usage: `/imgen api`
 
-After generating an image, click the **✏️ Edit** button to open a modal where you can:
-1. Enter a new prompt describing the desired changes
-2. Optionally adjust the size and quality
-3. Submit to generate an edited version
+### /imgen clearapi (Slash Command)
 
-The edit uses OpenAI's turn-based conversation feature, which maintains context from the original generation for more coherent edits.
+Remove the OpenAI API key for this server<br/>
 
-## Access Control
+ - Usage: `/imgen clearapi`
 
-ImGen uses a role-based access system:
+### /imgen logchannel (Slash Command)
 
-- **No roles configured**: Everyone can use image generation
-- **Roles configured**: Only users with at least one allowed role can generate images
-- **Cooldowns**: Each role can have a cooldown (in seconds) between generations
-  - If a user has multiple allowed roles, the shortest cooldown applies
- - **Model/Size/Quality Access**: Each role can restrict which models, sizes, and quality levels are available
-    - If any restrictions are set for size or quality, `auto` is no longer available
+Set or clear the logging channel<br/>
 
-## Logging
+ - Usage: `/imgen logchannel [channel]`
+ - `channel:` (Optional) The channel to log generations to (leave empty to disable)
 
-Enable generation logging to track usage:
+### /imgen clearroles (Slash Command)
 
-```
-/imgen logchannel #your-log-channel
-```
+Clear all role restrictions (open access)<br/>
 
-Each generation will log:
-- The user who requested it
-- The prompt used
-- Model, size, and quality settings
-- A link to the generated image
+ - Usage: `/imgen clearroles`
 
-## Requirements
+### /imgen defaults (Slash Command)
 
-- Python 3.11+
-- Red-DiscordBot 3.5+
-- OpenAI API key with access to GPT-Image models
-- `openai` Python package
-- `pydantic` Python package (v2.11+)
+Set default generation settings<br/>
+
+ - Usage: `/imgen defaults [model] [size] [quality]`
+ - `model:` (Optional) Default model for generation
+ - `size:` (Optional) Default image size
+ - `quality:` (Optional) Default image quality
+
+### /imgen tiers (Slash Command)
+
+View available subscription tier presets<br/>
+
+ - Usage: `/imgen tiers`
+
+### /imgen tier (Slash Command)
+
+Apply a subscription tier preset to a role<br/>
+
+ - Usage: `/imgen tier <role> <tier>`
+ - `role:` (Required) The role to configure
+ - `tier:` (Required) The tier preset to apply
+
