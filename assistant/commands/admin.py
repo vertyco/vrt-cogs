@@ -194,9 +194,7 @@ class Admin(MixinMeta):
         planners = [ctx.guild.get_member(i) or ctx.guild.get_role(i) for i in conf.planners]
         planner_mentions = [i.mention for i in planners if i]
         if planner_mentions:
-            planner_field = _(
-                "The following roles/users can use the `think_and_plan` tool: "
-            )
+            planner_field = _("The following roles/users can use the `think_and_plan` tool: ")
             planner_field += humanize_list(sorted(planner_mentions))
             embed.add_field(name="Planners", value=planner_field, inline=False)
 
@@ -2320,6 +2318,101 @@ class Admin(MixinMeta):
             conf.planners.append(role_or_member.id)
             await ctx.send(_("{} has been added to the planner list").format(role_or_member.name))
         await self.save_conf()
+
+    @assistant.command(name="memories")
+    async def view_memories(
+        self,
+        ctx: commands.Context,
+        *,
+        member: discord.Member = None,
+    ):
+        """
+        View all stored user memories for this server.
+
+        Shows what facts the assistant has remembered about users.
+
+        Optionally specify a member to view only their memories.
+        If the output is too long, it will be sent as a file.
+        """
+        guild = ctx.guild
+        memories: list[tuple[int, list[str], datetime]] = []
+
+        for key, mem in self.db.user_memories.items():
+            if mem.guild_id != guild.id or not mem.facts:
+                continue
+            if member and mem.user_id != member.id:
+                continue
+            memories.append((mem.user_id, mem.facts, mem.updated_at))
+
+        if not memories:
+            target = f" for {member.display_name}" if member else ""
+            return await ctx.send(_("No stored memories{}.").format(target))
+
+        lines: list[str] = []
+        total_facts = 0
+        for user_id, facts, updated_at in sorted(memories, key=lambda x: x[0]):
+            user = guild.get_member(user_id)
+            name = f"{user.display_name} ({user_id})" if user else f"Unknown User ({user_id})"
+            lines.append(f"## {name}")
+            lines.append(f"*Last updated: <t:{int(updated_at.timestamp())}:R>*")
+            for i, fact in enumerate(facts, 1):
+                lines.append(f"{i}. {fact}")
+                total_facts += 1
+            lines.append("")
+
+        header = _("**User Memories for {}** — {} user(s), {} fact(s)\n\n").format(
+            guild.name, len(memories), total_facts
+        )
+        output = header + "\n".join(lines)
+
+        if len(output) <= 2000:
+            await ctx.send(output)
+        else:
+            pages = list(pagify(output, delims=["\n## ", "\n"], page_length=1900))
+            if len(pages) <= 5:
+                for page in pages:
+                    await ctx.send(page)
+            else:
+                await ctx.send(
+                    _("Output too long, sending as a file."),
+                    file=text_to_file(output, filename="user_memories.md"),
+                )
+
+    @assistant.command(name="clearmemories")
+    async def clear_memories(
+        self,
+        ctx: commands.Context,
+        *,
+        member: discord.Member = None,
+    ):
+        """
+        Clear stored user memories for this server.
+
+        Specify a member to clear only their memories, or omit to clear all memories for the server.
+        """
+        guild = ctx.guild
+        keys_to_remove: list[str] = []
+
+        for key, mem in self.db.user_memories.items():
+            if mem.guild_id != guild.id:
+                continue
+            if member and mem.user_id != member.id:
+                continue
+            keys_to_remove.append(key)
+
+        if not keys_to_remove:
+            target = f" for {member.display_name}" if member else ""
+            return await ctx.send(_("No stored memories{} to clear.").format(target))
+
+        for key in keys_to_remove:
+            del self.db.user_memories[key]
+
+        await self.save_conf()
+
+        if member:
+            await ctx.send(_("Cleared {} memory entries for {}.").format(len(keys_to_remove), member.display_name))
+        else:
+            await ctx.send(_("Cleared all {} memory entries for this server.").format(len(keys_to_remove)))
 
     @assistant.group(name="override")
     async def override(self, ctx: commands.Context):
