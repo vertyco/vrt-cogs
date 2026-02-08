@@ -30,6 +30,9 @@ def record_ticket_opened(
         panel_name: The name of the panel used
         channel_id: The ticket channel ID
     """
+    if conf.is_panel_analytics_blacklisted(panel_name):
+        return
+
     now = datetime.now().astimezone()
 
     # --- User Stats ---
@@ -118,6 +121,9 @@ def record_ticket_closed(
         owner_id: The user who owns the ticket
         closed_by_id: The user who closed the ticket
     """
+    if conf.is_panel_analytics_blacklisted(ticket.panel):
+        return
+
     now = datetime.now().astimezone()
     resolution_time = (now - ticket.opened).total_seconds()
     panel_name = ticket.panel
@@ -194,6 +200,7 @@ def record_ticket_claimed(
     conf: GuildSettings,
     staff_id: int,
     channel_id: int,
+    panel_name: str,
 ) -> None:
     """Record analytics when a staff member claims a ticket.
 
@@ -201,7 +208,11 @@ def record_ticket_claimed(
         conf: Guild settings
         staff_id: The staff member who claimed
         channel_id: The ticket channel ID
+        panel_name: The panel name (for blacklist checking)
     """
+    if conf.is_panel_analytics_blacklisted(panel_name):
+        return
+
     now = datetime.now().astimezone()
 
     staff_stats = conf.get_staff_stats(staff_id)
@@ -233,6 +244,12 @@ def record_staff_first_response(
         staff_id: The staff member who responded
         channel_id: The ticket channel ID
     """
+    if conf.is_panel_analytics_blacklisted(ticket.panel):
+        # Still record first_response timestamp on the ticket itself
+        # so auto-close and other non-analytics features work correctly
+        ticket.first_response = datetime.now().astimezone()
+        return
+
     now = datetime.now().astimezone()
     response_time = (now - ticket.opened).total_seconds()
 
@@ -272,6 +289,7 @@ def record_staff_message(
     conf: GuildSettings,
     staff_id: int,
     channel_id: int,
+    panel_name: str,
 ) -> None:
     """Record analytics when a staff member sends a message in a ticket.
 
@@ -279,7 +297,11 @@ def record_staff_message(
         conf: Guild settings
         staff_id: The staff member who sent the message
         channel_id: The ticket channel ID
+        panel_name: The panel name (for blacklist checking)
     """
+    if conf.is_panel_analytics_blacklisted(panel_name):
+        return
+
     now = datetime.now().astimezone()
 
     staff_stats = conf.get_staff_stats(staff_id)
@@ -300,12 +322,17 @@ def record_staff_message(
 def record_user_message(
     conf: GuildSettings,
     user_id: int,
+    panel_name: str,
 ) -> None:
     """Record analytics when a ticket owner sends a message.
 
     Args:
         conf: Guild settings
         user_id: The user who sent the message
+        panel_name: The panel name (for blacklist checking)
     """
+    if conf.is_panel_analytics_blacklisted(panel_name):
+        return
+
     user_stats = conf.get_user_stats(user_id)
     user_stats.messages_sent += 1
