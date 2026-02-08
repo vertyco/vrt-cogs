@@ -65,13 +65,12 @@ FETCH_CHANNEL_HISTORY = {
             },
             "limit": {
                 "type": "integer",
-                "description": "The number of messages to fetch from the channel, starting from the most recent (default: 30)",
-                "default": 30,
+                "description": "The number of messages to fetch from the channel, starting from the most recent. If not provided, uses delta instead.",
             },
             "delta": {
                 "type": "string",
-                "description": "The time delta to filter messages by, in the format 'XdXhXmXs' (e.g., '1d2h30m' for 1 day, 2 hours, and 30 minutes). If this is provided, it will use the delta instead of the limit. If not provided, the default `limit` will be used",
-                "default": "",
+                "description": "The time delta to filter messages by, in the format 'XdXhXmXs' (e.g., '1d2h30m' for 1 day, 2 hours, and 30 minutes). Defaults to '1h' if neither limit nor delta is provided.",
+                "default": "1h",
             },
         },
     },
@@ -107,5 +106,124 @@ GET_DISCORD_TIMESTAMP_FORMAT = {
             },
         },
         "required": ["date_or_timestamp"],
+    },
+}
+GET_ROLE_INFO = {
+    "name": "get_role_info",
+    "description": "Get detailed information about a Discord role including its ID, color, permissions, position, and member count.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "role_name_or_id": {
+                "type": "string",
+                "description": "The name or ID of the role you want to get info about",
+            }
+        },
+        "required": ["role_name_or_id"],
+    },
+}
+GET_SERVER_INFO = {
+    "name": "get_server_info",
+    "description": "Get detailed information about the current Discord server including member count, channel counts, boost level, and features.",
+    "parameters": {
+        "type": "object",
+        "properties": {},
+    },
+}
+FETCH_URL = {
+    "name": "fetch_url",
+    "description": "Fetch the content of a URL and return the text. Useful for reading documentation, articles, or any web page content.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "url": {
+                "type": "string",
+                "description": "The URL to fetch content from",
+            },
+        },
+        "required": ["url"],
+    },
+}
+CREATE_AND_SEND_FILE = {
+    "name": "create_and_send_file",
+    "description": "Create a file with the provided content and send it to the current Discord channel.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "filename": {
+                "type": "string",
+                "description": "The name of the file including extension (e.g. 'script.py', 'data.json')",
+            },
+            "content": {
+                "type": "string",
+                "description": "The complete content to include in the file",
+            },
+            "comment": {
+                "type": "string",
+                "description": "Optional comment to include when sending the file",
+                "default": "",
+            },
+        },
+        "required": ["filename", "content"],
+    },
+}
+ADD_REACTION = {
+    "name": "add_reaction",
+    "description": "Add a reaction emoji to a message in the current channel.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "message_id": {
+                "type": "string",
+                "description": "The ID of the message to add a reaction to",
+            },
+            "emoji": {
+                "type": "string",
+                "description": "The emoji to add as a reaction (unicode emoji like '👍' or custom emoji format like '<:name:id>')",
+            },
+        },
+        "required": ["message_id", "emoji"],
+    },
+}
+SEARCH_MESSAGES = {
+    "name": "search_messages",
+    "description": "Search for messages containing specific text or matching a regex pattern in a channel.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "query": {
+                "type": "string",
+                "description": "The search query (text to find or regex pattern if use_regex is true)",
+            },
+            "channel_name_or_id": {
+                "type": "string",
+                "description": "The name or ID of the channel to search in (defaults to current channel if not provided)",
+            },
+            "limit": {
+                "type": "integer",
+                "description": "Maximum number of messages to search through (default: 50, max: 500)",
+                "default": 50,
+            },
+            "use_regex": {
+                "type": "boolean",
+                "description": "Whether to treat the query as a regex pattern (default: false)",
+                "default": False,
+            },
+        },
+        "required": ["query"],
+    },
+}
+RUN_COMMAND = {
+    "name": "run_command",
+    "description": "Run a bot command on behalf of the user. The command will be executed with the user's permissions.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "command": {
+                "type": "string",
+                "description": "The command to run WITHOUT the prefix (e.g. 'help', 'ping', 'userinfo @user')",
+            },
+        },
+        "required": ["command"],
     },
 }

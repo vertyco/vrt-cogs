@@ -19,12 +19,11 @@ from .common.api import API
 from .common.chat import ChatHandler
 from .common.constants import (
     CANCEL_REMINDER,
-    CREATE_FILE,
     CREATE_MEMORY,
     CREATE_REMINDER,
+    DO_NOT_RESPOND_SCHEMA,
     EDIT_IMAGE,
     EDIT_MEMORY,
-    FETCH_URL,
     FORGET_USER,
     GENERATE_IMAGE,
     LIST_MEMORIES,
@@ -34,6 +33,7 @@ from .common.constants import (
     RESPOND_AND_CONTINUE,
     SEARCH_INTERNET,
     SEARCH_MEMORIES,
+    THINK_AND_PLAN,
 )
 from .common.embedding_store import EmbeddingStore
 from .common.functions import AssistantFunctions
@@ -68,7 +68,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "7.0.0"
+    __version__ = "7.1.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -130,9 +130,9 @@ class Assistant(
         await self.register_function(self.qualified_name, SEARCH_MEMORIES)
         await self.register_function(self.qualified_name, EDIT_MEMORY)
         await self.register_function(self.qualified_name, LIST_MEMORIES)
+        await self.register_function(self.qualified_name, THINK_AND_PLAN)
+        await self.register_function(self.qualified_name, DO_NOT_RESPOND_SCHEMA)
         await self.register_function(self.qualified_name, RESPOND_AND_CONTINUE)
-        await self.register_function(self.qualified_name, FETCH_URL)
-        await self.register_function(self.qualified_name, CREATE_FILE)
         await self.register_function(self.qualified_name, CREATE_REMINDER)
         await self.register_function(self.qualified_name, CANCEL_REMINDER)
         await self.register_function(self.qualified_name, LIST_REMINDERS)

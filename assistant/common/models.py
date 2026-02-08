@@ -106,6 +106,9 @@ class GuildSettings(AssistantBaseModel):
     reasoning_effort: str = "low"  # low, medium, high (or minimal for gpt-5)
     verbosity: str = "low"  # low, medium, high (gpt-5 only)
 
+    # Planner roles - users with these roles can use the think_and_plan tool
+    planners: t.List[int] = []  # Role or user IDs who can use planning tools
+
     # Auto-answer
     auto_answer: bool = False  # Answer questions anywhere if one is detected and embedding is found for it
     auto_answer_threshold: float = 0.7  # 0.0 - 1.0  # Confidence threshold for auto-answer
