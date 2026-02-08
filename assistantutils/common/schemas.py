@@ -187,7 +187,7 @@ ADD_REACTION = {
 }
 SEARCH_MESSAGES = {
     "name": "search_messages",
-    "description": "Search for messages containing specific text or matching a regex pattern in a channel.",
+    "description": "Search for messages containing specific text or matching a regex pattern in a channel. Searches through both message content AND embed content (title, description, author, footer, fields).",
     "parameters": {
         "type": "object",
         "properties": {

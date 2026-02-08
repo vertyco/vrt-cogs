@@ -190,6 +190,16 @@ class Admin(MixinMeta):
         if mentions:
             embed.add_field(name="Tutors", value=tutor_field, inline=False)
 
+        # Planners field
+        planners = [ctx.guild.get_member(i) or ctx.guild.get_role(i) for i in conf.planners]
+        planner_mentions = [i.mention for i in planners if i]
+        if planner_mentions:
+            planner_field = _(
+                "The following roles/users can use the `think_and_plan` tool: "
+            )
+            planner_field += humanize_list(sorted(planner_mentions))
+            embed.add_field(name="Planners", value=planner_field, inline=False)
+
         custom_func_field = (
             _("`Function Calling:  `{}\n").format(conf.use_function_calls)
             + _("`Maximum Recursion: `{}\n").format(conf.max_function_calls)
@@ -2266,6 +2276,49 @@ class Admin(MixinMeta):
         else:
             conf.tutors.append(role_or_member.id)
             await ctx.send(_("{} has been added to the tutor list").format(role_or_member.name))
+        await self.save_conf()
+
+    @assistant.command(name="planner", aliases=["planners"])
+    async def planner_settings(
+        self,
+        ctx: commands.Context,
+        *,
+        role_or_member: Union[
+            discord.Member,
+            discord.Role,
+        ] = None,
+    ):
+        """
+        Add/Remove items from the planner list, or view current planners.
+
+        Users/roles in the planner list can use the `think_and_plan` tool for complex task breakdown.
+
+        If the planner list is empty, everyone can use the planning tool.
+        If the planner list has entries, only those users/roles can use it.
+
+        `role_or_member` can be a member or role. Omit to view the current list.
+        """
+        conf = self.db.get_conf(ctx.guild)
+
+        if role_or_member is None:
+            # Show current planners
+            if not conf.planners:
+                await ctx.send(_("The planner list is empty. Everyone can use the `think_and_plan` tool."))
+            else:
+                planners = [ctx.guild.get_member(i) or ctx.guild.get_role(i) for i in conf.planners]
+                names = [i.display_name if isinstance(i, discord.Member) else i.name for i in planners if i]
+                if names:
+                    await ctx.send(_("**Planners:** {}").format(humanize_list(sorted(names))))
+                else:
+                    await ctx.send(_("The planner list has invalid entries. Consider clearing it."))
+            return
+
+        if role_or_member.id in conf.planners:
+            conf.planners.remove(role_or_member.id)
+            await ctx.send(_("{} has been removed from the planner list").format(role_or_member.name))
+        else:
+            conf.planners.append(role_or_member.id)
+            await ctx.send(_("{} has been added to the planner list").format(role_or_member.name))
         await self.save_conf()
 
     @assistant.group(name="override")
