@@ -194,6 +194,8 @@ test_outputs/
 scratch*
 TODO.md
 MIGRATION*
+templates/
+.github/skills/
 
 # WIP cogs
 arkadia/
