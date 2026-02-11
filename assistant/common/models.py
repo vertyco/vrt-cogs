@@ -103,6 +103,7 @@ class GuildSettings(AssistantBaseModel):
     model: str = "gpt-5.1"
     embed_model: str = "text-embedding-3-small"  # Or text-embedding-3-large, text-embedding-ada-002
     collab_convos: bool = False
+    message_coalesce_delay: float = 0.0  # seconds to wait for follow-up messages before responding (0 = disabled)
     reasoning_effort: str = "low"  # low, medium, high (or minimal for gpt-5)
     verbosity: str = "low"  # low, medium, high (gpt-5 only)
 
@@ -268,6 +269,11 @@ class Conversation(AssistantBaseModel):
     def reset(self):
         self.refresh()
         self.messages.clear()
+
+    def rollback(self, snapshot_length: int):
+        """Rollback conversation to a previous state by truncating to snapshot_length."""
+        self.messages = self.messages[:snapshot_length]
+        self.refresh()
 
     def refresh(self):
         self.last_updated = datetime.now().timestamp()

@@ -86,6 +86,7 @@ class Admin(MixinMeta):
             + _("`Mention on Reply:    `{}\n").format(conf.mention)
             + _("`Respond to Mentions: `{}\n").format(conf.mention_respond)
             + _("`Collaborative Mode:  `{}\n").format(conf.collab_convos)
+            + _("`Coalesce Delay:      `{}s\n").format(conf.message_coalesce_delay)
             + _("`Max Retention:       `{}\n").format(conf.max_retention)
             + _("`Retention Expire:    `{}s\n").format(conf.max_retention_time)
             + _("`Max Tokens:          `{}\n").format(conf.max_tokens)
@@ -1111,6 +1112,31 @@ class Admin(MixinMeta):
         else:
             conf.collab_convos = True
             await ctx.send(_("Collaborative conversations are now **Enabled**"))
+        await self.save_conf()
+
+    @assistant.command(name="coalesce")
+    async def set_coalesce_delay(self, ctx: commands.Context, delay: float):
+        """
+        Set the message coalesce delay in seconds
+
+        When a user sends multiple messages in quick succession, the bot will wait this many seconds
+        for follow-up messages before responding. All messages within the window are combined into a
+        single request. If follow-up messages arrive while the bot is already processing, the current
+        response is discarded and the messages are combined for a fresh request.
+
+        This prevents the bot from responding to half-finished thoughts when a user accidentally hits
+        send too early.
+
+        Set to 0 to disable (default). Recommended: 1.5
+        """
+        if delay < 0 or delay > 10:
+            return await ctx.send(_("Delay must be between 0 and 10 seconds"))
+        conf = self.db.get_conf(ctx.guild)
+        conf.message_coalesce_delay = delay
+        if delay == 0:
+            await ctx.send(_("Message coalescing is now **Disabled**"))
+        else:
+            await ctx.send(_("Messages will be coalesced with a **{}s** delay").format(delay))
         await self.save_conf()
 
     @assistant.command(name="maxretention")
