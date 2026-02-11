@@ -4,6 +4,7 @@ import logging
 import multiprocessing as mp
 import re
 import typing as t
+from dataclasses import dataclass, field
 from io import StringIO
 
 import discord
@@ -19,10 +20,20 @@ log = logging.getLogger("red.vrt.assistant.listener")
 _ = Translator("Assistant", __file__)
 
 
+@dataclass
+class _ResponseState:
+    """Tracks an active response and any messages that arrived while processing."""
+
+    queued_messages: list[discord.Message] = field(default_factory=list)
+    queued_kwargs: list[dict] = field(default_factory=list)
+    cancel: asyncio.Event = field(default_factory=asyncio.Event)
+
+
 class AssistantListener(MixinMeta):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.responding_to = set()
+        # {(author_id, channel_id): _ResponseState}
+        self._response_state: dict[tuple[int, int], _ResponseState] = {}
 
     async def safe_regex_search(self, pattern: str, content: str) -> bool:
         """Safely check if a regex pattern matches content using multiprocessing pool for timeout."""
@@ -55,8 +66,6 @@ class AssistantListener(MixinMeta):
     async def handler(self, message: discord.Message):
         # If message object is None for some reason
         if not message:
-            return
-        if message.author.id in self.responding_to:
             return
         # If message wasn't sent in a guild
         if not message.guild:
@@ -182,12 +191,129 @@ class AssistantListener(MixinMeta):
             # Message was in the assistant channel and didn't end with a question mark while the config requires it
             return
 
-        self.responding_to.add(message.author.id)
+        state_key = (message.author.id, channel.id)
+        coalesce_enabled = conf.message_coalesce_delay > 0
+
+        # If the bot is already responding to this user in this channel
+        if state_key in self._response_state:
+            if coalesce_enabled:
+                # Queue the follow-up for combining with the in-progress request
+                state = self._response_state[state_key]
+                state.queued_messages.append(message)
+                state.queued_kwargs.append(handle_message_kwargs)
+                state.cancel.set()
+                log.debug(f"Queued message from {message.author} in {channel} (queue size: {len(state.queued_messages)})")
+            else:
+                log.debug(f"Dropping message from {message.author} in {channel} (already responding, coalescing disabled)")
+            return
+
+        # Normal flow — process message (with coalesce support)
+        state = _ResponseState()
+        self._response_state[state_key] = state
+
         try:
+            # If coalescing is enabled, wait briefly for follow-up messages before processing
+            if coalesce_enabled:
+                try:
+                    await asyncio.wait_for(state.cancel.wait(), timeout=conf.message_coalesce_delay)
+                    # cancel was set — a follow-up arrived during the delay window
+                    # Combine and reset the cancel event for the next iteration
+                    state.cancel.clear()
+                except asyncio.TimeoutError:
+                    # No follow-up arrived during the delay — proceed with original message
+                    pass
+
+                # Combine any messages that arrived during the coalesce window
+                if state.queued_messages:
+                    handle_message_kwargs = self._combine_queued(message, handle_message_kwargs, state)
+
             async with channel.typing():
-                await self.handle_message(**handle_message_kwargs)
+                await self._process_with_coalesce(state, handle_message_kwargs, conf)
         finally:
-            self.responding_to.discard(message.author.id)
+            self._response_state.pop(state_key, None)
+
+    def _combine_queued(
+        self,
+        original_message: discord.Message,
+        original_kwargs: dict,
+        state: _ResponseState,
+    ) -> dict:
+        """Combine the original message with all queued follow-up messages into a single kwargs dict."""
+        all_messages = [original_message] + state.queued_messages
+        all_kwargs = [original_kwargs] + state.queued_kwargs
+
+        # Use the last message as the anchor for replying
+        last_message = all_messages[-1]
+        last_kwargs = all_kwargs[-1]
+
+        # Combine question text from all messages
+        combined_question = "\n".join(kw["question"] for kw in all_kwargs)
+
+        # Build merged kwargs using the last message's kwargs as base
+        merged = {**last_kwargs}
+        merged["message"] = last_message
+        merged["question"] = combined_question
+
+        # Preserve trigger_prompt/auto_answer/model_override if any kwargs had them
+        for kw in all_kwargs:
+            if "trigger_prompt" in kw and "trigger_prompt" not in merged:
+                merged["trigger_prompt"] = kw["trigger_prompt"]
+            if kw.get("auto_answer"):
+                merged["auto_answer"] = True
+            if "model_override" in kw and "model_override" not in merged:
+                merged["model_override"] = kw["model_override"]
+
+        # Clear the queue
+        state.queued_messages.clear()
+        state.queued_kwargs.clear()
+        state.cancel.clear()
+
+        log.debug(f"Coalesced {len(all_messages)} messages into one request")
+        return merged
+
+    async def _process_with_coalesce(self, state: _ResponseState, kwargs: dict, conf) -> None:
+        """Process a message, and if follow-ups arrived during the API call, rollback and re-process."""
+        coalesce_enabled = conf.message_coalesce_delay > 0
+        max_retries = 3  # Prevent infinite rollback loops from continuous spam
+        retries = 0
+        while True:
+            # Snapshot conversation length so we can rollback if needed
+            message = kwargs["message"]
+            mem_id = message.channel.id if conf.collab_convos else message.author.id
+            conversation = self.db.get_conversation(mem_id, message.channel.id, message.guild.id)
+            snapshot_len = len(conversation.messages)
+
+            # Clear cancel event before processing
+            state.cancel.clear()
+
+            # Run the actual API call
+            await self.handle_message(**kwargs)
+
+            # Check if new messages arrived while we were processing
+            if not state.queued_messages or not coalesce_enabled or retries >= max_retries:
+                if retries >= max_retries and state.queued_messages:
+                    log.warning(
+                        f"Max coalesce retries reached for {message.author} — "
+                        f"dropping {len(state.queued_messages)} queued message(s)"
+                    )
+                    state.queued_messages.clear()
+                    state.queued_kwargs.clear()
+                break
+
+            # Follow-ups arrived during the API call!
+            # Rollback the conversation to before this exchange
+            log.debug(
+                f"Rolling back conversation for {message.author} "
+                f"({len(state.queued_messages)} queued follow-ups)"
+            )
+            conversation.rollback(snapshot_len)
+
+            # Combine the original message with all queued follow-ups
+            original_message = kwargs["message"]
+            kwargs = self._combine_queued(original_message, kwargs, state)
+            retries += 1
+
+            # Loop again to process the combined message
 
     @commands.Cog.listener("on_guild_remove")
     async def cleanup(self, guild: discord.Guild):
