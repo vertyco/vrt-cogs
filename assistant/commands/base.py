@@ -397,12 +397,13 @@ If a file has no extension it will still try to read it only if it can be decode
 
         for message in reversed(messages):
             # Cleanup the message content
-            for mention in message.mentions:
-                message.content = message.content.replace(f"<@{mention.id}>", f"{mention.name} (<@{mention.id}>)")
-            for mention in message.channel_mentions:
-                message.content = message.content.replace(f"<#{mention.id}>", f"{mention.name} (<@{mention.id}>)")
-            for mention in message.role_mentions:
-                message.content = message.content.replace(f"<@&{mention.id}>", f"{mention.name} (<@{mention.id}>)")
+            if message.content:
+                for mention in message.mentions:
+                    message.content = message.content.replace(f"<@{mention.id}>", f"{mention.name} (<@{mention.id}>)")
+                for mention in message.channel_mentions:
+                    message.content = message.content.replace(f"<#{mention.id}>", f"{mention.name} (<@{mention.id}>)")
+                for mention in message.role_mentions:
+                    message.content = message.content.replace(f"<@&{mention.id}>", f"{mention.name} (<@{mention.id}>)")
 
             # created = message.created_at.strftime("%m-%d-%Y %I:%M %p")
             created_ts = f"<t:{int(message.created_at.timestamp())}:t>"
