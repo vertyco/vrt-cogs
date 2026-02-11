@@ -151,7 +151,6 @@ If a file has no extension it will still try to read it only if it can be decode
         ],
     )
     @commands.guild_only()
-    @commands.cooldown(1, 6, commands.BucketType.user)
     async def ask_question(self, ctx: commands.Context, *, question: str):
         """
         Chat with [botname]!
