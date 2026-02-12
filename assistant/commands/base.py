@@ -496,14 +496,27 @@ If a file has no extension it will still try to read it only if it can be decode
         # We want to compress the spaced out bullet points while keeping the tldr header with two new lines
         description = split[0] + "\n\n" + "\n".join(split[1:])
 
-        embed = discord.Embed(
-            color=await self.bot.get_embed_color(interaction.channel),
-            description=description,
-        )
-        embed.set_footer(text=_("Timeframe: {}").format(humanized_delta))
-        if channel.id != interaction.channel.id:
-            embed.add_field(name=_("Channel"), value=channel.mention)
-        await interaction.followup.send(embed=embed)
+        color = await self.bot.get_embed_color(interaction.channel)
+        footer_text = _("Timeframe: {}").format(humanized_delta)
+
+        # Split into multiple embeds if description exceeds Discord's 4096 char limit
+        if len(description) <= 4096:
+            embed = discord.Embed(color=color, description=description)
+            embed.set_footer(text=footer_text)
+            if channel.id != interaction.channel.id:
+                embed.add_field(name=_("Channel"), value=channel.mention)
+            await interaction.followup.send(embed=embed)
+        else:
+            embeds = []
+            chunks = [description[i : i + 4096] for i in range(0, len(description), 4096)]
+            for i, chunk in enumerate(chunks):
+                embed = discord.Embed(color=color, description=chunk)
+                if i == len(chunks) - 1:
+                    embed.set_footer(text=footer_text)
+                    if channel.id != interaction.channel.id:
+                        embed.add_field(name=_("Channel"), value=channel.mention)
+                embeds.append(embed)
+            await interaction.followup.send(embeds=embeds[:10])
 
         # if private:
         #     try:
