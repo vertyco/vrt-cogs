@@ -1,0 +1,181 @@
+/* ── LevelUp Settings Page ── */
+
+/* Page container */
+.lu-settings {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+/* Section cards */
+.lu-section {
+  border: none;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .08);
+  transition: box-shadow .2s ease;
+}
+.lu-section:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .12);
+}
+.lu-section .card-header {
+  background: transparent;
+  border-bottom: 1px solid rgba(0, 0, 0, .06);
+  user-select: none;
+}
+.lu-section .card-header h6 {
+  font-size: .875rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
+/* Chevron rotation */
+.lu-chevron {
+  transition: transform .25s ease;
+  font-size: .65rem;
+}
+.lu-section .card-header[aria-expanded="true"] .lu-chevron,
+.lu-section .card-header:not(.collapsed) .lu-chevron {
+  transform: rotate(180deg);
+}
+
+/* Field wrapper */
+.lu-field {
+  position: relative;
+}
+.lu-field label {
+  font-size: .8125rem;
+  font-weight: 500;
+  margin-bottom: .35rem;
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+}
+
+/* Tooltip icon */
+.lu-tip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(94, 114, 228, .12);
+  color: #5e72e4;
+  font-size: .6rem;
+  cursor: help;
+  flex-shrink: 0;
+  transition: background .15s ease;
+}
+.lu-tip:hover {
+  background: rgba(94, 114, 228, .25);
+}
+
+/* Form controls */
+.lu-settings .form-control,
+.lu-settings .form-select {
+  font-size: .8125rem;
+  border-radius: .5rem;
+  padding: .5rem .75rem;
+  border: 1px solid #d2d6da;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.lu-settings .form-control:focus,
+.lu-settings .form-select:focus {
+  border-color: #5e72e4;
+  box-shadow: 0 0 0 2px rgba(94, 114, 228, .15);
+}
+
+/* Textarea defaults */
+.lu-settings textarea.form-control {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: .75rem;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 64px;
+}
+
+/* Toggle switches */
+.lu-settings .form-check.form-switch {
+  min-height: auto;
+  padding-top: .25rem;
+}
+.lu-settings .form-check-input {
+  width: 2.5em;
+  height: 1.25em;
+  cursor: pointer;
+}
+.lu-settings .form-check-input:checked {
+  background-color: #2dce89;
+  border-color: #2dce89;
+}
+.lu-settings .form-check-input:focus {
+  box-shadow: 0 0 0 2px rgba(45, 206, 137, .2);
+}
+
+/* Placeholder styling */
+.lu-settings .form-control::placeholder {
+  color: #adb5bd;
+  font-style: italic;
+}
+
+/* Submit button */
+.lu-settings .btn-lg {
+  font-size: .875rem;
+  font-weight: 600;
+  letter-spacing: .03em;
+  border-radius: .5rem;
+}
+
+/* Cursor for collapsible headers */
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* ── Dynamic Table ── */
+.lu-dynamic-table {
+  background: transparent;
+  margin-bottom: .5rem;
+}
+.lu-dynamic-table thead th {
+  font-size: .7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #8898aa;
+  border-top: none;
+  border-bottom: 2px solid #e9ecef;
+  padding: .5rem .4rem;
+}
+.lu-dynamic-table tbody td {
+  padding: .35rem .4rem;
+  vertical-align: middle;
+  border-top: 1px solid #f0f0f5;
+}
+.lu-dynamic-table tfoot td {
+  padding: .5rem .4rem;
+  border-top: 1px solid #e9ecef;
+}
+.lu-dynamic-table .form-control-sm {
+  font-size: .78rem;
+  padding: .3rem .5rem;
+  border-radius: .375rem;
+}
+
+/* Add / Remove row buttons */
+.lu-add-row {
+  font-size: .78rem;
+  font-weight: 500;
+}
+.lu-remove-row {
+  padding: .2rem .4rem;
+  line-height: 1;
+}
+.lu-remove-row i {
+  font-size: .85rem;
+}
+
+/* Bonus sub-headers */
+.lu-settings .text-xs {
+  font-size: .7rem;
+  letter-spacing: .05em;
+}
