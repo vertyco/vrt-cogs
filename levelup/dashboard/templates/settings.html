@@ -1,9 +1,199 @@
-<script
-  defer
-  src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
-></script>
-
-<div class="container-fluid">
-  <h3 class="text-dark mb-4">This page is a work in progress!</h3>
-  <div class="card-body">{{ settings_form|safe }}</div>
+{# ── Macro: render a single form field with label + tooltip ── #} {% macro
+field(f, desc="", cols="col-md-6") %}
+<div class="{{ cols }} mb-3">
+  <div class="lu-field">
+    <label class="form-label" for="{{ f.id }}">
+      {{ f.label.text }} {% if desc or f.render_kw.get('title') %}
+      <span
+        class="lu-tip"
+        data-toggle="tooltip"
+        data-placement="top"
+        title="{{ desc or f.render_kw.get('title', '') }}"
+      >
+        <i class="ni ni-bulb-61"></i>
+      </span>
+      {% endif %}
+    </label>
+    {% if f.type == 'BooleanField' %}
+    <div class="form-check form-switch ps-0">
+      {{ f(class="form-check-input ms-0") }}
+    </div>
+    {% else %} {{ f() }} {% endif %}
+  </div>
 </div>
+{% endmacro %} {# ── Macro: collapsible card section ── #} {% macro section(id,
+icon, title, open=false) %}
+<div class="card lu-section mb-3">
+  <div
+    class="card-header p-3 cursor-pointer d-flex align-items-center justify-content-between"
+    data-toggle="collapse"
+    data-target="#{{ id }}"
+    aria-expanded="{{ 'true' if open else 'false' }}"
+  >
+    <h6 class="mb-0"><i class="ni {{ icon }} me-2"></i>{{ title }}</h6>
+    <i class="ni ni-bold-down lu-chevron"></i>
+  </div>
+  <div id="{{ id }}" class="collapse{{ ' show' if open else '' }}">
+    <div class="card-body pt-2">
+      <div class="row">{{ caller() }}</div>
+    </div>
+  </div>
+</div>
+{% endmacro %} {# ── Macro: labeled dynamic table injector ── #} {% macro
+dtable(label, desc, html) %}
+<div class="col-12 mb-3">
+  <div class="lu-field">
+    <label class="form-label">
+      {{ label }} {% if desc %}
+      <span
+        class="lu-tip"
+        data-toggle="tooltip"
+        data-placement="top"
+        title="{{ desc }}"
+      >
+        <i class="ni ni-bulb-61"></i>
+      </span>
+      {% endif %}
+    </label>
+    {{ html|safe }}
+  </div>
+</div>
+{% endmacro %}
+
+<div class="container-fluid lu-settings">
+  <div class="d-flex align-items-center mb-4">
+    <h4 class="mb-0 me-3">LevelUp Settings</h4>
+  </div>
+
+  <form method="POST">
+    {{ settings_form.hidden_tag() }} {# ════════════════ General
+    ════════════════ #} {% call section("sec-general", "ni-settings-gear-65",
+    "General", open=true) %} {{ field(settings_form.enabled) }} {{
+    field(settings_form.use_embeds) }} {{ field(settings_form.showbal) }} {{
+    field(settings_form.autoremove) }} {{ field(settings_form.style_override) }}
+    {{ field(settings_form.default_background) }} {{
+    field(settings_form.show_profile_welcome) }} {% endcall %} {#
+    ════════════════ Algorithm & XP ════════════════ #} {% call
+    section("sec-xp", "ni-chart-bar-32", "Algorithm & XP") %} {{
+    field(settings_form.algo_base) }} {{ field(settings_form.algo_exp) }} {{
+    field(settings_form.xp_min) }} {{ field(settings_form.xp_max) }} {{
+    field(settings_form.command_xp) }} {{ field(settings_form.cooldown) }} {{
+    field(settings_form.min_length) }} {% endcall %} {# ════════════════
+    Anti-Spam ════════════════ #} {% call section("sec-antispam",
+    "ni-notification-70", "Anti-Spam") %} {{
+    field(settings_form.antispam_enabled) }} {{
+    field(settings_form.antispam_similarity_threshold) }} {{
+    field(settings_form.antispam_history_size) }} {{
+    field(settings_form.antispam_min_unique_ratio) }} {% endcall %} {#
+    ════════════════ Voice XP ════════════════ #} {% call section("sec-voice",
+    "ni-headphones", "Voice XP") %} {{ field(settings_form.voicexp) }} {{
+    field(settings_form.ignore_muted) }} {{ field(settings_form.ignore_solo) }}
+    {{ field(settings_form.ignore_deafened) }} {{
+    field(settings_form.ignore_invisible) }} {{
+    field(settings_form.streambonus_min) }} {{
+    field(settings_form.streambonus_max) }} {% endcall %} {# ════════════════
+    Filters & Bypass ════════════════ #} {% call section("sec-filters",
+    "ni-lock-circle-open", "Filters & Bypass") %} {{
+    field(settings_form.allowedchannels) }} {{ field(settings_form.allowedroles)
+    }} {{ field(settings_form.ignoredchannels) }} {{
+    field(settings_form.ignoredroles) }} {{ field(settings_form.ignoredusers,
+    cols="col-12") }} {{ field(settings_form.ignore_notification_channels,
+    cols="col-12") }} {% endcall %} {# ════════════════ Alerts & Notifications
+    ════════════════ #} {% call section("sec-alerts", "ni-bell-55", "Alerts &
+    Notifications") %} {{ field(settings_form.notify) }} {{
+    field(settings_form.notifylog) }} {{ field(settings_form.notifydm) }} {{
+    field(settings_form.notifymention) }} {{
+    field(settings_form.role_awarded_dm, cols="col-12") }} {{
+    field(settings_form.levelup_dm, cols="col-12") }} {{
+    field(settings_form.role_awarded_msg, cols="col-12") }} {{
+    field(settings_form.levelup_msg, cols="col-12") }} {% endcall %} {#
+    ════════════════ Stars ════════════════ #} {% call section("sec-stars",
+    "ni-favourite-28", "Stars") %} {{ field(settings_form.starcooldown) }} {{
+    field(settings_form.starmention) }} {{
+    field(settings_form.starmentionautodelete) }} {% endcall %} {#
+    ════════════════ Prestige ════════════════ #} {% call
+    section("sec-prestige", "ni-trophy", "Prestige") %} {{
+    field(settings_form.prestigelevel) }} {{
+    field(settings_form.stackprestigeroles) }} {{
+    field(settings_form.keep_level_roles) }} {{ dtable( "Prestige Tiers", "Map
+    prestige levels to roles and emojis. Each tier requires a level, role, and
+    optional emoji.", prestige_html ) }} {% endcall %} {# ════════════════
+    Weekly Leaderboard ════════════════ #} {% call section("sec-weekly",
+    "ni-calendar-grid-61", "Weekly Leaderboard") %} {{
+    field(settings_form.weekly_on) }} {{ field(settings_form.weekly_autoreset)
+    }} {{ field(settings_form.weekly_reset_day) }} {{
+    field(settings_form.weekly_reset_hour) }} {{
+    field(settings_form.weekly_count) }} {{ field(settings_form.weekly_channel)
+    }} {{ field(settings_form.weekly_role) }} {{
+    field(settings_form.weekly_role_all) }} {{
+    field(settings_form.weekly_remove) }} {{ field(settings_form.weekly_bonus)
+    }} {{ field(settings_form.weekly_ping_winners) }} {{
+    field(settings_form.weekly_excluded_roles) }} {{
+    field(settings_form.weekly_bonus_roles) }} {% endcall %} {# ════════════════
+    Emojis ════════════════ #} {% call section("sec-emojis", "ni-spaceship",
+    "Emojis") %} {{ field(settings_form.emoji_level) }} {{
+    field(settings_form.emoji_trophy) }} {{ field(settings_form.emoji_star) }}
+    {{ field(settings_form.emoji_chat) }} {{ field(settings_form.emoji_mic) }}
+    {{ field(settings_form.emoji_bulb) }} {{ field(settings_form.emoji_money) }}
+    {% endcall %} {# ════════════════ Level Roles ════════════════ #} {% call
+    section("sec-levelroles", "ni-collection", "Level Roles") %} {{ dtable(
+    "Level to Role Mapping", "Assign a role when a member reaches a certain
+    level.", levelrole_html ) }} {{ field(settings_form.role_groups,
+    cols="col-12") }} {% endcall %} {# ════════════════ Command Restrictions
+    ════════════════ #} {% call section("sec-commands", "ni-key-25", "Command
+    Restrictions") %} {{ field(settings_form.cmd_bypass_roles) }} {{
+    field(settings_form.cmd_bypass_member) }} {{ dtable( "Command Requirements",
+    "Set a minimum level required to use specific commands.", cmd_requirements_html
+    ) }} {{ dtable( "Command Cooldowns", "Set per-level cooldowns for commands.
+    Multiple rows per command allow different cooldowns at different levels.",
+    cmd_cooldowns_html ) }} {% endcall %} {#
+    ════════════════ XP Bonuses ════════════════ #} {% call
+    section("sec-bonuses", "ni-diamond", "XP Bonuses") %} {# ── Role Bonuses ──
+    #}
+    <div class="col-12">
+      <h6 class="text-xs text-uppercase text-muted fw-bold mt-2 mb-3">
+        Role Bonuses
+      </h6>
+    </div>
+    {{ dtable("Message XP", "Extra XP range for members with specific roles.",
+    rolebonus_msg_html) }} {{ dtable("Voice XP", "Extra voice XP range for
+    members with specific roles.", rolebonus_voice_html) }} {# ── Channel
+    Bonuses ── #}
+    <div class="col-12">
+      <h6 class="text-xs text-uppercase text-muted fw-bold mt-2 mb-3">
+        Channel Bonuses
+      </h6>
+    </div>
+    {{ dtable("Message XP", "Extra XP range in specific channels.",
+    channelbonus_msg_html) }} {{ dtable("Voice XP", "Extra voice XP range in
+    specific voice channels.", channelbonus_voice_html) }} {# ── Presence
+    Bonuses ── #}
+    <div class="col-12">
+      <h6 class="text-xs text-uppercase text-muted fw-bold mt-2 mb-3">
+        Presence Bonuses
+      </h6>
+    </div>
+    {{ dtable("Message XP", "Extra XP based on member status (online, idle, dnd,
+    offline).", presencebonus_msg_html) }} {{ dtable("Voice XP", "Extra voice XP
+    based on member status.", presencebonus_voice_html) }} {# ── Application
+    Bonuses ── #}
+    <div class="col-12">
+      <h6 class="text-xs text-uppercase text-muted fw-bold mt-2 mb-3">
+        Application Bonuses
+      </h6>
+    </div>
+    {{ dtable("Message XP", "Extra XP while using a specific app (e.g.
+    Spotify).", appbonus_msg_html) }} {{ dtable("Voice XP", "Extra voice XP
+    while using a specific app.", appbonus_voice_html) }} {% endcall %} {#
+    ════════════════ Submit ════════════════ #}
+    <div class="d-flex justify-content-end mt-2 mb-4">
+      {{ settings_form.submit(class="btn bg-gradient-primary btn-lg px-5") }}
+    </div>
+  </form>
+</div>
+
+<script>
+  $(function () {
+    $('[data-toggle="tooltip"]').tooltip();
+  });
+</script>
