@@ -4,6 +4,7 @@ import typing as t
 from pathlib import Path
 
 import discord
+from pydantic import BaseModel, Field, ValidationError
 from redbot.core import commands
 from redbot.core.i18n import Translator
 
@@ -15,6 +16,10 @@ log = logging.getLogger("red.levelup.dashboard")
 root = Path(__file__).parent
 static = root / "static"
 templates = root / "templates"
+
+
+class LeaderboardQueryParams(BaseModel):
+    page: int = Field(default=1, ge=1)
 
 
 def dashboard_page(*args: t.Any, **kwargs: t.Any) -> t.Callable[[t.Any], t.Any]:
@@ -110,13 +115,19 @@ class DashboardIntegration(MixinMeta):
             use_displayname=True,
             dashboard=True,
         )
+        try:
+            query_params = LeaderboardQueryParams.model_validate(kwargs.get("extra_kwargs", {}))
+            page = query_params.page
+        except ValidationError:
+            page = 1
+
         data = {
             "user_id": user.id,
             "users": res["stats"],
             "stat": stat,
             "total": res["description"].replace("`", ""),
             "type": lbtype,
-            "page": int(kwargs["extra_kwargs"].get("page", 1)),
+            "page": page,
         }
         content = {
             "status": 0,
