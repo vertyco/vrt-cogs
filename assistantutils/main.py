@@ -27,7 +27,7 @@ class AssistantUtils(Functions, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.1.0"
+    __version__ = "1.2.1"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -57,4 +57,6 @@ class AssistantUtils(Functions, commands.Cog, metaclass=CompositeMetaClass):
         await cog.register_function(self.qualified_name, schemas.ADD_REACTION)
         await cog.register_function(self.qualified_name, schemas.SEARCH_MESSAGES)
         await cog.register_function(self.qualified_name, schemas.RUN_COMMAND)
+        # Moderation tools
+        await cog.register_function(self.qualified_name, schemas.GET_MODLOG_CASES, permission_level="mod")
         log.info("Functions have been registered")
