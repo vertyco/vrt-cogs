@@ -37,7 +37,7 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "3.1.0"
+    __version__ = "3.1.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -168,9 +168,13 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
                 continue
             if any([not category, not channel_obj]):
                 if not category:
-                    log.error(f"Invalid category for panel {panel_name} in {guild.name}")
+                    log.warning(f"Invalid category for panel {panel_name} in {guild.name}, clearing from config")
+                    panel.category_id = 0
                 if not channel_obj:
-                    log.error(f"Invalid channel for panel {panel_name} in {guild.name}")
+                    log.warning(f"Invalid channel for panel {panel_name} in {guild.name}, clearing from config")
+                    panel.channel_id = 0
+                    panel.message_id = 0
+                await self.save()
                 continue
 
             if message_id not in prefetched:
