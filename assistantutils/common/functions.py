@@ -12,7 +12,7 @@ import discord
 from dateutil import parser
 from duckduckgo_search import DDGS
 from rapidfuzz import fuzz
-from redbot.core import commands
+from redbot.core import commands, modlog
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import text_to_file
 
@@ -799,3 +799,88 @@ class Functions(MixinMeta):
         except Exception as e:
             log.error(f"Error running command {command}", exc_info=e)
             return f"Error executing command: {e}"
+
+    async def get_modlog_cases(
+        self,
+        guild: discord.Guild,
+        user: discord.Member,
+        user_name_or_id: str,
+        *args,
+        **kwargs,
+    ) -> str:
+        """Get modlog cases (bans, kicks, mutes, etc.) for a user."""
+        bot: Red = self.bot
+
+        # Resolve the target member
+        user_name_or_id = str(user_name_or_id).strip()
+        if user_name_or_id.isdigit():
+            member_id = int(user_name_or_id)
+        else:
+            member = discord.utils.get(guild.members, name=user_name_or_id)
+            if not member:
+                member = discord.utils.get(guild.members, display_name=user_name_or_id)
+            if not member:
+                # Fuzzy match
+                matches = []
+                clean_query = clean_name(user_name_or_id.lower())
+                for m in guild.members:
+                    matches.append((m, fuzz.ratio(clean_name(m.name), clean_query)))
+                    if m.display_name != m.name:
+                        matches.append((m, fuzz.ratio(clean_name(m.display_name), clean_query)))
+                if matches:
+                    matches.sort(key=lambda x: x[1], reverse=True)
+                    member = matches[0][0]
+            if not member:
+                return f"User not found for the name or ID: `{user_name_or_id}`"
+            member_id = member.id
+
+        try:
+            cases = await modlog.get_cases_for_member(guild=guild, bot=bot, member_id=member_id)
+        except Exception as e:
+            return f"Error retrieving modlog cases: {e}"
+
+        if not cases:
+            return f"No modlog cases found for user ID {member_id}."
+
+        buffer = StringIO()
+        buffer.write(f"Modlog cases for user ID {member_id} ({len(cases)} total):\n\n")
+        for case in cases:
+            # Case number and type
+            buffer.write(f"Case #{case.case_number} | {case.action_type}\n")
+
+            # User
+            if isinstance(case.user, int):
+                buffer.write(f"  User: ID {case.user}\n")
+            else:
+                buffer.write(f"  User: {case.user} (ID: {case.user.id})\n")
+
+            # Moderator
+            if case.moderator is None:
+                buffer.write("  Moderator: Unknown\n")
+            elif isinstance(case.moderator, int):
+                buffer.write(f"  Moderator: ID {case.moderator}\n")
+            else:
+                buffer.write(f"  Moderator: {case.moderator} (ID: {case.moderator.id})\n")
+
+            # Reason
+            buffer.write(f"  Reason: {case.reason or 'No reason provided'}\n")
+
+            # Timestamp
+            created = datetime.fromtimestamp(case.created_at, tz=timezone.utc)
+            buffer.write(f"  Date: {created.strftime('%Y-%m-%d %H:%M:%S')} UTC\n")
+            buffer.write(f"  Date (Discord): <t:{case.created_at}:F>\n")
+
+            # Duration info
+            if case.until:
+                buffer.write(f"  Until: <t:{case.until}:F>\n")
+
+            # Channel
+            if case.channel:
+                if isinstance(case.channel, int):
+                    buffer.write(f"  Channel: ID {case.channel} (deleted)\n")
+                else:
+                    buffer.write(f"  Channel: {case.channel.name}\n")
+
+            buffer.write("\n")
+
+        return buffer.getvalue().strip()

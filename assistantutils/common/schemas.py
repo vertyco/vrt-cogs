@@ -227,3 +227,17 @@ RUN_COMMAND = {
         "required": ["command"],
     },
 }
+GET_MODLOG_CASES = {
+    "name": "get_modlog_cases",
+    "description": "Get modlog cases (bans, kicks, mutes, timeouts, and other mod actions) for a specified user. Returns case details including case number, action type, moderator, reason, and date.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "user_name_or_id": {
+                "type": "string",
+                "description": "The username, display name, or user ID of the person to look up modlog cases for",
+            },
+        },
+        "required": ["user_name_or_id"],
+    },
+}
