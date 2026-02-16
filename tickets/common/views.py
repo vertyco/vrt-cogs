@@ -843,7 +843,12 @@ class PanelView(View):
         self.cog: "MixinMeta" = cog
         self.panels: list[tuple[str, Panel]] = panels
         for panel_name, panel in self.panels:
-            self.add_item(SupportButton(panel_name, panel, mock_user=mock_user))
+            button = SupportButton(panel_name, panel, mock_user=mock_user)
+            # Validate custom emojis are still accessible to the bot
+            if button.emoji and button.emoji.is_custom_emoji() and not bot.get_emoji(button.emoji.id):
+                log.warning(f"Panel '{panel_name}' in {guild.name} has an invalid emoji: {panel.button_emoji}")
+                button.emoji = None
+            self.add_item(button)
 
     async def start(self):
         chan = self.guild.get_channel(self.panels[0][1].channel_id)
