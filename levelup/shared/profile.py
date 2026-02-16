@@ -30,6 +30,7 @@ class ProfileFormatting(MixinMeta):
         conf = self.db.get_conf(member.guild)
         profile = conf.get_profile(member)
         profile.xp += xp
+        profile.level = conf.algorithm.get_level(profile.xp)
         self.save(False)
         return int(profile.xp)
 
@@ -40,6 +41,7 @@ class ProfileFormatting(MixinMeta):
         conf = self.db.get_conf(member.guild)
         profile = conf.get_profile(member)
         profile.xp = xp
+        profile.level = conf.algorithm.get_level(profile.xp)
         self.save(False)
         return int(profile.xp)
 
@@ -49,7 +51,8 @@ class ProfileFormatting(MixinMeta):
             raise TypeError("member must be a discord.Member")
         conf = self.db.get_conf(member.guild)
         profile = conf.get_profile(member)
-        profile.xp -= xp
+        profile.xp = max(0, profile.xp - xp)
+        profile.level = conf.algorithm.get_level(profile.xp)
         self.save(False)
         return int(profile.xp)
 
