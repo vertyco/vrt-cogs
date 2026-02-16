@@ -514,7 +514,8 @@ class Admin(MixinMeta):
             new_xp = profile.xp + xp
             if new_xp > 2**62:
                 return await ctx.send(_("That XP value is too high!"))
-            profile.xp += xp
+            profile.xp = new_xp
+            profile.level = conf.algorithm.get_level(profile.xp)
             txt = _("Added {} XP to {}").format(xp, user_or_role.name)
             self.save()
             return await ctx.send(txt)
@@ -524,7 +525,8 @@ class Admin(MixinMeta):
             new_xp = profile.xp + xp
             if new_xp > 2**62:
                 return await ctx.send(_("That XP value is too high!"))
-            profile.xp += xp
+            profile.xp = new_xp
+            profile.level = conf.algorithm.get_level(profile.xp)
         txt = _("Added {} XP {} member(s) with the {} role").format(
             xp,
             len(user_or_role.members),
@@ -544,13 +546,16 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         if isinstance(user_or_role, discord.Member):
             profile = conf.get_profile(user_or_role)
-            profile.xp -= min(profile.xp, xp)
-            txt = _("Removed {} XP from {}").format(min(profile.xp, xp), user_or_role.name)
+            removed = min(profile.xp, xp)
+            profile.xp -= removed
+            profile.level = conf.algorithm.get_level(profile.xp)
+            txt = _("Removed {} XP from {}").format(round(removed), user_or_role.name)
             self.save()
             return await ctx.send(txt)
         for user in user_or_role.members:
             profile = conf.get_profile(user)
             profile.xp -= min(profile.xp, xp)
+            profile.level = conf.algorithm.get_level(profile.xp)
         txt = _("Removed {} XP from {} member(s) with the {} role").format(
             xp,
             len(user_or_role.members),
