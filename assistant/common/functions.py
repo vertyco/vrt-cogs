@@ -444,6 +444,8 @@ class AssistantFunctions(MixinMeta):
         try:
             delta = commands.parse_timedelta(remind_in)
         except commands.BadArgument:
+            delta = None
+        if delta is None:
             return f"Could not parse duration from: {remind_in}. Use formats like '30m', '2h', '1d', '1w2d3h'."
         now = datetime.now(tz=timezone.utc)
         remind_at = now + delta
