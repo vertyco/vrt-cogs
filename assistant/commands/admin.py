@@ -2759,3 +2759,75 @@ class Admin(MixinMeta):
             self.db.listen_to_bots = True
             await ctx.send(_("Assistant will listen to other bot messages"))
         await self.save_conf()
+
+    @assistant.command(name="scheduledtasks", aliases=["tasks", "listtasks"])
+    @commands.guild_only()
+    @commands.admin_or_permissions(administrator=True)
+    @commands.bot_has_permissions(embed_links=True)
+    async def view_scheduled_tasks(self, ctx: commands.Context):
+        """View and manage all scheduled autonomous tasks in this server."""
+        guild_tasks = [stask for stask in self.db.scheduled_tasks.values() if stask.guild_id == ctx.guild.id]
+        if not guild_tasks:
+            return await ctx.send(_("No scheduled tasks in this server."))
+
+        guild_tasks.sort(key=lambda stask: stask.execute_at)
+        lines = []
+        for stask in guild_tasks:
+            member = ctx.guild.get_member(stask.user_id)
+            user_display = member.display_name if member else f"Unknown ({stask.user_id})"
+            channel = ctx.guild.get_channel(stask.channel_id)
+            channel_display = channel.mention if channel else f"#{stask.channel_id}"
+            timestamp = int(stask.execute_at.timestamp())
+            instruction_preview = stask.instruction[:80] + ("..." if len(stask.instruction) > 80 else "")
+            lines.append(
+                f"**`{stask.id}`** | {user_display} | {channel_display}\n"
+                f"  Executes <t:{timestamp}:R> (<t:{timestamp}:f>)\n"
+                f"  {instruction_preview}"
+            )
+
+        text = "\n\n".join(lines)
+        embed = discord.Embed(
+            title=_("Scheduled Tasks ({})").format(len(guild_tasks)),
+            description=text[:4000],
+            color=discord.Color.blue(),
+        )
+        await ctx.send(embed=embed)
+
+    @assistant.command(name="canceltask")
+    @commands.guild_only()
+    @commands.admin_or_permissions(administrator=True)
+    async def cancel_task_admin(self, ctx: commands.Context, task_id: str):
+        """Cancel a scheduled task by its ID (admin override)."""
+        task = self.db.scheduled_tasks.get(task_id)
+        if not task:
+            return await ctx.send(_("No scheduled task found with ID `{}`.").format(task_id))
+        if task.guild_id != ctx.guild.id:
+            return await ctx.send(_("That task belongs to a different server."))
+
+        job_id = f"task_{task_id}"
+        job = self.scheduler.get_job(job_id)
+        if job:
+            job.remove()
+
+        del self.db.scheduled_tasks[task_id]
+        await self.save_conf()
+        await ctx.send(_("Scheduled task `{}` has been cancelled.").format(task_id))
+
+    @assistant.command(name="cleartasks")
+    @commands.guild_only()
+    @commands.admin_or_permissions(administrator=True)
+    async def clear_all_tasks(self, ctx: commands.Context, yes_or_no: bool):
+        """Clear all scheduled tasks in this server."""
+        if not yes_or_no:
+            return await ctx.send(_("Not clearing tasks."))
+
+        task_ids = [tid for tid, t in self.db.scheduled_tasks.items() if t.guild_id == ctx.guild.id]
+        for tid in task_ids:
+            job_id = f"task_{tid}"
+            job = self.scheduler.get_job(job_id)
+            if job:
+                job.remove()
+            del self.db.scheduled_tasks[tid]
+
+        await self.save_conf()
+        await ctx.send(_("Cleared {} scheduled tasks.").format(len(task_ids)))

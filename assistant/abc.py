@@ -33,6 +33,10 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    async def _fire_scheduled_task(self, task_id: str) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
     async def openai_status(self) -> str:
         raise NotImplementedError
 
