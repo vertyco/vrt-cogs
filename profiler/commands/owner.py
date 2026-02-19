@@ -10,13 +10,16 @@ from discord import app_commands
 from rapidfuzz import fuzz
 from redbot.core import commands
 from redbot.core.bot import Red
+from redbot.core.data_manager import core_data_path
 from redbot.core.utils.chat_formatting import box, humanize_number, pagify
 
 from ..abc import MixinMeta
 from ..common.formatting import humanize_size
+from ..common.io_profiler import IOProfileResult, run_io_profile
 from ..common.mem_profiler import profile_cog_memory, profile_memory
 from ..common.models import IGNORED_COGS
 from ..common.pyspy_profiler import ProfileResult, run_pyspy_profile
+from ..views.io_menu import IOMenu
 from ..views.profile_menu import ProfileMenu
 from ..views.pyspy_menu import PySpyMenu
 
@@ -608,4 +611,67 @@ class Owner(MixinMeta):
 
         # Start the interactive menu
         view = PySpyMenu(ctx, result)
+        await view.start()
+
+    @profiler.command(name="ioprofile", aliases=["io", "diskprofile"])
+    async def run_io_command(
+        self,
+        ctx: commands.Context,
+        duration: int = 60,
+    ):
+        """
+        Monitor file write activity in the bot's data directory
+
+        Watches for all file writes (create, modify) under the bot's data
+        directory for the specified duration and reports which files are
+        being written to, how often, and how much data is involved.
+
+        Useful for identifying cogs that are doing excessive disk I/O,
+        config saves that fire too often, or unexpected file churn.
+
+        **Arguments**:
+        - `duration`: How long to monitor in seconds (default: 60, max: 600)
+
+        **Example Usage**:
+        - `[p]profiler io` - Monitor for 60 seconds
+        - `[p]profiler io 120` - Monitor for 2 minutes
+        """
+        if duration < 5:
+            return await ctx.send("Duration must be at least 5 seconds.")
+        if duration > 600:
+            return await ctx.send("Duration cannot exceed 600 seconds (10 minutes).")
+
+        data_path = str(core_data_path().parent)
+
+        msg = await ctx.send(
+            f"📁 Starting I/O Monitor\n\n"
+            f"Watching `{data_path}` for file writes for **{duration}** seconds.\n\n"
+            f"-# Please wait..."
+        )
+
+        try:
+            result: IOProfileResult = await run_io_profile(
+                data_path=data_path,
+                duration=duration,
+            )
+        except Exception as e:
+            log.exception("Error running I/O profile")
+            return await msg.edit(content=f"❌ I/O Profiling Failed\n\nError: {e}")
+
+        if result.error:
+            return await msg.edit(content=f"❌ I/O Profiling Failed\n\n{result.error}")
+
+        if not result.file_stats:
+            return await msg.edit(
+                content=(
+                    "⚠️ I/O Profile Complete\n\n"
+                    "No file write activity detected during the monitoring period.\n"
+                    "The bot may not have saved any data while monitoring."
+                )
+            )
+
+        with suppress(discord.NotFound):
+            await msg.delete()
+
+        view = IOMenu(ctx, result)
         await view.start()
