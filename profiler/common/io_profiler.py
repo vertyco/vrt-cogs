@@ -8,6 +8,7 @@ are being written to, how often, and how much data is changing.
 import asyncio
 import logging
 import os
+import re
 import time
 import typing as t
 from collections import defaultdict
@@ -111,6 +112,21 @@ def _shorten_path(path: str, base: str) -> str:
         return path
 
 
+# Red writes configs to `filename-DIGITS.tmp` before renaming to the real file.
+_TMP_PATTERN = re.compile(r"^(.+)-\d+\.tmp$")
+
+
+def _normalize_path(rel_path: str) -> str:
+    """Collapse Red's atomic-write temp files into the canonical config name.
+
+    e.g. ``cogs/Mod/settings-2106206022.tmp`` -> ``cogs/Mod/settings``
+    """
+    m = _TMP_PATTERN.match(rel_path)
+    if m:
+        return m.group(1)
+    return rel_path
+
+
 def _aggregate_results(events: t.List[FileWriteEvent], base_path: str, duration: int) -> IOProfileResult:
     """Aggregate raw events into an IOProfileResult."""
     result = IOProfileResult(duration=duration, base_path=base_path)
@@ -124,7 +140,7 @@ def _aggregate_results(events: t.List[FileWriteEvent], base_path: str, duration:
     dir_counts: t.Dict[str, int] = defaultdict(int)
 
     for evt in events:
-        rel = _shorten_path(evt.path, base_path)
+        rel = _normalize_path(_shorten_path(evt.path, base_path))
 
         if rel not in file_map:
             file_map[rel] = FileWriteStats(path=rel, first_write=evt.timestamp)
