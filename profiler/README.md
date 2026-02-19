@@ -9,6 +9,13 @@ Cog profiling tools for bot owners and developers<br/><br/>This cog provides too
 
 Profiling commands
 
+## profiler pyspy
+
+- Usage: `[p]profiler pyspy [duration=30] [subprocesses=False]`
+- Aliases: `fullprofile and cpuprofile`
+
+Run a full CPU profile using py-spy.<br/><br/>This command attaches py-spy to the bot process and records CPU usage for the specified duration. It then displays a breakdown of where the bot is spending its CPU time, helping identify performance bottlenecks.<br/><br/>**Arguments**:<br/>- `duration`: How long to profile in seconds (default: 30, max: 300)<br/>- `subprocesses`: Profile subprocesses too (default: False)<br/><br/>**Requirements**:<br/>- py-spy must be installed: `pip install py-spy`<br/>- On Linux, may need to set ptrace scope: `echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope`
+
 ## profiler verbose
 
 - Usage: `[p]profiler verbose`

@@ -6,7 +6,7 @@ from pydantic import Field
 
 from . import Base
 
-IGNORED_COGS = ["SentryIO", "Profiler"]
+IGNORED_COGS = ["Profiler"]
 
 
 @dataclass
@@ -29,9 +29,6 @@ class StatsProfile(Base):
 class DB(Base):
     save_stats: bool = False  # Save stats persistently
     delta: int = 1  # Data retention in hours
-
-    sentry_enabled: bool = True  # Enable Sentry initialization (if DSN is set)
-    sentry_profiler: bool = False  # Enable Sentry profiling
 
     # Profiling entire cogs's methods on a high level (No verbosity)
     tracked_cogs: t.List[str] = []  # List of cogs to track
