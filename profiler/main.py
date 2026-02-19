@@ -2,14 +2,9 @@ import asyncio
 import logging
 import typing as t
 
-import sentry_sdk
 from discord.ext import tasks
 from redbot.core import Config, commands
 from redbot.core.bot import Red
-from sentry_sdk import profiler
-from sentry_sdk.integrations.asyncio import AsyncioIntegration
-from sentry_sdk.integrations.logging import LoggingIntegration
-from sentry_sdk.integrations.socket import SocketIntegration
 
 from .abc import CompositeMetaClass
 from .commands.owner import Owner
@@ -31,7 +26,7 @@ class Profiler(Owner, Profiling, Wrapper, Listeners, commands.Cog, metaclass=Com
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.7.2"
+    __version__ = "1.9.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -72,8 +67,6 @@ class Profiler(Owner, Profiling, Wrapper, Listeners, commands.Cog, metaclass=Com
     async def cog_unload(self) -> None:
         self.detach_profilers()
         self.save_loop.cancel()
-        profiler.stop_profiler()
-        await self.close_sentry()
 
     async def _initialize(self) -> None:
         await self.bot.wait_until_red_ready()
@@ -84,7 +77,6 @@ class Profiler(Owner, Profiling, Wrapper, Listeners, commands.Cog, metaclass=Com
         await asyncio.to_thread(self.db.cleanup)
         await asyncio.sleep(10)
         self.save_loop.start()
-        await self.start_sentry(await self.get_dsn())
 
     async def save(self) -> None:
         if self.saving:
@@ -124,43 +116,3 @@ class Profiler(Owner, Profiling, Wrapper, Listeners, commands.Cog, metaclass=Com
         cleaned = await asyncio.to_thread(_run)
         if cleaned:
             await self.save()
-
-    async def close_sentry(self) -> None:
-        client = sentry_sdk.get_client()
-        if client.is_active():
-            profiler.stop_profiler()
-            client.close(timeout=0)
-
-    async def start_sentry(self, dsn: str) -> None:
-        await self.close_sentry()
-        if not dsn:
-            return
-        if not self.db.sentry_enabled:
-            log.info("Sentry is disabled, skipping initialization")
-            return
-        log.info("Initializing Sentry with DSN %s", dsn)
-        sentry_sdk.init(
-            dsn=dsn,
-            integrations=[
-                AsyncioIntegration(),
-                LoggingIntegration(event_level=logging.ERROR),
-                SocketIntegration(),
-            ],
-            include_local_variables=True,
-            traces_sample_rate=1.0,
-            profile_session_sample_rate=1.0,
-            profile_lifecycle="manual",  # default
-            send_default_pii=True,
-        )
-        if self.db.sentry_profiler:
-            log.debug("Starting Sentry Profiler")
-            profiler.start_profiler()
-
-    async def get_dsn(self, api_tokens: t.Optional[dict[str, str]] = None) -> str:
-        """Get Sentry DSN."""
-        if api_tokens is None:
-            api_tokens: dict = await self.bot.get_shared_api_tokens("sentry")
-        dsn = api_tokens.get("dsn", "")
-        if not dsn:
-            log.error("No valid DSN found")
-        return dsn

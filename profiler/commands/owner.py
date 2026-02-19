@@ -6,19 +6,19 @@ import typing as t
 from contextlib import suppress
 
 import discord
-import sentry_sdk
 from discord import app_commands
 from rapidfuzz import fuzz
 from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import box, humanize_number, pagify
-from sentry_sdk import profiler
 
 from ..abc import MixinMeta
 from ..common.formatting import humanize_size
 from ..common.mem_profiler import profile_cog_memory, profile_memory
 from ..common.models import IGNORED_COGS
+from ..common.pyspy_profiler import ProfileResult, run_pyspy_profile
 from ..views.profile_menu import ProfileMenu
+from ..views.pyspy_menu import PySpyMenu
 
 log = logging.getLogger("red.vrt.profiler.commands")
 
@@ -81,10 +81,6 @@ class Owner(MixinMeta):
 
         # DATA RETENTION
         txt += f"- Data retention is set to **{self.db.delta} {'hour' if self.db.delta == 1 else 'hours'}**\n"
-
-        # SENTRY
-        txt += f"- Sentry: **{'Enabled' if self.db.sentry_enabled else 'Disabled'}**\n"
-        txt += f"- Sentry Profiling: **{'Enabled' if self.db.sentry_profiler else 'Disabled'}**\n"
 
         # CONFIG SIZE
         mem_size_raw = await asyncio.to_thread(deep_getsizeof, self.db)
@@ -524,47 +520,6 @@ class Owner(MixinMeta):
         view = ProfileMenu(ctx, self)
         await view.start()
 
-    @profiler.command(name="sentry")
-    async def toggle_sentry_enabled(self, ctx: commands.Context):
-        """
-        Toggle Sentry integration on/off
-
-        When disabled, Sentry will not initialize even if a DSN is configured.
-        This is useful if you want to temporarily disable error tracking without
-        removing the DSN configuration.
-        """
-        self.db.sentry_enabled = not self.db.sentry_enabled
-        await self.save()
-        if self.db.sentry_enabled:
-            await ctx.send("Sentry is now **Enabled**. Initializing...")
-            await self.start_sentry(await self.get_dsn())
-        else:
-            await ctx.send("Sentry is now **Disabled**. Closing connection...")
-            await self.close_sentry()
-
-    @profiler.command(name="sentryprofiling")
-    async def toggle_sentry_profiling(self, ctx: commands.Context):
-        """
-        Toggle Sentry profiling integration
-
-        **Warning**: This will increase memory usage and may have privacy implications.
-        Ensure you have configured Sentry SDK in your bot before enabling this.
-        """
-        # Check sentry version
-        if "sentry_sdk" not in sys.modules:
-            return await ctx.send("Sentry SDK is not installed or configured in your bot.")
-        if not self.db.sentry_enabled:
-            return await ctx.send("Sentry is disabled. Enable it first with the `sentry` command.")
-        client = sentry_sdk.get_client()
-        if not client.is_active():
-            return await ctx.send("Sentry SDK is not initialized in your bot.")
-        if not hasattr(profiler, "start_profiler"):
-            return await ctx.send("Your version of Sentry SDK does not support profiling. Please update it.")
-        self.db.sentry_profiler = not self.db.sentry_profiler
-        await self.save()
-        await ctx.send(f"Sentry profiling is now **{self.db.sentry_profiler}**")
-        await self.start_sentry(await self.get_dsn())
-
     @profiler.command(name="cogmem")
     async def view_cog_memory_profile(self, ctx: commands.Context, limit: int = 0):
         """
@@ -588,33 +543,69 @@ class Owner(MixinMeta):
             header = "## Cog Memory Usage\n" if i == 0 else ""
             await ctx.send(f"{header}{box(page, lang='py')}")
 
-    @profiler.command(name="sentrydsn")
-    async def set_sentry_dsn(self, ctx: commands.Context, dsn: str):
+    @profiler.command(name="pyspy", aliases=["fullprofile", "cpuprofile"])
+    async def run_pyspy_command(
+        self,
+        ctx: commands.Context,
+        duration: int = 30,
+        subprocesses: bool = False,
+    ):
         """
-        Configure Sentry DSN for general error tracking
-        - Go to https://sentry.io/settings
-        - Go to projects list and select the project you want
-        - Select client keys (DSN) on the left sidebar
-        - Copy the DSN value
-        """
-        existing_tokens = await self.bot.get_shared_api_tokens("sentry")
-        if existing_tokens.get("dsn", "") == dsn:
-            return await ctx.send("The provided DSN is already configured.")
-        await self.bot.set_shared_api_tokens("sentry", dsn=dsn)
-        await ctx.message.delete()
-        await ctx.send("Sentry DSN has been updated.")
+        Run a full CPU profile using py-spy
 
-    @profiler.command(name="sentrystatus")
-    async def sentry_status(self, ctx: commands.Context):
+        This command attaches py-spy to the bot process and records CPU usage
+        for the specified duration. It then displays a breakdown of where the
+        bot is spending its CPU time, helping identify performance bottlenecks.
+
+        **Arguments**:
+        - `duration`: How long to profile in seconds (default: 30, max: 300)
+        - `subprocesses`: Profile subprocesses too (default: False)
+
+        **Requirements**:
+        - py-spy must be installed: `pip install py-spy`
+        - On Linux, may need to set ptrace scope: `echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope`
+
+        **Example Usage**:
+        - `[p]profiler pyspy` - Profile for 30 seconds
+        - `[p]profiler pyspy 60` - Profile for 60 seconds
         """
-        Check the status of Sentry integration
-        """
-        if not hasattr(profiler, "start_profiler"):
-            return await ctx.send("Your version of Sentry SDK does not support profiling. Please update it.")
-        client = sentry_sdk.get_client()
-        if not client.is_active():
-            return await ctx.send("Sentry SDK is not initialized in your bot.")
-        dsn = client.options.get("dsn")
-        if not dsn:
-            return await ctx.send("Sentry DSN is not configured.")
-        await ctx.send(f"Sentry DSN configured with DSN: `{dsn}`")
+        if duration < 1:
+            return await ctx.send("Duration must be at least 1 second.")
+        if duration > 300:
+            return await ctx.send("Duration cannot exceed 300 seconds (5 minutes).")
+
+        msg = await ctx.send(
+            f"🔍 **Starting CPU Profile**\n\n"
+            f"py-spy will monitor the bot for **{duration}** seconds.\n"
+            f"The bot will continue to function normally during profiling.\n\n"
+            f"-# Please wait..."
+        )
+
+        try:
+            result: ProfileResult = await run_pyspy_profile(
+                duration=duration,
+                subprocesses=subprocesses,
+            )
+        except Exception as e:
+            log.exception("Error running py-spy profile")
+            return await msg.edit(content=f"❌ **Profiling Failed**\n\nError: {e}")
+
+        if result.error:
+            return await msg.edit(content=f"❌ **Profiling Failed**\n\n{result.error}")
+
+        if not result.functions:
+            return await msg.edit(
+                content=(
+                    "⚠️ **Profiling Complete**\n\n"
+                    "No samples were collected. The bot may have been mostly idle during the profile period.\n"
+                    "Try running commands or events during the profiling window."
+                )
+            )
+
+        # Delete the status message
+        with suppress(discord.NotFound):
+            await msg.delete()
+
+        # Start the interactive menu
+        view = PySpyMenu(ctx, result)
+        await view.start()

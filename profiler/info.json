@@ -9,7 +9,7 @@
   "min_python_version": [3, 10, 0],
   "permissions": [],
   "required_cogs": {},
-  "requirements": ["pydantic>=2.11,<2.12", "Pympler", "tabulate", "plotly", "sentry-sdk"],
+  "requirements": ["pydantic>=2.11,<2.12", "Pympler", "tabulate", "plotly", "py-spy"],
   "short": "Cog profiling tools for bot owners and developers",
   "tags": [
     "profiler",
@@ -23,7 +23,6 @@
     "performance",
     "tracking",
     "tracker",
-    "sentry",
     "logging"
   ],
   "type": "COG"
