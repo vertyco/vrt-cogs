@@ -343,6 +343,26 @@ def format_profiling_insights(result: ProfileResult) -> t.List[str]:
     return pages
 
 
+def _find_pyspy() -> t.Optional[str]:
+    """Find py-spy executable, checking venv bin directory first."""
+    # First check system PATH
+    pyspy_path = shutil.which("py-spy")
+    if pyspy_path:
+        return pyspy_path
+
+    # Check in the same directory as the Python executable (venv bin/Scripts)
+    python_dir = Path(sys.executable).parent
+    if sys.platform == "win32":
+        pyspy_in_venv = python_dir / "py-spy.exe"
+    else:
+        pyspy_in_venv = python_dir / "py-spy"
+
+    if pyspy_in_venv.exists():
+        return str(pyspy_in_venv)
+
+    return None
+
+
 async def run_pyspy_profile(duration: int = 30, subprocesses: bool = False) -> ProfileResult:
     """
     Run py-spy profiler on the current Python process.
@@ -363,7 +383,7 @@ async def run_pyspy_profile(duration: int = 30, subprocesses: bool = False) -> P
     result = ProfileResult(duration=duration, sample_count=0)
 
     # Check if py-spy is available
-    pyspy_path = shutil.which("py-spy")
+    pyspy_path = _find_pyspy()
     if not pyspy_path:
         result.error = (
             "py-spy is not installed or not in PATH. "
