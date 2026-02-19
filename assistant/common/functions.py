@@ -21,6 +21,7 @@ from .models import (
     EmbeddingEntryExists,
     GuildSettings,
     Reminder,
+    ScheduledTask,
     UserMemory,
 )
 
@@ -603,3 +604,116 @@ class AssistantFunctions(MixinMeta):
                 return f"Removed fact: {removed_fact}"
 
         return f"Could not find a fact matching '{fact_index_or_text}'."
+
+    # -------------------------------------------------------
+    # --------------- SCHEDULED TASKS -----------------------
+    # -------------------------------------------------------
+    async def schedule_task(
+        self,
+        guild: discord.Guild,
+        channel: discord.TextChannel,
+        user: discord.Member,
+        conf: GuildSettings,
+        instruction: str,
+        execute_in: str,
+        context: str = "",
+        *args,
+        **kwargs,
+    ) -> str:
+        """Schedule an autonomous task for future execution."""
+        # Check user's task limit
+        user_task_count = sum(
+            1 for t in self.db.scheduled_tasks.values() if t.user_id == user.id and t.guild_id == guild.id
+        )
+        if user_task_count >= conf.max_scheduled_tasks:
+            return f"You have reached the maximum of {conf.max_scheduled_tasks} scheduled tasks. Cancel some before scheduling more."
+
+        try:
+            delta = commands.parse_timedelta(execute_in)
+        except commands.BadArgument:
+            delta = None
+        if delta is None:
+            return f"Could not parse duration from: {execute_in}. Use formats like '30m', '2h', '1d', '1w2d3h'."
+
+        now = datetime.now(tz=timezone.utc)
+        execute_at = now + delta
+
+        task_id = str(uuid4())[:8]
+        task = ScheduledTask(
+            id=task_id,
+            guild_id=guild.id,
+            channel_id=channel.id,
+            user_id=user.id,
+            instruction=instruction,
+            context=context,
+            created_at=now,
+            execute_at=execute_at,
+        )
+        self.db.scheduled_tasks[task_id] = task
+        asyncio.create_task(self.save_conf())
+
+        # Schedule with APScheduler
+        self.scheduler.add_job(
+            self._fire_scheduled_task,
+            "date",
+            run_date=execute_at,
+            args=[task_id],
+            id=f"task_{task_id}",
+            replace_existing=True,
+        )
+
+        timestamp = int(execute_at.timestamp())
+        return f"Task scheduled! ID: `{task_id}`. I'll execute it <t:{timestamp}:R> (<t:{timestamp}:f>)."
+
+    async def cancel_scheduled_task(
+        self,
+        guild: discord.Guild,
+        user: discord.Member,
+        task_id: str,
+        *args,
+        **kwargs,
+    ) -> str:
+        """Cancel a scheduled task."""
+        task = self.db.scheduled_tasks.get(task_id)
+        if not task:
+            return f"No scheduled task found with ID `{task_id}`."
+        if task.user_id != user.id:
+            return "You can only cancel your own scheduled tasks."
+        if task.guild_id != guild.id:
+            return "That task belongs to a different server."
+
+        # Remove from scheduler
+        job_id = f"task_{task_id}"
+        job = self.scheduler.get_job(job_id)
+        if job:
+            job.remove()
+
+        # Remove from storage
+        del self.db.scheduled_tasks[task_id]
+        asyncio.create_task(self.save_conf())
+        return f"Scheduled task `{task_id}` has been cancelled."
+
+    async def list_scheduled_tasks(
+        self,
+        guild: discord.Guild,
+        user: discord.Member,
+        *args,
+        **kwargs,
+    ) -> str:
+        """List all pending scheduled tasks for the user."""
+        user_tasks = [
+            utask
+            for utask in self.db.scheduled_tasks.values()
+            if utask.user_id == user.id and utask.guild_id == guild.id
+        ]
+        if not user_tasks:
+            return "You have no pending scheduled tasks."
+
+        user_tasks.sort(key=lambda utask: utask.execute_at)
+        lines = []
+        for utask in user_tasks:
+            timestamp = int(utask.execute_at.timestamp())
+            instruction_preview = utask.instruction[:60] + ("..." if len(utask.instruction) > 60 else "")
+            lines.append(f"- `{utask.id}`: <t:{timestamp}:R> - {instruction_preview}")
+
+        return "**Your scheduled tasks:**\n" + "\n".join(lines)

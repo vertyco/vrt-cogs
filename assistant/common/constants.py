@@ -598,3 +598,60 @@ FORGET_USER = {
         "required": ["fact_index_or_text"],
     },
 }
+
+SCHEDULE_TASK = {
+    "name": "schedule_task",
+    "description": (
+        "Schedule an autonomous task to be executed at a future time. "
+        "When this task fires, you will be prompted with the instruction in this channel and can take any actions "
+        "available to you (search, fetch, send messages, etc.). "
+        "Use this when a user asks you to do something later, check on something periodically, or follow up on a task. "
+        "Examples: 'check the status channel in 1 hour', 'summarize today's messages at 5pm', 'follow up with the user tomorrow'."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "instruction": {
+                "type": "string",
+                "description": (
+                    "The detailed instruction for what to do when the task fires. "
+                    "Be specific — include what to check, what to report, and any context needed. "
+                    "This will be your prompt when the task executes."
+                ),
+            },
+            "execute_in": {
+                "type": "string",
+                "description": "How long until the task executes. Examples: '30 minutes', '1 hour', '2 days', '1 week'.",
+            },
+            "context": {
+                "type": "string",
+                "description": "Optional context about why this task was scheduled, for your own reference when it fires.",
+            },
+        },
+        "required": ["instruction", "execute_in"],
+    },
+}
+
+CANCEL_SCHEDULED_TASK = {
+    "name": "cancel_scheduled_task",
+    "description": "Cancel a scheduled autonomous task by its ID.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "task_id": {
+                "type": "string",
+                "description": "The unique ID of the scheduled task to cancel",
+            },
+        },
+        "required": ["task_id"],
+    },
+}
+
+LIST_SCHEDULED_TASKS = {
+    "name": "list_scheduled_tasks",
+    "description": "List all pending scheduled tasks for the user in this server.",
+    "parameters": {
+        "type": "object",
+        "properties": {},
+    },
+}

@@ -143,6 +143,7 @@ class GuildSettings(AssistantBaseModel):
 
     use_function_calls: bool = False
     max_function_calls: int = 20  # Max calls in a row
+    max_scheduled_tasks: int = 25  # Max pending scheduled tasks per user in this guild
     function_statuses: t.Dict[str, bool] = {}  # {"function_name": True/False for enabled/disabled}
     functions_called: int = 0
 
@@ -217,6 +218,19 @@ class Reminder(AssistantBaseModel):
     created_at: datetime
     remind_at: datetime
     dm: bool = False  # Whether to DM instead of channel ping
+
+
+class ScheduledTask(AssistantBaseModel):
+    """A deferred autonomous action the AI schedules for future execution."""
+
+    id: str  # unique identifier
+    guild_id: int
+    channel_id: int
+    user_id: int  # user who triggered the original conversation
+    instruction: str  # the prompt/instruction the AI will execute
+    context: str = ""  # optional context about why this task was scheduled
+    created_at: datetime
+    execute_at: datetime
 
 
 class UserMemory(AssistantBaseModel):
@@ -369,6 +383,7 @@ class DB(AssistantBaseModel):
     brave_api_key: t.Optional[str] = None
     endpoint_override: t.Optional[str] = None
     reminders: t.Dict[str, Reminder] = {}  # reminder_id -> Reminder
+    scheduled_tasks: t.Dict[str, ScheduledTask] = {}  # task_id -> ScheduledTask
     user_memories: t.Dict[str, UserMemory] = {}  # "{guild_id}-{user_id}" -> UserMemory
 
     def get_conf(self, guild: t.Union[discord.Guild, int]) -> GuildSettings:

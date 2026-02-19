@@ -395,12 +395,13 @@ class EmbeddingMenu(discord.ui.View):
 
 
 class CodeModal(discord.ui.Modal):
-    def __init__(self, schema: str, code: str, permission_level: str = None):
+    def __init__(self, schema: str, code: str, permission_level: str = None, required_permissions: str = None):
         super().__init__(title=_("Function Edit"), timeout=None)
 
         self.schema = ""
         self.code = ""
         self.permission_level = ""
+        self.required_permissions: list[str] = []
 
         self.schema_field = discord.ui.TextInput(
             label=_("JSON Schema"),
@@ -421,6 +422,14 @@ class CodeModal(discord.ui.Modal):
             default=permission_level,
         )
         self.add_item(self.perm_field)
+        self.perms_field = discord.ui.TextInput(
+            label=_("Required Discord Permissions"),
+            placeholder=_("e.g. manage_messages, kick_members (comma-separated, or leave blank)"),
+            style=discord.TextStyle.short,
+            required=False,
+            default=required_permissions or "",
+        )
+        self.add_item(self.perms_field)
 
     async def on_submit(self, interaction: discord.Interaction):
         self.schema = self.schema_field.value
@@ -431,6 +440,22 @@ class CodeModal(discord.ui.Modal):
                 ephemeral=True,
             )
         self.permission_level = self.perm_field.value.lower()
+
+        # Parse required_permissions
+        raw_perms = self.perms_field.value.strip()
+        if raw_perms:
+            perms = [p.strip().lower() for p in raw_perms.split(",") if p.strip()]
+            valid_flags = set(discord.Permissions.VALID_FLAGS)
+            invalid = [p for p in perms if p not in valid_flags]
+            if invalid:
+                return await interaction.response.send_message(
+                    _("Invalid Discord permission names: {}").format(", ".join(f"`{p}`" for p in invalid)),
+                    ephemeral=True,
+                )
+            self.required_permissions = perms
+        else:
+            self.required_permissions = []
+
         await interaction.response.defer()
         self.stop()
 
@@ -695,7 +720,8 @@ class CodeMenu(discord.ui.View):
                 ephemeral=True,
             )
 
-        modal = CodeModal(json.dumps(entry.jsonschema, indent=2), entry.code, entry.permission_level)
+        perms_str = ", ".join(entry.required_permissions) if entry.required_permissions else ""
+        modal = CodeModal(json.dumps(entry.jsonschema, indent=2), entry.code, entry.permission_level, perms_str)
         await interaction.response.send_modal(modal)
         await modal.wait()
         if not modal.schema or not modal.code:
@@ -718,12 +744,18 @@ class CodeMenu(discord.ui.View):
             return await interaction.followup.send(_("Invalid function"), ephemeral=True)
 
         if function_name != new_name:
-            self.db.functions[new_name] = CustomFunction(code=code, jsonschema=schema)
+            self.db.functions[new_name] = CustomFunction(
+                code=code,
+                jsonschema=schema,
+                permission_level=modal.permission_level,
+                required_permissions=modal.required_permissions,
+            )
             del self.db.functions[function_name]
         else:
             self.db.functions[function_name].code = code
             self.db.functions[function_name].jsonschema = schema
             self.db.functions[function_name].permission_level = modal.permission_level
+            self.db.functions[function_name].required_permissions = modal.required_permissions
         await interaction.followup.send(_("`{}` function updated!").format(function_name), ephemeral=True)
         await self.get_pages()
         await self.message.edit(embed=self.pages[self.page], view=self)

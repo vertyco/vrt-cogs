@@ -12,6 +12,7 @@ from pydantic import ValidationError
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.data_manager import cog_data_path
+from redbot.core.utils.chat_formatting import pagify
 
 from .abc import CompositeMetaClass
 from .commands import AssistantCommands
@@ -19,6 +20,7 @@ from .common.api import API
 from .common.chat import ChatHandler
 from .common.constants import (
     CANCEL_REMINDER,
+    CANCEL_SCHEDULED_TASK,
     CREATE_MEMORY,
     CREATE_REMINDER,
     DO_NOT_RESPOND_SCHEMA,
@@ -28,9 +30,11 @@ from .common.constants import (
     GENERATE_IMAGE,
     LIST_MEMORIES,
     LIST_REMINDERS,
+    LIST_SCHEDULED_TASKS,
     RECALL_USER,
     REMEMBER_USER,
     RESPOND_AND_CONTINUE,
+    SCHEDULE_TASK,
     SEARCH_INTERNET,
     SEARCH_MEMORIES,
     THINK_AND_PLAN,
@@ -68,7 +72,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "7.3.0"
+    __version__ = "7.4.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -139,10 +143,14 @@ class Assistant(
         await self.register_function(self.qualified_name, REMEMBER_USER)
         await self.register_function(self.qualified_name, RECALL_USER)
         await self.register_function(self.qualified_name, FORGET_USER)
+        await self.register_function(self.qualified_name, SCHEDULE_TASK, permission_level="mod")
+        await self.register_function(self.qualified_name, CANCEL_SCHEDULED_TASK, permission_level="mod")
+        await self.register_function(self.qualified_name, LIST_SCHEDULED_TASKS, permission_level="mod")
 
-        # Start scheduler and reschedule existing reminders
+        # Start scheduler and reschedule existing reminders/tasks
         self.scheduler.start()
         await self._reschedule_reminders()
+        await self._reschedule_tasks()
 
         logging.getLogger("openai").setLevel(logging.WARNING)
         logging.getLogger("aiocache").setLevel(logging.WARNING)
@@ -271,6 +279,90 @@ class Assistant(
 
         if self.db.reminders:
             log.info(f"Rescheduled {len(self.db.reminders)} reminders ({len(expired_ids)} expired)")
+
+    async def _reschedule_tasks(self):
+        """Reschedule all pending scheduled tasks on cog load."""
+        now = datetime.now(tz=timezone.utc)
+        expired_ids = []
+
+        for task_id, task in self.db.scheduled_tasks.items():
+            if task.execute_at <= now:
+                expired_ids.append(task_id)
+            else:
+                self.scheduler.add_job(
+                    self._fire_scheduled_task,
+                    "date",
+                    run_date=task.execute_at,
+                    args=[task_id],
+                    id=f"task_{task_id}",
+                    replace_existing=True,
+                )
+
+        for task_id in expired_ids:
+            asyncio.create_task(self._fire_scheduled_task(task_id))
+
+        if self.db.scheduled_tasks:
+            log.info(f"Rescheduled {len(self.db.scheduled_tasks)} tasks ({len(expired_ids)} expired)")
+
+    async def _fire_scheduled_task(self, task_id: str):
+        """Execute a scheduled task by sending the instruction as a chat message."""
+        task = self.db.scheduled_tasks.get(task_id)
+        if not task:
+            return
+
+        guild = self.bot.get_guild(task.guild_id)
+        if not guild:
+            del self.db.scheduled_tasks[task_id]
+            asyncio.create_task(self.save_conf())
+            return
+
+        channel = guild.get_channel(task.channel_id)
+        if not channel or not hasattr(channel, "send"):
+            del self.db.scheduled_tasks[task_id]
+            asyncio.create_task(self.save_conf())
+            return
+
+        member = guild.get_member(task.user_id)
+        if not member:
+            del self.db.scheduled_tasks[task_id]
+            asyncio.create_task(self.save_conf())
+            return
+
+        conf = self.db.get_conf(guild)
+        if not await self.can_call_llm(conf):
+            log.warning(f"Cannot fire scheduled task {task_id}: no API key configured")
+            del self.db.scheduled_tasks[task_id]
+            asyncio.create_task(self.save_conf())
+            return
+
+        # Clean up the task before execution
+        del self.db.scheduled_tasks[task_id]
+        asyncio.create_task(self.save_conf())
+
+        # Build the prompt with context
+        prompt = f"[SCHEDULED TASK] This is an autonomous task you previously scheduled (ID: {task_id}).\n"
+        if task.context:
+            prompt += f"Context: {task.context}\n"
+        prompt += f"Original requester: {member.display_name} ({member.id})\n"
+        prompt += f"Instruction: {task.instruction}"
+
+        try:
+            reply = await self.get_chat_response(
+                message=prompt,
+                author=member,
+                guild=guild,
+                channel=channel,
+                conf=conf,
+            )
+            if reply:
+                for page in pagify(reply, delims=["\n", " "], page_length=2000):
+                    await channel.send(page)
+        except Exception as e:
+            log.error(f"Error executing scheduled task {task_id}", exc_info=e)
+            try:
+                await channel.send(f"⚠️ {member.mention} A scheduled task failed to execute: {task.instruction[:100]}")
+            except discord.HTTPException:
+                pass
 
     async def _fire_reminder(self, reminder_id: str):
         """Fire a reminder and clean it up."""
