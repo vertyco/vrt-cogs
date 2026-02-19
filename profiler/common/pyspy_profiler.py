@@ -293,8 +293,14 @@ def format_profiling_insights(result: ProfileResult) -> t.List[str]:
     for idx, func in enumerate(top_total, 1):
         total_pct = (func.total_time / total) * 100
         self_pct = (func.self_time / total) * 100
+        # Simplify file path for display
+        file_display = func.file
+        if "/" in file_display:
+            file_display = "/".join(file_display.split("/")[-2:])
+        elif "\\" in file_display:
+            file_display = "\\".join(file_display.split("\\")[-2:])
         detail_page.append(
-            f"{idx}. `{func.name}` • total {total_pct:.1f}% • self {self_pct:.1f}% • {func.call_count:,} samples"
+            f"{idx}. `{func.name}` ({file_display}) • total {total_pct:.1f}% • self {self_pct:.1f}% • {func.call_count:,} samples"
         )
 
     pages.append("\n".join(detail_page))
