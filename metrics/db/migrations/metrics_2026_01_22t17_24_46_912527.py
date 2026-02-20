@@ -1,8 +1,10 @@
+from db.piccolo_conf import DB
 from piccolo.apps.migrations.auto.migration_manager import MigrationManager
 from piccolo.columns.base import OnDelete, OnUpdate
 from piccolo.columns.column_types import BigInt, Float, ForeignKey, Timestamptz
 from piccolo.columns.defaults.timestamptz import TimestamptzNow
 from piccolo.columns.indexes import IndexMethod
+from piccolo.engine.postgres import PostgresEngine
 from piccolo.table import Table
 
 
@@ -838,17 +840,19 @@ async def forwards():
         schema=None,
     )
 
-    manager.alter_column(
-        table_class_name="GlobalSettings",
-        tablename="global_settings",
-        column_name="max_snapshot_age_days",
-        db_column_name="max_snapshot_age_days",
-        params={"default": 3600},
-        old_params={"default": 90},
-        column_class=BigInt,
-        old_column_class=BigInt,
-        schema=None,
-    )
+    # SQLite doesn't support ALTER COLUMN, only run on PostgreSQL
+    if isinstance(DB, PostgresEngine):
+        manager.alter_column(
+            table_class_name="GlobalSettings",
+            tablename="global_settings",
+            column_name="max_snapshot_age_days",
+            db_column_name="max_snapshot_age_days",
+            params={"default": 3600},
+            old_params={"default": 90},
+            column_class=BigInt,
+            old_column_class=BigInt,
+            schema=None,
+        )
 
     # NOTE: Data migration and dropping old tables is handled in the next migration file
     # (metrics_2026_01_22t17_30_00_000000.py) because Piccolo runs raw() callbacks
