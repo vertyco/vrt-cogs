@@ -1,4 +1,6 @@
+from db.piccolo_conf import DB
 from piccolo.apps.migrations.auto.migration_manager import MigrationManager
+from piccolo.engine.postgres import PostgresEngine
 from piccolo.table import Table
 
 
@@ -88,8 +90,13 @@ async def forwards():
 
     async def drop_old_tables():
         """Drop the old snapshot tables after data migration."""
-        await RawTable.raw("DROP TABLE IF EXISTS global_snapshot CASCADE")
-        await RawTable.raw("DROP TABLE IF EXISTS guild_snapshot CASCADE")
+        # CASCADE is PostgreSQL-only syntax
+        if isinstance(DB, PostgresEngine):
+            await RawTable.raw("DROP TABLE IF EXISTS global_snapshot CASCADE")
+            await RawTable.raw("DROP TABLE IF EXISTS guild_snapshot CASCADE")
+        else:
+            await RawTable.raw("DROP TABLE IF EXISTS global_snapshot")
+            await RawTable.raw("DROP TABLE IF EXISTS guild_snapshot")
 
     manager.add_raw(migrate_global_snapshots)
     manager.add_raw(migrate_guild_snapshots)
