@@ -524,7 +524,7 @@ CREATE_REMINDER = {
             },
             "remind_in": {
                 "type": "string",
-                "description": "How long until the reminder fires. Examples: '5 minutes', '2 hours', '1 day', '1 day 3 hours', '30 seconds'",
+                "description": "When the reminder should fire. Can be a relative duration (e.g. '5 minutes', '2 hours', '1 day', '1d3h') or an absolute datetime (e.g. '6pm', 'august 4th 3:00pm', '2025-08-04T15:00:00').",
             },
             "dm": {
                 "type": "boolean",
@@ -621,7 +621,7 @@ SCHEDULE_TASK = {
             },
             "execute_in": {
                 "type": "string",
-                "description": "How long until the task executes. Examples: '30 minutes', '1 hour', '2 days', '1 week'.",
+                "description": "When the task should execute. Can be a relative duration (e.g. '30 minutes', '1 hour', '2 days', '1w2d3h') or an absolute datetime (e.g. '6pm', 'august 4th 3:00pm', '2025-08-04T15:00:00').",
             },
             "context": {
                 "type": "string",
