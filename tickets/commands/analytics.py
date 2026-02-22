@@ -1,4 +1,6 @@
 import logging
+from datetime import datetime
+from typing import Iterable
 
 import discord
 from redbot.core import commands
@@ -38,6 +40,25 @@ def format_time(seconds: float | None) -> str:
     return humanize_timedelta(seconds=int(seconds))
 
 
+def _oldest_ts(timestamps: Iterable[datetime]) -> datetime | None:
+    """Return the oldest datetime from an iterable, or None if empty."""
+    return min(timestamps, default=None)
+
+
+def _period_text(timespan, oldest: datetime | None) -> str:
+    """Return a human-readable period string for the embed footer.
+
+    When a timespan is given, shows the humanized duration.
+    When no timespan is given, shows 'Since' (caller sets embed.timestamp)
+    or 'All Time' if there are no events to derive a date from.
+    """
+    if timespan:
+        return humanize_timedelta(timedelta=timespan)
+    if oldest is None:
+        return _("All Time")
+    return _("Since")
+
+
 class AnalyticsCommands(MixinMeta):
     """Analytics and statistics commands for the ticket system."""
 
@@ -70,18 +91,19 @@ class AnalyticsCommands(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         target = member or ctx.author
 
-        timespan_text = humanize_timedelta(timedelta=timespan) if timespan else _("All Time")
-
         # Get or create staff stats
         if target.id not in conf.staff_stats:
             return await ctx.send(_("{} has no recorded staff activity.").format(target.display_name))
 
         stats = conf.staff_stats[target.id]
+        oldest = _oldest_ts(e.timestamp for e in stats.events)
+        timespan_text = _period_text(timespan, oldest)
         filtered = get_staff_stats_for_timespan(stats, timespan)
 
         embed = discord.Embed(
             title=_("Staff Statistics: {}").format(target.display_name),
             color=target.color or discord.Color.blue(),
+            timestamp=oldest if (timespan is None and oldest is not None) else None,
         )
         embed.set_thumbnail(url=target.display_avatar.url)
         embed.set_footer(text=_("Period: {}").format(timespan_text))
@@ -156,7 +178,8 @@ class AnalyticsCommands(MixinMeta):
             )
 
         metric = metric.lower()
-        timespan_text = humanize_timedelta(timedelta=timespan) if timespan else _("All Time")
+        oldest = _oldest_ts(e.timestamp for s in conf.staff_stats.values() for e in s.events)
+        timespan_text = _period_text(timespan, oldest)
 
         # Gather all staff stats
         staff_data: list[tuple[int, dict]] = []
@@ -206,6 +229,7 @@ class AnalyticsCommands(MixinMeta):
             title=title,
             description="\n".join(lines) if lines else _("No data"),
             color=discord.Color.gold(),
+            timestamp=oldest if (timespan is None and oldest is not None) else None,
         )
         embed.set_footer(text=_("Period: {}").format(timespan_text))
 
@@ -235,12 +259,14 @@ class AnalyticsCommands(MixinMeta):
             return await ctx.send(_("{} has no recorded ticket activity.").format(user.display_name))
 
         stats = conf.user_stats[user.id]
-        timespan_text = humanize_timedelta(timedelta=timespan) if timespan else _("All Time")
+        oldest = stats.first_ticket or _oldest_ts(e.timestamp for e in stats.events)
+        timespan_text = _period_text(timespan, oldest)
         filtered = get_user_stats_for_timespan(stats, timespan)
 
         embed = discord.Embed(
             title=_("User Ticket Statistics: {}").format(user.display_name),
             color=discord.Color.blue(),
+            timestamp=oldest if (timespan is None and oldest is not None) else None,
         )
         embed.set_thumbnail(url=user.display_avatar.url)
         embed.set_footer(text=_("Period: {}").format(timespan_text))
@@ -298,7 +324,8 @@ class AnalyticsCommands(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         limit = min(max(1, limit), 25)
 
-        timespan_text = humanize_timedelta(timedelta=timespan) if timespan else _("All Time")
+        oldest = _oldest_ts(e.timestamp for e in conf.server_stats.events)
+        timespan_text = _period_text(timespan, oldest)
 
         # Gather user stats
         user_data: list[tuple[int, int]] = []
@@ -326,6 +353,7 @@ class AnalyticsCommands(MixinMeta):
             title=_("🎫 Most Frequent Ticket Openers"),
             description="\n".join(lines),
             color=discord.Color.orange(),
+            timestamp=oldest if (timespan is None and oldest is not None) else None,
         )
         embed.set_footer(text=_("Period: {}").format(timespan_text))
 
@@ -346,7 +374,8 @@ class AnalyticsCommands(MixinMeta):
         conf: GuildSettings = self.db.get_conf(ctx.guild)
         stats = conf.server_stats
 
-        timespan_text = humanize_timedelta(timedelta=timespan) if timespan else _("All Time")
+        oldest = _oldest_ts(e.timestamp for e in stats.events)
+        timespan_text = _period_text(timespan, oldest)
         filtered = get_server_stats_for_timespan(stats, timespan)
 
         # Currently open tickets
@@ -355,6 +384,7 @@ class AnalyticsCommands(MixinMeta):
         embed = discord.Embed(
             title=_("📊 Server Ticket Statistics"),
             color=discord.Color.blue(),
+            timestamp=oldest if (timespan is None and oldest is not None) else None,
         )
         embed.set_footer(text=_("Period: {}").format(timespan_text))
 
@@ -417,7 +447,8 @@ class AnalyticsCommands(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         stats = conf.server_stats
 
-        timespan_text = humanize_timedelta(timedelta=timespan) if timespan else _("All Time")
+        oldest = _oldest_ts(e.timestamp for e in stats.events)
+        timespan_text = _period_text(timespan, oldest)
         filtered = get_server_stats_for_timespan(stats, timespan)
 
         hourly = filtered["hourly_distribution"]
@@ -429,6 +460,7 @@ class AnalyticsCommands(MixinMeta):
         embed = discord.Embed(
             title=_("📊 Ticket Volume Analysis"),
             color=discord.Color.blue(),
+            timestamp=oldest if (timespan is None and oldest is not None) else None,
         )
         embed.set_footer(text=_("Period: {}").format(timespan_text))
 
@@ -488,7 +520,8 @@ class AnalyticsCommands(MixinMeta):
         """
         conf = self.db.get_conf(ctx.guild)
 
-        timespan_text = humanize_timedelta(timedelta=timespan) if timespan else _("All Time")
+        oldest = _oldest_ts(e.timestamp for e in conf.server_stats.events)
+        timespan_text = _period_text(timespan, oldest)
         filtered = get_server_stats_for_timespan(conf.server_stats, timespan)
 
         if panel_name:
@@ -503,6 +536,7 @@ class AnalyticsCommands(MixinMeta):
             embed = discord.Embed(
                 title=_("📋 Panel Statistics: {}").format(panel_name_lower),
                 color=discord.Color.blue(),
+                timestamp=oldest if (timespan is None and oldest is not None) else None,
             )
             embed.set_footer(text=_("Period: {}").format(timespan_text))
 
@@ -536,6 +570,7 @@ class AnalyticsCommands(MixinMeta):
             embed = discord.Embed(
                 title=_("📋 Panel Statistics Overview"),
                 color=discord.Color.blue(),
+                timestamp=oldest if (timespan is None and oldest is not None) else None,
             )
             embed.set_footer(text=_("Period: {}").format(timespan_text))
 
