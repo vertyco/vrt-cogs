@@ -7,6 +7,7 @@ from redbot.core.utils.chat_formatting import humanize_timedelta
 
 from ..abc import MixinMeta
 from ..common.models import (
+    EventType,
     GuildSettings,
     get_server_stats_for_timespan,
     get_staff_stats_for_timespan,
@@ -175,6 +176,7 @@ class AnalyticsCommands(MixinMeta):
             title = _("🏆 Staff Leaderboard: Response Time")
             get_value = lambda d: format_time(d["avg_response_time"])  # noqa
         elif metric == "claimed":
+            staff_data = [(u, d) for u, d in staff_data if d["tickets_claimed"] > 0]
             staff_data.sort(key=lambda x: x[1]["tickets_claimed"], reverse=True)
             title = _("🏆 Staff Leaderboard: Tickets Claimed")
             get_value = lambda d: str(d["tickets_claimed"])  # noqa
@@ -587,6 +589,104 @@ class AnalyticsCommands(MixinMeta):
                     days
                 )
             )
+
+    @ticketstats.command(name="pruneresponse", aliases=["removeoutliers"])
+    async def pruneresponse(
+        self,
+        ctx: commands.Context,
+        member: discord.Member,
+        max_days: float,
+    ):
+        """
+        Remove response time outliers from a staff member's stats.
+
+        Any response time events exceeding `max_days` will be removed and the
+        cumulative response time stats recalculated. Useful for cleaning up
+        tickets that were used for training or were unusually delayed.
+
+        **Arguments:**
+        - `<member>` - The staff member to prune outliers for
+        - `<max_days>` - Maximum acceptable response time in days (e.g. `3` removes anything over 3 days)
+
+        **Examples:**
+        - `[p]ticketstats pruneresponse @User 3` - Remove responses > 3 days
+        - `[p]ticketstats pruneresponse @User 0.5` - Remove responses > 12 hours
+        """
+        from ..common.views import confirm
+
+        conf = self.db.get_conf(ctx.guild)
+
+        if member.id not in conf.staff_stats:
+            return await ctx.send(_("{} has no recorded staff activity.").format(member.display_name))
+
+        stats = conf.staff_stats[member.id]
+        threshold_seconds = max_days * 86400
+
+        # Find outlier events
+        outlier_events = [
+            e
+            for e in stats.events
+            if e.event_type == EventType.FIRST_RESPONSE
+            and e.response_time is not None
+            and e.response_time > threshold_seconds
+        ]
+
+        if not outlier_events:
+            return await ctx.send(
+                _("No response time outliers found for {} exceeding {}.").format(
+                    member.display_name,
+                    format_time(threshold_seconds),
+                )
+            )
+
+        # Preview what will be removed
+        preview_lines = []
+        for e in outlier_events[:10]:
+            preview_lines.append(f"- <t:{int(e.timestamp.timestamp())}:D> → {format_time(e.response_time)}")
+        if len(outlier_events) > 10:
+            preview_lines.append(_("... and {} more").format(len(outlier_events) - 10))
+
+        confirmed = await confirm(
+            ctx,
+            _("Remove **{count}** response time outlier(s) over **{threshold}** for **{member}**?\n{preview}").format(
+                count=len(outlier_events),
+                threshold=format_time(threshold_seconds),
+                member=member.display_name,
+                preview="\n".join(preview_lines),
+            ),
+        )
+        if not confirmed:
+            return await ctx.send(_("Cancelled."))
+
+        # Remove outlier events and keep the rest
+        stats.events = [
+            e
+            for e in stats.events
+            if not (
+                e.event_type == EventType.FIRST_RESPONSE
+                and e.response_time is not None
+                and e.response_time > threshold_seconds
+            )
+        ]
+
+        # Recalculate cumulative response time stats from remaining events
+        remaining_response_times = [
+            e.response_time
+            for e in stats.events
+            if e.event_type == EventType.FIRST_RESPONSE and e.response_time is not None
+        ]
+        stats.total_response_time = sum(remaining_response_times)
+        stats.response_count = len(remaining_response_times)
+        stats.fastest_response = min(remaining_response_times) if remaining_response_times else None
+        stats.slowest_response = max(remaining_response_times) if remaining_response_times else None
+
+        await self.save()
+        await ctx.send(
+            _("✅ Removed **{count}** response time outlier(s) for **{member}**. Stats recalculated.").format(
+                count=len(outlier_events),
+                member=member.display_name,
+            )
+        )
 
     @ticketstats.command(name="reset")
     async def resetstats(

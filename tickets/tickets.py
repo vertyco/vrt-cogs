@@ -12,7 +12,11 @@ from redbot.core.i18n import Translator, cog_i18n
 
 from .abc import CompositeMetaClass
 from .commands import TicketCommands
-from .common.analytics import record_staff_message, record_user_message
+from .common.analytics import (
+    record_staff_message,
+    record_ticket_claimed,
+    record_user_message,
+)
 from .common.functions import Functions
 from .common.models import DB, GuildSettings, migrate_from_old_config, run_migrations
 from .common.utils import (
@@ -37,7 +41,7 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "3.1.2"
+    __version__ = "3.1.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -237,7 +241,7 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
                     continue
 
                 max_claims = ticket_info.max_claims
-                logview = LogView(guild, ticket_channel, max_claims, cog=self)
+                logview = LogView(guild, ticket_channel, max_claims, cog=self, joined_by=ticket_info.joined_by)
                 self.bot.add_view(logview, message_id=ticket_info.logmsg)
                 self.view_cache[guild.id].append(logview)
 
@@ -450,6 +454,10 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
         # Record the first response time (only if no first response yet)
         if ticket.first_response is None:
             log.info(f"Response time: Recording first response for ticket {channel_id}")
+            # Auto-claim: first staff to respond becomes the ticket claimer
+            if ticket.claimed_by is None:
+                ticket.claimed_by = message.author.id
+                record_ticket_claimed(conf, message.author.id, channel_id, panel_name)
             await record_response_time(
                 cog=self,
                 guild=guild,

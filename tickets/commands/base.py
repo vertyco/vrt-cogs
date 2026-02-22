@@ -11,6 +11,7 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.mod import is_admin_or_superior
 
 from ..abc import MixinMeta
+from ..common.analytics import record_ticket_claimed
 from ..common.utils import can_close, close_ticket, get_ticket_owner
 
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
@@ -252,3 +253,61 @@ class BaseCommands(MixinMeta):
             closedby=ctx.author.id,
             cog=self,
         )
+
+    @commands.hybrid_command(name="claimticket", description="Claim a ticket as your responsibility")
+    @app_commands.describe(channel="The ticket channel to claim (defaults to current channel)")
+    @commands.guild_only()
+    async def claim_ticket(
+        self,
+        ctx: commands.Context,
+        channel: discord.abc.GuildChannel | None = None,
+    ):
+        """
+        Claim a ticket as your responsibility.
+
+        The first support staff member to send a message in a ticket is auto-claimed.
+        Use this command to manually claim a ticket (or take over an existing claim).
+
+        **Examples:**
+        `[p]claimticket` - claim the current ticket channel
+        `[p]claimticket #channel` - claim a specific ticket channel
+        """
+        conf = self.db.get_conf(ctx.guild)
+        target_channel = channel or ctx.channel
+
+        if not isinstance(target_channel, (discord.TextChannel, discord.Thread)):
+            return await ctx.send(_("That is not a valid ticket channel."))
+
+        owner_id = get_ticket_owner(conf.opened, target_channel.id)
+        if not owner_id:
+            return await ctx.send(_("That channel is not an open ticket."))
+
+        ticket = conf.opened[owner_id][target_channel.id]
+        panel = conf.panels.get(ticket.panel)
+
+        # Check caller is support staff or admin
+        if not conf.is_support_staff(ctx.author, panel) and not await is_admin_or_superior(self.bot, ctx.author):
+            return await ctx.send(_("You do not have permission to claim tickets."))
+
+        previous_claimer_id = ticket.claimed_by
+        ticket.claimed_by = ctx.author.id
+        record_ticket_claimed(conf, ctx.author.id, target_channel.id, ticket.panel)
+        await self.save()
+
+        if previous_claimer_id and previous_claimer_id != ctx.author.id:
+            previous_claimer = ctx.guild.get_member(previous_claimer_id)
+            prev_name = previous_claimer.display_name if previous_claimer else str(previous_claimer_id)
+            await ctx.send(
+                _("✅ {claimer} has claimed {channel} (previously claimed by {prev}).").format(
+                    claimer=ctx.author.display_name,
+                    channel=target_channel.mention,
+                    prev=prev_name,
+                )
+            )
+        else:
+            await ctx.send(
+                _("✅ {claimer} has claimed {channel}.").format(
+                    claimer=ctx.author.display_name,
+                    channel=target_channel.mention,
+                )
+            )
