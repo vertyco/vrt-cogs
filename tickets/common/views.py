@@ -15,7 +15,7 @@ from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box, humanize_list, pagify
 
 from ..abc import MixinMeta
-from .analytics import record_ticket_claimed, record_ticket_opened
+from .analytics import record_ticket_opened
 from .models import GuildSettings, ModalField, OpenedTicket, Panel
 from .utils import (
     can_close,
@@ -865,6 +865,7 @@ class LogView(View):
         channel: discord.TextChannel | discord.Thread,
         max_claims: int,
         cog: "MixinMeta",
+        joined_by: list[int] | None = None,
     ):
         super().__init__(timeout=None)
         self.guild: discord.Guild = guild
@@ -872,7 +873,8 @@ class LogView(View):
         self.max_claims: int = max_claims
         self.cog: "MixinMeta" = cog
 
-        self.added: set[int] = set()
+        # Restore persisted join state so max_claims and duplicate checks survive restarts
+        self.added: set[int] = set(joined_by) if joined_by else set()
         self.join_ticket.custom_id = str(channel.id)
 
     @discord.ui.button(label="Join Ticket", style=ButtonStyle.green)
@@ -904,14 +906,14 @@ class LogView(View):
             await self.channel.add_user(user)
         self.added.add(user.id)
 
-        # Track claim analytics
+        # Persist joined_by so max_claims enforcement survives restarts
         conf = self.cog.db.get_conf(self.guild)
-        panel_name = ""
         for _uid, tickets in conf.opened.items():
             if self.channel.id in tickets:
-                panel_name = tickets[self.channel.id].panel
+                ticket = tickets[self.channel.id]
+                if user.id not in ticket.joined_by:
+                    ticket.joined_by.append(user.id)
                 break
-        record_ticket_claimed(conf, user.id, self.channel.id, panel_name)
         await self.cog.save()
 
         await interaction.response.send_message(

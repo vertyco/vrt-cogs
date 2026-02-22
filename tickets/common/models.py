@@ -155,6 +155,8 @@ class OpenedTicket(Base):
     has_response: bool = False  # Whether ticket owner has responded
     message_id: int | None = None  # First bot message ID in ticket
     max_claims: int = 0
+    joined_by: list[int] = []  # Staff user IDs who joined via the log "Join Ticket" button (for max_claims enforcement)
+    claimed_by: int | None = None  # The single staff member responsible for this ticket
     overview_msg: int | None = None  # Overview message ID
     first_response: datetime | None = None
     closed_by: int | None = None  # User ID of who closed (set on close)
