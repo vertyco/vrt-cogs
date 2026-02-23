@@ -1,5 +1,4 @@
 import asyncio
-import json
 import logging
 import typing as t
 from base64 import b64decode
@@ -17,20 +16,13 @@ from redbot.core.utils.chat_formatting import pagify
 
 from ..abc import MixinMeta
 from ..common import calls, constants, reply
-from .models import (
-    Conversation,
-    EmbeddingEntryExists,
-    GuildSettings,
-    Reminder,
-    ScheduledTask,
-    UserMemory,
-)
+from .models import Conversation, GuildSettings, Reminder, ScheduledTask, UserMemory
 
 log = logging.getLogger("red.vrt.assistant.functions")
 _ = Translator("Assistant", __file__)
 
 
-def _parse_time_input(time_str: str) -> datetime | None:
+def parse_time_input(time_str: str) -> datetime | None:
     """Parse a time input string as either a relative duration or an absolute datetime.
 
     Supports:
@@ -305,124 +297,6 @@ class AssistantFunctions(MixinMeta):
         # Fallback to DuckDuckGo
         return await self._search_duckduckgo(query, num_results)
 
-    async def create_memory(
-        self,
-        conf: GuildSettings,
-        guild: discord.Guild,
-        user: discord.Member,
-        memory_name: str,
-        memory_text: str,
-        *args,
-        **kwargs,
-    ):
-        """Create an embedding"""
-        if len(memory_name) > 100:
-            return "Error: memory_name should be 100 characters or less!"
-        if not any([role.id in conf.tutors for role in user.roles]) and user.id not in conf.tutors:
-            return f"User {user.display_name} is not recognized as a tutor!"
-        try:
-            embedding = await self.add_embedding(
-                guild,
-                memory_name,
-                memory_text,
-                overwrite=False,
-                ai_created=True,
-            )
-            if embedding is None:
-                return "Failed to create memory"
-            return f"The memory '{memory_name}' has been created successfully"
-        except EmbeddingEntryExists:
-            return "That memory name already exists"
-
-    async def search_memories(
-        self,
-        guild: discord.Guild,
-        conf: GuildSettings,
-        search_query: str,
-        amount: int = 2,
-        *args,
-        **kwargs,
-    ):
-        """Search for an embedding"""
-        try:
-            amount = int(amount)
-        except ValueError:
-            return "Error: amount must be an integer"
-        if amount < 1:
-            return "Amount needs to be more than 1"
-
-        if not await self.embedding_store.has_embeddings(guild.id):
-            return "There are no memories saved!"
-
-        # Check for exact name match
-        exact = await self.embedding_store.get(guild.id, search_query)
-        if exact:
-            return f"Found a memory name that matches exactly: {exact.get('text', '')}"
-
-        query_embedding = await self.request_embedding(search_query, conf)
-        if not query_embedding:
-            return f"Failed to get memory for your the query '{search_query}'"
-
-        embeddings = await self.embedding_store.get_related(
-            guild_id=guild.id,
-            query_embedding=query_embedding,
-            top_n=amount,
-            min_relatedness=0.5,
-        )
-        if not embeddings:
-            return f"No embeddings could be found related to the search query '{search_query}'"
-
-        results = []
-        for embed in embeddings:
-            entry = {"memory name": embed[0], "relatedness": round(embed[2], 2), "content": embed[1]}
-            results.append(entry)
-
-        return f"Memories related to `{search_query}`\n{json.dumps(results, indent=2)}"
-
-    async def edit_memory(
-        self,
-        guild: discord.Guild,
-        conf: GuildSettings,
-        user: discord.Member,
-        memory_name: str,
-        memory_text: str,
-        *args,
-        **kwargs,
-    ):
-        """Edit an embedding"""
-        if not any([role.id in conf.tutors for role in user.roles]) and user.id not in conf.tutors:
-            return f"User {user.display_name} is not recognized as a tutor!"
-
-        if not await self.embedding_store.exists(guild.id, memory_name):
-            return "A memory with that name does not exist!"
-        embedding = await self.request_embedding(memory_text, conf)
-        if not embedding:
-            return "Could not update the memory!"
-
-        await self.embedding_store.update(
-            guild.id,
-            memory_name,
-            memory_text,
-            embedding,
-            conf.embed_model,
-        )
-        asyncio.create_task(self.save_conf())
-        return "Your memory has been updated!"
-
-    async def list_memories(
-        self,
-        conf: GuildSettings,
-        guild: discord.Guild,
-        *args,
-        **kwargs,
-    ):
-        """List all embeddings"""
-        metadata = await self.embedding_store.get_all_metadata(guild.id)
-        if not metadata:
-            return "You have no memories available!"
-        joined = "\n".join(metadata.keys())
-        return joined
-
     async def respond_and_continue(
         self,
         conf: GuildSettings,
@@ -481,7 +355,7 @@ class AssistantFunctions(MixinMeta):
         **kwargs,
     ) -> str:
         """Create a reminder for the user."""
-        remind_at = _parse_time_input(remind_in)
+        remind_at = parse_time_input(remind_in)
         if remind_at is None:
             return f"Could not parse time from: {remind_in}. Use a duration like '30m', '2h', '1d' or a datetime like '6pm', 'august 4th 3:00pm'."
         now = datetime.now(tz=timezone.utc)
@@ -564,7 +438,7 @@ class AssistantFunctions(MixinMeta):
 
         return "**Your reminders:**\n" + "\n".join(lines)
 
-    def _get_user_memory_key(self, guild_id: int, user_id: int) -> str:
+    def get_user_memory_key(self, guild_id: int, user_id: int) -> str:
         """Get the key for storing user memory."""
         return f"{guild_id}-{user_id}"
 
@@ -577,7 +451,7 @@ class AssistantFunctions(MixinMeta):
         **kwargs,
     ) -> str:
         """Remember a fact about the user."""
-        key = self._get_user_memory_key(guild.id, user.id)
+        key = self.get_user_memory_key(guild.id, user.id)
         if key not in self.db.user_memories:
             self.db.user_memories[key] = UserMemory(
                 user_id=user.id,
@@ -598,7 +472,7 @@ class AssistantFunctions(MixinMeta):
         **kwargs,
     ) -> str:
         """Retrieve all remembered facts about the user."""
-        key = self._get_user_memory_key(guild.id, user.id)
+        key = self.get_user_memory_key(guild.id, user.id)
         memory = self.db.user_memories.get(key)
         if not memory or not memory.facts:
             return f"I don't have any stored facts about {user.display_name}."
@@ -615,7 +489,7 @@ class AssistantFunctions(MixinMeta):
         **kwargs,
     ) -> str:
         """Remove a specific fact from the user's memory."""
-        key = self._get_user_memory_key(guild.id, user.id)
+        key = self.get_user_memory_key(guild.id, user.id)
         memory = self.db.user_memories.get(key)
         if not memory or not memory.facts:
             return f"I don't have any stored facts about {user.display_name}."
@@ -665,7 +539,7 @@ class AssistantFunctions(MixinMeta):
         if user_task_count >= conf.max_scheduled_tasks:
             return f"You have reached the maximum of {conf.max_scheduled_tasks} scheduled tasks. Cancel some before scheduling more."
 
-        execute_at = _parse_time_input(execute_in)
+        execute_at = parse_time_input(execute_in)
         if execute_at is None:
             return f"Could not parse time from: {execute_in}. Use a duration like '30m', '2h', '1d' or a datetime like '6pm', 'august 4th 3:00pm'."
 

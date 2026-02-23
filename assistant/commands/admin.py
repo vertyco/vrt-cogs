@@ -181,16 +181,6 @@ class Admin(MixinMeta):
             value=embedding_field,
             inline=False,
         )
-        tutors = [ctx.guild.get_member(i) or ctx.guild.get_role(i) for i in conf.tutors]
-        mentions = [i.mention for i in tutors if i]
-        tutor_field = _(
-            "The following roles/users are considered tutors. "
-            "If function calls are on and create_memory is enabled, the model can create its own embeddings: "
-        )
-        tutor_field += humanize_list(sorted(mentions))
-        if mentions:
-            embed.add_field(name="Tutors", value=tutor_field, inline=False)
-
         # Planners field
         planners = [ctx.guild.get_member(i) or ctx.guild.get_role(i) for i in conf.planners]
         planner_mentions = [i.mention for i in planners if i]
@@ -2274,32 +2264,6 @@ class Admin(MixinMeta):
         else:
             conf.blacklist.append(channel_role_member.id)
             await ctx.send(_("{} has been added to the blacklist").format(channel_role_member.name))
-        await self.save_conf()
-
-    @assistant.command(name="tutor", aliases=["tutors"])
-    async def tutor_settings(
-        self,
-        ctx: commands.Context,
-        *,
-        role_or_member: Union[
-            discord.Member,
-            discord.Role,
-        ],
-    ):
-        """
-        Add/Remove items from the tutor list.
-
-        If using OpenAI's function calling and talking to a tutor, the AI is able to create its own embeddings to remember later
-
-        `role_or_member` can be a member or role
-        """
-        conf = self.db.get_conf(ctx.guild)
-        if role_or_member.id in conf.tutors:
-            conf.tutors.remove(role_or_member.id)
-            await ctx.send(_("{} has been removed from the tutor list").format(role_or_member.name))
-        else:
-            conf.tutors.append(role_or_member.id)
-            await ctx.send(_("{} has been added to the tutor list").format(role_or_member.name))
         await self.save_conf()
 
     @assistant.command(name="planner", aliases=["planners"])

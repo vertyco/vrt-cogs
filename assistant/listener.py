@@ -155,12 +155,12 @@ class AssistantListener(MixinMeta):
             (not bot_mentioned or not conf.mention_respond),
             not trigger_matched,  # If trigger matched, don't skip
         ]
+        is_mod = await self.bot.is_mod(message.author)
         check_auto_answer = [
             conf.auto_answer,
             channel.id not in conf.auto_answer_ignored_channels,
             getattr(channel, "category_id", 0) not in conf.auto_answer_ignored_channels,
-            message.author.id not in conf.tutors,
-            not any([role.id in conf.tutors for role in getattr(message.author, "roles", [])]),
+            not is_mod,
         ]
         if all(check_auto_answer):
             if is_question(message.content):
@@ -358,7 +358,7 @@ class AssistantListener(MixinMeta):
         # Check if cog is disabled
         if await self.bot.cog_disabled_in_guild(self, guild):
             return
-        if not any([role.id in conf.tutors for role in user.roles]) and user.id not in conf.tutors:
+        if not await self.bot.is_mod(user):
             return
 
         messages: t.List[discord.Message] = [message]

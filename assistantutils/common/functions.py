@@ -1,6 +1,5 @@
 import asyncio
 import html as html_module
-import json
 import logging
 import re
 from datetime import datetime, timezone
@@ -10,7 +9,6 @@ from typing import Literal
 import aiohttp
 import discord
 from dateutil import parser
-from duckduckgo_search import DDGS
 from rapidfuzz import fuzz
 from redbot.core import commands, modlog
 from redbot.core.bot import Red
@@ -154,14 +152,6 @@ class Functions(MixinMeta):
             buffer.write(f"Role: {role.name} (Mention: {role.mention})\n")
 
         return buffer.getvalue().strip()
-
-    async def search_web_duckduckgo(self, query: str, num_results: int = 5, *args, **kwargs) -> str:
-        def _search():
-            with DDGS() as ddgs:
-                return list(ddgs.text(query, max_results=num_results))
-
-        res: list[dict] = await asyncio.to_thread(_search)
-        return json.dumps(res)
 
     async def fetch_channel_history(
         self,
@@ -725,11 +715,11 @@ class Functions(MixinMeta):
             and (alias_cog := bot.get_cog("Alias")) is not None
             and not await bot.cog_disabled_in_guild(alias_cog, guild)
         ):
-            alias = await alias_cog._aliases.get_alias(guild, context.invoked_with)
+            alias = await alias_cog._aliases.get_alias(guild, context.invoked_with)  # type: ignore
             if alias is not None:
 
                 async def alias_callback(__, ctx: commands.Context):
-                    await alias_cog.call_alias(ctx.message, ctx.prefix, alias)
+                    await alias_cog.call_alias(ctx.message, ctx.prefix, alias)  # type: ignore
 
                 context.command = commands.command(name=command)(alias_callback)
                 context.command.cog = alias_cog
@@ -744,7 +734,7 @@ class Functions(MixinMeta):
             and not await bot.cog_disabled_in_guild(cc_cog, guild)
         ):
             try:
-                raw_response, cooldowns = await cc_cog.commandobj.get(message=message, command=context.invoked_with)
+                raw_response, cooldowns = await cc_cog.commandobj.get(message=message, command=context.invoked_with)  # type: ignore
                 if isinstance(raw_response, list):
                     import random
 
@@ -753,16 +743,16 @@ class Functions(MixinMeta):
                 async def cc_callback(__, ctx: commands.Context):
                     try:
                         if cooldowns:
-                            cc_cog.test_cooldowns(context, context.invoked_with, cooldowns)
+                            cc_cog.test_cooldowns(context, context.invoked_with, cooldowns)  # type: ignore
                     except Exception:
                         return
                     del ctx.args[0]
-                    await cc_cog.cc_command(*ctx.args, **ctx.kwargs, raw_response=raw_response)
+                    await cc_cog.cc_command(*ctx.args, **ctx.kwargs, raw_response=raw_response)  # type: ignore
 
                 context.command = commands.command(name=command)(cc_callback)
                 context.command.cog = cc_cog
                 context.command.requires.ready_event.set()
-                context.command.params = cc_cog.prepare_args(raw_response)
+                context.command.params = cc_cog.prepare_args(raw_response)  # type: ignore
             except Exception:
                 pass
 
@@ -773,7 +763,7 @@ class Functions(MixinMeta):
             and (tags_cog := bot.get_cog("Tags")) is not None
             and not await bot.cog_disabled_in_guild(tags_cog, guild)
         ):
-            tag = tags_cog.get_tag(guild, context.invoked_with, check_global=True)
+            tag = tags_cog.get_tag(guild, context.invoked_with, check_global=True)  # type: ignore
             if tag is not None:
                 message.content = f"{context.prefix}invoketag {command}"
                 context = await bot.get_context(message)
@@ -884,3 +874,228 @@ class Functions(MixinMeta):
             buffer.write("\n")
 
         return buffer.getvalue().strip()
+
+    async def fetch_category_channels(
+        self,
+        guild: discord.Guild,
+        user: discord.Member,
+        category_name_or_id: str,
+        *args,
+        **kwargs,
+    ) -> str:
+        """Get a list of all channels within a specific category."""
+        category_name_or_id = str(category_name_or_id).strip()
+        category: discord.CategoryChannel | None = None
+
+        if category_name_or_id.isdigit():
+            channel = guild.get_channel(int(category_name_or_id))
+            if isinstance(channel, discord.CategoryChannel):
+                category = channel
+        else:
+            # Exact name match first
+            for cat in guild.categories:
+                if cat.name.lower() == category_name_or_id.lower():
+                    category = cat
+                    break
+            # Fuzzy match fallback
+            if not category:
+                matches = []
+                clean_query = clean_name(category_name_or_id.lower())
+                for cat in guild.categories:
+                    matches.append((cat, fuzz.ratio(clean_name(cat.name.lower()), clean_query)))
+                    matches.append((cat, fuzz.ratio(cat.name.lower(), category_name_or_id.lower())))
+                if matches:
+                    matches.sort(key=lambda x: x[1], reverse=True)
+                    if matches[0][1] >= 60:
+                        category = matches[0][0]
+
+        if not category:
+            available = ", ".join(c.name for c in guild.categories)
+            return f"No category found matching '{category_name_or_id}'. Available categories: {available}"
+
+        channels = category.channels
+        if not channels:
+            return f"The category '{category.name}' has no channels."
+
+        # Filter to channels the user can see
+        visible = [ch for ch in channels if ch.permissions_for(user).view_channel]
+        if not visible:
+            return f"The user has no visible channels in the '{category.name}' category."
+
+        buffer = StringIO()
+        buffer.write(f"Channels in '{category.name}' (ID: {category.id}):\n")
+        for ch in visible:
+            ch_type = ch.type.name.replace("_", " ")
+            line = f"- {ch.name} (ID: {ch.id}, Type: {ch_type}, Mention: {ch.mention})"
+            if topic := getattr(ch, "topic", None):
+                line += f" - Topic: {topic}"
+            buffer.write(f"{line}\n")
+
+        return buffer.getvalue().strip()
+
+    async def send_message_to_channel(
+        self,
+        guild: discord.Guild,
+        channel_name_or_id: str,
+        message_content: str,
+        *args,
+        **kwargs,
+    ) -> str:
+        """Send a message to a specific channel as the bot."""
+        channel_name_or_id = str(channel_name_or_id).strip().replace("#", "").replace("<", "").replace(">", "")
+        target: discord.TextChannel | discord.Thread | None = None
+
+        if channel_name_or_id.isdigit():
+            target = guild.get_channel_or_thread(int(channel_name_or_id))
+        else:
+            # Exact name match
+            for ch in guild.channels:
+                if ch.name.lower() == channel_name_or_id.lower():
+                    target = ch
+                    break
+            # Fuzzy match fallback
+            if not target:
+                matches = []
+                clean_query = clean_name(channel_name_or_id.lower())
+                for ch in guild.channels:
+                    score = max(
+                        fuzz.ratio(clean_name(ch.name.lower()), clean_query),
+                        fuzz.ratio(ch.name.lower(), channel_name_or_id.lower()),
+                    )
+                    if score >= 70:
+                        matches.append((ch, score))
+                if matches:
+                    matches.sort(key=lambda x: x[1], reverse=True)
+                    target = matches[0][0]
+
+        if not target:
+            return f"No channel found matching '{channel_name_or_id}'."
+
+        if not hasattr(target, "send"):
+            return f"'{target.name}' is not a text channel and cannot receive messages."
+
+        perms = target.permissions_for(guild.me)
+        if not perms.send_messages:
+            return f"I don't have permission to send messages in {target.mention}."
+
+        if len(message_content) > 2000:
+            return "Message content exceeds the 2000 character Discord limit. Please shorten it."
+
+        try:
+            await target.send(message_content)
+            return f"Message sent to {target.mention} successfully."
+        except discord.HTTPException as e:
+            return f"Failed to send message: {e.text}"
+
+    async def get_pinned_messages(
+        self,
+        guild: discord.Guild,
+        channel: discord.TextChannel,
+        user: discord.Member,
+        channel_name_or_id: str = None,
+        *args,
+        **kwargs,
+    ) -> str:
+        """Fetch pinned messages from a channel."""
+        if channel_name_or_id is not None:
+            channel_name_or_id = str(channel_name_or_id).strip().replace("#", "").replace("<", "").replace(">", "")
+            if channel_name_or_id.isdigit():
+                target = guild.get_channel(int(channel_name_or_id))
+            else:
+                target = discord.utils.get(guild.channels, name=channel_name_or_id)
+                if not target:
+                    matches = []
+                    clean_query = clean_name(channel_name_or_id.lower())
+                    for ch in guild.channels:
+                        score = max(
+                            fuzz.ratio(clean_name(ch.name.lower()), clean_query),
+                            fuzz.ratio(ch.name.lower(), channel_name_or_id.lower()),
+                        )
+                        if score >= 70:
+                            matches.append((ch, score))
+                    if matches:
+                        matches.sort(key=lambda x: x[1], reverse=True)
+                        target = matches[0][0]
+            if not target:
+                return f"No channel found matching '{channel_name_or_id}'."
+            channel = target
+
+        if not hasattr(channel, "pins"):
+            return f"'{channel.name}' does not support pinned messages."
+
+        if not channel.permissions_for(user).view_channel:
+            return "The user doesn't have permission to view that channel."
+        if not channel.permissions_for(guild.me).view_channel:
+            return "I don't have permission to view that channel."
+
+        try:
+            pins = await channel.pins()
+        except discord.HTTPException as e:
+            return f"Failed to fetch pinned messages: {e.text}"
+
+        if not pins:
+            return f"There are no pinned messages in {channel.mention}."
+
+        buffer = StringIO()
+        buffer.write(f"Pinned messages in {channel.name} ({len(pins)} total):\n\n")
+        for msg in pins:
+            timestamp = msg.created_at.strftime("%Y-%m-%d %H:%M:%S")
+            buffer.write(f"[{timestamp}] {msg.author.name} (Message ID: {msg.id}):\n")
+            if msg.content:
+                buffer.write(f"  {msg.content[:500]}")
+                if len(msg.content) > 500:
+                    buffer.write("... (truncated)")
+                buffer.write("\n")
+            if msg.embeds:
+                for embed in msg.embeds:
+                    parts = []
+                    if embed.title:
+                        parts.append(f"Title: {embed.title}")
+                    if embed.description:
+                        parts.append(f"Description: {embed.description[:300]}")
+                    for field in embed.fields:
+                        parts.append(f"{field.name}: {(field.value or '')[:200]}")
+                    if parts:
+                        buffer.write(f"  [Embed] {' | '.join(parts)}\n")
+            if msg.attachments:
+                for att in msg.attachments:
+                    buffer.write(f"  [Attachment] {att.filename} ({att.url})\n")
+            buffer.write("\n")
+
+        return buffer.getvalue().strip()
+
+    async def edit_bot_message(
+        self,
+        guild: discord.Guild,
+        channel: discord.TextChannel,
+        message_id: str,
+        new_content: str,
+        *args,
+        **kwargs,
+    ) -> str:
+        """Edit a message previously sent by the bot."""
+        try:
+            msg_id = int(str(message_id).strip())
+        except ValueError:
+            return f"Invalid message ID: '{message_id}'. Must be a numeric ID."
+
+        if len(new_content) > 2000:
+            return "New content exceeds the 2000 character Discord limit. Please shorten it."
+
+        try:
+            message = await channel.fetch_message(msg_id)
+        except discord.NotFound:
+            return f"No message found with ID `{msg_id}` in {channel.mention}."
+        except discord.Forbidden:
+            return f"I don't have permission to read messages in {channel.mention}."
+        except discord.HTTPException as e:
+            return f"Failed to fetch message: {e.text}"
+
+        if message.author.id != guild.me.id:
+            return "I can only edit messages that I sent. That message was sent by someone else."
+
+        try:
+            await message.edit(content=new_content)
+            return f"Message `{msg_id}` has been edited successfully."
+        except discord.HTTPException as e:
+            return f"Failed to edit message: {e.text}"

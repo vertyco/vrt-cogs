@@ -34,25 +34,6 @@ GET_USER_INFO = {
         "required": ["user_name_or_id"],
     },
 }
-SEARCH_INTERNET = {
-    "name": "search_web_duckduckgo",
-    "description": "Search the web for current information on a topic using the DuckDuckGo Search API.",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "query": {
-                "type": "string",
-                "description": "The search query, can be a question or topic",
-            },
-            "num_results": {
-                "type": "integer",
-                "description": "Number of results to return (default: 5)",
-                "default": 5,
-            },
-        },
-        "required": ["query"],
-    },
-}
 FETCH_CHANNEL_HISTORY = {
     "name": "fetch_channel_history",
     "description": "Fetch messages from a Discord channel over a specified limit or time delta.",
@@ -239,5 +220,76 @@ GET_MODLOG_CASES = {
             },
         },
         "required": ["user_name_or_id"],
+    },
+}
+
+FETCH_CATEGORY_CHANNELS = {
+    "name": "fetch_category_channels",
+    "description": "Get a list of all channels within a specific category, including their name, ID, type, and topic.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "category_name_or_id": {
+                "type": "string",
+                "description": "The name or ID of the category to list channels for",
+            },
+        },
+        "required": ["category_name_or_id"],
+    },
+}
+
+SEND_MESSAGE_TO_CHANNEL = {
+    "name": "send_message_to_channel",
+    "description": (
+        "Send a message to a specific Discord channel on behalf of the bot. "
+        "Use this to post announcements, notify staff channels, relay information, or escalate issues. "
+        "The message will appear as coming from the bot."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "channel_name_or_id": {
+                "type": "string",
+                "description": "The name or ID of the channel to send the message to",
+            },
+            "message_content": {
+                "type": "string",
+                "description": "The message text to send. Supports Discord markdown formatting.",
+            },
+        },
+        "required": ["channel_name_or_id", "message_content"],
+    },
+}
+
+GET_PINNED_MESSAGES = {
+    "name": "get_pinned_messages",
+    "description": "Fetch all pinned messages from a Discord channel. Useful for referencing FAQs, rules, important announcements, or any other pinned content.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "channel_name_or_id": {
+                "type": "string",
+                "description": "The name or ID of the channel to fetch pinned messages from (defaults to the current channel if not provided)",
+            },
+        },
+    },
+}
+
+EDIT_BOT_MESSAGE = {
+    "name": "edit_bot_message",
+    "description": "Edit a message that was previously sent by the bot in the current channel. Use this to correct or update information the bot already posted.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "message_id": {
+                "type": "string",
+                "description": "The ID of the bot's message to edit",
+            },
+            "new_content": {
+                "type": "string",
+                "description": "The new message content to replace the existing text with. Supports Discord markdown.",
+            },
+        },
+        "required": ["message_id", "new_content"],
     },
 }

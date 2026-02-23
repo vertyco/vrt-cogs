@@ -627,7 +627,7 @@ class API(MixinMeta):
                 elif cog_name == "Assistant":
                     embed.add_field(
                         name=_("Internal Function"),
-                        value=_("This is an internal command that can only be used when interacting with a tutor"),
+                        value=_("This is a built-in function managed by the Assistant cog"),
                         inline=False,
                     )
                 schema = json.dumps(data["jsonschema"], indent=2)

@@ -404,68 +404,6 @@ SEARCH_INTERNET = {
     },
 }
 
-CREATE_MEMORY = {
-    "name": "create_memory",
-    "description": "Use this to remember information that you normally wouldnt have access to. Useful when someone corrects you, tells you something new, or tells you to remember something. Use the search_memories function first to ensure no duplicates are created.",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "memory_name": {
-                "type": "string",
-                "description": "A short name to describe the memory, perferrably less than 50 characters or 3 words tops",
-            },
-            "memory_text": {
-                "type": "string",
-                "description": "The information to remember, write as if you are informing yourself of the thing to remember, Make sure to include the context of the conversation as well as the answer or important information to be retained",
-            },
-        },
-        "required": ["memory_name", "memory_text"],
-    },
-}
-SEARCH_MEMORIES = {
-    "name": "search_memories",
-    "description": "Use this to find information about something, always use this if you are unsure about the answer to a question.",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "search_query": {
-                "type": "string",
-                "description": "a sentence or phrase that describes what you are looking for, this should be as specific as possible, it will be tokenized to find the best match with related embeddings.",
-            },
-            "amount": {
-                "type": "integer",
-                "description": "Max amount of memories to fetch. Defaults to 2",
-            },
-        },
-        "required": ["search_query"],
-    },
-}
-EDIT_MEMORY = {
-    "name": "edit_memory",
-    "description": "Use this to edit existing memories, useful for correcting inaccurate memories after making them. Use search_memories first if the memory you need to edit is not in the conversation.",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "memory_name": {
-                "type": "string",
-                "description": "The name of the memory entry, case sensitive",
-            },
-            "memory_text": {
-                "type": "string",
-                "description": "The new text that will replace the current content of the memory, this should reflect the old memory with the corrections",
-            },
-        },
-        "required": ["memory_name", "memory_text"],
-    },
-}
-LIST_MEMORIES = {
-    "name": "list_memories",
-    "description": "Get a list of all your available memories",
-    "parameters": {
-        "type": "object",
-        "properties": {},
-    },
-}
 THINK_AND_PLAN = {
     "name": "think_and_plan",
     "description": "Use this to break down complex tasks into smaller steps before executing them. This helps you organize your approach and ensure you don't miss important details. Call this BEFORE starting work on complex multi-step tasks.",
@@ -562,13 +500,18 @@ LIST_REMINDERS = {
 
 REMEMBER_USER = {
     "name": "remember_user",
-    "description": "Remember a fact or preference about the user for future conversations. Use this when the user tells you something about themselves, their preferences, or asks you to remember something.",
+    "description": (
+        "Store a fact or preference about the user you are talking to so you can recall it in future conversations. "
+        "You SHOULD proactively use this whenever the user shares personal details, preferences, their setup/configuration, "
+        "issues they are experiencing, or anything that would be useful to know next time they ask for help. "
+        "Examples: user's timezone, platform they play on, recurring issues, preferred language, etc."
+    ),
     "parameters": {
         "type": "object",
         "properties": {
             "fact": {
                 "type": "string",
-                "description": "The fact to remember about the user. Should be concise and informative, e.g. 'Prefers Python over JavaScript' or 'Timezone is EST'",
+                "description": "A concise, self-contained fact about the user. Write it so it makes sense without additional context, e.g. 'Plays on Xbox Series X' or 'Has recurring connection timeouts when joining ARK servers'",
             },
         },
         "required": ["fact"],
@@ -577,7 +520,7 @@ REMEMBER_USER = {
 
 RECALL_USER = {
     "name": "recall_user",
-    "description": "Retrieve all remembered facts about the user. Use this to check what you know about the user.",
+    "description": "Retrieve all stored facts about the user you are talking to. Call this at the start of a support interaction to check if you already know relevant details about them.",
     "parameters": {
         "type": "object",
         "properties": {},
@@ -655,3 +598,8 @@ LIST_SCHEDULED_TASKS = {
         "properties": {},
     },
 }
+
+# Maximum character length for tool results before they get trimmed
+TOOL_RESULT_TRIM_THRESHOLD = 500
+# Number of recent messages to protect from pruning
+TOOL_RESULT_PROTECT_RECENT = 6

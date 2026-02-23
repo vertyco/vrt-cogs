@@ -28,7 +28,13 @@ from redbot.core.utils.chat_formatting import box, humanize_number, text_to_file
 from sentry_sdk import add_breadcrumb
 
 from ..abc import MixinMeta
-from .constants import DO_NOT_RESPOND_SCHEMA, READ_EXTENSIONS, SUPPORTS_VISION
+from .constants import (
+    DO_NOT_RESPOND_SCHEMA,
+    READ_EXTENSIONS,
+    SUPPORTS_VISION,
+    TOOL_RESULT_PROTECT_RECENT,
+    TOOL_RESULT_TRIM_THRESHOLD,
+)
 from .models import Conversation, GuildSettings
 from .reply import send_reply
 from .utils import (
@@ -50,6 +56,31 @@ from .utils import (
 
 log = logging.getLogger("red.vrt.assistant.chathandler")
 _ = Translator("Assistant", __file__)
+
+
+def prune_old_tool_results(messages: list[dict]) -> None:
+    """Trim old tool/function result content to save context window space.
+
+    Recent tool results (within the last ``TOOL_RESULT_PROTECT_RECENT`` messages)
+    are left intact. Older ones are truncated to head + tail with a note.
+    """
+    if len(messages) <= TOOL_RESULT_PROTECT_RECENT:
+        return
+
+    cutoff = len(messages) - TOOL_RESULT_PROTECT_RECENT
+    for msg in messages[:cutoff]:
+        if msg.get("role") not in ("tool", "function"):
+            continue
+        content = msg.get("content", "")
+        if len(content) <= TOOL_RESULT_TRIM_THRESHOLD:
+            continue
+        # Keep first and last portion, replace middle with truncation notice
+        keep = TOOL_RESULT_TRIM_THRESHOLD // 2
+        msg["content"] = (
+            content[:keep]
+            + f"\n... [trimmed {len(content) - TOOL_RESULT_TRIM_THRESHOLD} chars] ...\n"
+            + content[-keep:]
+        )
 
 
 @cog_i18n(_)
@@ -401,33 +432,11 @@ class ChatHandler(MixinMeta):
             "balance": bal,
         }
 
-        # Don't include if user is not a tutor
-        not_tutor = [
-            user_id not in conf.tutors,
-            not any([role.id in conf.tutors for role in user.roles]),
-        ]
-
         # Don't include if user is not a planner
         not_planner = [
             user_id not in conf.planners,
             not any([role.id in conf.planners for role in user.roles]),
         ]
-
-        if "create_memory" in function_map and all(not_tutor):
-            function_calls = [i for i in function_calls if i["name"] != "create_memory"]
-            del function_map["create_memory"]
-
-        if "edit_memory" in function_map and (not has_embeds or all(not_tutor)):
-            function_calls = [i for i in function_calls if i["name"] != "edit_memory"]
-            del function_map["edit_memory"]
-
-        # Don't include if there are no embeddings
-        if "search_memories" in function_map and not has_embeds:
-            function_calls = [i for i in function_calls if i["name"] != "search_memories"]
-            del function_map["search_memories"]
-        if "list_memories" in function_map and not has_embeds:
-            function_calls = [i for i in function_calls if i["name"] != "list_memories"]
-            del function_map["list_memories"]
 
         # Don't include think_and_plan if user is not a planner (and planners list is not empty)
         if "think_and_plan" in function_map and conf.planners and all(not_planner):
@@ -456,6 +465,7 @@ class ChatHandler(MixinMeta):
 
         calls = 0
         tries = 0
+        tool_call_history: dict[str, int] = {}  # Track (name, args) -> count for loop detection
         while True:
             if tries > 2:
                 log.error("breaking after 3 tries, purge_images function must have failed")
@@ -470,6 +480,9 @@ class ChatHandler(MixinMeta):
                 for i in messages:
                     if i["role"] == "developer":
                         i["role"] = "system"
+
+            # Prune old tool results to save context window space
+            prune_old_tool_results(messages)
 
             # Iteratively degrade the conversation to ensure it is always under the token limit
             degraded = await self.degrade_conversation(messages, function_calls, conf, author)
@@ -580,6 +593,30 @@ class ChatHandler(MixinMeta):
                     role = "tool"
 
                 calls += 1
+
+                # Loop detection: track repeated identical tool calls
+                call_key = f"{function_name}:{arguments}"
+                tool_call_history[call_key] = tool_call_history.get(call_key, 0) + 1
+                if tool_call_history[call_key] > 2:
+                    log.warning(f"Tool loop detected: {function_name} called {tool_call_history[call_key]} times with same args")
+                    e = {
+                        "role": role,
+                        "name": function_name,
+                        "content": (
+                            f"ERROR: You have already called {function_name} with these exact arguments "
+                            f"{tool_call_history[call_key]} times. Stop calling this function repeatedly and "
+                            "respond to the user with the information you already have."
+                        ),
+                    }
+                    if tool_id:
+                        e["tool_call_id"] = tool_id
+                    messages.append(e)
+                    conversation.messages.append(e)
+                    # Remove the tool to prevent further calls
+                    function_calls = [i for i in function_calls if i["name"] != function_name]
+                    if function_name in function_map:
+                        del function_map[function_name]
+                    continue
 
                 if function_name not in function_map:
                     log.error(f"GPT suggested a function not provided: {function_name}")
@@ -730,12 +767,6 @@ class ChatHandler(MixinMeta):
 
                 if return_null:
                     return None
-
-                if message_obj and function_name in ["create_memory", "edit_memory"]:
-                    try:
-                        await message_obj.add_reaction("\N{BRAIN}")
-                    except (discord.Forbidden, discord.NotFound):
-                        pass
 
         # Handle the rest of the reply
         if calls > 1:

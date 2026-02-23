@@ -83,7 +83,6 @@ class GuildSettings(AssistantBaseModel):
     embeddings: t.Dict[str, Embedding] = {}
     usage: t.Dict[str, Usage] = {}
     blacklist: t.List[int] = []  # Channel/Role/User IDs
-    tutors: t.List[int] = []  # Role or user IDs
     top_n: int = 3
     min_relatedness: float = 0.78
     embed_method: str = "dynamic"  # hybrid, dynamic, static, user
