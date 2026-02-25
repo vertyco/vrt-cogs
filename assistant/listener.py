@@ -28,6 +28,8 @@ class _ResponseState:
     queued_kwargs: list[dict] = field(default_factory=list)
     cancel: asyncio.Event = field(default_factory=asyncio.Event)
 
+    MAX_QUEUE_DEPTH: int = 10  # Drop further messages beyond this depth
+
 
 class AssistantListener(MixinMeta):
     def __init__(self, *args, **kwargs):
@@ -196,15 +198,16 @@ class AssistantListener(MixinMeta):
 
         # If the bot is already responding to this user in this channel
         if state_key in self._response_state:
-            if coalesce_enabled:
+            state = self._response_state[state_key]
+            if coalesce_enabled and len(state.queued_messages) < state.MAX_QUEUE_DEPTH:
                 # Queue the follow-up for combining with the in-progress request
-                state = self._response_state[state_key]
                 state.queued_messages.append(message)
                 state.queued_kwargs.append(handle_message_kwargs)
                 state.cancel.set()
                 log.debug(f"Queued message from {message.author} in {channel} (queue size: {len(state.queued_messages)})")
             else:
-                log.debug(f"Dropping message from {message.author} in {channel} (already responding, coalescing disabled)")
+                reason = "queue full" if coalesce_enabled else "coalescing disabled"
+                log.debug(f"Dropping message from {message.author} in {channel} (already responding, {reason})")
             return
 
         # Normal flow — process message (with coalesce support)
@@ -212,16 +215,19 @@ class AssistantListener(MixinMeta):
         self._response_state[state_key] = state
 
         try:
-            # If coalescing is enabled, wait briefly for follow-up messages before processing
+            # If coalescing is enabled, use a sliding window: keep re-waiting
+            # as long as new messages keep arriving within the delay.  This
+            # gathers *all* rapid-fire follow-ups before hitting the API,
+            # significantly reducing expensive rollback+retry cycles.
             if coalesce_enabled:
-                try:
-                    await asyncio.wait_for(state.cancel.wait(), timeout=conf.message_coalesce_delay)
-                    # cancel was set — a follow-up arrived during the delay window
-                    # Combine and reset the cancel event for the next iteration
-                    state.cancel.clear()
-                except asyncio.TimeoutError:
-                    # No follow-up arrived during the delay — proceed with original message
-                    pass
+                while True:
+                    try:
+                        await asyncio.wait_for(state.cancel.wait(), timeout=conf.message_coalesce_delay)
+                        # A follow-up arrived — reset and wait again
+                        state.cancel.clear()
+                    except asyncio.TimeoutError:
+                        # Window expired with no new messages — proceed
+                        break
 
                 # Combine any messages that arrived during the coalesce window
                 if state.queued_messages:

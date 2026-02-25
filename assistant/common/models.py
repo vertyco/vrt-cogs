@@ -277,7 +277,21 @@ class Conversation(AssistantBaseModel):
         if any(clear):
             self.messages.clear()
         elif conf.max_retention:
-            self.messages = self.messages[-conf.get_user_max_retention(member) :]
+            # Turn-based retention: count user→assistant exchange *turns* rather
+            # than raw messages.  A single turn may include a user message, several
+            # tool calls/results, and an assistant reply.  This prevents heavy
+            # tool-use sessions from being prematurely truncated.
+            max_turns = conf.get_user_max_retention(member)
+            turn_count = 0
+            keep_from = 0
+            for idx in range(len(self.messages) - 1, -1, -1):
+                if self.messages[idx].get("role") == "user":
+                    turn_count += 1
+                    if turn_count >= max_turns:
+                        keep_from = idx
+                        break
+            if keep_from > 0:
+                self.messages = self.messages[keep_from:]
 
     def reset(self):
         self.refresh()

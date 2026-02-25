@@ -599,7 +599,24 @@ LIST_SCHEDULED_TASKS = {
     },
 }
 
-# Maximum character length for tool results before they get trimmed
-TOOL_RESULT_TRIM_THRESHOLD = 500
-# Number of recent messages to protect from pruning
+# ---- Tool result pruning constants (two-tier: soft-trim → hard-clear) ----
+# Number of recent messages whose tool results are never pruned
 TOOL_RESULT_PROTECT_RECENT = 6
+# Soft-trim: keep head + tail of oversized tool results
+TOOL_RESULT_SOFT_TRIM_HEAD = 1500  # chars to keep from the start
+TOOL_RESULT_SOFT_TRIM_TAIL = 1500  # chars to keep from the end
+TOOL_RESULT_SOFT_TRIM_MAX = 4000  # total chars after soft-trim
+TOOL_RESULT_SOFT_MIN_CHARS = 500  # results smaller than this are never soft-trimmed
+# Hard-clear: replace entire old tool result with a placeholder
+TOOL_RESULT_HARD_CLEAR_PLACEHOLDER = "[Old tool result cleared to save context space]"
+# Context fill ratios that trigger each tier (fraction of max_tokens)
+TOOL_RESULT_SOFT_RATIO = 0.3  # soft-trim when context > 30% full
+TOOL_RESULT_HARD_RATIO = 0.5  # hard-clear when context > 50% full
+# Max fraction of context window a single tool result may consume
+TOOL_RESULT_MAX_CONTEXT_SHARE = 0.15
+
+# ---- Image retention ----
+# Number of assistant response turns after which old images are evicted from history.
+# Images are enormously expensive (thousands of tokens each); once the model has
+# responded to them a few times they add very little value.
+IMAGE_RETAIN_TURNS = 3

@@ -30,10 +30,18 @@ from sentry_sdk import add_breadcrumb
 from ..abc import MixinMeta
 from .constants import (
     DO_NOT_RESPOND_SCHEMA,
+    IMAGE_RETAIN_TURNS,
     READ_EXTENSIONS,
     SUPPORTS_VISION,
+    TOOL_RESULT_HARD_CLEAR_PLACEHOLDER,
+    TOOL_RESULT_HARD_RATIO,
+    TOOL_RESULT_MAX_CONTEXT_SHARE,
     TOOL_RESULT_PROTECT_RECENT,
-    TOOL_RESULT_TRIM_THRESHOLD,
+    TOOL_RESULT_SOFT_MIN_CHARS,
+    TOOL_RESULT_SOFT_RATIO,
+    TOOL_RESULT_SOFT_TRIM_HEAD,
+    TOOL_RESULT_SOFT_TRIM_MAX,
+    TOOL_RESULT_SOFT_TRIM_TAIL,
 )
 from .models import Conversation, GuildSettings
 from .reply import send_reply
@@ -58,11 +66,17 @@ log = logging.getLogger("red.vrt.assistant.chathandler")
 _ = Translator("Assistant", __file__)
 
 
-def prune_old_tool_results(messages: list[dict]) -> None:
-    """Trim old tool/function result content to save context window space.
+def prune_old_tool_results(messages: list[dict], context_fill_ratio: float = 0.0) -> None:
+    """Two-tier pruning of old tool/function results to save context window space.
 
-    Recent tool results (within the last ``TOOL_RESULT_PROTECT_RECENT`` messages)
-    are left intact. Older ones are truncated to head + tail with a note.
+    Tier 1 (soft-trim): when *context_fill_ratio* >= ``TOOL_RESULT_SOFT_RATIO``,
+    oversized results are truncated to head + tail with a note.
+
+    Tier 2 (hard-clear): when *context_fill_ratio* >= ``TOOL_RESULT_HARD_RATIO``,
+    old results are replaced entirely with a short placeholder.
+
+    Recent results (within the last ``TOOL_RESULT_PROTECT_RECENT`` messages) are
+    always left intact.
     """
     if len(messages) <= TOOL_RESULT_PROTECT_RECENT:
         return
@@ -72,14 +86,116 @@ def prune_old_tool_results(messages: list[dict]) -> None:
         if msg.get("role") not in ("tool", "function"):
             continue
         content = msg.get("content", "")
-        if len(content) <= TOOL_RESULT_TRIM_THRESHOLD:
+        if not isinstance(content, str):
             continue
-        # Keep first and last portion, replace middle with truncation notice
-        keep = TOOL_RESULT_TRIM_THRESHOLD // 2
+
+        # Tier 2 — hard-clear when context pressure is high
+        if context_fill_ratio >= TOOL_RESULT_HARD_RATIO and len(content) > TOOL_RESULT_SOFT_MIN_CHARS:
+            msg["content"] = TOOL_RESULT_HARD_CLEAR_PLACEHOLDER
+            continue
+
+        # Tier 1 — soft-trim when context pressure is moderate
+        if context_fill_ratio >= TOOL_RESULT_SOFT_RATIO and len(content) > TOOL_RESULT_SOFT_MIN_CHARS:
+            head = content[:TOOL_RESULT_SOFT_TRIM_HEAD]
+            tail = content[-TOOL_RESULT_SOFT_TRIM_TAIL:]
+            trimmed = len(content) - TOOL_RESULT_SOFT_TRIM_MAX
+            msg["content"] = (
+                head + f"\n... [trimmed {trimmed} chars] ...\n" + tail
+            )
+            continue
+
+        # Fallback: always soft-trim truly huge results even at low context pressure
+        if len(content) > TOOL_RESULT_SOFT_TRIM_MAX * 4:
+            head = content[:TOOL_RESULT_SOFT_TRIM_HEAD]
+            tail = content[-TOOL_RESULT_SOFT_TRIM_TAIL:]
+            trimmed = len(content) - TOOL_RESULT_SOFT_TRIM_MAX
+            msg["content"] = (
+                head + f"\n... [trimmed {trimmed} chars] ...\n" + tail
+            )
+
+
+def evict_old_images(messages: list[dict]) -> bool:
+    """Remove images from messages once the model has responded enough times.
+
+    Images are the most token-expensive content in a conversation (easily
+    thousands of tokens each).  Once the model has seen and responded to an
+    image a few turns ago, keeping the raw image data provides diminishing
+    returns while consuming enormous context budget.
+
+    This walks backwards through the messages, counting assistant turns.
+    Any image content found *before* the last ``IMAGE_RETAIN_TURNS`` assistant
+    messages is replaced with a lightweight text placeholder.
+
+    Returns ``True`` if any images were evicted.
+    """
+    # Count assistant turns from the end
+    assistant_count = 0
+    safe_boundary = len(messages)  # Index before which images are evictable
+    for idx in range(len(messages) - 1, -1, -1):
+        if messages[idx].get("role") == "assistant":
+            assistant_count += 1
+            if assistant_count >= IMAGE_RETAIN_TURNS:
+                safe_boundary = idx
+                break
+
+    if safe_boundary == len(messages):
+        # Not enough assistant turns yet; nothing to evict
+        return False
+
+    evicted = False
+    for idx in range(safe_boundary):
+        msg = messages[idx]
+        content = msg.get("content")
+        if not isinstance(content, list):
+            continue
+
+        new_content = []
+        had_image = False
+        for item in content:
+            if item.get("type") == "image_url":
+                had_image = True
+                # Skip (evict) this image block
+                continue
+            new_content.append(item)
+
+        if had_image:
+            evicted = True
+            if new_content:
+                # Inject a note so the model knows an image was here
+                new_content.append({"type": "text", "text": "[image removed from context]"})
+                msg["content"] = new_content
+            else:
+                # The entire message was just images; replace with text
+                msg["content"] = "[image removed from context]"
+
+    return evicted
+
+
+def cap_tool_result_by_context(messages: list[dict], max_tokens: int) -> None:
+    """Cap individual tool results to a fraction of the context window.
+
+    Prevents a single massive tool result from crowding out everything else.
+    Uses ``TOOL_RESULT_MAX_CONTEXT_SHARE`` of *max_tokens* (assuming ~4
+    chars/token) as the per-result character limit.
+    """
+    # Approximate max chars allowed for a single tool result
+    max_chars = int(max_tokens * 4 * TOOL_RESULT_MAX_CONTEXT_SHARE)
+    if max_chars < 500:
+        return
+
+    for msg in messages:
+        if msg.get("role") not in ("tool", "function"):
+            continue
+        content = msg.get("content", "")
+        if not isinstance(content, str):
+            continue
+        if len(content) <= max_chars:
+            continue
+        half = max_chars // 2
         msg["content"] = (
-            content[:keep]
-            + f"\n... [trimmed {len(content) - TOOL_RESULT_TRIM_THRESHOLD} chars] ...\n"
-            + content[-keep:]
+            content[:half]
+            + f"\n... [capped to {max_chars} chars of {len(content)} total] ...\n"
+            + content[-half:]
         )
 
 
@@ -481,8 +597,20 @@ class ChatHandler(MixinMeta):
                     if i["role"] == "developer":
                         i["role"] = "system"
 
-            # Prune old tool results to save context window space
-            prune_old_tool_results(messages)
+            # Evict images from older turns to free up massive token cost
+            evicted = evict_old_images(messages)
+
+            # Compute context fill ratio for context-aware pruning
+            max_tokens = self.get_max_tokens(conf, author)
+            convo_tokens = await self.count_payload_tokens(messages, model)
+            func_tokens = await self.count_function_tokens(function_calls, model)
+            context_fill_ratio = (convo_tokens + func_tokens) / max_tokens if max_tokens else 0.0
+
+            # Cap individual tool results to a fraction of the context window
+            cap_tool_result_by_context(messages, max_tokens)
+
+            # Two-tier prune old tool results based on context pressure
+            prune_old_tool_results(messages, context_fill_ratio)
 
             # Iteratively degrade the conversation to ensure it is always under the token limit
             degraded = await self.degrade_conversation(messages, function_calls, conf, author)
@@ -494,7 +622,7 @@ class ChatHandler(MixinMeta):
 
             await clean_responses(messages)
 
-            if cleaned or degraded:
+            if cleaned or degraded or evicted:
                 conversation.overwrite(messages)
 
             if not messages:
