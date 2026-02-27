@@ -143,7 +143,7 @@ class AdminCommands(MixinMeta):
         if not category.permissions_for(ctx.me).manage_channels:
             return await ctx.send(_("I need the `manage channels` permission to set this category"))
         if not category.permissions_for(ctx.me).manage_permissions:
-            return await ctx.send(_("I need `manage roles` enabled in this category"))
+            return await ctx.send(_("I need the `manage permissions` permission to set this category"))
         if not category.permissions_for(ctx.me).attach_files:
             return await ctx.send(_("I need the `attach files` permission to set this category"))
         if not category.permissions_for(ctx.me).view_channel:
