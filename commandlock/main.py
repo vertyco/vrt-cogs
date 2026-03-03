@@ -29,7 +29,7 @@ class CommandLock(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.0.7"
+    __version__ = "0.1.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -40,6 +40,7 @@ class CommandLock(commands.Cog):
             "command_locks": {},  # {qualified_command_name: [channel_ids]}
             "whitelisted_roles": [],  # list[role_ids] that bypass all locks
             "delete_after": 30,  # seconds; 0 means never delete
+            "threads_bypass": False,  # if True, threads bypass all locks
         }
         self.config.register_guild(**guild_config)
 
@@ -64,6 +65,8 @@ class CommandLock(commands.Cog):
 
     async def before_invoke_hook(self, ctx: commands.Context):
         if await self.is_immune(ctx):
+            return True
+        if isinstance(ctx.channel, discord.Thread) and await self.config.guild(ctx.guild).threads_bypass():
             return True
         allowed_channels = await self.get_allowed_channels(ctx)
         delete_after = await self.config.guild(ctx.guild).delete_after()
@@ -165,6 +168,21 @@ class CommandLock(commands.Cog):
             await self.config.guild(ctx.guild).whitelisted_roles.set(whitelist)
             await ctx.send(f"Role {role.mention} has been added to the whitelist.")
 
+    @commandlock.command(name="threadbypass")
+    async def toggle_threads_bypass(self, ctx: commands.Context):
+        """Toggle whether threads bypass all command and cog locks.
+
+        When enabled, commands used inside threads will not be subject to lock restrictions,
+        even if the parent channel is not in the allowed list.
+        """
+        current = await self.config.guild(ctx.guild).threads_bypass()
+        new_value = not current
+        await self.config.guild(ctx.guild).threads_bypass.set(new_value)
+        state = "enabled" if new_value else "disabled"
+        await ctx.send(
+            f"Thread bypass has been **{state}**. Threads will {'now' if new_value else 'no longer'} bypass command locks."
+        )
+
     @commandlock.command(name="deleteafter")
     async def set_delete_after(self, ctx: commands.Context, seconds: commands.positive_int):
         """Set a duration in seconds after the redirect message is deleted.
@@ -261,6 +279,13 @@ class CommandLock(commands.Cog):
         """
         conf = await self.config.guild(ctx.guild).all()
         embed = discord.Embed(title="CommandLock Settings", color=await ctx.embed_color())
+
+        threads_bypass = conf["threads_bypass"]
+        embed.add_field(
+            name="Thread Bypass",
+            value="Enabled (threads bypass all locks)" if threads_bypass else "Disabled",
+            inline=False,
+        )
 
         delete_after = conf["delete_after"]
         if delete_after:
