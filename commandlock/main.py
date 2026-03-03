@@ -29,7 +29,7 @@ class CommandLock(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.0.6"
+    __version__ = "0.0.7"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -357,7 +357,7 @@ class CommandLock(commands.Cog):
             embed.description = buffer.getvalue() or "No locks set."
         await ctx.send(embed=embed)
 
-    @commandlock.command(name="toggelchannel", aliases=["toggle"])
+    @commandlock.command(name="togglechannel", aliases=["toggle"])
     async def toggle_channel(
         self,
         ctx: commands.Context,
