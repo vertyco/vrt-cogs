@@ -280,18 +280,22 @@ class Profiling(MixinMeta):
         """Detach a profiler from the methods of a specified cog."""
         cog = self.bot.get_cog(cog_name)
         if not cog:
-            log.warning(f"{cog_name} cog not found. Cant detach profiler from cog.")
-            return False
+            log.warning(f"Detach called on cog '{cog_name}' that is not loaded.")
+
         self.map_methods()
         detached = False
+
         # Detach methods
-        if original_methods := self.original_methods.pop(cog_name, None):
+        original_methods = self.original_methods.pop(cog_name, None)
+        if original_methods and cog:
             for method_name, original_method in original_methods.items():
                 setattr(cog, method_name, original_method)
                 log.debug(f"Detaching profiler from method {cog_name}.{method_name}")
                 detached = True
+
         # Detach loops
-        if original_loops := self.original_loops.pop(cog_name, None):
+        original_loops = self.original_loops.pop(cog_name, None)
+        if original_loops and cog:
             for loop_name, original_coro in original_loops.items():
                 loop = getattr(cog, loop_name, None)
                 if not loop:
@@ -299,8 +303,10 @@ class Profiling(MixinMeta):
                 loop.coro = original_coro
                 log.debug(f"Detaching profiler from loop {cog_name}.{loop_name}")
                 detached = True
+
         # Detach commands
-        if original_callbacks := self.original_callbacks.pop(cog_name, None):
+        original_callbacks = self.original_callbacks.pop(cog_name, None)
+        if original_callbacks and cog:
             for command_name, original_callback in original_callbacks.items():
                 command = self.bot.get_command(command_name)
                 if not command:
@@ -308,8 +314,10 @@ class Profiling(MixinMeta):
                 command.callback = original_callback
                 log.debug(f"Detaching profiler from command {cog_name}.{command_name}")
                 detached = True
+
         # Detach app commands
-        if original_slash_callbacks := self.original_slash_callbacks.pop(cog_name, None):
+        original_slash_callbacks = self.original_slash_callbacks.pop(cog_name, None)
+        if original_slash_callbacks and cog:
             for command_name, original_callback in original_slash_callbacks.items():
                 for command in cog.walk_app_commands():
                     if command.qualified_name != command_name:
@@ -317,11 +325,14 @@ class Profiling(MixinMeta):
                     setattr(command, "_callback", original_callback)
                 log.debug(f"Detaching profiler from slash command {cog_name}.{command_name}")
                 detached = True
+
         # Detach listeners
-        if original_listeners := self.original_listeners.pop(cog_name, None):
+        original_listeners = self.original_listeners.pop(cog_name, None)
+        if original_listeners:
             for listener_name, (original_coro, wrapped_coro) in original_listeners.items():
                 self.bot.remove_listener(wrapped_coro, name=listener_name)
-                self.bot.add_listener(original_coro, name=listener_name)
+                if cog:
+                    self.bot.add_listener(original_coro, name=listener_name)
                 log.debug(f"Detaching profiler from listener {cog_name}.{listener_name}")
                 detached = True
 
