@@ -356,33 +356,16 @@ TUTORIAL_STEPS = [
         "target_category": None,
     },
     {
-        "id": "buy_chassis_2",
-        "title": "Step 5: Build a Second Bot",
-        "description": (
-            "**The first mission has 2 enemies!** You'll need 2 bots to have a fair fight.\n\n"
-            "Repeat what you learned:\n"
-            "1️⃣ Buy another **DLZ-100** chassis (3,000 credits)\n"
-            "2️⃣ Buy **Chromitrex** plating (550 credits)\n"
-            "3️⃣ Buy **Raptor DT-01** weapon (500 credits)\n"
-            "4️⃣ Go to Garage and equip everything\n\n"
-            "**Your Goal:** Have **2 battle-ready bots**\n"
-            "-# Budget check: 8,100 total for 2 bots, you started with 8,200!"
-        ),
-        "button_label": "Go to Shop",
-        "button_emoji": "🛒",
-        "target_category": "chassis",
-    },
-    {
         "id": "start_campaign",
-        "title": "Step 6: Start the Campaign!",
+        "title": "Step 5: Start the Campaign!",
         "description": (
             "🎉 **You're ready for battle!**\n\n"
-            "Your 2 bots are equipped and ready to fight. The **Campaign** is where you:\n"
+            "You have everything you need to start fighting. The **Campaign** is where you:\n"
             "• 💰 Earn credits from victories\n"
             "• 🔓 Unlock new parts and upgrades\n"
             "• 📈 Progress through increasingly difficult missions\n\n"
-            "**Your Goal:** Start Mission 1-1 and WIN!\n"
-            "-# Good luck, Commander! 🤖⚔️"
+            "**Your Goal:** Start Mission 1-1 and win your first battle!\n"
+            "-# One battle-ready bot is enough to begin, and a second bot will make the opener much easier."
         ),
         "button_label": "Start Campaign",
         "button_emoji": "⚔️",
@@ -444,7 +427,7 @@ class TutorialActionRow(ui.ActionRow["TutorialLayout"]):
         step_id = self._step_data["id"]
         target = self._step_data.get("target_category")
 
-        if step_id == "equip_bot_1" or (step_id == "buy_chassis_2" and self._step_complete):
+        if step_id == "equip_bot_1":
             # Go to Garage
             from .inventory import GarageLayout
 
@@ -514,13 +497,13 @@ class TutorialQuickStartRow(ui.ActionRow["TutorialLayout"]):
             "1️⃣ Visit the **🛒 Shop** to buy a chassis, plating, and weapon\n"
             "2️⃣ Go to the **🏠 Garage** to equip your parts\n"
             "3️⃣ Hit **⚔️ Campaign** to start fighting!\n\n"
-            "-# 💡 Tip: You'll need 2 battle-ready bots to beat the first mission!",
+            "-# 💡 Tip: One battle-ready bot is enough to start, but a second bot gives you a much safer opening.",
             ephemeral=True,
         )
 
     @ui.button(label="⚡ Quick Start (Pre-built Bots)", style=discord.ButtonStyle.secondary)
     async def quickstart_button(self, interaction: discord.Interaction, button: ui.Button):
-        """Give the player TWO starter bots to tackle the first mission!"""
+        """Give the player TWO starter bots for a strong opening!"""
         player = self.view.cog.db.get_player(self.view.ctx.author.id)
         registry = self.view.cog.registry
 
@@ -579,7 +562,7 @@ class TutorialQuickStartRow(ui.ActionRow["TutorialLayout"]):
             f"• ⚔️ **{weapon_name}** weapon\n\n"
             f"💰 Cost: **{humanize_number(total_cost)}** credits\n"
             f"💰 Remaining: **{humanize_number(player.credits)}** credits\n\n"
-            f"-# 💡 You'll need both bots to beat the first mission!\n"
+            f"-# 💡 You can start the campaign right away, and having two bots gives you a much stronger opener.\n"
             f"Click **⚔️ Campaign** to start fighting!",
             ephemeral=True,
         )
@@ -611,12 +594,9 @@ class TutorialLayout(BotArenaView):
         total_weapons = weapon_count + equipped_weapon
 
         # Determine step based on progress
-        if battle_ready_count >= 2:
+        if battle_ready_count >= 1:
             # Ready for campaign!
-            self.current_step = 5  # start_campaign
-        elif battle_ready_count >= 1:
-            # Has one battle-ready bot, need second
-            self.current_step = 4  # buy_chassis_2
+            self.current_step = 4  # start_campaign
         elif chassis_count >= 1 and total_plating >= 1 and total_weapons >= 1:
             # Has parts but not assembled
             self.current_step = 3  # equip_bot_1
@@ -656,11 +636,8 @@ class TutorialLayout(BotArenaView):
             return total_weapons >= 1
         elif step_id == "equip_bot_1":
             return battle_ready_count >= 1
-        elif step_id == "buy_chassis_2":
-            # Need 2 chassis, 2 plating, 2 weapons (or 2 battle ready)
-            return battle_ready_count >= 2 or (chassis_count >= 2 and total_plating >= 2 and total_weapons >= 2)
         elif step_id == "start_campaign":
-            return battle_ready_count >= 2
+            return battle_ready_count >= 1
         return False
 
     def _get_progress_display(self) -> str:
