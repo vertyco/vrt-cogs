@@ -268,7 +268,7 @@ class ShopView(BotArenaView):
                 return "💡 **Tip:** You need a weapon! Switch to **Weapons** to arm your bot."
 
         # Has all parts but hasn't assembled
-        return "✅ **Ready to build!** You have all the parts. Use **🔧 Build Bot** from the hub to assemble your bot!"
+        return "✅ **Ready to assemble!** You have all the parts. Use the **🏠 Garage** from the hub to equip your bot."
 
     def _build_layout(self):
         player = self.db.get_player(self.ctx.author.id)
@@ -443,8 +443,8 @@ class PurchaseConfirmView(discord.ui.View):
         # If this purchase enables building for the first time AND they have no battle-ready bots, add instructions
         if can_build_now and not could_build_before and not had_battle_ready:
             response += (
-                "\n\n🎉 **You can now build your first bot!**\n"
-                "Go to the **🏠 Garage** from the hub, then click on a chassis to equip your plating and weapon!"
+                "\n\n🎉 **You can now assemble your first bot!**\n"
+                "Go to the **🏠 Garage** from the hub, then open one of your bots to equip its plating and weapon!"
             )
 
         await interaction.response.edit_message(content=response, view=None)
