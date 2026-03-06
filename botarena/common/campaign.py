@@ -49,7 +49,6 @@ from ..constants.parts import (  # Chassis; Plating; Components
     GAIACORP_EG_SR,
     GAIACORP_LB_MK2,
     GAIACORP_SC_RS,
-    KEDRON,
     OVERWATCH_R200,
     OVERWATCH_R760,
     OVERWATCH_Z,
@@ -214,25 +213,25 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                     NPCBot(
                         name="Scrapper",
                         chassis_name=DLZ_100.name,
-                        plating_name=CHROMITREX.name,
-                        component_name=RAPTOR_DT_01.name,
+                        plating_name=SANTRIN.name,
+                        component_name=RAPTOR_DT_02.name,
                     ),
                     NPCBot(
                         name="Junkrat",
                         chassis_name=DLZ_100.name,
-                        plating_name=CHROMITREX.name,
-                        component_name=KEDRON.name,
-                        # Junkrat with Kedron: Close-range ambusher
-                        tactical_orders=TacticalOrders(movement_stance=MovementStance.AGGRESSIVE),
+                        plating_name=SANTRIN.name,
+                        component_name=TORRIKA_KJ_557.name,
+                        # Junkrat with Torrika KJ-557: Short-range bruiser, but less relentless
+                        tactical_orders=TacticalOrders(movement_stance=MovementStance.TACTICAL),
                     ),
                 ],
                 credit_reward=650,
                 entry_fee=100,
                 required_mission="1-1",
                 unlock_parts=[RAPTOR_DT_02.name, TORRIKA_KJ_557.name],
-                briefing="Tory's Junkyard - where scrap becomes weapons. Watch out for the Kedron up close!",
+                briefing="Tory's Junkyard - where scrap becomes weapons. You'll get your first look at upgraded guns, but the frames are still light.",
                 victory_text="Junkyard champion! Raptor DT-02 and Torrika KJ-557 are now available!",
-                defeat_text="That Kedron shredded you. Try staying at range.",
+                defeat_text="Those upgraded weapons hurt fast. Try kiting the short-range bot and focus one target at a time.",
             ),
             # Battle 3: Chrometek Alley
             # Weight: 45, Cost: 300, Prize: 1750
@@ -260,8 +259,8 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                     NPCBot(
                         name="Tek",
                         chassis_name=DLZ_100.name,  # DLZ-100: 5+6+5=16 (cap 16)
-                        plating_name=OVERWATCH_R200.name,
-                        component_name=RAPTOR_DT_02.name,
+                        plating_name=GAIACORP_LB_MK2.name,
+                        component_name=RAPTOR_DT_01.name,
                         # Tek: Aggressive harasser
                         tactical_orders=TacticalOrders(
                             movement_stance=MovementStance.AGGRESSIVE,
@@ -272,7 +271,7 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                 entry_fee=300,
                 required_mission="1-2",
                 unlock_parts=[DLZ_250.name, GAIACORP_LB_MK2.name],
-                briefing="Chrometek Alley - where the serious fighters hang out. Watch out for Chrome's upgraded chassis!",
+                briefing="Chrometek Alley - where the serious fighters hang out. Chrome shows off the new chassis while Tek brings heavier Gaiacorp plating.",
                 victory_text="Impressive! DLZ-250 chassis and Gaiacorp LB-MK2 plating are now available!",
                 defeat_text="Those Raptors hit hard. Consider upgrading your armor.",
             ),
@@ -290,8 +289,8 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                 enemies=[
                     NPCBot(
                         name="Masher",
-                        chassis_name=DLZ_250.name,  # DLZ-250: 8+6+8=22 (cap 22, maxed!)
-                        plating_name=OVERWATCH_R200.name,
+                        chassis_name=DLZ_250.name,  # DLZ-250: 8+4+8=20 (cap 22)
+                        plating_name=CHROMITREX.name,
                         component_name=DARSIJ.name,
                         # Masher: Defensive machine gunner, stays at range
                         tactical_orders=TacticalOrders(
@@ -328,27 +327,27 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                 enemies=[
                     NPCBot(
                         name="Diamond",
-                        chassis_name=DLZ_100.name,  # DLZ-100: 5+6+3=14 (cap 16)
-                        plating_name=OVERWATCH_R200.name,
-                        component_name=RAPTOR_DT_01.name,
+                        chassis_name=DLZ_100.name,  # DLZ-100: 5+3+2=10 (cap 16)
+                        plating_name=SANTRIN.name,
+                        component_name=ZINTEK.name,
                         tactical_orders=TacticalOrders(
                             movement_stance=MovementStance.AGGRESSIVE,
                         ),
                     ),
                     NPCBot(
                         name="Spade",
-                        chassis_name=SMARTMOVE.name,  # Smartmove: 10+6+8=24 (cap 30)
-                        plating_name=OVERWATCH_R200.name,
-                        component_name=DARSIJ.name,
+                        chassis_name=SMARTMOVE.name,  # Smartmove: 10+9+5=24 (cap 30)
+                        plating_name=OVERWATCH_R760.name,
+                        component_name=RAPTOR_DT_02.name,
                         tactical_orders=TacticalOrders(
                             movement_stance=MovementStance.DEFENSIVE,
                         ),
                     ),
                     NPCBot(
                         name="Club",
-                        chassis_name=DLZ_100.name,  # DLZ-100: 5+6+3=14 (cap 16)
-                        plating_name=OVERWATCH_R200.name,
-                        component_name=RAPTOR_DT_01.name,
+                        chassis_name=DLZ_100.name,  # DLZ-100: 5+3+2=10 (cap 16)
+                        plating_name=SANTRIN.name,
+                        component_name=ZINTEK.name,
                         tactical_orders=TacticalOrders(
                             movement_stance=MovementStance.AGGRESSIVE,
                         ),
@@ -358,7 +357,7 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                 entry_fee=1500,
                 required_mission="1-4",
                 unlock_parts=[SMARTMOVE.name, OVERWATCH_R760.name],
-                briefing="Spade's Battle Royale - the deadly trio! Watch out for Spade's heavy Smartmove chassis!",
+                briefing="Spade's Battle Royale - the deadly trio! The escorts are flimsy, but Spade debuts the Smartmove frame with Overwatch R760 armor.",
                 victory_text="Rookie Circuit complete! Smartmove chassis and Overwatch R760 are now available!",
                 defeat_text="Outnumbered and outgunned. Focus on one target at a time!",
             ),
@@ -393,22 +392,22 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                     ),
                     NPCBot(
                         name="Watcher",
-                        chassis_name=DLZ_250.name,  # DLZ-250: 8+9+3=20 (cap 22)
+                        chassis_name=DLZ_250.name,  # DLZ-250: 8+9+5=22 (cap 22)
                         plating_name=OVERWATCH_R760.name,
-                        component_name=RAPTOR_DT_01.name,
+                        component_name=RAPTOR_DT_02.name,
                     ),
                     NPCBot(
                         name="Gaia-2",
-                        chassis_name=SMARTMOVE.name,  # Smartmove: 10+8+5=23 (cap 30)
-                        plating_name=GAIACORP_LB_MK2.name,
-                        component_name=RAPTOR_DT_02.name,
+                        chassis_name=SMARTMOVE.name,  # Smartmove: 10+9+10=29 (cap 30)
+                        plating_name=OVERWATCH_R760.name,
+                        component_name=TORRIKA_KR_2.name,
                     ),
                 ],
                 credit_reward=6500,
                 entry_fee=2000,
                 required_mission="1-5",
                 unlock_parts=[TORRIKA_KR_2.name],
-                briefing="Gaiacorp sponsors this fight. Those Smartmoves pack heavy Gaiacorp armor!",
+                briefing="Gaiacorp sponsors this fight. Their prototype Torrika KR-2 finally hits the arena, but only one bot carries it.",
                 victory_text="Gaiacorp impressed! Torrika KR-2 is now available!",
                 defeat_text="Heavy armor requires heavy firepower. Upgrade your weapons.",
             ),
@@ -427,20 +426,20 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                 enemies=[
                     NPCBot(
                         name="Mechanic",
-                        chassis_name=CLR_Z050.name,  # CLR-Z050: 15+9+10=34 (cap 50)
-                        plating_name=OVERWATCH_R760.name,
-                        component_name=TORRIKA_KR_2.name,
-                        # Mechanic: Heavy brawler, aggressive combat (Torrika KR-2 min_range=30)
-                        tactical_orders=TacticalOrders(movement_stance=MovementStance.TACTICAL),
+                        chassis_name=CLR_Z050.name,  # CLR-Z050: 15+12+5=32 (cap 50)
+                        plating_name=GAIACORP_SC_RS.name,
+                        component_name=RAPTOR_DT_02.name,
+                        # Mechanic: Showcases the new chassis and plating without overwhelming firepower
+                        tactical_orders=TacticalOrders(movement_stance=MovementStance.DEFENSIVE),
                     ),
                     NPCBot(
                         name="Welder",
-                        chassis_name=SMARTMOVE.name,  # Smartmove: 10+8+10=28 (cap 30)
-                        plating_name=GAIACORP_LB_MK2.name,
-                        component_name=TORRIKA_KR_2.name,
-                        # Welder: Aggressive assassin, targets weak (Torrika KR-2 min_range=30)
+                        chassis_name=SMARTMOVE.name,  # Smartmove: 10+9+5=24 (cap 30)
+                        plating_name=OVERWATCH_R760.name,
+                        component_name=RAPTOR_DT_02.name,
+                        # Welder: Mobile support threat, but easier to manage than a second KR-2 brawler
                         tactical_orders=TacticalOrders(
-                            movement_stance=MovementStance.AGGRESSIVE,
+                            movement_stance=MovementStance.TACTICAL,
                         ),
                     ),
                 ],
@@ -448,9 +447,9 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                 entry_fee=3200,
                 required_mission="2-1",
                 unlock_parts=[CLR_Z050.name, GAIACORP_SC_RS.name],
-                briefing="The Workshop - Mechanic's CLR-Z050 is a serious threat. Both have Torrika KR-2!",
+                briefing="The Workshop - Mechanic debuts the CLR-Z050 with Gaiacorp SC-RS plating, but the weapons are more forgiving this time.",
                 victory_text="Workshop mastered! CLR-Z050 chassis and Gaiacorp SC-RS plating are now available!",
-                defeat_text="Those Torrikas hit hard. Try heavier armor.",
+                defeat_text="The new armor can soak a lot of punishment. Try focusing one target before the other closes in.",
             ),
             # Battle 8: Scraptoria 2059
             # Weight: 70, Cost: 4800, Prize: 12000
@@ -466,28 +465,28 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                 enemies=[
                     NPCBot(
                         name="Scrap-1",
-                        chassis_name=DLZ_250.name,  # DLZ-250: 8+6+8=22 (cap 22, maxed!) - aggressive threat
-                        plating_name=OVERWATCH_R200.name,
-                        component_name=DARSIJ.name,
-                        # Scrap-1: Aggressive damage dealer with machine gun
+                        chassis_name=DLZ_250.name,  # DLZ-250: 8+4+5=17 (cap 22) - skirmisher
+                        plating_name=CHROMITREX.name,
+                        component_name=RAPTOR_DT_02.name,
+                        # Scrap-1: Faster pressure bot with less staying power
                         tactical_orders=TacticalOrders(
                             movement_stance=MovementStance.AGGRESSIVE,
                         ),
                     ),
                     NPCBot(
                         name="Scrapper",
-                        chassis_name=CLR_Z050.name,  # CLR-Z050: 15+12+10=37 (cap 50) - main threat
-                        plating_name=GAIACORP_SC_RS.name,
-                        component_name=TORRIKA_KR_2.name,
-                        # Scrapper: Main threat, aggressive finisher (Torrika KR-2 min_range=30)
+                        chassis_name=CLR_Z050.name,  # CLR-Z050: 15+9+8=32 (cap 50) - main threat
+                        plating_name=OVERWATCH_R760.name,
+                        component_name=DARSIJ.name,
+                        # Scrapper: Main threat, but easier to kite than the previous KR-2 setup
                         tactical_orders=TacticalOrders(
-                            movement_stance=MovementStance.AGGRESSIVE,
+                            movement_stance=MovementStance.TACTICAL,
                         ),
                     ),
                     NPCBot(
                         name="Scrap-2",
-                        chassis_name=DLZ_250.name,  # DLZ-250: 8+4+10=22 (cap 22, maxed!) - healer
-                        plating_name=CHROMITREX.name,
+                        chassis_name=DLZ_250.name,  # DLZ-250: 8+3+10=21 (cap 22) - healer
+                        plating_name=SANTRIN.name,
                         component_name=ZENI_PRS.name,
                         # Scrap-2: Healer support, stays back and keeps team alive
                         tactical_orders=TacticalOrders(
@@ -499,7 +498,7 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                 entry_fee=4800,
                 required_mission="2-2",
                 unlock_parts=[ZENI_PRS.name],
-                briefing="Scraptoria 2059 - Scrapper's CLR-Z050 is brutal, but watch out for their healer! Take it out first!",
+                briefing="Scraptoria 2059 - the healer is still the priority, but the escort bots are less oppressive than before.",
                 victory_text="Local Circuit complete! Zeni PRS healer is now available!",
                 defeat_text="That healer kept them alive too long. Focus fire on Scrap-2 first!",
             ),
@@ -528,8 +527,8 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                 enemies=[
                     NPCBot(
                         name="Medic",
-                        chassis_name=CLR_Z050.name,  # CLR-Z050: 15+12+10=37 (cap 50) - healer
-                        plating_name=GAIACORP_SC_RS.name,
+                        chassis_name=DLZ_250.name,  # DLZ-250: 8+4+10=22 (cap 22) - healer
+                        plating_name=CHROMITREX.name,
                         component_name=ZENI_PRS.name,
                         # Medic: Defensive stance, stays with team
                         tactical_orders=TacticalOrders(
@@ -538,22 +537,22 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                     ),
                     NPCBot(
                         name="Gladiator-1",
-                        chassis_name=SMARTMOVE.name,  # Smartmove: 10+9+7=26 (cap 30)
-                        plating_name=OVERWATCH_R760.name,
-                        component_name=TORRIKA_KJ_557.name,
-                        # Gladiator-1: Aggressive brawler
+                        chassis_name=CLR_Z050.name,  # CLR-Z050: 15+15+11=41 (cap 50)
+                        plating_name=GAIACORP_EG_PR.name,
+                        component_name=DARSIK_B301_1.name,
+                        # Gladiator-1: Elite bruiser showing off new EG-PR armor and B301-1 firepower
                         tactical_orders=TacticalOrders(
-                            movement_stance=MovementStance.AGGRESSIVE,
+                            movement_stance=MovementStance.TACTICAL,
                         ),
                     ),
                     NPCBot(
                         name="Gladiator-2",
-                        chassis_name=CLR_Z050.name,  # CLR-Z050: 15+9+7=31 (cap 50)
+                        chassis_name=CLR_Z050.name,  # CLR-Z050: 15+9+13=37 (cap 50)
                         plating_name=OVERWATCH_R760.name,
-                        component_name=TORRIKA_KJ_557.name,
-                        # Gladiator-2: Aggressive bruiser
+                        component_name=PORANTIS.name,
+                        # Gladiator-2: Backline damage dealer with the new heavy cannon
                         tactical_orders=TacticalOrders(
-                            movement_stance=MovementStance.AGGRESSIVE,
+                            movement_stance=MovementStance.DEFENSIVE,
                         ),
                     ),
                 ],
@@ -561,7 +560,7 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                 entry_fee=6000,
                 required_mission="2-3",
                 unlock_parts=[GAIACORP_EG_PR.name, DARSIK_B301_1.name, PORANTIS.name],
-                briefing="The Colosseum - their CLR-Z050 Medic keeps them fighting. Eliminate it first!",
+                briefing="The Colosseum - their support bot is lighter now, but the arena debuts EG-PR armor, Darsik B301-1, and Porantis weaponry.",
                 victory_text="Colosseum champion! Gaiacorp EG-PR, Darsik B301-1, and Porantis are now available!",
                 defeat_text="That healer kept them alive. Focus fire on the Medic!",
             ),
@@ -590,20 +589,20 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                     ),
                     NPCBot(
                         name="Tactician-2",
-                        chassis_name=SMARTMOVE.name,  # Smartmove: 10+12+5=27 (cap 30)
-                        plating_name=GAIACORP_SC_RS.name,
-                        component_name=RAPTOR_DT_02.name,
-                        # Tactician-2: Defensive anchor
+                        chassis_name=SMARTMOVE.name,  # Smartmove: 10+9+8=27 (cap 30)
+                        plating_name=OVERWATCH_R760.name,
+                        component_name=DARSIJ.name,
+                        # Tactician-2: Mid-range anchor
                         tactical_orders=TacticalOrders(
-                            movement_stance=MovementStance.DEFENSIVE,
+                            movement_stance=MovementStance.TACTICAL,
                         ),
                     ),
                     NPCBot(
                         name="Heavy",
-                        chassis_name=ELECTRON.name,  # Electron: 19+9+11=39 (cap 64) - first Electron!
+                        chassis_name=ELECTRON.name,  # Electron: 19+9+15=43 (cap 64) - first Electron!
                         plating_name=OVERWATCH_R760.name,
-                        component_name=DARSIK_B301_1.name,
-                        # Heavy: Massive firepower (Darsik B301-1 min_range=30)
+                        component_name=CIRCES.name,
+                        # Heavy: Showcases Electron + Circes, but without extra elite support weapons elsewhere
                         tactical_orders=TacticalOrders(
                             movement_stance=MovementStance.DEFENSIVE,
                         ),
@@ -613,7 +612,7 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                 entry_fee=8000,
                 required_mission="3-1",
                 unlock_parts=[ELECTRON.name, CIRCES.name],
-                briefing="Skirmesh - Heavy's Electron chassis is a beast. That Darsik B301-1 shreds armor!",
+                briefing="Skirmesh - Heavy's Electron chassis is a beast, and this time it debuts the Circes launcher.",
                 victory_text="Tactical victory! Electron chassis and Circes weapon are now available!",
                 defeat_text="Outmaneuvered. Try splitting their attention.",
             ),
@@ -632,24 +631,30 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                 enemies=[
                     NPCBot(
                         name="Vulcan-1",
-                        chassis_name=ELECTRON.name,  # Electron: 19+19+15=53 (cap 64)
+                        chassis_name=DURICHAS.name,  # Durichas: 26+19+13=58 (cap 70)
                         plating_name=OVERWATCH_Z.name,  # First Overwatch Z!
-                        component_name=CIRCES.name,
+                        component_name=PORANTIS.name,
+                        tactical_orders=TacticalOrders(
+                            movement_stance=MovementStance.DEFENSIVE,
+                        ),
                     ),
                     NPCBot(
                         name="Vulcan-2",
-                        chassis_name=ELECTRON.name,  # Electron: 19+12+15=46 (cap 64)
-                        plating_name=GAIACORP_EG_PR.name,  # Matching player progression
-                        component_name=CIRCES.name,  # Player just unlocked this
+                        chassis_name=CLR_Z050.name,  # CLR-Z050: 15+15+18=48 (cap 50)
+                        plating_name=GAIACORP_EG_PR.name,
+                        component_name=ZENI_PRZ_2.name,
+                        tactical_orders=TacticalOrders(
+                            movement_stance=MovementStance.DEFENSIVE,
+                        ),
                     ),
                 ],
                 credit_reward=22000,
                 entry_fee=10050,
                 required_mission="3-2",
                 unlock_parts=[DURICHAS.name, OVERWATCH_Z.name, ZENI_PRZ_2.name],
-                briefing="Vulcandome Arena - Vulcan-1's Durichas is a fortress with heavy cannon! Watch for Vulcan-2's flanking plasma!",
+                briefing="Vulcandome Arena - Vulcan-1 finally unveils the Durichas with Overwatch Z, while Vulcan-2 supports with the upgraded healer.",
                 victory_text="Regional Tournament complete! Durichas, Overwatch Z, and Zeni PRZ-2 are now available!",
-                defeat_text="That Durichas is tough. Focus fire to bring it down!",
+                defeat_text="That Durichas is tough, but the healer makes it much worse. Break the support line first if you can.",
             ),
         ],
     ),
@@ -677,7 +682,7 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                     NPCBot(
                         name="Healer",
                         chassis_name=CLR_Z050.name,  # CLR-Z050: 15+12+18=45 (cap 50)
-                        plating_name=GAIACORP_SC_RS.name,
+                        plating_name=GAIACORP_EG_PR.name,
                         component_name=ZENI_PRZ_2.name,  # Upgraded healer - serious threat
                         # Healer: Defensive stance, stays behind Forge and heals
                         tactical_orders=TacticalOrders(
@@ -686,18 +691,18 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                     ),
                     NPCBot(
                         name="Forge",
-                        chassis_name=DURICHAS.name,  # Durichas: 26+15+15=56 (cap 70)
-                        plating_name=GAIACORP_EG_PR.name,  # Good armor
-                        component_name=CIRCES.name,  # Hard-hitting weapon (min_range=50)
-                        # Forge: Aggressive tank, draws fire while healer supports
-                        tactical_orders=TacticalOrders(movement_stance=MovementStance.TACTICAL),
+                        chassis_name=DURICHAS.name,  # Durichas: 26+22+20=68 (cap 70)
+                        plating_name=GAIACORP_EG_SR.name,
+                        component_name=DEVENGE.name,
+                        # Forge: Durable sniper showing off the chapter rewards
+                        tactical_orders=TacticalOrders(movement_stance=MovementStance.DEFENSIVE),
                     ),
                 ],  # Reduced from 3 to 2 - Durichas with Circes + healer is plenty
                 credit_reward=26000,
                 entry_fee=12000,
                 required_mission="3-3",
                 unlock_parts=[GAIACORP_EG_SR.name, DEVENGE.name],
-                briefing="The Foundry - Forge's Durichas has devastating Circes! Take out the healer first!",
+                briefing="The Foundry - Forge debuts Gaiacorp EG-SR armor and the Devenge sniper. The healer still needs to be respected.",
                 victory_text="Foundry conquered! Gaiacorp EG-SR plating and Devenge sniper are now available!",
                 defeat_text="That healer is the key. Focus fire on it!",
             ),
@@ -715,26 +720,26 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                 enemies=[
                     NPCBot(
                         name="Kamikaze-1",
-                        chassis_name=DURICHAS.name,  # Durichas: 26+19+15=60 (cap 70)
-                        plating_name=OVERWATCH_Z.name,  # Good but not best armor
-                        component_name=CIRCES.name,  # High damage plasma (min_range=50)
+                        chassis_name=DURICHAS.name,  # Durichas: 26+15+22=63 (cap 70)
+                        plating_name=OVERWATCH_Z.name,
+                        component_name=DARSIK_R200.name,
                         # Kamikaze-1: All-out aggression, no retreat
                         tactical_orders=TacticalOrders(movement_stance=MovementStance.TACTICAL),
                     ),
                     NPCBot(
                         name="Kamikaze-2",
-                        chassis_name=ELECTRON.name,  # Electron: 19+15+11=45 (cap 64)
-                        plating_name=GAIACORP_EG_PR.name,  # Slightly weaker armor
-                        component_name=DARSIK_B301_1.name,  # Rapid fire (min_range=30)
-                        # Kamikaze-2: Aggressive flanker, spray and pray
-                        tactical_orders=TacticalOrders(movement_stance=MovementStance.TACTICAL),
+                        chassis_name=ELECTRON.name,  # Electron: 19+15+25=59 (cap 64)
+                        plating_name=GAIACORP_EG_PR.name,
+                        component_name=CEREBUS.name,
+                        # Kamikaze-2: Aggressive flanker with the new teslacoil
+                        tactical_orders=TacticalOrders(movement_stance=MovementStance.AGGRESSIVE),
                     ),
                 ],
                 credit_reward=30000,
                 entry_fee=14000,
                 required_mission="4-1",
                 unlock_parts=[DARSIK_R200.name, CEREBUS.name],
-                briefing="The Kamikaze-Dome - two assault chassis with heavy firepower. Plasma and bullets!",
+                briefing="The Kamikaze-Dome - two assault bots, but now they preview Darsik R200 and Cerebus instead of piling on even more plasma.",
                 victory_text="Kamikaze-Dome mastered! Darsik R200 and Cerebus teslacoil are now available!",
                 defeat_text="Pure firepower required. Bring your best weapons.",
             ),
@@ -753,8 +758,8 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                 enemies=[
                     NPCBot(
                         name="Executioner",
-                        chassis_name=DELIVERANCE.name,  # Deliverance: 30+15+20=65 (cap 85) - first Deliverance!
-                        plating_name=GAIACORP_EG_PR.name,
+                        chassis_name=DELIVERANCE.name,  # Deliverance: 30+25+20=75 (cap 85) - first Deliverance!
+                        plating_name=SHRED_MK3.name,
                         component_name=DEVENGE.name,  # Player just unlocked this - fair fight
                         # Executioner: Defensive sniper, methodical kills
                         tactical_orders=TacticalOrders(
@@ -763,10 +768,10 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                     ),
                     NPCBot(
                         name="Headsman",
-                        chassis_name=DURICHAS.name,  # Durichas: 26+19+15=60 (cap 70)
-                        plating_name=OVERWATCH_Z.name,  # Good armor, not max
-                        component_name=CIRCES.name,  # min_range=50
-                        # Headsman: Aggressive enforcer, protects Executioner
+                        chassis_name=ELECTRON.name,  # Electron: 19+15+11=45 (cap 64)
+                        plating_name=GAIACORP_EG_PR.name,
+                        component_name=DARSIK_B301_1.name,
+                        # Headsman: Flexible enforcer, less oppressive than the previous plasma guard
                         tactical_orders=TacticalOrders(movement_stance=MovementStance.TACTICAL),
                     ),
                 ],
@@ -774,7 +779,7 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                 entry_fee=16500,
                 required_mission="4-2",
                 unlock_parts=[DELIVERANCE.name, SHRED_MK3.name],
-                briefing="Execute 2059 - the Executioner's Deliverance is the ultimate war machine. Devenge sniper and Circes plasma!",
+                briefing="Execute 2059 - the Executioner finally unveils Deliverance with Shred-MK3 plating, backed by a more manageable escort.",
                 victory_text="National League complete! Deliverance chassis and Shred-MK3 plating are now available!",
                 defeat_text="The elite fighters live up to their names. Bring maximum firepower.",
             ),
@@ -813,8 +818,8 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                     ),
                     NPCBot(
                         name="Herald",
-                        chassis_name=CLR_Z050.name,  # CLR-Z050: 15+22+18=55 (cap 50, over!)
-                        plating_name=GAIACORP_EG_SR.name,  # Heavy armor
+                        chassis_name=CLR_Z050.name,  # CLR-Z050: 15+12+18=45 (cap 50)
+                        plating_name=GAIACORP_SC_RS.name,
                         component_name=ZENI_PRZ_2.name,  # Healer support - keeps Champion alive
                         # Herald: Dedicated healer, stays back and supports
                         tactical_orders=TacticalOrders(
@@ -823,9 +828,9 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                     ),
                     NPCBot(
                         name="Guardian",
-                        chassis_name=DURICHAS.name,  # Durichas: 26+22+22=70 (cap 70, maxed!)
-                        plating_name=GAIACORP_EG_SR.name,  # Best available armor
-                        component_name=DARSIK_R200.name,  # High DPM suppressive fire
+                        chassis_name=DURICHAS.name,  # Durichas: 26+15+11=52 (cap 70)
+                        plating_name=GAIACORP_EG_PR.name,
+                        component_name=DARSIK_B301_1.name,
                         # Guardian: Protector stance, stays near team and suppresses
                         tactical_orders=TacticalOrders(
                             movement_stance=MovementStance.DEFENSIVE,
@@ -836,7 +841,7 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                 entry_fee=22000,
                 required_mission="4-3",
                 unlock_parts=[SCREAM_SHARD.name],
-                briefing="The Final Hour - the Champion wields the legendary Scream Shard! Herald's healing keeps them fighting while Guardian suppresses!",
+                briefing="The Final Hour - the Champion still wields the legendary Scream Shard, but the support line is less overloaded than before.",
                 victory_text="CHAMPION! You are the greatest bot arena fighter of all time! The legendary Scream Shard is yours!",
                 defeat_text="The Champion remains undefeated. Take out the Herald healer first, then focus the Guardian!",
             ),
