@@ -37,6 +37,10 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def get_api_key(self, conf: GuildSettings) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
     async def openai_status(self) -> str:
         raise NotImplementedError
 

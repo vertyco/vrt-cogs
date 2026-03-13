@@ -204,7 +204,9 @@ class AssistantListener(MixinMeta):
                 state.queued_messages.append(message)
                 state.queued_kwargs.append(handle_message_kwargs)
                 state.cancel.set()
-                log.debug(f"Queued message from {message.author} in {channel} (queue size: {len(state.queued_messages)})")
+                log.debug(
+                    f"Queued message from {message.author} in {channel} (queue size: {len(state.queued_messages)})"
+                )
             else:
                 reason = "queue full" if coalesce_enabled else "coalescing disabled"
                 log.debug(f"Dropping message from {message.author} in {channel} (already responding, {reason})")
@@ -309,8 +311,7 @@ class AssistantListener(MixinMeta):
             # Follow-ups arrived during the API call!
             # Rollback the conversation to before this exchange
             log.debug(
-                f"Rolling back conversation for {message.author} "
-                f"({len(state.queued_messages)} queued follow-ups)"
+                f"Rolling back conversation for {message.author} ({len(state.queued_messages)} queued follow-ups)"
             )
             conversation.rollback(snapshot_len)
 
@@ -398,7 +399,9 @@ class AssistantListener(MixinMeta):
                 {"role": "developer", "content": REACT_SUMMARY_MESSAGE.strip()},
                 {"role": "user", "content": content.getvalue()},
             ]
-            res = await create_memory_call(messages=messages, api_key=conf.api_key, base_url=self.db.endpoint_override)
+            res = await create_memory_call(
+                messages=messages, api_key=self.get_api_key(conf), base_url=self.db.endpoint_override
+            )
             if res:
                 embedding = await self.add_embedding(guild, res.memory_name, res.memory_content)
                 if embedding is None:
