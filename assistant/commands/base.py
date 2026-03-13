@@ -120,7 +120,7 @@ If a file has no extension it will still try to read it only if it can be decode
         cost = IMAGE_COSTS.get(cost_key, 0)
 
         image = await request_image_raw(
-            prompt, conf.api_key, size, quality, style, model, base_url=self.db.endpoint_override
+            prompt, self.get_api_key(conf), size, quality, style, model, base_url=self.db.endpoint_override
         )
 
         image_bytes = b64decode(image.b64_json)

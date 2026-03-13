@@ -105,7 +105,7 @@ class AssistantFunctions(MixinMeta):
         # Pass the image data with the correct format
         image = await calls.request_image_edit_raw(
             prompt=prompt,
-            api_key=conf.api_key,
+            api_key=self.get_api_key(conf),
             images=image_data,
             base_url=self.db.endpoint_override,
         )
@@ -147,7 +147,7 @@ class AssistantFunctions(MixinMeta):
         cost = constants.IMAGE_COSTS.get(cost_key, 0)
 
         image = await calls.request_image_raw(
-            prompt, conf.api_key, size, quality, style, model, base_url=self.db.endpoint_override
+            prompt, self.get_api_key(conf), size, quality, style, model, base_url=self.db.endpoint_override
         )
 
         desc = _("-# Size: {}\n-# Quality: {}\n-# Model: {}").format(size, quality, model)

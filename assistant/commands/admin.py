@@ -2574,8 +2574,8 @@ class Admin(MixinMeta):
         Override the OpenAI endpoint
 
         **Notes**
-        - Using a custom endpoint is not supported!
-        - Using an endpoing override will negate model settings like temperature and custom functions
+        - When set, all servers can use the assistant without needing their own API key
+        - Custom endpoints must be OpenAI-compatible
         """
         if self.db.endpoint_override == endpoint:
             return await ctx.send(_("Endpoint is already set to **{}**").format(endpoint))

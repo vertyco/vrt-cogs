@@ -27,6 +27,16 @@ _ = Translator("Assistant", __file__)
 
 @cog_i18n(_)
 class API(MixinMeta):
+    def get_api_key(self, conf: GuildSettings) -> str:
+        """Return the effective API key for a guild.
+
+        If the guild has its own key, use that.  Otherwise, if a global
+        endpoint override is configured, return a placeholder so the
+        openai client doesn't reject a ``None`` key (custom endpoints
+        typically don't validate it).
+        """
+        return conf.api_key or ("n/a" if self.db.endpoint_override else "")
+
     async def openai_status(self) -> str:
         try:
             timeout = aiohttp.ClientTimeout(total=5)
@@ -90,7 +100,7 @@ class API(MixinMeta):
             model=model,
             messages=messages,
             temperature=temperature_override if temperature_override is not None else conf.temperature,
-            api_key=conf.api_key,
+            api_key=self.get_api_key(conf),
             max_tokens=response_tokens,
             functions=functions,
             frequency_penalty=conf.frequency_penalty,
@@ -115,7 +125,7 @@ class API(MixinMeta):
     async def request_embedding(self, text: str, conf: GuildSettings) -> List[float]:
         response: CreateEmbeddingResponse = await request_embedding_raw(
             text=text,
-            api_key=conf.api_key,
+            api_key=self.get_api_key(conf),
             model=conf.embed_model,
             base_url=self.db.endpoint_override,
         )
