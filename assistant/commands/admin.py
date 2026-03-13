@@ -2589,6 +2589,7 @@ class Admin(MixinMeta):
         else:
             self.db.endpoint_override = None
             await ctx.send(_("Endpoint override has been removed!"))
+        await self.save_conf()
 
     @assistant.command(name="wipecog")
     @commands.is_owner()
