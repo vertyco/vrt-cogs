@@ -102,12 +102,13 @@ class API(MixinMeta):
         )
         message: ChatCompletionMessage = response.choices[0].message
 
-        conf.update_usage(
-            response.model,
-            response.usage.total_tokens,
-            response.usage.prompt_tokens,
-            response.usage.completion_tokens,
-        )
+        if response.usage:
+            conf.update_usage(
+                response.model,
+                response.usage.total_tokens,
+                response.usage.prompt_tokens,
+                response.usage.completion_tokens,
+            )
         log.debug(f"MESSAGE TYPE: {type(message)}")
         return message
 
@@ -119,12 +120,13 @@ class API(MixinMeta):
             base_url=self.db.endpoint_override,
         )
 
-        conf.update_usage(
-            response.model,
-            response.usage.total_tokens,
-            response.usage.prompt_tokens,
-            0,
-        )
+        if response.usage:
+            conf.update_usage(
+                response.model,
+                response.usage.total_tokens,
+                response.usage.prompt_tokens,
+                0,
+            )
         return response.data[0].embedding
 
     # -------------------------------------------------------

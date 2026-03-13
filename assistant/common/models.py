@@ -270,28 +270,29 @@ class Conversation(AssistantBaseModel):
         return (datetime.now().timestamp() - self.last_updated) > conf.get_user_max_time(member)
 
     def cleanup(self, conf: GuildSettings, member: t.Optional[discord.Member] = None):
-        clear = [
-            self.is_expired(conf, member),
-            not conf.get_user_max_retention(member),
-        ]
-        if any(clear):
+        if self.is_expired(conf, member):
             self.messages.clear()
-        elif conf.max_retention:
-            # Turn-based retention: count user→assistant exchange *turns* rather
-            # than raw messages.  A single turn may include a user message, several
-            # tool calls/results, and an assistant reply.  This prevents heavy
-            # tool-use sessions from being prematurely truncated.
-            max_turns = conf.get_user_max_retention(member)
-            turn_count = 0
-            keep_from = 0
-            for idx in range(len(self.messages) - 1, -1, -1):
-                if self.messages[idx].get("role") == "user":
-                    turn_count += 1
-                    if turn_count >= max_turns:
-                        keep_from = idx
-                        break
-            if keep_from > 0:
-                self.messages = self.messages[keep_from:]
+            return
+
+        user_retention = conf.get_user_max_retention(member)
+        if user_retention == 0:
+            # Unlimited messages, only expire by time
+            return
+
+        # Turn-based retention: count user→assistant exchange *turns* rather
+        # than raw messages.  A single turn may include a user message, several
+        # tool calls/results, and an assistant reply.  This prevents heavy
+        # tool-use sessions from being prematurely truncated.
+        turn_count = 0
+        keep_from = 0
+        for idx in range(len(self.messages) - 1, -1, -1):
+            if self.messages[idx].get("role") == "user":
+                turn_count += 1
+                if turn_count >= user_retention:
+                    keep_from = idx
+                    break
+        if keep_from > 0:
+            self.messages = self.messages[keep_from:]
 
     def reset(self):
         self.refresh()

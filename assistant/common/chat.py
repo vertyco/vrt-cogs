@@ -99,9 +99,7 @@ def prune_old_tool_results(messages: list[dict], context_fill_ratio: float = 0.0
             head = content[:TOOL_RESULT_SOFT_TRIM_HEAD]
             tail = content[-TOOL_RESULT_SOFT_TRIM_TAIL:]
             trimmed = len(content) - TOOL_RESULT_SOFT_TRIM_MAX
-            msg["content"] = (
-                head + f"\n... [trimmed {trimmed} chars] ...\n" + tail
-            )
+            msg["content"] = head + f"\n... [trimmed {trimmed} chars] ...\n" + tail
             continue
 
         # Fallback: always soft-trim truly huge results even at low context pressure
@@ -109,9 +107,7 @@ def prune_old_tool_results(messages: list[dict], context_fill_ratio: float = 0.0
             head = content[:TOOL_RESULT_SOFT_TRIM_HEAD]
             tail = content[-TOOL_RESULT_SOFT_TRIM_TAIL:]
             trimmed = len(content) - TOOL_RESULT_SOFT_TRIM_MAX
-            msg["content"] = (
-                head + f"\n... [trimmed {trimmed} chars] ...\n" + tail
-            )
+            msg["content"] = head + f"\n... [trimmed {trimmed} chars] ...\n" + tail
 
 
 def evict_old_images(messages: list[dict]) -> bool:
@@ -193,9 +189,7 @@ def cap_tool_result_by_context(messages: list[dict], max_tokens: int) -> None:
             continue
         half = max_chars // 2
         msg["content"] = (
-            content[:half]
-            + f"\n... [capped to {max_chars} chars of {len(content)} total] ...\n"
-            + content[-half:]
+            content[:half] + f"\n... [capped to {max_chars} chars of {len(content)} total] ...\n" + content[-half:]
         )
 
 
@@ -530,12 +524,15 @@ class ChatHandler(MixinMeta):
             message_tokens < 8191,
         ]
         if all(get_embed_conditions):
-            if conf.question_mode:
-                # If question mode is enabled, only the first message and messages that end with a ? will be embedded
-                if message.endswith("?") or not conversation.messages:
+            try:
+                if conf.question_mode:
+                    # If question mode is enabled, only the first message and messages that end with a ? will be embedded
+                    if message.endswith("?") or not conversation.messages:
+                        query_embedding = await self.request_embedding(message, conf)
+                else:
                     query_embedding = await self.request_embedding(message, conf)
-            else:
-                query_embedding = await self.request_embedding(message, conf)
+            except Exception as e:
+                log.error("Failed to get query embedding, continuing without embeddings", exc_info=e)
 
         log.debug(f"Query embedding: {len(query_embedding)}")
 
@@ -726,7 +723,9 @@ class ChatHandler(MixinMeta):
                 call_key = f"{function_name}:{arguments}"
                 tool_call_history[call_key] = tool_call_history.get(call_key, 0) + 1
                 if tool_call_history[call_key] > 2:
-                    log.warning(f"Tool loop detected: {function_name} called {tool_call_history[call_key]} times with same args")
+                    log.warning(
+                        f"Tool loop detected: {function_name} called {tool_call_history[call_key]} times with same args"
+                    )
                     e = {
                         "role": role,
                         "name": function_name,
