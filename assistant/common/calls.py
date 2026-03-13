@@ -51,7 +51,14 @@ async def request_chat_completion_raw(
 
     kwargs = {"model": model, "messages": messages}
 
-    if model in PRICES and base_url is None:
+    if base_url is not None:
+        # Custom endpoint: send standard params, skip OpenAI-specific ones
+        kwargs["temperature"] = temperature
+        kwargs["frequency_penalty"] = frequency_penalty
+        kwargs["presence_penalty"] = presence_penalty
+        if max_tokens and max_tokens > 0:
+            kwargs["max_tokens"] = max_tokens
+    elif model in PRICES:
         # Using an OpenAI model
         if not model.startswith("o") and "gpt-5" not in model:
             kwargs["temperature"] = temperature
@@ -74,7 +81,7 @@ async def request_chat_completion_raw(
             kwargs["seed"] = seed
 
     if functions and model not in NO_DEVELOPER_ROLE:
-        if model in OLD_TOOL_SCHEMA:
+        if base_url is None and model in OLD_TOOL_SCHEMA:
             kwargs["functions"] = functions
             # If passing functions, make sure the messages payload has no tool calls
             for idx, message in enumerate(messages):
@@ -82,6 +89,7 @@ async def request_chat_completion_raw(
                     # Remove the message from the payload
                     del kwargs["messages"][idx]
         else:
+            # Custom endpoints and modern OpenAI models use the tools schema
             tools = []
             for func in functions:
                 function = {"type": "function", "function": func, "name": func["name"]}
