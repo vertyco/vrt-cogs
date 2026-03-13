@@ -260,6 +260,7 @@ SUPPORTS_TOOLS = [
     "gpt-5.2",
     "gpt-5.2-2025-12-11",
 ]
+OLD_TOOL_SCHEMA = [i for i in MODELS.keys() if i not in SUPPORTS_TOOLS]
 READ_EXTENSIONS = [
     ".txt",
     ".py",

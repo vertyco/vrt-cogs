@@ -16,7 +16,7 @@ from tenacity import (
     wait_random_exponential,
 )
 
-from .constants import NO_DEVELOPER_ROLE, PRICES, SUPPORTS_SEED, SUPPORTS_TOOLS
+from .constants import NO_DEVELOPER_ROLE, OLD_TOOL_SCHEMA, PRICES, SUPPORTS_SEED
 
 log = logging.getLogger("red.vrt.assistant.calls")
 
@@ -74,7 +74,14 @@ async def request_chat_completion_raw(
             kwargs["seed"] = seed
 
     if functions and model not in NO_DEVELOPER_ROLE:
-        if model in SUPPORTS_TOOLS:
+        if model in OLD_TOOL_SCHEMA:
+            kwargs["functions"] = functions
+            # If passing functions, make sure the messages payload has no tool calls
+            for idx, message in enumerate(messages):
+                if "tool_calls" in message:
+                    # Remove the message from the payload
+                    del kwargs["messages"][idx]
+        else:
             tools = []
             for func in functions:
                 function = {"type": "function", "function": func, "name": func["name"]}
@@ -86,14 +93,6 @@ async def request_chat_completion_raw(
                     if "function_call" in message:
                         # Remove the message from the payload
                         del kwargs["messages"][idx]
-
-        else:
-            kwargs["functions"] = functions
-            # If passing functions, make sure the messages payload has no tool calls
-            for idx, message in enumerate(messages):
-                if "tool_calls" in message:
-                    # Remove the message from the payload
-                    del kwargs["messages"][idx]
 
     add_breadcrumb(
         category="api",
