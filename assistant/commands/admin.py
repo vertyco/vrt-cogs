@@ -304,6 +304,17 @@ class Admin(MixinMeta):
                 if field:
                     embed.add_field(name=_("Max Response Token Role Overrides"), value=field, inline=False)
 
+            if overrides := conf.reasoning_effort_role_override:
+                field = ""
+                roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items() if ctx.guild.get_role(k)}
+                sorted_roles = sorted(roles.items(), key=lambda x: x[0].position, reverse=True)
+                for role, effort in sorted_roles:
+                    if not role:
+                        continue
+                    field += f"{role.mention}: `{effort}`\n"
+                if field:
+                    embed.add_field(name=_("Reasoning Effort Role Overrides"), value=field, inline=False)
+
         if ctx.author.id in self.bot.owner_ids:
             if self.db.brave_api_key:
                 value = _("Your Brave websearch API key is set!")
@@ -2542,6 +2553,34 @@ class Admin(MixinMeta):
         else:
             conf.max_time_role_override[role.id] = retention_seconds
             await ctx.send(_("Max retention time override for {} added!").format(role.mention))
+        await self.save_conf()
+
+    @override.command(name="reasoning")
+    async def reasoning_effort_override(self, ctx: commands.Context, effort: str, *, role: discord.Role):
+        """
+        Assign a reasoning effort override to a role
+
+        Valid values: none, minimal, low, medium, high, xhigh
+
+        *Specify same role and effort to remove the override*
+        """
+        valid = ("none", "minimal", "low", "medium", "high", "xhigh")
+        effort = effort.lower().strip()
+        if effort not in valid:
+            return await ctx.send(_("Invalid effort level. Valid values: {}").format(humanize_list(list(valid))))
+
+        conf = self.db.get_conf(ctx.guild)
+
+        if role.id in conf.reasoning_effort_role_override:
+            if conf.reasoning_effort_role_override[role.id] == effort:
+                del conf.reasoning_effort_role_override[role.id]
+                await ctx.send(_("Reasoning effort override for {} removed!").format(role.mention))
+            else:
+                conf.reasoning_effort_role_override[role.id] = effort
+                await ctx.send(_("Reasoning effort override for {} overwritten!").format(role.mention))
+        else:
+            conf.reasoning_effort_role_override[role.id] = effort
+            await ctx.send(_("Reasoning effort override for {} added!").format(role.mention))
         await self.save_conf()
 
     @assistant.command(name="verbosity")

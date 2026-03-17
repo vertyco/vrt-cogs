@@ -137,6 +137,7 @@ class GuildSettings(AssistantBaseModel):
     max_retention_role_override: t.Dict[int, int] = {}
     role_overrides: t.Dict[int, str] = {}  # Role overrides for model selection
     max_time_role_override: t.Dict[int, int] = {}
+    reasoning_effort_role_override: t.Dict[int, str] = {}  # Role overrides for reasoning effort
 
     vision_detail: str = "auto"  # high, low, auto
 
@@ -206,6 +207,15 @@ class GuildSettings(AssistantBaseModel):
             if role.id in self.max_time_role_override:
                 return self.max_time_role_override[role.id]
         return self.max_retention_time
+
+    def get_user_reasoning_effort(self, member: t.Optional[discord.Member] = None) -> str:
+        if not member or not self.reasoning_effort_role_override:
+            return self.reasoning_effort
+        sorted_roles = sorted(member.roles, reverse=True)
+        for role in sorted_roles:
+            if role.id in self.reasoning_effort_role_override:
+                return self.reasoning_effort_role_override[role.id]
+        return self.reasoning_effort
 
 
 class Reminder(AssistantBaseModel):
