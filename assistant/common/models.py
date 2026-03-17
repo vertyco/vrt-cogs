@@ -103,7 +103,7 @@ class GuildSettings(AssistantBaseModel):
     embed_model: str = "text-embedding-3-small"  # Or text-embedding-3-large, text-embedding-ada-002
     collab_convos: bool = False
     message_coalesce_delay: float = 0.0  # seconds to wait for follow-up messages before responding (0 = disabled)
-    reasoning_effort: str = "low"  # low, medium, high (or minimal for gpt-5)
+    reasoning_effort: str = "low"  # none, minimal, low, medium, high, xhigh (model-dependent)
     verbosity: str = "low"  # low, medium, high (gpt-5 only)
 
     # Planner roles - users with these roles can use the think_and_plan tool

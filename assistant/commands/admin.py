@@ -1034,22 +1034,24 @@ class Admin(MixinMeta):
 
     @assistant.command(name="reasoning")
     async def switch_reasoning_effort(self, ctx: commands.Context):
-        """Switch reasoning effort for o1 model between low, medium, and high"""
+        """Switch reasoning effort between none, minimal, low, medium, high, and xhigh
+
+        Not all models support every level. Unsupported levels are automatically mapped to the closest supported value.
+        - **none**: No reasoning (gpt-5.4 only, skipped for other models)
+        - **minimal**: Minimal reasoning (gpt-5 only, mapped to low for o-series)
+        - **low**: Low reasoning effort
+        - **medium**: Medium reasoning effort
+        - **high**: High reasoning effort
+        - **xhigh**: Maximum reasoning (gpt-5.4 only, mapped to high for other models)
+        """
+        cycle = ["none", "minimal", "low", "medium", "high", "xhigh"]
         conf = self.db.get_conf(ctx.guild)
-        if conf.reasoning_effort == "minimal":
+        try:
+            idx = cycle.index(conf.reasoning_effort)
+            conf.reasoning_effort = cycle[(idx + 1) % len(cycle)]
+        except ValueError:
             conf.reasoning_effort = "low"
-            await ctx.send(_("Reasoning effort has been set to **Low**"))
-        elif conf.reasoning_effort == "low":
-            conf.reasoning_effort = "medium"
-            await ctx.send(_("Reasoning effort has been set to **Medium**"))
-        elif conf.reasoning_effort == "medium":
-            conf.reasoning_effort = "high"
-            await ctx.send(_("Reasoning effort has been set to **High**"))
-        else:
-            conf.reasoning_effort = "minimal"
-            await ctx.send(
-                _("Reasoning effort has been set to **Minimal** (Only gpt-5 supports this, otherwise it'll use low)")
-            )
+        await ctx.send(_("Reasoning effort has been set to **{}**").format(conf.reasoning_effort.capitalize()))
         await self.save_conf()
 
     @assistant.command(name="questionmark")
