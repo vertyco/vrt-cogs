@@ -1,7 +1,6 @@
 import asyncio
 import base64
 import functools
-import json
 import logging
 import multiprocessing as mp
 import re
@@ -14,6 +13,7 @@ from typing import Callable, Dict, List, Optional, Union
 import discord
 import httpx
 import openai
+import orjson
 import pytz
 from openai.types.chat.chat_completion_message import (
     ChatCompletionMessage,
@@ -650,7 +650,10 @@ class ChatHandler(MixinMeta):
                     reply = _("Bad Request Error({}): {}").format(e.status_code, e.message)
                 if guild.id == 625757527765811240:
                     # Dump payload for debugging if its my guild
-                    dump_file = text_to_file(json.dumps(messages, indent=2), filename=f"{author}_convo_BadRequest.json")
+                    dump_file = text_to_file(
+                        orjson.dumps(messages, option=orjson.OPT_INDENT_2).decode(),
+                        filename=f"{author}_convo_BadRequest.json",
+                    )
                     await channel.send(file=dump_file)
                 break
             except Exception as e:
@@ -661,7 +664,10 @@ class ChatHandler(MixinMeta):
                 )
                 if guild.id == 625757527765811240:
                     # Dump payload for debugging if its my guild
-                    dump_file = text_to_file(json.dumps(messages, indent=2), filename=f"{author}_convo_Exception.json")
+                    dump_file = text_to_file(
+                        orjson.dumps(messages, option=orjson.OPT_INDENT_2).decode(),
+                        filename=f"{author}_convo_Exception.json",
+                    )
                     await channel.send(file=dump_file)
 
                 raise e
@@ -760,18 +766,16 @@ class ChatHandler(MixinMeta):
                     function_calls = [i for i in function_calls if i["name"] != function_name]
                     continue
 
-                if arguments != "{}":
-                    try:
-                        args = json.loads(arguments)
-                        parse_success = True
-                    except json.JSONDecodeError:
-                        args = {}
-                        parse_success = False
-                else:
-                    args = {}
-                    parse_success = True
+                try:
+                    args = orjson.loads(arguments)
+                    func_result = None
+                except orjson.JSONDecodeError as e:
+                    func_result = f"JSONDecodeError: Failed to parse arguments for function {function_name}: {str(e)}"
+                except Exception as e:
+                    log.error(f"Unexpected error parsing arguments for function {function_name}", exc_info=e)
+                    func_result = f"Error: Failed to parse arguments for function {function_name}: {str(e)}"
 
-                if parse_success:
+                if func_result is None:
                     data = {
                         **extras,
                         "user": guild.get_member(author) if isinstance(author, int) else author,
@@ -795,11 +799,8 @@ class ChatHandler(MixinMeta):
                             f"Custom function {function_name} failed to execute!\nArgs: {arguments}",
                             exc_info=e,
                         )
-                        func_result = traceback.format_exc()
+                        func_result = f"Unexpected error executing function {function_name}:\n{traceback.format_exc()}"
                         function_calls = [i for i in function_calls if i["name"] != function_name]
-                else:
-                    # Help the model self-correct
-                    func_result = f"JSONDecodeError: Failed to parse arguments for function {function_name}"
 
                 return_null = False
 
