@@ -135,7 +135,7 @@ class GuildSettings(AssistantBaseModel):
     max_response_token_override: t.Dict[int, int] = {}
     max_token_role_override: t.Dict[int, int] = {}
     max_retention_role_override: t.Dict[int, int] = {}
-    role_overrides: t.Dict[int, str] = Field(default_factory=dict, alias="model_role_overrides")
+    role_overrides: t.Dict[int, str] = {}  # Role overrides for model selection
     max_time_role_override: t.Dict[int, int] = {}
 
     vision_detail: str = "auto"  # high, low, auto
