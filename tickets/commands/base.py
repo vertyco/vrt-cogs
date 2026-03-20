@@ -6,6 +6,7 @@ from typing import Optional
 import discord
 from discord import app_commands
 from redbot.core import commands
+from redbot.core.bot import Red
 from redbot.core.commands import parse_timedelta
 from redbot.core.i18n import Translator
 from redbot.core.utils.mod import is_admin_or_superior
@@ -130,8 +131,8 @@ class BaseCommands(MixinMeta):
         support_role_ids = conf.get_support_role_ids(panel)
         if not support_role_ids:
             return await ctx.send(_("There are no support roles configured to remove"))
-
-        admin_role_ids = await self.bot.get_admin_role_ids(ctx.guild)
+        bot: Red = self.bot
+        admin_role_ids = await bot.get_admin_role_ids(ctx.guild.id)
 
         # Only remove support roles that are NOT admin roles
         roles_to_remove = support_role_ids - admin_role_ids
