@@ -132,7 +132,7 @@ class BaseCommands(MixinMeta):
         if not support_role_ids:
             return await ctx.send(_("There are no support roles configured to remove"))
         bot: Red = self.bot
-        admin_role_ids = await bot.get_admin_role_ids(ctx.guild.id)
+        admin_role_ids = set(await bot.get_admin_role_ids(ctx.guild.id))
 
         # Only remove support roles that are NOT admin roles
         roles_to_remove = support_role_ids - admin_role_ids
