@@ -13,6 +13,7 @@ from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box, humanize_list, pagify
+from redbot.core.utils.mod import is_admin_or_superior
 
 from ..abc import MixinMeta
 from .analytics import record_ticket_opened
@@ -882,6 +883,20 @@ class LogView(View):
         user = interaction.guild.get_member(interaction.user.id)
         if not user:
             return
+
+        # Check if ticket is escalated — only admins can join escalated tickets
+        conf = self.cog.db.get_conf(self.guild)
+        for _uid, tickets in conf.opened.items():
+            if self.channel.id in tickets:
+                ticket = tickets[self.channel.id]
+                if ticket.escalated and not await is_admin_or_superior(self.cog.bot, user):
+                    return await interaction.response.send_message(
+                        _("This ticket has been escalated to admins only. You do not have permission to join."),
+                        ephemeral=True,
+                        delete_after=60,
+                    )
+                break
+
         if user.id in self.added:
             return await interaction.response.send_message(
                 _("You have already been added to the ticket **{}**!").format(self.channel.name),

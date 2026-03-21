@@ -176,6 +176,9 @@ class BaseCommands(MixinMeta):
                     except Exception as e:
                         log.error(f"Failed to remove {member} from thread ticket", exc_info=e)
 
+        ticket.escalated = True
+        await self.save()
+
         if removed:
             names = ", ".join(f"**{n}**" for n in removed)
             await ctx.send(_("Ticket escalated to admins. Removed: {}").format(names))

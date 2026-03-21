@@ -157,6 +157,7 @@ class OpenedTicket(Base):
     max_claims: int = 0
     joined_by: list[int] = []  # Staff user IDs who joined via the log "Join Ticket" button (for max_claims enforcement)
     claimed_by: int | None = None  # The single staff member responsible for this ticket
+    escalated: bool = False  # Whether ticket has been escalated to admins only
     overview_msg: int | None = None  # Overview message ID
     first_response: datetime | None = None
     closed_by: int | None = None  # User ID of who closed (set on close)
