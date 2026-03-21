@@ -15,9 +15,10 @@ from .common.constants import (
     VALID_QUALITIES,
     VALID_SIZES,
     format_cost,
+    format_quota,
     get_generation_cost,
 )
-from .common.models import RoleCooldown
+from .common.models import RoleAccess
 
 if t.TYPE_CHECKING:
     from .main import ImGen
@@ -240,7 +241,11 @@ class EditImageButton(
             return
 
         default_model = conf.default_model if conf.default_model in allowed_models else allowed_models[0]
-        default_size = conf.default_size if conf.default_size in allowed_sizes else allowed_sizes[0]
+        default_size = (
+            "auto"
+            if "auto" in allowed_sizes
+            else (conf.default_size if conf.default_size in allowed_sizes else allowed_sizes[0])
+        )
         default_quality = conf.default_quality if conf.default_quality in allowed_qualities else allowed_qualities[0]
 
         # Get the image URL from the message embed
@@ -278,6 +283,8 @@ def create_image_embed(
     quality: str,
     author: discord.User | discord.Member,
     title: str = "🎨 Generated Image",
+    quota_text: str = "",
+    show_cost: bool = False,
 ) -> discord.Embed:
     """Create an embed displaying the generated image with its settings."""
     # Truncate prompt if too long for embed description
@@ -295,12 +302,16 @@ def create_image_embed(
     embed.add_field(name="Size", value=size, inline=True)
     embed.add_field(name="Quality", value=quality, inline=True)
 
-    # Add cost field
-    cost = get_generation_cost(model, quality, size)
-    if cost > 0:
-        embed.add_field(name="Cost", value=format_cost(cost), inline=True)
+    # Only show cost for admins/owners
+    if show_cost:
+        cost = get_generation_cost(model, quality, size)
+        if cost > 0:
+            embed.add_field(name="Cost", value=format_cost(cost), inline=True)
 
-    embed.set_footer(text=f"Requested by {author.display_name}", icon_url=author.display_avatar.url)
+    footer_text = f"Requested by {author.display_name}"
+    if quota_text:
+        footer_text += f" • {quota_text}"
+    embed.set_footer(text=footer_text, icon_url=author.display_avatar.url)
 
     return embed
 
@@ -360,21 +371,32 @@ class RoleAccessModal(discord.ui.Modal):
         self.quality_label = discord.ui.Label(text="Qualities", component=quality_select)
         self.add_item(self.quality_label)
 
-        self.cooldown_input = discord.ui.TextInput(
-            label="Cooldown (seconds)",
-            placeholder="60",
-            default="60",
+        self.quota_input = discord.ui.TextInput(
+            label="Quota (0 = unlimited)",
+            placeholder="10",
+            default="10",
             required=True,
             min_length=1,
             max_length=6,
         )
-        self.add_item(self.cooldown_input)
+        self.add_item(self.quota_input)
+
+        interval_select = discord.ui.Select(
+            placeholder="Select quota interval",
+            options=[
+                discord.SelectOption(label="Daily", value="daily", default=True),
+                discord.SelectOption(label="Monthly", value="monthly"),
+            ],
+        )
+        self.interval_label = discord.ui.Label(text="Quota Interval", component=interval_select)
+        self.add_item(self.interval_label)
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
         role_select = self.role_label.component
         model_select = self.model_label.component
         size_select = self.size_label.component
         quality_select = self.quality_label.component
+        interval_select = self.interval_label.component
 
         role_value = role_select.values[0] if role_select.values else None
         if role_value is None:
@@ -392,14 +414,16 @@ class RoleAccessModal(discord.ui.Modal):
             role = interaction.guild.get_role(role_id)
 
         try:
-            cooldown = int(self.cooldown_input.value.strip())
+            quota = int(self.quota_input.value.strip())
         except ValueError:
-            await interaction.response.send_message("Cooldown must be a number.", ephemeral=True)
+            await interaction.response.send_message("Quota must be a number.", ephemeral=True)
             return
 
-        if cooldown < 0:
-            await interaction.response.send_message("Cooldown must be 0 or greater.", ephemeral=True)
+        if quota < 0:
+            await interaction.response.send_message("Quota must be 0 or greater.", ephemeral=True)
             return
+
+        quota_interval = interval_select.values[0] if interval_select.values else "daily"
 
         conf = self.view.conf
 
@@ -410,9 +434,10 @@ class RoleAccessModal(discord.ui.Modal):
                 return []
             return values
 
-        conf.role_cooldowns[role_id] = RoleCooldown(
+        conf.role_access[role_id] = RoleAccess(
             role_id=role_id,
-            cooldown_seconds=cooldown,
+            quota=quota,
+            quota_interval=quota_interval,
             allowed_models=normalize(list(model_select.values), self.model_values),
             allowed_sizes=normalize(list(size_select.values), self.size_values),
             allowed_qualities=normalize(list(quality_select.values), self.quality_values),
@@ -457,11 +482,11 @@ class RemoveRoleAccessModal(discord.ui.Modal):
             role = interaction.guild.get_role(role_id)
 
         conf = self.view.conf
-        if role_id not in conf.role_cooldowns:
+        if role_id not in conf.role_access:
             await interaction.response.send_message("That role is not configured.", ephemeral=True)
             return
 
-        del conf.role_cooldowns[role_id]
+        del conf.role_access[role_id]
         await self.view.cog.save()
 
         self.view.refresh()
@@ -500,42 +525,42 @@ class AccessConfigView(discord.ui.LayoutView):
         self.add_item(self.row)
 
     def _build_access_text(self) -> str:
-        if not self.conf.role_cooldowns:
+        if not self.conf.role_access:
             return "## Role Access\n-# Open access. Add a role to restrict usage."
 
         lines = ["## Role Access"]
-        roles: list[tuple[discord.Role, RoleCooldown]] = []
-        for role_id, rc in self.conf.role_cooldowns.items():
+        roles: list[tuple[discord.Role, RoleAccess]] = []
+        for role_id, ra in self.conf.role_access.items():
             role = self.guild.get_role(role_id)
             if role:
-                roles.append((role, rc))
+                roles.append((role, ra))
 
         if not roles:
             return "## Role Access\n-# Roles configured but not found in this guild."
 
         roles.sort(key=lambda item: item[0].position, reverse=True)
-        for role, rc in roles:
-            cooldown_txt = "No cooldown" if rc.cooldown_seconds <= 0 else f"{rc.cooldown_seconds}s cooldown"
+        for role, ra in roles:
+            quota_txt = format_quota(ra.quota, ra.quota_interval)
             models_txt = (
                 "All models"
-                if not rc.allowed_models
-                else ", ".join(MODEL_LABELS.get(value, value) for value in rc.allowed_models)
+                if not ra.allowed_models
+                else ", ".join(MODEL_LABELS.get(value, value) for value in ra.allowed_models)
             )
             sizes_txt = (
                 "All sizes (auto allowed)"
-                if not rc.allowed_sizes
-                else ", ".join(SIZE_LABELS.get(value, value) for value in rc.allowed_sizes)
+                if not ra.allowed_sizes
+                else ", ".join(SIZE_LABELS.get(value, value) for value in ra.allowed_sizes)
             )
             qualities_txt = (
                 "All qualities (auto allowed)"
-                if not rc.allowed_qualities
-                else ", ".join(QUALITY_LABELS.get(value, value) for value in rc.allowed_qualities)
+                if not ra.allowed_qualities
+                else ", ".join(QUALITY_LABELS.get(value, value) for value in ra.allowed_qualities)
             )
 
             # Calculate cost range for this role's configuration
-            models = rc.allowed_models or VALID_MODELS
-            sizes = rc.allowed_sizes or [s for s in VALID_SIZES if s != "auto"]
-            qualities = rc.allowed_qualities or [q for q in VALID_QUALITIES if q != "auto"]
+            models = ra.allowed_models or VALID_MODELS
+            sizes = ra.allowed_sizes or [s for s in VALID_SIZES if s != "auto"]
+            qualities = ra.allowed_qualities or [q for q in VALID_QUALITIES if q != "auto"]
             costs: list[float] = []
             for model in models:
                 for quality in qualities:
@@ -554,7 +579,7 @@ class AccessConfigView(discord.ui.LayoutView):
                 cost_txt = "N/A"
 
             lines.append(
-                f"- {role.mention}: {cooldown_txt}\n"
+                f"- {role.mention}: {quota_txt}\n"
                 f"  - Models: {models_txt}\n"
                 f"  - Sizes: {sizes_txt}\n"
                 f"  - Qualities: {qualities_txt}\n"

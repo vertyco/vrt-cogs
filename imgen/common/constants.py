@@ -104,7 +104,7 @@ def format_cost(cost: float) -> str:
 
 
 # Subscription tier presets for easy configuration
-# Each tier defines: models, qualities, sizes, and cooldown
+# Each tier defines: models, qualities, sizes, quota, and quota interval
 class TierPreset:
     """Subscription tier preset configuration."""
 
@@ -115,7 +115,8 @@ class TierPreset:
         models: list[str],
         qualities: list[str],
         sizes: list[str],
-        cooldown_seconds: int,
+        quota: int,
+        quota_interval: str = "daily",
         emoji: str = "🎨",
     ):
         self.name = name
@@ -123,7 +124,8 @@ class TierPreset:
         self.models = models
         self.qualities = qualities
         self.sizes = sizes
-        self.cooldown_seconds = cooldown_seconds
+        self.quota = quota
+        self.quota_interval = quota_interval
         self.emoji = emoji
 
     def get_cost_range(self) -> tuple[float, float]:
@@ -140,6 +142,13 @@ class TierPreset:
         return (min(costs), max(costs))
 
 
+def format_quota(quota: int, interval: str) -> str:
+    """Format a quota value for display."""
+    if quota == 0:
+        return "Unlimited"
+    return f"{quota}/{interval}"
+
+
 # Predefined subscription tiers
 TIER_PRESETS: dict[str, TierPreset] = {
     "free": TierPreset(
@@ -148,7 +157,8 @@ TIER_PRESETS: dict[str, TierPreset] = {
         models=["gpt-image-1-mini"],
         qualities=["low"],
         sizes=["1024x1024"],
-        cooldown_seconds=300,  # 5 minutes
+        quota=5,
+        quota_interval="daily",
         emoji="🆓",
     ),
     "basic": TierPreset(
@@ -157,7 +167,8 @@ TIER_PRESETS: dict[str, TierPreset] = {
         models=["gpt-image-1-mini"],
         qualities=["low", "medium"],
         sizes=["1024x1024", "1536x1024", "1024x1536"],
-        cooldown_seconds=120,  # 2 minutes
+        quota=15,
+        quota_interval="daily",
         emoji="🥉",
     ),
     "standard": TierPreset(
@@ -166,7 +177,8 @@ TIER_PRESETS: dict[str, TierPreset] = {
         models=["gpt-image-1.5", "gpt-image-1-mini"],
         qualities=["low", "medium"],
         sizes=["1024x1024", "1536x1024", "1024x1536"],
-        cooldown_seconds=60,  # 1 minute
+        quota=30,
+        quota_interval="daily",
         emoji="🥈",
     ),
     "premium": TierPreset(
@@ -175,7 +187,8 @@ TIER_PRESETS: dict[str, TierPreset] = {
         models=["gpt-image-1.5", "gpt-image-1-mini"],
         qualities=["low", "medium", "high"],
         sizes=["1024x1024", "1536x1024", "1024x1536"],
-        cooldown_seconds=30,  # 30 seconds
+        quota=0,  # Unlimited
+        quota_interval="daily",
         emoji="🥇",
     ),
 }

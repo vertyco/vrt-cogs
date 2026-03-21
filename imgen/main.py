@@ -27,9 +27,10 @@ from .common.constants import (
     VALID_QUALITIES,
     VALID_SIZES,
     format_cost,
+    format_quota,
     get_generation_cost,
 )
-from .common.models import DB, AccessLimits, GuildSettings
+from .common.models import DB, AccessLimits, GuildSettings, RoleAccess
 from .views import (
     AccessConfigView,
     EditImageButton,
@@ -71,7 +72,11 @@ async def edit_image_context_menu(interaction: discord.Interaction, message: dis
         return await interaction.response.send_message(reason, ephemeral=True)
 
     default_model = conf.default_model if conf.default_model in allowed_models else allowed_models[0]
-    default_size = conf.default_size if conf.default_size in allowed_sizes else allowed_sizes[0]
+    default_size = (
+        "auto"
+        if "auto" in allowed_sizes
+        else (conf.default_size if conf.default_size in allowed_sizes else allowed_sizes[0])
+    )
     default_quality = conf.default_quality if conf.default_quality in allowed_qualities else allowed_qualities[0]
 
     # Use the first image attachment
@@ -101,7 +106,7 @@ class ImGen(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.4.1"
+    __version__ = "1.5.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -119,10 +124,10 @@ class ImGen(commands.Cog):
         return f"{helpcmd}\n\n{txt}"
 
     async def red_delete_data_for_user(self, *, requester: str, user_id: int):
-        """Delete cooldown data for user."""
+        """Delete usage data for user."""
         for conf in self.db.configs.values():
-            if user_id in conf.user_cooldowns:
-                del conf.user_cooldowns[user_id]
+            if user_id in conf.user_usage:
+                del conf.user_usage[user_id]
         await self.save()
 
     async def red_get_data_for_user(self, *, requester: str, user_id: int):
@@ -191,7 +196,12 @@ class ImGen(commands.Cog):
         allowed_qualities = self._normalize_allowed(access.allowed_qualities, QUALITY_ORDER)
 
         if access.allowed_sizes is not None:
-            allowed_sizes = [size for size in allowed_sizes if size != "auto"]
+            concrete_sizes = [size for size in allowed_sizes if size != "auto"]
+            all_concrete = {s for s in VALID_SIZES if s != "auto"}
+            if set(concrete_sizes) >= all_concrete:
+                allowed_sizes = ["auto"] + concrete_sizes
+            else:
+                allowed_sizes = concrete_sizes
         if access.allowed_qualities is not None:
             allowed_qualities = [quality for quality in allowed_qualities if quality != "auto"]
 
@@ -381,6 +391,25 @@ class ImGen(commands.Cog):
             image_bytes = base64.b64decode(response.data[0].b64_json)
             file = discord.File(BytesIO(image_bytes), filename=f"generated.{output_format}")
 
+            # Record the generation for quota tracking (before building embed so counts are current)
+            conf.record_generation(interaction.user)
+            await self.save()
+
+            # Build quota footer text
+            access = conf.get_access_limits(interaction.user)
+            quota_parts: list[str] = []
+            if access.daily_quota > 0:
+                used_daily = conf.get_user_daily_usage(interaction.user)
+                quota_parts.append(f"Daily: {used_daily}/{access.daily_quota}")
+            if access.monthly_quota > 0:
+                used_monthly = conf.get_user_monthly_usage(interaction.user)
+                quota_parts.append(f"Monthly: {used_monthly}/{access.monthly_quota}")
+            quota_text = " | ".join(quota_parts)
+
+            # Show cost only for admins and guild owner
+            member = interaction.user
+            show_cost = member.id == interaction.guild.owner_id or member.guild_permissions.manage_guild
+
             # Create the embed
             embed = create_image_embed(
                 prompt=prompt,
@@ -389,6 +418,8 @@ class ImGen(commands.Cog):
                 quality=resolved_quality,
                 author=interaction.user,
                 title=title,
+                quota_text=quota_text,
+                show_cost=show_cost,
             )
             embed.set_image(url=f"attachment://generated.{output_format}")
 
@@ -398,10 +429,6 @@ class ImGen(commands.Cog):
 
             # Send the image
             message = await interaction.followup.send(embed=embed, file=file, view=view)
-
-            # Record the generation for cooldown tracking
-            conf.record_generation(interaction.user)
-            await self.save()
 
             # Log to logging channel if configured
             if conf.log_channel:
@@ -488,6 +515,61 @@ class ImGen(commands.Cog):
             if needle in value.lower() or needle in label.lower():
                 choices.append(app_commands.Choice(name=label, value=value))
         return choices[:25]
+
+    @app_commands.command(name="imagequota", description="View your remaining image generation quota")
+    @app_commands.guild_only()
+    async def imagequota(self, interaction: discord.Interaction):
+        """Check your current image generation quota usage."""
+        conf = self.db.get_conf(interaction.guild)
+
+        # No role restrictions means open access
+        if not conf.role_access:
+            return await interaction.response.send_message(
+                "Image generation is open to everyone with no quota limits.",
+                ephemeral=True,
+            )
+
+        access = conf.get_access_limits(interaction.user)
+        if not access.has_access:
+            return await interaction.response.send_message(
+                "You don't have a role that allows image generation.",
+                ephemeral=True,
+            )
+
+        lines: list[str] = []
+
+        if access.daily_quota > 0:
+            used_daily = conf.get_user_daily_usage(interaction.user)
+            remaining_daily = max(0, access.daily_quota - used_daily)
+            lines.append(f"**Daily:** {used_daily}/{access.daily_quota} used ({remaining_daily} remaining)")
+        elif access.daily_quota == 0 and any(
+            ra.quota_interval == "daily"
+            for rid, ra in conf.role_access.items()
+            if rid in {r.id for r in interaction.user.roles}
+        ):
+            lines.append("**Daily:** Unlimited")
+
+        if access.monthly_quota > 0:
+            used_monthly = conf.get_user_monthly_usage(interaction.user)
+            remaining_monthly = max(0, access.monthly_quota - used_monthly)
+            lines.append(f"**Monthly:** {used_monthly}/{access.monthly_quota} used ({remaining_monthly} remaining)")
+        elif access.monthly_quota == 0 and any(
+            ra.quota_interval == "monthly"
+            for rid, ra in conf.role_access.items()
+            if rid in {r.id for r in interaction.user.roles}
+        ):
+            lines.append("**Monthly:** Unlimited")
+
+        if not lines:
+            lines.append("No quota limits apply to your roles.")
+
+        embed = discord.Embed(
+            title="🎨 Image Generation Quota",
+            description="\n".join(lines),
+            color=discord.Color.blue(),
+            timestamp=datetime.now(tz=timezone.utc),
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @app_commands.command(name="makeimage", description="Generate an image from a text prompt")
     @app_commands.describe(
@@ -617,33 +699,33 @@ class ImGen(commands.Cog):
         embed.add_field(name="Default Quality", value=conf.default_quality, inline=True)
 
         # Role access
-        if conf.role_cooldowns:
+        if conf.role_access:
             role_lines = []
-            for rid, rc in conf.role_cooldowns.items():
+            for rid, ra in conf.role_access.items():
                 role = interaction.guild.get_role(rid)
                 if not role:
                     continue
-                cooldown_txt = f"{rc.cooldown_seconds}s" if rc.cooldown_seconds > 0 else "No cooldown"
+                quota_txt = format_quota(ra.quota, ra.quota_interval)
                 models_txt = (
                     "All models"
-                    if not rc.allowed_models
-                    else ", ".join(MODEL_LABELS.get(value, value) for value in rc.allowed_models)
+                    if not ra.allowed_models
+                    else ", ".join(MODEL_LABELS.get(value, value) for value in ra.allowed_models)
                 )
                 sizes_txt = (
                     "All sizes (auto)"
-                    if not rc.allowed_sizes
-                    else ", ".join(SIZE_LABELS.get(value, value) for value in rc.allowed_sizes)
+                    if not ra.allowed_sizes
+                    else ", ".join(SIZE_LABELS.get(value, value) for value in ra.allowed_sizes)
                 )
                 qualities_txt = (
                     "All qualities (auto)"
-                    if not rc.allowed_qualities
-                    else ", ".join(QUALITY_LABELS.get(value, value) for value in rc.allowed_qualities)
+                    if not ra.allowed_qualities
+                    else ", ".join(QUALITY_LABELS.get(value, value) for value in ra.allowed_qualities)
                 )
 
                 # Calculate cost range
-                models = rc.allowed_models or VALID_MODELS
-                sizes = rc.allowed_sizes or [s for s in VALID_SIZES if s != "auto"]
-                qualities = rc.allowed_qualities or [q for q in VALID_QUALITIES if q != "auto"]
+                models = ra.allowed_models or VALID_MODELS
+                sizes = ra.allowed_sizes or [s for s in VALID_SIZES if s != "auto"]
+                qualities = ra.allowed_qualities or [q for q in VALID_QUALITIES if q != "auto"]
                 costs: list[float] = []
                 for model in models:
                     for quality in qualities:
@@ -662,7 +744,7 @@ class ImGen(commands.Cog):
                     cost_txt = "N/A"
 
                 role_lines.append(
-                    f"{role.mention}: {cooldown_txt}\n"
+                    f"{role.mention}: {quota_txt}\n"
                     f"• Models: {models_txt}\n"
                     f"• Sizes: {sizes_txt}\n"
                     f"• Qualities: {qualities_txt}\n"
@@ -745,13 +827,13 @@ class ImGen(commands.Cog):
         """Clear all role restrictions, allowing open access."""
         conf = self.db.get_conf(interaction.guild)
 
-        if not conf.role_cooldowns:
+        if not conf.role_access:
             return await interaction.response.send_message(
                 "No role restrictions are currently configured.",
                 ephemeral=True,
             )
 
-        conf.role_cooldowns.clear()
+        conf.role_access.clear()
         await self.save()
         await interaction.response.send_message(
             "✅ All role restrictions cleared. Image generation is now open to everyone.",
@@ -809,17 +891,18 @@ class ImGen(commands.Cog):
 
         # Build a mapping of tier -> roles that match it
         tier_roles: dict[str, list[discord.Role]] = {tid: [] for tid in TIER_PRESETS}
-        for role_id, rc in conf.role_cooldowns.items():
+        for role_id, ra in conf.role_access.items():
             role = interaction.guild.get_role(role_id)
             if not role:
                 continue
             # Check which tier this role matches
             for tid, tier in TIER_PRESETS.items():
                 if (
-                    set(rc.allowed_models or []) == set(tier.models)
-                    and set(rc.allowed_qualities or []) == set(tier.qualities)
-                    and set(rc.allowed_sizes or []) == set(tier.sizes)
-                    and rc.cooldown_seconds == tier.cooldown_seconds
+                    set(ra.allowed_models or []) == set(tier.models)
+                    and set(ra.allowed_qualities or []) == set(tier.qualities)
+                    and set(ra.allowed_sizes or []) == set(tier.sizes)
+                    and ra.quota == tier.quota
+                    and ra.quota_interval == tier.quota_interval
                 ):
                     tier_roles[tid].append(role)
                     break
@@ -844,9 +927,7 @@ class ImGen(commands.Cog):
             qualities_txt = ", ".join(QUALITY_LABELS.get(q, q) for q in tier.qualities)
             sizes_txt = ", ".join(SIZE_LABELS.get(s, s) for s in tier.sizes)
 
-            cooldown_txt = (
-                f"{tier.cooldown_seconds}s" if tier.cooldown_seconds < 60 else f"{tier.cooldown_seconds // 60}m"
-            )
+            quota_txt = format_quota(tier.quota, tier.quota_interval)
 
             # Show roles configured for this tier
             roles_txt = ""
@@ -859,7 +940,7 @@ class ImGen(commands.Cog):
                 f"**Models:** {models_txt}\n"
                 f"**Qualities:** {qualities_txt}\n"
                 f"**Sizes:** {sizes_txt}\n"
-                f"**Cooldown:** {cooldown_txt}\n"
+                f"**Quota:** {quota_txt}\n"
                 f"**Cost/image:** {cost_txt}"
                 f"{roles_txt}"
             )
@@ -882,16 +963,15 @@ class ImGen(commands.Cog):
         tier: str,
     ):
         """Apply a subscription tier preset to a role."""
-        from .common.models import RoleCooldown
-
         preset = TIER_PRESETS.get(tier)
         if not preset:
             return await interaction.response.send_message("Invalid tier selected.", ephemeral=True)
 
         conf = self.db.get_conf(interaction.guild)
-        conf.role_cooldowns[role.id] = RoleCooldown(
+        conf.role_access[role.id] = RoleAccess(
             role_id=role.id,
-            cooldown_seconds=preset.cooldown_seconds,
+            quota=preset.quota,
+            quota_interval=preset.quota_interval,
             allowed_models=preset.models,
             allowed_sizes=preset.sizes,
             allowed_qualities=preset.qualities,
@@ -914,7 +994,7 @@ class ImGen(commands.Cog):
                 f"**Models:** {', '.join(MODEL_LABELS.get(m, m) for m in preset.models)}\n"
                 f"**Qualities:** {', '.join(QUALITY_LABELS.get(q, q) for q in preset.qualities)}\n"
                 f"**Sizes:** {', '.join(SIZE_LABELS.get(s, s) for s in preset.sizes)}\n"
-                f"**Cooldown:** {preset.cooldown_seconds}s\n"
+                f"**Quota:** {format_quota(preset.quota, preset.quota_interval)}\n"
                 f"**Cost/image:** {cost_txt}"
             ),
             inline=False,
