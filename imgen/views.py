@@ -372,31 +372,20 @@ class RoleAccessModal(discord.ui.Modal):
         self.add_item(self.quality_label)
 
         self.quota_input = discord.ui.TextInput(
-            label="Quota (0 = unlimited)",
-            placeholder="10",
-            default="10",
+            label="Quota and Interval (e.g. 10/daily or 300/monthly)",
+            placeholder="10/daily",
+            default="10/daily",
             required=True,
             min_length=1,
-            max_length=6,
+            max_length=20,
         )
         self.add_item(self.quota_input)
-
-        interval_select = discord.ui.Select(
-            placeholder="Select quota interval",
-            options=[
-                discord.SelectOption(label="Daily", value="daily", default=True),
-                discord.SelectOption(label="Monthly", value="monthly"),
-            ],
-        )
-        self.interval_label = discord.ui.Label(text="Quota Interval", component=interval_select)
-        self.add_item(self.interval_label)
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
         role_select = self.role_label.component
         model_select = self.model_label.component
         size_select = self.size_label.component
         quality_select = self.quality_label.component
-        interval_select = self.interval_label.component
 
         role_value = role_select.values[0] if role_select.values else None
         if role_value is None:
@@ -413,17 +402,37 @@ class RoleAccessModal(discord.ui.Modal):
                 return
             role = interaction.guild.get_role(role_id)
 
+        # Parse quota input: "10/daily", "300/monthly", or just "10" (defaults to daily)
+        raw = self.quota_input.value.strip().lower()
+        if "/" in raw:
+            parts = raw.split("/", 1)
+            quota_str = parts[0].strip()
+            interval_str = parts[1].strip()
+        else:
+            quota_str = raw
+            interval_str = "daily"
+
         try:
-            quota = int(self.quota_input.value.strip())
+            quota = int(quota_str)
         except ValueError:
-            await interaction.response.send_message("Quota must be a number.", ephemeral=True)
+            await interaction.response.send_message(
+                "Invalid quota format. Use `number/interval` like `10/daily` or `300/monthly`.",
+                ephemeral=True,
+            )
             return
 
         if quota < 0:
             await interaction.response.send_message("Quota must be 0 or greater.", ephemeral=True)
             return
 
-        quota_interval = interval_select.values[0] if interval_select.values else "daily"
+        if interval_str not in ("daily", "monthly"):
+            await interaction.response.send_message(
+                "Invalid interval. Use `daily` or `monthly` (e.g. `10/daily`).",
+                ephemeral=True,
+            )
+            return
+
+        quota_interval = interval_str
 
         conf = self.view.conf
 
