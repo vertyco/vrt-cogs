@@ -112,6 +112,9 @@ class GuildSettings(Base):
         Check if a member can generate an image.
         Returns (can_generate, reason).
         """
+        if member.id == member.guild.owner_id:
+            return (True, "")
+
         cooldown_seconds = self.get_user_cooldown(member)
 
         if cooldown_seconds == -1:

@@ -101,7 +101,7 @@ class ImGen(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.4.0"
+    __version__ = "1.4.1"
 
     def __init__(self, bot: Red):
         super().__init__()
