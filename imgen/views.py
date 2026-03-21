@@ -372,8 +372,8 @@ class RoleAccessModal(discord.ui.Modal):
         self.add_item(self.quality_label)
 
         self.quota_input = discord.ui.TextInput(
-            label="Quota and Interval (e.g. 10/daily or 300/monthly)",
-            placeholder="10/daily",
+            label="Quota / Interval (e.g. 10/daily)",
+            placeholder="10/daily or 300/monthly (0 = unlimited)",
             default="10/daily",
             required=True,
             min_length=1,
