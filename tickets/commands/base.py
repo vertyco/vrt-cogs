@@ -142,6 +142,29 @@ class BaseCommands(MixinMeta):
         channel = ctx.channel
         removed = []
         if isinstance(channel, discord.TextChannel):
+            # Ensure admin roles have explicit access before removing support roles
+            can_read_send = discord.PermissionOverwrite(
+                read_messages=True,
+                read_message_history=True,
+                send_messages=True,
+                attach_files=True,
+                embed_links=True,
+                use_application_commands=True,
+            )
+            for role_id in admin_role_ids:
+                role = ctx.guild.get_role(role_id)
+                if not role:
+                    continue
+                overwrite = channel.overwrites_for(role)
+                if overwrite.read_messages:
+                    continue
+                try:
+                    await channel.set_permissions(role, overwrite=can_read_send)
+                except discord.Forbidden:
+                    log.warning(f"Missing permissions to add admin role {role.name} to ticket {channel.id}")
+                except Exception as e:
+                    log.error(f"Failed to add admin role {role.name} to ticket", exc_info=e)
+
             for role_id in roles_to_remove:
                 role = ctx.guild.get_role(role_id)
                 if not role:
