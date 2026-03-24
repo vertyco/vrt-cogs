@@ -1,0 +1,16 @@
+{
+  "author": ["Vertyco"],
+  "description": "Link Google Forms to reward users with virtual currency on survey completion.",
+  "disabled": false,
+  "end_user_data_statement": "This cog stores Discord user IDs and survey completion counts.",
+  "hidden": false,
+  "install_msg": "Thank you for installing GSurveys! Use `[p]gsurveys` to get started.",
+  "min_bot_version": "3.5.3",
+  "min_python_version": [3, 11, 0],
+  "permissions": ["manage_webhooks"],
+  "required_cogs": {},
+  "requirements": ["pydantic>=2.11,<2.12"],
+  "short": "Reward users for completing Google Form surveys.",
+  "tags": ["economy", "survey", "google", "forms", "rewards"],
+  "type": "COG"
+}
