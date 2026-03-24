@@ -190,6 +190,38 @@ class Admin(MixinMeta):
         await ctx.send(txt)
         await self.save()
 
+    @extendedeconomy.command(name="rolestaticbonus")
+    async def role_static_bonus(self, ctx: commands.Context, role: discord.Role, bonus: int):
+        """
+        Add/Remove Payday static role bonuses
+
+        Example: `[p]ecoset rolestaticbonus @role 500` - Adds a flat 500 credit bonus to the user's payday if they have the role.
+
+        To remove a bonus, set the bonus to 0.
+        """
+        is_global = await bank.is_global()
+        if is_global:
+            return await ctx.send(_("This setting is not available when global bank is enabled."))
+        conf = self.db.get_conf(ctx.guild)
+        if bonus <= 0:
+            if role.id in conf.role_static_bonuses:
+                del conf.role_static_bonuses[role.id]
+                txt = _("Static role bonus removed.")
+                await self.save()
+            else:
+                txt = _("That role does not have a static bonus.")
+            return await ctx.send(txt)
+        if role.id in conf.role_static_bonuses:
+            current = conf.role_static_bonuses[role.id]
+            if current == bonus:
+                return await ctx.send(_("That role already has that static bonus."))
+            txt = _("Static role bonus updated.")
+        else:
+            txt = _("Static role bonus added.")
+        conf.role_static_bonuses[role.id] = bonus
+        await ctx.send(txt)
+        await self.save()
+
     @extendedeconomy.command(name="autopayday")
     @commands.is_owner()
     async def autopayday(self, ctx: commands.Context):
@@ -694,6 +726,10 @@ class Admin(MixinMeta):
                     if conf.role_bonuses and any(role.id in conf.role_bonuses for role in member.roles):
                         highest_bonus = max(conf.role_bonuses.get(role.id, 0) for role in member.roles)
                         base_amount += round(base_amount * highest_bonus)
+
+                    if conf.role_static_bonuses and any(role.id in conf.role_static_bonuses for role in member.roles):
+                        highest_static = max(conf.role_static_bonuses.get(role.id, 0) for role in member.roles)
+                        base_amount += highest_static
 
                     # Calculate total amount to give
                     amount_to_give = base_amount * potential_paydays

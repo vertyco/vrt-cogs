@@ -125,6 +125,7 @@ class GuildSettings(Base):
     stack_paydays: bool = False
     auto_claim_roles: t.List[int] = []  # Role IDs that auto claim paydays
     role_bonuses: t.Dict[int, float] = {}  # Role ID: bonus multiplier
+    role_static_bonuses: t.Dict[int, int] = {}  # Role ID: static bonus amount
 
 
 class DB(Base):

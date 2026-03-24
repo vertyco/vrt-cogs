@@ -110,6 +110,14 @@ class Tasks(MixinMeta):
                     if not can_autoclaim:
                         continue
 
+                    if conf.role_bonuses and any(role.id in conf.role_bonuses for role in member.roles):
+                        highest_bonus = max(conf.role_bonuses.get(role.id, 0) for role in member.roles)
+                        to_give += round(to_give * highest_bonus)
+
+                    if conf.role_static_bonuses and any(role.id in conf.role_static_bonuses for role in member.roles):
+                        highest_static = max(conf.role_static_bonuses.get(role.id, 0) for role in member.roles)
+                        to_give += highest_static
+
                     accounts[uid]["balance"] = min(max_bal, accounts[uid]["balance"] + to_give)
                     ecousers[uid]["next_payday"] = cur_time
                     updated.append((f"{member.name} ({member.id}): {humanize_number(to_give)}\n", to_give))

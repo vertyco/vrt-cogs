@@ -97,6 +97,10 @@ class PaydayOverride(MixinMeta):
                     highest_bonus = max(conf.role_bonuses.get(role.id, 0) for role in author.roles)
                     credit_amount += round(credit_amount * highest_bonus)
 
+                if conf.role_static_bonuses and any(role.id in conf.role_static_bonuses for role in author.roles):
+                    highest_static = max(conf.role_static_bonuses.get(role.id, 0) for role in author.roles)
+                    credit_amount += highest_static
+
                 try:
                     new_balance = await bank.deposit_credits(author, credit_amount)
                 except errors.BalanceTooHigh as exc:

@@ -132,6 +132,12 @@ def format_settings(
     if not is_global:
         bonuses = ", ".join([f"<@&{r}>: {b}" for r, b in conf.role_bonuses.items()]) if conf.role_bonuses else _("None")
         txt.write(_("`Role Bonuses:      `{}\n").format(bonuses) if not is_global else "")
+        static_bonuses = (
+            ", ".join([f"<@&{r}>: {b}" for r, b in conf.role_static_bonuses.items()])
+            if conf.role_static_bonuses
+            else _("None")
+        )
+        txt.write(_("`Static Bonuses:    `{}\n").format(static_bonuses))
     txt.write(_("`Payday Autoclaim:  `{}\n").format(db.auto_payday_claim))
     if not is_global:
         autoclaim_channel = f"<#{conf.logs.auto_claim}>" if conf.logs.auto_claim else not_set

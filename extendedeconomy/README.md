@@ -112,6 +112,16 @@ To remove a bonus, set the bonus to 0.<br/>
 
  - Usage: `[p]extendedeconomy rolebonus <role> <bonus>`
 
+### [p]extendedeconomy rolestaticbonus
+
+Add/Remove Payday static role bonuses<br/>
+
+Example: `[p]ecoset rolestaticbonus @role 500` - Adds a flat 500 credit bonus to the user's payday if they have the role.<br/>
+
+To remove a bonus, set the bonus to 0.<br/>
+
+ - Usage: `[p]extendedeconomy rolestaticbonus <role> <bonus>`
+
 ### [p]extendedeconomy autoclaimchannel
 
 Set the auto claim channel<br/>
