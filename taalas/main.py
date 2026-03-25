@@ -13,6 +13,8 @@ log = logging.getLogger("red.vrt.taalas")
 API_BASE = "https://api.taalas.com"
 MODEL = "llama3.1-8B"
 TOKEN_LIMIT = 10000
+MAX_RETRIES = 3
+BASE_RETRY_DELAY = 2
 # llama3.1 uses the same tokenizer base as GPT-4o
 ENCODING = tiktoken.get_encoding("o200k_base")
 # Per-message overhead: <|start|>role<|end|> framing
@@ -52,7 +54,7 @@ class Taalas(commands.Cog):
     """Interact with the Taalas LLM API powered by custom silicon-embedded model weights."""
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.0.2"
+    __version__ = "0.0.3"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -102,7 +104,7 @@ class Taalas(commands.Cog):
         return tokens.get("api_key")
 
     async def chat(self, messages: list[dict]) -> str:
-        """Call the Taalas v1/chat/completions endpoint with streaming."""
+        """Call the Taalas v1/chat/completions endpoint with streaming and 429 retry."""
         api_key = await self.get_api_key()
         if not api_key:
             raise ValueError(
@@ -119,28 +121,44 @@ class Taalas(commands.Cog):
             "stream": True,
         }
 
-        response_text = ""
-        async with self.session.post(f"{API_BASE}/v1/chat/completions", headers=headers, json=payload) as resp:
-            if resp.status != 200:
-                body = await resp.text()
-                raise ValueError(f"API returned status {resp.status}: {body[:300]}")
+        for attempt in range(MAX_RETRIES):
+            async with self.session.post(f"{API_BASE}/v1/chat/completions", headers=headers, json=payload) as resp:
+                if resp.status == 429:
+                    retry_after = float(resp.headers.get("Retry-After", BASE_RETRY_DELAY * (attempt + 1)))
+                    if attempt < MAX_RETRIES - 1:
+                        log.warning(
+                            "Taalas 429 rate limited, retrying in %.1fs (attempt %d/%d)",
+                            retry_after,
+                            attempt + 1,
+                            MAX_RETRIES,
+                        )
+                        await asyncio.sleep(retry_after)
+                        continue
+                    raise ValueError("Rate limited by the Taalas API. Please try again in a moment.")
 
-            async for raw_line in resp.content:
-                line = raw_line.decode("utf-8").strip()
-                if not line.startswith("data:"):
-                    continue
-                data_str = line[5:].strip()
-                if data_str == "[DONE]":
-                    break
-                try:
-                    data = json.loads(data_str)
-                except json.JSONDecodeError:
-                    continue
-                for choice in data.get("choices", []):
-                    delta = choice.get("delta", {})
-                    response_text += delta.get("content", "")
+                if resp.status != 200:
+                    body = await resp.text()
+                    raise ValueError(f"API returned status {resp.status}: {body[:300]}")
 
-        return response_text
+                response_text = ""
+                async for raw_line in resp.content:
+                    line = raw_line.decode("utf-8").strip()
+                    if not line.startswith("data:"):
+                        continue
+                    data_str = line[5:].strip()
+                    if data_str == "[DONE]":
+                        break
+                    try:
+                        data = json.loads(data_str)
+                    except json.JSONDecodeError:
+                        continue
+                    for choice in data.get("choices", []):
+                        delta = choice.get("delta", {})
+                        response_text += delta.get("content", "")
+
+                return response_text
+
+        raise ValueError("Failed to get a response after retries.")
 
     def save(self) -> None:
         async def _save():
@@ -190,6 +208,28 @@ class Taalas(commands.Cog):
         no_mentions = discord.AllowedMentions.none()
         for i in range(0, len(response), 2000):
             await ctx.send(response[i : i + 2000], allowed_mentions=no_mentions)
+
+    @taalas.command(name="health")
+    async def taalas_health(self, ctx: commands.Context):
+        """Check the Taalas API health status."""
+        if not self.session:
+            await ctx.send("Taalas is still initializing, please try again in a moment.")
+            return
+
+        try:
+            async with self.session.get(f"{API_BASE}/health") as resp:
+                if resp.status != 200:
+                    await ctx.send(f"Health check failed with status {resp.status}.")
+                    return
+                data = await resp.json()
+        except aiohttp.ClientError as e:
+            await ctx.send(f"Failed to reach the Taalas API: {e}")
+            return
+
+        status = data.get("status", "unknown")
+        queue_size = data.get("queue_size", "?")
+        adapter = data.get("current_adapter", "unknown")
+        await ctx.send(f"**Taalas API**\nStatus: `{status}`\nQueue size: `{queue_size}`\nAdapter: `{adapter}`")
 
     @taalas.command(name="clearconvo")
     async def taalas_clearconvo(self, ctx: commands.Context):
