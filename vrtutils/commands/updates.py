@@ -9,7 +9,6 @@ from redbot.core import commands
 
 from ..abc import MixinMeta
 
-
 _ORIG_FUNC = None
 _INSTALL_REQS_VAR = contextvars.ContextVar("_INSTALL_REQS_VAR")
 
