@@ -63,7 +63,6 @@ class Updates(MixinMeta):
     @commands.is_owner()
     async def quick_update_cog(self, ctx: commands.Context, *cogs: InstalledCog):
         """Auto update & reload cogs WITHOUT updating dependencies"""
-        ctx.assume_yes = True
         cog_update_command = ctx.bot.get_command("cog update")
         if cog_update_command is None:
             return await ctx.send(
@@ -72,6 +71,6 @@ class Updates(MixinMeta):
 
         token = _INSTALL_REQS_VAR.set(False)
         try:
-            await ctx.invoke(cog_update_command, *cogs)
+            await ctx.invoke(cog_update_command, True, *cogs)
         finally:
             _INSTALL_REQS_VAR.reset(token)
