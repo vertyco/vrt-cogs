@@ -46,12 +46,11 @@ FETCH_CHANNEL_HISTORY = {
             },
             "limit": {
                 "type": "integer",
-                "description": "The number of messages to fetch from the channel, starting from the most recent. If not provided, uses delta instead.",
+                "description": "The number of messages to fetch from the channel, starting from the most recent. Defaults to 50 if neither limit nor delta is provided.",
             },
             "delta": {
                 "type": "string",
-                "description": "The time delta to filter messages by, in the format 'XdXhXmXs' (e.g., '1d2h30m' for 1 day, 2 hours, and 30 minutes). Defaults to '1h' if neither limit nor delta is provided.",
-                "default": "1h",
+                "description": "The time delta to filter messages by, in the format 'XdXhXmXs' (e.g., '1d2h30m' for 1 day, 2 hours, and 30 minutes). If omitted, no time-based cutoff is applied.",
             },
         },
     },
@@ -291,5 +290,33 @@ EDIT_BOT_MESSAGE = {
             },
         },
         "required": ["message_id", "new_content"],
+    },
+}
+
+RENDER_SVG = {
+    "name": "render_svg",
+    "description": "Render an SVG string into a PNG image and send it to the current Discord channel.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "svg_content": {
+                "type": "string",
+                "description": (
+                    "Complete SVG markup with an <svg> root that has explicit width and height attributes."
+                    " Place elements intelligently and fit everything in a way that makes sense visually!"
+                ),
+            },
+            "filename": {
+                "type": "string",
+                "description": "Output filename (default: 'rendering.png').",
+                "default": "rendering.png",
+            },
+            "background": {
+                "type": "string",
+                "description": "Optional background hex color.",
+                "default": "",
+            },
+        },
+        "required": ["svg_content"],
     },
 }

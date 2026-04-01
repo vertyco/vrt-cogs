@@ -27,7 +27,7 @@ class AssistantUtils(Functions, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.3.0"
+    __version__ = "1.4.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -59,6 +59,7 @@ class AssistantUtils(Functions, commands.Cog, metaclass=CompositeMetaClass):
         await cog.register_function(self.qualified_name, schemas.SEARCH_MESSAGES)
         await cog.register_function(self.qualified_name, schemas.RUN_COMMAND)
         await cog.register_function(self.qualified_name, schemas.EDIT_BOT_MESSAGE)
+        await cog.register_function(self.qualified_name, schemas.RENDER_SVG)
         # Moderation tools
         await cog.register_function(self.qualified_name, schemas.GET_MODLOG_CASES, permission_level="mod")
         await cog.register_function(self.qualified_name, schemas.SEND_MESSAGE_TO_CHANNEL, permission_level="mod")

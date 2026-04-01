@@ -3,11 +3,12 @@ import html as html_module
 import logging
 import re
 from datetime import datetime, timezone
-from io import StringIO
+from io import BytesIO, StringIO
 from typing import Literal
 
 import aiohttp
 import discord
+import resvg_py
 from dateutil import parser
 from rapidfuzz import fuzz
 from redbot.core import commands, modlog
@@ -160,7 +161,7 @@ class Functions(MixinMeta):
         user: discord.Member,
         channel_name_or_id: str | int = None,
         limit: int = None,
-        delta: str = "1h",
+        delta: str | None = None,
         *args,
         **kwargs,
     ):
@@ -211,10 +212,11 @@ class Functions(MixinMeta):
         except (ValueError, TypeError, commands.BadArgument):
             timedelta = None
 
-        if limit is None and timedelta is None:
-            timedelta = commands.parse_timedelta("1h")
-        elif timedelta is not None and timedelta > commands.parse_timedelta("7d"):
+        if timedelta is not None and timedelta > commands.parse_timedelta("7d"):
             return "Delta cannot be greater than 7 days to prevent excessive fetching."
+
+        if limit is None and timedelta is None:
+            limit = 50
 
         # Start fetching the content
         buffer = StringIO()
@@ -242,6 +244,8 @@ class Functions(MixinMeta):
                         embed_parts.append(f"{field.name}: {field.value}")
                     if embed.footer and embed.footer.text:
                         embed_parts.append(f"Footer: {embed.footer.text}")
+                    for field in embed.fields:
+                        embed_parts.append(f"{field.name}: {field.value}")
 
                     if embed_parts:
                         embed_text = " | ".join(embed_parts)
@@ -1099,3 +1103,47 @@ class Functions(MixinMeta):
             return f"Message `{msg_id}` has been edited successfully."
         except discord.HTTPException as e:
             return f"Failed to edit message: {e.text}"
+
+    async def render_svg(
+        self,
+        svg_content: str,
+        channel: discord.TextChannel,
+        filename: str = "rendering.png",
+        background: str = "",
+        *args,
+        **kwargs,
+    ) -> str:
+        """
+        Render an SVG string to a PNG image and send it to the Discord channel.
+
+        Args:
+            svg_content: Complete SVG markup to render
+            channel: The channel to send the image to
+            filename: Name for the output PNG file
+            background: Optional CSS background color (e.g. '#ffffff')
+
+        Returns:
+            Confirmation message or error description
+        """
+        if not filename.lower().endswith(".png"):
+            filename = filename.rsplit(".", 1)[0] + ".png"
+
+        kwargs_render = {"svg_string": svg_content, "zoom": 2}
+        if background:
+            kwargs_render["background"] = background
+
+        try:
+            raw = await asyncio.to_thread(resvg_py.svg_to_bytes, **kwargs_render)
+        except Exception as e:
+            log.warning("render_svg failed to rasterize SVG", exc_info=e)
+            return f"Failed to render SVG: {e}"
+
+        png_bytes = bytes(raw)
+        if not png_bytes:
+            return "SVG rendered to an empty image. Check that the SVG has valid width/height attributes and visible content."
+
+        buf = BytesIO(png_bytes)
+        buf.seek(0)
+        file = discord.File(buf, filename=filename)
+        await channel.send(file=file)
+        return "Success!"
