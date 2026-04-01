@@ -1,3 +1,18 @@
+import matplotlib.font_manager as _fm
+
+
+def _available_svg_fonts() -> str:
+    try:
+        families = sorted({f.name for f in _fm.fontManager.ttflist})
+        return ", ".join(f"'{n}'" for n in families)
+    except Exception:
+        return "'DejaVu Sans', 'DejaVu Serif', 'DejaVu Sans Mono', 'STIXGeneral'"
+
+
+_SVG_FONTS = _available_svg_fonts()
+print(_SVG_FONTS)
+
+
 GET_CHANNEL_LIST = {
     "name": "get_channel_list",
     "description": "Get a list of all the Discord channels that the person you are talking to can see, including their name and ID along with the topic.",
@@ -303,9 +318,9 @@ RENDER_SVG = {
                 "type": "string",
                 "description": (
                     "Complete SVG markup with an <svg> root that has explicit width and height attributes."
-                    " For text, always use font-family='DejaVu Sans' (or 'DejaVu Serif' / 'DejaVu Sans Mono')."
-                    " Place elements intelligently and fit everything in a way that makes sense visually!"
-                    " Keep in mind that Discord channels and user mention formatting doesnt render in SVGs so just use plain text."
+                    f" Available font families: {_SVG_FONTS}."
+                    " Tip: prefer named families over generic CSS families (sans-serif etc.) for consistent results."
+                    " Keep in mind that Discord mention formatting doesn't render in SVGs so just use plain text."
                 ),
             },
             "filename": {

@@ -2,6 +2,7 @@ import asyncio
 import html as html_module
 import logging
 import re
+import sys
 from datetime import datetime, timezone
 from io import BytesIO, StringIO
 from pathlib import Path
@@ -21,6 +22,24 @@ from ..abc import MixinMeta
 from .utils import clean_name
 
 log = logging.getLogger("red.vrt.assistantutils")
+
+
+def _svg_font_dirs() -> list[str]:
+    """Collect font directories available for SVG rendering."""
+    dirs: list[str] = []
+    # Always include matplotlib's bundled fonts (DejaVu + STIX)
+    mpl_ttf = Path(matplotlib.__file__).parent / "mpl-data" / "fonts" / "ttf"
+    if mpl_ttf.is_dir():
+        dirs.append(str(mpl_ttf))
+    # System font directories for additional variety
+    if sys.platform.startswith("linux"):
+        candidates = ["/usr/share/fonts", "/usr/local/share/fonts", str(Path.home() / ".fonts")]
+    elif sys.platform == "darwin":
+        candidates = ["/Library/Fonts", "/System/Library/Fonts", str(Path.home() / "Library/Fonts")]
+    else:
+        candidates = []
+    dirs.extend(d for d in candidates if Path(d).is_dir())
+    return dirs
 
 
 class Functions(MixinMeta):
@@ -1130,14 +1149,10 @@ class Functions(MixinMeta):
         if not filename.lower().endswith(".png"):
             filename = filename.rsplit(".", 1)[0] + ".png"
 
-        mpl_font_dir = Path(matplotlib.__file__).parent / "mpl-data" / "fonts" / "ttf"
         kwargs_render = {
             "svg_string": svg_content,
             "zoom": 2,
-            "font_dirs": [str(mpl_font_dir)] if mpl_font_dir.is_dir() else [],
-            "sans_serif_family": "DejaVu Sans",
-            "serif_family": "DejaVu Serif",
-            "monospace_family": "DejaVu Sans Mono",
+            "font_dirs": _svg_font_dirs(),
         }
         if background:
             kwargs_render["background"] = background
