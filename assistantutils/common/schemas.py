@@ -1,15 +1,33 @@
-import matplotlib.font_manager as _fm
+import re
+
+import matplotlib.font_manager as fm
+from matplotlib.ft2font import FT2Font
+
+FONT_NOISE = re.compile(
+    r"^(cm[a-z]+\d|STIX(?:Size|NonUni)|Wingdings|Webdings|Symbol|Marlett|MT Extra)",
+    re.IGNORECASE,
+)
+FONT_CAP = 40
 
 
-def _available_svg_fonts() -> str:
+def available_svg_fonts() -> str:
     try:
-        families = sorted({f.name for f in _fm.fontManager.ttflist})
-        return ", ".join(f"'{n}'" for n in families)
+        paths = fm.findSystemFonts()
+        families: set[str] = set()
+        for path in paths:
+            try:
+                name = FT2Font(path).family_name
+                if not FONT_NOISE.match(name):
+                    families.add(name)
+            except Exception:
+                pass
+        capped = sorted(families)[:FONT_CAP]
+        return ", ".join(f"'{n}'" for n in capped)
     except Exception:
         return "'DejaVu Sans', 'DejaVu Serif', 'DejaVu Sans Mono', 'STIXGeneral'"
 
 
-_SVG_FONTS = _available_svg_fonts()
+SVG_FONTS = available_svg_fonts()
 
 
 GET_CHANNEL_LIST = {
@@ -317,7 +335,7 @@ RENDER_SVG = {
                 "type": "string",
                 "description": (
                     "Complete SVG markup with an <svg> root that has explicit width and height attributes."
-                    f" Available font families: {_SVG_FONTS}."
+                    f" Available font families: {SVG_FONTS}."
                     " Tip: prefer named families over generic CSS families (sans-serif etc.) for consistent results."
                     " Keep in mind that Discord mention formatting doesn't render in SVGs so just use plain text."
                 ),
