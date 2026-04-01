@@ -581,7 +581,7 @@ class ChatHandler(MixinMeta):
         tool_call_history: dict[str, int] = {}  # Track (name, args) -> count for loop detection
         while True:
             if tries > 2:
-                log.error("breaking after 3 tries, purge_images function must have failed")
+                log.error("Breaking after 3 retries (image purge or empty model response)")
                 break
             if calls >= conf.max_function_calls:
                 function_calls = []
@@ -675,6 +675,12 @@ class ChatHandler(MixinMeta):
             if reply := response.content:
                 break
 
+            # Check for model refusal (newer API field)
+            if hasattr(response, "refusal") and response.refusal:
+                log.error(f"Model refused to respond: {response.refusal}")
+                reply = response.refusal
+                break
+
             await clean_response(response)
 
             if response.tool_calls:
@@ -684,7 +690,11 @@ class ChatHandler(MixinMeta):
                 log.debug("Function call detected")
                 response_functions: list[FunctionCall] = [response.function_call]
             else:
-                log.error("No reply and no function calls???")
+                tries += 1
+                log.warning(
+                    f"No reply and no function calls from model (attempt {tries}). "
+                    f"Response dump: {response.model_dump()}"
+                )
                 continue
 
             if len(response_functions) > 1:
