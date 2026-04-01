@@ -3,7 +3,7 @@ import logging
 import re
 import sys
 import typing as t
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import BytesIO, StringIO
 from tempfile import NamedTemporaryFile
 
@@ -235,6 +235,12 @@ def get_params(
 ) -> dict:
     roles = [role for role in author.roles if "everyone" not in role.name] if author else []
     display_name = author.display_name if author else ""
+    uptime_delta = datetime.now() - bot.uptime
+    # If uptime is more than a minute, round to the nearest minute for readability
+    if uptime_delta.total_seconds() > 60:
+        uptime = humanize_timedelta(timedelta=timedelta(minutes=round(uptime_delta.total_seconds() / 60)))
+    else:
+        uptime = humanize_timedelta(timedelta=uptime_delta)
     params = {
         **extras,
         "botname": bot.user.name,
@@ -263,7 +269,7 @@ def get_params(
         "topic": channel.topic if channel and isinstance(channel, discord.TextChannel) else "",
         "userjoindate": author.joined_at.strftime("%B %d, %Y") if author else "[unknown date]",
         "userjointime": author.joined_at.strftime("%I:%M %p %Z") if author else "[unknown time]",
-        "uptime": humanize_timedelta(timedelta=datetime.now() - bot.uptime),
+        "uptime": uptime,
     }
     return params
 
