@@ -13,7 +13,7 @@ from openai.types.chat.chat_completion_message import ChatCompletionMessage
 from redbot.core import commands, version_info
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import humanize_list
+from redbot.core.utils.chat_formatting import humanize_list, humanize_timedelta
 
 from .constants import NO_DEVELOPER_ROLE, SUPPORTS_VISION
 from .models import GuildSettings
@@ -263,6 +263,7 @@ def get_params(
         "topic": channel.topic if channel and isinstance(channel, discord.TextChannel) else "",
         "userjoindate": author.joined_at.strftime("%B %d, %Y") if author else "[unknown date]",
         "userjointime": author.joined_at.strftime("%I:%M %p %Z") if author else "[unknown time]",
+        "uptime": humanize_timedelta(timedelta=datetime.now() - bot.uptime),
     }
     return params
 

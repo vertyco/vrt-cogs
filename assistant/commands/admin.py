@@ -548,6 +548,7 @@ class Admin(MixinMeta):
         - **currency**: currency name
         - **bank**: bank name
         - **balance**: the user's current balance
+        - **uptime**: the bot's current uptime
         """
         attachments = get_attachments(ctx.message)
         if attachments:
@@ -689,6 +690,7 @@ class Admin(MixinMeta):
         - **currency**: currency name
         - **bank**: bank name
         - **balance**: the user's current balance
+        - **uptime**: the bot's current uptime
         """
         attachments = get_attachments(ctx.message)
         if attachments:
@@ -941,6 +943,7 @@ class Admin(MixinMeta):
         - **currency**: currency name
         - **bank**: bank name
         - **balance**: the user's current balance
+        - **uptime**: the bot's current uptime
         """
         attachments = get_attachments(ctx.message)
         if attachments:
