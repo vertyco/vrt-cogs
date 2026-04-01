@@ -303,6 +303,7 @@ RENDER_SVG = {
                 "type": "string",
                 "description": (
                     "Complete SVG markup with an <svg> root that has explicit width and height attributes."
+                    " For text, always use font-family='DejaVu Sans' (or 'DejaVu Serif' / 'DejaVu Sans Mono')."
                     " Place elements intelligently and fit everything in a way that makes sense visually!"
                 ),
             },

@@ -4,10 +4,12 @@ import logging
 import re
 from datetime import datetime, timezone
 from io import BytesIO, StringIO
+from pathlib import Path
 from typing import Literal
 
 import aiohttp
 import discord
+import matplotlib
 import resvg_py
 from dateutil import parser
 from rapidfuzz import fuzz
@@ -1128,7 +1130,15 @@ class Functions(MixinMeta):
         if not filename.lower().endswith(".png"):
             filename = filename.rsplit(".", 1)[0] + ".png"
 
-        kwargs_render = {"svg_string": svg_content, "zoom": 2}
+        mpl_font_dir = Path(matplotlib.__file__).parent / "mpl-data" / "fonts" / "ttf"
+        kwargs_render = {
+            "svg_string": svg_content,
+            "zoom": 2,
+            "font_dirs": [str(mpl_font_dir)] if mpl_font_dir.is_dir() else [],
+            "sans_serif_family": "DejaVu Sans",
+            "serif_family": "DejaVu Serif",
+            "monospace_family": "DejaVu Sans Mono",
+        }
         if background:
             kwargs_render["background"] = background
 
