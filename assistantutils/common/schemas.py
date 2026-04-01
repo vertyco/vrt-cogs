@@ -305,6 +305,7 @@ RENDER_SVG = {
                     "Complete SVG markup with an <svg> root that has explicit width and height attributes."
                     " For text, always use font-family='DejaVu Sans' (or 'DejaVu Serif' / 'DejaVu Sans Mono')."
                     " Place elements intelligently and fit everything in a way that makes sense visually!"
+                    " Keep in mind that Discord channels and user mention formatting doesnt render in SVGs so just use plain text."
                 ),
             },
             "filename": {
