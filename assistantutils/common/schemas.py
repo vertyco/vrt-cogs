@@ -10,7 +10,6 @@ def _available_svg_fonts() -> str:
 
 
 _SVG_FONTS = _available_svg_fonts()
-print(_SVG_FONTS)
 
 
 GET_CHANNEL_LIST = {
