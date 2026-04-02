@@ -209,7 +209,7 @@ class ChatHandler(MixinMeta):
         outputfile_pattern = r"--outputfile\s+([^\s]+)"
         extract_pattern = r"--extract"
         get_last_message_pattern = r"--last"
-        image_url_pattern = r"(https?:\/\/\S+\.(?:png|gif|webp|jpg|jpeg)\b)"
+        image_url_pattern = r"(https?:\/\/\S+\.(?:png|gif|webp|jpg|jpeg)(?:\?\S*)?)"
 
         # Extract the optional arguments and their values
         outputfile_match = re.search(outputfile_pattern, question)
@@ -221,7 +221,6 @@ class ChatHandler(MixinMeta):
         question = re.sub(outputfile_pattern, "", question)
         question = re.sub(extract_pattern, "", question)
         question = re.sub(get_last_message_pattern, "", question)
-        question = re.sub(image_url_pattern, "", question)
 
         # Check if the optional arguments were present and set the corresponding variables
         outputfile = outputfile_match.group(1) if outputfile_match else None
