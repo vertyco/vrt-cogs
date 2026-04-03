@@ -16,6 +16,7 @@ from ..views.upgrade_view import UpgradeConfirmView
 
 class User(MixinMeta):
     @commands.hybrid_group(name="miner", invoke_without_command=True)
+    @commands.guild_only()
     async def miner_group(self, ctx: commands.Context):
         """User commands"""
         await ctx.send_help()
