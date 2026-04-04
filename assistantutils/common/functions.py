@@ -2,15 +2,12 @@ import asyncio
 import html as html_module
 import logging
 import re
-import sys
 from datetime import datetime, timezone
 from io import BytesIO, StringIO
-from pathlib import Path
 from typing import Literal
 
 import aiohttp
 import discord
-import matplotlib
 import resvg_py
 from dateutil import parser
 from rapidfuzz import fuzz
@@ -19,27 +16,9 @@ from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import text_to_file
 
 from ..abc import MixinMeta
-from .utils import clean_name
+from .utils import clean_name, find_channel, svg_font_dirs
 
 log = logging.getLogger("red.vrt.assistantutils")
-
-
-def _svg_font_dirs() -> list[str]:
-    """Collect font directories available for SVG rendering."""
-    dirs: list[str] = []
-    # Always include matplotlib's bundled fonts (DejaVu + STIX)
-    mpl_ttf = Path(matplotlib.__file__).parent / "mpl-data" / "fonts" / "ttf"
-    if mpl_ttf.is_dir():
-        dirs.append(str(mpl_ttf))
-    # System font directories for additional variety
-    if sys.platform.startswith("linux"):
-        candidates = ["/usr/share/fonts", "/usr/local/share/fonts", str(Path.home() / ".fonts")]
-    elif sys.platform == "darwin":
-        candidates = ["/Library/Fonts", "/System/Library/Fonts", str(Path.home() / "Library/Fonts")]
-    else:
-        candidates = []
-    dirs.extend(d for d in candidates if Path(d).is_dir())
-    return dirs
 
 
 class Functions(MixinMeta):
@@ -50,7 +29,13 @@ class Functions(MixinMeta):
         *args,
         **kwargs,
     ):
-        valid_channels = set(list(guild.channels) + list(guild.threads) + list(guild.forums))
+        valid_channels = set(
+            list(guild.channels)
+            + list(guild.threads)
+            + list(guild.forums)
+            + list(guild.categories)
+            + list(guild.voice_channels)
+        )
         valid_channels = [i for i in valid_channels if i.permissions_for(user).view_channel]
         if not valid_channels:
             return "There are no channels this user can view"
@@ -71,27 +56,7 @@ class Functions(MixinMeta):
         *args,
         **kwargs,
     ):
-        def _fuzzymatch() -> discord.abc.GuildChannel | None:
-            valid_channels = set(list(guild.channels) + list(guild.threads) + list(guild.forums))
-            matches = []
-            clean_query = clean_name(channel_name_or_id.lower())
-            for c in valid_channels:
-                matches.append((c, fuzz.ratio(clean_name(c.name), clean_query)))
-                matches.append((c, fuzz.ratio(c.name, channel_name_or_id)))
-
-            if matches:
-                matches.sort(key=lambda x: x[1], reverse=True)
-                return matches[0][0]
-            return None
-
-        channel_name_or_id = str(channel_name_or_id).strip()
-        if channel_name_or_id.isdigit():
-            channel = guild.get_channel(int(channel_name_or_id))
-        else:
-            channel = discord.utils.get(guild.channels, name=channel_name_or_id)
-            if not channel:
-                channel = await asyncio.to_thread(_fuzzymatch)
-
+        channel = await asyncio.to_thread(find_channel, guild, channel_name_or_id)
         if not channel:
             return f"Channel not found matching the name or ID: `{channel_name_or_id}`"
 
@@ -187,28 +152,10 @@ class Functions(MixinMeta):
         **kwargs,
     ):
         if channel_name_or_id is not None:
-            channel_name_or_id = str(channel_name_or_id)
-            channel_name_or_id = channel_name_or_id.replace("#", "").replace("<", "").replace(">", "").strip()
-            if channel_name_or_id.isdigit():
-                channel = guild.get_channel(int(channel_name_or_id))
-            else:
-                named_channels = {c.name: c for c in guild.channels}
-                channel = named_channels.get(channel_name_or_id)
-                if not channel:
-                    # Try fuzzy matching
-                    matches = []
-                    for c in guild.channels:
-                        name_score = fuzz.ratio(c.name, channel_name_or_id)
-                        if name_score >= 80:
-                            matches.append((c.name, c.id, name_score))
-                        clean_name_score = fuzz.ratio(clean_name(c.name), clean_name(channel_name_or_id))
-                        if clean_name_score >= 80:
-                            matches.append((c.name, c.id, clean_name_score))
-                    if matches:
-                        matches.sort(key=lambda x: x[2], reverse=True)
-                        channel_name, channel_id, score = matches[0]
-                        channel = guild.get_channel(int(channel_id))
-
+            channel_override = await asyncio.to_thread(find_channel, guild, channel_name_or_id)
+            if not channel_override:
+                return f"No channel found matching '{channel_name_or_id}'."
+            channel = channel_override
         if not channel:
             return "No channel found with that name or ID!"
         if not channel.permissions_for(channel.guild.me).view_channel:
@@ -576,13 +523,10 @@ class Functions(MixinMeta):
         """
         # Resolve channel if specified
         if channel_name_or_id:
-            channel_name_or_id = str(channel_name_or_id).strip()
-            if channel_name_or_id.isdigit():
-                search_channel = guild.get_channel(int(channel_name_or_id))
-            else:
-                search_channel = discord.utils.get(guild.channels, name=channel_name_or_id)
-            if search_channel:
-                channel = search_channel
+            channel_override = await asyncio.to_thread(find_channel, guild, channel_name_or_id)
+            if not channel_override:
+                return f"No channel found matching '{channel_name_or_id}'."
+            channel = channel_override
 
         if not channel:
             return "Channel not found!"
@@ -909,34 +853,13 @@ class Functions(MixinMeta):
         **kwargs,
     ) -> str:
         """Get a list of all channels within a specific category."""
-        category_name_or_id = str(category_name_or_id).strip()
-        category: discord.CategoryChannel | None = None
-
-        if category_name_or_id.isdigit():
-            channel = guild.get_channel(int(category_name_or_id))
-            if isinstance(channel, discord.CategoryChannel):
-                category = channel
-        else:
-            # Exact name match first
-            for cat in guild.categories:
-                if cat.name.lower() == category_name_or_id.lower():
-                    category = cat
-                    break
-            # Fuzzy match fallback
-            if not category:
-                matches = []
-                clean_query = clean_name(category_name_or_id.lower())
-                for cat in guild.categories:
-                    matches.append((cat, fuzz.ratio(clean_name(cat.name.lower()), clean_query)))
-                    matches.append((cat, fuzz.ratio(cat.name.lower(), category_name_or_id.lower())))
-                if matches:
-                    matches.sort(key=lambda x: x[1], reverse=True)
-                    if matches[0][1] >= 60:
-                        category = matches[0][0]
+        category = await asyncio.to_thread(find_channel, guild, category_name_or_id)
 
         if not category:
             available = ", ".join(c.name for c in guild.categories)
             return f"No category found matching '{category_name_or_id}'. Available categories: {available}"
+        if not isinstance(category, discord.CategoryChannel):
+            return f"'{category_name_or_id}' is not a valid category."
 
         channels = category.channels
         if not channels:
@@ -967,41 +890,17 @@ class Functions(MixinMeta):
         **kwargs,
     ) -> str:
         """Send a message to a specific channel as the bot."""
-        channel_name_or_id = str(channel_name_or_id).strip().replace("#", "").replace("<", "").replace(">", "")
-        target: discord.TextChannel | discord.Thread | None = None
-
-        if channel_name_or_id.isdigit():
-            target = guild.get_channel_or_thread(int(channel_name_or_id))
-        else:
-            # Exact name match
-            for ch in guild.channels:
-                if ch.name.lower() == channel_name_or_id.lower():
-                    target = ch
-                    break
-            # Fuzzy match fallback
-            if not target:
-                matches = []
-                clean_query = clean_name(channel_name_or_id.lower())
-                for ch in guild.channels:
-                    score = max(
-                        fuzz.ratio(clean_name(ch.name.lower()), clean_query),
-                        fuzz.ratio(ch.name.lower(), channel_name_or_id.lower()),
-                    )
-                    if score >= 70:
-                        matches.append((ch, score))
-                if matches:
-                    matches.sort(key=lambda x: x[1], reverse=True)
-                    target = matches[0][0]
+        target = await asyncio.to_thread(find_channel, guild, channel_name_or_id)
 
         if not target:
             return f"No channel found matching '{channel_name_or_id}'."
 
         if not hasattr(target, "send"):
-            return f"'{target.name}' is not a text channel and cannot receive messages."
+            return f"'{target.name}' is not a channel you can send messages to."
 
         perms = target.permissions_for(guild.me)
         if not perms.send_messages:
-            return f"I don't have permission to send messages in {target.mention}."
+            return f"You don't have permission to send messages in {target.mention}."
 
         if len(message_content) > 2000:
             return "Message content exceeds the 2000 character Discord limit. Please shorten it."
@@ -1023,27 +922,10 @@ class Functions(MixinMeta):
     ) -> str:
         """Fetch pinned messages from a channel."""
         if channel_name_or_id is not None:
-            channel_name_or_id = str(channel_name_or_id).strip().replace("#", "").replace("<", "").replace(">", "")
-            if channel_name_or_id.isdigit():
-                target = guild.get_channel(int(channel_name_or_id))
-            else:
-                target = discord.utils.get(guild.channels, name=channel_name_or_id)
-                if not target:
-                    matches = []
-                    clean_query = clean_name(channel_name_or_id.lower())
-                    for ch in guild.channels:
-                        score = max(
-                            fuzz.ratio(clean_name(ch.name.lower()), clean_query),
-                            fuzz.ratio(ch.name.lower(), channel_name_or_id.lower()),
-                        )
-                        if score >= 70:
-                            matches.append((ch, score))
-                    if matches:
-                        matches.sort(key=lambda x: x[1], reverse=True)
-                        target = matches[0][0]
-            if not target:
+            channel_override = await asyncio.to_thread(find_channel, guild, channel_name_or_id)
+            if not channel_override:
                 return f"No channel found matching '{channel_name_or_id}'."
-            channel = target
+            channel = channel_override
 
         if not hasattr(channel, "pins"):
             return f"'{channel.name}' does not support pinned messages."
@@ -1152,7 +1034,7 @@ class Functions(MixinMeta):
         kwargs_render = {
             "svg_string": svg_content,
             "zoom": 2,
-            "font_dirs": _svg_font_dirs(),
+            "font_dirs": svg_font_dirs(),
         }
         if background:
             kwargs_render["background"] = background
