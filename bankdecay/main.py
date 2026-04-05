@@ -35,7 +35,7 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.3.15"
+    __version__ = "0.3.16"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -114,7 +114,7 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
         # Decayed users: dict[username, amount]
         decayed: t.Dict[str, int] = {}
         uids_to_remove = set()  # User IDs to remove from tracking who no longer have a balance
-        for user_id in conf.users.keys():
+        for user_id in list(conf.users.keys()):
             balance = bank_members.get(user_id, 0)
             if not balance:
                 # Balance is 0, no other checks are needed
