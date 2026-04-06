@@ -8,6 +8,7 @@ from uuid import uuid4
 
 import aiohttp
 import discord
+import pytz
 from dateutil import parser as dateutil_parser
 from duckduckgo_search import DDGS
 from redbot.core import commands
@@ -22,13 +23,17 @@ log = logging.getLogger("red.vrt.assistant.functions")
 _ = Translator("Assistant", __file__)
 
 
-def parse_time_input(time_str: str) -> datetime | None:
+def parse_time_input(time_str: str, timezone_str: str = "UTC") -> datetime | None:
     """Parse a time input string as either a relative duration or an absolute datetime.
 
     Supports:
     - Relative durations: '30m', '2h', '1d', '1w2d3h', '5 minutes'
     - ISO format: '2024-08-04T15:00:00', '2024-08-04'
     - Humanized datetimes: 'august 4th 3:00pm', '6pm', 'december 25 2024'
+
+    Args:
+        time_str: The time string to parse.
+        timezone_str: IANA timezone name used to interpret naive datetimes (default: UTC).
 
     Returns a timezone-aware UTC datetime, or None if parsing fails.
     """
@@ -46,9 +51,14 @@ def parse_time_input(time_str: str) -> datetime | None:
     try:
         parsed = dateutil_parser.parse(time_str, fuzzy=True)
         if parsed.tzinfo is None:
-            parsed = parsed.replace(tzinfo=timezone.utc)
-        else:
-            parsed = parsed.astimezone(timezone.utc)
+            # Interpret naive datetimes in the configured guild timezone
+            try:
+                tz = pytz.timezone(timezone_str)
+            except pytz.UnknownTimeZoneError:
+                tz = pytz.UTC
+            parsed = tz.localize(parsed)
+        # Normalise to UTC
+        parsed = parsed.astimezone(timezone.utc)
         # If parsed time is in the past and less than 24h ago, assume user meant next occurrence
         # This handles cases like "6pm" when it's already past 6pm today
         if parsed <= now and (now - parsed).total_seconds() < 86400:
@@ -348,6 +358,7 @@ class AssistantFunctions(MixinMeta):
         guild: discord.Guild,
         channel: discord.TextChannel,
         user: discord.Member,
+        conf: GuildSettings,
         message: str,
         remind_in: str,
         dm: bool = False,
@@ -355,9 +366,9 @@ class AssistantFunctions(MixinMeta):
         **kwargs,
     ) -> str:
         """Create a reminder for the user."""
-        remind_at = parse_time_input(remind_in)
+        remind_at = parse_time_input(remind_in, timezone_str=conf.timezone)
         if remind_at is None:
-            return f"Could not parse time from: {remind_in}. Use a duration like '30m', '2h', '1d' or a datetime like '6pm', 'august 4th 3:00pm'."
+            return f"Could not parse time from: {remind_in}. Use a duration like '30m', '2h', '1d' or an ISO datetime like '2025-08-04T15:00:00'."
         now = datetime.now(tz=timezone.utc)
         if remind_at <= now:
             return "The specified time is in the past. Please provide a future time."
@@ -541,9 +552,9 @@ class AssistantFunctions(MixinMeta):
         if user_task_count >= conf.max_scheduled_tasks:
             return f"You have reached the maximum of {conf.max_scheduled_tasks} scheduled tasks. Cancel some before scheduling more."
 
-        execute_at = parse_time_input(execute_in)
+        execute_at = parse_time_input(execute_in, timezone_str=conf.timezone)
         if execute_at is None:
-            return f"Could not parse time from: {execute_in}. Use a duration like '30m', '2h', '1d' or a datetime like '6pm', 'august 4th 3:00pm'."
+            return f"Could not parse time from: {execute_in}. Use a duration like '30m', '2h', '1d' or an ISO datetime like '2025-08-04T15:00:00'."
 
         now = datetime.now(tz=timezone.utc)
         if execute_at <= now:

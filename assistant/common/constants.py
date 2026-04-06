@@ -493,7 +493,15 @@ CREATE_REMINDER = {
             },
             "remind_in": {
                 "type": "string",
-                "description": "When the reminder should fire. Can be a relative duration (e.g. '5 minutes', '2 hours', '1 day', '1d3h') or an absolute datetime (e.g. '6pm', 'august 4th 3:00pm', '2025-08-04T15:00:00').",
+                "description": (
+                    "When the reminder should fire. Accepts TWO formats ONLY:\n"
+                    "1. Relative duration from now: '5 minutes', '2 hours', '1 day', '1d3h', '30m'\n"
+                    "2. ISO 8601 datetime: '2025-08-04T15:00:00' (interpreted in the server's timezone)\n"
+                    "IMPORTANT: Do NOT pass vague or relative day references like 'next Monday' or 'tomorrow'. "
+                    "You know the current date and time from the system prompt — compute the exact date yourself "
+                    "and pass it as an ISO 8601 datetime (YYYY-MM-DDTHH:MM:SS). "
+                    "For simple offsets (e.g. 'in 2 hours'), use a relative duration instead."
+                ),
             },
             "dm": {
                 "type": "boolean",
@@ -595,7 +603,15 @@ SCHEDULE_TASK = {
             },
             "execute_in": {
                 "type": "string",
-                "description": "When the task should execute. Can be a relative duration (e.g. '30 minutes', '1 hour', '2 days', '1w2d3h') or an absolute datetime (e.g. '6pm', 'august 4th 3:00pm', '2025-08-04T15:00:00').",
+                "description": (
+                    "When the task should execute. Accepts TWO formats ONLY:\n"
+                    "1. Relative duration from now: '30 minutes', '1 hour', '2 days', '1w2d3h'\n"
+                    "2. ISO 8601 datetime: '2025-08-04T15:00:00' (interpreted in the server's timezone)\n"
+                    "IMPORTANT: Do NOT pass vague or relative day references like 'next Monday' or 'tomorrow'. "
+                    "You know the current date and time from the system prompt — compute the exact date yourself "
+                    "and pass it as an ISO 8601 datetime (YYYY-MM-DDTHH:MM:SS). "
+                    "For simple offsets (e.g. 'in 2 hours'), use a relative duration instead."
+                ),
             },
             "context": {
                 "type": "string",
