@@ -130,6 +130,10 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    async def get_mention_permissions(self, member: discord.Member) -> discord.AllowedMentions:
+        raise NotImplementedError
+
+    @abstractmethod
     async def token_pagify(self, text: str, conf: GuildSettings) -> List[str]:
         raise NotImplementedError
 

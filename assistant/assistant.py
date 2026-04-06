@@ -68,7 +68,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "7.7.0"
+    __version__ = "7.7.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -347,8 +347,9 @@ class Assistant(
                 conf=conf,
             )
             if reply:
+                allowed_mentions = await self.get_mention_permissions(member)
                 for page in pagify(reply, delims=["\n", " "], page_length=2000):
-                    await channel.send(page)
+                    await channel.send(page, allowed_mentions=allowed_mentions)
         except Exception as e:
             log.error(f"Error executing scheduled task {task_id}", exc_info=e)
             try:

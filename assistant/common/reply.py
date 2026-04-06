@@ -21,6 +21,7 @@ async def send_reply(
     conf: GuildSettings,
     files: Optional[List[discord.File]] = None,
     reply: bool = False,
+    allowed_mentions: Optional[discord.AllowedMentions] = None,
 ):
     """Intelligently send a reply to a message
 
@@ -64,11 +65,18 @@ async def send_reply(
                     embeds=embeds,
                     files=files,
                     mention_author=mention,
+                    allowed_mentions=allowed_mentions,
                 )
             except discord.HTTPException:
                 pass
         try:
-            await message.channel.send(content=content, embed=embed, embeds=embeds, files=files)
+            await message.channel.send(
+                content=content,
+                embed=embed,
+                embeds=embeds,
+                files=files,
+                allowed_mentions=allowed_mentions,
+            )
         except discord.HTTPException as e:
             log.error("Error sending message", exc_info=e)
 

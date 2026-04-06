@@ -5,6 +5,7 @@ import logging
 import multiprocessing as mp
 import re
 import traceback
+from contextlib import suppress
 from datetime import datetime
 from inspect import iscoroutinefunction
 from io import BytesIO, StringIO
@@ -195,6 +196,18 @@ def cap_tool_result_by_context(messages: list[dict], max_tokens: int) -> None:
 
 @cog_i18n(_)
 class ChatHandler(MixinMeta):
+    async def get_mention_permissions(self, member: discord.Member) -> discord.AllowedMentions:
+        """Return AllowedMentions allowing role/user pings for privileged members"""
+        privileged = (
+            member.id in self.bot.owner_ids
+            or member.id == member.guild.owner_id
+            or await self.bot.is_admin(member)
+            or await self.bot.is_mod(member)
+        )
+        if privileged:
+            return discord.AllowedMentions(everyone=False, roles=True, users=True)
+        return discord.AllowedMentions(everyone=False, roles=False, users=False)
+
     async def handle_message(
         self,
         message: discord.Message,
@@ -372,12 +385,14 @@ class ChatHandler(MixinMeta):
         if reply is None:
             return
 
+        allowed_mentions = await self.get_mention_permissions(message.author)
+
         files = None
         to_send = []
         if outputfile and not extract:
             # Everything to file
             file = discord.File(BytesIO(reply.encode()), filename=outputfile)
-            return await message.reply(file=file, mention_author=conf.mention)
+            return await message.reply(file=file, mention_author=conf.mention, allowed_mentions=allowed_mentions)
         elif outputfile and extract:
             # Code to files and text to discord
             codes = extract_code_blocks(reply)
@@ -410,9 +425,10 @@ class ChatHandler(MixinMeta):
                     conf=conf,
                     files=files,
                     reply=True,
+                    allowed_mentions=allowed_mentions,
                 )
             else:
-                await send_reply(message=message, content=text, conf=conf)
+                await send_reply(message=message, content=text, conf=conf, allowed_mentions=allowed_mentions)
 
     async def get_chat_response(
         self,
@@ -503,6 +519,9 @@ class ChatHandler(MixinMeta):
             author = guild.get_member(author)
         if isinstance(channel, int):
             channel = guild.get_channel(channel)
+
+        member = author if isinstance(author, discord.Member) else guild.get_member(author)
+        allowed_mentions = await self.get_mention_permissions(member) if member else discord.AllowedMentions.none()
 
         query_embedding = []
         user = author if isinstance(author, discord.Member) else guild.get_member(author)
@@ -616,6 +635,10 @@ class ChatHandler(MixinMeta):
                 messages, function_calls, conf, author, conversation=conversation
             )
             degraded = compacted
+
+            if compacted and message_obj:
+                with suppress(discord.HTTPException):
+                    await message_obj.add_reaction("🗜️")
 
             before = len(messages)
             cleaned = await ensure_tool_consistency(messages)
@@ -822,14 +845,14 @@ class ChatHandler(MixinMeta):
                 if isinstance(func_result, discord.Embed):
                     content = func_result.description or _("Result sent!")
                     try:
-                        await channel.send(embed=func_result)
+                        await channel.send(embed=func_result, allowed_mentions=allowed_mentions)
                     except discord.Forbidden:
                         content = "You do not have permissions to embed links in this channel"
                         function_calls = [i for i in function_calls if i["name"] != function_name]
                 elif isinstance(func_result, discord.File):
                     content = "File uploaded!"
                     try:
-                        await channel.send(file=func_result)
+                        await channel.send(file=func_result, allowed_mentions=allowed_mentions)
                     except discord.Forbidden:
                         content = "You do not have permissions to upload files in this channel"
                         function_calls = [i for i in function_calls if i["name"] != function_name]
@@ -862,7 +885,7 @@ class ChatHandler(MixinMeta):
                         kwargs["files"] = func_result["files"]
                     if kwargs:
                         try:
-                            await channel.send(**kwargs)
+                            await channel.send(**kwargs, allowed_mentions=allowed_mentions)
                         except discord.HTTPException as e:
                             content = f"discord.HTTPException: {e.text}"
                             function_calls = [i for i in function_calls if i["name"] != function_name]

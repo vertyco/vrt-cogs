@@ -313,14 +313,16 @@ class AssistantFunctions(MixinMeta):
         channel: discord.TextChannel,
         content: str,
         message_obj: discord.Message,
+        user: discord.Member = None,
         *args,
         **kwargs,
     ):
+        allowed_mentions = await self.get_mention_permissions(user) if user else discord.AllowedMentions.none()
         if message_obj is not None:
-            await reply.send_reply(message=message_obj, content=content, conf=conf)
+            await reply.send_reply(message=message_obj, content=content, conf=conf, allowed_mentions=allowed_mentions)
         else:
             for p in pagify(content):
-                await channel.send(p)
+                await channel.send(p, allowed_mentions=allowed_mentions)
         return "Your message has been sent to the user! You can continue working."
 
     async def think_and_plan(
@@ -341,17 +343,10 @@ class AssistantFunctions(MixinMeta):
             considerations: Optional notes about edge cases or issues
 
         Returns:
-            A formatted plan that becomes part of the conversation context
+            A short acknowledgment so the structured reasoning is captured
+            in the tool call arguments without duplicating it in the result.
         """
-        plan = f"**Task:** {task_summary}\n\n**Plan:**\n"
-        for i, step in enumerate(steps, 1):
-            plan += f"{i}. {step}\n"
-
-        if considerations:
-            plan += f"\n**Considerations:** {considerations}\n"
-
-        plan += "\n---\nPlan created. Now proceeding with execution..."
-        return plan
+        return "Plan noted."
 
     async def create_reminder(
         self,
