@@ -667,3 +667,24 @@ TOOL_RESULT_MAX_CONTEXT_SHARE = 0.15
 # Images are enormously expensive (thousands of tokens each); once the model has
 # responded to them a few times they add very little value.
 IMAGE_RETAIN_TURNS = 3
+
+# ---- Compaction (LLM-based summarization) ----
+# Minimum number of messages to keep verbatim after compaction (the "tail")
+COMPACTION_KEEP_RECENT = 6
+# Role used for the compaction summary injected into conversation
+COMPACTION_SUMMARY_ROLE = "developer"
+# System prompt sent to the compaction model
+COMPACTION_SYSTEM_PROMPT = (
+    "You are a conversation summarizer. Condense the following conversation into a concise summary "
+    "that preserves all key facts, decisions, user preferences, action items, and any tool results "
+    "that are still relevant. Write in third person. Keep the summary under 500 words. "
+    "Do NOT include greetings, filler, or redundant exchanges."
+)
+# Pre-compaction memory flush prompt — asks the model to extract facts as JSON
+MEMORY_FLUSH_PROMPT = (
+    "You are reviewing a conversation that is about to be compacted (summarized). "
+    "Extract any important facts about the user that should be remembered for future conversations. "
+    "\n\nAlready known facts:\n{existing_facts}"
+    "\n\nOutput ONLY a JSON array of new fact strings, e.g. [\"fact1\", \"fact2\"]. "
+    "If there are no new facts worth storing, output an empty array: []"
+)

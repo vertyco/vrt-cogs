@@ -141,6 +141,12 @@ class GuildSettings(AssistantBaseModel):
 
     vision_detail: str = "auto"  # high, low, auto
 
+    # Compaction (LLM-based context summarization)
+    compaction_enabled: bool = True  # Enable automatic LLM compaction before blind degradation
+    compaction_model: str = ""  # Model to use for compaction (empty = use same model as chat)
+    compaction_threshold: int = 0  # Token threshold to trigger compaction (0 = use max_tokens)
+    memory_flush_on_compaction: bool = True  # Run a memory flush before compacting
+
     use_function_calls: bool = False
     max_function_calls: int = 20  # Max calls in a row
     max_scheduled_tasks: int = 25  # Max pending scheduled tasks per user in this guild
@@ -253,6 +259,7 @@ class Conversation(AssistantBaseModel):
     messages: t.List[dict] = []
     last_updated: float = 0.0
     system_prompt_override: t.Optional[str] = None
+    compaction_count: int = 0  # How many times this conversation has been compacted
 
     def get_images(self) -> t.List[str]:
         """Get all image b64 strings in the conversation

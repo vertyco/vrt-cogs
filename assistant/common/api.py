@@ -3,11 +3,12 @@ import inspect
 import json
 import logging
 import math
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 
 import aiohttp
 import discord
+import orjson
 import tiktoken
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.chat.chat_completion_message import ChatCompletionMessage
@@ -18,8 +19,15 @@ from redbot.core.utils.chat_formatting import box, humanize_number
 
 from ..abc import MixinMeta
 from .calls import request_chat_completion_raw, request_embedding_raw
-from .constants import MODELS, VISION_COSTS
-from .models import GuildSettings
+from .constants import (
+    COMPACTION_KEEP_RECENT,
+    COMPACTION_SUMMARY_ROLE,
+    COMPACTION_SYSTEM_PROMPT,
+    MEMORY_FLUSH_PROMPT,
+    MODELS,
+    VISION_COSTS,
+)
+from .models import Conversation, GuildSettings, UserMemory
 
 log = logging.getLogger("red.vrt.assistant.api")
 _ = Translator("Assistant", __file__)
@@ -454,6 +462,270 @@ class API(MixinMeta):
     # -------------------- FORMATTING -----------------------
     # -------------------------------------------------------
     # -------------------------------------------------------
+    async def compact_conversation(
+        self,
+        messages: List[dict],
+        function_list: List[dict],
+        conf: GuildSettings,
+        user: Optional[discord.Member],
+        conversation: Optional[Conversation] = None,
+        focus: str = "",
+    ) -> bool:
+        """Summarize older messages via LLM, falling back to degrade_conversation on failure"""
+        model = conf.get_user_model(user)
+        max_tokens = self.get_max_tokens(conf, user)
+        threshold = conf.compaction_threshold or max_tokens
+        convo_tokens = await self.count_payload_tokens(messages, model)
+        func_tokens = await self.count_function_tokens(function_list, model)
+        total_tokens = convo_tokens + func_tokens
+
+        if total_tokens <= threshold:
+            return False
+
+        # If compaction is disabled, fall back to blind degradation
+        if not conf.compaction_enabled:
+            return await self.degrade_conversation(messages, function_list, conf, user)
+
+        # Separate system/developer messages from conversation messages
+        system_msgs = [m for m in messages if m.get("role") in ("system", "developer")]
+        convo_msgs = [m for m in messages if m.get("role") not in ("system", "developer")]
+
+        if len(convo_msgs) <= COMPACTION_KEEP_RECENT:
+            # Too few messages to compact — fall back to degradation
+            return await self.degrade_conversation(messages, function_list, conf, user)
+
+        # Find the split point, respecting tool-call/result pairs
+        split_idx = len(convo_msgs) - COMPACTION_KEEP_RECENT
+        split_idx = self.find_safe_split(convo_msgs, split_idx)
+
+        if split_idx <= 0:
+            return await self.degrade_conversation(messages, function_list, conf, user)
+
+        old_messages = convo_msgs[:split_idx]
+        recent_messages = convo_msgs[split_idx:]
+
+        # Build a text representation of old messages for the summarizer
+        old_text = self.messages_to_text(old_messages)
+        if not old_text.strip():
+            return await self.degrade_conversation(messages, function_list, conf, user)
+
+        # Call the LLM to summarize
+        compaction_model = conf.compaction_model or model
+        summary_prompt = COMPACTION_SYSTEM_PROMPT
+        if focus:
+            summary_prompt += f"\n\nFocus the summary on: {focus}"
+
+        try:
+            summary_messages = [
+                {"role": "developer", "content": summary_prompt},
+                {"role": "user", "content": old_text},
+            ]
+            if self.db.endpoint_override:
+                for m in summary_messages:
+                    if m["role"] == "developer":
+                        m["role"] = "system"
+            response = await request_chat_completion_raw(
+                model=compaction_model,
+                messages=summary_messages,
+                temperature=0.0,
+                api_key=self.get_api_key(conf),
+                max_tokens=1000,
+                functions=None,
+                frequency_penalty=0.0,
+                presence_penalty=0.0,
+                seed=None,
+                base_url=self.db.endpoint_override,
+            )
+            summary_text = response.choices[0].message.content
+            if response.usage:
+                conf.update_usage(
+                    response.model,
+                    response.usage.total_tokens,
+                    response.usage.prompt_tokens,
+                    response.usage.completion_tokens,
+                )
+        except Exception as e:
+            log.warning(f"Compaction LLM call failed, falling back to degradation: {e}")
+            return await self.degrade_conversation(messages, function_list, conf, user)
+
+        if not summary_text or not summary_text.strip():
+            log.warning("Compaction returned empty summary, falling back to degradation")
+            return await self.degrade_conversation(messages, function_list, conf, user)
+
+        # Replace messages in-place: system msgs + summary + recent messages
+        summary_msg = {
+            "role": COMPACTION_SUMMARY_ROLE,
+            "content": f"[Conversation Summary — compacted from {len(old_messages)} earlier messages]\n{summary_text}",
+        }
+
+        messages.clear()
+        messages.extend(system_msgs)
+        messages.append(summary_msg)
+        messages.extend(recent_messages)
+
+        if conversation:
+            conversation.compaction_count += 1
+
+        log.info(
+            f"Compacted conversation for {user}: "
+            f"removed {len(old_messages)} messages, "
+            f"summary ~{len(summary_text)} chars, "
+            f"kept {len(recent_messages)} recent messages"
+        )
+        return True
+
+    async def flush_memory_before_compaction(
+        self,
+        messages: List[dict],
+        conf: GuildSettings,
+        user: Optional[discord.Member],
+        guild: discord.Guild,
+    ) -> None:
+        """Extract and store important user facts from messages about to be compacted"""
+        if not user or not conf.memory_flush_on_compaction:
+            return
+        if not conf.use_function_calls:
+            return
+
+        convo_msgs = [m for m in messages if m.get("role") not in ("system", "developer")]
+        if len(convo_msgs) <= COMPACTION_KEEP_RECENT:
+            return
+
+        split_idx = len(convo_msgs) - COMPACTION_KEEP_RECENT
+        split_idx = self.find_safe_split(convo_msgs, split_idx)
+        if split_idx <= 0:
+            return
+
+        old_text = self.messages_to_text(convo_msgs[:split_idx])
+        if not old_text.strip():
+            return
+
+        # Check existing memories so we don't duplicate
+        memory_key = f"{guild.id}-{user.id}"
+        existing = self.db.user_memories.get(memory_key)
+        existing_facts = "\n".join(f"- {f}" for f in existing.facts) if existing and existing.facts else "None"
+
+        flush_prompt = MEMORY_FLUSH_PROMPT.format(existing_facts=existing_facts)
+
+        try:
+            flush_model = conf.compaction_model or conf.get_user_model(user)
+            flush_messages = [
+                {"role": "developer", "content": flush_prompt},
+                {"role": "user", "content": old_text},
+            ]
+            if self.db.endpoint_override:
+                for m in flush_messages:
+                    if m["role"] == "developer":
+                        m["role"] = "system"
+            response = await request_chat_completion_raw(
+                model=flush_model,
+                messages=flush_messages,
+                temperature=0.0,
+                api_key=self.get_api_key(conf),
+                max_tokens=500,
+                functions=None,
+                frequency_penalty=0.0,
+                presence_penalty=0.0,
+                seed=None,
+                base_url=self.db.endpoint_override,
+            )
+            result_text = response.choices[0].message.content or ""
+            if response.usage:
+                conf.update_usage(
+                    response.model,
+                    response.usage.total_tokens,
+                    response.usage.prompt_tokens,
+                    response.usage.completion_tokens,
+                )
+
+            # Parse the JSON array of facts
+            result_text = result_text.strip()
+            # Handle markdown code blocks
+            if result_text.startswith("```"):
+                result_text = result_text.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+
+            facts = orjson.loads(result_text)
+            if not isinstance(facts, list):
+                return
+
+            if memory_key not in self.db.user_memories:
+                self.db.user_memories[memory_key] = UserMemory(user_id=user.id, guild_id=guild.id)
+
+            memory = self.db.user_memories[memory_key]
+            added = 0
+            for fact in facts:
+                if not isinstance(fact, str) or not fact.strip():
+                    continue
+                # Avoid exact duplicates
+                if fact.strip() not in memory.facts:
+                    memory.facts.append(fact.strip())
+                    added += 1
+
+            if added:
+                memory.updated_at = datetime.now(tz=timezone.utc)
+                log.info(f"Memory flush stored {added} new facts for {user} before compaction")
+
+        except Exception as e:
+            log.debug(f"Memory flush failed (non-critical): {e}")
+
+    def find_safe_split(self, messages: List[dict], target_idx: int) -> int:
+        """Walk backward from target_idx to avoid splitting tool-call/result pairs"""
+        idx = target_idx
+        while idx > 0:
+            msg = messages[idx - 1]
+            # If the message right before the split is an assistant with tool_calls,
+            # the results are on the other side — move the split back
+            if msg.get("role") == "assistant" and (msg.get("tool_calls") or msg.get("function_call")):
+                idx -= 1
+                continue
+            # If the message right at the split is a tool/function result, its
+            # associated assistant call is before the split — move back
+            if idx < len(messages) and messages[idx].get("role") in ("tool", "function"):
+                idx -= 1
+                continue
+            break
+        return idx
+
+    def messages_to_text(self, messages: List[dict]) -> str:
+        """Convert message dicts to a plain-text transcript for summarization"""
+        lines = []
+        for msg in messages:
+            role = msg.get("role", "unknown")
+            content = msg.get("content", "")
+            if isinstance(content, list):
+                parts = []
+                for item in content:
+                    if item.get("type") == "text":
+                        parts.append(item["text"])
+                    elif item.get("type") == "image_url":
+                        parts.append("[image]")
+                content = " ".join(parts)
+            elif not isinstance(content, str):
+                content = str(content)
+
+            # Include tool call info if present
+            if msg.get("tool_calls"):
+                calls = msg["tool_calls"]
+                call_names = []
+                for c in calls:
+                    if isinstance(c, dict) and "function" in c:
+                        call_names.append(c["function"].get("name", "unknown"))
+                if call_names:
+                    content = f"[called: {', '.join(call_names)}] {content}"
+            elif msg.get("function_call"):
+                fc = msg["function_call"]
+                if isinstance(fc, dict):
+                    content = f"[called: {fc.get('name', 'unknown')}] {content}"
+
+            name = msg.get("name", "")
+            if name:
+                lines.append(f"{role} ({name}): {content}")
+            elif msg.get("tool_call_id"):
+                lines.append(f"{role} [result]: {content}")
+            else:
+                lines.append(f"{role}: {content}")
+        return "\n".join(lines)
+
     async def degrade_conversation(
         self,
         messages: List[dict],
@@ -461,38 +733,14 @@ class API(MixinMeta):
         conf: GuildSettings,
         user: Optional[discord.Member],
     ) -> bool:
-        """
-        Iteratively degrade a conversation payload in-place to fit within the max token limit, prioritizing more recent messages and critical context.
-
-        Order of importance:
-        - System messages
-        - Function calls available to model
-        - Most recent user message
-        - Most recent assistant message
-        - Most recent function/tool message
-
-        System messages are always ignored.
-
-        Args:
-            messages (List[dict]): message entries sent to the api
-            function_list (List[dict]): list of json function schemas for the model
-            conf: (GuildSettings): current settings
-
-        Returns:
-            bool: whether the conversation was degraded
-        """
-        # Fetch the current model the user is using
+        """Last-resort fallback: remove oldest messages to fit within token limit"""
         model = conf.get_user_model(user)
-        # Fetch the max token limit for the current user
         max_tokens = self.get_max_tokens(conf, user)
-        # Token count of current conversation
         convo_tokens = await self.count_payload_tokens(messages, model)
-        # Token count of function calls available to model
         function_tokens = await self.count_function_tokens(function_list, model)
 
         total_tokens = convo_tokens + function_tokens
 
-        # Check if the total token count is already under the max token limit
         if total_tokens <= max_tokens:
             return False
 
@@ -501,33 +749,52 @@ class API(MixinMeta):
         def count(role: str):
             return sum(1 for msg in messages if msg["role"] == role)
 
-        async def pop(role: str) -> int:
+        async def pop_with_pair(role: str) -> int:
+            """Remove the oldest message of the given role plus its paired tool results."""
             for idx, msg in enumerate(messages):
                 if msg["role"] != role:
                     continue
-                removed = messages.pop(idx)
-                reduction = 4
-                if "name" in removed:
-                    reduction += 1
-                if content := removed.get("content"):
-                    if isinstance(content, list):
-                        for i in content:
-                            if i["type"] == "text":
-                                reduction += await self.count_tokens(i["text"], model)
-                            else:
-                                reduction += 2
-                    else:
-                        reduction += await self.count_tokens(str(content), model)
-                elif tool_calls := removed.get("tool_calls"):
-                    reduction += await self.count_tokens(str(tool_calls), model)
-                elif function_call := removed.get("function_call"):
-                    reduction += await self.count_tokens(str(function_call), model)
+                # If this is an assistant message with tool_calls, also remove
+                # all immediately following tool/function result messages
+                indices_to_remove = [idx]
+                if role == "assistant" and (msg.get("tool_calls") or msg.get("function_call")):
+                    # Collect paired tool results
+                    tool_ids = set()
+                    if msg.get("tool_calls"):
+                        for tc in msg["tool_calls"]:
+                            if isinstance(tc, dict) and "id" in tc:
+                                tool_ids.add(tc["id"])
+                    j = idx + 1
+                    while j < len(messages):
+                        next_msg = messages[j]
+                        if next_msg.get("role") in ("tool", "function"):
+                            indices_to_remove.append(j)
+                            j += 1
+                        else:
+                            break
+
+                reduction = 0
+                for remove_idx in sorted(indices_to_remove, reverse=True):
+                    removed = messages.pop(remove_idx)
+                    reduction += 4
+                    if "name" in removed:
+                        reduction += 1
+                    if content := removed.get("content"):
+                        if isinstance(content, list):
+                            for i in content:
+                                if i["type"] == "text":
+                                    reduction += await self.count_tokens(i["text"], model)
+                                else:
+                                    reduction += 2
+                        else:
+                            reduction += await self.count_tokens(str(content), model)
+                    elif tool_calls := removed.get("tool_calls"):
+                        reduction += await self.count_tokens(str(tool_calls), model)
+                    elif function_call := removed.get("function_call"):
+                        reduction += await self.count_tokens(str(function_call), model)
                 return reduction
             return 0
 
-        # We will NOT remove the most recent user message or assistant message
-        # We will also not touch system messages
-        # We will also not touch function calls available to model (yet)
         iters = 0
         while True:
             iters += 1
@@ -538,31 +805,29 @@ class API(MixinMeta):
             ]
             if any(break_conditions):
                 break
-            # First we will iterate through the messages and remove in the following sweep order:
-            # 1. Remove oldest tool call or response
-            reduced = await pop("tool")
+            # 1. Remove oldest tool/function result (with paired assistant call)
+            reduced = await pop_with_pair("tool")
             if reduced:
                 total_tokens -= reduced
                 if total_tokens <= max_tokens:
                     break
-            reduced = await pop("function")
+            reduced = await pop_with_pair("function")
             if reduced:
                 total_tokens -= reduced
                 if total_tokens <= max_tokens:
                     break
-            # 2. Remove oldest assistant message
-            reduced = await pop("assistant")
+            # 2. Remove oldest assistant message (with paired tool results)
+            reduced = await pop_with_pair("assistant")
             if reduced:
                 total_tokens -= reduced
                 if total_tokens <= max_tokens:
                     break
             # 3. Remove oldest user message
-            reduced = await pop("user")
+            reduced = await pop_with_pair("user")
             if reduced:
                 total_tokens -= reduced
                 if total_tokens <= max_tokens:
                     break
-            # Then we will repeat the process until we are under the max token limit
 
         log.debug(f"Convo degradation finished for {user} (total: {total_tokens}/max: {max_tokens})")
         return True

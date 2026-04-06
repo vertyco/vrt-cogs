@@ -10,7 +10,7 @@ from redbot.core import commands
 from redbot.core.bot import Red
 
 from .common.embedding_store import EmbeddingStore
-from .common.models import DB, GuildSettings
+from .common.models import DB, Conversation, GuildSettings
 
 
 class CompositeMetaClass(CogMeta, ABCMeta):
@@ -105,6 +105,28 @@ class MixinMeta(ABC):
         conf: GuildSettings,
         user: Optional[discord.Member],
     ) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def compact_conversation(
+        self,
+        messages: List[dict],
+        function_list: List[dict],
+        conf: GuildSettings,
+        user: Optional[discord.Member],
+        conversation: Optional[Conversation] = None,
+        focus: str = "",
+    ) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def flush_memory_before_compaction(
+        self,
+        messages: List[dict],
+        conf: GuildSettings,
+        user: Optional[discord.Member],
+        guild: discord.Guild,
+    ) -> None:
         raise NotImplementedError
 
     @abstractmethod

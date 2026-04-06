@@ -1,6 +1,6 @@
 # Assistant
 
-Set up and configure an AI assistant (or chat) cog for your server with one of OpenAI's ChatGPT language models.<br/><br/>Features include configurable prompt injection, dynamic embeddings, custom function calling, and more!<br/><br/>- **[p]assistant**: base command for setting up the assistant<br/>- **[p]chat**: talk with the assistant<br/>- **[p]convostats**: view a user's token usage/conversation message count for the channel<br/>- **[p]clearconvo**: reset your conversation with the assistant in the channel
+Set up and configure an AI assistant (or chat) cog for your server with one of OpenAI's ChatGPT language models.<br/><br/>Features include configurable prompt injection, dynamic embeddings, custom function calling, conversation compaction, and more!<br/><br/>- **[p]assistant**: base command for setting up the assistant<br/>- **[p]chat**: talk with the assistant<br/>- **[p]convostats**: view a user's token usage/conversation message count for the channel<br/>- **[p]convocontext**: view a detailed token breakdown of your conversation context<br/>- **[p]convocompact**: compact your conversation using LLM summarization<br/>- **[p]clearconvo**: reset your conversation with the assistant in the channel
 
 ## /draw (Slash Command)
 
@@ -65,6 +65,30 @@ Conversations are *Per* user *Per* channel, meaning a conversation you have in o
 Conversations are only stored in memory until the bot restarts or the cog reloads<br/>
 
  - Usage: `[p]convostats [user]`
+ - Checks: `guild_only`
+
+## [p]convocontext
+
+Show a detailed token breakdown for your conversation context<br/>
+
+Displays max context, fill percentage, model, token breakdown (system prompt, initial prompt, channel prompt, function schemas, conversation), message breakdown by role, compaction count, and stored facts.<br/>
+
+ - Usage: `[p]convocontext [user]`
+ - Aliases: `contextinfo`
+ - Checks: `guild_only`
+
+## [p]convocompact
+
+Compact your conversation using LLM summarization<br/>
+
+This summarizes older messages instead of deleting them, preserving context while freeing up token space. Optionally provide a focus phrase to guide what the summary emphasizes.<br/>
+
+**Examples**<br/>
+- `[p]compact` - compact with default summarization<br/>
+- `[p]compact coding decisions` - focus on coding decisions<br/>
+
+ - Usage: `[p]convocompact [focus]`
+ - Aliases: `compact`
  - Checks: `guild_only`
 
 ## [p]convoclear
@@ -854,6 +878,38 @@ This prompt will be appended to the initial prompt when the bot responds to a tr
 Toggle allowing per-conversation system prompt overriding<br/>
 
  - Usage: `[p]assistant sysoverride`
+
+### [p]assistant compaction
+
+Toggle LLM-based conversation compaction on or off<br/>
+
+When enabled, conversations that exceed the token limit are summarized using an LLM instead of blindly dropping old messages.<br/>
+
+ - Usage: `[p]assistant compaction`
+
+### [p]assistant compactionmodel
+
+Set the model used for compaction (leave blank to use the chat model)<br/>
+
+ - Usage: `[p]assistant compactionmodel [model]`
+
+### [p]assistant compactionthreshold
+
+Set the token threshold at which compaction triggers<br/>
+
+When set, the bot will proactively compact conversations once they exceed this many tokens, even if the model's context window is larger.<br/>
+
+Set to **0** to only compact when hitting the model's max token limit.<br/>
+
+ - Usage: `[p]assistant compactionthreshold [token_limit]`
+
+### [p]assistant memoryflush
+
+Toggle pre-compaction memory flush on or off<br/>
+
+When enabled, the bot extracts important user facts from the conversation before compacting, storing them as persistent memories.<br/>
+
+ - Usage: `[p]assistant memoryflush`
 
 ## [p]embeddings (Hybrid Command)
 

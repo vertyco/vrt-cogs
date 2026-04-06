@@ -1,5 +1,30 @@
 # Assistant Changelog
 
+## v7.7.0
+
+### Conversation compaction
+
+Conversations that exceed the token limit are now intelligently summarized using an LLM instead of blindly dropping old messages. This preserves important context while freeing up token space.
+
+- LLM-based summarization replaces blind message truncation when context overflows
+- Tool-call/result pairs are kept together during degradation to prevent orphaned messages
+- Pre-compaction memory flush extracts user facts before summarizing, storing them as persistent memories
+- Configurable compaction model (use a cheaper model for summarization)
+- Configurable token threshold to trigger compaction before hitting the model's max context
+- Compaction can be toggled on/off per server (`[p]assistant compaction`)
+
+### New user commands
+
+- `[p]convocontext` - detailed token breakdown showing context fill %, token usage by category, message counts by role, compaction history, and stored facts
+- `[p]convocompact` - manually compact a conversation with optional focus phrase to guide the summary
+
+### Admin commands
+
+- `[p]assistant compaction` - toggle LLM compaction on/off
+- `[p]assistant compactionmodel` - set the model used for compaction
+- `[p]assistant compactionthreshold` - set the token threshold for proactive compaction
+- `[p]assistant memoryflush` - toggle pre-compaction memory flush
+
 ## v7.0.0
 
 ### Embeddings moved to persistent storage

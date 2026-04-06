@@ -17,6 +17,7 @@ from redbot.core.utils.chat_formatting import (
     box,
     escape,
     humanize_list,
+    humanize_number,
     humanize_timedelta,
     pagify,
     text_to_file,
@@ -24,7 +25,13 @@ from redbot.core.utils.chat_formatting import (
 
 from ..abc import MixinMeta
 from ..common.calls import request_image_raw
-from ..common.constants import IMAGE_COSTS, LOADING, READ_EXTENSIONS, TLDR_PROMPT
+from ..common.constants import (
+    COMPACTION_KEEP_RECENT,
+    IMAGE_COSTS,
+    LOADING,
+    READ_EXTENSIONS,
+    TLDR_PROMPT,
+)
 from ..common.models import Conversation
 from ..common.utils import can_use, get_attachments
 
@@ -44,6 +51,8 @@ class Base(MixinMeta):
 
 ### Commands
 `[p]convostats` - view your conversation message count/token usage for that convo.
+`[p]convocontext` - detailed token breakdown of what's consuming your context window.
+`[p]convocompact` - intelligently summarize older messages to free up context space.
 `[p]clearconvo` - reset your conversation for the current channel/thread/forum.
 `[p]showconvo` - get a json dump of your current conversation (this is mostly for debugging)
 `[p]chat` or `[p]ask` - command prefix for chatting with the bot outside of the live chat, or just @ it.
@@ -252,6 +261,159 @@ If a file has no extension it will still try to read it only if it can be decode
             elif ctx.channel.id in conf.channel_prompts:
                 file = text_to_file(conf.channel_prompts[ctx.channel.id])
                 await ctx.send(_("System prompt override for this channel"), file=file)
+
+    @commands.command(name="convocontext", aliases=["contextinfo"])
+    @commands.guild_only()
+    @commands.bot_has_permissions(embed_links=True)
+    async def convo_context(self, ctx: commands.Context, *, user: discord.Member = None):
+        """Show a detailed token breakdown for your conversation context"""
+        if not user:
+            user = ctx.author
+        conf = self.db.get_conf(ctx.guild)
+        model = conf.get_user_model(user)
+        max_tokens = self.get_max_tokens(conf, user)
+
+        mem_id = ctx.channel.id if conf.collab_convos else user.id
+        conversation = self.db.get_conversation(mem_id, ctx.channel.id, ctx.guild.id)
+
+        system_tokens = await self.count_tokens(conf.system_prompt, model) if conf.system_prompt else 0
+        prompt_tokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
+        channel_prompt = conf.channel_prompts.get(ctx.channel.id, "")
+        channel_tokens = await self.count_tokens(channel_prompt, model) if channel_prompt else 0
+
+        func_list, function_map = await self.db.prep_functions(self.bot, conf, self.registry, showall=True)
+        func_tokens = await self.count_function_tokens(func_list, model)
+
+        convo_tokens = await self.count_payload_tokens(conversation.messages, model)
+
+        system_msgs = sum(1 for m in conversation.messages if m.get("role") in ("system", "developer"))
+        user_msgs = sum(1 for m in conversation.messages if m.get("role") == "user")
+        assistant_msgs = sum(1 for m in conversation.messages if m.get("role") == "assistant")
+        tool_msgs = sum(1 for m in conversation.messages if m.get("role") in ("tool", "function"))
+        image_count = len(conversation.get_images())
+        summary_msgs = sum(
+            1
+            for m in conversation.messages
+            if m.get("content") and isinstance(m.get("content"), str) and "[Conversation Summary" in m["content"]
+        )
+
+        total_tokens = system_tokens + prompt_tokens + channel_tokens + func_tokens + convo_tokens
+        fill_pct = (total_tokens / max_tokens * 100) if max_tokens else 0
+
+        memory_key = f"{ctx.guild.id}-{user.id}"
+        memory = self.db.user_memories.get(memory_key)
+        fact_count = len(memory.facts) if memory else 0
+
+        desc = (
+            _("`Max Context:        `{} tokens\n").format(humanize_number(max_tokens))
+            + _("`Context Fill:       `{:.1f}%\n").format(fill_pct)
+            + _("`Model:              `{}\n").format(model)
+            + "\n"
+            + _("**Token Breakdown**\n")
+            + _("`System Prompt:      `{}\n").format(humanize_number(system_tokens))
+            + _("`Initial Prompt:     `{}\n").format(humanize_number(prompt_tokens))
+            + _("`Channel Prompt:     `{}\n").format(humanize_number(channel_tokens))
+            + _("`Function Schemas:   `{} ({} functions)\n").format(
+                humanize_number(func_tokens), humanize_number(len(func_list))
+            )
+            + _("`Conversation:       `{}\n").format(humanize_number(convo_tokens))
+            + _("`Total:              `{}\n").format(humanize_number(total_tokens))
+            + "\n"
+            + _("**Message Breakdown**\n")
+            + _("`System/Developer:   `{}\n").format(system_msgs)
+            + _("`User Messages:      `{}\n").format(user_msgs)
+            + _("`Assistant Messages: `{}\n").format(assistant_msgs)
+            + _("`Tool Results:       `{}\n").format(tool_msgs)
+            + _("`Images:             `{}\n").format(image_count)
+            + _("`Compaction Summaries:`{}\n").format(summary_msgs)
+            + "\n"
+            + _("**Compaction**\n")
+            + _("`Times Compacted:    `{}\n").format(conversation.compaction_count)
+            + _("`Stored Facts:       `{}\n").format(fact_count)
+        )
+
+        if fill_pct < 70:
+            color = discord.Color.green()
+        elif fill_pct < 90:
+            color = discord.Color.orange()
+        else:
+            color = discord.Color.red()
+        embed = discord.Embed(
+            title=_("Context Breakdown"),
+            description=desc,
+            color=color,
+        )
+        embed.set_author(
+            name=_("Context for {}").format(user.display_name),
+            icon_url=user.display_avatar,
+        )
+        await ctx.send(embed=embed)
+
+    @commands.command(name="convocompact", aliases=["compact"])
+    @commands.guild_only()
+    async def compact_convo(self, ctx: commands.Context, *, focus: str = ""):
+        """Compact your conversation using LLM summarization
+
+        This summarizes older messages instead of deleting them, preserving
+        context while freeing up token space. Optionally provide a focus phrase.
+
+        **Examples**
+        - `[p]compact` - compact with default summarization
+        - `[p]compact coding decisions` - focus on coding decisions
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if not conf.api_key and not self.db.endpoint_override:
+            return await ctx.send(_("No API key has been set!"))
+        if not conf.compaction_enabled:
+            return await ctx.send(_("Conversation compaction is disabled in this server."))
+
+        mem_id = ctx.channel.id if conf.collab_convos else ctx.author.id
+        if conf.collab_convos:
+            perms = [
+                await self.bot.is_mod(ctx.author),
+                ctx.channel.permissions_for(ctx.author).manage_messages,
+                ctx.author.id in self.bot.owner_ids,
+            ]
+            if not any(perms):
+                return await ctx.send(
+                    _("Only moderators can compact channel conversations when collaborative conversations are enabled!")
+                )
+
+        conversation = self.db.get_conversation(mem_id, ctx.channel.id, ctx.guild.id)
+        if not conversation.messages:
+            return await ctx.send(_("You have no conversation history in this channel."))
+
+        convo_msgs = [m for m in conversation.messages if m.get("role") not in ("system", "developer")]
+        if len(convo_msgs) <= COMPACTION_KEEP_RECENT:
+            return await ctx.send(
+                _("Not enough messages to compact (need more than {}).").format(COMPACTION_KEEP_RECENT)
+            )
+
+        async with ctx.typing():
+            await self.flush_memory_before_compaction(conversation.messages, conf, ctx.author, ctx.guild)
+
+            function_calls, function_map = await self.db.prep_functions(
+                self.bot, conf, self.registry
+            )
+
+            compacted = await self.compact_conversation(
+                conversation.messages,
+                function_calls,
+                conf,
+                ctx.author,
+                conversation=conversation,
+                focus=focus,
+            )
+
+        if compacted:
+            await self.save_conf()
+            await ctx.send(
+                _("Conversation compacted! ({} compactions total for this conversation)").format(
+                    conversation.compaction_count
+                )
+            )
+        else:
+            await ctx.send(_("Compaction was not needed or failed."))
 
     @commands.command(name="convoclear", aliases=["clearconvo"])
     @commands.guild_only()

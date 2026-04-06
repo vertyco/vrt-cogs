@@ -338,6 +338,9 @@ RENDER_SVG = {
                     f" Available font families: {SVG_FONTS}."
                     " Tip: prefer named families over generic CSS families (sans-serif etc.) for consistent results."
                     " Keep in mind that Discord mention formatting doesn't render in SVGs so just use plain text."
+                    " IMPORTANT: never place differently colored inline <text>/<tspan> fragments on the same line"
+                    " unless x positions are explicitly calculated to prevent overlap. Prefer full single-color"
+                    " lines, separate <text> elements per line, or padded blocks. Readability over decoration."
                 ),
             },
             "filename": {

@@ -608,8 +608,14 @@ class ChatHandler(MixinMeta):
             # Two-tier prune old tool results based on context pressure
             prune_old_tool_results(messages, context_fill_ratio)
 
-            # Iteratively degrade the conversation to ensure it is always under the token limit
-            degraded = await self.degrade_conversation(messages, function_calls, conf, author)
+            # Multi-layer context management:
+            # 1. Flush important user facts to memory before compaction
+            # 2. Compact via LLM summarization (falls back to blind degradation)
+            await self.flush_memory_before_compaction(messages, conf, author, guild)
+            compacted = await self.compact_conversation(
+                messages, function_calls, conf, author, conversation=conversation
+            )
+            degraded = compacted
 
             before = len(messages)
             cleaned = await ensure_tool_consistency(messages)

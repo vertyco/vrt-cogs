@@ -206,6 +206,15 @@ class Admin(MixinMeta):
             inline=False,
         )
 
+        threshold_display = humanize_number(conf.compaction_threshold) if conf.compaction_threshold else _("Max tokens")
+        compaction_field = (
+            _("`Compaction:        `{}\n").format(_("Enabled") if conf.compaction_enabled else _("Disabled"))
+            + _("`Compaction Model:  `{}\n").format(conf.compaction_model or _("Same as chat"))
+            + _("`Threshold:         `{}\n").format(threshold_display)
+            + _("`Memory Flush:      `{}\n").format(_("Enabled") if conf.memory_flush_on_compaction else _("Disabled"))
+        )
+        embed.add_field(name=_("Context Compaction"), value=compaction_field, inline=False)
+
         if private and any(send_key):
             embed.add_field(
                 name=_("OpenAI Key"),
@@ -2366,7 +2375,7 @@ class Admin(MixinMeta):
                 total_facts += 1
             lines.append("")
 
-        header = _("**User Memories for {}** — {} user(s), {} fact(s)\n\n").format(
+        header = _("**User Memories for {}** - {} user(s), {} fact(s)\n\n").format(
             guild.name, len(memories), total_facts
         )
         output = header + "\n".join(lines)
@@ -2840,3 +2849,68 @@ class Admin(MixinMeta):
 
         await self.save_conf()
         await ctx.send(_("Cleared {} scheduled tasks.").format(len(task_ids)))
+
+    # ---------- Compaction Commands ----------
+
+    @assistant.command(name="compaction")
+    async def toggle_compaction(self, ctx: commands.Context):
+        """Toggle LLM-based conversation compaction on or off"""
+        conf = self.db.get_conf(ctx.guild)
+        if conf.compaction_enabled:
+            conf.compaction_enabled = False
+            await ctx.send(_("Conversation compaction is now **Disabled** (blind degradation will be used)"))
+        else:
+            conf.compaction_enabled = True
+            await ctx.send(_("Conversation compaction is now **Enabled**"))
+        await self.save_conf()
+
+    @assistant.command(name="compactionmodel")
+    async def set_compaction_model(self, ctx: commands.Context, model: str = ""):
+        """Set the model used for compaction (leave blank to use the chat model)"""
+        conf = self.db.get_conf(ctx.guild)
+        if not model:
+            conf.compaction_model = ""
+            await ctx.send(_("Compaction model cleared, the main chat model will be used"))
+        elif model not in MODELS:
+            return await ctx.send(_("Invalid model, valid models are: {}").format(humanize_list(MODELS)))
+        else:
+            conf.compaction_model = model
+            await ctx.send(_("Compaction model set to **{}**").format(model))
+        await self.save_conf()
+
+    @assistant.command(name="compactionthreshold")
+    async def set_compaction_threshold(self, ctx: commands.Context, token_limit: int = 0):
+        """Set the token threshold at which compaction triggers
+
+        When set, the bot will proactively compact conversations once they
+        exceed this many tokens, even if the model's context window is larger.
+
+        Set to **0** to only compact when hitting the model's max token limit.
+
+        **Examples**
+        - `[p]assistant compactionthreshold 16000` - compact at 16k tokens
+        - `[p]assistant compactionthreshold 0` - reset to default behavior
+        """
+        if token_limit < 0:
+            return await ctx.send(_("Token limit must be 0 or higher"))
+        conf = self.db.get_conf(ctx.guild)
+        conf.compaction_threshold = token_limit
+        if token_limit:
+            await ctx.send(
+                _("Compaction will now trigger at **{}** tokens").format(humanize_number(token_limit))
+            )
+        else:
+            await ctx.send(_("Compaction threshold reset, will only compact at the model's max token limit"))
+        await self.save_conf()
+
+    @assistant.command(name="memoryflush")
+    async def toggle_memory_flush(self, ctx: commands.Context):
+        """Toggle pre-compaction memory flush on or off"""
+        conf = self.db.get_conf(ctx.guild)
+        if conf.memory_flush_on_compaction:
+            conf.memory_flush_on_compaction = False
+            await ctx.send(_("Pre-compaction memory flush is now **Disabled**"))
+        else:
+            conf.memory_flush_on_compaction = True
+            await ctx.send(_("Pre-compaction memory flush is now **Enabled**"))
+        await self.save_conf()
