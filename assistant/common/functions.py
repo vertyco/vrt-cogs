@@ -12,7 +12,7 @@ from dateutil import parser as dateutil_parser
 from duckduckgo_search import DDGS
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import pagify
+from redbot.core.utils.chat_formatting import humanize_timedelta, pagify
 
 from ..abc import MixinMeta
 from ..common import calls, constants, reply
@@ -387,7 +387,9 @@ class AssistantFunctions(MixinMeta):
         )
 
         timestamp = int(remind_at.timestamp())
-        return f"Reminder created! ID: `{reminder_id}`. I'll remind you <t:{timestamp}:R> (<t:{timestamp}:f>)."
+        time_until = humanize_timedelta(timedelta=(remind_at - now))
+        response = f"Reminder created! (ID: {reminder_id}). Triggers in: {time_until}. Discord Format: <t:{timestamp}:R> (<t:{timestamp}:f>)"
+        return response
 
     async def cancel_reminder(
         self,
