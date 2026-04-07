@@ -339,17 +339,25 @@ class Assistant(
         prompt += f"Instruction: {task.instruction}"
 
         try:
+            deferred_files = []
             reply = await self.get_chat_response(
                 message=prompt,
                 author=member,
                 guild=guild,
                 channel=channel,
                 conf=conf,
+                deferred_files=deferred_files,
             )
             if reply:
                 allowed_mentions = await self.get_mention_permissions(member)
-                for page in pagify(reply, delims=["\n", " "], page_length=2000):
-                    await channel.send(page, allowed_mentions=allowed_mentions)
+                pages = list(pagify(reply, delims=["\n", " "], page_length=2000))
+                for i, page in enumerate(pages):
+                    kwargs = {"allowed_mentions": allowed_mentions}
+                    if i == 0 and deferred_files:
+                        kwargs["files"] = deferred_files
+                    await channel.send(page, **kwargs)
+            elif deferred_files:
+                await channel.send(files=deferred_files)
         except Exception as e:
             log.error(f"Error executing scheduled task {task_id}", exc_info=e)
             try:

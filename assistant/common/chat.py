@@ -336,7 +336,9 @@ class ChatHandler(MixinMeta):
 
         if get_last_message:
             reply = conversation.messages[-1]["content"] if conversation.messages else _("No message history!")
+            deferred_files = []
         else:
+            deferred_files = []
             try:
                 reply = await self.get_chat_response(
                     message=question,
@@ -349,6 +351,7 @@ class ChatHandler(MixinMeta):
                     model_override=model_override,
                     auto_answer=auto_answer,
                     trigger_prompt=trigger_prompt,
+                    deferred_files=deferred_files,
                 )
             except openai.InternalServerError as e:
                 if e.body and isinstance(e.body, dict):
@@ -391,8 +394,8 @@ class ChatHandler(MixinMeta):
         to_send = []
         if outputfile and not extract:
             # Everything to file
-            file = discord.File(BytesIO(reply.encode()), filename=outputfile)
-            return await message.reply(file=file, mention_author=conf.mention, allowed_mentions=allowed_mentions)
+            all_files = [discord.File(BytesIO(reply.encode()), filename=outputfile)] + deferred_files
+            return await message.reply(files=all_files, mention_author=conf.mention, allowed_mentions=allowed_mentions)
         elif outputfile and extract:
             # Code to files and text to discord
             codes = extract_code_blocks(reply)
@@ -416,6 +419,9 @@ class ChatHandler(MixinMeta):
             return
         elif not to_send and not listener:
             return await message.reply(_("No results found"))
+
+        if deferred_files:
+            files = (files or []) + deferred_files
 
         for index, text in enumerate(to_send):
             if index == 0:
@@ -445,6 +451,7 @@ class ChatHandler(MixinMeta):
         model_override: Optional[str] = None,
         auto_answer: Optional[bool] = False,
         trigger_prompt: Optional[str] = None,
+        deferred_files: Optional[List[discord.File]] = None,
     ) -> Union[str, None]:
         """Call the API asynchronously"""
         functions = function_calls.copy() if function_calls else []
@@ -494,6 +501,7 @@ class ChatHandler(MixinMeta):
                 model_override=model_override,
                 auto_answer=auto_answer,
                 trigger_prompt=trigger_prompt,
+                deferred_files=deferred_files,
             )
         finally:
             conversation.cleanup(conf, author)
@@ -514,6 +522,7 @@ class ChatHandler(MixinMeta):
         model_override: Optional[str] = None,
         auto_answer: Optional[bool] = False,
         trigger_prompt: Optional[str] = None,
+        deferred_files: Optional[List[discord.File]] = None,
     ) -> Union[str, None]:
         if isinstance(author, int):
             author = guild.get_member(author)
@@ -850,18 +859,28 @@ class ChatHandler(MixinMeta):
                         content = "You do not have permissions to embed links in this channel"
                         function_calls = [i for i in function_calls if i["name"] != function_name]
                 elif isinstance(func_result, discord.File):
-                    content = "File uploaded!"
-                    try:
-                        await channel.send(file=func_result, allowed_mentions=allowed_mentions)
-                    except discord.Forbidden:
-                        content = "You do not have permissions to upload files in this channel"
-                        function_calls = [i for i in function_calls if i["name"] != function_name]
+                    content = "File generated, it will be attached to the response."
+                    if deferred_files is not None:
+                        deferred_files.append(func_result)
+                    else:
+                        try:
+                            await channel.send(file=func_result, allowed_mentions=allowed_mentions)
+                        except discord.Forbidden:
+                            content = "You do not have permissions to upload files in this channel"
+                            function_calls = [i for i in function_calls if i["name"] != function_name]
                 elif isinstance(func_result, dict):
                     # For complex responses
                     content = func_result.get("result_text")
                     if not content:
                         content = func_result.get("content")
                     return_null = func_result.get("return_null", False)
+
+                    # Collect deferred files for attachment to the final reply
+                    if "defer_files" in func_result and deferred_files is not None:
+                        for f in func_result["defer_files"]:
+                            if isinstance(f, discord.File):
+                                deferred_files.append(f)
+
                     kwargs = {}
                     if "embed" in func_result and channel.permissions_for(guild.me).embed_links:
                         if not isinstance(func_result["embed"], discord.Embed):
@@ -932,6 +951,12 @@ class ChatHandler(MixinMeta):
                 conversation.messages.append(e)
 
                 if return_null:
+                    if deferred_files:
+                        try:
+                            await channel.send(files=deferred_files, allowed_mentions=allowed_mentions)
+                        except discord.HTTPException:
+                            pass
+                        deferred_files.clear()
                     return None
 
         # Handle the rest of the reply

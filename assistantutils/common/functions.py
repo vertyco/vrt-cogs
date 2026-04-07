@@ -4,7 +4,7 @@ import logging
 import re
 from datetime import datetime, timezone
 from io import BytesIO, StringIO
-from typing import Literal
+from typing import Literal, Union
 
 import aiohttp
 import discord
@@ -438,7 +438,7 @@ class Functions(MixinMeta):
         comment: str = None,
         *args,
         **kwargs,
-    ) -> str:
+    ) -> dict:
         """
         Create a file with the provided content and send it to the Discord channel.
 
@@ -449,11 +449,11 @@ class Functions(MixinMeta):
             channel: The channel where the file will be sent
 
         Returns:
-            A message confirming the file was sent
+            A dict with deferred file and result content
         """
         file = text_to_file(content, filename=filename)
-        await channel.send(content=comment, file=file)
-        return "File sent successfully!"
+        result = {"content": comment or f"File '{filename}' generated.", "defer_files": [file]}
+        return result
 
     async def add_reaction(
         self,
@@ -1015,7 +1015,7 @@ class Functions(MixinMeta):
         background: str = "",
         *args,
         **kwargs,
-    ) -> str:
+    ) -> Union[str, dict]:
         """
         Render an SVG string to a PNG image and send it to the Discord channel.
 
@@ -1052,5 +1052,4 @@ class Functions(MixinMeta):
         buf = BytesIO(png_bytes)
         buf.seek(0)
         file = discord.File(buf, filename=filename)
-        await channel.send(file=file)
-        return "Success!"
+        return {"content": "Image rendered successfully.", "defer_files": [file]}
