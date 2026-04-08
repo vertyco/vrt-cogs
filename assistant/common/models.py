@@ -315,11 +315,6 @@ class Conversation(AssistantBaseModel):
         self.refresh()
         self.messages.clear()
 
-    def rollback(self, snapshot_length: int):
-        """Rollback conversation to a previous state by truncating to snapshot_length."""
-        self.messages = self.messages[:snapshot_length]
-        self.refresh()
-
     def refresh(self):
         self.last_updated = datetime.now().timestamp()
 

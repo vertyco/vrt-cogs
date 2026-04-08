@@ -219,8 +219,7 @@ class AssistantListener(MixinMeta):
         try:
             # If coalescing is enabled, use a sliding window: keep re-waiting
             # as long as new messages keep arriving within the delay.  This
-            # gathers *all* rapid-fire follow-ups before hitting the API,
-            # significantly reducing expensive rollback+retry cycles.
+            # gathers *all* rapid-fire follow-ups before hitting the API.
             if coalesce_enabled:
                 while True:
                     try:
@@ -280,47 +279,36 @@ class AssistantListener(MixinMeta):
         return merged
 
     async def _process_with_coalesce(self, state: _ResponseState, kwargs: dict, conf) -> None:
-        """Process a message, and if follow-ups arrived during the API call, rollback and re-process."""
-        coalesce_enabled = conf.message_coalesce_delay > 0
-        max_retries = 3  # Prevent infinite rollback loops from continuous spam
-        retries = 0
-        while True:
-            # Snapshot conversation length so we can rollback if needed
-            message = kwargs["message"]
-            mem_id = message.channel.id if conf.collab_convos else message.author.id
-            conversation = self.db.get_conversation(mem_id, message.channel.id, message.guild.id)
-            snapshot_len = len(conversation.messages)
+        """Process a message, then handle any follow-ups that arrived during the API call."""
+        # Run the actual API call
+        await self.handle_message(**kwargs)
 
-            # Clear cancel event before processing
+        # If follow-ups arrived while the API was processing, combine them
+        # and process as a new message (the prior exchange is already in
+        # conversation history, giving the model full context).
+        if state.queued_messages:
+            combined_question = "\n".join(kw["question"] for kw in state.queued_kwargs)
+            last_kwargs = state.queued_kwargs[-1].copy()
+            last_kwargs["message"] = state.queued_messages[-1]
+            last_kwargs["question"] = combined_question
+
+            # Preserve trigger/auto_answer from any queued message
+            for kw in state.queued_kwargs:
+                if "trigger_prompt" in kw and "trigger_prompt" not in last_kwargs:
+                    last_kwargs["trigger_prompt"] = kw["trigger_prompt"]
+                if kw.get("auto_answer"):
+                    last_kwargs["auto_answer"] = True
+                if "model_override" in kw and "model_override" not in last_kwargs:
+                    last_kwargs["model_override"] = kw["model_override"]
+
+            state.queued_messages.clear()
+            state.queued_kwargs.clear()
             state.cancel.clear()
 
-            # Run the actual API call
-            await self.handle_message(**kwargs)
-
-            # Check if new messages arrived while we were processing
-            if not state.queued_messages or not coalesce_enabled or retries >= max_retries:
-                if retries >= max_retries and state.queued_messages:
-                    log.warning(
-                        f"Max coalesce retries reached for {message.author} — "
-                        f"dropping {len(state.queued_messages)} queued message(s)"
-                    )
-                    state.queued_messages.clear()
-                    state.queued_kwargs.clear()
-                break
-
-            # Follow-ups arrived during the API call!
-            # Rollback the conversation to before this exchange
             log.debug(
-                f"Rolling back conversation for {message.author} ({len(state.queued_messages)} queued follow-ups)"
+                f"Processing {len(state.queued_messages) + 1} coalesced follow-up(s) for {kwargs['message'].author}"
             )
-            conversation.rollback(snapshot_len)
-
-            # Combine the original message with all queued follow-ups
-            original_message = kwargs["message"]
-            kwargs = self._combine_queued(original_message, kwargs, state)
-            retries += 1
-
-            # Loop again to process the combined message
+            await self.handle_message(**last_kwargs)
 
     @commands.Cog.listener("on_guild_remove")
     async def cleanup(self, guild: discord.Guild):

@@ -606,6 +606,7 @@ class ChatHandler(MixinMeta):
         calls = 0
         tries = 0
         tool_call_history: dict[str, int] = {}  # Track (name, args) -> count for loop detection
+        last_sent_content: str = ""  # Track content already sent via respond_and_continue
         while True:
             if tries > 2:
                 log.error("Breaking after 3 retries (image purge or empty model response)")
@@ -841,6 +842,8 @@ class ChatHandler(MixinMeta):
                             func_result = await func(**kwargs)
                         else:
                             func_result = await asyncio.to_thread(func, **kwargs)
+                        if function_name == "respond_and_continue":
+                            last_sent_content = args.get("content", "")
                     except Exception as e:
                         log.error(
                             f"Custom function {function_name} failed to execute!\nArgs: {arguments}",
@@ -982,6 +985,11 @@ class ChatHandler(MixinMeta):
 
         if reply and reply == "do_not_respond":
             log.info("Auto answer triggered, not responding to user")
+            return None
+
+        # Suppress duplicate if respond_and_continue already sent the same content
+        if last_sent_content and reply and reply.strip() == last_sent_content.strip():
+            log.debug("Suppressing duplicate reply already sent via respond_and_continue")
             return None
 
         return reply
