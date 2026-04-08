@@ -222,26 +222,48 @@ If a file has no extension it will still try to read it only if it can be decode
             # Return the new RGB color
             return (green, blue)
 
-        convo_tokens = await self.count_payload_tokens(conversation.messages, conf.get_user_model(user))
+        model = conf.get_user_model(user)
+        convo_tokens = await self.count_payload_tokens(conversation.messages, model)
+
+        system_tokens = await self.count_tokens(conf.system_prompt, model) if conf.system_prompt else 0
+        prompt_tokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
+        channel_prompt = conf.channel_prompts.get(ctx.channel.id, "")
+        channel_tokens = await self.count_tokens(channel_prompt, model) if channel_prompt else 0
+        func_list, function_map = await self.db.prep_functions(self.bot, conf, self.registry, showall=True)
+        func_tokens = await self.count_function_tokens(func_list, model)
+        total_tokens = system_tokens + prompt_tokens + channel_tokens + func_tokens + convo_tokens
+        fill_pct = (total_tokens / max_tokens * 100) if max_tokens else 0
+
         g, b = generate_color(messages, conf.get_user_max_retention(ctx.author))
-        gg, bb = generate_color(convo_tokens, max_tokens)
+        gg, bb = generate_color(total_tokens, max_tokens)
         # Whatever limit is more severe get that color
         color = discord.Color.from_rgb(255, min(g, gg), min(b, bb))
-        model = conf.get_user_model(ctx.author)
 
         desc = (
             ctx.channel.mention
             + "\n"
-            + _("`Messages:   `{}/{}\n`Tokens:     `{}/{}\n`Expired:    `{}\n`Model:      `{}").format(
+            + _(
+                "`Messages:    `{}/{}\n"
+                "`Context:     `{}/{} ({:.1f}%)\n"
+                "`Conversation:`{}\n"
+                "`Overhead:    `{}\n"
+                "`Expired:     `{}\n"
+                "`Model:       `{}"
+            ).format(
                 messages,
                 conf.get_user_max_retention(ctx.author),
-                convo_tokens,
-                max_tokens,
+                humanize_number(total_tokens),
+                humanize_number(max_tokens),
+                fill_pct,
+                humanize_number(convo_tokens),
+                humanize_number(system_tokens + prompt_tokens + channel_tokens + func_tokens),
                 conversation.is_expired(conf, ctx.author),
                 model,
             )
         )
-        desc += _("\n`Tool Calls: `{}").format(conversation.function_count())
+        desc += _("\n`Tool Calls:  `{}").format(conversation.function_count())
+        if conversation.compaction_count:
+            desc += _("\n`Compacted:   `{} time(s)").format(conversation.compaction_count)
         if conf.collab_convos:
             desc += "\n" + _("*Collabroative conversations are enabled*")
         embed = discord.Embed(
@@ -252,7 +274,7 @@ If a file has no extension it will still try to read it only if it can be decode
             name=_("Conversation stats for {}").format(ctx.channel.name if conf.collab_convos else user.display_name),
             icon_url=ctx.guild.icon if conf.collab_convos else user.display_avatar,
         )
-        embed.set_footer(text=_("Token limit is a soft cap and excess is trimmed before sending to the api"))
+        embed.set_footer(text=_("Context = conversation + overhead (prompts + function schemas)"))
         await ctx.send(embed=embed)
         if await self.bot.is_mod(ctx.author) or ctx.author.id in self.bot.owner_ids or not conf.collab_convos:
             if conversation.system_prompt_override:
@@ -392,9 +414,7 @@ If a file has no extension it will still try to read it only if it can be decode
         async with ctx.typing():
             await self.flush_memory_before_compaction(conversation.messages, conf, ctx.author, ctx.guild)
 
-            function_calls, function_map = await self.db.prep_functions(
-                self.bot, conf, self.registry
-            )
+            function_calls, function_map = await self.db.prep_functions(self.bot, conf, self.registry)
 
             compacted = await self.compact_conversation(
                 conversation.messages,
