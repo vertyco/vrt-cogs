@@ -30,6 +30,18 @@ BETWEEN_TIME_UNITS = {"hours", "minutes"}
 ALL_INTERVAL_UNITS = ["seconds", "minutes", "hours", "days", "weeks", "months", "years"]
 
 
+def get_select_value_id(value: object) -> int | None:
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        return int(value) if value.isdigit() else None
+
+    value_id = getattr(value, "id", None)
+    if isinstance(value_id, int):
+        return value_id
+    return None
+
+
 class IntervalModal(ui.Modal, title=_("Edit Interval")):
     """Modal for configuring interval with a dropdown for unit selection."""
 
@@ -151,8 +163,8 @@ class ConfigScheduleModal(ui.Modal, title=_("Edit Scheduled Command")):
         await interaction.response.defer()
         author_component: discord.ui.UserSelect = self.author.component  # type: ignore
         channel_component: discord.ui.ChannelSelect = self.channel.component  # type: ignore
-        author_value = int(author_component.values[0]) if author_component.values else None
-        channel_value = int(channel_component.values[0]) if channel_component.values else None
+        author_value = get_select_value_id(author_component.values[0]) if author_component.values else None
+        channel_value = get_select_value_id(channel_component.values[0]) if channel_component.values else None
         log.debug(f"AUTHOR VALUES: {author_value!r}, CHANNEL VALUES: {channel_value!r}")
         try:
             self.inputs["name"] = self.name.value
