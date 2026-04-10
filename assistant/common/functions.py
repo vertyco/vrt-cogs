@@ -473,11 +473,13 @@ class AssistantFunctions(MixinMeta):
         if not conf:
             conf = self.db.get_conf(guild)
         max_facts = conf.get_user_max_memory_facts(user)
+        consolidated = False
         if max_facts and len(memory.facts) >= max_facts:
             # At cap — trigger consolidation to make room
+            before_count = len(memory.facts)
             consolidated = await self.consolidate_user_memory(guild, user, conf)
             if consolidated:
-                log.info(f"Memory consolidation for {user}: {len(memory.facts)} facts after consolidation")
+                log.info(f"Memory consolidation for {user}: {before_count} -> {len(memory.facts)} facts")
             # If still at or over cap after consolidation, evict the oldest fact
             if max_facts and len(memory.facts) >= max_facts:
                 memory.facts.pop(0)
@@ -488,6 +490,8 @@ class AssistantFunctions(MixinMeta):
         status = f"I'll remember that about {user.display_name}: {fact}"
         if max_facts:
             status += f" ({len(memory.facts)}/{max_facts} facts stored)"
+        if consolidated:
+            status += f" [Memory was consolidated from {before_count} to {len(memory.facts) - 1} facts to make room]"
         return status
 
     async def recall_user(

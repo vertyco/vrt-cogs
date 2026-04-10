@@ -3006,3 +3006,31 @@ class Admin(MixinMeta):
             await ctx.send(
                 _("Consolidation was not needed or failed for {} ({} facts)").format(member.display_name, before)
             )
+
+    @assistant.command(name="resetmemories")
+    async def wipe_memories(self, ctx: commands.Context, member: discord.Member = None):
+        """
+        Wipe stored user memory facts.
+
+        If a member is specified, only their facts are wiped.
+        If no member is specified, ALL user memories in this server are wiped.
+        """
+        if member:
+            memory_key = f"{ctx.guild.id}-{member.id}"
+            memory = self.db.user_memories.get(memory_key)
+            if not memory or not memory.facts:
+                return await ctx.send(_("No stored facts for {}").format(member.display_name))
+            count = len(memory.facts)
+            memory.facts.clear()
+            await ctx.send(_("Wiped **{}** facts for {}").format(count, member.display_name))
+        else:
+            prefix = f"{ctx.guild.id}-"
+            wiped = 0
+            for key, memory in self.db.user_memories.items():
+                if key.startswith(prefix) and memory.facts:
+                    wiped += len(memory.facts)
+                    memory.facts.clear()
+            if not wiped:
+                return await ctx.send(_("No stored user memories in this server"))
+            await ctx.send(_("Wiped **{}** total facts across all users in this server").format(wiped))
+        await self.save_conf()
