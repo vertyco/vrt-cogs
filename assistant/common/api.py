@@ -691,7 +691,7 @@ class API(MixinMeta):
             return False
 
         max_facts = conf.get_user_max_memory_facts(user)
-        if not max_facts or len(memory.facts) <= max_facts:
+        if not max_facts or len(memory.facts) < max_facts:
             return False
 
         target_count = max(5, int(max_facts * 0.75))
