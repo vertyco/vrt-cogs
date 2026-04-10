@@ -144,7 +144,6 @@ class GuildSettings(AssistantBaseModel):
     # User memory
     max_memory_facts: int = 20  # Max facts per regular user (0 = unlimited)
     max_memory_facts_override: t.Dict[int, int] = {}  # Role/user ID -> max facts override
-    max_memory_injection: int = 20  # Max facts injected into system prompt per turn (0 = unlimited)
 
     # Compaction (LLM-based context summarization)
     compaction_enabled: bool = True  # Enable automatic LLM compaction before blind degradation

@@ -541,8 +541,8 @@ REMEMBER_USER = {
     "name": "remember_user",
     "description": (
         "Store a DURABLE fact about the user that would meaningfully help them in a FUTURE SEPARATE conversation. "
-        "Only store facts that are stable over time: their setup, environment, preferences, "
-        "recurring issues, timezone, or role/position. "
+        "Only store facts that are stable over time: preferences, technical setup, recurring issues, "
+        "timezone, role/position, or important context about their situation. "
         "Do NOT store: one-time questions, temporary states, conversational details, or things "
         "already answered by the knowledge base. When in doubt, do NOT store."
     ),
@@ -551,7 +551,7 @@ REMEMBER_USER = {
         "properties": {
             "fact": {
                 "type": "string",
-                "description": "A concise, self-contained fact about the user. Write it so it makes sense without additional context.",
+                "description": "A concise, self-contained fact about the user. Write it so it makes sense without additional context.'",
             },
         },
         "required": ["fact"],
@@ -560,7 +560,7 @@ REMEMBER_USER = {
 
 RECALL_USER = {
     "name": "recall_user",
-    "description": "Retrieve all stored facts about the user you are talking to. Stored facts are already injected into context automatically, so only call this if you specifically need to review or reference the list.",
+    "description": "Retrieve stored facts about the user you are talking to. Facts are already injected into context automatically, so only call this if the user explicitly asks what you know about them.",
     "parameters": {
         "type": "object",
         "properties": {},
@@ -686,7 +686,7 @@ MEMORY_FLUSH_PROMPT = (
     "You are reviewing a conversation that is about to be compacted (summarized). "
     "Extract ONLY durable, high-value facts that would help this user in a FUTURE SEPARATE conversation. "
     "\n\nGuidelines:\n"
-    "- GOOD: their setup/environment, preferences, recurring issues, timezone, role\n"
+    "- GOOD: preferences, technical setup, recurring issues, timezone, role/position, important context\n"
     "- BAD: one-time questions they asked, temporary issues already resolved, conversational filler, "
     "things that are common knowledge or in the knowledge base\n"
     "- Do NOT duplicate or rephrase facts already known\n"
@@ -704,8 +704,8 @@ MEMORY_CONSOLIDATION_PROMPT = (
     "Rules:\n"
     "- Merge overlapping or redundant facts into single, more specific facts\n"
     "- Drop facts that are trivial, outdated-sounding, or unlikely to help in future conversations\n"
-    "- Keep facts about: their setup/environment, preferences, recurring issues, timezone, roles\n"
-    "- Drop facts about: one-time questions, resolved issues, conversational filler, generic statements\n"
+    "- Keep facts about: preferences, technical setup, recurring issues, timezone, roles, important context\n"
+    "- Drop facts about: one-time questions, resolved issues, conversational preferences, generic statements\n"
     "- Target approximately {target_count} facts (current: {current_count})\n"
     "- Preserve the most specific and useful version of each fact\n\n"
     "Current facts:\n{facts_list}\n\n"

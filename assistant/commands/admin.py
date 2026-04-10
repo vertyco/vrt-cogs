@@ -216,12 +216,9 @@ class Admin(MixinMeta):
         embed.add_field(name=_("Context Compaction"), value=compaction_field, inline=False)
 
         cap_display = humanize_number(conf.max_memory_facts) if conf.max_memory_facts else _("Unlimited")
-        inject_display = humanize_number(conf.max_memory_injection) if conf.max_memory_injection else _("All")
         overrides = len(conf.max_memory_facts_override)
-        memory_field = (
-            _("`Fact Cap (default):`{}\n").format(cap_display)
-            + _("`Inject Per Turn:   `{}\n").format(inject_display)
-            + _("`Role Overrides:    `{}\n").format(overrides)
+        memory_field = _("`Fact Cap (default):`{}\n").format(cap_display) + _("`Role Overrides:    `{}\n").format(
+            overrides
         )
         if conf.max_memory_facts_override:
             for rid, cap in conf.max_memory_facts_override.items():
@@ -2946,26 +2943,6 @@ class Admin(MixinMeta):
             await ctx.send(_("User memory cap set to **{}** facts per user").format(max_facts))
         else:
             await ctx.send(_("User memory cap **disabled** (unlimited facts)"))
-        await self.save_conf()
-
-    @assistant.command(name="memoryinjection")
-    async def set_memory_injection(self, ctx: commands.Context, max_inject: int):
-        """
-        Set how many facts are injected into the system prompt per turn.
-
-        Only the N most recent facts are injected. The rest are still stored
-        and accessible via the `recall_user` tool if the bot needs them.
-
-        Set to 0 to inject all facts (not recommended for users with many facts).
-        """
-        if max_inject < 0:
-            return await ctx.send(_("Injection cap must be 0 or higher"))
-        conf = self.db.get_conf(ctx.guild)
-        conf.max_memory_injection = max_inject
-        if max_inject:
-            await ctx.send(_("Will inject up to **{}** most recent facts per turn into context").format(max_inject))
-        else:
-            await ctx.send(_("Will inject **all** stored facts per turn (no cap)"))
         await self.save_conf()
 
     @assistant.command(name="memoryoverride")

@@ -1102,19 +1102,8 @@ class ChatHandler(MixinMeta):
             memory_key = f"{guild.id}-{author.id}"
             user_memory = self.db.user_memories.get(memory_key)
             if user_memory and user_memory.facts:
-                max_inject = conf.max_memory_injection
-                if max_inject:
-                    # Inject only the N most recent facts
-                    facts_to_inject = user_memory.facts[-max_inject:]
-                    remaining = len(user_memory.facts) - len(facts_to_inject)
-                else:
-                    facts_to_inject = user_memory.facts
-                    remaining = 0
-                facts_text = "\n".join(f"- {fact}" for fact in facts_to_inject)
-                header = f"[Known facts about {author.display_name}]"
-                if remaining:
-                    header += f" (showing {len(facts_to_inject)} most recent of {len(user_memory.facts)} total)"
-                system_prompt += f"\n\n{header}\n{facts_text}"
+                facts_text = "\n".join(f"- {fact}" for fact in user_memory.facts)
+                system_prompt += f"\n\n[Known facts about {author.display_name}]\n{facts_text}"
 
         if auto_answer:
             initial_prompt += (
