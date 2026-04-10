@@ -455,6 +455,7 @@ class AssistantFunctions(MixinMeta):
         guild: discord.Guild,
         user: discord.Member,
         fact: str,
+        conf: GuildSettings = None,
         *args,
         **kwargs,
     ) -> str:
@@ -467,10 +468,27 @@ class AssistantFunctions(MixinMeta):
             )
 
         memory = self.db.user_memories[key]
+
+        # Enforce fact cap if configured
+        if not conf:
+            conf = self.db.get_conf(guild)
+        max_facts = conf.get_user_max_memory_facts(user)
+        if max_facts and len(memory.facts) >= max_facts:
+            # At cap — trigger consolidation to make room
+            consolidated = await self.consolidate_user_memory(guild, user, conf)
+            if consolidated:
+                log.info(f"Memory consolidation for {user}: {len(memory.facts)} facts after consolidation")
+            # If still at or over cap after consolidation, evict the oldest fact
+            if max_facts and len(memory.facts) >= max_facts:
+                memory.facts.pop(0)
+
         memory.facts.append(fact)
         memory.updated_at = datetime.now(tz=timezone.utc)
         asyncio.create_task(self.save_conf())
-        return f"I'll remember that about {user.display_name}: {fact}"
+        status = f"I'll remember that about {user.display_name}: {fact}"
+        if max_facts:
+            status += f" ({len(memory.facts)}/{max_facts} facts stored)"
+        return status
 
     async def recall_user(
         self,

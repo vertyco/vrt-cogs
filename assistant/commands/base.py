@@ -325,6 +325,16 @@ If a file has no extension it will still try to read it only if it can be decode
         memory_key = f"{ctx.guild.id}-{user.id}"
         memory = self.db.user_memories.get(memory_key)
         fact_count = len(memory.facts) if memory else 0
+        max_facts = conf.get_user_max_memory_facts(user)
+        max_inject = conf.max_memory_injection
+        if max_facts:
+            fact_display = f"{fact_count}/{max_facts}"
+        else:
+            fact_display = str(fact_count)
+        if max_inject and fact_count > max_inject:
+            inject_display = f" ({max_inject} injected per turn)"
+        else:
+            inject_display = ""
 
         desc = (
             _("`Max Context:        `{} tokens\n").format(humanize_number(max_tokens))
@@ -351,7 +361,7 @@ If a file has no extension it will still try to read it only if it can be decode
             + "\n"
             + _("**Compaction**\n")
             + _("`Times Compacted:    `{}\n").format(conversation.compaction_count)
-            + _("`Stored Facts:       `{}\n").format(fact_count)
+            + _("`Stored Facts:       `{}{}\n").format(fact_display, inject_display)
         )
 
         if fill_pct < 70:

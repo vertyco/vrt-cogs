@@ -23,6 +23,7 @@ from .constants import (
     COMPACTION_KEEP_RECENT,
     COMPACTION_SUMMARY_ROLE,
     COMPACTION_SYSTEM_PROMPT,
+    MEMORY_CONSOLIDATION_PROMPT,
     MEMORY_FLUSH_PROMPT,
     MODELS,
     VISION_COSTS,
@@ -665,8 +666,96 @@ class API(MixinMeta):
                 memory.updated_at = datetime.now(tz=timezone.utc)
                 log.info(f"Memory flush stored {added} new facts for {user} before compaction")
 
+            # If we're now over the cap, trigger consolidation
+            max_facts = conf.get_user_max_memory_facts(user)
+            if max_facts and len(memory.facts) > max_facts:
+                await self.consolidate_user_memory(guild, user, conf)
+
         except Exception as e:
             log.debug(f"Memory flush failed (non-critical): {e}")
+
+    async def consolidate_user_memory(
+        self,
+        guild: discord.Guild,
+        user: discord.Member,
+        conf: GuildSettings,
+    ) -> bool:
+        """Consolidate a user's facts via LLM when nearing the cap.
+
+        Merges redundant facts, drops low-value ones, and targets ~75% of the cap.
+        Returns True if consolidation was performed.
+        """
+        memory_key = f"{guild.id}-{user.id}"
+        memory = self.db.user_memories.get(memory_key)
+        if not memory or not memory.facts:
+            return False
+
+        max_facts = conf.get_user_max_memory_facts(user)
+        if not max_facts or len(memory.facts) <= max_facts:
+            return False
+
+        target_count = max(5, int(max_facts * 0.75))
+        facts_list = "\n".join(f"{i + 1}. {fact}" for i, fact in enumerate(memory.facts))
+
+        prompt = MEMORY_CONSOLIDATION_PROMPT.format(
+            target_count=target_count,
+            current_count=len(memory.facts),
+            facts_list=facts_list,
+        )
+
+        try:
+            model = conf.compaction_model or conf.get_user_model(user)
+            consolidation_messages = [
+                {"role": "developer", "content": prompt},
+            ]
+            if self.db.endpoint_override:
+                for m in consolidation_messages:
+                    if m["role"] == "developer":
+                        m["role"] = "system"
+            response = await request_chat_completion_raw(
+                model=model,
+                messages=consolidation_messages,
+                temperature=0.0,
+                api_key=self.get_api_key(conf),
+                max_tokens=2000,
+                functions=None,
+                frequency_penalty=0.0,
+                presence_penalty=0.0,
+                seed=None,
+                base_url=self.db.endpoint_override,
+            )
+            result_text = response.choices[0].message.content or ""
+            if response.usage:
+                conf.update_usage(
+                    response.model,
+                    response.usage.total_tokens,
+                    response.usage.prompt_tokens,
+                    response.usage.completion_tokens,
+                )
+
+            result_text = result_text.strip()
+            if result_text.startswith("```"):
+                result_text = result_text.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+
+            new_facts = orjson.loads(result_text)
+            if not isinstance(new_facts, list):
+                return False
+
+            # Validate all entries are non-empty strings
+            new_facts = [f.strip() for f in new_facts if isinstance(f, str) and f.strip()]
+            if not new_facts:
+                return False
+
+            before_count = len(memory.facts)
+            memory.facts = new_facts
+            memory.updated_at = datetime.now(tz=timezone.utc)
+
+            log.info(f"Memory consolidation for {user} in {guild}: {before_count} -> {len(new_facts)} facts")
+            return True
+
+        except Exception as e:
+            log.debug(f"Memory consolidation failed (non-critical): {e}")
+            return False
 
     def find_safe_split(self, messages: List[dict], target_idx: int) -> int:
         """Walk backward from target_idx to avoid splitting tool-call/result pairs"""

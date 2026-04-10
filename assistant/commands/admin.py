@@ -215,6 +215,21 @@ class Admin(MixinMeta):
         )
         embed.add_field(name=_("Context Compaction"), value=compaction_field, inline=False)
 
+        cap_display = humanize_number(conf.max_memory_facts) if conf.max_memory_facts else _("Unlimited")
+        inject_display = humanize_number(conf.max_memory_injection) if conf.max_memory_injection else _("All")
+        overrides = len(conf.max_memory_facts_override)
+        memory_field = (
+            _("`Fact Cap (default):`{}\n").format(cap_display)
+            + _("`Inject Per Turn:   `{}\n").format(inject_display)
+            + _("`Role Overrides:    `{}\n").format(overrides)
+        )
+        if conf.max_memory_facts_override:
+            for rid, cap in conf.max_memory_facts_override.items():
+                role_or_user = ctx.guild.get_role(rid) or ctx.guild.get_member(rid)
+                name = role_or_user.name if role_or_user else str(rid)
+                memory_field += _("`  {} → {} facts`\n").format(name, cap)
+        embed.add_field(name=_("User Memory"), value=memory_field, inline=False)
+
         if private and any(send_key):
             embed.add_field(
                 name=_("OpenAI Key"),
@@ -2896,9 +2911,7 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         conf.compaction_threshold = token_limit
         if token_limit:
-            await ctx.send(
-                _("Compaction will now trigger at **{}** tokens").format(humanize_number(token_limit))
-            )
+            await ctx.send(_("Compaction will now trigger at **{}** tokens").format(humanize_number(token_limit)))
         else:
             await ctx.send(_("Compaction threshold reset, will only compact at the model's max token limit"))
         await self.save_conf()
@@ -2914,3 +2927,105 @@ class Admin(MixinMeta):
             conf.memory_flush_on_compaction = True
             await ctx.send(_("Pre-compaction memory flush is now **Enabled**"))
         await self.save_conf()
+
+    @assistant.command(name="memorycap")
+    async def set_memory_cap(self, ctx: commands.Context, max_facts: int):
+        """
+        Set the maximum number of stored facts per user.
+
+        This is the default cap for regular users. Admins/mods can have a higher
+        cap via role overrides (see `[p]assistant memoryoverride`).
+
+        Set to 0 for unlimited (not recommended).
+        """
+        if max_facts < 0:
+            return await ctx.send(_("Fact cap must be 0 or higher"))
+        conf = self.db.get_conf(ctx.guild)
+        conf.max_memory_facts = max_facts
+        if max_facts:
+            await ctx.send(_("User memory cap set to **{}** facts per user").format(max_facts))
+        else:
+            await ctx.send(_("User memory cap **disabled** (unlimited facts)"))
+        await self.save_conf()
+
+    @assistant.command(name="memoryinjection")
+    async def set_memory_injection(self, ctx: commands.Context, max_inject: int):
+        """
+        Set how many facts are injected into the system prompt per turn.
+
+        Only the N most recent facts are injected. The rest are still stored
+        and accessible via the `recall_user` tool if the bot needs them.
+
+        Set to 0 to inject all facts (not recommended for users with many facts).
+        """
+        if max_inject < 0:
+            return await ctx.send(_("Injection cap must be 0 or higher"))
+        conf = self.db.get_conf(ctx.guild)
+        conf.max_memory_injection = max_inject
+        if max_inject:
+            await ctx.send(_("Will inject up to **{}** most recent facts per turn into context").format(max_inject))
+        else:
+            await ctx.send(_("Will inject **all** stored facts per turn (no cap)"))
+        await self.save_conf()
+
+    @assistant.command(name="memoryoverride")
+    async def set_memory_override(
+        self,
+        ctx: commands.Context,
+        role_or_member: t.Union[discord.Role, discord.Member],
+        max_facts: int,
+    ):
+        """
+        Set a memory fact cap override for a role or member.
+
+        Members with this role (or member directly) can store up to this many facts,
+        overriding the default cap. Useful for giving admins/mods a larger memory budget.
+
+        Set to 0 to remove the override.
+        """
+        if max_facts < 0:
+            return await ctx.send(_("Fact cap must be 0 or higher"))
+        conf = self.db.get_conf(ctx.guild)
+        if max_facts == 0:
+            if role_or_member.id in conf.max_memory_facts_override:
+                del conf.max_memory_facts_override[role_or_member.id]
+                await ctx.send(_("Memory override removed for {}").format(role_or_member.name))
+            else:
+                await ctx.send(_("{} has no memory override to remove").format(role_or_member.name))
+        else:
+            conf.max_memory_facts_override[role_or_member.id] = max_facts
+            await ctx.send(_("Memory cap for {} set to **{}** facts").format(role_or_member.name, max_facts))
+        await self.save_conf()
+
+    @assistant.command(name="consolidatememory")
+    async def admin_consolidate_memory(
+        self,
+        ctx: commands.Context,
+        member: discord.Member,
+    ):
+        """
+        Manually trigger memory consolidation for a user.
+
+        This uses an LLM pass to merge redundant facts, drop low-value ones,
+        and bring the fact count down to ~75% of the user's cap.
+        """
+        conf = self.db.get_conf(ctx.guild)
+        memory_key = f"{ctx.guild.id}-{member.id}"
+        memory = self.db.user_memories.get(memory_key)
+        if not memory or not memory.facts:
+            return await ctx.send(_("No stored facts for {}").format(member.display_name))
+
+        before = len(memory.facts)
+        async with ctx.typing():
+            result = await self.consolidate_user_memory(ctx.guild, member, conf)
+
+        if result:
+            after = len(memory.facts)
+            await ctx.send(
+                _("Consolidated memory for {}: **{}** → **{}** facts").format(member.display_name, before, after)
+            )
+            await self.save_conf()
+        else:
+            await ctx.send(
+                _("Consolidation was not needed or failed for {} ({} facts)").format(member.display_name, before)
+            )

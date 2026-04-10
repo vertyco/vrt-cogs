@@ -141,6 +141,11 @@ class GuildSettings(AssistantBaseModel):
 
     vision_detail: str = "auto"  # high, low, auto
 
+    # User memory
+    max_memory_facts: int = 20  # Max facts per regular user (0 = unlimited)
+    max_memory_facts_override: t.Dict[int, int] = {}  # Role/user ID -> max facts override
+    max_memory_injection: int = 20  # Max facts injected into system prompt per turn (0 = unlimited)
+
     # Compaction (LLM-based context summarization)
     compaction_enabled: bool = True  # Enable automatic LLM compaction before blind degradation
     compaction_model: str = ""  # Model to use for compaction (empty = use same model as chat)
@@ -222,6 +227,18 @@ class GuildSettings(AssistantBaseModel):
             if role.id in self.reasoning_effort_role_override:
                 return self.reasoning_effort_role_override[role.id]
         return self.reasoning_effort
+
+    def get_user_max_memory_facts(self, member: t.Optional[discord.Member] = None) -> int:
+        if not member or not self.max_memory_facts_override:
+            return self.max_memory_facts
+        # Check direct user ID override first
+        if member.id in self.max_memory_facts_override:
+            return self.max_memory_facts_override[member.id]
+        sorted_roles = sorted(member.roles, reverse=True)
+        for role in sorted_roles:
+            if role.id in self.max_memory_facts_override:
+                return self.max_memory_facts_override[role.id]
+        return self.max_memory_facts
 
 
 class Reminder(AssistantBaseModel):

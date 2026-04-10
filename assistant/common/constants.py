@@ -540,17 +540,18 @@ LIST_REMINDERS = {
 REMEMBER_USER = {
     "name": "remember_user",
     "description": (
-        "Store a fact or preference about the user you are talking to so you can recall it in future conversations. "
-        "You SHOULD proactively use this whenever the user shares personal details, preferences, their setup/configuration, "
-        "issues they are experiencing, or anything that would be useful to know next time they ask for help. "
-        "Examples: user's timezone, platform they play on, recurring issues, preferred language, etc."
+        "Store a DURABLE fact about the user that would meaningfully help them in a FUTURE SEPARATE conversation. "
+        "Only store facts that are stable over time: their setup, environment, preferences, "
+        "recurring issues, timezone, or role/position. "
+        "Do NOT store: one-time questions, temporary states, conversational details, or things "
+        "already answered by the knowledge base. When in doubt, do NOT store."
     ),
     "parameters": {
         "type": "object",
         "properties": {
             "fact": {
                 "type": "string",
-                "description": "A concise, self-contained fact about the user. Write it so it makes sense without additional context, e.g. 'Plays on Xbox Series X' or 'Has recurring connection timeouts when joining ARK servers'",
+                "description": "A concise, self-contained fact about the user. Write it so it makes sense without additional context.",
             },
         },
         "required": ["fact"],
@@ -559,7 +560,7 @@ REMEMBER_USER = {
 
 RECALL_USER = {
     "name": "recall_user",
-    "description": "Retrieve all stored facts about the user you are talking to. Call this at the start of a support interaction to check if you already know relevant details about them.",
+    "description": "Retrieve all stored facts about the user you are talking to. Stored facts are already injected into context automatically, so only call this if you specifically need to review or reference the list.",
     "parameters": {
         "type": "object",
         "properties": {},
@@ -683,8 +684,30 @@ COMPACTION_SYSTEM_PROMPT = (
 # Pre-compaction memory flush prompt — asks the model to extract facts as JSON
 MEMORY_FLUSH_PROMPT = (
     "You are reviewing a conversation that is about to be compacted (summarized). "
-    "Extract any important facts about the user that should be remembered for future conversations. "
-    "\n\nAlready known facts:\n{existing_facts}"
-    "\n\nOutput ONLY a JSON array of new fact strings, e.g. [\"fact1\", \"fact2\"]. "
+    "Extract ONLY durable, high-value facts that would help this user in a FUTURE SEPARATE conversation. "
+    "\n\nGuidelines:\n"
+    "- GOOD: their setup/environment, preferences, recurring issues, timezone, role\n"
+    "- BAD: one-time questions they asked, temporary issues already resolved, conversational filler, "
+    "things that are common knowledge or in the knowledge base\n"
+    "- Do NOT duplicate or rephrase facts already known\n"
+    "- Each fact must be concise and self-contained\n"
+    "- Prefer FEWER high-quality facts over many low-quality ones\n"
+    "\nAlready known facts:\n{existing_facts}"
+    '\n\nOutput ONLY a JSON array of new fact strings, e.g. ["fact1", "fact2"]. '
     "If there are no new facts worth storing, output an empty array: []"
+)
+
+# Consolidation prompt — merges/deduplicates facts when nearing cap
+MEMORY_CONSOLIDATION_PROMPT = (
+    "You are a memory curator. The user has accumulated too many stored facts and they need to be "
+    "consolidated down to the most useful set.\n\n"
+    "Rules:\n"
+    "- Merge overlapping or redundant facts into single, more specific facts\n"
+    "- Drop facts that are trivial, outdated-sounding, or unlikely to help in future conversations\n"
+    "- Keep facts about: their setup/environment, preferences, recurring issues, timezone, roles\n"
+    "- Drop facts about: one-time questions, resolved issues, conversational filler, generic statements\n"
+    "- Target approximately {target_count} facts (current: {current_count})\n"
+    "- Preserve the most specific and useful version of each fact\n\n"
+    "Current facts:\n{facts_list}\n\n"
+    "Output ONLY a JSON array of the consolidated fact strings. Every fact in your output replaces the entire list."
 )

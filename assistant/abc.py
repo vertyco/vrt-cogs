@@ -130,6 +130,15 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    async def consolidate_user_memory(
+        self,
+        guild: discord.Guild,
+        user: discord.Member,
+        conf: GuildSettings,
+    ) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
     async def get_mention_permissions(self, member: discord.Member) -> discord.AllowedMentions:
         raise NotImplementedError
 
