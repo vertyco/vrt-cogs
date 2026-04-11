@@ -47,7 +47,7 @@ class CowClickComponent(
     async def from_custom_id(cls, interaction: discord.Interaction, item: discord.ui.Button, match: re.Match[str], /):
         return cls(int(match["clicks"]))
 
-    async def callback(self, interaction: discord.Interaction) -> None:
+    async def callback(self, interaction: discord.Interaction):
         bot: Red = interaction.client
         cog: MixinMeta | None = bot.get_cog("CowClicker")
         if not cog:
@@ -68,4 +68,4 @@ class CowClickComponent(
         # 1 in a 100,000 chance of sending "MOO!"
         if random.randint(1, 100_000) == 1:
             with suppress(discord.HTTPException):
-                await interaction.response.followup.send("MOO!")
+                await interaction.followup.send("MOO!")
