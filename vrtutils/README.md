@@ -48,36 +48,6 @@ Bring all messages without a ✅ or ❌ to the front of the channel.<br/>
  - Restricted to: `MOD`
  - Aliases: `refreshtodo`
 
-## [p]noping
-
-Toggle whether you want to be pinged<br/>
-
- - Usage: `[p]noping`
- - Restricted to: `MOD`
- - Checks: `guild_only`
-
-## [p]nopingset
-
-No Ping subcommands<br/>
-
- - Usage: `[p]nopingset`
- - Restricted to: `ADMIN`
-
-### [p]nopingset view
-
-List users who have opted out of being pinged<br/>
-
- - Usage: `[p]nopingset view`
- - Aliases: `list`
- - Checks: `guild_only`
-
-### [p]nopingset prune
-
-Prune users no longer in the server from the No Ping rule<br/>
-
- - Usage: `[p]nopingset prune`
- - Checks: `guild_only`
-
 ## [p]throwerror (Hybrid Command)
 
 Throw an unhandled exception<br/>

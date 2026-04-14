@@ -7,7 +7,6 @@ from .disk import DiskBench
 from .guildprofiles import GuildProfiles
 from .logs import Logs
 from .misc import Misc
-from .noping import NoPing
 from .todo import ToDo
 from .updates import Updates
 from .zipper import Zipper
@@ -22,7 +21,6 @@ class Utils(
     GuildProfiles,
     Logs,
     Misc,
-    NoPing,
     ToDo,
     Updates,
     Zipper,
