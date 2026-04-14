@@ -24,7 +24,7 @@ class NoPing(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMe
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.0.0"
+    __version__ = "1.0.1"
 
     def __init__(self, bot: Red):
         super().__init__()

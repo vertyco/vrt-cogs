@@ -113,8 +113,7 @@ class Admin(MixinMeta):
         txt = "\n".join(lines)
         color = await self.bot.get_embed_color(ctx)
         pages = [
-            discord.Embed(title="NoPing Users", description=page, color=color)
-            for page in pagify(txt, page_length=800)
+            discord.Embed(title="NoPing Users", description=page, color=color) for page in pagify(txt, page_length=800)
         ]
         for page in pages:
             await ctx.send(embed=page)
@@ -138,8 +137,10 @@ class Admin(MixinMeta):
         """View current NoPing settings for this server."""
         conf = self.db.get_conf(ctx.guild)
         now = get_current_time(conf.timezone)
-        active_count = len(conf.get_active_user_ids())
-        noping_now = len(get_noping_user_ids_at_now(conf))
+        enrolled = conf.get_active_user_ids()
+        blocked_now = get_noping_user_ids_at_now(conf)
+        scheduled = [uid for uid in enrolled if conf.users[uid].has_schedule()]
+        permanent = [uid for uid in enrolled if not conf.users[uid].has_schedule()]
 
         embed = discord.Embed(
             title=f"{SHIELD} NoPing Settings",
@@ -147,8 +148,21 @@ class Admin(MixinMeta):
         )
         embed.add_field(name="Server Timezone", value=conf.timezone, inline=True)
         embed.add_field(name="User Access", value="Enabled" if conf.allow_user_noping else "Disabled", inline=True)
-        embed.add_field(name="Total Enrolled", value=str(active_count), inline=True)
-        embed.add_field(name="Currently Protected", value=str(noping_now), inline=True)
         embed.add_field(name="AutoMod Rules", value=str(len(conf.rule_ids)), inline=True)
-        embed.add_field(name="Current Time", value=discord_timestamp(now, "F"), inline=True)
+        embed.add_field(
+            name="Enrolled Users",
+            value=(f"**{len(enrolled)}** total\n{len(permanent)} permanent / {len(scheduled)} scheduled"),
+            inline=True,
+        )
+        embed.add_field(
+            name="Pings Blocked Right Now",
+            value=(
+                f"**{len(blocked_now)}** of {len(enrolled)} enrolled\n-# Others are in an availability window"
+                if len(blocked_now) < len(enrolled)
+                else f"**{len(blocked_now)}** of {len(enrolled)} enrolled"
+            ),
+            inline=True,
+        )
+        embed.add_field(name="Server Time", value=discord_timestamp(now, "F"), inline=True)
+        embed.set_footer(text="Enrolled = toggled noping on | Pings Blocked = actively in AutoMod filter right now")
         await ctx.send(embed=embed)
