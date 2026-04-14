@@ -186,11 +186,52 @@ def window_discord_times(
     return (discord_timestamp(start_dt, "t"), discord_timestamp(end_dt, "t"))
 
 
+def import_legacy_users(
+    all_rules: list[discord.AutoModRule],
+    conf: GuildSettings,
+    guild_id: int,
+) -> int:
+    """Import users from legacy 'No Ping' automod rules into the cog's database.
+
+    Checks the provided rules for legacy naming patterns and extracts user IDs
+    from their keyword filters. Any users not already in the database are added
+    with noping enabled (permanent, no schedule).
+
+    Only runs when no managed NoPing rules exist yet (first-time adoption).
+    Returns the number of newly imported users.
+    """
+    # Only import if we don't already have managed rules (first-time adoption)
+    managed = [r for r in all_rules if is_noping_rule(r)]
+    if managed:
+        return 0
+
+    legacy = [r for r in all_rules if is_legacy_noping_rule(r)]
+    if not legacy:
+        return 0
+
+    imported = 0
+    for rule in legacy:
+        existing_ids = extract_user_ids(rule.trigger.keyword_filter)
+        for uid in existing_ids:
+            if uid not in conf.users:
+                sched = conf.get_user(uid)
+                sched.enabled = True
+                imported += 1
+            elif not conf.users[uid].enabled:
+                conf.users[uid].enabled = True
+                imported += 1
+
+    if imported:
+        log.info("Imported %d user(s) from legacy No Ping rules in guild %s", imported, guild_id)
+    return imported
+
+
 async def sync_rules(
     guild: discord.Guild,
     conf: GuildSettings,
     active_user_ids: list[int],
     bot_mod_roles: list[discord.Role],
+    all_rules: list[discord.AutoModRule],
 ) -> list[int]:
     """Synchronize automod rules with the current set of active noping user IDs.
 
@@ -202,7 +243,6 @@ async def sync_rules(
     for i in range(0, len(keywords), MAX_KEYWORDS_PER_RULE):
         chunks.append(keywords[i : i + MAX_KEYWORDS_PER_RULE])
 
-    all_rules = await guild.fetch_automod_rules()
     existing_rules = get_noping_rules(all_rules)
 
     rule_ids: list[int] = []

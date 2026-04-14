@@ -8,7 +8,7 @@ from redbot.core.bot import Red
 from .abc import CompositeMetaClass
 from .commands import Commands
 from .common.models import DB
-from .common.utils import get_noping_user_ids_at_now, sync_rules
+from .common.utils import get_noping_user_ids_at_now, import_legacy_users, sync_rules
 from .listeners import Listeners
 from .tasks import TaskLoops
 
@@ -112,6 +112,14 @@ class NoPing(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMe
 
             conf = self.db.get_conf(guild)
 
+            # Fetch all automod rules once for both import and sync
+            all_rules = await guild.fetch_automod_rules()
+
+            # Import users from legacy rules before syncing (first-time adoption)
+            imported = import_legacy_users(all_rules, conf, guild_id)
+            if imported:
+                self.save()
+
             # Per-user timezone aware: each user's schedule checked against their own timezone
             active_ids = get_noping_user_ids_at_now(conf)
 
@@ -123,7 +131,7 @@ class NoPing(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMe
             admin_roles = await self.bot.get_admin_roles(guild)
             exempt_roles = list(set(mod_roles + admin_roles))
 
-            rule_ids = await sync_rules(guild, conf, active_ids, exempt_roles)
+            rule_ids = await sync_rules(guild, conf, active_ids, exempt_roles, all_rules)
             conf.rule_ids = rule_ids
             self.save()
 
