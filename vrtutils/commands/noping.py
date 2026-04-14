@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import re
 import typing as t
@@ -20,6 +21,12 @@ class NoPing(MixinMeta):
     @commands.mod_or_permissions(manage_messages=True)
     async def noping(self, ctx: commands.Context):
         """Toggle whether you want to be pinged"""
+        if not hasattr(self.bot, "_noping_lock"):
+            self.bot._noping_lock = asyncio.Lock()
+        async with self.bot._noping_lock:
+            await self._toggle_noping(ctx)
+
+    async def _toggle_noping(self, ctx: commands.Context):
         is_admin = await self.bot.is_admin(ctx.author)
         automod_rule: t.List[discord.AutoModRule] = await ctx.guild.fetch_automod_rules()
         created = False
