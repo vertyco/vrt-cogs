@@ -372,10 +372,12 @@ class ScheduleView(ui.LayoutView):
 
     @action_row.button(label="Save & Close", style=discord.ButtonStyle.green, emoji=CHECK)
     async def save_button(self, interaction: discord.Interaction, button: ui.Button) -> None:
-        # Save and sync
+        # Auto-enable noping if the user has any schedule windows configured
+        if self.user_schedule.has_schedule():
+            self.user_schedule.enabled = True
         self.cog.save()
         await self.cog.sync_automod_rules(interaction.guild.id)
-        view = _text_view(f"{CHECK} Schedule saved! Use `noping` to toggle your ping protection.")
+        view = _text_view(f"{CHECK} Schedule saved and ping protection is now active!")
         await interaction.response.edit_message(view=view)
         self.stop()
 

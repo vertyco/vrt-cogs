@@ -74,21 +74,16 @@ class UserSchedule(Base):
         if not self.enabled:
             return False
         if not self.has_schedule():
-            # No schedule = permanent noping
             return True
         day = self.days.get(weekday)
         if not day or not day.enabled or not day.windows:
-            # No windows on this day = noping is active (user not available)
             return True
-        # Check if current time falls within any availability window
         current = hour * 60 + minute
         for window in day.windows:
             start = window.start_hour * 60 + window.start_minute
             end = window.end_hour * 60 + window.end_minute
             if start <= current < end:
-                # User IS available during this window, so noping is NOT active
                 return False
-        # Not within any window = noping active
         return True
 
     def format_schedule(self) -> str:

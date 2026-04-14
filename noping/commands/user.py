@@ -8,8 +8,11 @@ from ..common.constants import BELL, BELL_OFF, CHECK, CROSS
 from ..common.utils import (
     discord_timestamp,
     get_available_timezones,
+    get_noping_rules,
     get_user_time,
+    is_user_in_rules,
     next_transition_dt,
+    toggle_user_in_rules,
 )
 from ..views import ScheduleView, TutorialView
 
@@ -32,10 +35,11 @@ class User(MixinMeta):
             return await ctx.send(f"{CROSS} NoPing is currently disabled for regular users in this server.")
 
         user_sched = conf.get_user(ctx.author.id)
-        user_sched.enabled = not user_sched.enabled
-        self.save()
 
-        if user_sched.enabled:
+        if not user_sched.enabled:
+            # First time or re-enabling: turn on noping and do a full sync
+            user_sched.enabled = True
+            self.save()
             msg = f"{BELL_OFF} **{ctx.author.display_name}**, you will no longer be pinged."
             if user_sched.has_schedule():
                 now = get_user_time(user_sched, conf.timezone)
@@ -44,14 +48,48 @@ class User(MixinMeta):
                     transition = next_transition_dt(user_sched, conf.timezone)
                     if transition:
                         msg += f"\n-# Your schedule shows you're currently available. Protection activates {discord_timestamp(transition, 'R')}."
-                    else:
-                        msg += "\n-# Your schedule shows you're currently available. Protection will activate at your next scheduled time."
-        else:
-            msg = f"{BELL} **{ctx.author.display_name}**, you can now be pinged."
+            await ctx.typing()
+            success = await self.sync_automod_rules(ctx.guild.id)
+            if not success:
+                msg = f"{CROSS} Failed to sync AutoMod rules. Check that the bot has `Manage Server` permission and that the server hasn't hit the AutoMod rule limit."
+            return await ctx.send(msg)
+
+        if user_sched.has_schedule():
+            # Has a schedule: directly toggle in automod rules.
+            # The schedule loop will correct this at the next transition.
+            await ctx.typing()
+            all_rules = await ctx.guild.fetch_automod_rules()
+            noping_rules = get_noping_rules(all_rules)
+            currently_in = is_user_in_rules(ctx.author.id, noping_rules)
+
+            if currently_in:
+                success = await toggle_user_in_rules(ctx.guild, ctx.author.id, add=False)
+                if success:
+                    transition = next_transition_dt(user_sched, conf.timezone)
+                    msg = f"{BELL} **{ctx.author.display_name}**, you can now be pinged."
+                    if transition:
+                        msg += f"\n-# Your schedule will resume {discord_timestamp(transition, 'R')}."
+                else:
+                    msg = f"{CROSS} Failed to update AutoMod rules."
+            else:
+                success = await toggle_user_in_rules(ctx.guild, ctx.author.id, add=True)
+                if success:
+                    transition = next_transition_dt(user_sched, conf.timezone)
+                    msg = f"{BELL_OFF} **{ctx.author.display_name}**, you will no longer be pinged."
+                    if transition:
+                        msg += f"\n-# Your schedule will resume {discord_timestamp(transition, 'R')}."
+                else:
+                    msg = f"{CROSS} Failed to update AutoMod rules."
+            return await ctx.send(msg)
+
+        # No schedule: simple on/off toggle
+        user_sched.enabled = False
+        self.save()
+        msg = f"{BELL} **{ctx.author.display_name}**, you can now be pinged."
 
         await ctx.typing()
         success = await self.sync_automod_rules(ctx.guild.id)
-        if not success and user_sched.enabled:
+        if not success:
             msg = f"{CROSS} Failed to sync AutoMod rules. Check that the bot has `Manage Server` permission and that the server hasn't hit the AutoMod rule limit."
         await ctx.send(msg)
 

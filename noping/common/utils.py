@@ -68,6 +68,68 @@ def get_noping_rules(rules: list[discord.AutoModRule]) -> list[discord.AutoModRu
     return []
 
 
+def is_user_in_rules(user_id: int, noping_rules: list[discord.AutoModRule]) -> bool:
+    """Check if a user's ping pattern is currently in any noping automod rule."""
+    keyword = make_keyword(user_id)
+    for rule in noping_rules:
+        if keyword in rule.trigger.keyword_filter:
+            return True
+    return False
+
+
+async def toggle_user_in_rules(
+    guild: discord.Guild,
+    user_id: int,
+    add: bool,
+) -> bool:
+    """Directly add or remove a user from the noping automod rules.
+
+    This edits the rules in-place without a full sync, so the schedule loop
+    will naturally correct it at the next transition.
+    Returns True if the rules were modified successfully.
+    """
+    all_rules = await guild.fetch_automod_rules()
+    noping_rules = get_noping_rules(all_rules)
+    keyword = make_keyword(user_id)
+
+    if add:
+        if not noping_rules:
+            return False
+        # Add to the first rule that has room
+        for rule in noping_rules:
+            if keyword in rule.trigger.keyword_filter:
+                return True  # Already there
+            if len(rule.trigger.keyword_filter) < MAX_KEYWORDS_PER_RULE:
+                new_keywords = rule.trigger.keyword_filter + [keyword]
+                try:
+                    await rule.edit(
+                        trigger=discord.AutoModTrigger(keyword_filter=new_keywords),
+                        reason="NoPing manual toggle.",
+                    )
+                    return True
+                except discord.HTTPException:
+                    log.exception("Failed to add user to automod rule %s", rule.id)
+                    return False
+        return False  # All rules full
+    else:
+        # Remove from whichever rule contains it
+        for rule in noping_rules:
+            if keyword in rule.trigger.keyword_filter:
+                new_keywords = [kw for kw in rule.trigger.keyword_filter if kw != keyword]
+                if not new_keywords:
+                    new_keywords = ["placeholder_noping_empty"]
+                try:
+                    await rule.edit(
+                        trigger=discord.AutoModTrigger(keyword_filter=new_keywords),
+                        reason="NoPing manual toggle.",
+                    )
+                    return True
+                except discord.HTTPException:
+                    log.exception("Failed to remove user from automod rule %s", rule.id)
+                    return False
+        return True  # Not in any rule, nothing to remove
+
+
 def resolve_timezone(user_sched: UserSchedule, guild_tz: str) -> ZoneInfo:
     """Resolve the effective timezone for a user (user override > guild default)."""
     tz_str = user_sched.timezone or guild_tz
