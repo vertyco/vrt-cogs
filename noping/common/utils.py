@@ -301,9 +301,7 @@ async def sync_rules(
     Returns the list of rule IDs that are currently active.
     """
     keywords = [make_keyword(uid) for uid in active_user_ids]
-    chunks: list[list[str]] = []
-    for i in range(0, len(keywords), MAX_KEYWORDS_PER_RULE):
-        chunks.append(keywords[i : i + MAX_KEYWORDS_PER_RULE])
+    chunks = list(discord.utils.as_chunks(keywords, MAX_KEYWORDS_PER_RULE))
 
     existing_rules = get_noping_rules(all_rules)
 
