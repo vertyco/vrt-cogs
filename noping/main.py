@@ -98,16 +98,17 @@ class NoPing(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMe
             self.guild_locks[guild_id] = asyncio.Lock()
         return self.guild_locks[guild_id]
 
-    async def sync_automod_rules(self, guild_id: int) -> None:
+    async def sync_automod_rules(self, guild_id: int) -> bool:
         """Synchronize automod rules for a guild based on current schedules.
 
         Uses a per-guild lock to prevent race conditions from concurrent syncs.
+        Returns True if rules were synced successfully, False otherwise.
         """
         lock = self.get_guild_lock(guild_id)
         async with lock:
             guild = self.bot.get_guild(guild_id)
             if not guild:
-                return
+                return False
 
             conf = self.db.get_conf(guild)
 
@@ -125,3 +126,8 @@ class NoPing(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMe
             rule_ids = await sync_rules(guild, conf, active_ids, exempt_roles)
             conf.rule_ids = rule_ids
             self.save()
+
+            # If we have active users but no rules, the sync failed
+            if active_ids and not rule_ids:
+                return False
+            return True

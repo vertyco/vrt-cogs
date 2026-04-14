@@ -24,5 +24,5 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def sync_automod_rules(self, guild_id: int) -> None:
+    async def sync_automod_rules(self, guild_id: int) -> bool:
         raise NotImplementedError

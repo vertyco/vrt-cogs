@@ -49,7 +49,10 @@ class User(MixinMeta):
         else:
             msg = f"{BELL} **{ctx.author.display_name}**, you can now be pinged."
 
-        await self.sync_automod_rules(ctx.guild.id)
+        await ctx.typing()
+        success = await self.sync_automod_rules(ctx.guild.id)
+        if not success and user_sched.enabled:
+            msg = f"{CROSS} Failed to sync AutoMod rules. Check that the bot has `Manage Server` permission and that the server hasn't hit the AutoMod rule limit."
         await ctx.send(msg)
 
     @noping.command(name="schedule")

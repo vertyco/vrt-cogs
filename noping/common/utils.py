@@ -45,11 +45,27 @@ def is_noping_rule(rule: discord.AutoModRule) -> bool:
     return False
 
 
+def is_legacy_noping_rule(rule: discord.AutoModRule) -> bool:
+    """Check if an automod rule is a legacy 'No Ping' rule from the old vrtutils cog."""
+    return "no ping" in rule.name.strip().lower()
+
+
 def get_noping_rules(rules: list[discord.AutoModRule]) -> list[discord.AutoModRule]:
-    """Filter and sort NoPing rules from a list of automod rules."""
-    noping = [r for r in rules if is_noping_rule(r)]
-    noping.sort(key=lambda r: r.name)
-    return noping
+    """Filter and sort NoPing rules from a list of automod rules.
+
+    Finds rules managed by this cog first, then falls back to legacy 'No Ping' rules
+    from the old vrtutils version so they can be adopted.
+    """
+    managed = [r for r in rules if is_noping_rule(r)]
+    if managed:
+        managed.sort(key=lambda r: r.name)
+        return managed
+    # No managed rules found, look for legacy rules to adopt
+    legacy = [r for r in rules if is_legacy_noping_rule(r)]
+    if legacy:
+        legacy.sort(key=lambda r: r.name)
+        return legacy
+    return []
 
 
 def resolve_timezone(user_sched: UserSchedule, guild_tz: str) -> ZoneInfo:
