@@ -578,6 +578,8 @@ class DataAdmin(MixinMeta):
                         conf.xp = xp_per_message
                     if role_rewards := data.get("role_rewards"):
                         for entry in role_rewards:
+                            if "role_id" not in entry or "rank" not in entry:
+                                continue
                             role_id = int(entry["role_id"])
                             if not ctx.guild.get_role(role_id):
                                 continue
