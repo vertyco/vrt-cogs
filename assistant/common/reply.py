@@ -43,6 +43,12 @@ def extract_think_blocks(content: str, conf: GuildSettings) -> tuple[str, List[d
     return pattern.sub("", content).strip(), files
 
 
+def make_text_view(content: str) -> discord.ui.LayoutView:
+    view = discord.ui.LayoutView(timeout=None)
+    view.add_item(discord.ui.TextDisplay(content))
+    return view
+
+
 async def send_reply(
     message: discord.Message,
     content: str,
@@ -64,64 +70,51 @@ async def send_reply(
         files.extend(think_files)
 
     channel_perms = message.channel.permissions_for(message.guild.me)
-    embed_perms = channel_perms.embed_links
     file_perms = channel_perms.attach_files
     if files and not file_perms:
         files = []
         content += _("\nMissing 'attach files' permissions!")
 
     async def send(
-        content: Optional[str] = None,
-        embed: Optional[discord.Embed] = None,
-        embeds: Optional[List[discord.Embed]] = None,
+        view: Optional[discord.ui.LayoutView] = None,
         files: Optional[List[discord.File]] = None,
         as_reply: bool = False,
         mention: bool = False,
     ):
         if files is None:
             files = []
+        kwargs = {"allowed_mentions": allowed_mentions}
+        if view is not None:
+            kwargs["view"] = view
+        if files:
+            kwargs["files"] = files
         if as_reply:
             try:
                 return await message.reply(
-                    content=content,
-                    embed=embed,
-                    embeds=embeds,
-                    files=files,
                     mention_author=mention,
-                    allowed_mentions=allowed_mentions,
+                    **kwargs,
                 )
             except discord.HTTPException:
                 pass
         try:
-            await message.channel.send(
-                content=content,
-                embed=embed,
-                embeds=embeds,
-                files=files,
-                allowed_mentions=allowed_mentions,
-            )
+            await message.channel.send(**kwargs)
         except discord.HTTPException as e:
             log.error("Error sending message", exc_info=e)
 
-    # Simple case: Content fits in a single message
-    if len(content) <= 2000:
-        return await send(content, files=files, as_reply=reply, mention=conf.mention)
+    if not content:
+        if files:
+            return await send(files=files, as_reply=reply, mention=conf.mention)
+        return
 
-    # Medium case: Content fits in a single embed and we have embed permissions
-    elif len(content) <= 4000 and embed_perms and "```" not in content:
-        return await send(embed=discord.Embed(description=content), files=files, as_reply=reply, mention=conf.mention)
+    # Simple case: Content fits in a single text display
+    if len(content) <= 4000 and "```" not in content:
+        return await send(view=make_text_view(content), files=files, as_reply=reply, mention=conf.mention)
 
     # Long content case without code blocks: Paginate into multiple messages
     elif "```" not in content:
-        # Use longer pages if we can use embeds, otherwise stick to message length limit
-        page_length = 4000 if embed_perms else 2000
-        chunks = [p for p in pagify(content, page_length=page_length)]
+        chunks = [p for p in pagify(content, page_length=4000)]
         for idx, chunk in enumerate(chunks):
-            kwargs = {}
-            if embed_perms:
-                kwargs["embed"] = discord.Embed(description=chunk)
-            else:
-                kwargs["content"] = chunk
+            kwargs = {"view": make_text_view(chunk)}
             # Only include files and mention on first message
             if idx == 0:
                 kwargs["mention"] = conf.mention
@@ -153,16 +146,10 @@ async def send_reply(
 
     # Process and send each segment appropriately
     first_message_sent = False
-    for idx, (type, text) in enumerate(segments):
-        if type == "text":
-            # Regular text can use embeds for larger chunks
-            page_length = 4000 if embed_perms else 2000
-            for chunk in pagify(text, page_length=page_length):
-                kwargs = {}
-                if len(chunk) >= 2000:
-                    kwargs["embed"] = discord.Embed(description=chunk)
-                else:
-                    kwargs["content"] = chunk
+    for segment_type, text in segments:
+        if segment_type == "text":
+            for chunk in pagify(text, page_length=4000):
+                kwargs = {"view": make_text_view(chunk)}
                 if not first_message_sent:
                     kwargs["mention"] = conf.mention
                     kwargs["files"] = files
@@ -176,9 +163,10 @@ async def send_reply(
                 lang = match.group("lang") or ""
                 code = match.group("code")
                 # Pagify just the code content
-                lang_length = 6 + len(lang)
-                for chunk in pagify(code, delims=("\n",), page_length=2000 - lang_length):
-                    kwargs = {"content": f"```{lang}\n{chunk}```"}
+                wrapper_length = 7 + len(lang)
+                for chunk in pagify(code, delims=("\n",), page_length=4000 - wrapper_length):
+                    formatted = f"```{lang}\n{chunk}```"
+                    kwargs = {"view": make_text_view(formatted)}
                     if not first_message_sent:
                         kwargs["mention"] = conf.mention
                         kwargs["files"] = files
