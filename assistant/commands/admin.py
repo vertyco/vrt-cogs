@@ -30,12 +30,16 @@ from redbot.core.utils.chat_formatting import (
 
 from ..abc import MixinMeta
 from ..common.constants import MODELS, PRICES
-from ..common.models import DB
+from ..common.models import DB, DEFAULT_THINK_TAG_PREFIX, DEFAULT_THINK_TAG_SUFFIX
 from ..common.utils import get_attachments
 from ..views import CodeMenu, EmbeddingMenu, SetAPI
 
 log = logging.getLogger("red.vrt.assistant.admin")
 _ = Translator("Assistant", __file__)
+
+
+def format_think_tag(tag: str) -> str:
+    return tag.encode("unicode_escape").decode("ascii") or _("Empty")
 
 
 @cog_i18n(_)
@@ -128,6 +132,14 @@ class Admin(MixinMeta):
             humanize_list([f"<#{i}>" for i in conf.trigger_ignore_channels]) or _("None")
         )
         val += _("`Has Prompt:`{}\n").format(_("Yes") if conf.trigger_prompt else _("No"))
+        embed.add_field(name=name, value=val, inline=False)
+
+        name = _("Think Tags")
+        val = _("Reasoning blocks wrapped in these tags are removed from chat output and uploaded as files.\n")
+        val += _("Prefix\n{}\nSuffix\n{}").format(
+            box(format_think_tag(conf.think_tag_prefix)),
+            box(format_think_tag(conf.think_tag_suffix)),
+        )
         embed.add_field(name=name, value=val, inline=False)
 
         if conf.allow_sys_prompt_override:
@@ -1087,6 +1099,90 @@ class Admin(MixinMeta):
         except ValueError:
             conf.reasoning_effort = "low"
         await ctx.send(_("Reasoning effort has been set to **{}**").format(conf.reasoning_effort.capitalize()))
+        await self.save_conf()
+
+    @assistant.command(name="thinkprefix")
+    async def set_think_prefix(self, ctx: commands.Context, *, prefix: str = None):
+        """
+        Set the prefix used to detect model thinking blocks
+
+        Omit the value to reset to the default prefix.
+        You can attach a .txt file instead if the prefix includes newlines.
+        """
+        attachments = get_attachments(ctx.message)
+        if attachments:
+            try:
+                prefix = (await attachments[0].read()).decode()
+            except Exception as e:
+                txt = _("Failed to read `{}`, bot owner can use `{}` for more information").format(
+                    attachments[0].filename, f"{ctx.clean_prefix}traceback"
+                )
+                await ctx.send(txt)
+                log.error("Failed to parse think prefix", exc_info=e)
+                self.bot._last_exception = traceback.format_exc()  # type: ignore
+                return
+
+        conf = self.db.get_conf(ctx.guild)
+        if prefix is None:
+            if conf.think_tag_prefix == DEFAULT_THINK_TAG_PREFIX:
+                return await ctx.send(_("Think tag prefix is already set to the default value."))
+            conf.think_tag_prefix = DEFAULT_THINK_TAG_PREFIX
+            await ctx.send(
+                _("Think tag prefix reset to default:\n{}").format(box(format_think_tag(conf.think_tag_prefix)))
+            )
+            await self.save_conf()
+            return
+
+        if prefix == "":
+            return await ctx.send(_("Think tag prefix cannot be empty."))
+
+        if conf.think_tag_prefix == prefix:
+            return await ctx.send(_("Think tag prefix is already set to that value."))
+
+        conf.think_tag_prefix = prefix
+        await ctx.send(_("Think tag prefix has been set to:\n{}").format(box(format_think_tag(prefix))))
+        await self.save_conf()
+
+    @assistant.command(name="thinksuffix")
+    async def set_think_suffix(self, ctx: commands.Context, *, suffix: str = None):
+        """
+        Set the suffix used to detect model thinking blocks
+
+        Omit the value to reset to the default suffix.
+        You can attach a .txt file instead if the suffix includes newlines.
+        """
+        attachments = get_attachments(ctx.message)
+        if attachments:
+            try:
+                suffix = (await attachments[0].read()).decode()
+            except Exception as e:
+                txt = _("Failed to read `{}`, bot owner can use `{}` for more information").format(
+                    attachments[0].filename, f"{ctx.clean_prefix}traceback"
+                )
+                await ctx.send(txt)
+                log.error("Failed to parse think suffix", exc_info=e)
+                self.bot._last_exception = traceback.format_exc()  # type: ignore
+                return
+
+        conf = self.db.get_conf(ctx.guild)
+        if suffix is None:
+            if conf.think_tag_suffix == DEFAULT_THINK_TAG_SUFFIX:
+                return await ctx.send(_("Think tag suffix is already set to the default value."))
+            conf.think_tag_suffix = DEFAULT_THINK_TAG_SUFFIX
+            await ctx.send(
+                _("Think tag suffix reset to default:\n{}").format(box(format_think_tag(conf.think_tag_suffix)))
+            )
+            await self.save_conf()
+            return
+
+        if suffix == "":
+            return await ctx.send(_("Think tag suffix cannot be empty."))
+
+        if conf.think_tag_suffix == suffix:
+            return await ctx.send(_("Think tag suffix is already set to that value."))
+
+        conf.think_tag_suffix = suffix
+        await ctx.send(_("Think tag suffix has been set to:\n{}").format(box(format_think_tag(suffix))))
         await self.save_conf()
 
     @assistant.command(name="questionmark")

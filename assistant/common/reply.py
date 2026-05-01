@@ -12,7 +12,35 @@ log = logging.getLogger("red.vrt.assistant.reply")
 _ = Translator("Assistant", __file__)
 
 CODE_BLOCK = re.compile(r"```(?P<lang>\w+)?\n?(?P<code>.*?)```", re.DOTALL)
-THINK_BLOCK = re.compile(r"<think>(.*?)</think>", re.DOTALL)
+
+
+def get_think_block_pattern(conf: GuildSettings) -> Optional[re.Pattern[str]]:
+    if not conf.think_tag_prefix or not conf.think_tag_suffix:
+        return None
+    return re.compile(
+        f"{re.escape(conf.think_tag_prefix)}(.*?){re.escape(conf.think_tag_suffix)}",
+        re.DOTALL,
+    )
+
+
+def extract_think_blocks(content: str, conf: GuildSettings) -> tuple[str, List[discord.File]]:
+    pattern = get_think_block_pattern(conf)
+    if pattern is None:
+        return content, []
+
+    if conf.think_tag_prefix not in content or conf.think_tag_suffix not in content:
+        return content, []
+
+    files: List[discord.File] = []
+    for idx, match in enumerate(pattern.finditer(content)):
+        think_content = match.group(1).strip() or "no thinkies 🤯"
+        filename = "thinkies.txt" if idx == 0 else f"thinkies_part{idx + 1}.txt"
+        files.append(text_to_file(think_content, filename=filename))
+
+    if not files:
+        return content, []
+
+    return pattern.sub("", content).strip(), files
 
 
 async def send_reply(
@@ -29,16 +57,11 @@ async def send_reply(
     Making sure not to break any markdown code blocks
     """
     # Handle thinking sections first
-    if "<think>" in content:
+    content, think_files = extract_think_blocks(content, conf)
+    if think_files:
         if files is None:
             files = []
-        for idx, match in enumerate(THINK_BLOCK.finditer(content)):
-            think_content = match.group(1).strip()
-            if not think_content:
-                think_content += "no thinkies 🤯"
-            filename = "thinkies.txt" if idx == 0 else f"thinkies_part{idx + 1}.txt"
-            files.append(text_to_file(think_content, filename=filename))
-        content = THINK_BLOCK.sub("", content).strip()
+        files.extend(think_files)
 
     channel_perms = message.channel.permissions_for(message.guild.me)
     embed_perms = channel_perms.embed_links

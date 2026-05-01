@@ -9,6 +9,9 @@ from redbot.core.bot import Red
 
 log = logging.getLogger("red.vrt.assistant.models")
 
+DEFAULT_THINK_TAG_PREFIX = "<think>"
+DEFAULT_THINK_TAG_SUFFIX = "</think>"
+
 
 class AssistantBaseModel(BaseModel):
     @classmethod
@@ -105,6 +108,8 @@ class GuildSettings(AssistantBaseModel):
     message_coalesce_delay: float = 0.0  # seconds to wait for follow-up messages before responding (0 = disabled)
     reasoning_effort: str = "low"  # none, minimal, low, medium, high, xhigh (model-dependent)
     verbosity: str = "low"  # low, medium, high (gpt-5 only)
+    think_tag_prefix: str = DEFAULT_THINK_TAG_PREFIX
+    think_tag_suffix: str = DEFAULT_THINK_TAG_SUFFIX
 
     # Planner roles - users with these roles can use the think_and_plan tool
     planners: t.List[int] = []  # Role or user IDs who can use planning tools
