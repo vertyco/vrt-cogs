@@ -246,6 +246,13 @@ class Admin(MixinMeta):
                 inline=False,
             )
 
+        if private and ctx.author.id in self.bot.owner_ids:
+            embed.add_field(
+                name=_("Endpoint Override API Key"),
+                value=box(self.db.endpoint_api_key) if self.db.endpoint_api_key else _("Not Set"),
+                inline=False,
+            )
+
         if conf.regex_blacklist:
             joined = "\n".join(conf.regex_blacklist)
             for p in pagify(joined, page_length=1000):
@@ -529,6 +536,37 @@ class Admin(MixinMeta):
         else:
             self.db.brave_api_key = key
             await msg.edit(content=_("Brave API key has been set!"), embed=None, view=None)
+
+        await self.save_conf()
+
+    @assistant.command(name="endpointapikey", aliases=["endpointkey"])
+    @commands.bot_has_permissions(embed_links=True)
+    @commands.is_owner()
+    async def set_endpoint_key(self, ctx: commands.Context):
+        """
+        Set the global API key used for the custom endpoint override
+
+        This key is only used when an endpoint override is configured and a guild
+        has not provided its own API key.
+        """
+        view = SetAPI(ctx.author, self.db.endpoint_api_key)
+        txt = _(
+            "Click to set the API key used for the endpoint override\n\n"
+            "To remove the key, enter `none`"
+        )
+        embed = discord.Embed(description=txt, color=ctx.author.color)
+        msg = await ctx.send(embed=embed, view=view)
+        await view.wait()
+        key = view.key.strip() if view.key else "none"
+
+        if key == "none" and self.db.endpoint_api_key:
+            self.db.endpoint_api_key = None
+            await msg.edit(content=_("Endpoint override API key has been removed!"), embed=None, view=None)
+        elif key == "none" and not self.db.endpoint_api_key:
+            return await msg.edit(content=_("No API key was entered!"), embed=None, view=None)
+        else:
+            self.db.endpoint_api_key = key
+            await msg.edit(content=_("Endpoint override API key has been set!"), embed=None, view=None)
 
         await self.save_conf()
 
@@ -2737,6 +2775,7 @@ class Admin(MixinMeta):
         **Notes**
         - When set, all servers can use the assistant without needing their own API key
         - Custom endpoints must be OpenAI-compatible
+        - Use `[p]assistant endpointapikey` to set a global key for authenticated custom endpoints
         """
         if self.db.endpoint_override == endpoint:
             return await ctx.send(_("Endpoint is already set to **{}**").format(endpoint))

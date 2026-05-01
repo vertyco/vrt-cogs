@@ -40,11 +40,15 @@ class API(MixinMeta):
         """Return the effective API key for a guild.
 
         If the guild has its own key, use that.  Otherwise, if a global
-        endpoint override is configured, return a placeholder so the
-        openai client doesn't reject a ``None`` key (custom endpoints
-        typically don't validate it).
+        endpoint override is configured, use the owner-configured endpoint
+        key if available. Fall back to a placeholder so the openai client
+        doesn't reject a ``None`` key for endpoints that don't validate it.
         """
-        return conf.api_key or ("n/a" if self.db.endpoint_override else "")
+        if conf.api_key:
+            return conf.api_key
+        if self.db.endpoint_override:
+            return self.db.endpoint_api_key or "n/a"
+        return ""
 
     async def openai_status(self) -> str:
         try:

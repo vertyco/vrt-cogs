@@ -429,6 +429,7 @@ class DB(AssistantBaseModel):
     listen_to_bots: bool = False
     brave_api_key: t.Optional[str] = None
     endpoint_override: t.Optional[str] = None
+    endpoint_api_key: t.Optional[str] = None
     reminders: t.Dict[str, Reminder] = {}  # reminder_id -> Reminder
     scheduled_tasks: t.Dict[str, ScheduledTask] = {}  # task_id -> ScheduledTask
     user_memories: t.Dict[str, UserMemory] = {}  # "{guild_id}-{user_id}" -> UserMemory
