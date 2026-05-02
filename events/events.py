@@ -33,6 +33,20 @@ DPY2 = True if version_info >= VersionInfo.from_str("3.5.0") else False
 DEFAULT_EMOJI = "👍"
 
 
+def iter_message_ids(values):
+    # A malformed submission write can store IDs as nested lists like [[123]].
+    if isinstance(values, int):
+        yield values
+        return
+    if isinstance(values, str):
+        if values.isdigit():
+            yield int(values)
+        return
+    if isinstance(values, (list, tuple, set)):
+        for value in values:
+            yield from iter_message_ids(value)
+
+
 class Events(commands.Cog):
     """
     Host and manage events in your server with a variety of customization options.
@@ -42,7 +56,7 @@ class Events(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.2.4"
+    __version__ = "0.2.5"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -184,13 +198,14 @@ class Events(commands.Cog):
         per_user = event["submissions_per_user"]
         already_submitted = 0
         if uid in event["submissions"]:
-            if len(event["submissions"][uid]) >= per_user:
+            existing_entries = list(iter_message_ids(event["submissions"][uid]))
+            if len(existing_entries) >= per_user:
                 return await edit(
                     msg,
                     "You have already submitted the max amount of entries for this event!",
                 )
             else:
-                already_submitted = len(event["submissions"][uid])
+                already_submitted = len(existing_entries)
 
         required_roles = event["roles_required"]
         if required_roles:
@@ -336,9 +351,11 @@ class Events(commands.Cog):
 
         async with self.config.guild(ctx.guild).events() as events:
             if uid in events[event_name]["submissions"]:
-                events[event_name]["submissions"][uid].extend(to_save)
+                existing_entries = list(iter_message_ids(events[event_name]["submissions"][uid]))
+                existing_entries.extend(to_save)
+                events[event_name]["submissions"][uid] = existing_entries
             else:
-                events[event_name]["submissions"][uid] = [to_save]
+                events[event_name]["submissions"][uid] = to_save.copy()
 
     @commands.group(name="events")
     @commands.guild_only()
@@ -403,7 +420,9 @@ class Events(commands.Cog):
             per_user = i["submissions_per_user"]
             winners = i["winners"]
             participants = len(i["submissions"].keys())
-            submissions = sum(len(subs) for subs in i["submissions"].values()) if i["submissions"] else 0
+            submissions = (
+                sum(len(list(iter_message_ids(subs))) for subs in i["submissions"].values()) if i["submissions"] else 0
+            )
             start = i["start_date"]
             end = i["end_date"]
             roles = i["roles_required"]
@@ -718,7 +737,7 @@ class Events(commands.Cog):
         deleted = 0
         async with ctx.typing():
             async with self.config.guild(ctx.guild).events() as events:
-                for mid in events[event_name]["submissions"][uid].copy():
+                for mid in iter_message_ids(events[event_name]["submissions"][uid].copy()):
                     try:
                         message = await channel.fetch_message(mid)
                     except discord.NotFound:
@@ -753,10 +772,10 @@ class Events(commands.Cog):
                 if "y" in reply.content.lower():
                     with contextlib.suppress(discord.NotFound, discord.Forbidden, AttributeError):
                         for message_ids in event["submissions"].values():
-                            for message_id in message_ids:
+                            for message_id in iter_message_ids(message_ids):
                                 message = await channel.fetch_message(message_id)
                                 await message.delete()
-                        for message_id in event["messages"]:
+                        for message_id in iter_message_ids(event["messages"]):
                             message = await channel.fetch_message(message_id)
                             await message.delete()
 
@@ -1135,10 +1154,7 @@ class Events(commands.Cog):
                 continue
             if any(r.id in rblacklist for r in submitter.roles):
                 continue
-            for message_id in message_ids:
-                if isinstance(message_id, list):
-                    # IDFK
-                    message_id = message_id[0]
+            for message_id in iter_message_ids(message_ids):
                 try:
                     message = await channel.fetch_message(message_id)
                 except (discord.NotFound, discord.HTTPException):
