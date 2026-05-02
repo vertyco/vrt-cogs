@@ -11,6 +11,7 @@ log = logging.getLogger("red.vrt.assistant.models")
 
 DEFAULT_THINK_TAG_PREFIX = "<think>"
 DEFAULT_THINK_TAG_SUFFIX = "</think>"
+DEFAULT_SYSTEM_PROMPT = "You are a discord bot named {botname}, and are chatting with {username}."
 
 
 class AssistantBaseModel(BaseModel):
@@ -101,7 +102,7 @@ class EndpointProfile(AssistantBaseModel):
 
 
 class GuildSettings(AssistantBaseModel):
-    system_prompt: str = "You are a discord bot named {botname}, and are chatting with {username}."
+    system_prompt: str = DEFAULT_SYSTEM_PROMPT
     prompt: str = ""
     channel_prompts: t.Dict[int, str] = {}
     allow_sys_prompt_override: bool = False  # Per convo system prompt
@@ -449,7 +450,9 @@ class DB(AssistantBaseModel):
     persistent_conversations: bool = False
     functions: t.Dict[str, CustomFunction] = {}
     listen_to_bots: bool = False
+    reasoning_as_files: bool = True
     brave_api_key: t.Optional[str] = None
+    default_system_prompt: str = DEFAULT_SYSTEM_PROMPT
     endpoint_override: t.Optional[str] = None
     endpoint_api_key: t.Optional[str] = None
     endpoint_profile: t.Optional[EndpointProfile] = None
@@ -459,7 +462,9 @@ class DB(AssistantBaseModel):
 
     def get_conf(self, guild: t.Union[discord.Guild, int]) -> GuildSettings:
         gid = guild if isinstance(guild, int) else guild.id
-        return self.configs.setdefault(gid, GuildSettings())
+        if gid not in self.configs:
+            self.configs[gid] = GuildSettings(system_prompt=self.default_system_prompt)
+        return self.configs[gid]
 
     def get_conversation(
         self,

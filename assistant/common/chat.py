@@ -439,9 +439,16 @@ class ChatHandler(MixinMeta):
                     files=files,
                     reply=True,
                     allowed_mentions=allowed_mentions,
+                    include_think_files=self.db.reasoning_as_files,
                 )
             else:
-                await send_reply(message=message, content=text, conf=conf, allowed_mentions=allowed_mentions)
+                await send_reply(
+                    message=message,
+                    content=text,
+                    conf=conf,
+                    allowed_mentions=allowed_mentions,
+                    include_think_files=self.db.reasoning_as_files,
+                )
 
     async def get_chat_response(
         self,

@@ -330,7 +330,13 @@ class AssistantFunctions(MixinMeta):
     ):
         allowed_mentions = await self.get_mention_permissions(user) if user else discord.AllowedMentions.none()
         if message_obj is not None:
-            await reply.send_reply(message=message_obj, content=content, conf=conf, allowed_mentions=allowed_mentions)
+            await reply.send_reply(
+                message=message_obj,
+                content=content,
+                conf=conf,
+                allowed_mentions=allowed_mentions,
+                include_think_files=self.db.reasoning_as_files,
+            )
         else:
             for p in pagify(content):
                 await channel.send(p, allowed_mentions=allowed_mentions)

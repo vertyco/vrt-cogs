@@ -31,7 +31,12 @@ from redbot.core.utils.chat_formatting import (
 
 from ..abc import MixinMeta
 from ..common.constants import MODELS, PRICES
-from ..common.models import DB, DEFAULT_THINK_TAG_PREFIX, DEFAULT_THINK_TAG_SUFFIX
+from ..common.models import (
+    DB,
+    DEFAULT_SYSTEM_PROMPT,
+    DEFAULT_THINK_TAG_PREFIX,
+    DEFAULT_THINK_TAG_SUFFIX,
+)
 from ..common.utils import get_attachments
 from ..views import CodeMenu, EmbeddingMenu, SetAPI
 
@@ -262,7 +267,8 @@ class Admin(MixinMeta):
         embed.add_field(name=name, value=val, inline=False)
 
         name = _("Think Tags")
-        val = _("Reasoning blocks wrapped in these tags are removed from chat output and uploaded as files.\n")
+        val = _("Reasoning blocks wrapped in these tags are removed from chat output.\n")
+        val += _("`Upload as Files:`{}\n").format(_("Enabled") if self.db.reasoning_as_files else _("Disabled"))
         val += _("Prefix\n{}\nSuffix\n{}").format(
             box(format_think_tag(conf.think_tag_prefix)),
             box(format_think_tag(conf.think_tag_suffix)),
@@ -932,6 +938,59 @@ class Admin(MixinMeta):
             conf.system_prompt = system_prompt.strip()
             await ctx.send(_("System prompt has been set!"))
 
+        await self.save_conf()
+
+    @assistant.command(name="defaultsystem")
+    @commands.is_owner()
+    async def set_default_system_prompt(self, ctx: commands.Context, *, system_prompt: str = None):
+        """
+        Set the global default system prompt for newly created guild configs
+
+        - Run without arguments to view the current global default prompt
+        - Use `none` to reset to the built-in default prompt
+        - This does not modify existing server-specific prompts
+        """
+        attachments = get_attachments(ctx.message)
+        if attachments:
+            try:
+                system_prompt = (await attachments[0].read()).decode()
+            except Exception as e:
+                txt = _("Failed to read `{}`, bot owner can use `{}` for more information").format(
+                    attachments[0].filename, f"{ctx.clean_prefix}traceback"
+                )
+                await ctx.send(txt)
+                log.error("Failed to parse default system prompt", exc_info=e)
+                self.bot._last_exception = traceback.format_exc()  # type: ignore
+                return
+
+        if system_prompt is None:
+            current = self.db.default_system_prompt
+            file = text_to_file(current, "DefaultSystemPrompt.txt")
+            lines = [_("Current global default system prompt for newly created servers:"), _("Existing servers are unchanged.")]
+            if current == DEFAULT_SYSTEM_PROMPT:
+                lines.append(_("This is currently using the built-in default prompt."))
+            else:
+                lines.append(_("This is currently using a custom default prompt."))
+            return await ctx.send("\n".join(lines), file=file)
+
+        normalized = system_prompt.strip()
+        if not normalized:
+            return await ctx.send(
+                _("Please include a system prompt or .txt file, or use `none` to reset to the built-in default.")
+            )
+
+        if normalized.lower() == "none":
+            self.db.default_system_prompt = DEFAULT_SYSTEM_PROMPT
+            await ctx.send(
+                _("The global default system prompt has been reset to the built-in default. Existing servers were not changed.")
+            )
+            await self.save_conf()
+            return
+
+        self.db.default_system_prompt = normalized
+        await ctx.send(
+            _("The global default system prompt has been set for newly created servers. Existing servers were not changed.")
+        )
         await self.save_conf()
 
     @assistant.command(name="channel")
@@ -3083,6 +3142,18 @@ class Admin(MixinMeta):
         else:
             self.db.persistent_conversations = True
             await ctx.send(_("Persistent conversations have been **Enabled**"))
+        await self.save_conf()
+
+    @assistant.command(name="reasoningfiles")
+    @commands.is_owner()
+    async def toggle_reasoning_files(self, ctx: commands.Context):
+        """Toggle whether reasoning/think blocks are uploaded as files globally"""
+        if self.db.reasoning_as_files:
+            self.db.reasoning_as_files = False
+            await ctx.send(_("Reasoning blocks will now be stripped from replies without uploading think files."))
+        else:
+            self.db.reasoning_as_files = True
+            await ctx.send(_("Reasoning blocks will now be uploaded as think files when present."))
         await self.save_conf()
 
     @assistant.command(name="resetglobalembeddings")

@@ -25,13 +25,17 @@ def get_think_block_pattern(conf: GuildSettings) -> Optional[re.Pattern[str]]:
     )
 
 
-def extract_think_blocks(content: str, conf: GuildSettings) -> tuple[str, List[discord.File]]:
+def extract_think_blocks(content: str, conf: GuildSettings, include_files: bool = True) -> tuple[str, List[discord.File]]:
     pattern = get_think_block_pattern(conf)
     if pattern is None:
         return content, []
 
     if conf.think_tag_prefix not in content or conf.think_tag_suffix not in content:
         return content, []
+
+    cleaned = pattern.sub("", content).strip()
+    if not include_files:
+        return cleaned, []
 
     files: List[discord.File] = []
     for idx, match in enumerate(pattern.finditer(content)):
@@ -40,9 +44,9 @@ def extract_think_blocks(content: str, conf: GuildSettings) -> tuple[str, List[d
         files.append(text_to_file(think_content, filename=filename))
 
     if not files:
-        return content, []
+        return cleaned, []
 
-    return pattern.sub("", content).strip(), files
+    return cleaned, files
 
 
 def split_attachment_files(files: Optional[List[discord.File]]) -> tuple[List[discord.File], List[discord.File]]:
@@ -87,6 +91,7 @@ async def send_reply(
     files: Optional[List[discord.File]] = None,
     reply: bool = False,
     allowed_mentions: Optional[discord.AllowedMentions] = None,
+    include_think_files: bool = True,
 ):
     """Intelligently send a reply to a message
 
@@ -94,7 +99,7 @@ async def send_reply(
     Making sure not to break any markdown code blocks
     """
     # Handle thinking sections first
-    content, think_files = extract_think_blocks(content, conf)
+    content, think_files = extract_think_blocks(content, conf, include_files=include_think_files)
     if think_files:
         if files is None:
             files = []
