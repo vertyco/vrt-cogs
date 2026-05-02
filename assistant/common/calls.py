@@ -4,10 +4,11 @@ from typing import List, Optional
 
 import httpx
 import openai
+import orjson
 from aiocache import cached
 from openai.types import CreateEmbeddingResponse, Image, ImagesResponse
 from openai.types.chat import ChatCompletion
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from sentry_sdk import add_breadcrumb
 from tenacity import (
     retry,
@@ -19,6 +20,47 @@ from tenacity import (
 from .constants import NO_DEVELOPER_ROLE, OLD_TOOL_SCHEMA, PRICES, SUPPORTS_SEED
 
 log = logging.getLogger("red.vrt.assistant.calls")
+
+
+def get_custom_endpoint_image_error() -> str:
+    return (
+        "The configured custom endpoint does not support OpenAI image generation endpoints. "
+        "Many OpenAI-compatible backends support chat and embeddings but do not implement /v1/images."
+    )
+
+
+def get_request_messages(messages: List[dict], use_legacy_functions: bool) -> list[dict]:
+    """Return a request-safe copy of the chat payload.
+
+    The low-level API helper should never mutate the caller's conversation state.
+    When targeting the legacy ``functions`` schema, modern tool-call history is
+    downgraded to the older assistant/function message format where possible.
+    """
+    payload: list[dict] = []
+    for message in messages:
+        copied = message.copy()
+
+        if use_legacy_functions:
+            if copied.get("role") == "tool":
+                copied["role"] = "function"
+                copied.pop("tool_call_id", None)
+
+            tool_calls = copied.pop("tool_calls", None)
+            if tool_calls:
+                if len(tool_calls) == 1:
+                    function = tool_calls[0].get("function", {})
+                    name = function.get("name")
+                    arguments = function.get("arguments")
+                    if name and arguments is not None:
+                        copied["function_call"] = {"name": name, "arguments": arguments}
+                else:
+                    log.debug("Dropping parallel tool call metadata for legacy functions payload")
+        else:
+            copied.pop("function_call", None)
+
+        payload.append(copied)
+
+    return payload
 
 
 @retry(
@@ -49,7 +91,9 @@ async def request_chat_completion_raw(
 ) -> ChatCompletion:
     client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
 
-    kwargs = {"model": model, "messages": messages}
+    use_legacy_functions = bool(functions and model not in NO_DEVELOPER_ROLE and base_url is None and model in OLD_TOOL_SCHEMA)
+
+    kwargs = {"model": model, "messages": get_request_messages(messages, use_legacy_functions)}
 
     if base_url is not None:
         # Custom endpoint: send standard params, skip OpenAI-specific ones
@@ -98,26 +142,13 @@ async def request_chat_completion_raw(
             kwargs["seed"] = seed
 
     if functions and model not in NO_DEVELOPER_ROLE:
-        if base_url is None and model in OLD_TOOL_SCHEMA:
+        if use_legacy_functions:
             kwargs["functions"] = functions
-            # If passing functions, make sure the messages payload has no tool calls
-            for idx, message in enumerate(messages):
-                if "tool_calls" in message:
-                    # Remove the message from the payload
-                    del kwargs["messages"][idx]
         else:
             # Custom endpoints and modern OpenAI models use the tools schema
-            tools = []
-            for func in functions:
-                function = {"type": "function", "function": func, "name": func["name"]}
-                tools.append(function)
+            tools = [{"type": "function", "function": func} for func in functions]
             if tools:
                 kwargs["tools"] = tools
-                # If passing tools, make sure the messages payload has no "function_call" key
-                for idx, message in enumerate(messages):
-                    if "function_call" in message:
-                        # Remove the message from the payload
-                        del kwargs["messages"][idx]
 
     add_breadcrumb(
         category="api",
@@ -238,12 +269,35 @@ class CreateMemoryResponse(BaseModel):
 async def create_memory_call(
     messages: t.List[dict],
     api_key: str,
+    model: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> t.Union[CreateMemoryResponse, None]:
+    if not model:
+        raise ValueError("A model is required for memory calls")
+
     client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
-    response = await client.beta.chat.completions.parse(
-        model="o3",
+    if base_url is None:
+        response = await client.beta.chat.completions.parse(
+            model=model,
+            messages=messages,
+            response_format=CreateMemoryResponse,
+        )
+        return response.choices[0].message.parsed
+
+    response: ChatCompletion = await client.chat.completions.create(
+        model=model,
         messages=messages,
-        response_format=CreateMemoryResponse,
+        temperature=0.0,
+        max_tokens=300,
     )
-    return response.choices[0].message.parsed
+    content = (response.choices[0].message.content or "").strip()
+    if not content:
+        return None
+    if content.startswith("```"):
+        content = content.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+
+    try:
+        return CreateMemoryResponse.model_validate(orjson.loads(content))
+    except (orjson.JSONDecodeError, ValidationError) as e:
+        log.warning("Failed to parse memory response from custom endpoint", exc_info=e)
+        return None

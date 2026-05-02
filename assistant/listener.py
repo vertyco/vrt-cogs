@@ -113,9 +113,6 @@ class AssistantListener(MixinMeta):
                 except discord.HTTPException:
                     pass
 
-        if ref and ref.author.id == self.bot.user.id:
-            bot_mentioned = True
-
         # Ignore common prefixes from other bots
         if message.content.startswith((",", ".", "+", "!", "-", "><", "?", "$", "%", "^", "&", "*", "_")):
             return
@@ -388,7 +385,10 @@ class AssistantListener(MixinMeta):
                 {"role": "user", "content": content.getvalue()},
             ]
             res = await create_memory_call(
-                messages=messages, api_key=self.get_api_key(conf), base_url=self.db.endpoint_override
+                messages=messages,
+                api_key=self.get_api_key(conf),
+                model=conf.get_user_model(message.author),
+                base_url=self.db.endpoint_override,
             )
             if res:
                 embedding = await self.add_embedding(guild, res.memory_name, res.memory_content)

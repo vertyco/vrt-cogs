@@ -67,6 +67,14 @@ log = logging.getLogger("red.vrt.assistant.chathandler")
 _ = Translator("Assistant", __file__)
 
 
+def append_reasoning_block(reply: Optional[str], reasoning: Optional[str], conf: GuildSettings) -> Optional[str]:
+    if not reply or not reasoning:
+        return reply
+    if not conf.think_tag_prefix or not conf.think_tag_suffix:
+        return reply
+    return f"{reply}\n{conf.think_tag_prefix}{reasoning.strip()}{conf.think_tag_suffix}"
+
+
 def prune_old_tool_results(messages: list[dict], context_fill_ratio: float = 0.0) -> None:
     """Two-tier pruning of old tool/function results to save context window space.
 
@@ -602,6 +610,7 @@ class ChatHandler(MixinMeta):
             trigger_prompt=trigger_prompt,
         )
         reply = None
+        reply_reasoning = ""
 
         calls = 0
         tries = 0
@@ -710,6 +719,9 @@ class ChatHandler(MixinMeta):
 
                 raise e
 
+            reasoning_content = getattr(response, "reasoning_content", None)
+            reply_reasoning = reasoning_content.strip() if isinstance(reasoning_content, str) else ""
+
             if reply := response.content:
                 break
 
@@ -743,6 +755,7 @@ class ChatHandler(MixinMeta):
                 del dump["function_call"]
             if not dump["tool_calls"]:
                 del dump["tool_calls"]
+            dump.pop("reasoning_content", None)
 
             conversation.messages.append(dump)
             messages.append(dump)
@@ -992,7 +1005,7 @@ class ChatHandler(MixinMeta):
             log.debug("Suppressing duplicate reply already sent via respond_and_continue")
             return None
 
-        return reply
+        return append_reasoning_block(reply, reply_reasoning, conf)
 
     async def safe_regex(self, regex: str, content: str):
         process = self.mp_pool.apply_async(

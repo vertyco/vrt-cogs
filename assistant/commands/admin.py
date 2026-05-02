@@ -7,6 +7,7 @@ import typing as t
 from datetime import datetime, timezone
 from io import BytesIO
 from typing import List, Union
+from urllib.parse import urlparse
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import discord
@@ -36,6 +37,27 @@ from ..views import CodeMenu, EmbeddingMenu, SetAPI
 
 log = logging.getLogger("red.vrt.assistant.admin")
 _ = Translator("Assistant", __file__)
+
+
+def normalize_endpoint_override(endpoint: t.Optional[str]) -> tuple[t.Optional[str], t.Optional[str]]:
+    if endpoint is None:
+        return None, None
+
+    normalized = endpoint.strip().rstrip("/")
+    parsed = urlparse(normalized)
+
+    if parsed.scheme not in ("http", "https") or not parsed.netloc:
+        return None, _(
+            "Endpoint override must be a full base URL, for example `http://127.0.0.1:1234/v1` or `https://example.com/api/v1`."
+        )
+
+    if not parsed.path.endswith("/v1"):
+        return None, _(
+            "Endpoint override must point at the OpenAI-compatible API base path ending in `/v1`. "
+            "Do not include routes like `/chat/completions` or `/models`."
+        )
+
+    return normalized, None
 
 
 def format_think_tag(tag: str) -> str:
@@ -241,7 +263,7 @@ class Admin(MixinMeta):
 
         if private and any(send_key):
             embed.add_field(
-                name=_("OpenAI Key"),
+                name=_("API Key"),
                 value=box(conf.api_key) if conf.api_key else _("Not Set"),
                 inline=False,
             )
@@ -486,12 +508,12 @@ class Admin(MixinMeta):
     @commands.bot_has_permissions(embed_links=True)
     async def set_openai_key(self, ctx: commands.Context):
         """
-        Set your OpenAI key
+        Set this server's API key
         """
         conf = self.db.get_conf(ctx.guild)
 
         view = SetAPI(ctx.author, conf.api_key)
-        txt = _("Click to set your OpenAI key\n\nTo remove your keys, enter `none`")
+        txt = _("Click to set this server's API key\n\nTo remove your key, enter `none`")
         embed = discord.Embed(description=txt, color=ctx.author.color)
         msg = await ctx.send(embed=embed, view=view)
         await view.wait()
@@ -500,13 +522,13 @@ class Admin(MixinMeta):
         try:
             if key == "none" and conf.api_key:
                 conf.api_key = None
-                await msg.edit(content=_("OpenAI key has been removed!"), embed=None, view=None)
+                await msg.edit(content=_("API key has been removed!"), embed=None, view=None)
             elif key == "none" and not conf.api_key:
                 conf.api_key = key
                 await msg.edit(content=_("No API key was entered!"), embed=None, view=None)
             else:
                 conf.api_key = key
-                await msg.edit(content=_("OpenAI key has been set!"), embed=None, view=None)
+                await msg.edit(content=_("API key has been set!"), embed=None, view=None)
         except discord.NotFound:
             pass
 
@@ -928,7 +950,7 @@ class Admin(MixinMeta):
     async def set_autoanswer_model(self, ctx: commands.Context, model: str):
         """Set the model used for auto-answer"""
         conf = self.db.get_conf(ctx.guild)
-        if model not in MODELS:
+        if not self.db.endpoint_override and model not in MODELS:
             return await ctx.send(_("Invalid model, valid models are: {}").format(humanize_list(MODELS)))
         conf.auto_answer_model = model
         await ctx.send(_("Auto-answer model has been set to **{}**").format(model))
@@ -1532,6 +1554,9 @@ class Admin(MixinMeta):
             return
 
         if not model:
+            if self.db.endpoint_override:
+                txt = _("Enter a model id supported by your custom endpoint. If it exposes `/v1/models`, you can copy one from there.")
+                return await ctx.send(txt)
             valid = [i for i in MODELS]
             humanized = humanize_list(valid)
             formatted = box(humanized)
@@ -1569,7 +1594,12 @@ class Admin(MixinMeta):
             "text-embedding-3-small",
             "text-embedding-3-large",
         ]
-        if not model or model not in valid:
+        if not model:
+            if self.db.endpoint_override:
+                txt = _("Enter an embedding model id supported by your custom endpoint. If it exposes `/v1/models`, you can copy one from there.")
+                return await ctx.send(txt)
+            return await ctx.send(_("Valid models are:\n{}").format(box(humanize_list(valid))))
+        if not self.db.endpoint_override and model not in valid:
             return await ctx.send(_("Valid models are:\n{}").format(box(humanize_list(valid))))
         conf.embed_model = model
         await ctx.send(_("The **{}** model will now be used for embeddings").format(model))
@@ -2597,7 +2627,10 @@ class Admin(MixinMeta):
             return
 
         if not model:
-            return await ctx.send(_("Valid models are:\n{}").format(box(humanize_list(list(MODELS.keys)))))
+            if self.db.endpoint_override:
+                txt = _("Enter a model id supported by your custom endpoint. If it exposes `/v1/models`, you can copy one from there.")
+                return await ctx.send(txt)
+            return await ctx.send(_("Valid models are:\n{}").format(box(humanize_list(list(MODELS.keys())))))
 
         if conf.api_key and "deepseek" not in model and not self.db.endpoint_override:
             try:
@@ -2770,13 +2803,26 @@ class Admin(MixinMeta):
     @commands.is_owner()
     async def endpoint_override(self, ctx: commands.Context, endpoint: str = None):
         """
-        Override the OpenAI endpoint
+        Override the global OpenAI-compatible API base URL
+
+        Pass the full API base URL, including the scheme and the `/v1` suffix.
+
+        **Examples**
+        - `http://127.0.0.1:1234/v1`
+        - `http://localhost:5001/v1`
+        - `https://example.com/api/v1`
 
         **Notes**
         - When set, all servers can use the assistant without needing their own API key
         - Custom endpoints must be OpenAI-compatible
+        - This should be the SDK `base_url`, not a specific route like `/chat/completions`
         - Use `[p]assistant endpointapikey` to set a global key for authenticated custom endpoints
+        - Omit the argument to remove the override
         """
+        endpoint, error = normalize_endpoint_override(endpoint)
+        if error:
+            return await ctx.send(error)
+
         if self.db.endpoint_override == endpoint:
             return await ctx.send(_("Endpoint is already set to **{}**").format(endpoint))
         if endpoint and not self.db.endpoint_override:
@@ -3018,7 +3064,7 @@ class Admin(MixinMeta):
         if not model:
             conf.compaction_model = ""
             await ctx.send(_("Compaction model cleared, the main chat model will be used"))
-        elif model not in MODELS:
+        elif not self.db.endpoint_override and model not in MODELS:
             return await ctx.send(_("Invalid model, valid models are: {}").format(humanize_list(MODELS)))
         else:
             conf.compaction_model = model

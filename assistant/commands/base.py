@@ -24,7 +24,7 @@ from redbot.core.utils.chat_formatting import (
 )
 
 from ..abc import MixinMeta
-from ..common.calls import request_image_raw
+from ..common.calls import get_custom_endpoint_image_error, request_image_raw
 from ..common.constants import (
     COMPACTION_KEEP_RECENT,
     IMAGE_COSTS,
@@ -128,9 +128,15 @@ If a file has no extension it will still try to read it only if it can be decode
         cost_key = f"{quality}{size}"
         cost = IMAGE_COSTS.get(cost_key, 0)
 
-        image = await request_image_raw(
-            prompt, self.get_api_key(conf), size, quality, style, model, base_url=self.db.endpoint_override
-        )
+        try:
+            image = await request_image_raw(
+                prompt, self.get_api_key(conf), size, quality, style, model, base_url=self.db.endpoint_override
+            )
+        except (openai.NotFoundError, openai.BadRequestError):
+            if self.db.endpoint_override:
+                embed = discord.Embed(description=get_custom_endpoint_image_error(), color=color)
+                return await interaction.edit_original_response(embed=embed)
+            raise
 
         image_bytes = b64decode(image.b64_json)
         file = discord.File(BytesIO(image_bytes), filename="image.png")

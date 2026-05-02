@@ -105,8 +105,8 @@ class API(MixinMeta):
                 response_tokens = min(response_tokens, max_response_tokens)
 
         if model not in MODELS and self.db.endpoint_override is None:
-            log.error(f"This model is no longer supported: {model}. Switching to gpt-5.1")
-            model = "gpt-5.1"
+            log.error(f"This model is no longer supported: {model}. Switching to gpt-5.4")
+            model = "gpt-5.4"
             await self.save_conf()
 
         response: ChatCompletion = await request_chat_completion_raw(
@@ -342,9 +342,9 @@ class API(MixinMeta):
     async def can_call_llm(self, conf: GuildSettings, ctx: Optional[commands.Context] = None) -> bool:
         if not conf.api_key and not self.db.endpoint_override:
             if ctx:
-                txt = _("There are no API keys set!\n")
+                txt = _("No model API key or endpoint override is configured!\n")
                 if ctx.author.id == ctx.guild.owner_id:
-                    txt += _("- Set your OpenAI key with `{}`\n").format(f"{ctx.clean_prefix}assist openaikey")
+                    txt += _("- Set this server's API key with `{}`\n").format(f"{ctx.clean_prefix}assist openaikey")
                 await ctx.send(txt)
             return False
         return True
@@ -436,7 +436,11 @@ class API(MixinMeta):
     def get_max_tokens(self, conf: GuildSettings, user: Optional[discord.Member]) -> int:
         user_max = conf.get_user_max_tokens(user)
         model = conf.get_user_model(user)
-        max_model_tokens = MODELS.get(model, 4000)
+        max_model_tokens = MODELS.get(model)
+        if max_model_tokens is None:
+            if self.db.endpoint_override:
+                return user_max
+            max_model_tokens = 4000
         if not user_max or user_max > max_model_tokens:
             return max_model_tokens
         return user_max
@@ -934,7 +938,9 @@ class API(MixinMeta):
         tokens = await self.get_tokens(text)
         current_chunk = []
 
-        max_tokens = min(conf.max_tokens - 100, MODELS.get(conf.model, 4000))
+        max_tokens = conf.max_tokens - 100
+        if not self.db.endpoint_override or conf.model in MODELS:
+            max_tokens = min(max_tokens, MODELS.get(conf.model, 4000))
         for token in tokens:
             current_chunk.append(token)
             if len(current_chunk) == max_tokens:

@@ -8,6 +8,7 @@ from uuid import uuid4
 
 import aiohttp
 import discord
+import openai
 import pytz
 from dateutil import parser as dateutil_parser
 from duckduckgo_search import DDGS
@@ -113,12 +114,17 @@ class AssistantFunctions(MixinMeta):
             image_data.append((f"image{i}.{extension}", image_bytes, mime_type))
 
         # Pass the image data with the correct format
-        image = await calls.request_image_edit_raw(
-            prompt=prompt,
-            api_key=self.get_api_key(conf),
-            images=image_data,
-            base_url=self.db.endpoint_override,
-        )
+        try:
+            image = await calls.request_image_edit_raw(
+                prompt=prompt,
+                api_key=self.get_api_key(conf),
+                images=image_data,
+                base_url=self.db.endpoint_override,
+            )
+        except (openai.NotFoundError, openai.BadRequestError):
+            if self.db.endpoint_override:
+                return calls.get_custom_endpoint_image_error()
+            raise
         color = (await self.bot.get_embed_color(channel)) if channel else discord.Color.blue()
         embed = discord.Embed(color=color).set_image(url="attachment://image.png")
 
@@ -156,9 +162,14 @@ class AssistantFunctions(MixinMeta):
         cost_key = f"{quality}{size}"
         cost = constants.IMAGE_COSTS.get(cost_key, 0)
 
-        image = await calls.request_image_raw(
-            prompt, self.get_api_key(conf), size, quality, style, model, base_url=self.db.endpoint_override
-        )
+        try:
+            image = await calls.request_image_raw(
+                prompt, self.get_api_key(conf), size, quality, style, model, base_url=self.db.endpoint_override
+            )
+        except (openai.NotFoundError, openai.BadRequestError):
+            if self.db.endpoint_override:
+                return calls.get_custom_endpoint_image_error()
+            raise
 
         desc = _("-# Size: {}\n-# Quality: {}\n-# Model: {}").format(size, quality, model)
         if model == "dall-e-3":

@@ -544,7 +544,7 @@ class DB(AssistantBaseModel):
 
 
 class NoAPIKey(Exception):
-    """OpenAI Key no set"""
+    """Model API key not set"""
 
 
 class EmbeddingEntryExists(Exception):

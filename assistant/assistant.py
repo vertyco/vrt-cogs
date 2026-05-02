@@ -57,7 +57,7 @@ class Assistant(
     metaclass=CompositeMetaClass,
 ):
     """
-    Set up and configure an AI assistant (or chat) cog for your server with one of OpenAI's ChatGPT language models.
+    Set up and configure an AI assistant (or chat) cog for your server with OpenAI or other OpenAI-compatible language models.
 
     Features include configurable prompt injection, dynamic embeddings, custom function calling, and more!
 
@@ -68,7 +68,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "7.11.0"
+    __version__ = "7.12.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -481,11 +481,11 @@ class Assistant(
             NoAPIKey: If the specified guild has no api key associated with it
 
         Returns:
-            str: the reply from ChatGPT (may need to be pagified)
+            str: the reply from the configured model (may need to be pagified)
         """
         conf = self.db.get_conf(guild)
         if not await self.can_call_llm(conf):
-            raise NoAPIKey("OpenAI key has not been set for this server!")
+            raise NoAPIKey("No API key or endpoint override has been set for this server!")
         return await self.get_chat_response(
             message,
             author,
