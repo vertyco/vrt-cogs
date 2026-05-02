@@ -123,7 +123,7 @@ class GuildSettings(AssistantBaseModel):
     max_response_tokens: int = 0
     max_tokens: int = 4000
     mention: bool = False
-    mention_respond: bool = True
+    mention_respond: bool = False
     enabled: bool = True  # Auto-reply channel
     model: str = "gpt-5.1"
     embed_model: str = "text-embedding-3-small"  # Or text-embedding-3-large, text-embedding-ada-002
