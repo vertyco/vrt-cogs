@@ -191,12 +191,12 @@ class EmbeddingMenu(discord.ui.View):
                 )
 
     async def add_embedding(self, name: str, text: str):
-        embedding = await self.embed_method(text, self.conf)
+        embedding, observed_model = await self.embed_method(text, self.conf)
         if not embedding:
             return await self.ctx.send(_("Failed to process embedding `{}`\nContent: ```\n{}\n```").format(name, text))
         if await self.embedding_store.exists(self.guild_id, name):
             return await self.ctx.send(_("An embedding with the name `{}` already exists!").format(name))
-        await self.embedding_store.add(self.guild_id, name, text, embedding, self.conf.embed_model)
+        await self.embedding_store.add(self.guild_id, name, text, embedding, observed_model)
         await self.get_pages()
         with suppress(discord.NotFound):
             self.message = await self.message.edit(embed=self.pages[self.page], view=self)
@@ -243,14 +243,14 @@ class EmbeddingMenu(discord.ui.View):
         await modal.wait()
         if not modal.name or not modal.text:
             return
-        embedding = await self.embed_method(modal.text, self.conf)
+        embedding, observed_model = await self.embed_method(modal.text, self.conf)
         if not embedding:
             return await interaction.followup.send(
                 _("Failed to edit that embedding, please try again later"), ephemeral=True
             )
         if modal.name != name:
             await self.embedding_store.delete(self.guild_id, name)
-        await self.embedding_store.update(self.guild_id, modal.name, modal.text, embedding, self.conf.embed_model)
+        await self.embedding_store.update(self.guild_id, modal.name, modal.text, embedding, observed_model)
         await self.get_pages()
         await self.message.edit(embed=self.pages[self.page], view=self)
         await interaction.followup.send(_("Your embedding has been modified!"), ephemeral=True)

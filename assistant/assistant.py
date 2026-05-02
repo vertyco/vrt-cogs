@@ -437,7 +437,7 @@ class Assistant(
         if await self.embedding_store.exists(guild.id, name) and not overwrite:
             raise EmbeddingEntryExists(f"The entry name '{name}' already exists!")
 
-        embedding = await self.request_embedding(text, conf)
+        embedding, observed_model = await self.request_embedding_with_info(text, conf)
         if not embedding:
             return None
         await self.embedding_store.add(
@@ -445,7 +445,7 @@ class Assistant(
             name,
             text,
             embedding,
-            conf.embed_model,
+            observed_model,
             ai_created,
         )
         asyncio.create_task(self.save_conf())

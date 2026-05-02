@@ -33,7 +33,6 @@ from .constants import (
     DO_NOT_RESPOND_SCHEMA,
     IMAGE_RETAIN_TURNS,
     READ_EXTENSIONS,
-    SUPPORTS_VISION,
     TOOL_RESULT_HARD_CLEAR_PLACEHOLDER,
     TOOL_RESULT_HARD_RATIO,
     TOOL_RESULT_MAX_CONTEXT_SHARE,
@@ -623,7 +622,9 @@ class ChatHandler(MixinMeta):
             if calls >= conf.max_function_calls:
                 function_calls = []
 
-            await ensure_supports_vision(messages, conf, author)
+            supports_vision = await self.endpoint_supports_vision(conf, author, requested_model=model)
+            if not supports_vision:
+                await ensure_supports_vision(messages, conf, author)
             await ensure_message_compatibility(messages, conf, author)
             if self.db.endpoint_override:
                 # Replace "developer" role with "system" role
@@ -1129,7 +1130,8 @@ class ChatHandler(MixinMeta):
             formatted_trigger = format_string(trigger_prompt)
             initial_prompt += f"\n# TRIGGER RESPONSE:\n{formatted_trigger}"
 
-        images = images if model in SUPPORTS_VISION else []
+        supports_vision = await self.endpoint_supports_vision(conf, author, requested_model=model)
+        images = images if supports_vision else []
         messages = conversation.prepare_chat(
             message,
             initial_prompt.strip(),

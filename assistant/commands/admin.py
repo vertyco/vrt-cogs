@@ -136,6 +136,11 @@ class Admin(MixinMeta):
             color=ctx.author.color,
         )
 
+        if self.db.endpoint_override:
+            profile = await self.refresh_endpoint_profile()
+            if profile:
+                embed.add_field(name=_("Endpoint Runtime"), value=self.describe_endpoint_profile(profile), inline=False)
+
         name = _("Auto Answer")
         val = _(
             "Auto-answer will trigger the bot outside of the assistant channel if a question is detected and an embedding is not found.\n"
@@ -1821,12 +1826,12 @@ class Admin(MixinMeta):
                             message_text, proc, name, index + 1, len(df)
                         )
                     )
-            query_embedding = await self.request_embedding(text, conf)
+            query_embedding, observed_model = await self.request_embedding_with_info(text, conf)
             if len(query_embedding) == 0:
                 await ctx.send(_("Failed to process embedding: `{}`").format(name))
                 continue
 
-            await self.embedding_store.add(ctx.guild.id, name, text, query_embedding, conf.embed_model)
+            await self.embedding_store.add(ctx.guild.id, name, text, query_embedding, observed_model)
             imported += 1
         await message.edit(content=_("{}\n**COMPLETE**").format(message_text))
         await ctx.send(_("Successfully imported {} embeddings!").format(humanize_number(imported)))
@@ -1867,8 +1872,7 @@ class Admin(MixinMeta):
                         ai_created = em.get("ai_created", False)
                         if not embedding_vec:
                             # Re-embed if no vector present
-                            embedding_vec = await self.request_embedding(text, conf)
-                            model = conf.embed_model
+                            embedding_vec, model = await self.request_embedding_with_info(text, conf)
                         if not embedding_vec:
                             continue
                         await self.embedding_store.add(
@@ -1961,7 +1965,7 @@ class Admin(MixinMeta):
                             )
                         )
 
-                query_embedding = await self.request_embedding(text, conf)
+                query_embedding, observed_model = await self.request_embedding_with_info(text, conf)
                 if len(query_embedding) == 0:
                     await ctx.send(_("Failed to process embedding: `{}`").format(name))
                     continue
@@ -1971,7 +1975,7 @@ class Admin(MixinMeta):
                     name,
                     text,
                     query_embedding,
-                    conf.embed_model,
+                    observed_model,
                     bool(row["ai_created"]),
                 )
                 imported += 1
@@ -2146,7 +2150,7 @@ class Admin(MixinMeta):
             conf,
             self.save_conf,
             self.get_embedding_menu_embeds,
-            self.request_embedding,
+            self.request_embedding_with_info,
             self.embedding_store,
             ctx.guild.id,
         )
@@ -2827,15 +2831,39 @@ class Admin(MixinMeta):
             return await ctx.send(_("Endpoint is already set to **{}**").format(endpoint))
         if endpoint and not self.db.endpoint_override:
             self.db.endpoint_override = endpoint
-            await ctx.send(_("Endpoint has been set to **{}**").format(endpoint))
+            profile = await self.refresh_endpoint_profile(force=True)
+            txt = _("Endpoint has been set to **{}**").format(endpoint)
+            if profile:
+                txt += "\n\n" + self.describe_endpoint_profile(profile)
+            await ctx.send(txt)
         elif endpoint and self.db.endpoint_override:
             old = self.db.endpoint_override
             self.db.endpoint_override = endpoint
-            await ctx.send(_("Endpoint has been changed from **{}** to **{}**").format(old, endpoint))
+            profile = await self.refresh_endpoint_profile(force=True)
+            txt = _("Endpoint has been changed from **{}** to **{}**").format(old, endpoint)
+            if profile:
+                txt += "\n\n" + self.describe_endpoint_profile(profile)
+            await ctx.send(txt)
         else:
             self.db.endpoint_override = None
+            self.clear_endpoint_profile()
             await ctx.send(_("Endpoint override has been removed!"))
         await self.save_conf()
+
+    @assistant.command(name="endpointprobe")
+    @commands.is_owner()
+    async def endpoint_probe(self, ctx: commands.Context):
+        """Probe the configured custom endpoint and cache its runtime model/capability profile"""
+        if not self.db.endpoint_override:
+            return await ctx.send(_("No endpoint override is configured."))
+
+        async with ctx.typing():
+            profile = await self.refresh_endpoint_profile(force=True, save=True)
+
+        if not profile:
+            return await ctx.send(_("Failed to probe the configured endpoint."))
+
+        await ctx.send(self.describe_endpoint_profile(profile))
 
     @assistant.command(name="wipecog")
     @commands.is_owner()

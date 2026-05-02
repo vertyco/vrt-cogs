@@ -299,18 +299,18 @@ async def ensure_supports_vision(messages: list[dict], conf: GuildSettings, user
     cleaned = False
 
     model = conf.get_user_model(user)
-    if model in SUPPORTS_VISION:
+    supports_vision = model in SUPPORTS_VISION
+    if supports_vision:
         return cleaned
 
-    if model not in SUPPORTS_VISION:
-        for idx, message in enumerate(messages):
-            if isinstance(message["content"], list):
-                for obj in message["content"]:
-                    if obj["type"] != "text":
-                        continue
-                    messages[idx]["content"] = obj["text"]
-                    cleaned = True
-                    break
+    for idx, message in enumerate(messages):
+        if isinstance(message["content"], list):
+            for obj in message["content"]:
+                if obj["type"] != "text":
+                    continue
+                messages[idx]["content"] = obj["text"]
+                cleaned = True
+                break
     return cleaned
 
 

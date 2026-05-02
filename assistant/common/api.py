@@ -26,12 +26,20 @@ from .constants import (
     MEMORY_CONSOLIDATION_PROMPT,
     MEMORY_FLUSH_PROMPT,
     MODELS,
+    SUPPORTS_VISION,
     VISION_COSTS,
 )
-from .models import Conversation, GuildSettings, UserMemory
+from .models import (
+    Conversation,
+    EndpointModelProfile,
+    EndpointProfile,
+    GuildSettings,
+    UserMemory,
+)
 
 log = logging.getLogger("red.vrt.assistant.api")
 _ = Translator("Assistant", __file__)
+ENDPOINT_PROFILE_TTL_SECONDS = 300
 
 
 @cog_i18n(_)
@@ -49,6 +57,228 @@ class API(MixinMeta):
         if self.db.endpoint_override:
             return self.db.endpoint_api_key or "n/a"
         return ""
+
+    def get_cached_endpoint_profile(self) -> Optional[EndpointProfile]:
+        profile = self.db.endpoint_profile
+        if not self.db.endpoint_override or not profile:
+            return None
+        if profile.base_url != self.db.endpoint_override:
+            return None
+        return profile
+
+    def clear_endpoint_profile(self) -> None:
+        self.db.endpoint_profile = None
+
+    def resolve_chat_model(self, requested_model: str) -> str:
+        if not self.db.endpoint_override:
+            return requested_model
+        profile = self.get_cached_endpoint_profile()
+        if not profile:
+            return requested_model
+        if requested_model in profile.chat_models:
+            return requested_model
+        if profile.provider == "lmstudio" and profile.active_chat_model:
+            return profile.active_chat_model
+        return requested_model
+
+    def resolve_embedding_model(self, requested_model: str) -> str:
+        if not self.db.endpoint_override:
+            return requested_model
+        profile = self.get_cached_endpoint_profile()
+        if not profile:
+            return requested_model
+        if requested_model in profile.embedding_models:
+            return requested_model
+        if profile.provider == "lmstudio" and profile.active_embedding_model:
+            return profile.active_embedding_model
+        return requested_model
+
+    def describe_endpoint_profile(self, profile: EndpointProfile) -> str:
+        chat_model = profile.active_chat_model or _("Unknown")
+        embed_model = profile.active_embedding_model or _("Unknown")
+        chat_info = profile.chat_models.get(profile.active_chat_model) if profile.active_chat_model else None
+        vision = chat_info.supports_vision if chat_info else None
+        reasoning = chat_info.supports_reasoning if chat_info else None
+        max_context = chat_info.max_context_length if chat_info else 0
+        lines = [
+            _("`Provider:           `{}").format(profile.provider),
+            _("`Runtime Chat Model: `{}").format(chat_model),
+            _("`Runtime Embed Model:`{}").format(embed_model),
+            _("`Vision:             `{}").format(vision if vision is not None else _("Unknown")),
+            _("`Reasoning:          `{}").format(reasoning if reasoning is not None else _("Unknown")),
+            _("`Max Context:        `{}").format(humanize_number(max_context) if max_context else _("Unknown")),
+            _("`Embed Dimensions:   `{}").format(
+                humanize_number(profile.active_embedding_dimensions) if profile.active_embedding_dimensions else _("Unknown")
+            ),
+            _("`Models Discovered:  `{}").format(humanize_number(len(profile.available_models))),
+        ]
+        return "\n".join(lines)
+
+    def observe_chat_runtime(self, model_id: str, message: Optional[ChatCompletionMessage] = None) -> None:
+        if not self.db.endpoint_override or not model_id:
+            return
+        profile = self.get_cached_endpoint_profile()
+        if not profile:
+            return
+        entry = profile.chat_models.get(model_id) or EndpointModelProfile(id=model_id, kind="llm")
+        entry.loaded = True
+        if message is not None and isinstance(getattr(message, "reasoning_content", None), str):
+            entry.supports_reasoning = True
+        profile.chat_models[model_id] = entry
+        profile.active_chat_model = model_id
+        if model_id not in profile.available_models:
+            profile.available_models.append(model_id)
+
+    def observe_embedding_runtime(self, model_id: str, dimensions: int) -> None:
+        if not self.db.endpoint_override or not model_id:
+            return
+        profile = self.get_cached_endpoint_profile()
+        if not profile:
+            return
+        entry = profile.embedding_models.get(model_id) or EndpointModelProfile(id=model_id, kind="embedding")
+        entry.loaded = True
+        profile.embedding_models[model_id] = entry
+        profile.active_embedding_model = model_id
+        profile.active_embedding_dimensions = dimensions
+        if model_id not in profile.available_models:
+            profile.available_models.append(model_id)
+
+    async def refresh_endpoint_profile(self, force: bool = False, save: bool = False) -> Optional[EndpointProfile]:
+        if not self.db.endpoint_override:
+            self.clear_endpoint_profile()
+            if save:
+                await self.save_conf()
+            return None
+
+        cached = self.get_cached_endpoint_profile()
+        if cached and not force:
+            age = (datetime.now(tz=timezone.utc) - cached.discovered_at).total_seconds()
+            if age < ENDPOINT_PROFILE_TTL_SECONDS:
+                return cached
+
+        profile = await self.probe_endpoint_profile(self.db.endpoint_override)
+        if profile is None:
+            return cached
+
+        self.db.endpoint_profile = profile
+        if save:
+            await self.save_conf()
+        return profile
+
+    async def probe_endpoint_profile(self, base_url: str) -> Optional[EndpointProfile]:
+        headers = {}
+        if self.db.endpoint_api_key:
+            headers["Authorization"] = f"Bearer {self.db.endpoint_api_key}"
+
+        timeout = aiohttp.ClientTimeout(total=5)
+        root_url = base_url.rstrip("/")
+        native_root = root_url[:-3] if root_url.endswith("/v1") else root_url
+
+        async with aiohttp.ClientSession(timeout=timeout, headers=headers) as session:
+            native_url = f"{native_root}/api/v1/models"
+            try:
+                async with session.get(native_url) as res:
+                    if res.ok:
+                        data = await res.json()
+                        models = data.get("models") if isinstance(data, dict) else None
+                        if isinstance(models, list):
+                            return self.parse_lmstudio_profile(base_url, models)
+            except Exception as e:
+                log.debug("Native endpoint probe failed for %s", native_url, exc_info=e)
+
+            compat_url = f"{root_url}/models"
+            try:
+                async with session.get(compat_url) as res:
+                    if not res.ok:
+                        return None
+                    data = await res.json()
+                    items = data.get("data") if isinstance(data, dict) else None
+                    if isinstance(items, list):
+                        return self.parse_openai_compatible_profile(base_url, items)
+            except Exception as e:
+                log.debug("OpenAI-compatible model probe failed for %s", compat_url, exc_info=e)
+
+        return None
+
+    def parse_lmstudio_profile(self, base_url: str, models: list[dict]) -> EndpointProfile:
+        profile = EndpointProfile(base_url=base_url, provider="lmstudio")
+        for model in models:
+            model_id = model.get("key")
+            if not model_id:
+                continue
+
+            capabilities = model.get("capabilities") or {}
+            loaded_instances = model.get("loaded_instances") or []
+            loaded_config = loaded_instances[0].get("config", {}) if loaded_instances else {}
+            entry = EndpointModelProfile(
+                id=model_id,
+                kind=model.get("type", "llm"),
+                loaded=bool(loaded_instances),
+                max_context_length=loaded_config.get("context_length", 0) or model.get("max_context_length", 0) or 0,
+                supports_vision=capabilities.get("vision"),
+                supports_reasoning=bool(capabilities.get("reasoning")) if "reasoning" in capabilities else None,
+                supports_tools=capabilities.get("trained_for_tool_use"),
+            )
+            profile.available_models.append(model_id)
+            if entry.kind == "embedding":
+                profile.embedding_models[model_id] = entry
+                if entry.loaded and not profile.active_embedding_model:
+                    profile.active_embedding_model = model_id
+            else:
+                profile.chat_models[model_id] = entry
+                if entry.loaded and not profile.active_chat_model:
+                    profile.active_chat_model = model_id
+
+        if not profile.active_chat_model and len(profile.chat_models) == 1:
+            profile.active_chat_model = next(iter(profile.chat_models))
+        if not profile.active_embedding_model and len(profile.embedding_models) == 1:
+            profile.active_embedding_model = next(iter(profile.embedding_models))
+        return profile
+
+    def parse_openai_compatible_profile(self, base_url: str, items: list[dict]) -> EndpointProfile:
+        provider = "llamacpp" if any(item.get("owned_by") == "llamacpp" for item in items) else "openai-compatible"
+        profile = EndpointProfile(base_url=base_url, provider=provider)
+        for item in items:
+            model_id = item.get("id")
+            if not model_id:
+                continue
+            lower = model_id.lower()
+            is_embedding = "embedding" in lower or "embed" in lower
+            entry = EndpointModelProfile(id=model_id, kind="embedding" if is_embedding else "llm")
+            profile.available_models.append(model_id)
+            if is_embedding:
+                profile.embedding_models[model_id] = entry
+            else:
+                profile.chat_models[model_id] = entry
+
+        if len(profile.chat_models) == 1:
+            profile.active_chat_model = next(iter(profile.chat_models))
+        if len(profile.embedding_models) == 1:
+            profile.active_embedding_model = next(iter(profile.embedding_models))
+        return profile
+
+    async def endpoint_supports_vision(
+        self,
+        conf: GuildSettings,
+        user: Optional[discord.Member] = None,
+        requested_model: Optional[str] = None,
+    ) -> bool:
+        model = requested_model or conf.get_user_model(user)
+        if not self.db.endpoint_override:
+            return model in SUPPORTS_VISION
+
+        profile = await self.refresh_endpoint_profile()
+        if profile:
+            requested = profile.chat_models.get(model)
+            if requested and requested.supports_vision is not None:
+                return bool(requested.supports_vision)
+            if profile.active_chat_model:
+                active = profile.chat_models.get(profile.active_chat_model)
+                if active and active.supports_vision is not None:
+                    return bool(active.supports_vision)
+
+        # Default to permissive for custom endpoints so we do not silently drop images.
+        return True
 
     async def openai_status(self) -> str:
         try:
@@ -73,7 +303,10 @@ class API(MixinMeta):
         model_override: Optional[str] = None,
         temperature_override: Optional[float] = None,
     ) -> ChatCompletionMessage:
-        model = model_override or conf.get_user_model(member)
+        requested_model = model_override or conf.get_user_model(member)
+        if self.db.endpoint_override:
+            await self.refresh_endpoint_profile()
+        model = self.resolve_chat_model(requested_model)
 
         max_convo_tokens = self.get_max_tokens(conf, member)
         max_response_tokens = conf.get_user_max_response_tokens(member)
@@ -132,14 +365,18 @@ class API(MixinMeta):
                 response.usage.prompt_tokens,
                 response.usage.completion_tokens,
             )
+        self.observe_chat_runtime(response.model, message)
         log.debug(f"MESSAGE TYPE: {type(message)}")
         return message
 
-    async def request_embedding(self, text: str, conf: GuildSettings) -> List[float]:
+    async def request_embedding_with_info(self, text: str, conf: GuildSettings) -> tuple[List[float], str]:
+        if self.db.endpoint_override:
+            await self.refresh_endpoint_profile()
+        requested_model = self.resolve_embedding_model(conf.embed_model)
         response: CreateEmbeddingResponse = await request_embedding_raw(
             text=text,
             api_key=self.get_api_key(conf),
-            model=conf.embed_model,
+            model=requested_model,
             base_url=self.db.endpoint_override,
         )
 
@@ -150,7 +387,14 @@ class API(MixinMeta):
                 response.usage.prompt_tokens,
                 0,
             )
-        return response.data[0].embedding
+        embedding = response.data[0].embedding
+        observed_model = response.model or requested_model
+        self.observe_embedding_runtime(observed_model, len(embedding))
+        return embedding, observed_model
+
+    async def request_embedding(self, text: str, conf: GuildSettings) -> List[float]:
+        embedding, __ = await self.request_embedding_with_info(text, conf)
+        return embedding
 
     # -------------------------------------------------------
     # -------------------------------------------------------
@@ -358,47 +602,45 @@ class API(MixinMeta):
         if not all_data:
             return 0
 
-        # Check which entries need re-embedding
-        entries_to_sync: list[tuple[str, str]] = []  # (name, text)
-        sample_embed = None
-        for name, meta in all_data.items():
-            if meta.get("model") != conf.embed_model or not meta.get("embedding"):
-                entries_to_sync.append((name, meta.get("text", "")))
-            elif sample_embed is None:
-                sample_embed = meta["embedding"]
+        first_name, first_meta = next(iter(all_data.items()))
+        probe_text = first_meta.get("text", "")
+        probe_embed, observed_model = await self.request_embedding_with_info(probe_text, conf)
+        if not probe_embed:
+            return 0
 
-        # If nothing needs syncing, check if dimensions match by getting a sample
+        current_dims = len(probe_embed)
+        stored_dims = {len(meta.get("embedding", [])) for meta in all_data.values() if meta.get("embedding")}
+        stored_models = {meta.get("model") for meta in all_data.values() if meta.get("model")}
+
+        dimension_changed = bool(stored_dims) and (len(stored_dims) > 1 or current_dims not in stored_dims)
+        model_changed = bool(stored_models) and observed_model not in stored_models
+
+        if dimension_changed or model_changed:
+            entries_to_sync = [(name, meta.get("text", "")) for name, meta in all_data.items()]
+        else:
+            entries_to_sync = []
+            for name, meta in all_data.items():
+                if not meta.get("embedding"):
+                    entries_to_sync.append((name, meta.get("text", "")))
+                    continue
+                if len(meta.get("embedding", [])) != current_dims:
+                    entries_to_sync.append((name, meta.get("text", "")))
+                    continue
+                if meta.get("model") != observed_model:
+                    entries_to_sync.append((name, meta.get("text", "")))
+
         if not entries_to_sync:
             return 0
 
-        # Get a reference embedding to check dimensions
-        if sample_embed is None:
-            first_name, first_text = entries_to_sync[0]
-            sample_embed = await self.request_embedding(first_text, conf)
-            if not sample_embed:
-                return 0
-
-        # Check if we need to recreate (dimension change)
-        existing_dims = next(
-            (len(meta["embedding"]) for meta in all_data.values() if meta.get("embedding")),
-            0,
-        )
-        new_dims = len(sample_embed) if sample_embed else 0
-        dimension_changed = existing_dims > 0 and new_dims > 0 and existing_dims != new_dims
-
-        if dimension_changed:
-            # Dimensions changed — must re-embed everything and recreate collection
-            entries_to_sync = [(name, meta.get("text", "")) for name, meta in all_data.items()]
-
         # Re-embed in parallel
-        results: dict[str, list[float]] = {}
+        results: dict[str, tuple[list[float], str]] = {first_name: (probe_embed, observed_model)} if first_name in dict(entries_to_sync) else {}
 
         async def _embed(name: str, text: str):
-            vec = await self.request_embedding(text, conf)
+            vec, model = await self.request_embedding_with_info(text, conf)
             if vec:
-                results[name] = vec
+                results[name] = (vec, model)
 
-        await asyncio.gather(*[_embed(n, t) for n, t in entries_to_sync])
+        await asyncio.gather(*[_embed(n, t) for n, t in entries_to_sync if n not in results])
 
         if not results:
             return 0
@@ -407,7 +649,7 @@ class API(MixinMeta):
             # Recreate collection and re-add everything
             await self.embedding_store.recreate_collection(guild_id)
             for name, meta in all_data.items():
-                vec = results.get(name, meta.get("embedding", []))
+                vec, model = results.get(name, (meta.get("embedding", []), meta.get("model") or observed_model))
                 if not vec:
                     continue
                 await self.embedding_store.add(
@@ -415,19 +657,19 @@ class API(MixinMeta):
                     name,
                     meta.get("text", ""),
                     vec,
-                    conf.embed_model,
+                    model,
                     meta.get("ai_created", False),
                 )
         else:
             # Just update the changed entries
-            for name, vec in results.items():
+            for name, (vec, model) in results.items():
                 meta = all_data[name]
                 await self.embedding_store.update(
                     guild_id,
                     name,
                     meta.get("text", ""),
                     vec,
-                    conf.embed_model,
+                    model,
                 )
 
         await self.save_conf()

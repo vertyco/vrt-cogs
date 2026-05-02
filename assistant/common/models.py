@@ -78,6 +78,28 @@ class Usage(AssistantBaseModel):
     output_tokens: int = 0
 
 
+class EndpointModelProfile(AssistantBaseModel):
+    id: str
+    kind: str = "llm"
+    loaded: bool = False
+    max_context_length: int = 0
+    supports_vision: t.Optional[bool] = None
+    supports_reasoning: t.Optional[bool] = None
+    supports_tools: t.Optional[bool] = None
+
+
+class EndpointProfile(AssistantBaseModel):
+    base_url: str = ""
+    provider: str = "unknown"
+    discovered_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
+    available_models: t.List[str] = []
+    chat_models: t.Dict[str, EndpointModelProfile] = {}
+    embedding_models: t.Dict[str, EndpointModelProfile] = {}
+    active_chat_model: str = ""
+    active_embedding_model: str = ""
+    active_embedding_dimensions: int = 0
+
+
 class GuildSettings(AssistantBaseModel):
     system_prompt: str = "You are a discord bot named {botname}, and are chatting with {username}."
     prompt: str = ""
@@ -430,6 +452,7 @@ class DB(AssistantBaseModel):
     brave_api_key: t.Optional[str] = None
     endpoint_override: t.Optional[str] = None
     endpoint_api_key: t.Optional[str] = None
+    endpoint_profile: t.Optional[EndpointProfile] = None
     reminders: t.Dict[str, Reminder] = {}  # reminder_id -> Reminder
     scheduled_tasks: t.Dict[str, ScheduledTask] = {}  # task_id -> ScheduledTask
     user_memories: t.Dict[str, UserMemory] = {}  # "{guild_id}-{user_id}" -> UserMemory

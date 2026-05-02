@@ -10,7 +10,7 @@ from redbot.core import commands
 from redbot.core.bot import Red
 
 from .common.embedding_store import EmbeddingStore
-from .common.models import DB, Conversation, GuildSettings
+from .common.models import DB, Conversation, EndpointProfile, GuildSettings
 
 
 class CompositeMetaClass(CogMeta, ABCMeta):
@@ -62,11 +62,36 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    async def request_embedding_with_info(self, text: str, conf: GuildSettings) -> tuple[List[float], str]:
+        raise NotImplementedError
+
+    @abstractmethod
     async def can_call_llm(self, conf: GuildSettings, ctx: Optional[commands.Context] = None) -> bool:
         raise NotImplementedError
 
     @abstractmethod
     async def resync_embeddings(self, conf: GuildSettings, guild_id: int) -> int:
+        raise NotImplementedError
+
+    @abstractmethod
+    def clear_endpoint_profile(self) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def describe_endpoint_profile(self, profile: EndpointProfile) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def refresh_endpoint_profile(self, force: bool = False, save: bool = False) -> Optional[EndpointProfile]:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def endpoint_supports_vision(
+        self,
+        conf: GuildSettings,
+        user: Optional[discord.Member] = None,
+        requested_model: Optional[str] = None,
+    ) -> bool:
         raise NotImplementedError
 
     @abstractmethod
