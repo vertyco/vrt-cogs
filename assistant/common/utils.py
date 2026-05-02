@@ -232,9 +232,21 @@ def get_params(
     author: t.Optional[discord.Member],
     channel: t.Optional[discord.TextChannel | discord.Thread | discord.ForumChannel],
     extras: dict,
+    model: str,
+    modelinfo: str,
 ) -> dict:
     roles = [role for role in author.roles if "everyone" not in role.name] if author else []
     display_name = author.display_name if author else ""
+    owner_ids = list(bot.owner_ids)
+
+    bot_owners = []
+    for owner_id in owner_ids:
+        owner = bot.get_user(owner_id) or guild.get_member(owner_id)
+        if owner is None:
+            continue
+        bot_owners.append(owner.display_name)
+
+    botowner = humanize_list(bot_owners) if bot_owners else guild.owner.name
     uptime_delta = datetime.now() - bot.uptime
     # If uptime is more than a minute, round to the nearest minute for readability
     if uptime_delta.total_seconds() > 60:
@@ -254,10 +266,13 @@ def get_params(
         "user": author.name if author else "",
         "displayname": display_name,
         "datetime": str(datetime.now()),
+        "model": model,
+        "modelinfo": modelinfo,
         "roles": humanize_list([role.name for role in roles]),
         "rolementions": humanize_list([role.mention for role in roles]),
         "avatar": author.display_avatar.url if author else "",
         "owner": guild.owner.name,
+        "botowner": botowner,
         "servercreated": f"<t:{round(guild.created_at.timestamp())}:F>",
         "server": guild.name,
         "py": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",

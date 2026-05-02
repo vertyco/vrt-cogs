@@ -750,6 +750,9 @@ class Admin(MixinMeta):
         - **currency**: currency name
         - **bank**: bank name
         - **balance**: the user's current balance
+        - **model**: the current chat model being used
+        - **botowner**: the bot owner's name
+        - **modelinfo**: bundled information about the current model/runtime
         - **uptime**: the bot's current uptime
         """
         attachments = get_attachments(ctx.message)
@@ -893,6 +896,9 @@ class Admin(MixinMeta):
         - **currency**: currency name
         - **bank**: bank name
         - **balance**: the user's current balance
+        - **model**: the current chat model being used
+        - **botowner**: the bot owner's name
+        - **modelinfo**: bundled information about the current model/runtime
         - **uptime**: the bot's current uptime
         """
         attachments = get_attachments(ctx.message)
@@ -1221,6 +1227,9 @@ class Admin(MixinMeta):
         - **currency**: currency name
         - **bank**: bank name
         - **balance**: the user's current balance
+        - **model**: the current chat model being used
+        - **botowner**: the bot owner's name
+        - **modelinfo**: bundled information about the current model/runtime
         - **uptime**: the bot's current uptime
         """
         attachments = get_attachments(ctx.message)

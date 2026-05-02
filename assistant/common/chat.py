@@ -32,6 +32,7 @@ from ..abc import MixinMeta
 from .constants import (
     DO_NOT_RESPOND_SCHEMA,
     IMAGE_RETAIN_TURNS,
+    MODELS,
     READ_EXTENSIONS,
     TOOL_RESULT_HARD_CLEAR_PLACEHOLDER,
     TOOL_RESULT_HARD_RATIO,
@@ -1065,7 +1066,63 @@ class ChatHandler(MixinMeta):
             List[dict]: list of messages prepped for api
         """
         now = datetime.now().astimezone(pytz.timezone(conf.timezone))
-        params = await asyncio.to_thread(get_params, self.bot, guild, now, author, channel, extras)
+        configured_model = conf.get_user_model(author)
+        current_model = self.resolve_chat_model(configured_model)
+        current_embed_model = self.resolve_embedding_model(conf.embed_model)
+        reasoning_effort = conf.get_user_reasoning_effort(author)
+        configured_max_tokens = conf.get_user_max_tokens(author)
+        max_tokens = self.get_max_tokens(conf, author)
+        max_response_tokens = conf.get_user_max_response_tokens(author)
+
+        profile = self.get_cached_endpoint_profile()
+        model_max_context = (
+            self.get_endpoint_chat_model_limit(current_model)
+            if self.db.endpoint_override
+            else MODELS.get(current_model, 0)
+        )
+        configured_max_text = humanize_number(configured_max_tokens) if configured_max_tokens else "Model Max"
+
+        if profile:
+            modelinfo_lines = [
+                line.replace("`", "").rstrip() for line in self.describe_endpoint_profile(profile).splitlines()
+            ]
+        else:
+            modelinfo_lines = [
+                f"Chat Model: {current_model}",
+                f"Embedding Model: {current_embed_model}",
+                f"Max Context: {humanize_number(model_max_context) if model_max_context else 'Unknown'}",
+            ]
+
+        if profile:
+            if configured_model != current_model:
+                modelinfo_lines.append(f"Configured Chat Model: {configured_model}")
+            if conf.embed_model != current_embed_model:
+                modelinfo_lines.append(f"Configured Embed Model: {conf.embed_model}")
+
+        modelinfo_lines.extend(
+            [
+                f"Configured Max Tokens (Cog): {configured_max_text}",
+                f"Effective Max Tokens: {humanize_number(max_tokens)}",
+                f"Reasoning Effort: {reasoning_effort}",
+                f"Verbosity: {conf.verbosity}",
+            ]
+        )
+
+        if max_response_tokens:
+            modelinfo_lines.append(f"Configured Max Response Tokens (Cog): {humanize_number(max_response_tokens)}")
+
+        modelinfo = "\n".join(modelinfo_lines)
+        params = await asyncio.to_thread(
+            get_params,
+            self.bot,
+            guild,
+            now,
+            author,
+            channel,
+            extras,
+            current_model,
+            modelinfo,
+        )
 
         def format_string(text: str):
             """Instead of format(**params) possibly giving a KeyError if prompt has code in it"""
@@ -1077,15 +1134,15 @@ class ChatHandler(MixinMeta):
         if channel.id in conf.channel_prompts:
             system_prompt = format_string(conf.channel_prompts[channel.id])
         else:
-            system_prompt = format_string(conversation.system_prompt_override or self.db.get_effective_system_prompt(conf))
+            system_prompt = format_string(
+                conversation.system_prompt_override or self.db.get_effective_system_prompt(conf)
+            )
 
         initial_prompt = format_string(conf.prompt)
-        model = conf.get_user_model(author)
+        model = configured_model
         current_tokens = await self.count_tokens(message + system_prompt + initial_prompt, model)
         current_tokens += await self.count_payload_tokens(conversation.messages, model)
         current_tokens += await self.count_function_tokens(function_calls, model)
-
-        max_tokens = self.get_max_tokens(conf, author)
 
         related = await self.embedding_store.get_related(
             guild_id=guild.id,

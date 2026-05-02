@@ -74,7 +74,23 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def get_cached_endpoint_profile(self) -> Optional[EndpointProfile]:
+        raise NotImplementedError
+
+    @abstractmethod
     def clear_endpoint_profile(self) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def resolve_chat_model(self, requested_model: str) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
+    def resolve_embedding_model(self, requested_model: str) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_endpoint_chat_model_limit(self, requested_model: Optional[str] = None) -> int:
         raise NotImplementedError
 
     @abstractmethod
