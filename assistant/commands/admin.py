@@ -77,6 +77,106 @@ class Admin(MixinMeta):
         """
         pass
 
+    def format_endpoint_model_box(self, model_ids: List[str], active_model: str = "") -> str:
+        ordered = [active_model] if active_model and active_model in model_ids else []
+        ordered.extend(sorted(model_id for model_id in model_ids if model_id != active_model))
+        lines = []
+        for model_id in ordered[:20]:
+            label = f"{model_id} (active)" if model_id == active_model else model_id
+            lines.append(label)
+        if len(ordered) > 20:
+            lines.append(_("... and {} more").format(len(ordered) - 20))
+        return box("\n".join(lines))
+
+    async def describe_endpoint_chat_model_options(
+        self,
+        ctx: commands.Context,
+        configured_model: str,
+        configured_label: t.Optional[str] = None,
+    ) -> str:
+        profile = await self.refresh_endpoint_profile()
+        label = configured_label or _("Configured chat model")
+        lines = [_("{}: **{}**").format(label, configured_model)]
+        if not profile:
+            lines.append(
+                _(
+                    "No endpoint model cache is available yet. Run `{}` to refresh it, or enter a model id manually."
+                ).format(f"{ctx.clean_prefix}assist endpointprobe")
+            )
+            return "\n".join(lines)
+
+        if profile.active_chat_model:
+            lines.append(_("Runtime chat model: **{}**").format(profile.active_chat_model))
+
+        chat_models = list(profile.chat_models)
+        if chat_models:
+            lines.append(
+                _("Discovered chat models:\n{}").format(
+                    self.format_endpoint_model_box(chat_models, profile.active_chat_model)
+                )
+            )
+        else:
+            lines.append(
+                _("No chat models were discovered from this endpoint yet. You can still enter a model id manually.")
+            )
+
+        lines.append(
+            _(
+                "Use this command again with one of these model ids, or enter another id manually if your endpoint supports it."
+            )
+        )
+        return "\n".join(lines)
+
+    async def describe_endpoint_embedding_model_options(self, ctx: commands.Context, configured_model: str) -> str:
+        profile = await self.refresh_endpoint_profile()
+        lines = [_("Configured embedding model: **{}**").format(configured_model)]
+        if not profile:
+            lines.append(
+                _(
+                    "No endpoint model cache is available yet. Run `{}` to refresh it, or enter a model id manually."
+                ).format(f"{ctx.clean_prefix}assist endpointprobe")
+            )
+            return "\n".join(lines)
+
+        if profile.active_embedding_model:
+            lines.append(_("Runtime embedding model: **{}**").format(profile.active_embedding_model))
+
+        embedding_models = list(profile.embedding_models)
+        if embedding_models:
+            lines.append(
+                _("Discovered embedding models:\n{}").format(
+                    self.format_endpoint_model_box(embedding_models, profile.active_embedding_model)
+                )
+            )
+        else:
+            lines.append(
+                _(
+                    "No embedding models were discovered from this endpoint yet. You can still enter a model id manually."
+                )
+            )
+
+        lines.append(
+            _(
+                "Use this command again with one of these model ids, or enter another id manually if your endpoint supports it."
+            )
+        )
+        return "\n".join(lines)
+
+    async def get_endpoint_model_warning(self, model: str, embedding: bool = False) -> t.Optional[str]:
+        profile = await self.refresh_endpoint_profile()
+        if not profile:
+            return None
+
+        discovered = profile.embedding_models if embedding else profile.chat_models
+        runtime_model = profile.active_embedding_model if embedding else profile.active_chat_model
+        kind = _("embedding") if embedding else _("chat")
+
+        if discovered and model not in discovered and runtime_model:
+            return _(
+                "Note: `{}` is not in the endpoint's discovered {} model list. Requests will currently resolve to `{}` unless the endpoint starts advertising or returning that model."
+            ).format(model, kind, runtime_model)
+        return None
+
     @assistant.command(name="view", aliases=["v"])
     @commands.bot_has_permissions(embed_links=True)
     async def view_settings(self, ctx: commands.Context, private: bool = False):
@@ -577,10 +677,7 @@ class Admin(MixinMeta):
         has not provided its own API key.
         """
         view = SetAPI(ctx.author, self.db.endpoint_api_key)
-        txt = _(
-            "Click to set the API key used for the endpoint override\n\n"
-            "To remove the key, enter `none`"
-        )
+        txt = _("Click to set the API key used for the endpoint override\n\nTo remove the key, enter `none`")
         embed = discord.Embed(description=txt, color=ctx.author.color)
         msg = await ctx.send(embed=embed, view=view)
         await view.wait()
@@ -952,13 +1049,26 @@ class Admin(MixinMeta):
         await self.save_conf()
 
     @assistant.command(name="autoanswermodel")
-    async def set_autoanswer_model(self, ctx: commands.Context, model: str):
+    async def set_autoanswer_model(self, ctx: commands.Context, model: str = None):
         """Set the model used for auto-answer"""
+        model = model.lower().strip() if model else None
         conf = self.db.get_conf(ctx.guild)
+        if not model:
+            if self.db.endpoint_override:
+                return await ctx.send(
+                    await self.describe_endpoint_chat_model_options(
+                        ctx, conf.auto_answer_model, _("Configured auto-answer model")
+                    )
+                )
+            return await ctx.send(_("Valid models are:\n{}").format(box(humanize_list(list(MODELS.keys())))))
         if not self.db.endpoint_override and model not in MODELS:
             return await ctx.send(_("Invalid model, valid models are: {}").format(humanize_list(MODELS)))
         conf.auto_answer_model = model
         await ctx.send(_("Auto-answer model has been set to **{}**").format(model))
+        if self.db.endpoint_override:
+            warning = await self.get_endpoint_model_warning(model)
+            if warning:
+                await ctx.send(warning)
         await self.save_conf()
 
     # ---------- Trigger Word Commands ----------
@@ -1560,8 +1670,7 @@ class Admin(MixinMeta):
 
         if not model:
             if self.db.endpoint_override:
-                txt = _("Enter a model id supported by your custom endpoint. If it exposes `/v1/models`, you can copy one from there.")
-                return await ctx.send(txt)
+                return await ctx.send(await self.describe_endpoint_chat_model_options(ctx, conf.model))
             valid = [i for i in MODELS]
             humanized = humanize_list(valid)
             formatted = box(humanized)
@@ -1577,6 +1686,10 @@ class Admin(MixinMeta):
 
         conf.model = model
         await ctx.send(_("The **{}** model will now be used").format(model))
+        if self.db.endpoint_override:
+            warning = await self.get_endpoint_model_warning(model)
+            if warning:
+                await ctx.send(warning)
         await self.save_conf()
         if model.startswith("o"):
             txt = _(
@@ -1601,13 +1714,16 @@ class Admin(MixinMeta):
         ]
         if not model:
             if self.db.endpoint_override:
-                txt = _("Enter an embedding model id supported by your custom endpoint. If it exposes `/v1/models`, you can copy one from there.")
-                return await ctx.send(txt)
+                return await ctx.send(await self.describe_endpoint_embedding_model_options(ctx, conf.embed_model))
             return await ctx.send(_("Valid models are:\n{}").format(box(humanize_list(valid))))
         if not self.db.endpoint_override and model not in valid:
             return await ctx.send(_("Valid models are:\n{}").format(box(humanize_list(valid))))
         conf.embed_model = model
         await ctx.send(_("The **{}** model will now be used for embeddings").format(model))
+        if self.db.endpoint_override:
+            warning = await self.get_endpoint_model_warning(model, embedding=True)
+            if warning:
+                await ctx.send(warning)
         await self.save_conf()
 
     @assistant.command(name="resetembeddings")
@@ -2632,7 +2748,9 @@ class Admin(MixinMeta):
 
         if not model:
             if self.db.endpoint_override:
-                txt = _("Enter a model id supported by your custom endpoint. If it exposes `/v1/models`, you can copy one from there.")
+                txt = _(
+                    "Enter a model id supported by your custom endpoint. If it exposes `/v1/models`, you can copy one from there."
+                )
                 return await ctx.send(txt)
             return await ctx.send(_("Valid models are:\n{}").format(box(humanize_list(list(MODELS.keys())))))
 

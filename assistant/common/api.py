@@ -77,7 +77,7 @@ class API(MixinMeta):
             return requested_model
         if requested_model in profile.chat_models:
             return requested_model
-        if profile.provider == "lmstudio" and profile.active_chat_model:
+        if profile.active_chat_model:
             return profile.active_chat_model
         return requested_model
 
@@ -89,9 +89,25 @@ class API(MixinMeta):
             return requested_model
         if requested_model in profile.embedding_models:
             return requested_model
-        if profile.provider == "lmstudio" and profile.active_embedding_model:
+        if profile.active_embedding_model:
             return profile.active_embedding_model
         return requested_model
+
+    def get_endpoint_chat_model_limit(self, requested_model: Optional[str] = None) -> int:
+        if not self.db.endpoint_override:
+            return 0
+        profile = self.get_cached_endpoint_profile()
+        if not profile:
+            return 0
+        model_id = self.resolve_chat_model(requested_model or "")
+        entry = profile.chat_models.get(model_id)
+        if entry and entry.max_context_length:
+            return entry.max_context_length
+        if profile.active_chat_model:
+            active = profile.chat_models.get(profile.active_chat_model)
+            if active and active.max_context_length:
+                return active.max_context_length
+        return 0
 
     def describe_endpoint_profile(self, profile: EndpointProfile) -> str:
         chat_model = profile.active_chat_model or _("Unknown")
@@ -108,7 +124,9 @@ class API(MixinMeta):
             _("`Reasoning:          `{}").format(reasoning if reasoning is not None else _("Unknown")),
             _("`Max Context:        `{}").format(humanize_number(max_context) if max_context else _("Unknown")),
             _("`Embed Dimensions:   `{}").format(
-                humanize_number(profile.active_embedding_dimensions) if profile.active_embedding_dimensions else _("Unknown")
+                humanize_number(profile.active_embedding_dimensions)
+                if profile.active_embedding_dimensions
+                else _("Unknown")
             ),
             _("`Models Discovered:  `{}").format(humanize_number(len(profile.available_models))),
         ]
@@ -175,6 +193,18 @@ class API(MixinMeta):
         native_root = root_url[:-3] if root_url.endswith("/v1") else root_url
 
         async with aiohttp.ClientSession(timeout=timeout, headers=headers) as session:
+
+            async def fetch_json(url: str) -> Optional[dict]:
+                try:
+                    async with session.get(url) as res:
+                        if not res.ok:
+                            return None
+                        data = await res.json()
+                        return data if isinstance(data, dict) else None
+                except Exception as e:
+                    log.debug("Endpoint probe failed for %s", url, exc_info=e)
+                    return None
+
             native_url = f"{native_root}/api/v1/models"
             try:
                 async with session.get(native_url) as res:
@@ -185,6 +215,39 @@ class API(MixinMeta):
                             return self.parse_lmstudio_profile(base_url, models)
             except Exception as e:
                 log.debug("Native endpoint probe failed for %s", native_url, exc_info=e)
+
+            kobold_version = await fetch_json(f"{native_root}/api/extra/version")
+            if kobold_version and str(kobold_version.get("result", "")).lower() == "koboldcpp":
+                active_model = ""
+                active_model_data = await fetch_json(f"{native_root}/api/v1/model")
+                if active_model_data:
+                    active_model = str(active_model_data.get("result") or "").strip()
+
+                max_context = 0
+                true_max_context = await fetch_json(f"{native_root}/api/extra/true_max_context_length")
+                if true_max_context:
+                    max_context = int(true_max_context.get("value") or 0)
+                if not max_context:
+                    public_max_context = await fetch_json(f"{native_root}/api/v1/config/max_context_length")
+                    if public_max_context:
+                        max_context = int(public_max_context.get("value") or 0)
+                props = await fetch_json(f"{native_root}/props")
+
+                compat_items: list[dict] = []
+                compat_url = f"{root_url}/models"
+                try:
+                    async with session.get(compat_url) as res:
+                        if res.ok:
+                            data = await res.json()
+                            items = data.get("data") if isinstance(data, dict) else None
+                            if isinstance(items, list):
+                                compat_items = items
+                except Exception as e:
+                    log.debug("OpenAI-compatible model probe failed for %s", compat_url, exc_info=e)
+
+                return self.parse_koboldcpp_profile(
+                    base_url, kobold_version, active_model, compat_items, max_context, props
+                )
 
             compat_url = f"{root_url}/models"
             try:
@@ -199,6 +262,48 @@ class API(MixinMeta):
                 log.debug("OpenAI-compatible model probe failed for %s", compat_url, exc_info=e)
 
         return None
+
+    def parse_koboldcpp_profile(
+        self,
+        base_url: str,
+        version_data: dict,
+        active_model: str,
+        items: list[dict],
+        max_context_length: int = 0,
+        props: Optional[dict] = None,
+    ) -> EndpointProfile:
+        profile = self.parse_openai_compatible_profile(base_url, items)
+        profile.provider = "koboldcpp"
+
+        if not max_context_length and isinstance(props, dict):
+            default_settings = props.get("default_generation_settings") or {}
+            max_context_length = int(default_settings.get("n_ctx") or 0)
+
+        if active_model:
+            entry = profile.chat_models.get(active_model) or EndpointModelProfile(id=active_model, kind="llm")
+            entry.loaded = True
+            if max_context_length:
+                entry.max_context_length = max_context_length
+            if "vision" in version_data:
+                entry.supports_vision = bool(version_data.get("vision"))
+            profile.chat_models[active_model] = entry
+            profile.active_chat_model = active_model
+            if active_model not in profile.available_models:
+                profile.available_models.append(active_model)
+
+        if not profile.active_chat_model and len(profile.chat_models) == 1:
+            profile.active_chat_model = next(iter(profile.chat_models))
+
+        if profile.active_chat_model and max_context_length:
+            profile.chat_models[profile.active_chat_model].max_context_length = max_context_length
+
+        if version_data.get("embeddings") and profile.active_embedding_model:
+            profile.embedding_models[profile.active_embedding_model].loaded = True
+        elif version_data.get("embeddings") and len(profile.embedding_models) == 1:
+            profile.active_embedding_model = next(iter(profile.embedding_models))
+            profile.embedding_models[profile.active_embedding_model].loaded = True
+
+        return profile
 
     def parse_lmstudio_profile(self, base_url: str, models: list[dict]) -> EndpointProfile:
         profile = EndpointProfile(base_url=base_url, provider="lmstudio")
@@ -633,7 +738,9 @@ class API(MixinMeta):
             return 0
 
         # Re-embed in parallel
-        results: dict[str, tuple[list[float], str]] = {first_name: (probe_embed, observed_model)} if first_name in dict(entries_to_sync) else {}
+        results: dict[str, tuple[list[float], str]] = (
+            {first_name: (probe_embed, observed_model)} if first_name in dict(entries_to_sync) else {}
+        )
 
         async def _embed(name: str, text: str):
             vec, model = await self.request_embedding_with_info(text, conf)
@@ -678,8 +785,8 @@ class API(MixinMeta):
     def get_max_tokens(self, conf: GuildSettings, user: Optional[discord.Member]) -> int:
         user_max = conf.get_user_max_tokens(user)
         model = conf.get_user_model(user)
-        max_model_tokens = MODELS.get(model)
-        if max_model_tokens is None:
+        max_model_tokens = self.get_endpoint_chat_model_limit(model) if self.db.endpoint_override else MODELS.get(model)
+        if not max_model_tokens:
             if self.db.endpoint_override:
                 return user_max
             max_model_tokens = 4000
@@ -762,6 +869,8 @@ class API(MixinMeta):
 
         # Call the LLM to summarize
         compaction_model = conf.compaction_model or model
+        if self.db.endpoint_override:
+            compaction_model = self.resolve_chat_model(compaction_model)
         summary_prompt = COMPACTION_SYSTEM_PROMPT
         if focus:
             summary_prompt += f"\n\nFocus the summary on: {focus}"
@@ -860,6 +969,8 @@ class API(MixinMeta):
 
         try:
             flush_model = conf.compaction_model or conf.get_user_model(user)
+            if self.db.endpoint_override:
+                flush_model = self.resolve_chat_model(flush_model)
             flush_messages = [
                 {"role": "developer", "content": flush_prompt},
                 {"role": "user", "content": old_text},
@@ -955,6 +1066,8 @@ class API(MixinMeta):
 
         try:
             model = conf.compaction_model or conf.get_user_model(user)
+            if self.db.endpoint_override:
+                model = self.resolve_chat_model(model)
             consolidation_messages = [
                 {"role": "developer", "content": prompt},
             ]
@@ -1181,7 +1294,10 @@ class API(MixinMeta):
         current_chunk = []
 
         max_tokens = conf.max_tokens - 100
-        if not self.db.endpoint_override or conf.model in MODELS:
+        model_limit = self.get_endpoint_chat_model_limit(conf.model) if self.db.endpoint_override else 0
+        if model_limit:
+            max_tokens = min(max_tokens, model_limit)
+        elif not self.db.endpoint_override or conf.model in MODELS:
             max_tokens = min(max_tokens, MODELS.get(conf.model, 4000))
         for token in tokens:
             current_chunk.append(token)
