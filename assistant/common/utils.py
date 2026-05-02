@@ -234,6 +234,8 @@ def get_params(
     extras: dict,
     model: str,
     modelinfo: str,
+    prefix: str,
+    prefixes: str,
 ) -> dict:
     roles = [role for role in author.roles if "everyone" not in role.name] if author else []
     display_name = author.display_name if author else ""
@@ -268,6 +270,8 @@ def get_params(
         "datetime": str(datetime.now()),
         "model": model,
         "modelinfo": modelinfo,
+        "prefix": prefix,
+        "prefixes": prefixes,
         "roles": humanize_list([role.name for role in roles]),
         "rolementions": humanize_list([role.mention for role in roles]),
         "avatar": author.display_avatar.url if author else "",

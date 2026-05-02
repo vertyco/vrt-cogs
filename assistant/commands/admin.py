@@ -753,6 +753,8 @@ class Admin(MixinMeta):
         - **model**: the current chat model being used
         - **botowner**: the bot owner's name
         - **modelinfo**: bundled information about the current model/runtime
+        - **prefix**: one active bot prefix for this server
+        - **prefixes**: all active bot prefixes for this server
         - **uptime**: the bot's current uptime
         """
         attachments = get_attachments(ctx.message)
@@ -899,6 +901,8 @@ class Admin(MixinMeta):
         - **model**: the current chat model being used
         - **botowner**: the bot owner's name
         - **modelinfo**: bundled information about the current model/runtime
+        - **prefix**: one active bot prefix for this server
+        - **prefixes**: all active bot prefixes for this server
         - **uptime**: the bot's current uptime
         """
         attachments = get_attachments(ctx.message)
@@ -1230,6 +1234,8 @@ class Admin(MixinMeta):
         - **model**: the current chat model being used
         - **botowner**: the bot owner's name
         - **modelinfo**: bundled information about the current model/runtime
+        - **prefix**: one active bot prefix for this server
+        - **prefixes**: all active bot prefixes for this server
         - **uptime**: the bot's current uptime
         """
         attachments = get_attachments(ctx.message)

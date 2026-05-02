@@ -25,7 +25,12 @@ from openai.types.chat.chat_completion_message_tool_call import (
 )
 from redbot.core import bank
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import box, humanize_number, text_to_file
+from redbot.core.utils.chat_formatting import (
+    box,
+    humanize_list,
+    humanize_number,
+    text_to_file,
+)
 from sentry_sdk import add_breadcrumb
 
 from ..abc import MixinMeta
@@ -1112,6 +1117,9 @@ class ChatHandler(MixinMeta):
             modelinfo_lines.append(f"Configured Max Response Tokens (Cog): {humanize_number(max_response_tokens)}")
 
         modelinfo = "\n".join(modelinfo_lines)
+        valid_prefixes = await self.bot.get_valid_prefixes(guild)
+        prefix = valid_prefixes[0] if valid_prefixes else ""
+        prefixes = humanize_list(valid_prefixes)
         params = await asyncio.to_thread(
             get_params,
             self.bot,
@@ -1122,6 +1130,8 @@ class ChatHandler(MixinMeta):
             extras,
             current_model,
             modelinfo,
+            prefix,
+            prefixes,
         )
 
         def format_string(text: str):
