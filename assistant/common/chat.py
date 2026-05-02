@@ -1077,7 +1077,7 @@ class ChatHandler(MixinMeta):
         if channel.id in conf.channel_prompts:
             system_prompt = format_string(conf.channel_prompts[channel.id])
         else:
-            system_prompt = format_string(conversation.system_prompt_override or conf.system_prompt)
+            system_prompt = format_string(conversation.system_prompt_override or self.db.get_effective_system_prompt(conf))
 
         initial_prompt = format_string(conf.prompt)
         model = conf.get_user_model(author)

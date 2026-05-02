@@ -102,7 +102,7 @@ class EndpointProfile(AssistantBaseModel):
 
 
 class GuildSettings(AssistantBaseModel):
-    system_prompt: str = DEFAULT_SYSTEM_PROMPT
+    system_prompt: t.Optional[str] = DEFAULT_SYSTEM_PROMPT
     prompt: str = ""
     channel_prompts: t.Dict[int, str] = {}
     allow_sys_prompt_override: bool = False  # Per convo system prompt
@@ -460,10 +460,15 @@ class DB(AssistantBaseModel):
     scheduled_tasks: t.Dict[str, ScheduledTask] = {}  # task_id -> ScheduledTask
     user_memories: t.Dict[str, UserMemory] = {}  # "{guild_id}-{user_id}" -> UserMemory
 
+    def get_effective_system_prompt(self, conf: GuildSettings) -> str:
+        if conf.system_prompt in (None, DEFAULT_SYSTEM_PROMPT):
+            return self.default_system_prompt
+        return conf.system_prompt
+
     def get_conf(self, guild: t.Union[discord.Guild, int]) -> GuildSettings:
         gid = guild if isinstance(guild, int) else guild.id
         if gid not in self.configs:
-            self.configs[gid] = GuildSettings(system_prompt=self.default_system_prompt)
+            self.configs[gid] = GuildSettings()
         return self.configs[gid]
 
     def get_conversation(

@@ -194,7 +194,8 @@ class Admin(MixinMeta):
 
         conf = self.db.get_conf(ctx.guild)
         model = conf.get_user_model(ctx.author)
-        system_tokens = await self.count_tokens(conf.system_prompt, model) if conf.system_prompt else 0
+        effective_system_prompt = self.db.get_effective_system_prompt(conf)
+        system_tokens = await self.count_tokens(effective_system_prompt, model) if effective_system_prompt else 0
         prompt_tokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
 
         func_list, __ = await self.db.prep_functions(self.bot, conf, self.registry, showall=True)
@@ -503,10 +504,10 @@ class Admin(MixinMeta):
         files = []
         system_file = (
             discord.File(
-                BytesIO(conf.system_prompt.encode()),
+                BytesIO(effective_system_prompt.encode()),
                 filename=_("SystemPrompt") + ".txt",
             )
-            if conf.system_prompt
+            if effective_system_prompt
             else None
         )
         prompt_file = (
@@ -767,7 +768,8 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         model = conf.get_user_model(ctx.author)
         ptokens = await self.count_tokens(prompt, model) if prompt else 0
-        stokens = await self.count_tokens(conf.system_prompt, model) if conf.system_prompt else 0
+        effective_system_prompt = self.db.get_effective_system_prompt(conf)
+        stokens = await self.count_tokens(effective_system_prompt, model) if effective_system_prompt else 0
         combined = ptokens + stokens
         if conf.max_tokens:
             max_tokens = round(conf.max_tokens * 0.9)
@@ -944,11 +946,11 @@ class Admin(MixinMeta):
     @commands.is_owner()
     async def set_default_system_prompt(self, ctx: commands.Context, *, system_prompt: str = None):
         """
-        Set the global default system prompt for newly created guild configs
+        Set the global default system prompt used by servers that inherit the default prompt
 
         - Run without arguments to view the current global default prompt
         - Use `none` to reset to the built-in default prompt
-        - This does not modify existing server-specific prompts
+        - Servers with a custom system prompt keep using their custom prompt
         """
         attachments = get_attachments(ctx.message)
         if attachments:
@@ -966,7 +968,10 @@ class Admin(MixinMeta):
         if system_prompt is None:
             current = self.db.default_system_prompt
             file = text_to_file(current, "DefaultSystemPrompt.txt")
-            lines = [_("Current global default system prompt for newly created servers:"), _("Existing servers are unchanged.")]
+            lines = [
+                _("Current global default system prompt for servers using the default or an unset system prompt:"),
+                _("Servers with a custom system prompt are unchanged."),
+            ]
             if current == DEFAULT_SYSTEM_PROMPT:
                 lines.append(_("This is currently using the built-in default prompt."))
             else:
@@ -982,14 +987,20 @@ class Admin(MixinMeta):
         if normalized.lower() == "none":
             self.db.default_system_prompt = DEFAULT_SYSTEM_PROMPT
             await ctx.send(
-                _("The global default system prompt has been reset to the built-in default. Existing servers were not changed.")
+                _(
+                    "The global default system prompt has been reset to the built-in default. "
+                    "Servers using the default or an unset system prompt will use it immediately."
+                )
             )
             await self.save_conf()
             return
 
         self.db.default_system_prompt = normalized
         await ctx.send(
-            _("The global default system prompt has been set for newly created servers. Existing servers were not changed.")
+            _(
+                "The global default system prompt has been updated. "
+                "Servers using the default or an unset system prompt will use it immediately."
+            )
         )
         await self.save_conf()
 

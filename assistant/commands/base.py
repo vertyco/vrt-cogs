@@ -231,7 +231,8 @@ If a file has no extension it will still try to read it only if it can be decode
         model = conf.get_user_model(user)
         convo_tokens = await self.count_payload_tokens(conversation.messages, model)
 
-        system_tokens = await self.count_tokens(conf.system_prompt, model) if conf.system_prompt else 0
+        effective_system_prompt = self.db.get_effective_system_prompt(conf)
+        system_tokens = await self.count_tokens(effective_system_prompt, model) if effective_system_prompt else 0
         prompt_tokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
         channel_prompt = conf.channel_prompts.get(ctx.channel.id, "")
         channel_tokens = await self.count_tokens(channel_prompt, model) if channel_prompt else 0
@@ -304,7 +305,8 @@ If a file has no extension it will still try to read it only if it can be decode
         mem_id = ctx.channel.id if conf.collab_convos else user.id
         conversation = self.db.get_conversation(mem_id, ctx.channel.id, ctx.guild.id)
 
-        system_tokens = await self.count_tokens(conf.system_prompt, model) if conf.system_prompt else 0
+        effective_system_prompt = self.db.get_effective_system_prompt(conf)
+        system_tokens = await self.count_tokens(effective_system_prompt, model) if effective_system_prompt else 0
         prompt_tokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
         channel_prompt = conf.channel_prompts.get(ctx.channel.id, "")
         channel_tokens = await self.count_tokens(channel_prompt, model) if channel_prompt else 0
