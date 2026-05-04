@@ -730,7 +730,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
                 "required": ["message", "to_language"],
             },
         }
-        await cog.register_function(cog_name="Fluent", schema=schema, category="translation")
+        await cog.register_function(cog_name="Fluent", schema=schema, category="utility")
 
     async def get_translation(self, message: str, to_language: str, *args, **kwargs) -> str:
         translator = api.TranslateManager()

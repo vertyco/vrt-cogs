@@ -632,7 +632,14 @@ class AIToolsNavigationRow(discord.ui.ActionRow["AIToolsView"]):
 
     async def close_view(self, interaction: discord.Interaction):
         self.view.stop()
-        await interaction.response.edit_message(view=None)
+        if not interaction.response.is_done():
+            with suppress(discord.NotFound):
+                await interaction.response.defer()
+        with suppress(discord.HTTPException):
+            if self.view.message:
+                await self.view.message.edit(view=None)
+                return
+            await interaction.message.edit(view=None)
 
 
 class AIToolsView(discord.ui.LayoutView):
@@ -765,13 +772,27 @@ class AIToolsView(discord.ui.LayoutView):
         self.build_layout()
         self.message = await self.ctx.send(view=self)
 
+    async def edit_view_message(self, view: Optional[discord.ui.View]) -> None:
+        with suppress(discord.HTTPException):
+            if self.message:
+                await self.message.edit(view=view)
+                return
+
     async def refresh(self, interaction: Optional[discord.Interaction] = None):
         self.build_layout()
+        if interaction is not None and not interaction.response.is_done():
+            with suppress(discord.NotFound):
+                await interaction.response.defer()
         if interaction is None:
-            if self.message:
-                await self.message.edit(view=self)
+            await self.edit_view_message(self)
             return
-        await interaction.response.edit_message(view=self)
+        if self.message is None:
+            self.message = interaction.message
+        if self.message:
+            await self.edit_view_message(self)
+            return
+        with suppress(discord.HTTPException):
+            await interaction.edit_original_response(view=self)
 
     async def change_page(self, interaction: discord.Interaction, delta: int):
         self.page += delta
