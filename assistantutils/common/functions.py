@@ -109,7 +109,9 @@ class Functions(MixinMeta):
             return None, "Colors must be a 6-digit hex value like `#5865F2`."
         return int(cleaned, 16), None
 
-    def build_role_permissions(self, permissions: list[str] | str | None) -> tuple[discord.Permissions | None, list[str], str | None]:
+    def build_role_permissions(
+        self, permissions: list[str] | str | None
+    ) -> tuple[discord.Permissions | None, list[str], str | None]:
         raw_permissions = self.coerce_string_list(permissions)
         if permissions is None:
             return None, [], None
@@ -230,6 +232,81 @@ class Functions(MixinMeta):
             return find_member(guild, target_name_or_id)
         if target_type == "role":
             return find_role(guild, target_name_or_id)
+        return None
+
+    def get_requesting_admin(self, guild: discord.Guild, kwargs: dict) -> tuple[discord.Member | None, str | None]:
+        user = kwargs.get("user")
+        if not isinstance(user, discord.Member) or user.guild.id != guild.id:
+            return None, "Unable to verify the requesting admin for this action."
+        return user, None
+
+    def user_has_guild_permission(self, user: discord.Member, permission_name: str) -> bool:
+        if user.id == user.guild.owner_id:
+            return True
+        perms = user.guild_permissions
+        return perms.administrator or getattr(perms, permission_name, False)
+
+    def user_has_channel_permission(
+        self,
+        user: discord.Member,
+        channel: discord.abc.GuildChannel | discord.Thread,
+        permission_name: str,
+    ) -> bool:
+        if user.id == user.guild.owner_id:
+            return True
+        perms = channel.permissions_for(user)
+        return perms.administrator or getattr(perms, permission_name, False)
+
+    def ensure_guild_permission(self, user: discord.Member, permission_name: str, action: str) -> str | None:
+        if self.user_has_guild_permission(user, permission_name):
+            return None
+        return f"You do not have permission to {action}. Required Discord permission: `{permission_name}`."
+
+    def ensure_channel_permission(
+        self,
+        user: discord.Member,
+        channel: discord.abc.GuildChannel | discord.Thread,
+        permission_name: str,
+        action: str,
+    ) -> str | None:
+        if self.user_has_channel_permission(user, channel, permission_name):
+            return None
+        return f"You do not have permission to {action}. Required Discord permission: `{permission_name}`."
+
+    def ensure_permission_subset(self, user: discord.Member, permission_names: list[str], action: str) -> str | None:
+        if self.user_has_guild_permission(user, "administrator"):
+            return None
+        missing = [
+            permission_name
+            for permission_name in permission_names
+            if not getattr(user.guild_permissions, permission_name, False)
+        ]
+        if not missing:
+            return None
+        return (
+            f"You do not have permission to {action} with these permission flags: {', '.join(missing)}. "
+            "The bot will not grant permissions you do not have."
+        )
+
+    def can_manage_role(self, user: discord.Member, role: discord.Role) -> bool:
+        if role.is_default() or role.managed:
+            return False
+        if user.id == user.guild.owner_id:
+            return True
+        if not self.user_has_guild_permission(user, "manage_roles"):
+            return False
+        return role < user.top_role
+
+    def ensure_role_manageable(self, user: discord.Member, role: discord.Role, action: str) -> str | None:
+        if self.can_manage_role(user, role):
+            return None
+        return f"You do not have permission to {action} for role `{role.name}`."
+
+    def ensure_role_position(self, user: discord.Member, position: int | None, action: str) -> str | None:
+        if position is None or user.id == user.guild.owner_id:
+            return None
+        if position >= user.top_role.position:
+            return f"You do not have permission to {action} at or above your top role position."
         return None
 
     async def get_channel_list(
@@ -1226,6 +1303,10 @@ class Functions(MixinMeta):
         **kwargs,
     ) -> str:
         """Create, edit, move, or delete guild channels through one unified tool."""
+        user, user_error = self.get_requesting_admin(guild, kwargs)
+        if user_error:
+            return user_error
+
         action = str(action).strip().lower()
         if action not in {"create", "edit", "move", "delete"}:
             return "Invalid action. Use one of: create, edit, move, delete."
@@ -1292,6 +1373,16 @@ class Functions(MixinMeta):
                 if normalized_type == "category" and category_explicit and category is not None:
                     return "Categories cannot be placed inside another category."
 
+                permission_error = (
+                    self.ensure_channel_permission(
+                        user, category, "manage_channels", "create channels in that category"
+                    )
+                    if category is not None
+                    else self.ensure_guild_permission(user, "manage_channels", "create channels")
+                )
+                if permission_error:
+                    return permission_error
+
                 create_kwargs: dict[str, object] = {"name": name, "reason": reason}
                 changes: dict[str, object] = {"action": "create", "channel_type": normalized_type, "name": name}
                 if position is not None:
@@ -1339,7 +1430,11 @@ class Functions(MixinMeta):
                         create_kwargs["bitrate"] = min(bitrate, guild.bitrate_limit)
                         changes["bitrate"] = min(bitrate, guild.bitrate_limit)
                     if rtc_region is not None:
-                        normalized_region = None if str(rtc_region).strip().lower() in {"auto", "automatic", "none", "null"} else rtc_region
+                        normalized_region = (
+                            None
+                            if str(rtc_region).strip().lower() in {"auto", "automatic", "none", "null"}
+                            else rtc_region
+                        )
                         create_kwargs["rtc_region"] = normalized_region
                         changes["rtc_region"] = normalized_region or "automatic"
                     if video_quality_enum is not None:
@@ -1363,7 +1458,11 @@ class Functions(MixinMeta):
                     if topic is not None:
                         changes["topic"] = topic
                     if rtc_region is not None:
-                        normalized_region = None if str(rtc_region).strip().lower() in {"auto", "automatic", "none", "null"} else rtc_region
+                        normalized_region = (
+                            None
+                            if str(rtc_region).strip().lower() in {"auto", "automatic", "none", "null"}
+                            else rtc_region
+                        )
                         create_kwargs["rtc_region"] = normalized_region
                         changes["rtc_region"] = normalized_region or "automatic"
                     if video_quality_enum is not None:
@@ -1427,6 +1526,12 @@ class Functions(MixinMeta):
                 return f"No channel found matching '{channel_name_or_id}'."
             if isinstance(channel, discord.Thread):
                 return "Threads are managed with `manage_thread`, not `manage_channel`."
+
+            permission_error = self.ensure_channel_permission(
+                user, channel, "manage_channels", f"{action} that channel"
+            )
+            if permission_error:
+                return permission_error
 
             if action == "delete":
                 channel_name = channel.name
@@ -1493,7 +1598,9 @@ class Functions(MixinMeta):
             if rtc_region is not None:
                 if not hasattr(channel, "rtc_region"):
                     return "This channel type does not support `rtc_region`."
-                normalized_region = None if str(rtc_region).strip().lower() in {"auto", "automatic", "none", "null"} else rtc_region
+                normalized_region = (
+                    None if str(rtc_region).strip().lower() in {"auto", "automatic", "none", "null"} else rtc_region
+                )
                 edit_kwargs["rtc_region"] = normalized_region
                 changes["rtc_region"] = normalized_region or "automatic"
 
@@ -1576,16 +1683,34 @@ class Functions(MixinMeta):
         **kwargs,
     ) -> str:
         """Set explicit channel permission overwrites for a role or member."""
+        user, user_error = self.get_requesting_admin(guild, kwargs)
+        if user_error:
+            return user_error
+
         channel = await asyncio.to_thread(find_channel, guild, channel_name_or_id)
         if not channel:
             return f"No channel found matching '{channel_name_or_id}'."
         if isinstance(channel, discord.Thread):
             return "This tool does not currently manage thread permission overwrites. Use the parent channel instead."
 
+        permission_error = self.ensure_channel_permission(
+            user,
+            channel,
+            "manage_channels",
+            "update channel permission overwrites",
+        )
+        if permission_error:
+            return permission_error
+
         normalized_target_type = str(target_type).strip().lower()
         target = self.resolve_permission_target(guild, normalized_target_type, target_name_or_id)
         if not target:
             return f"No {normalized_target_type} found matching '{target_name_or_id}'."
+
+        if isinstance(target, discord.Role):
+            target_error = self.ensure_role_manageable(user, target, "update channel overwrites")
+            if target_error:
+                return target_error
 
         allow, invalid_allow = self.normalize_permission_names(allow_permissions)
         deny, invalid_deny = self.normalize_permission_names(deny_permissions)
@@ -1593,6 +1718,10 @@ class Functions(MixinMeta):
         invalid = invalid_allow + invalid_deny + invalid_clear
         if invalid:
             return f"Invalid permission names: {', '.join(sorted(set(invalid)))}"
+
+        allow_error = self.ensure_permission_subset(user, allow, "allow channel permissions")
+        if allow_error:
+            return allow_error
 
         overlap = (set(allow) & set(deny)) | (set(allow) & set(clear)) | (set(deny) & set(clear))
         if overlap:
@@ -1655,6 +1784,10 @@ class Functions(MixinMeta):
         **kwargs,
     ) -> str:
         """Create, edit, or delete Discord threads and forum posts."""
+        user, user_error = self.get_requesting_admin(guild, kwargs)
+        if user_error:
+            return user_error
+
         action = str(action).strip().lower()
         if action not in {"create", "edit", "delete"}:
             return "Invalid action. Use one of: create, edit, delete."
@@ -1672,6 +1805,14 @@ class Functions(MixinMeta):
             parent = await asyncio.to_thread(find_channel, guild, parent_channel_name_or_id)
             if not isinstance(parent, (discord.TextChannel, discord.ForumChannel)):
                 return "Threads can only be created inside text channels or forum channels."
+
+            if isinstance(parent, discord.ForumChannel):
+                permission_error = self.ensure_channel_permission(user, parent, "send_messages", "create forum posts")
+            else:
+                thread_permission = "create_private_threads" if private_thread else "create_public_threads"
+                permission_error = self.ensure_channel_permission(user, parent, thread_permission, "create threads")
+            if permission_error:
+                return permission_error
 
             changes: dict[str, object] = {"action": "create", "parent": parent.name, "name": name}
             if auto_archive_duration is not None:
@@ -1713,7 +1854,9 @@ class Functions(MixinMeta):
 
             thread_type = None
             if starter_message is None:
-                thread_type = discord.ChannelType.private_thread if private_thread else discord.ChannelType.public_thread
+                thread_type = (
+                    discord.ChannelType.private_thread if private_thread else discord.ChannelType.public_thread
+                )
                 changes["thread_type"] = thread_type.name
 
             if dry_run:
@@ -1737,11 +1880,15 @@ class Functions(MixinMeta):
         if not isinstance(thread, discord.Thread):
             return f"No thread found matching '{thread_name_or_id}'."
 
+        permission_error = self.ensure_channel_permission(user, thread, "manage_threads", f"{action} that thread")
+        if permission_error:
+            return permission_error
+
         if action == "delete":
             if dry_run:
                 return self.format_change_summary(
                     f"Dry run: would delete thread `{thread.name}`.",
-                    {"thread_id": thread.id, "parent": getattr(thread.parent, 'name', 'unknown')},
+                    {"thread_id": thread.id, "parent": getattr(thread.parent, "name", "unknown")},
                 )
             await thread.delete(reason=reason)
             return f"Deleted thread `{thread.name}` successfully."
@@ -1806,15 +1953,26 @@ class Functions(MixinMeta):
         **kwargs,
     ) -> str:
         """Create, edit, move, or delete Discord roles."""
+        user, user_error = self.get_requesting_admin(guild, kwargs)
+        if user_error:
+            return user_error
+
         action = str(action).strip().lower()
         if action not in {"create", "edit", "move", "delete"}:
             return "Invalid action. Use one of: create, edit, move, delete."
         if position is not None and position < 0:
             return "Role position must be 0 or greater."
 
+        permission_error = self.ensure_guild_permission(user, "manage_roles", "manage roles")
+        if permission_error:
+            return permission_error
+
         permissions_obj, permission_names, permission_error = self.build_role_permissions(permissions)
         if permission_error:
             return permission_error
+        permission_subset_error = self.ensure_permission_subset(user, permission_names, "grant role permissions")
+        if permission_subset_error:
+            return permission_subset_error
         color_value, color_error = self.parse_color_value(color)
         if color_error:
             return color_error
@@ -1827,6 +1985,9 @@ class Functions(MixinMeta):
         if action == "create":
             if not name:
                 return "A role `name` is required when action is `create`."
+            position_error = self.ensure_role_position(user, position, "create a role")
+            if position_error:
+                return position_error
 
             create_kwargs: dict[str, object] = {"name": name, "reason": reason}
             changes: dict[str, object] = {"action": "create", "name": name}
@@ -1864,6 +2025,10 @@ class Functions(MixinMeta):
         if role.is_default():
             return "The default @everyone role cannot be managed with this tool."
 
+        role_error = self.ensure_role_manageable(user, role, f"{action} that role")
+        if role_error:
+            return role_error
+
         if action == "delete":
             if dry_run:
                 return self.format_change_summary(
@@ -1881,6 +2046,10 @@ class Functions(MixinMeta):
             if above_role_name_or_id and below_role_name_or_id:
                 return "Use only one of `above_role_name_or_id` or `below_role_name_or_id`."
 
+            position_error = self.ensure_role_position(user, position, "move a role")
+            if position_error:
+                return position_error
+
             changes: dict[str, object] = {"action": "move", "role": role.name}
             if position is not None:
                 changes["position"] = position
@@ -1893,12 +2062,18 @@ class Functions(MixinMeta):
                     above_role = await asyncio.to_thread(find_role, guild, above_role_name_or_id)
                     if above_role is None:
                         return f"No role found matching '{above_role_name_or_id}'."
+                    above_error = self.ensure_role_manageable(user, above_role, "move roles relative to that role")
+                    if above_error:
+                        return above_error
                     move_kwargs["above"] = above_role
                     changes["above"] = above_role.name
                 if below_role_name_or_id:
                     below_role = await asyncio.to_thread(find_role, guild, below_role_name_or_id)
                     if below_role is None:
                         return f"No role found matching '{below_role_name_or_id}'."
+                    below_error = self.ensure_role_manageable(user, below_role, "move roles relative to that role")
+                    if below_error:
+                        return below_error
                     move_kwargs["below"] = below_role
                     changes["below"] = below_role.name
                 if dry_run:
@@ -1927,6 +2102,9 @@ class Functions(MixinMeta):
             edit_kwargs["display_icon"] = role_icon
             changes["display_icon"] = display_icon if role_icon is not None else "none"
         if position is not None:
+            position_error = self.ensure_role_position(user, position, "update a role")
+            if position_error:
+                return position_error
             edit_kwargs["position"] = position
             changes["position"] = position
 
@@ -1967,6 +2145,14 @@ class Functions(MixinMeta):
         **kwargs,
     ) -> str:
         """Update supported Discord server settings."""
+        user, user_error = self.get_requesting_admin(guild, kwargs)
+        if user_error:
+            return user_error
+
+        permission_error = self.ensure_guild_permission(user, "manage_guild", "manage server settings")
+        if permission_error:
+            return permission_error
+
         verification_enum, verification_error = self.parse_named_enum(
             discord.VerificationLevel,
             verification_level,

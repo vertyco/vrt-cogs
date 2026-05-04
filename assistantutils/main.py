@@ -48,10 +48,17 @@ class AssistantUtils(Functions, commands.Cog, metaclass=CompositeMetaClass):
             ("discord", "mod", schemas.DISCORD_MESSAGE_TOOLS_MOD),
             ("discord_admin", "admin", schemas.DISCORD_ADMIN_TOOLS),
             ("web", "user", (schemas.FETCH_URL,)),
-            ("time", "user", (schemas.CONVERT_DATETIME_TIMESTAMP, schemas.GET_DISCORD_TIMESTAMP_FORMAT)),
+            (
+                "utility",
+                "user",
+                (
+                    schemas.RUN_COMMAND,
+                    schemas.CONVERT_DATETIME_TIMESTAMP,
+                    schemas.GET_DISCORD_TIMESTAMP_FORMAT,
+                ),
+            ),
             ("files", "user", (schemas.CREATE_AND_SEND_FILE, schemas.RENDER_SVG)),
-            ("utility", "user", (schemas.RUN_COMMAND,)),
-            ("moderation", "mod", (schemas.GET_MODLOG_CASES,)),
+            ("utility", "mod", (schemas.GET_MODLOG_CASES,)),
         )
 
         for category, permission_level, registered_schemas in grouped_registrations:

@@ -93,7 +93,7 @@ class Meow(commands.Cog):
                 "properties": {},
             },
         }
-        await cog.register_function("Meow", schema, category="fun")
+        await cog.register_function("Meow", schema)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):

@@ -17,15 +17,13 @@ class Listeners(MixinMeta):
     async def on_assistant_cog_add(self, cog: commands.Cog):
         schema = {
             "name": "get_user_suggestion_stats",
-            "description": (
-                "Get the current user's suggestion stats, including votes, wins, and losses.\n"
-            ),
+            "description": ("Get the current user's suggestion stats, including votes, wins, and losses.\n"),
             "parameters": {
                 "type": "object",
                 "properties": {},
             },
         }
-        await cog.register_function(self.qualified_name, schema, category="suggestions")
+        await cog.register_function(self.qualified_name, schema, category="utility")
 
     async def get_user_suggestion_stats(self, user: discord.Member, *args, **kwargs):
         """Get the number of suggestions a user has submitted"""

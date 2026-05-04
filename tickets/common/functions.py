@@ -40,7 +40,7 @@ class Functions(MixinMeta):
                 "properties": {},
             },
         }
-        await cog.register_function("Tickets", schema)
+        await cog.register_function("Tickets", schema, category="utility")
         await cog.register_context_variable(
             cog_name="Tickets",
             variable_name="available_tickets",
@@ -102,7 +102,7 @@ class Functions(MixinMeta):
                 "required": ["panel_name"],
             },
         }
-        await cog.register_function("Tickets", schema)
+        await cog.register_function("Tickets", schema, category="utility")
 
     def get_ticket_block_reason(self, user: discord.Member, conf) -> str | None:
         if conf.suspended_msg:
@@ -219,10 +219,7 @@ class Functions(MixinMeta):
             return "Average support response time is not available yet."
 
         sample_count = len(conf.response_times)
-        return (
-            f"Average support response time: {format_response_time(avg_response)}\n"
-            f"Samples: {sample_count}"
-        )
+        return f"Average support response time: {format_response_time(avg_response)}\nSamples: {sample_count}"
 
     async def ticket_working_hours(self, user: discord.Member, *args, **kwargs) -> str:
         conf = self.db.get_conf(user.guild)

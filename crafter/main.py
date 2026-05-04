@@ -167,4 +167,4 @@ class Crafter(commands.Cog):
                 "required": ["item_name"],
             },
         }
-        await cog.register_function(self.qualified_name, schema, category="crafting")
+        await cog.register_function(self.qualified_name, schema, category="utility")
