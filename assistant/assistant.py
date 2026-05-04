@@ -37,8 +37,8 @@ from .common.constants import (
 )
 from .common.embedding_store import EmbeddingStore
 from .common.functions import AssistantFunctions
-from .common.models import DB, EmbeddingEntryExists, NoAPIKey
-from .common.utils import json_schema_invalid
+from .common.models import DB, EmbeddingEntryExists, NoAPIKey, normalize_tool_category
+from .common.utils import clean_name, json_schema_invalid
 from .listener import AssistantListener
 
 log = logging.getLogger("red.vrt.assistant")
@@ -90,8 +90,10 @@ class Assistant(
         self.embedding_store = EmbeddingStore(cog_data_path(self))
         self.scheduler = AsyncIOScheduler()
 
-        # {cog_name: {function_name: {"permission_level": "user", "schema": function_json_schema, "required_permissions": []}}}
+        # {cog_name: {function_name: {"permission_level": "user", "schema": function_json_schema, "required_permissions": [], "category": "uncategorized"}}}
         self.registry: Dict[str, Dict[str, dict]] = {}
+        # {cog_name: {variable_name: {"description": str, "fetch_method": str, "permission_level": str, "required_permissions": []}}}
+        self.context_registry: Dict[str, Dict[str, dict]] = {}
 
         self.saving = False
         self.first_run = True
@@ -123,21 +125,31 @@ class Assistant(
         await self._migrate_embeddings()
 
         # Register internal functions
-        await self.register_function(self.qualified_name, GENERATE_IMAGE)
-        await self.register_function(self.qualified_name, EDIT_IMAGE)
-        await self.register_function(self.qualified_name, SEARCH_INTERNET)
-        await self.register_function(self.qualified_name, THINK_AND_PLAN)
-        await self.register_function(self.qualified_name, DO_NOT_RESPOND_SCHEMA)
-        await self.register_function(self.qualified_name, RESPOND_AND_CONTINUE)
-        await self.register_function(self.qualified_name, CREATE_REMINDER)
-        await self.register_function(self.qualified_name, CANCEL_REMINDER)
-        await self.register_function(self.qualified_name, LIST_REMINDERS)
-        await self.register_function(self.qualified_name, REMEMBER_USER)
-        await self.register_function(self.qualified_name, RECALL_USER)
-        await self.register_function(self.qualified_name, FORGET_USER)
-        await self.register_function(self.qualified_name, SCHEDULE_TASK, permission_level="mod")
-        await self.register_function(self.qualified_name, CANCEL_SCHEDULED_TASK, permission_level="mod")
-        await self.register_function(self.qualified_name, LIST_SCHEDULED_TASKS, permission_level="mod")
+        await self.register_function(self.qualified_name, GENERATE_IMAGE, category="image")
+        await self.register_function(self.qualified_name, EDIT_IMAGE, category="image")
+        await self.register_function(self.qualified_name, SEARCH_INTERNET, category="web")
+        await self.register_function(self.qualified_name, THINK_AND_PLAN, category="planning")
+        await self.register_function(self.qualified_name, DO_NOT_RESPOND_SCHEMA, category="planning")
+        await self.register_function(self.qualified_name, RESPOND_AND_CONTINUE, category="planning")
+        await self.register_function(self.qualified_name, CREATE_REMINDER, category="reminders")
+        await self.register_function(self.qualified_name, CANCEL_REMINDER, category="reminders")
+        await self.register_function(self.qualified_name, LIST_REMINDERS, category="reminders")
+        await self.register_function(self.qualified_name, REMEMBER_USER, category="memory")
+        await self.register_function(self.qualified_name, RECALL_USER, category="memory")
+        await self.register_function(self.qualified_name, FORGET_USER, category="memory")
+        await self.register_function(self.qualified_name, SCHEDULE_TASK, permission_level="mod", category="scheduling")
+        await self.register_function(
+            self.qualified_name,
+            CANCEL_SCHEDULED_TASK,
+            permission_level="mod",
+            category="scheduling",
+        )
+        await self.register_function(
+            self.qualified_name,
+            LIST_SCHEDULED_TASKS,
+            permission_level="mod",
+            category="scheduling",
+        )
 
         # Start scheduler and reschedule existing reminders/tasks
         self.scheduler.start()
@@ -189,6 +201,20 @@ class Assistant(
                 if not hasattr(cog, function_name):
                     log.debug(f"{cog_name} no longer has function named {function_name}, removing")
                     del self.registry[cog_name][function_name]
+                    cleaned = True
+
+        for cog_name, cog_variables in self.context_registry.copy().items():
+            cog = self.bot.get_cog(cog_name)
+            if not cog:
+                log.debug(f"{cog_name} no longer loaded. Unregistering its context variables")
+                del self.context_registry[cog_name]
+                cleaned = True
+                continue
+            for variable_name, data in list(cog_variables.items()):
+                fetch_method = data.get("fetch_method", variable_name)
+                if not hasattr(cog, fetch_method):
+                    log.debug(f"{cog_name} no longer has context variable fetcher named {fetch_method}, removing")
+                    del self.context_registry[cog_name][variable_name]
                     cleaned = True
 
         # Clean up any stale channels
@@ -510,15 +536,40 @@ class Assistant(
     async def on_cog_remove(self, cog: commands.Cog):
         await self.unregister_cog(cog.qualified_name)
 
-    async def register_functions(self, cog_name: str, schemas: List[dict]) -> None:
+    async def register_functions(
+        self,
+        cog_name: str,
+        schemas: List[dict],
+        category: Optional[str] = None,
+        requires_user_approval: bool = False,
+    ) -> None:
         """Quick way to register multiple functions for a cog
 
         Args:
             cog_name (str): the name of the cog registering the functions
             schemas (List[dict]): List of dicts representing the json schemas of the functions
+            category (Optional[str]): Category applied to all registered functions unless they are registered individually
+            requires_user_approval (bool): Whether these functions require interactive approval before execution
         """
         for schema in schemas:
-            await self.register_function(cog_name, schema)
+            await self.register_function(
+                cog_name,
+                schema,
+                category=category,
+                requires_user_approval=requires_user_approval,
+            )
+
+    async def register_context_variables(self, cog_name: str, variables: List[dict]) -> None:
+        """Quick way to register multiple context variables for a cog."""
+        for variable in variables:
+            await self.register_context_variable(
+                cog_name=cog_name,
+                variable_name=variable["name"],
+                description=variable["description"],
+                permission_level=variable.get("permission_level", "user"),
+                required_permissions=variable.get("required_permissions"),
+                fetch_method=variable.get("fetch_method"),
+            )
 
     async def register_function(
         self,
@@ -526,6 +577,8 @@ class Assistant(
         schema: dict,
         permission_level: Literal["user", "mod", "admin", "owner"] = "user",
         required_permissions: Optional[List[str]] = None,
+        category: Optional[str] = None,
+        requires_user_approval: bool = False,
     ) -> bool:
         """Allow 3rd party cogs to register their functions for the model to use
 
@@ -534,6 +587,8 @@ class Assistant(
             schema (dict): JSON schema representation of the command (see https://json-schema.org/understanding-json-schema/)
             permission_level (str): the permission level required to call the function (user, mod, admin, owner)
             required_permissions (list[str]): Discord permission names required (e.g. ["manage_messages", "kick_members"])
+            category (Optional[str]): Category used to group related tools in commands and UI
+            requires_user_approval (bool): Whether the user must interactively approve the tool before execution
 
         Returns:
             bool: True if function was successfully registered
@@ -579,12 +634,78 @@ class Assistant(
         if cog_name not in self.registry:
             self.registry[cog_name] = {}
 
-        log.info(f"The {cog_name} cog registered a function object: {function_name}")
+        normalized_category = normalize_tool_category(category)
+        log.info(f"The {cog_name} cog registered a function object: {function_name} [{normalized_category}]")
         self.registry[cog_name][function_name] = {
             "permission_level": permission_level,
             "schema": schema,
             "required_permissions": required_permissions or [],
+            "category": normalized_category,
+            "requires_user_approval": requires_user_approval,
         }
+        return True
+
+    async def register_context_variable(
+        self,
+        cog_name: str,
+        variable_name: str,
+        description: str,
+        permission_level: Literal["user", "mod", "admin", "owner"] = "user",
+        required_permissions: Optional[List[str]] = None,
+        fetch_method: Optional[str] = None,
+    ) -> bool:
+        """Allow 3rd party cogs to register prompt context variables resolved at prompt-build time."""
+
+        def fail(reason: str):
+            return f"Context variable registry failed for {cog_name}: {reason}"
+
+        cog = self.bot.get_cog(cog_name)
+        if not cog:
+            log.info(fail("Cog is not loaded or does not exist"))
+            return False
+
+        variable_name = str(variable_name).strip()
+        if not variable_name:
+            log.info(fail("Empty variable name provided"))
+            return False
+        if clean_name(variable_name) != variable_name:
+            log.info(fail("Variable names must be alphanumeric and may include underscores or dashes only"))
+            return False
+
+        description = str(description).strip()
+        if not description:
+            log.info(fail("Context variables require a non-empty description"))
+            return False
+
+        fetch_method = str(fetch_method or variable_name).strip()
+        if not hasattr(cog, fetch_method):
+            log.info(fail(f"Cog does not have a fetch method called {fetch_method}"))
+            return False
+
+        for registered_cog_name, registered_variables in self.context_registry.items():
+            if registered_cog_name == cog_name:
+                continue
+            if variable_name in registered_variables:
+                log.info(fail(f"{registered_cog_name} already registered the context variable {variable_name}"))
+                return False
+
+        if required_permissions:
+            valid_flags = set(discord.Permissions.VALID_FLAGS)
+            invalid = [p for p in required_permissions if p not in valid_flags]
+            if invalid:
+                log.info(fail(f"Invalid permission names: {', '.join(invalid)}"))
+                return False
+
+        if cog_name not in self.context_registry:
+            self.context_registry[cog_name] = {}
+
+        self.context_registry[cog_name][variable_name] = {
+            "description": description,
+            "fetch_method": fetch_method,
+            "permission_level": permission_level,
+            "required_permissions": required_permissions or [],
+        }
+        log.info(f"The {cog_name} cog registered a context variable: {variable_name}")
         return True
 
     async def unregister_function(self, cog_name: str, function_name: str) -> None:
@@ -603,14 +724,31 @@ class Assistant(
         del self.registry[cog_name][function_name]
         log.info(f"{cog_name} cog removed the function {function_name} from the registry")
 
+    async def unregister_context_variable(self, cog_name: str, variable_name: str) -> None:
+        """Remove a specific cog's context variable from the registry."""
+        if cog_name not in self.context_registry:
+            log.debug(f"{cog_name} not in context registry")
+            return
+        if variable_name not in self.context_registry[cog_name]:
+            log.debug(f"{variable_name} not in {cog_name}'s context registry")
+            return
+        del self.context_registry[cog_name][variable_name]
+        log.info(f"{cog_name} cog removed the context variable {variable_name} from the registry")
+
     async def unregister_cog(self, cog_name: str) -> None:
         """Remove a cog from the registry
 
         Args:
             cog_name (str): name of the cog
         """
-        if cog_name not in self.registry:
-            log.debug(f"{cog_name} not in registry")
-            return
-        del self.registry[cog_name]
-        log.info(f"{cog_name} cog removed from registry")
+        removed = False
+        if cog_name in self.registry:
+            del self.registry[cog_name]
+            removed = True
+        if cog_name in self.context_registry:
+            del self.context_registry[cog_name]
+            removed = True
+        if removed:
+            log.info(f"{cog_name} cog removed from assistant registries")
+        else:
+            log.debug(f"{cog_name} not in assistant registries")

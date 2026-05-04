@@ -28,12 +28,12 @@ log = logging.getLogger("red.vrt.tickets.functions")
 
 class Functions(MixinMeta):
     @commands.Cog.listener()
-    async def on_assistant_cog_add(self, cog: commands.Cog):
+    async def on_assistant_cog_add(self, cog):
         schema = {
             "name": "get_ticket_types",
             "description": (
-                "Fetch support ticket types available for the user to open (Use this before opening a ticket). "
-                "The user MUST answer the questions in detail before the ticket can be opened!"
+                "Get the support ticket panels this user can open, plus required pre-ticket questions. "
+                "Use this before opening a ticket."
             ),
             "parameters": {
                 "type": "object",
@@ -41,12 +41,35 @@ class Functions(MixinMeta):
             },
         }
         await cog.register_function("Tickets", schema)
+        await cog.register_context_variable(
+            cog_name="Tickets",
+            variable_name="available_tickets",
+            description="Support ticket panels this user can open, including required pre-ticket questions.",
+            fetch_method="get_ticket_types",
+        )
+        await cog.register_context_variables(
+            cog_name="Tickets",
+            variables=[
+                {
+                    "name": "open_tickets",
+                    "description": "Current user's open tickets, including panel names and max ticket limit state.",
+                },
+                {
+                    "name": "ticket_response_time",
+                    "description": "Average support response time for this server, if available.",
+                },
+                {
+                    "name": "ticket_working_hours",
+                    "description": "Whether each available ticket panel is open now or blocked by working hours.",
+                },
+            ],
+        )
 
         schema = {
             "name": "create_ticket_for_user",
             "description": (
-                "Create a support ticket for the user you are speaking with if you are unable to help sufficiently. "
-                "Use `get_ticket_types` function before this one to get the panel names and response section requirements. "
+                "Create a support ticket for the current user after collecting the required panel answers. "
+                "Use `get_ticket_types` first."
             ),
             "parameters": {
                 "type": "object",
@@ -81,6 +104,28 @@ class Functions(MixinMeta):
         }
         await cog.register_function("Tickets", schema)
 
+    def get_ticket_block_reason(self, user: discord.Member, conf) -> str | None:
+        if conf.suspended_msg:
+            return f"Tickets are suspended: {conf.suspended_msg}"
+        if user.id in conf.blacklist:
+            return "This user has been blacklisted from opening tickets!"
+        if any(role.id in conf.blacklist for role in user.roles):
+            return "This user has a role that is blacklisted from opening tickets!"
+        return None
+
+    def get_visible_ticket_panels(self, user: discord.Member, conf):
+        guild = user.guild
+        visible = []
+        for panel_name, panel in conf.panels.items():
+            if panel.disabled:
+                continue
+            if guild.get_channel(panel.channel_id) is None:
+                continue
+            if panel.required_roles and not any(role.id in panel.required_roles for role in user.roles):
+                continue
+            visible.append((panel_name, panel))
+        return visible
+
     async def get_ticket_types(self, user: discord.Member, *args, **kwargs) -> str:
         """Fetch available ticket types that the user can open.
         Returns the available tickets as well as their section requriements and panel names.
@@ -90,12 +135,8 @@ class Functions(MixinMeta):
         """
         guild = user.guild
         conf = self.db.get_conf(guild)
-        if conf.suspended_msg:
-            return f"Tickets are suspended: {conf.suspended_msg}"
-        if user.id in conf.blacklist:
-            return "This user has been blacklisted from opening tickets!"
-        if any(r.id in conf.blacklist for r in user.roles):
-            return "This user has a role that is blacklisted from opening tickets!"
+        if block_reason := self.get_ticket_block_reason(user, conf):
+            return block_reason
 
         opened = conf.opened
         uid = user.id
@@ -104,26 +145,13 @@ class Functions(MixinMeta):
             txt = f"This user has the maximum amount of tickets opened already!\nTickets: {channels}"
             return txt
 
-        panels = conf.panels
+        panels = self.get_visible_ticket_panels(user, conf)
         if not panels:
             return "There are no support ticket panels available!"
 
         buffer = StringIO()
         q = "Pre-ticket questions (USER MUST ANSWER THESE IN DETAIL BEFORE TICKET CAN BE OPENED!)\n"
-        for panel_name, panel in panels.items():
-            # Check if the panel is disabled
-            if panel.disabled:
-                continue
-
-            # Check if the channel exists
-            channel = guild.get_channel(panel.channel_id)
-            if channel is None:
-                continue
-
-            # Check if the member has the required roles to open a ticket from this panel
-            if panel.required_roles and not any(role.id in panel.required_roles for role in user.roles):
-                continue
-
+        for panel_name, panel in panels:
             buffer.write(f"# Support ticket panel name: {panel_name}\n")
             if btext := panel.button_text:
                 buffer.write(f"- Tag: {btext}\n")
@@ -144,6 +172,91 @@ class Functions(MixinMeta):
             return "There are no tickets available to be opened by this user!"
 
         return final
+
+    async def open_tickets(self, user: discord.Member, *args, **kwargs) -> str:
+        conf = self.db.get_conf(user.guild)
+        user_tickets = conf.opened.get(user.id, {})
+        lines = [f"Open tickets: {len(user_tickets)}/{conf.max_tickets}"]
+
+        if len(user_tickets) >= conf.max_tickets:
+            lines.append("This user has reached the max open ticket limit.")
+        else:
+            lines.append(f"Remaining ticket slots: {conf.max_tickets - len(user_tickets)}")
+
+        if block_reason := self.get_ticket_block_reason(user, conf):
+            lines.append(block_reason)
+
+        if not user_tickets:
+            return "\n".join(lines)
+
+        for channel_id, ticket in user_tickets.items():
+            channel = user.guild.get_channel_or_thread(channel_id)
+            channel_ref = channel.mention if channel else f"<#{channel_id}>"
+            opened_at = int(ticket.opened.timestamp())
+            line = f"- {ticket.panel}: {channel_ref} opened <t:{opened_at}:R>"
+
+            details = []
+            if ticket.claimed_by:
+                claimer = user.guild.get_member(ticket.claimed_by)
+                if claimer:
+                    details.append(f"claimed by {claimer.display_name}")
+            if ticket.escalated:
+                details.append("escalated")
+            if details:
+                line += f" ({', '.join(details)})"
+
+            lines.append(line)
+
+        return "\n".join(lines)
+
+    async def ticket_response_time(self, user: discord.Member, *args, **kwargs) -> str:
+        conf = self.db.get_conf(user.guild)
+        if not conf.show_response_time:
+            return "Average support response time display is disabled."
+
+        avg_response = get_average_response_time(conf.response_times)
+        if avg_response is None:
+            return "Average support response time is not available yet."
+
+        sample_count = len(conf.response_times)
+        return (
+            f"Average support response time: {format_response_time(avg_response)}\n"
+            f"Samples: {sample_count}"
+        )
+
+    async def ticket_working_hours(self, user: discord.Member, *args, **kwargs) -> str:
+        conf = self.db.get_conf(user.guild)
+        if block_reason := self.get_ticket_block_reason(user, conf):
+            return block_reason
+
+        panels = self.get_visible_ticket_panels(user, conf)
+        if not panels:
+            return "There are no support ticket panels available!"
+
+        lines = ["Ticket panel availability:"]
+        for panel_name, panel in panels:
+            if not panel.working_hours:
+                lines.append(f"- {panel_name}: open anytime")
+                continue
+
+            within_hours, start_time, end_time = is_within_working_hours(panel)
+            timezone = panel.timezone or "UTC"
+            details = [f"timezone {timezone}"]
+            if start_time and end_time:
+                details.insert(0, f"hours today <t:{start_time}:t> to <t:{end_time}:t>")
+            else:
+                details.insert(0, "no working hours set for today")
+
+            if within_hours:
+                status = "open now"
+            elif panel.block_outside_hours:
+                status = "blocked right now"
+            else:
+                status = "open now, but outside normal hours"
+
+            lines.append(f"- {panel_name}: {status}, {', '.join(details)}")
+
+        return "\n".join(lines)
 
     async def create_ticket_for_user(
         self,

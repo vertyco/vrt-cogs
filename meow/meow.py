@@ -87,13 +87,13 @@ class Meow(commands.Cog):
     async def on_assistant_cog_add(self, cog: commands.Cog):
         schema = {
             "name": "get_cat",
-            "description": "generates ascii art of a cat face emoji",
+            "description": "Generate ASCII cat face art",
             "parameters": {
                 "type": "object",
                 "properties": {},
             },
         }
-        await cog.register_function("Meow", schema)
+        await cog.register_function("Meow", schema, category="fun")
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):

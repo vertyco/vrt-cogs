@@ -10,18 +10,228 @@ import aiohttp
 import discord
 import resvg_py
 from dateutil import parser
-from rapidfuzz import fuzz
 from redbot.core import commands, modlog
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import text_to_file
 
 from ..abc import MixinMeta
-from .utils import clean_name, find_channel, svg_font_dirs
+from .utils import (
+    find_category,
+    find_channel,
+    find_member,
+    find_role,
+    normalize_channel_type,
+    split_permission_overwrite,
+    svg_font_dirs,
+)
 
 log = logging.getLogger("red.vrt.assistantutils")
 
 
 class Functions(MixinMeta):
+    def get_channel_parent(self, channel: discord.abc.GuildChannel | discord.Thread):
+        if isinstance(channel, discord.Thread):
+            return channel.parent
+        if category := getattr(channel, "category", None):
+            return category
+        return getattr(channel, "parent", None)
+
+    def render_channel_overwrites(self, channel: discord.abc.GuildChannel | discord.Thread, limit: int = 10) -> str:
+        overwrites = getattr(channel, "overwrites", None)
+        if not overwrites:
+            return "Inherited or not explicitly set."
+
+        lines: list[str] = []
+        overwrite_items = list(overwrites.items())
+        for target, overwrite in overwrite_items[:limit]:
+            allowed, denied = split_permission_overwrite(overwrite)
+            if not allowed and not denied:
+                continue
+            target_name = getattr(target, "mention", None) or getattr(target, "name", str(target))
+            parts: list[str] = []
+            if allowed:
+                parts.append(f"allow: {', '.join(allowed[:8])}")
+            if denied:
+                parts.append(f"deny: {', '.join(denied[:8])}")
+            lines.append(f"{target_name} -> {' | '.join(parts)}")
+
+        if not lines:
+            return "Inherited or not explicitly set."
+        if len(overwrite_items) > limit:
+            lines.append(f"... and {len(overwrite_items) - limit} more overwrite(s)")
+        return "\n".join(lines)
+
+    def normalize_permission_names(self, permissions: list[str] | None) -> tuple[list[str], list[str]]:
+        valid_flags = discord.Permissions.VALID_FLAGS
+        normalized: list[str] = []
+        invalid: list[str] = []
+        for permission_name in permissions or []:
+            cleaned = str(permission_name).strip().lower().replace("-", "_").replace(" ", "_")
+            if cleaned in valid_flags:
+                normalized.append(cleaned)
+            else:
+                invalid.append(str(permission_name))
+        return sorted(set(normalized)), invalid
+
+    def coerce_string_list(self, values: list[str] | str | None) -> list[str]:
+        if values is None:
+            return []
+        if isinstance(values, str):
+            return [item.strip() for item in values.split(",") if item.strip()]
+        return [str(item).strip() for item in values if str(item).strip()]
+
+    def parse_named_enum(self, enum_cls, value: str | None, field_name: str):
+        if value is None:
+            return None, None
+        normalized = str(value).strip().lower().replace("-", "_").replace(" ", "_")
+        member = enum_cls.__members__.get(normalized)
+        if member is None:
+            choices = ", ".join(sorted(enum_cls.__members__))
+            return None, f"Invalid `{field_name}`. Valid values: {choices}"
+        return member, None
+
+    def parse_color_value(self, color: str | int | None) -> tuple[int | None, str | None]:
+        if color is None:
+            return None, None
+        if isinstance(color, int):
+            if 0 <= color <= 0xFFFFFF:
+                return color, None
+            return None, "Color integers must be between 0 and 16777215."
+
+        cleaned = str(color).strip().lower()
+        if cleaned in {"none", "null", "clear", "remove"}:
+            return None, None
+        if cleaned.startswith("#"):
+            cleaned = cleaned[1:]
+        if cleaned.startswith("0x"):
+            cleaned = cleaned[2:]
+        if len(cleaned) != 6 or any(ch not in "0123456789abcdef" for ch in cleaned):
+            return None, "Colors must be a 6-digit hex value like `#5865F2`."
+        return int(cleaned, 16), None
+
+    def build_role_permissions(self, permissions: list[str] | str | None) -> tuple[discord.Permissions | None, list[str], str | None]:
+        raw_permissions = self.coerce_string_list(permissions)
+        if permissions is None:
+            return None, [], None
+        normalized, invalid = self.normalize_permission_names(raw_permissions)
+        if invalid:
+            return None, [], f"Invalid permission names: {', '.join(sorted(set(invalid)))}"
+
+        perms = discord.Permissions.none()
+        for permission_name in normalized:
+            setattr(perms, permission_name, True)
+        return perms, normalized, None
+
+    async def fetch_remote_asset(self, url: str, field_name: str) -> tuple[bytes | None, str | None]:
+        cleaned = str(url).strip()
+        if not cleaned.startswith(("http://", "https://")):
+            return None, f"`{field_name}` must be an http or https URL."
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(cleaned, timeout=aiohttp.ClientTimeout(total=30)) as response:
+                    if response.status not in (200, 201):
+                        return None, f"Failed to fetch `{field_name}` asset: HTTP {response.status}"
+                    content_type = response.headers.get("Content-Type", "")
+                    if not content_type.startswith("image/"):
+                        return None, f"`{field_name}` URL must point to an image."
+                    data = await response.read()
+                    if not data:
+                        return None, f"`{field_name}` URL returned empty content."
+                    return data, None
+        except asyncio.TimeoutError:
+            return None, f"Fetching `{field_name}` timed out."
+        except Exception as e:
+            return None, f"Failed to fetch `{field_name}` asset: {e}"
+
+    async def resolve_display_icon_input(self, display_icon: str | None) -> tuple[bytes | str | None, str | None]:
+        if display_icon is None:
+            return None, None
+        cleaned = str(display_icon).strip()
+        if not cleaned or cleaned.lower() in {"none", "null", "clear", "remove"}:
+            return None, None
+        if cleaned.startswith(("http://", "https://")):
+            return await self.fetch_remote_asset(cleaned, "display_icon")
+        return cleaned, None
+
+    async def resolve_optional_image_input(self, value: str | None, field_name: str) -> tuple[bytes | None, str | None]:
+        if value is None:
+            return None, None
+        cleaned = str(value).strip()
+        if not cleaned or cleaned.lower() in {"none", "null", "clear", "remove"}:
+            return None, None
+        return await self.fetch_remote_asset(cleaned, field_name)
+
+    def parse_partial_emoji(
+        self,
+        guild: discord.Guild,
+        emoji_input: str | None,
+    ) -> tuple[discord.PartialEmoji | str | None, str | None]:
+        if emoji_input is None:
+            return None, None
+        cleaned = str(emoji_input).strip()
+        if not cleaned:
+            return None, None
+        if cleaned.lower() in {"none", "null", "clear", "remove"}:
+            return None, None
+
+        emoji = discord.PartialEmoji.from_str(cleaned)
+        if emoji.id is not None and guild.get_emoji(emoji.id) is None:
+            return None, f"Custom emoji `{emoji_input}` was not found in this server."
+        if emoji.id is None and emoji.name:
+            return emoji.name, None
+        return emoji, None
+
+    def build_forum_tag_objects(self, tag_names: list[str] | str | None) -> list[discord.ForumTag]:
+        tags: list[discord.ForumTag] = []
+        seen: set[str] = set()
+        for tag_name in self.coerce_string_list(tag_names):
+            normalized = tag_name[:20]
+            lowered = normalized.lower()
+            if lowered in seen:
+                continue
+            seen.add(lowered)
+            tags.append(discord.ForumTag(name=normalized))
+        return tags
+
+    def resolve_forum_tags(
+        self,
+        forum: discord.ForumChannel,
+        tag_names_or_ids: list[str] | str | None,
+    ) -> tuple[list[discord.ForumTag], list[str]]:
+        resolved: list[discord.ForumTag] = []
+        missing: list[str] = []
+        for raw_value in self.coerce_string_list(tag_names_or_ids):
+            tag = None
+            if raw_value.isdigit():
+                tag = forum.get_tag(int(raw_value))
+            if tag is None:
+                tag = discord.utils.find(lambda item: item.name.lower() == raw_value.lower(), forum.available_tags)
+            if tag is None:
+                missing.append(raw_value)
+                continue
+            resolved.append(tag)
+        return resolved, missing
+
+    def format_change_summary(self, heading: str, changes: dict[str, object]) -> str:
+        if not changes:
+            return f"{heading}\n- No changes provided."
+        lines = [heading]
+        for key, value in changes.items():
+            lines.append(f"- {key}: {value}")
+        return "\n".join(lines)
+
+    def resolve_permission_target(
+        self,
+        guild: discord.Guild,
+        target_type: str,
+        target_name_or_id: str,
+    ) -> discord.Role | discord.Member | None:
+        if target_type in {"member", "user"}:
+            return find_member(guild, target_name_or_id)
+        if target_type == "role":
+            return find_role(guild, target_name_or_id)
+        return None
+
     async def get_channel_list(
         self,
         guild: discord.Guild,
@@ -39,12 +249,27 @@ class Functions(MixinMeta):
         valid_channels = [i for i in valid_channels if i.permissions_for(user).view_channel]
         if not valid_channels:
             return "There are no channels this user can view"
+        valid_channels = sorted(
+            valid_channels,
+            key=lambda channel: (
+                channel.type.name,
+                getattr(self.get_channel_parent(channel), "name", ""),
+                getattr(channel, "position", 0),
+                channel.name.lower(),
+            ),
+        )
         buffer = StringIO()
         for channel in valid_channels:
+            details = [
+                f"ID: {channel.id}",
+                f"Mention: {channel.mention}",
+                f"Type: {channel.type.name.replace('_', ' ')}",
+            ]
+            if parent := self.get_channel_parent(channel):
+                details.append(f"Parent: {parent.name}")
             if topic := getattr(channel, "topic", None):
-                text = f"{channel.name} (mention: {channel.mention}) - Topic: {topic}"
-            else:
-                text = f"{channel.name} (mention: {channel.mention})"
+                details.append(f"Topic: {topic}")
+            text = f"{channel.name} ({', '.join(details)})"
             buffer.write(f"{text}\n")
         return buffer.getvalue().strip()
 
@@ -62,29 +287,48 @@ class Functions(MixinMeta):
 
         if not channel.permissions_for(user).view_channel:
             return "The user you are talking to doesn't have permission to view that channel"
-        if not channel.permissions_for(user).read_message_history:
-            return "The user you are talking to doesn't have permission to read message history in that channel"
 
         buffer = StringIO()
         buffer.write(f"Channel Name: {channel.name}\n")
         buffer.write(f"Channel ID: {channel.id}\n")
         buffer.write(f"Channel Mention: {channel.mention}\n")
         buffer.write(f"Channel Type: {channel.type.name}\n")
+        buffer.write(f"Channel Position: {getattr(channel, 'position', 'n/a')}\n")
         buffer.write(f"Created At: {channel.created_at.strftime('%Y-%m-%d %H:%M:%S')}\n")
         buffer.write(f"Created At (Discord Format): <t:{int(channel.created_at.timestamp())}:F>\n")
+        if parent := self.get_channel_parent(channel):
+            buffer.write(f"Parent: {parent.name} (ID: {parent.id})\n")
+        permissions_synced = getattr(channel, "permissions_synced", None)
+        if permissions_synced is not None:
+            buffer.write(f"Permissions Synced: {permissions_synced}\n")
         if topic := getattr(channel, "topic", None):
             buffer.write(f"Channel Topic: {topic}\n")
-        if isinstance(channel, discord.VoiceChannel):
+        if isinstance(channel, discord.StageChannel):
+            buffer.write(f"Bitrate: {channel.bitrate}\n")
+            buffer.write(f"User Limit: {channel.user_limit}\n")
+            if channel.topic:
+                buffer.write(f"Stage Topic: {channel.topic}\n")
+        elif isinstance(channel, discord.VoiceChannel):
             buffer.write(f"Bitrate: {channel.bitrate}\n")
             buffer.write(f"User Limit: {channel.user_limit}\n")
         elif isinstance(channel, discord.TextChannel):
             buffer.write(f"NSFW: {channel.is_nsfw()}\n")
             buffer.write(f"Slowmode Delay: {channel.slowmode_delay} seconds\n")
+        elif isinstance(channel, discord.Thread):
+            buffer.write(f"Archived: {channel.archived}\n")
+            buffer.write(f"Locked: {channel.locked}\n")
+            buffer.write(f"Message Count: {channel.message_count}\n")
         elif isinstance(channel, discord.ForumChannel):
+            buffer.write(f"NSFW: {channel.is_nsfw()}\n")
+            buffer.write(f"Slowmode Delay: {channel.slowmode_delay} seconds\n")
             buffer.write(f"Default Reaction Emoji: {channel.default_reaction_emoji}\n")
             buffer.write(f"Default Sort Order: {channel.default_sort_order}\n")
             if channel.available_tags:
                 buffer.write(f"Available Tags: {', '.join([str(tag) for tag in channel.available_tags])}\n")
+        elif isinstance(channel, discord.CategoryChannel):
+            buffer.write(f"Child Channel Count: {len(channel.channels)}\n")
+            buffer.write(f"NSFW: {channel.is_nsfw()}\n")
+        buffer.write(f"Permission Overwrites:\n{self.render_channel_overwrites(channel)}")
         return buffer.getvalue().strip()
 
     async def get_user_info(
@@ -94,30 +338,7 @@ class Functions(MixinMeta):
         *args,
         **kwargs,
     ):
-        def _fuzzymatch() -> discord.Member | None:
-            matches = []
-            clean_query = clean_name(user_name_or_id.lower())
-            for member in guild.members:
-                matches.append((member, fuzz.ratio(clean_name(member.name), clean_query)))
-                matches.append((member, fuzz.ratio(member.name, user_name_or_id)))
-                if member.display_name != member.name:
-                    matches.append((member, fuzz.ratio(clean_name(member.display_name), clean_query)))
-                    matches.append((member, fuzz.ratio(member.display_name, user_name_or_id)))
-
-            if matches:
-                matches.sort(key=lambda x: x[1], reverse=True)
-                return matches[0][0]
-            return None
-
-        user_name_or_id = str(user_name_or_id).strip()
-        if user_name_or_id.isdigit():
-            user = guild.get_member(int(user_name_or_id))
-        else:
-            user = discord.utils.get(guild.members, name=user_name_or_id)
-            if not user:
-                user = discord.utils.get(guild.members, display_name=user_name_or_id)
-                if not user:
-                    user = await asyncio.to_thread(_fuzzymatch)
+        user = await asyncio.to_thread(find_member, guild, user_name_or_id)
 
         if not user:
             return f"User not found for the name or ID: `{user_name_or_id}`"
@@ -281,25 +502,7 @@ class Functions(MixinMeta):
         *args,
         **kwargs,
     ):
-        def _fuzzymatch() -> discord.Role | None:
-            matches = []
-            clean_query = clean_name(role_name_or_id.lower())
-            for role in guild.roles:
-                matches.append((role, fuzz.ratio(clean_name(role.name), clean_query)))
-                matches.append((role, fuzz.ratio(role.name.lower(), role_name_or_id.lower())))
-
-            if matches:
-                matches.sort(key=lambda x: x[1], reverse=True)
-                return matches[0][0]
-            return None
-
-        role_name_or_id = str(role_name_or_id).strip()
-        if role_name_or_id.isdigit():
-            role = guild.get_role(int(role_name_or_id))
-        else:
-            role = discord.utils.get(guild.roles, name=role_name_or_id)
-            if not role:
-                role = await asyncio.to_thread(_fuzzymatch)
+        role = await asyncio.to_thread(find_role, guild, role_name_or_id)
 
         if not role:
             return f"Role not found for the name or ID: `{role_name_or_id}`"
@@ -771,27 +974,14 @@ class Functions(MixinMeta):
         bot: Red = self.bot
 
         # Resolve the target member
-        user_name_or_id = str(user_name_or_id).strip()
-        if user_name_or_id.isdigit():
-            member_id = int(user_name_or_id)
-        else:
-            member = discord.utils.get(guild.members, name=user_name_or_id)
-            if not member:
-                member = discord.utils.get(guild.members, display_name=user_name_or_id)
-            if not member:
-                # Fuzzy match
-                matches = []
-                clean_query = clean_name(user_name_or_id.lower())
-                for m in guild.members:
-                    matches.append((m, fuzz.ratio(clean_name(m.name), clean_query)))
-                    if m.display_name != m.name:
-                        matches.append((m, fuzz.ratio(clean_name(m.display_name), clean_query)))
-                if matches:
-                    matches.sort(key=lambda x: x[1], reverse=True)
-                    member = matches[0][0]
-            if not member:
-                return f"User not found for the name or ID: `{user_name_or_id}`"
+        member = await asyncio.to_thread(find_member, guild, user_name_or_id)
+        if member is not None:
             member_id = member.id
+        else:
+            user_name_or_id = str(user_name_or_id).strip()
+            if not user_name_or_id.isdigit():
+                return f"User not found for the name or ID: `{user_name_or_id}`"
+            member_id = int(user_name_or_id)
 
         try:
             cases = await modlog.get_cases_for_member(guild=guild, bot=bot, member_id=member_id)
@@ -853,13 +1043,11 @@ class Functions(MixinMeta):
         **kwargs,
     ) -> str:
         """Get a list of all channels within a specific category."""
-        category = await asyncio.to_thread(find_channel, guild, category_name_or_id)
+        category = await asyncio.to_thread(find_category, guild, category_name_or_id)
 
         if not category:
             available = ", ".join(c.name for c in guild.categories)
             return f"No category found matching '{category_name_or_id}'. Available categories: {available}"
-        if not isinstance(category, discord.CategoryChannel):
-            return f"'{category_name_or_id}' is not a valid category."
 
         channels = category.channels
         if not channels:
@@ -1006,6 +1194,915 @@ class Functions(MixinMeta):
             return f"Message `{msg_id}` has been edited successfully."
         except discord.HTTPException as e:
             return f"Failed to edit message: {e.text}"
+
+    async def manage_channel(
+        self,
+        guild: discord.Guild,
+        action: Literal["create", "edit", "move", "delete"],
+        channel_name_or_id: str | None = None,
+        channel_type: Literal["text", "voice", "stage", "forum", "category"] | None = None,
+        name: str | None = None,
+        category_name_or_id: str | None = None,
+        position: int | None = None,
+        topic: str | None = None,
+        news: bool | None = None,
+        nsfw: bool | None = None,
+        slowmode_delay: int | None = None,
+        default_auto_archive_duration: int | None = None,
+        default_thread_slowmode_delay: int | None = None,
+        user_limit: int | None = None,
+        bitrate: int | None = None,
+        rtc_region: str | None = None,
+        video_quality_mode: Literal["auto", "full"] | None = None,
+        media: bool | None = None,
+        default_reaction_emoji: str | None = None,
+        default_sort_order: Literal["latest_activity", "creation_date"] | None = None,
+        default_layout: Literal["list_view", "gallery_view", "not_set"] | None = None,
+        available_tags: list[str] | str | None = None,
+        sync_permissions: bool | None = None,
+        reason: str | None = None,
+        dry_run: bool = False,
+        *args,
+        **kwargs,
+    ) -> str:
+        """Create, edit, move, or delete guild channels through one unified tool."""
+        action = str(action).strip().lower()
+        if action not in {"create", "edit", "move", "delete"}:
+            return "Invalid action. Use one of: create, edit, move, delete."
+
+        if position is not None and position < 0:
+            return "Channel position must be 0 or greater."
+        if slowmode_delay is not None and slowmode_delay < 0:
+            return "Slowmode delay must be 0 or greater."
+        if default_thread_slowmode_delay is not None and default_thread_slowmode_delay < 0:
+            return "Default thread slowmode delay must be 0 or greater."
+        if user_limit is not None and user_limit < 0:
+            return "User limit must be 0 or greater."
+        if bitrate is not None and bitrate < 8000:
+            return "Bitrate must be at least 8000."
+
+        video_quality_enum, video_quality_error = self.parse_named_enum(
+            discord.VideoQualityMode,
+            video_quality_mode,
+            "video_quality_mode",
+        )
+        if video_quality_error:
+            return video_quality_error
+
+        sort_order_enum, sort_order_error = self.parse_named_enum(
+            discord.ForumOrderType,
+            default_sort_order,
+            "default_sort_order",
+        )
+        if sort_order_error:
+            return sort_order_error
+
+        layout_enum, layout_error = self.parse_named_enum(
+            discord.ForumLayoutType,
+            default_layout,
+            "default_layout",
+        )
+        if layout_error:
+            return layout_error
+
+        reaction_emoji, reaction_error = self.parse_partial_emoji(guild, default_reaction_emoji)
+        if reaction_error:
+            return reaction_error
+
+        forum_tags = self.build_forum_tag_objects(available_tags)
+
+        category = None
+        category_explicit = category_name_or_id is not None and str(category_name_or_id).strip() != ""
+        if category_explicit:
+            category_query = str(category_name_or_id).strip()
+            if category_query.lower() not in {"none", "null", "remove", "uncategorized", "no category"}:
+                category = await asyncio.to_thread(find_category, guild, category_query)
+                if not category:
+                    return f"No category found matching '{category_name_or_id}'."
+
+        error_prefix = "Channel management failed"
+
+        try:
+            if action == "create":
+                normalized_type = normalize_channel_type(channel_type or "")
+                if not normalized_type:
+                    return "A valid `channel_type` is required: text, voice, stage, forum, or category."
+                if not name:
+                    return "A channel `name` is required when action is `create`."
+                if normalized_type == "category" and category_explicit and category is not None:
+                    return "Categories cannot be placed inside another category."
+
+                create_kwargs: dict[str, object] = {"name": name, "reason": reason}
+                changes: dict[str, object] = {"action": "create", "channel_type": normalized_type, "name": name}
+                if position is not None:
+                    create_kwargs["position"] = position
+                    changes["position"] = position
+                if category is not None:
+                    changes["category"] = category.name
+
+                if normalized_type == "text":
+                    if news and "COMMUNITY" not in guild.features:
+                        return "News channels require the server community feature."
+                    if category is not None:
+                        create_kwargs["category"] = category
+                    if topic is not None:
+                        create_kwargs["topic"] = topic
+                        changes["topic"] = topic
+                    if news is not None:
+                        create_kwargs["news"] = news
+                        changes["news"] = news
+                    if nsfw is not None:
+                        create_kwargs["nsfw"] = nsfw
+                        changes["nsfw"] = nsfw
+                    if slowmode_delay is not None:
+                        create_kwargs["slowmode_delay"] = slowmode_delay
+                        changes["slowmode_delay"] = slowmode_delay
+                    if default_auto_archive_duration is not None:
+                        create_kwargs["default_auto_archive_duration"] = default_auto_archive_duration
+                        changes["default_auto_archive_duration"] = default_auto_archive_duration
+                    if default_thread_slowmode_delay is not None:
+                        create_kwargs["default_thread_slowmode_delay"] = default_thread_slowmode_delay
+                        changes["default_thread_slowmode_delay"] = default_thread_slowmode_delay
+                    if dry_run:
+                        return self.format_change_summary(f"Dry run: would create text channel `{name}`.", changes)
+                    created = await guild.create_text_channel(**create_kwargs)
+                elif normalized_type == "voice":
+                    if category is not None:
+                        create_kwargs["category"] = category
+                    if nsfw is not None:
+                        create_kwargs["nsfw"] = nsfw
+                        changes["nsfw"] = nsfw
+                    if user_limit is not None:
+                        create_kwargs["user_limit"] = user_limit
+                        changes["user_limit"] = user_limit
+                    if bitrate is not None:
+                        create_kwargs["bitrate"] = min(bitrate, guild.bitrate_limit)
+                        changes["bitrate"] = min(bitrate, guild.bitrate_limit)
+                    if rtc_region is not None:
+                        normalized_region = None if str(rtc_region).strip().lower() in {"auto", "automatic", "none", "null"} else rtc_region
+                        create_kwargs["rtc_region"] = normalized_region
+                        changes["rtc_region"] = normalized_region or "automatic"
+                    if video_quality_enum is not None:
+                        create_kwargs["video_quality_mode"] = video_quality_enum
+                        changes["video_quality_mode"] = video_quality_enum.name
+                    if dry_run:
+                        return self.format_change_summary(f"Dry run: would create voice channel `{name}`.", changes)
+                    created = await guild.create_voice_channel(**create_kwargs)
+                elif normalized_type == "stage":
+                    if category is not None:
+                        create_kwargs["category"] = category
+                    if nsfw is not None:
+                        create_kwargs["nsfw"] = nsfw
+                        changes["nsfw"] = nsfw
+                    if user_limit is not None:
+                        create_kwargs["user_limit"] = user_limit
+                        changes["user_limit"] = user_limit
+                    if bitrate is not None:
+                        create_kwargs["bitrate"] = min(bitrate, guild.bitrate_limit)
+                        changes["bitrate"] = min(bitrate, guild.bitrate_limit)
+                    if topic is not None:
+                        changes["topic"] = topic
+                    if rtc_region is not None:
+                        normalized_region = None if str(rtc_region).strip().lower() in {"auto", "automatic", "none", "null"} else rtc_region
+                        create_kwargs["rtc_region"] = normalized_region
+                        changes["rtc_region"] = normalized_region or "automatic"
+                    if video_quality_enum is not None:
+                        create_kwargs["video_quality_mode"] = video_quality_enum
+                        changes["video_quality_mode"] = video_quality_enum.name
+                    if dry_run:
+                        return self.format_change_summary(f"Dry run: would create stage channel `{name}`.", changes)
+                    created = await guild.create_stage_channel(**create_kwargs)
+                    if topic is not None:
+                        await created.edit(topic=topic, reason=reason)
+                elif normalized_type == "forum":
+                    if category is not None:
+                        create_kwargs["category"] = category
+                    if topic is not None:
+                        create_kwargs["topic"] = topic
+                        changes["topic"] = topic
+                    if nsfw is not None:
+                        create_kwargs["nsfw"] = nsfw
+                        changes["nsfw"] = nsfw
+                    if slowmode_delay is not None:
+                        create_kwargs["slowmode_delay"] = slowmode_delay
+                        changes["slowmode_delay"] = slowmode_delay
+                    if media is not None:
+                        create_kwargs["media"] = media
+                        changes["media"] = media
+                    if default_auto_archive_duration is not None:
+                        create_kwargs["default_auto_archive_duration"] = default_auto_archive_duration
+                        changes["default_auto_archive_duration"] = default_auto_archive_duration
+                    if default_thread_slowmode_delay is not None:
+                        create_kwargs["default_thread_slowmode_delay"] = default_thread_slowmode_delay
+                        changes["default_thread_slowmode_delay"] = default_thread_slowmode_delay
+                    if sort_order_enum is not None:
+                        create_kwargs["default_sort_order"] = sort_order_enum
+                        changes["default_sort_order"] = sort_order_enum.name
+                    if layout_enum is not None:
+                        create_kwargs["default_layout"] = layout_enum
+                        changes["default_layout"] = layout_enum.name
+                    if reaction_emoji is not None:
+                        create_kwargs["default_reaction_emoji"] = reaction_emoji
+                        changes["default_reaction_emoji"] = default_reaction_emoji
+                    if forum_tags:
+                        create_kwargs["available_tags"] = forum_tags
+                        changes["available_tags"] = ", ".join(tag.name for tag in forum_tags)
+                    if dry_run:
+                        return self.format_change_summary(f"Dry run: would create forum channel `{name}`.", changes)
+                    created = await guild.create_forum(**create_kwargs)
+                else:
+                    if dry_run:
+                        return self.format_change_summary(f"Dry run: would create category `{name}`.", changes)
+                    created = await guild.create_category(**create_kwargs)
+
+                created_ref = getattr(created, "mention", None) or created.name
+                parent_note = f" under {category.name}" if category is not None else ""
+                return f"Created {normalized_type} channel {created_ref} (ID: {created.id}){parent_note}."
+
+            if not channel_name_or_id:
+                return "`channel_name_or_id` is required unless action is `create`."
+
+            channel = await asyncio.to_thread(find_channel, guild, channel_name_or_id)
+            if not channel:
+                return f"No channel found matching '{channel_name_or_id}'."
+            if isinstance(channel, discord.Thread):
+                return "Threads are managed with `manage_thread`, not `manage_channel`."
+
+            if action == "delete":
+                channel_name = channel.name
+                channel_type_name = channel.type.name.replace("_", " ")
+                if dry_run:
+                    return self.format_change_summary(
+                        f"Dry run: would delete {channel_type_name} channel `{channel_name}`.",
+                        {"channel_id": channel.id},
+                    )
+                await channel.delete(reason=reason)
+                return f"Deleted {channel_type_name} channel `{channel_name}`."
+
+            edit_kwargs: dict[str, object] = {}
+            changes: dict[str, object] = {"action": action, "channel": channel.name}
+            if name is not None:
+                edit_kwargs["name"] = name
+                changes["name"] = name
+            if position is not None:
+                edit_kwargs["position"] = position
+                changes["position"] = position
+            if category_explicit:
+                if isinstance(channel, discord.CategoryChannel):
+                    return "Categories cannot be moved into another category."
+                edit_kwargs["category"] = category
+                changes["category"] = category.name if category is not None else "none"
+                if sync_permissions is not None:
+                    edit_kwargs["sync_permissions"] = sync_permissions
+                    changes["sync_permissions"] = sync_permissions
+            elif sync_permissions is not None:
+                if isinstance(channel, discord.CategoryChannel):
+                    return "Categories do not support `sync_permissions`."
+                if channel.category is None:
+                    return "This channel is not inside a category, so `sync_permissions` cannot be used."
+                edit_kwargs["sync_permissions"] = sync_permissions
+                changes["sync_permissions"] = sync_permissions
+
+            for field_name, value in {
+                "topic": topic,
+                "nsfw": nsfw,
+                "slowmode_delay": slowmode_delay,
+                "user_limit": user_limit,
+            }.items():
+                if value is None:
+                    continue
+                if not hasattr(channel, field_name):
+                    return f"This channel type does not support `{field_name}`."
+                edit_kwargs[field_name] = value
+                changes[field_name] = value
+
+            if news is not None:
+                if not isinstance(channel, discord.TextChannel):
+                    return "This channel type does not support `news`."
+                if news and "COMMUNITY" not in guild.features:
+                    return "News channels require the server community feature."
+                edit_kwargs["news"] = news
+                changes["news"] = news
+
+            if bitrate is not None:
+                if not hasattr(channel, "bitrate"):
+                    return "This channel type does not support `bitrate`."
+                edit_kwargs["bitrate"] = min(bitrate, guild.bitrate_limit)
+                changes["bitrate"] = min(bitrate, guild.bitrate_limit)
+
+            if rtc_region is not None:
+                if not hasattr(channel, "rtc_region"):
+                    return "This channel type does not support `rtc_region`."
+                normalized_region = None if str(rtc_region).strip().lower() in {"auto", "automatic", "none", "null"} else rtc_region
+                edit_kwargs["rtc_region"] = normalized_region
+                changes["rtc_region"] = normalized_region or "automatic"
+
+            if video_quality_enum is not None:
+                if not hasattr(channel, "video_quality_mode"):
+                    return "This channel type does not support `video_quality_mode`."
+                edit_kwargs["video_quality_mode"] = video_quality_enum
+                changes["video_quality_mode"] = video_quality_enum.name
+
+            if default_auto_archive_duration is not None:
+                if not hasattr(channel, "default_auto_archive_duration"):
+                    return "This channel type does not support `default_auto_archive_duration`."
+                edit_kwargs["default_auto_archive_duration"] = default_auto_archive_duration
+                changes["default_auto_archive_duration"] = default_auto_archive_duration
+
+            if default_thread_slowmode_delay is not None:
+                if not hasattr(channel, "default_thread_slowmode_delay"):
+                    return "This channel type does not support `default_thread_slowmode_delay`."
+                edit_kwargs["default_thread_slowmode_delay"] = default_thread_slowmode_delay
+                changes["default_thread_slowmode_delay"] = default_thread_slowmode_delay
+
+            if media is not None:
+                return "`media` can only be set while creating a forum channel."
+
+            if sort_order_enum is not None:
+                if not isinstance(channel, discord.ForumChannel):
+                    return "This channel type does not support `default_sort_order`."
+                edit_kwargs["default_sort_order"] = sort_order_enum
+                changes["default_sort_order"] = sort_order_enum.name
+
+            if layout_enum is not None:
+                if not isinstance(channel, discord.ForumChannel):
+                    return "This channel type does not support `default_layout`."
+                edit_kwargs["default_layout"] = layout_enum
+                changes["default_layout"] = layout_enum.name
+
+            if default_reaction_emoji is not None:
+                if not isinstance(channel, discord.ForumChannel):
+                    return "This channel type does not support `default_reaction_emoji`."
+                edit_kwargs["default_reaction_emoji"] = reaction_emoji
+                changes["default_reaction_emoji"] = default_reaction_emoji if reaction_emoji is not None else "none"
+
+            if available_tags is not None:
+                if not isinstance(channel, discord.ForumChannel):
+                    return "This channel type does not support `available_tags`."
+                edit_kwargs["available_tags"] = forum_tags
+                changes["available_tags"] = ", ".join(tag.name for tag in forum_tags) if forum_tags else "none"
+
+            if not edit_kwargs:
+                return "No channel changes were provided."
+
+            if dry_run:
+                return self.format_change_summary(
+                    f"Dry run: would {'move' if action == 'move' else 'update'} channel `{channel.name}`.",
+                    changes,
+                )
+
+            await channel.edit(reason=reason, **edit_kwargs)
+            result_label = "Moved" if action == "move" else "Updated"
+            channel_ref = getattr(channel, "mention", None) or channel.name
+            return f"{result_label} channel {channel_ref} successfully."
+        except discord.Forbidden:
+            return f"{error_prefix}: I do not have permission to perform that action."
+        except discord.HTTPException as e:
+            message = getattr(e, "text", None) or str(e)
+            return f"{error_prefix}: {message}"
+
+    async def set_channel_permissions(
+        self,
+        guild: discord.Guild,
+        channel_name_or_id: str,
+        target_type: Literal["role", "member"],
+        target_name_or_id: str,
+        allow_permissions: list[str] | None = None,
+        deny_permissions: list[str] | None = None,
+        clear_permissions: list[str] | None = None,
+        reason: str | None = None,
+        dry_run: bool = False,
+        *args,
+        **kwargs,
+    ) -> str:
+        """Set explicit channel permission overwrites for a role or member."""
+        channel = await asyncio.to_thread(find_channel, guild, channel_name_or_id)
+        if not channel:
+            return f"No channel found matching '{channel_name_or_id}'."
+        if isinstance(channel, discord.Thread):
+            return "This tool does not currently manage thread permission overwrites. Use the parent channel instead."
+
+        normalized_target_type = str(target_type).strip().lower()
+        target = self.resolve_permission_target(guild, normalized_target_type, target_name_or_id)
+        if not target:
+            return f"No {normalized_target_type} found matching '{target_name_or_id}'."
+
+        allow, invalid_allow = self.normalize_permission_names(allow_permissions)
+        deny, invalid_deny = self.normalize_permission_names(deny_permissions)
+        clear, invalid_clear = self.normalize_permission_names(clear_permissions)
+        invalid = invalid_allow + invalid_deny + invalid_clear
+        if invalid:
+            return f"Invalid permission names: {', '.join(sorted(set(invalid)))}"
+
+        overlap = (set(allow) & set(deny)) | (set(allow) & set(clear)) | (set(deny) & set(clear))
+        if overlap:
+            return f"Permissions must only appear in one list: {', '.join(sorted(overlap))}"
+        if not allow and not deny and not clear:
+            return "Provide at least one permission to allow, deny, or clear."
+
+        overwrite = channel.overwrites_for(target)
+        for permission_name in allow:
+            setattr(overwrite, permission_name, True)
+        for permission_name in deny:
+            setattr(overwrite, permission_name, False)
+        for permission_name in clear:
+            setattr(overwrite, permission_name, None)
+
+        target_label = getattr(target, "mention", None) or getattr(target, "name", str(target))
+        summary_parts: list[str] = []
+        if allow:
+            summary_parts.append(f"allowed: {', '.join(allow)}")
+        if deny:
+            summary_parts.append(f"denied: {', '.join(deny)}")
+        if clear:
+            summary_parts.append(f"cleared: {', '.join(clear)}")
+        if dry_run:
+            return f"Dry run: would update overwrites for {target_label} in {channel.mention} ({'; '.join(summary_parts)})."
+
+        try:
+            if overwrite.is_empty():
+                await channel.set_permissions(target, overwrite=None, reason=reason)
+            else:
+                await channel.set_permissions(target, overwrite=overwrite, reason=reason)
+        except discord.Forbidden:
+            return "I do not have permission to update channel overwrites for that target."
+        except discord.HTTPException as e:
+            message = getattr(e, "text", None) or str(e)
+            return f"Failed to update channel overwrites: {message}"
+
+        return f"Updated overwrites for {target_label} in {channel.mention} ({'; '.join(summary_parts)})."
+
+    async def manage_thread(
+        self,
+        guild: discord.Guild,
+        action: Literal["create", "edit", "delete"],
+        parent_channel_name_or_id: str | None = None,
+        thread_name_or_id: str | None = None,
+        name: str | None = None,
+        starter_message_id: str | None = None,
+        private_thread: bool | None = None,
+        auto_archive_duration: int | None = None,
+        slowmode_delay: int | None = None,
+        invitable: bool | None = None,
+        archived: bool | None = None,
+        locked: bool | None = None,
+        pinned: bool | None = None,
+        applied_tags: list[str] | str | None = None,
+        message_content: str | None = None,
+        reason: str | None = None,
+        dry_run: bool = False,
+        *args,
+        **kwargs,
+    ) -> str:
+        """Create, edit, or delete Discord threads and forum posts."""
+        action = str(action).strip().lower()
+        if action not in {"create", "edit", "delete"}:
+            return "Invalid action. Use one of: create, edit, delete."
+        if slowmode_delay is not None and slowmode_delay < 0:
+            return "Thread slowmode delay must be 0 or greater."
+        if message_content is not None and len(message_content) > 2000:
+            return "Thread starter content exceeds Discord's 2000 character limit."
+
+        if action == "create":
+            if not parent_channel_name_or_id:
+                return "`parent_channel_name_or_id` is required when creating a thread."
+            if not name:
+                return "A thread `name` is required when action is `create`."
+
+            parent = await asyncio.to_thread(find_channel, guild, parent_channel_name_or_id)
+            if not isinstance(parent, (discord.TextChannel, discord.ForumChannel)):
+                return "Threads can only be created inside text channels or forum channels."
+
+            changes: dict[str, object] = {"action": "create", "parent": parent.name, "name": name}
+            if auto_archive_duration is not None:
+                changes["auto_archive_duration"] = auto_archive_duration
+            if slowmode_delay is not None:
+                changes["slowmode_delay"] = slowmode_delay
+            if invitable is not None:
+                changes["invitable"] = invitable
+
+            if isinstance(parent, discord.ForumChannel):
+                if not message_content:
+                    return "`message_content` is required when creating a forum post."
+                resolved_tags, missing_tags = self.resolve_forum_tags(parent, applied_tags)
+                if missing_tags:
+                    return f"Unknown forum tags: {', '.join(missing_tags)}"
+                if resolved_tags:
+                    changes["applied_tags"] = ", ".join(tag.name for tag in resolved_tags)
+                if dry_run:
+                    return self.format_change_summary(f"Dry run: would create forum post `{name}`.", changes)
+
+                thread_with_message = await parent.create_thread(
+                    name=name,
+                    auto_archive_duration=auto_archive_duration or discord.utils.MISSING,
+                    slowmode_delay=slowmode_delay,
+                    content=message_content,
+                    applied_tags=resolved_tags,
+                    reason=reason,
+                )
+                return f"Created forum post {thread_with_message.thread.mention} successfully."
+
+            if starter_message_id is not None:
+                try:
+                    starter_message = discord.Object(id=int(str(starter_message_id).strip()))
+                except ValueError:
+                    return "`starter_message_id` must be a numeric Discord message ID."
+                changes["starter_message_id"] = starter_message.id
+            else:
+                starter_message = None
+
+            thread_type = None
+            if starter_message is None:
+                thread_type = discord.ChannelType.private_thread if private_thread else discord.ChannelType.public_thread
+                changes["thread_type"] = thread_type.name
+
+            if dry_run:
+                return self.format_change_summary(f"Dry run: would create thread `{name}`.", changes)
+
+            created_thread = await parent.create_thread(
+                name=name,
+                message=starter_message,
+                auto_archive_duration=auto_archive_duration or discord.utils.MISSING,
+                type=thread_type,
+                reason=reason,
+                invitable=True if invitable is None else invitable,
+                slowmode_delay=slowmode_delay,
+            )
+            return f"Created thread {created_thread.mention} successfully."
+
+        if not thread_name_or_id:
+            return "`thread_name_or_id` is required unless action is `create`."
+
+        thread = await asyncio.to_thread(find_channel, guild, thread_name_or_id)
+        if not isinstance(thread, discord.Thread):
+            return f"No thread found matching '{thread_name_or_id}'."
+
+        if action == "delete":
+            if dry_run:
+                return self.format_change_summary(
+                    f"Dry run: would delete thread `{thread.name}`.",
+                    {"thread_id": thread.id, "parent": getattr(thread.parent, 'name', 'unknown')},
+                )
+            await thread.delete(reason=reason)
+            return f"Deleted thread `{thread.name}` successfully."
+
+        edit_kwargs: dict[str, object] = {}
+        changes: dict[str, object] = {"action": "edit", "thread": thread.name}
+        if name is not None:
+            edit_kwargs["name"] = name
+            changes["name"] = name
+        if archived is not None:
+            edit_kwargs["archived"] = archived
+            changes["archived"] = archived
+        if locked is not None:
+            edit_kwargs["locked"] = locked
+            changes["locked"] = locked
+        if invitable is not None:
+            edit_kwargs["invitable"] = invitable
+            changes["invitable"] = invitable
+        if pinned is not None:
+            edit_kwargs["pinned"] = pinned
+            changes["pinned"] = pinned
+        if slowmode_delay is not None:
+            edit_kwargs["slowmode_delay"] = slowmode_delay
+            changes["slowmode_delay"] = slowmode_delay
+        if auto_archive_duration is not None:
+            edit_kwargs["auto_archive_duration"] = auto_archive_duration
+            changes["auto_archive_duration"] = auto_archive_duration
+        if applied_tags is not None:
+            if not isinstance(thread.parent, discord.ForumChannel):
+                return "Only forum posts support `applied_tags`."
+            resolved_tags, missing_tags = self.resolve_forum_tags(thread.parent, applied_tags)
+            if missing_tags:
+                return f"Unknown forum tags: {', '.join(missing_tags)}"
+            edit_kwargs["applied_tags"] = resolved_tags
+            changes["applied_tags"] = ", ".join(tag.name for tag in resolved_tags) if resolved_tags else "none"
+
+        if not edit_kwargs:
+            return "No thread changes were provided."
+        if dry_run:
+            return self.format_change_summary(f"Dry run: would update thread `{thread.name}`.", changes)
+
+        await thread.edit(reason=reason, **edit_kwargs)
+        return f"Updated thread {thread.mention} successfully."
+
+    async def manage_role(
+        self,
+        guild: discord.Guild,
+        action: Literal["create", "edit", "move", "delete"],
+        role_name_or_id: str | None = None,
+        name: str | None = None,
+        permissions: list[str] | str | None = None,
+        color: str | int | None = None,
+        hoist: bool | None = None,
+        mentionable: bool | None = None,
+        display_icon: str | None = None,
+        position: int | None = None,
+        above_role_name_or_id: str | None = None,
+        below_role_name_or_id: str | None = None,
+        reason: str | None = None,
+        dry_run: bool = False,
+        *args,
+        **kwargs,
+    ) -> str:
+        """Create, edit, move, or delete Discord roles."""
+        action = str(action).strip().lower()
+        if action not in {"create", "edit", "move", "delete"}:
+            return "Invalid action. Use one of: create, edit, move, delete."
+        if position is not None and position < 0:
+            return "Role position must be 0 or greater."
+
+        permissions_obj, permission_names, permission_error = self.build_role_permissions(permissions)
+        if permission_error:
+            return permission_error
+        color_value, color_error = self.parse_color_value(color)
+        if color_error:
+            return color_error
+        role_icon, role_icon_error = await self.resolve_display_icon_input(display_icon)
+        if role_icon_error:
+            return role_icon_error
+        if display_icon is not None and role_icon is not None and "ROLE_ICONS" not in guild.features:
+            return "Role icons are not available in this server."
+
+        if action == "create":
+            if not name:
+                return "A role `name` is required when action is `create`."
+
+            create_kwargs: dict[str, object] = {"name": name, "reason": reason}
+            changes: dict[str, object] = {"action": "create", "name": name}
+            if permissions is not None:
+                create_kwargs["permissions"] = permissions_obj or discord.Permissions.none()
+                changes["permissions"] = ", ".join(permission_names) if permission_names else "none"
+            if color is not None:
+                create_kwargs["colour"] = color_value or 0
+                changes["color"] = f"#{(color_value or 0):06x}"
+            if hoist is not None:
+                create_kwargs["hoist"] = hoist
+                changes["hoist"] = hoist
+            if mentionable is not None:
+                create_kwargs["mentionable"] = mentionable
+                changes["mentionable"] = mentionable
+            if display_icon is not None:
+                create_kwargs["display_icon"] = role_icon
+                changes["display_icon"] = display_icon if role_icon is not None else "none"
+            if position is not None:
+                changes["position"] = position
+            if dry_run:
+                return self.format_change_summary(f"Dry run: would create role `{name}`.", changes)
+
+            role = await guild.create_role(**create_kwargs)
+            if position is not None:
+                await role.edit(position=position, reason=reason)
+            return f"Created role {role.mention} (ID: {role.id}) successfully."
+
+        if not role_name_or_id:
+            return "`role_name_or_id` is required unless action is `create`."
+
+        role = await asyncio.to_thread(find_role, guild, role_name_or_id)
+        if role is None:
+            return f"No role found matching '{role_name_or_id}'."
+        if role.is_default():
+            return "The default @everyone role cannot be managed with this tool."
+
+        if action == "delete":
+            if dry_run:
+                return self.format_change_summary(
+                    f"Dry run: would delete role `{role.name}`.",
+                    {"role_id": role.id, "member_count": len(role.members)},
+                )
+            await role.delete(reason=reason)
+            return f"Deleted role `{role.name}` successfully."
+
+        if action == "move":
+            if position is None and above_role_name_or_id is None and below_role_name_or_id is None:
+                return "Provide `position`, `above_role_name_or_id`, or `below_role_name_or_id` to move a role."
+            if position is not None and (above_role_name_or_id or below_role_name_or_id):
+                return "Use either `position` or `above_role_name_or_id`/`below_role_name_or_id`, not both."
+            if above_role_name_or_id and below_role_name_or_id:
+                return "Use only one of `above_role_name_or_id` or `below_role_name_or_id`."
+
+            changes: dict[str, object] = {"action": "move", "role": role.name}
+            if position is not None:
+                changes["position"] = position
+                if dry_run:
+                    return self.format_change_summary(f"Dry run: would move role `{role.name}`.", changes)
+                await role.edit(position=position, reason=reason)
+            else:
+                move_kwargs: dict[str, object] = {"reason": reason}
+                if above_role_name_or_id:
+                    above_role = await asyncio.to_thread(find_role, guild, above_role_name_or_id)
+                    if above_role is None:
+                        return f"No role found matching '{above_role_name_or_id}'."
+                    move_kwargs["above"] = above_role
+                    changes["above"] = above_role.name
+                if below_role_name_or_id:
+                    below_role = await asyncio.to_thread(find_role, guild, below_role_name_or_id)
+                    if below_role is None:
+                        return f"No role found matching '{below_role_name_or_id}'."
+                    move_kwargs["below"] = below_role
+                    changes["below"] = below_role.name
+                if dry_run:
+                    return self.format_change_summary(f"Dry run: would move role `{role.name}`.", changes)
+                await role.move(**move_kwargs)
+            return f"Moved role {role.mention} successfully."
+
+        edit_kwargs: dict[str, object] = {}
+        changes: dict[str, object] = {"action": "edit", "role": role.name}
+        if name is not None:
+            edit_kwargs["name"] = name
+            changes["name"] = name
+        if permissions is not None:
+            edit_kwargs["permissions"] = permissions_obj or discord.Permissions.none()
+            changes["permissions"] = ", ".join(permission_names) if permission_names else "none"
+        if color is not None:
+            edit_kwargs["colour"] = color_value or 0
+            changes["color"] = f"#{(color_value or 0):06x}"
+        if hoist is not None:
+            edit_kwargs["hoist"] = hoist
+            changes["hoist"] = hoist
+        if mentionable is not None:
+            edit_kwargs["mentionable"] = mentionable
+            changes["mentionable"] = mentionable
+        if display_icon is not None:
+            edit_kwargs["display_icon"] = role_icon
+            changes["display_icon"] = display_icon if role_icon is not None else "none"
+        if position is not None:
+            edit_kwargs["position"] = position
+            changes["position"] = position
+
+        if not edit_kwargs:
+            return "No role changes were provided."
+        if dry_run:
+            return self.format_change_summary(f"Dry run: would update role `{role.name}`.", changes)
+
+        await role.edit(reason=reason, **edit_kwargs)
+        return f"Updated role {role.mention} successfully."
+
+    async def manage_server(
+        self,
+        guild: discord.Guild,
+        name: str | None = None,
+        description: str | None = None,
+        verification_level: Literal["none", "low", "medium", "high", "highest"] | None = None,
+        explicit_content_filter: Literal["disabled", "no_role", "all_members"] | None = None,
+        default_notifications: Literal["all_messages", "only_mentions"] | None = None,
+        preferred_locale: str | None = None,
+        afk_timeout: int | None = None,
+        afk_channel_name_or_id: str | None = None,
+        system_channel_name_or_id: str | None = None,
+        rules_channel_name_or_id: str | None = None,
+        public_updates_channel_name_or_id: str | None = None,
+        widget_enabled: bool | None = None,
+        widget_channel_name_or_id: str | None = None,
+        premium_progress_bar_enabled: bool | None = None,
+        community: bool | None = None,
+        invites_disabled: bool | None = None,
+        icon_url: str | None = None,
+        banner_url: str | None = None,
+        splash_url: str | None = None,
+        discovery_splash_url: str | None = None,
+        reason: str | None = None,
+        dry_run: bool = False,
+        *args,
+        **kwargs,
+    ) -> str:
+        """Update supported Discord server settings."""
+        verification_enum, verification_error = self.parse_named_enum(
+            discord.VerificationLevel,
+            verification_level,
+            "verification_level",
+        )
+        if verification_error:
+            return verification_error
+
+        content_filter_enum, content_filter_error = self.parse_named_enum(
+            discord.ContentFilter,
+            explicit_content_filter,
+            "explicit_content_filter",
+        )
+        if content_filter_error:
+            return content_filter_error
+
+        notification_enum, notification_error = self.parse_named_enum(
+            discord.NotificationLevel,
+            default_notifications,
+            "default_notifications",
+        )
+        if notification_error:
+            return notification_error
+
+        locale_enum, locale_error = self.parse_named_enum(discord.Locale, preferred_locale, "preferred_locale")
+        if locale_error:
+            return locale_error
+
+        server_icon, icon_error = await self.resolve_optional_image_input(icon_url, "icon_url")
+        if icon_error:
+            return icon_error
+        banner, banner_error = await self.resolve_optional_image_input(banner_url, "banner_url")
+        if banner_error:
+            return banner_error
+        splash, splash_error = await self.resolve_optional_image_input(splash_url, "splash_url")
+        if splash_error:
+            return splash_error
+        discovery_splash, discovery_splash_error = await self.resolve_optional_image_input(
+            discovery_splash_url,
+            "discovery_splash_url",
+        )
+        if discovery_splash_error:
+            return discovery_splash_error
+
+        if afk_timeout is not None and afk_timeout < 0:
+            return "`afk_timeout` must be 0 or greater."
+
+        edit_kwargs: dict[str, object] = {"reason": reason}
+        changes: dict[str, object] = {}
+        if name is not None:
+            edit_kwargs["name"] = name
+            changes["name"] = name
+        if description is not None:
+            edit_kwargs["description"] = description
+            changes["description"] = description
+        if icon_url is not None:
+            edit_kwargs["icon"] = server_icon
+            changes["icon"] = icon_url if server_icon is not None else "none"
+        if banner_url is not None:
+            edit_kwargs["banner"] = banner
+            changes["banner"] = banner_url if banner is not None else "none"
+        if splash_url is not None:
+            edit_kwargs["splash"] = splash
+            changes["splash"] = splash_url if splash is not None else "none"
+        if discovery_splash_url is not None:
+            edit_kwargs["discovery_splash"] = discovery_splash
+            changes["discovery_splash"] = discovery_splash_url if discovery_splash is not None else "none"
+        if verification_enum is not None:
+            edit_kwargs["verification_level"] = verification_enum
+            changes["verification_level"] = verification_enum.name
+        if content_filter_enum is not None:
+            edit_kwargs["explicit_content_filter"] = content_filter_enum
+            changes["explicit_content_filter"] = content_filter_enum.name
+        if notification_enum is not None:
+            edit_kwargs["default_notifications"] = notification_enum
+            changes["default_notifications"] = notification_enum.name
+        if locale_enum is not None:
+            edit_kwargs["preferred_locale"] = locale_enum
+            changes["preferred_locale"] = locale_enum.name
+        if afk_timeout is not None:
+            edit_kwargs["afk_timeout"] = afk_timeout
+            changes["afk_timeout"] = afk_timeout
+        if widget_enabled is not None:
+            edit_kwargs["widget_enabled"] = widget_enabled
+            changes["widget_enabled"] = widget_enabled
+        if premium_progress_bar_enabled is not None:
+            edit_kwargs["premium_progress_bar_enabled"] = premium_progress_bar_enabled
+            changes["premium_progress_bar_enabled"] = premium_progress_bar_enabled
+        if community is not None:
+            edit_kwargs["community"] = community
+            changes["community"] = community
+        if invites_disabled is not None:
+            edit_kwargs["invites_disabled"] = invites_disabled
+            changes["invites_disabled"] = invites_disabled
+
+        invalid_for_community = [
+            verification_enum is not None and verification_enum == discord.VerificationLevel.none,
+            content_filter_enum is not None and content_filter_enum == discord.ContentFilter.disabled,
+        ]
+        if community is True and any(invalid_for_community):
+            return "Community cannot stay enabled when verification level is `none` or content filter is `disabled`."
+        if any(invalid_for_community) and "community" not in edit_kwargs:
+            edit_kwargs["community"] = False
+            changes["community"] = False
+
+        channel_fields = {
+            "afk_channel": (afk_channel_name_or_id, (discord.VoiceChannel,), "voice channel"),
+            "system_channel": (system_channel_name_or_id, (discord.TextChannel,), "text channel"),
+            "rules_channel": (rules_channel_name_or_id, (discord.TextChannel,), "text channel"),
+            "public_updates_channel": (public_updates_channel_name_or_id, (discord.TextChannel,), "text channel"),
+            "widget_channel": (widget_channel_name_or_id, (discord.TextChannel,), "text channel"),
+        }
+        for field_name, (reference, expected_types, expected_label) in channel_fields.items():
+            if reference is None:
+                continue
+            lowered = str(reference).strip().lower()
+            if lowered in {"none", "null", "clear", "remove"}:
+                edit_kwargs[field_name] = None
+                changes[field_name] = "none"
+                continue
+
+            resolved = await asyncio.to_thread(find_channel, guild, reference)
+            if resolved is None:
+                return f"No channel found matching '{reference}'."
+            if not isinstance(resolved, expected_types):
+                return f"`{field_name}` must reference a {expected_label}."
+            edit_kwargs[field_name] = resolved
+            changes[field_name] = resolved.name
+
+        if len(edit_kwargs) == 1:
+            return "No server changes were provided."
+        if dry_run:
+            return self.format_change_summary("Dry run: would update server settings.", changes)
+
+        await guild.edit(**edit_kwargs)
+        return "Updated server settings successfully."
 
     async def render_svg(
         self,

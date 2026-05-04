@@ -18,15 +18,14 @@ class Listeners(MixinMeta):
         schema = {
             "name": "get_user_suggestion_stats",
             "description": (
-                "Get statistics about the suggestions the user you are speaking to has made.\n"
-                "This command will fetch total upvotes, downvotes, wins, losses, and more for suggestions the user may have made in the community.\n"
+                "Get the current user's suggestion stats, including votes, wins, and losses.\n"
             ),
             "parameters": {
                 "type": "object",
                 "properties": {},
             },
         }
-        await cog.register_function(self.qualified_name, schema)
+        await cog.register_function(self.qualified_name, schema, category="suggestions")
 
     async def get_user_suggestion_stats(self, user: discord.Member, *args, **kwargs):
         """Get the number of suggestions a user has submitted"""

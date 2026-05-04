@@ -28,6 +28,7 @@ from redbot.core.utils.chat_formatting import (
     pagify,
     text_to_file,
 )
+from redbot.core.utils.views import SimpleMenu
 
 from ..abc import MixinMeta
 from ..common.constants import MODELS, PRICES
@@ -36,12 +37,23 @@ from ..common.models import (
     DEFAULT_SYSTEM_PROMPT,
     DEFAULT_THINK_TAG_PREFIX,
     DEFAULT_THINK_TAG_SUFFIX,
+    get_category_state,
+    render_tool_category,
 )
 from ..common.utils import get_attachments
-from ..views import CodeMenu, EmbeddingMenu, SetAPI
+from ..views import AIToolsView, CodeMenu, EmbeddingMenu, SetAPI
 
 log = logging.getLogger("red.vrt.assistant.admin")
 _ = Translator("Assistant", __file__)
+ON_STATUS_EMOJI = "🟢"
+OFF_STATUS_EMOJI = "🔴"
+MIXED_STATUS_EMOJI = "🟡"
+STATUS_EMOJIS = {
+    "on": ON_STATUS_EMOJI,
+    "off": OFF_STATUS_EMOJI,
+    "mixed": MIXED_STATUS_EMOJI,
+}
+THIRD_PARTY_DOCS_URL = "https://github.com/vertyco/vrt-cogs/blob/main/assistant/THIRD%20PARTY.md"
 
 
 def normalize_endpoint_override(endpoint: t.Optional[str]) -> tuple[t.Optional[str], t.Optional[str]]:
@@ -81,6 +93,34 @@ class Admin(MixinMeta):
         You will need an **[api key](https://platform.openai.com/account/api-keys)** from OpenAI to use ChatGPT and their other models.
         """
         pass
+
+    def get_tool_catalog(self) -> list[dict]:
+        catalog = self.db.get_function_catalog(self.bot, self.registry)
+        return sorted(catalog, key=lambda entry: (entry["category"], entry["name"].lower()))
+
+    def get_tool_categories(self) -> dict[str, list[dict]]:
+        grouped = self.db.get_functions_by_category(self.bot, self.registry)
+        return {
+            category: sorted(entries, key=lambda entry: entry["name"].lower())
+            for category, entries in sorted(grouped.items(), key=lambda item: item[0])
+        }
+
+    def get_context_variable_catalog(self) -> list[dict]:
+        catalog = self.db.get_context_variable_catalog(self.bot, self.context_registry)
+        return sorted(catalog, key=lambda entry: (entry["source"], entry["name"].lower()))
+
+    async def retry_discord_server_error(self, operation: t.Callable[[], t.Awaitable[t.Any]]):
+        last_error = None
+        for attempt in range(3):
+            try:
+                return await operation()
+            except discord.DiscordServerError as error:
+                last_error = error
+                if attempt == 2:
+                    break
+                await asyncio.sleep(attempt + 1)
+        if last_error is not None:
+            raise last_error
 
     def format_endpoint_model_box(self, model_ids: List[str], active_model: str = "") -> str:
         ordered = [active_model] if active_model and active_model in model_ids else []
@@ -2416,6 +2456,40 @@ class Admin(MixinMeta):
             break
         await view.start()
 
+    @assistant.command(name="customvariables", aliases=["customvars"])
+    @commands.bot_has_permissions(embed_links=True)
+    async def custom_variables(self, ctx: commands.Context):
+        """List custom prompt context variables registered by other cogs."""
+        catalog = self.get_context_variable_catalog()
+        docs_line = _("3rd party docs: {}").format(THIRD_PARTY_DOCS_URL)
+        if not catalog:
+            text = _("No custom context variables have been registered yet!\n{}").format(docs_line)
+            return await self.retry_discord_server_error(lambda: ctx.send(text))
+
+        lines = [docs_line, ""]
+        for entry in catalog:
+            suffix = f" · {entry['permission_level']}" if entry["permission_level"] != "user" else ""
+            lines.append(f"**{{{entry['name']}}}** · {entry['source']}{suffix}")
+            lines.append(entry["description"])
+            lines.append("")
+
+        chunks = list(pagify("\n".join(lines).strip(), page_length=1600))
+        pages: list[discord.Embed] = []
+        for index, chunk in enumerate(chunks, 1):
+            embed = discord.Embed(
+                title=_("Custom Variables"),
+                url=THIRD_PARTY_DOCS_URL,
+                description=chunk,
+                color=discord.Color.blue(),
+            )
+            embed.set_footer(text=_("Page {}/{} | {} variables").format(index, len(chunks), len(catalog)))
+            pages.append(embed)
+
+        if len(pages) == 1:
+            return await self.retry_discord_server_error(lambda: ctx.send(embed=pages[0]))
+
+        await self.retry_discord_server_error(lambda: SimpleMenu(pages, disable_after_timeout=True).start(ctx))
+
     @commands.hybrid_command(name="listfunctions", aliases=["listfuncs", "funclist"])
     @commands.guild_only()
     @commands.admin_or_permissions(administrator=True)
@@ -2432,42 +2506,32 @@ class Admin(MixinMeta):
 
         conf = self.db.get_conf(ctx.guild)
 
-        # Gather all functions
-        all_functions: list[tuple[str, str, bool]] = []  # (name, source, enabled)
-
-        # Custom functions from bot owner
-        for func_name in self.db.functions:
-            enabled = conf.function_statuses.get(func_name, False)
-            all_functions.append((func_name, "Custom", enabled))
-
-        # Registry functions from other cogs
-        for cog_name, function_schemas in self.registry.items():
-            cog = self.bot.get_cog(cog_name)
-            if not cog:
-                continue
-            for func_name in function_schemas:
-                enabled = conf.function_statuses.get(func_name, False)
-                all_functions.append((func_name, cog_name, enabled))
-
-        if not all_functions:
+        grouped = self.get_tool_categories()
+        if not grouped:
             return await ctx.send(_("No functions have been registered yet!"))
-
-        # Sort by enabled status (enabled first), then by name
-        all_functions.sort(key=lambda x: (not x[2], x[0].lower()))
 
         # Build embed pages
         pages: list[discord.Embed] = []
-        enabled_count = sum(1 for f in all_functions if f[2])
-        disabled_count = len(all_functions) - enabled_count
+        all_entries = [entry for entries in grouped.values() for entry in entries]
+        enabled_count = sum(conf.function_statuses.get(entry["name"], False) for entry in all_entries)
+        disabled_count = len(all_entries) - enabled_count
 
         lines = []
-        for func_name, source, enabled in all_functions:
-            status = "\N{WHITE HEAVY CHECK MARK}" if enabled else "\N{CROSS MARK}"
-            source_txt = f" ({source})" if source != "Custom" else ""
-            lines.append(f"{status} `{func_name}`{source_txt}")
+        for category, entries in grouped.items():
+            function_names = [entry["name"] for entry in entries]
+            category_state = get_category_state(function_names, conf.function_statuses)
+            enabled_in_category = sum(conf.function_statuses.get(name, False) for name in function_names)
+            lines.append(
+                f"{STATUS_EMOJIS[category_state]} **{render_tool_category(category)}** ({enabled_in_category}/{len(entries)})"
+            )
+            for entry in entries:
+                enabled = conf.function_statuses.get(entry["name"], False)
+                source_txt = f" · {entry['source']}" if entry["source"] != "Custom" else ""
+                lines.append(f"{ON_STATUS_EMOJI if enabled else OFF_STATUS_EMOJI} {entry['name']}{source_txt}")
+            lines.append("")
 
         # Pagify the lines
-        chunks = list(pagify("\n".join(lines), page_length=1500))
+        chunks = list(pagify("\n".join(lines).strip(), page_length=1500))
         total_pages = len(chunks)
         for i, chunk in enumerate(chunks, 1):
             embed = discord.Embed(
@@ -2487,6 +2551,132 @@ class Admin(MixinMeta):
         from redbot.core.utils.views import SimpleMenu
 
         await SimpleMenu(pages, disable_after_timeout=True).start(ctx)
+
+    @commands.hybrid_command(name="aitools")
+    @commands.guild_only()
+    @commands.admin_or_permissions(administrator=True)
+    async def ai_tools(self, ctx: commands.Context):
+        """Open the mobile-friendly AI tools manager."""
+        view = AIToolsView(ctx, self.db, self.registry, self.save_conf)
+        await view.start()
+
+    @commands.hybrid_command(name="listcategories", aliases=["listcats", "toolcategories"])
+    @commands.guild_only()
+    @commands.admin_or_permissions(administrator=True)
+    @commands.bot_has_permissions(embed_links=True)
+    async def list_categories(self, ctx: commands.Context):
+        """List tool categories and their current enabled state."""
+        if ctx.interaction:
+            await ctx.interaction.response.defer()
+
+        conf = self.db.get_conf(ctx.guild)
+        grouped = self.get_tool_categories()
+        if not grouped:
+            return await ctx.send(_("No functions have been registered yet!"))
+
+        lines = []
+        total_enabled = 0
+        total_tools = 0
+        for category, entries in grouped.items():
+            function_names = [entry["name"] for entry in entries]
+            enabled_count = sum(conf.function_statuses.get(name, False) for name in function_names)
+            total_enabled += enabled_count
+            total_tools += len(function_names)
+            category_state = get_category_state(function_names, conf.function_statuses)
+            lines.append(
+                f"{STATUS_EMOJIS[category_state]} {render_tool_category(category)} ({enabled_count}/{len(function_names)})"
+            )
+
+        chunks = list(pagify("\n".join(lines), page_length=1800))
+        pages: list[discord.Embed] = []
+        for index, chunk in enumerate(chunks, 1):
+            embed = discord.Embed(title=_("Tool Categories"), description=chunk, color=discord.Color.blue())
+            embed.set_footer(
+                text=_("Page {}/{} | {} enabled of {} total").format(index, len(chunks), total_enabled, total_tools)
+            )
+            pages.append(embed)
+
+        if len(pages) == 1:
+            return await ctx.send(embed=pages[0])
+
+        from redbot.core.utils.views import SimpleMenu
+
+        await SimpleMenu(pages, disable_after_timeout=True).start(ctx)
+
+    @commands.hybrid_command(name="togglecategories", aliases=["togglecats"])
+    @app_commands.describe(
+        enable="True to enable, False to disable, or omit to cycle the category state",
+        categories="Category names to toggle (comma-separated, or 'all' to toggle all)",
+    )
+    @commands.guild_only()
+    @commands.admin_or_permissions(administrator=True)
+    async def toggle_categories(
+        self,
+        ctx: commands.Context,
+        enable: t.Optional[bool],
+        *,
+        categories: str,
+    ):
+        """Enable or disable all tools in one or more categories."""
+        if ctx.interaction:
+            await ctx.interaction.response.defer()
+
+        conf = self.db.get_conf(ctx.guild)
+        grouped = self.get_tool_categories()
+        if not grouped:
+            return await ctx.send(_("No functions have been registered yet!"))
+
+        valid_categories = set(grouped)
+        raw_categories = categories.lower().strip()
+        if raw_categories == "all":
+            target_categories = valid_categories
+        else:
+            target_categories = {category.strip().lower() for category in categories.split(",") if category.strip()}
+
+        if not target_categories:
+            return await ctx.send(_("No valid category names provided!"))
+
+        invalid_categories = target_categories - valid_categories
+        if invalid_categories:
+            invalid_display = humanize_list([render_tool_category(category) for category in sorted(invalid_categories)])
+            return await ctx.send(_("The following categories do not exist: {}").format(invalid_display))
+
+        enabled_categories = []
+        disabled_categories = []
+        for category in sorted(target_categories):
+            entries = grouped[category]
+            function_names = [entry["name"] for entry in entries]
+            current_state = get_category_state(function_names, conf.function_statuses)
+            new_state = enable if enable is not None else current_state != "on"
+            for function_name in function_names:
+                conf.function_statuses[function_name] = new_state
+            payload = f"{render_tool_category(category)} ({len(function_names)})"
+            if new_state:
+                enabled_categories.append(payload)
+            else:
+                disabled_categories.append(payload)
+
+        await self.save_conf()
+
+        response_parts = []
+        if enabled_categories:
+            response_parts.append(
+                _("{} **Enabled Categories** ({}):\n{}").format(
+                    ON_STATUS_EMOJI,
+                    len(enabled_categories),
+                    humanize_list(enabled_categories),
+                )
+            )
+        if disabled_categories:
+            response_parts.append(
+                _("{} **Disabled Categories** ({}):\n{}").format(
+                    OFF_STATUS_EMOJI,
+                    len(disabled_categories),
+                    humanize_list(disabled_categories),
+                )
+            )
+
+        await ctx.send("\n\n".join(response_parts))
 
     @commands.hybrid_command(name="togglefunctions", aliases=["togglefuncs"])
     @app_commands.describe(
@@ -2599,12 +2789,7 @@ class Admin(MixinMeta):
             search_term = current.lower()
 
         # Add "all" as an option
-        entries = ["all"]
-        for key in self.db.functions:
-            entries.append(key)
-        for functions in self.registry.values():
-            for key in functions:
-                entries.append(key)
+        entries = ["all", *[entry["name"] for entry in self.get_tool_catalog()]]
 
         # Filter and format choices
         choices = []
@@ -2617,6 +2802,27 @@ class Admin(MixinMeta):
                 if len(choices) >= 25:
                     break
 
+        return choices
+
+    @toggle_categories.autocomplete("categories")
+    async def toggle_categories_complete(self, interaction: discord.Interaction, current: str):
+        if "," in current:
+            parts = current.rsplit(",", 1)
+            prefix = parts[0] + ", "
+            search_term = parts[1].strip().lower()
+        else:
+            prefix = ""
+            search_term = current.lower()
+
+        entries = ["all", *self.get_tool_categories().keys()]
+        choices = []
+        for entry in entries:
+            if search_term in entry.lower():
+                display_name = prefix + entry if prefix else entry
+                if len(display_name) <= 100:
+                    choices.append(Choice(name=display_name, value=display_name))
+                if len(choices) >= 25:
+                    break
         return choices
 
     @custom_functions.autocomplete("function_name")

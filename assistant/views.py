@@ -2,8 +2,9 @@ import asyncio
 import inspect
 import json
 import logging
+import re
 from contextlib import suppress
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, List, Optional, Set, Tuple
 
 import discord
 import json5
@@ -12,7 +13,14 @@ from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box, pagify, text_to_file
 
-from .common.models import DB, CustomFunction, GuildSettings
+from .common.models import (
+    DB,
+    CustomFunction,
+    GuildSettings,
+    get_category_state,
+    normalize_tool_category,
+    render_tool_category,
+)
 from .common.utils import (
     code_string_valid,
     extract_code_blocks,
@@ -23,8 +31,25 @@ from .common.utils import (
 
 log = logging.getLogger("red.vrt.assistant.views")
 _ = Translator("Assistant", __file__)
-ON_EMOJI = "\N{ON WITH EXCLAMATION MARK WITH LEFT RIGHT ARROW ABOVE}"
-OFF_EMOJI = "\N{MOBILE PHONE OFF}"
+ON_EMOJI = "🟢"
+OFF_EMOJI = "🔴"
+MIXED_EMOJI = "🟡"
+STATE_EMOJIS = {
+    "on": ON_EMOJI,
+    "off": OFF_EMOJI,
+    "mixed": MIXED_EMOJI,
+}
+MAX_SELECT_OPTION_DESCRIPTION = 100
+
+
+def format_tool_option_description(entry: dict) -> str:
+    source = entry["source"] if entry["source"] != "Custom" else _("Custom")
+    description = entry.get("schema", {}).get("description", "")
+    cleaned = re.sub(r"\s+", " ", description).strip()
+    combined = f"{source} - {cleaned}" if cleaned else source
+    if len(combined) <= MAX_SELECT_OPTION_DESCRIPTION:
+        return combined
+    return combined[: MAX_SELECT_OPTION_DESCRIPTION - 3].rstrip() + "..."
 
 
 class APIModal(discord.ui.Modal):
@@ -65,6 +90,49 @@ class SetAPI(discord.ui.View):
         self.key = modal.key
         if modal.key:
             self.stop()
+
+
+class AdminToolApprovalView(discord.ui.View):
+    def __init__(self, author_id: int, timeout: float = 120):
+        self.author_id = author_id
+        self.decision: str = "timeout"
+        self.message: Optional[discord.Message] = None
+        super().__init__(timeout=timeout)
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        if interaction.user.id != self.author_id:
+            await interaction.response.send_message(_("This approval prompt isn't for you!"), ephemeral=True)
+            return False
+        return True
+
+    def disable_all(self) -> None:
+        for item in self.children:
+            item.disabled = True
+
+    async def on_timeout(self):
+        self.disable_all()
+        with suppress(discord.HTTPException):
+            if self.message is not None:
+                await self.message.edit(view=self)
+        return await super().on_timeout()
+
+    async def finish(self, interaction: discord.Interaction, decision: str):
+        self.decision = decision
+        self.disable_all()
+        await interaction.response.edit_message(view=self)
+        self.stop()
+
+    @discord.ui.button(label="Approve Once", style=discord.ButtonStyle.primary)
+    async def approve_once(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.finish(interaction, "once")
+
+    @discord.ui.button(label="Allow This Session", style=discord.ButtonStyle.success)
+    async def allow_session(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.finish(interaction, "session")
+
+    @discord.ui.button(label="Skip", style=discord.ButtonStyle.secondary)
+    async def skip(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.finish(interaction, "skip")
 
 
 class EmbeddingModal(discord.ui.Modal):
@@ -395,13 +463,21 @@ class EmbeddingMenu(discord.ui.View):
 
 
 class CodeModal(discord.ui.Modal):
-    def __init__(self, schema: str, code: str, permission_level: str = None, required_permissions: str = None):
+    def __init__(
+        self,
+        schema: str,
+        code: str,
+        permission_level: str = None,
+        required_permissions: str = None,
+        category: str = None,
+    ):
         super().__init__(title=_("Function Edit"), timeout=None)
 
         self.schema = ""
         self.code = ""
         self.permission_level = ""
         self.required_permissions: list[str] = []
+        self.category = normalize_tool_category(category)
 
         self.schema_field = discord.ui.TextInput(
             label=_("JSON Schema"),
@@ -430,6 +506,14 @@ class CodeModal(discord.ui.Modal):
             default=required_permissions or "",
         )
         self.add_item(self.perms_field)
+        self.category_field = discord.ui.TextInput(
+            label=_("Category"),
+            placeholder=_("memory, web, utility"),
+            style=discord.TextStyle.short,
+            required=False,
+            default=self.category,
+        )
+        self.add_item(self.category_field)
 
     async def on_submit(self, interaction: discord.Interaction):
         self.schema = self.schema_field.value
@@ -456,8 +540,277 @@ class CodeModal(discord.ui.Modal):
         else:
             self.required_permissions = []
 
+        self.category = normalize_tool_category(self.category_field.value)
+
         await interaction.response.defer()
         self.stop()
+
+
+class AIToolsCategoryToggleButton(discord.ui.Button["AIToolsView"]):
+    def __init__(self, category: str, state: str):
+        self.category = category
+        super().__init__(label=_("Toggle"), style=discord.ButtonStyle.secondary)
+
+    async def callback(self, interaction: discord.Interaction):
+        await self.view.toggle_category(interaction, self.category)
+
+
+class AIToolsCategorySelect(discord.ui.Select["AIToolsView"]):
+    def __init__(
+        self,
+        category: str,
+        entries: list[dict],
+        conf: GuildSettings,
+        chunk_index: int = 0,
+        chunk_total: int = 1,
+    ):
+        self.category = category
+        self.function_names = [entry["name"] for entry in entries]
+
+        options = []
+        for entry in entries:
+            options.append(
+                discord.SelectOption(
+                    label=entry["name"][:100],
+                    value=entry["name"],
+                    description=format_tool_option_description(entry),
+                    default=conf.function_statuses.get(entry["name"], False),
+                )
+            )
+
+        if chunk_total > 1:
+            placeholder = _("Choose tools for {} ({}/{})...").format(
+                render_tool_category(category),
+                chunk_index + 1,
+                chunk_total,
+            )
+        else:
+            placeholder = _("Choose tools for {}...").format(render_tool_category(category))
+        super().__init__(
+            placeholder=placeholder[:150],
+            min_values=0 if options else 1,
+            max_values=len(options) if options else 1,
+            options=options or [discord.SelectOption(label=_("No tools available"), value="none")],
+            disabled=not options,
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        selected_names = set(self.values)
+        await self.view.apply_category_selection(interaction, self.category, selected_names, set(self.function_names))
+
+
+class AIToolsNavigationRow(discord.ui.ActionRow["AIToolsView"]):
+    def __init__(self, page: int, total_pages: int):
+        super().__init__()
+        previous_button = discord.ui.Button(
+            label=_("Prev"),
+            emoji="⬅️",
+            style=discord.ButtonStyle.secondary,
+            disabled=total_pages <= 1,
+        )
+        previous_button.callback = self.previous_page
+        self.add_item(previous_button)
+
+        next_button = discord.ui.Button(
+            label=_("Next"),
+            emoji="➡️",
+            style=discord.ButtonStyle.secondary,
+            disabled=total_pages <= 1,
+        )
+        next_button.callback = self.next_page
+        self.add_item(next_button)
+
+        close_button = discord.ui.Button(label=_("Close"), emoji="✖️", style=discord.ButtonStyle.secondary)
+        close_button.callback = self.close_view
+        self.add_item(close_button)
+
+    async def previous_page(self, interaction: discord.Interaction):
+        await self.view.change_page(interaction, -1)
+
+    async def next_page(self, interaction: discord.Interaction):
+        await self.view.change_page(interaction, 1)
+
+    async def close_view(self, interaction: discord.Interaction):
+        self.view.stop()
+        await interaction.response.edit_message(view=None)
+
+
+class AIToolsView(discord.ui.LayoutView):
+    def __init__(
+        self,
+        ctx: commands.Context,
+        db: DB,
+        registry: Dict[str, Dict[str, dict]],
+        save_func: Callable,
+        page_size: int = 4,
+    ):
+        super().__init__(timeout=600)
+        self.ctx = ctx
+        self.db = db
+        self.conf = db.get_conf(ctx.guild)
+        self.registry = registry
+        self.save = save_func
+        self.page_size = page_size
+        self.page = 0
+        self.total_pages = 1
+        self.message: Optional[discord.Message] = None
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        if interaction.user.id != self.ctx.author.id:
+            await interaction.response.send_message(_("This isn't your menu!"), ephemeral=True)
+            return False
+        return True
+
+    async def on_timeout(self) -> None:
+        for item in self.walk_children():
+            if hasattr(item, "disabled"):
+                item.disabled = True
+        with suppress(discord.HTTPException):
+            if self.message:
+                await self.message.edit(view=self)
+
+    def get_grouped_categories(self) -> dict[str, list[dict]]:
+        grouped = self.db.get_functions_by_category(self.ctx.bot, self.registry)
+        return {
+            category: sorted(entries, key=lambda entry: entry["name"].lower())
+            for category, entries in sorted(grouped.items(), key=lambda item: item[0])
+        }
+
+    def get_category_preview(self, entries: list[dict]) -> str:
+        preview = ", ".join(entry["name"] for entry in entries[:4])
+        remaining = len(entries) - 4
+        if remaining > 0:
+            preview += f", +{remaining}"
+        return preview
+
+    def chunk_category_entries(self, entries: list[dict], size: int = 25) -> list[list[dict]]:
+        if not entries:
+            return []
+        return [entries[index : index + size] for index in range(0, len(entries), size)]
+
+    def build_layout(self) -> None:
+        self.clear_items()
+        grouped = self.get_grouped_categories()
+        catalog = [entry for entries in grouped.values() for entry in entries]
+        container = discord.ui.Container(accent_colour=discord.Color.blue())
+
+        if not catalog:
+            container.add_item(discord.ui.TextDisplay("# 🤖 AI Tools"))
+            container.add_item(discord.ui.TextDisplay("-# No registered tools found."))
+            container.add_item(AIToolsNavigationRow(0, 1))
+            self.add_item(container)
+            return
+
+        categories = list(grouped)
+        self.total_pages = max(1, (len(categories) + self.page_size - 1) // self.page_size)
+        self.page %= self.total_pages
+        start = self.page * self.page_size
+        stop = start + self.page_size
+        page_categories = categories[start:stop]
+
+        enabled_total = sum(self.conf.function_statuses.get(entry["name"], False) for entry in catalog)
+        container.add_item(discord.ui.TextDisplay("# 🤖 AI Tools"))
+        container.add_item(
+            discord.ui.TextDisplay(
+                _("{} {}/{} enabled • {} categories • Page {}/{}").format(
+                    ON_EMOJI,
+                    enabled_total,
+                    len(catalog),
+                    len(categories),
+                    self.page + 1,
+                    self.total_pages,
+                )
+            )
+        )
+        container.add_item(discord.ui.TextDisplay(f"{ON_EMOJI} On • {MIXED_EMOJI} Mixed • {OFF_EMOJI} Off"))
+        container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.small))
+
+        for index, category in enumerate(page_categories):
+            entries = grouped[category]
+            function_names = [entry["name"] for entry in entries]
+            state = get_category_state(function_names, self.conf.function_statuses)
+            enabled_count = sum(self.conf.function_statuses.get(name, False) for name in function_names)
+            preview = self.get_category_preview(entries)
+
+            container.add_item(
+                discord.ui.Section(
+                    discord.ui.TextDisplay(
+                        f"**{STATE_EMOJIS[state]} {render_tool_category(category)}**\n{enabled_count}/{len(entries)} enabled"
+                    ),
+                    discord.ui.TextDisplay(preview),
+                    accessory=AIToolsCategoryToggleButton(category, state),
+                )
+            )
+            entry_chunks = self.chunk_category_entries(entries)
+            for chunk_index, entry_chunk in enumerate(entry_chunks):
+                container.add_item(
+                    discord.ui.ActionRow(
+                        AIToolsCategorySelect(
+                            category,
+                            entry_chunk,
+                            self.conf,
+                            chunk_index=chunk_index,
+                            chunk_total=len(entry_chunks),
+                        )
+                    )
+                )
+            if index != len(page_categories) - 1:
+                container.add_item(discord.ui.Separator(visible=False, spacing=discord.SeparatorSpacing.small))
+
+        container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.small))
+        container.add_item(AIToolsNavigationRow(self.page, self.total_pages))
+        self.add_item(container)
+
+    async def start(self):
+        self.build_layout()
+        self.message = await self.ctx.send(view=self)
+
+    async def refresh(self, interaction: Optional[discord.Interaction] = None):
+        self.build_layout()
+        if interaction is None:
+            if self.message:
+                await self.message.edit(view=self)
+            return
+        await interaction.response.edit_message(view=self)
+
+    async def change_page(self, interaction: discord.Interaction, delta: int):
+        self.page += delta
+        self.page %= self.total_pages
+        await self.refresh(interaction)
+
+    async def toggle_category(self, interaction: discord.Interaction, category: str):
+        grouped = self.get_grouped_categories()
+        entries = grouped.get(category, [])
+        if not entries:
+            return await interaction.response.send_message(_("That category no longer exists."), ephemeral=True)
+
+        function_names = [entry["name"] for entry in entries]
+        state = get_category_state(function_names, self.conf.function_statuses)
+        new_state = state != "on"
+        for function_name in function_names:
+            self.conf.function_statuses[function_name] = new_state
+        await self.save()
+        await self.refresh(interaction)
+
+    async def apply_category_selection(
+        self,
+        interaction: discord.Interaction,
+        category: str,
+        selected_names: Set[str],
+        available_names: Optional[Set[str]] = None,
+    ):
+        grouped = self.get_grouped_categories()
+        entries = grouped.get(category, [])
+        if not entries:
+            return await interaction.response.send_message(_("That category no longer exists."), ephemeral=True)
+
+        function_names = [entry["name"] for entry in entries]
+        if available_names is not None:
+            function_names = [name for name in function_names if name in available_names]
+        for function_name in function_names:
+            self.conf.function_statuses[function_name] = function_name in selected_names
+        await self.save()
+        await self.refresh(interaction)
 
 
 class CodeMenu(discord.ui.View):
@@ -616,7 +969,7 @@ class CodeMenu(discord.ui.View):
                 if not cog:
                     continue
                 if function_name in functions:
-                    function_schema = functions[function_name]
+                    function_schema = functions[function_name]["schema"]
                     function_obj = getattr(cog, function_name, None)
                     if not function_obj:
                         continue
@@ -721,7 +1074,9 @@ class CodeMenu(discord.ui.View):
             )
 
         perms_str = ", ".join(entry.required_permissions) if entry.required_permissions else ""
-        modal = CodeModal(json.dumps(entry.jsonschema, indent=2), entry.code, entry.permission_level, perms_str)
+        modal = CodeModal(
+            json.dumps(entry.jsonschema, indent=2), entry.code, entry.permission_level, perms_str, entry.category
+        )
         await interaction.response.send_modal(modal)
         await modal.wait()
         if not modal.schema or not modal.code:
@@ -749,6 +1104,7 @@ class CodeMenu(discord.ui.View):
                 jsonschema=schema,
                 permission_level=modal.permission_level,
                 required_permissions=modal.required_permissions,
+                category=modal.category,
             )
             del self.db.functions[function_name]
         else:
@@ -756,6 +1112,7 @@ class CodeMenu(discord.ui.View):
             self.db.functions[function_name].jsonschema = schema
             self.db.functions[function_name].permission_level = modal.permission_level
             self.db.functions[function_name].required_permissions = modal.required_permissions
+            self.db.functions[function_name].category = modal.category
         await interaction.followup.send(_("`{}` function updated!").format(function_name), ephemeral=True)
         await self.get_pages()
         await self.message.edit(embed=self.pages[self.page], view=self)

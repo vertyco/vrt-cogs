@@ -968,7 +968,7 @@ class XTools(commands.Cog):
     async def on_assistant_cog_add(self, cog: commands.Cog):
         schema = {
             "name": "get_gamertag_profile",
-            "description": "Get details about an Xbox Gamertag profile like gamerscore, bio, followers, ect..",
+            "description": "Get Xbox profile details for a gamertag, including gamerscore, bio, and followers.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -979,7 +979,7 @@ class XTools(commands.Cog):
                 },
             },
         }
-        await cog.register_function("XTools", schema)
+        await cog.register_function("XTools", schema, category="xbox")
 
     async def get_gamertag_profile(self, user: discord.Member, gamertag: str = None, *args, **kwargs):
         async with SignedSession() as session:

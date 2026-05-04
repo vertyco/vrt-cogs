@@ -12,6 +12,32 @@ log = logging.getLogger("red.vrt.assistant.models")
 DEFAULT_THINK_TAG_PREFIX = "<think>"
 DEFAULT_THINK_TAG_SUFFIX = "</think>"
 DEFAULT_SYSTEM_PROMPT = "You are a discord bot named {botname}, and are chatting with {username}."
+UNCATEGORIZED = "uncategorized"
+
+
+def normalize_tool_category(category: t.Optional[str]) -> str:
+    if category is None:
+        return UNCATEGORIZED
+    normalized = str(category).strip().lower()
+    return normalized or UNCATEGORIZED
+
+
+def render_tool_category(category: t.Optional[str]) -> str:
+    return normalize_tool_category(category).replace("_", " ").title()
+
+
+def get_category_state(
+    function_names: t.Iterable[str], function_statuses: t.Mapping[str, bool]
+) -> t.Literal["off", "mixed", "on"]:
+    names = list(function_names)
+    if not names:
+        return "off"
+    enabled = sum(function_statuses.get(name, False) for name in names)
+    if enabled == 0:
+        return "off"
+    if enabled == len(names):
+        return "on"
+    return "mixed"
 
 
 class AssistantBaseModel(BaseModel):
@@ -57,6 +83,8 @@ class CustomFunction(AssistantBaseModel):
     jsonschema: dict
     permission_level: str = "user"  # user, mod, admin, owner
     required_permissions: t.List[str] = []  # Discord permission names (e.g. ["manage_messages"])
+    category: str = UNCATEGORIZED
+    requires_user_approval: bool = False
 
     @field_validator("required_permissions")
     @classmethod
@@ -66,6 +94,11 @@ class CustomFunction(AssistantBaseModel):
         if invalid:
             raise ValueError(f"Invalid Discord permission names: {', '.join(invalid)}")
         return v
+
+    @field_validator("category")
+    @classmethod
+    def validate_category(cls, v: str) -> str:
+        return normalize_tool_category(v)
 
     def prep(self) -> t.Callable:
         """Prep function for execution"""
@@ -304,6 +337,7 @@ class Conversation(AssistantBaseModel):
     last_updated: float = 0.0
     system_prompt_override: t.Optional[str] = None
     compaction_count: int = 0  # How many times this conversation has been compacted
+    approved_tool_names: t.List[str] = []
 
     def get_images(self) -> t.List[str]:
         """Get all image b64 strings in the conversation
@@ -333,6 +367,7 @@ class Conversation(AssistantBaseModel):
     def cleanup(self, conf: GuildSettings, member: t.Optional[discord.Member] = None):
         if self.is_expired(conf, member):
             self.messages.clear()
+            self.approved_tool_names.clear()
             return
 
         user_retention = conf.get_user_max_retention(member)
@@ -358,6 +393,7 @@ class Conversation(AssistantBaseModel):
     def reset(self):
         self.refresh()
         self.messages.clear()
+        self.approved_tool_names.clear()
 
     def refresh(self):
         self.last_updated = datetime.now().timestamp()
@@ -480,6 +516,180 @@ class DB(AssistantBaseModel):
         key = f"{member_id}-{channel_id}-{guild_id}"
         return self.conversations.setdefault(key, Conversation())
 
+    def get_function_catalog(self, bot: Red, registry: t.Dict[str, t.Dict[str, dict]]) -> t.List[dict]:
+        catalog: t.List[dict] = []
+
+        for function_name, function_data in self.functions.items():
+            catalog.append(
+                {
+                    "name": function_name,
+                    "source": "Custom",
+                    "category": normalize_tool_category(function_data.category),
+                    "permission_level": function_data.permission_level,
+                    "required_permissions": list(function_data.required_permissions),
+                    "requires_user_approval": function_data.requires_user_approval,
+                    "schema": function_data.jsonschema,
+                }
+            )
+
+        for cog_name, function_schemas in registry.items():
+            cog = bot.get_cog(cog_name)
+            if not cog:
+                continue
+            for function_name, data in function_schemas.items():
+                function_obj = getattr(cog, function_name, None)
+                if function_obj is None:
+                    continue
+                catalog.append(
+                    {
+                        "name": function_name,
+                        "source": cog_name,
+                        "category": normalize_tool_category(data.get("category")),
+                        "permission_level": data["permission_level"],
+                        "required_permissions": list(data.get("required_permissions", [])),
+                        "requires_user_approval": data.get("requires_user_approval", False),
+                        "schema": data["schema"],
+                    }
+                )
+
+        return catalog
+
+    def get_function_callable(
+        self,
+        bot: Red,
+        registry: t.Dict[str, t.Dict[str, dict]],
+        function_name: str,
+        source: str,
+    ) -> t.Optional[t.Callable]:
+        if source == "Custom":
+            custom_function = self.functions.get(function_name)
+            if custom_function is not None:
+                return custom_function.prep()
+            return None
+
+        function_schemas = registry.get(source)
+        if not function_schemas or function_name not in function_schemas:
+            return None
+
+        cog = bot.get_cog(source)
+        if not cog:
+            return None
+
+        function_obj = getattr(cog, function_name, None)
+        if function_obj is not None:
+            return function_obj
+
+        return None
+
+    def get_functions_by_category(
+        self, bot: Red, registry: t.Dict[str, t.Dict[str, dict]]
+    ) -> t.Dict[str, t.List[dict]]:
+        grouped: t.Dict[str, t.List[dict]] = {}
+        for entry in self.get_function_catalog(bot, registry):
+            grouped.setdefault(entry["category"], []).append(entry)
+        return grouped
+
+    def get_context_variable_catalog(self, bot: Red, registry: t.Dict[str, t.Dict[str, dict]]) -> t.List[dict]:
+        catalog: t.List[dict] = []
+        for cog_name, variables in registry.items():
+            cog = bot.get_cog(cog_name)
+            if not cog:
+                continue
+            for variable_name, data in variables.items():
+                fetch_method = data.get("fetch_method", variable_name)
+                fetch_obj = getattr(cog, fetch_method, None)
+                if fetch_obj is None:
+                    continue
+                catalog.append(
+                    {
+                        "name": variable_name,
+                        "source": cog_name,
+                        "description": data["description"],
+                        "permission_level": data["permission_level"],
+                        "required_permissions": list(data.get("required_permissions", [])),
+                        "fetch_method": fetch_method,
+                    }
+                )
+        return catalog
+
+    def get_context_variable_callable(
+        self,
+        bot: Red,
+        registry: t.Dict[str, t.Dict[str, dict]],
+        variable_name: str,
+        source: str,
+    ) -> t.Optional[t.Callable]:
+        variable_entries = registry.get(source)
+        if not variable_entries or variable_name not in variable_entries:
+            return None
+
+        cog = bot.get_cog(source)
+        if not cog:
+            return None
+
+        fetch_method = variable_entries[variable_name].get("fetch_method", variable_name)
+        callable_obj = getattr(cog, fetch_method, None)
+        if callable_obj is not None:
+            return callable_obj
+        return None
+
+    async def prep_context_variables(
+        self,
+        bot: Red,
+        registry: t.Dict[str, t.Dict[str, dict]],
+        requested_names: t.Optional[t.Iterable[str]] = None,
+        member: discord.Member = None,
+        showall: bool = False,
+    ) -> t.Dict[str, dict]:
+        async def can_use(perm_level: str) -> bool:
+            if perm_level == "user":
+                return True
+            if member is None:
+                return False
+            if perm_level == "mod":
+                perms = [
+                    member.guild_permissions.manage_messages,
+                    await bot.is_mod(member),
+                ]
+                return any(perms)
+            if perm_level == "admin":
+                perms = [
+                    member.guild_permissions.administrator,
+                    await bot.is_admin(member),
+                ]
+                return any(perms)
+            if perm_level == "owner":
+                return await bot.is_owner(member)
+            return False
+
+        def has_discord_perms(required_permissions: t.List[str]) -> bool:
+            if not required_permissions:
+                return True
+            if member is None:
+                return False
+            guild_perms = member.guild_permissions
+            return all(getattr(guild_perms, perm, False) for perm in required_permissions)
+
+        target_names = set(requested_names) if requested_names is not None else None
+        prepared: t.Dict[str, dict] = {}
+
+        for entry in self.get_context_variable_catalog(bot, registry):
+            variable_name = entry["name"]
+            if target_names is not None and variable_name not in target_names:
+                continue
+            if variable_name in prepared:
+                continue
+            if not await can_use(entry["permission_level"]) and not showall:
+                continue
+            if not has_discord_perms(entry["required_permissions"]) and not showall:
+                continue
+            callable_obj = self.get_context_variable_callable(bot, registry, variable_name, entry["source"])
+            if callable_obj is None:
+                continue
+            prepared[variable_name] = {"entry": entry, "callable": callable_obj}
+
+        return prepared
+
     async def prep_functions(
         self,
         bot: Red,
@@ -531,46 +741,30 @@ class DB(AssistantBaseModel):
         function_calls = []
         function_map = {}
 
-        # Prep bot owner functions first
-        for function_name, func in self.functions.items():
+        for entry in self.get_function_catalog(bot, registry):
+            function_name = entry["name"]
             if not conf.function_statuses.get(function_name, False):
-                # Function is disabled
                 continue
-            if not await can_use(func.permission_level) and not showall:
+            if function_name in function_map:
                 continue
-            if not has_discord_perms(func.required_permissions) and not showall:
-                continue
-            function_calls.append(func.jsonschema)
-            function_map[function_name] = func.prep()
-
-        # Next prep registry functions
-        for cog_name, function_schemas in registry.items():
-            cog = bot.get_cog(cog_name)
-            if not cog:
-                continue
-            for function_name, data in function_schemas.items():
-                if not conf.function_statuses.get(function_name, False):
-                    # Function is disabled
-                    continue
-                if function_name in function_map:
-                    continue
-                function_obj = getattr(cog, function_name, None)
-                if function_obj is None:
-                    log.error(f"{cog_name} doesnt have a function called {function_name}!")
-                    continue
-                if not await can_use(data["permission_level"]) and not showall:
+            if not await can_use(entry["permission_level"]) and not showall:
+                if member is not None:
                     log.debug(
-                        f"{member.name} cannot use {function_name} with {data['permission_level']} permission level."
+                        f"{member.name} cannot use {function_name} with {entry['permission_level']} permission level."
                     )
-                    continue
-                if not has_discord_perms(data.get("required_permissions", [])) and not showall:
+                continue
+            if not has_discord_perms(entry["required_permissions"]) and not showall:
+                if member is not None:
                     log.debug(
                         f"{member.name} lacks required discord permissions for {function_name}: "
-                        f"{data.get('required_permissions', [])}"
+                        f"{entry['required_permissions']}"
                     )
-                    continue
-                function_calls.append(data["schema"])
-                function_map[function_name] = function_obj
+                continue
+            callable_obj = self.get_function_callable(bot, registry, function_name, entry["source"])
+            if callable_obj is None:
+                continue
+            function_calls.append(entry["schema"])
+            function_map[function_name] = callable_obj
 
         log.debug(f"Prepped: {function_map.keys()}")
         return function_calls, function_map

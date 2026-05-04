@@ -326,7 +326,7 @@ class AutoDocs(commands.Cog):
         schemas = [
             {
                 "name": "get_command_info",
-                "description": "Get info about a specific command",
+                "description": "Get details about a specific command",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -340,7 +340,7 @@ class AutoDocs(commands.Cog):
             },
             {
                 "name": "get_command_names",
-                "description": "Get a list of commands for a cog",
+                "description": "Get the command names for a cog",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -368,11 +368,11 @@ class AutoDocs(commands.Cog):
             },
             {
                 "name": "get_cog_list",
-                "description": "Get a list of currently loaded cogs by name",
+                "description": "Get the names of currently loaded cogs",
                 "parameters": {
                     "type": "object",
                     "properties": {},
                 },
             },
         ]
-        await cog.register_functions(self.qualified_name, schemas)
+        await cog.register_functions(self.qualified_name, schemas, category="documentation")

@@ -160,11 +160,11 @@ class Crafter(commands.Cog):
     async def on_assistant_cog_add(self, cog: commands.Cog):
         schema = {
             "name": "get_crafting_info",
-            "description": "Get crafting information for an item in Ark Survival Evolved",
+            "description": "Get Ark Survival Evolved crafting info for an item",
             "parameters": {
                 "type": "object",
                 "properties": {"item_name": {"type": "string"}},
                 "required": ["item_name"],
             },
         }
-        await cog.register_function(self.qualified_name, schema)
+        await cog.register_function(self.qualified_name, schema, category="crafting")

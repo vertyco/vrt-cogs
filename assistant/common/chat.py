@@ -7,7 +7,7 @@ import re
 import traceback
 from contextlib import suppress
 from datetime import datetime
-from inspect import iscoroutinefunction
+from inspect import Parameter, iscoroutinefunction, signature
 from io import BytesIO, StringIO
 from typing import Callable, Dict, List, Optional, Union
 
@@ -34,6 +34,7 @@ from redbot.core.utils.chat_formatting import (
 from sentry_sdk import add_breadcrumb
 
 from ..abc import MixinMeta
+from ..views import AdminToolApprovalView
 from .constants import (
     DO_NOT_RESPOND_SCHEMA,
     IMAGE_RETAIN_TURNS,
@@ -49,7 +50,7 @@ from .constants import (
     TOOL_RESULT_SOFT_TRIM_MAX,
     TOOL_RESULT_SOFT_TRIM_TAIL,
 )
-from .models import Conversation, GuildSettings
+from .models import Conversation, GuildSettings, render_tool_category
 from .reply import send_reply
 from .utils import (
     clean_name,
@@ -207,6 +208,24 @@ def cap_tool_result_by_context(messages: list[dict], max_tokens: int) -> None:
         )
 
 
+def get_callable_kwargs(func: Callable, payload: dict) -> dict:
+    """Filter kwargs for callables that do not accept arbitrary keyword args."""
+    try:
+        parameters = signature(func).parameters.values()
+    except (TypeError, ValueError):
+        return payload
+
+    if any(parameter.kind == Parameter.VAR_KEYWORD for parameter in parameters):
+        return payload
+
+    allowed = {
+        parameter.name
+        for parameter in parameters
+        if parameter.kind in (Parameter.POSITIONAL_OR_KEYWORD, Parameter.KEYWORD_ONLY)
+    }
+    return {key: value for key, value in payload.items() if key in allowed}
+
+
 @cog_i18n(_)
 class ChatHandler(MixinMeta):
     async def get_mention_permissions(self, member: discord.Member) -> discord.AllowedMentions:
@@ -220,6 +239,143 @@ class ChatHandler(MixinMeta):
         if privileged:
             return discord.AllowedMentions(everyone=False, roles=True, users=True)
         return discord.AllowedMentions(everyone=False, roles=False, users=False)
+
+    async def request_tool_approval(
+        self,
+        function_name: str,
+        function_entry: dict,
+        arguments: dict,
+        author: Optional[discord.Member],
+        channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel, int],
+        conversation: Conversation,
+        message_obj: Optional[discord.Message],
+    ) -> tuple[bool, str]:
+        if not function_entry.get("requires_user_approval"):
+            return True, ""
+        if arguments.get("dry_run") is True:
+            return True, ""
+        if function_name in conversation.approved_tool_names:
+            return True, ""
+
+        if author is None or not hasattr(channel, "send") or message_obj is None:
+            denial = _(
+                "Execution of admin tool `{}` requires interactive approval, but no interactive message context was available."
+            ).format(function_name)
+            return False, denial
+
+        source = function_entry.get("source", _("Unknown"))
+        category = render_tool_category(function_entry.get("category"))
+        preview = orjson.dumps(arguments, option=orjson.OPT_INDENT_2).decode()
+        if len(preview) > 1200:
+            preview = preview[:1200] + "\n... [truncated]"
+
+        prompt = _(
+            "`{}` wants to run admin tool `{}` from `{}` ({})\nChoose `Approve Once`, `Allow This Session`, or `Skip`."
+        ).format(author.display_name, function_name, source, category)
+        prompt += "\n" + box(preview, lang="json")
+
+        reference = None
+        with suppress(discord.HTTPException, AttributeError):
+            reference = message_obj.to_reference(fail_if_not_exists=False)
+
+        view = AdminToolApprovalView(author.id)
+        approval_message = await channel.send(prompt, view=view, reference=reference)
+        view.message = approval_message
+        await view.wait()
+
+        decision_map = {
+            "once": _("Approved once."),
+            "session": _("Approved for this session."),
+            "skip": _("Skipped."),
+            "timeout": _("Approval timed out."),
+        }
+        if view.decision == "session" and function_name not in conversation.approved_tool_names:
+            conversation.approved_tool_names.append(function_name)
+
+        with suppress(discord.HTTPException):
+            await approval_message.edit(content=prompt + "\n" + decision_map[view.decision], view=view)
+
+        if view.decision in {"once", "session"}:
+            return True, ""
+
+        if view.decision == "timeout":
+            timed_out = _(
+                "SKIPPED: Approval for admin tool `{}` timed out. Do not claim it ran. Continue without it, ask again later, or try a different tool."
+            ).format(function_name)
+            return False, timed_out
+
+        denial = _(
+            "SKIPPED: The user skipped admin tool `{}` for this call. Do not claim it ran. You may continue without it, ask for approval again later, or try a different tool."
+        ).format(function_name)
+        return False, denial
+
+    async def resolve_prompt_context_variables(
+        self,
+        guild: discord.Guild,
+        channel: Optional[Union[discord.TextChannel, discord.Thread, discord.ForumChannel]],
+        author: Optional[discord.Member],
+        conf: GuildSettings,
+        conversation: Conversation,
+        extras: dict,
+        now: datetime,
+        prompt_templates: list[str],
+    ) -> dict[str, str]:
+        catalog = self.db.get_context_variable_catalog(self.bot, self.context_registry)
+        if not catalog:
+            return {}
+
+        requested_names = {
+            entry["name"]
+            for entry in catalog
+            if any(f"{{{entry['name']}}}" in template for template in prompt_templates if template)
+        }
+        if not requested_names:
+            return {}
+
+        prepared = await self.db.prep_context_variables(
+            bot=self.bot,
+            registry=self.context_registry,
+            requested_names=requested_names,
+            member=author,
+        )
+
+        payload = {
+            **extras,
+            "user": author,
+            "channel": channel,
+            "guild": guild,
+            "bot": self.bot,
+            "conf": conf,
+            "conversation": conversation,
+            "now": now,
+        }
+        resolved: dict[str, str] = {}
+        for variable_name in sorted(requested_names):
+            prepared_entry = prepared.get(variable_name)
+            if prepared_entry is None:
+                resolved[variable_name] = "Unavailable"
+                continue
+
+            fetcher = prepared_entry["callable"]
+            fetch_kwargs = get_callable_kwargs(fetcher, payload)
+            try:
+                if iscoroutinefunction(fetcher):
+                    value = await fetcher(**fetch_kwargs)
+                else:
+                    value = await asyncio.to_thread(fetcher, **fetch_kwargs)
+            except Exception as e:
+                log.error(f"Failed to resolve context variable {variable_name}", exc_info=e)
+                resolved[variable_name] = f"[Error resolving {variable_name}]"
+                continue
+
+            if value is None:
+                resolved[variable_name] = ""
+            elif isinstance(value, (dict, list)):
+                resolved[variable_name] = orjson.dumps(value, option=orjson.OPT_INDENT_2).decode()
+            else:
+                resolved[variable_name] = str(value)
+
+        return resolved
 
     async def handle_message(
         self,
@@ -476,6 +632,7 @@ class ChatHandler(MixinMeta):
         """Call the API asynchronously"""
         functions = function_calls.copy() if function_calls else []
         mapping = function_map.copy() if function_map else {}
+        function_entries: Dict[str, dict] = {}
 
         async def do_not_respond(*args, **kwargs):
             return {"return_null": True, "content": "do_not_respond"}
@@ -485,8 +642,12 @@ class ChatHandler(MixinMeta):
             prepped_function_calls, prepped_function_map = await self.db.prep_functions(
                 bot=self.bot, conf=conf, registry=self.registry, member=author
             )
+            catalog_map = {entry["name"]: entry for entry in self.db.get_function_catalog(self.bot, self.registry)}
             functions.extend(prepped_function_calls)
             mapping.update(prepped_function_map)
+            for function_name in prepped_function_map:
+                if function_name in catalog_map:
+                    function_entries[function_name] = catalog_map[function_name]
             if auto_answer:
                 functions.append(DO_NOT_RESPOND_SCHEMA)
                 mapping["do_not_respond"] = do_not_respond
@@ -516,6 +677,7 @@ class ChatHandler(MixinMeta):
                 conversation=conversation,
                 function_calls=functions,
                 function_map=mapping,
+                function_entries=function_entries,
                 message_obj=message_obj,
                 images=images,
                 model_override=model_override,
@@ -537,6 +699,7 @@ class ChatHandler(MixinMeta):
         conversation: Conversation,
         function_calls: List[dict],
         function_map: Dict[str, Callable],
+        function_entries: Dict[str, dict],
         message_obj: Optional[discord.Message] = None,
         images: list[str] = None,
         model_override: Optional[str] = None,
@@ -865,7 +1028,18 @@ class ChatHandler(MixinMeta):
                     kwargs = {**args, **data}
                     func = function_map[function_name]
                     try:
-                        if iscoroutinefunction(func):
+                        approved, denial_reason = await self.request_tool_approval(
+                            function_name=function_name,
+                            function_entry=function_entries.get(function_name, {}),
+                            arguments=args,
+                            author=member,
+                            channel=channel,
+                            conversation=conversation,
+                            message_obj=message_obj,
+                        )
+                        if not approved:
+                            func_result = denial_reason
+                        elif iscoroutinefunction(func):
                             func_result = await func(**kwargs)
                         else:
                             func_result = await asyncio.to_thread(func, **kwargs)
@@ -1133,6 +1307,30 @@ class ChatHandler(MixinMeta):
             prefix,
             prefixes,
         )
+
+        selected_system_prompt = (
+            conf.channel_prompts[channel.id]
+            if channel.id in conf.channel_prompts
+            else conversation.system_prompt_override or self.db.get_effective_system_prompt(conf)
+        )
+        prompt_templates = [selected_system_prompt, conf.prompt, trigger_prompt or ""]
+        context_variables = await self.resolve_prompt_context_variables(
+            guild=guild,
+            channel=channel,
+            author=author,
+            conf=conf,
+            conversation=conversation,
+            extras=extras,
+            now=now,
+            prompt_templates=prompt_templates,
+        )
+        for variable_name, value in context_variables.items():
+            if variable_name in params:
+                log.warning(
+                    f"Context variable {variable_name} conflicts with a built-in prompt parameter and was skipped"
+                )
+                continue
+            params[variable_name] = value
 
         def format_string(text: str):
             """Instead of format(**params) possibly giving a KeyError if prompt has code in it"""

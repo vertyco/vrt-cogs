@@ -25,6 +25,7 @@ class MixinMeta(ABC):
         self.db: DB
         self.mp_pool: Pool
         self.registry: Dict[str, Dict[str, dict]]
+        self.context_registry: Dict[str, Dict[str, dict]]
         self.embedding_store: EmbeddingStore
         self.scheduler: AsyncIOScheduler
 

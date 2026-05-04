@@ -367,7 +367,7 @@ TLDR tips:
 
 GENERATE_IMAGE = {
     "name": "generate_image",
-    "description": "Use this to generate an image from a text prompt.",
+    "description": "Generate an image from a text prompt.",
     "parameters": {
         "type": "object",
         "properties": {
@@ -401,7 +401,7 @@ GENERATE_IMAGE = {
 }
 EDIT_IMAGE = {
     "name": "edit_image",
-    "description": "Use this to edit an existing image for a user. (Use this is the user tells you to do something to an image!)",
+    "description": "Edit an existing image using the user's instructions.",
     "parameters": {
         "type": "object",
         "properties": {
@@ -417,7 +417,7 @@ EDIT_IMAGE = {
 
 SEARCH_INTERNET = {
     "name": "search_web_brave",
-    "description": "Search the web for current information on a topic. Uses Brave Search API if configured, otherwise falls back to DuckDuckGo.",
+    "description": "Search the web for current information on a topic.",
     "parameters": {
         "type": "object",
         "properties": {
@@ -437,7 +437,7 @@ SEARCH_INTERNET = {
 
 THINK_AND_PLAN = {
     "name": "think_and_plan",
-    "description": "Use this to break down complex tasks into smaller steps before executing them. This helps you organize your approach and ensure you don't miss important details. Call this BEFORE starting work on complex multi-step tasks.",
+    "description": "Break a complex task into clear steps before doing it. Call this before multi-step work.",
     "parameters": {
         "type": "object",
         "properties": {
@@ -460,7 +460,7 @@ THINK_AND_PLAN = {
 }
 DO_NOT_RESPOND_SCHEMA = {
     "name": "do_not_respond",
-    "description": "Call this function if you do not want to or do not need to respond to the user.",
+    "description": "Use this when no response is needed.",
     "parameters": {
         "type": "object",
         "properties": {},
@@ -468,7 +468,7 @@ DO_NOT_RESPOND_SCHEMA = {
 }
 RESPOND_AND_CONTINUE = {
     "name": "respond_and_continue",
-    "description": "Call this function if you want to respond to the user but also continue working on the task at hand.",
+    "description": "Send a reply to the user and keep working afterward.",
     "parameters": {
         "type": "object",
         "properties": {
@@ -483,7 +483,7 @@ RESPOND_AND_CONTINUE = {
 
 CREATE_REMINDER = {
     "name": "create_reminder",
-    "description": "Create a reminder for the user. The reminder will ping the user (or DM them) at the specified time.",
+    "description": "Create a reminder for the user at a specified time.",
     "parameters": {
         "type": "object",
         "properties": {
@@ -515,7 +515,7 @@ CREATE_REMINDER = {
 
 CANCEL_REMINDER = {
     "name": "cancel_reminder",
-    "description": "Cancel an existing reminder by its ID.",
+    "description": "Cancel a reminder by ID.",
     "parameters": {
         "type": "object",
         "properties": {
@@ -530,7 +530,7 @@ CANCEL_REMINDER = {
 
 LIST_REMINDERS = {
     "name": "list_reminders",
-    "description": "List all pending reminders for the user.",
+    "description": "List the user's pending reminders.",
     "parameters": {
         "type": "object",
         "properties": {},
@@ -540,11 +540,10 @@ LIST_REMINDERS = {
 REMEMBER_USER = {
     "name": "remember_user",
     "description": (
-        "Store a DURABLE fact about the user that would meaningfully help them in a FUTURE SEPARATE conversation. "
-        "Only store facts that are stable over time: preferences, technical setup, recurring issues, "
-        "timezone, role/position, or important context about their situation. "
-        "Do NOT store: one-time questions, temporary states, conversational details, or things "
-        "already answered by the knowledge base. When in doubt, do NOT store."
+        "Store a durable fact about the user for future conversations. "
+        "Only store stable long-term context like preferences, technical setup, recurring issues, timezone, role, "
+        "or ongoing situation. Do not store one-off requests, temporary states, or things already covered elsewhere. "
+        "When unsure, do not store it."
     ),
     "parameters": {
         "type": "object",
@@ -560,7 +559,7 @@ REMEMBER_USER = {
 
 RECALL_USER = {
     "name": "recall_user",
-    "description": "Retrieve stored facts about the user you are talking to. Facts are already injected into context automatically, so only call this if the user explicitly asks what you know about them.",
+    "description": "Retrieve stored facts about the current user. Facts are usually injected automatically, so use this only if the user asks.",
     "parameters": {
         "type": "object",
         "properties": {},
@@ -569,7 +568,7 @@ RECALL_USER = {
 
 FORGET_USER = {
     "name": "forget_user",
-    "description": "Remove a specific fact from the user's memory. Use the fact index (starting from 1) or the exact text of the fact to remove.",
+    "description": "Remove a stored user fact by index or exact text.",
     "parameters": {
         "type": "object",
         "properties": {
@@ -585,11 +584,8 @@ FORGET_USER = {
 SCHEDULE_TASK = {
     "name": "schedule_task",
     "description": (
-        "Schedule an autonomous task to be executed at a future time. "
-        "When this task fires, you will be prompted with the instruction in this channel and can take any actions "
-        "available to you (search, fetch, send messages, etc.). "
-        "Use this when a user asks you to do something later, check on something periodically, or follow up on a task. "
-        "Examples: 'check the status channel in 1 hour', 'summarize today's messages at 5pm', 'follow up with the user tomorrow'."
+        "Schedule an autonomous task for later in this channel. "
+        "Use this for follow-ups, periodic checks, or delayed actions the user requests."
     ),
     "parameters": {
         "type": "object",
@@ -625,7 +621,7 @@ SCHEDULE_TASK = {
 
 CANCEL_SCHEDULED_TASK = {
     "name": "cancel_scheduled_task",
-    "description": "Cancel a scheduled autonomous task by its ID.",
+    "description": "Cancel a scheduled task by ID.",
     "parameters": {
         "type": "object",
         "properties": {
@@ -640,7 +636,7 @@ CANCEL_SCHEDULED_TASK = {
 
 LIST_SCHEDULED_TASKS = {
     "name": "list_scheduled_tasks",
-    "description": "List all pending scheduled tasks for the user in this server.",
+    "description": "List the user's pending scheduled tasks in this server.",
     "parameters": {
         "type": "object",
         "properties": {},

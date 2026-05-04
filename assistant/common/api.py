@@ -35,6 +35,7 @@ from .models import (
     EndpointProfile,
     GuildSettings,
     UserMemory,
+    render_tool_category,
 )
 
 log = logging.getLogger("red.vrt.assistant.api")
@@ -1324,6 +1325,7 @@ class API(MixinMeta):
         func_dump = {}
         for k, v in self.db.functions.items():
             d = v.model_dump(exclude_defaults=False)
+            d.setdefault("category", "uncategorized")
             d.setdefault("required_permissions", [])
             func_dump[k] = d
         registry = {"Assistant-Custom": func_dump}
@@ -1343,6 +1345,7 @@ class API(MixinMeta):
                     "jsonschema": function_schema,
                     "permission_level": data["permission_level"],
                     "required_permissions": list(data.get("required_permissions", [])),
+                    "category": data.get("category", "uncategorized"),
                 }
 
         conf = self.db.get_conf(user.guild)
@@ -1358,18 +1361,28 @@ class API(MixinMeta):
                     description=function_name,
                     color=discord.Color.blue(),
                 )
-                if cog_name != "Assistant-Custom":
-                    embed.add_field(
-                        name=_("3rd Party"),
-                        value=_("This function is managed by the `{}` cog").format(cog_name),
-                        inline=False,
-                    )
-                elif cog_name == "Assistant":
+                enabled = conf.function_statuses.get(function_name, False)
+                status_emoji = "🟢" if enabled else "🔴"
+                category_name = render_tool_category(data.get("category", "uncategorized"))
+
+                if cog_name == "Assistant":
                     embed.add_field(
                         name=_("Internal Function"),
                         value=_("This is a built-in function managed by the Assistant cog"),
                         inline=False,
                     )
+                elif cog_name != "Assistant-Custom":
+                    embed.add_field(
+                        name=_("3rd Party"),
+                        value=_("This function is managed by the `{}` cog").format(cog_name),
+                        inline=False,
+                    )
+                embed.add_field(name=_("Category"), value=category_name, inline=True)
+                embed.add_field(
+                    name=_("Status"),
+                    value=_("{} {}").format(status_emoji, _("Enabled") if enabled else _("Disabled")),
+                    inline=True,
+                )
                 schema = json.dumps(data["jsonschema"], indent=2)
                 tokens = await self.count_tokens(schema, model)
 
