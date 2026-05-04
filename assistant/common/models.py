@@ -154,11 +154,11 @@ class GuildSettings(AssistantBaseModel):
     max_retention: int = 50
     max_retention_time: int = 1800
     max_response_tokens: int = 0
-    max_tokens: int = 4000
+    max_tokens: int = 10000
     mention: bool = False
     mention_respond: bool = False
     enabled: bool = True  # Auto-reply channel
-    model: str = "gpt-5.1"
+    model: str = "gpt-5.4"
     embed_model: str = "text-embedding-3-small"  # Or text-embedding-3-large, text-embedding-ada-002
     collab_convos: bool = False
     message_coalesce_delay: float = 0.0  # seconds to wait for follow-up messages before responding (0 = disabled)
@@ -174,7 +174,7 @@ class GuildSettings(AssistantBaseModel):
     auto_answer: bool = False  # Answer questions anywhere if one is detected and embedding is found for it
     auto_answer_threshold: float = 0.7  # 0.0 - 1.0  # Confidence threshold for auto-answer
     auto_answer_ignored_channels: t.List[int] = []  # Channel IDs to ignore auto-answer
-    auto_answer_model: str = "gpt-5.1"  # Model to use for auto-answer
+    auto_answer_model: str = "gpt-5.4"  # Model to use for auto-answer
 
     # Trigger words - reply to messages containing specific keywords/regex patterns
     trigger_enabled: bool = False  # Whether trigger word feature is enabled
