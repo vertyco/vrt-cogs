@@ -2,7 +2,7 @@ import asyncio
 import html as html_module
 import logging
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from io import BytesIO, StringIO
 from typing import Literal, Union
 
@@ -163,6 +163,51 @@ class Functions(MixinMeta):
             return None, None
         return await self.fetch_remote_asset(cleaned, field_name)
 
+    async def fetch_remote_resource(
+        self,
+        url: str,
+        field_name: str,
+        allowed_prefixes: tuple[str, ...],
+    ) -> tuple[bytes | None, str | None, str | None]:
+        cleaned = str(url).strip()
+        if not cleaned.startswith(("http://", "https://")):
+            return None, None, f"`{field_name}` must be an http or https URL."
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(cleaned, timeout=aiohttp.ClientTimeout(total=30)) as response:
+                    if response.status not in (200, 201):
+                        return None, None, f"Failed to fetch `{field_name}` resource: HTTP {response.status}"
+                    content_type = response.headers.get("Content-Type", "")
+                    if allowed_prefixes and not any(content_type.startswith(prefix) for prefix in allowed_prefixes):
+                        allowed_text = ", ".join(allowed_prefixes)
+                        return None, None, f"`{field_name}` URL must point to one of these content types: {allowed_text}."
+                    data = await response.read()
+                    if not data:
+                        return None, None, f"`{field_name}` URL returned empty content."
+                    return data, content_type, None
+        except asyncio.TimeoutError:
+            return None, None, f"Fetching `{field_name}` timed out."
+        except Exception as e:
+            return None, None, f"Failed to fetch `{field_name}` resource: {e}"
+
+    def extension_from_content_type(self, content_type: str | None, default: str = "bin") -> str:
+        mapping = {
+            "image/png": "png",
+            "image/jpeg": "jpg",
+            "image/jpg": "jpg",
+            "image/gif": "gif",
+            "image/apng": "png",
+            "audio/mpeg": "mp3",
+            "audio/mp3": "mp3",
+            "audio/ogg": "ogg",
+            "audio/wav": "wav",
+            "audio/x-wav": "wav",
+            "audio/webm": "webm",
+            "application/json": "json",
+            "application/octet-stream": default,
+        }
+        return mapping.get((content_type or "").split(";", 1)[0].strip().lower(), default)
+
     def parse_partial_emoji(
         self,
         guild: discord.Guild,
@@ -308,6 +353,242 @@ class Functions(MixinMeta):
         if position >= user.top_role.position:
             return f"You do not have permission to {action} at or above your top role position."
         return None
+
+    def user_has_any_guild_permission(self, user: discord.Member, permission_names: list[str]) -> bool:
+        if user.id == user.guild.owner_id:
+            return True
+        perms = user.guild_permissions
+        return perms.administrator or any(
+            getattr(perms, permission_name, False) for permission_name in permission_names
+        )
+
+    def ensure_any_guild_permission(self, user: discord.Member, permission_names: list[str], action: str) -> str | None:
+        if self.user_has_any_guild_permission(user, permission_names):
+            return None
+        needed = " or ".join(f"`{permission_name}`" for permission_name in permission_names)
+        return f"You do not have permission to {action}. Required Discord permission: {needed}."
+
+    def bot_has_guild_permission(self, guild: discord.Guild, permission_name: str) -> bool:
+        me = guild.me
+        if me is None:
+            return False
+        perms = me.guild_permissions
+        return perms.administrator or getattr(perms, permission_name, False)
+
+    def bot_has_channel_permission(
+        self,
+        guild: discord.Guild,
+        channel: discord.abc.GuildChannel | discord.Thread,
+        permission_name: str,
+    ) -> bool:
+        me = guild.me
+        if me is None:
+            return False
+        perms = channel.permissions_for(me)
+        return perms.administrator or getattr(perms, permission_name, False)
+
+    def ensure_bot_guild_permission(self, guild: discord.Guild, permission_name: str, action: str) -> str | None:
+        if self.bot_has_guild_permission(guild, permission_name):
+            return None
+        return f"I do not have permission to {action}. Required bot permission: `{permission_name}`."
+
+    def ensure_bot_channel_permission(
+        self,
+        guild: discord.Guild,
+        channel: discord.abc.GuildChannel | discord.Thread,
+        permission_name: str,
+        action: str,
+    ) -> str | None:
+        if self.bot_has_channel_permission(guild, channel, permission_name):
+            return None
+        return f"I do not have permission to {action}. Required bot permission: `{permission_name}`."
+
+    def can_bot_manage_role(self, guild: discord.Guild, role: discord.Role) -> bool:
+        me = guild.me
+        if me is None or role.is_default() or role.managed:
+            return False
+        if not self.bot_has_guild_permission(guild, "manage_roles"):
+            return False
+        return role < me.top_role
+
+    def ensure_bot_role_manageable(self, guild: discord.Guild, role: discord.Role, action: str) -> str | None:
+        if self.can_bot_manage_role(guild, role):
+            return None
+        return f"I do not have permission to {action} for role `{role.name}`."
+
+    def can_manage_member(
+        self,
+        actor: discord.Member,
+        member: discord.Member,
+        permission_name: str | None = None,
+        *,
+        allow_self: bool = False,
+    ) -> bool:
+        if permission_name and not self.user_has_guild_permission(actor, permission_name):
+            return False
+        if member.id == actor.guild.owner_id:
+            return False
+        if member.id == actor.id:
+            return allow_self
+        if actor.id == actor.guild.owner_id:
+            return True
+        return actor.top_role > member.top_role
+
+    def ensure_member_manageable(
+        self,
+        actor: discord.Member,
+        member: discord.Member,
+        action: str,
+        permission_name: str | None = None,
+        *,
+        allow_self: bool = False,
+    ) -> str | None:
+        if permission_name is not None:
+            permission_error = self.ensure_guild_permission(actor, permission_name, action)
+            if permission_error:
+                return permission_error
+        if member.id == actor.guild.owner_id:
+            return f"You cannot {action} because that member owns the server."
+        if member.id == actor.id and not allow_self:
+            return f"You cannot use this tool to {action} yourself."
+        if actor.id == actor.guild.owner_id:
+            return None
+        if actor.top_role <= member.top_role:
+            return f"You cannot {action} because that member's top role is at or above your top role."
+        return None
+
+    def ensure_bot_can_manage_member(self, guild: discord.Guild, member: discord.Member, action: str) -> str | None:
+        me = guild.me
+        if me is None:
+            return f"I cannot {action} because my member cache is unavailable."
+        if member.id == guild.owner_id:
+            return f"I cannot {action} because that member owns the server."
+        if member.id == me.id:
+            return f"I cannot {action} to myself."
+        if me.top_role <= member.top_role:
+            return f"I cannot {action} because that member's top role is at or above my top role."
+        return None
+
+    async def resolve_roles(
+        self, guild: discord.Guild, role_names_or_ids: list[str] | str | None
+    ) -> tuple[list[discord.Role], list[str]]:
+        resolved: list[discord.Role] = []
+        missing: list[str] = []
+        seen: set[int] = set()
+        for raw_value in self.coerce_string_list(role_names_or_ids):
+            role = await asyncio.to_thread(find_role, guild, raw_value)
+            if role is None:
+                missing.append(raw_value)
+                continue
+            if role.id in seen:
+                continue
+            seen.add(role.id)
+            resolved.append(role)
+        return resolved, missing
+
+    def parse_datetime_input(self, value: str | None, field_name: str) -> tuple[datetime | None, str | None]:
+        if value is None:
+            return None, None
+        try:
+            parsed = parser.parse(str(value).strip())
+        except (ValueError, TypeError) as e:
+            return None, f"Invalid `{field_name}` datetime: {e}"
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        else:
+            parsed = parsed.astimezone(timezone.utc)
+        return parsed, None
+
+    def normalize_system_channel_flags(self, flags: list[str] | str | None) -> tuple[list[str], list[str]]:
+        valid_flags = discord.SystemChannelFlags.VALID_FLAGS
+        normalized: list[str] = []
+        invalid: list[str] = []
+        for flag_name in self.coerce_string_list(flags):
+            cleaned = str(flag_name).strip().lower().replace("-", "_").replace(" ", "_")
+            if cleaned in valid_flags:
+                normalized.append(cleaned)
+            else:
+                invalid.append(str(flag_name))
+        return sorted(set(normalized)), invalid
+
+    def resolve_scheduled_event(self, guild: discord.Guild, event_name_or_id: str) -> discord.ScheduledEvent | None:
+        cleaned = str(event_name_or_id).strip()
+        if cleaned.isdigit():
+            event_id = int(cleaned)
+            for scheduled_event in guild.scheduled_events:
+                if scheduled_event.id == event_id:
+                    return scheduled_event
+        lowered = cleaned.lower()
+        for scheduled_event in guild.scheduled_events:
+            if scheduled_event.name.lower() == lowered:
+                return scheduled_event
+        return None
+
+    def resolve_webhook_from_list(
+        self, webhooks: list[discord.Webhook], webhook_name_or_id: str
+    ) -> discord.Webhook | None:
+        cleaned = str(webhook_name_or_id).strip()
+        if cleaned.isdigit():
+            webhook_id = int(cleaned)
+            for webhook in webhooks:
+                if webhook.id == webhook_id:
+                    return webhook
+        lowered = cleaned.lower()
+        for webhook in webhooks:
+            if webhook.name and webhook.name.lower() == lowered:
+                return webhook
+        return None
+
+    def extract_invite_code(self, invite_code_or_url: str) -> str:
+        cleaned = str(invite_code_or_url).strip().rstrip("/")
+        if "/" in cleaned:
+            cleaned = cleaned.rsplit("/", 1)[-1]
+        if "?" in cleaned:
+            cleaned = cleaned.split("?", 1)[0]
+        return cleaned
+
+    def resolve_custom_emoji(self, guild: discord.Guild, emoji_name_or_id: str) -> discord.Emoji | None:
+        cleaned = str(emoji_name_or_id).strip()
+        if cleaned.isdigit():
+            emoji = guild.get_emoji(int(cleaned))
+            if emoji is not None:
+                return emoji
+        lowered = cleaned.lower()
+        return discord.utils.find(lambda item: item.name.lower() == lowered, guild.emojis)
+
+    def resolve_sticker(self, guild: discord.Guild, sticker_name_or_id: str) -> discord.GuildSticker | None:
+        cleaned = str(sticker_name_or_id).strip()
+        if cleaned.isdigit():
+            sticker = discord.utils.get(guild.stickers, id=int(cleaned))
+            if sticker is not None:
+                return sticker
+        lowered = cleaned.lower()
+        return discord.utils.find(lambda item: item.name.lower() == lowered, guild.stickers)
+
+    async def resolve_soundboard_sound(
+        self, guild: discord.Guild, sound_name_or_id: str
+    ) -> discord.SoundboardSound | None:
+        sounds = guild.soundboard_sounds or await guild.fetch_soundboard_sounds()
+        cleaned = str(sound_name_or_id).strip()
+        if cleaned.isdigit():
+            sound = discord.utils.get(sounds, id=int(cleaned))
+            if sound is not None:
+                return sound
+        lowered = cleaned.lower()
+        return discord.utils.find(lambda item: item.name.lower() == lowered, sounds)
+
+    def resolve_onboarding_prompt(
+        self,
+        onboarding: discord.Onboarding,
+        prompt_name_or_id: str,
+    ) -> discord.OnboardingPrompt | None:
+        cleaned = str(prompt_name_or_id).strip()
+        if cleaned.isdigit():
+            prompt = onboarding.get_prompt(int(cleaned))
+            if prompt is not None:
+                return prompt
+        lowered = cleaned.lower()
+        return discord.utils.find(lambda item: item.title.lower() == lowered, onboarding.prompts)
 
     async def get_channel_list(
         self,
@@ -658,6 +939,439 @@ class Functions(MixinMeta):
             buffer.write(f"Features: {', '.join(features)}\n")
 
         return buffer.getvalue().strip()
+
+    async def inspect_server_setup(
+        self,
+        guild: discord.Guild,
+        focus: Literal["overview", "channels", "roles", "community", "moderation", "assets"] | None = None,
+        *args,
+        **kwargs,
+    ) -> str:
+        """Inspect the current server setup and highlight useful admin gaps."""
+        onboarding = None
+        welcome_screen = None
+        invites: list[discord.Invite] | None = None
+        webhooks: list[discord.Webhook] | None = None
+
+        try:
+            onboarding = await guild.onboarding()
+        except discord.HTTPException:
+            onboarding = None
+
+        try:
+            welcome_screen = await guild.welcome_screen()
+        except discord.HTTPException:
+            welcome_screen = None
+
+        try:
+            invites = await guild.invites()
+        except discord.HTTPException:
+            invites = None
+
+        try:
+            webhooks = await guild.webhooks()
+        except discord.HTTPException:
+            webhooks = None
+
+        admin_roles = [
+            role
+            for role in guild.roles
+            if not role.is_default() and (role.permissions.administrator or role.permissions.manage_guild)
+        ]
+        mod_roles = [
+            role
+            for role in guild.roles
+            if not role.is_default()
+            and any(
+                [
+                    role.permissions.manage_messages,
+                    role.permissions.moderate_members,
+                    role.permissions.kick_members,
+                    role.permissions.manage_channels,
+                ]
+            )
+        ]
+        uncategorized = [channel.name for channel in guild.channels if getattr(channel, "category", None) is None]
+        focus_note = f"Focus: {focus}\n" if focus else ""
+
+        recommendations: list[str] = []
+        if "COMMUNITY" in guild.features:
+            if guild.rules_channel is None:
+                recommendations.append("Community enabled but no rules channel is configured.")
+            if guild.public_updates_channel is None:
+                recommendations.append("Community enabled but no public updates channel is configured.")
+            if welcome_screen is None or not welcome_screen.enabled:
+                recommendations.append("Welcome screen is not enabled for this community server.")
+        if onboarding is None or not onboarding.enabled:
+            recommendations.append("Onboarding is disabled or unavailable.")
+        elif not onboarding.prompts:
+            recommendations.append("Onboarding is enabled but has no prompts configured.")
+        if not guild.categories:
+            recommendations.append("Server has no categories. Organization may be hard to navigate.")
+        if not admin_roles:
+            recommendations.append("No non-default admin roles detected.")
+        if not mod_roles:
+            recommendations.append("No clear moderation roles detected.")
+        if not guild.text_channels:
+            recommendations.append("Server has no text channels.")
+        if invites is not None and not invites and not guild.invites_paused():
+            recommendations.append("No active invites found. Consider creating one for onboarding or support flows.")
+        if not guild.scheduled_events:
+            recommendations.append("No scheduled events configured.")
+
+        buffer = StringIO()
+        buffer.write(f"Server Setup Report for {guild.name}\n")
+        buffer.write(f"Server ID: {guild.id}\n")
+        if focus_note:
+            buffer.write(focus_note)
+        buffer.write(f"Community: {'COMMUNITY' in guild.features}\n")
+        buffer.write(f"Verification Level: {guild.verification_level.name}\n")
+        buffer.write(f"Explicit Content Filter: {guild.explicit_content_filter.name}\n")
+        buffer.write(f"Default Notifications: {guild.default_notifications.name}\n")
+        buffer.write(f"Preferred Locale: {guild.preferred_locale.value}\n")
+        buffer.write(f"Invites Paused: {guild.invites_paused()}\n")
+        buffer.write(f"Discoverable: {'DISCOVERABLE' in guild.features}\n")
+        buffer.write(f"Widget Enabled: {guild.widget_enabled}\n")
+        buffer.write(f"Premium Progress Bar: {guild.premium_progress_bar_enabled}\n")
+        buffer.write(f"System Channel: {guild.system_channel.mention if guild.system_channel else 'none'}\n")
+        buffer.write(f"Rules Channel: {guild.rules_channel.mention if guild.rules_channel else 'none'}\n")
+        buffer.write(
+            f"Public Updates Channel: {guild.public_updates_channel.mention if guild.public_updates_channel else 'none'}\n"
+        )
+        buffer.write(
+            f"Safety Alerts Channel: {guild.safety_alerts_channel.mention if guild.safety_alerts_channel else 'none'}\n"
+        )
+        buffer.write(f"AFK Channel: {guild.afk_channel.mention if guild.afk_channel else 'none'}\n")
+        buffer.write(f"AFK Timeout: {guild.afk_timeout}\n")
+        buffer.write(f"Categories: {len(guild.categories)}\n")
+        buffer.write(f"Text Channels: {len(guild.text_channels)}\n")
+        buffer.write(f"Voice Channels: {len(guild.voice_channels)}\n")
+        buffer.write(f"Stage Channels: {len(guild.stage_channels)}\n")
+        buffer.write(f"Forum Channels: {len(guild.forums)}\n")
+        buffer.write(f"Roles: {len(guild.roles)}\n")
+        buffer.write(f"Emojis: {len(guild.emojis)}\n")
+        buffer.write(f"Stickers: {len(guild.stickers)}\n")
+        buffer.write(f"Soundboard Sounds: {len(guild.soundboard_sounds)}\n")
+        buffer.write(f"Scheduled Events: {len(guild.scheduled_events)}\n")
+        if invites is not None:
+            buffer.write(f"Active Invites: {len(invites)}\n")
+        if webhooks is not None:
+            buffer.write(f"Webhooks: {len(webhooks)}\n")
+
+        if uncategorized:
+            buffer.write(f"Uncategorized Channels: {', '.join(uncategorized[:15])}")
+            if len(uncategorized) > 15:
+                buffer.write(f", ... and {len(uncategorized) - 15} more")
+            buffer.write("\n")
+
+        if admin_roles:
+            buffer.write(
+                f"Admin Roles: {', '.join(role.name for role in sorted(admin_roles, key=lambda role: role.position, reverse=True)[:10])}\n"
+            )
+        if mod_roles:
+            buffer.write(
+                f"Moderation Roles: {', '.join(role.name for role in sorted(mod_roles, key=lambda role: role.position, reverse=True)[:10])}\n"
+            )
+
+        if welcome_screen is not None:
+            buffer.write(f"Welcome Screen Enabled: {welcome_screen.enabled}\n")
+            buffer.write(f"Welcome Channels: {len(welcome_screen.welcome_channels)}\n")
+        else:
+            buffer.write("Welcome Screen Enabled: unavailable\n")
+
+        if onboarding is not None:
+            buffer.write(f"Onboarding Enabled: {onboarding.enabled}\n")
+            buffer.write(f"Onboarding Mode: {onboarding.mode.name}\n")
+            buffer.write(f"Onboarding Default Channels: {len(onboarding.default_channels)}\n")
+            buffer.write(f"Onboarding Prompts: {len(onboarding.prompts)}\n")
+        else:
+            buffer.write("Onboarding Enabled: unavailable\n")
+
+        buffer.write("Recommendations:\n")
+        if recommendations:
+            for recommendation in recommendations:
+                buffer.write(f"- {recommendation}\n")
+        else:
+            buffer.write("- No major setup gaps detected from the available data.\n")
+        return buffer.getvalue().strip()
+
+    async def manage_member(
+        self,
+        guild: discord.Guild,
+        action: Literal[
+            "inspect",
+            "set_nickname",
+            "add_roles",
+            "remove_roles",
+            "set_roles",
+            "timeout",
+            "clear_timeout",
+            "kick",
+            "move_voice",
+            "disconnect",
+            "mute",
+            "unmute",
+            "deafen",
+            "undeafen",
+        ],
+        member_name_or_id: str,
+        nickname: str | None = None,
+        role_names_or_ids: list[str] | str | None = None,
+        timeout_minutes: int | None = None,
+        voice_channel_name_or_id: str | None = None,
+        reason: str | None = None,
+        dry_run: bool = False,
+        *args,
+        **kwargs,
+    ) -> str:
+        """Inspect or manage a guild member."""
+        user, user_error = self.get_requesting_admin(guild, kwargs)
+        if user_error:
+            return user_error
+
+        member = await asyncio.to_thread(find_member, guild, member_name_or_id)
+        if member is None:
+            return f"No member found matching '{member_name_or_id}'."
+
+        action = str(action).strip().lower()
+        if action == "inspect":
+            buffer = StringIO()
+            buffer.write(f"Member: {member.display_name} ({member.name})\n")
+            buffer.write(f"Member ID: {member.id}\n")
+            buffer.write(f"Mention: {member.mention}\n")
+            buffer.write(f"Created At: {member.created_at.strftime('%Y-%m-%d %H:%M:%S')}\n")
+            buffer.write(
+                f"Joined At: {member.joined_at.strftime('%Y-%m-%d %H:%M:%S') if member.joined_at else 'unknown'}\n"
+            )
+            buffer.write(f"Nickname: {member.nick or 'none'}\n")
+            buffer.write(f"Top Role: {member.top_role.name}\n")
+            buffer.write(f"Timed Out Until: {member.timed_out_until or 'not timed out'}\n")
+            buffer.write(f"Bot Account: {member.bot}\n")
+            roles = [role.name for role in member.roles if not role.is_default()]
+            buffer.write(f"Roles: {', '.join(roles) if roles else 'none'}\n")
+            if member.voice and member.voice.channel:
+                buffer.write(f"Voice Channel: {member.voice.channel.name}\n")
+                buffer.write(f"Muted: {member.voice.mute}\n")
+                buffer.write(f"Deafened: {member.voice.deaf}\n")
+            else:
+                buffer.write("Voice Channel: not connected\n")
+            return buffer.getvalue().strip()
+
+        action_names = {
+            "set_nickname": "change nicknames",
+            "add_roles": "assign roles",
+            "remove_roles": "remove roles",
+            "set_roles": "set roles",
+            "timeout": "timeout members",
+            "clear_timeout": "clear member timeouts",
+            "kick": "kick members",
+            "move_voice": "move members in voice",
+            "disconnect": "disconnect members from voice",
+            "mute": "mute members in voice",
+            "unmute": "unmute members in voice",
+            "deafen": "deafen members in voice",
+            "undeafen": "undeafen members in voice",
+        }
+        permission_names = {
+            "set_nickname": "manage_nicknames",
+            "add_roles": "manage_roles",
+            "remove_roles": "manage_roles",
+            "set_roles": "manage_roles",
+            "timeout": "moderate_members",
+            "clear_timeout": "moderate_members",
+            "kick": "kick_members",
+            "move_voice": "move_members",
+            "disconnect": "move_members",
+            "mute": "mute_members",
+            "unmute": "mute_members",
+            "deafen": "deafen_members",
+            "undeafen": "deafen_members",
+        }
+        permission_name = permission_names.get(action)
+        action_name = action_names.get(action, action.replace("_", " "))
+        if permission_name is None:
+            return "Invalid action for member management."
+
+        manage_error = self.ensure_member_manageable(user, member, action_name, permission_name)
+        if manage_error:
+            return manage_error
+
+        bot_permission_error = self.ensure_bot_guild_permission(guild, permission_name, action_name)
+        if bot_permission_error:
+            return bot_permission_error
+        bot_manage_error = self.ensure_bot_can_manage_member(guild, member, action_name)
+        if bot_manage_error:
+            return bot_manage_error
+
+        if action == "set_nickname":
+            if nickname is None:
+                return "`nickname` is required for set_nickname."
+            cleaned_nickname = str(nickname).strip()
+            new_nickname = None if cleaned_nickname.lower() in {"none", "null", "clear", "remove"} else cleaned_nickname
+            if dry_run:
+                return self.format_change_summary(
+                    f"Dry run: would update nickname for `{member.display_name}`.",
+                    {"nickname": new_nickname or "none"},
+                )
+            await member.edit(nick=new_nickname, reason=reason)
+            return f"Updated nickname for {member.mention} to `{new_nickname or 'none'}`."
+
+        if action in {"add_roles", "remove_roles", "set_roles"}:
+            resolved_roles, missing_roles = await self.resolve_roles(guild, role_names_or_ids)
+            if missing_roles:
+                return f"Unknown roles: {', '.join(missing_roles)}"
+            if not resolved_roles and action != "set_roles":
+                return "Provide at least one valid role to manage."
+
+            requested_roles = [role for role in resolved_roles if not role.is_default()]
+            for role in requested_roles:
+                user_role_error = self.ensure_role_manageable(user, role, "assign that role")
+                if user_role_error:
+                    return user_role_error
+                bot_role_error = self.ensure_bot_role_manageable(guild, role, "assign that role")
+                if bot_role_error:
+                    return bot_role_error
+
+            if action == "add_roles":
+                changes = {"roles": ", ".join(role.name for role in requested_roles)}
+                if dry_run:
+                    return self.format_change_summary(
+                        f"Dry run: would add roles to `{member.display_name}`.",
+                        changes,
+                    )
+                await member.add_roles(*requested_roles, reason=reason)
+                return f"Added roles to {member.mention}: {', '.join(role.name for role in requested_roles)}."
+
+            if action == "remove_roles":
+                changes = {"roles": ", ".join(role.name for role in requested_roles)}
+                if dry_run:
+                    return self.format_change_summary(
+                        f"Dry run: would remove roles from `{member.display_name}`.",
+                        changes,
+                    )
+                await member.remove_roles(*requested_roles, reason=reason)
+                return f"Removed roles from {member.mention}: {', '.join(role.name for role in requested_roles)}."
+
+            protected_roles = [
+                role
+                for role in member.roles
+                if role.is_default()
+                or role.managed
+                or not self.can_manage_role(user, role)
+                or not self.can_bot_manage_role(guild, role)
+            ]
+            final_roles = sorted({*protected_roles, *requested_roles}, key=lambda role: role.position)
+            changes = {
+                "requested_roles": ", ".join(role.name for role in requested_roles) if requested_roles else "none",
+                "preserved_roles": ", ".join(role.name for role in protected_roles if not role.is_default()) or "none",
+            }
+            if dry_run:
+                return self.format_change_summary(
+                    f"Dry run: would set manageable roles for `{member.display_name}`.",
+                    changes,
+                )
+            await member.edit(roles=final_roles, reason=reason)
+            return f"Updated manageable roles for {member.mention}."
+
+        if action == "timeout":
+            if timeout_minutes is None:
+                return "`timeout_minutes` is required for timeout."
+            if timeout_minutes <= 0 or timeout_minutes > 40320:
+                return "`timeout_minutes` must be between 1 and 40320."
+            until = discord.utils.utcnow() + timedelta(minutes=timeout_minutes)
+            if dry_run:
+                return self.format_change_summary(
+                    f"Dry run: would timeout `{member.display_name}`.",
+                    {"timeout_minutes": timeout_minutes, "until": until.isoformat()},
+                )
+            await member.edit(timed_out_until=until, reason=reason)
+            return f"Timed out {member.mention} for {timeout_minutes} minute(s)."
+
+        if action == "clear_timeout":
+            if dry_run:
+                return self.format_change_summary(
+                    f"Dry run: would clear timeout for `{member.display_name}`.",
+                    {"timed_out_until": "none"},
+                )
+            await member.edit(timed_out_until=None, reason=reason)
+            return f"Cleared timeout for {member.mention}."
+
+        if action == "kick":
+            if dry_run:
+                return self.format_change_summary(
+                    f"Dry run: would kick `{member.display_name}`.",
+                    {"member_id": member.id},
+                )
+            await member.kick(reason=reason)
+            return f"Kicked `{member.display_name}` successfully."
+
+        if member.voice is None or member.voice.channel is None:
+            return f"{member.display_name} is not connected to a voice or stage channel."
+
+        current_voice_channel = member.voice.channel
+        voice_permission_error = self.ensure_channel_permission(
+            user, current_voice_channel, permission_name, action_name
+        )
+        if voice_permission_error:
+            return voice_permission_error
+        bot_voice_permission_error = self.ensure_bot_channel_permission(
+            guild,
+            current_voice_channel,
+            permission_name,
+            action_name,
+        )
+        if bot_voice_permission_error:
+            return bot_voice_permission_error
+
+        if action == "move_voice":
+            if not voice_channel_name_or_id:
+                return "`voice_channel_name_or_id` is required for move_voice."
+            voice_channel = await asyncio.to_thread(find_channel, guild, voice_channel_name_or_id)
+            if not isinstance(voice_channel, (discord.VoiceChannel, discord.StageChannel)):
+                return "Target channel for move_voice must be a voice or stage channel."
+            target_permission_error = self.ensure_channel_permission(user, voice_channel, permission_name, action_name)
+            if target_permission_error:
+                return target_permission_error
+            bot_target_permission_error = self.ensure_bot_channel_permission(
+                guild,
+                voice_channel,
+                permission_name,
+                action_name,
+            )
+            if bot_target_permission_error:
+                return bot_target_permission_error
+            if dry_run:
+                return self.format_change_summary(
+                    f"Dry run: would move `{member.display_name}`.",
+                    {"from": current_voice_channel.name, "to": voice_channel.name},
+                )
+            await member.move_to(voice_channel, reason=reason)
+            return f"Moved {member.mention} to {voice_channel.mention}."
+
+        if action == "disconnect":
+            if dry_run:
+                return self.format_change_summary(
+                    f"Dry run: would disconnect `{member.display_name}` from voice.",
+                    {"from": current_voice_channel.name},
+                )
+            await member.move_to(None, reason=reason)
+            return f"Disconnected {member.mention} from voice."
+
+        voice_changes = {
+            "mute": ("mute", True),
+            "unmute": ("mute", False),
+            "deafen": ("deafen", True),
+            "undeafen": ("deafen", False),
+        }
+        field_name, value = voice_changes[action]
+        if dry_run:
+            return self.format_change_summary(
+                f"Dry run: would update voice state for `{member.display_name}`.",
+                {field_name: value, "channel": current_voice_channel.name},
+            )
+        await member.edit(reason=reason, **{field_name: value})
+        state_word = action.replace("_", " ")
+        return f"Applied `{state_word}` to {member.mention}."
 
     async def fetch_url(self, url: str, *args, **kwargs) -> str:
         """
@@ -2116,6 +2830,512 @@ class Functions(MixinMeta):
         await role.edit(reason=reason, **edit_kwargs)
         return f"Updated role {role.mention} successfully."
 
+    async def manage_invite(
+        self,
+        guild: discord.Guild,
+        action: Literal["list", "create", "revoke"],
+        channel_name_or_id: str | None = None,
+        invite_code_or_url: str | None = None,
+        max_age: int = 0,
+        max_uses: int = 0,
+        temporary: bool = False,
+        unique: bool = True,
+        target_type: Literal["stream", "embedded_application"] | None = None,
+        target_user_name_or_id: str | None = None,
+        target_application_id: int | None = None,
+        guest: bool = False,
+        reason: str | None = None,
+        dry_run: bool = False,
+        *args,
+        **kwargs,
+    ) -> str:
+        """List, create, or revoke guild invites."""
+        user, user_error = self.get_requesting_admin(guild, kwargs)
+        if user_error:
+            return user_error
+
+        action = str(action).strip().lower()
+        if max_age < 0 or max_uses < 0:
+            return "`max_age` and `max_uses` must be 0 or greater."
+
+        if action == "list":
+            permission_error = self.ensure_guild_permission(user, "manage_guild", "list invites")
+            if permission_error:
+                return permission_error
+            bot_permission_error = self.ensure_bot_guild_permission(guild, "manage_guild", "list invites")
+            if bot_permission_error:
+                return bot_permission_error
+
+            invites = await guild.invites()
+            if channel_name_or_id is not None:
+                channel = await asyncio.to_thread(find_channel, guild, channel_name_or_id)
+                if channel is None:
+                    return f"No channel found matching '{channel_name_or_id}'."
+                invites = [invite for invite in invites if invite.channel and invite.channel.id == channel.id]
+
+            if not invites:
+                return "No active invites found."
+
+            buffer = StringIO()
+            buffer.write(f"Active invites in {guild.name}:\n")
+            for invite in sorted(invites, key=lambda item: item.created_at or discord.utils.utcnow()):
+                buffer.write(
+                    f"- Code: {invite.code} | Channel: {getattr(invite.channel, 'name', 'unknown')} | "
+                    f"Uses: {invite.uses}/{invite.max_uses or 'unlimited'} | "
+                    f"Temporary: {invite.temporary} | Expires: {invite.expires_at or 'never'}\n"
+                )
+            return buffer.getvalue().strip()
+
+        if action == "create":
+            if not channel_name_or_id:
+                return "`channel_name_or_id` is required for create."
+            channel = await asyncio.to_thread(find_channel, guild, channel_name_or_id)
+            if channel is None or not hasattr(channel, "create_invite"):
+                return "Invite creation requires a text, voice, stage, or forum channel."
+            permission_error = self.ensure_channel_permission(user, channel, "create_instant_invite", "create invites")
+            if permission_error:
+                return permission_error
+            bot_permission_error = self.ensure_bot_channel_permission(
+                guild,
+                channel,
+                "create_instant_invite",
+                "create invites",
+            )
+            if bot_permission_error:
+                return bot_permission_error
+
+            target_type_enum, target_type_error = self.parse_named_enum(
+                discord.InviteTarget, target_type, "target_type"
+            )
+            if target_type_error:
+                return target_type_error
+            target_user = None
+            if target_type_enum == discord.InviteTarget.stream:
+                if not target_user_name_or_id:
+                    return "`target_user_name_or_id` is required when target_type is `stream`."
+                target_user = await asyncio.to_thread(find_member, guild, target_user_name_or_id)
+                if target_user is None:
+                    return f"No member found matching '{target_user_name_or_id}'."
+            if target_type_enum == discord.InviteTarget.embedded_application and target_application_id is None:
+                return "`target_application_id` is required when target_type is `embedded_application`."
+
+            changes = {
+                "channel": channel.name,
+                "max_age": max_age,
+                "max_uses": max_uses,
+                "temporary": temporary,
+                "unique": unique,
+                "guest": guest,
+            }
+            if target_type_enum is not None:
+                changes["target_type"] = target_type_enum.name
+            if target_user is not None:
+                changes["target_user"] = target_user.display_name
+            if target_application_id is not None:
+                changes["target_application_id"] = target_application_id
+            if dry_run:
+                return self.format_change_summary("Dry run: would create an invite.", changes)
+
+            invite = await channel.create_invite(
+                reason=reason,
+                max_age=max_age,
+                max_uses=max_uses,
+                temporary=temporary,
+                unique=unique,
+                target_type=target_type_enum,
+                target_user=target_user,
+                target_application_id=target_application_id,
+                guest=guest,
+            )
+            return f"Created invite `{invite.code}` for {channel.mention}."
+
+        if action != "revoke":
+            return "Invalid action. Use one of: list, create, revoke."
+        if not invite_code_or_url:
+            return "`invite_code_or_url` is required for revoke."
+        permission_error = self.ensure_any_guild_permission(user, ["manage_channels", "manage_guild"], "revoke invites")
+        if permission_error:
+            return permission_error
+        if guild.me is None:
+            return "I cannot verify my permissions to revoke invites."
+        bot_permission_error = self.ensure_any_guild_permission(
+            guild.me, ["manage_channels", "manage_guild"], "revoke invites"
+        )
+        if bot_permission_error:
+            return bot_permission_error
+
+        invite_code = self.extract_invite_code(invite_code_or_url)
+        try:
+            invite = await self.bot.fetch_invite(invite_code, with_counts=True, with_expiration=True)
+        except discord.NotFound:
+            return f"Invite `{invite_code}` was not found."
+        except discord.HTTPException as e:
+            return f"Failed to fetch invite `{invite_code}`: {getattr(e, 'text', None) or str(e)}"
+
+        if invite.guild is None or invite.guild.id != guild.id:
+            return "That invite does not belong to this server."
+
+        invite_channel = guild.get_channel(invite.channel.id) if invite.channel else None
+        if invite_channel is not None:
+            channel_permission_error = self.ensure_channel_permission(
+                user, invite_channel, "manage_channels", "revoke invites"
+            )
+            if channel_permission_error:
+                return channel_permission_error
+            bot_channel_permission_error = self.ensure_bot_channel_permission(
+                guild,
+                invite_channel,
+                "manage_channels",
+                "revoke invites",
+            )
+            if bot_channel_permission_error:
+                return bot_channel_permission_error
+
+        if dry_run:
+            return self.format_change_summary(
+                f"Dry run: would revoke invite `{invite.code}`.",
+                {"channel": getattr(invite.channel, "name", "unknown")},
+            )
+        await invite.delete(reason=reason)
+        return f"Revoked invite `{invite.code}` successfully."
+
+    async def manage_webhook(
+        self,
+        guild: discord.Guild,
+        action: Literal["list", "create", "edit", "delete", "send_test"],
+        channel_name_or_id: str | None = None,
+        webhook_name_or_id: str | None = None,
+        name: str | None = None,
+        avatar_url: str | None = None,
+        test_message: str | None = None,
+        reason: str | None = None,
+        dry_run: bool = False,
+        *args,
+        **kwargs,
+    ) -> str:
+        """List, create, edit, delete, or test guild webhooks."""
+        user, user_error = self.get_requesting_admin(guild, kwargs)
+        if user_error:
+            return user_error
+
+        avatar, avatar_error = await self.resolve_optional_image_input(avatar_url, "avatar_url")
+        if avatar_error:
+            return avatar_error
+
+        action = str(action).strip().lower()
+        if action == "list":
+            if channel_name_or_id is not None:
+                channel = await asyncio.to_thread(find_channel, guild, channel_name_or_id)
+                if channel is None or not hasattr(channel, "webhooks"):
+                    return "Webhook listing for a channel requires a channel that supports webhooks."
+                permission_error = self.ensure_channel_permission(user, channel, "manage_webhooks", "list webhooks")
+                if permission_error:
+                    return permission_error
+                bot_permission_error = self.ensure_bot_channel_permission(
+                    guild, channel, "manage_webhooks", "list webhooks"
+                )
+                if bot_permission_error:
+                    return bot_permission_error
+                webhooks = await channel.webhooks()
+            else:
+                permission_error = self.ensure_guild_permission(user, "manage_webhooks", "list webhooks")
+                if permission_error:
+                    return permission_error
+                bot_permission_error = self.ensure_bot_guild_permission(guild, "manage_webhooks", "list webhooks")
+                if bot_permission_error:
+                    return bot_permission_error
+                webhooks = await guild.webhooks()
+
+            if not webhooks:
+                return "No webhooks found."
+
+            buffer = StringIO()
+            buffer.write(f"Webhooks in {guild.name}:\n")
+            for webhook in webhooks:
+                webhook_channel = guild.get_channel(webhook.channel_id) if webhook.channel_id else None
+                channel_name = webhook_channel.name if webhook_channel else "unknown"
+                buffer.write(f"- {webhook.name or 'unnamed'} (ID: {webhook.id}, Channel: {channel_name})\n")
+            return buffer.getvalue().strip()
+
+        if action == "create":
+            if not channel_name_or_id:
+                return "`channel_name_or_id` is required for create."
+            if not name:
+                return "`name` is required for create."
+            channel = await asyncio.to_thread(find_channel, guild, channel_name_or_id)
+            if channel is None or not hasattr(channel, "create_webhook"):
+                return "Webhook creation requires a channel that supports webhooks."
+            permission_error = self.ensure_channel_permission(user, channel, "manage_webhooks", "create webhooks")
+            if permission_error:
+                return permission_error
+            bot_permission_error = self.ensure_bot_channel_permission(
+                guild, channel, "manage_webhooks", "create webhooks"
+            )
+            if bot_permission_error:
+                return bot_permission_error
+            if dry_run:
+                return self.format_change_summary(
+                    "Dry run: would create a webhook.",
+                    {"channel": channel.name, "name": name, "avatar": avatar_url or "none"},
+                )
+            webhook = await channel.create_webhook(name=name, avatar=avatar, reason=reason)
+            return f"Created webhook `{webhook.name}` (ID: {webhook.id}) in {channel.mention}."
+
+        if action not in {"edit", "delete", "send_test"}:
+            return "Invalid action. Use one of: list, create, edit, delete, send_test."
+        if not webhook_name_or_id:
+            return "`webhook_name_or_id` is required for this action."
+
+        webhooks = await guild.webhooks()
+        webhook = self.resolve_webhook_from_list(webhooks, webhook_name_or_id)
+        if webhook is None:
+            return f"No webhook found matching '{webhook_name_or_id}'."
+
+        webhook_channel = guild.get_channel(webhook.channel_id) if webhook.channel_id else None
+        if webhook_channel is not None:
+            permission_error = self.ensure_channel_permission(
+                user, webhook_channel, "manage_webhooks", "manage that webhook"
+            )
+            if permission_error:
+                return permission_error
+            bot_permission_error = self.ensure_bot_channel_permission(
+                guild, webhook_channel, "manage_webhooks", "manage that webhook"
+            )
+            if bot_permission_error:
+                return bot_permission_error
+
+        if action == "delete":
+            if dry_run:
+                return self.format_change_summary(
+                    f"Dry run: would delete webhook `{webhook.name or webhook.id}`.",
+                    {"channel": webhook_channel.name if webhook_channel else "unknown"},
+                )
+            await webhook.delete(reason=reason)
+            return f"Deleted webhook `{webhook.name or webhook.id}` successfully."
+
+        if action == "send_test":
+            if not test_message:
+                return "`test_message` is required for send_test."
+            if dry_run:
+                return self.format_change_summary(
+                    f"Dry run: would send a test message through `{webhook.name or webhook.id}`.",
+                    {"content": test_message[:200]},
+                )
+            await webhook.send(test_message, wait=False)
+            return f"Sent test message through webhook `{webhook.name or webhook.id}`."
+
+        edit_kwargs: dict[str, object] = {"reason": reason}
+        changes: dict[str, object] = {}
+        if name is not None:
+            edit_kwargs["name"] = name
+            changes["name"] = name
+        if avatar_url is not None:
+            edit_kwargs["avatar"] = avatar
+            changes["avatar"] = avatar_url if avatar is not None else "none"
+        if channel_name_or_id is not None:
+            new_channel = await asyncio.to_thread(find_channel, guild, channel_name_or_id)
+            if new_channel is None or not hasattr(new_channel, "webhooks"):
+                return "Webhook moves require a channel that supports webhooks."
+            channel_permission_error = self.ensure_channel_permission(
+                user, new_channel, "manage_webhooks", "move that webhook"
+            )
+            if channel_permission_error:
+                return channel_permission_error
+            bot_channel_permission_error = self.ensure_bot_channel_permission(
+                guild, new_channel, "manage_webhooks", "move that webhook"
+            )
+            if bot_channel_permission_error:
+                return bot_channel_permission_error
+            edit_kwargs["channel"] = new_channel
+            changes["channel"] = new_channel.name
+        if len(edit_kwargs) == 1:
+            return "No webhook changes were provided."
+        if dry_run:
+            return self.format_change_summary(
+                f"Dry run: would update webhook `{webhook.name or webhook.id}`.",
+                changes,
+            )
+        await webhook.edit(**edit_kwargs)
+        return f"Updated webhook `{webhook.name or webhook.id}` successfully."
+
+    async def manage_event(
+        self,
+        guild: discord.Guild,
+        action: Literal["list", "create", "edit", "delete"],
+        event_name_or_id: str | None = None,
+        name: str | None = None,
+        description: str | None = None,
+        channel_name_or_id: str | None = None,
+        location: str | None = None,
+        start_time: str | None = None,
+        end_time: str | None = None,
+        status: Literal["scheduled", "active", "completed", "canceled", "cancelled", "ended"] | None = None,
+        image_url: str | None = None,
+        reason: str | None = None,
+        dry_run: bool = False,
+        *args,
+        **kwargs,
+    ) -> str:
+        """List, create, edit, or delete scheduled events."""
+        user, user_error = self.get_requesting_admin(guild, kwargs)
+        if user_error:
+            return user_error
+
+        permission_error = self.ensure_guild_permission(user, "manage_events", "manage scheduled events")
+        if permission_error:
+            return permission_error
+        bot_permission_error = self.ensure_bot_guild_permission(guild, "manage_events", "manage scheduled events")
+        if bot_permission_error:
+            return bot_permission_error
+
+        action = str(action).strip().lower()
+        if action == "list":
+            if not guild.scheduled_events:
+                return "No scheduled events found."
+            buffer = StringIO()
+            buffer.write(f"Scheduled events in {guild.name}:\n")
+            for scheduled_event in sorted(guild.scheduled_events, key=lambda event: event.start_time):
+                buffer.write(
+                    f"- {scheduled_event.name} (ID: {scheduled_event.id}, Status: {scheduled_event.status.name}, "
+                    f"Type: {scheduled_event.entity_type.name}, Start: {scheduled_event.start_time}, "
+                    f"Location: {scheduled_event.location or getattr(scheduled_event.channel, 'name', 'n/a')})\n"
+                )
+            return buffer.getvalue().strip()
+
+        start_dt, start_error = self.parse_datetime_input(start_time, "start_time")
+        if start_error:
+            return start_error
+        end_dt, end_error = self.parse_datetime_input(end_time, "end_time")
+        if end_error:
+            return end_error
+        if start_dt is not None and end_dt is not None and end_dt <= start_dt:
+            return "`end_time` must be later than `start_time`."
+
+        event_image, image_error = await self.resolve_optional_image_input(image_url, "image_url")
+        if image_error:
+            return image_error
+
+        target_channel = None
+        entity_type = None
+        if channel_name_or_id is not None:
+            target_channel = await asyncio.to_thread(find_channel, guild, channel_name_or_id)
+            if not isinstance(target_channel, (discord.VoiceChannel, discord.StageChannel)):
+                return "Scheduled events can only target voice or stage channels."
+            entity_type = (
+                discord.EntityType.stage_instance
+                if isinstance(target_channel, discord.StageChannel)
+                else discord.EntityType.voice
+            )
+        elif location is not None:
+            entity_type = discord.EntityType.external
+
+        status_enum, status_error = self.parse_named_enum(discord.EventStatus, status, "status")
+        if status_error:
+            return status_error
+
+        if action == "create":
+            if not name:
+                return "`name` is required for create."
+            if start_dt is None:
+                return "`start_time` is required for create."
+            if target_channel is None and not location:
+                return "Provide either `channel_name_or_id` or `location` when creating an event."
+            if entity_type == discord.EntityType.external and end_dt is None:
+                return "External events require `end_time`."
+
+            create_kwargs: dict[str, object] = {
+                "name": name,
+                "start_time": start_dt,
+                "entity_type": entity_type,
+                "privacy_level": discord.PrivacyLevel.guild_only,
+                "reason": reason,
+            }
+            changes: dict[str, object] = {
+                "name": name,
+                "start_time": start_dt.isoformat(),
+                "entity_type": entity_type.name if entity_type else "unknown",
+            }
+            if description is not None:
+                create_kwargs["description"] = description
+                changes["description"] = description
+            if target_channel is not None:
+                create_kwargs["channel"] = target_channel
+                changes["channel"] = target_channel.name
+            if location is not None:
+                create_kwargs["location"] = location
+                changes["location"] = location
+            if end_dt is not None:
+                create_kwargs["end_time"] = end_dt
+                changes["end_time"] = end_dt.isoformat()
+            if image_url is not None:
+                create_kwargs["image"] = event_image
+                changes["image"] = image_url if event_image is not None else "none"
+            if dry_run:
+                return self.format_change_summary("Dry run: would create a scheduled event.", changes)
+            created_event = await guild.create_scheduled_event(**create_kwargs)
+            return f"Created scheduled event `{created_event.name}` (ID: {created_event.id})."
+
+        if action not in {"edit", "delete"}:
+            return "Invalid action. Use one of: list, create, edit, delete."
+        if not event_name_or_id:
+            return "`event_name_or_id` is required for edit or delete."
+        scheduled_event = self.resolve_scheduled_event(guild, event_name_or_id)
+        if scheduled_event is None:
+            return f"No scheduled event found matching '{event_name_or_id}'."
+
+        if action == "delete":
+            if dry_run:
+                return self.format_change_summary(
+                    f"Dry run: would delete scheduled event `{scheduled_event.name}`.",
+                    {"event_id": scheduled_event.id},
+                )
+            await scheduled_event.delete(reason=reason)
+            return f"Deleted scheduled event `{scheduled_event.name}` successfully."
+
+        edit_kwargs: dict[str, object] = {"reason": reason}
+        changes: dict[str, object] = {"event": scheduled_event.name}
+        if name is not None:
+            edit_kwargs["name"] = name
+            changes["name"] = name
+        if description is not None:
+            edit_kwargs["description"] = description
+            changes["description"] = description
+        if start_dt is not None:
+            edit_kwargs["start_time"] = start_dt
+            changes["start_time"] = start_dt.isoformat()
+        if end_time is not None:
+            edit_kwargs["end_time"] = end_dt
+            changes["end_time"] = end_dt.isoformat() if end_dt else "none"
+        if status_enum is not None:
+            edit_kwargs["status"] = status_enum
+            changes["status"] = status_enum.name
+        if image_url is not None:
+            edit_kwargs["image"] = event_image
+            changes["image"] = image_url if event_image is not None else "none"
+        if target_channel is not None:
+            edit_kwargs["channel"] = target_channel
+            edit_kwargs["entity_type"] = entity_type
+            changes["channel"] = target_channel.name
+            changes["entity_type"] = entity_type.name
+        elif location is not None:
+            final_end_time = end_dt or scheduled_event.end_time
+            if final_end_time is None:
+                return "External events require an end time. Provide `end_time` when switching to `location`."
+            edit_kwargs["location"] = location
+            edit_kwargs["entity_type"] = discord.EntityType.external
+            changes["location"] = location
+            changes["entity_type"] = discord.EntityType.external.name
+
+        if len(edit_kwargs) == 1:
+            return "No event changes were provided."
+        if dry_run:
+            return self.format_change_summary(
+                f"Dry run: would update scheduled event `{scheduled_event.name}`.",
+                changes,
+            )
+        await scheduled_event.edit(**edit_kwargs)
+        return f"Updated scheduled event `{scheduled_event.name}` successfully."
+
     async def manage_server(
         self,
         guild: discord.Guild,
@@ -2132,9 +3352,16 @@ class Functions(MixinMeta):
         public_updates_channel_name_or_id: str | None = None,
         widget_enabled: bool | None = None,
         widget_channel_name_or_id: str | None = None,
+        system_channel_flags: list[str] | str | None = None,
         premium_progress_bar_enabled: bool | None = None,
         community: bool | None = None,
         invites_disabled: bool | None = None,
+        discoverable: bool | None = None,
+        raid_alerts_disabled: bool | None = None,
+        safety_alerts_channel_name_or_id: str | None = None,
+        welcome_screen_enabled: bool | None = None,
+        welcome_screen_description: str | None = None,
+        welcome_channels: list[dict] | None = None,
         icon_url: str | None = None,
         banner_url: str | None = None,
         splash_url: str | None = None,
@@ -2180,6 +3407,10 @@ class Functions(MixinMeta):
         locale_enum, locale_error = self.parse_named_enum(discord.Locale, preferred_locale, "preferred_locale")
         if locale_error:
             return locale_error
+
+        normalized_system_flags, invalid_system_flags = self.normalize_system_channel_flags(system_channel_flags)
+        if invalid_system_flags:
+            return f"Invalid `system_channel_flags`: {', '.join(sorted(set(invalid_system_flags)))}"
 
         server_icon, icon_error = await self.resolve_optional_image_input(icon_url, "icon_url")
         if icon_error:
@@ -2238,6 +3469,12 @@ class Functions(MixinMeta):
         if widget_enabled is not None:
             edit_kwargs["widget_enabled"] = widget_enabled
             changes["widget_enabled"] = widget_enabled
+        if system_channel_flags is not None:
+            channel_flags = discord.SystemChannelFlags()
+            for flag_name in normalized_system_flags:
+                setattr(channel_flags, flag_name, True)
+            edit_kwargs["system_channel_flags"] = channel_flags
+            changes["system_channel_flags"] = ", ".join(normalized_system_flags) if normalized_system_flags else "none"
         if premium_progress_bar_enabled is not None:
             edit_kwargs["premium_progress_bar_enabled"] = premium_progress_bar_enabled
             changes["premium_progress_bar_enabled"] = premium_progress_bar_enabled
@@ -2247,6 +3484,12 @@ class Functions(MixinMeta):
         if invites_disabled is not None:
             edit_kwargs["invites_disabled"] = invites_disabled
             changes["invites_disabled"] = invites_disabled
+        if discoverable is not None:
+            edit_kwargs["discoverable"] = discoverable
+            changes["discoverable"] = discoverable
+        if raid_alerts_disabled is not None:
+            edit_kwargs["raid_alerts_disabled"] = raid_alerts_disabled
+            changes["raid_alerts_disabled"] = raid_alerts_disabled
 
         invalid_for_community = [
             verification_enum is not None and verification_enum == discord.VerificationLevel.none,
@@ -2264,6 +3507,7 @@ class Functions(MixinMeta):
             "rules_channel": (rules_channel_name_or_id, (discord.TextChannel,), "text channel"),
             "public_updates_channel": (public_updates_channel_name_or_id, (discord.TextChannel,), "text channel"),
             "widget_channel": (widget_channel_name_or_id, (discord.TextChannel,), "text channel"),
+            "safety_alerts_channel": (safety_alerts_channel_name_or_id, (discord.TextChannel,), "text channel"),
         }
         for field_name, (reference, expected_types, expected_label) in channel_fields.items():
             if reference is None:
@@ -2282,13 +3526,604 @@ class Functions(MixinMeta):
             edit_kwargs[field_name] = resolved
             changes[field_name] = resolved.name
 
-        if len(edit_kwargs) == 1:
+        welcome_edit_kwargs: dict[str, object] = {"reason": reason}
+        welcome_changes: dict[str, object] = {}
+        if welcome_screen_enabled is not None:
+            welcome_edit_kwargs["enabled"] = welcome_screen_enabled
+            welcome_changes["welcome_screen_enabled"] = welcome_screen_enabled
+        if welcome_screen_description is not None:
+            welcome_edit_kwargs["description"] = welcome_screen_description
+            welcome_changes["welcome_screen_description"] = welcome_screen_description
+        if welcome_channels is not None:
+            if not isinstance(welcome_channels, list):
+                return "`welcome_channels` must be a list of objects."
+            resolved_welcome_channels: list[discord.WelcomeChannel] = []
+            welcome_labels: list[str] = []
+            for index, entry in enumerate(welcome_channels, start=1):
+                if not isinstance(entry, dict):
+                    return f"Welcome channel entry #{index} must be an object."
+                channel_ref = entry.get("channel_name_or_id")
+                description_text = entry.get("description")
+                emoji_input = entry.get("emoji")
+                if not channel_ref or not description_text:
+                    return f"Welcome channel entry #{index} requires `channel_name_or_id` and `description`."
+                welcome_channel = await asyncio.to_thread(find_channel, guild, str(channel_ref))
+                if not isinstance(welcome_channel, discord.TextChannel):
+                    return f"Welcome channel entry #{index} must reference a text channel."
+                emoji_value, emoji_error = self.parse_partial_emoji(guild, emoji_input)
+                if emoji_error:
+                    return emoji_error
+                resolved_welcome_channels.append(
+                    discord.WelcomeChannel(
+                        channel=welcome_channel,
+                        description=str(description_text),
+                        emoji=emoji_value,
+                    )
+                )
+                welcome_labels.append(welcome_channel.name)
+            welcome_edit_kwargs["welcome_channels"] = resolved_welcome_channels
+            welcome_changes["welcome_channels"] = ", ".join(welcome_labels) if welcome_labels else "none"
+
+        welcome_requested = len(welcome_edit_kwargs) > 1
+        if welcome_requested and community is False:
+            return "Welcome screen settings cannot be updated while `community` is being disabled."
+        if welcome_requested and "COMMUNITY" not in guild.features and community is not True:
+            return "Welcome screen settings require community mode. Enable `community` in the same call or first."
+
+        changes.update(welcome_changes)
+
+        if len(edit_kwargs) == 1 and not welcome_requested:
             return "No server changes were provided."
         if dry_run:
             return self.format_change_summary("Dry run: would update server settings.", changes)
 
-        await guild.edit(**edit_kwargs)
+        if len(edit_kwargs) > 1:
+            await guild.edit(**edit_kwargs)
+        if welcome_requested:
+            await guild.edit_welcome_screen(**welcome_edit_kwargs)
         return "Updated server settings successfully."
+
+    async def manage_emoji(
+        self,
+        guild: discord.Guild,
+        action: Literal["list", "create", "edit", "delete"],
+        emoji_name_or_id: str | None = None,
+        name: str | None = None,
+        image_url: str | None = None,
+        role_names_or_ids: list[str] | str | None = None,
+        reason: str | None = None,
+        dry_run: bool = False,
+        *args,
+        **kwargs,
+    ) -> str:
+        """List, create, edit, or delete custom server emojis."""
+        user, user_error = self.get_requesting_admin(guild, kwargs)
+        if user_error:
+            return user_error
+        expression_permissions = ["manage_expressions", "create_expressions", "manage_emojis_and_stickers"]
+        permission_error = self.ensure_any_guild_permission(user, expression_permissions, "manage custom emojis")
+        if permission_error:
+            return permission_error
+        if guild.me is None:
+            return "I cannot verify my permissions to manage custom emojis."
+        bot_permission_error = self.ensure_any_guild_permission(guild.me, expression_permissions, "manage custom emojis")
+        if bot_permission_error:
+            return bot_permission_error
+
+        action = str(action).strip().lower()
+        if action == "list":
+            if not guild.emojis:
+                return "No custom emojis found."
+            buffer = StringIO()
+            buffer.write(f"Custom emojis in {guild.name}:\n")
+            for emoji in guild.emojis:
+                role_text = ", ".join(role.name for role in emoji.roles) if emoji.roles else "all members"
+                buffer.write(f"- {emoji.name} (ID: {emoji.id}, Roles: {role_text})\n")
+            return buffer.getvalue().strip()
+
+        resolved_roles, missing_roles = await self.resolve_roles(guild, role_names_or_ids)
+        if missing_roles:
+            return f"Unknown roles: {', '.join(missing_roles)}"
+        for role in resolved_roles:
+            user_role_error = self.ensure_role_manageable(user, role, "use that role in emoji restrictions")
+            if user_role_error:
+                return user_role_error
+            bot_role_error = self.ensure_bot_role_manageable(guild, role, "use that role in emoji restrictions")
+            if bot_role_error:
+                return bot_role_error
+
+        if action == "create":
+            if not name:
+                return "`name` is required for create."
+            if not image_url:
+                return "`image_url` is required for create."
+            image_bytes, image_error = await self.resolve_optional_image_input(image_url, "image_url")
+            if image_error:
+                return image_error
+            if dry_run:
+                return self.format_change_summary(
+                    "Dry run: would create a custom emoji.",
+                    {
+                        "name": name,
+                        "roles": ", ".join(role.name for role in resolved_roles) if resolved_roles else "all members",
+                    },
+                )
+            emoji = await guild.create_custom_emoji(name=name, image=image_bytes, roles=resolved_roles, reason=reason)
+            return f"Created custom emoji `{emoji.name}` (ID: {emoji.id})."
+
+        if action not in {"edit", "delete"}:
+            return "Invalid action. Use one of: list, create, edit, delete."
+        if not emoji_name_or_id:
+            return "`emoji_name_or_id` is required for edit or delete."
+        emoji = self.resolve_custom_emoji(guild, emoji_name_or_id)
+        if emoji is None:
+            return f"No custom emoji found matching '{emoji_name_or_id}'."
+
+        if action == "delete":
+            if dry_run:
+                return self.format_change_summary(
+                    f"Dry run: would delete emoji `{emoji.name}`.",
+                    {"emoji_id": emoji.id},
+                )
+            await emoji.delete(reason=reason)
+            return f"Deleted custom emoji `{emoji.name}` successfully."
+
+        edit_kwargs: dict[str, object] = {"reason": reason}
+        changes: dict[str, object] = {"emoji": emoji.name}
+        if name is not None:
+            edit_kwargs["name"] = name
+            changes["name"] = name
+        if role_names_or_ids is not None:
+            edit_kwargs["roles"] = resolved_roles
+            changes["roles"] = ", ".join(role.name for role in resolved_roles) if resolved_roles else "all members"
+        if len(edit_kwargs) == 1:
+            return "No emoji changes were provided."
+        if dry_run:
+            return self.format_change_summary(
+                f"Dry run: would update emoji `{emoji.name}`.",
+                changes,
+            )
+        await emoji.edit(**edit_kwargs)
+        return f"Updated custom emoji `{emoji.name}` successfully."
+
+    async def manage_sticker(
+        self,
+        guild: discord.Guild,
+        action: Literal["list", "create", "edit", "delete"],
+        sticker_name_or_id: str | None = None,
+        name: str | None = None,
+        description: str | None = None,
+        emoji: str | None = None,
+        image_url: str | None = None,
+        reason: str | None = None,
+        dry_run: bool = False,
+        *args,
+        **kwargs,
+    ) -> str:
+        """List, create, edit, or delete server stickers."""
+        user, user_error = self.get_requesting_admin(guild, kwargs)
+        if user_error:
+            return user_error
+        expression_permissions = ["manage_expressions", "create_expressions", "manage_emojis_and_stickers"]
+        permission_error = self.ensure_any_guild_permission(user, expression_permissions, "manage stickers")
+        if permission_error:
+            return permission_error
+        if guild.me is None:
+            return "I cannot verify my permissions to manage stickers."
+        bot_permission_error = self.ensure_any_guild_permission(guild.me, expression_permissions, "manage stickers")
+        if bot_permission_error:
+            return bot_permission_error
+
+        action = str(action).strip().lower()
+        if action == "list":
+            if not guild.stickers:
+                return "No stickers found."
+            buffer = StringIO()
+            buffer.write(f"Stickers in {guild.name}:\n")
+            for sticker in guild.stickers:
+                buffer.write(
+                    f"- {sticker.name} (ID: {sticker.id}, Emoji: {sticker.emoji}, Description: {sticker.description or 'none'})\n"
+                )
+            return buffer.getvalue().strip()
+
+        if action == "create":
+            if not name:
+                return "`name` is required for create."
+            if not emoji:
+                return "`emoji` is required for create."
+            if not image_url:
+                return "`image_url` is required for create."
+            image_bytes, content_type, image_error = await self.fetch_remote_resource(image_url, "image_url", ("image/",))
+            if image_error:
+                return image_error
+            extension = self.extension_from_content_type(content_type, "png")
+            safe_name = re.sub(r"[^a-zA-Z0-9_-]+", "_", name).strip("_") or "sticker"
+            if dry_run:
+                return self.format_change_summary(
+                    "Dry run: would create a sticker.",
+                    {"name": name, "emoji": emoji, "description": description or "none"},
+                )
+            file = discord.File(BytesIO(image_bytes), filename=f"{safe_name}.{extension}")
+            sticker = await guild.create_sticker(
+                name=name,
+                description=description or "",
+                emoji=emoji,
+                file=file,
+                reason=reason,
+            )
+            return f"Created sticker `{sticker.name}` (ID: {sticker.id})."
+
+        if action not in {"edit", "delete"}:
+            return "Invalid action. Use one of: list, create, edit, delete."
+        if not sticker_name_or_id:
+            return "`sticker_name_or_id` is required for edit or delete."
+        sticker = self.resolve_sticker(guild, sticker_name_or_id)
+        if sticker is None:
+            return f"No sticker found matching '{sticker_name_or_id}'."
+
+        if action == "delete":
+            if dry_run:
+                return self.format_change_summary(
+                    f"Dry run: would delete sticker `{sticker.name}`.",
+                    {"sticker_id": sticker.id},
+                )
+            await sticker.delete(reason=reason)
+            return f"Deleted sticker `{sticker.name}` successfully."
+
+        edit_kwargs: dict[str, object] = {"reason": reason}
+        changes: dict[str, object] = {"sticker": sticker.name}
+        if name is not None:
+            edit_kwargs["name"] = name
+            changes["name"] = name
+        if description is not None:
+            edit_kwargs["description"] = description
+            changes["description"] = description
+        if emoji is not None:
+            edit_kwargs["emoji"] = emoji
+            changes["emoji"] = emoji
+        if len(edit_kwargs) == 1:
+            return "No sticker changes were provided."
+        if dry_run:
+            return self.format_change_summary(
+                f"Dry run: would update sticker `{sticker.name}`.",
+                changes,
+            )
+        await sticker.edit(**edit_kwargs)
+        return f"Updated sticker `{sticker.name}` successfully."
+
+    async def manage_soundboard(
+        self,
+        guild: discord.Guild,
+        action: Literal["list", "create", "edit", "delete"],
+        sound_name_or_id: str | None = None,
+        name: str | None = None,
+        audio_url: str | None = None,
+        volume: float | None = None,
+        emoji: str | None = None,
+        reason: str | None = None,
+        dry_run: bool = False,
+        *args,
+        **kwargs,
+    ) -> str:
+        """List, create, edit, or delete custom soundboard sounds."""
+        user, user_error = self.get_requesting_admin(guild, kwargs)
+        if user_error:
+            return user_error
+        expression_permissions = ["manage_expressions", "create_expressions"]
+        permission_error = self.ensure_any_guild_permission(user, expression_permissions, "manage soundboard sounds")
+        if permission_error:
+            return permission_error
+        if guild.me is None:
+            return "I cannot verify my permissions to manage soundboard sounds."
+        bot_permission_error = self.ensure_any_guild_permission(guild.me, expression_permissions, "manage soundboard sounds")
+        if bot_permission_error:
+            return bot_permission_error
+
+        action = str(action).strip().lower()
+        if volume is not None and not 0 <= volume <= 1:
+            return "`volume` must be between 0.0 and 1.0."
+        emoji_value, emoji_error = self.parse_partial_emoji(guild, emoji)
+        if emoji_error:
+            return emoji_error
+
+        if action == "list":
+            sounds = guild.soundboard_sounds or await guild.fetch_soundboard_sounds()
+            if not sounds:
+                return "No custom soundboard sounds found."
+            buffer = StringIO()
+            buffer.write(f"Soundboard sounds in {guild.name}:\n")
+            for sound in sounds:
+                buffer.write(
+                    f"- {sound.name} (ID: {sound.id}, Volume: {sound.volume}, Emoji: {sound.emoji or 'none'})\n"
+                )
+            return buffer.getvalue().strip()
+
+        if action == "create":
+            if not name:
+                return "`name` is required for create."
+            if not audio_url:
+                return "`audio_url` is required for create."
+            audio_bytes, content_type, audio_error = await self.fetch_remote_resource(
+                audio_url,
+                "audio_url",
+                ("audio/", "application/octet-stream"),
+            )
+            if audio_error:
+                return audio_error
+            changes = {
+                "name": name,
+                "volume": volume if volume is not None else 1.0,
+                "emoji": emoji or "none",
+                "content_type": content_type or "unknown",
+            }
+            if dry_run:
+                return self.format_change_summary("Dry run: would create a soundboard sound.", changes)
+            sound = await guild.create_soundboard_sound(
+                name=name,
+                sound=audio_bytes,
+                volume=volume if volume is not None else 1.0,
+                emoji=emoji_value,
+                reason=reason,
+            )
+            return f"Created soundboard sound `{sound.name}` (ID: {sound.id})."
+
+        if action not in {"edit", "delete"}:
+            return "Invalid action. Use one of: list, create, edit, delete."
+        if not sound_name_or_id:
+            return "`sound_name_or_id` is required for edit or delete."
+        sound = await self.resolve_soundboard_sound(guild, sound_name_or_id)
+        if sound is None:
+            return f"No soundboard sound found matching '{sound_name_or_id}'."
+
+        if action == "delete":
+            if dry_run:
+                return self.format_change_summary(
+                    f"Dry run: would delete soundboard sound `{sound.name}`.",
+                    {"sound_id": sound.id},
+                )
+            await sound.delete(reason=reason)
+            return f"Deleted soundboard sound `{sound.name}` successfully."
+
+        edit_kwargs: dict[str, object] = {"reason": reason}
+        changes: dict[str, object] = {"sound": sound.name}
+        if name is not None:
+            edit_kwargs["name"] = name
+            changes["name"] = name
+        if volume is not None:
+            edit_kwargs["volume"] = volume
+            changes["volume"] = volume
+        if emoji is not None:
+            edit_kwargs["emoji"] = emoji_value
+            changes["emoji"] = emoji if emoji_value is not None else "none"
+        if len(edit_kwargs) == 1:
+            return "No soundboard changes were provided."
+        if dry_run:
+            return self.format_change_summary(
+                f"Dry run: would update soundboard sound `{sound.name}`.",
+                changes,
+            )
+        await sound.edit(**edit_kwargs)
+        return f"Updated soundboard sound `{sound.name}` successfully."
+
+    async def manage_onboarding(
+        self,
+        guild: discord.Guild,
+        action: Literal["inspect", "set_defaults", "upsert_prompt", "delete_prompt"],
+        prompt_name_or_id: str | None = None,
+        title: str | None = None,
+        prompt_type: Literal["multiple_choice", "dropdown"] | None = None,
+        single_select: bool | None = None,
+        required: bool | None = None,
+        in_onboarding: bool | None = None,
+        enabled: bool | None = None,
+        mode: Literal["default", "advanced"] | None = None,
+        default_channel_names_or_ids: list[str] | str | None = None,
+        options: list[dict] | None = None,
+        reason: str | None = None,
+        dry_run: bool = False,
+        *args,
+        **kwargs,
+    ) -> str:
+        """Inspect or update guild onboarding defaults and prompts."""
+        user, user_error = self.get_requesting_admin(guild, kwargs)
+        if user_error:
+            return user_error
+
+        try:
+            onboarding = await guild.onboarding()
+        except discord.HTTPException as e:
+            return f"Onboarding is unavailable for this server: {getattr(e, 'text', None) or str(e)}"
+
+        action = str(action).strip().lower()
+        if action == "inspect":
+            buffer = StringIO()
+            buffer.write(f"Onboarding Enabled: {onboarding.enabled}\n")
+            buffer.write(f"Onboarding Mode: {onboarding.mode.name}\n")
+            default_channels = [channel.name for channel in onboarding.default_channels]
+            buffer.write(f"Default Channels: {', '.join(default_channels) if default_channels else 'none'}\n")
+            buffer.write(f"Prompt Count: {len(onboarding.prompts)}\n")
+            for prompt in onboarding.prompts:
+                buffer.write(
+                    f"- Prompt: {prompt.title} (ID: {prompt.id}, Type: {prompt.type.name}, Required: {prompt.required}, Single Select: {prompt.single_select}, In Onboarding: {prompt.in_onboarding})\n"
+                )
+                for option in prompt.options:
+                    channel_names = ", ".join(channel.name for channel in option.channels) if option.channels else "none"
+                    role_names = ", ".join(role.name for role in option.roles) if option.roles else "none"
+                    buffer.write(
+                        f"  - Option: {option.title} | Description: {option.description or 'none'} | Channels: {channel_names} | Roles: {role_names} | Emoji: {option.emoji or 'none'}\n"
+                    )
+            return buffer.getvalue().strip()
+
+        permission_error = self.ensure_guild_permission(user, "manage_guild", "manage onboarding")
+        if permission_error:
+            return permission_error
+        role_permission_error = self.ensure_guild_permission(user, "manage_roles", "manage onboarding")
+        if role_permission_error:
+            return role_permission_error
+        if guild.me is None:
+            return "I cannot verify my permissions to manage onboarding."
+        bot_permission_error = self.ensure_guild_permission(guild.me, "manage_guild", "manage onboarding")
+        if bot_permission_error:
+            return bot_permission_error
+        bot_role_permission_error = self.ensure_guild_permission(guild.me, "manage_roles", "manage onboarding")
+        if bot_role_permission_error:
+            return bot_role_permission_error
+
+        mode_enum, mode_error = self.parse_named_enum(discord.OnboardingMode, mode, "mode")
+        if mode_error:
+            return mode_error
+        prompt_type_enum, prompt_type_error = self.parse_named_enum(discord.OnboardingPromptType, prompt_type, "prompt_type")
+        if prompt_type_error:
+            return prompt_type_error
+
+        resolved_default_channels: list[discord.abc.Snowflake] | None = None
+        if default_channel_names_or_ids is not None:
+            resolved_default_channels = []
+            for channel_ref in self.coerce_string_list(default_channel_names_or_ids):
+                channel = await asyncio.to_thread(find_channel, guild, channel_ref)
+                if channel is None:
+                    return f"No channel found matching '{channel_ref}'."
+                resolved_default_channels.append(channel)
+
+        if action == "set_defaults":
+            if enabled is None and mode_enum is None and resolved_default_channels is None:
+                return "Provide `enabled`, `mode`, or `default_channel_names_or_ids` for set_defaults."
+            changes: dict[str, object] = {}
+            if enabled is not None:
+                changes["enabled"] = enabled
+            if mode_enum is not None:
+                changes["mode"] = mode_enum.name
+            if resolved_default_channels is not None:
+                changes["default_channels"] = ", ".join(channel.name for channel in resolved_default_channels) or "none"
+            if dry_run:
+                return self.format_change_summary("Dry run: would update onboarding defaults.", changes)
+            await guild.edit_onboarding(
+                prompts=list(onboarding.prompts),
+                default_channels=resolved_default_channels if resolved_default_channels is not None else list(onboarding.default_channels),
+                enabled=enabled if enabled is not None else onboarding.enabled,
+                mode=mode_enum if mode_enum is not None else onboarding.mode,
+                reason=reason,
+            )
+            return "Updated onboarding defaults successfully."
+
+        if action == "delete_prompt":
+            if not prompt_name_or_id:
+                return "`prompt_name_or_id` is required for delete_prompt."
+            prompt = self.resolve_onboarding_prompt(onboarding, prompt_name_or_id)
+            if prompt is None:
+                return f"No onboarding prompt found matching '{prompt_name_or_id}'."
+            new_prompts = [item for item in onboarding.prompts if item.id != prompt.id]
+            if dry_run:
+                return self.format_change_summary(
+                    f"Dry run: would delete onboarding prompt `{prompt.title}`.",
+                    {"prompt_id": prompt.id},
+                )
+            await guild.edit_onboarding(
+                prompts=new_prompts,
+                default_channels=list(onboarding.default_channels),
+                enabled=onboarding.enabled,
+                mode=onboarding.mode,
+                reason=reason,
+            )
+            return f"Deleted onboarding prompt `{prompt.title}` successfully."
+
+        if action != "upsert_prompt":
+            return "Invalid action. Use one of: inspect, set_defaults, upsert_prompt, delete_prompt."
+
+        existing_prompt = self.resolve_onboarding_prompt(onboarding, prompt_name_or_id) if prompt_name_or_id else None
+        if existing_prompt is None and not title:
+            return "`title` is required when creating a new onboarding prompt."
+        if existing_prompt is None and options is None:
+            return "`options` is required when creating a new onboarding prompt."
+
+        prompt_title = title or existing_prompt.title
+        prompt_type_value = prompt_type_enum or (existing_prompt.type if existing_prompt is not None else None)
+        if prompt_type_value is None:
+            return "`prompt_type` is required when creating a new onboarding prompt."
+
+        if options is None:
+            prompt_options = list(existing_prompt.options) if existing_prompt is not None else []
+        else:
+            prompt_options = []
+            for index, option in enumerate(options, start=1):
+                if not isinstance(option, dict):
+                    return f"Onboarding option #{index} must be an object."
+                option_title = option.get("title")
+                if not option_title:
+                    return f"Onboarding option #{index} requires `title`."
+                option_emoji, option_emoji_error = self.parse_partial_emoji(guild, option.get("emoji"))
+                if option_emoji_error:
+                    return option_emoji_error
+
+                resolved_channels: list[discord.abc.Snowflake] = []
+                for channel_ref in self.coerce_string_list(option.get("channel_names_or_ids")):
+                    channel = await asyncio.to_thread(find_channel, guild, channel_ref)
+                    if channel is None:
+                        return f"No channel found matching '{channel_ref}'."
+                    resolved_channels.append(channel)
+
+                resolved_roles, missing_roles = await self.resolve_roles(guild, option.get("role_names_or_ids"))
+                if missing_roles:
+                    return f"Unknown roles in onboarding option #{index}: {', '.join(missing_roles)}"
+                for role in resolved_roles:
+                    user_role_error = self.ensure_role_manageable(user, role, "use that role in onboarding")
+                    if user_role_error:
+                        return user_role_error
+                    bot_role_error = self.ensure_bot_role_manageable(guild, role, "use that role in onboarding")
+                    if bot_role_error:
+                        return bot_role_error
+
+                prompt_options.append(
+                    discord.OnboardingPromptOption(
+                        title=str(option_title),
+                        description=option.get("description"),
+                        emoji=option_emoji,
+                        channels=resolved_channels,
+                        roles=resolved_roles,
+                    )
+                )
+
+        if not prompt_options:
+            return "Onboarding prompts must have at least one option."
+
+        new_prompt = discord.OnboardingPrompt(
+            type=prompt_type_value,
+            title=prompt_title,
+            options=prompt_options,
+            single_select=single_select if single_select is not None else (existing_prompt.single_select if existing_prompt is not None else True),
+            required=required if required is not None else (existing_prompt.required if existing_prompt is not None else True),
+            in_onboarding=in_onboarding if in_onboarding is not None else (existing_prompt.in_onboarding if existing_prompt is not None else True),
+        )
+
+        if existing_prompt is None:
+            new_prompts = list(onboarding.prompts) + [new_prompt]
+        else:
+            new_prompts = [new_prompt if prompt.id == existing_prompt.id else prompt for prompt in onboarding.prompts]
+
+        changes = {
+            "title": prompt_title,
+            "prompt_type": prompt_type_value.name,
+            "options": len(prompt_options),
+            "single_select": new_prompt.single_select,
+            "required": new_prompt.required,
+            "in_onboarding": new_prompt.in_onboarding,
+        }
+        if dry_run:
+            label = "update" if existing_prompt is not None else "create"
+            return self.format_change_summary(
+                f"Dry run: would {label} onboarding prompt `{prompt_title}`.",
+                changes,
+            )
+
+        await guild.edit_onboarding(
+            prompts=new_prompts,
+            default_channels=list(onboarding.default_channels),
+            enabled=onboarding.enabled,
+            mode=onboarding.mode,
+            reason=reason,
+        )
+        verb = "Updated" if existing_prompt is not None else "Created"
+        return f"{verb} onboarding prompt `{prompt_title}` successfully."
 
     async def render_svg(
         self,
