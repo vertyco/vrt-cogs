@@ -271,7 +271,7 @@ class ChatHandler(MixinMeta):
 
         prompt = _(
             "`{}` wants to run admin tool `{}` from `{}` ({})\nChoose `Approve Once`, `Allow This Session`, or `Skip`."
-        ).format(author.display_name, function_name, source, category)
+        ).format(self.bot.user.display_name, function_name, source, category)
         prompt += "\n" + box(preview, lang="json")
 
         reference = None
