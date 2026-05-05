@@ -537,50 +537,6 @@ LIST_REMINDERS = {
     },
 }
 
-REMEMBER_USER = {
-    "name": "remember_user",
-    "description": (
-        "Store a durable fact about the user for future conversations. "
-        "Only store stable long-term context like preferences, technical setup, recurring issues, timezone, role, "
-        "or ongoing situation. Do not store one-off requests, temporary states, or things already covered elsewhere. "
-        "When unsure, do not store it."
-    ),
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "fact": {
-                "type": "string",
-                "description": "A concise, self-contained fact about the user. Write it so it makes sense without additional context.'",
-            },
-        },
-        "required": ["fact"],
-    },
-}
-
-RECALL_USER = {
-    "name": "recall_user",
-    "description": "Retrieve stored facts about the current user. Facts are usually injected automatically, so use this only if the user asks.",
-    "parameters": {
-        "type": "object",
-        "properties": {},
-    },
-}
-
-FORGET_USER = {
-    "name": "forget_user",
-    "description": "Remove a stored user fact by index or exact text.",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "fact_index_or_text": {
-                "type": "string",
-                "description": "Either the index number of the fact to remove (e.g. '1', '2') or the exact text of the fact to remove",
-            },
-        },
-        "required": ["fact_index_or_text"],
-    },
-}
-
 SCHEDULE_TASK = {
     "name": "schedule_task",
     "description": (
@@ -676,34 +632,4 @@ COMPACTION_SYSTEM_PROMPT = (
     "that preserves all key facts, decisions, user preferences, action items, and any tool results "
     "that are still relevant. Write in third person. Keep the summary under 500 words. "
     "Do NOT include greetings, filler, or redundant exchanges."
-)
-# Pre-compaction memory flush prompt — asks the model to extract facts as JSON
-MEMORY_FLUSH_PROMPT = (
-    "You are reviewing a conversation that is about to be compacted (summarized). "
-    "Extract ONLY durable, high-value facts that would help this user in a FUTURE SEPARATE conversation. "
-    "\n\nGuidelines:\n"
-    "- GOOD: preferences, technical setup, recurring issues, timezone, role/position, important context\n"
-    "- BAD: one-time questions they asked, temporary issues already resolved, conversational filler, "
-    "things that are common knowledge or in the knowledge base\n"
-    "- Do NOT duplicate or rephrase facts already known\n"
-    "- Each fact must be concise and self-contained\n"
-    "- Prefer FEWER high-quality facts over many low-quality ones\n"
-    "\nAlready known facts:\n{existing_facts}"
-    '\n\nOutput ONLY a JSON array of new fact strings, e.g. ["fact1", "fact2"]. '
-    "If there are no new facts worth storing, output an empty array: []"
-)
-
-# Consolidation prompt — merges/deduplicates facts when nearing cap
-MEMORY_CONSOLIDATION_PROMPT = (
-    "You are a memory curator. The user has accumulated too many stored facts and they need to be "
-    "consolidated down to the most useful set.\n\n"
-    "Rules:\n"
-    "- Merge overlapping or redundant facts into single, more specific facts\n"
-    "- Drop facts that are trivial, outdated-sounding, or unlikely to help in future conversations\n"
-    "- Keep facts about: preferences, technical setup, recurring issues, timezone, roles, important context\n"
-    "- Drop facts about: one-time questions, resolved issues, conversational preferences, generic statements\n"
-    "- Target approximately {target_count} facts (current: {current_count})\n"
-    "- Preserve the most specific and useful version of each fact\n\n"
-    "Current facts:\n{facts_list}\n\n"
-    "Output ONLY a JSON array of the consolidated fact strings. Every fact in your output replaces the entire list."
 )

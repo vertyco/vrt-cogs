@@ -8,14 +8,13 @@ Conversations that exceed the token limit are now intelligently summarized using
 
 - LLM-based summarization replaces blind message truncation when context overflows
 - Tool-call/result pairs are kept together during degradation to prevent orphaned messages
-- Pre-compaction memory flush extracts user facts before summarizing, storing them as persistent memories
 - Configurable compaction model (use a cheaper model for summarization)
 - Configurable token threshold to trigger compaction before hitting the model's max context
 - Compaction can be toggled on/off per server (`[p]assistant compaction`)
 
 ### New user commands
 
-- `[p]convocontext` - detailed token breakdown showing context fill %, token usage by category, message counts by role, compaction history, and stored facts
+- `[p]convocontext` - detailed token breakdown showing context fill %, token usage by category, message counts by role, and compaction history
 - `[p]convocompact` - manually compact a conversation with optional focus phrase to guide the summary
 
 ### Admin commands
@@ -23,7 +22,6 @@ Conversations that exceed the token limit are now intelligently summarized using
 - `[p]assistant compaction` - toggle LLM compaction on/off
 - `[p]assistant compactionmodel` - set the model used for compaction
 - `[p]assistant compactionthreshold` - set the token threshold for proactive compaction
-- `[p]assistant memoryflush` - toggle pre-compaction memory flush
 
 ## v7.0.0
 
@@ -48,15 +46,6 @@ The assistant can now set reminders for users via function calling.
 - Supports DM or channel reminders
 - Past-due reminders fire immediately on startup
 
-### User memory
-
-The assistant can remember facts about users across conversations.
-
-- Remembers, recalls, and forgets facts about individual users per-guild
-- Memory is injected into the system prompt for personalized responses
-- Users can ask to forget specific facts
-
 ### Bug fixes and improvements
 
-- Improved memory tool responsiveness (search_memories, edit_memory, list_memories)
 - Auto-answer now uses the new embedding system

@@ -8,7 +8,6 @@ from typing import List, Optional
 
 import aiohttp
 import discord
-import orjson
 import tiktoken
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.chat.chat_completion_message import ChatCompletionMessage
@@ -23,8 +22,6 @@ from .constants import (
     COMPACTION_KEEP_RECENT,
     COMPACTION_SUMMARY_ROLE,
     COMPACTION_SYSTEM_PROMPT,
-    MEMORY_CONSOLIDATION_PROMPT,
-    MEMORY_FLUSH_PROMPT,
     MODELS,
     SUPPORTS_VISION,
     VISION_COSTS,
@@ -34,7 +31,6 @@ from .models import (
     EndpointModelProfile,
     EndpointProfile,
     GuildSettings,
-    UserMemory,
     render_tool_category,
 )
 
@@ -934,192 +930,6 @@ class API(MixinMeta):
             f"kept {len(recent_messages)} recent messages"
         )
         return True
-
-    async def flush_memory_before_compaction(
-        self,
-        messages: List[dict],
-        conf: GuildSettings,
-        user: Optional[discord.Member],
-        guild: discord.Guild,
-    ) -> None:
-        """Extract and store important user facts from messages about to be compacted"""
-        if not user or not conf.memory_flush_on_compaction:
-            return
-        if not conf.use_function_calls:
-            return
-
-        convo_msgs = [m for m in messages if m.get("role") not in ("system", "developer")]
-        if len(convo_msgs) <= COMPACTION_KEEP_RECENT:
-            return
-
-        split_idx = len(convo_msgs) - COMPACTION_KEEP_RECENT
-        split_idx = self.find_safe_split(convo_msgs, split_idx)
-        if split_idx <= 0:
-            return
-
-        old_text = self.messages_to_text(convo_msgs[:split_idx])
-        if not old_text.strip():
-            return
-
-        # Check existing memories so we don't duplicate
-        memory_key = f"{guild.id}-{user.id}"
-        existing = self.db.user_memories.get(memory_key)
-        existing_facts = "\n".join(f"- {f}" for f in existing.facts) if existing and existing.facts else "None"
-
-        flush_prompt = MEMORY_FLUSH_PROMPT.format(existing_facts=existing_facts)
-
-        try:
-            flush_model = conf.compaction_model or conf.get_user_model(user)
-            if self.db.endpoint_override:
-                flush_model = self.resolve_chat_model(flush_model)
-            flush_messages = [
-                {"role": "developer", "content": flush_prompt},
-                {"role": "user", "content": old_text},
-            ]
-            if self.db.endpoint_override:
-                for m in flush_messages:
-                    if m["role"] == "developer":
-                        m["role"] = "system"
-            response = await request_chat_completion_raw(
-                model=flush_model,
-                messages=flush_messages,
-                temperature=0.0,
-                api_key=self.get_api_key(conf),
-                max_tokens=500,
-                functions=None,
-                frequency_penalty=0.0,
-                presence_penalty=0.0,
-                seed=None,
-                base_url=self.db.endpoint_override,
-            )
-            result_text = response.choices[0].message.content or ""
-            if response.usage:
-                conf.update_usage(
-                    response.model,
-                    response.usage.total_tokens,
-                    response.usage.prompt_tokens,
-                    response.usage.completion_tokens,
-                )
-
-            # Parse the JSON array of facts
-            result_text = result_text.strip()
-            # Handle markdown code blocks
-            if result_text.startswith("```"):
-                result_text = result_text.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
-
-            facts = orjson.loads(result_text)
-            if not isinstance(facts, list):
-                return
-
-            if memory_key not in self.db.user_memories:
-                self.db.user_memories[memory_key] = UserMemory(user_id=user.id, guild_id=guild.id)
-
-            memory = self.db.user_memories[memory_key]
-            added = 0
-            for fact in facts:
-                if not isinstance(fact, str) or not fact.strip():
-                    continue
-                # Avoid exact duplicates
-                if fact.strip() not in memory.facts:
-                    memory.facts.append(fact.strip())
-                    added += 1
-
-            if added:
-                memory.updated_at = datetime.now(tz=timezone.utc)
-                log.info(f"Memory flush stored {added} new facts for {user} before compaction")
-
-            # If we're now over the cap, trigger consolidation
-            max_facts = conf.get_user_max_memory_facts(user)
-            if max_facts and len(memory.facts) > max_facts:
-                await self.consolidate_user_memory(guild, user, conf)
-
-        except Exception as e:
-            log.debug(f"Memory flush failed (non-critical): {e}")
-
-    async def consolidate_user_memory(
-        self,
-        guild: discord.Guild,
-        user: discord.Member,
-        conf: GuildSettings,
-    ) -> bool:
-        """Consolidate a user's facts via LLM when nearing the cap.
-
-        Merges redundant facts, drops low-value ones, and targets ~75% of the cap.
-        Returns True if consolidation was performed.
-        """
-        memory_key = f"{guild.id}-{user.id}"
-        memory = self.db.user_memories.get(memory_key)
-        if not memory or not memory.facts:
-            return False
-
-        max_facts = conf.get_user_max_memory_facts(user)
-        if not max_facts or len(memory.facts) < max_facts:
-            return False
-
-        target_count = max(5, int(max_facts * 0.75))
-        facts_list = "\n".join(f"{i + 1}. {fact}" for i, fact in enumerate(memory.facts))
-
-        prompt = MEMORY_CONSOLIDATION_PROMPT.format(
-            target_count=target_count,
-            current_count=len(memory.facts),
-            facts_list=facts_list,
-        )
-
-        try:
-            model = conf.compaction_model or conf.get_user_model(user)
-            if self.db.endpoint_override:
-                model = self.resolve_chat_model(model)
-            consolidation_messages = [
-                {"role": "developer", "content": prompt},
-            ]
-            if self.db.endpoint_override:
-                for m in consolidation_messages:
-                    if m["role"] == "developer":
-                        m["role"] = "system"
-            response = await request_chat_completion_raw(
-                model=model,
-                messages=consolidation_messages,
-                temperature=0.0,
-                api_key=self.get_api_key(conf),
-                max_tokens=2000,
-                functions=None,
-                frequency_penalty=0.0,
-                presence_penalty=0.0,
-                seed=None,
-                base_url=self.db.endpoint_override,
-            )
-            result_text = response.choices[0].message.content or ""
-            if response.usage:
-                conf.update_usage(
-                    response.model,
-                    response.usage.total_tokens,
-                    response.usage.prompt_tokens,
-                    response.usage.completion_tokens,
-                )
-
-            result_text = result_text.strip()
-            if result_text.startswith("```"):
-                result_text = result_text.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
-
-            new_facts = orjson.loads(result_text)
-            if not isinstance(new_facts, list):
-                return False
-
-            # Validate all entries are non-empty strings
-            new_facts = [f.strip() for f in new_facts if isinstance(f, str) and f.strip()]
-            if not new_facts:
-                return False
-
-            before_count = len(memory.facts)
-            memory.facts = new_facts
-            memory.updated_at = datetime.now(tz=timezone.utc)
-
-            log.info(f"Memory consolidation for {user} in {guild}: {before_count} -> {len(new_facts)} facts")
-            return True
-
-        except Exception as e:
-            log.debug(f"Memory consolidation failed (non-critical): {e}")
-            return False
 
     def find_safe_split(self, messages: List[dict], target_idx: int) -> int:
         """Walk backward from target_idx to avoid splitting tool-call/result pairs"""

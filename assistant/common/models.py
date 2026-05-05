@@ -202,15 +202,10 @@ class GuildSettings(AssistantBaseModel):
 
     vision_detail: str = "auto"  # high, low, auto
 
-    # User memory
-    max_memory_facts: int = 20  # Max facts per regular user (0 = unlimited)
-    max_memory_facts_override: t.Dict[int, int] = {}  # Role/user ID -> max facts override
-
     # Compaction (LLM-based context summarization)
     compaction_enabled: bool = True  # Enable automatic LLM compaction before blind degradation
     compaction_model: str = ""  # Model to use for compaction (empty = use same model as chat)
     compaction_threshold: int = 0  # Token threshold to trigger compaction (0 = use max_tokens)
-    memory_flush_on_compaction: bool = True  # Run a memory flush before compacting
 
     use_function_calls: bool = False
     max_function_calls: int = 20  # Max calls in a row
@@ -288,19 +283,6 @@ class GuildSettings(AssistantBaseModel):
                 return self.reasoning_effort_role_override[role.id]
         return self.reasoning_effort
 
-    def get_user_max_memory_facts(self, member: t.Optional[discord.Member] = None) -> int:
-        if not member or not self.max_memory_facts_override:
-            return self.max_memory_facts
-        # Check direct user ID override first
-        if member.id in self.max_memory_facts_override:
-            return self.max_memory_facts_override[member.id]
-        sorted_roles = sorted(member.roles, reverse=True)
-        for role in sorted_roles:
-            if role.id in self.max_memory_facts_override:
-                return self.max_memory_facts_override[role.id]
-        return self.max_memory_facts
-
-
 class Reminder(AssistantBaseModel):
     id: str  # unique identifier
     guild_id: int
@@ -323,13 +305,6 @@ class ScheduledTask(AssistantBaseModel):
     context: str = ""  # optional context about why this task was scheduled
     created_at: datetime
     execute_at: datetime
-
-
-class UserMemory(AssistantBaseModel):
-    user_id: int
-    guild_id: int
-    facts: t.List[str] = []  # List of facts about the user
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
 
 
 class Conversation(AssistantBaseModel):
@@ -494,7 +469,6 @@ class DB(AssistantBaseModel):
     endpoint_profile: t.Optional[EndpointProfile] = None
     reminders: t.Dict[str, Reminder] = {}  # reminder_id -> Reminder
     scheduled_tasks: t.Dict[str, ScheduledTask] = {}  # task_id -> ScheduledTask
-    user_memories: t.Dict[str, UserMemory] = {}  # "{guild_id}-{user_id}" -> UserMemory
 
     def get_effective_system_prompt(self, conf: GuildSettings) -> str:
         if conf.system_prompt in (None, DEFAULT_SYSTEM_PROMPT):
