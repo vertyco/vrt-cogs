@@ -635,7 +635,7 @@ class AIToolsNavigationRow(discord.ui.ActionRow["AIToolsView"]):
         if not interaction.response.is_done():
             with suppress(discord.NotFound):
                 await interaction.response.defer()
-        await self.view.edit_view_message(None, interaction)
+        await self.view.delete_view_message(interaction)
 
 
 class AIToolsView(discord.ui.LayoutView):
@@ -647,7 +647,7 @@ class AIToolsView(discord.ui.LayoutView):
         save_func: Callable,
         page_size: int = 4,
     ):
-        super().__init__(timeout=600)
+        super().__init__(timeout=300)
         self.ctx = ctx
         self.db = db
         self.conf = db.get_conf(ctx.guild)
@@ -789,6 +789,28 @@ class AIToolsView(discord.ui.LayoutView):
         if interaction is not None:
             with suppress(discord.HTTPException):
                 await interaction.edit_original_response(view=view)
+                return True
+
+        return False
+
+    async def delete_view_message(self, interaction: Optional[discord.Interaction] = None) -> bool:
+        candidate_messages: list[discord.Message] = []
+        if self.message is not None:
+            candidate_messages.append(self.message)
+        if interaction is not None and interaction.message is not None:
+            if not any(message.id == interaction.message.id for message in candidate_messages):
+                candidate_messages.append(interaction.message)
+
+        for candidate in candidate_messages:
+            with suppress(discord.HTTPException):
+                await candidate.delete()
+                self.message = None
+                return True
+
+        if interaction is not None:
+            with suppress(discord.HTTPException):
+                await interaction.delete_original_response()
+                self.message = None
                 return True
 
         return False
