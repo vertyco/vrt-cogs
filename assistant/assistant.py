@@ -24,12 +24,9 @@ from .common.constants import (
     CREATE_REMINDER,
     DO_NOT_RESPOND_SCHEMA,
     EDIT_IMAGE,
-    FORGET_USER,
     GENERATE_IMAGE,
     LIST_REMINDERS,
     LIST_SCHEDULED_TASKS,
-    RECALL_USER,
-    REMEMBER_USER,
     RESPOND_AND_CONTINUE,
     SCHEDULE_TASK,
     SEARCH_INTERNET,
@@ -68,7 +65,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "7.13.0"
+    __version__ = "7.14.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -134,9 +131,6 @@ class Assistant(
         await self.register_function(self.qualified_name, CREATE_REMINDER, category="reminders")
         await self.register_function(self.qualified_name, CANCEL_REMINDER, category="reminders")
         await self.register_function(self.qualified_name, LIST_REMINDERS, category="reminders")
-        await self.register_function(self.qualified_name, REMEMBER_USER, category="memory")
-        await self.register_function(self.qualified_name, RECALL_USER, category="memory")
-        await self.register_function(self.qualified_name, FORGET_USER, category="memory")
         await self.register_function(self.qualified_name, SCHEDULE_TASK, permission_level="mod", category="scheduling")
         await self.register_function(
             self.qualified_name,

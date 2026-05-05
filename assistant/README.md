@@ -71,7 +71,7 @@ Conversations are only stored in memory until the bot restarts or the cog reload
 
 Show a detailed token breakdown for your conversation context<br/>
 
-Displays max context, fill percentage, model, token breakdown (system prompt, initial prompt, channel prompt, function schemas, conversation), message breakdown by role, compaction count, and stored facts.<br/>
+Displays max context, fill percentage, model, token breakdown (system prompt, initial prompt, channel prompt, function schemas, conversation), message breakdown by role, and compaction count.<br/>
 
  - Usage: `[p]convocontext [user]`
  - Aliases: `contextinfo`
@@ -902,14 +902,6 @@ When set, the bot will proactively compact conversations once they exceed this m
 Set to **0** to only compact when hitting the model's max token limit.<br/>
 
  - Usage: `[p]assistant compactionthreshold [token_limit]`
-
-### [p]assistant memoryflush
-
-Toggle pre-compaction memory flush on or off<br/>
-
-When enabled, the bot extracts important user facts from the conversation before compacting, storing them as persistent memories.<br/>
-
- - Usage: `[p]assistant memoryflush`
 
 ## [p]embeddings (Hybrid Command)
 

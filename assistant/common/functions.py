@@ -18,7 +18,7 @@ from redbot.core.utils.chat_formatting import humanize_timedelta, pagify
 
 from ..abc import MixinMeta
 from ..common import calls, constants, reply
-from .models import Conversation, GuildSettings, Reminder, ScheduledTask, UserMemory
+from .models import Conversation, GuildSettings, Reminder, ScheduledTask
 
 log = logging.getLogger("red.vrt.assistant.functions")
 _ = Translator("Assistant", __file__)
@@ -462,106 +462,6 @@ class AssistantFunctions(MixinMeta):
             )
 
         return "**Your reminders:**\n" + "\n".join(lines)
-
-    def get_user_memory_key(self, guild_id: int, user_id: int) -> str:
-        """Get the key for storing user memory."""
-        return f"{guild_id}-{user_id}"
-
-    async def remember_user(
-        self,
-        guild: discord.Guild,
-        user: discord.Member,
-        fact: str,
-        conf: GuildSettings = None,
-        *args,
-        **kwargs,
-    ) -> str:
-        """Remember a fact about the user."""
-        key = self.get_user_memory_key(guild.id, user.id)
-        if key not in self.db.user_memories:
-            self.db.user_memories[key] = UserMemory(
-                user_id=user.id,
-                guild_id=guild.id,
-            )
-
-        memory = self.db.user_memories[key]
-
-        # Enforce fact cap if configured
-        if not conf:
-            conf = self.db.get_conf(guild)
-        max_facts = conf.get_user_max_memory_facts(user)
-        consolidated = False
-        if max_facts and len(memory.facts) >= max_facts:
-            # At cap — trigger consolidation to make room
-            before_count = len(memory.facts)
-            consolidated = await self.consolidate_user_memory(guild, user, conf)
-            if consolidated:
-                log.info(f"Memory consolidation for {user}: {before_count} -> {len(memory.facts)} facts")
-            # If still at or over cap after consolidation, evict the oldest fact
-            if max_facts and len(memory.facts) >= max_facts:
-                memory.facts.pop(0)
-
-        memory.facts.append(fact)
-        memory.updated_at = datetime.now(tz=timezone.utc)
-        asyncio.create_task(self.save_conf())
-        status = f"I'll remember that about {user.display_name}: {fact}"
-        if max_facts:
-            status += f" ({len(memory.facts)}/{max_facts} facts stored)"
-        if consolidated:
-            status += f" [Memory was consolidated from {before_count} to {len(memory.facts) - 1} facts to make room]"
-        return status
-
-    async def recall_user(
-        self,
-        guild: discord.Guild,
-        user: discord.Member,
-        *args,
-        **kwargs,
-    ) -> str:
-        """Retrieve all remembered facts about the user."""
-        key = self.get_user_memory_key(guild.id, user.id)
-        memory = self.db.user_memories.get(key)
-        if not memory or not memory.facts:
-            return f"I don't have any stored facts about {user.display_name}."
-
-        lines = [f"{i + 1}. {fact}" for i, fact in enumerate(memory.facts)]
-        return f"**Known facts about {user.display_name}:**\n" + "\n".join(lines)
-
-    async def forget_user(
-        self,
-        guild: discord.Guild,
-        user: discord.Member,
-        fact_index_or_text: str,
-        *args,
-        **kwargs,
-    ) -> str:
-        """Remove a specific fact from the user's memory."""
-        key = self.get_user_memory_key(guild.id, user.id)
-        memory = self.db.user_memories.get(key)
-        if not memory or not memory.facts:
-            return f"I don't have any stored facts about {user.display_name}."
-
-        # Try to parse as an index first
-        try:
-            index = int(fact_index_or_text) - 1  # Convert to 0-based index
-            if 0 <= index < len(memory.facts):
-                removed_fact = memory.facts.pop(index)
-                memory.updated_at = datetime.now(tz=timezone.utc)
-                asyncio.create_task(self.save_conf())
-                return f"Removed fact: {removed_fact}"
-            return f"Invalid index. Please use a number between 1 and {len(memory.facts)}."
-        except ValueError:
-            pass
-
-        # Try to match by text
-        for i, fact in enumerate(memory.facts):
-            if fact_index_or_text.lower() in fact.lower():
-                removed_fact = memory.facts.pop(i)
-                memory.updated_at = datetime.now(tz=timezone.utc)
-                asyncio.create_task(self.save_conf())
-                return f"Removed fact: {removed_fact}"
-
-        return f"Could not find a fact matching '{fact_index_or_text}'."
 
     # -------------------------------------------------------
     # --------------- SCHEDULED TASKS -----------------------

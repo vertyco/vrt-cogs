@@ -823,10 +823,7 @@ class ChatHandler(MixinMeta):
             # Two-tier prune old tool results based on context pressure
             prune_old_tool_results(messages, context_fill_ratio)
 
-            # Multi-layer context management:
-            # 1. Flush important user facts to memory before compaction
-            # 2. Compact via LLM summarization (falls back to blind degradation)
-            await self.flush_memory_before_compaction(messages, conf, author, guild)
+            # Compact via LLM summarization (falls back to blind degradation)
             compacted = await self.compact_conversation(
                 messages, function_calls, conf, author, conversation=conversation
             )
@@ -1382,14 +1379,6 @@ class ChatHandler(MixinMeta):
                 message += f"\n\n# RELATED EMBEDDINGS\n{embeds[0]}"
                 if len(embeds) > 1:
                     system_prompt += f"\n\n# RELATED EMBEDDINGS\n{''.join(embeds[1:])}"
-
-        # Inject user memories if available
-        if author:
-            memory_key = f"{guild.id}-{author.id}"
-            user_memory = self.db.user_memories.get(memory_key)
-            if user_memory and user_memory.facts:
-                facts_text = "\n".join(f"- {fact}" for fact in user_memory.facts)
-                system_prompt += f"\n\n[Known facts about {author.display_name}]\n{facts_text}"
 
         if auto_answer:
             initial_prompt += (

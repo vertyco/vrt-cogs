@@ -330,15 +330,6 @@ If a file has no extension it will still try to read it only if it can be decode
         total_tokens = system_tokens + prompt_tokens + channel_tokens + func_tokens + convo_tokens
         fill_pct = (total_tokens / max_tokens * 100) if max_tokens else 0
 
-        memory_key = f"{ctx.guild.id}-{user.id}"
-        memory = self.db.user_memories.get(memory_key)
-        fact_count = len(memory.facts) if memory else 0
-        max_facts = conf.get_user_max_memory_facts(user)
-        if max_facts:
-            fact_display = f"{fact_count}/{max_facts}"
-        else:
-            fact_display = str(fact_count)
-
         desc = (
             _("`Max Context:        `{} tokens\n").format(humanize_number(max_tokens))
             + _("`Context Fill:       `{:.1f}%\n").format(fill_pct)
@@ -364,7 +355,6 @@ If a file has no extension it will still try to read it only if it can be decode
             + "\n"
             + _("**Compaction**\n")
             + _("`Times Compacted:    `{}\n").format(conversation.compaction_count)
-            + _("`Stored Facts:       `{}\n").format(fact_display)
         )
 
         if fill_pct < 70:
