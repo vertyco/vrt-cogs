@@ -635,11 +635,7 @@ class AIToolsNavigationRow(discord.ui.ActionRow["AIToolsView"]):
         if not interaction.response.is_done():
             with suppress(discord.NotFound):
                 await interaction.response.defer()
-        with suppress(discord.HTTPException):
-            if self.view.message:
-                await self.view.message.edit(view=None)
-                return
-            await interaction.message.edit(view=None)
+        await self.view.edit_view_message(None, interaction)
 
 
 class AIToolsView(discord.ui.LayoutView):
@@ -772,11 +768,30 @@ class AIToolsView(discord.ui.LayoutView):
         self.build_layout()
         self.message = await self.ctx.send(view=self)
 
-    async def edit_view_message(self, view: Optional[discord.ui.View]) -> None:
-        with suppress(discord.HTTPException):
-            if self.message:
-                await self.message.edit(view=view)
-                return
+    async def edit_view_message(
+        self,
+        view: Optional[discord.ui.View],
+        interaction: Optional[discord.Interaction] = None,
+    ) -> bool:
+        candidate_messages: list[discord.Message] = []
+        if self.message is not None:
+            candidate_messages.append(self.message)
+        if interaction is not None and interaction.message is not None:
+            if not any(message.id == interaction.message.id for message in candidate_messages):
+                candidate_messages.append(interaction.message)
+
+        for candidate in candidate_messages:
+            with suppress(discord.HTTPException):
+                await candidate.edit(view=view)
+                self.message = candidate
+                return True
+
+        if interaction is not None:
+            with suppress(discord.HTTPException):
+                await interaction.edit_original_response(view=view)
+                return True
+
+        return False
 
     async def refresh(self, interaction: Optional[discord.Interaction] = None):
         self.build_layout()
@@ -788,11 +803,7 @@ class AIToolsView(discord.ui.LayoutView):
             return
         if self.message is None:
             self.message = interaction.message
-        if self.message:
-            await self.edit_view_message(self)
-            return
-        with suppress(discord.HTTPException):
-            await interaction.edit_original_response(view=self)
+        await self.edit_view_message(self, interaction)
 
     async def change_page(self, interaction: discord.Interaction, delta: int):
         self.page += delta
