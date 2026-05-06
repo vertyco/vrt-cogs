@@ -388,5 +388,110 @@ def get_avg_duration(image: Image.Image) -> int:
         return 0
 
 
+def shrink_animation(image: Image.Image, max_bytes: int, scale: float, frame_step: int) -> t.Optional[bytes]:
+    """Try to shrink an animated image under a target byte size."""
+    if not getattr(image, "is_animated", False):
+        return None
+
+    default_duration = max(get_avg_duration(image), 20)
+    frame_total = getattr(image, "n_frames", 1)
+    frames: t.List[Image.Image] = []
+    durations: t.List[int] = []
+
+    for start in range(0, frame_total, frame_step):
+        duration = 0
+        stop = min(start + frame_step, frame_total)
+        for index in range(start, stop):
+            image.seek(index)
+            duration += max(int(image.info.get("duration", default_duration)), 20)
+
+        image.seek(start)
+        frame = image.convert("RGBA")
+        if scale != 1.0:
+            width = max(1, round(frame.width * scale))
+            height = max(1, round(frame.height * scale))
+            frame = frame.resize((width, height), Image.Resampling.LANCZOS)
+        frames.append(frame)
+        durations.append(duration)
+
+    if len(frames) < 2:
+        return None
+
+    buffer = BytesIO()
+    frames[0].save(
+        buffer,
+        format="GIF",
+        save_all=True,
+        append_images=frames[1:],
+        duration=durations,
+        loop=0,
+        optimize=True,
+        disposal=2,
+    )
+    data = buffer.getvalue()
+    if len(data) <= max_bytes:
+        return data
+    return None
+
+
+def make_static_image(image: Image.Image, max_bytes: int) -> t.Optional[bytes]:
+    """Convert the first frame into a smaller static WEBP if needed."""
+    image.seek(0)
+    base = image.convert("RGBA")
+    scales = (1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4)
+    qualities = (95, 90, 85, 80, 75, 70, 65)
+
+    for scale in scales:
+        frame = base
+        if scale != 1.0:
+            width = max(1, round(base.width * scale))
+            height = max(1, round(base.height * scale))
+            frame = base.resize((width, height), Image.Resampling.LANCZOS)
+
+        for quality in qualities:
+            buffer = BytesIO()
+            frame.save(buffer, format="WEBP", quality=quality, method=6)
+            data = buffer.getvalue()
+            if len(data) <= max_bytes:
+                return data
+
+    return None
+
+
+def fit_discord_upload_limit(image_bytes: bytes, file_size_limit: int) -> t.Tuple[bytes, bool, str]:
+    """Shrink oversized animated images, then fall back to a static WEBP if needed."""
+    if not image_bytes:
+        return image_bytes, False, "webp"
+    if not file_size_limit or file_size_limit <= 0:
+        return image_bytes, False, "webp"
+
+    safety_margin = min(16 * 1024, max(1024, file_size_limit // 50))
+    max_bytes = max(1, file_size_limit - safety_margin)
+
+    try:
+        image = Image.open(BytesIO(image_bytes))
+    except Exception as e:
+        log.warning("Failed to inspect generated image size", exc_info=e)
+        return image_bytes, False, "webp"
+
+    animated = bool(getattr(image, "is_animated", False))
+    ext = "gif" if animated else "webp"
+    if len(image_bytes) <= max_bytes or not animated:
+        return image_bytes, animated, ext
+
+    scales = (1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4)
+    frame_steps = (1, 2, 3, 4, 5)
+
+    for frame_step in frame_steps:
+        for scale in scales:
+            if shrunk := shrink_animation(image, max_bytes, scale, frame_step):
+                return shrunk, True, "gif"
+
+    if static_image := make_static_image(image, max_bytes):
+        return static_image, False, "webp"
+
+    return image_bytes, animated, ext
+
+
 if __name__ == "__main__":
     print(calc_aspect_ratio(200, 70))

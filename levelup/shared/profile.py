@@ -16,6 +16,7 @@ from redbot.core.utils.chat_formatting import box, humanize_number
 from ..abc import MixinMeta
 from ..common import formatter, utils
 from ..common.models import Profile
+from ..generator import imgtools
 from ..generator.styles import default, gaming, minimal, runescape
 
 log = logging.getLogger("red.vrt.levelup.shared.profile")
@@ -23,6 +24,22 @@ _ = Translator("LevelUp", __file__)
 
 
 class ProfileFormatting(MixinMeta):
+    def make_profile_file(self, member: discord.Member, img_bytes: bytes, animated: bool) -> discord.File:
+        """Clamp generated profile images to the guild upload limit."""
+        original_size = len(img_bytes)
+        original_ext = "gif" if animated else "webp"
+        img_bytes, animated, ext = imgtools.fit_discord_upload_limit(img_bytes, member.guild.filesize_limit)
+        if original_size != len(img_bytes) or original_ext != ext:
+            log.info(
+                "Adjusted profile image for %s (%s -> %s bytes, %s -> %s)",
+                member,
+                original_size,
+                len(img_bytes),
+                original_ext,
+                ext,
+            )
+        return discord.File(BytesIO(img_bytes), filename=f"profile.{ext}")
+
     async def add_xp(self, member: discord.Member, xp: int) -> int:
         """Add XP to a user and check for level ups"""
         if not isinstance(member, discord.Member):
@@ -346,8 +363,7 @@ class ProfileFormatting(MixinMeta):
                             data = await response.json()
                             img_b64, animated = data["b64"], data["animated"]
                             img_bytes = base64.b64decode(img_b64)
-                            ext = "gif" if animated else "webp"
-                            return discord.File(BytesIO(img_bytes), filename=f"profile.{ext}")
+                            return self.make_profile_file(member, img_bytes, animated)
                         log.error(f"Failed to fetch profile from API: {response.status}")
             except Exception as e:
                 log.error("Failed to fetch profile from API, falling back to subprocess", exc_info=e)
@@ -357,13 +373,13 @@ class ProfileFormatting(MixinMeta):
 
         if output_path and result:
             img_bytes = output_path.read_bytes()
-            ext = result.get("format", "webp")
+            animated = result.get("animated", result.get("format", "webp") == "gif")
             # Clean up output file
             try:
                 output_path.unlink()
             except Exception:
                 pass
-            return discord.File(BytesIO(img_bytes), filename=f"profile.{ext}")
+            return self.make_profile_file(member, img_bytes, animated)
 
         # Final fallback - run in-process (should rarely happen)
         log.warning("Subprocess failed, falling back to in-process generation")
@@ -422,8 +438,7 @@ class ProfileFormatting(MixinMeta):
 
         def _run() -> discord.File:
             img_bytes, animated = funcs[profile_style](**kwargs)
-            ext = "gif" if animated else "webp"
-            return discord.File(BytesIO(img_bytes), filename=f"profile.{ext}")
+            return self.make_profile_file(member, img_bytes, animated)
 
         file = await asyncio.to_thread(_run)
         return file
@@ -439,16 +454,18 @@ class ProfileFormatting(MixinMeta):
             if not isinstance(file, discord.File):
                 return file
             filebytes = file.fp.read()
-            self.profile_cache[member.guild.id][member.id] = (now, filebytes)
-            return discord.File(BytesIO(filebytes), filename="profile.webp")
+            filename = file.filename or "profile.webp"
+            self.profile_cache[member.guild.id][member.id] = (now, filebytes, filename)
+            return discord.File(BytesIO(filebytes), filename=filename)
 
-        last_used, imgbytes = cachedata
+        last_used, imgbytes, filename = cachedata
         if last_used and now - last_used < self.db.cache_seconds:
-            return discord.File(BytesIO(imgbytes), filename="profile.webp")
+            return discord.File(BytesIO(imgbytes), filename=filename)
 
         file = await self.get_user_profile(member)
         if not isinstance(file, discord.File):
             return file
         filebytes = file.fp.read()
-        self.profile_cache[member.guild.id][member.id] = (now, filebytes)
-        return discord.File(BytesIO(filebytes), filename="profile.webp")
+        filename = file.filename or "profile.webp"
+        self.profile_cache[member.guild.id][member.id] = (now, filebytes, filename)
+        return discord.File(BytesIO(filebytes), filename=filename)

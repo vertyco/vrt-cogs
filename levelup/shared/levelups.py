@@ -13,7 +13,7 @@ from redbot.core.i18n import Translator
 from ..abc import MixinMeta
 from ..common import utils
 from ..common.models import GuildSettings, Profile
-from ..generator import levelalert
+from ..generator import imgtools, levelalert
 
 log = logging.getLogger("red.vrt.levelup.shared.levelups")
 _ = Translator("LevelUp", __file__)
@@ -243,7 +243,7 @@ class LevelUps(MixinMeta):
 
                 img_bytes, animated = await asyncio.to_thread(_run)
 
-            ext = "gif" if animated else "webp"
+            img_bytes, animated, ext = imgtools.fit_discord_upload_limit(img_bytes, guild.filesize_limit)
             if conf.notifydm:
                 file = discord.File(BytesIO(img_bytes), filename=f"levelup.{ext}")
                 with suppress(discord.HTTPException):

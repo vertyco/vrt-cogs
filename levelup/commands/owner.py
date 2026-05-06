@@ -336,8 +336,8 @@ class Owner(MixinMeta):
                 elif (self.custom_fonts / profile.font).exists():
                     font = str(self.custom_fonts / profile.font)
 
-            def _run() -> discord.File:
-                img_bytes, animated = levelalert.generate_level_img(
+            def _run() -> t.Tuple[bytes, bool]:
+                return levelalert.generate_level_img(
                     background_bytes=banner,
                     avatar_bytes=avatar,
                     level=level,
@@ -345,8 +345,8 @@ class Owner(MixinMeta):
                     color=ctx.author.color.to_rgb(),
                     render_gif=self.db.render_gifs,
                 )
-                ext = "gif" if animated else "webp"
-                return discord.File(BytesIO(img_bytes), filename=f"levelup.{ext}")
 
-            file = await asyncio.to_thread(_run)
+            img_bytes, animated = await asyncio.to_thread(_run)
+            img_bytes, animated, ext = imgtools.fit_discord_upload_limit(img_bytes, ctx.guild.filesize_limit)
+            file = discord.File(BytesIO(img_bytes), filename=f"levelup.{ext}")
             await ctx.send(file=file)
