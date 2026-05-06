@@ -759,6 +759,7 @@ class Admin(MixinMeta):
         - **members**: server member count
         - **username**: user's name
         - **displayname**: user's display name
+        - **activities**: the user's current Discord activities and statuses
         - **roles**: the names of the user's roles
         - **rolementions**: the mentions of the user's roles
         - **avatar**: the user's avatar url
@@ -907,6 +908,7 @@ class Admin(MixinMeta):
         - **members**: server member count
         - **username**: user's name
         - **displayname**: user's display name
+        - **activities**: the user's current Discord activities and statuses
         - **roles**: the names of the user's roles
         - **rolementions**: the mentions of the user's roles
         - **avatar**: the user's avatar url
@@ -1240,6 +1242,7 @@ class Admin(MixinMeta):
         - **members**: server member count
         - **username**: user's name
         - **displayname**: user's display name
+        - **activities**: the user's current Discord activities and statuses
         - **roles**: the names of the user's roles
         - **rolementions**: the mentions of the user's roles
         - **avatar**: the user's avatar url
