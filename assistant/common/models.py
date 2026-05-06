@@ -56,7 +56,6 @@ class AssistantBaseModel(BaseModel):
 class Embedding(AssistantBaseModel):
     text: str
     embedding: t.List[float]
-    ai_created: bool = False
     created: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
     modified: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
     model: str = "text-embedding-3-small"
@@ -144,7 +143,6 @@ class GuildSettings(AssistantBaseModel):
     blacklist: t.List[int] = []  # Channel/Role/User IDs
     top_n: int = 3
     min_relatedness: float = 0.78
-    embed_method: str = "dynamic"  # hybrid, dynamic, static, user
     question_mode: bool = False  # If True, only the first message and messages that end with ? will have emebddings
     channel_id: t.Optional[int] = 0  # The main auto-response channel ID
     listen_channels: t.List[int] = []  # Channels to listen to for auto-reply
@@ -283,6 +281,7 @@ class GuildSettings(AssistantBaseModel):
                 return self.reasoning_effort_role_override[role.id]
         return self.reasoning_effort
 
+
 class Reminder(AssistantBaseModel):
     id: str  # unique identifier
     guild_id: int
@@ -412,6 +411,7 @@ class Conversation(AssistantBaseModel):
         name: str = None,
         images: t.List[str] = None,
         resolution: str = "auto",
+        transient_user_context: str = "",
     ) -> t.List[dict]:
         """Pre-appends the prmompts before the user's messages without motifying them"""
         prepared = []
@@ -420,6 +420,8 @@ class Conversation(AssistantBaseModel):
         if initial_prompt.strip():
             prepared.append({"role": "user", "content": initial_prompt})
         prepared.extend(self.messages)
+        if transient_user_context.strip():
+            prepared.append({"role": "user", "content": transient_user_context})
 
         if images:
             content = [{"type": "text", "text": user_message}]
@@ -471,7 +473,7 @@ class DB(AssistantBaseModel):
     scheduled_tasks: t.Dict[str, ScheduledTask] = {}  # task_id -> ScheduledTask
 
     def get_effective_system_prompt(self, conf: GuildSettings) -> str:
-        if conf.system_prompt in (None, DEFAULT_SYSTEM_PROMPT):
+        if not conf.system_prompt or conf.system_prompt == DEFAULT_SYSTEM_PROMPT:
             return self.default_system_prompt
         return conf.system_prompt
 

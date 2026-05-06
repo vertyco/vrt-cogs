@@ -56,7 +56,7 @@ class Assistant(
     """
     Set up and configure an AI assistant (or chat) cog for your server with OpenAI or other OpenAI-compatible language models.
 
-    Features include configurable prompt injection, dynamic embeddings, custom function calling, and more!
+    Features include configurable prompt injection, admin-curated grounded RAG embeddings, custom function calling, and more!
 
     - **[p]assistant**: base command for setting up the assistant
     - **[p]chat**: talk with the assistant
@@ -65,7 +65,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "7.14.1"
+    __version__ = "7.15.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)

@@ -344,14 +344,6 @@ READ_EXTENSIONS = [
     ".csv",
 ]
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
-REACT_SUMMARY_MESSAGE = """
-Ignore previous instructions. You will be given a snippet of text, your job is to create a "memory" for the given text to provide context for future conversations.
-
-# RULES
-- Output a summary of the text in your own words.
-- This is a contextual memory about a topic, do not include irrelevant information like names of who is speaking.
-- Do not include the original text in your response.
-"""
 TLDR_PROMPT = """
 Write a TLDR based on the messages provided.
 

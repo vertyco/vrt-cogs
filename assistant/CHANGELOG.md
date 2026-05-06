@@ -1,5 +1,26 @@
 # Assistant Changelog
 
+## v7.15.1
+
+### Curated embedding cleanup
+
+The assistant's active embedding pool is now admin-curated only.
+
+- Removed the brain-reaction memory writer so message reactions no longer create embeddings
+- Removed stale tutor documentation tied to self-created embeddings
+- Current retrieval, exports, menu views, and resync only operate on admin-curated embeddings
+- Restored the public `add_embedding` API and removed `ai_created` metadata tracking
+
+## v7.15.0
+
+### Grounded RAG injection
+
+Embedding injection now follows a single grounded 2026-style RAG layout instead of the older dynamic/static/hybrid/user modes.
+
+- Retrieved embeddings are injected as structured XML in an ephemeral user message immediately before the live user query
+- Grounding rules stay in the developer/system prompt instead of mixing retrieval into high-authority instructions
+- Retrieved chunks now include source ids plus creation/update metadata so the model can cite what it used
+
 ## v7.7.0
 
 ### Conversation compaction

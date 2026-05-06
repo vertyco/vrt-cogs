@@ -409,7 +409,8 @@ class EmbeddingMenu(discord.ui.View):
         row=3,
     )
     async def search(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if not await self.embedding_store.has_embeddings(self.guild_id):
+        all_meta = await self.embedding_store.get_all_metadata(self.guild_id)
+        if not all_meta:
             return await interaction.response.send_message(_("No embeddings to search!"), ephemeral=True)
         modal = SearchModal(_("Search for an embedding"))
         await interaction.response.send_modal(modal)
@@ -417,7 +418,6 @@ class EmbeddingMenu(discord.ui.View):
         if modal.query is None:
             return
         query = modal.query.lower()
-        all_meta = await self.embedding_store.get_all_metadata(self.guild_id)
         matches: List[Tuple[str, int]] = []
         for name, meta in all_meta.items():
             text = meta.get("text", "")

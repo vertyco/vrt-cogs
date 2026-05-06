@@ -1,6 +1,6 @@
 # Assistant
 
-Set up and configure an AI assistant (or chat) cog for your server with one of OpenAI's ChatGPT language models.<br/><br/>Features include configurable prompt injection, dynamic embeddings, custom function calling, conversation compaction, and more!<br/><br/>- **[p]assistant**: base command for setting up the assistant<br/>- **[p]chat**: talk with the assistant<br/>- **[p]convostats**: view a user's token usage/conversation message count for the channel<br/>- **[p]convocontext**: view a detailed token breakdown of your conversation context<br/>- **[p]convocompact**: compact your conversation using LLM summarization<br/>- **[p]clearconvo**: reset your conversation with the assistant in the channel
+Set up and configure an AI assistant (or chat) cog for your server with one of OpenAI's ChatGPT language models.<br/><br/>Features include configurable prompt injection, admin-curated grounded RAG embeddings, custom function calling, conversation compaction, and more!<br/><br/>- **[p]assistant**: base command for setting up the assistant<br/>- **[p]chat**: talk with the assistant<br/>- **[p]convostats**: view a user's token usage/conversation message count for the channel<br/>- **[p]convocontext**: view a detailed token breakdown of your conversation context<br/>- **[p]convocompact**: compact your conversation using LLM summarization<br/>- **[p]clearconvo**: reset your conversation with the assistant in the channel
 
 ## /draw (Slash Command)
 
@@ -464,17 +464,6 @@ Set the OpenAI Embedding model to use<br/>
 
  - Usage: `[p]assistant embedmodel [model=None]`
 
-### [p]assistant tutor
-
-Add/Remove items from the tutor list.<br/>
-
-If using OpenAI's function calling and talking to a tutor, the AI is able to create its own embeddings to remember later<br/>
-
-`role_or_member` can be a member or role<br/>
-
- - Usage: `[p]assistant tutor <role_or_member>`
- - Aliases: `tutors`
-
 ### [p]assistant braveapikey
 
 Enables use of the `search_web_brave` function<br/>
@@ -684,23 +673,6 @@ Toggle whether the bot responds to mentions in any channel<br/>
 
  - Usage: `[p]assistant mentionrespond`
 
-### [p]assistant embedmethod
-
-Cycle between embedding methods<br/>
-
-**Dynamic** embeddings mean that the embeddings pulled are dynamically appended to the initial prompt for each individual question.<br/>
-When each time the user asks a question, the previous embedding is replaced with embeddings pulled from the current question, this reduces token usage significantly<br/>
-
-**Static** embeddings are applied in front of each user message and get stored with the conversation instead of being replaced with each question.<br/>
-
-**Hybrid** embeddings are a combination, with the first embedding being stored in the conversation and the rest being dynamic, this saves a bit on token usage.<br/>
-
-**User** embeddings are injected into the beginning of the prompt as the first user message.<br/>
-
-Dynamic embeddings are helpful for Q&A, but not so much for chat when you need to retain the context pulled from the embeddings. The hybrid method is a good middle ground<br/>
-
- - Usage: `[p]assistant embedmethod`
-
 ### [p]assistant persist
 
 Toggle persistent conversations<br/>
@@ -815,7 +787,7 @@ Set to 0 to respond to anything<br/>
 
 Set the embedding inclusion amout<br/>
 
-Top N is the amount of embeddings to include with the initial prompt<br/>
+Top N is the amount of retrieved embeddings to include in the grounded RAG context block before the live user query<br/>
 
  - Usage: `[p]assistant topn <top_n>`
 
@@ -907,7 +879,7 @@ Set to **0** to only compact when hitting the model's max token limit.<br/>
 
 Manage embeddings for training<br/>
 
-Embeddings are used to optimize training of the assistant and minimize token usage.<br/>
+Embeddings are admin-curated reference entries used to optimize training of the assistant and minimize token usage.<br/>
 
 By using this the bot can store vast amounts of contextual information without going over the token limit.<br/>
 
