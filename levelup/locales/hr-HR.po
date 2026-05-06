@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2024-07-24 17:08-0400\n"
-"PO-Revision-Date: 2024-12-03 14:58\n"
+"POT-Creation-Date: 2025-11-27 13:02-0500\n"
+"PO-Revision-Date: 2025-12-03 16:54\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -17,17 +17,17 @@ msgstr ""
 "X-Crowdin-File-ID: 172\n"
 "Language: hr_HR\n"
 
-#: levelup\abc.py:17
+#: levelup\abc.py:18
 #, docstring
 msgid "Type detection"
 msgstr ""
 
-#: levelup\abc.py:21
+#: levelup\abc.py:22
 #, docstring
 msgid "Type hinting"
 msgstr ""
 
-#: levelup\main.py:71
+#: levelup\main.py:73
 #, docstring
 msgid "\n"
 "    Your friendly neighborhood leveling system\n\n"
@@ -35,13 +35,13 @@ msgid "\n"
 "    "
 msgstr ""
 
-#: levelup\main.py:233
+#: levelup\main.py:223
 msgid "LevelUp has successfully migrated to v4!\n"
 "Leveling is now disabled by default and must be toggled on in each server via `[p]lset toggle`.\n"
 "[View the changelog](https://github.com/vertyco/vrt-cogs/blob/main/levelup/CHANGELOG.md) for more information."
 msgstr ""
 
-#: levelup\main.py:243
+#: levelup\main.py:233
 msgid "LevelUp has failed to migrate to v4!\n"
 "Send this to vertyco:\n"
 "{}"
