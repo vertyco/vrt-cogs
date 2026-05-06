@@ -105,6 +105,32 @@ def record_ticket_opened(
     )
 
 
+def get_ticket_claim_attribution(
+    conf: GuildSettings,
+    channel_id: int,
+) -> tuple[int | None, int | None, datetime | None]:
+    """Return the existing claimer and first responder for a ticket channel."""
+    claimed_staff_id: int | None = None
+    claimed_at: datetime | None = None
+    first_responder_id: int | None = None
+    first_response_at: datetime | None = None
+
+    for staff_id, staff_stats in conf.staff_stats.items():
+        for event in staff_stats.events:
+            if event.ticket_channel_id != channel_id:
+                continue
+            if event.event_type == EventType.TICKET_CLAIMED:
+                if claimed_at is None or event.timestamp > claimed_at:
+                    claimed_at = event.timestamp
+                    claimed_staff_id = staff_id
+            elif event.event_type == EventType.FIRST_RESPONSE:
+                if first_response_at is None or event.timestamp < first_response_at:
+                    first_response_at = event.timestamp
+                    first_responder_id = staff_id
+
+    return claimed_staff_id, first_responder_id, first_response_at
+
+
 def record_ticket_closed(
     conf: GuildSettings,
     ticket: OpenedTicket,
@@ -127,6 +153,14 @@ def record_ticket_closed(
     now = datetime.now().astimezone()
     resolution_time = (now - ticket.opened).total_seconds()
     panel_name = ticket.panel
+    claimed_staff_id, first_responder_id, first_response_at = get_ticket_claim_attribution(conf, channel_id)
+
+    if ticket.claimed_by is None:
+        if claimed_staff_id is not None:
+            ticket.claimed_by = claimed_staff_id
+        elif first_responder_id is not None:
+            ticket.claimed_by = first_responder_id
+            record_ticket_claimed(conf, first_responder_id, channel_id, panel_name, claimed_at=first_response_at)
 
     # Calculate wait time (time to first response)
     wait_time: float | None = None
@@ -201,6 +235,7 @@ def record_ticket_claimed(
     staff_id: int,
     channel_id: int,
     panel_name: str,
+    claimed_at: datetime | None = None,
 ) -> None:
     """Record analytics when a staff member claims a ticket.
 
@@ -209,15 +244,17 @@ def record_ticket_claimed(
         staff_id: The staff member who claimed
         channel_id: The ticket channel ID
         panel_name: The panel name (for blacklist checking)
+        claimed_at: When the claim happened
     """
     if conf.is_panel_analytics_blacklisted(panel_name):
         return
 
-    now = datetime.now().astimezone()
+    now = claimed_at or datetime.now().astimezone()
 
     staff_stats = conf.get_staff_stats(staff_id)
     staff_stats.tickets_claimed += 1
-    staff_stats.last_active = now
+    if staff_stats.last_active is None or now > staff_stats.last_active:
+        staff_stats.last_active = now
 
     staff_stats.events.append(
         StaffEvent(
