@@ -5,15 +5,12 @@ import multiprocessing as mp
 import re
 import typing as t
 from dataclasses import dataclass, field
-from io import StringIO
 
 import discord
 from redbot.core import commands
 from redbot.core.i18n import Translator
 
 from .abc import MixinMeta
-from .common.calls import create_memory_call
-from .common.constants import REACT_SUMMARY_MESSAGE
 from .common.utils import can_use, embed_to_content, is_question
 
 log = logging.getLogger("red.vrt.assistant.listener")
@@ -313,96 +310,3 @@ class AssistantListener(MixinMeta):
             log.info(f"Bot removed from {guild.name}, cleaning up...")
             del self.db.configs[guild.id]
             await self.save_conf()
-
-    @commands.Cog.listener("on_raw_reaction_add")
-    async def remember(self, payload: discord.RawReactionActionEvent):
-        """Save messages as embeddings when reacted to with :brain: emoji"""
-        emoji = str(payload.emoji)
-        if emoji != "\N{BRAIN}":
-            return
-        if payload.user_id == self.bot.user.id:
-            return
-        if not payload.guild_id:
-            return
-        guild = self.bot.get_guild(payload.guild_id)
-        if not guild:
-            return
-        user = payload.member
-        if not user:
-            return
-        # Ignore reactions added by other bots
-        if user.bot:
-            return
-        channel = guild.get_channel(payload.channel_id)
-        if not channel:
-            return
-
-        message = await channel.fetch_message(payload.message_id)
-        if not message:
-            return
-        if not message.content:
-            return
-        conf = self.db.get_conf(guild)
-        if not conf.enabled:
-            return
-        if not conf.api_key and not self.db.endpoint_override:
-            return
-        # Check if cog is disabled
-        if await self.bot.cog_disabled_in_guild(self, guild):
-            return
-        if not await self.bot.is_mod(user):
-            return
-
-        messages: t.List[discord.Message] = [message]
-
-        # Set up the message chain
-        tmp = message
-        while True:
-            if getattr(tmp, "reference", None) is not None:
-                resolved = tmp.reference.resolved
-                if resolved is None:
-                    break
-                messages.append(resolved)
-                # If the message is a reply to another message, we want to keep going up the chain
-                tmp = resolved
-
-            else:
-                break
-
-        messages.reverse()
-
-        content = StringIO()
-        for idx, msg in enumerate(messages):
-            if idx == 0:
-                content.write(f"Original message from {msg.author.name}: {msg.content}\n")
-            else:
-                content.write(f"{msg.author.name} said: {msg.content}\n")
-
-        success = True
-        try:
-            messages = [
-                {"role": "developer", "content": REACT_SUMMARY_MESSAGE.strip()},
-                {"role": "user", "content": content.getvalue()},
-            ]
-            res = await create_memory_call(
-                messages=messages,
-                api_key=self.get_api_key(conf),
-                model=conf.get_user_model(message.author),
-                base_url=self.db.endpoint_override,
-            )
-            if res:
-                embedding = await self.add_embedding(guild, res.memory_name, res.memory_content)
-                if embedding is None:
-                    success = False
-                else:
-                    log.info(f"Created embedding in {guild.name}\nName: {res.memory_name}\nEntry: {res.memory_content}")
-            else:
-                success = False
-        except Exception as e:
-            log.warning(f"Failed to save embed memory in {guild.name}", exc_info=e)
-            success = False
-
-        if success:
-            await message.add_reaction("\N{WHITE HEAVY CHECK MARK}")
-        else:
-            await message.add_reaction("\N{CROSS MARK}")

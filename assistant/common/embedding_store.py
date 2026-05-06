@@ -97,7 +97,7 @@ class EmbeddingStore:
     async def get(self, guild_id: int, name: str) -> t.Optional[dict]:
         """Get a single embedding's metadata + vector by name.
 
-        Returns dict with keys: text, ai_created, created, modified, model, dimensions, embedding
+        Returns dict with keys: text, created, modified, model, dimensions, embedding
         """
 
         def _get():
@@ -118,7 +118,7 @@ class EmbeddingStore:
     async def get_all_metadata(self, guild_id: int) -> dict[str, dict]:
         """Get all embeddings' metadata (no vectors).
 
-        Returns: ``{name: {text, ai_created, created, modified, model, dimensions}}``
+        Returns: ``{name: {text, created, modified, model, dimensions}}``
         """
 
         def _get():
@@ -137,7 +137,7 @@ class EmbeddingStore:
     async def get_all_with_embeddings(self, guild_id: int) -> dict[str, dict]:
         """Get all embeddings including vectors (for resync / export).
 
-        Returns: ``{name: {text, embedding, ai_created, created, modified, model, dimensions}}``
+        Returns: ``{name: {text, embedding, created, modified, model, dimensions}}``
         """
 
         def _get():
@@ -165,7 +165,6 @@ class EmbeddingStore:
         text: str,
         embedding: list[float],
         model: str,
-        ai_created: bool = False,
     ) -> None:
         """Add a new embedding.
 
@@ -178,7 +177,6 @@ class EmbeddingStore:
             now = datetime.now(tz=timezone.utc).isoformat()
             metadata = {
                 "text": text,
-                "ai_created": ai_created,
                 "created": now,
                 "modified": now,
                 "model": model,
@@ -211,17 +209,14 @@ class EmbeddingStore:
             collection = self._get_collection(guild_id)
             if not collection:
                 return False  # Signal to fall back to add
-            # Preserve original creation date and ai_created flag
+            # Preserve original creation date
             existing = collection.get(ids=[name], include=["metadatas"])
             created = datetime.now(tz=timezone.utc).isoformat()
-            ai_created = False
             if existing["ids"] and existing["metadatas"]:
                 created = existing["metadatas"][0].get("created", created)
-                ai_created = existing["metadatas"][0].get("ai_created", False)
 
             metadata = {
                 "text": text,
-                "ai_created": ai_created,
                 "created": created,
                 "modified": datetime.now(tz=timezone.utc).isoformat(),
                 "model": model,
@@ -369,14 +364,12 @@ class EmbeddingStore:
                 if isinstance(em, dict):
                     text = em.get("text", "")
                     embedding = em.get("embedding", [])
-                    ai_created = em.get("ai_created", False)
                     created = em.get("created", datetime.now(tz=timezone.utc).isoformat())
                     modified = em.get("modified", datetime.now(tz=timezone.utc).isoformat())
                     model = em.get("model", "text-embedding-3-small")
                 else:
                     text = em.text
                     embedding = em.embedding
-                    ai_created = em.ai_created
                     created = em.created.isoformat() if hasattr(em.created, "isoformat") else str(em.created)
                     modified = em.modified.isoformat() if hasattr(em.modified, "isoformat") else str(em.modified)
                     model = em.model
@@ -390,7 +383,6 @@ class EmbeddingStore:
                 metadatas.append(
                     {
                         "text": text,
-                        "ai_created": ai_created,
                         "created": created if isinstance(created, str) else str(created),
                         "modified": modified if isinstance(modified, str) else str(modified),
                         "model": model,

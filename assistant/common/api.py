@@ -762,7 +762,6 @@ class API(MixinMeta):
                     meta.get("text", ""),
                     vec,
                     model,
-                    meta.get("ai_created", False),
                 )
         else:
             # Just update the changed entries
@@ -1236,6 +1235,13 @@ class API(MixinMeta):
     async def get_embedding_menu_embeds(self, guild_id: int, conf: GuildSettings, place: int) -> List[discord.Embed]:
         all_meta = await self.embedding_store.get_all_metadata(guild_id)
         embeddings = sorted(all_meta.items(), key=lambda x: x[0])
+        if not embeddings:
+            return [
+                discord.Embed(
+                    description=_("No embeddings have been created yet!"),
+                    color=discord.Color.blue(),
+                )
+            ]
         embeds = []
         pages = math.ceil(len(embeddings) / 5)
         model = conf.get_user_model()
@@ -1255,7 +1261,6 @@ class API(MixinMeta):
                 created_str = meta.get("created", "")
                 modified_str = meta.get("modified", "")
                 dimensions = meta.get("dimensions", 0)
-                ai_created = meta.get("ai_created", False)
                 emb_model = meta.get("model", conf.embed_model)
 
                 # Format timestamps
@@ -1271,7 +1276,6 @@ class API(MixinMeta):
                     f"`Modified:   `{modified_display}\n"
                     f"`Tokens:     `{tokens}\n"
                     f"`Dimensions: `{dimensions}\n"
-                    f"`AI Created: `{ai_created}\n"
                     f"`Model:      `{emb_model}\n"
                 )
                 val += text

@@ -358,7 +358,6 @@ class Admin(MixinMeta):
         embedding_field = (
             _("`Top N Embeddings:  `{}\n").format(conf.top_n)
             + _("`Min Relatedness:   `{}\n").format(conf.min_relatedness)
-            + _("`Embedding Method:  `{}\n").format(conf.embed_method)
             + _("`Encodings:         `{}").format(encoded_by)
         )
         embed_num = humanize_number(len(all_meta))
@@ -1873,7 +1872,7 @@ class Admin(MixinMeta):
         """
         Set the embedding inclusion amout
 
-        Top N is the amount of embeddings to include with the initial prompt
+        Top N is the amount of retrieved embeddings to include in the grounded RAG context block before the live user query
         """
         if not 0 <= top_n <= 10:
             return await ctx.send(_("Top N must be between 0 and 10"))
@@ -1950,37 +1949,6 @@ class Admin(MixinMeta):
         else:
             conf.question_mode = True
             await ctx.send(_("Question mode is now **Enabled**"))
-        await self.save_conf()
-
-    @assistant.command(name="embedmethod")
-    async def toggle_embedding_method(self, ctx: commands.Context):
-        """
-        Cycle between embedding methods
-
-        **Dynamic** embeddings mean that the embeddings pulled are dynamically appended to the initial prompt for each individual question.
-        When each time the user asks a question, the previous embedding is replaced with embeddings pulled from the current question, this reduces token usage significantly
-
-        **Static** embeddings are applied in front of each user message and get stored with the conversation instead of being replaced with each question.
-
-        **Hybrid** embeddings are a combination, with the first embedding being stored in the conversation and the rest being dynamic, this saves a bit on token usage.
-
-        **User** embeddings are injected into the beginning of the prompt as the first user message.
-
-        Dynamic embeddings are helpful for Q&A, but not so much for chat when you need to retain the context pulled from the embeddings. The hybrid method is a good middle ground
-        """
-        conf = self.db.get_conf(ctx.guild)
-        if conf.embed_method == "dynamic":
-            conf.embed_method = "static"
-            await ctx.send(_("Embedding method has been set to **Static**"))
-        elif conf.embed_method == "static":
-            conf.embed_method = "hybrid"
-            await ctx.send(_("Embedding method has been set to **Hybrid**"))
-        elif conf.embed_method == "hybrid":
-            conf.embed_method = "user"
-            await ctx.send(_("Embedding method has been set to **User**"))
-        elif conf.embed_method == "user":
-            conf.embed_method = "dynamic"
-            await ctx.send(_("Embedding method has been set to **Dynamic**"))
         await self.save_conf()
 
     @assistant.command(name="importcsv")
@@ -2097,7 +2065,6 @@ class Admin(MixinMeta):
                         text = str(em.get("text", ""))[:4000]
                         embedding_vec = em.get("embedding", [])
                         model = em.get("model", conf.embed_model)
-                        ai_created = em.get("ai_created", False)
                         if not embedding_vec:
                             # Re-embed if no vector present
                             embedding_vec, model = await self.request_embedding_with_info(text, conf)
@@ -2109,7 +2076,6 @@ class Admin(MixinMeta):
                             text,
                             embedding_vec,
                             model,
-                            ai_created,
                         )
                         imported += 1
                 except (ValidationError, KeyError, TypeError):
@@ -2155,12 +2121,10 @@ class Admin(MixinMeta):
                 invalid = [
                     "name" not in df.columns,
                     "text" not in df.columns,
-                    "created" not in df.columns,
-                    "ai_created" not in df.columns,
                 ]
                 if any(invalid):
                     txt = _("{} is invalid! Must contain the following columns: {}").format(
-                        f"**{attachment.filename}**", "name, text, created, ai_created"
+                        f"**{attachment.filename}**", "name, text"
                     )
                     await ctx.send(txt)
                     continue
@@ -2204,7 +2168,6 @@ class Admin(MixinMeta):
                     text,
                     query_embedding,
                     observed_model,
-                    bool(row["ai_created"]),
                 )
                 imported += 1
 
@@ -2232,7 +2195,6 @@ class Admin(MixinMeta):
             "name": str,
             "text": str,
             "created": "datetime64[ns]",  # Use numpy datetime64 type for datetime
-            "ai_created": bool,
         }
 
         def _get_file() -> discord.File:
@@ -2243,7 +2205,7 @@ class Admin(MixinMeta):
                     created_dt = datetime.fromisoformat(created_str).astimezone(timezone.utc).replace(tzinfo=None)
                 except (ValueError, TypeError):
                     created_dt = datetime.now(tz=timezone.utc).replace(tzinfo=None)
-                rows.append([name, meta.get("text", ""), created_dt, meta.get("ai_created", False)])
+                rows.append([name, meta.get("text", ""), created_dt])
             df = pd.DataFrame(rows, columns=columns.keys())
 
             # Convert the columns to the specified types

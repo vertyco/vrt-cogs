@@ -4,11 +4,9 @@ from typing import List, Optional
 
 import httpx
 import openai
-import orjson
 from aiocache import cached
 from openai.types import CreateEmbeddingResponse, Image, ImagesResponse
 from openai.types.chat import ChatCompletion
-from pydantic import BaseModel, ValidationError
 from sentry_sdk import add_breadcrumb
 from tenacity import (
     retry,
@@ -259,45 +257,3 @@ async def request_image_edit_raw(
     )
     images: list[Image] = response.data
     return images[0]
-
-
-class CreateMemoryResponse(BaseModel):
-    memory_name: str
-    memory_content: str
-
-
-async def create_memory_call(
-    messages: t.List[dict],
-    api_key: str,
-    model: Optional[str] = None,
-    base_url: Optional[str] = None,
-) -> t.Union[CreateMemoryResponse, None]:
-    if not model:
-        raise ValueError("A model is required for memory calls")
-
-    client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
-    if base_url is None:
-        response = await client.beta.chat.completions.parse(
-            model=model,
-            messages=messages,
-            response_format=CreateMemoryResponse,
-        )
-        return response.choices[0].message.parsed
-
-    response: ChatCompletion = await client.chat.completions.create(
-        model=model,
-        messages=messages,
-        temperature=0.0,
-        max_tokens=300,
-    )
-    content = (response.choices[0].message.content or "").strip()
-    if not content:
-        return None
-    if content.startswith("```"):
-        content = content.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
-
-    try:
-        return CreateMemoryResponse.model_validate(orjson.loads(content))
-    except (orjson.JSONDecodeError, ValidationError) as e:
-        log.warning("Failed to parse memory response from custom endpoint", exc_info=e)
-        return None
