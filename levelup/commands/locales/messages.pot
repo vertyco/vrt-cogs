@@ -1621,6 +1621,10 @@ msgstr ""
 msgid "No data to prune!"
 msgstr ""
 
+#: levelup\commands\data.py:119
+msgid "Cleanup complete\n{}"
+msgstr ""
+
 #: levelup\commands\data.py:123
 #, docstring
 msgid "Reset user data for all servers"
