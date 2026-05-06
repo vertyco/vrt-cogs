@@ -115,6 +115,8 @@ class DataAdmin(MixinMeta):
             txt += _("Pruned {} voice channel bonuses from the database\n").format(pruned)
         if not txt:
             await ctx.send(_("No data to prune!"))
+        else:
+            await ctx.send(_("Cleanup complete\n{}").format(txt.rstrip()))
         self.save()
 
     @lvldata.command(name="resetglobal")
