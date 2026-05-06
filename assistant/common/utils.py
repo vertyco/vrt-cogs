@@ -22,6 +22,97 @@ log = logging.getLogger("red.vrt.assistant.utils")
 _ = Translator("Assistant", __file__)
 
 
+def get_activity_type_label(activity: object) -> str:
+    activity_type = getattr(activity, "type", None)
+    labels = {
+        discord.ActivityType.playing: _("Playing"),
+        discord.ActivityType.streaming: _("Streaming"),
+        discord.ActivityType.listening: _("Listening"),
+        discord.ActivityType.watching: _("Watching"),
+        discord.ActivityType.custom: _("Custom status"),
+        discord.ActivityType.competing: _("Competing"),
+    }
+    if activity_type in labels:
+        return labels[activity_type]
+    name = getattr(activity_type, "name", "")
+    return name.replace("_", " ").title() if name else _("Activity")
+
+
+def join_activity_parts(*parts: object) -> list[str]:
+    rendered: list[str] = []
+    for part in parts:
+        if part is None:
+            continue
+        text = str(part).strip()
+        if not text or text == "None" or text in rendered:
+            continue
+        rendered.append(text)
+    return rendered
+
+
+def format_activity(activity: object) -> str:
+    if isinstance(activity, discord.Spotify):
+        title = activity.title or activity.name or _("Unknown track")
+        artist = activity.artist or _("Unknown artist")
+        album = activity.album
+        parts = join_activity_parts(
+            title,
+            _("by {artist}").format(artist=artist),
+            _("album: {album}").format(album=album) if album else None,
+        )
+        return _("Listening to Spotify: {details}").format(details=" | ".join(parts))
+
+    if isinstance(activity, discord.CustomActivity):
+        status = str(activity).strip()
+        return _("Custom status: {status}").format(status=status) if status and status != "None" else _("Custom status")
+
+    if isinstance(activity, discord.Streaming):
+        parts = join_activity_parts(
+            activity.name or activity.details,
+            _("game: {game}").format(game=activity.game) if activity.game else None,
+            _("platform: {platform}").format(platform=activity.platform) if activity.platform else None,
+        )
+        return _("Streaming: {details}").format(details=" | ".join(parts)) if parts else _("Streaming")
+
+    if isinstance(activity, discord.Game):
+        parts = join_activity_parts(
+            activity.name,
+            _("platform: {platform}").format(platform=activity.platform) if activity.platform else None,
+        )
+        return _("Playing: {details}").format(details=" | ".join(parts)) if parts else _("Playing")
+
+    if isinstance(activity, discord.Activity):
+        label = get_activity_type_label(activity)
+        buttons = humanize_list(activity.buttons) if activity.buttons else ""
+        parts = join_activity_parts(
+            activity.name,
+            activity.details if activity.details != activity.name else None,
+            activity.state,
+            _("platform: {platform}").format(platform=activity.platform) if activity.platform else None,
+            _("buttons: {buttons}").format(buttons=buttons) if buttons else None,
+        )
+        return f"{label}: {' | '.join(parts)}" if parts else label
+
+    label = get_activity_type_label(activity)
+    parts = join_activity_parts(str(activity))
+    return f"{label}: {' | '.join(parts)}" if parts else label
+
+
+def format_activities(author: t.Optional[discord.Member]) -> str:
+    if not author or not author.activities:
+        return ""
+
+    rendered = []
+    for activity in author.activities:
+        if activity is None:
+            continue
+        formatted = format_activity(activity)
+        if formatted and formatted not in rendered:
+            rendered.append(formatted)
+
+    return " ; ".join(rendered)
+
+
 def is_question(text: str):
     text_stripped = text.strip()
 
@@ -267,6 +358,7 @@ def get_params(
         "username": author.name if author else "",
         "user": author.name if author else "",
         "displayname": display_name,
+        "activities": format_activities(author),
         "datetime": str(datetime.now()),
         "model": model,
         "modelinfo": modelinfo,
