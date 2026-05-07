@@ -1,0 +1,53 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 03:06\n"
+"Last-Translator: \n"
+"Language-Team: Croatian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: hr\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/miner/common/locales/messages.pot\n"
+"X-Crowdin-File-ID: 708\n"
+"Language: hr_HR\n"
+
+#: miner\common\tracker.py:12
+#, docstring
+msgid "Track message activity for spawning rocks.\n\n"
+"    In-memory sliding window using a deque of timestamps.\n"
+"    Single-process only; resets on restart.\n"
+"    "
+msgstr ""
+
+#: miner\common\tracker.py:19
+#, docstring
+msgid "Initialize the tracker with a sliding window size in seconds."
+msgstr ""
+
+#: miner\common\tracker.py:30
+#, docstring
+msgid "Record a message event."
+msgstr ""
+
+#: miner\common\tracker.py:41
+#, docstring
+msgid "Determine if a rock should spawn, and return its tier if so.\n\n"
+"        The caller provides the global minimum and maximum spawn intervals, in seconds.\n"
+"        "
+msgstr ""
+
+#: miner\common\tracker.py:66
+#, docstring
+msgid "Get the current spawn probability for a key based on activity and timing.\n\n"
+"        - Before ``min_interval`` has elapsed since the last spawn, probability is 0.\n"
+"        - Between ``min_interval`` and ``max_interval``, probability ramps with time and activity.\n"
+"        - After ``max_interval``, probability is clamped to the global maximum.\n"
+"        "
+msgstr ""
+
