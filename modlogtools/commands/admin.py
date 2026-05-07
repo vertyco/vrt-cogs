@@ -7,18 +7,79 @@ from collections import Counter, defaultdict
 from datetime import timedelta
 
 import discord
-from redbot.core import commands
+from redbot.core import commands, modlog
 from redbot.core.utils.chat_formatting import humanize_number, humanize_timedelta
 
 from ..abc import MixinMeta
 from ..common.models import WarningRecord
-from ..common.utils import DELETED_USER_SENTINEL, utcnow
+from ..common.utils import DELETED_USER_SENTINEL, from_unix, get_user_id, utcnow
 
 log = logging.getLogger("red.vrt.modlogtools.commands.admin")
 
 
 class Admin(MixinMeta):
     """Admin commands."""
+
+    leaderboard_sort_aliases = {
+        "active": "active",
+        "activewarn": "active",
+        "activewarns": "active",
+        "warn": "warns",
+        "warns": "warns",
+        "warning": "warns",
+        "warnings": "warns",
+        "total": "warns",
+        "points": "points",
+        "point": "points",
+        "pts": "points",
+    }
+
+    modlog_case_aliases = {
+        "warn": "warning",
+        "warns": "warning",
+        "warning": "warning",
+        "warnings": "warning",
+        "ban": "ban",
+        "bans": "ban",
+        "kick": "kick",
+        "kicks": "kick",
+        "hackban": "hackban",
+        "hackbans": "hackban",
+        "tempban": "tempban",
+        "tempbans": "tempban",
+        "softban": "softban",
+        "softbans": "softban",
+        "unban": "unban",
+        "unbans": "unban",
+        "voiceban": "voiceban",
+        "voicebans": "voiceban",
+        "voiceunban": "voiceunban",
+        "voiceunbans": "voiceunban",
+        "vmute": "vmute",
+        "voicemute": "vmute",
+        "voicemutes": "vmute",
+        "cmute": "cmute",
+        "channelmute": "cmute",
+        "channelmutes": "cmute",
+        "smute": "smute",
+        "servermute": "smute",
+        "servermutes": "smute",
+        "vunmute": "vunmute",
+        "voiceunmute": "vunmute",
+        "voiceunmutes": "vunmute",
+        "cunmute": "cunmute",
+        "channelunmute": "cunmute",
+        "channelunmutes": "cunmute",
+        "sunmute": "sunmute",
+        "serverunmute": "sunmute",
+        "serverunmutes": "sunmute",
+        "vkick": "vkick",
+        "voicekick": "vkick",
+        "voicekicks": "vkick",
+        "expired": "warning_expired",
+        "warningexpired": "warning_expired",
+        "warning_expired": "warning_expired",
+    }
 
     async def maybe_send_command_help(self, ctx: commands.Context, *, show: bool) -> None:
         if show:
@@ -51,6 +112,112 @@ class Admin(MixinMeta):
         if timespan is None:
             return "all time"
         return humanize_timedelta(timedelta=timespan)
+
+    def normalize_modlog_case_type(self, value: str) -> str:
+        return self.modlog_case_aliases.get(value.lower(), value.lower())
+
+    def format_modlog_case_type(self, value: str) -> str:
+        return value.replace("_", " ").title()
+
+    def format_leaderboard_sort(self, sort_by: str) -> str:
+        labels = {
+            "active": "active warnings",
+            "warns": "total warnings",
+            "points": "warning points",
+        }
+        return labels.get(sort_by, sort_by)
+
+    def parse_leaderboard_args(self, raw: str) -> tuple[str, timedelta | None, int]:
+        sort_by = "active"
+        timespan = None
+        limit = 10
+        limit_set = False
+
+        for token in raw.split():
+            lower = token.lower()
+            if lower in self.leaderboard_sort_aliases:
+                sort_by = self.leaderboard_sort_aliases[lower]
+                continue
+
+            delta = commands.parse_timedelta(token)
+            if delta is not None:
+                timespan = delta
+                continue
+
+            if not limit_set:
+                try:
+                    parsed_limit = int(token)
+                except ValueError:
+                    parsed_limit = None
+                if parsed_limit is not None:
+                    if not 1 <= parsed_limit <= 25:
+                        raise commands.BadArgument("Limit must be between 1 and 25.")
+                    limit = parsed_limit
+                    limit_set = True
+                    continue
+
+            raise commands.BadArgument(
+                "Unknown leaderboard option. Use one sort (`active`, `warns`, `points`), one timespan, and one limit."
+            )
+
+        return sort_by, timespan, limit
+
+    def parse_moderator_args(self, raw: str) -> tuple[str, timedelta | None, int]:
+        case_type = "warning"
+        timespan = None
+        limit = 10
+        case_set = False
+        limit_set = False
+
+        for token in raw.split():
+            delta = commands.parse_timedelta(token)
+            if delta is not None:
+                timespan = delta
+                continue
+
+            if not limit_set:
+                try:
+                    parsed_limit = int(token)
+                except ValueError:
+                    parsed_limit = None
+                if parsed_limit is not None:
+                    if not 1 <= parsed_limit <= 25:
+                        raise commands.BadArgument("Limit must be between 1 and 25.")
+                    limit = parsed_limit
+                    limit_set = True
+                    continue
+
+            if not case_set:
+                case_type = self.normalize_modlog_case_type(token)
+                case_set = True
+                continue
+
+            raise commands.BadArgument("Unknown moderator option. Use one case type, one timespan, and one limit.")
+
+        return case_type, timespan, limit
+
+    async def get_modlog_cases_for_window(
+        self,
+        guild: discord.Guild,
+        case_type: str,
+        timespan: timedelta | None = None,
+    ) -> list[modlog.Case]:
+        try:
+            cases = await modlog.get_all_cases(guild, self.bot)
+        except Exception:
+            log.exception("Failed to fetch modlog cases for guild %s", guild.id)
+            return []
+
+        if timespan is None:
+            cutoff = None
+        else:
+            cutoff = utcnow() - timespan
+
+        return [
+            case
+            for case in cases
+            if case.action_type == case_type and (cutoff is None or from_unix(case.created_at) >= cutoff)
+        ]
 
     def get_window_records(
         self,
@@ -118,7 +285,9 @@ class Admin(MixinMeta):
         if duration is None:
             expiry = conf.get_warning_expiry()
             lines = [
-                "Warning expiry disabled." if expiry is None else f"Warning expiry: {humanize_timedelta(timedelta=expiry)}",
+                "Warning expiry disabled."
+                if expiry is None
+                else f"Warning expiry: {humanize_timedelta(timedelta=expiry)}",
                 f"Delete original modlog messages on expiry: {'enabled' if conf.delete_expired_modlog_messages else 'disabled'}",
             ]
             return await ctx.send("\n".join(lines))
@@ -389,17 +558,21 @@ class Admin(MixinMeta):
 
         await ctx.send("\n".join(lines))
 
-    @modlogtool.command(name="leaderboard", aliases=["topwarned"])
+    @modlogtool.command(name="leaderboard", aliases=["topwarned", "lb"])
     async def mlt_leaderboard(
         self,
         ctx: commands.Context,
-        timespan: commands.TimedeltaConverter = None,
-        limit: commands.Range[int, 1, 25] = 10,
+        *,
+        options: str = "",
     ):
-        """Show top warned members for a time window."""
+        """Show top warned members. Options: [active|warns|points] [timespan] [limit]."""
         if self.get_warnings_cog() is None:
             return await ctx.send("Warnings cog not loaded.")
-        await self.maybe_send_command_help(ctx, show=timespan is None and limit == 10)
+        await self.maybe_send_command_help(ctx, show=not options)
+        try:
+            sort_by, timespan, limit = self.parse_leaderboard_args(options)
+        except commands.BadArgument as exc:
+            return await ctx.send(str(exc))
         await self.sync_guild_records(ctx.guild)
 
         window_records = self.get_window_records(ctx.guild, timespan)
@@ -418,13 +591,26 @@ class Admin(MixinMeta):
             if (record.user_id, record.warn_id) in active_keys:
                 aggregates[record.user_id]["active"] += 1
 
-        ranked = sorted(
-            aggregates.items(),
-            key=lambda item: (item[1]["warns"], item[1]["points"], item[1]["active"]),
-            reverse=True,
-        )[:limit]
+        if sort_by == "active":
+            ranked = sorted(
+                aggregates.items(),
+                key=lambda item: (item[1]["active"], item[1]["warns"], item[1]["points"]),
+                reverse=True,
+            )[:limit]
+        elif sort_by == "points":
+            ranked = sorted(
+                aggregates.items(),
+                key=lambda item: (item[1]["points"], item[1]["warns"], item[1]["active"]),
+                reverse=True,
+            )[:limit]
+        else:
+            ranked = sorted(
+                aggregates.items(),
+                key=lambda item: (item[1]["warns"], item[1]["active"], item[1]["points"]),
+                reverse=True,
+            )[:limit]
 
-        lines = [f"Leaderboard for {self.format_period(timespan)}"]
+        lines = [f"Leaderboard for {self.format_period(timespan)} sorted by {self.format_leaderboard_sort(sort_by)}"]
         for index, (user_id, stats) in enumerate(ranked, start=1):
             lines.append(
                 f"{index}. {self.get_label(ctx.guild, user_id)} -> {stats['warns']} warns | {stats['points']} pts | {stats['active']} active"
@@ -435,34 +621,36 @@ class Admin(MixinMeta):
     async def mlt_moderators(
         self,
         ctx: commands.Context,
-        timespan: commands.TimedeltaConverter = None,
-        limit: commands.Range[int, 1, 25] = 10,
+        *,
+        options: str = "",
     ):
-        """Show which moderators issued the most warnings."""
-        if self.get_warnings_cog() is None:
-            return await ctx.send("Warnings cog not loaded.")
-        await self.maybe_send_command_help(ctx, show=timespan is None and limit == 10)
-        await self.sync_guild_records(ctx.guild)
+        """Show which moderators issued the most cases. Options: [case_type] [timespan] [limit]."""
+        await self.maybe_send_command_help(ctx, show=not options)
+        try:
+            case_type, timespan, limit = self.parse_moderator_args(options)
+        except commands.BadArgument as exc:
+            return await ctx.send(str(exc))
 
-        window_records = self.get_window_records(ctx.guild, timespan)
-        window_records = [record for record in window_records if record.moderator_id]
-        if not window_records:
-            return await ctx.send("No moderator warning data for that period.")
+        window_cases = await self.get_modlog_cases_for_window(ctx.guild, case_type, timespan)
+        window_cases = [case for case in window_cases if case.moderator is not None]
+        if not window_cases:
+            label = self.format_modlog_case_type(case_type).lower()
+            return await ctx.send(f"No moderator {label} data for that period.")
 
-        aggregates: dict[int, dict[str, int]] = defaultdict(lambda: {"warns": 0, "points": 0})
-        for record in window_records:
-            aggregates[record.moderator_id]["warns"] += 1
-            aggregates[record.moderator_id]["points"] += record.points
+        aggregates: dict[int, int] = defaultdict(int)
+        for case in window_cases:
+            aggregates[get_user_id(case.moderator)] += 1
 
         ranked = sorted(
             aggregates.items(),
-            key=lambda item: (item[1]["warns"], item[1]["points"]),
+            key=lambda item: item[1],
             reverse=True,
         )[:limit]
 
-        lines = [f"Moderator leaderboard for {self.format_period(timespan)}"]
-        for index, (user_id, stats) in enumerate(ranked, start=1):
-            lines.append(f"{index}. {self.get_label(ctx.guild, user_id)} -> {stats['warns']} warns | {stats['points']} pts")
+        case_label = self.format_modlog_case_type(case_type)
+        lines = [f"Moderator leaderboard for {case_label} in {self.format_period(timespan)}"]
+        for index, (user_id, count) in enumerate(ranked, start=1):
+            lines.append(f"{index}. {self.get_label(ctx.guild, user_id)} -> {count} cases")
         await ctx.send("\n".join(lines))
 
     @modlogtool.command(name="member")

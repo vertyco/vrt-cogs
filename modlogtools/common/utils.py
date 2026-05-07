@@ -17,6 +17,21 @@ def from_unix(timestamp: int | float) -> datetime:
     return datetime.fromtimestamp(timestamp, tz=timezone.utc)
 
 
+def from_snowflake(value: int | str) -> datetime | None:
+    try:
+        snowflake = int(value)
+    except (TypeError, ValueError):
+        return None
+
+    if snowflake <= 0:
+        return None
+
+    try:
+        return discord.utils.snowflake_time(snowflake)
+    except (OverflowError, OSError, ValueError):
+        return None
+
+
 def extract_warn_id(reason: str | None) -> str | None:
     if not reason:
         return None

@@ -12,7 +12,13 @@ from redbot.core.utils.chat_formatting import humanize_timedelta
 from .abc import CompositeMetaClass
 from .commands import Commands
 from .common.models import DB, GuildSettings, WarningRecord
-from .common.utils import extract_warn_id, from_unix, get_user_id, utcnow
+from .common.utils import (
+    extract_warn_id,
+    from_snowflake,
+    from_unix,
+    get_user_id,
+    utcnow,
+)
 from .listeners import Listeners
 from .tasks import TaskLoops
 
@@ -178,9 +184,10 @@ class ModLogTools(
                 active_keys.add(key)
                 record = conf.records.get(key)
                 case_data = case_map.get(key)
+                snowflake_created_at = from_snowflake(warn_id)
 
                 if record is None:
-                    created_at = case_data[0] if case_data else now
+                    created_at = case_data[0] if case_data else snowflake_created_at or now
                     record = WarningRecord(
                         user_id=int(user_id),
                         warn_id=warn_id,
@@ -226,6 +233,10 @@ class ModLogTools(
                         record.modlog_case_number = case_number
                         changed = True
                         summary["backfilled"] += 1
+                elif record.modlog_case_number is None and snowflake_created_at is not None:
+                    if record.created_at != snowflake_created_at:
+                        record.created_at = snowflake_created_at
+                        changed = True
 
                 new_expires_at = (record.created_at + expiry) if expiry else None
                 if record.expires_at != new_expires_at:
