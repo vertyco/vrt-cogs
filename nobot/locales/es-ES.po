@@ -1,0 +1,67 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:52\n"
+"Last-Translator: \n"
+"Language-Team: Spanish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: es-ES\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/nobot/locales/messages.pot\n"
+"X-Crowdin-File-ID: 722\n"
+"Language: es_ES\n"
+
+#: nobot\nobot.py:12
+#, docstring
+msgid "\n"
+"    Filter messages from other bots\n\n"
+"    Some \"Free\" bots spam ads and links when using their commands, this cog fixes that.\n"
+"    Add a bot to the watchlist and add phrases to look for and if that phrase is found in the other bot's\n"
+"    message, this cog will delete them.\n"
+"    "
+msgstr ""
+
+#: nobot\nobot.py:28
+#, docstring
+msgid "No data to delete"
+msgstr ""
+
+#: nobot\nobot.py:48
+#, docstring
+msgid "Main setup command for NoBot"
+msgstr ""
+
+#: nobot\nobot.py:53
+#, docstring
+msgid "Add a bot to the filter list"
+msgstr ""
+
+#: nobot\nobot.py:64
+#, docstring
+msgid "\n"
+"        Remove a bot from the filter list\n\n"
+"        If bot is no longer in the server, use its ID\n"
+"        "
+msgstr ""
+
+#: nobot\nobot.py:80
+#, docstring
+msgid "Add text context to match against the bot filter list, use phrases that match what the bot sends exactly"
+msgstr ""
+
+#: nobot\nobot.py:92
+#, docstring
+msgid "View NoBot settings"
+msgstr ""
+
+#: nobot\nobot.py:111
+#, docstring
+msgid "Delete a filter"
+msgstr ""
+
