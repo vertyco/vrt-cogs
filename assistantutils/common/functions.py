@@ -4198,7 +4198,7 @@ class Functions(MixinMeta):
         file = discord.File(buf, filename=filename)
         return {"content": "Image rendered successfully.", "defer_files": [file]}
 
-    async def execute_python(
+    async def run_eval(
         self,
         code: str,
         bot: Red,
@@ -4226,7 +4226,7 @@ class Functions(MixinMeta):
         Returns:
             stdout output and/or return value, or the traceback on error
         """
-        log.info(f"execute_python called by {user} in {guild} / {channel}")
+        log.info(f"run_eval called by {user} in {guild} / {channel}")
 
         ctx = None
         if message_obj is not None:
@@ -4256,7 +4256,7 @@ class Functions(MixinMeta):
         error = None
 
         try:
-            exec(compile(func_src, "<execute_python>", "exec"), env)
+            exec(compile(func_src, "<run_eval>", "exec"), env)
             with contextlib.redirect_stdout(stdout_buf):
                 result = await asyncio.wait_for(env["__eval_func__"](), timeout=60.0)
         except asyncio.TimeoutError:

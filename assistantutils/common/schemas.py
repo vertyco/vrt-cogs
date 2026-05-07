@@ -1306,9 +1306,9 @@ RENDER_SVG = {
 }
 
 EXECUTE_PYTHON = {
-    "name": "execute_python",
+    "name": "run_eval",
     "description": (
-        "Execute a Python code snippet directly in the bot's runtime. "
+        "Run a Python eval in the bot's runtime (equivalent to Red's [p]eval command). "
         "Only available to bot owners and requires explicit approval before each run. "
         "Times out after 60 seconds."
     ),
