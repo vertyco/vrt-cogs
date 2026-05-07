@@ -3,7 +3,7 @@
   "description": "Extended tooling for Red's core modlog and warning system. Set warnings to expire and view insights about moderations history.",
   "disabled": false,
   "end_user_data_statement": "Stores warning metadata needed to expire warnings automatically and generate guild insights.",
-  "hidden": false,
+  "hidden": true,
   "install_msg": "ModLogTools loaded. Configure warning expiry with `[p]modlogtool expiry`.",
   "min_bot_version": "3.5.3",
   "min_python_version": [3, 11, 0],
