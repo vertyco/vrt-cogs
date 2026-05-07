@@ -133,6 +133,8 @@ class MessageListener(MixinMeta):
             # Don't give XP for commands
             return
 
+        channel_category_id = getattr(message.channel, "category_id", None)
+
         if conf.allowedchannels:
             # Make sure the channel is allowed
             if message.channel.id not in conf.allowedchannels:
@@ -146,8 +148,7 @@ class MessageListener(MixinMeta):
                             # Nope, not allowed
                             return
                 else:
-                    channel_id = message.channel.category_id
-                    if channel_id and channel_id not in conf.allowedchannels:
+                    if channel_category_id not in conf.allowedchannels:
                         return
 
         if message.channel.id in conf.ignoredchannels:
@@ -163,7 +164,7 @@ class MessageListener(MixinMeta):
             and message.channel.parent_id in conf.ignoredchannels
         ):
             return
-        elif message.channel.category_id and message.channel.category_id in conf.ignoredchannels:
+        elif channel_category_id and channel_category_id in conf.ignoredchannels:
             return
 
         if conf.allowedroles:
