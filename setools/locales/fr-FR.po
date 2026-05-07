@@ -1,0 +1,39 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:50\n"
+"Last-Translator: \n"
+"Language-Team: French\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: fr\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/setools/locales/messages.pot\n"
+"X-Crowdin-File-ID: 772\n"
+"Language: fr_FR\n"
+
+#: setools\abc.py:10
+#, docstring
+msgid "Type detection"
+msgstr ""
+
+#: setools\abc.py:14
+#, docstring
+msgid "Type hinting"
+msgstr ""
+
+#: setools\main.py:19
+#, docstring
+msgid "Space Engineers Server Tools for Discord"
+msgstr ""
+
+#: setools\main.py:39
+#, docstring
+msgid "No data to delete"
+msgstr ""
+
