@@ -1,0 +1,67 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:54\n"
+"Last-Translator: \n"
+"Language-Team: German\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: de\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/emojitracker/locales/messages.pot\n"
+"X-Crowdin-File-ID: 654\n"
+"Language: de_DE\n"
+
+#: emojitracker\emojitracker.py:11
+#, docstring
+msgid "\n"
+"    Track emojis and view leaderboards/most emojis used ect..\n\n"
+"    This cog will track reactions added to other user's messages.\n"
+"    It will ignore reactions added to a bot's message\n"
+"    It will also only count one reaction per emoji for each user on a message so user's can't spam react/unreact\n"
+"    "
+msgstr ""
+
+#: emojitracker\emojitracker.py:27
+#, docstring
+msgid "No data to delete"
+msgstr ""
+
+#: emojitracker\emojitracker.py:89
+#, docstring
+msgid "\n"
+"        Add/Remove a guild from the blacklist\n\n"
+"        Enter a Guild ID to add it to the blacklist, to remove, simply enter it again\n"
+"        "
+msgstr ""
+
+#: emojitracker\emojitracker.py:106
+#, docstring
+msgid "View EmojiTracker Blacklist"
+msgstr ""
+
+#: emojitracker\emojitracker.py:120
+#, docstring
+msgid "Reset reaction data for this guild"
+msgstr ""
+
+#: emojitracker\emojitracker.py:128
+#, docstring
+msgid "View the emoji leaderboard"
+msgstr ""
+
+#: emojitracker\emojitracker.py:170
+#, docstring
+msgid "View user leaderboard for most emojis added"
+msgstr ""
+
+#: emojitracker\emojitracker.py:215
+#, docstring
+msgid "Get the size of EmojiTracker cache"
+msgstr ""
+
