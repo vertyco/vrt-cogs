@@ -21,6 +21,17 @@ log = logging.getLogger("red.vrt.fluent")
 _ = Translator("Fluent", __file__)
 
 
+class AssistantRegistry(t.Protocol):
+    async def register_function(
+        self,
+        cog_name: str,
+        schema: dict,
+        permission_level: t.Literal["user", "mod", "admin", "owner"] = "user",
+        category: t.Optional[str] = None,
+        requires_user_approval: bool = False,
+    ) -> bool: ...
+
+
 @app_commands.context_menu(name="Translate")
 async def translate_message_ctx(interaction: discord.Interaction, message: discord.Message):
     """Translate a message"""
@@ -29,23 +40,91 @@ async def translate_message_ctx(interaction: discord.Interaction, message: disco
     with suppress(discord.HTTPException):
         await interaction.response.defer(ephemeral=True, thinking=True)
     bot: Red = interaction.client
-    content = message.content or message.embeds[0].description
-    if not content:
-        return await interaction.edit_original_response(content=_("❌ No content to translate."))
-    res: t.Optional[api.Result] = await bot.get_cog("Fluent").translate(content, message.guild.preferred_locale.value)
-    if res is None:
+    cog = t.cast(t.Optional[Fluent], bot.get_cog("Fluent"))
+    if cog is None or message.guild is None:
         return await interaction.edit_original_response(content=_("❌ Translation failed."))
-    if res.src == res.dest:
-        return await interaction.edit_original_response(
-            content=_("❌ The detected language is the same as the target language.")
-        )
-    if res.text == content:
-        return await interaction.edit_original_response(content=_("❌ Translated content matches the source."))
-    embed = discord.Embed(
-        description=res.text,
-        color=await bot.get_embed_color(message),
-    ).set_footer(text=f"{res.src} -> {res.dest}")
-    await interaction.edit_original_response(content=None, embed=embed)
+    target_lang = message.guild.preferred_locale.value
+    working_embeds = [embed.copy() for embed in message.embeds]
+
+    to_translate = []
+    if message.content:
+        to_translate.append(("content", message.content))
+    for embed_idx, embed in enumerate(working_embeds):
+        if embed.author and embed.author.name:
+            to_translate.append((f"embed_{embed_idx}_author_name", embed.author.name))
+        if embed.title:
+            to_translate.append((f"embed_{embed_idx}_title", embed.title))
+        if embed.description:
+            to_translate.append((f"embed_{embed_idx}_desc", embed.description))
+        if embed.footer and embed.footer.text:
+            to_translate.append((f"embed_{embed_idx}_footer", embed.footer.text))
+        for field_idx, field in enumerate(embed.fields):
+            to_translate.append((f"embed_{embed_idx}_field_{field_idx}_name", field.name))
+            to_translate.append((f"embed_{embed_idx}_field_{field_idx}_value", field.value))
+
+    if not to_translate:
+        return await interaction.edit_original_response(content=_("❌ No content to translate."))
+
+    tasks_dict = {key: cog.translate(text, target_lang) for key, text in to_translate}
+    results = await asyncio.gather(*tasks_dict.values())
+    translation_map = dict(zip(tasks_dict.keys(), results))
+
+    first_result: t.Optional[api.Result] = next((r for r in results if r is not None), None)
+    if first_result is None:
+        return await interaction.edit_original_response(content=_("❌ Translation failed."))
+
+    translated_content = None
+    if message.content:
+        res = translation_map.get("content")
+        translated_content = (res.text if res else message.content)[:2000]
+
+    new_embeds = []
+    for embed_idx, embed in enumerate(working_embeds):
+        new_embed = embed.copy()
+        if new_embed.author and new_embed.author.name:
+            author_name = translation_map.get(f"embed_{embed_idx}_author_name")
+            new_embed.set_author(
+                name=(author_name.text if author_name else new_embed.author.name)[:256],
+                url=new_embed.author.url,
+                icon_url=new_embed.author.icon_url,
+            )
+        if new_embed.title:
+            title = translation_map.get(f"embed_{embed_idx}_title")
+            new_embed.title = (title.text if title else new_embed.title)[:256]
+        if new_embed.description:
+            description = translation_map.get(f"embed_{embed_idx}_desc")
+            new_embed.description = (description.text if description else new_embed.description)[:4096]
+        if new_embed.footer and new_embed.footer.text:
+            footer = translation_map.get(f"embed_{embed_idx}_footer")
+            new_embed.set_footer(
+                text=(footer.text if footer else new_embed.footer.text)[:2048],
+                icon_url=new_embed.footer.icon_url,
+            )
+        fields = new_embed.fields.copy()
+        new_embed.clear_fields()
+        for field_idx, field in enumerate(fields):
+            name_translation = translation_map.get(f"embed_{embed_idx}_field_{field_idx}_name")
+            value_translation = translation_map.get(f"embed_{embed_idx}_field_{field_idx}_value")
+            field_name = t.cast(str, name_translation.text if name_translation else field.name)
+            field_value = t.cast(str, value_translation.text if value_translation else field.value)
+            new_embed.add_field(
+                name=field_name[:256],
+                value=field_value[:1024],
+                inline=field.inline,
+            )
+        new_embeds.append(new_embed)
+
+    if new_embeds:
+        last = new_embeds[-1]
+        if not last.footer or not last.footer.text:
+            last.set_footer(text=f"{first_result.src} -> {first_result.dest}")
+        await interaction.edit_original_response(content=translated_content, embeds=new_embeds)
+    else:
+        embed = discord.Embed(
+            description=translated_content,
+            color=await bot.get_embed_color(message),
+        ).set_footer(text=f"{first_result.src} -> {first_result.dest}")
+        await interaction.edit_original_response(content=None, embed=embed)
 
 
 # redgettext -D fluent/fluent.py --command-docstring
@@ -67,7 +146,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "2.5.5"
+    __version__ = "2.6.0"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -115,6 +194,8 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
         for channel_id, messages in button_dict.items():
             channel = self.bot.get_channel(channel_id)
             if not channel:
+                continue
+            if not isinstance(channel, discord.abc.Messageable):
                 continue
             for message_id, button_objs in messages.items():
                 if target_message_id and message_id != target_message_id:
@@ -212,7 +293,9 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
 
         if not message and hasattr(ctx.message, "reference"):
             try:
-                message = ctx.message.reference.resolved.content
+                resolved = ctx.message.reference.resolved
+                if isinstance(resolved, discord.Message):
+                    message = resolved.content
             except AttributeError:
                 pass
         if not message:
@@ -225,7 +308,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
             txt = _("An error occured while translating, Check logs for more info.")
             await ctx.send(txt)
             log.error("Translation failed", exc_info=e)
-            self.bot._last_exception = e
+            setattr(self.bot, "_last_exception", e)
             return
 
         if trans is None:
@@ -333,6 +416,8 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
         for button in buttons:
             channel = ctx.guild.get_channel(button.channel_id)
             if not channel:
+                continue
+            if not isinstance(channel, discord.abc.Messageable):
                 continue
             try:
                 if button.message_id not in cached_messages:
@@ -612,8 +697,12 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
         channel_config = None
         if channel_id in channels:
             channel_config = channels[channel_id]
-        elif hasattr(message.channel, "category_id") and message.channel.category_id:
-            category_id = str(message.channel.category_id)
+        else:
+            category_id = getattr(message.channel, "category_id", None)
+            if category_id is not None:
+                category_id = str(category_id)
+            else:
+                category_id = None
             if category_id in channels:
                 channel_config = channels[category_id]
 
@@ -633,7 +722,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
                 trans: api.Result = await self.translate(clean_content, target_lang, force=True)
             except Exception as e:
                 log.error("Translation failed in 'only' mode", exc_info=e)
-                self.bot._last_exception = e
+                setattr(self.bot, "_last_exception", e)
                 return
 
             if trans is None:
@@ -670,7 +759,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
                 trans = await self.translate(clean_content, lang1, force=True)
             except Exception as e:
                 log.error("Initial listener translation failed", exc_info=e)
-                self.bot._last_exception = e
+                setattr(self.bot, "_last_exception", e)
                 return
 
             if trans is None:
@@ -714,7 +803,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
                     await channel.send(trans.text)
 
     @commands.Cog.listener()
-    async def on_assistant_cog_add(self, cog: commands.Cog):
+    async def on_assistant_cog_add(self, cog: AssistantRegistry):
         schema = {
             "name": "get_translation",
             "description": "Translate text into another language",
