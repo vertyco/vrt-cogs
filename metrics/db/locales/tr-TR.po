@@ -1,0 +1,54 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 03:03\n"
+"Last-Translator: \n"
+"Language-Team: Turkish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: tr\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/metrics/db/locales/messages.pot\n"
+"X-Crowdin-File-ID: 698\n"
+"Language: tr_TR\n"
+
+#: metrics\db\tables.py:40
+#, docstring
+msgid "Per-guild settings for metrics tracking."
+msgstr ""
+
+#: metrics\db\tables.py:50
+#, docstring
+msgid "Global settings for the metrics cog with per-metric intervals."
+msgstr ""
+
+#: metrics\db\tables.py:75
+#, docstring
+msgid "Per-guild economy/bank statistics captured at regular intervals."
+msgstr ""
+
+#: metrics\db\tables.py:88
+#, docstring
+msgid "Per-guild member statistics captured at regular intervals."
+msgstr ""
+
+#: metrics\db\tables.py:108
+#, docstring
+msgid "Global economy/bank statistics aggregated across all tracked guilds."
+msgstr ""
+
+#: metrics\db\tables.py:120
+#, docstring
+msgid "Global member statistics aggregated across all tracked guilds."
+msgstr ""
+
+#: metrics\db\tables.py:134
+#, docstring
+msgid "Server/bot performance metrics captured at high frequency."
+msgstr ""
+

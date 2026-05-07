@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2025-08-31 20:23-0400\n"
-"PO-Revision-Date: 2025-09-01 00:32\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:53\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -86,5 +86,78 @@ msgstr ""
 
 #: levelup\generator\styles\default.py:408
 msgid "Exp: {} ({} total)"
+msgstr ""
+
+#: levelup\generator\styles\gaming.py:45
+#, docstring
+msgid "Draw HUD-style corner brackets"
+msgstr ""
+
+#: levelup\generator\styles\gaming.py:69
+#, docstring
+msgid "Draw a gaming-style segmented progress bar"
+msgstr ""
+
+#: levelup\generator\styles\gaming.py:135
+#, docstring
+msgid "Generate a gaming/HUD style profile card."
+msgstr ""
+
+#: levelup\generator\styles\gaming.py:194
+#, docstring
+msgid "Create the HUD stats overlay"
+msgstr ""
+
+#: levelup\generator\styles\gaming.py:413
+#, docstring
+msgid "Create avatar"
+msgstr ""
+
+#: levelup\generator\styles\gaming.py:438
+#, docstring
+msgid "Prepare gaming-style background"
+msgstr ""
+
+#: levelup\generator\styles\minimal.py:66
+#, docstring
+msgid "\n"
+"    Generate a minimal/clean profile card.\n\n"
+"    Features a dark overlay for readability, large avatar, and clean typography.\n"
+"    "
+msgstr ""
+
+#: levelup\generator\styles\minimal.py:137
+#, docstring
+msgid "Create the stats overlay layer"
+msgstr ""
+
+#: levelup\generator\styles\minimal.py:180
+msgid "Prestige {}"
+msgstr ""
+
+#: levelup\generator\styles\minimal.py:234
+msgid "RANK"
+msgstr ""
+
+#: levelup\generator\styles\minimal.py:235
+msgid "LEVEL"
+msgstr ""
+
+#: levelup\generator\styles\minimal.py:236
+msgid "MESSAGES"
+msgstr ""
+
+#: levelup\generator\styles\minimal.py:237
+msgid "VOICE"
+msgstr ""
+
+#: levelup\generator\styles\minimal.py:340
+#, docstring
+msgid "Create the avatar with border"
+msgstr ""
+
+#: levelup\generator\styles\minimal.py:376
+#, docstring
+msgid "Prepare background with overlay"
 msgstr ""
 

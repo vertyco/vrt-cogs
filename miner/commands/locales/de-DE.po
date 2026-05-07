@@ -1,0 +1,163 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:54\n"
+"Last-Translator: \n"
+"Language-Team: German\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: de\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/miner/commands/locales/messages.pot\n"
+"X-Crowdin-File-ID: 706\n"
+"Language: de_DE\n"
+
+#: miner\commands\__init__.py:8
+#, docstring
+msgid "Subclass all command classes"
+msgstr ""
+
+#: miner\commands\admin.py:21
+#, docstring
+msgid "Admin commands"
+msgstr ""
+
+#: miner\commands\admin.py:26
+#, docstring
+msgid "Toggle active mining channels"
+msgstr ""
+
+#: miner\commands\admin.py:44
+#, docstring
+msgid "View active mining channels"
+msgstr ""
+
+#: miner\commands\admin.py:122
+#, docstring
+msgid "Set the global minimum and maximum time between rock spawns in seconds.\n\n"
+"        Example: `[p]minerset spawntiming 30 600`\n"
+"        "
+msgstr ""
+
+#: miner\commands\admin.py:160
+#, docstring
+msgid "Toggle per-channel or per-guild activity tracking.\n\n"
+"        `Per Channel` mode tracks activity in each channel separately, and rocks can spawn in any active channel.\n"
+"        `Per Guild` mode tracks activity across the entire guild, and rocks will spawn in random active channels.\n"
+"        "
+msgstr ""
+
+#: miner\commands\admin.py:181
+#, docstring
+msgid "Spawn a new mining rock in the specified channel."
+msgstr ""
+
+#: miner\commands\admin.py:197
+#, docstring
+msgid "View the current rock spawn probability for a channel."
+msgstr ""
+
+#: miner\commands\admin.py:210
+#, docstring
+msgid "Toggle resource conversion on/off."
+msgstr ""
+
+#: miner\commands\admin.py:229
+#, docstring
+msgid "Set the conversion ratio for a resource.\n\n"
+"        **Examples:**\n"
+"        - `[p]minerset convertratio stone 20` (20 stone = 1 credit)\n"
+"        - `[p]minerset convertratio iron 5` (5 iron = 1 credit)\n"
+"        - `[p]minerset convertratio gems 0.1` (1 gem = 10 credits)\n\n"
+"        "
+msgstr ""
+
+#: miner\commands\database.py:15
+#, docstring
+msgid "Database Commands"
+msgstr ""
+
+#: miner\commands\database.py:19
+#, docstring
+msgid "Set the Postgres connection info"
+msgstr ""
+
+#: miner\commands\database.py:25
+#, docstring
+msgid "Delete the database for this cog and reinitialize it\n\n"
+"        THIS CANNOT BE UNDONE!"
+msgstr ""
+
+#: miner\commands\database.py:60
+#, docstring
+msgid "Check the database connection"
+msgstr ""
+
+#: miner\commands\user.py:21
+#, docstring
+msgid "User commands"
+msgstr ""
+
+#: miner\commands\user.py:27
+#, docstring
+msgid "View your stats."
+msgstr ""
+
+#: miner\commands\user.py:94
+#, docstring
+msgid "Toggle rock spawn notifications."
+msgstr ""
+
+#: miner\commands\user.py:121
+#, docstring
+msgid "Repair your pickaxe."
+msgstr ""
+
+#: miner\commands\user.py:197
+#, docstring
+msgid "Trade resources with another miner."
+msgstr ""
+
+#: miner\commands\user.py:219
+#, docstring
+msgid "Transfer resources to another miner."
+msgstr ""
+
+#: miner\commands\user.py:248
+#, docstring
+msgid "Upgrade your mining tool if you have enough resources (with confirmation)."
+msgstr ""
+
+#: miner\commands\user.py:346 miner\commands\user.py:352
+#, docstring
+msgid "View the leaderboard."
+msgstr ""
+
+#: miner\commands\user.py:363
+#, docstring
+msgid "Convert resources to economy credits (if enabled).\n\n"
+"        **Arguments:**\n"
+"        `resource`: The type of resource to convert (stone, iron, gems).\n"
+"        `amount`: The amount of the resource to convert.\n"
+"        "
+msgstr ""
+
+#: miner\commands\user.py:413
+#, docstring
+msgid "Show an approximate rock spawn chance for this server.\n\n"
+"        This reports a bucketed spawn chance (Low / Medium / High) based on\n"
+"        recent activity and time since the last rock, without exposing exact\n"
+"        internal percentages.\n"
+"        "
+msgstr ""
+
+#: miner\commands\user.py:467
+#, docstring
+msgid "Send an in-game guide covering the core loop, spawns, overswing, and repairs."
+msgstr ""
+

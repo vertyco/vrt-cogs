@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2024-02-08 18:31-0500\n"
-"PO-Revision-Date: 2024-12-03 14:55\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:50\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -17,27 +17,46 @@ msgstr ""
 "X-Crowdin-File-ID: 13\n"
 "Language: es_ES\n"
 
-#: tickets.py:32
+#: tickets\tickets.py:39
 #, docstring
 msgid "\n"
 "    Support ticket system with multi-panel functionality\n"
 "    "
 msgstr "Sistema de tickets de soporte con funcionalidad multipanel    "
 
-#: tickets.py:45
+#: tickets\tickets.py:52
 #, docstring
 msgid "No data to delete"
 msgstr "No hay datos que borrar"
 
-#: tickets.py:274
+#: tickets\tickets.py:75
+#, docstring
+msgid "Save the Pydantic DB to Config."
+msgstr ""
+
+#: tickets\tickets.py:135
+#, docstring
+msgid "Initialize a guild's ticket system.\n\n"
+"        Args:\n"
+"            guild: The Discord guild\n"
+"            conf: GuildSettings model (from self.db.get_conf(guild))\n"
+"        "
+msgstr ""
+
+#: tickets\tickets.py:287
 msgid "If you do not respond to this ticket within the next 20 minutes it will be closed automatically."
 msgstr "Si no responde a este ticket dentro de los próximos 20 minutos, se cerrará automáticamente."
 
-#: tickets.py:291
+#: tickets\tickets.py:304
 msgid "(Auto-Close) Opened ticket with no response for "
 msgstr "(Cierre automático) Ticket abierto sin respuesta durante "
 
-#: tickets.py:338
+#: tickets\tickets.py:354
 msgid "User left guild(Auto-Close)"
 msgstr "Usuario abandonó gremio (Auto-Cerrar)"
+
+#: tickets\tickets.py:395
+#, docstring
+msgid "Track staff first response time and message counts in tickets."
+msgstr ""
 

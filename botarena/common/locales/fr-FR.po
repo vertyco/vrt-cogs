@@ -1,0 +1,1309 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:49\n"
+"Last-Translator: \n"
+"Language-Team: French\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: fr\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/botarena/common/locales/messages.pot\n"
+"X-Crowdin-File-ID: 626\n"
+"Language: fr_FR\n"
+
+#: botarena\common\bot_sprite.py:25
+#, docstring
+msgid "Rotate an image around a custom pivot point.\n\n"
+"    Args:\n"
+"        img: The image to rotate\n"
+"        angle: Rotation angle in degrees (positive = counter-clockwise)\n"
+"        pivot_x: X offset of pivot from image center (positive = right)\n"
+"        pivot_y: Y offset of pivot from image center (positive = down)\n\n"
+"    Returns:\n"
+"        (rotated_image, (offset_x, offset_y)) - The rotated image and the offset\n"
+"        to apply when positioning so the pivot stays at the same world position.\n"
+"    "
+msgstr ""
+
+#: botarena\common\bot_sprite.py:80
+#, docstring
+msgid "Apply a color tint to an image."
+msgstr ""
+
+#: botarena\common\bot_sprite.py:98
+#, docstring
+msgid "Render a complete bot sprite with plating and weapon.\n\n"
+"    This is the SINGLE SOURCE OF TRUTH for bot rendering. Both battle frames\n"
+"    and garage previews use this function to ensure visual consistency.\n\n"
+"    Note: Chassis is not rendered because plating always covers it completely.\n\n"
+"    Args:\n"
+"        plating_name: Name of the plating to render (required, serves as the base layer)\n"
+"        registry: PartsRegistry for looking up pivot points\n"
+"        weapon_name: Name of weapon to attach (optional)\n"
+"        orientation: Rotation angle of the bot in degrees (0 = facing right)\n"
+"        weapon_orientation: Rotation angle of weapon turret (defaults to orientation)\n"
+"        scale: Scale multiplier for output (1.0 = native size, 0.5 = half size)\n"
+"        tint_color: RGB tuple for team color tint (optional)\n"
+"        tint_intensity: How strongly to apply tint (0.0-1.0)\n\n"
+"    Returns:\n"
+"        RGBA PIL Image of the rendered bot, or None if plating not found.\n"
+"        The image is sized to fit the content with transparent background.\n"
+"    "
+msgstr ""
+
+#: botarena\common\bot_sprite.py:211
+#, docstring
+msgid "Render a bot sprite and return as WEBP bytes.\n\n"
+"    This is a convenience wrapper around render_bot_sprite() that handles\n"
+"    output sizing and WEBP encoding.\n\n"
+"    Args:\n"
+"        plating_name: Name of the plating to render (required)\n"
+"        registry: PartsRegistry for pivot point lookups\n"
+"        weapon_name: Name of weapon to attach (optional)\n"
+"        orientation: Rotation angle of the bot in degrees\n"
+"        weapon_orientation: Rotation angle of weapon turret\n"
+"        scale: Scale multiplier for rendering\n"
+"        tint_color: RGB tuple for team color tint\n"
+"        tint_intensity: How strongly to apply tint\n"
+"        output_size: If specified, resize final image to this (width, height)\n\n"
+"    Returns:\n"
+"        WEBP image bytes, or empty bytes if rendering failed.\n"
+"    "
+msgstr ""
+
+#: botarena\common\campaign.py:72
+#, docstring
+msgid "Arena difficulty levels based on progression"
+msgstr ""
+
+#: botarena\common\campaign.py:83
+#, docstring
+msgid "An NPC bot configuration for campaign battles"
+msgstr ""
+
+#: botarena\common\campaign.py:92
+#, docstring
+msgid "Convert to a full Bot object"
+msgstr ""
+
+#: botarena\common\campaign.py:110
+#, docstring
+msgid "A single arena battle (called \"Mission\" for UI consistency)"
+msgstr ""
+
+#: botarena\common\campaign.py:145
+#, docstring
+msgid "A campaign chapter containing multiple arenas"
+msgstr ""
+
+#: botarena\common\campaign.py:854
+#, docstring
+msgid "Get all missions from all chapters"
+msgstr ""
+
+#: botarena\common\campaign.py:862
+#, docstring
+msgid "Find a mission by its ID"
+msgstr ""
+
+#: botarena\common\campaign.py:871
+#, docstring
+msgid "Get the chapter that contains a mission"
+msgstr ""
+
+#: botarena\common\campaign.py:880
+#, docstring
+msgid "Get missions that are available based on completed missions"
+msgstr ""
+
+#: botarena\common\campaign.py:894
+#, docstring
+msgid "Get (completed, total) mission count for a chapter"
+msgstr ""
+
+#: botarena\common\collision.py:22
+#, docstring
+msgid "\n"
+"    A collision mask for a bot, based on the plating image only.\n\n"
+"    The mask stores which pixels are \"solid\" (non-transparent) and can be\n"
+"    queried at any rotation angle. We use plating-only because:\n"
+"    1. Weapons rotate independently from the chassis (different orientation)\n"
+"    2. Weapons are mounted at an offset, not centered\n"
+"    3. User expectation: hitbox = plating shape\n"
+"    "
+msgstr ""
+
+#: botarena\common\collision.py:33
+#, docstring
+msgid "\n"
+"        Create a collision mask for a bot with the given plating.\n\n"
+"        Args:\n"
+"            plating_name: Name of the plating (e.g., \"Zintek\")\n"
+"            weapon_name: Ignored (kept for API compatibility)\n"
+"        "
+msgstr ""
+
+#: botarena\common\collision.py:53
+#, docstring
+msgid "Load the plating image and create a collision mask.\n\n"
+"        Note: Weapon is NOT included in the collision mask because:\n"
+"        - Weapon rotates independently (weapon_orientation vs chassis orientation)\n"
+"        - Weapon is positioned at a mount point offset, not centered\n"
+"        - This would require passing weapon_orientation to each collision check\n\n"
+"        The plating-only mask correctly represents the bot's \"body\" hitbox.\n"
+"        "
+msgstr ""
+
+#: botarena\common\collision.py:81
+#, docstring
+msgid "Quantize angle to nearest 5 degrees for caching."
+msgstr ""
+
+#: botarena\common\collision.py:85
+#, docstring
+msgid "Get the collision mask rotated to the given angle (degrees)."
+msgstr ""
+
+#: botarena\common\collision.py:111
+#, docstring
+msgid "\n"
+"        Check if a point (e.g., projectile position) collides with the bot.\n\n"
+"        Args:\n"
+"            point_x: World X coordinate of the point\n"
+"            point_y: World Y coordinate of the point\n"
+"            bot_x: World X coordinate of the bot's center\n"
+"            bot_y: World Y coordinate of the bot's center\n"
+"            bot_angle: Bot's rotation angle in degrees\n"
+"            scale: Scale factor from source pixels to world coordinates\n\n"
+"        Returns:\n"
+"            True if the point is inside a non-transparent pixel of the bot\n"
+"        "
+msgstr ""
+
+#: botarena\common\collision.py:154
+#, docstring
+msgid "\n"
+"    Manages collision masks for all bots in a battle.\n\n"
+"    Provides an efficient way to check projectile-bot collisions using\n"
+"    pixel-perfect collision detection.\n"
+"    "
+msgstr ""
+
+#: botarena\common\collision.py:173
+#, docstring
+msgid "\n"
+"        Register a bot's collision mask.\n\n"
+"        Args:\n"
+"            bot_id: Unique identifier for the bot\n"
+"            plating_name: Name of the bot's plating\n"
+"            weapon_name: Name of the bot's weapon (optional)\n"
+"        "
+msgstr ""
+
+#: botarena\common\collision.py:192
+#, docstring
+msgid "\n"
+"        Check if a projectile at (proj_x, proj_y) collides with the given bot.\n\n"
+"        Args:\n"
+"            proj_x: Projectile X position in arena coordinates\n"
+"            proj_y: Projectile Y position in arena coordinates\n"
+"            bot_id: ID of the bot to check against\n"
+"            bot_x: Bot's X position in arena coordinates\n"
+"            bot_y: Bot's Y position in arena coordinates\n"
+"            bot_angle: Bot's rotation angle in degrees\n\n"
+"        Returns:\n"
+"            True if the projectile collides with a non-transparent pixel of the bot\n"
+"            False if the projectile does not collide\n"
+"            None if no collision mask is available (caller should use fallback collision)\n"
+"        "
+msgstr ""
+
+#: botarena\common\collision.py:215
+#, docstring
+msgid "Clear all registered collision masks."
+msgstr ""
+
+#: botarena\common\collision.py:222
+#, docstring
+msgid "Get a cached collision mask for the given plating.\n\n"
+"    Note: weapon_name is kept for API compatibility but not used for collision.\n"
+"    "
+msgstr ""
+
+#: botarena\common\engine.py:51
+#, docstring
+msgid "AI behavior modes - simplified to 3 core behaviors"
+msgstr ""
+
+#: botarena\common\engine.py:59
+#, docstring
+msgid "Target selection priority - simplified to 3 meaningful options"
+msgstr ""
+
+#: botarena\common\engine.py:84
+#, docstring
+msgid "2D vector for position and velocity"
+msgstr ""
+
+#: botarena\common\engine.py:111
+#, docstring
+msgid "Return angle in degrees from self to other (0 = right, 90 = down)"
+msgstr ""
+
+#: botarena\common\engine.py:123
+#, docstring
+msgid "Dot product with another vector"
+msgstr ""
+
+#: botarena\common\engine.py:133
+#, docstring
+msgid "Tracks threat from a single enemy"
+msgstr ""
+
+#: botarena\common\engine.py:141
+#, docstring
+msgid "Calculate current threat score with time decay.\n\n"
+"        Recent damage is weighted more heavily than old damage.\n"
+"        Score decays over time so bots don't hold grudges forever.\n"
+"        "
+msgstr ""
+
+#: botarena\common\engine.py:154
+#, docstring
+msgid "Runtime state for a bot during real-time battle simulation"
+msgstr ""
+
+#: botarena\common\engine.py:228
+#, docstring
+msgid "Apply damage, return actual damage dealt.\n\n"
+"        Args:\n"
+"            damage: Amount of damage to apply\n"
+"            source_id: ID of the bot that dealt the damage (for threat tracking)\n"
+"            current_time: Current simulation time (for threat decay)\n"
+"        "
+msgstr ""
+
+#: botarena\common\engine.py:256
+#, docstring
+msgid "Heal, return actual amount healed"
+msgstr ""
+
+#: botarena\common\engine.py:264
+#, docstring
+msgid "Check if weapon is ready to fire"
+msgstr ""
+
+#: botarena\common\engine.py:271
+#, docstring
+msgid "Get the preferred engagement range based on movement stance.\n\n"
+"        Range preferences (derived from stance - no need for separate setting):\n"
+"        - AGGRESSIVE: Just outside min_range (15-20% into range band)\n"
+"        - DEFENSIVE: Near max range (90-95% of max)\n"
+"        - TACTICAL: Optimal midpoint (50% of range band)\n"
+"        "
+msgstr ""
+
+#: botarena\common\engine.py:286
+#, docstring
+msgid "Get how often this bot should re-evaluate targets based on intelligence.\n\n"
+"        Higher intelligence = more frequent target checks = more adaptive behavior.\n"
+"        Range: 1.2s (intel 10) to 2.8s (intel 1)\n"
+"        "
+msgstr ""
+
+#: botarena\common\engine.py:295
+#, docstring
+msgid "Get the enemy that poses the highest threat to this bot.\n\n"
+"        Returns None if no threats recorded.\n"
+"        "
+msgstr ""
+
+#: botarena\common\engine.py:315
+#, docstring
+msgid "Check if this bot took damage recently (for reactive dodging).\n\n"
+"        Args:\n"
+"            current_time: Current simulation time\n"
+"            threshold: Time window in seconds to consider \"recent\"\n"
+"        "
+msgstr ""
+
+#: botarena\common\engine.py:324
+#, docstring
+msgid "Get current health as a percentage (0.0 to 1.0)"
+msgstr ""
+
+#: botarena\common\engine.py:330
+#, docstring
+msgid "Export state for frame capture"
+msgstr ""
+
+#: botarena\common\engine.py:352
+#, docstring
+msgid "A projectile in flight"
+msgstr ""
+
+#: botarena\common\engine.py:380
+#, docstring
+msgid "A single frame of battle state for rendering"
+msgstr ""
+
+#: botarena\common\engine.py:391
+#, docstring
+msgid "Configuration for a battle simulation"
+msgstr ""
+
+#: botarena\common\engine.py:402
+#, docstring
+msgid "\n"
+"    Real-time battle simulation engine.\n\n"
+"    Runs a physics-based simulation with continuous movement and combat.\n"
+"    All times are in seconds, positions in pixels.\n\n"
+"    STALEMATE PREVENTION:\n"
+"    If no damage is dealt for a prolonged period, bots become increasingly\n"
+"    aggressive to force engagement and prevent infinite standoffs.\n"
+"    "
+msgstr ""
+
+#: botarena\common\engine.py:462
+#, docstring
+msgid "Add a bot to the simulation.\n\n"
+"        Args:\n"
+"            min_range: Minimum weapon range (will be scaled by RANGE_SCALE_FACTOR)\n"
+"            max_range: Maximum weapon range (will be scaled by RANGE_SCALE_FACTOR)\n"
+"            behavior: AI movement behavior (from tactical orders or chassis default)\n"
+"            target_priority: Who to target (from tactical orders)\n"
+"            projectile_type: Visual type of projectile (bullet, laser, cannon, missile, heal)\n"
+"            muzzle_offset: Distance from bot center to weapon muzzle (for projectile spawn point)\n"
+"        "
+msgstr ""
+
+#: botarena\common\engine.py:540
+#, docstring
+msgid "Place bots in starting positions"
+msgstr ""
+
+#: botarena\common\engine.py:566
+#, docstring
+msgid "\n"
+"        Run the complete battle simulation.\n\n"
+"        Returns a dict with battle results and frame data.\n"
+"        "
+msgstr ""
+
+#: botarena\common\engine.py:601
+#, docstring
+msgid "Calculate how aggressive bots should become based on stalemate duration.\n\n"
+"        Returns a value from 0.0 (normal) to 1.0 (maximum aggression).\n"
+"        "
+msgstr ""
+
+#: botarena\common\engine.py:617
+#, docstring
+msgid "Modify bot behaviors if a stalemate is detected.\n\n"
+"        When no damage has been dealt for a while:\n"
+"        1. Reduce commitment timers (more frequent repositioning)\n"
+"        2. Decrease preferred ranges (close the distance)\n"
+"        3. Eventually force all bots to become AGGRESSIVE\n"
+"        "
+msgstr ""
+
+#: botarena\common\engine.py:655
+#, docstring
+msgid "Update bot AI - target selection and decision making.\n\n"
+"        Intelligence affects how often bots re-evaluate targets:\n"
+"        - High intel (10): Re-evaluates every 1.4s - very adaptive\n"
+"        - Low intel (1): Re-evaluates every 2.8s - slow to adapt\n\n"
+"        Bots also force re-evaluation when:\n"
+"        - They have no target\n"
+"        - Current target died\n"
+"        - They took damage from a different enemy (reactive targeting)\n"
+"        "
+msgstr ""
+
+#: botarena\common\engine.py:697
+#, docstring
+msgid "Find the best target for this bot based on tactical orders"
+msgstr ""
+
+#: botarena\common\engine.py:748
+#, docstring
+msgid "Select target from candidates based on priority with threat weighting.\n\n"
+"        Threat weighting: Bots remember who hurt them and factor that into targeting.\n"
+"        Higher intelligence = better threat assessment and less random noise.\n"
+"        "
+msgstr ""
+
+#: botarena\common\engine.py:758
+#, docstring
+msgid "Get threat bonus for an enemy (higher = more threatening)"
+msgstr ""
+
+#: botarena\common\engine.py:791
+#, docstring
+msgid "Update weapon turret to track target independently of chassis"
+msgstr ""
+
+#: botarena\common\engine.py:811
+#, docstring
+msgid "Rotate weapon turret towards target angle (faster than chassis).\n\n"
+"        Weapons track independently and faster than the chassis moves.\n"
+"        This lets bots fire while maneuvering.\n"
+"        "
+msgstr ""
+
+#: botarena\common\engine.py:831
+#, docstring
+msgid "Update bot movement using position-based commitment system.\n\n"
+"        Core design:\n"
+"        1. Calculate a TARGET POSITION based on behavior\n"
+"        2. COMMIT to that position for 1-2 seconds\n"
+"        3. Move toward target position at full speed\n"
+"        4. Periodic DODGE impulses for evasion\n"
+"        "
+msgstr ""
+
+#: botarena\common\engine.py:878
+#, docstring
+msgid "Calculate where this bot wants to be based on its behavior.\n\n"
+"        Position-based system with team awareness and wall avoidance.\n\n"
+"        Features:\n"
+"        - AGGRESSIVE: Position just outside min_range, directly toward target\n"
+"        - DEFENSIVE: Position at max_range, directly away from target\n"
+"        - TACTICAL: Position at optimal range, with some lateral offset\n"
+"        - Wall avoidance: Penalize positions near arena edges\n"
+"        - Spread awareness: Offset from allies targeting same enemy\n"
+"        - Weapon archetype modifiers: Snipers prefer clear sightlines, brawlers flank\n"
+"        - Stalemate prevention: Reduce ranges when no damage dealt for a while\n"
+"        "
+msgstr ""
+
+#: botarena\common\engine.py:1023
+#, docstring
+msgid "Check if bot should initiate a dodge maneuver.\n\n"
+"        REACTIVE DODGING: Dodges are triggered by:\n"
+"        1. Taking recent damage (pain response)\n"
+"        2. Incoming projectiles heading toward this bot\n"
+"        3. Random chance (baseline evasion, intelligence-scaled)\n"
+"        4. Low health (survival instinct)\n\n"
+"        Dodges are quick perpendicular bursts that provide evasion\n"
+"        without the infinite orbit problem of continuous strafing.\n"
+"        "
+msgstr ""
+
+#: botarena\common\engine.py:1105
+#, docstring
+msgid "Check if any enemy projectiles are heading toward this bot.\n\n"
+"        Returns the most threatening projectile, or None if clear.\n"
+"        "
+msgstr ""
+
+#: botarena\common\engine.py:1159
+#, docstring
+msgid "Move bot toward its target_position, handling dodges and walls."
+msgstr ""
+
+#: botarena\common\engine.py:1210
+#, docstring
+msgid "Wander toward arena center when no target.\n\n"
+"        Uses commitment system to avoid jittery orientation changes.\n"
+"        "
+msgstr ""
+
+#: botarena\common\engine.py:1250
+#, docstring
+msgid "Find the best ally to heal using triage logic.\n\n"
+"        TRIAGE PRIORITIES (in order):\n"
+"        1. Critical allies (<30% health) - emergency healing needed\n"
+"        2. Damaged allies (<70% health) - standard healing\n"
+"        3. High-value allies (high DPS) - prefer healing damage dealers\n"
+"        4. Nearest damaged ally - if equal priority, heal closest\n\n"
+"        Ignores:\n"
+"        - Full health allies (100%)\n"
+"        - Nearly-full allies (>90%) unless no other options\n"
+"        - Self\n\n"
+"        Returns None if no ally needs healing.\n"
+"        "
+msgstr ""
+
+#: botarena\common\engine.py:1319
+#, docstring
+msgid "Find the nearest enemy to this bot."
+msgstr ""
+
+#: botarena\common\engine.py:1339
+#, docstring
+msgid "\n"
+"        PROTECTOR/HEALER movement with smart positioning and self-preservation.\n\n"
+"        BEHAVIOR PRIORITIES:\n"
+"        1. SELF-PRESERVATION: If healer is low health, prioritize survival\n"
+"        2. ANTICIPATION: Position near allies about to engage (frontline support)\n"
+"        3. PROTECTION: Stay behind ally relative to enemies\n"
+"        4. RANGE MANAGEMENT: Stay within healing range but not too close\n\n"
+"        Key intelligence-based differences:\n"
+"        - Higher intel = better threat awareness and positioning\n"
+"        - Higher intel = smarter triage (handled in target selection)\n"
+"        "
+msgstr ""
+
+#: botarena\common\engine.py:1458
+#, docstring
+msgid "Find the ally closest to enemies (frontline) for proactive support.\n\n"
+"        Used when no ally needs healing - positions healer near action.\n"
+"        "
+msgstr ""
+
+#: botarena\common\engine.py:1485
+#, docstring
+msgid "Emergency flee behavior for low-health healers.\n\n"
+"        Moves directly away from the threatening enemy.\n"
+"        "
+msgstr ""
+
+#: botarena\common\engine.py:1509
+#, docstring
+msgid "Adjust a position to avoid being too close to walls.\n\n"
+"        Args:\n"
+"            pos: Desired position\n"
+"            margin: Minimum distance from walls\n\n"
+"        Returns:\n"
+"            Adjusted position pushed away from walls if necessary\n"
+"        "
+msgstr ""
+
+#: botarena\common\engine.py:1536
+#, docstring
+msgid "Rotate chassis towards target angle.\n\n"
+"        All bots get a base rotation speed boost to make tactical orders responsive.\n"
+"        This ensures even slow heavy chassis can react to tactical situations.\n"
+"        "
+msgstr ""
+
+#: botarena\common\engine.py:1560
+#, docstring
+msgid "Deprecated - use _rotate_chassis_towards instead"
+msgstr ""
+
+#: botarena\common\engine.py:1564
+#, docstring
+msgid "\n"
+"        Check if bot is against a wall.\n\n"
+"        Returns:\n"
+"            (is_against_wall, list of wall sides hit: 'left', 'right', 'top', 'bottom')\n"
+"        "
+msgstr ""
+
+#: botarena\common\engine.py:1589
+#, docstring
+msgid "\n"
+"        Calculate the escape direction and speed multiplier when against a wall.\n\n"
+"        Returns:\n"
+"            (escape_angle, speed_multiplier)\n"
+"        "
+msgstr ""
+
+#: botarena\common\engine.py:1617
+#, docstring
+msgid "\n"
+"        Check if the bot's desired movement direction would move it further into a wall.\n"
+"        "
+msgstr ""
+
+#: botarena\common\engine.py:1637
+#, docstring
+msgid "Apply movement vector with bounds, collision checking, and wall response"
+msgstr ""
+
+#: botarena\common\engine.py:1680
+#, docstring
+msgid "Check if any friendly bot is between shooter and target.\n\n"
+"        Uses a simple line-circle intersection test to see if the projectile\n"
+"        path would pass through a teammate.\n\n"
+"        Args:\n"
+"            shooter: The bot that wants to fire\n"
+"            target: The intended target\n\n"
+"        Returns:\n"
+"            True if a friendly is blocking the shot, False if clear to fire\n"
+"        "
+msgstr ""
+
+#: botarena\common\engine.py:1740
+#, docstring
+msgid "Update projectile positions and check for hits"
+msgstr ""
+
+#: botarena\common\engine.py:1870
+#, docstring
+msgid "Handle weapon firing"
+msgstr ""
+
+#: botarena\common\engine.py:2007
+#, docstring
+msgid "Capture current state as a frame"
+msgstr ""
+
+#: botarena\common\engine.py:2018
+#, docstring
+msgid "Check if battle should end"
+msgstr ""
+
+#: botarena\common\engine.py:2024
+#, docstring
+msgid "Build the final battle result"
+msgstr ""
+
+#: botarena\common\image_utils.py:19
+#, docstring
+msgid "Find an image file, trying different name normalizations and extensions.\n\n"
+"    This is the SINGLE SOURCE OF TRUTH for finding part images.\n"
+"    It normalizes the part name to lowercase with underscores and tries\n"
+"    both webp and png extensions.\n\n"
+"    Args:\n"
+"        folder: Subfolder in data directory (e.g., \"chassis\", \"plating\", \"weapons\")\n"
+"        name: Part name to find (e.g., \"DLZ-100\", \"Zintek\")\n\n"
+"    Returns:\n"
+"        Path to the image file, or None if not found.\n"
+"    "
+msgstr ""
+
+#: botarena\common\image_utils.py:49
+#, docstring
+msgid "Load an image from the data directory as RGBA.\n\n"
+"    Args:\n"
+"        folder: Subfolder in data directory (e.g., \"chassis\", \"plating\", \"weapons\")\n"
+"        name: Part name to load\n\n"
+"    Returns:\n"
+"        PIL Image in RGBA mode, or None if not found/failed to load.\n"
+"    "
+msgstr ""
+
+#: botarena\common\image_utils.py:70
+#, docstring
+msgid "Load an image and return as WEBP bytes.\n\n"
+"    Args:\n"
+"        folder: Subfolder in data directory\n"
+"        name: Part name to load\n"
+"        scale: Scale multiplier (e.g., 2 for 2x size)\n\n"
+"    Returns:\n"
+"        WEBP image bytes, or None if not found.\n"
+"    "
+msgstr ""
+
+#: botarena\common\image_utils.py:101
+#, docstring
+msgid "Get a discord.File for a specific part image.\n\n"
+"    Args:\n"
+"        part_type: Type of part (\"chassis\", \"plating\", \"component\", \"weapon\")\n"
+"        part_name: Name of the part\n"
+"        filename: Filename to use for the discord.File attachment\n\n"
+"    Returns:\n"
+"        discord.File object, or None if image not found.\n"
+"    "
+msgstr ""
+
+#: botarena\common\models.py:22
+#, docstring
+msgid "Generate a visual weight bar using colored emoji squares.\n\n"
+"    Args:\n"
+"        chassis_weight: Weight of the chassis itself (green squares)\n"
+"        plating_weight: Weight of equipped plating (blue squares)\n"
+"        weapon_weight: Weight of equipped weapon (red squares)\n"
+"        capacity: Total weight capacity of the chassis\n"
+"        bar_length: Length of the bar in squares (default 12)\n\n"
+"    Returns:\n"
+"        String like \"🟩🟩🟩🟩🟦🟦🟥⬛⬛⬛⬛⬛⬛⬛⬛⬛\"\n"
+"    "
+msgstr ""
+
+#: botarena\common\models.py:65
+#, docstring
+msgid "Get PNG image bytes of a bot with specified parts.\n\n"
+"    Uses the unified render_bot_sprite_to_bytes() function for consistent\n"
+"    rendering between battle and garage views.\n\n"
+"    Args:\n"
+"        plating_name: Name of the plating (required)\n"
+"        weapon_name: Name of the weapon (or None)\n"
+"        orientation: Orientation angle in degrees (0 = facing right)\n\n"
+"    Returns:\n"
+"        PNG image bytes showing the bot with its equipped parts\n"
+"    "
+msgstr ""
+
+#: botarena\common\models.py:100
+#, docstring
+msgid "Base model with serialization helpers"
+msgstr ""
+
+#: botarena\common\models.py:194
+#, docstring
+msgid "How the bot moves during combat - simplified to 3 core behaviors"
+msgstr ""
+
+#: botarena\common\models.py:202
+#, docstring
+msgid "Who the bot targets - simplified to 3 meaningful options"
+msgstr ""
+
+#: botarena\common\models.py:210
+#, docstring
+msgid "Pre-battle orders that control bot AI behavior.\n\n"
+"    - Movement Stance: How the bot positions itself (3 options)\n"
+"    - Target Priority: Who the bot attacks (3 options)\n\n"
+"    Total combinations: 9 (manageable for players to understand)\n"
+"    "
+msgstr ""
+
+#: botarena\common\models.py:224
+#, docstring
+msgid "Convert legacy movement stance values to new defaults."
+msgstr ""
+
+#: botarena\common\models.py:239
+#, docstring
+msgid "Convert legacy target priority values to new defaults."
+msgstr ""
+
+#: botarena\common\models.py:250
+#, docstring
+msgid "Get a brief summary of the orders"
+msgstr ""
+
+#: botarena\common\models.py:263
+#, docstring
+msgid "The base frame of a bot - determines weight capacity, speed, and intelligence"
+msgstr ""
+
+#: botarena\common\models.py:290
+#, docstring
+msgid "Armor plating that provides additional shielding"
+msgstr ""
+
+#: botarena\common\models.py:328
+#, docstring
+msgid "Weapons, healers, and special equipment"
+msgstr ""
+
+#: botarena\common\models.py:360
+#, docstring
+msgid "A fully assembled battle bot"
+msgstr ""
+
+#: botarena\common\models.py:389
+#, docstring
+msgid "Check if the bot's total weight does not exceed the chassis's weight capacity."
+msgstr ""
+
+#: botarena\common\models.py:393
+#, docstring
+msgid "Return a formatted string for Discord embed fields"
+msgstr ""
+
+#: botarena\common\models.py:409
+#, docstring
+msgid "Runtime state for a bot during battle"
+msgstr ""
+
+#: botarena\common\models.py:421
+#, docstring
+msgid "Apply damage and return actual damage dealt"
+msgstr ""
+
+#: botarena\common\models.py:430
+#, docstring
+msgid "Heal and return actual amount healed"
+msgstr ""
+
+#: botarena\common\models.py:440
+#, docstring
+msgid "Result of a completed battle"
+msgstr ""
+
+#: botarena\common\models.py:455
+#, docstring
+msgid "A part owned by a player (for inventory - unequipped plating/weapons)"
+msgstr ""
+
+#: botarena\common\models.py:463
+#, docstring
+msgid "A chassis owned by a player - THIS IS THE BOT.\n\n"
+"    The chassis is the core identity of the bot. Plating and weapons\n"
+"    can be equipped/unequipped from it.\n"
+"    "
+msgstr ""
+
+#: botarena\common\models.py:481
+#, docstring
+msgid "Get the display name (custom name or chassis name)"
+msgstr ""
+
+#: botarena\common\models.py:486
+#, docstring
+msgid "Check if bot has both plating and weapon equipped"
+msgstr ""
+
+#: botarena\common\models.py:490
+#, docstring
+msgid "Convert to a full Bot object using the parts registry"
+msgstr ""
+
+#: botarena\common\models.py:514
+#, docstring
+msgid "Get formatted weight display with visual bar.\n\n"
+"        Args:\n"
+"            registry: The parts registry to look up part weights\n\n"
+"        Returns:\n"
+"            String like \"(8+4+2/32) 🟩🟩🟩🟩🟦🟦🟥⬛⬛⬛⬛⬛⬛⬛⬛⬛\"\n"
+"        "
+msgstr ""
+
+#: botarena\common\models.py:536
+#, docstring
+msgid "Get PNG image bytes of this bot with equipped parts.\n\n"
+"        Args:\n"
+"            orientation: Orientation angle in degrees (0 = facing right)\n\n"
+"        Returns:\n"
+"            PNG image bytes showing the bot with its equipped parts.\n"
+"            If no plating is equipped, returns the chassis image.\n\n"
+"        Raises:\n"
+"            RuntimeError: If no valid image could be generated.\n"
+"        "
+msgstr ""
+
+#: botarena\common\models.py:587
+#, docstring
+msgid "All data for a single player"
+msgstr ""
+
+#: botarena\common\models.py:631
+#, docstring
+msgid "Ensure team_color is a valid option, fallback to blue if not."
+msgstr ""
+
+#: botarena\common\models.py:638
+#, docstring
+msgid "Total wins (campaign + pvp)"
+msgstr ""
+
+#: botarena\common\models.py:643
+#, docstring
+msgid "Total losses (campaign + pvp)"
+msgstr ""
+
+#: botarena\common\models.py:662
+#, docstring
+msgid "Check if the player owns any parts or chassis."
+msgstr ""
+
+#: botarena\common\models.py:669
+#, docstring
+msgid "Return a unified list of owned parts, including chassis counts."
+msgstr ""
+
+#: botarena\common\models.py:680
+#, docstring
+msgid "Return (completed, total) missions"
+msgstr ""
+
+#: botarena\common\models.py:687
+#, docstring
+msgid "Check if a mission has been completed"
+msgstr ""
+
+#: botarena\common\models.py:691
+#, docstring
+msgid "Mark a mission as completed"
+msgstr ""
+
+#: botarena\common\models.py:696
+#, docstring
+msgid "Check if a mission has been attempted (enemy info revealed)"
+msgstr ""
+
+#: botarena\common\models.py:700
+#, docstring
+msgid "Mark a mission as attempted and increment attempt counter"
+msgstr ""
+
+#: botarena\common\models.py:707
+#, docstring
+msgid "Get the number of times this mission has been attempted"
+msgstr ""
+
+#: botarena\common\models.py:711
+#, docstring
+msgid "Check if a part has been unlocked via campaign"
+msgstr ""
+
+#: botarena\common\models.py:715
+#, docstring
+msgid "Unlock a part from campaign rewards"
+msgstr ""
+
+#: botarena\common\models.py:722
+#, docstring
+msgid "Find an owned chassis by ID"
+msgstr ""
+
+#: botarena\common\models.py:729
+#, docstring
+msgid "Find an owned chassis by display name (case-insensitive)"
+msgstr ""
+
+#: botarena\common\models.py:736
+#, docstring
+msgid "Get all chassis that have both plating and weapon equipped"
+msgstr ""
+
+#: botarena\common\models.py:740
+#, docstring
+msgid "Add a new chassis (bot) to the player's collection.\n\n"
+"        Returns the new chassis, or None if the garage is full (max 7 bots).\n"
+"        "
+msgstr ""
+
+#: botarena\common\models.py:751
+#, docstring
+msgid "Remove a chassis (returns the removed chassis, or None if not found)"
+msgstr ""
+
+#: botarena\common\models.py:758
+#, docstring
+msgid "Check if player has a specific equipment piece in inventory"
+msgstr ""
+
+#: botarena\common\models.py:765
+#, docstring
+msgid "Get quantity of a specific equipment piece in inventory"
+msgstr ""
+
+#: botarena\common\models.py:772
+#, docstring
+msgid "Add equipment to inventory"
+msgstr ""
+
+#: botarena\common\models.py:780
+#, docstring
+msgid "Remove equipment from inventory. Returns True if successful."
+msgstr ""
+
+#: botarena\common\models.py:791
+#, docstring
+msgid "Equip plating to a chassis. Returns (success, message)\n\n"
+"        Args:\n"
+"            chassis_id: ID of the chassis to equip to\n"
+"            plating_name: Name of the plating to equip\n"
+"            registry: Parts registry for weight validation (optional but recommended)\n"
+"        "
+msgstr ""
+
+#: botarena\common\models.py:839
+#, docstring
+msgid "Equip weapon to a chassis. Returns (success, message)\n\n"
+"        Args:\n"
+"            chassis_id: ID of the chassis to equip to\n"
+"            weapon_name: Name of the weapon to equip\n"
+"            registry: Parts registry for weight validation (optional but recommended)\n"
+"        "
+msgstr ""
+
+#: botarena\common\models.py:885
+#, docstring
+msgid "Unequip plating from a chassis (returns to inventory)"
+msgstr ""
+
+#: botarena\common\models.py:898
+#, docstring
+msgid "Unequip weapon from a chassis (returns to inventory)"
+msgstr ""
+
+#: botarena\common\models.py:913
+#, docstring
+msgid "Count how many of a specific part the player owns"
+msgstr ""
+
+#: botarena\common\models.py:922
+#, docstring
+msgid "Add a part to inventory.\n\n"
+"        Returns True if successful, False if failed (e.g., garage full for chassis).\n"
+"        "
+msgstr ""
+
+#: botarena\common\models.py:942
+#, docstring
+msgid "Root database model"
+msgstr ""
+
+#: botarena\common\models.py:947
+#, docstring
+msgid "Get or create player data"
+msgstr ""
+
+#: botarena\common\models.py:957
+#, docstring
+msgid "Central registry for all available parts"
+msgstr ""
+
+#: botarena\common\renderer.py:118
+#, docstring
+msgid "Renders battle frames to video"
+msgstr ""
+
+#: botarena\common\renderer.py:132
+#, docstring
+msgid "\n"
+"        Initialize the renderer.\n\n"
+"        Args:\n"
+"            width: Arena width in pixels\n"
+"            height: Arena height in pixels\n"
+"            scale: Scale factor for output (0.5 = 500x500 output)\n"
+"            fps: Frames per second\n"
+"            team1_color: Color name for team 1 (player's team)\n"
+"            team2_color: Color name for team 2 (enemy team)\n"
+"            parts_registry: Optional registry for looking up component render offsets\n"
+"            chapter: Campaign chapter number (1-5) for chapter-specific arena backgrounds\n"
+"            mission_id: Mission ID for mission-specific arena backgrounds (e.g., \"1-1\")\n"
+"        "
+msgstr ""
+
+#: botarena\common\renderer.py:182
+#, docstring
+msgid "Load and scale the arena background image if available.\n\n"
+"        Tries to load arena backgrounds in this order:\n"
+"        1. Mission-specific: arena_mission_{mission_id} (e.g., arena_mission_1-1.webp)\n"
+"        2. Chapter-specific: arena_chapter_{chapter} (e.g., arena_chapter_1.webp)\n"
+"        3. Legacy fallback: arena_background\n"
+"        "
+msgstr ""
+
+#: botarena\common\renderer.py:213
+#, docstring
+msgid "Scale position from arena coords to output coords"
+msgstr ""
+
+#: botarena\common\renderer.py:217
+#, docstring
+msgid "Scale a size value"
+msgstr ""
+
+#: botarena\common\renderer.py:221
+#, docstring
+msgid "\n"
+"        Render a single frame.\n\n"
+"        Args:\n"
+"            frame_data: Frame data dict with bots, projectiles, events\n"
+"            battle_info: Battle metadata (arena size, teams, etc.)\n\n"
+"        Returns:\n"
+"            PIL Image of the rendered frame\n"
+"        "
+msgstr ""
+
+#: botarena\common\renderer.py:262
+#, docstring
+msgid "Draw arena grid lines"
+msgstr ""
+
+#: botarena\common\renderer.py:272
+#, docstring
+msgid "Draw a single bot with separate body facing and weapon turret.\n\n"
+"        Uses render_bot_sprite() for consistent rendering between battle and garage.\n"
+"        "
+msgstr ""
+
+#: botarena\common\renderer.py:372
+#, docstring
+msgid "Draw a simple shape for dead bots or bots without plating."
+msgstr ""
+
+#: botarena\common\renderer.py:386
+#, docstring
+msgid "Draw a bot as a directional polygon"
+msgstr ""
+
+#: botarena\common\renderer.py:411
+#, docstring
+msgid "Draw a projectile with style based on weapon type, oriented along velocity vector"
+msgstr ""
+
+#: botarena\common\renderer.py:533
+#, docstring
+msgid "Draw an ellipse rotated by angle_deg degrees.\n\n"
+"        Uses polygon approximation since PIL doesn't support rotated ellipses directly.\n"
+"        "
+msgstr ""
+
+#: botarena\common\renderer.py:576
+#, docstring
+msgid "Draw heads-up display with team info"
+msgstr ""
+
+#: botarena\common\renderer.py:610
+#, docstring
+msgid "\n"
+"        Render all frames to a video file.\n\n"
+"        Uses PyAV directly for H.264 encoding (Discord compatible).\n"
+"        Falls back to ffmpeg subprocess, then GIF if neither available.\n\n"
+"        Args:\n"
+"            battle_result: Complete battle result dict with frames\n"
+"            output_path: Path to save the video\n"
+"            show_progress: Print progress updates\n"
+"            freeze_duration: Duration in seconds to freeze on the final frame (default 3s)\n\n"
+"        Returns:\n"
+"            Path to the created video file\n"
+"        "
+msgstr ""
+
+#: botarena\common\renderer.py:678
+#, docstring
+msgid "Write video using PyAV directly with Discord-compatible settings."
+msgstr ""
+
+#: botarena\common\renderer.py:708
+#, docstring
+msgid "Write video using ffmpeg subprocess with Discord-compatible settings."
+msgstr ""
+
+#: botarena\common\renderer.py:766
+#, docstring
+msgid "\n"
+"        Render all frames to a GIF file.\n\n"
+"        Args:\n"
+"            battle_result: Complete battle result dict with frames\n"
+"            output_path: Path to save the GIF\n"
+"            frame_skip: Skip every N frames to reduce size\n"
+"            show_progress: Print progress updates\n\n"
+"        Returns:\n"
+"            Path to the created GIF file\n"
+"        "
+msgstr ""
+
+#: botarena\common\renderer.py:825
+#, docstring
+msgid "\n"
+"        Render battle to bytes (for direct Discord upload).\n\n"
+"        Args:\n"
+"            battle_result: Complete battle result dict\n"
+"            format: \"gif\" or \"mp4\"\n"
+"            frame_skip: For GIF, skip every N frames\n\n"
+"        Returns:\n"
+"            Bytes of the rendered video/gif\n"
+"        "
+msgstr ""
+
+#: botarena\common\renderer.py:854
+#, docstring
+msgid "Render a static image of a bot with its parts.\n\n"
+"        This is a convenience method that delegates to render_bot_sprite_to_bytes()\n"
+"        for consistent rendering between battle and garage views.\n\n"
+"        Args:\n"
+"            plating_name: Name of equipped plating (required)\n"
+"            weapon_name: Name of equipped weapon (optional)\n"
+"            orientation: Orientation angle in degrees (0 = facing right)\n\n"
+"        Returns:\n"
+"            PNG image bytes\n"
+"        "
+msgstr ""
+
+#: botarena\common\telemetry.py:19
+#, docstring
+msgid "\n"
+"    Manages battle telemetry logging and analysis.\n\n"
+"    Data is stored in JSONL format (one JSON object per line) for:\n"
+"    - Easy appending without loading entire file\n"
+"    - Simple filtering by reading line-by-line\n"
+"    - Efficient pruning by rewriting without old entries\n"
+"    "
+msgstr ""
+
+#: botarena\common\telemetry.py:51
+#, docstring
+msgid "\n"
+"        Log a campaign battle outcome.\n\n"
+"        Args:\n"
+"            mission_id: Mission identifier (e.g., \"1-1\", \"3-2\")\n"
+"            mission_name: Human-readable mission name\n"
+"            chapter_id: Chapter number (1-5)\n"
+"            player_id: Discord user ID (for tracking per-player patterns)\n"
+"            result: \"win\", \"loss\", or \"stalemate\"\n"
+"            duration: Battle duration in seconds\n"
+"            player_bots_count: Number of bots the player brought\n"
+"            player_bots_survived: Number of player bots that survived\n"
+"            player_total_hp_remaining: Sum of surviving bot HP\n"
+"            player_max_hp: Sum of all player bot max HP (for percentage calc)\n"
+"            enemy_bots_count: Number of enemy bots in the mission\n"
+"            enemy_bots_survived: Number of enemy bots that survived\n"
+"            total_damage_dealt: Total damage dealt by player\n"
+"            total_damage_taken: Total damage taken by player\n"
+"            attempt_number: Which attempt this is for this player on this mission\n"
+"            is_first_win: True if this is the player's first time beating this mission\n"
+"        "
+msgstr ""
+
+#: botarena\common\telemetry.py:103
+#, docstring
+msgid "\n"
+"        Read telemetry entries with optional filtering.\n\n"
+"        Args:\n"
+"            since: Only return entries after this datetime (UTC)\n"
+"            mission_id: Only return entries for this mission\n\n"
+"        Returns:\n"
+"            List of telemetry entry dicts\n"
+"        "
+msgstr ""
+
+#: botarena\common\telemetry.py:142
+#, docstring
+msgid "\n"
+"        Aggregate statistics per mission.\n\n"
+"        Returns dict like:\n"
+"        {\n"
+"            \"1-1\": {\n"
+"                \"name\": \"Roxtan Park Arena\",\n"
+"                \"chapter\": 1,\n"
+"                \"attempts\": 150,\n"
+"                \"wins\": 120,\n"
+"                \"losses\": 25,\n"
+"                \"stalemates\": 5,\n"
+"                \"win_rate\": 0.80,\n"
+"                \"first_try_wins\": 95,\n"
+"                \"first_try_rate\": 0.79,\n"
+"                \"avg_attempts_to_win\": 1.3,\n"
+"                \"avg_win_duration\": 45.2,\n"
+"                \"avg_loss_duration\": 38.1,\n"
+"                \"avg_hp_remaining_pct\": 0.65,\n"
+"                \"avg_bots_used\": 2.1,\n"
+"            },\n"
+"            ...\n"
+"        }\n"
+"        "
+msgstr ""
+
+#: botarena\common\telemetry.py:226
+#, docstring
+msgid "\n"
+"        Remove entries older than the given datetime.\n\n"
+"        Args:\n"
+"            before: Remove entries with timestamp before this (UTC)\n\n"
+"        Returns:\n"
+"            Number of entries removed\n"
+"        "
+msgstr ""
+
+#: botarena\common\telemetry.py:262
+#, docstring
+msgid "\n"
+"        Delete all telemetry data.\n\n"
+"        Returns:\n"
+"            Number of entries deleted\n"
+"        "
+msgstr ""
+
+#: botarena\common\telemetry.py:284
+#, docstring
+msgid "Get total number of telemetry entries."
+msgstr ""
+

@@ -1,0 +1,152 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:54\n"
+"Last-Translator: \n"
+"Language-Team: German\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: de\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/miner/engine/locales/messages.pot\n"
+"X-Crowdin-File-ID: 712\n"
+"Language: de_DE\n"
+
+#: miner\engine\engine.py:32
+#, docstring
+msgid "Registers a Discord cog with a database connection and runs migrations.\n\n"
+"    Args:\n"
+"        cog_instance (commands.Cog | Path): The instance/path of the cog to register.\n"
+"        tables (list[type[Table]]): List of Piccolo Table classes to associate with the database engine.\n"
+"        config (dict): Configuration dictionary containing database connection details.\n"
+"        trace (bool, optional): Whether to enable tracing for migrations. Defaults to False.\n"
+"        max_size (int, optional): Maximum size of the database connection pool. Defaults to 20.\n"
+"        min_size (int, optional): Minimum size of the database connection pool. Defaults to 1.\n"
+"        skip_migrations (bool, optional): Whether to skip running migrations. Defaults to False.\n"
+"        extensions (list[str], optional): List of Postgres extensions to enable. Defaults to (\"uuid-ossp\",).\n\n"
+"    Raises:\n"
+"        UNCPathError: If the cog path is a UNC path, which is not supported.\n"
+"        DirectoryError: If the cog files are not in a valid directory.\n\n"
+"    Returns:\n"
+"        PostgresEngine: The database engine associated with the registered cog.\n"
+"    "
+msgstr ""
+
+#: miner\engine\engine.py:91
+#, docstring
+msgid "Runs database migrations for a given Discord cog.\n\n"
+"    Args:\n"
+"        cog_instance (commands.Cog | Path): The instance of the cog for which to run migrations.\n"
+"        config (dict): Database connection details.\n"
+"        trace (bool, optional): Whether to enable tracing for migrations. Defaults to False.\n\n"
+"    Returns:\n"
+"        str: The result of the migration process, including any output messages.\n"
+"    "
+msgstr ""
+
+#: miner\engine\engine.py:120
+#, docstring
+msgid "Reverses a database migration for a given Discord cog to a specific timestamp.\n\n"
+"    Args:\n"
+"        cog_instance (commands.Cog | Path): The instance of the cog for which to reverse the migration.\n"
+"        config (dict): Configuration dictionary containing database connection details.\n"
+"        timestamp (str): The timestamp to which the migration should be reversed.\n"
+"        trace (bool, optional): Whether to enable tracing for migrations. Defaults to False.\n\n"
+"    Returns:\n"
+"        str: The result of the reverse migration process, including any output messages.\n"
+"    "
+msgstr ""
+
+#: miner\engine\engine.py:151
+#, docstring
+msgid "Creates new database migrations for the cog\n\n"
+"    THIS SHOULD BE RUN MANUALLY!\n\n"
+"    Args:\n"
+"        cog_instance (commands.Cog | Path): The instance of the cog for which to create migrations.\n"
+"        config (dict): Configuration dictionary containing database connection details.\n"
+"        trace (bool, optional): Whether to enable tracing for migrations. Defaults to False.\n"
+"        description (str, optional): Description of the migration. Defaults to None.\n\n"
+"    Returns:\n"
+"        str: The result of the migration creation process, including any output messages.\n"
+"    "
+msgstr ""
+
+#: miner\engine\engine.py:181
+#, docstring
+msgid "Diagnoses potential issues with the database setup for a given Discord cog.\n\n"
+"    Args:\n"
+"        cog_instance (commands.Cog | Path): The instance of the cog to diagnose.\n"
+"        config (dict): Configuration dictionary containing database connection details.\n\n"
+"    Returns:\n"
+"        str: The result of the diagnosis process, including any output messages.\n"
+"    "
+msgstr ""
+
+#: miner\engine\engine.py:212
+#, docstring
+msgid "Create a database for the cog if it doesn't exist.\n\n"
+"    Args:\n"
+"        cog_instance (commands.Cog | Path): The cog instance\n"
+"        config (dict): the database connection information\n\n"
+"    Returns:\n"
+"        bool: True if a new database was created\n"
+"    "
+msgstr ""
+
+#: miner\engine\engine.py:237
+#, docstring
+msgid "Acquire a database engine\n"
+"    The PostgresEngine constructor is blocking and must be run in a separate thread.\n\n"
+"    Args:\n"
+"        config (dict): The database connection information\n"
+"        extensions (list[str]): The Postgres extensions to enable\n\n"
+"    Returns:\n"
+"        PostgresEngine: The database engine\n"
+"    "
+msgstr ""
+
+#: miner\engine\engine.py:262
+#, docstring
+msgid "Get the name of the database for the cog\n\n"
+"    Args:\n"
+"        cog_instance (commands.Cog | Path): The cog instance\n\n"
+"    Returns:\n"
+"        str: The database name\n"
+"    "
+msgstr ""
+
+#: miner\engine\engine.py:276
+#, docstring
+msgid "Get the root path of the cog"
+msgstr ""
+
+#: miner\engine\engine.py:283
+#, docstring
+msgid "Check if path is a UNC path"
+msgstr ""
+
+#: miner\engine\engine.py:288
+#, docstring
+msgid "Find the piccolo executable in the system's PATH."
+msgstr ""
+
+#: miner\engine\engine.py:316
+#, docstring
+msgid "Create mock environment for subprocess"
+msgstr ""
+
+#: miner\engine\engine.py:343
+#, docstring
+msgid "Run a shell command in a separate thread"
+msgstr ""
+
+#: miner\engine\errors.py:2
+#, docstring
+msgid "Base class for all ORM-related errors."
+msgstr ""
+

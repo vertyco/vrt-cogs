@@ -1,0 +1,81 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:55\n"
+"Last-Translator: \n"
+"Language-Team: German\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: de\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/taskr/common/locales/messages.pot\n"
+"X-Crowdin-File-ID: 784\n"
+"Language: de_DE\n"
+
+#: taskr\common\models.py:124
+#, docstring
+msgid "\n"
+"        Returns a humanized explanation of the current scheduled task.\n"
+"        "
+msgstr ""
+
+#: taskr\common\models.py:638
+msgid "• Channel: {}\n"
+"• Author: {}\n"
+msgstr ""
+
+#: taskr\common\models.py:639
+msgid "**DM**"
+msgstr ""
+
+#: taskr\common\models.py:651
+msgid "This command will run: {} ({})\n"
+"• Timezone: **{}**\n"
+"• Created: <t:{}:F> (<t:{}:R>)\n"
+"• Last run: {}\n"
+"Next 3 runtimes:\n"
+"{}"
+msgstr ""
+
+#: taskr\common\models.py:731
+#, docstring
+msgid "\n"
+"        Return the appropriate APScheduler trigger based on the scheduling options\n\n"
+"        Can handle the following examples:\n"
+"        1. \"the first friday of every 3 months at 3:00 PM\"\n"
+"        2. \"every 2 weeks at 8:00 PM\"\n"
+"        3. \"every other day at 6:00 AM\"\n"
+"        4. \"january and july on the 1st at 12:00 PM\"\n"
+"        5. \"every 30 minutes\"\n"
+"        6. \"every 2 hours between 10am and 10pm\"\n"
+"        "
+msgstr ""
+
+#: taskr\common\models.py:870
+#, docstring
+msgid "Ensure that the scheduled task will not run more frequently than the minimum interval."
+msgstr ""
+
+#: taskr\common\utils.py:35
+#, docstring
+msgid "\n"
+"    This is a slightly modified version of the function from AAA3A's 'AAA3A_utils' repo.\n"
+"    Shoutout to AAA3A for this function :p\n"
+"    https://github.com/AAA3A-AAA3A/AAA3A_utils/blob/cb454feeecc6d417cfbdfb4acbe63bf1b7078108/AAA3A_utils/cogsutils.py#L507\n"
+"    "
+msgstr ""
+
+#: taskr\common\utils.py:165
+#, docstring
+msgid "Retrieve OpenAI API token from Red's shared API tokens.\n\n"
+"    Checks multiple possible key names and service name variations.\n\n"
+"    Returns:\n"
+"        The OpenAI API token if found, None otherwise.\n"
+"    "
+msgstr ""
+

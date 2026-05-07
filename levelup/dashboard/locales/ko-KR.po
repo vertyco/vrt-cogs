@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2025-08-31 20:23-0400\n"
-"PO-Revision-Date: 2025-09-01 00:32\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:55\n"
 "Last-Translator: \n"
 "Language-Team: Korean\n"
 "MIME-Version: 1.0\n"
@@ -17,80 +17,744 @@ msgstr ""
 "X-Crowdin-File-ID: 164\n"
 "Language: ko_KR\n"
 
-#: levelup\dashboard\integration.py:43
-#, docstring
-msgid "\n"
-"        kwargs = {\n"
-"            \"user_id\": int,\n"
-"            \"guild_id\": int,\n"
-"            \"method\": str,  # GET or POST\n"
-"            \"request_url\": str,\n"
-"            \"cxrf_token\": str,\n"
-"            \"wtf_csrf_secret_key\": bytes,\n"
-"            \"extra_kwargs\": MultiDict,\n"
-"            \"data\": {\n"
-"                \"form\": ImmutableMultiDict,\n"
-"                \"json\": ImmutableMultiDict,\n"
-"            }\n"
-"            \"lang_code\": str,\n"
-"            \"Form\": FlaskForm,\n"
-"            \"DpyObjectConverter\": DpyObjectConverter,\n"
-"            \"get_sorted_channels\": Callable,\n"
-"            \"get_sorted_roles\": Callable,\n"
-"            \"Pagination\": Pagination,\n"
-"        }\n"
-"        "
-msgstr ""
-
-#: levelup\dashboard\integration.py:69
+#: levelup\dashboard\leaderboard.py:34
 msgid "Weekly stats disabled"
 msgstr ""
 
-#: levelup\dashboard\integration.py:70
+#: levelup\dashboard\leaderboard.py:35
 msgid "Weekly stats are disabled for this guild."
 msgstr ""
 
-#: levelup\dashboard\integration.py:75
+#: levelup\dashboard\leaderboard.py:40
 msgid "No Weekly stats available"
 msgstr ""
 
-#: levelup\dashboard\integration.py:76
+#: levelup\dashboard\leaderboard.py:41
 msgid "There is no data for the weekly leaderboard yet, please chat a bit first."
 msgstr ""
 
-#: levelup\dashboard\integration.py:158
+#: levelup\dashboard\settings.py:31
+#, docstring
+msgid "Convert a list of int IDs to a list of string IDs for SelectMultipleField."
+msgstr ""
+
+#: levelup\dashboard\settings.py:44
+#, docstring
+msgid "Convert SelectMultipleField string IDs back to int list."
+msgstr ""
+
+#: levelup\dashboard\settings.py:49
+#, docstring
+msgid "Parse structured prestige tier fields from form submission."
+msgstr ""
+
+#: levelup\dashboard\settings.py:74
+#, docstring
+msgid "Parse structured level role fields from form submission."
+msgstr ""
+
+#: levelup\dashboard\settings.py:91
+#, docstring
+msgid "Parse structured bonus fields (role/channel bonus rows) from form submission."
+msgstr ""
+
+#: levelup\dashboard\settings.py:110
+#, docstring
+msgid "Parse structured command requirement fields from form submission."
+msgstr ""
+
+#: levelup\dashboard\settings.py:127
+#, docstring
+msgid "Parse structured command cooldown fields from form submission.\n\n"
+"    Rows are flattened (command, level, cooldown) and grouped back by command name.\n"
+"    "
+msgstr ""
+
+#: levelup\dashboard\settings.py:171
+#, docstring
+msgid "Build HTML for the prestige tiers dynamic table."
+msgstr ""
+
+#: levelup\dashboard\settings.py:231
+#, docstring
+msgid "Build HTML for the level-role mapping dynamic table."
+msgstr ""
+
+#: levelup\dashboard\settings.py:286
+#, docstring
+msgid "Build HTML for bonus mapping dynamic tables (role/channel/presence/app bonuses)."
+msgstr ""
+
+#: levelup\dashboard\settings.py:354
+#, docstring
+msgid "Build HTML for the command requirements dynamic table."
+msgstr ""
+
+#: levelup\dashboard\settings.py:397
+#, docstring
+msgid "Build HTML for the command cooldowns dynamic table.\n\n"
+"    Flattens Dict[str, Dict[int, int]] into individual rows: command | level | cooldown.\n"
+"    "
+msgstr ""
+
+#: levelup\dashboard\settings.py:467
 msgid "Member not found"
 msgstr ""
 
-#: levelup\dashboard\integration.py:159
+#: levelup\dashboard\settings.py:468
 msgid "You are not a member of this guild."
 msgstr ""
 
-#: levelup\dashboard\integration.py:165
+#: levelup\dashboard\settings.py:474
 msgid "Insufficient permissions"
 msgstr ""
 
-#: levelup\dashboard\integration.py:166
+#: levelup\dashboard\settings.py:475
 msgid "You need to be an admin to access this page."
 msgstr ""
 
-#: levelup\dashboard\integration.py:176
-msgid "Enabled:"
+#: levelup\dashboard\settings.py:485
+msgid "None (use user preference)"
 msgstr ""
 
-#: levelup\dashboard\integration.py:178
-msgid "Algorithm Base:"
+#: levelup\dashboard\settings.py:486
+msgid "Default"
 msgstr ""
 
-#: levelup\dashboard\integration.py:181
-msgid "Algorithm Multiplier:"
+#: levelup\dashboard\settings.py:487
+msgid "Minimal"
 msgstr ""
 
-#: levelup\dashboard\integration.py:185
+#: levelup\dashboard\settings.py:488
+msgid "Gaming"
+msgstr ""
+
+#: levelup\dashboard\settings.py:489
+msgid "Runescape"
+msgstr ""
+
+#: levelup\dashboard\settings.py:492
+msgid "Monday"
+msgstr ""
+
+#: levelup\dashboard\settings.py:493
+msgid "Tuesday"
+msgstr ""
+
+#: levelup\dashboard\settings.py:494
+msgid "Wednesday"
+msgstr ""
+
+#: levelup\dashboard\settings.py:495
+msgid "Thursday"
+msgstr ""
+
+#: levelup\dashboard\settings.py:496
+msgid "Friday"
+msgstr ""
+
+#: levelup\dashboard\settings.py:497
+msgid "Saturday"
+msgstr ""
+
+#: levelup\dashboard\settings.py:498
+msgid "Sunday"
+msgstr ""
+
+#: levelup\dashboard\settings.py:508
+msgid "Enable Leveling"
+msgstr ""
+
+#: levelup\dashboard\settings.py:510
+msgid "Master toggle for the entire leveling system in this guild."
+msgstr ""
+
+#: levelup\dashboard\settings.py:513
+msgid "Use Embeds for Profiles"
+msgstr ""
+
+#: levelup\dashboard\settings.py:515
+msgid "Show profiles as embeds instead of generated images."
+msgstr ""
+
+#: levelup\dashboard\settings.py:518
+msgid "Show Economy Balance"
+msgstr ""
+
+#: levelup\dashboard\settings.py:520
+msgid "Display the user's Red economy balance on their profile card."
+msgstr ""
+
+#: levelup\dashboard\settings.py:523
+msgid "Auto-Remove Previous Level Role"
+msgstr ""
+
+#: levelup\dashboard\settings.py:525
+msgid "Remove the previous level role when a new one is earned."
+msgstr ""
+
+#: levelup\dashboard\settings.py:528
+msgid "Guild Style Override"
+msgstr ""
+
+#: levelup\dashboard\settings.py:531
+msgid "Force a specific profile style for all members."
+msgstr ""
+
+#: levelup\dashboard\settings.py:534
+msgid "Default Background"
+msgstr ""
+
+#: levelup\dashboard\settings.py:538
+msgid "Default profile background for all members. Use 'default', a filename, or a URL."
+msgstr ""
+
+#: levelup\dashboard\settings.py:542
+msgid "Show Profile Welcome"
+msgstr ""
+
+#: levelup\dashboard\settings.py:544
+msgid "Show tutorial/welcome message on first profile command."
+msgstr ""
+
+#: levelup\dashboard\settings.py:549
+msgid "Algorithm Base"
+msgstr ""
+
+#: levelup\dashboard\settings.py:552
+msgid "Base value for the leveling formula. Higher = slower leveling."
+msgstr ""
+
+#: levelup\dashboard\settings.py:556
+msgid "Algorithm Exponent"
+msgstr ""
+
+#: levelup\dashboard\settings.py:558
+msgid "Exponent for the leveling curve. Higher = more exponential."
+msgstr ""
+
+#: levelup\dashboard\settings.py:561
+msgid "Message XP Min"
+msgstr ""
+
+#: levelup\dashboard\settings.py:563
+msgid "Minimum XP awarded per qualifying message."
+msgstr ""
+
+#: levelup\dashboard\settings.py:566
+msgid "Message XP Max"
+msgstr ""
+
+#: levelup\dashboard\settings.py:568
+msgid "Maximum XP awarded per qualifying message."
+msgstr ""
+
+#: levelup\dashboard\settings.py:571
+msgid "Give XP for Commands"
+msgstr ""
+
+#: levelup\dashboard\settings.py:573
+msgid "Award XP when members use bot commands."
+msgstr ""
+
+#: levelup\dashboard\settings.py:576
+msgid "Message Cooldown"
+msgstr ""
+
+#: levelup\dashboard\settings.py:578
+msgid "Seconds between XP-eligible messages per user."
+msgstr ""
+
+#: levelup\dashboard\settings.py:581
+msgid "Min Message Length"
+msgstr ""
+
+#: levelup\dashboard\settings.py:584
+msgid "Minimum character count for a message to earn XP. 0 = no minimum."
+msgstr ""
+
+#: levelup\dashboard\settings.py:590
+msgid "Enable Anti-Spam"
+msgstr ""
+
+#: levelup\dashboard\settings.py:592
+msgid "Detect and reject repetitive/similar messages from earning XP."
+msgstr ""
+
+#: levelup\dashboard\settings.py:595
+msgid "Similarity Threshold"
+msgstr ""
+
+#: levelup\dashboard\settings.py:598
+msgid "0-100. How similar messages can be before flagged. Higher = stricter."
+msgstr ""
+
+#: levelup\dashboard\settings.py:602
+msgid "History Size"
+msgstr ""
+
+#: levelup\dashboard\settings.py:604
+msgid "Number of recent messages to compare against for similarity."
+msgstr ""
+
+#: levelup\dashboard\settings.py:607
+msgid "Min Unique Word Ratio"
+msgstr ""
+
+#: levelup\dashboard\settings.py:609
+msgid "0.0-1.0. Minimum ratio of unique words in a message."
+msgstr ""
+
+#: levelup\dashboard\settings.py:614
+msgid "Voice XP per Minute"
+msgstr ""
+
+#: levelup\dashboard\settings.py:616
+msgid "XP awarded per minute spent in a voice channel."
+msgstr ""
+
+#: levelup\dashboard\settings.py:619
+msgid "Ignore Self-Muted"
+msgstr ""
+
+#: levelup\dashboard\settings.py:621
+msgid "Don't award voice XP to self-muted members."
+msgstr ""
+
+#: levelup\dashboard\settings.py:624
+msgid "Ignore Solo"
+msgstr ""
+
+#: levelup\dashboard\settings.py:626
+msgid "Don't award voice XP when alone in a channel (bots excluded)."
+msgstr ""
+
+#: levelup\dashboard\settings.py:629
+msgid "Ignore Self-Deafened"
+msgstr ""
+
+#: levelup\dashboard\settings.py:631
+msgid "Don't award voice XP to self-deafened members."
+msgstr ""
+
+#: levelup\dashboard\settings.py:634
+msgid "Ignore Invisible"
+msgstr ""
+
+#: levelup\dashboard\settings.py:636
+msgid "Don't award voice XP to members with invisible status."
+msgstr ""
+
+#: levelup\dashboard\settings.py:639
+msgid "Stream Bonus Min"
+msgstr ""
+
+#: levelup\dashboard\settings.py:641
+msgid "Extra minimum voice XP bonus per minute while streaming."
+msgstr ""
+
+#: levelup\dashboard\settings.py:644
+msgid "Stream Bonus Max"
+msgstr ""
+
+#: levelup\dashboard\settings.py:646
+msgid "Extra maximum voice XP bonus per minute while streaming."
+msgstr ""
+
+#: levelup\dashboard\settings.py:651
+msgid "Allowed Channels"
+msgstr ""
+
+#: levelup\dashboard\settings.py:654
+msgid "Only these channels will earn XP. Leave empty to allow all."
+msgstr ""
+
+#: levelup\dashboard\settings.py:657
+msgid "Allowed Roles"
+msgstr ""
+
+#: levelup\dashboard\settings.py:660
+msgid "Only members with these roles will earn XP. Leave empty to allow all."
+msgstr ""
+
+#: levelup\dashboard\settings.py:663
+msgid "Ignored Channels"
+msgstr ""
+
+#: levelup\dashboard\settings.py:666
+msgid "These channels will never earn XP."
+msgstr ""
+
+#: levelup\dashboard\settings.py:669
+msgid "Ignored Roles"
+msgstr ""
+
+#: levelup\dashboard\settings.py:672
+msgid "Members with these roles will not earn XP."
+msgstr ""
+
+#: levelup\dashboard\settings.py:675
+msgid "Ignored Users"
+msgstr ""
+
+#: levelup\dashboard\settings.py:679
+msgid "User IDs that will never earn XP. One per line."
+msgstr ""
+
+#: levelup\dashboard\settings.py:684
+msgid "Muted Notification Channels"
+msgstr ""
+
+#: levelup\dashboard\settings.py:687
+msgid "Level-up announcements will not be sent in these channels."
+msgstr ""
+
+#: levelup\dashboard\settings.py:690
+msgid "Command Bypass Roles"
+msgstr ""
+
+#: levelup\dashboard\settings.py:693
+msgid "These roles bypass command level requirements and cooldowns."
+msgstr ""
+
+#: levelup\dashboard\settings.py:696
+msgid "Command Bypass Members"
+msgstr ""
+
+#: levelup\dashboard\settings.py:699
+msgid "Members that bypass command level requirements and cooldowns."
+msgstr ""
+
+#: levelup\dashboard\settings.py:704
+msgid "Announce in Current Channel"
+msgstr ""
+
+#: levelup\dashboard\settings.py:706
+msgid "Send level-up messages in the channel where the user earned XP."
+msgstr ""
+
+#: levelup\dashboard\settings.py:709
+msgid "Log Channel"
+msgstr ""
+
+#: levelup\dashboard\settings.py:712
+msgid "Channel for level-up log messages."
+msgstr ""
+
+#: levelup\dashboard\settings.py:715
+msgid "DM on Level Up"
+msgstr ""
+
+#: levelup\dashboard\settings.py:717
+msgid "Send a DM to the member when they level up."
+msgstr ""
+
+#: levelup\dashboard\settings.py:720
+msgid "Mention User"
+msgstr ""
+
+#: levelup\dashboard\settings.py:722
+msgid "@mention the user in level-up announcements."
+msgstr ""
+
+#: levelup\dashboard\settings.py:725
+msgid "Role Awarded DM"
+msgstr ""
+
+#: levelup\dashboard\settings.py:729
+msgid "Custom DM message when a level role is awarded. Supports {role}, {level}, {user}."
+msgstr ""
+
+#: levelup\dashboard\settings.py:734
+msgid "Level Up DM"
+msgstr ""
+
+#: levelup\dashboard\settings.py:738
+msgid "Custom DM message on level up. Supports {level}, {user}."
+msgstr ""
+
+#: levelup\dashboard\settings.py:743
+msgid "Role Awarded Message"
+msgstr ""
+
+#: levelup\dashboard\settings.py:747
+msgid "Custom guild message when a level role is awarded. Supports {role}, {level}, {user}."
+msgstr ""
+
+#: levelup\dashboard\settings.py:752
+msgid "Level Up Message"
+msgstr ""
+
+#: levelup\dashboard\settings.py:756
+msgid "Custom guild message on level up. Supports {level}, {user}."
+msgstr ""
+
+#: levelup\dashboard\settings.py:763
+msgid "Star Cooldown"
+msgstr ""
+
+#: levelup\dashboard\settings.py:765
+msgid "Seconds between giving stars to the same person."
+msgstr ""
+
+#: levelup\dashboard\settings.py:768
+msgid "Star Mention"
+msgstr ""
+
+#: levelup\dashboard\settings.py:770
+msgid "Send a message when someone gives a star."
+msgstr ""
+
+#: levelup\dashboard\settings.py:773
+msgid "Star Auto-Delete"
+msgstr ""
+
+#: levelup\dashboard\settings.py:775
+msgid "Auto-delete star mention messages after N seconds. 0 = don't."
+msgstr ""
+
+#: levelup\dashboard\settings.py:780
+msgid "Required Level"
+msgstr ""
+
+#: levelup\dashboard\settings.py:782
+msgid "Level required to prestige. 0 = prestige disabled."
+msgstr ""
+
+#: levelup\dashboard\settings.py:785
+msgid "Stack Prestige Roles"
+msgstr ""
+
+#: levelup\dashboard\settings.py:787
+msgid "Keep all earned prestige roles instead of only the latest."
+msgstr ""
+
+#: levelup\dashboard\settings.py:790
+msgid "Keep Level Roles on Prestige"
+msgstr ""
+
+#: levelup\dashboard\settings.py:792
+msgid "Don't remove level roles when a member prestiges."
+msgstr ""
+
+#: levelup\dashboard\settings.py:797
+msgid "Enable Weekly Stats"
+msgstr ""
+
+#: levelup\dashboard\settings.py:799
+msgid "Track a weekly leaderboard alongside the all-time one."
+msgstr ""
+
+#: levelup\dashboard\settings.py:802
+msgid "Auto Reset"
+msgstr ""
+
+#: levelup\dashboard\settings.py:804
+msgid "Automatically reset the weekly leaderboard on the scheduled day."
+msgstr ""
+
+#: levelup\dashboard\settings.py:807
+msgid "Reset Hour"
+msgstr ""
+
+#: levelup\dashboard\settings.py:810
+msgid "Hour of day (server time) for the weekly reset."
+msgstr ""
+
+#: levelup\dashboard\settings.py:813
+msgid "Reset Day"
+msgstr ""
+
+#: levelup\dashboard\settings.py:816
+msgid "Day of the week for the weekly reset."
+msgstr ""
+
+#: levelup\dashboard\settings.py:819
+msgid "Winner Count"
+msgstr ""
+
+#: levelup\dashboard\settings.py:821
+msgid "Number of top members announced as weekly winners."
+msgstr ""
+
+#: levelup\dashboard\settings.py:824
+msgid "Announcement Channel"
+msgstr ""
+
+#: levelup\dashboard\settings.py:827
+msgid "Channel to post weekly winner announcements."
+msgstr ""
+
+#: levelup\dashboard\settings.py:830
+msgid "Winner Role"
+msgstr ""
+
+#: levelup\dashboard\settings.py:833
+msgid "Role awarded to the weekly winner(s)."
+msgstr ""
+
+#: levelup\dashboard\settings.py:836
+msgid "Role for All Winners"
+msgstr ""
+
+#: levelup\dashboard\settings.py:838
+msgid "Give the winner role to all top members, not just 1st place."
+msgstr ""
+
+#: levelup\dashboard\settings.py:841
+msgid "Remove Previous Roles"
+msgstr ""
+
+#: levelup\dashboard\settings.py:843
+msgid "Remove winner role(s) from last week's winners on reset."
+msgstr ""
+
+#: levelup\dashboard\settings.py:846
+msgid "Bonus XP"
+msgstr ""
+
+#: levelup\dashboard\settings.py:848
+msgid "Bonus XP awarded to each weekly winner."
+msgstr ""
+
+#: levelup\dashboard\settings.py:851
+msgid "Ping Winners"
+msgstr ""
+
+#: levelup\dashboard\settings.py:853
+msgid "@mention winners in the weekly announcement."
+msgstr ""
+
+#: levelup\dashboard\settings.py:856
+msgid "Excluded Roles"
+msgstr ""
+
+#: levelup\dashboard\settings.py:859
+msgid "Roles excluded from winning the weekly leaderboard role."
+msgstr ""
+
+#: levelup\dashboard\settings.py:862
+msgid "Bonus Roles"
+msgstr ""
+
+#: levelup\dashboard\settings.py:865
+msgid "Additional roles awarded alongside the main winner role."
+msgstr ""
+
+#: levelup\dashboard\settings.py:870
+msgid "Level"
+msgstr ""
+
+#: levelup\dashboard\settings.py:870
+msgid "Emoji for levels."
+msgstr ""
+
+#: levelup\dashboard\settings.py:873
+msgid "Trophy"
+msgstr ""
+
+#: levelup\dashboard\settings.py:875
+msgid "Emoji for prestige."
+msgstr ""
+
+#: levelup\dashboard\settings.py:878
+msgid "Star"
+msgstr ""
+
+#: levelup\dashboard\settings.py:878
+msgid "Emoji for stars."
+msgstr ""
+
+#: levelup\dashboard\settings.py:881
+msgid "Chat"
+msgstr ""
+
+#: levelup\dashboard\settings.py:881
+msgid "Emoji for messages."
+msgstr ""
+
+#: levelup\dashboard\settings.py:884
+msgid "Mic"
+msgstr ""
+
+#: levelup\dashboard\settings.py:884
+msgid "Emoji for voice time."
+msgstr ""
+
+#: levelup\dashboard\settings.py:887
+msgid "Bulb"
+msgstr ""
+
+#: levelup\dashboard\settings.py:887
+msgid "Emoji for tips."
+msgstr ""
+
+#: levelup\dashboard\settings.py:890
+msgid "Money"
+msgstr ""
+
+#: levelup\dashboard\settings.py:890
+msgid "Emoji for balance."
+msgstr ""
+
+#: levelup\dashboard\settings.py:895
+msgid "Role Groups"
+msgstr ""
+
+#: levelup\dashboard\settings.py:898
+msgid "Roles that accumulate XP as a group from all members with the role."
+msgstr ""
+
+#: levelup\dashboard\settings.py:901
 msgid "Save Settings"
 msgstr ""
 
-#: levelup\dashboard\integration.py:198
+#: levelup\dashboard\settings.py:906 levelup\dashboard\settings.py:907
+msgid "— None —"
+msgstr ""
+
+#: levelup\dashboard\settings.py:931 levelup\dashboard\settings.py:933
+msgid "Role"
+msgstr ""
+
+#: levelup\dashboard\settings.py:936 levelup\dashboard\settings.py:939
+msgid "Channel"
+msgstr ""
+
+#: levelup\dashboard\settings.py:942
+msgid "Online"
+msgstr ""
+
+#: levelup\dashboard\settings.py:943
+msgid "Do Not Disturb"
+msgstr ""
+
+#: levelup\dashboard\settings.py:944
+msgid "Idle"
+msgstr ""
+
+#: levelup\dashboard\settings.py:945
+msgid "Offline"
+msgstr ""
+
+#: levelup\dashboard\settings.py:948 levelup\dashboard\settings.py:951
+msgid "Status"
+msgstr ""
+
+#: levelup\dashboard\settings.py:953 levelup\dashboard\settings.py:954
+msgid "App Name"
+msgstr ""
+
+#: levelup\dashboard\settings.py:1092
+msgid "Invalid settings input."
+msgstr ""
+
+#: levelup\dashboard\settings.py:1117
 msgid "Settings saved"
+msgstr ""
+
+#: levelup\dashboard\settings.py:1146
+#, docstring
+msgid "Pre-render the settings template with the form on the bot side."
 msgstr ""
 

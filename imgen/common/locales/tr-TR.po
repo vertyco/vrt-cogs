@@ -1,0 +1,102 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 03:03\n"
+"Last-Translator: \n"
+"Language-Team: Turkish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: tr\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/imgen/common/locales/messages.pot\n"
+"X-Crowdin-File-ID: 688\n"
+"Language: tr_TR\n"
+
+#: imgen\common\constants.py:91
+#, docstring
+msgid "Calculate the cost for a generation based on model, quality, and size."
+msgstr ""
+
+#: imgen\common\constants.py:100
+#, docstring
+msgid "Format a cost value as a string with appropriate precision."
+msgstr ""
+
+#: imgen\common\constants.py:109
+#, docstring
+msgid "Subscription tier preset configuration."
+msgstr ""
+
+#: imgen\common\constants.py:132
+#, docstring
+msgid "Get the min and max cost for this tier's options."
+msgstr ""
+
+#: imgen\common\constants.py:146
+#, docstring
+msgid "Format a quota value for display."
+msgstr ""
+
+#: imgen\common\models.py:16
+#, docstring
+msgid "Role-based access configuration that also acts as an allow list."
+msgstr ""
+
+#: imgen\common\models.py:27
+#, docstring
+msgid "Tracks a user's generation counts for daily and monthly periods."
+msgstr ""
+
+#: imgen\common\models.py:46
+#, docstring
+msgid "Per-guild configuration."
+msgstr ""
+
+#: imgen\common\models.py:68
+#, docstring
+msgid "Resolve access limits for a member based on their roles."
+msgstr ""
+
+#: imgen\common\models.py:132
+#, docstring
+msgid "Get today's date string in UTC."
+msgstr ""
+
+#: imgen\common\models.py:136
+#, docstring
+msgid "Get current month string in UTC."
+msgstr ""
+
+#: imgen\common\models.py:140
+#, docstring
+msgid "Get the number of generations a user has made today (UTC)."
+msgstr ""
+
+#: imgen\common\models.py:147
+#, docstring
+msgid "Get the number of generations a user has made this month (UTC)."
+msgstr ""
+
+#: imgen\common\models.py:154
+#, docstring
+msgid "\n"
+"        Check if a member can generate an image.\n"
+"        Returns (can_generate, reason).\n"
+"        "
+msgstr ""
+
+#: imgen\common\models.py:190
+#, docstring
+msgid "Record a generation for quota tracking."
+msgstr ""
+
+#: imgen\common\models.py:213
+#, docstring
+msgid "Root database model."
+msgstr ""
+

@@ -1,0 +1,393 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:52\n"
+"Last-Translator: \n"
+"Language-Team: Spanish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: es-ES\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/referrals/commands/locales/messages.pot\n"
+"X-Crowdin-File-ID: 752\n"
+"Language: es_ES\n"
+
+#: referrals\commands\__init__.py:7
+#, docstring
+msgid "Subclass all command classes"
+msgstr ""
+
+#: referrals\commands\admin.py:27
+#, docstring
+msgid "Settings for the referral system"
+msgstr ""
+
+#: referrals\commands\admin.py:33
+#, docstring
+msgid "View the current settings for the guild"
+msgstr ""
+
+#: referrals\commands\admin.py:36
+msgid "Referral System Settings"
+msgstr ""
+
+#: referrals\commands\admin.py:39
+msgid "Status"
+msgstr ""
+
+#: referrals\commands\admin.py:40
+msgid "`Enabled`"
+msgstr ""
+
+#: referrals\commands\admin.py:40
+msgid "`Disabled`"
+msgstr ""
+
+#: referrals\commands\admin.py:44
+msgid "Referral Reward"
+msgstr ""
+
+#: referrals\commands\admin.py:45
+msgid "Amount of {} given to the person who referred someone: {}"
+msgstr ""
+
+#: referrals\commands\admin.py:51
+msgid "Referred Reward"
+msgstr ""
+
+#: referrals\commands\admin.py:52
+msgid "Amount of {} given to the person who was referred: {}"
+msgstr ""
+
+#: referrals\commands\admin.py:58
+msgid "Referral Log"
+msgstr ""
+
+#: referrals\commands\admin.py:59
+msgid "Channel where referral events are sent: {}"
+msgstr ""
+
+#: referrals\commands\admin.py:60
+msgid "`Not set`"
+msgstr ""
+
+#: referrals\commands\admin.py:66
+msgid "Minimum Account Age"
+msgstr ""
+
+#: referrals\commands\admin.py:67
+msgid "Account of referred user must be at least {} old to make the claim."
+msgstr ""
+
+#: referrals\commands\admin.py:69
+msgid "There is no minimum account age requirement for users to claim their referral"
+msgstr ""
+
+#: referrals\commands\admin.py:74
+msgid "Claim Timeout"
+msgstr ""
+
+#: referrals\commands\admin.py:75
+msgid "Referral claims must be done within {} after joining."
+msgstr ""
+
+#: referrals\commands\admin.py:77
+msgid "Users have no time limit to claim their referral"
+msgstr ""
+
+#: referrals\commands\admin.py:81
+msgid "Initialized Users"
+msgstr ""
+
+#: referrals\commands\admin.py:82
+msgid "Users who have been initialized: {}"
+msgstr ""
+
+#: referrals\commands\admin.py:86
+msgid "Referrals Claimed"
+msgstr ""
+
+#: referrals\commands\admin.py:87
+msgid "Total referrals claimed: {}"
+msgstr ""
+
+#: referrals\commands\admin.py:96
+#, docstring
+msgid "List all referrals made in the server"
+msgstr ""
+
+#: referrals\commands\admin.py:99
+msgid "No referrals found in this server"
+msgstr ""
+
+#: referrals\commands\admin.py:109
+msgid "Referrals"
+msgstr ""
+
+#: referrals\commands\admin.py:110 referrals\commands\user.py:321
+msgid "Page {}/{}"
+msgstr ""
+
+#: referrals\commands\admin.py:117
+#, docstring
+msgid "Toggle the referral system on or off"
+msgstr ""
+
+#: referrals\commands\admin.py:121
+msgid "Referral system is now {}"
+msgstr ""
+
+#: referrals\commands\admin.py:121
+msgid "enabled"
+msgstr ""
+
+#: referrals\commands\admin.py:121
+msgid "disabled"
+msgstr ""
+
+#: referrals\commands\admin.py:126
+#, docstring
+msgid "Set the reward for referring or being referred\n\n"
+"        **Arguments:**\n"
+"        - `reward_type` - Either `referral` or `referred`\n"
+"          - `referral` - The reward for referring someone\n"
+"          - `referred` - The reward for being referred\n"
+"        - `amount` - The amount of currency to reward\n\n"
+"        *Set to 0 to disable the reward*\n"
+"        "
+msgstr ""
+
+#: referrals\commands\admin.py:140
+msgid "The person who referred someone will receive {}"
+msgstr ""
+
+#: referrals\commands\admin.py:143
+msgid "The person who was referred will receive {}"
+msgstr ""
+
+#: referrals\commands\admin.py:152
+#, docstring
+msgid "Set the channel where referral events will be sent"
+msgstr ""
+
+#: referrals\commands\admin.py:155
+msgid "Referral events are not being sent to any channel"
+msgstr ""
+
+#: referrals\commands\admin.py:160
+msgid "I don't have permission to send messages in that channel"
+msgstr ""
+
+#: referrals\commands\admin.py:162
+msgid "I don't have permission to send embeds in that channel"
+msgstr ""
+
+#: referrals\commands\admin.py:163
+msgid "Referral events will be sent to {}"
+msgstr ""
+
+#: referrals\commands\admin.py:165
+msgid "Referral events will no longer be sent to a channel"
+msgstr ""
+
+#: referrals\commands\admin.py:170
+#, docstring
+msgid "Set the minimum account age for referred users to be eligible for rewards\n\n"
+"        - `age` - The minimum account age in the format of `30m`, `1h`, `2d12h`, etc.\n"
+"        "
+msgstr ""
+
+#: referrals\commands\admin.py:185
+msgid "Account age restriction removed"
+msgstr ""
+
+#: referrals\commands\admin.py:188
+msgid "The minimum account age required to claim a referral is {}"
+msgstr ""
+
+#: referrals\commands\admin.py:197
+#, docstring
+msgid "Set the time frame for users to claim their reward after joining\n\n"
+"        - `timeout` - The time frame in the format of `30m`, `1h`, `2d12h`, etc.\n"
+"        "
+msgstr ""
+
+#: referrals\commands\admin.py:212
+msgid "Claim timeout removed"
+msgstr ""
+
+#: referrals\commands\admin.py:215
+msgid "Users will have {} to claim their referral after joining."
+msgstr ""
+
+#: referrals\commands\admin.py:224
+#, docstring
+msgid "Initialize all unreferred users in the server so they cannot retroactively claim rewards"
+msgstr ""
+
+#: referrals\commands\admin.py:232
+msgid "All users have been initialized"
+msgstr ""
+
+#: referrals\commands\admin.py:238
+msgid "Initialized {} users"
+msgstr ""
+
+#: referrals\commands\admin.py:243
+#, docstring
+msgid "Reset all referral data and settings for the guild\n\n"
+"        This deletes all referrals and settings, completely starting fresh.\n"
+"        "
+msgstr ""
+
+#: referrals\commands\admin.py:248
+msgid "Rerun this with `True` to comfirm"
+msgstr ""
+
+#: referrals\commands\admin.py:251 referrals\commands\admin.py:263
+msgid "All referral data has been reset for this server"
+msgstr ""
+
+#: referrals\commands\admin.py:256
+#, docstring
+msgid "Reset all referral records for the guild\n\n"
+"        This keeps your settings but removes all referral history.\n"
+"        "
+msgstr ""
+
+#: referrals\commands\admin.py:261 referrals\commands\admin.py:273
+#: referrals\commands\admin.py:286
+msgid "Rerun this with `True` to confirm"
+msgstr ""
+
+#: referrals\commands\admin.py:268
+#, docstring
+msgid "Reset all referral settings for the guild\n\n"
+"        This keeps your referral history but resets all configuration settings.\n"
+"        "
+msgstr ""
+
+#: referrals\commands\admin.py:275
+msgid "All referral settings have been reset for this server"
+msgstr ""
+
+#: referrals\commands\admin.py:280
+#, docstring
+msgid "Reset the list of initialized users for the guild\n\n"
+"        This clears the record of which users have been initialized, allowing them\n"
+"        to potentially claim referrals.\n"
+"        "
+msgstr ""
+
+#: referrals\commands\admin.py:290
+msgid "All initialized users have been reset for this server"
+msgstr ""
+
+#: referrals\commands\user.py:28
+msgid "This command can only be used in a server."
+msgstr ""
+
+#: referrals\commands\user.py:30 referrals\commands\user.py:192
+msgid "Bots can't refer users."
+msgstr ""
+
+#: referrals\commands\user.py:32 referrals\commands\user.py:190
+msgid "You can't refer yourself."
+msgstr ""
+
+#: referrals\commands\user.py:35
+msgid "The user you are trying to refer is not in this server."
+msgstr ""
+
+#: referrals\commands\user.py:41
+msgid "Database connection is not active, try again later."
+msgstr ""
+
+#: referrals\commands\user.py:47 referrals\commands\user.py:195
+msgid "Referral rewards are not enabled for this server."
+msgstr ""
+
+#: referrals\commands\user.py:49 referrals\commands\user.py:210
+msgid "Referral rewards are not configured for this server."
+msgstr ""
+
+#: referrals\commands\user.py:52 referrals\commands\user.py:212
+msgid "You were already a part of this server when the referral system was initialized."
+msgstr ""
+
+#: referrals\commands\user.py:57 referrals\commands\user.py:198
+msgid "This user joined the server after you, they couldn't have referred you."
+msgstr ""
+
+#: referrals\commands\user.py:72 referrals\commands\user.py:218
+msgid "Account age less than {} old. ({} old)"
+msgstr ""
+
+#: referrals\commands\user.py:81 referrals\commands\user.py:229
+msgid "You must have an account age of at least {} to be eligible for referral rewards."
+msgstr ""
+
+#: referrals\commands\user.py:90 referrals\commands\user.py:238
+msgid "Missed claim timeout of {} after joining. ({} ago)"
+msgstr ""
+
+#: referrals\commands\user.py:102 referrals\commands\user.py:249
+msgid "You joined the server too long ago to claim a referral reward. You must claim it within {}."
+msgstr ""
+
+#: referrals\commands\user.py:111 referrals\commands\user.py:258
+msgid "You have already been referred by {}."
+msgstr ""
+
+#: referrals\commands\user.py:115 referrals\commands\user.py:262
+msgid "You have been referred by {}!\n"
+msgstr ""
+
+#: referrals\commands\user.py:121 referrals\commands\user.py:268
+msgid "-# You have received {} as a reward for being referred!\n"
+msgstr ""
+
+#: referrals\commands\user.py:131 referrals\commands\user.py:278
+msgid "-# {} has received {} as a reward for referring you!"
+msgstr ""
+
+#: referrals\commands\user.py:162 referrals\commands\user.py:178
+#, docstring
+msgid "Claim a referral\n\n"
+"        Claim a referral from a user who referred you\n\n"
+"        If referral rewards are enabled, you will receive the reward for being referred.\n"
+"        If referrer rewards are enabled, the person who referred you will also receive a reward.\n"
+"        "
+msgstr ""
+
+#: referrals\commands\user.py:306
+#, docstring
+msgid "Check your referrals"
+msgstr ""
+
+#: referrals\commands\user.py:311
+msgid "You have not referred anyone yet."
+msgstr ""
+
+#: referrals\commands\user.py:320
+msgid "Your Referrals"
+msgstr ""
+
+#: referrals\commands\user.py:329
+#, docstring
+msgid "Check if a specific user has been referred"
+msgstr ""
+
+#: referrals\commands\user.py:332
+msgid "{} has not been referred by anyone."
+msgstr ""
+
+#: referrals\commands\user.py:335
+msgid "{} was referred by {}."
+msgstr ""
+

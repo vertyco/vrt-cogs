@@ -1,0 +1,111 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:53\n"
+"Last-Translator: \n"
+"Language-Team: German\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: de\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/appeals/engine/locales/messages.pot\n"
+"X-Crowdin-File-ID: 606\n"
+"Language: de_DE\n"
+
+#: appeals\engine\common.py:13
+#, docstring
+msgid "Get the root path of the cog"
+msgstr ""
+
+#: appeals\engine\common.py:20
+#, docstring
+msgid "Check if path is a UNC path"
+msgstr ""
+
+#: appeals\engine\common.py:25
+#, docstring
+msgid "Check if the OS is Windows"
+msgstr ""
+
+#: appeals\engine\common.py:30
+#, docstring
+msgid "Find the piccolo executable in the system's PATH."
+msgstr ""
+
+#: appeals\engine\common.py:54
+#, docstring
+msgid "Create mock environment for subprocess"
+msgstr ""
+
+#: appeals\engine\common.py:80
+#, docstring
+msgid "Run a shell command in a separate thread"
+msgstr ""
+
+#: appeals\engine\engine.py:22
+#, docstring
+msgid "Registers a Discord cog with a database connection and runs migrations.\n\n"
+"    Args:\n"
+"        cog_instance (commands.Cog | Path): The instance/path of the cog to register.\n"
+"        tables (list[type[Table]]): List of Piccolo Table classes to associate with the database engine.\n"
+"        trace (bool, optional): Whether to enable tracing for migrations. Defaults to False.\n"
+"        skip_migrations (bool, optional): Whether to skip running migrations. Defaults to False.\n\n"
+"    Raises:\n"
+"        TypeError: If the cog instance is not a subclass of discord.ext.commands.Cog or a valid directory path.\n"
+"        UNCPathError: If the cog path is a UNC path, which is not supported.\n"
+"        DirectoryError: If the cog files are not in a valid directory.\n\n"
+"    Returns:\n"
+"        SQLiteEngine: The database engine associated with the registered cog.\n"
+"    "
+msgstr ""
+
+#: appeals\engine\engine.py:72
+#, docstring
+msgid "Runs database migrations for the cog\n\n"
+"    Args:\n"
+"        cog_instance (commands.Cog | Path): The instance of the cog for which to run migrations.\n"
+"        trace (bool, optional): Whether to enable tracing for migrations. Defaults to False.\n\n"
+"    Returns:\n"
+"        str: The result of the migration process, including any output messages.\n"
+"    "
+msgstr ""
+
+#: appeals\engine\engine.py:97
+#, docstring
+msgid "Reverses database migrations for the cog\n\n"
+"    Args:\n"
+"        cog_instance (commands.Cog | Path): The instance of the cog for which to reverse the migration.\n"
+"        timestamp (str): The timestamp of the migration to reverse to.\n"
+"        trace (bool, optional): Whether to enable tracing for migrations. Defaults to False.\n\n"
+"    Returns:\n"
+"        str: The result of the migration process, including any output messages.\n"
+"    "
+msgstr ""
+
+#: appeals\engine\engine.py:124
+#, docstring
+msgid "Creates new database migrations for the cog\n\n"
+"    THIS SHOULD BE RUN MANUALLY!\n\n"
+"    Args:\n"
+"        cog_instance (commands.Cog | Path): The instance of the cog to create migrations for.\n"
+"        name (str): The name of the migration to create.\n\n"
+"    Returns:\n"
+"        str: The result of the migration process, including any output messages.\n"
+"    "
+msgstr ""
+
+#: appeals\engine\engine.py:150
+#, docstring
+msgid "Diagnose issues with the cog's database connection\n\n"
+"    Args:\n"
+"        cog_instance (commands.Cog | Path): The instance of the cog to diagnose.\n\n"
+"    Returns:\n"
+"        str: The result of the diagnosis process, including any output messages.\n"
+"    "
+msgstr ""
+
