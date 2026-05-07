@@ -1,0 +1,514 @@
+from __future__ import annotations
+
+import io
+import json
+import logging
+from collections import Counter, defaultdict
+from datetime import timedelta
+
+import discord
+from redbot.core import commands
+from redbot.core.utils.chat_formatting import humanize_number, humanize_timedelta
+
+from ..abc import MixinMeta
+from ..common.models import WarningRecord
+from ..common.utils import DELETED_USER_SENTINEL, utcnow
+
+log = logging.getLogger("red.vrt.modlogtools.commands.admin")
+
+
+class Admin(MixinMeta):
+    """Admin commands."""
+
+    async def maybe_send_command_help(self, ctx: commands.Context, *, show: bool) -> None:
+        if show:
+            await ctx.send_help()
+
+    def get_status_lines(self, guild: discord.Guild) -> list[str]:
+        conf = self.db.get_conf(guild)
+        expiry = conf.get_warning_expiry()
+        active = sum(1 for record in conf.records.values() if record.is_active)
+        expiry_text = humanize_timedelta(timedelta=expiry) if expiry else "disabled"
+        return [
+            f"Warning expiry: {expiry_text}",
+            f"Delete original modlog messages on expiry: {'enabled' if conf.delete_expired_modlog_messages else 'disabled'}",
+            f"Tracked warnings: {humanize_number(len(conf.records))}",
+            f"Active warnings: {humanize_number(active)}",
+        ]
+
+    def get_import_attachment(self, ctx: commands.Context) -> discord.Attachment | None:
+        if ctx.message.attachments:
+            return ctx.message.attachments[0]
+
+        reference = ctx.message.reference
+        resolved = getattr(reference, "resolved", None)
+        if isinstance(resolved, discord.Message) and resolved.attachments:
+            return resolved.attachments[0]
+
+        return None
+
+    def format_period(self, timespan: timedelta | None) -> str:
+        if timespan is None:
+            return "all time"
+        return humanize_timedelta(timedelta=timespan)
+
+    def get_window_records(
+        self,
+        guild: discord.Guild,
+        timespan: timedelta | None = None,
+    ) -> list[WarningRecord]:
+        records = list(self.db.get_conf(guild).records.values())
+        if timespan is None:
+            return records
+        cutoff = utcnow() - timespan
+        return [record for record in records if record.created_at >= cutoff]
+
+    def get_resolved_records(
+        self,
+        guild: discord.Guild,
+        timespan: timedelta | None = None,
+    ) -> list[WarningRecord]:
+        records = [record for record in self.db.get_conf(guild).records.values() if not record.is_active]
+        if timespan is None:
+            return records
+        cutoff = utcnow() - timespan
+        return [record for record in records if record.resolved_at and record.resolved_at >= cutoff]
+
+    def get_label(self, guild: discord.Guild, user_id: int) -> str:
+        if user_id == DELETED_USER_SENTINEL:
+            return "Deleted User"
+        member = guild.get_member(user_id) or self.bot.get_user(user_id)
+        if member is not None:
+            return f"{member} ({user_id})"
+        return f"Unknown User ({user_id})"
+
+    def shorten_reason(self, reason: str, *, limit: int = 60) -> str:
+        if len(reason) <= limit:
+            return reason
+        return reason[: limit - 3] + "..."
+
+    @commands.group(name="modlogtool", aliases=["mlt"], invoke_without_command=True)
+    @commands.guild_only()
+    @commands.mod_or_permissions(manage_messages=True)
+    async def modlogtool(self, ctx: commands.Context):
+        """Configure ModLogTools and view warning insights."""
+        await self.maybe_send_command_help(ctx, show=True)
+        await ctx.send("\n".join(self.get_status_lines(ctx.guild)))
+
+    @modlogtool.command(name="status")
+    async def mlt_status(self, ctx: commands.Context):
+        """Show current expiry setting and tracked warning counts."""
+        await self.maybe_send_command_help(ctx, show=True)
+        await ctx.send("\n".join(self.get_status_lines(ctx.guild)))
+
+    @modlogtool.command(name="expiry")
+    @commands.admin_or_permissions(manage_guild=True)
+    async def mlt_expiry(
+        self,
+        ctx: commands.Context,
+        duration: str | None = None,
+        dry_run: bool = True,
+    ):
+        """Set warning expiry. Use `off` to disable. Dry run defaults to true."""
+        if self.get_warnings_cog() is None:
+            return await ctx.send("Warnings cog not loaded.")
+
+        await self.maybe_send_command_help(ctx, show=duration is None)
+        conf = self.db.get_conf(ctx.guild)
+        if duration is None:
+            expiry = conf.get_warning_expiry()
+            lines = [
+                "Warning expiry disabled." if expiry is None else f"Warning expiry: {humanize_timedelta(timedelta=expiry)}",
+                f"Delete original modlog messages on expiry: {'enabled' if conf.delete_expired_modlog_messages else 'disabled'}",
+            ]
+            return await ctx.send("\n".join(lines))
+
+        duration = duration.strip()
+        apply_arg = duration
+        if duration.lower() in {"off", "none", "disable", "disabled"}:
+            preview = self.preview_warning_expiry_update(ctx.guild, None)
+            if dry_run:
+                return await ctx.send(
+                    "\n".join(
+                        [
+                            "Dry run only. No changes applied.",
+                            "New warning expiry: disabled",
+                            f"Active tracked warnings: {humanize_number(preview['active'])}",
+                            f"Warnings with updated expiry: {humanize_number(preview['changed'])}",
+                            f"Run `{ctx.clean_prefix}modlogtool expiry off false` to apply.",
+                        ]
+                    )
+                )
+            conf.update_expiry(None)
+            summary = await self.sync_guild_records(ctx.guild, save=False)
+            await self.save()
+            return await ctx.send(
+                "\n".join(
+                    [
+                        "Warning expiry disabled.",
+                        f"Warnings with updated expiry: {humanize_number(preview['changed'])}",
+                        f"Sync updates: {humanize_number(summary['updated'])}",
+                    ]
+                )
+            )
+
+        delta = commands.parse_timedelta(duration, minimum=timedelta(hours=1))
+        if delta is None:
+            return await ctx.send("Could not parse duration. Example: `30d`, `12h`, `2w`. Minimum: `1h`.")
+
+        preview = self.preview_warning_expiry_update(ctx.guild, delta)
+        if dry_run:
+            return await ctx.send(
+                "\n".join(
+                    [
+                        "Dry run only. No changes applied.",
+                        f"New warning expiry: {humanize_timedelta(timedelta=delta)}",
+                        f"Active tracked warnings: {humanize_number(preview['active'])}",
+                        f"Warnings with updated expiry: {humanize_number(preview['changed'])}",
+                        f"Warnings already past new limit: {humanize_number(preview['overdue'])}",
+                        f"Run `{ctx.clean_prefix}modlogtool expiry {apply_arg} false` to apply.",
+                    ]
+                )
+            )
+
+        conf.update_expiry(delta)
+        summary = await self.sync_guild_records(ctx.guild, save=False)
+        await self.save()
+        await ctx.send(
+            "\n".join(
+                [
+                    f"Warning expiry set to {humanize_timedelta(timedelta=delta)}.",
+                    f"Delete original modlog messages on expiry: {'enabled' if conf.delete_expired_modlog_messages else 'disabled'}",
+                    f"Warnings with updated expiry: {humanize_number(preview['changed'])}",
+                    f"Warnings already past new limit: {humanize_number(preview['overdue'])}",
+                    f"Sync updates: {humanize_number(summary['updated'])}",
+                    f"Tracked warnings: {humanize_number(len(conf.records))}",
+                ]
+            )
+        )
+
+    @modlogtool.command(name="deletemodlogmessages", aliases=["delmodlogmessages"])
+    @commands.admin_or_permissions(manage_guild=True)
+    async def mlt_deletemodlogmessages(self, ctx: commands.Context, enabled: bool | None = None):
+        """Toggle deleting original warning modlog messages when warnings expire."""
+        await self.maybe_send_command_help(ctx, show=enabled is None)
+        conf = self.db.get_conf(ctx.guild)
+        if enabled is None:
+            state = "enabled" if conf.delete_expired_modlog_messages else "disabled"
+            return await ctx.send(f"Delete original modlog messages on expiry: {state}")
+
+        conf.delete_expired_modlog_messages = enabled
+        await self.save()
+        state = "enabled" if enabled else "disabled"
+        await ctx.send(f"Delete original modlog messages on expiry: {state}")
+
+    @modlogtool.command(name="sync")
+    @commands.admin_or_permissions(manage_guild=True)
+    async def mlt_sync(self, ctx: commands.Context):
+        """Rescan Red warnings and modlog data."""
+        if self.get_warnings_cog() is None:
+            return await ctx.send("Warnings cog not loaded.")
+        await self.maybe_send_command_help(ctx, show=True)
+        summary = await self.sync_guild_records(ctx.guild, full_scan=True)
+        await ctx.send(
+            "\n".join(
+                [
+                    "Sync complete.",
+                    f"Created: {humanize_number(summary['created'])}",
+                    f"Updated: {humanize_number(summary['updated'])}",
+                    f"Resolved: {humanize_number(summary['resolved'])}",
+                    f"Backfilled cases: {humanize_number(summary['backfilled'])}",
+                ]
+            )
+        )
+
+    @modlogtool.command(name="exportconfig", aliases=["exportcfg", "export"])
+    @commands.admin_or_permissions(manage_guild=True)
+    async def mlt_exportconfig(self, ctx: commands.Context):
+        """Export current guild warnings/modlog/modlogtools config."""
+        await self.maybe_send_command_help(ctx, show=True)
+        try:
+            payload = await self.export_guild_config(ctx.guild)
+        except RuntimeError as exc:
+            return await ctx.send(str(exc))
+
+        summary = self.summarize_guild_import(ctx.guild, payload)
+        buffer = io.BytesIO(json.dumps(payload, indent=2).encode("utf-8"))
+        filename = f"modlogtools-{ctx.guild.id}-config-export.json"
+        await ctx.send(
+            "\n".join(
+                [
+                    "Export complete.",
+                    f"Warning members: {humanize_number(summary['warning_members'])}",
+                    f"Warning entries: {humanize_number(summary['warning_entries'])}",
+                    f"Modlog cases: {humanize_number(summary['modlog_cases'])}",
+                    f"Modlog casetypes: {humanize_number(summary['modlog_casetypes'])}",
+                    f"Tracked records: {humanize_number(summary['tracked_records'])}",
+                ]
+            ),
+            file=discord.File(buffer, filename=filename),
+        )
+
+    @modlogtool.command(name="importconfig", aliases=["importcfg", "import"])
+    @commands.admin_or_permissions(manage_guild=True)
+    async def mlt_importconfig(self, ctx: commands.Context, dry_run: bool = True):
+        """Import guild warnings/modlog/modlogtools config. Dry run defaults to true."""
+        await self.maybe_send_command_help(ctx, show=dry_run)
+        attachment = self.get_import_attachment(ctx)
+        if attachment is None:
+            return await ctx.send("Attach an export JSON file to this command or reply to one.")
+
+        try:
+            payload = json.loads((await attachment.read()).decode("utf-8"))
+            summary = self.summarize_guild_import(ctx.guild, payload)
+        except UnicodeDecodeError:
+            return await ctx.send("Import file must be UTF-8 JSON.")
+        except json.JSONDecodeError as exc:
+            return await ctx.send(f"Invalid JSON: {exc}")
+        except (TypeError, ValueError) as exc:
+            return await ctx.send(f"Invalid import payload: {exc}")
+
+        lines = [
+            "Dry run only. No changes applied." if dry_run else "Import complete.",
+            f"Source guild: {summary['source_guild_name']} ({summary['source_guild_id']})",
+            f"Target guild: {ctx.guild.name} ({ctx.guild.id})",
+            f"Warning members: {humanize_number(summary['warning_members'])}",
+            f"Warning entries: {humanize_number(summary['warning_entries'])}",
+            f"Modlog cases: {humanize_number(summary['modlog_cases'])}",
+            f"Modlog casetypes: {humanize_number(summary['modlog_casetypes'])}",
+            f"Tracked records: {humanize_number(summary['tracked_records'])}",
+        ]
+        if summary["guild_mismatch"]:
+            lines.append("Source guild ID differs from current guild.")
+
+        if dry_run:
+            lines.append(f"Run `{ctx.clean_prefix}modlogtool importconfig false` with same attachment to apply.")
+            return await ctx.send("\n".join(lines))
+
+        try:
+            result = await self.import_guild_config(ctx.guild, payload)
+        except RuntimeError as exc:
+            return await ctx.send(str(exc))
+        except Exception:
+            log.exception("Failed to import config for guild %s", ctx.guild.id)
+            return await ctx.send("Import failed. Check logs.")
+
+        lines.extend(
+            [
+                f"Imported warning members: {humanize_number(result['warning_members'])}",
+                f"Imported warning entries: {humanize_number(result['warning_entries'])}",
+                f"Imported modlog cases: {humanize_number(result['modlog_cases'])}",
+                f"Imported modlog casetypes: {humanize_number(result['modlog_casetypes'])}",
+                f"Imported tracked records: {humanize_number(result['tracked_records'])}",
+            ]
+        )
+        await ctx.send("\n".join(lines))
+
+    @modlogtool.command(name="expire")
+    @commands.admin_or_permissions(manage_guild=True)
+    async def mlt_expire(self, ctx: commands.Context, dry_run: bool = True):
+        """Run warning expiry now. Dry run defaults to true."""
+        if self.get_warnings_cog() is None:
+            return await ctx.send("Warnings cog not loaded.")
+        conf = self.db.get_conf(ctx.guild)
+        if conf.warning_expiry_seconds is None:
+            return await ctx.send("Warning expiry disabled.")
+
+        await self.maybe_send_command_help(ctx, show=dry_run)
+        async with ctx.typing():
+            if dry_run:
+                summary = await self.preview_guild_expiry(ctx.guild)
+                if not any(summary.values()):
+                    return await ctx.send("Dry run complete. No warnings eligible for expiry.")
+                lines = [
+                    "Dry run only. No warnings removed.",
+                    f"Would expire: {humanize_number(summary['expired'])}",
+                    f"Would remove points: {humanize_number(summary['points'])}",
+                    f"Would create modlog cases: {humanize_number(summary['expired'])}",
+                    f"Already missing: {humanize_number(summary['stale'])}",
+                    f"Affected members: {humanize_number(summary['members'])}",
+                ]
+                if conf.delete_expired_modlog_messages:
+                    lines.append(f"Would delete original modlog messages: {humanize_number(summary['linked_cases'])}")
+                else:
+                    lines.append("Delete original modlog messages on expiry: disabled")
+                lines.append(f"Run `{ctx.clean_prefix}modlogtool expire false` to apply.")
+                return await ctx.send("\n".join(lines))
+
+            summary = await self.expire_guild_warnings(ctx.guild)
+
+        lines = [
+            "Expiry run complete.",
+            f"Expired: {humanize_number(summary['expired'])}",
+            f"Points removed: {humanize_number(summary['points'])}",
+            f"Already missing: {humanize_number(summary['stale'])}",
+            f"Affected members: {humanize_number(summary['members'])}",
+        ]
+        if conf.delete_expired_modlog_messages:
+            lines.append(f"Original modlog messages deleted: {humanize_number(summary['messages_deleted'])}")
+        else:
+            lines.append("Delete original modlog messages on expiry: disabled")
+        await ctx.send("\n".join(lines))
+
+    @modlogtool.command(name="overview")
+    async def mlt_overview(self, ctx: commands.Context, timespan: commands.TimedeltaConverter = None):
+        """Show warning trends for the guild."""
+        if self.get_warnings_cog() is None:
+            return await ctx.send("Warnings cog not loaded.")
+        await self.maybe_send_command_help(ctx, show=timespan is None)
+        await self.sync_guild_records(ctx.guild)
+
+        conf = self.db.get_conf(ctx.guild)
+        issued = self.get_window_records(ctx.guild, timespan)
+        resolved = self.get_resolved_records(ctx.guild, timespan)
+        active = [record for record in conf.records.values() if record.is_active]
+        top_users = Counter(record.user_id for record in issued)
+        top_mods = Counter(record.moderator_id for record in issued if record.moderator_id)
+        top_reasons = Counter(record.description for record in issued if record.description)
+
+        lines = [
+            f"Period: {self.format_period(timespan)}",
+            f"Warnings issued: {humanize_number(len(issued))}",
+            f"Points issued: {humanize_number(sum(record.points for record in issued))}",
+            f"Unique members warned: {humanize_number(len({record.user_id for record in issued}))}",
+            f"Active warnings now: {humanize_number(len(active))}",
+            f"Active warning points: {humanize_number(sum(record.points for record in active))}",
+            f"Expired in period: {humanize_number(sum(1 for record in resolved if record.resolution == 'expired'))}",
+            f"Manually removed in period: {humanize_number(sum(1 for record in resolved if record.resolution == 'removed'))}",
+        ]
+
+        if top_users:
+            user_id, count = top_users.most_common(1)[0]
+            lines.append(f"Top warned member: {self.get_label(ctx.guild, user_id)} [{count}]")
+        if top_mods:
+            mod_id, count = top_mods.most_common(1)[0]
+            lines.append(f"Top issuing moderator: {self.get_label(ctx.guild, mod_id)} [{count}]")
+        if top_reasons:
+            reason, count = top_reasons.most_common(1)[0]
+            lines.append(f"Most common reason: {self.shorten_reason(reason)} [{count}]")
+
+        await ctx.send("\n".join(lines))
+
+    @modlogtool.command(name="leaderboard", aliases=["topwarned"])
+    async def mlt_leaderboard(
+        self,
+        ctx: commands.Context,
+        timespan: commands.TimedeltaConverter = None,
+        limit: commands.Range[int, 1, 25] = 10,
+    ):
+        """Show top warned members for a time window."""
+        if self.get_warnings_cog() is None:
+            return await ctx.send("Warnings cog not loaded.")
+        await self.maybe_send_command_help(ctx, show=timespan is None and limit == 10)
+        await self.sync_guild_records(ctx.guild)
+
+        window_records = self.get_window_records(ctx.guild, timespan)
+        if not window_records:
+            return await ctx.send("No warning data for that period.")
+
+        active_keys = {
+            (record.user_id, record.warn_id)
+            for record in self.db.get_conf(ctx.guild).records.values()
+            if record.is_active
+        }
+        aggregates: dict[int, dict[str, int]] = defaultdict(lambda: {"warns": 0, "points": 0, "active": 0})
+        for record in window_records:
+            aggregates[record.user_id]["warns"] += 1
+            aggregates[record.user_id]["points"] += record.points
+            if (record.user_id, record.warn_id) in active_keys:
+                aggregates[record.user_id]["active"] += 1
+
+        ranked = sorted(
+            aggregates.items(),
+            key=lambda item: (item[1]["warns"], item[1]["points"], item[1]["active"]),
+            reverse=True,
+        )[:limit]
+
+        lines = [f"Leaderboard for {self.format_period(timespan)}"]
+        for index, (user_id, stats) in enumerate(ranked, start=1):
+            lines.append(
+                f"{index}. {self.get_label(ctx.guild, user_id)} -> {stats['warns']} warns | {stats['points']} pts | {stats['active']} active"
+            )
+        await ctx.send("\n".join(lines))
+
+    @modlogtool.command(name="moderators", aliases=["topmods"])
+    async def mlt_moderators(
+        self,
+        ctx: commands.Context,
+        timespan: commands.TimedeltaConverter = None,
+        limit: commands.Range[int, 1, 25] = 10,
+    ):
+        """Show which moderators issued the most warnings."""
+        if self.get_warnings_cog() is None:
+            return await ctx.send("Warnings cog not loaded.")
+        await self.maybe_send_command_help(ctx, show=timespan is None and limit == 10)
+        await self.sync_guild_records(ctx.guild)
+
+        window_records = self.get_window_records(ctx.guild, timespan)
+        window_records = [record for record in window_records if record.moderator_id]
+        if not window_records:
+            return await ctx.send("No moderator warning data for that period.")
+
+        aggregates: dict[int, dict[str, int]] = defaultdict(lambda: {"warns": 0, "points": 0})
+        for record in window_records:
+            aggregates[record.moderator_id]["warns"] += 1
+            aggregates[record.moderator_id]["points"] += record.points
+
+        ranked = sorted(
+            aggregates.items(),
+            key=lambda item: (item[1]["warns"], item[1]["points"]),
+            reverse=True,
+        )[:limit]
+
+        lines = [f"Moderator leaderboard for {self.format_period(timespan)}"]
+        for index, (user_id, stats) in enumerate(ranked, start=1):
+            lines.append(f"{index}. {self.get_label(ctx.guild, user_id)} -> {stats['warns']} warns | {stats['points']} pts")
+        await ctx.send("\n".join(lines))
+
+    @modlogtool.command(name="member")
+    async def mlt_member(
+        self,
+        ctx: commands.Context,
+        member: discord.Member | commands.RawUserIdConverter,
+        timespan: commands.TimedeltaConverter = None,
+    ):
+        """Show warning summary for one member."""
+        if self.get_warnings_cog() is None:
+            return await ctx.send("Warnings cog not loaded.")
+        await self.sync_guild_records(ctx.guild)
+
+        user_id = member.id if isinstance(member, discord.Member) else int(member)
+        all_records = [record for record in self.db.get_conf(ctx.guild).records.values() if record.user_id == user_id]
+        if not all_records:
+            return await ctx.send("No tracked warnings for that member.")
+
+        if timespan is None:
+            window_records = all_records
+        else:
+            cutoff = utcnow() - timespan
+            window_records = [record for record in all_records if record.created_at >= cutoff]
+
+        active_records = [record for record in all_records if record.is_active]
+        recent = sorted(window_records, key=lambda record: record.created_at, reverse=True)[:5]
+        next_expiry = min((record.expires_at for record in active_records if record.expires_at), default=None)
+
+        lines = [
+            f"Member: {self.get_label(ctx.guild, user_id)}",
+            f"Period: {self.format_period(timespan)}",
+            f"Warnings issued: {humanize_number(len(window_records))}",
+            f"Points issued: {humanize_number(sum(record.points for record in window_records))}",
+            f"Active warnings now: {humanize_number(len(active_records))}",
+            f"Active points now: {humanize_number(sum(record.points for record in active_records))}",
+        ]
+        if next_expiry is not None:
+            lines.append(f"Next expiry: <t:{int(next_expiry.timestamp())}:F>")
+
+        if recent:
+            lines.append("Recent warnings:")
+            for record in recent:
+                reason = self.shorten_reason(record.description or "No reason provided")
+                lines.append(
+                    f"- <t:{record.created_ts}:d> | {record.points} pts | {reason} | {record.resolution or 'active'}"
+                )
+
+        await ctx.send("\n".join(lines))
