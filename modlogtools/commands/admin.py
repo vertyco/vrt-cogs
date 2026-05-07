@@ -162,40 +162,6 @@ class Admin(MixinMeta):
 
         return sort_by, timespan, limit
 
-    def parse_moderator_args(self, raw: str) -> tuple[str, timedelta | None, int]:
-        case_type = "warning"
-        timespan = None
-        limit = 10
-        case_set = False
-        limit_set = False
-
-        for token in raw.split():
-            delta = commands.parse_timedelta(token)
-            if delta is not None:
-                timespan = delta
-                continue
-
-            if not limit_set:
-                try:
-                    parsed_limit = int(token)
-                except ValueError:
-                    parsed_limit = None
-                if parsed_limit is not None:
-                    if not 1 <= parsed_limit <= 25:
-                        raise commands.BadArgument("Limit must be between 1 and 25.")
-                    limit = parsed_limit
-                    limit_set = True
-                    continue
-
-            if not case_set:
-                case_type = self.normalize_modlog_case_type(token)
-                case_set = True
-                continue
-
-            raise commands.BadArgument("Unknown moderator option. Use one case type, one timespan, and one limit.")
-
-        return case_type, timespan, limit
-
     async def get_modlog_cases_for_window(
         self,
         guild: discord.Guild,
@@ -621,20 +587,37 @@ class Admin(MixinMeta):
     async def mlt_moderators(
         self,
         ctx: commands.Context,
-        *,
-        options: str = "",
+        case_type: str = "warning",
+        timespan: commands.TimedeltaConverter = None,
+        limit: commands.Range[int, 1, 25] = 10,
     ):
-        """Show which moderators issued the most cases. Options: [case_type] [timespan] [limit]."""
-        await self.maybe_send_command_help(ctx, show=not options)
-        try:
-            case_type, timespan, limit = self.parse_moderator_args(options)
-        except commands.BadArgument as exc:
-            return await ctx.send(str(exc))
+        """Show which moderators issued the most cases.
 
-        window_cases = await self.get_modlog_cases_for_window(ctx.guild, case_type, timespan)
+        `case_type` - the modlog action to count. Common values:
+        `warn` / `ban` / `kick` / `hackban` / `tempban` / `softban` /
+        `unban` / `vmute` / `cmute` / `smute` / `vkick` / `expired`
+        (default: warn)
+
+        `timespan` - optional window, e.g. `30d`, `1w`, `12h`
+        `limit` - number of results, 1-25 (default: 10)
+        """
+        normalized = self.normalize_modlog_case_type(case_type)
+
+        try:
+            all_casetypes = await modlog.get_all_casetypes(guild=ctx.guild)
+        except Exception:
+            log.exception("Failed to fetch casetypes for guild %s", ctx.guild.id)
+            all_casetypes = []
+
+        valid_names = {ct.name for ct in all_casetypes}
+        if valid_names and normalized not in valid_names:
+            type_list = " | ".join(ct.name for ct in sorted(all_casetypes, key=lambda c: c.name))
+            return await ctx.send(f"Unknown case type `{case_type}`. Available: {type_list}")
+
+        window_cases = await self.get_modlog_cases_for_window(ctx.guild, normalized, timespan)
         window_cases = [case for case in window_cases if case.moderator is not None]
         if not window_cases:
-            label = self.format_modlog_case_type(case_type).lower()
+            label = self.format_modlog_case_type(normalized).lower()
             return await ctx.send(f"No moderator {label} data for that period.")
 
         aggregates: dict[int, int] = defaultdict(int)
@@ -647,7 +630,7 @@ class Admin(MixinMeta):
             reverse=True,
         )[:limit]
 
-        case_label = self.format_modlog_case_type(case_type)
+        case_label = self.format_modlog_case_type(normalized)
         lines = [f"Moderator leaderboard for {case_label} in {self.format_period(timespan)}"]
         for index, (user_id, count) in enumerate(ranked, start=1):
             lines.append(f"{index}. {self.get_label(ctx.guild, user_id)} -> {count} cases")
