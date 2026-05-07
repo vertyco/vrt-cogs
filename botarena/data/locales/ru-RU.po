@@ -1,0 +1,272 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 03:00\n"
+"Last-Translator: \n"
+"Language-Team: Russian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=4; plural=((n%10==1 && n%100!=11) ? 0 : ((n%10 >= 2 && n%10 <=4 && (n%100 < 12 || n%100 > 14)) ? 1 : ((n%10 == 0 || (n%10 >= 5 && n%10 <=9)) || (n%100 >= 11 && n%100 <= 14)) ? 2 : 3));\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: ru\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/botarena/data/locales/messages.pot\n"
+"X-Crowdin-File-ID: 630\n"
+"Language: ru_RU\n"
+
+#: botarena\data\center_point_editor.py:62
+#, docstring
+msgid "Load previously saved offsets from JSON file."
+msgstr ""
+
+#: botarena\data\center_point_editor.py:71
+#, docstring
+msgid "Save offsets to JSON file."
+msgstr ""
+
+#: botarena\data\center_point_editor.py:76
+#, docstring
+msgid "Setup the UI components."
+msgstr ""
+
+#: botarena\data\center_point_editor.py:256
+#, docstring
+msgid "Handle part type selection change."
+msgstr ""
+
+#: botarena\data\center_point_editor.py:270
+#, docstring
+msgid "Handle editing mode change (center vs weapon mount)."
+msgstr ""
+
+#: botarena\data\center_point_editor.py:276
+#, docstring
+msgid "Show/hide weapon mount fields based on part type."
+msgstr ""
+
+#: botarena\data\center_point_editor.py:287
+#, docstring
+msgid "Hide weapon mount fields."
+msgstr ""
+
+#: botarena\data\center_point_editor.py:294
+#, docstring
+msgid "Refresh the file listbox based on selected part type."
+msgstr ""
+
+#: botarena\data\center_point_editor.py:311
+#, docstring
+msgid "Handle file selection from listbox."
+msgstr ""
+
+#: botarena\data\center_point_editor.py:329
+#, docstring
+msgid "Load an image and display it."
+msgstr ""
+
+#: botarena\data\center_point_editor.py:359
+#, docstring
+msgid "Update the canvas display."
+msgstr ""
+
+#: botarena\data\center_point_editor.py:425
+#, docstring
+msgid "Handle click on canvas to set center point or weapon mount."
+msgstr ""
+
+#: botarena\data\center_point_editor.py:449
+#, docstring
+msgid "Update mouse position display."
+msgstr ""
+
+#: botarena\data\center_point_editor.py:463
+#, docstring
+msgid "Update the info labels."
+msgstr ""
+
+#: botarena\data\center_point_editor.py:489
+#, docstring
+msgid "Update the code snippet preview."
+msgstr ""
+
+#: botarena\data\center_point_editor.py:510
+#, docstring
+msgid "Copy the offset values to clipboard."
+msgstr ""
+
+#: botarena\data\center_point_editor.py:534
+#, docstring
+msgid "Save the current offset to the JSON file."
+msgstr ""
+
+#: botarena\data\center_point_editor.py:555
+#, docstring
+msgid "Reset the offset to center (0, 0)."
+msgstr ""
+
+#: botarena\data\center_point_editor.py:561
+#, docstring
+msgid "Show a report of all saved offsets that need to be applied."
+msgstr ""
+
+#: botarena\data\center_point_editor.py:612
+#, docstring
+msgid "Generate possible part name variants from a filename."
+msgstr ""
+
+#: botarena\data\center_point_editor.py:680
+#, docstring
+msgid "Find the actual part name as it appears in parts.py."
+msgstr ""
+
+#: botarena\data\center_point_editor.py:689
+#, docstring
+msgid "Apply all saved offsets directly to parts.py file."
+msgstr ""
+
+#: botarena\data\generate_ai_images.py:234 botarena\data\generate_images.py:73
+#, docstring
+msgid "Create output directories if they don't exist"
+msgstr ""
+
+#: botarena\data\generate_ai_images.py:737
+#, docstring
+msgid "Generate an arena background for a specific chapter.\n\n"
+"    Returns: (success, error_message)\n"
+"    "
+msgstr ""
+
+#: botarena\data\generate_ai_images.py:773
+#, docstring
+msgid "Generate arena backgrounds for all chapters.\n\n"
+"    Returns: List of (chapter, success, error_message)\n"
+"    "
+msgstr ""
+
+#: botarena\data\generate_ai_images.py:785
+#, docstring
+msgid "Generate an arena background for a specific mission.\n\n"
+"    Returns: (success, error_message)\n"
+"    "
+msgstr ""
+
+#: botarena\data\generate_ai_images.py:825
+#, docstring
+msgid "Generate arena backgrounds for all missions.\n\n"
+"    Returns: List of (mission_id, success, error_message)\n"
+"    "
+msgstr ""
+
+#: botarena\data\generate_ai_images.py:837
+#, docstring
+msgid "Generate the arena background image using image generation (not edit).\n\n"
+"    Returns: (success, error_message)\n"
+"    "
+msgstr ""
+
+#: botarena\data\generate_ai_images.py:878
+#, docstring
+msgid "Generate an image using gpt-image-1 and save it.\n\n"
+"    Args:\n"
+"        image_url: Can be a URL (http/https) or a local file path (relative to data/ or absolute)\n\n"
+"    Returns: (name, success, error_message)\n"
+"    "
+msgstr ""
+
+#: botarena\data\generate_ai_images.py:942
+#, docstring
+msgid "Edit an image using the Responses API with gpt-5.\n\n"
+"    This mode uses the Responses API to edit the reference image directly,\n"
+"    which can provide better results than the images.edit endpoint for\n"
+"    perspective transformations.\n\n"
+"    Args:\n"
+"        prompt_template: The prompt template with {description} placeholder\n"
+"        description: Specific description of the part to insert into prompt\n"
+"        reference_url: URL or local path to reference image to edit\n\n"
+"    Returns: (name, success, error_message)\n"
+"    "
+msgstr ""
+
+#: botarena\data\generate_ai_images.py:1042
+#, docstring
+msgid "Generate all chassis images concurrently"
+msgstr ""
+
+#: botarena\data\generate_ai_images.py:1082
+#, docstring
+msgid "Generate all plating images concurrently"
+msgstr ""
+
+#: botarena\data\generate_ai_images.py:1122
+#, docstring
+msgid "Generate all weapon images concurrently"
+msgstr ""
+
+#: botarena\data\generate_ai_images.py:1156
+#, docstring
+msgid "Print results for a category"
+msgstr ""
+
+#: botarena\data\generate_ai_images.py:1175
+#, docstring
+msgid "Show what would be generated without calling the API"
+msgstr ""
+
+#: botarena\data\generate_images.py:87
+#, docstring
+msgid "DLZ-100: Akaumin starter light chassis - nimble wedge, quick and agile"
+msgstr ""
+
+#: botarena\data\generate_images.py:123
+#, docstring
+msgid "DLZ-250: Akaumin upgraded light - sleeker, more refined wedge"
+msgstr ""
+
+#: botarena\data\generate_images.py:167
+#, docstring
+msgid "SmartMove: Khacor medium chassis - rounded, intelligent design with sensor arrays"
+msgstr ""
+
+#: botarena\data\generate_images.py:205
+#, docstring
+msgid "CLR-Z050: Xeroi industrial medium - boxy, utilitarian, heavy-duty workframe"
+msgstr ""
+
+#: botarena\data\generate_images.py:242
+#, docstring
+msgid "Electron: Khacor top medium - sleek tech frame with energy conduits"
+msgstr ""
+
+#: botarena\data\generate_images.py:281
+#, docstring
+msgid "Durichas: NTech heavy fortress - massive armored frame, built like a bunker"
+msgstr ""
+
+#: botarena\data\generate_images.py:325
+#, docstring
+msgid "Deliverance: Xeroi ultimate heavy - war machine, angular aggressive design"
+msgstr ""
+
+#: botarena\data\generate_images.py:392
+#, docstring
+msgid "Generate a chassis image"
+msgstr ""
+
+#: botarena\data\generate_images.py:415
+#, docstring
+msgid "Generate a plating overlay image - shows the armor style"
+msgstr ""
+
+#: botarena\data\generate_images.py:595
+#, docstring
+msgid "Generate a weapon image (pointing right)"
+msgstr ""
+
+#: botarena\data\generate_images.py:840
+#, docstring
+msgid "Generate all part images"
+msgstr ""
+

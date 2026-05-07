@@ -1,0 +1,270 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 03:06\n"
+"Last-Translator: \n"
+"Language-Team: Croatian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: hr\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/profiler/common/locales/messages.pot\n"
+"X-Crowdin-File-ID: 742\n"
+"Language: hr_HR\n"
+
+#: profiler\common\formatting.py:87
+#, docstring
+msgid "Create pages that show only the errored runs for a given method.\n\n"
+"    Parameters\n"
+"    - method_key: The identifier of the method being inspected.\n"
+"    - data: The list of StatsProfile entries for this method.\n\n"
+"    Returns\n"
+"    - List of page strings suitable for sending as message content.\n"
+"    "
+msgstr ""
+
+#: profiler\common\io_profiler.py:35
+#, docstring
+msgid "A single file write event."
+msgstr ""
+
+#: profiler\common\io_profiler.py:44
+#, docstring
+msgid "Aggregated stats for a single file."
+msgstr ""
+
+#: profiler\common\io_profiler.py:56
+#, docstring
+msgid "The result of an I/O profiling session."
+msgstr ""
+
+#: profiler\common\io_profiler.py:69
+#, docstring
+msgid "Watchdog handler that tracks close_write events."
+msgstr ""
+
+#: profiler\common\io_profiler.py:99
+#, docstring
+msgid "Format bytes into human-readable string."
+msgstr ""
+
+#: profiler\common\io_profiler.py:108
+#, docstring
+msgid "Make a path relative to the base data directory."
+msgstr ""
+
+#: profiler\common\io_profiler.py:120
+#, docstring
+msgid "Collapse Red's atomic-write temp files into the canonical config name.\n\n"
+"    e.g. ``cogs/Mod/settings-2106206022.tmp`` -> ``cogs/Mod/settings``\n"
+"    "
+msgstr ""
+
+#: profiler\common\io_profiler.py:131
+#, docstring
+msgid "Aggregate raw events into an IOProfileResult."
+msgstr ""
+
+#: profiler\common\io_profiler.py:189
+#, docstring
+msgid "Generate charts showing I/O activity breakdown."
+msgstr ""
+
+#: profiler\common\io_profiler.py:265
+#, docstring
+msgid "Format I/O profiling results into pages."
+msgstr ""
+
+#: profiler\common\io_profiler.py:366
+#, docstring
+msgid "\n"
+"    Monitor file write activity in the bot's data directory.\n\n"
+"    Parameters\n"
+"    ----------\n"
+"    data_path : str\n"
+"        The root data path to monitor.\n"
+"    duration : int\n"
+"        How long to monitor in seconds.\n\n"
+"    Returns\n"
+"    -------\n"
+"    IOProfileResult\n"
+"        Aggregated I/O profiling results.\n"
+"    "
+msgstr ""
+
+#: profiler\common\mem_profiler.py:55
+#, docstring
+msgid "Recursively calculate the size of an object and its references.\n\n"
+"    Args:\n"
+"        obj: The object to measure\n"
+"        seen: Set of object ids already counted (for cycle detection)\n"
+"        depth: Current recursion depth\n"
+"        max_depth: Maximum recursion depth to prevent infinite loops\n\n"
+"    Returns:\n"
+"        Size in bytes of the object and its children\n"
+"    "
+msgstr ""
+
+#: profiler\common\mem_profiler.py:109
+#, docstring
+msgid "Get IDs of objects that should be excluded from cog memory counting.\n\n"
+"    This includes the bot instance and its direct attributes to avoid\n"
+"    counting shared infrastructure.\n"
+"    "
+msgstr ""
+
+#: profiler\common\mem_profiler.py:125
+#, docstring
+msgid "Measure the memory footprint of a single cog.\n\n"
+"    Each cog is measured independently with its own seen set,\n"
+"    but with shared bot-related objects pre-excluded.\n\n"
+"    Args:\n"
+"        cog_instance: The cog to measure\n"
+"        excluded_ids: Set of object IDs to skip (bot and its attributes)\n\n"
+"    Returns:\n"
+"        Size in bytes\n"
+"    "
+msgstr ""
+
+#: profiler\common\mem_profiler.py:159
+#, docstring
+msgid "Profile memory usage per cog.\n\n"
+"    Each cog is measured independently to show its full memory footprint.\n"
+"    The bot instance and its direct attributes are excluded to avoid\n"
+"    counting shared infrastructure.\n\n"
+"    Note: Shared objects between cogs (like Config internals) may be\n"
+"    counted multiple times. This is intentional - it shows the memory\n"
+"    each cog is \"responsible for\" rather than unique bytes.\n\n"
+"    Args:\n"
+"        bot: The Red bot instance\n"
+"        limit: Maximum number of cogs to display (0 for all)\n\n"
+"    Returns:\n"
+"        A formatted table string showing cog memory usage\n"
+"    "
+msgstr ""
+
+#: profiler\common\profiling.py:89
+#, docstring
+msgid "Attach a profiler to the methods of a specified cog.\n\n"
+"        Args:\n"
+"            cog_name (str): The name of the cog to attach the profiler to.\n\n"
+"        Returns:\n"
+"            True if attached successfully, False otherwise.\n"
+"        "
+msgstr ""
+
+#: profiler\common\profiling.py:205
+#, docstring
+msgid "Detach a profiler from a specific method."
+msgstr ""
+
+#: profiler\common\profiling.py:280
+#, docstring
+msgid "Detach a profiler from the methods of a specified cog."
+msgstr ""
+
+#: profiler\common\profiling.py:354
+#, docstring
+msgid "Detach profilers from all methods, commands, tasks, and listeners."
+msgstr ""
+
+#: profiler\common\profiling.py:419
+#, docstring
+msgid "Populate the methods cache"
+msgstr ""
+
+#: profiler\common\pyspy_profiler.py:28
+#, docstring
+msgid "Represents a single frame in the call stack."
+msgstr ""
+
+#: profiler\common\pyspy_profiler.py:37
+#, docstring
+msgid "A sample from py-spy containing stack frames and weight."
+msgstr ""
+
+#: profiler\common\pyspy_profiler.py:45
+#, docstring
+msgid "Aggregated statistics for a function."
+msgstr ""
+
+#: profiler\common\pyspy_profiler.py:56
+#, docstring
+msgid "The result of a py-spy profiling session."
+msgstr ""
+
+#: profiler\common\pyspy_profiler.py:67
+#, docstring
+msgid "\n"
+"    Parse speedscope JSON format and extract function statistics.\n\n"
+"    Parameters\n"
+"    ----------\n"
+"    data : dict\n"
+"        The parsed JSON data from py-spy speedscope output.\n\n"
+"    Returns\n"
+"    -------\n"
+"    tuple\n"
+"        A tuple containing (list of FunctionStats, total sample count).\n"
+"    "
+msgstr ""
+
+#: profiler\common\pyspy_profiler.py:139
+#, docstring
+msgid "\n"
+"    Generate visualization charts from profiling results.\n\n"
+"    Creates a multi-panel figure with:\n"
+"    - Top functions by self time (horizontal bar chart)\n"
+"    - Top functions by total time (horizontal bar chart)\n\n"
+"    Parameters\n"
+"    ----------\n"
+"    result : ProfileResult\n"
+"        The profiling result containing function statistics.\n\n"
+"    Returns\n"
+"    -------\n"
+"    bytes\n"
+"        PNG image data of the generated charts.\n"
+"    "
+msgstr ""
+
+#: profiler\common\pyspy_profiler.py:241
+#, docstring
+msgid "\n"
+"    Format profiling results into human-readable pages.\n\n"
+"    Parameters\n"
+"    ----------\n"
+"    result : ProfileResult\n"
+"        The profiling result containing function statistics.\n\n"
+"    Returns\n"
+"    -------\n"
+"    list\n"
+"        List of formatted message strings.\n"
+"    "
+msgstr ""
+
+#: profiler\common\pyspy_profiler.py:353
+#, docstring
+msgid "Find py-spy executable, checking venv bin directory first."
+msgstr ""
+
+#: profiler\common\pyspy_profiler.py:373
+#, docstring
+msgid "\n"
+"    Run py-spy profiler on the current Python process.\n\n"
+"    Parameters\n"
+"    ----------\n"
+"    duration : int\n"
+"        How long to profile in seconds (default 30).\n"
+"    subprocesses : bool\n"
+"        Whether to profile subprocesses too.\n\n"
+"    Returns\n"
+"    -------\n"
+"    ProfileResult\n"
+"        The profiling result with statistics and any errors.\n"
+"    "
+msgstr ""
+

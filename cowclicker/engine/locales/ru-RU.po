@@ -1,0 +1,131 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 03:00\n"
+"Last-Translator: \n"
+"Language-Team: Russian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=4; plural=((n%10==1 && n%100!=11) ? 0 : ((n%10 >= 2 && n%10 <=4 && (n%100 < 12 || n%100 > 14)) ? 1 : ((n%10 == 0 || (n%10 >= 5 && n%10 <=9)) || (n%100 >= 11 && n%100 <= 14)) ? 2 : 3));\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: ru\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/cowclicker/engine/locales/messages.pot\n"
+"X-Crowdin-File-ID: 644\n"
+"Language: ru_RU\n"
+
+#: cowclicker\engine\engine.py:27
+#, docstring
+msgid "Registers a Discord cog with a database connection and runs migrations.\n\n"
+"    Args:\n"
+"        cog_instance (commands.Cog | Path): The instance/path of the cog to register.\n"
+"        config (dict): Configuration dictionary containing database connection details.\n"
+"        tables (list[type[Table]]): List of Piccolo Table classes to associate with the database engine.\n"
+"        pool_size (int, optional): Maximum size of the database connection pool. Defaults to 20.\n"
+"        trace (bool, optional): Whether to enable tracing for migrations. Defaults to False.\n\n"
+"    Raises:\n"
+"        UNCPathError: If the cog path is a UNC path, which is not supported.\n"
+"        DirectoryError: If the cog files are not in a valid directory.\n\n"
+"    Returns:\n"
+"        PostgresEngine: The database engine associated with the registered cog.\n"
+"    "
+msgstr ""
+
+#: cowclicker\engine\engine.py:76
+#, docstring
+msgid "Runs database migrations for a given Discord cog.\n\n"
+"    Args:\n"
+"        cog_instance (commands.Cog | Path): The instance of the cog for which to run migrations.\n"
+"        config (dict): Configuration dictionary containing database connection details.\n"
+"        trace (bool, optional): Whether to enable tracing for migrations. Defaults to False.\n\n"
+"    Returns:\n"
+"        str: The result of the migration process, including any output messages.\n"
+"    "
+msgstr ""
+
+#: cowclicker\engine\engine.py:115
+#, docstring
+msgid "Reverses a database migration for a given Discord cog to a specific timestamp.\n\n"
+"    Args:\n"
+"        cog_instance (commands.Cog | Path): The instance of the cog for which to reverse the migration.\n"
+"        config (dict): Configuration dictionary containing database connection details.\n"
+"        timestamp (str): The timestamp to which the migration should be reversed.\n"
+"        trace (bool, optional): Whether to enable tracing for migrations. Defaults to False.\n\n"
+"    Returns:\n"
+"        str: The result of the reverse migration process, including any output messages.\n"
+"    "
+msgstr ""
+
+#: cowclicker\engine\engine.py:154
+#, docstring
+msgid "Creates new database migrations for a given Discord cog.\n\n"
+"    THIS SHOULD BE RUN MANUALLY!\n\n"
+"    Args:\n"
+"        cog_instance (commands.Cog | Path): The instance of the cog for which to create migrations.\n"
+"        config (dict): Configuration dictionary containing database connection details.\n\n"
+"    Returns:\n"
+"        str: The result of the migration creation process, including any output messages.\n"
+"    "
+msgstr ""
+
+#: cowclicker\engine\engine.py:189
+#, docstring
+msgid "Diagnoses potential issues with the database setup for a given Discord cog.\n\n"
+"    Args:\n"
+"        cog_instance (commands.Cog | Path): The instance of the cog for which to diagnose issues.\n"
+"        config (dict): Configuration dictionary containing database connection details.\n\n"
+"    Returns:\n"
+"        str: A report of the diagnosis and migration check results.\n"
+"    "
+msgstr ""
+
+#: cowclicker\engine\engine.py:224
+#, docstring
+msgid "Create a database for the cog if it doesn't exist.\n\n"
+"    Args:\n"
+"        cog_instance (commands.Cog | Path): The cog instance\n"
+"        config (dict): the database connection information\n\n"
+"    Returns:\n"
+"        bool: True if a new database was created\n"
+"    "
+msgstr ""
+
+#: cowclicker\engine\engine.py:246
+#, docstring
+msgid "Acquire a database engine\n"
+"    The PostgresEngine constructor is blocking and must be run in a separate thread.\n\n"
+"    Args:\n"
+"        config (dict): The database connection information\n\n"
+"    Returns:\n"
+"        PostgresEngine: The database engine\n"
+"    "
+msgstr ""
+
+#: cowclicker\engine\engine.py:268
+#, docstring
+msgid "Get the root path of the cog"
+msgstr ""
+
+#: cowclicker\engine\engine.py:275
+#, docstring
+msgid "Create mock environment for subprocess"
+msgstr ""
+
+#: cowclicker\engine\engine.py:289
+#, docstring
+msgid "Get the name of the database for the cog"
+msgstr ""
+
+#: cowclicker\engine\engine.py:296
+#, docstring
+msgid "Check if path is a UNC path"
+msgstr ""
+
+#: cowclicker\engine\engine.py:301
+#, docstring
+msgid "Check if the OS is Windows"
+msgstr ""
+

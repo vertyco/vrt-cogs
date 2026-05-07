@@ -1,0 +1,367 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 03:03\n"
+"Last-Translator: \n"
+"Language-Team: Turkish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: tr\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/extendedeconomy/common/locales/messages.pot\n"
+"X-Crowdin-File-ID: 660\n"
+"Language: tr_TR\n"
+
+#: extendedeconomy\common\checks.py:68
+msgid "You do not have enough {} to run that command! (Need {})"
+msgstr ""
+
+#: extendedeconomy\common\checks.py:69
+msgid "{}, you spent {} to run this command"
+msgstr ""
+
+#: extendedeconomy\common\checks.py:81
+msgid "Do you want to spend {} {} to run this command?"
+msgstr ""
+
+#: extendedeconomy\common\checks.py:96
+msgid "Not running `{}`."
+msgstr ""
+
+#: extendedeconomy\common\checks.py:147
+msgid "{}% transfer tax applied, {} deducted from transfer"
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:41
+msgid "You have been refunded since this command failed."
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:90
+msgid "Set Balance"
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:91
+msgid "Transfer Credits"
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:92
+#: extendedeconomy\common\listeners.py:186
+msgid "Bank Wipe"
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:93
+msgid "Prune Accounts"
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:94
+msgid "Set Global"
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:95
+msgid "Payday Claim"
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:98
+msgid "Bank Event: {}"
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:102
+#: extendedeconomy\common\listeners.py:109
+#: extendedeconomy\common\listeners.py:121
+msgid "Recipient"
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:103
+#: extendedeconomy\common\listeners.py:123
+msgid "Old Balance"
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:104
+#: extendedeconomy\common\listeners.py:124
+msgid "New Balance"
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:106
+#: extendedeconomy\common\listeners.py:112
+#: extendedeconomy\common\listeners.py:119
+#: extendedeconomy\common\listeners.py:126
+msgid "Guild"
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:108
+msgid "Sender"
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:110
+msgid "Transfer Amount"
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:115
+msgid "User ID"
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:117
+msgid "Pruned Users"
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:122
+msgid "Amount"
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:126
+msgid "Unknown"
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:128
+msgid "Channel"
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:130
+msgid "Message"
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:141
+#, docstring
+msgid "Payload attributes:\n"
+"        - recipient: Union[discord.Member, discord.User]\n"
+"        - guild: Union[discord.Guild, None]\n"
+"        - recipient_old_balance: int\n"
+"        - recipient_new_balance: int\n"
+"        "
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:151
+#, docstring
+msgid "Payload attributes:\n"
+"        - sender: Union[discord.Member, discord.User]\n"
+"        - recipient: Union[discord.Member, discord.User]\n"
+"        - guild: Union[discord.Guild, None]\n"
+"        - transfer_amount: int\n"
+"        - sender_new_balance: int\n"
+"        - recipient_new_balance: int\n"
+"        "
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:163
+#, docstring
+msgid "scope: int (-1 for global, None for all members, guild_id for server bank)"
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:166
+msgid "Global bank has been wiped!"
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:169
+msgid "All bank accounts for all guilds have been wiped!"
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:177
+msgid "Bank accounts have been wiped!"
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:195
+#, docstring
+msgid "Payload attributes:\n"
+"        - guild: Union[discord.Guild, None]\n"
+"        - user_id: Union[int, None]\n"
+"        - scope: int (1 for global, 2 for server, 3 for user)\n"
+"        - pruned_users: list[int(user_id)] or dict[int(guild_id), list[int(user_id)]]\n"
+"        "
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:205
+#, docstring
+msgid "is_global: True if global bank, False if server bank"
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:206
+msgid "Bank has been set to Global!"
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:206
+msgid "Bank has been set to per-server!"
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:214
+msgid "Set Global Bank"
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:223
+#, docstring
+msgid "Payload attributes:\n"
+"        - member: discord.Member\n"
+"        - channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel]\n"
+"        - amount: int\n"
+"        - old_balance: int\n"
+"        - new_balance: int\n"
+"        "
+msgstr ""
+
+#: extendedeconomy\common\listeners.py:234
+#, docstring
+msgid "Send embeds in chunks to avoid rate limits"
+msgstr ""
+
+#: extendedeconomy\common\models.py:39
+#, docstring
+msgid "\n"
+"    - cost: the base cost of the command\n"
+"    - duration: the time period in seconds in which the command usage is tracked and used to calculate the cost\n"
+"    - level: the minimum permission level of the command in which the cost is applied\n"
+"        - admin: admins and above can use the command for free\n"
+"        - mod: mods and above can use the command for free\n"
+"        - all: everyone must pay the cost to use the command\n"
+"        - user: all users must pay the cost to use the command unless they are mod or admin\n"
+"        - global: the cost is applied to all users globally\n"
+"    - prompt: how will the user be prompted to confirm the cost (Slash commands will always use silent mode)\n"
+"        - text: the bot will send a text message asking the user to confirm the cost with yes or no\n"
+"        - reaction: the bot will send a message with emoji reactions to confirm the cost\n"
+"        - button: the bot will send a message with buttons to confirm the cost\n"
+"        - silent: the bot will not prompt the user to confirm the cost\n"
+"        - notify: the bot will simply notify the user of the cost without asking for confirmation\n"
+"    - modifier: the type of cost modifier\n"
+"        - static: the cost is a fixed amount\n"
+"        - percent: the cost is a percentage of the user's balance on top of the base cost\n"
+"        - exponential: the cost increases exponentially based on how frequenty the command is used\n"
+"            - Ex: cost gets doubled every time the command is used within a set time period\n"
+"        - linear: the cost increases linearly based on how frequently the command is used\n"
+"            - Ex: cost gets increased by a fixed amount every time the command is used within a set time period\n"
+"    - value: the value of the cost modifier depends on the modifier type\n"
+"        - static: this will be 0 and does nothing\n"
+"        - percent: value will be the percentage of the user's balance to add to the base cost\n"
+"        - exponential: value will be the base cost multiplier\n"
+"        - linear: value will multiplied by the number of uses in the last hour to get the cost increase\n"
+"    - uses: a list of lists containing the user ID and the timestamp of the command usage\n"
+"    "
+msgstr ""
+
+#: extendedeconomy\common\parser.py:14
+msgid "Invalid value, the argument must be an integer, optionally preceded with a `+` or `-` sign."
+msgstr ""
+
+#: extendedeconomy\common\parser.py:23
+msgid "Invalid value, the amount of currency to increase or decrease must be an integer different from zero."
+msgstr ""
+
+#: extendedeconomy\common\utils.py:28
+#, docstring
+msgid "Generate a unique ID for a context command"
+msgstr ""
+
+#: extendedeconomy\common\utils.py:65
+#, docstring
+msgid "Check if a command already has the cost check attached to it"
+msgstr ""
+
+#: extendedeconomy\common\utils.py:73
+#, docstring
+msgid "Wait for user to respond yes or no"
+msgstr ""
+
+#: extendedeconomy\common\utils.py:89
+#, docstring
+msgid "Wait for user to react with a checkmark or x"
+msgstr ""
+
+#: extendedeconomy\common\utils.py:107
+msgid "Not Set"
+msgstr ""
+
+#: extendedeconomy\common\utils.py:109
+msgid "# Extended Economy Settings\n"
+msgstr ""
+
+#: extendedeconomy\common\utils.py:110 extendedeconomy\common\utils.py:114
+#: extendedeconomy\common\utils.py:116 extendedeconomy\common\utils.py:133
+#: extendedeconomy\common\utils.py:138 extendedeconomy\common\utils.py:145
+msgid "None"
+msgstr ""
+
+#: extendedeconomy\common\utils.py:111
+msgid "`Transfer Tax:      `{}\n"
+msgstr ""
+
+#: extendedeconomy\common\utils.py:114
+msgid "`Tax Whitelist:     `{}\n"
+msgstr ""
+
+#: extendedeconomy\common\utils.py:116
+msgid "`Command Costs:     `{}\n"
+msgstr ""
+
+#: extendedeconomy\common\utils.py:117
+msgid "`Global Bank:       `{}\n"
+msgstr ""
+
+#: extendedeconomy\common\utils.py:120
+msgid "`Delete After:      `{}\n"
+msgstr ""
+
+#: extendedeconomy\common\utils.py:120
+msgid "Disabled"
+msgstr ""
+
+#: extendedeconomy\common\utils.py:126
+msgid "`Set Global:        `{}\n"
+msgstr ""
+
+#: extendedeconomy\common\utils.py:131
+msgid "`Stack Roles:       `{}\n"
+msgstr ""
+
+#: extendedeconomy\common\utils.py:134
+msgid "`Role Bonuses:      `{}\n"
+msgstr ""
+
+#: extendedeconomy\common\utils.py:140
+msgid "`Static Bonuses:    `{}\n"
+msgstr ""
+
+#: extendedeconomy\common\utils.py:141
+msgid "`Payday Autoclaim:  `{}\n"
+msgstr ""
+
+#: extendedeconomy\common\utils.py:144
+msgid "`Autoclaim Channel: `{}\n"
+msgstr ""
+
+#: extendedeconomy\common\utils.py:146
+msgid "`Autoclaim Roles:   `{}\n"
+msgstr ""
+
+#: extendedeconomy\common\utils.py:148
+msgid "## Event Log Channels\n"
+"`Default Log Channel: `{}\n"
+"`Set Balance:         `{}\n"
+"`Transfer Credits:    `{}\n"
+"`Bank Wipe:           `{}\n"
+"`Prune Accounts:      `{}\n"
+msgstr ""
+
+#: extendedeconomy\common\utils.py:165
+msgid "`Payday AutoClaim:    `{}\n"
+msgstr ""
+
+#: extendedeconomy\common\utils.py:169
+msgid "Showing settings for global bank"
+msgstr ""
+
+#: extendedeconomy\common\utils.py:171
+msgid "Showing settings for this server"
+msgstr ""
+
+#: extendedeconomy\common\utils.py:178
+msgid "`Cost:        `{}\n"
+"`Duration:    `{}\n"
+"`Level:       `{}\n"
+"`Prompt:      `{}\n"
+"`Modifier:    `{}\n"
+"`Value:       `{}\n"
+"`Cached Uses: `{}\n"
+msgstr ""
+

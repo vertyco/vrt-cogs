@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2024-02-08 18:30-0500\n"
-"PO-Revision-Date: 2024-12-03 14:57\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 03:02\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -17,72 +17,68 @@ msgstr ""
 "X-Crowdin-File-ID: 124\n"
 "Language: tr_TR\n"
 
-#: views\voteview.py:53
+#: ideaboard\views\voteview.py:60
 #, docstring
 msgid "Return True if the user can vote"
 msgstr ""
 
-#: views\voteview.py:57
+#: ideaboard\views\voteview.py:64
 msgid "This suggestion no longer exists in the config!"
 msgstr ""
 
-#: views\voteview.py:68
-msgid "You are blacklisted from voting."
+#: ideaboard\views\voteview.py:92
+msgid "You do not have any of the required roles to vote."
 msgstr ""
 
-#: views\voteview.py:71
-msgid "You have a blacklisted role and cannot vote."
+#: ideaboard\views\voteview.py:102
+msgid "Your account is too new! You must wait `{tleft}` before you can vote."
 msgstr ""
 
-#: views\voteview.py:76
-msgid "You do not have the required roles to vote."
+#: ideaboard\views\voteview.py:111
+msgid "You joined the server too recently! You must wait `{tleft}` before you can vote."
 msgstr ""
 
-#: views\voteview.py:84
-msgid "Your account is too young to vote. You must wait {age} more hours."
+#: ideaboard\views\voteview.py:125
+msgid "You must be level {level} or higher to vote."
 msgstr ""
 
-#: views\voteview.py:96
-msgid "You must wait {age} more hours before you can vote."
-msgstr ""
-
-#: views\voteview.py:112
-msgid "You must be level {level} to vote."
-msgstr ""
-
-#: views\voteview.py:126
+#: ideaboard\views\voteview.py:140
 msgid "Your in-game profile must be registered in order to vote on suggestions.\n"
 msgstr ""
 
-#: views\voteview.py:127
+#: ideaboard\views\voteview.py:141
 msgid "Use the {} command to link your discord account."
 msgstr ""
 
-#: views\voteview.py:133
-msgid "You must have at least {hours} hours of playtime to vote."
+#: ideaboard\views\voteview.py:147
+msgid "You must have at least {} hours of playtime to vote."
 msgstr ""
 
-#: views\voteview.py:156
+#: ideaboard\views\voteview.py:170 ideaboard\views\voteview.py:213
+msgid "You cannot vote on your own suggestion."
+msgstr ""
+
+#: ideaboard\views\voteview.py:173
 msgid "You have switched your downvote to an upvote."
 msgstr ""
 
-#: views\voteview.py:162
+#: ideaboard\views\voteview.py:181
 msgid "You have removed your upvote."
 msgstr ""
 
-#: views\voteview.py:166
+#: ideaboard\views\voteview.py:186
 msgid "You have upvoted this suggestion."
 msgstr ""
 
-#: views\voteview.py:190
+#: ideaboard\views\voteview.py:216
 msgid "You have switched your upvote to a downvote."
 msgstr ""
 
-#: views\voteview.py:196
+#: ideaboard\views\voteview.py:224
 msgid "You have removed your downvote."
 msgstr ""
 
-#: views\voteview.py:200
+#: ideaboard\views\voteview.py:229
 msgid "You have downvoted this suggestion."
 msgstr ""
 

@@ -1,0 +1,347 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 03:06\n"
+"Last-Translator: \n"
+"Language-Team: Croatian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: hr\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/pixl/locales/messages.pot\n"
+"X-Crowdin-File-ID: 738\n"
+"Language: hr_HR\n"
+
+#: pixl\dmenu.py:22 pixl\menu.py:57
+#, docstring
+msgid "\n"
+"    A 'yes' or 'no' confirmation menu\n\n"
+"    Parameters\n"
+"    ----------\n"
+"    ctx: commands.Context\n"
+"        The command context\n"
+"    msg: discord.Message\n"
+"        The buttons will be applied to this message.\n\n"
+"    Returns\n"
+"    ----------\n"
+"    Union[bool, None]: True if 'Yes', False if 'No', None if timeout\n"
+"    "
+msgstr ""
+
+#: pixl\dmenu.py:194
+#, docstring
+msgid "\n"
+"    An emoji-based dislash menu\n\n"
+"    note:: All pages should be of the same type\n\n"
+"    note:: All functions for handling what a particular emoji does\n"
+"           should be coroutines (i.e. :code:`async def`). Additionally,\n"
+"           they must take all the parameters of this function, in\n"
+"           addition to a string representing the emoji reacted with.\n"
+"           This parameter should be the last one, and none of the\n"
+"           parameters in the handling functions are optional\n\n"
+"    Parameters\n"
+"    ----------\n"
+"    ctx: commands.Context\n"
+"        The command context\n"
+"    pages: `list` of `str` or `discord.Embed`\n"
+"        The pages of the menu.\n"
+"    controls: dict\n"
+"        A mapping of emoji to the function which handles the action for the\n"
+"        emoji.\n"
+"    message: discord.Message\n"
+"        The message representing the menu. Usually :code:`None` when first opening\n"
+"        the menu\n"
+"    page: int\n"
+"        The current page number of the menu\n"
+"    timeout: float\n"
+"        The time (in seconds) to wait for a reaction\n\n"
+"    Raises\n"
+"    ------\n"
+"    RuntimeError\n"
+"        If either of the notes above are violated\n"
+"    "
+msgstr ""
+
+#: pixl\menu.py:165
+#, docstring
+msgid "\n"
+"    An emoji-based dpy2 menu\n\n"
+"    note:: All pages should be of the same type\n\n"
+"    note:: All functions for handling what a particular emoji does\n"
+"           should be coroutines (i.e. :code:`async def`). Additionally,\n"
+"           they must take all the parameters of this function, in\n"
+"           addition to a string representing the emoji reacted with.\n"
+"           This parameter should be the last one, and none of the\n"
+"           parameters in the handling functions are optional\n\n"
+"    Parameters\n"
+"    ----------\n"
+"    ctx: commands.Context\n"
+"        The command context\n"
+"    pages: `list` of `discord.Embed`\n"
+"        The pages of the menu.\n"
+"    controls: dict\n"
+"        A mapping of emoji to the function which handles the action for the\n"
+"        emoji.\n"
+"    message: discord.Message\n"
+"        The message representing the menu. Usually :code:`None` when first opening\n"
+"        the menu\n"
+"    page: int\n"
+"        The current page number of the menu\n"
+"    timeout: float\n"
+"        The time (in seconds) to wait for a reaction\n\n"
+"    Raises\n"
+"    ------\n"
+"    RuntimeError\n"
+"        If either of the notes above are violated\n"
+"    "
+msgstr ""
+
+#: pixl\pixl.py:41
+#, docstring
+msgid "\n"
+"    Guess pictures for points\n\n"
+"    Pixl is an image guessing game that reveals parts of an image over time while users race to guess the correct answer first.\n\n"
+"    **Images are split up into 192 blocks and slowly revealed over time.**\n"
+"    The score of the game is based on how many blocks are left when the image is guessed.\n"
+"    "
+msgstr ""
+
+#: pixl\pixl.py:81
+#, docstring
+msgid "Validates a single image entry from a text file"
+msgstr ""
+
+#: pixl\pixl.py:130
+#, docstring
+msgid "View the Pixl leaderboard!\n\n"
+"        **Arguments**\n"
+"        `show_global`: show the global leaderboard\n\n"
+"        example: `[p]pixlb true`\n"
+"        "
+msgstr ""
+
+#: pixl\pixl.py:206
+#, docstring
+msgid "\n"
+"        Start a Pixl game!\n"
+"        Guess the image as it is slowly revealed\n"
+"        "
+msgstr ""
+
+#: pixl\pixl.py:383
+#, docstring
+msgid "Configure the Pixl game"
+msgstr ""
+
+#: pixl\pixl.py:389
+#, docstring
+msgid "View the current settings"
+msgstr ""
+
+#: pixl\pixl.py:419
+#, docstring
+msgid "Set the time limit for Pixl games"
+msgstr ""
+
+#: pixl\pixl.py:428
+#, docstring
+msgid "Set the amount of blocks to reveal after each delay"
+msgstr ""
+
+#: pixl\pixl.py:437
+#, docstring
+msgid "Set the minimum amount of participants for the game to reward users credits"
+msgstr ""
+
+#: pixl\pixl.py:446
+#, docstring
+msgid "\n"
+"        Set the point to credit conversion ratio (points x ratio = credit reward)\n"
+"        Points are calculated based on how many hidden blocks are left at the end of the game\n\n"
+"        Ratio can be a decimal\n"
+"        Set to 0 to disable credit rewards\n"
+"        "
+msgstr ""
+
+#: pixl\pixl.py:461
+#, docstring
+msgid "(Toggle) Showing the answer after a game over"
+msgstr ""
+
+#: pixl\pixl.py:472
+#, docstring
+msgid "(Toggle) Whether to use global images in this guild"
+msgstr ""
+
+#: pixl\pixl.py:483
+#, docstring
+msgid "(Toggle) Whether to use the default hardcoded images in this guild"
+msgstr ""
+
+#: pixl\pixl.py:495
+#, docstring
+msgid "\n"
+"        (Owner Only)Set the delay between block reveals\n\n"
+"        **Warning**\n"
+"        Setting this too low may hit rate limits, default is 5 seconds.\n"
+"        "
+msgstr ""
+
+#: pixl\pixl.py:511
+#, docstring
+msgid "\n"
+"        Reset the Pixl scoreboard\n\n"
+"        **Arguments**\n"
+"        `user`: (Optional) A specific user to reset scores for. If not provided, resets scores for all users.\n\n"
+"        Examples:\n"
+"        - `[p]pixlset reset` - Resets scores for all users\n"
+"        - `[p]pixlset reset @user` - Resets scores for the specified user\n"
+"        "
+msgstr ""
+
+#: pixl\pixl.py:533
+#, docstring
+msgid "\n"
+"        Set the fuzzy matching threshold for answer checking (0.0 to 1.0)\n\n"
+"        A lower value means more lenient matching (more answers accepted)\n"
+"        A higher value requires more accurate spelling\n\n"
+"        Examples:\n"
+"        - 0.92 (default) accepts answers that are 92% similar\n"
+"        - 0.7 would accept answers that are roughly 70% similar\n"
+"        - 1.0 would require exact matching\n"
+"        - 0 would disable fuzzy matching entirely\n"
+"        "
+msgstr ""
+
+#: pixl\pixl.py:556
+#, docstring
+msgid "Add/Remove images"
+msgstr ""
+
+#: pixl\pixl.py:562
+#, docstring
+msgid "View the default images"
+msgstr ""
+
+#: pixl\pixl.py:568
+#, docstring
+msgid "View the global images"
+msgstr ""
+
+#: pixl\pixl.py:577
+#, docstring
+msgid "View the guild images"
+msgstr ""
+
+#: pixl\pixl.py:586
+#, docstring
+msgid "Test the default images to ensure they are valid urls"
+msgstr ""
+
+#: pixl\pixl.py:597
+#, docstring
+msgid "Test the global images to ensure they are valid urls"
+msgstr ""
+
+#: pixl\pixl.py:608
+#, docstring
+msgid "Test the guild images to ensure they are valid urls"
+msgstr ""
+
+#: pixl\pixl.py:621
+#, docstring
+msgid "\n"
+"        Add a global image for all guilds to use\n\n"
+"        **Arguments**\n"
+"        `url:     `the url of the image\n"
+"        `answers: `a list of possible answers separated by a comma\n\n"
+"        **Alternative**\n"
+"        If args are left blank, a text file can be uploaded with the following format for bulk image adding.\n"
+"        Each line starts with the url followed by all the possible correct answers separated by a comma\n\n"
+"        Example: `url, answer, answer, answer...`\n"
+"        ```\n"
+"        https://some_url.com/example.png, answer1, answer two, another answer\n"
+"        https://yet_another_url.com/another_example.jpg, answer one, answer 2, another answer\n"
+"        ```\n"
+"        "
+msgstr ""
+
+#: pixl\pixl.py:713
+#, docstring
+msgid "\n"
+"        Add an image for your guild to use\n\n"
+"        **Arguments**\n"
+"        `url:     `the url of the image\n"
+"        `answers: `a list of possible answers separated by a comma\n\n"
+"        **Alternative**\n"
+"        If args are left blank, a text file can be uploaded with the following format for bulk image adding.\n"
+"        Each line starts with the url followed by all the possible correct answers separated by a comma\n\n"
+"        Example: `url, answer, answer, answer...`\n"
+"        ```\n"
+"        https://some_url.com/example.png, answer1, answer two, another answer\n"
+"        https://yet_another_url.com/another_example.jpg, answer one, answer 2, another answer\n"
+"        ```\n"
+"        "
+msgstr ""
+
+#: pixl\pixl.py:805
+#, docstring
+msgid "\n"
+"        Delete all custom images for this guild\n\n"
+"        This will remove all custom images that have been added to this guild.\n"
+"        Default and global images will remain available if enabled.\n"
+"        "
+msgstr ""
+
+#: pixl\pixl.py:827
+#, docstring
+msgid "\n"
+"        Clean up invalid or dead image links\n\n"
+"        **Arguments**\n"
+"        `scope`: The scope to clean up - \"guild\", \"global\", or \"all\"\n\n"
+"        This command will test all images and remove any that are no longer accessible\n"
+"        "
+msgstr ""
+
+#: pixl\pixl.py:924
+#, docstring
+msgid "Test a single image to see if it's still valid"
+msgstr ""
+
+#: pixl\pixl.py:1054
+#, docstring
+msgid "Get all attachments from context"
+msgstr ""
+
+#: pixl\pixl.py:1069
+#, docstring
+msgid "Test images to ensure they're valid"
+msgstr ""
+
+#: pixl\utils.py:22
+#, docstring
+msgid "Basic URL validation"
+msgstr ""
+
+#: pixl\utils.py:34
+#, docstring
+msgid "\n"
+"    Get content from a URL with improved headers and retry logic for 403/404 errors.\n\n"
+"    Args:\n"
+"        url: The URL to fetch content from\n"
+"        timeout: Timeout in seconds\n\n"
+"    Returns:\n"
+"        Optional[bytes]: The content if successful, otherwise None\n"
+"    "
+msgstr ""
+
+#: pixl\utils.py:126
+#, docstring
+msgid "Slowly reveal blocks from an image while waiting for text response"
+msgstr ""
+

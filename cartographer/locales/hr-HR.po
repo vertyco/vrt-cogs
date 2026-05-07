@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2024-07-29 21:29-0400\n"
-"PO-Revision-Date: 2024-12-03 14:56\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 03:04\n"
 "Last-Translator: \n"
 "Language-Team: Croatian\n"
 "MIME-Version: 1.0\n"
@@ -17,7 +17,7 @@ msgstr ""
 "X-Crowdin-File-ID: 80\n"
 "Language: hr_HR\n"
 
-#: main.py:29
+#: cartographer\main.py:29
 #, docstring
 msgid "\n"
 "    Backup & Restore tools for Discord servers.\n\n"
@@ -27,43 +27,59 @@ msgid "\n"
 "    - Text channels (permissions/order)\n"
 "    - Voice channels (permissions/order)\n"
 "    - Forum channels  (permissions/order)[Not forum posts]\n"
-"    - Roles (permissions and what members they're assigned to)\n"
-"    - Emojis (Very slow and rate limit heavy)\n"
-"    - Stickers (Very slow and rate limit heavy)\n"
+"    - Roles (permissions/color/name/icon and what members they're assigned to)\n"
+"    - Emojis (name/roles, Very slow and rate limit heavy)\n"
+"    - Stickers (name/description, Very slow and rate limit heavy)\n"
 "    - Members (roles and nicknames)\n"
 "    - Messages (Optional, can be disabled)\n"
+"    - Server icon/banner/splash/discovery splash/description/name\n"
+"    - All server verification/security settings\n"
 "    "
 msgstr ""
 
-#: main.py:87
+#: cartographer\main.py:89
 msgid "Version: {}\n"
 "Author: {}"
 msgstr ""
 
-#: main.py:91
+#: cartographer\main.py:93
 #, docstring
 msgid "No data to delete"
 msgstr ""
 
-#: main.py:139
+#: cartographer\main.py:145
 #, docstring
-msgid "Open the Backup/Restore menu"
+msgid "Open the Backup/Restore menu\n\n"
+"        This cog can backup & restore the following:\n"
+"        - Bans (including reason)\n"
+"        - Categories (permissions/order)\n"
+"        - Text channels (permissions/order)\n"
+"        - Voice channels (permissions/order)\n"
+"        - Forum channels  (permissions/order)[Not forum posts]\n"
+"        - Roles (permissions/color/name/icon and what members they're assigned to)\n"
+"        - Emojis (name/roles, Very slow and rate limit heavy)\n"
+"        - Stickers (name/description, Very slow and rate limit heavy)\n"
+"        - Members (roles and nicknames)\n"
+"        - Messages (Optional, can be disabled)\n"
+"        - Server icon/banner/splash/discovery splash/description/name\n"
+"        - All server verification/security settings\n"
+"        "
 msgstr ""
 
-#: main.py:141 main.py:189 main.py:216
-msgid "This server is in the ingored list!"
+#: cartographer\main.py:162 cartographer\main.py:211 cartographer\main.py:238
+msgid "This server is in the ignored list!"
 msgstr ""
 
-#: main.py:144 main.py:192 main.py:219
+#: cartographer\main.py:165 cartographer\main.py:214 cartographer\main.py:241
 msgid "This server is not in the allowed list!"
 msgstr ""
 
-#: main.py:160
+#: cartographer\main.py:181
 #, docstring
 msgid "Backup & Restore Tools"
 msgstr ""
 
-#: main.py:165
+#: cartographer\main.py:186
 #, docstring
 msgid "\n"
 "        Wipe all backups for all servers\n\n"
@@ -71,15 +87,15 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: main.py:171
+#: cartographer\main.py:192
 msgid "Please confirm this action by passing `True` as an argument"
 msgstr ""
 
-#: main.py:179
+#: cartographer\main.py:201
 msgid "All backups have been wiped!"
 msgstr ""
 
-#: main.py:183
+#: cartographer\main.py:205
 #, docstring
 msgid "\n"
 "        Create a backup of this server\n\n"
@@ -87,39 +103,39 @@ msgid "\n"
 "        "
 msgstr ""
 
-#: main.py:206
+#: cartographer\main.py:228
 msgid "A backup has been created!"
 msgstr ""
 
-#: main.py:212
+#: cartographer\main.py:234
 #, docstring
 msgid "\n"
 "        Restore the latest backup for this server\n"
 "        "
 msgstr ""
 
-#: main.py:225
+#: cartographer\main.py:247
 msgid "There are no backups for this guild!"
 msgstr ""
 
-#: main.py:230
+#: cartographer\main.py:252
 msgid "Server restore is complete!"
 msgstr ""
 
-#: main.py:232
+#: cartographer\main.py:254
 msgid "The following errors occurred while restoring the backup"
 msgstr ""
 
-#: main.py:238
+#: cartographer\main.py:260
 #, docstring
 msgid "View current global settings"
 msgstr ""
 
-#: main.py:246 main.py:247
+#: cartographer\main.py:269 cartographer\main.py:270
 msgid "**None Set**"
 msgstr ""
 
-#: main.py:249
+#: cartographer\main.py:272
 msgid "### Global Settings\n"
 "- Global backups: {}\n"
 "- Max backups per server: {}\n"
@@ -133,20 +149,20 @@ msgid "### Global Settings\n"
 "- Allowed servers: {}\n"
 msgstr ""
 
-#: main.py:278
+#: cartographer\main.py:301
 #, docstring
 msgid "Enable/Disable allowing auto backups"
 msgstr ""
 
-#: main.py:281
+#: cartographer\main.py:304
 msgid "Auto backups have been **Disabled**"
 msgstr ""
 
-#: main.py:284
+#: cartographer\main.py:307
 msgid "Auto backups have been **Enabled**"
 msgstr ""
 
-#: main.py:291
+#: cartographer\main.py:314
 #, docstring
 msgid "Set the message backup limit per channel for auto backups\n\n"
 "        Set to 0 to disable message backups\n\n"
@@ -155,19 +171,19 @@ msgid "Set the message backup limit per channel for auto backups\n\n"
 "        "
 msgstr ""
 
-#: main.py:299
+#: cartographer\main.py:322
 msgid "Limit must be 0 or higher"
 msgstr ""
 
-#: main.py:302
+#: cartographer\main.py:325
 msgid "Message backup has been **Disabled**"
 msgstr ""
 
-#: main.py:304
+#: cartographer\main.py:327
 msgid "Message backup limit has been set"
 msgstr ""
 
-#: main.py:310
+#: cartographer\main.py:333
 #, docstring
 msgid "Toggle backing up members\n\n"
 "        ⚠️**Warning**⚠️\n"
@@ -175,21 +191,21 @@ msgid "Toggle backing up members\n\n"
 "        "
 msgstr ""
 
-#: main.py:316
+#: cartographer\main.py:339
 msgid "\n"
 "⚠️**Warning**⚠️\n"
 "Restoring the roles of all members can be slow for large servers."
 msgstr ""
 
-#: main.py:318
+#: cartographer\main.py:341
 msgid "Members will now be backed up"
 msgstr ""
 
-#: main.py:320
+#: cartographer\main.py:343
 msgid "Members will no longer be backed up"
 msgstr ""
 
-#: main.py:327
+#: cartographer\main.py:350
 #, docstring
 msgid "Toggle backing up roles\n\n"
 "        ⚠️**Warning**⚠️\n"
@@ -197,21 +213,21 @@ msgid "Toggle backing up roles\n\n"
 "        "
 msgstr ""
 
-#: main.py:333
+#: cartographer\main.py:356
 msgid "\n"
 "⚠️**Warning**⚠️\n"
 "Any roles above the bot's role will not be restored."
 msgstr ""
 
-#: main.py:335
+#: cartographer\main.py:358
 msgid "Roles will now be backed up"
 msgstr ""
 
-#: main.py:337
+#: cartographer\main.py:360
 msgid "Roles will no longer be backed up"
 msgstr ""
 
-#: main.py:344
+#: cartographer\main.py:367
 #, docstring
 msgid "Toggle backing up emojis\n\n"
 "        ⚠️**Warning**⚠️\n"
@@ -219,21 +235,21 @@ msgid "Toggle backing up emojis\n\n"
 "        "
 msgstr ""
 
-#: main.py:350
+#: cartographer\main.py:373
 msgid "\n"
 "⚠️**Warning**⚠️\n"
 "Restoring emojis is EXTREMELY rate-limited and can take a long time (like hours) for servers with many emojis."
 msgstr ""
 
-#: main.py:354
+#: cartographer\main.py:377
 msgid "Emojis will now be backed up"
 msgstr ""
 
-#: main.py:356
+#: cartographer\main.py:379
 msgid "Emojis will no longer be backed up"
 msgstr ""
 
-#: main.py:363
+#: cartographer\main.py:386
 #, docstring
 msgid "Toggle backing up stickers\n\n"
 "        ⚠️**Warning**⚠️\n"
@@ -241,56 +257,56 @@ msgid "Toggle backing up stickers\n\n"
 "        "
 msgstr ""
 
-#: main.py:369
+#: cartographer\main.py:392
 msgid "\n"
 "⚠️**Warning**⚠️\n"
 "Restoring stickers is EXTREMELY rate-limited and can take a long time (like hours) for servers with many stickers."
 msgstr ""
 
-#: main.py:373
+#: cartographer\main.py:396
 msgid "Stickers will now be backed up"
 msgstr ""
 
-#: main.py:375
+#: cartographer\main.py:398
 msgid "Stickers will no longer be backed up"
 msgstr ""
 
-#: main.py:382
+#: cartographer\main.py:405
 #, docstring
 msgid "Set the max amount of backups a server can have"
 msgstr ""
 
-#: main.py:385
+#: cartographer\main.py:408
 msgid "Max backups set to 0, Cartographer has been **Disabled**"
 msgstr ""
 
-#: main.py:387
+#: cartographer\main.py:410
 msgid "Max backup count has been set"
 msgstr ""
 
-#: main.py:394
+#: cartographer\main.py:417
 #, docstring
 msgid "Add/Remove a server from the ignore list"
 msgstr ""
 
-#: main.py:397
+#: cartographer\main.py:420
 msgid "Server removed from the ignore list"
 msgstr ""
 
-#: main.py:400
+#: cartographer\main.py:423
 msgid "Server added to the ignore list"
 msgstr ""
 
-#: main.py:407
+#: cartographer\main.py:430
 #, docstring
 msgid "Add/Remove a server from the allow list"
 msgstr ""
 
-#: main.py:410
+#: cartographer\main.py:433
 msgid "Server removed from the allow list"
 msgstr ""
 
-#: main.py:413
+#: cartographer\main.py:436
 msgid "Server added to the allow list"
 msgstr ""
 

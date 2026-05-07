@@ -1,0 +1,178 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 03:01\n"
+"Last-Translator: \n"
+"Language-Team: Russian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=4; plural=((n%10==1 && n%100!=11) ? 0 : ((n%10 >= 2 && n%10 <=4 && (n%100 < 12 || n%100 > 14)) ? 1 : ((n%10 == 0 || (n%10 >= 5 && n%10 <=9)) || (n%100 >= 11 && n%100 <= 14)) ? 2 : 3));\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: ru\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/noping/common/locales/messages.pot\n"
+"X-Crowdin-File-ID: 730\n"
+"Language: ru_RU\n"
+
+#: noping\common\models.py:31
+#, docstring
+msgid "A single availability window within a day (e.g., 9:00 - 17:00)."
+msgstr ""
+
+#: noping\common\models.py:48
+#, docstring
+msgid "Schedule windows for a specific day of the week."
+msgstr ""
+
+#: noping\common\models.py:55
+#, docstring
+msgid "A user's noping schedule. If no days have windows, noping is permanent when enabled."
+msgstr ""
+
+#: noping\common\models.py:65
+#, docstring
+msgid "Return True if any day has enabled windows."
+msgstr ""
+
+#: noping\common\models.py:69
+#, docstring
+msgid "Check if noping should be active at the given time.\n\n"
+"        If no schedule is configured, noping is permanent (always active when enabled).\n"
+"        If a schedule IS configured, noping is active when the user is NOT in an availability window.\n"
+"        "
+msgstr ""
+
+#: noping\common\models.py:90
+#, docstring
+msgid "Return a human-readable summary of the schedule."
+msgstr ""
+
+#: noping\common\models.py:115
+#, docstring
+msgid "Get user IDs that currently have noping enabled (regardless of schedule)."
+msgstr ""
+
+#: noping\common\models.py:119
+#, docstring
+msgid "Remove a user's schedule. Returns True if the user was found."
+msgstr ""
+
+#: noping\common\utils.py:16
+#, docstring
+msgid "Create the automod keyword filter pattern for a user ID."
+msgstr ""
+
+#: noping\common\utils.py:21
+#, docstring
+msgid "Extract user IDs from a list of automod keyword filter strings."
+msgstr ""
+
+#: noping\common\utils.py:31
+#, docstring
+msgid "Generate a deterministic rule name for the given index (0-based)."
+msgstr ""
+
+#: noping\common\utils.py:38
+#, docstring
+msgid "Check if an automod rule is managed by this cog."
+msgstr ""
+
+#: noping\common\utils.py:49
+#, docstring
+msgid "Check if an automod rule is a legacy 'No Ping' rule from the old vrtutils cog."
+msgstr ""
+
+#: noping\common\utils.py:54
+#, docstring
+msgid "Filter and sort NoPing rules from a list of automod rules.\n\n"
+"    Finds rules managed by this cog first, then falls back to legacy 'No Ping' rules\n"
+"    from the old vrtutils version so they can be adopted.\n"
+"    "
+msgstr ""
+
+#: noping\common\utils.py:72
+#, docstring
+msgid "Check if a user's ping pattern is currently in any noping automod rule."
+msgstr ""
+
+#: noping\common\utils.py:85
+#, docstring
+msgid "Directly add or remove a user from the noping automod rules.\n\n"
+"    This edits the rules in-place without a full sync, so the schedule loop\n"
+"    will naturally correct it at the next transition.\n"
+"    Returns True if the rules were modified successfully.\n"
+"    "
+msgstr ""
+
+#: noping\common\utils.py:134
+#, docstring
+msgid "Resolve the effective timezone for a user (user override > guild default)."
+msgstr ""
+
+#: noping\common\utils.py:143
+#, docstring
+msgid "Get current time in the given timezone."
+msgstr ""
+
+#: noping\common\utils.py:152
+#, docstring
+msgid "Get current time in the user's effective timezone."
+msgstr ""
+
+#: noping\common\utils.py:158
+#, docstring
+msgid "Format a datetime as a Discord timestamp string.\n\n"
+"    Styles: F (full), f (short datetime), D (date), d (short date),\n"
+"            T (long time), t (short time), R (relative)\n"
+"    "
+msgstr ""
+
+#: noping\common\utils.py:167
+#, docstring
+msgid "Get the next occurrence of a specific weekday + time in the given timezone."
+msgstr ""
+
+#: noping\common\utils.py:180
+#, docstring
+msgid "Calculate the datetime of the next schedule transition for a user.\n\n"
+"    Returns None if no schedule is configured (permanent noping).\n"
+"    "
+msgstr ""
+
+#: noping\common\utils.py:240
+#, docstring
+msgid "Convert a schedule window to Discord timestamp strings for the next occurrence."
+msgstr ""
+
+#: noping\common\utils.py:256
+#, docstring
+msgid "Import users from legacy 'No Ping' automod rules into the cog's database.\n\n"
+"    Checks the provided rules for legacy naming patterns and extracts user IDs\n"
+"    from their keyword filters. Any users not already in the database are added\n"
+"    with noping enabled (permanent, no schedule).\n\n"
+"    Only runs when no managed NoPing rules exist yet (first-time adoption).\n"
+"    Returns the number of newly imported users.\n"
+"    "
+msgstr ""
+
+#: noping\common\utils.py:298
+#, docstring
+msgid "Synchronize automod rules with the current set of active noping user IDs.\n\n"
+"    Creates, updates, or deletes rules as needed to match the active user set.\n"
+"    Returns the list of rule IDs that are currently active.\n"
+"    "
+msgstr ""
+
+#: noping\common\utils.py:357
+#, docstring
+msgid "Get user IDs whose noping is active right now, respecting per-user timezones."
+msgstr ""
+
+#: noping\common\utils.py:369
+#, docstring
+msgid "Get a sorted list of all available timezone names."
+msgstr ""
+

@@ -1,0 +1,306 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 03:07\n"
+"Last-Translator: \n"
+"Language-Team: Croatian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: hr\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/whitelabel/locales/messages.pot\n"
+"X-Crowdin-File-ID: 798\n"
+"Language: hr_HR\n"
+
+#: whitelabel\main.py:25
+#, docstring
+msgid "Manage bot's profile settings."
+msgstr ""
+
+#: whitelabel\main.py:30
+#, docstring
+msgid "Allow server owners to set a custom bot avatar, banner and bio."
+msgstr ""
+
+#: whitelabel\main.py:65
+#, docstring
+msgid "If image or content is safe, return None, else return reason."
+msgstr ""
+
+#: whitelabel\main.py:89
+msgid "Failed to validate submission, contact bot owner."
+msgstr ""
+
+#: whitelabel\main.py:97
+msgid "Submission was flagged by OpenAI moderation for the following reasons:\n"
+msgstr ""
+
+#: whitelabel\main.py:119
+msgid "Could not determine the owner of this server!"
+msgstr ""
+
+#: whitelabel\main.py:122
+msgid "I could not find {} in the 'main' server!"
+msgstr ""
+
+#: whitelabel\main.py:125 whitelabel\main.py:136
+msgid " You can join the server here: {}"
+msgstr ""
+
+#: whitelabel\main.py:131
+msgid "The owner ({}) of this server does not have the {} role in the {} server required to use this feature."
+msgstr ""
+
+#: whitelabel\main.py:148
+msgid "(no invite available)"
+msgstr ""
+
+#: whitelabel\main.py:182
+#, docstring
+msgid "Set the bot's avatar for this server."
+msgstr ""
+
+#: whitelabel\main.py:185
+msgid "The provided attachment is too large. Max size is 8MB."
+msgstr ""
+
+#: whitelabel\main.py:189 whitelabel\main.py:235
+msgid "Invalid attachment type `{}`, must be one of: PNG, JPEG, JPG, GIF."
+msgstr ""
+
+#: whitelabel\main.py:204
+msgid "My avatar has been updated for this server!"
+msgstr ""
+
+#: whitelabel\main.py:209
+msgid "I do not have a global avatar to reset to, so my avatar for this server has been cleared!"
+msgstr ""
+
+#: whitelabel\main.py:214
+msgid "My avatar for this server has been reset to my global avatar!"
+msgstr ""
+
+#: whitelabel\main.py:222
+msgid "Failed to update avatar: {}"
+msgstr ""
+
+#: whitelabel\main.py:228
+#, docstring
+msgid "Set the bot's banner for this server."
+msgstr ""
+
+#: whitelabel\main.py:231
+msgid "The provided attachment is too large. Max size is 10MB."
+msgstr ""
+
+#: whitelabel\main.py:249
+msgid "My banner has been updated for this server!"
+msgstr ""
+
+#: whitelabel\main.py:254
+msgid "I do not have a global banner to reset to, so my banner for this server has been cleared!"
+msgstr ""
+
+#: whitelabel\main.py:259
+msgid "My banner for this server has been reset to my global banner!"
+msgstr ""
+
+#: whitelabel\main.py:265
+msgid "Failed to update banner: {}"
+msgstr ""
+
+#: whitelabel\main.py:271
+#, docstring
+msgid "Set the bot's bio for this server."
+msgstr ""
+
+#: whitelabel\main.py:279
+msgid "Bio cannot be longer than 190 characters."
+msgstr ""
+
+#: whitelabel\main.py:282
+msgid "My bio has been updated for this server!"
+msgstr ""
+
+#: whitelabel\main.py:284
+msgid "My bio for this server has been reset to my global bio!"
+msgstr ""
+
+#: whitelabel\main.py:291
+msgid "Failed to update bio: {}"
+msgstr ""
+
+#: whitelabel\main.py:298
+#, docstring
+msgid "Configuration for the whitelabel cog."
+msgstr ""
+
+#: whitelabel\main.py:303
+#, docstring
+msgid "View the current configuration."
+msgstr ""
+
+#: whitelabel\main.py:309
+msgid "Whitelabel Configuration"
+msgstr ""
+
+#: whitelabel\main.py:310
+msgid "Main Guild"
+msgstr ""
+
+#: whitelabel\main.py:310 whitelabel\main.py:311 whitelabel\main.py:312
+msgid "Not set"
+msgstr ""
+
+#: whitelabel\main.py:311
+msgid "Main Role"
+msgstr ""
+
+#: whitelabel\main.py:312
+msgid "Disallowed Message"
+msgstr ""
+
+#: whitelabel\main.py:314
+msgid "OpenAI Validation"
+msgstr ""
+
+#: whitelabel\main.py:314
+msgid "Enabled"
+msgstr ""
+
+#: whitelabel\main.py:314
+msgid "Disabled"
+msgstr ""
+
+#: whitelabel\main.py:319
+#, docstring
+msgid "Set THIS server as the main server."
+msgstr ""
+
+#: whitelabel\main.py:322
+msgid "Main server has been set to: `{}`, main role has been cleared."
+msgstr ""
+
+#: whitelabel\main.py:327
+#, docstring
+msgid "Set the role required in the main server for owners of other servers to change the bot's profile.\n\n"
+"        Leave the role empty to disable the role check.\n"
+"        "
+msgstr ""
+
+#: whitelabel\main.py:335
+msgid "The main server is not set. Please set it using `{}whitelabel mainserver`"
+msgstr ""
+
+#: whitelabel\main.py:339
+msgid "You can only set the main role from the main server: `{}`"
+msgstr ""
+
+#: whitelabel\main.py:344
+msgid "Main role has been cleared. Any server owner can now change the bot's profile."
+msgstr ""
+
+#: whitelabel\main.py:347
+msgid "The role must be from the main server: `{}`"
+msgstr ""
+
+#: whitelabel\main.py:349
+msgid "Main role has been set to: `{}`"
+msgstr ""
+
+#: whitelabel\main.py:353
+#, docstring
+msgid "Set the message to send when a server owner is not allowed to change the bot's profile.\n\n"
+"        You can use the following placeholders in your message:\n"
+"        {owner_mention} - Mentions the owner of the server\n"
+"        {owner_name} - The name of the owner of the server\n"
+"        {role_name} - The name of the required role in the main server\n"
+"        {main_guild} - The name of the main server\n"
+"        {invite} - An invite link to the main server (if available)\n"
+"        "
+msgstr ""
+
+#: whitelabel\main.py:363
+msgid "The disallowed message cannot be longer than 1000 characters."
+msgstr ""
+
+#: whitelabel\main.py:365
+msgid "Disallowed message has been set."
+msgstr ""
+
+#: whitelabel\main.py:369
+#, docstring
+msgid "Toggle OpenAI's free validation on or off."
+msgstr ""
+
+#: whitelabel\main.py:372 whitelabel\main.py:396
+msgid "1. Go to [OpenAI](https://platform.openai.com/signup) and sign up for an account.\n"
+"2. Go to the [API keys](https://platform.openai.com/account/api-keys) page.\n"
+"3. Click the `+ Create new secret key` button to create a new API key.\n"
+"4. Copy the API key click the button below to set it."
+msgstr ""
+
+#: whitelabel\main.py:388
+msgid "enabled"
+msgstr ""
+
+#: whitelabel\main.py:388
+msgid "disabled"
+msgstr ""
+
+#: whitelabel\main.py:389
+msgid "OpenAI validation has been {}."
+msgstr ""
+
+#: whitelabel\main.py:394
+#, docstring
+msgid "Set an openai key for free content moderation"
+msgstr ""
+
+#: whitelabel\main.py:412
+#, docstring
+msgid "\n"
+"        Revert any unauthorized server profiles for users that no longer have access.\n\n"
+"        WARNING: This will take a while to run and may hit rate limits if the bot is in many servers.\n"
+"        "
+msgstr ""
+
+#: whitelabel\main.py:420
+msgid "The main server is not set. Please set it using `{}whitelabel mainserver`."
+msgstr ""
+
+#: whitelabel\main.py:424
+msgid "I am not in the main server. Please check my servers."
+msgstr ""
+
+#: whitelabel\main.py:428
+msgid "The main role is not set. Please set it using `{}whitelabel mainrole`."
+msgstr ""
+
+#: whitelabel\main.py:432
+msgid "The main role does not exist in the main server. Please check the role."
+msgstr ""
+
+#: whitelabel\main.py:436
+msgid "Starting cleanup, this may take a while..."
+msgstr ""
+
+#: whitelabel\main.py:462
+msgid "Cleanup complete. Reverted: {} | Failed: {}"
+msgstr ""
+
+#: whitelabel\main.py:466
+#, docstring
+msgid "Check if a server owner lost the required role and revert the bot's profile if so."
+msgstr ""
+
+#: whitelabel\main.py:490
+#, docstring
+msgid "Check if a server owner left the main guild and revert the bot's profile if so."
+msgstr ""
+
