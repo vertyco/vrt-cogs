@@ -319,20 +319,22 @@ class ChatHandler(MixinMeta):
         source = function_entry.get("source", _("Unknown"))
         category = render_tool_category(function_entry.get("category"))
         preview = orjson.dumps(arguments, option=orjson.OPT_INDENT_2).decode()
-        if len(preview) > 1200:
-            preview = preview[:1200] + "\n... [truncated]"
 
         prompt = _(
             "`{}` wants to run admin tool `{}` from `{}` ({})\nChoose `Approve Once`, `Allow This Session`, or `Skip`."
         ).format(self.bot.user.display_name, function_name, source, category)
-        prompt += "\n" + box(preview, lang="json")
 
         reference = None
         with suppress(discord.HTTPException, AttributeError):
             reference = message_obj.to_reference(fail_if_not_exists=False)
 
         view = AdminToolApprovalView(author.id)
-        approval_message = await channel.send(prompt, view=view, reference=reference)
+        if len(preview) > 1200:
+            file = text_to_file(preview, filename=f"{function_name}_args.json")
+            approval_message = await channel.send(prompt, file=file, view=view, reference=reference)
+        else:
+            prompt += "\n" + box(preview, lang="json")
+            approval_message = await channel.send(prompt, view=view, reference=reference)
         view.message = approval_message
         await view.wait()
 
@@ -346,7 +348,7 @@ class ChatHandler(MixinMeta):
             conversation.approved_tool_names.append(function_name)
 
         with suppress(discord.HTTPException):
-            await approval_message.edit(content=prompt + "\n" + decision_map[view.decision], view=view)
+            await approval_message.edit(content=prompt + "\n" + decision_map[view.decision], attachments=[], view=view)
 
         if view.decision in {"once", "session"}:
             return True, ""
