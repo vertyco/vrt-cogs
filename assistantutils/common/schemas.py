@@ -1305,6 +1305,33 @@ RENDER_SVG = {
     },
 }
 
+EXECUTE_PYTHON = {
+    "name": "execute_python",
+    "description": (
+        "Execute a Python code snippet directly in the bot's runtime. "
+        "Only available to bot owners and requires explicit approval before each run. "
+        "Times out after 60 seconds."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "code": {
+                "type": "string",
+                "description": (
+                    "The Python code to execute. May be multi-line. "
+                    "Pre-injected variables: "
+                    "ctx, bot, channel, author, guild, message, _, aiohttp, asyncio, discord, commands, cf. "
+                    "Use 'return' to return a value. Use 'print()' to capture stdout output. "
+                    "IMPORTANT: any synchronous blocking call (file I/O, requests, time.sleep, CPU work) "
+                    "MUST be wrapped with 'await asyncio.to_thread(fn, *args)' to avoid blocking the event loop. "
+                    "You can also import modules not included in the snippet context."
+                ),
+            },
+        },
+        "required": ["code"],
+    },
+}
+
 DISCORD_INFO_TOOLS = (
     GET_CHANNEL_LIST,
     GET_CHANNEL_INFO,
