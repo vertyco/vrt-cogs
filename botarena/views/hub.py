@@ -164,6 +164,7 @@ class BattleResultLayout(BotArenaView):
         ctx: t.Optional[commands.Context] = None,
         cog: t.Optional["BotArena"] = None,
         parent: t.Optional[ui.LayoutView] = None,
+        retry_mission: t.Optional["Mission"] = None,
     ):
         # BattleResultLayout has optional ctx/cog, so we handle None case
         if ctx is not None and cog is not None:
@@ -175,6 +176,7 @@ class BattleResultLayout(BotArenaView):
             self.cog = cog
             self.parent = parent
             self.message: t.Optional[discord.Message] = None
+        self.retry_mission = retry_mission
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         """Override to handle optional ctx case."""
@@ -208,6 +210,38 @@ class BattleResultActionsRow(ui.ActionRow["BattleResultLayout"]):
         self.view.stop()
 
 
+class CampaignBattleActionsRow(ui.ActionRow["BattleResultLayout"]):
+    """Actions row for campaign battle results - includes Try Again for quick retry"""
+
+    @ui.button(label="Try Again", style=discord.ButtonStyle.primary, emoji="🔄")
+    async def retry_button(self, interaction: discord.Interaction, button: ui.Button):
+        if not self.view.ctx or not self.view.cog or not self.view.retry_mission:
+            await interaction.response.send_message("Cannot retry.", ephemeral=True)
+            return
+        view = MissionBriefingLayout(self.view.ctx, self.view.cog, self.view.retry_mission)
+        await interaction.response.send_message(view=view)
+        msg = await interaction.original_response()
+        view.message = msg
+        self.retry_button.disabled = True
+        self.return_button.disabled = True
+        await self.view.message.edit(view=self.view)
+        self.view.stop()
+
+    @ui.button(label="Return to Hub", style=discord.ButtonStyle.secondary, emoji="🏠")
+    async def return_button(self, interaction: discord.Interaction, button: ui.Button):
+        if not self.view.ctx or not self.view.cog:
+            await interaction.response.send_message("Cannot return to hub.", ephemeral=True)
+            return
+        hub = GameHubLayout(self.view.ctx, self.view.cog)
+        await interaction.response.send_message(view=hub)
+        msg = await interaction.original_response()
+        hub.message = msg
+        self.retry_button.disabled = True
+        self.return_button.disabled = True
+        await self.view.message.edit(view=self.view)
+        self.view.stop()
+
+
 def create_battle_result_view(
     title: str,
     description: str,
@@ -221,6 +255,7 @@ def create_battle_result_view(
     user: t.Optional[discord.User | discord.Member] = None,
     mission_name: t.Optional[str] = None,
     chapter_name: t.Optional[str] = None,
+    mission: t.Optional["Mission"] = None,
 ) -> tuple[BattleResultLayout, list[discord.File]]:
     """
     Create a LayoutView for battle results with an embedded video.
@@ -242,7 +277,7 @@ def create_battle_result_view(
     Returns:
         Tuple of (LayoutView, list of files to attach)
     """
-    layout = BattleResultLayout(ctx=ctx, cog=cog)
+    layout = BattleResultLayout(ctx=ctx, cog=cog, retry_mission=mission)
     container = ui.Container(accent_colour=color)
 
     # Title and description with user attribution and mission info
@@ -281,7 +316,10 @@ def create_battle_result_view(
 
     # Add Return to Hub button if ctx and cog are provided
     if ctx and cog:
-        layout.add_item(BattleResultActionsRow())
+        if mission:
+            layout.add_item(CampaignBattleActionsRow())
+        else:
+            layout.add_item(BattleResultActionsRow())
 
     return layout, files
 
@@ -1221,7 +1259,14 @@ class MissionBriefingLayout(BotArenaView):
         await interaction.response.edit_message(view=self)
 
     def _build_layout(self):
+        player = self.cog.db.get_player(self.ctx.author.id)
         if self.battle_in_progress:
+            attempts = player.get_mission_attempts(self.mission.id)
+            hint = (
+                f"💡 *Hint: {self.mission.defeat_text}*"
+                if attempts > 1 and self.mission.defeat_text
+                else get_random_tip()
+            )
             container = ui.Container(accent_colour=discord.Color.orange())
             container.add_item(
                 ui.TextDisplay(
@@ -1230,13 +1275,11 @@ class MissionBriefingLayout(BotArenaView):
                     f"**Chapter:** {self.mission.chapter}\n"
                     f"**Player:** {self.ctx.author.mention}\n\n"
                     f"🎬 Simulating and rendering battle...\n\n"
-                    f"{get_random_tip()}"
+                    f"{hint}"
                 )
             )
             self.add_item(container)
             return
-
-        player = self.cog.db.get_player(self.ctx.author.id)
 
         # Calculate total team weight from selected bots
         total_team_weight = 0
@@ -1649,6 +1692,7 @@ class MissionBriefingLayout(BotArenaView):
                 user=self.ctx.author,
                 mission_name=self.mission.name,
                 chapter_name=chapter_name,
+                mission=self.mission,
             )
             result_view.message = self.message
             await self.message.edit(view=result_view, embed=None, attachments=files)
@@ -1673,6 +1717,7 @@ class MissionBriefingLayout(BotArenaView):
                 user=self.ctx.author,
                 mission_name=self.mission.name,
                 chapter_name=chapter_name,
+                mission=self.mission,
             )
             result_view.message = self.message
             await self.message.edit(view=result_view, embed=None)
