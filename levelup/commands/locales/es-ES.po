@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
 "POT-Creation-Date: 2025-11-27 13:02-0500\n"
-"PO-Revision-Date: 2025-11-27 19:08\n"
+"PO-Revision-Date: 2026-05-06 23:27\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -1655,6 +1655,11 @@ msgstr "Se han eliminado {} bonificaciones de canal de voz de la base de datos\n
 #: levelup\commands\data.py:117
 msgid "No data to prune!"
 msgstr "¡No hay datos que eliminar!"
+
+#: levelup\commands\data.py:119
+msgid "Cleanup complete\n"
+"{}"
+msgstr ""
 
 #: levelup\commands\data.py:123
 #, docstring
