@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2024-02-10 17:37-0500\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -11,31 +11,40 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: redgettext 3.4.2\n"
 
-#: views.py:33
-msgid "Set OpenAI Key"
+#: assistant\views.py:46
+msgid "Custom"
 msgstr ""
 
-#: views.py:35
-msgid "Enter your OpenAI Key below"
+#: assistant\views.py:58
+msgid "Set API Key"
 msgstr ""
 
-#: views.py:56 views.py:142 views.py:462
+#: assistant\views.py:60
+msgid "Enter your API Key below"
+msgstr ""
+
+#: assistant\views.py:81 assistant\views.py:214 assistant\views.py:663
+#: assistant\views.py:905
 msgid "This isn't your menu!"
 msgstr ""
 
-#: views.py:77
+#: assistant\views.py:104
+msgid "This approval prompt isn't for you!"
+msgstr ""
+
+#: assistant\views.py:145
 msgid "Entry name"
 msgstr ""
 
-#: views.py:85
+#: assistant\views.py:153
 msgid "Training context"
 msgstr ""
 
-#: views.py:104
+#: assistant\views.py:172
 msgid "Search Query"
 msgstr ""
 
-#: views.py:192
+#: assistant\views.py:264
 msgid ""
 "Failed to process embedding `{}`\n"
 "Content: ```\n"
@@ -43,161 +52,234 @@ msgid ""
 "```"
 msgstr ""
 
-#: views.py:194
+#: assistant\views.py:266
 msgid "An embedding with the name `{}` already exists!"
 msgstr ""
 
-#: views.py:199
+#: assistant\views.py:271
 msgid "Your embedding labeled `{}` has been processed!"
 msgstr ""
 
-#: views.py:211
+#: assistant\views.py:282
 msgid "No embeddings to inspect!"
 msgstr ""
 
-#: views.py:232
+#: assistant\views.py:287
+msgid "Embedding not found!"
+msgstr ""
+
+#: assistant\views.py:305
 msgid "No embeddings to edit!"
 msgstr ""
 
-#: views.py:243
+#: assistant\views.py:317
 msgid "Failed to edit that embedding, please try again later"
 msgstr ""
 
-#: views.py:253
+#: assistant\views.py:324
 msgid "Your embedding has been modified!"
 msgstr ""
 
-#: views.py:294
+#: assistant\views.py:364
 msgid "Add an embedding"
 msgstr ""
 
-#: views.py:300
+#: assistant\views.py:370
 msgid "Your embedding is processing and will appear when ready!"
 msgstr ""
 
-#: views.py:316
+#: assistant\views.py:386
 msgid "No embeddings to delete!"
 msgstr ""
 
-#: views.py:318
+#: assistant\views.py:388
 msgid "Deleted `{}` embedding."
 msgstr ""
 
-#: views.py:344
+#: assistant\views.py:414
 msgid "No embeddings to search!"
 msgstr ""
 
-#: views.py:345
+#: assistant\views.py:415
 msgid "Search for an embedding"
 msgstr ""
 
-#: views.py:370
+#: assistant\views.py:437
 msgid "Search result: **{}**"
 msgstr ""
 
-#: views.py:400
+#: assistant\views.py:474
 msgid "Function Edit"
 msgstr ""
 
-#: views.py:406
+#: assistant\views.py:483
 msgid "JSON Schema"
 msgstr ""
 
-#: views.py:413
+#: assistant\views.py:489
 msgid "Code"
 msgstr ""
 
-#: views.py:570
+#: assistant\views.py:495
+msgid "Permission Level"
+msgstr ""
+
+#: assistant\views.py:496
+msgid "User, Mod, Admin, or Owner"
+msgstr ""
+
+#: assistant\views.py:502
+msgid "Required Discord Permissions"
+msgstr ""
+
+#: assistant\views.py:503
+msgid "e.g. manage_messages, kick_members (comma-separated, or leave blank)"
+msgstr ""
+
+#: assistant\views.py:510
+msgid "Category"
+msgstr ""
+
+#: assistant\views.py:511
+msgid "memory, web, utility"
+msgstr ""
+
+#: assistant\views.py:523
+msgid ""
+"Invalid permission level, must be one of `User`, `Mod`, `Admin`, or `Owner`"
+msgstr ""
+
+#: assistant\views.py:536
+msgid "Invalid Discord permission names: {}"
+msgstr ""
+
+#: assistant\views.py:552
+msgid "Toggle"
+msgstr ""
+
+#: assistant\views.py:582
+msgid "Choose tools for {} ({}/{})..."
+msgstr ""
+
+#: assistant\views.py:588
+msgid "Choose tools for {}..."
+msgstr ""
+
+#: assistant\views.py:593
+msgid "No tools available"
+msgstr ""
+
+#: assistant\views.py:606
+msgid "Prev"
+msgstr ""
+
+#: assistant\views.py:615
+msgid "Next"
+msgstr ""
+
+#: assistant\views.py:623
+msgid "Close"
+msgstr ""
+
+#: assistant\views.py:718
+msgid "{} {}/{} enabled • {} categories • Page {}/{}"
+msgstr ""
+
+#: assistant\views.py:839 assistant\views.py:859
+msgid "That category no longer exists."
+msgstr ""
+
+#: assistant\views.py:1014
 msgid "No code to inspect!"
 msgstr ""
 
-#: views.py:594
+#: assistant\views.py:1038
 msgid "Here are your custom functions"
 msgstr ""
 
-#: views.py:599
+#: assistant\views.py:1043
 msgid ""
 "Reply to this message with the json schema for your function\n"
 "- [Example Functions](https://github.com/vertyco/vrt-cogs/tree/main/assistant/example-funcs)"
 msgstr ""
 
-#: views.py:620 views.py:695
+#: assistant\views.py:1064 assistant\views.py:1142
 msgid ""
 "SchemaError\n"
 "{}"
 msgstr ""
 
-#: views.py:622 views.py:697
+#: assistant\views.py:1066 assistant\views.py:1144
 msgid "Empty schema!"
 msgstr ""
 
-#: views.py:625 views.py:700
+#: assistant\views.py:1069 assistant\views.py:1147
 msgid ""
 "Invalid schema!\n"
 "**Missing**\n"
 "{}"
 msgstr ""
 
-#: views.py:629
+#: assistant\views.py:1073
 msgid "Reply to this message with the custom code"
 msgstr ""
 
-#: views.py:644 views.py:706
+#: assistant\views.py:1088 assistant\views.py:1153
 msgid "Invalid function"
 msgstr ""
 
-#: views.py:648
+#: assistant\views.py:1092
 msgid "`{}` has been overwritten!"
 msgstr ""
 
-#: views.py:650
+#: assistant\views.py:1094
 msgid "`{}` has been created!"
 msgstr ""
 
-#: views.py:661
+#: assistant\views.py:1105
 msgid "No code to edit!"
 msgstr ""
 
-#: views.py:669 views.py:729
+#: assistant\views.py:1113 assistant\views.py:1185
 msgid "Could not find function!"
 msgstr ""
 
-#: views.py:671
+#: assistant\views.py:1115
 msgid "This function is managed by the `{}` cog and cannot be edited"
 msgstr ""
 
-#: views.py:677
+#: assistant\views.py:1121
 msgid ""
 "The json schema for this function is too long, you'll need to re-upload it "
 "to modify"
 msgstr ""
 
-#: views.py:682
+#: assistant\views.py:1126
 msgid ""
 "The code for this function is too long, you'll need to re-upload it to "
 "modify"
 msgstr ""
 
-#: views.py:714
+#: assistant\views.py:1170
 msgid "`{}` function updated!"
 msgstr ""
 
-#: views.py:722
+#: assistant\views.py:1178
 msgid "No code to delete!"
 msgstr ""
 
-#: views.py:731
+#: assistant\views.py:1187
 msgid "This function is managed by the `{}` cog and cannot be deleted"
 msgstr ""
 
-#: views.py:738
+#: assistant\views.py:1194
 msgid "`{}` has been deleted!"
 msgstr ""
 
-#: views.py:745
+#: assistant\views.py:1201
 msgid "No code to toggle!"
 msgstr ""
 
-#: views.py:758
+#: assistant\views.py:1215
 msgid "Search for a function"
 msgstr ""
