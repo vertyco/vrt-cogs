@@ -1,0 +1,117 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:50\n"
+"Last-Translator: \n"
+"Language-Team: French\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: fr\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/setools/commands/locales/messages.pot\n"
+"X-Crowdin-File-ID: 766\n"
+"Language: fr_FR\n"
+
+#: setools\commands\__init__.py:7
+#, docstring
+msgid "Subclass all command classes"
+msgstr ""
+
+#: setools\commands\admin.py:23
+#, docstring
+msgid "Admin commands for SETools"
+msgstr ""
+
+#: setools\commands\admin.py:29
+#, docstring
+msgid "View the current settings"
+msgstr ""
+
+#: setools\commands\admin.py:56
+#, docstring
+msgid "Add an SE server"
+msgstr ""
+
+#: setools\commands\admin.py:62
+#, docstring
+msgid "Edit an SE server"
+msgstr ""
+
+#: setools\commands\admin.py:68
+#, docstring
+msgid "Remove an SE server"
+msgstr ""
+
+#: setools\commands\admin.py:80
+#, docstring
+msgid "Set the status channel"
+msgstr ""
+
+#: setools\commands\admin.py:88
+#, docstring
+msgid "Save the world on a server"
+msgstr ""
+
+#: setools\commands\admin.py:111
+#, docstring
+msgid "\n"
+"        Generate an visualization of the world\n\n"
+"        **Note**: The HTML file needs to be opened in a browser to view the visualization\n"
+"        "
+msgstr ""
+
+#: setools\commands\admin.py:150
+#, docstring
+msgid "Delete an Asteroid, Grid, FloatingObject, or Planet from a server"
+msgstr ""
+
+#: setools\commands\admin.py:186
+#, docstring
+msgid "Get a list of Asteroids, Grids, FloatingObjects, or Planets for a server"
+msgstr ""
+
+#: setools\commands\admin.py:240
+#, docstring
+msgid "Get the cheater list for a server"
+msgstr ""
+
+#: setools\commands\admin.py:274
+#, docstring
+msgid "Get the ban list for a server"
+msgstr ""
+
+#: setools\commands\admin.py:309
+#, docstring
+msgid "Ban a player"
+msgstr ""
+
+#: setools\commands\admin.py:331
+#, docstring
+msgid "Unban a player"
+msgstr ""
+
+#: setools\commands\admin.py:353
+#, docstring
+msgid "Get a json dump of the server's endpoints"
+msgstr ""
+
+#: setools\commands\admin.py:377
+#, docstring
+msgid "Promote a player"
+msgstr ""
+
+#: setools\commands\admin.py:398
+#, docstring
+msgid "Demote a player"
+msgstr ""
+
+#: setools\commands\user.py:16
+#, docstring
+msgid "List players on a server"
+msgstr ""
+

@@ -1,0 +1,201 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:50\n"
+"Last-Translator: \n"
+"Language-Team: French\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: fr\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/setools/vragepy/locales/messages.pot\n"
+"X-Crowdin-File-ID: 778\n"
+"Language: fr_FR\n"
+
+#: setools\vragepy\api.py:25
+#, docstring
+msgid "\n"
+"        Prepares the headers required to query the Space Engineers VRage API.\n\n"
+"        Source: https://www.spaceengineersgame.com/dedicated-servers/\n"
+"        "
+msgstr ""
+
+#: setools\vragepy\api.py:38
+#, docstring
+msgid "Make a request to the VRage API."
+msgstr ""
+
+#: setools\vragepy\api.py:50
+#, docstring
+msgid "Fetch all available endpoints."
+msgstr ""
+
+#: setools\vragepy\api.py:57
+#, docstring
+msgid "Gets server information and health status."
+msgstr ""
+
+#: setools\vragepy\api.py:64
+#, docstring
+msgid "Get server ping"
+msgstr ""
+
+#: setools\vragepy\api.py:71
+#, docstring
+msgid "Gets currently connected players."
+msgstr ""
+
+#: setools\vragepy\api.py:78
+#, docstring
+msgid "Gets list of cheating players records on the server."
+msgstr ""
+
+#: setools\vragepy\api.py:85
+#, docstring
+msgid "Ban player."
+msgstr ""
+
+#: setools\vragepy\api.py:92
+#, docstring
+msgid "Unban player."
+msgstr ""
+
+#: setools\vragepy\api.py:99
+#, docstring
+msgid "Gets all banned players on the server."
+msgstr ""
+
+#: setools\vragepy\api.py:106
+#, docstring
+msgid "Removes player from kick list."
+msgstr ""
+
+#: setools\vragepy\api.py:113
+#, docstring
+msgid "Unkicks player from the server."
+msgstr ""
+
+#: setools\vragepy\api.py:120
+#, docstring
+msgid "Gets kicked players on the server."
+msgstr ""
+
+#: setools\vragepy\api.py:127
+#, docstring
+msgid "Promote player."
+msgstr ""
+
+#: setools\vragepy\api.py:134
+#, docstring
+msgid "Demote player."
+msgstr ""
+
+#: setools\vragepy\api.py:141
+#, docstring
+msgid "Get characters of players currently on the server."
+msgstr ""
+
+#: setools\vragepy\api.py:146
+#, docstring
+msgid "Stops the character movement."
+msgstr ""
+
+#: setools\vragepy\api.py:153
+#, docstring
+msgid "Gets all existing asteroids in the world."
+msgstr ""
+
+#: setools\vragepy\api.py:160
+#, docstring
+msgid "Gets all floating objects in the world."
+msgstr ""
+
+#: setools\vragepy\api.py:167
+#, docstring
+msgid "Gets all grids in the world."
+msgstr ""
+
+#: setools\vragepy\api.py:174
+#, docstring
+msgid "Gets all planets in the world."
+msgstr ""
+
+#: setools\vragepy\api.py:183
+#, docstring
+msgid "\n"
+"        Gets global chat messages. You can specify MessageCount and Date in query string.\n\n"
+"        The date is some weird timestamp-like integer, no clue what it is.\n"
+"        Date example: '638457071427146845'\n"
+"        "
+msgstr ""
+
+#: setools\vragepy\api.py:203
+#, docstring
+msgid "Send message to global chat."
+msgstr ""
+
+#: setools\vragepy\api.py:210
+#, docstring
+msgid "Deletes existing asteroid."
+msgstr ""
+
+#: setools\vragepy\api.py:217
+#, docstring
+msgid "Deletes floating object."
+msgstr ""
+
+#: setools\vragepy\api.py:224
+#, docstring
+msgid "Deletes grid."
+msgstr ""
+
+#: setools\vragepy\api.py:231
+#, docstring
+msgid "Deletes planet."
+msgstr ""
+
+#: setools\vragepy\api.py:238
+#, docstring
+msgid "Stops grids movement."
+msgstr ""
+
+#: setools\vragepy\api.py:245
+#, docstring
+msgid "Stops floating objects movement."
+msgstr ""
+
+#: setools\vragepy\api.py:252
+#, docstring
+msgid "Turns off power on the grid."
+msgstr ""
+
+#: setools\vragepy\api.py:259
+#, docstring
+msgid "Turns on power on the grid."
+msgstr ""
+
+#: setools\vragepy\api.py:266
+#, docstring
+msgid "Saves the server."
+msgstr ""
+
+#: setools\vragepy\api.py:273
+#, docstring
+msgid "Stops the server."
+msgstr ""
+
+#: setools\vragepy\api.py:280
+#, docstring
+msgid "Gets summary of state and changes in economy (currency) during last period"
+msgstr ""
+
+#: setools\vragepy\responses.py:12
+#, docstring
+msgid "Cross-version compatibility for BaseModel."
+msgstr ""
+

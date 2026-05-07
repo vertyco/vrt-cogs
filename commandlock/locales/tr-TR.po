@@ -1,0 +1,90 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 03:03\n"
+"Last-Translator: \n"
+"Language-Team: Turkish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: tr\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/commandlock/locales/messages.pot\n"
+"X-Crowdin-File-ID: 636\n"
+"Language: tr_TR\n"
+
+#: commandlock\main.py:27
+#, docstring
+msgid "\n"
+"    Lock command or cog usage to specific channels and redirect users to the correct ones.\n"
+"    "
+msgstr ""
+
+#: commandlock\main.py:155
+#, docstring
+msgid "Manage command and cog locks to specific channels."
+msgstr ""
+
+#: commandlock\main.py:160
+#, docstring
+msgid "Add/Remove whitelisted roles to bypass all command and cog locks."
+msgstr ""
+
+#: commandlock\main.py:173
+#, docstring
+msgid "Toggle whether threads bypass all command and cog locks.\n\n"
+"        When enabled, commands used inside threads will not be subject to lock restrictions,\n"
+"        even if the parent channel is not in the allowed list.\n"
+"        "
+msgstr ""
+
+#: commandlock\main.py:188
+#, docstring
+msgid "Set a duration in seconds after the redirect message is deleted.\n\n"
+"        Set to 0 to never delete the messages.\n"
+"        "
+msgstr ""
+
+#: commandlock\main.py:211
+#, docstring
+msgid "Add a lock to a cog or command to restrict its usage to the specified channels.\n\n"
+"        **Notes:**\n"
+"        - Bot owners, server owners, and admins are immune to command locks.\n"
+"        - Whitelisted roles bypass all command and cog locks.\n"
+"        - Command locks take precedence over cog locks.\n"
+"        - Channels can be categories, in which case all channels within that category are included.\n\n"
+"        **Examples:**\n"
+"        `[p]commandlock lock #allowed-channel MyCog`\n"
+"        `[p]commandlock lock channel_id channel_id_2 MyCommand`\n"
+"        `[p]commandlock lock #channel1 #channel2 MyCog`\n"
+"        "
+msgstr ""
+
+#: commandlock\main.py:248
+#, docstring
+msgid "Remove a lock from a cog or command, allowing it to be used in any channel."
+msgstr ""
+
+#: commandlock\main.py:273
+#, docstring
+msgid "View the current lock settings for a cog or command.\n\n"
+"        If no cog or command is specified, shows all locks for the server.\n\n"
+"        If a cog is specified, shows the useable channels for that cog including individual command locks.\n"
+"        If a command is specified, shows the useable channels for that command.\n"
+"        "
+msgstr ""
+
+#: commandlock\main.py:393
+#, docstring
+msgid "Toggle a channel for an existing cog or command lock.\n\n"
+"        This quickly adds or removes a channel from the lock configuration.\n\n"
+"        Example:\n"
+"        `[p]commandlock toggle #channel MyCog`\n"
+"        `[p]cmdlock toggle #channel mycommand`\n"
+"        "
+msgstr ""
+

@@ -1,0 +1,157 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:49\n"
+"Last-Translator: \n"
+"Language-Team: French\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: fr\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/botarena/commands/locales/messages.pot\n"
+"X-Crowdin-File-ID: 624\n"
+"Language: fr_FR\n"
+
+#: botarena\commands\__init__.py:11
+#, docstring
+msgid "Subclass all command mixins"
+msgstr ""
+
+#: botarena\commands\admin.py:19
+#, docstring
+msgid "Admin commands for Bot Arena configuration"
+msgstr ""
+
+#: botarena\commands\admin.py:25
+#, docstring
+msgid "Configure Bot Arena settings for this server"
+msgstr ""
+
+#: botarena\commands\admin.py:31
+#, docstring
+msgid "[Owner] Reset a player's data completely"
+msgstr ""
+
+#: botarena\commands\admin.py:49
+#, docstring
+msgid "[Owner] Wipe ALL player data from Bot Arena\n\n"
+"        This is irreversible! Type the confirmation code to proceed.\n"
+"        "
+msgstr ""
+
+#: botarena\commands\admin.py:74
+#, docstring
+msgid "[Owner] View all parts and their render offsets\n\n"
+"        Debug tool for previewing part combinations and weapon offsets.\n"
+"        "
+msgstr ""
+
+#: botarena\commands\admin.py:85
+#, docstring
+msgid "[Owner] View and manage campaign battle telemetry"
+msgstr ""
+
+#: botarena\commands\admin.py:94
+#, docstring
+msgid "View campaign mission statistics\n\n"
+"        Shows win rates, attempt counts, and difficulty indicators.\n\n"
+"        **Arguments:**\n"
+"        - `since` - Only include data from this time period (e.g., `7d`, `24h`, `1w`)\n"
+"        "
+msgstr ""
+
+#: botarena\commands\admin.py:166
+#, docstring
+msgid "Delete all telemetry data\n\n"
+"        **Arguments:**\n"
+"        - `confirm` - Set to True to confirm deletion\n"
+"        "
+msgstr ""
+
+#: botarena\commands\admin.py:189
+#, docstring
+msgid "Remove telemetry entries older than a duration\n\n"
+"        **Arguments:**\n"
+"        - `older_than` - Remove entries older than this (e.g., `30d`, `1w`, `7d`)\n"
+"        - `confirm` - Set to True to confirm deletion\n"
+"        "
+msgstr ""
+
+#: botarena\commands\admin.py:214
+#, docstring
+msgid "Format a timedelta as a human-readable string."
+msgstr ""
+
+#: botarena\commands\user.py:20
+#, docstring
+msgid "Confirmation view for account reset"
+msgstr ""
+
+#: botarena\commands\user.py:64
+#, docstring
+msgid "Buttons for reset confirmation"
+msgstr ""
+
+#: botarena\commands\user.py:98
+#, docstring
+msgid "User-facing commands for Bot Arena"
+msgstr ""
+
+#: botarena\commands\user.py:103
+#, docstring
+msgid "Bot Arena - Build and battle robots!\n\n"
+"        Opens the main game hub where you can:\n"
+"        - Play through the Campaign\n"
+"        - Build and customize bots\n"
+"        - Challenge other players\n"
+"        - Browse the shop\n"
+"        "
+msgstr ""
+
+#: botarena\commands\user.py:126
+#, docstring
+msgid "View a player's Bot Arena profile and stats.\n\n"
+"        Shows campaign progress, battle record, combat stats, and owned bots.\n\n"
+"        **Arguments:**\n"
+"        - `member`: The player to view (defaults to yourself)\n\n"
+"        **Examples:**\n"
+"        - `[p]botprofile` - View your own profile\n"
+"        - `[p]botprofile @User` - View another player's profile\n"
+"        "
+msgstr ""
+
+#: botarena\commands\user.py:144
+#, docstring
+msgid "Reset your Bot Arena account.\n\n"
+"        **⚠️ WARNING:** This permanently deletes ALL your progress!\n"
+"        - All credits will be lost\n"
+"        - All bots and parts will be deleted\n"
+"        - All campaign progress will be reset\n"
+"        - All battle statistics will be cleared\n\n"
+"        You will start fresh with 8,200 credits.\n\n"
+"        Use this if you're stuck and can't afford to continue.\n"
+"        "
+msgstr ""
+
+#: botarena\commands\user.py:162
+#, docstring
+msgid "View the Bot Arena leaderboard.\n\n"
+"        **Modes:**\n"
+"        - `wins` - Total wins (campaign + PvP) [default]\n"
+"        - `pvp` - PvP wins\n"
+"        - `campaign` - Campaign wins\n"
+"        - `damage` - Total damage dealt\n"
+"        - `credits` - Current credit balance\n"
+"        - `bots` - Enemy bots destroyed\n\n"
+"        **Examples:**\n"
+"        - `[p]botleaderboard` - Show total wins leaderboard\n"
+"        - `[p]botlb pvp` - Show PvP wins leaderboard\n"
+"        - `[p]botlb damage` - Show damage dealt leaderboard\n"
+"        "
+msgstr ""
+

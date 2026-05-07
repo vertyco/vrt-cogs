@@ -1,0 +1,414 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:50\n"
+"Last-Translator: \n"
+"Language-Team: French\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: fr\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/vrtutils/commands/locales/messages.pot\n"
+"X-Crowdin-File-ID: 792\n"
+"Language: fr_FR\n"
+
+#: vrtutils\commands\__init__.py:29
+#, docstring
+msgid "Subclass all commands"
+msgstr ""
+
+#: vrtutils\commands\bot.py:44
+#, docstring
+msgid "\n"
+"        Return the bot's latency.\n"
+"        "
+msgstr ""
+
+#: vrtutils\commands\bot.py:56
+#, docstring
+msgid "Run a pip command from within your bots venv"
+msgstr ""
+
+#: vrtutils\commands\bot.py:77
+#, docstring
+msgid "Run a shell command from within your bots venv"
+msgstr ""
+
+#: vrtutils\commands\bot.py:100
+#, docstring
+msgid "View guilds your bot is in"
+msgstr ""
+
+#: vrtutils\commands\bot.py:293
+#, docstring
+msgid "\n"
+"        Get info about the bot\n"
+"        "
+msgstr ""
+
+#: vrtutils\commands\bot.py:492
+#, docstring
+msgid "Get the bots public IP address (in DMs)"
+msgstr ""
+
+#: vrtutils\commands\bot.py:513
+#, docstring
+msgid "\n"
+"        Run an internet speed test.\n\n"
+"        Keep in mind that this speedtest is single threaded and may not be accurate!\n\n"
+"        Based on PhasecoreX's [netspeed](https://github.com/PhasecoreX/PCXCogs/tree/master/netspeed) cog\n"
+"        "
+msgstr ""
+
+#: vrtutils\commands\bot.py:564
+#, docstring
+msgid "\n"
+"        View members in a specified server that are also in this server\n"
+"        "
+msgstr ""
+
+#: vrtutils\commands\bot.py:591
+#, docstring
+msgid "View servers that the bot and a user are both in together\n\n"
+"        Does not include the server this command is run in\n"
+"        "
+msgstr ""
+
+#: vrtutils\commands\bot.py:613
+#, docstring
+msgid "\n"
+"        DM yourself the bot's API keys\n"
+"        "
+msgstr ""
+
+#: vrtutils\commands\bot.py:628
+#, docstring
+msgid "\n"
+"        Delete an API key from the bot's config\n\n"
+"        WARNING: This is irreversible and will delete the key from the bot's config!\n"
+"        "
+msgstr ""
+
+#: vrtutils\commands\bot.py:654
+#, docstring
+msgid "Cleanup all the `.tmp` files left behind by Red's config"
+msgstr ""
+
+#: vrtutils\commands\bot.py:676
+#, docstring
+msgid "View the storage space each cog's saved data is taking up"
+msgstr ""
+
+#: vrtutils\commands\bot.py:697
+#, docstring
+msgid "View the storage space each cog's code is taking up"
+msgstr ""
+
+#: vrtutils\commands\botemojis.py:23
+#, docstring
+msgid "\n"
+"        Add/Edit/List/Delete bot emojis\n"
+"        "
+msgstr ""
+
+#: vrtutils\commands\botemojis.py:29
+#, docstring
+msgid "List all existing bot emojis"
+msgstr ""
+
+#: vrtutils\commands\botemojis.py:65
+#, docstring
+msgid "\n"
+"        Create a new emoji from an image attachment\n\n"
+"        If a name is not specified, the image's filename will be used\n"
+"        "
+msgstr ""
+
+#: vrtutils\commands\botemojis.py:85
+#, docstring
+msgid "Create a new bot emoji from an existing one"
+msgstr ""
+
+#: vrtutils\commands\botemojis.py:96
+#, docstring
+msgid "Delete an bot emoji"
+msgstr ""
+
+#: vrtutils\commands\botemojis.py:113
+#, docstring
+msgid "Edit a bot emoji's name"
+msgstr ""
+
+#: vrtutils\commands\botemojis.py:130
+#, docstring
+msgid "Get details about a bot emoji"
+msgstr ""
+
+#: vrtutils\commands\chatexport.py:21
+#, docstring
+msgid "\n"
+"        Export chat history to an html file\n"
+"        "
+msgstr ""
+
+#: vrtutils\commands\dcord.py:60
+#, docstring
+msgid "Dehoist all nicknames in the server\n"
+"        **Arguments**\n"
+"        `confirm:` (True/False) whether to confirm the action\n\n"
+"        Run with confirm **False** to see which nicknames would be reset.\n\n"
+"        Users will be dehoisted IF:\n"
+"        - Their nickname starts with a hoist character (e.g., `!`, `$`, `(`, `)`, `*`)\n"
+"        - Their nickname starts with a number but not their username\n\n"
+"        **Examples**\n"
+"        `[p]nohoist true`\n"
+"        "
+msgstr ""
+
+#: vrtutils\commands\dcord.py:98
+#, docstring
+msgid "Reset nickname of a member"
+msgstr ""
+
+#: vrtutils\commands\dcord.py:159
+#, docstring
+msgid "Get a list of servers the specified user is the owner of"
+msgstr ""
+
+#: vrtutils\commands\dcord.py:187
+#, docstring
+msgid "Set a cooldown for the current channel"
+msgstr ""
+
+#: vrtutils\commands\dcord.py:203
+#, docstring
+msgid "Find the closest fuzzy match for a user"
+msgstr ""
+
+#: vrtutils\commands\dcord.py:221
+#, docstring
+msgid "Find a guild by name or ID"
+msgstr ""
+
+#: vrtutils\commands\dcord.py:247
+#, docstring
+msgid "Find a channel by ID"
+msgstr ""
+
+#: vrtutils\commands\dcord.py:270
+#, docstring
+msgid "Fetch a channelID-MessageID combo and display the message"
+msgstr ""
+
+#: vrtutils\commands\dcord.py:303
+#, docstring
+msgid "Find a user by ID"
+msgstr ""
+
+#: vrtutils\commands\dcord.py:330
+#, docstring
+msgid "Get a user's banner"
+msgstr ""
+
+#: vrtutils\commands\dcord.py:359
+#, docstring
+msgid "Find a webhook by ID"
+msgstr ""
+
+#: vrtutils\commands\dcord.py:376
+#, docstring
+msgid "Get a json file containing all non-bot usernames/ID's in this guild"
+msgstr ""
+
+#: vrtutils\commands\dcord.py:384
+#, docstring
+msgid "See which channel is the oldest"
+msgstr ""
+
+#: vrtutils\commands\dcord.py:417
+#, docstring
+msgid "\n"
+"        See which users have been in the server the longest\n\n"
+"        **Arguments**\n"
+"        `include_bots:` (True/False) whether to include bots\n"
+"        "
+msgstr ""
+
+#: vrtutils\commands\dcord.py:461
+#, docstring
+msgid "\n"
+"        See which users have the oldest Discord accounts\n\n"
+"        **Arguments**\n"
+"        `include_bots:` (True/False) whether to include bots\n"
+"        "
+msgstr ""
+
+#: vrtutils\commands\dcord.py:505
+#, docstring
+msgid "View all members that have a specific role"
+msgstr ""
+
+#: vrtutils\commands\dcord.py:543
+#, docstring
+msgid "\n"
+"        Clear all voice channels from a server\n"
+"        "
+msgstr ""
+
+#: vrtutils\commands\dcord.py:573
+#, docstring
+msgid "\n"
+"        Clear all threads from a server\n"
+"        "
+msgstr ""
+
+#: vrtutils\commands\dcord.py:597
+#, docstring
+msgid "Get info about an emoji"
+msgstr ""
+
+#: vrtutils\commands\dcord.py:652
+#, docstring
+msgid "\n"
+"        Select a random sample of voters from a message\n\n"
+"        **Arguments**\n"
+"        `message:` The message to sample voters from\n"
+"        `emoji:` The emoji to sample voters from\n"
+"        `sample_size:` The number of voters to select\n\n"
+"        **Examples**\n"
+"        `[p]samplevoters 1234567890 🎉 5`\n"
+"        "
+msgstr ""
+
+#: vrtutils\commands\dcord.py:687
+#, docstring
+msgid "Delete all messages containing a keyword in a channel\n\n"
+"        **Arguments**\n"
+"        `channel:` The channel to delete messages from\n"
+"        `filters:` The keywords to filter messages by, separated by new lines\n"
+"        "
+msgstr ""
+
+#: vrtutils\commands\disk.py:16
+#, docstring
+msgid "\n"
+"        Get disk R/W performance for the server your bot is on\n\n"
+"        The results of this test may vary, Python isn't fast enough for this kind of byte-by-byte writing,\n"
+"        and the file buffering and similar adds too much overhead.\n"
+"        Still this can give a good idea of where the bot is at I/O wise.\n"
+"        "
+msgstr ""
+
+#: vrtutils\commands\guildprofiles.py:21
+#, docstring
+msgid "Manage bot's per server bio, banner, and avatar."
+msgstr ""
+
+#: vrtutils\commands\guildprofiles.py:26
+#, docstring
+msgid "Set the bot's avatar for this server."
+msgstr ""
+
+#: vrtutils\commands\guildprofiles.py:56
+#, docstring
+msgid "Set the bot's banner for this server."
+msgstr ""
+
+#: vrtutils\commands\guildprofiles.py:86
+#, docstring
+msgid "Set the bot's bio for this server."
+msgstr ""
+
+#: vrtutils\commands\logs.py:19
+#, docstring
+msgid "View the bot's logs."
+msgstr ""
+
+#: vrtutils\commands\misc.py:19
+#, docstring
+msgid "\n"
+"        Throw an unhandled exception\n\n"
+"        A zero division error will be raised\n"
+"        "
+msgstr ""
+
+#: vrtutils\commands\misc.py:30
+#, docstring
+msgid "\n"
+"        Get the source code of a command\n"
+"        "
+msgstr ""
+
+#: vrtutils\commands\misc.py:50
+#, docstring
+msgid "Convert text to binary"
+msgstr ""
+
+#: vrtutils\commands\misc.py:61
+#, docstring
+msgid "Convert a binary string to text"
+msgstr ""
+
+#: vrtutils\commands\misc.py:71
+#, docstring
+msgid "Generate a random number between the numbers specified"
+msgstr ""
+
+#: vrtutils\commands\misc.py:86
+#, docstring
+msgid "\n"
+"        Add a reaction to a message\n"
+"        "
+msgstr ""
+
+#: vrtutils\commands\misc.py:103
+#, docstring
+msgid "Prune adventure alerts from members no longer in the server\n\n"
+"        This command requires the AdventureAlert cog by TrustyJAID to be loaded.\n"
+"        https://github.com/TrustyJAID/Trusty-cogs/tree/master\n"
+"        "
+msgstr ""
+
+#: vrtutils\commands\misc.py:144
+#, docstring
+msgid "Unobfuscate a Teredo IPv6 address"
+msgstr ""
+
+#: vrtutils\commands\todo.py:255
+#, docstring
+msgid "\n"
+"        Refresh a todo list channel.\n\n"
+"        Bring all messages without a ✅ or ❌ to the front of the channel.\n\n"
+"        **WARNING**: DO NOT USE THIS COMMAND IN A BUSY CHANNEL.\n"
+"        "
+msgstr ""
+
+#: vrtutils\commands\updates.py:54
+#, docstring
+msgid "Auto update & reload cogs"
+msgstr ""
+
+#: vrtutils\commands\updates.py:65
+#, docstring
+msgid "Auto update & reload cogs WITHOUT updating dependencies"
+msgstr ""
+
+#: vrtutils\commands\zipper.py:17
+#, docstring
+msgid "\n"
+"        zip a file or files\n"
+"        "
+msgstr ""
+
+#: vrtutils\commands\zipper.py:53
+#, docstring
+msgid "\n"
+"        Unzips a zip file and sends the extracted files in the channel\n"
+"        "
+msgstr ""
+

@@ -1,0 +1,108 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 03:02\n"
+"Last-Translator: \n"
+"Language-Team: Russian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=4; plural=((n%10==1 && n%100!=11) ? 0 : ((n%10 >= 2 && n%10 <=4 && (n%100 < 12 || n%100 > 14)) ? 1 : ((n%10 == 0 || (n%10 >= 5 && n%10 <=9)) || (n%100 >= 11 && n%100 <= 14)) ? 2 : 3));\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: ru\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/upgradechat/locales/messages.pot\n"
+"X-Crowdin-File-ID: 790\n"
+"Language: ru_RU\n"
+
+#: upgradechat\upgradechat.py:21
+#, docstring
+msgid "\n"
+"    Upgrade.Chat API integration for buying economy credits directly instead of roles\n\n"
+"    https://upgrade.chat/\n"
+"    "
+msgstr ""
+
+#: upgradechat\upgradechat.py:35
+#, docstring
+msgid "No data to delete"
+msgstr ""
+
+#: upgradechat\upgradechat.py:60
+#, docstring
+msgid "Base command for cog settings"
+msgstr ""
+
+#: upgradechat\upgradechat.py:64
+#, docstring
+msgid "\n"
+"        Set your Upgrade.Chat api tokens\n"
+"        By using this feature it is assumed that you are already familiar with Upgrade.Chat\n\n"
+"        1. Create your api keys here: https://upgrade.chat/developers\n\n"
+"        2. Copy your client ID and Client Secret\n\n"
+"        3. Run this command with your credentials\n\n"
+"        **Enjoy!**\n"
+"        "
+msgstr ""
+
+#: upgradechat\upgradechat.py:89
+#, docstring
+msgid "\n"
+"        Set the worth of 1 unit of real currency to economy credits\n\n"
+"        for example, if `credit_worth` is 100, then $1 = 100 Credits\n"
+"        "
+msgstr ""
+
+#: upgradechat\upgradechat.py:100
+#, docstring
+msgid "\n"
+"        Set the message the bot sends when a user claims a purchase\n\n"
+"        Valid placeholders:\n"
+"        {mention} - mention the user\n"
+"        {username} - the users discord name\n"
+"        {displayname} - the users nickname(if they have one)\n"
+"        {uid} - the users Discord ID\n"
+"        {guild} - guild name\n"
+"        {creditsname} - name of the currency in your guild\n"
+"        {amount} - the amount of credits the user has claimed\n\n"
+"        set to `default` to use the default message\n"
+"        "
+msgstr ""
+
+#: upgradechat\upgradechat.py:119
+#, docstring
+msgid "\n"
+"        Add an Upgrade.Chat product by UUID\n\n"
+"        This can be any type of product, either subscription or one-time purchase.\n"
+"        Users will be accredited based on `amount spend * conversion ratio`.\n"
+"        Transactions can only be claimed once.\n"
+"        "
+msgstr ""
+
+#: upgradechat\upgradechat.py:143
+#, docstring
+msgid "Delete an Upgrade.Chat product by UUID"
+msgstr ""
+
+#: upgradechat\upgradechat.py:158
+#, docstring
+msgid "Set log channel for claims"
+msgstr ""
+
+#: upgradechat\upgradechat.py:165
+#, docstring
+msgid "View user purchase history"
+msgstr ""
+
+#: upgradechat\upgradechat.py:209
+#, docstring
+msgid "View your current products"
+msgstr ""
+
+#: upgradechat\upgradechat.py:248
+#, docstring
+msgid "Claim your Upgrade.Chat purchases!"
+msgstr ""
+

@@ -1,0 +1,143 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:49\n"
+"Last-Translator: \n"
+"Language-Team: French\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: fr\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/gsurveys/commands/locales/messages.pot\n"
+"X-Crowdin-File-ID: 676\n"
+"Language: fr_FR\n"
+
+#: gsurveys\commands\__init__.py:7
+#, docstring
+msgid "Subclass all command classes"
+msgstr ""
+
+#: gsurveys\commands\admin.py:45
+#, docstring
+msgid "Manage Google Form survey rewards.\n\n"
+"        This cog lets you link Google Forms to your server's economy.\n"
+"        When a user fills out a form and enters their Discord User ID,\n"
+"        they automatically receive virtual currency as a reward.\n\n"
+"        **Quick Start:**\n"
+"        1. `[p]gsurveys add #channel <reward> <name>` — create a survey\n"
+"        2. `[p]gsurveys script <survey_id>` — get the Google Apps Script\n"
+"        3. Add the script to your form and you're done!\n\n"
+"        **Finding a survey ID:**\n"
+"        Survey IDs are shown when you create a survey and in `[p]gsurveys list`.\n"
+"        They look like short hex codes, e.g. `a1b2c3d4e5f6`.\n"
+"        "
+msgstr ""
+
+#: gsurveys\commands\admin.py:65
+#, docstring
+msgid "Add a new survey.\n\n"
+"        The bot will create a Discord webhook in the specified channel to receive\n"
+"        Google Form responses. Choose a private channel that only the bot and\n"
+"        admins can see — webhook messages are deleted automatically but the\n"
+"        channel should not be publicly visible.\n\n"
+"        **Arguments**\n"
+"        - `channel`: The channel to receive form submissions in (use a private channel).\n"
+"        - `reward`: The amount of credits to award on completion.\n"
+"        - `name`: A display name for this survey.\n"
+"        "
+msgstr ""
+
+#: gsurveys\commands\admin.py:113
+#, docstring
+msgid "Remove a survey by its ID.\n\n"
+"        This also deletes the associated Discord webhook.\n"
+"        "
+msgstr ""
+
+#: gsurveys\commands\admin.py:135
+#, docstring
+msgid "List all surveys for this server."
+msgstr ""
+
+#: gsurveys\commands\admin.py:156
+#, docstring
+msgid "View the current settings for this server."
+msgstr ""
+
+#: gsurveys\commands\admin.py:173
+#, docstring
+msgid "Enable or disable a survey."
+msgstr ""
+
+#: gsurveys\commands\admin.py:185
+#, docstring
+msgid "Change the reward amount for a survey."
+msgstr ""
+
+#: gsurveys\commands\admin.py:198
+#, docstring
+msgid "Set the Google Form question title that collects the Discord User ID.\n\n"
+"        This must match the exact title of the question in your Google Form.\n"
+"        Default is \"Discord User ID\".\n"
+"        "
+msgstr ""
+
+#: gsurveys\commands\admin.py:216
+#, docstring
+msgid "View who has completed a survey."
+msgstr ""
+
+#: gsurveys\commands\admin.py:237
+#, docstring
+msgid "Reset all completions for a survey.\n\n"
+"        This clears the completion history so all users can fill it out again.\n"
+"        Credits already awarded are **not** taken back.\n"
+"        "
+msgstr ""
+
+#: gsurveys\commands\admin.py:254
+#, docstring
+msgid "Reset a specific user's completion for a survey.\n\n"
+"        This allows the user to fill out the survey and be rewarded again.\n"
+"        Credits already awarded are **not** taken back.\n"
+"        "
+msgstr ""
+
+#: gsurveys\commands\admin.py:273
+#, docstring
+msgid "Set or clear the log channel for survey completions.\n\n"
+"        When set, the bot posts a message here each time someone completes a survey.\n"
+"        Run without a channel to clear it.\n"
+"        "
+msgstr ""
+
+#: gsurveys\commands\admin.py:289
+#, docstring
+msgid "Set or clear the public notification channel.\n\n"
+"        If the bot can't DM a user after they complete a survey, it will\n"
+"        mention them in this channel instead so they know they were rewarded.\n"
+"        Run without a channel to clear it.\n"
+"        "
+msgstr ""
+
+#: gsurveys\commands\admin.py:307
+#, docstring
+msgid "Get the Google Apps Script to attach to your Google Form.\n\n"
+"        The script is sent via DM to avoid leaking the webhook URL.\n"
+"        Find the survey ID from `[p]gsurveys list` or when you first created the survey.\n"
+"        "
+msgstr ""
+
+#: gsurveys\commands\user.py:10
+#, docstring
+msgid "Get your Discord User ID for survey forms.\n\n"
+"        Run this command and copy the number it gives you.\n"
+"        Paste it into the survey's \"Discord User ID\" field.\n"
+"        "
+msgstr ""
+
