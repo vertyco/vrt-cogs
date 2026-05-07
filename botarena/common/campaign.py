@@ -191,7 +191,7 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         component_name=ZINTEK.name,
                     ),
                 ],
-                credit_reward=200,
+                credit_reward=400,
                 entry_fee=0,
                 unlock_parts=[OVERWATCH_R200.name],
                 briefing="Welcome to Roxtan Park! Your opponents have basic gear. Show them what you've got!",
@@ -225,7 +225,7 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         tactical_orders=TacticalOrders(movement_stance=MovementStance.TACTICAL),
                     ),
                 ],
-                credit_reward=650,
+                credit_reward=900,
                 entry_fee=100,
                 required_mission="1-1",
                 unlock_parts=[RAPTOR_DT_02.name, TORRIKA_KJ_557.name],
@@ -251,17 +251,17 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         chassis_name=DLZ_250.name,  # DLZ-250: 8+4+5=17 (cap 22)
                         plating_name=CHROMITREX.name,
                         component_name=RAPTOR_DT_02.name,
-                        # Chrome: Defensive, stays at optimal range
+                        # Chrome: Tactical, repositions rather than perfectly kiting
                         tactical_orders=TacticalOrders(
-                            movement_stance=MovementStance.DEFENSIVE,
+                            movement_stance=MovementStance.TACTICAL,
                         ),
                     ),
                     NPCBot(
                         name="Tek",
-                        chassis_name=DLZ_100.name,  # DLZ-100: 5+6+5=16 (cap 16)
-                        plating_name=GAIACORP_LB_MK2.name,
+                        chassis_name=DLZ_100.name,  # DLZ-100: 5+6+3=14 (cap 16)
+                        plating_name=OVERWATCH_R200.name,
                         component_name=RAPTOR_DT_01.name,
-                        # Tek: Aggressive harasser
+                        # Tek: Aggressive harasser with standard armor (not preview-tier plating)
                         tactical_orders=TacticalOrders(
                             movement_stance=MovementStance.AGGRESSIVE,
                         ),
@@ -271,7 +271,7 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                 entry_fee=300,
                 required_mission="1-2",
                 unlock_parts=[DLZ_250.name, GAIACORP_LB_MK2.name],
-                briefing="Chrometek Alley - where the serious fighters hang out. Chrome shows off the new chassis while Tek brings heavier Gaiacorp plating.",
+                briefing="Chrometek Alley - where the serious fighters hang out. Chrome debuts the DLZ-250 frame with upgraded Raptor firepower.",
                 victory_text="Impressive! DLZ-250 chassis and Gaiacorp LB-MK2 plating are now available!",
                 defeat_text="Those Raptors hit hard. Consider upgrading your armor.",
             ),
@@ -292,9 +292,9 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         chassis_name=DLZ_250.name,  # DLZ-250: 8+4+8=20 (cap 22)
                         plating_name=CHROMITREX.name,
                         component_name=DARSIJ.name,
-                        # Masher: Defensive machine gunner, stays at range
+                        # Masher: Tactical machine gunner, repositions rather than perfectly kiting
                         tactical_orders=TacticalOrders(
-                            movement_stance=MovementStance.DEFENSIVE,
+                            movement_stance=MovementStance.TACTICAL,
                         ),
                     ),
                     NPCBot(
@@ -340,7 +340,7 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                         plating_name=OVERWATCH_R760.name,
                         component_name=RAPTOR_DT_02.name,
                         tactical_orders=TacticalOrders(
-                            movement_stance=MovementStance.DEFENSIVE,
+                            movement_stance=MovementStance.TACTICAL,
                         ),
                     ),
                     NPCBot(
@@ -398,16 +398,19 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                     ),
                     NPCBot(
                         name="Gaia-2",
-                        chassis_name=SMARTMOVE.name,  # Smartmove: 10+9+10=29 (cap 30)
+                        chassis_name=SMARTMOVE.name,  # Smartmove: 10+9+8=27 (cap 30)
                         plating_name=OVERWATCH_R760.name,
-                        component_name=TORRIKA_KR_2.name,
+                        component_name=DARSIJ.name,
+                        tactical_orders=TacticalOrders(
+                            movement_stance=MovementStance.TACTICAL,
+                        ),
                     ),
                 ],
                 credit_reward=6500,
                 entry_fee=2000,
                 required_mission="1-5",
                 unlock_parts=[TORRIKA_KR_2.name],
-                briefing="Gaiacorp sponsors this fight. Their prototype Torrika KR-2 finally hits the arena, but only one bot carries it.",
+                briefing="Gaiacorp sponsors this fight. Three heavy frames take the field - destroy them to earn access to the Torrika KR-2.",
                 victory_text="Gaiacorp impressed! Torrika KR-2 is now available!",
                 defeat_text="Heavy armor requires heavy firepower. Upgrade your weapons.",
             ),
