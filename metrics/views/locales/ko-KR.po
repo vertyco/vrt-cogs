@@ -1,0 +1,74 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:56\n"
+"Last-Translator: \n"
+"Language-Team: Korean\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: ko\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/metrics/views/locales/messages.pot\n"
+"X-Crowdin-File-ID: 704\n"
+"Language: ko_KR\n"
+
+#: metrics\views\dashboard.py:72
+#, docstring
+msgid "Modal for configuring the time range for metrics display."
+msgstr ""
+
+#: metrics\views\dashboard.py:117
+#, docstring
+msgid "Dropdown for selecting the metric category."
+msgstr ""
+
+#: metrics\views\dashboard.py:158
+#, docstring
+msgid "Multi-select dropdown for choosing specific metrics to display."
+msgstr ""
+
+#: metrics\views\dashboard.py:193
+#, docstring
+msgid "Buttons for selecting global vs guild scope."
+msgstr ""
+
+#: metrics\views\dashboard.py:234
+#, docstring
+msgid "Interactive metrics dashboard using V2 LayoutView components."
+msgstr ""
+
+#: metrics\views\dashboard.py:281
+#, docstring
+msgid "Build the dashboard layout."
+msgstr ""
+
+#: metrics\views\dashboard.py:357
+#, docstring
+msgid "Refresh the dashboard view."
+msgstr ""
+
+#: metrics\views\dashboard.py:378
+#, docstring
+msgid "Generate the metrics graph based on current selections."
+msgstr ""
+
+#: metrics\views\dashboard.py:451
+#, docstring
+msgid "Get the appropriate metric map for the current category."
+msgstr ""
+
+#: metrics\views\dashboard.py:464
+#, docstring
+msgid "Query metrics data from the database."
+msgstr ""
+
+#: metrics\views\dashboard.py:495
+#, docstring
+msgid "Open the interactive metrics dashboard."
+msgstr ""
+
