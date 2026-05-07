@@ -144,13 +144,41 @@ GET_SERVER_INFO = {
 }
 FETCH_URL = {
     "name": "fetch_url",
-    "description": "Fetch a URL and return its text content.",
+    "description": (
+        "Fetch a URL and return a JSON object with 'url' (final URL after redirects), "
+        "'status' (HTTP status code), and 'content' (page text as Markdown for HTML, raw for JSON/plain text). "
+        "Supports GET, POST, PUT, PATCH, DELETE, and HEAD."
+    ),
     "parameters": {
         "type": "object",
         "properties": {
             "url": {
                 "type": "string",
-                "description": "The URL to fetch content from",
+                "description": "The URL to fetch.",
+            },
+            "method": {
+                "type": "string",
+                "description": "HTTP method to use (default: GET).",
+                "enum": ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"],
+                "default": "GET",
+            },
+            "headers": {
+                "type": "object",
+                "description": (
+                    "Optional HTTP headers to include in the request. "
+                    "Keys and values must be strings. "
+                    "A default User-Agent is sent automatically unless overridden here."
+                ),
+                "additionalProperties": {"type": "string"},
+            },
+            "body": {
+                "type": "string",
+                "description": "Optional request body for POST/PUT/PATCH requests.",
+            },
+            "max_chars": {
+                "type": "integer",
+                "description": "Maximum number of characters to return from the response content (default: 50000).",
+                "default": 50000,
             },
         },
         "required": ["url"],
@@ -269,25 +297,66 @@ FETCH_CATEGORY_CHANNELS = {
     },
 }
 
-SEND_MESSAGE_TO_CHANNEL = {
-    "name": "send_message_to_channel",
+SEND_MESSAGE = {
+    "name": "send_message",
     "description": (
-        "Send a bot message to a specific Discord channel. "
-        "Use this for announcements, staff updates, relays, or escalations."
+        "Send a bot message to a channel. Omit channel_name_or_id to send in the current channel. "
+        "Supports plain text, Discord markdown, and rich embeds. "
+        "Provide any embed_* parameter to include an embed alongside or instead of plain text."
     ),
     "parameters": {
         "type": "object",
         "properties": {
-            "channel_name_or_id": {
-                "type": "string",
-                "description": "The name or ID of the channel to send the message to",
-            },
             "message_content": {
                 "type": "string",
-                "description": "The message text to send. Supports Discord markdown formatting.",
+                "description": "Plain text or Discord markdown to send. Can be combined with an embed.",
+            },
+            "channel_name_or_id": {
+                "type": "string",
+                "description": "Name or ID of the target channel. Omit to send in the current channel.",
+            },
+            "embed_title": {
+                "type": "string",
+                "description": "Embed title (max 256 characters).",
+            },
+            "embed_description": {
+                "type": "string",
+                "description": "Embed description (max 4096 characters). Supports Discord markdown.",
+            },
+            "embed_color": {
+                "type": "string",
+                "description": "Embed color as a hex string like '#5865F2' or a decimal integer string.",
+            },
+            "embed_fields": {
+                "type": "array",
+                "description": "Up to 25 embed fields.",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string", "description": "Field name (max 256 chars)."},
+                        "value": {"type": "string", "description": "Field value (max 1024 chars)."},
+                        "inline": {
+                            "type": "boolean",
+                            "description": "Whether to display this field inline.",
+                            "default": False,
+                        },
+                    },
+                    "required": ["name", "value"],
+                },
+            },
+            "embed_footer": {
+                "type": "string",
+                "description": "Embed footer text.",
+            },
+            "embed_thumbnail_url": {
+                "type": "string",
+                "description": "URL for the embed thumbnail image (top-right corner).",
+            },
+            "embed_image_url": {
+                "type": "string",
+                "description": "URL for the embed's large main image.",
             },
         },
-        "required": ["channel_name_or_id", "message_content"],
     },
 }
 
@@ -1352,7 +1421,7 @@ DISCORD_MESSAGE_TOOLS_USER = (
     EDIT_BOT_MESSAGE,
 )
 
-DISCORD_MESSAGE_TOOLS_MOD = (SEND_MESSAGE_TO_CHANNEL,)
+DISCORD_MESSAGE_TOOLS_MOD = (SEND_MESSAGE,)
 
 DISCORD_ADMIN_TOOLS = (
     INSPECT_SERVER_SETUP,

@@ -1,6 +1,6 @@
 import asyncio
 import contextlib
-import html as html_module
+import json
 import logging
 import re
 import textwrap
@@ -11,6 +11,7 @@ from typing import Literal, Union
 
 import aiohttp
 import discord
+import markdownify
 import resvg_py
 from dateutil import parser
 from redbot.core import commands, modlog
@@ -1381,56 +1382,72 @@ class Functions(MixinMeta):
         state_word = action.replace("_", " ")
         return f"Applied `{state_word}` to {member.mention}."
 
-    async def fetch_url(self, url: str, *args, **kwargs) -> str:
-        """
-        Fetch the content of a URL and return the text.
+    async def fetch_url(
+        self,
+        url: str,
+        headers: dict = None,
+        method: str = "GET",
+        body: str = "",
+        max_chars: int = 50000,
+        *args,
+        **kwargs,
+    ) -> str:
+        """Fetch a URL and return structured JSON with the final URL, status code, and content."""
+        log.info(f"Fetching URL: {url} [method={method}]")
 
-        Args:
-            url: The URL to fetch content from
+        allowed_methods = {"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"}
+        method = method.upper()
+        if method not in allowed_methods:
+            return json.dumps({"url": url, "status": 0, "content": f"Unsupported HTTP method: {method}"})
 
-        Returns:
-            The text content of the page, or an error message
-        """
-        log.info(f"Fetching URL: {url}")
+        request_headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+        if headers:
+            request_headers.update(headers)
 
         try:
             async with aiohttp.ClientSession() as session:
-                headers = {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                request_kwargs: dict = {
+                    "headers": request_headers,
+                    "timeout": aiohttp.ClientTimeout(total=30),
                 }
-                async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=30)) as response:
-                    if response.status not in (200, 201):
-                        return f"Failed to fetch URL: HTTP {response.status}"
+                if body:
+                    request_kwargs["data"] = body
+                method_fn = getattr(session, method.lower())
+                async with method_fn(url, **request_kwargs) as response:
+                    final_url = str(response.url)
+                    status = response.status
+
+                    if status not in (200, 201):
+                        return json.dumps({"url": final_url, "status": status, "content": f"HTTP {status}"})
 
                     content_type = response.headers.get("Content-Type", "")
 
                     if "text/html" in content_type:
-                        html = await response.text()
-                        # Remove script and style elements
-                        html = re.sub(r"<script[^>]*>.*?</script>", "", html, flags=re.DOTALL | re.IGNORECASE)
-                        html = re.sub(r"<style[^>]*>.*?</style>", "", html, flags=re.DOTALL | re.IGNORECASE)
-                        # Remove HTML tags
-                        text = re.sub(r"<[^>]+>", " ", html)
-                        # Clean up whitespace
-                        text = re.sub(r"\s+", " ", text).strip()
-                        # Decode HTML entities
-                        text = html_module.unescape(text)
-                        # Limit response size
-                        if len(text) > 50000:
-                            text = text[:50000] + "\n\n[Content truncated...]"
-                        return text
-                    elif "application/json" in content_type:
-                        return await response.text()
-                    elif "text/" in content_type:
-                        return await response.text()
+                        html_content = await response.text()
+                        text = markdownify.markdownify(
+                            html_content,
+                            strip=["script", "style", "nav", "header", "footer", "aside", "noscript", "iframe"],
+                            heading_style=markdownify.ATX,
+                        )
+                    elif "application/json" in content_type or "text/" in content_type:
+                        text = await response.text()
                     else:
-                        return f"Unsupported content type: {content_type}"
+                        return json.dumps(
+                            {"url": final_url, "status": status, "content": f"Unsupported content type: {content_type}"}
+                        )
+
+                    if len(text) > max_chars:
+                        text = text[:max_chars] + "\n\n[Content truncated...]"
+
+                    return json.dumps({"url": final_url, "status": status, "content": text})
 
         except asyncio.TimeoutError:
-            return "Request timed out after 30 seconds"
+            return json.dumps({"url": url, "status": 0, "content": "Request timed out after 30 seconds"})
         except Exception as e:
             log.error(f"Error fetching URL {url}", exc_info=e)
-            return f"Failed to fetch URL: {str(e)}"
+            return json.dumps({"url": url, "status": 0, "content": f"Failed to fetch URL: {str(e)}"})
 
     async def create_and_send_file(
         self,
@@ -1868,32 +1885,76 @@ class Functions(MixinMeta):
 
         return buffer.getvalue().strip()
 
-    async def send_message_to_channel(
+    async def send_message(
         self,
         guild: discord.Guild,
-        channel_name_or_id: str,
-        message_content: str,
+        channel: discord.TextChannel,
+        message_content: str = "",
+        channel_name_or_id: str = None,
+        embed_title: str = "",
+        embed_description: str = "",
+        embed_color: str = "",
+        embed_fields: list = None,
+        embed_footer: str = "",
+        embed_thumbnail_url: str = "",
+        embed_image_url: str = "",
         *args,
         **kwargs,
     ) -> str:
-        """Send a message to a specific channel as the bot."""
-        target = await asyncio.to_thread(find_channel, guild, channel_name_or_id)
-
-        if not target:
-            return f"No channel found matching '{channel_name_or_id}'."
-
-        if not hasattr(target, "send"):
-            return f"'{target.name}' is not a channel you can send messages to."
+        """Send a message (text, embed, or both) to the current or a specified channel."""
+        if channel_name_or_id:
+            target = await asyncio.to_thread(find_channel, guild, channel_name_or_id)
+            if not target:
+                return f"No channel found matching '{channel_name_or_id}'."
+            if not hasattr(target, "send"):
+                return f"'{target.name}' is not a channel you can send messages to."
+        else:
+            target = channel
 
         perms = target.permissions_for(guild.me)
         if not perms.send_messages:
-            return f"You don't have permission to send messages in {target.mention}."
+            return f"No permission to send messages in {target.mention}."
 
-        if len(message_content) > 2000:
-            return "Message content exceeds the 2000 character Discord limit. Please shorten it."
+        has_embed = any((embed_title, embed_description, embed_fields, embed_thumbnail_url, embed_image_url))
+        if not message_content and not has_embed:
+            return "Nothing to send: provide message_content or at least one embed_ parameter."
+
+        if message_content and len(message_content) > 2000:
+            return "message_content exceeds the 2000 character Discord limit."
+
+        embed = None
+        if has_embed:
+            if not perms.embed_links:
+                return f"No permission to embed links in {target.mention}."
+            color = discord.Color.blurple()
+            if embed_color:
+                ec = embed_color.strip()
+                if ec.startswith("#"):
+                    with contextlib.suppress(ValueError):
+                        color = discord.Color(int(ec[1:], 16))
+                else:
+                    with contextlib.suppress(ValueError):
+                        color = discord.Color(int(ec))
+            embed = discord.Embed(
+                title=embed_title or None,
+                description=embed_description or None,
+                color=color,
+            )
+            for field in (embed_fields or []):
+                embed.add_field(
+                    name=field.get("name", ""),
+                    value=field.get("value", ""),
+                    inline=field.get("inline", False),
+                )
+            if embed_footer:
+                embed.set_footer(text=embed_footer)
+            if embed_thumbnail_url:
+                embed.set_thumbnail(url=embed_thumbnail_url)
+            if embed_image_url:
+                embed.set_image(url=embed_image_url)
 
         try:
-            await target.send(message_content)
+            await target.send(content=message_content or None, embed=embed)
             return f"Message sent to {target.mention} successfully."
         except discord.HTTPException as e:
             return f"Failed to send message: {e.text}"
