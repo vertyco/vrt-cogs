@@ -1,0 +1,186 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:52\n"
+"Last-Translator: \n"
+"Language-Team: Spanish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: es-ES\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/profiler/commands/locales/messages.pot\n"
+"X-Crowdin-File-ID: 740\n"
+"Language: es_ES\n"
+
+#: profiler\commands\owner.py:59
+#, docstring
+msgid "Profiling commands"
+msgstr ""
+
+#: profiler\commands\owner.py:78
+#, docstring
+msgid "\n"
+"        View the current profiler settings\n"
+"        "
+msgstr ""
+
+#: profiler\commands\owner.py:127
+#, docstring
+msgid "Run a cleanup of the stats"
+msgstr ""
+
+#: profiler\commands\owner.py:135
+#, docstring
+msgid "\n"
+"        Clear all saved metrics\n"
+"        "
+msgstr ""
+
+#: profiler\commands\owner.py:144
+#, docstring
+msgid "\n"
+"        Toggle saving stats persistently\n\n"
+"        **Warning**: The config size can grow very large if this is enabled for a long time\n"
+"        "
+msgstr ""
+
+#: profiler\commands\owner.py:155
+#, docstring
+msgid "\n"
+"        Set the data retention period in hours\n"
+"        "
+msgstr ""
+
+#: profiler\commands\owner.py:173
+#, docstring
+msgid "\n"
+"        Toggle tracking of a method\n\n"
+"        Enabled methods will be profiled and included in the stats when attaching a profiler to a cog\n\n"
+"        **Arguments**:\n"
+"        - `method`: The method to toggle tracking for (methods, commands, listeners, tasks)\n"
+"        - `state`: The state to set tracking to (True/False, 1/0, t/f)\n"
+"        "
+msgstr ""
+
+#: profiler\commands\owner.py:204
+#, docstring
+msgid "\n"
+"        Set the minimum execution delta to record a profile of tracked methods\n"
+"        "
+msgstr ""
+
+#: profiler\commands\owner.py:213
+#, docstring
+msgid "\n"
+"        Add or remove a method from the ignore list\n"
+"        "
+msgstr ""
+
+#: profiler\commands\owner.py:240
+#, docstring
+msgid "\n"
+"        Attach a profiler to a cog or method\n"
+"        "
+msgstr ""
+
+#: profiler\commands\owner.py:317
+#, docstring
+msgid "\n"
+"        Remove the profiler from a cog or method\n"
+"        "
+msgstr ""
+
+#: profiler\commands\owner.py:413
+#, docstring
+msgid "\n"
+"        Profile memory usage of objects in the current environment\n"
+"        "
+msgstr ""
+
+#: profiler\commands\owner.py:426
+#, docstring
+msgid "\n"
+"        List all available methods that can be tracked\n\n"
+"        This will send a text file containing all trackable methods organized by cog.\n"
+"        Useful for finding specific methods to profile without attaching to entire cogs.\n"
+"        "
+msgstr ""
+
+#: profiler\commands\owner.py:503
+#, docstring
+msgid "\n"
+"        View a menu of the current stats\n\n"
+"        **Columns**:\n"
+"        - Method: The method being profiled\n"
+"        - Max: The highest recorded runtime of the method\n"
+"        - Min: The lowest recorded runtime of the method\n"
+"        - Avg: The average runtime of the method\n"
+"        - Calls/Min: The average calls per minute of the method over the set delta\n"
+"        - Last X: The total number of times the method was called over the set delta\n"
+"        - Impact Score: A score calculated from the average runtime and calls per minute\n\n"
+"        **Impact Score**:\n"
+"        The impact score represents the impact of the method on the bot's performance.\n"
+"        ```python\n"
+"        variability_score = standard_deviation_of_runtimes / avg_runtime\n"
+"        impact_score = (avg_runtime * calls_per_minute) * (1 + variability_score)\n"
+"        ```\n"
+"        The higher the score, the more impact the method has on the bot's performance\n"
+"        "
+msgstr ""
+
+#: profiler\commands\owner.py:528
+#, docstring
+msgid "\n"
+"        Profile memory usage per cog\n\n"
+"        Shows estimated RAM consumption for each loaded cog, sorted by size.\n"
+"        Uses deep object traversal to calculate the total memory footprint\n"
+"        of each cog instance including all referenced objects.\n\n"
+"        **Note**: This is an estimate. Objects shared between cogs may be\n"
+"        counted multiple times, and some internal Python objects may not\n"
+"        be fully accounted for.\n\n"
+"        **Arguments**:\n"
+"        - `limit`: Maximum number of cogs to display (default: all)\n"
+"        "
+msgstr ""
+
+#: profiler\commands\owner.py:556
+#, docstring
+msgid "\n"
+"        Run a full CPU profile using py-spy\n\n"
+"        This command attaches py-spy to the bot process and records CPU usage\n"
+"        for the specified duration. It then displays a breakdown of where the\n"
+"        bot is spending its CPU time, helping identify performance bottlenecks.\n\n"
+"        **Arguments**:\n"
+"        - `duration`: How long to profile in seconds (default: 30, max: 300)\n"
+"        - `subprocesses`: Profile subprocesses too (default: False)\n\n"
+"        **Requirements**:\n"
+"        - py-spy must be installed: `pip install py-spy`\n"
+"        - On Linux, may need to set ptrace scope: `echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope`\n\n"
+"        **Example Usage**:\n"
+"        - `[p]profiler pyspy` - Profile for 30 seconds\n"
+"        - `[p]profiler pyspy 60` - Profile for 60 seconds\n"
+"        "
+msgstr ""
+
+#: profiler\commands\owner.py:622
+#, docstring
+msgid "\n"
+"        Monitor file write activity in the bot's data directory\n\n"
+"        Watches for all file writes (create, modify) under the bot's data\n"
+"        directory for the specified duration and reports which files are\n"
+"        being written to, how often, and how much data is involved.\n\n"
+"        Useful for identifying cogs that are doing excessive disk I/O,\n"
+"        config saves that fire too often, or unexpected file churn.\n\n"
+"        **Arguments**:\n"
+"        - `duration`: How long to monitor in seconds (default: 60, max: 600)\n\n"
+"        **Example Usage**:\n"
+"        - `[p]profiler io` - Monitor for 60 seconds\n"
+"        - `[p]profiler io 120` - Monitor for 2 minutes\n"
+"        "
+msgstr ""
+
