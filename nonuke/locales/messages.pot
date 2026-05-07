@@ -1,0 +1,147 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+
+#: nonuke\abc.py:10
+#, docstring
+msgid "Type detection"
+msgstr ""
+
+#: nonuke\abc.py:14
+#, docstring
+msgid "Type hinting"
+msgstr ""
+
+#: nonuke\abc.py:21
+#, docstring
+msgid "Save the config"
+msgstr ""
+
+#: nonuke\nonuke.py:17
+#, docstring
+msgid ""
+"\n"
+"    Anti-Nuke System for lazy server owners!\n"
+"\n"
+"    Monitors the following events:\n"
+"    Kicks/Bans/Unbans/Prunes\n"
+"    Channel Creation/Edit/Deletion\n"
+"    Role Creation/Edit/Deletion\n"
+"    Emoji Creation/Edit/Deletion\n"
+"    Sticker Creation/Edit/Deletion\n"
+"    Webhook Creation/Edit/Deletion\n"
+"    Member role/nickname updates\n"
+"\n"
+"    Set a cooldown(in seconds)\n"
+"    Set an overload count(X events in X seconds)\n"
+"    Set an action(kick, ban, strip, notify)\n"
+"\n"
+"    If a user or bot exceeds X mod events within X seconds, the set action will be performed.\n"
+"\n"
+"    - Any dangerous permissions added to a role will be logged.\n"
+"    - If the vanity URL is changed, it will be logged.\n"
+"    "
+msgstr ""
+
+#: nonuke\nonuke.py:47
+#, docstring
+msgid "No data to delete"
+msgstr ""
+
+#: nonuke\nonuke.py:102
+#, docstring
+msgid ""
+"\n"
+"        Anti-Nuke System for lazy guild owners!\n"
+"\n"
+"        Monitors the following events:\n"
+"        Kicks & Bans\n"
+"        Channel Creation/Edit/Deletion\n"
+"        Role Creation/Edit/Deletion\n"
+"\n"
+"        Set a cooldown(in seconds)\n"
+"        Set an overload count(X events in X seconds)\n"
+"        Set an action(kick, ban, strip, notify)\n"
+"\n"
+"        If a user or bot exceeds X mod events within X seconds, the set action will be performed\n"
+"        "
+msgstr ""
+
+#: nonuke\nonuke.py:119
+#, docstring
+msgid "Enable/Disable the NoNuke system"
+msgstr ""
+
+#: nonuke\nonuke.py:131
+#, docstring
+msgid ""
+"\n"
+"        Toggle whether other bots are ignored\n"
+"\n"
+"        **NOTE:** Bot specific roles (the role created when the bot joins) cannot be removed.\n"
+"        If NoNuke is set to strip roles, and a bot triggers it while having an integrated role, NoNuke will fail\n"
+"        to remove the role from it.\n"
+"        "
+msgstr ""
+
+#: nonuke\nonuke.py:149
+#, docstring
+msgid ""
+"Toggle whether the bot sends the user a DM when a kick or ban action is "
+"performed"
+msgstr ""
+
+#: nonuke\nonuke.py:161
+#, docstring
+msgid "Set the log channel for Anti-Nuke kicks"
+msgstr ""
+
+#: nonuke\nonuke.py:170
+#, docstring
+msgid "Cooldown (in seconds) for NoNuke to trigger"
+msgstr ""
+
+#: nonuke\nonuke.py:177
+#, docstring
+msgid ""
+"How many mod actions can be done within the set cooldown\n"
+"\n"
+"        **Mod actions include:**\n"
+"        Kicks & Bans\n"
+"        Channel Creation/Edit/Deletion\n"
+"        Role Creation/Edit/Deletion\n"
+"        "
+msgstr ""
+
+#: nonuke\nonuke.py:203
+#, docstring
+msgid ""
+"\n"
+"        Set the action for the bot to take when NoNuke is triggered\n"
+"\n"
+"        **Actions**\n"
+"        `kick` - kick the user\n"
+"        `ban` - ban the user\n"
+"        `strip` - strip all roles with permissions from user\n"
+"        `notify` - just sends a report to the log channel\n"
+"        "
+msgstr ""
+
+#: nonuke\nonuke.py:232
+#, docstring
+msgid "Add/Remove users from the whitelist"
+msgstr ""
+
+#: nonuke\nonuke.py:245
+#, docstring
+msgid "View the NoNuke settings"
+msgstr ""

@@ -1,0 +1,601 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+
+#: taskr\components\__init__.py:55
+msgid "This isn't your menu!"
+msgstr ""
+
+#: taskr\components\task_menu.py:46
+#, docstring
+msgid "Modal for configuring interval with a dropdown for unit selection."
+msgstr ""
+
+#: taskr\components\task_menu.py:49 taskr\components\task_menu.py:953
+msgid "Interval"
+msgstr ""
+
+#: taskr\components\task_menu.py:51
+msgid "every N units, ex: 5"
+msgstr ""
+
+#: taskr\components\task_menu.py:70
+msgid "None (clear unit)"
+msgstr ""
+
+#: taskr\components\task_menu.py:87
+msgid "Select interval unit..."
+msgstr ""
+
+#: taskr\components\task_menu.py:89
+msgid "Only hours/minutes (between times set)"
+msgstr ""
+
+#: taskr\components\task_menu.py:92
+msgid "Unit"
+msgstr ""
+
+#: taskr\components\task_menu.py:118 taskr\components\task_menu.py:305
+msgid "Scheduled Command Name"
+msgstr ""
+
+#: taskr\components\task_menu.py:120
+msgid "Command Author"
+msgstr ""
+
+#: taskr\components\task_menu.py:122
+msgid "Select the user to run the command as"
+msgstr ""
+
+#: taskr\components\task_menu.py:128
+msgid "Command Channel (Optional)"
+msgstr ""
+
+#: taskr\components\task_menu.py:130
+msgid "Channel that the command will be run in"
+msgstr ""
+
+#: taskr\components\task_menu.py:136 taskr\components\task_menu.py:327
+msgid "Command"
+msgstr ""
+
+#: taskr\components\task_menu.py:139 taskr\components\task_menu.py:329
+msgid "ex: ping"
+msgstr ""
+
+#: taskr\components\task_menu.py:206 taskr\components\task_menu.py:510
+msgid "No scheduled commands found matching that query."
+msgstr ""
+
+#: taskr\components\task_menu.py:227
+msgid "No scheduled commands have been created."
+msgstr ""
+
+#: taskr\components\task_menu.py:229
+msgid "Current Filter"
+msgstr ""
+
+#: taskr\components\task_menu.py:296 taskr\components\task_menu.py:1225
+msgid "You have reached the maximum number of schedules for the free tier.\n"
+msgstr ""
+
+#: taskr\components\task_menu.py:301 taskr\components\task_menu.py:1230
+msgid "You have reached the maximum number of schedules.\n"
+msgstr ""
+
+#: taskr\components\task_menu.py:307
+msgid "Name of the scheduled command"
+msgstr ""
+
+#: taskr\components\task_menu.py:311
+msgid "Author ID"
+msgstr ""
+
+#: taskr\components\task_menu.py:313
+msgid "ID of the user who created the command"
+msgstr ""
+
+#: taskr\components\task_menu.py:319
+msgid "Channel ID (Optional)"
+msgstr ""
+
+#: taskr\components\task_menu.py:321
+msgid "ID of the channel to send the command to"
+msgstr ""
+
+#: taskr\components\task_menu.py:333
+msgid "Add Scheduled Command"
+msgstr ""
+
+#: taskr\components\task_menu.py:344
+msgid "Author ID must be a number."
+msgstr ""
+
+#: taskr\components\task_menu.py:348 taskr\components\task_menu.py:533
+msgid "Author for that ID was not found."
+msgstr ""
+
+#: taskr\components\task_menu.py:354 taskr\components\task_menu.py:539
+msgid "You cannot schedule commands for other users."
+msgstr ""
+
+#: taskr\components\task_menu.py:359 taskr\components\task_menu.py:544
+msgid "You cannot schedule commands for users with equal or higher roles."
+msgstr ""
+
+#: taskr\components\task_menu.py:363
+msgid "Channel ID must be a number."
+msgstr ""
+
+#: taskr\components\task_menu.py:368
+msgid "Channel for that ID was not found."
+msgstr ""
+
+#: taskr\components\task_menu.py:386 taskr\components\task_menu.py:563
+#: taskr\components\task_menu.py:1210
+msgid "This command doesn't exist."
+msgstr ""
+
+#: taskr\components\task_menu.py:392 taskr\components\task_menu.py:569
+#: taskr\components\task_menu.py:1212
+msgid "You can't run this command!"
+msgstr ""
+
+#: taskr\components\task_menu.py:395 taskr\components\task_menu.py:572
+msgid ""
+"You cannot schedule commands that affect bot restarts or cog "
+"loading/unloading"
+msgstr ""
+
+#: taskr\components\task_menu.py:399 taskr\components\task_menu.py:576
+#: taskr\components\task_menu.py:1215
+msgid "An error occurred while checking permissions: {}"
+msgstr ""
+
+#: taskr\components\task_menu.py:419
+msgid "Scheduled command added, please configure it before enabling!"
+msgstr ""
+
+#: taskr\components\task_menu.py:426
+msgid "No scheduled commands to delete."
+msgstr ""
+
+#: taskr\components\task_menu.py:429
+msgid "Are you sure? This cannot be undone!"
+msgstr ""
+
+#: taskr\components\task_menu.py:431 taskr\components\task_menu.py:1179
+msgid "yes or no"
+msgstr ""
+
+#: taskr\components\task_menu.py:434
+msgid "Delete Scheduled Command"
+msgstr ""
+
+#: taskr\components\task_menu.py:441 taskr\components\task_menu.py:1189
+msgid "Cancelled."
+msgstr ""
+
+#: taskr\components\task_menu.py:447
+msgid "Scheduled command deleted."
+msgstr ""
+
+#: taskr\components\task_menu.py:479
+msgid "No scheduled commands to search."
+msgstr ""
+
+#: taskr\components\task_menu.py:482
+msgid "Search Query"
+msgstr ""
+
+#: taskr\components\task_menu.py:484
+msgid "Search query"
+msgstr ""
+
+#: taskr\components\task_menu.py:489
+msgid "Search Scheduled Commands"
+msgstr ""
+
+#: taskr\components\task_menu.py:500
+msgid "Already searching for that query."
+msgstr ""
+
+#: taskr\components\task_menu.py:513
+msgid "Found a scheduled command matching that query."
+msgstr ""
+
+#: taskr\components\task_menu.py:518 taskr\components\task_menu.py:593
+#: taskr\components\task_menu.py:663 taskr\components\task_menu.py:748
+#: taskr\components\task_menu.py:825
+msgid "No scheduled commands to configure."
+msgstr ""
+
+#: taskr\components\task_menu.py:587
+msgid "Scheduled command updated"
+msgstr ""
+
+#: taskr\components\task_menu.py:608
+msgid "Interval must be a number."
+msgstr ""
+
+#: taskr\components\task_menu.py:619 taskr\components\task_menu.py:921
+msgid "Invalid configuration: {}"
+msgstr ""
+
+#: taskr\components\task_menu.py:628 taskr\components\task_menu.py:736
+#: taskr\components\task_menu.py:813
+msgid "Scheduled command interval is not safe."
+msgstr ""
+
+#: taskr\components\task_menu.py:632
+msgid "Scheduled command interval updated."
+msgstr ""
+
+#: taskr\components\task_menu.py:641
+msgid "0 seconds"
+msgstr ""
+
+#: taskr\components\task_menu.py:645
+msgid ""
+"Scheduled command is not safe to enable, please configure it first.\n"
+"The minimum interval between tasks is {}."
+msgstr ""
+
+#: taskr\components\task_menu.py:667
+msgid "Hour Expression"
+msgstr ""
+
+#: taskr\components\task_menu.py:669
+msgid "2, 0-23, *, */2, 0-23/2, etc..."
+msgstr ""
+
+#: taskr\components\task_menu.py:674
+msgid "Minute Expression"
+msgstr ""
+
+#: taskr\components\task_menu.py:676
+msgid "15, 0-59, *, */2, 0-59/2, etc..."
+msgstr ""
+
+#: taskr\components\task_menu.py:681
+msgid "Second Expression"
+msgstr ""
+
+#: taskr\components\task_menu.py:683
+msgid "30, 0-59, *, */2, 0-59/2, etc..."
+msgstr ""
+
+#: taskr\components\task_menu.py:688
+msgid "Edit Scheduled Command Cron"
+msgstr ""
+
+#: taskr\components\task_menu.py:701
+msgid "Hour expression is invalid!"
+msgstr ""
+
+#: taskr\components\task_menu.py:706
+msgid "Minute expression is invalid!"
+msgstr ""
+
+#: taskr\components\task_menu.py:711
+msgid "Second expression is invalid!"
+msgstr ""
+
+#: taskr\components\task_menu.py:716 taskr\components\task_menu.py:721
+msgid "Cron expression is invalid!"
+msgstr ""
+
+#: taskr\components\task_menu.py:740
+msgid "Scheduled command cron updated."
+msgstr ""
+
+#: taskr\components\task_menu.py:752
+msgid "Days of Week"
+msgstr ""
+
+#: taskr\components\task_menu.py:754
+msgid "Day of week ('mon', 'tue', 'fri#1', ect...)"
+msgstr ""
+
+#: taskr\components\task_menu.py:759
+msgid "Days of Month"
+msgstr ""
+
+#: taskr\components\task_menu.py:761
+msgid "Day of month ('1', '2-14', 'last', ect...)"
+msgstr ""
+
+#: taskr\components\task_menu.py:766
+msgid "Months of Year"
+msgstr ""
+
+#: taskr\components\task_menu.py:768
+msgid "Month of year ('1', '1-12/3', '1/2', '1,7', etc...)"
+msgstr ""
+
+#: taskr\components\task_menu.py:773
+msgid "Edit Scheduled Command Advanced"
+msgstr ""
+
+#: taskr\components\task_menu.py:785
+msgid "Days of week expression is invalid!"
+msgstr ""
+
+#: taskr\components\task_menu.py:789
+msgid "Days of month expression is invalid!"
+msgstr ""
+
+#: taskr\components\task_menu.py:793
+msgid "Months of year expression is invalid!"
+msgstr ""
+
+#: taskr\components\task_menu.py:802
+msgid "Advanced cron expression is invalid!"
+msgstr ""
+
+#: taskr\components\task_menu.py:817
+msgid "Scheduled command advanced cron updated."
+msgstr ""
+
+#: taskr\components\task_menu.py:829
+msgid "Start Date"
+msgstr ""
+
+#: taskr\components\task_menu.py:831
+msgid "ex: April 10th, 2022 4:20PM"
+msgstr ""
+
+#: taskr\components\task_menu.py:836
+msgid "End Date"
+msgstr ""
+
+#: taskr\components\task_menu.py:838
+msgid "ex: 10/20/2024 17:00"
+msgstr ""
+
+#: taskr\components\task_menu.py:843
+msgid "Between Time Start"
+msgstr ""
+
+#: taskr\components\task_menu.py:845 taskr\components\task_menu.py:852
+msgid "HH:MM"
+msgstr ""
+
+#: taskr\components\task_menu.py:850
+msgid "Between Time End"
+msgstr ""
+
+#: taskr\components\task_menu.py:857
+msgid "Edit Scheduled Command Times"
+msgstr ""
+
+#: taskr\components\task_menu.py:876
+msgid "Start date is invalid!"
+msgstr ""
+
+#: taskr\components\task_menu.py:885
+msgid "End date is invalid!"
+msgstr ""
+
+#: taskr\components\task_menu.py:890
+msgid "Between time start is invalid!"
+msgstr ""
+
+#: taskr\components\task_menu.py:895
+msgid "Between time end is invalid!"
+msgstr ""
+
+#: taskr\components\task_menu.py:902
+msgid ""
+"Cannot set 'between times' when interval unit is **{}**.\n"
+"Between times only work with **hours** or **minutes** intervals.\n"
+"Please update your interval unit first, or leave between times empty."
+msgstr ""
+
+#: taskr\components\task_menu.py:926
+msgid "Scheduled command times updated."
+msgstr ""
+
+#: taskr\components\task_menu.py:943
+msgid "Scheduled Command Help"
+msgstr ""
+
+#: taskr\components\task_menu.py:948
+msgid ""
+"The interval is the time between each run of the command.\n"
+"- Interval = `some number`\n"
+"- Units = `seconds, minutes, hours, days, weeks, months, years`\n"
+msgstr ""
+
+#: taskr\components\task_menu.py:955
+msgid ""
+"The cron expression is a more advanced way to schedule commands.\n"
+"- Hour = `0-23, *, */2, 0-23/2, etc...`\n"
+"- Minute = `0-59, *, */2, 0-59/2, etc...`\n"
+"- Second = `0-59, *, */2, 0-59/2, etc...`\n"
+"Other expressions include\n"
+"- `*` - fire on every value\n"
+"- `*/a` - fire every `a` values, starting from the minimum\n"
+"- `a-b` - fire on any value in the range `a` to `b`\n"
+"- `a-b/c` - fire every `c` values in the range `a` to `b`\n"
+"- `x,y,z` - fire on any matching expression\n"
+msgstr ""
+
+#: taskr\components\task_menu.py:967
+msgid "Cron Expressions"
+msgstr ""
+
+#: taskr\components\task_menu.py:969
+msgid ""
+"Advanced cron expressions allow for more complex scheduling.\n"
+"- Days of Week = `mon, tue, wed, thu, fri, sat, sun`\n"
+"- Days of Month = `1, 2-14, last, 1st fri`\n"
+"- Months of Year = `1, 1-12/3, 1/2, 1,7`\n"
+"In addition to the cron expressions above, the following are available for Days of Month:\n"
+"- `last` - fire on the last day within the month\n"
+"- `last x` - Fire on the last occurrence of weekday `x` within the month\n"
+"- `xth y` - fire on the `x`-th occurence of weekday `y` within the month\n"
+msgstr ""
+
+#: taskr\components\task_menu.py:979
+msgid "Advanced Cron Expressions"
+msgstr ""
+
+#: taskr\components\task_menu.py:981
+msgid ""
+"Every 15 minutes.\n"
+"- Interval: **15**\n"
+"- Units: **minutes**"
+msgstr ""
+
+#: taskr\components\task_menu.py:982 taskr\components\task_menu.py:985
+msgid "Simple Interval Example"
+msgstr ""
+
+#: taskr\components\task_menu.py:984
+msgid ""
+"Every 2 hours.\n"
+"- Interval: **2**\n"
+"- Units: **hours**"
+msgstr ""
+
+#: taskr\components\task_menu.py:987
+msgid ""
+"Every Monday at 3:30 PM.\n"
+"- Hour: **15**\n"
+"- Minute: **30**\n"
+"- Days of Week: **mon**"
+msgstr ""
+
+#: taskr\components\task_menu.py:988 taskr\components\task_menu.py:991
+msgid "Intermediate Cron Example"
+msgstr ""
+
+#: taskr\components\task_menu.py:990
+msgid ""
+"Monday, Wednesday, Friday at 8 AM.\n"
+"- Hour: **08**\n"
+"- Days of Week: **mon,wed,fri**"
+msgstr ""
+
+#: taskr\components\task_menu.py:993
+msgid ""
+"Every 2 hours on the 1st and 15th of the month.\n"
+"- Interval: **2**\n"
+"- Units: **hours**\n"
+"- Days of Month: **1,15**"
+msgstr ""
+
+#: taskr\components\task_menu.py:997 taskr\components\task_menu.py:1000
+msgid "Advanced Cron Example"
+msgstr ""
+
+#: taskr\components\task_menu.py:999
+msgid ""
+"First Friday of every 3rd month.\n"
+"- Days of Month: **1st fri**\n"
+"- Months of Year: **1/3**"
+msgstr ""
+
+#: taskr\components\task_menu.py:1002
+msgid ""
+"Every 2 hours between 8 AM and 5 PM on the last day of each month.\n"
+"- Interval: **2**\n"
+"- Units: **hours**\n"
+"- Days of Month: **last**\n"
+"- Between Time Start: **08:00**\n"
+"- Between Time End: **17:00**"
+msgstr ""
+
+#: taskr\components\task_menu.py:1007
+msgid "Advanced Time Example"
+msgstr ""
+
+#: taskr\components\task_menu.py:1015
+msgid "OpenAI API key is not set, cannot use AI helper."
+msgstr ""
+
+#: taskr\components\task_menu.py:1020
+msgid "When do you want this command to run?"
+msgstr ""
+
+#: taskr\components\task_menu.py:1022
+msgid "ex: run every 5 minutes"
+msgstr ""
+
+#: taskr\components\task_menu.py:1026
+msgid "AI Schedule Helper"
+msgstr ""
+
+#: taskr\components\task_menu.py:1034
+msgid ""
+"Generating cron expression...\n"
+"{}"
+msgstr ""
+
+#: taskr\components\task_menu.py:1089
+msgid "AI failed to generate cron expression, please try again."
+msgstr ""
+
+#: taskr\components\task_menu.py:1096
+msgid "Failed to get cron expression from AI model."
+msgstr ""
+
+#: taskr\components\task_menu.py:1154
+msgid ""
+"AI failed to compile schedule, please check the cron expression.\n"
+"{}"
+msgstr ""
+
+#: taskr\components\task_menu.py:1156 taskr\components\task_menu.py:1165
+msgid ""
+"\n"
+"AI Comment: {}"
+msgstr ""
+
+#: taskr\components\task_menu.py:1163
+msgid ""
+"Scheduled command updated from the following request:\n"
+"{}"
+msgstr ""
+
+#: taskr\components\task_menu.py:1174
+msgid "No scheduled commands to run."
+msgstr ""
+
+#: taskr\components\task_menu.py:1177
+msgid "Are you sure you want to run this command?"
+msgstr ""
+
+#: taskr\components\task_menu.py:1182
+msgid "Run Now"
+msgstr ""
+
+#: taskr\components\task_menu.py:1205
+msgid "Failed to run scheduled command: {}"
+msgstr ""
+
+#: taskr\components\task_menu.py:1221
+msgid "No scheduled commands to duplicate."
+msgstr ""
+
+#: taskr\components\task_menu.py:1238
+msgid "The original author is no longer in this server."
+msgstr ""
+
+#: taskr\components\task_menu.py:1242
+msgid " (Copy)"
+msgstr ""
+
+#: taskr\components\task_menu.py:1260
+msgid "Scheduled command duplicated. Please configure it before enabling!"
+msgstr ""

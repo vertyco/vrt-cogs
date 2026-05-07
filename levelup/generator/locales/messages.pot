@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2025-11-27 13:02-0500\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -11,12 +11,70 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: redgettext 3.4.2\n"
 
-#: levelup\generator\api.py:173
+#: levelup\generator\api.py:76
+#, docstring
+msgid "Request model for profile generation."
+msgstr ""
+
+#: levelup\generator\api.py:116
+#, docstring
+msgid "Request model for level-up image generation."
+msgstr ""
+
+#: levelup\generator\api.py:131
+#, docstring
+msgid "Response model for generated images."
+msgstr ""
+
+#: levelup\generator\api.py:151
+#, docstring
+msgid "Health check endpoint for readiness probes."
+msgstr ""
+
+#: levelup\generator\api.py:156
+#, docstring
+msgid "Download image from URL."
+msgstr ""
+
+#: levelup\generator\api.py:163
+#, docstring
+msgid "Resolve font name to path, or decode font_b64 to temp file."
+msgstr ""
+
+#: levelup\generator\api.py:189
+#, docstring
+msgid "Generate a profile image (new JSON API)."
+msgstr ""
+
+#: levelup\generator\api.py:265
+#, docstring
+msgid "Generate a level-up alert image (new JSON API)."
+msgstr ""
+
+#: levelup\generator\api.py:306
+#, docstring
+msgid "Parse color string like '(255, 255, 255)' to tuple."
+msgstr ""
+
+#: levelup\generator\api.py:319
+#, docstring
+msgid "Parse FormData into kwargs dict."
+msgstr ""
+
+#: levelup\generator\api.py:344
+#, docstring
+msgid "Legacy endpoint for full profile (FormData) - backward compatible."
+msgstr ""
+
+#: levelup\generator\api.py:360
 #, docstring
 msgid ""
-"\n"
-"    Find and kill the process that's using the specified port.\n"
-"    "
+"Legacy endpoint for runescape profile (FormData) - backward compatible."
+msgstr ""
+
+#: levelup\generator\api.py:376
+#, docstring
+msgid "Health check endpoint."
 msgstr ""
 
 #: levelup\generator\imgtools.py:38
@@ -141,6 +199,57 @@ msgstr ""
 msgid "Get the average duration of a GIF"
 msgstr ""
 
+#: levelup\generator\imgtools.py:392
+#, docstring
+msgid "Try to shrink an animated image under a target byte size."
+msgstr ""
+
+#: levelup\generator\imgtools.py:438
+#, docstring
+msgid "Convert the first frame into a smaller static WEBP if needed."
+msgstr ""
+
+#: levelup\generator\imgtools.py:462
+#, docstring
+msgid ""
+"Shrink oversized animated images, then fall back to a static WEBP if needed."
+msgstr ""
+
 #: levelup\generator\levelalert.py:86
 msgid "Level {}"
+msgstr ""
+
+#: levelup\generator\profile_runner.py:55
+#, docstring
+msgid "Download image from URL using requests (sync for subprocess)."
+msgstr ""
+
+#: levelup\generator\profile_runner.py:71
+#, docstring
+msgid "Get asset bytes from URL or base64, preferring URL."
+msgstr ""
+
+#: levelup\generator\profile_runner.py:84
+#, docstring
+msgid "Generate a profile image from input data."
+msgstr ""
+
+#: levelup\generator\profile_runner.py:191
+#, docstring
+msgid "Generate a level-up alert image from input data."
+msgstr ""
+
+#: levelup\generator\schemas.py:15
+#, docstring
+msgid "Request schema for profile image generation."
+msgstr ""
+
+#: levelup\generator\schemas.py:69
+#, docstring
+msgid "Request schema for level-up alert image generation."
+msgstr ""
+
+#: levelup\generator\schemas.py:94
+#, docstring
+msgid "Response schema for generated images."
 msgstr ""

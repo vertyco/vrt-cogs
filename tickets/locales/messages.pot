@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2024-02-08 18:31-0500\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -11,7 +11,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: redgettext 3.4.2\n"
 
-#: tickets.py:32
+#: tickets\tickets.py:39
 #, docstring
 msgid ""
 "\n"
@@ -19,21 +19,42 @@ msgid ""
 "    "
 msgstr ""
 
-#: tickets.py:45
+#: tickets\tickets.py:52
 #, docstring
 msgid "No data to delete"
 msgstr ""
 
-#: tickets.py:274
+#: tickets\tickets.py:75
+#, docstring
+msgid "Save the Pydantic DB to Config."
+msgstr ""
+
+#: tickets\tickets.py:135
+#, docstring
+msgid ""
+"Initialize a guild's ticket system.\n"
+"\n"
+"        Args:\n"
+"            guild: The Discord guild\n"
+"            conf: GuildSettings model (from self.db.get_conf(guild))\n"
+"        "
+msgstr ""
+
+#: tickets\tickets.py:287
 msgid ""
 "If you do not respond to this ticket within the next 20 minutes it will be "
 "closed automatically."
 msgstr ""
 
-#: tickets.py:291
+#: tickets\tickets.py:304
 msgid "(Auto-Close) Opened ticket with no response for "
 msgstr ""
 
-#: tickets.py:338
+#: tickets\tickets.py:354
 msgid "User left guild(Auto-Close)"
+msgstr ""
+
+#: tickets\tickets.py:395
+#, docstring
+msgid "Track staff first response time and message counts in tickets."
 msgstr ""

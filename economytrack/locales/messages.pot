@@ -1,0 +1,163 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+
+#: economytrack\abc.py:12
+#, docstring
+msgid "Type detection"
+msgstr ""
+
+#: economytrack\abc.py:16
+#, docstring
+msgid "Type hinting"
+msgstr ""
+
+#: economytrack\commands.py:20
+#, docstring
+msgid "Configure EconomyTrack"
+msgstr ""
+
+#: economytrack\commands.py:26
+#, docstring
+msgid "Enable/Disable economy tracking for this server"
+msgstr ""
+
+#: economytrack\commands.py:39
+#, docstring
+msgid "Enable/Disable member tracking for this server"
+msgstr ""
+
+#: economytrack\commands.py:51
+#, docstring
+msgid ""
+"\n"
+"        Set the max amount of data points the bot will store\n"
+"\n"
+"        **Arguments**\n"
+"        `<max_points>` Maximum amount of data points to store\n"
+"\n"
+"        The loop runs every 2 minutes, so 720 points equals 1 day\n"
+"        The default is 21600 (30 days)\n"
+"        Set to 0 to store data indefinitely (Not Recommended)\n"
+"        "
+msgstr ""
+
+#: economytrack\commands.py:66
+#, docstring
+msgid ""
+"\n"
+"        Set your desired timezone for the graph\n"
+"\n"
+"        **Arguments**\n"
+"        `<timezone>` A string representing a valid timezone\n"
+"\n"
+"        **Example:** `[p]ecotrack timezone US/Eastern`\n"
+"\n"
+"        Use this command without the argument to get a huge list of valid timezones.\n"
+"        "
+msgstr ""
+
+#: economytrack\commands.py:89
+#, docstring
+msgid "View EconomyTrack Settings"
+msgstr ""
+
+#: economytrack\commands.py:130
+#, docstring
+msgid ""
+"\n"
+"        Cleanup data that falls outside a specified range\n"
+"\n"
+"        **Arguments**\n"
+"        `[min_value]` - Minimum value to keep (optional)\n"
+"        `[max_value]` - Maximum value to keep (optional)\n"
+"        `[datatype]` - Either `bank` or `member` (defaults to bank)\n"
+"\n"
+"        At least one of min_value or max_value must be provided.\n"
+"\n"
+"        **Examples:**\n"
+"        `[p]remoutliers 0 50000 bank` - Remove bank points outside 0-50000 range\n"
+"        `[p]remoutliers 500 10000 member` - Remove member counts outside 500-10000 range\n"
+"        `[p]remoutliers None 8000 member` - Remove only data points above 8000 members\n"
+"        `[p]remoutliers 5000 None member` - Remove only data points below 5000 members\n"
+"        "
+msgstr ""
+
+#: economytrack\commands.py:205
+#, docstring
+msgid ""
+"\n"
+"        View bank status over a period of time.\n"
+"        **Arguments**\n"
+"        `<timespan>` How long to look for, or `all` for all-time data. Defaults to 1 day.\n"
+"        Must be at least 1 hour.\n"
+"        **Examples:**\n"
+"            - `[p]bankgraph 3w2d`\n"
+"            - `[p]bankgraph 5d`\n"
+"            - `[p]bankgraph all`\n"
+"        "
+msgstr ""
+
+#: economytrack\commands.py:300
+#, docstring
+msgid ""
+"\n"
+"        View member count over a period of time.\n"
+"        **Arguments**\n"
+"        `<timespan>` How long to look for, or `all` for all-time data. Defaults to 1 day.\n"
+"        Must be at least 1 hour.\n"
+"        **Examples:**\n"
+"            - `[p]membergraph 3w2d`\n"
+"            - `[p]membergraph 5d`\n"
+"            - `[p]membergraph all`\n"
+"        "
+msgstr ""
+
+#: economytrack\commands.py:394
+#, docstring
+msgid ""
+"\n"
+"        Automatically detect and remove outliers in your data using statistical methods\n"
+"\n"
+"        **Arguments**\n"
+"        `[datatype]` - Either `bank` or `member` (defaults to bank)\n"
+"        `[multiplier]` - IQR multiplier for outlier detection sensitivity (default: 1.5)\n"
+"            - Higher values = more lenient (keeps more data)\n"
+"            - Lower values = more strict (removes more outliers)\n"
+"        `[confirm]` - Whether to actually remove the outliers\n"
+"            - Set to False for a dry run that shows what would be removed without actually removing anything\n"
+"\n"
+"        This command uses the Interquartile Range (IQR) method to detect outliers:\n"
+"        - Calculates Q1 (25th percentile) and Q3 (75th percentile)\n"
+"        - Any value outside [Q1 - multiplier*IQR, Q3 + multiplier*IQR] is considered an outlier\n"
+"\n"
+"        **Examples:**\n"
+"        `[p]autoremoutliers true member` - Automatically remove member count outliers\n"
+"        `[p]autoremoutliers true bank 2.0` - Remove bank outliers with higher tolerance\n"
+"        `[p]autoremoutliers false member 1.0` - Show outliers that would be removed without actually removing them\n"
+"        "
+msgstr ""
+
+#: economytrack\economytrack.py:24
+#, docstring
+msgid ""
+"\n"
+"    Track your economy's total balance over time\n"
+"\n"
+"    Also track you server's member count!\n"
+"    "
+msgstr ""
+
+#: economytrack\economytrack.py:39
+#, docstring
+msgid "No data to delete"
+msgstr ""

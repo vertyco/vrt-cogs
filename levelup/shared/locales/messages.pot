@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2025-11-27 13:02-0500\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -55,47 +55,48 @@ msgstr ""
 msgid "{} just reached level {}!"
 msgstr ""
 
-#: levelup\shared\levelups.py:245
+#: levelup\shared\levelups.py:287
 #, docstring
 msgid ""
 "Ensure a user has the correct level roles based on their level and the "
 "guild's settings"
 msgstr ""
 
-#: levelup\shared\levelups.py:255
+#: levelup\shared\levelups.py:297
 msgid "Level Up"
 msgstr ""
 
-#: levelup\shared\profile.py:26
+#: levelup\shared\profile.py:44
 #, docstring
 msgid "Add XP to a user and check for level ups"
 msgstr ""
 
-#: levelup\shared\profile.py:36
+#: levelup\shared\profile.py:55
 #, docstring
 msgid "Set a user's XP and check for level ups"
 msgstr ""
 
-#: levelup\shared\profile.py:46
+#: levelup\shared\profile.py:66
 #, docstring
 msgid "Remove XP from a user and check for level ups"
 msgstr ""
 
-#: levelup\shared\profile.py:56
+#: levelup\shared\profile.py:77
 #, docstring
 msgid "Get the XP for a member"
 msgstr ""
 
-#: levelup\shared\profile.py:64
+#: levelup\shared\profile.py:85
 #, docstring
 msgid "Get the level for a member"
 msgstr ""
 
-#: levelup\shared\profile.py:74
+#: levelup\shared\profile.py:95
 #, docstring
 msgid ""
 "\n"
 "        Get a background for a user's profile in the following priority:\n"
+"        - Stored background (base64 with b64: prefix)\n"
 "        - Custom background selected by user\n"
 "        - Banner of user's Discord profile\n"
 "        - Guild default background\n"
@@ -103,7 +104,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup\shared\profile.py:133
+#: levelup\shared\profile.py:160
 #, docstring
 msgid ""
 "Fetch a user's banner from Discord's API\n"
@@ -116,7 +117,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup\shared\profile.py:150
+#: levelup\shared\profile.py:177
 #, docstring
 msgid ""
 "\n"
@@ -133,43 +134,43 @@ msgid ""
 "        "
 msgstr ""
 
-#: levelup\shared\profile.py:205
+#: levelup\shared\profile.py:232
 msgid "Level {}\n"
 msgstr ""
 
-#: levelup\shared\profile.py:207
+#: levelup\shared\profile.py:234
 msgid "Prestige {}\n"
 msgstr ""
 
-#: levelup\shared\profile.py:210
+#: levelup\shared\profile.py:237
 msgid " stars\n"
 msgstr ""
 
-#: levelup\shared\profile.py:211
+#: levelup\shared\profile.py:238
 msgid " messages sent\n"
 msgstr ""
 
-#: levelup\shared\profile.py:212
+#: levelup\shared\profile.py:239
 msgid " in voice\n"
 msgstr ""
 
-#: levelup\shared\profile.py:214
+#: levelup\shared\profile.py:241
 msgid " Exp ({} total)\n"
 msgstr ""
 
-#: levelup\shared\profile.py:228
+#: levelup\shared\profile.py:255
 msgid "{}'s Profile"
 msgstr ""
 
-#: levelup\shared\profile.py:232
+#: levelup\shared\profile.py:259
 msgid "Rank {}, with {}% of the total server Exp"
 msgstr ""
 
-#: levelup\shared\profile.py:237
+#: levelup\shared\profile.py:264
 msgid "Progress"
 msgstr ""
 
-#: levelup\shared\profile.py:362
+#: levelup\shared\profile.py:447
 #, docstring
 msgid "Cached version of get_user_profile"
 msgstr ""
@@ -225,18 +226,18 @@ msgstr ""
 msgid "`Voicetime:  `{}\n"
 msgstr ""
 
-#: levelup\shared\weeklyreset.py:138
+#: levelup\shared\weeklyreset.py:152
 msgid "Missing permissions to manage roles"
 msgstr ""
 
-#: levelup\shared\weeklyreset.py:150
+#: levelup\shared\weeklyreset.py:175
 msgid "Weekly winner role removal"
 msgstr ""
 
-#: levelup\shared\weeklyreset.py:162
+#: levelup\shared\weeklyreset.py:188
 msgid "Weekly winner role addition"
 msgstr ""
 
-#: levelup\shared\weeklyreset.py:180
+#: levelup\shared\weeklyreset.py:207
 msgid "Weekly stats have been reset."
 msgstr ""

@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2024-02-08 18:30-0500\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -11,7 +11,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: redgettext 3.4.2\n"
 
-#: commands\admin.py:23
+#: bankdecay\commands\admin.py:26
 #, docstring
 msgid ""
 "\n"
@@ -19,16 +19,16 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\admin.py:31
+#: bankdecay\commands\admin.py:34
 #, docstring
 msgid "View Bank Decay Settings"
 msgstr ""
 
-#: commands\admin.py:48
+#: bankdecay\commands\admin.py:51
 msgid "Not Set"
 msgstr ""
 
-#: commands\admin.py:53
+#: bankdecay\commands\admin.py:56
 msgid ""
 "`Decay Enabled: `{}\n"
 "`Inactive Days: `{}\n"
@@ -41,19 +41,19 @@ msgid ""
 "`Log Channel:   `{}\n"
 msgstr ""
 
-#: commands\admin.py:75
+#: bankdecay\commands\admin.py:78
 msgid "`Next Runtime:  `{}\n"
 msgstr ""
 
-#: commands\admin.py:78
+#: bankdecay\commands\admin.py:81
 msgid "**Ignored Roles**\n"
 msgstr ""
 
-#: commands\admin.py:80
+#: bankdecay\commands\admin.py:83
 msgid "BankDecay Settings"
 msgstr ""
 
-#: commands\admin.py:88
+#: bankdecay\commands\admin.py:91
 #, docstring
 msgid ""
 "\n"
@@ -61,25 +61,26 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\admin.py:92 commands\admin.py:144 commands\admin.py:186
-#: commands\admin.py:213 commands\admin.py:249 commands\admin.py:318
-#: commands\admin.py:350
+#: bankdecay\commands\admin.py:95 bankdecay\commands\admin.py:144
+#: bankdecay\commands\admin.py:186 bankdecay\commands\admin.py:214
+#: bankdecay\commands\admin.py:265 bankdecay\commands\admin.py:334
+#: bankdecay\commands\admin.py:366
 msgid "This command is not available when using global bank."
 msgstr ""
 
-#: commands\admin.py:96
+#: bankdecay\commands\admin.py:99
 msgid "Bank decay has been {}."
 msgstr ""
 
-#: commands\admin.py:96
+#: bankdecay\commands\admin.py:99
 msgid "enabled"
 msgstr ""
 
-#: commands\admin.py:96
+#: bankdecay\commands\admin.py:99
 msgid "disabled"
 msgstr ""
 
-#: commands\admin.py:101
+#: bankdecay\commands\admin.py:104
 #, docstring
 msgid ""
 "\n"
@@ -87,15 +88,11 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\admin.py:105
-msgid "Inactive days cannot be negative."
-msgstr ""
-
-#: commands\admin.py:109
+#: bankdecay\commands\admin.py:109
 msgid "Inactive days set to {}."
 msgstr ""
 
-#: commands\admin.py:114
+#: bankdecay\commands\admin.py:114
 #, docstring
 msgid ""
 "\n"
@@ -106,15 +103,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\admin.py:121
+#: bankdecay\commands\admin.py:121
 msgid "Percent decay must be between 0 and 1."
 msgstr ""
 
-#: commands\admin.py:125
+#: bankdecay\commands\admin.py:125
 msgid "Percent decay set to {}%."
 msgstr ""
 
-#: commands\admin.py:130
+#: bankdecay\commands\admin.py:130
 #, docstring
 msgid ""
 "\n"
@@ -122,11 +119,11 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\admin.py:135
+#: bankdecay\commands\admin.py:135
 msgid "Total decayed amount has been reset to 0."
 msgstr ""
 
-#: commands\admin.py:140
+#: bankdecay\commands\admin.py:140
 #, docstring
 msgid ""
 "\n"
@@ -134,85 +131,85 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\admin.py:148
+#: bankdecay\commands\admin.py:148
 msgid "The decay system is currently disabled!"
 msgstr ""
 
-#: commands\admin.py:155
+#: bankdecay\commands\admin.py:155
 msgid "There were no users affected by the decay cycle"
 msgstr ""
 
-#: commands\admin.py:157 commands\admin.py:194
+#: bankdecay\commands\admin.py:157 bankdecay\commands\admin.py:194
 msgid "account"
 msgstr ""
 
-#: commands\admin.py:157 commands\admin.py:194
+#: bankdecay\commands\admin.py:157 bankdecay\commands\admin.py:194
 msgid "accounts"
 msgstr ""
 
-#: commands\admin.py:158
+#: bankdecay\commands\admin.py:158
 msgid "Are you sure you want to decay {} for a total of {}?"
 msgstr ""
 
-#: commands\admin.py:166
+#: bankdecay\commands\admin.py:166
 msgid "Decay cycle cancelled"
 msgstr ""
 
-#: commands\admin.py:168 commands\admin.py:171
+#: bankdecay\commands\admin.py:168 bankdecay\commands\admin.py:171
 msgid "Decaying user accounts, one moment..."
 msgstr ""
 
-#: commands\admin.py:176
+#: bankdecay\commands\admin.py:176
 msgid ""
 "User accounts have been decayed!\n"
 "- Users Affected: {}\n"
 "- Total {} Decayed: {}"
 msgstr ""
 
-#: commands\admin.py:184
+#: bankdecay\commands\admin.py:184
 #, docstring
 msgid ""
 "Get a list of users who are currently expired and how much they will lose if"
 " decayed"
 msgstr ""
 
-#: commands\admin.py:191
+#: bankdecay\commands\admin.py:191
 msgid "There were no users that would be affected by the decay cycle"
 msgstr ""
 
-#: commands\admin.py:195
+#: bankdecay\commands\admin.py:195
 msgid "This would decay {} for a total of {}"
 msgstr ""
 
-#: commands\admin.py:209
+#: bankdecay\commands\admin.py:210
 #, docstring
 msgid ""
 "\n"
-"        Remove users from the config that are no longer in the server or have no balance\n"
+"        Remove users from the config that have no balance\n"
 "        "
 msgstr ""
 
-#: commands\admin.py:217
+#: bankdecay\commands\admin.py:218
 msgid "Not removing users from the config"
 msgstr ""
 
-#: commands\admin.py:232
+#: bankdecay\commands\admin.py:248
 msgid "No users were removed from the config."
 msgstr ""
 
-#: commands\admin.py:235
+#: bankdecay\commands\admin.py:251
 msgid "user"
 msgstr ""
 
-#: commands\admin.py:235
+#: bankdecay\commands\admin.py:251
 msgid "users"
 msgstr ""
 
-#: commands\admin.py:236
+#: bankdecay\commands\admin.py:252
 msgid "Removed {} from the config."
 msgstr ""
 
-#: commands\admin.py:242
+#: bankdecay\commands\admin.py:258
 #, docstring
 msgid ""
 "\n"
@@ -223,19 +220,19 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\admin.py:265
+#: bankdecay\commands\admin.py:281
 msgid "member"
 msgstr ""
 
-#: commands\admin.py:265
+#: bankdecay\commands\admin.py:281
 msgid "members"
 msgstr ""
 
-#: commands\admin.py:266
+#: bankdecay\commands\admin.py:282
 msgid "Server initialized! {} added to the config."
 msgstr ""
 
-#: commands\admin.py:271
+#: bankdecay\commands\admin.py:287
 #, docstring
 msgid ""
 "\n"
@@ -243,15 +240,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\admin.py:277
+#: bankdecay\commands\admin.py:293
 msgid "This user is not in the config yet!"
 msgstr ""
 
-#: commands\admin.py:280
+#: bankdecay\commands\admin.py:296
 msgid "User was last seen {}"
 msgstr ""
 
-#: commands\admin.py:285
+#: bankdecay\commands\admin.py:301
 #, docstring
 msgid ""
 "\n"
@@ -261,15 +258,15 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\admin.py:293
+#: bankdecay\commands\admin.py:309
 msgid "Role removed from the ignore list."
 msgstr ""
 
-#: commands\admin.py:296
+#: bankdecay\commands\admin.py:312
 msgid "Role added to the ignore list."
 msgstr ""
 
-#: commands\admin.py:302
+#: bankdecay\commands\admin.py:318
 #, docstring
 msgid ""
 "\n"
@@ -277,11 +274,11 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\admin.py:307
+#: bankdecay\commands\admin.py:323
 msgid "Log channel has been set!"
 msgstr ""
 
-#: commands\admin.py:312
+#: bankdecay\commands\admin.py:328
 #, docstring
 msgid ""
 "\n"
@@ -291,19 +288,19 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\admin.py:322
+#: bankdecay\commands\admin.py:338
 msgid "Not adding credits to users"
 msgstr ""
 
-#: commands\admin.py:326 commands\admin.py:358
+#: bankdecay\commands\admin.py:342 bankdecay\commands\admin.py:374
 msgid "Percent must be greater than 1!"
 msgstr ""
 
-#: commands\admin.py:340
+#: bankdecay\commands\admin.py:356
 msgid "Credits added: {}"
 msgstr ""
 
-#: commands\admin.py:344
+#: bankdecay\commands\admin.py:360
 #, docstring
 msgid ""
 "\n"
@@ -313,10 +310,10 @@ msgid ""
 "        "
 msgstr ""
 
-#: commands\admin.py:354
+#: bankdecay\commands\admin.py:370
 msgid "Not removing credits from users"
 msgstr ""
 
-#: commands\admin.py:372
+#: bankdecay\commands\admin.py:388
 msgid "Credits removed: {}"
 msgstr ""

@@ -1,0 +1,57 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+
+#: bankevents\abc.py:8
+#, docstring
+msgid "Type detection"
+msgstr ""
+
+#: bankevents\abc.py:12
+#, docstring
+msgid "Type hinting"
+msgstr ""
+
+#: bankevents\main.py:21
+#, docstring
+msgid ""
+"\n"
+"    Dispatches listener events for Red bank transactions and payday claims.\n"
+"    - red_bank_set_balance\n"
+"    - red_bank_transfer_credits\n"
+"    - red_bank_wipe\n"
+"    - red_bank_prune\n"
+"    - red_bank_set_global\n"
+"    - red_economy_payday_claim\n"
+"\n"
+"    Shoutout to YamiKaitou for starting the work on this 2+ years ago with a PR.\n"
+"    Maybe one day it will be merged into core.\n"
+"    https://github.com/Cog-Creators/Red-DiscordBot/pull/5325\n"
+"    "
+msgstr ""
+
+#: bankevents\main.py:124
+#, docstring
+msgid "Get help using the BankEvents cog"
+msgstr ""
+
+#: bankevents\main.py:125
+msgid ""
+"This cog allows you to add listeners for Red bank transactions in your own cogs by dispatching the following events:\n"
+"- red_bank_set_balance\n"
+"- red_bank_transfer_credits\n"
+"- red_bank_wipe\n"
+"- red_bank_prune\n"
+"- red_bank_set_global\n"
+"- red_economy_payday_claim\n"
+"Here are the implementations you can use in your cogs that will work when this cog is loaded:\n"
+msgstr ""

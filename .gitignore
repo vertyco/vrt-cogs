@@ -197,6 +197,7 @@ MIGRATION*
 templates/
 .github/skills/
 references/
+makelocales.py
 
 # WIP cogs
 arkadia/
