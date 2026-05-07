@@ -130,7 +130,13 @@ If a file has no extension it will still try to read it only if it can be decode
 
         try:
             image = await request_image_raw(
-                prompt, self.get_api_key(conf), size, quality, style, model, base_url=self.db.endpoint_override
+                prompt,
+                self.get_api_key(conf),
+                size,
+                quality,
+                style,
+                model,
+                base_url=self.db.endpoint_override,
             )
         except (openai.NotFoundError, openai.BadRequestError):
             if self.db.endpoint_override:
@@ -147,7 +153,11 @@ If a file has no extension it will still try to read it only if it can be decode
         if hasattr(image, "revised_prompt") and image.revised_prompt:
             chunks = [p for p in pagify(image.revised_prompt, page_length=1000)]
             for idx, chunk in enumerate(chunks):
-                embed.add_field(name=_("Revised Prompt") if idx == 0 else _("Continued"), value=chunk, inline=False)
+                embed.add_field(
+                    name=_("Revised Prompt") if idx == 0 else _("Continued"),
+                    value=chunk,
+                    inline=False,
+                )
 
         await interaction.edit_original_response(embed=embed, attachments=[file])
 
@@ -246,6 +256,8 @@ If a file has no extension it will still try to read it only if it can be decode
         # Whatever limit is more severe get that color
         color = discord.Color.from_rgb(255, min(g, gg), min(b, bb))
 
+        max_retention = conf.get_user_max_retention(ctx.author)
+        retention_display = "\N{INFINITY}" if max_retention == 0 else max_retention
         desc = (
             ctx.channel.mention
             + "\n"
@@ -258,7 +270,7 @@ If a file has no extension it will still try to read it only if it can be decode
                 "`Model:       `{}"
             ).format(
                 messages,
-                conf.get_user_max_retention(ctx.author),
+                retention_display,
                 humanize_number(total_tokens),
                 humanize_number(max_tokens),
                 fill_pct,
@@ -630,7 +642,10 @@ If a file has no extension it will still try to read it only if it can be decode
                         message_obj["content"].append(
                             {
                                 "type": "image_url",
-                                "image_url": {"url": attachment.url, "detail": conf.vision_detail},
+                                "image_url": {
+                                    "url": attachment.url,
+                                    "detail": conf.vision_detail,
+                                },
                             }
                         )
                     elif attachment.content_type.startswith("text") and attachment.filename.endswith(
@@ -719,7 +734,10 @@ If a file has no extension it will still try to read it only if it can be decode
     @commands.guild_only()
     @commands.bot_has_guild_permissions(attach_files=True)
     async def copy_conversation(
-        self, ctx: commands.Context, *, channel: discord.TextChannel | discord.Thread | discord.ForumChannel
+        self,
+        ctx: commands.Context,
+        *,
+        channel: discord.TextChannel | discord.Thread | discord.ForumChannel,
     ):
         """
         Copy the conversation to another channel, thread, or forum

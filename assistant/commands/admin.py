@@ -53,10 +53,14 @@ STATUS_EMOJIS = {
     "off": OFF_STATUS_EMOJI,
     "mixed": MIXED_STATUS_EMOJI,
 }
-THIRD_PARTY_DOCS_URL = "https://github.com/vertyco/vrt-cogs/blob/main/assistant/THIRD%20PARTY.md"
+THIRD_PARTY_DOCS_URL = (
+    "https://github.com/vertyco/vrt-cogs/blob/main/assistant/THIRD%20PARTY.md"
+)
 
 
-def normalize_endpoint_override(endpoint: t.Optional[str]) -> tuple[t.Optional[str], t.Optional[str]]:
+def normalize_endpoint_override(
+    endpoint: t.Optional[str],
+) -> tuple[t.Optional[str], t.Optional[str]]:
     if endpoint is None:
         return None, None
 
@@ -96,7 +100,9 @@ class Admin(MixinMeta):
 
     def get_tool_catalog(self) -> list[dict]:
         catalog = self.db.get_function_catalog(self.bot, self.registry)
-        return sorted(catalog, key=lambda entry: (entry["category"], entry["name"].lower()))
+        return sorted(
+            catalog, key=lambda entry: (entry["category"], entry["name"].lower())
+        )
 
     def get_tool_categories(self) -> dict[str, list[dict]]:
         grouped = self.db.get_functions_by_category(self.bot, self.registry)
@@ -107,9 +113,13 @@ class Admin(MixinMeta):
 
     def get_context_variable_catalog(self) -> list[dict]:
         catalog = self.db.get_context_variable_catalog(self.bot, self.context_registry)
-        return sorted(catalog, key=lambda entry: (entry["source"], entry["name"].lower()))
+        return sorted(
+            catalog, key=lambda entry: (entry["source"], entry["name"].lower())
+        )
 
-    async def retry_discord_server_error(self, operation: t.Callable[[], t.Awaitable[t.Any]]):
+    async def retry_discord_server_error(
+        self, operation: t.Callable[[], t.Awaitable[t.Any]]
+    ):
         last_error = None
         for attempt in range(3):
             try:
@@ -122,9 +132,13 @@ class Admin(MixinMeta):
         if last_error is not None:
             raise last_error
 
-    def format_endpoint_model_box(self, model_ids: List[str], active_model: str = "") -> str:
+    def format_endpoint_model_box(
+        self, model_ids: List[str], active_model: str = ""
+    ) -> str:
         ordered = [active_model] if active_model and active_model in model_ids else []
-        ordered.extend(sorted(model_id for model_id in model_ids if model_id != active_model))
+        ordered.extend(
+            sorted(model_id for model_id in model_ids if model_id != active_model)
+        )
         lines = []
         for model_id in ordered[:20]:
             label = f"{model_id} (active)" if model_id == active_model else model_id
@@ -151,18 +165,24 @@ class Admin(MixinMeta):
             return "\n".join(lines)
 
         if profile.active_chat_model:
-            lines.append(_("Runtime chat model: **{}**").format(profile.active_chat_model))
+            lines.append(
+                _("Runtime chat model: **{}**").format(profile.active_chat_model)
+            )
 
         chat_models = list(profile.chat_models)
         if chat_models:
             lines.append(
                 _("Discovered chat models:\n{}").format(
-                    self.format_endpoint_model_box(chat_models, profile.active_chat_model)
+                    self.format_endpoint_model_box(
+                        chat_models, profile.active_chat_model
+                    )
                 )
             )
         else:
             lines.append(
-                _("No chat models were discovered from this endpoint yet. You can still enter a model id manually.")
+                _(
+                    "No chat models were discovered from this endpoint yet. You can still enter a model id manually."
+                )
             )
 
         lines.append(
@@ -172,7 +192,9 @@ class Admin(MixinMeta):
         )
         return "\n".join(lines)
 
-    async def describe_endpoint_embedding_model_options(self, ctx: commands.Context, configured_model: str) -> str:
+    async def describe_endpoint_embedding_model_options(
+        self, ctx: commands.Context, configured_model: str
+    ) -> str:
         profile = await self.refresh_endpoint_profile()
         lines = [_("Configured embedding model: **{}**").format(configured_model)]
         if not profile:
@@ -184,13 +206,19 @@ class Admin(MixinMeta):
             return "\n".join(lines)
 
         if profile.active_embedding_model:
-            lines.append(_("Runtime embedding model: **{}**").format(profile.active_embedding_model))
+            lines.append(
+                _("Runtime embedding model: **{}**").format(
+                    profile.active_embedding_model
+                )
+            )
 
         embedding_models = list(profile.embedding_models)
         if embedding_models:
             lines.append(
                 _("Discovered embedding models:\n{}").format(
-                    self.format_endpoint_model_box(embedding_models, profile.active_embedding_model)
+                    self.format_endpoint_model_box(
+                        embedding_models, profile.active_embedding_model
+                    )
                 )
             )
         else:
@@ -207,13 +235,17 @@ class Admin(MixinMeta):
         )
         return "\n".join(lines)
 
-    async def get_endpoint_model_warning(self, model: str, embedding: bool = False) -> t.Optional[str]:
+    async def get_endpoint_model_warning(
+        self, model: str, embedding: bool = False
+    ) -> t.Optional[str]:
         profile = await self.refresh_endpoint_profile()
         if not profile:
             return None
 
         discovered = profile.embedding_models if embedding else profile.chat_models
-        runtime_model = profile.active_embedding_model if embedding else profile.active_chat_model
+        runtime_model = (
+            profile.active_embedding_model if embedding else profile.active_chat_model
+        )
         kind = _("embedding") if embedding else _("chat")
 
         if discovered and model not in discovered and runtime_model:
@@ -230,15 +262,26 @@ class Admin(MixinMeta):
 
         To send in current channel, use `[p]assistant view false`
         """
-        send_key = [ctx.guild.owner_id == ctx.author.id, ctx.author.id in self.bot.owner_ids]
+        send_key = [
+            ctx.guild.owner_id == ctx.author.id,
+            ctx.author.id in self.bot.owner_ids,
+        ]
 
         conf = self.db.get_conf(ctx.guild)
         model = conf.get_user_model(ctx.author)
         effective_system_prompt = self.db.get_effective_system_prompt(conf)
-        system_tokens = await self.count_tokens(effective_system_prompt, model) if effective_system_prompt else 0
-        prompt_tokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
+        system_tokens = (
+            await self.count_tokens(effective_system_prompt, model)
+            if effective_system_prompt
+            else 0
+        )
+        prompt_tokens = (
+            await self.count_tokens(conf.prompt, model) if conf.prompt else 0
+        )
 
-        func_list, __ = await self.db.prep_functions(self.bot, conf, self.registry, showall=True)
+        func_list, __ = await self.db.prep_functions(
+            self.bot, conf, self.registry, showall=True
+        )
         func_tokens = await self.count_function_tokens(func_list, model)
         func_count = len(func_list)
 
@@ -247,12 +290,16 @@ class Admin(MixinMeta):
         desc = (
             _("`OpenAI Version:      `{}\n").format(openai.VERSION)
             + _("`OpenAI API Status:   `{}\n").format(status)
-            + _("`Draw Command:        `{}\n").format(_("Enabled") if conf.image_command else _("Disabled"))
+            + _("`Draw Command:        `{}\n").format(
+                _("Enabled") if conf.image_command else _("Disabled")
+            )
             + _("`Model:               `{}\n").format(conf.model)
             + _("`Embed Model:         `{}\n").format(conf.embed_model)
             + _("`Enabled:             `{}\n").format(conf.enabled)
             + _("`Timezone:            `{}\n").format(conf.timezone)
-            + _("`Channel:             `{}\n").format(f"<#{conf.channel_id}>" if conf.channel_id else _("Not Set"))
+            + _("`Channel:             `{}\n").format(
+                f"<#{conf.channel_id}>" if conf.channel_id else _("Not Set")
+            )
             + _("`? Required:          `{}\n").format(conf.endswith_questionmark)
             + _("`Question Mode:       `{}\n").format(conf.question_mode)
             + _("`Mention on Reply:    `{}\n").format(conf.mention)
@@ -271,8 +318,12 @@ class Admin(MixinMeta):
             + _("`Vision Resolution:   `{}\n").format(conf.vision_detail)
             + _("`Reasoning Effort:    `{}\n").format(conf.reasoning_effort)
             + _("`Verbosity:           `{}\n").format(conf.verbosity)
-            + _("`System Prompt:       `{} tokens\n").format(humanize_number(system_tokens))
-            + _("`User Prompt:         `{} tokens\n").format(humanize_number(prompt_tokens))
+            + _("`System Prompt:       `{} tokens\n").format(
+                humanize_number(system_tokens)
+            )
+            + _("`User Prompt:         `{} tokens\n").format(
+                humanize_number(prompt_tokens)
+            )
             + _("`Endpoint Override:   `{}\n").format(self.db.endpoint_override)
         )
 
@@ -285,31 +336,50 @@ class Admin(MixinMeta):
         if self.db.endpoint_override:
             profile = await self.refresh_endpoint_profile()
             if profile:
-                embed.add_field(name=_("Endpoint Runtime"), value=self.describe_endpoint_profile(profile), inline=False)
+                embed.add_field(
+                    name=_("Endpoint Runtime"),
+                    value=self.describe_endpoint_profile(profile),
+                    inline=False,
+                )
 
         name = _("Auto Answer")
         val = _(
             "Auto-answer will trigger the bot outside of the assistant channel if a question is detected and an embedding is not found.\n"
         )
         val += _("`Model:     `{}\n").format(conf.auto_answer_model)
-        val += _("`Status:    `{}\n").format(_("Enabled") if conf.auto_answer else _("Disabled"))
+        val += _("`Status:    `{}\n").format(
+            _("Enabled") if conf.auto_answer else _("Disabled")
+        )
         val += _("`Threshold: `{}\n").format(conf.auto_answer_threshold)
-        val += _("`Ignored:   `{}\n").format(humanize_list([f"<#{i}>" for i in conf.auto_answer_ignored_channels]))
+        val += _("`Ignored:   `{}\n").format(
+            humanize_list([f"<#{i}>" for i in conf.auto_answer_ignored_channels])
+        )
         embed.add_field(name=name, value=val, inline=False)
 
         name = _("Trigger Words")
-        val = _("Trigger words allow the bot to respond to messages containing specific keywords or regex patterns.\n")
-        val += _("`Status:    `{}\n").format(_("Enabled") if conf.trigger_enabled else _("Disabled"))
+        val = _(
+            "Trigger words allow the bot to respond to messages containing specific keywords or regex patterns.\n"
+        )
+        val += _("`Status:    `{}\n").format(
+            _("Enabled") if conf.trigger_enabled else _("Disabled")
+        )
         val += _("`Phrases:   `{}\n").format(len(conf.trigger_phrases))
         val += _("`Ignored:   `{}\n").format(
-            humanize_list([f"<#{i}>" for i in conf.trigger_ignore_channels]) or _("None")
+            humanize_list([f"<#{i}>" for i in conf.trigger_ignore_channels])
+            or _("None")
         )
-        val += _("`Has Prompt:`{}\n").format(_("Yes") if conf.trigger_prompt else _("No"))
+        val += _("`Has Prompt:`{}\n").format(
+            _("Yes") if conf.trigger_prompt else _("No")
+        )
         embed.add_field(name=name, value=val, inline=False)
 
         name = _("Think Tags")
-        val = _("Reasoning blocks wrapped in these tags are removed from chat output.\n")
-        val += _("`Upload as Files:`{}\n").format(_("Enabled") if self.db.reasoning_as_files else _("Disabled"))
+        val = _(
+            "Reasoning blocks wrapped in these tags are removed from chat output.\n"
+        )
+        val += _("`Upload as Files:`{}\n").format(
+            _("Enabled") if self.db.reasoning_as_files else _("Disabled")
+        )
         val += _("Prefix\n{}\nSuffix\n{}").format(
             box(format_think_tag(conf.think_tag_prefix)),
             box(format_think_tag(conf.think_tag_suffix)),
@@ -317,10 +387,16 @@ class Admin(MixinMeta):
         embed.add_field(name=name, value=val, inline=False)
 
         if conf.allow_sys_prompt_override:
-            val = _("System prompt override is **Allowed**, users can set a personal system prompt per convo.")
+            val = _(
+                "System prompt override is **Allowed**, users can set a personal system prompt per convo."
+            )
         else:
-            val = _("System prompt override is **Disabled**, users cannot set a personal system prompt per convo.")
-        val += _("\n*This will be restricted to mods if collaborative conversations are enabled!*")
+            val = _(
+                "System prompt override is **Disabled**, users cannot set a personal system prompt per convo."
+            )
+        val += _(
+            "\n*This will be restricted to mods if collaborative conversations are enabled!*"
+        )
         embed.add_field(name=_("System Prompt Overriding"), value=val, inline=False)
 
         if conf.channel_prompts:
@@ -367,10 +443,14 @@ class Admin(MixinMeta):
             inline=False,
         )
         # Planners field
-        planners = [ctx.guild.get_member(i) or ctx.guild.get_role(i) for i in conf.planners]
+        planners = [
+            ctx.guild.get_member(i) or ctx.guild.get_role(i) for i in conf.planners
+        ]
         planner_mentions = [i.mention for i in planners if i]
         if planner_mentions:
-            planner_field = _("The following roles/users can use the `think_and_plan` tool: ")
+            planner_field = _(
+                "The following roles/users can use the `think_and_plan` tool: "
+            )
             planner_field += humanize_list(sorted(planner_mentions))
             embed.add_field(name="Planners", value=planner_field, inline=False)
 
@@ -381,9 +461,9 @@ class Admin(MixinMeta):
         )
         if self.registry:
             cogs = humanize_list([cog for cog in self.registry])
-            custom_func_field += _("The following cogs also have functions registered with the assistant\n{}").format(
-                box(cogs)
-            )
+            custom_func_field += _(
+                "The following cogs also have functions registered with the assistant\n{}"
+            ).format(box(cogs))
 
         embed.add_field(
             name=_("Custom Functions ({})").format(humanize_number(func_count)),
@@ -391,13 +471,23 @@ class Admin(MixinMeta):
             inline=False,
         )
 
-        threshold_display = humanize_number(conf.compaction_threshold) if conf.compaction_threshold else _("Max tokens")
+        threshold_display = (
+            humanize_number(conf.compaction_threshold)
+            if conf.compaction_threshold
+            else _("Max tokens")
+        )
         compaction_field = (
-            _("`Compaction:        `{}\n").format(_("Enabled") if conf.compaction_enabled else _("Disabled"))
-            + _("`Compaction Model:  `{}\n").format(conf.compaction_model or _("Same as chat"))
+            _("`Compaction:        `{}\n").format(
+                _("Enabled") if conf.compaction_enabled else _("Disabled")
+            )
+            + _("`Compaction Model:  `{}\n").format(
+                conf.compaction_model or _("Same as chat")
+            )
             + _("`Threshold:         `{}\n").format(threshold_display)
         )
-        embed.add_field(name=_("Context Compaction"), value=compaction_field, inline=False)
+        embed.add_field(
+            name=_("Context Compaction"), value=compaction_field, inline=False
+        )
 
         if private and any(send_key):
             embed.add_field(
@@ -409,7 +499,9 @@ class Admin(MixinMeta):
         if private and ctx.author.id in self.bot.owner_ids:
             embed.add_field(
                 name=_("Endpoint Override API Key"),
-                value=box(self.db.endpoint_api_key) if self.db.endpoint_api_key else _("Not Set"),
+                value=box(self.db.endpoint_api_key)
+                if self.db.endpoint_api_key
+                else _("Not Set"),
                 inline=False,
             )
 
@@ -419,7 +511,9 @@ class Admin(MixinMeta):
                 embed.add_field(name=_("Regex Blacklist"), value=box(p), inline=False)
             embed.add_field(
                 name=_("Regex Failure Blocking"),
-                value=_("Block reply if regex replacement fails: **{}**").format(conf.block_failed_regex),
+                value=_("Block reply if regex replacement fails: **{}**").format(
+                    conf.block_failed_regex
+                ),
                 inline=False,
             )
 
@@ -442,46 +536,80 @@ class Admin(MixinMeta):
             else:
                 blacklist.append(f"{object_id}?")
         if blacklist:
-            embed.add_field(name=_("Blacklist"), value=humanize_list(blacklist), inline=False)
+            embed.add_field(
+                name=_("Blacklist"), value=humanize_list(blacklist), inline=False
+            )
 
         if not private:
             if overrides := conf.role_overrides:
                 field = ""
-                roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items() if ctx.guild.get_role(k)}
-                sorted_roles = sorted(roles.items(), key=lambda x: x[0].position, reverse=True)
+                roles = {
+                    ctx.guild.get_role(k): v
+                    for k, v in overrides.copy().items()
+                    if ctx.guild.get_role(k)
+                }
+                sorted_roles = sorted(
+                    roles.items(), key=lambda x: x[0].position, reverse=True
+                )
                 for role, model in sorted_roles:
                     if not role:
                         continue
                     field += f"{role.mention}: `{model}`\n"
                 if field:
-                    embed.add_field(name=_("Model Role Overrides"), value=field, inline=False)
+                    embed.add_field(
+                        name=_("Model Role Overrides"), value=field, inline=False
+                    )
 
             if overrides := conf.max_token_role_override:
                 field = ""
-                roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items() if ctx.guild.get_role(k)}
-                sorted_roles = sorted(roles.items(), key=lambda x: x[0].position, reverse=True)
+                roles = {
+                    ctx.guild.get_role(k): v
+                    for k, v in overrides.copy().items()
+                    if ctx.guild.get_role(k)
+                }
+                sorted_roles = sorted(
+                    roles.items(), key=lambda x: x[0].position, reverse=True
+                )
                 for role, tokens in sorted_roles:
                     if not role:
                         continue
                     field += f"{role.mention}: `{humanize_number(tokens)}`\n"
                 if field:
-                    embed.add_field(name=_("Max Token Role Overrides"), value=field, inline=False)
+                    embed.add_field(
+                        name=_("Max Token Role Overrides"), value=field, inline=False
+                    )
 
             if overrides := conf.max_retention_role_override:
                 field = ""
-                roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items() if ctx.guild.get_role(k)}
-                sorted_roles = sorted(roles.items(), key=lambda x: x[0].position, reverse=True)
+                roles = {
+                    ctx.guild.get_role(k): v
+                    for k, v in overrides.copy().items()
+                    if ctx.guild.get_role(k)
+                }
+                sorted_roles = sorted(
+                    roles.items(), key=lambda x: x[0].position, reverse=True
+                )
                 for role, retention in sorted_roles:
                     if not role:
                         continue
                     field += f"{role.mention}: `{humanize_number(retention)}`\n"
                 if field:
-                    embed.add_field(name=_("Max Message Retention Role Overrides"), value=field, inline=False)
+                    embed.add_field(
+                        name=_("Max Message Retention Role Overrides"),
+                        value=field,
+                        inline=False,
+                    )
 
             if overrides := conf.max_time_role_override:
                 field = ""
-                roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items() if ctx.guild.get_role(k)}
-                sorted_roles = sorted(roles.items(), key=lambda x: x[0].position, reverse=True)
+                roles = {
+                    ctx.guild.get_role(k): v
+                    for k, v in overrides.copy().items()
+                    if ctx.guild.get_role(k)
+                }
+                sorted_roles = sorted(
+                    roles.items(), key=lambda x: x[0].position, reverse=True
+                )
                 for role, retention_time in sorted_roles:
                     if not role:
                         continue
@@ -495,25 +623,45 @@ class Admin(MixinMeta):
 
             if overrides := conf.max_response_token_override:
                 field = ""
-                roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items() if ctx.guild.get_role(k)}
-                sorted_roles = sorted(roles.items(), key=lambda x: x[0].position, reverse=True)
+                roles = {
+                    ctx.guild.get_role(k): v
+                    for k, v in overrides.copy().items()
+                    if ctx.guild.get_role(k)
+                }
+                sorted_roles = sorted(
+                    roles.items(), key=lambda x: x[0].position, reverse=True
+                )
                 for role, retention_time in sorted_roles:
                     if not role:
                         continue
                     field += f"{role.mention}: `{humanize_number(retention_time)}s`\n"
                 if field:
-                    embed.add_field(name=_("Max Response Token Role Overrides"), value=field, inline=False)
+                    embed.add_field(
+                        name=_("Max Response Token Role Overrides"),
+                        value=field,
+                        inline=False,
+                    )
 
             if overrides := conf.reasoning_effort_role_override:
                 field = ""
-                roles = {ctx.guild.get_role(k): v for k, v in overrides.copy().items() if ctx.guild.get_role(k)}
-                sorted_roles = sorted(roles.items(), key=lambda x: x[0].position, reverse=True)
+                roles = {
+                    ctx.guild.get_role(k): v
+                    for k, v in overrides.copy().items()
+                    if ctx.guild.get_role(k)
+                }
+                sorted_roles = sorted(
+                    roles.items(), key=lambda x: x[0].position, reverse=True
+                )
                 for role, effort in sorted_roles:
                     if not role:
                         continue
                     field += f"{role.mention}: `{effort}`\n"
                 if field:
-                    embed.add_field(name=_("Reasoning Effort Role Overrides"), value=field, inline=False)
+                    embed.add_field(
+                        name=_("Reasoning Effort Role Overrides"),
+                        value=field,
+                        inline=False,
+                    )
 
         if ctx.author.id in self.bot.owner_ids:
             if self.db.brave_api_key:
@@ -537,7 +685,11 @@ class Admin(MixinMeta):
             else None
         )
         prompt_file = (
-            discord.File(BytesIO(conf.prompt.encode()), filename=_("InitialPrompt") + ".txt") if conf.prompt else None
+            discord.File(
+                BytesIO(conf.prompt.encode()), filename=_("InitialPrompt") + ".txt"
+            )
+            if conf.prompt
+            else None
         )
         if system_file:
             files.append(system_file)
@@ -591,7 +743,9 @@ class Admin(MixinMeta):
                 "text-embedding-3-large",
             ]:
                 field = _("`Total:  `{} (${} @ ${}/1k tokens)").format(
-                    humanize_number(usage.input_tokens), round(input_cost, 2), input_price
+                    humanize_number(usage.input_tokens),
+                    round(input_cost, 2),
+                    input_price,
                 )
                 embed.add_field(name=model_name, value=field, inline=False)
                 continue
@@ -651,7 +805,9 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
 
         view = SetAPI(ctx.author, conf.api_key)
-        txt = _("Click to set this server's API key\n\nTo remove your key, enter `none`")
+        txt = _(
+            "Click to set this server's API key\n\nTo remove your key, enter `none`"
+        )
         embed = discord.Embed(description=txt, color=ctx.author.color)
         msg = await ctx.send(embed=embed, view=view)
         await view.wait()
@@ -660,13 +816,19 @@ class Admin(MixinMeta):
         try:
             if key == "none" and conf.api_key:
                 conf.api_key = None
-                await msg.edit(content=_("API key has been removed!"), embed=None, view=None)
+                await msg.edit(
+                    content=_("API key has been removed!"), embed=None, view=None
+                )
             elif key == "none" and not conf.api_key:
                 conf.api_key = key
-                await msg.edit(content=_("No API key was entered!"), embed=None, view=None)
+                await msg.edit(
+                    content=_("No API key was entered!"), embed=None, view=None
+                )
             else:
                 conf.api_key = key
-                await msg.edit(content=_("API key has been set!"), embed=None, view=None)
+                await msg.edit(
+                    content=_("API key has been set!"), embed=None, view=None
+                )
         except discord.NotFound:
             pass
 
@@ -690,12 +852,18 @@ class Admin(MixinMeta):
 
         if key == "none" and self.db.brave_api_key:
             self.db.brave_api_key = None
-            await msg.edit(content=_("Brave API key has been removed!"), embed=None, view=None)
+            await msg.edit(
+                content=_("Brave API key has been removed!"), embed=None, view=None
+            )
         elif key == "none" and not self.db.brave_api_key:
-            return await msg.edit(content=_("No API key was entered!"), embed=None, view=None)
+            return await msg.edit(
+                content=_("No API key was entered!"), embed=None, view=None
+            )
         else:
             self.db.brave_api_key = key
-            await msg.edit(content=_("Brave API key has been set!"), embed=None, view=None)
+            await msg.edit(
+                content=_("Brave API key has been set!"), embed=None, view=None
+            )
 
         await self.save_conf()
 
@@ -710,7 +878,9 @@ class Admin(MixinMeta):
         has not provided its own API key.
         """
         view = SetAPI(ctx.author, self.db.endpoint_api_key)
-        txt = _("Click to set the API key used for the endpoint override\n\nTo remove the key, enter `none`")
+        txt = _(
+            "Click to set the API key used for the endpoint override\n\nTo remove the key, enter `none`"
+        )
         embed = discord.Embed(description=txt, color=ctx.author.color)
         msg = await ctx.send(embed=embed, view=view)
         await view.wait()
@@ -718,12 +888,22 @@ class Admin(MixinMeta):
 
         if key == "none" and self.db.endpoint_api_key:
             self.db.endpoint_api_key = None
-            await msg.edit(content=_("Endpoint override API key has been removed!"), embed=None, view=None)
+            await msg.edit(
+                content=_("Endpoint override API key has been removed!"),
+                embed=None,
+                view=None,
+            )
         elif key == "none" and not self.db.endpoint_api_key:
-            return await msg.edit(content=_("No API key was entered!"), embed=None, view=None)
+            return await msg.edit(
+                content=_("No API key was entered!"), embed=None, view=None
+            )
         else:
             self.db.endpoint_api_key = key
-            await msg.edit(content=_("Endpoint override API key has been set!"), embed=None, view=None)
+            await msg.edit(
+                content=_("Endpoint override API key has been set!"),
+                embed=None,
+                view=None,
+            )
 
         await self.save_conf()
 
@@ -734,8 +914,14 @@ class Admin(MixinMeta):
         try:
             tz = pytz.timezone(timezone)
         except pytz.UnknownTimeZoneError:
-            likely_match = sorted(pytz.common_timezones, key=lambda x: fuzz.ratio(timezone, x.lower()), reverse=True)[0]
-            return await ctx.send(_("Invalid Timezone, did you mean `{}`?").format(likely_match))
+            likely_match = sorted(
+                pytz.common_timezones,
+                key=lambda x: fuzz.ratio(timezone, x.lower()),
+                reverse=True,
+            )[0]
+            return await ctx.send(
+                _("Invalid Timezone, did you mean `{}`?").format(likely_match)
+            )
         time = datetime.now(tz).strftime("%I:%M %p")  # Convert to 12-hour format
         await ctx.send(_("Timezone set to **{}** (`{}`)").format(timezone, time))
         conf = self.db.get_conf(ctx.guild)
@@ -789,9 +975,9 @@ class Admin(MixinMeta):
             try:
                 prompt = (await attachments[0].read()).decode()
             except Exception as e:
-                txt = _("Failed to read `{}`, bot owner can use `{}` for more information").format(
-                    attachments[0].filename, f"{ctx.clean_prefix}traceback"
-                )
+                txt = _(
+                    "Failed to read `{}`, bot owner can use `{}` for more information"
+                ).format(attachments[0].filename, f"{ctx.clean_prefix}traceback")
                 await ctx.send(txt)
                 log.error("Failed to parse initial prompt", exc_info=e)
                 self.bot._last_exception = traceback.format_exc()  # type: ignore
@@ -801,7 +987,11 @@ class Admin(MixinMeta):
         model = conf.get_user_model(ctx.author)
         ptokens = await self.count_tokens(prompt, model) if prompt else 0
         effective_system_prompt = self.db.get_effective_system_prompt(conf)
-        stokens = await self.count_tokens(effective_system_prompt, model) if effective_system_prompt else 0
+        stokens = (
+            await self.count_tokens(effective_system_prompt, model)
+            if effective_system_prompt
+            else 0
+        )
         combined = ptokens + stokens
         if conf.max_tokens:
             max_tokens = round(conf.max_tokens * 0.9)
@@ -818,9 +1008,9 @@ class Admin(MixinMeta):
             await ctx.send(_("The initial prompt has been removed!"))
         elif not prompt and not conf.prompt:
             await ctx.send(
-                _("Please include an initial prompt or .txt file!\nUse `{}` to view details for this command").format(
-                    f"{ctx.clean_prefix}help assistant prompt"
-                )
+                _(
+                    "Please include an initial prompt or .txt file!\nUse `{}` to view details for this command"
+                ).format(f"{ctx.clean_prefix}help assistant prompt")
             )
         elif prompt and conf.prompt:
             conf.prompt = prompt.strip()
@@ -833,12 +1023,20 @@ class Admin(MixinMeta):
 
     @assistant.command(name="channelpromptshow")
     @commands.has_permissions(attach_files=True)
-    async def show_channel_prompt(self, ctx: commands.Context, channel: discord.TextChannel = commands.CurrentChannel):
+    async def show_channel_prompt(
+        self,
+        ctx: commands.Context,
+        channel: discord.TextChannel = commands.CurrentChannel,
+    ):
         """Show the channel specific system prompt"""
         conf = self.db.get_conf(ctx.guild)
         if channel.id not in conf.channel_prompts:
-            return await ctx.send(_("No channel prompt set for {}").format(channel.mention))
-        file = text_to_file(conf.channel_prompts[channel.id], f"{channel.name}_prompt.txt")
+            return await ctx.send(
+                _("No channel prompt set for {}").format(channel.mention)
+            )
+        file = text_to_file(
+            conf.channel_prompts[channel.id], f"{channel.name}_prompt.txt"
+        )
         await ctx.send(file=file)
 
     @assistant.command(name="channelprompt")
@@ -856,9 +1054,9 @@ class Admin(MixinMeta):
             try:
                 system_prompt = (await attachments[0].read()).decode()
             except Exception as e:
-                txt = _("Failed to read `{}`, bot owner can use `{}` for more information").format(
-                    attachments[0].filename, f"{ctx.clean_prefix}traceback"
-                )
+                txt = _(
+                    "Failed to read `{}`, bot owner can use `{}` for more information"
+                ).format(attachments[0].filename, f"{ctx.clean_prefix}traceback")
                 await ctx.send(txt)
                 log.error("Failed to parse initial prompt", exc_info=e)
                 self.bot._last_exception = traceback.format_exc()  # type: ignore
@@ -866,10 +1064,16 @@ class Admin(MixinMeta):
         if system_prompt is None:
             if channel.id in conf.channel_prompts:
                 del conf.channel_prompts[channel.id]
-                await ctx.send(_("Channel prompt has been removed from {}!").format(channel.mention))
+                await ctx.send(
+                    _("Channel prompt has been removed from {}!").format(
+                        channel.mention
+                    )
+                )
                 await self.save_conf()
             else:
-                await ctx.send(_("No channel prompt set for {}!").format(channel.mention))
+                await ctx.send(
+                    _("No channel prompt set for {}!").format(channel.mention)
+                )
             return
         model = conf.get_user_model(ctx.author)
         ptokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
@@ -885,14 +1089,20 @@ class Admin(MixinMeta):
                     ).format(humanize_number(combined), humanize_number(max_tokens))
                 )
         if channel.id in conf.channel_prompts:
-            await ctx.send(_("Channel prompt has been overwritten for {}!").format(channel.mention))
+            await ctx.send(
+                _("Channel prompt has been overwritten for {}!").format(channel.mention)
+            )
         else:
-            await ctx.send(_("Channel prompt has been set for {}!").format(channel.mention))
+            await ctx.send(
+                _("Channel prompt has been set for {}!").format(channel.mention)
+            )
         conf.channel_prompts[channel.id] = system_prompt
         await self.save_conf()
 
     @assistant.command(name="system", aliases=["sys"])
-    async def set_system_prompt(self, ctx: commands.Context, *, system_prompt: str = None):
+    async def set_system_prompt(
+        self, ctx: commands.Context, *, system_prompt: str = None
+    ):
         """
         Set the system prompt for GPT to use
 
@@ -938,9 +1148,9 @@ class Admin(MixinMeta):
             try:
                 system_prompt = (await attachments[0].read()).decode()
             except Exception as e:
-                txt = _("Failed to read `{}`, bot owner can use `{}` for more information").format(
-                    attachments[0].filename, f"{ctx.clean_prefix}traceback"
-                )
+                txt = _(
+                    "Failed to read `{}`, bot owner can use `{}` for more information"
+                ).format(attachments[0].filename, f"{ctx.clean_prefix}traceback")
                 await ctx.send(txt)
                 log.error("Failed to parse initial prompt", exc_info=e)
                 self.bot._last_exception = traceback.format_exc()  # type: ignore
@@ -967,9 +1177,9 @@ class Admin(MixinMeta):
             await ctx.send(_("The system prompt has been removed!"))
         elif not system_prompt and not conf.system_prompt:
             await ctx.send(
-                _("Please include a system prompt or .txt file!\nUse `{}` to view details for this command").format(
-                    f"{ctx.clean_prefix}help assistant system"
-                )
+                _(
+                    "Please include a system prompt or .txt file!\nUse `{}` to view details for this command"
+                ).format(f"{ctx.clean_prefix}help assistant system")
             )
         elif system_prompt and conf.system_prompt:
             conf.system_prompt = system_prompt.strip()
@@ -982,7 +1192,9 @@ class Admin(MixinMeta):
 
     @assistant.command(name="defaultsystem")
     @commands.is_owner()
-    async def set_default_system_prompt(self, ctx: commands.Context, *, system_prompt: str = None):
+    async def set_default_system_prompt(
+        self, ctx: commands.Context, *, system_prompt: str = None
+    ):
         """
         Set the global default system prompt used by servers that inherit the default prompt
 
@@ -995,9 +1207,9 @@ class Admin(MixinMeta):
             try:
                 system_prompt = (await attachments[0].read()).decode()
             except Exception as e:
-                txt = _("Failed to read `{}`, bot owner can use `{}` for more information").format(
-                    attachments[0].filename, f"{ctx.clean_prefix}traceback"
-                )
+                txt = _(
+                    "Failed to read `{}`, bot owner can use `{}` for more information"
+                ).format(attachments[0].filename, f"{ctx.clean_prefix}traceback")
                 await ctx.send(txt)
                 log.error("Failed to parse default system prompt", exc_info=e)
                 self.bot._last_exception = traceback.format_exc()  # type: ignore
@@ -1007,7 +1219,9 @@ class Admin(MixinMeta):
             current = self.db.default_system_prompt
             file = text_to_file(current, "DefaultSystemPrompt.txt")
             lines = [
-                _("Current global default system prompt for servers using the default or an unset system prompt:"),
+                _(
+                    "Current global default system prompt for servers using the default or an unset system prompt:"
+                ),
                 _("Servers with a custom system prompt are unchanged."),
             ]
             if current == DEFAULT_SYSTEM_PROMPT:
@@ -1019,7 +1233,9 @@ class Admin(MixinMeta):
         normalized = system_prompt.strip()
         if not normalized:
             return await ctx.send(
-                _("Please include a system prompt or .txt file, or use `none` to reset to the built-in default.")
+                _(
+                    "Please include a system prompt or .txt file, or use `none` to reset to the built-in default."
+                )
             )
 
         if normalized.lower() == "none":
@@ -1046,7 +1262,9 @@ class Admin(MixinMeta):
     async def set_channel(
         self,
         ctx: commands.Context,
-        channel: Union[discord.TextChannel, discord.Thread, discord.ForumChannel, None] = None,
+        channel: Union[
+            discord.TextChannel, discord.Thread, discord.ForumChannel, None
+        ] = None,
     ):
         """Set the main auto-response channel for the assistant"""
         conf = self.db.get_conf(ctx.guild)
@@ -1068,10 +1286,14 @@ class Admin(MixinMeta):
         """Toggle this channel as an auto-response channel"""
         conf = self.db.get_conf(ctx.guild)
         if conf.channel_id == ctx.channel.id:
-            return await ctx.send(_("This channel is already set as the assistant channel!"))
+            return await ctx.send(
+                _("This channel is already set as the assistant channel!")
+            )
         if ctx.channel.id in conf.listen_channels:
             conf.listen_channels.remove(ctx.channel.id)
-            await ctx.send(_("I will no longer auto-respond to messages in this channel!"))
+            await ctx.send(
+                _("I will no longer auto-respond to messages in this channel!")
+            )
         else:
             conf.listen_channels.append(ctx.channel.id)
             await ctx.send(_("I will now auto-respond to messages in this channel!"))
@@ -1083,10 +1305,18 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         if conf.allow_sys_prompt_override:
             conf.allow_sys_prompt_override = False
-            await ctx.send(_("System prompt overriding **Disabled**, users cannot set per-convo system prompts"))
+            await ctx.send(
+                _(
+                    "System prompt overriding **Disabled**, users cannot set per-convo system prompts"
+                )
+            )
         else:
             conf.allow_sys_prompt_override = True
-            await ctx.send(_("System prompt overriding **Enabled**, users can now set per-convo system prompts"))
+            await ctx.send(
+                _(
+                    "System prompt overriding **Enabled**, users can now set per-convo system prompts"
+                )
+            )
         await self.save_conf()
 
     @assistant.command(name="toggle")
@@ -1130,12 +1360,16 @@ class Admin(MixinMeta):
         """Set the auto-answer threshold for the bot"""
         conf = self.db.get_conf(ctx.guild)
         conf.auto_answer_threshold = threshold
-        await ctx.send(_("Auto-answer threshold has been set to **{}**").format(threshold))
+        await ctx.send(
+            _("Auto-answer threshold has been set to **{}**").format(threshold)
+        )
         await self.save_conf()
 
     @assistant.command(name="autoanswerignore")
     async def autoanswer_ignore_channel(
-        self, ctx: commands.Context, channel: discord.TextChannel | discord.CategoryChannel | int
+        self,
+        ctx: commands.Context,
+        channel: discord.TextChannel | discord.CategoryChannel | int,
     ):
         """Ignore a channel for auto-answer"""
         conf = self.db.get_conf(ctx.guild)
@@ -1168,9 +1402,15 @@ class Admin(MixinMeta):
                         ctx, conf.auto_answer_model, _("Configured auto-answer model")
                     )
                 )
-            return await ctx.send(_("Valid models are:\n{}").format(box(humanize_list(list(MODELS.keys())))))
+            return await ctx.send(
+                _("Valid models are:\n{}").format(
+                    box(humanize_list(list(MODELS.keys())))
+                )
+            )
         if not self.db.endpoint_override and model not in MODELS:
-            return await ctx.send(_("Invalid model, valid models are: {}").format(humanize_list(MODELS)))
+            return await ctx.send(
+                _("Invalid model, valid models are: {}").format(humanize_list(MODELS))
+            )
         conf.auto_answer_model = model
         await ctx.send(_("Auto-answer model has been set to **{}**").format(model))
         if self.db.endpoint_override:
@@ -1214,7 +1454,11 @@ class Admin(MixinMeta):
         # Warn about overly broad patterns
         broad_patterns = [r".*", r".+", r".", r"^", r"$", r"^.*$", r"^.+$"]
         if phrase in broad_patterns:
-            await ctx.send(_("⚠️ Warning: `{}` is a very broad pattern that may match most messages!").format(phrase))
+            await ctx.send(
+                _(
+                    "⚠️ Warning: `{}` is a very broad pattern that may match most messages!"
+                ).format(phrase)
+            )
 
         conf = self.db.get_conf(ctx.guild)
         if phrase in conf.trigger_phrases:
@@ -1272,9 +1516,9 @@ class Admin(MixinMeta):
             try:
                 prompt = (await attachments[0].read()).decode()
             except Exception as e:
-                txt = _("Failed to read `{}`, bot owner can use `{}` for more information").format(
-                    attachments[0].filename, f"{ctx.clean_prefix}traceback"
-                )
+                txt = _(
+                    "Failed to read `{}`, bot owner can use `{}` for more information"
+                ).format(attachments[0].filename, f"{ctx.clean_prefix}traceback")
                 await ctx.send(txt)
                 log.error("Failed to parse trigger prompt", exc_info=e)
                 self.bot._last_exception = traceback.format_exc()  # type: ignore
@@ -1287,9 +1531,9 @@ class Admin(MixinMeta):
             await ctx.send(_("The trigger prompt has been removed!"))
         elif not prompt and not conf.trigger_prompt:
             await ctx.send(
-                _("Please include a trigger prompt or .txt file!\nUse `{}` to view details for this command").format(
-                    f"{ctx.clean_prefix}help assistant triggerprompt"
-                )
+                _(
+                    "Please include a trigger prompt or .txt file!\nUse `{}` to view details for this command"
+                ).format(f"{ctx.clean_prefix}help assistant triggerprompt")
             )
         elif prompt and conf.trigger_prompt:
             conf.trigger_prompt = prompt.strip()
@@ -1302,7 +1546,9 @@ class Admin(MixinMeta):
 
     @assistant.command(name="triggerignore")
     async def trigger_ignore_channel(
-        self, ctx: commands.Context, channel: discord.TextChannel | discord.CategoryChannel | int
+        self,
+        ctx: commands.Context,
+        channel: discord.TextChannel | discord.CategoryChannel | int,
     ):
         """Ignore a channel or category for trigger phrases"""
         conf = self.db.get_conf(ctx.guild)
@@ -1315,7 +1561,9 @@ class Admin(MixinMeta):
 
         if channel_id in conf.trigger_ignore_channels:
             conf.trigger_ignore_channels.remove(channel_id)
-            await ctx.send(_("Trigger phrases will no longer ignore {}").format(mention))
+            await ctx.send(
+                _("Trigger phrases will no longer ignore {}").format(mention)
+            )
         else:
             if not ctx.guild.get_channel(channel_id):
                 return await ctx.send(_("Channel not found!"))
@@ -1387,7 +1635,11 @@ class Admin(MixinMeta):
             conf.reasoning_effort = cycle[(idx + 1) % len(cycle)]
         except ValueError:
             conf.reasoning_effort = "low"
-        await ctx.send(_("Reasoning effort has been set to **{}**").format(conf.reasoning_effort.capitalize()))
+        await ctx.send(
+            _("Reasoning effort has been set to **{}**").format(
+                conf.reasoning_effort.capitalize()
+            )
+        )
         await self.save_conf()
 
     @assistant.command(name="thinkprefix")
@@ -1403,9 +1655,9 @@ class Admin(MixinMeta):
             try:
                 prefix = (await attachments[0].read()).decode()
             except Exception as e:
-                txt = _("Failed to read `{}`, bot owner can use `{}` for more information").format(
-                    attachments[0].filename, f"{ctx.clean_prefix}traceback"
-                )
+                txt = _(
+                    "Failed to read `{}`, bot owner can use `{}` for more information"
+                ).format(attachments[0].filename, f"{ctx.clean_prefix}traceback")
                 await ctx.send(txt)
                 log.error("Failed to parse think prefix", exc_info=e)
                 self.bot._last_exception = traceback.format_exc()  # type: ignore
@@ -1414,10 +1666,14 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         if prefix is None:
             if conf.think_tag_prefix == DEFAULT_THINK_TAG_PREFIX:
-                return await ctx.send(_("Think tag prefix is already set to the default value."))
+                return await ctx.send(
+                    _("Think tag prefix is already set to the default value.")
+                )
             conf.think_tag_prefix = DEFAULT_THINK_TAG_PREFIX
             await ctx.send(
-                _("Think tag prefix reset to default:\n{}").format(box(format_think_tag(conf.think_tag_prefix)))
+                _("Think tag prefix reset to default:\n{}").format(
+                    box(format_think_tag(conf.think_tag_prefix))
+                )
             )
             await self.save_conf()
             return
@@ -1429,7 +1685,11 @@ class Admin(MixinMeta):
             return await ctx.send(_("Think tag prefix is already set to that value."))
 
         conf.think_tag_prefix = prefix
-        await ctx.send(_("Think tag prefix has been set to:\n{}").format(box(format_think_tag(prefix))))
+        await ctx.send(
+            _("Think tag prefix has been set to:\n{}").format(
+                box(format_think_tag(prefix))
+            )
+        )
         await self.save_conf()
 
     @assistant.command(name="thinksuffix")
@@ -1445,9 +1705,9 @@ class Admin(MixinMeta):
             try:
                 suffix = (await attachments[0].read()).decode()
             except Exception as e:
-                txt = _("Failed to read `{}`, bot owner can use `{}` for more information").format(
-                    attachments[0].filename, f"{ctx.clean_prefix}traceback"
-                )
+                txt = _(
+                    "Failed to read `{}`, bot owner can use `{}` for more information"
+                ).format(attachments[0].filename, f"{ctx.clean_prefix}traceback")
                 await ctx.send(txt)
                 log.error("Failed to parse think suffix", exc_info=e)
                 self.bot._last_exception = traceback.format_exc()  # type: ignore
@@ -1456,10 +1716,14 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         if suffix is None:
             if conf.think_tag_suffix == DEFAULT_THINK_TAG_SUFFIX:
-                return await ctx.send(_("Think tag suffix is already set to the default value."))
+                return await ctx.send(
+                    _("Think tag suffix is already set to the default value.")
+                )
             conf.think_tag_suffix = DEFAULT_THINK_TAG_SUFFIX
             await ctx.send(
-                _("Think tag suffix reset to default:\n{}").format(box(format_think_tag(conf.think_tag_suffix)))
+                _("Think tag suffix reset to default:\n{}").format(
+                    box(format_think_tag(conf.think_tag_suffix))
+                )
             )
             await self.save_conf()
             return
@@ -1471,7 +1735,11 @@ class Admin(MixinMeta):
             return await ctx.send(_("Think tag suffix is already set to that value."))
 
         conf.think_tag_suffix = suffix
-        await ctx.send(_("Think tag suffix has been set to:\n{}").format(box(format_think_tag(suffix))))
+        await ctx.send(
+            _("Think tag suffix has been set to:\n{}").format(
+                box(format_think_tag(suffix))
+            )
+        )
         await self.save_conf()
 
     @assistant.command(name="questionmark")
@@ -1480,7 +1748,9 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         if conf.endswith_questionmark:
             conf.endswith_questionmark = False
-            await ctx.send(_("Questions will be answered regardless of if they end with **?**"))
+            await ctx.send(
+                _("Questions will be answered regardless of if they end with **?**")
+            )
         else:
             conf.endswith_questionmark = True
             await ctx.send(_("Questions must end in **?** to be answered"))
@@ -1548,7 +1818,9 @@ class Admin(MixinMeta):
         if delay == 0:
             await ctx.send(_("Message coalescing is now **Disabled**"))
         else:
-            await ctx.send(_("Messages will be coalesced with a **{}s** delay").format(delay))
+            await ctx.send(
+                _("Messages will be coalesced with a **{}s** delay").format(delay)
+            )
         await self.save_conf()
 
     @assistant.command(name="maxretention")
@@ -1561,7 +1833,7 @@ class Admin(MixinMeta):
         Regardless of this number, the initial prompt and internal system message are always included,
         this only applies to any conversation between the user and bot after that.
 
-        Set to 0 to disable conversation retention
+        Set to 0 for unlimited conversation retention
 
         **Note:** *actual message count may exceed the max retention during an API call*
         """
@@ -1570,9 +1842,13 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         conf.max_retention = max_retention
         if max_retention == 0:
-            await ctx.send(_("Conversation retention has been disabled"))
+            await ctx.send(_("Message retention is now **unlimited**"))
         else:
-            await ctx.send(_("Conversations can now retain up to **{}** messages").format(max_retention))
+            await ctx.send(
+                _("Conversations can now retain up to **{}** messages").format(
+                    max_retention
+                )
+            )
         await self.save_conf()
 
     @assistant.command(name="maxtime")
@@ -1586,13 +1862,23 @@ class Admin(MixinMeta):
         Set to 0 to store conversations indefinitely or until the bot restarts or cog is reloaded
         """
         if retention_seconds < 0:
-            return await ctx.send(_("Max retention time needs to be at least 0 or higher"))
+            return await ctx.send(
+                _("Max retention time needs to be at least 0 or higher")
+            )
         conf = self.db.get_conf(ctx.guild)
         conf.max_retention_time = retention_seconds
         if retention_seconds == 0:
-            await ctx.send(_("Conversations will be stored until the bot restarts or the cog is reloaded"))
+            await ctx.send(
+                _(
+                    "Conversations will be stored until the bot restarts or the cog is reloaded"
+                )
+            )
         else:
-            await ctx.send(_("Conversations will be considered active for **{}** seconds").format(retention_seconds))
+            await ctx.send(
+                _("Conversations will be considered active for **{}** seconds").format(
+                    retention_seconds
+                )
+            )
         await self.save_conf()
 
     @assistant.command(name="temperature")
@@ -1612,7 +1898,9 @@ class Admin(MixinMeta):
         await ctx.send(_("Temperature has been set to **{}**").format(temperature))
 
     @assistant.command(name="frequency")
-    async def set_frequency_penalty(self, ctx: commands.Context, frequency_penalty: float):
+    async def set_frequency_penalty(
+        self, ctx: commands.Context, frequency_penalty: float
+    ):
         """
         Set the frequency penalty for the model (-2.0 to 2.0)
         - Defaults is 0
@@ -1620,15 +1908,21 @@ class Admin(MixinMeta):
         Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
         """
         if not -2 <= frequency_penalty <= 2:
-            return await ctx.send(_("Frequency penalty must be between **-2.0** and **2.0**"))
+            return await ctx.send(
+                _("Frequency penalty must be between **-2.0** and **2.0**")
+            )
         frequency_penalty = round(frequency_penalty, 2)
         conf = self.db.get_conf(ctx.guild)
         conf.frequency_penalty = frequency_penalty
         await self.save_conf()
-        await ctx.send(_("Frequency penalty has been set to **{}**").format(frequency_penalty))
+        await ctx.send(
+            _("Frequency penalty has been set to **{}**").format(frequency_penalty)
+        )
 
     @assistant.command(name="presence")
-    async def set_presence_penalty(self, ctx: commands.Context, presence_penalty: float):
+    async def set_presence_penalty(
+        self, ctx: commands.Context, presence_penalty: float
+    ):
         """
         Set the presence penalty for the model (-2.0 to 2.0)
         - Defaults is 0
@@ -1636,12 +1930,16 @@ class Admin(MixinMeta):
         Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics.
         """
         if not -2 <= presence_penalty <= 2:
-            return await ctx.send(_("Presence penalty must be between **-2.0** and **2.0**"))
+            return await ctx.send(
+                _("Presence penalty must be between **-2.0** and **2.0**")
+            )
         presence_penalty = round(presence_penalty, 2)
         conf = self.db.get_conf(ctx.guild)
         conf.presence_penalty = presence_penalty
         await self.save_conf()
-        await ctx.send(_("Presence penalty has been set to **{}**").format(presence_penalty))
+        await ctx.send(
+            _("Presence penalty has been set to **{}**").format(presence_penalty)
+        )
 
     @assistant.command(name="seed")
     async def set_seed(self, ctx: commands.Context, seed: int = None):
@@ -1658,7 +1956,10 @@ class Admin(MixinMeta):
         await self.save_conf()
         await ctx.send(_("The seed has been set to **{}**").format(seed))
 
-    @assistant.command(name="refreshembeds", aliases=["refreshembeddings", "syncembeds", "syncembeddings"])
+    @assistant.command(
+        name="refreshembeds",
+        aliases=["refreshembeddings", "syncembeds", "syncembeddings"],
+    )
     async def refresh_embeddings(self, ctx: commands.Context):
         """
         Refresh embedding weights
@@ -1705,7 +2006,9 @@ class Admin(MixinMeta):
         if recursion == 0:
             await ctx.send(_("Function calls will not be used since recursion is 0"))
         await ctx.send(
-            _("The model can now call various functions up to {} times before returning a response").format(recursion)
+            _(
+                "The model can now call various functions up to {} times before returning a response"
+            ).format(recursion)
         )
         conf.max_function_calls = recursion
 
@@ -1721,17 +2024,23 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         conf.min_length = min_question_length
         if min_question_length == 0:
-            await ctx.send(_("{} will respond regardless of message length").format(ctx.bot.user.name))
+            await ctx.send(
+                _("{} will respond regardless of message length").format(
+                    ctx.bot.user.name
+                )
+            )
         else:
             await ctx.send(
-                _("{} will respond to messages with more than **{}** characters").format(
-                    ctx.bot.user.name, min_question_length
-                )
+                _(
+                    "{} will respond to messages with more than **{}** characters"
+                ).format(ctx.bot.user.name, min_question_length)
             )
         await self.save_conf()
 
     @assistant.command(name="maxtokens")
-    async def max_tokens(self, ctx: commands.Context, max_tokens: commands.positive_int):
+    async def max_tokens(
+        self, ctx: commands.Context, max_tokens: commands.positive_int
+    ):
         """
         Set maximum tokens a convo can consume
 
@@ -1757,7 +2066,9 @@ class Admin(MixinMeta):
         await self.save_conf()
 
     @assistant.command(name="maxresponsetokens")
-    async def max_response_tokens(self, ctx: commands.Context, max_tokens: commands.positive_int):
+    async def max_response_tokens(
+        self, ctx: commands.Context, max_tokens: commands.positive_int
+    ):
         """
         Set the max response tokens the model can respond with
 
@@ -1766,7 +2077,9 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         conf.max_response_tokens = max_tokens
         if max_tokens:
-            txt = _("The maximum amount of tokens in the models responses will be {}.").format(max_tokens)
+            txt = _(
+                "The maximum amount of tokens in the models responses will be {}."
+            ).format(max_tokens)
         else:
             txt = _("Response tokens will now be dynamic")
         await ctx.send(txt)
@@ -1784,7 +2097,9 @@ class Admin(MixinMeta):
 
         if not model:
             if self.db.endpoint_override:
-                return await ctx.send(await self.describe_endpoint_chat_model_options(ctx, conf.model))
+                return await ctx.send(
+                    await self.describe_endpoint_chat_model_options(ctx, conf.model)
+                )
             valid = [i for i in MODELS]
             humanized = humanize_list(valid)
             formatted = box(humanized)
@@ -1828,12 +2143,22 @@ class Admin(MixinMeta):
         ]
         if not model:
             if self.db.endpoint_override:
-                return await ctx.send(await self.describe_endpoint_embedding_model_options(ctx, conf.embed_model))
-            return await ctx.send(_("Valid models are:\n{}").format(box(humanize_list(valid))))
+                return await ctx.send(
+                    await self.describe_endpoint_embedding_model_options(
+                        ctx, conf.embed_model
+                    )
+                )
+            return await ctx.send(
+                _("Valid models are:\n{}").format(box(humanize_list(valid)))
+            )
         if not self.db.endpoint_override and model not in valid:
-            return await ctx.send(_("Valid models are:\n{}").format(box(humanize_list(valid))))
+            return await ctx.send(
+                _("Valid models are:\n{}").format(box(humanize_list(valid)))
+            )
         conf.embed_model = model
-        await ctx.send(_("The **{}** model will now be used for embeddings").format(model))
+        await ctx.send(
+            _("The **{}** model will now be used for embeddings").format(model)
+        )
         if self.db.endpoint_override:
             warning = await self.get_endpoint_model_warning(model, embedding=True)
             if warning:
@@ -1884,11 +2209,17 @@ class Admin(MixinMeta):
         if not top_n:
             await ctx.send(_("Embeddings will not be pulled during conversations"))
         else:
-            await ctx.send(_("Up to **{}** embeddings will be pulled for each interaction").format(top_n))
+            await ctx.send(
+                _("Up to **{}** embeddings will be pulled for each interaction").format(
+                    top_n
+                )
+            )
         await self.save_conf()
 
     @assistant.command(name="relatedness")
-    async def set_min_relatedness(self, ctx: commands.Context, mimimum_relatedness: float):
+    async def set_min_relatedness(
+        self, ctx: commands.Context, mimimum_relatedness: float
+    ):
         """
         Set the minimum relatedness an embedding must be to include with the prompt
 
@@ -1902,7 +2233,9 @@ class Admin(MixinMeta):
             return await ctx.send(_("Minimum relatedness must be between 0 and 1"))
         conf = self.db.get_conf(ctx.guild)
         conf.min_relatedness = mimimum_relatedness
-        await ctx.send(_("Minimum relatedness has been set to **{}**").format(mimimum_relatedness))
+        await ctx.send(
+            _("Minimum relatedness has been set to **{}**").format(mimimum_relatedness)
+        )
         await self.save_conf()
 
     @assistant.command(name="regexblacklist")
@@ -1915,7 +2248,9 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         if regex in conf.regex_blacklist:
             conf.regex_blacklist.remove(regex)
-            await ctx.send(_("`{}` has been **Removed** from the blacklist").format(regex))
+            await ctx.send(
+                _("`{}` has been **Removed** from the blacklist").format(regex)
+            )
         else:
             conf.regex_blacklist.append(regex)
             await ctx.send(_("`{}` has been **Added** to the blacklist").format(regex))
@@ -1932,7 +2267,9 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         if conf.block_failed_regex:
             conf.block_failed_regex = False
-            await ctx.send(_("If a regex blacklist fails, the bots reply will be blocked"))
+            await ctx.send(
+                _("If a regex blacklist fails, the bots reply will be blocked")
+            )
         else:
             conf.block_failed_regex = True
             await ctx.send(_("If a reges blacklist fails, the bot will still reply"))
@@ -1969,7 +2306,9 @@ class Admin(MixinMeta):
         attachments = get_attachments(ctx.message)
         if not attachments:
             return await ctx.send(
-                _("You must attach **.csv** files to this command or reference a message that has them!")
+                _(
+                    "You must attach **.csv** files to this command or reference a message that has them!"
+                )
             )
         frames = []
         files = []
@@ -1982,12 +2321,18 @@ class Admin(MixinMeta):
                     df = pd.read_excel(BytesIO(file_bytes))
             except Exception as e:
                 log.error("Error reading uploaded file", exc_info=e)
-                await ctx.send(_("Error reading **{}**: {}").format(attachment.filename, box(str(e))))
+                await ctx.send(
+                    _("Error reading **{}**: {}").format(
+                        attachment.filename, box(str(e))
+                    )
+                )
                 continue
             invalid = ["name" not in df.columns, "text" not in df.columns]
             if any(invalid):
                 await ctx.send(
-                    _("**{}** contains invalid formatting, columns must be ").format(attachment.filename)
+                    _("**{}** contains invalid formatting, columns must be ").format(
+                        attachment.filename
+                    )
                     + "['name', 'text']",
                 )
                 continue
@@ -1997,7 +2342,9 @@ class Admin(MixinMeta):
         if not frames:
             return await ctx.send(_("There are no valid files to import!"))
 
-        message_text = _("Processing the following files in the background\n{}").format(box(humanize_list(files)))
+        message_text = _("Processing the following files in the background\n{}").format(
+            box(humanize_list(files))
+        )
         message = await ctx.send(message_text)
 
         df = await asyncio.to_thread(pd.concat, frames)
@@ -2025,15 +2372,21 @@ class Admin(MixinMeta):
                             message_text, proc, name, index + 1, len(df)
                         )
                     )
-            query_embedding, observed_model = await self.request_embedding_with_info(text, conf)
+            query_embedding, observed_model = await self.request_embedding_with_info(
+                text, conf
+            )
             if len(query_embedding) == 0:
                 await ctx.send(_("Failed to process embedding: `{}`").format(name))
                 continue
 
-            await self.embedding_store.add(ctx.guild.id, name, text, query_embedding, observed_model)
+            await self.embedding_store.add(
+                ctx.guild.id, name, text, query_embedding, observed_model
+            )
             imported += 1
         await message.edit(content=_("{}\n**COMPLETE**").format(message_text))
-        await ctx.send(_("Successfully imported {} embeddings!").format(humanize_number(imported)))
+        await ctx.send(
+            _("Successfully imported {} embeddings!").format(humanize_number(imported))
+        )
         await self.save_conf()
 
     @assistant.command(name="importjson")
@@ -2047,7 +2400,9 @@ class Admin(MixinMeta):
         attachments = get_attachments(ctx.message)
         if not attachments:
             return await ctx.send(
-                _("You must attach **.json** files to this command or reference a message that has them!")
+                _(
+                    "You must attach **.json** files to this command or reference a message that has them!"
+                )
             )
 
         imported = 0
@@ -2059,18 +2414,27 @@ class Admin(MixinMeta):
                     embeddings = orjson.loads(file_bytes)
                 except Exception as e:
                     log.error("Error reading uploaded file", exc_info=e)
-                    await ctx.send(_("Error reading **{}**: {}").format(attachment.filename, box(str(e))))
+                    await ctx.send(
+                        _("Error reading **{}**: {}").format(
+                            attachment.filename, box(str(e))
+                        )
+                    )
                     continue
                 try:
                     for name, em in embeddings.items():
-                        if not overwrite and await self.embedding_store.exists(ctx.guild.id, name):
+                        if not overwrite and await self.embedding_store.exists(
+                            ctx.guild.id, name
+                        ):
                             continue
                         text = str(em.get("text", ""))[:4000]
                         embedding_vec = em.get("embedding", [])
                         model = em.get("model", conf.embed_model)
                         if not embedding_vec:
                             # Re-embed if no vector present
-                            embedding_vec, model = await self.request_embedding_with_info(text, conf)
+                            (
+                                embedding_vec,
+                                model,
+                            ) = await self.request_embedding_with_info(text, conf)
                         if not embedding_vec:
                             continue
                         await self.embedding_store.add(
@@ -2083,7 +2447,9 @@ class Admin(MixinMeta):
                         imported += 1
                 except (ValidationError, KeyError, TypeError):
                     await ctx.send(
-                        _("Failed to import **{}** because it contains invalid formatting!").format(attachment.filename)
+                        _(
+                            "Failed to import **{}** because it contains invalid formatting!"
+                        ).format(attachment.filename)
                     )
                     continue
                 files.append(attachment.filename)
@@ -2105,7 +2471,9 @@ class Admin(MixinMeta):
         attachments = get_attachments(ctx.message)
         if not attachments:
             return await ctx.send(
-                _("You must attach **.xlsx** files to this command or reference a message that has them!")
+                _(
+                    "You must attach **.xlsx** files to this command or reference a message that has them!"
+                )
             )
 
         imported = 0
@@ -2119,22 +2487,28 @@ class Admin(MixinMeta):
                     df = pd.read_excel(BytesIO(file_bytes), sheet_name="embeddings")
                 except Exception as e:
                     log.error("Error reading uploaded file", exc_info=e)
-                    await ctx.send(_("Error reading **{}**: {}").format(attachment.filename, box(str(e))))
+                    await ctx.send(
+                        _("Error reading **{}**: {}").format(
+                            attachment.filename, box(str(e))
+                        )
+                    )
                     continue
                 invalid = [
                     "name" not in df.columns,
                     "text" not in df.columns,
                 ]
                 if any(invalid):
-                    txt = _("{} is invalid! Must contain the following columns: {}").format(
-                        f"**{attachment.filename}**", "name, text"
-                    )
+                    txt = _(
+                        "{} is invalid! Must contain the following columns: {}"
+                    ).format(f"**{attachment.filename}**", "name, text")
                     await ctx.send(txt)
                     continue
                 frames.append(df)
                 files.append(attachment.filename)
 
-            message_text = _("Processing the following files in the background\n{}").format(box(humanize_list(files)))
+            message_text = _(
+                "Processing the following files in the background\n{}"
+            ).format(box(humanize_list(files)))
             message = await ctx.send(message_text)
             df = await asyncio.to_thread(pd.concat, frames)
             entries = len(df.index)
@@ -2160,7 +2534,10 @@ class Admin(MixinMeta):
                             )
                         )
 
-                query_embedding, observed_model = await self.request_embedding_with_info(text, conf)
+                (
+                    query_embedding,
+                    observed_model,
+                ) = await self.request_embedding_with_info(text, conf)
                 if len(query_embedding) == 0:
                     await ctx.send(_("Failed to process embedding: `{}`").format(name))
                     continue
@@ -2176,7 +2553,11 @@ class Admin(MixinMeta):
 
             if imported:
                 await message.edit(content=_("{}\n**COMPLETE**").format(message_text))
-                await ctx.send(_("Successfully imported {} embeddings!").format(humanize_number(imported)))
+                await ctx.send(
+                    _("Successfully imported {} embeddings!").format(
+                        humanize_number(imported)
+                    )
+                )
                 await self.save_conf()
             else:
                 await message.edit(content=_("{}\n**COMPLETE**").format(message_text))
@@ -2205,7 +2586,11 @@ class Admin(MixinMeta):
             for name, meta in all_meta.items():
                 created_str = meta.get("created", "")
                 try:
-                    created_dt = datetime.fromisoformat(created_str).astimezone(timezone.utc).replace(tzinfo=None)
+                    created_dt = (
+                        datetime.fromisoformat(created_str)
+                        .astimezone(timezone.utc)
+                        .replace(tzinfo=None)
+                    )
                 except (ValueError, TypeError):
                     created_dt = datetime.now(tz=timezone.utc).replace(tzinfo=None)
                 rows.append([name, meta.get("text", ""), created_dt])
@@ -2214,7 +2599,9 @@ class Admin(MixinMeta):
             # Convert the columns to the specified types
             for column, dtype in columns.items():
                 if dtype == "datetime64[ns]":
-                    df[column] = pd.to_datetime(df[column], utc=True).dt.tz_convert(None)
+                    df[column] = pd.to_datetime(df[column], utc=True).dt.tz_convert(
+                        None
+                    )
                 else:
                     df[column] = df[column].astype(dtype)
 
@@ -2258,7 +2645,9 @@ class Admin(MixinMeta):
 
             def zip_file() -> discord.File:
                 zip_buffer = BytesIO()
-                with ZipFile(zip_buffer, "w", compression=ZIP_DEFLATED, compresslevel=9) as arc:
+                with ZipFile(
+                    zip_buffer, "w", compression=ZIP_DEFLATED, compresslevel=9
+                ) as arc:
                     arc.writestr(
                         "embeddings_export.csv",
                         df_buffer.getvalue(),
@@ -2297,7 +2686,9 @@ class Admin(MixinMeta):
 
             def zip_file() -> discord.File:
                 zip_buffer = BytesIO()
-                with ZipFile(zip_buffer, "w", compression=ZIP_DEFLATED, compresslevel=9) as arc:
+                with ZipFile(
+                    zip_buffer, "w", compression=ZIP_DEFLATED, compresslevel=9
+                ) as arc:
                     arc.writestr(
                         "embeddings_export.json",
                         json_buffer.getvalue(),
@@ -2366,7 +2757,9 @@ class Admin(MixinMeta):
 
         await view.start()
 
-    @commands.hybrid_command(name="customfunctions", aliases=["customfunction", "customfunc"])
+    @commands.hybrid_command(
+        name="customfunctions", aliases=["customfunction", "customfunc"]
+    )
     @app_commands.describe(function_name="Name of the custom function")
     @commands.guild_only()
     @commands.bot_has_permissions(attach_files=True, embed_links=True)
@@ -2395,7 +2788,9 @@ class Admin(MixinMeta):
         if ctx.interaction:
             await ctx.interaction.response.defer()
 
-        view = CodeMenu(ctx, self.db, self.registry, self.save_conf, self.get_function_menu_embeds)
+        view = CodeMenu(
+            ctx, self.db, self.registry, self.save_conf, self.get_function_menu_embeds
+        )
         await view.get_pages()
         if not function_name:
             return await view.start()
@@ -2415,12 +2810,18 @@ class Admin(MixinMeta):
         catalog = self.get_context_variable_catalog()
         docs_line = _("3rd party docs: {}").format(THIRD_PARTY_DOCS_URL)
         if not catalog:
-            text = _("No custom context variables have been registered yet!\n{}").format(docs_line)
+            text = _(
+                "No custom context variables have been registered yet!\n{}"
+            ).format(docs_line)
             return await self.retry_discord_server_error(lambda: ctx.send(text))
 
         lines = [docs_line, ""]
         for entry in catalog:
-            suffix = f" · {entry['permission_level']}" if entry["permission_level"] != "user" else ""
+            suffix = (
+                f" · {entry['permission_level']}"
+                if entry["permission_level"] != "user"
+                else ""
+            )
             lines.append(f"**{{{entry['name']}}}** · {entry['source']}{suffix}")
             lines.append(entry["description"])
             lines.append("")
@@ -2434,13 +2835,21 @@ class Admin(MixinMeta):
                 description=chunk,
                 color=discord.Color.blue(),
             )
-            embed.set_footer(text=_("Page {}/{} | {} variables").format(index, len(chunks), len(catalog)))
+            embed.set_footer(
+                text=_("Page {}/{} | {} variables").format(
+                    index, len(chunks), len(catalog)
+                )
+            )
             pages.append(embed)
 
         if len(pages) == 1:
-            return await self.retry_discord_server_error(lambda: ctx.send(embed=pages[0]))
+            return await self.retry_discord_server_error(
+                lambda: ctx.send(embed=pages[0])
+            )
 
-        await self.retry_discord_server_error(lambda: SimpleMenu(pages, disable_after_timeout=True).start(ctx))
+        await self.retry_discord_server_error(
+            lambda: SimpleMenu(pages, disable_after_timeout=True).start(ctx)
+        )
 
     @commands.hybrid_command(name="listfunctions", aliases=["listfuncs", "funclist"])
     @commands.guild_only()
@@ -2465,21 +2874,29 @@ class Admin(MixinMeta):
         # Build embed pages
         pages: list[discord.Embed] = []
         all_entries = [entry for entries in grouped.values() for entry in entries]
-        enabled_count = sum(conf.function_statuses.get(entry["name"], False) for entry in all_entries)
+        enabled_count = sum(
+            conf.function_statuses.get(entry["name"], False) for entry in all_entries
+        )
         disabled_count = len(all_entries) - enabled_count
 
         lines = []
         for category, entries in grouped.items():
             function_names = [entry["name"] for entry in entries]
             category_state = get_category_state(function_names, conf.function_statuses)
-            enabled_in_category = sum(conf.function_statuses.get(name, False) for name in function_names)
+            enabled_in_category = sum(
+                conf.function_statuses.get(name, False) for name in function_names
+            )
             lines.append(
                 f"{STATUS_EMOJIS[category_state]} **{render_tool_category(category)}** ({enabled_in_category}/{len(entries)})"
             )
             for entry in entries:
                 enabled = conf.function_statuses.get(entry["name"], False)
-                source_txt = f" · {entry['source']}" if entry["source"] != "Custom" else ""
-                lines.append(f"{ON_STATUS_EMOJI if enabled else OFF_STATUS_EMOJI} {entry['name']}{source_txt}")
+                source_txt = (
+                    f" · {entry['source']}" if entry["source"] != "Custom" else ""
+                )
+                lines.append(
+                    f"{ON_STATUS_EMOJI if enabled else OFF_STATUS_EMOJI} {entry['name']}{source_txt}"
+                )
             lines.append("")
 
         # Pagify the lines
@@ -2492,7 +2909,9 @@ class Admin(MixinMeta):
                 color=discord.Color.blue(),
             )
             embed.set_footer(
-                text=_("Page {}/{} | {} enabled, {} disabled").format(i, total_pages, enabled_count, disabled_count)
+                text=_("Page {}/{} | {} enabled, {} disabled").format(
+                    i, total_pages, enabled_count, disabled_count
+                )
             )
             pages.append(embed)
 
@@ -2512,7 +2931,9 @@ class Admin(MixinMeta):
         view = AIToolsView(ctx, self.db, self.registry, self.save_conf)
         await view.start()
 
-    @commands.hybrid_command(name="listcategories", aliases=["listcats", "toolcategories"])
+    @commands.hybrid_command(
+        name="listcategories", aliases=["listcats", "toolcategories"]
+    )
     @commands.guild_only()
     @commands.admin_or_permissions(administrator=True)
     @commands.bot_has_permissions(embed_links=True)
@@ -2531,7 +2952,9 @@ class Admin(MixinMeta):
         total_tools = 0
         for category, entries in grouped.items():
             function_names = [entry["name"] for entry in entries]
-            enabled_count = sum(conf.function_statuses.get(name, False) for name in function_names)
+            enabled_count = sum(
+                conf.function_statuses.get(name, False) for name in function_names
+            )
             total_enabled += enabled_count
             total_tools += len(function_names)
             category_state = get_category_state(function_names, conf.function_statuses)
@@ -2542,9 +2965,15 @@ class Admin(MixinMeta):
         chunks = list(pagify("\n".join(lines), page_length=1800))
         pages: list[discord.Embed] = []
         for index, chunk in enumerate(chunks, 1):
-            embed = discord.Embed(title=_("Tool Categories"), description=chunk, color=discord.Color.blue())
+            embed = discord.Embed(
+                title=_("Tool Categories"),
+                description=chunk,
+                color=discord.Color.blue(),
+            )
             embed.set_footer(
-                text=_("Page {}/{} | {} enabled of {} total").format(index, len(chunks), total_enabled, total_tools)
+                text=_("Page {}/{} | {} enabled of {} total").format(
+                    index, len(chunks), total_enabled, total_tools
+                )
             )
             pages.append(embed)
 
@@ -2583,15 +3012,26 @@ class Admin(MixinMeta):
         if raw_categories == "all":
             target_categories = valid_categories
         else:
-            target_categories = {category.strip().lower() for category in categories.split(",") if category.strip()}
+            target_categories = {
+                category.strip().lower()
+                for category in categories.split(",")
+                if category.strip()
+            }
 
         if not target_categories:
             return await ctx.send(_("No valid category names provided!"))
 
         invalid_categories = target_categories - valid_categories
         if invalid_categories:
-            invalid_display = humanize_list([render_tool_category(category) for category in sorted(invalid_categories)])
-            return await ctx.send(_("The following categories do not exist: {}").format(invalid_display))
+            invalid_display = humanize_list(
+                [
+                    render_tool_category(category)
+                    for category in sorted(invalid_categories)
+                ]
+            )
+            return await ctx.send(
+                _("The following categories do not exist: {}").format(invalid_display)
+            )
 
         enabled_categories = []
         disabled_categories = []
@@ -2689,7 +3129,9 @@ class Admin(MixinMeta):
         invalid_funcs = target_functions - valid_functions
         if invalid_funcs:
             return await ctx.send(
-                _("The following functions do not exist: {}").format(humanize_list(list(invalid_funcs)))
+                _("The following functions do not exist: {}").format(
+                    humanize_list(list(invalid_funcs))
+                )
             )
 
         # Apply changes
@@ -2716,20 +3158,24 @@ class Admin(MixinMeta):
         if enabled_funcs:
             response_parts.append(
                 _("\N{WHITE HEAVY CHECK MARK} **Enabled** ({}):\n{}").format(
-                    len(enabled_funcs), humanize_list([f"`{f}`" for f in sorted(enabled_funcs)])
+                    len(enabled_funcs),
+                    humanize_list([f"`{f}`" for f in sorted(enabled_funcs)]),
                 )
             )
         if disabled_funcs:
             response_parts.append(
                 _("\N{CROSS MARK} **Disabled** ({}):\n{}").format(
-                    len(disabled_funcs), humanize_list([f"`{f}`" for f in sorted(disabled_funcs)])
+                    len(disabled_funcs),
+                    humanize_list([f"`{f}`" for f in sorted(disabled_funcs)]),
                 )
             )
 
         await ctx.send("\n\n".join(response_parts))
 
     @toggle_functions.autocomplete("functions")
-    async def toggle_functions_complete(self, interaction: discord.Interaction, current: str):
+    async def toggle_functions_complete(
+        self, interaction: discord.Interaction, current: str
+    ):
         # Check if user is typing multiple functions (after a comma)
         if "," in current:
             # Get the last part after the last comma for autocomplete
@@ -2757,7 +3203,9 @@ class Admin(MixinMeta):
         return choices
 
     @toggle_categories.autocomplete("categories")
-    async def toggle_categories_complete(self, interaction: discord.Interaction, current: str):
+    async def toggle_categories_complete(
+        self, interaction: discord.Interaction, current: str
+    ):
         if "," in current:
             parts = current.rsplit(",", 1)
             prefix = parts[0] + ", "
@@ -2778,7 +3226,9 @@ class Admin(MixinMeta):
         return choices
 
     @custom_functions.autocomplete("function_name")
-    async def custom_func_complete(self, interaction: discord.Interaction, current: str):
+    async def custom_func_complete(
+        self, interaction: discord.Interaction, current: str
+    ):
         return await self.get_function_matches(current)
 
     @embeddings.autocomplete("query")
@@ -2792,7 +3242,9 @@ class Admin(MixinMeta):
     @cached(ttl=30)
     async def get_matches(self, guild_id: int, current: str) -> List[Choice]:
         entries = await self.get_embedding_entries(guild_id)
-        return [Choice(name=i, value=i) for i in entries if current.lower() in i.lower()][:25]
+        return [
+            Choice(name=i, value=i) for i in entries if current.lower() in i.lower()
+        ][:25]
 
     @cached(ttl=30)
     async def get_function_matches(self, current: str) -> List[Choice]:
@@ -2800,7 +3252,9 @@ class Admin(MixinMeta):
         for functions in self.registry.values():
             for key in functions:
                 entries.append(key)
-        return [Choice(name=i, value=i) for i in entries if current.lower() in i.lower()][:25]
+        return [
+            Choice(name=i, value=i) for i in entries if current.lower() in i.lower()
+        ][:25]
 
     @assistant.command(name="blacklist")
     async def blacklist_settings(
@@ -2824,10 +3278,16 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         if channel_role_member.id in conf.blacklist:
             conf.blacklist.remove(channel_role_member.id)
-            await ctx.send(_("{} has been removed from the blacklist").format(channel_role_member.name))
+            await ctx.send(
+                _("{} has been removed from the blacklist").format(
+                    channel_role_member.name
+                )
+            )
         else:
             conf.blacklist.append(channel_role_member.id)
-            await ctx.send(_("{} has been added to the blacklist").format(channel_role_member.name))
+            await ctx.send(
+                _("{} has been added to the blacklist").format(channel_role_member.name)
+            )
         await self.save_conf()
 
     @assistant.command(name="planner", aliases=["planners"])
@@ -2855,22 +3315,43 @@ class Admin(MixinMeta):
         if role_or_member is None:
             # Show current planners
             if not conf.planners:
-                await ctx.send(_("The planner list is empty. Everyone can use the `think_and_plan` tool."))
+                await ctx.send(
+                    _(
+                        "The planner list is empty. Everyone can use the `think_and_plan` tool."
+                    )
+                )
             else:
-                planners = [ctx.guild.get_member(i) or ctx.guild.get_role(i) for i in conf.planners]
-                names = [i.display_name if isinstance(i, discord.Member) else i.name for i in planners if i]
+                planners = [
+                    ctx.guild.get_member(i) or ctx.guild.get_role(i)
+                    for i in conf.planners
+                ]
+                names = [
+                    i.display_name if isinstance(i, discord.Member) else i.name
+                    for i in planners
+                    if i
+                ]
                 if names:
-                    await ctx.send(_("**Planners:** {}").format(humanize_list(sorted(names))))
+                    await ctx.send(
+                        _("**Planners:** {}").format(humanize_list(sorted(names)))
+                    )
                 else:
-                    await ctx.send(_("The planner list has invalid entries. Consider clearing it."))
+                    await ctx.send(
+                        _("The planner list has invalid entries. Consider clearing it.")
+                    )
             return
 
         if role_or_member.id in conf.planners:
             conf.planners.remove(role_or_member.id)
-            await ctx.send(_("{} has been removed from the planner list").format(role_or_member.name))
+            await ctx.send(
+                _("{} has been removed from the planner list").format(
+                    role_or_member.name
+                )
+            )
         else:
             conf.planners.append(role_or_member.id)
-            await ctx.send(_("{} has been added to the planner list").format(role_or_member.name))
+            await ctx.send(
+                _("{} has been added to the planner list").format(role_or_member.name)
+            )
         await self.save_conf()
 
     @assistant.group(name="override")
@@ -2883,7 +3364,9 @@ class Admin(MixinMeta):
         """
 
     @override.command(name="model")
-    async def model_role_override(self, ctx: commands.Context, model: str, *, role: discord.Role):
+    async def model_role_override(
+        self, ctx: commands.Context, model: str, *, role: discord.Role
+    ):
         """
         Assign a role to use a model
 
@@ -2900,7 +3383,11 @@ class Admin(MixinMeta):
                     "Enter a model id supported by your custom endpoint. If it exposes `/v1/models`, you can copy one from there."
                 )
                 return await ctx.send(txt)
-            return await ctx.send(_("Valid models are:\n{}").format(box(humanize_list(list(MODELS.keys())))))
+            return await ctx.send(
+                _("Valid models are:\n{}").format(
+                    box(humanize_list(list(MODELS.keys())))
+                )
+            )
 
         if conf.api_key and "deepseek" not in model and not self.db.endpoint_override:
             try:
@@ -2916,7 +3403,9 @@ class Admin(MixinMeta):
                 await ctx.send(_("Role override for {} removed!").format(role.mention))
             else:
                 conf.role_overrides[role.id] = model
-                await ctx.send(_("Role override for {} overwritten!").format(role.mention))
+                await ctx.send(
+                    _("Role override for {} overwritten!").format(role.mention)
+                )
         else:
             conf.role_overrides[role.id] = model
             await ctx.send(_("Role override for {} added!").format(role.mention))
@@ -2924,7 +3413,9 @@ class Admin(MixinMeta):
         await self.save_conf()
 
     @override.command(name="maxtokens")
-    async def max_token_override(self, ctx: commands.Context, max_tokens: int, *, role: discord.Role):
+    async def max_token_override(
+        self, ctx: commands.Context, max_tokens: int, *, role: discord.Role
+    ):
         """
         Assign a max token override to a role
 
@@ -2935,10 +3426,14 @@ class Admin(MixinMeta):
         if role.id in conf.max_token_role_override:
             if conf.max_token_role_override[role.id] == max_tokens:
                 del conf.max_token_role_override[role.id]
-                await ctx.send(_("Max token override for {} removed!").format(role.mention))
+                await ctx.send(
+                    _("Max token override for {} removed!").format(role.mention)
+                )
             else:
                 conf.max_token_role_override[role.id] = max_tokens
-                await ctx.send(_("Max token override for {} overwritten!").format(role.mention))
+                await ctx.send(
+                    _("Max token override for {} overwritten!").format(role.mention)
+                )
         else:
             conf.max_token_role_override[role.id] = max_tokens
             await ctx.send(_("Max token override for {} added!").format(role.mention))
@@ -2947,7 +3442,11 @@ class Admin(MixinMeta):
 
     @override.command(name="maxresponsetokens")
     async def max_response_token_override(
-        self, ctx: commands.Context, max_tokens: commands.positive_int, *, role: discord.Role
+        self,
+        ctx: commands.Context,
+        max_tokens: commands.positive_int,
+        *,
+        role: discord.Role,
     ):
         """
         Assign a max response token override to a role
@@ -2961,17 +3460,29 @@ class Admin(MixinMeta):
         if role.id in conf.max_response_token_override:
             if conf.max_response_token_override[role.id] == max_tokens:
                 del conf.max_response_token_override[role.id]
-                await ctx.send(_("Max response token override for {} removed!").format(role.mention))
+                await ctx.send(
+                    _("Max response token override for {} removed!").format(
+                        role.mention
+                    )
+                )
             else:
                 conf.max_response_token_override[role.id] = max_tokens
-                await ctx.send(_("Max response token override for {} overwritten!").format(role.mention))
+                await ctx.send(
+                    _("Max response token override for {} overwritten!").format(
+                        role.mention
+                    )
+                )
         else:
             conf.max_response_token_override[role.id] = max_tokens
-            await ctx.send(_("Max response token override for {} added!").format(role.mention))
+            await ctx.send(
+                _("Max response token override for {} added!").format(role.mention)
+            )
         await self.save_conf()
 
     @override.command(name="maxretention")
-    async def max_retention_override(self, ctx: commands.Context, max_retention: int, *, role: discord.Role):
+    async def max_retention_override(
+        self, ctx: commands.Context, max_retention: int, *, role: discord.Role
+    ):
         """
         Assign a max message retention override to a role
 
@@ -2984,40 +3495,62 @@ class Admin(MixinMeta):
         if role.id in conf.max_retention_role_override:
             if conf.max_retention_role_override[role.id] == max_retention:
                 del conf.max_retention_role_override[role.id]
-                await ctx.send(_("Max retention override for {} removed!").format(role.mention))
+                await ctx.send(
+                    _("Max retention override for {} removed!").format(role.mention)
+                )
             else:
                 conf.max_retention_role_override[role.id] = max_retention
-                await ctx.send(_("Max retention override for {} overwritten!").format(role.mention))
+                await ctx.send(
+                    _("Max retention override for {} overwritten!").format(role.mention)
+                )
         else:
             conf.max_retention_role_override[role.id] = max_retention
-            await ctx.send(_("Max retention override for {} added!").format(role.mention))
+            await ctx.send(
+                _("Max retention override for {} added!").format(role.mention)
+            )
         await self.save_conf()
 
     @override.command(name="maxtime")
-    async def max_time_override(self, ctx: commands.Context, retention_seconds: int, *, role: discord.Role):
+    async def max_time_override(
+        self, ctx: commands.Context, retention_seconds: int, *, role: discord.Role
+    ):
         """
         Assign a max retention time override to a role
 
         *Specify same role and time to remove the override*
         """
         if retention_seconds < 0:
-            return await ctx.send(_("Max retention time needs to be at least 0 or higher"))
+            return await ctx.send(
+                _("Max retention time needs to be at least 0 or higher")
+            )
         conf = self.db.get_conf(ctx.guild)
 
         if role.id in conf.max_time_role_override:
             if conf.max_time_role_override[role.id] == retention_seconds:
                 del conf.max_time_role_override[role.id]
-                await ctx.send(_("Max retention time override for {} removed!").format(role.mention))
+                await ctx.send(
+                    _("Max retention time override for {} removed!").format(
+                        role.mention
+                    )
+                )
             else:
                 conf.max_time_role_override[role.id] = retention_seconds
-                await ctx.send(_("Max retention time override for {} overwritten!").format(role.mention))
+                await ctx.send(
+                    _("Max retention time override for {} overwritten!").format(
+                        role.mention
+                    )
+                )
         else:
             conf.max_time_role_override[role.id] = retention_seconds
-            await ctx.send(_("Max retention time override for {} added!").format(role.mention))
+            await ctx.send(
+                _("Max retention time override for {} added!").format(role.mention)
+            )
         await self.save_conf()
 
     @override.command(name="reasoning")
-    async def reasoning_effort_override(self, ctx: commands.Context, effort: str, *, role: discord.Role):
+    async def reasoning_effort_override(
+        self, ctx: commands.Context, effort: str, *, role: discord.Role
+    ):
         """
         Assign a reasoning effort override to a role
 
@@ -3028,20 +3561,32 @@ class Admin(MixinMeta):
         valid = ("none", "minimal", "low", "medium", "high", "xhigh")
         effort = effort.lower().strip()
         if effort not in valid:
-            return await ctx.send(_("Invalid effort level. Valid values: {}").format(humanize_list(list(valid))))
+            return await ctx.send(
+                _("Invalid effort level. Valid values: {}").format(
+                    humanize_list(list(valid))
+                )
+            )
 
         conf = self.db.get_conf(ctx.guild)
 
         if role.id in conf.reasoning_effort_role_override:
             if conf.reasoning_effort_role_override[role.id] == effort:
                 del conf.reasoning_effort_role_override[role.id]
-                await ctx.send(_("Reasoning effort override for {} removed!").format(role.mention))
+                await ctx.send(
+                    _("Reasoning effort override for {} removed!").format(role.mention)
+                )
             else:
                 conf.reasoning_effort_role_override[role.id] = effort
-                await ctx.send(_("Reasoning effort override for {} overwritten!").format(role.mention))
+                await ctx.send(
+                    _("Reasoning effort override for {} overwritten!").format(
+                        role.mention
+                    )
+                )
         else:
             conf.reasoning_effort_role_override[role.id] = effort
-            await ctx.send(_("Reasoning effort override for {} added!").format(role.mention))
+            await ctx.send(
+                _("Reasoning effort override for {} added!").format(role.mention)
+            )
         await self.save_conf()
 
     @assistant.command(name="verbosity")
@@ -3094,7 +3639,9 @@ class Admin(MixinMeta):
             return await ctx.send(error)
 
         if self.db.endpoint_override == endpoint:
-            return await ctx.send(_("Endpoint is already set to **{}**").format(endpoint))
+            return await ctx.send(
+                _("Endpoint is already set to **{}**").format(endpoint)
+            )
         if endpoint and not self.db.endpoint_override:
             self.db.endpoint_override = endpoint
             profile = await self.refresh_endpoint_profile(force=True)
@@ -3106,7 +3653,9 @@ class Admin(MixinMeta):
             old = self.db.endpoint_override
             self.db.endpoint_override = endpoint
             profile = await self.refresh_endpoint_profile(force=True)
-            txt = _("Endpoint has been changed from **{}** to **{}**").format(old, endpoint)
+            txt = _("Endpoint has been changed from **{}** to **{}**").format(
+                old, endpoint
+            )
             if profile:
                 txt += "\n\n" + self.describe_endpoint_profile(profile)
             await ctx.send(txt)
@@ -3172,7 +3721,9 @@ class Admin(MixinMeta):
         def zip_file() -> discord.File:
             zip_buffer = BytesIO()
             zip_buffer.name = f"Assistant_{int(datetime.now().timestamp())}.json"
-            with ZipFile(zip_buffer, "w", compression=ZIP_DEFLATED, compresslevel=9) as arc:
+            with ZipFile(
+                zip_buffer, "w", compression=ZIP_DEFLATED, compresslevel=9
+            ) as arc:
                 arc.writestr(
                     "embeddings_export.json",
                     dump,
@@ -3199,7 +3750,9 @@ class Admin(MixinMeta):
         attachments = get_attachments(ctx.message)
         if not attachments:
             return await ctx.send(
-                _("You must attach **.json** files to this command or reference a message that has them!")
+                _(
+                    "You must attach **.json** files to this command or reference a message that has them!"
+                )
             )
         dump = await attachments[0].read()
         self.db = await asyncio.to_thread(DB.parse_raw, dump)
@@ -3239,10 +3792,16 @@ class Admin(MixinMeta):
         """Toggle whether reasoning/think blocks are uploaded as files globally"""
         if self.db.reasoning_as_files:
             self.db.reasoning_as_files = False
-            await ctx.send(_("Reasoning blocks will now be stripped from replies without uploading think files."))
+            await ctx.send(
+                _(
+                    "Reasoning blocks will now be stripped from replies without uploading think files."
+                )
+            )
         else:
             self.db.reasoning_as_files = True
-            await ctx.send(_("Reasoning blocks will now be uploaded as think files when present."))
+            await ctx.send(
+                _("Reasoning blocks will now be uploaded as think files when present.")
+            )
         await self.save_conf()
 
     @assistant.command(name="resetglobalembeddings")
@@ -3283,7 +3842,11 @@ class Admin(MixinMeta):
     @commands.bot_has_permissions(embed_links=True)
     async def view_scheduled_tasks(self, ctx: commands.Context):
         """View and manage all scheduled autonomous tasks in this server."""
-        guild_tasks = [stask for stask in self.db.scheduled_tasks.values() if stask.guild_id == ctx.guild.id]
+        guild_tasks = [
+            stask
+            for stask in self.db.scheduled_tasks.values()
+            if stask.guild_id == ctx.guild.id
+        ]
         if not guild_tasks:
             return await ctx.send(_("No scheduled tasks in this server."))
 
@@ -3291,11 +3854,15 @@ class Admin(MixinMeta):
         lines = []
         for stask in guild_tasks:
             member = ctx.guild.get_member(stask.user_id)
-            user_display = member.display_name if member else f"Unknown ({stask.user_id})"
+            user_display = (
+                member.display_name if member else f"Unknown ({stask.user_id})"
+            )
             channel = ctx.guild.get_channel(stask.channel_id)
             channel_display = channel.mention if channel else f"#{stask.channel_id}"
             timestamp = int(stask.execute_at.timestamp())
-            instruction_preview = stask.instruction[:80] + ("..." if len(stask.instruction) > 80 else "")
+            instruction_preview = stask.instruction[:80] + (
+                "..." if len(stask.instruction) > 80 else ""
+            )
             lines.append(
                 f"**`{stask.id}`** | {user_display} | {channel_display}\n"
                 f"  Executes <t:{timestamp}:R> (<t:{timestamp}:f>)\n"
@@ -3317,7 +3884,9 @@ class Admin(MixinMeta):
         """Cancel a scheduled task by its ID (admin override)."""
         task = self.db.scheduled_tasks.get(task_id)
         if not task:
-            return await ctx.send(_("No scheduled task found with ID `{}`.").format(task_id))
+            return await ctx.send(
+                _("No scheduled task found with ID `{}`.").format(task_id)
+            )
         if task.guild_id != ctx.guild.id:
             return await ctx.send(_("That task belongs to a different server."))
 
@@ -3338,7 +3907,11 @@ class Admin(MixinMeta):
         if not yes_or_no:
             return await ctx.send(_("Not clearing tasks."))
 
-        task_ids = [tid for tid, t in self.db.scheduled_tasks.items() if t.guild_id == ctx.guild.id]
+        task_ids = [
+            tid
+            for tid, t in self.db.scheduled_tasks.items()
+            if t.guild_id == ctx.guild.id
+        ]
         for tid in task_ids:
             job_id = f"task_{tid}"
             job = self.scheduler.get_job(job_id)
@@ -3357,7 +3930,11 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         if conf.compaction_enabled:
             conf.compaction_enabled = False
-            await ctx.send(_("Conversation compaction is now **Disabled** (blind degradation will be used)"))
+            await ctx.send(
+                _(
+                    "Conversation compaction is now **Disabled** (blind degradation will be used)"
+                )
+            )
         else:
             conf.compaction_enabled = True
             await ctx.send(_("Conversation compaction is now **Enabled**"))
@@ -3369,16 +3946,22 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         if not model:
             conf.compaction_model = ""
-            await ctx.send(_("Compaction model cleared, the main chat model will be used"))
+            await ctx.send(
+                _("Compaction model cleared, the main chat model will be used")
+            )
         elif not self.db.endpoint_override and model not in MODELS:
-            return await ctx.send(_("Invalid model, valid models are: {}").format(humanize_list(MODELS)))
+            return await ctx.send(
+                _("Invalid model, valid models are: {}").format(humanize_list(MODELS))
+            )
         else:
             conf.compaction_model = model
             await ctx.send(_("Compaction model set to **{}**").format(model))
         await self.save_conf()
 
     @assistant.command(name="compactionthreshold")
-    async def set_compaction_threshold(self, ctx: commands.Context, token_limit: int = 0):
+    async def set_compaction_threshold(
+        self, ctx: commands.Context, token_limit: int = 0
+    ):
         """Set the token threshold at which compaction triggers
 
         When set, the bot will proactively compact conversations once they
@@ -3395,7 +3978,15 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         conf.compaction_threshold = token_limit
         if token_limit:
-            await ctx.send(_("Compaction will now trigger at **{}** tokens").format(humanize_number(token_limit)))
+            await ctx.send(
+                _("Compaction will now trigger at **{}** tokens").format(
+                    humanize_number(token_limit)
+                )
+            )
         else:
-            await ctx.send(_("Compaction threshold reset, will only compact at the model's max token limit"))
+            await ctx.send(
+                _(
+                    "Compaction threshold reset, will only compact at the model's max token limit"
+                )
+            )
         await self.save_conf()
