@@ -1,0 +1,219 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 03:02\n"
+"Last-Translator: \n"
+"Language-Team: Turkish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: tr\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/appeals/commands/locales/messages.pot\n"
+"X-Crowdin-File-ID: 600\n"
+"Language: tr_TR\n"
+
+#: appeals\commands\__init__.py:6
+#, docstring
+msgid "Subclass all command classes"
+msgstr ""
+
+#: appeals\commands\admin.py:41
+#, docstring
+msgid "Get all appeal submissions for a specific user"
+msgstr ""
+
+#: appeals\commands\admin.py:59
+#, docstring
+msgid "View an appeal submission by ID"
+msgstr ""
+
+#: appeals\commands\admin.py:75
+#, docstring
+msgid "View all appeal submissions in the server"
+msgstr ""
+
+#: appeals\commands\admin.py:100
+#, docstring
+msgid "Configure appeal server settings"
+msgstr ""
+
+#: appeals\commands\admin.py:106
+#, docstring
+msgid "How to set up the appeal system"
+msgstr ""
+
+#: appeals\commands\admin.py:130
+#, docstring
+msgid "View the current appeal server settings"
+msgstr ""
+
+#: appeals\commands\admin.py:186
+#, docstring
+msgid "Nuke the entire appeal database"
+msgstr ""
+
+#: appeals\commands\admin.py:197
+#, docstring
+msgid "Set the maximum number of appeals a user can submit"
+msgstr ""
+
+#: appeals\commands\admin.py:206
+#, docstring
+msgid "Wipe all appeal submissions"
+msgstr ""
+
+#: appeals\commands\admin.py:215
+#, docstring
+msgid "Approve an appeal submission by ID"
+msgstr ""
+
+#: appeals\commands\admin.py:316
+#, docstring
+msgid "Deny an appeal submission by ID"
+msgstr ""
+
+#: appeals\commands\admin.py:380
+#, docstring
+msgid "Delete an appeal submission by ID"
+msgstr ""
+
+#: appeals\commands\admin.py:408
+#, docstring
+msgid "\n"
+"        Set the server ID where users will be unbanned from\n\n"
+"        **NOTES**\n"
+"        - This is the first step to setting up the appeal system\n"
+"        - This server will be the appeal server\n"
+"        - You must be the owner of the target server\n"
+"        "
+msgstr ""
+
+#: appeals\commands\admin.py:445
+#, docstring
+msgid "\n"
+"        Set the channel where submitted appeals will go\n\n"
+"        `channel_type` must be one of: pending, approved, denied\n\n"
+"        **NOTE**: All 3 channel types must be set for the appeal system to work properly.\n"
+"        "
+msgstr ""
+
+#: appeals\commands\admin.py:489
+#, docstring
+msgid "Quickly create and set a pre-baked appeal message in the specified channel"
+msgstr ""
+
+#: appeals\commands\admin.py:512
+#, docstring
+msgid "\n"
+"        Set the message where users will appeal from\n"
+"        Message format: `channelID-messageID`\n"
+"        "
+msgstr ""
+
+#: appeals\commands\admin.py:544
+#, docstring
+msgid "Add a question to the appeal form"
+msgstr ""
+
+#: appeals\commands\admin.py:562
+#, docstring
+msgid "Remove a question from the appeal form"
+msgstr ""
+
+#: appeals\commands\admin.py:583
+#, docstring
+msgid "Menu to view questions in the appeal form"
+msgstr ""
+
+#: appeals\commands\admin.py:606
+#, docstring
+msgid "\n"
+"        List all questions in the appeal form\n\n"
+"        Questions will be sorted by their sort order and then by creation date.\n"
+"        "
+msgstr ""
+
+#: appeals\commands\admin.py:624
+#, docstring
+msgid "View a question in the appeal form"
+msgstr ""
+
+#: appeals\commands\admin.py:658
+#, docstring
+msgid "Edit a question in the appeal form"
+msgstr ""
+
+#: appeals\commands\admin.py:676
+#, docstring
+msgid "Set the sort order for a question in the appeal form"
+msgstr ""
+
+#: appeals\commands\admin.py:706
+#, docstring
+msgid "Set specific data for a question in the appeal form\n\n"
+"        **Arguments**\n"
+"        - `required`: Whether the question is required or not\n"
+"        - `modal_style`: The style of the modal for the question\n"
+"          - `long`: The modal will be a long text input\n"
+"          - `short`: The modal will be a short text input\n"
+"        - `button_style`: The color of the button for the question\n"
+"          - `primary🔵`, `secondary⚫`, `success🟢`, `danger🔴`\n"
+"        - `placeholder`: The placeholder text for the input\n"
+"        - `default`: The default value for the input\n"
+"        - `min_length`: The minimum length for the input\n"
+"        - `max_length`: The maximum length for the input\n"
+"        "
+msgstr ""
+
+#: appeals\commands\admin.py:778
+#, docstring
+msgid "\n"
+"        Add/Remove roles to be pinged when a new appeal is submitted\n"
+"        These roles will be pinged in the appeal server, NOT the target server.\n"
+"        "
+msgstr ""
+
+#: appeals\commands\admin.py:800
+#, docstring
+msgid "\n"
+"        Set the channel ID where alerts for new appeals will be sent\n\n"
+"        This can be in either the appeal server or the target server.\n"
+"        Alert roles will not be pinged in this message.\n"
+"        "
+msgstr ""
+
+#: appeals\commands\admin.py:824
+#, docstring
+msgid "Refresh the appeal message with the current appeal form"
+msgstr ""
+
+#: appeals\commands\admin.py:847
+#, docstring
+msgid "Set the style of the appeal button"
+msgstr ""
+
+#: appeals\commands\admin.py:866
+#, docstring
+msgid "Set the label of the appeal button"
+msgstr ""
+
+#: appeals\commands\admin.py:891
+#, docstring
+msgid "Set the emoji of the appeal button"
+msgstr ""
+
+#: appeals\commands\admin.py:927
+#, docstring
+msgid "Toggle whether appeals will have a discussion thread created for them"
+msgstr ""
+
+#: appeals\commands\admin.py:942
+#, docstring
+msgid "Toggle whether appeals will have vote emojis added to them"
+msgstr ""
+

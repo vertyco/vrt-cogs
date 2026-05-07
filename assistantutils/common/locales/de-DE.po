@@ -1,0 +1,215 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:53\n"
+"Last-Translator: \n"
+"Language-Team: German\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: de\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/assistantutils/common/locales/messages.pot\n"
+"X-Crowdin-File-ID: 614\n"
+"Language: de_DE\n"
+
+#: assistantutils\common\functions.py:950
+#, docstring
+msgid "Inspect the current server setup and highlight useful admin gaps."
+msgstr ""
+
+#: assistantutils\common\functions.py:1127
+#, docstring
+msgid "Inspect or manage a guild member."
+msgstr ""
+
+#: assistantutils\common\functions.py:1377
+#, docstring
+msgid "\n"
+"        Fetch the content of a URL and return the text.\n\n"
+"        Args:\n"
+"            url: The URL to fetch content from\n\n"
+"        Returns:\n"
+"            The text content of the page, or an error message\n"
+"        "
+msgstr ""
+
+#: assistantutils\common\functions.py:1436
+#, docstring
+msgid "\n"
+"        Create a file with the provided content and send it to the Discord channel.\n\n"
+"        Args:\n"
+"            filename: Name of the file including extension\n"
+"            content: Content to write to the file\n"
+"            comment: Optional comment to include when sending the file\n"
+"            channel: The channel where the file will be sent\n\n"
+"        Returns:\n"
+"            A dict with deferred file and result content\n"
+"        "
+msgstr ""
+
+#: assistantutils\common\functions.py:1461
+#, docstring
+msgid "\n"
+"        Add a reaction to a message.\n\n"
+"        Args:\n"
+"            guild: The guild context\n"
+"            channel: The channel containing the message\n"
+"            message_id: The ID of the message to react to\n"
+"            emoji: The emoji to add (unicode or custom emoji format)\n\n"
+"        Returns:\n"
+"            Success or error message\n"
+"        "
+msgstr ""
+
+#: assistantutils\common\functions.py:1503
+#, docstring
+msgid "\n"
+"        Search for messages containing specific text or matching a regex pattern.\n\n"
+"        Args:\n"
+"            guild: The guild to search in\n"
+"            channel: The default channel context\n"
+"            user: The user performing the search\n"
+"            query: The search query (text or regex pattern)\n"
+"            channel_name_or_id: Optional specific channel to search in\n"
+"            limit: Maximum number of messages to search through (default: 50)\n"
+"            use_regex: Whether to treat the query as a regex pattern\n\n"
+"        Returns:\n"
+"            Matching messages formatted as a string\n"
+"        "
+msgstr ""
+
+#: assistantutils\common\functions.py:1613
+#, docstring
+msgid "\n"
+"        Run a bot command on behalf of the user.\n\n"
+"        Args:\n"
+"            guild: The guild context\n"
+"            channel: The channel to run the command in\n"
+"            user: The user to run the command as\n"
+"            command: The command string (without prefix)\n\n"
+"        Returns:\n"
+"            Result of the command execution\n"
+"        "
+msgstr ""
+
+#: assistantutils\common\functions.py:1764
+#, docstring
+msgid "Get modlog cases (bans, kicks, mutes, etc.) for a user."
+msgstr ""
+
+#: assistantutils\common\functions.py:1836
+#, docstring
+msgid "Get a list of all channels within a specific category."
+msgstr ""
+
+#: assistantutils\common\functions.py:1871
+#, docstring
+msgid "Send a message to a specific channel as the bot."
+msgstr ""
+
+#: assistantutils\common\functions.py:1902
+#, docstring
+msgid "Fetch pinned messages from a channel."
+msgstr ""
+
+#: assistantutils\common\functions.py:1962
+#, docstring
+msgid "Edit a message previously sent by the bot."
+msgstr ""
+
+#: assistantutils\common\functions.py:2019
+#, docstring
+msgid "Create, edit, move, or delete guild channels through one unified tool."
+msgstr ""
+
+#: assistantutils\common\functions.py:2399
+#, docstring
+msgid "Set explicit channel permission overwrites for a role or member."
+msgstr ""
+
+#: assistantutils\common\functions.py:2500
+#, docstring
+msgid "Create, edit, or delete Discord threads and forum posts."
+msgstr ""
+
+#: assistantutils\common\functions.py:2669
+#, docstring
+msgid "Create, edit, move, or delete Discord roles."
+msgstr ""
+
+#: assistantutils\common\functions.py:2852
+#, docstring
+msgid "List, create, or revoke guild invites."
+msgstr ""
+
+#: assistantutils\common\functions.py:3016
+#, docstring
+msgid "List, create, edit, delete, or test guild webhooks."
+msgstr ""
+
+#: assistantutils\common\functions.py:3179
+#, docstring
+msgid "List, create, edit, or delete scheduled events."
+msgstr ""
+
+#: assistantutils\common\functions.py:3374
+#, docstring
+msgid "Update supported Discord server settings."
+msgstr ""
+
+#: assistantutils\common\functions.py:3599
+#, docstring
+msgid "List, create, edit, or delete custom server emojis."
+msgstr ""
+
+#: assistantutils\common\functions.py:3703
+#, docstring
+msgid "List, create, edit, or delete server stickers."
+msgstr ""
+
+#: assistantutils\common\functions.py:3808
+#, docstring
+msgid "List, create, edit, or delete custom soundboard sounds."
+msgstr ""
+
+#: assistantutils\common\functions.py:3927
+#, docstring
+msgid "Inspect or update guild onboarding defaults and prompts."
+msgstr ""
+
+#: assistantutils\common\functions.py:4137
+#, docstring
+msgid "\n"
+"        Render an SVG string to a PNG image and send it to the Discord channel.\n\n"
+"        Args:\n"
+"            svg_content: Complete SVG markup to render\n"
+"            channel: The channel to send the image to\n"
+"            filename: Name for the output PNG file\n"
+"            background: Optional CSS background color (e.g. '#ffffff')\n\n"
+"        Returns:\n"
+"            Confirmation message or error description\n"
+"        "
+msgstr ""
+
+#: assistantutils\common\utils.py:60
+#, docstring
+msgid "\n"
+"    Cleans the function name to ensure it only contains alphanumeric characters,\n"
+"    underscores, or dashes and is not longer than 64 characters.\n\n"
+"    Args:\n"
+"        name (str): The original function name to clean.\n\n"
+"    Returns:\n"
+"        str: The cleaned function name.\n"
+"    "
+msgstr ""
+
+#: assistantutils\common\utils.py:80
+#, docstring
+msgid "Collect font directories available for SVG rendering."
+msgstr ""
+

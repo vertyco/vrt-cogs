@@ -1,0 +1,27 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 03:02\n"
+"Last-Translator: \n"
+"Language-Team: Turkish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: tr\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/appeals/listeners/locales/messages.pot\n"
+"X-Crowdin-File-ID: 608\n"
+"Language: tr_TR\n"
+
+#: appeals\listeners\__init__.py:6
+#, docstring
+msgid "\n"
+"    Subclass all listeners in this directory so you can import this single Listeners class in your cog's class constructor.\n\n"
+"    See `commands` directory for the same pattern.\n"
+"    "
+msgstr ""
+

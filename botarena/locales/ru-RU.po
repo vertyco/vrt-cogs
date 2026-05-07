@@ -1,0 +1,106 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 03:00\n"
+"Last-Translator: \n"
+"Language-Team: Russian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=4; plural=((n%10==1 && n%100!=11) ? 0 : ((n%10 >= 2 && n%10 <=4 && (n%100 < 12 || n%100 > 14)) ? 1 : ((n%10 == 0 || (n%10 >= 5 && n%10 <=9)) || (n%100 >= 11 && n%100 <= 14)) ? 2 : 3));\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: ru\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/botarena/locales/messages.pot\n"
+"X-Crowdin-File-ID: 632\n"
+"Language: ru_RU\n"
+
+#: botarena\abc.py:12
+#, docstring
+msgid "Metaclass for combining Cog and ABC functionality"
+msgstr ""
+
+#: botarena\abc.py:16
+#, docstring
+msgid "Type hinting mixin for all command classes"
+msgstr ""
+
+#: botarena\battle_runner.py:58
+#, docstring
+msgid "\n"
+"    Run a battle from JSON input and render to file.\n\n"
+"    Args:\n"
+"        input_data: Battle configuration and bot data\n"
+"        output_path: Where to save the video\n"
+"        format: \"gif\" or \"mp4\"\n\n"
+"    Returns:\n"
+"        Battle result dict (without frame data for smaller output)\n"
+"    "
+msgstr ""
+
+#: botarena\battle_runner.py:143
+#, docstring
+msgid "Add a bot to the engine from JSON data"
+msgstr ""
+
+#: botarena\main.py:34
+#, docstring
+msgid "\n"
+"    Bot Arena - Build and Battle Robots!\n\n"
+"    Create custom battle bots from chassis, plating, and weapons,\n"
+"    then fight against other players in arena combat.\n"
+"    "
+msgstr ""
+
+#: botarena\main.py:62
+#, docstring
+msgid "Register all parts from constants"
+msgstr ""
+
+#: botarena\main.py:75
+#, docstring
+msgid "Called when the cog is loaded"
+msgstr ""
+
+#: botarena\main.py:79
+#, docstring
+msgid "Called when the cog is unloaded"
+msgstr ""
+
+#: botarena\main.py:88
+#, docstring
+msgid "Initialize the cog - load data"
+msgstr ""
+
+#: botarena\main.py:105
+#, docstring
+msgid "Queue a save operation to disk (fire-and-forget)"
+msgstr ""
+
+#: botarena\main.py:145
+#, docstring
+msgid "Handle data deletion requests"
+msgstr ""
+
+#: botarena\main.py:162
+#, docstring
+msgid "\n"
+"        Run a battle in a subprocess and return the video path and results.\n\n"
+"        Args:\n"
+"            team1: List of Bot objects for team 1\n"
+"            team2: List of Bot objects for team 2\n"
+"            config: Optional battle config overrides\n"
+"            output_format: \"gif\" or \"mp4\"\n"
+"            team1_color: Color name for team 1 (player's team)\n"
+"            team2_color: Color name for team 2 (enemy team)\n"
+"            chapter: Campaign chapter number (1-5) for chapter-specific arena backgrounds\n"
+"            mission_id: Mission ID for mission-specific arena backgrounds (e.g., \"1-1\")\n\n"
+"        Returns:\n"
+"            Tuple of (video_path, battle_result, error_message)\n"
+"            On success: (Path, dict, None)\n"
+"            On error: (None, None, error_string)\n"
+"        "
+msgstr ""
+

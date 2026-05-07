@@ -1,0 +1,700 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:49\n"
+"Last-Translator: \n"
+"Language-Team: French\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: fr\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/botarena/views/locales/messages.pot\n"
+"X-Crowdin-File-ID: 634\n"
+"Language: fr_FR\n"
+
+#: botarena\views\base.py:24
+#, docstring
+msgid "Base class for all Bot Arena views.\n\n"
+"    Provides common functionality:\n"
+"    - Timeout handling that disables all components\n"
+"    - Permission checking to ensure only the command author can interact\n"
+"    - Message tracking for editing on timeout\n"
+"    - Navigation helpers that properly manage view lifecycles\n\n"
+"    Subclasses should:\n"
+"    - Call super().__init__()\n"
+"    - Implement `_build_layout()` (sync or async) to populate the view\n"
+"    - Override `get_attachments()` if the view uses images/thumbnails\n"
+"    "
+msgstr ""
+
+#: botarena\views\base.py:57
+#, docstring
+msgid "Build the view's layout. Override in subclasses.\n\n"
+"        Can be sync or async - the base class handles both.\n"
+"        "
+msgstr ""
+
+#: botarena\views\base.py:64
+#, docstring
+msgid "Return attachments needed for this view's thumbnails/images.\n\n"
+"        Override in subclasses that use `attachment://` URLs in thumbnails.\n"
+"        Default returns empty list (no attachments needed).\n"
+"        "
+msgstr ""
+
+#: botarena\views\base.py:76
+#, docstring
+msgid "Prepare to navigate to a child view.\n\n"
+"        Call this before editing the message to show the child.\n"
+"        Prevents this view's timeout from interfering with the child.\n"
+"        "
+msgstr ""
+
+#: botarena\views\base.py:85
+#, docstring
+msgid "Clear and rebuild this view's layout."
+msgstr ""
+
+#: botarena\views\base.py:92
+#, docstring
+msgid "Edit the interaction response to show this view with attachments."
+msgstr ""
+
+#: botarena\views\base.py:100
+#, docstring
+msgid "Navigate back to the parent view.\n\n"
+"        Handles rebuilding the parent, resetting flags, and editing with attachments.\n"
+"        "
+msgstr ""
+
+#: botarena\views\base.py:122
+#, docstring
+msgid "Disable all interactive components when the view times out."
+msgstr ""
+
+#: botarena\views\base.py:142
+#, docstring
+msgid "Ensure only the command author can interact with this view."
+msgstr ""
+
+#: botarena\views\builder.py:41
+#, docstring
+msgid "Dropdown for selecting a chassis"
+msgstr ""
+
+#: botarena\views\builder.py:82 botarena\views\parts_viewer.py:75
+#, docstring
+msgid "Dropdown for selecting plating"
+msgstr ""
+
+#: botarena\views\builder.py:130 botarena\views\parts_viewer.py:110
+#, docstring
+msgid "Dropdown for selecting weapon"
+msgstr ""
+
+#: botarena\views\builder.py:178
+#, docstring
+msgid "Button to open tactics configuration"
+msgstr ""
+
+#: botarena\views\builder.py:197
+#, docstring
+msgid "View for configuring tactical orders"
+msgstr ""
+
+#: botarena\views\builder.py:239 botarena\views\inventory.py:732
+#, docstring
+msgid "Rebuild and refresh the view"
+msgstr ""
+
+#: botarena\views\builder.py:246 botarena\views\inventory.py:739
+#, docstring
+msgid "Dropdown for selecting movement stance"
+msgstr ""
+
+#: botarena\views\builder.py:275 botarena\views\inventory.py:767
+#, docstring
+msgid "Dropdown for selecting target priority"
+msgstr ""
+
+#: botarena\views\builder.py:304 botarena\views\inventory.py:796
+#, docstring
+msgid "Control buttons for tactics view"
+msgstr ""
+
+#: botarena\views\builder.py:326
+#, docstring
+msgid "Action buttons for the builder"
+msgstr ""
+
+#: botarena\views\builder.py:417
+#, docstring
+msgid "Interactive bot builder - equip parts to a chassis to make it battle-ready"
+msgstr ""
+
+#: botarena\views\builder.py:441
+#, docstring
+msgid "Get the currently selected owned chassis"
+msgstr ""
+
+#: botarena\views\builder.py:609
+#, docstring
+msgid "Get discord.File objects for all selected parts"
+msgstr ""
+
+#: botarena\views\builder.py:634
+#, docstring
+msgid "Rebuild layout and update message"
+msgstr ""
+
+#: botarena\views\builder.py:641
+#, docstring
+msgid "Modal for renaming a bot (chassis)"
+msgstr ""
+
+#: botarena\views\challenge.py:37
+#, docstring
+msgid "Dropdown for the challenger to select their bots"
+msgstr ""
+
+#: botarena\views\challenge.py:86
+#, docstring
+msgid "Dropdown for the opponent to select their bots"
+msgstr ""
+
+#: botarena\views\challenge.py:140
+#, docstring
+msgid "Row with a single bet button for both players"
+msgstr ""
+
+#: botarena\views\challenge.py:160
+#, docstring
+msgid "Modal for entering bet amount"
+msgstr ""
+
+#: botarena\views\challenge.py:212
+#, docstring
+msgid "Row with ready buttons and cancel/decline"
+msgstr ""
+
+#: botarena\views\challenge.py:245
+#, docstring
+msgid "\n"
+"    Multi-bot PvP challenge view with betting and ready-up system.\n\n"
+"    Flow:\n"
+"    1. Challenger initiates challenge by selecting opponent from dropdown\n"
+"    2. Opponent accepts by interacting with the view\n"
+"    3. Both players select their bots (max 3 each)\n"
+"    4. Both players optionally set their bets\n"
+"    5. Both players click \"Ready Up\"\n"
+"    6. When both ready, battle starts automatically\n\n"
+"    If either player changes their selection or bet, both players are un-readied.\n"
+"    "
+msgstr ""
+
+#: botarena\views\challenge.py:297
+#, docstring
+msgid "Un-ready both players (called when selections change)"
+msgstr ""
+
+#: botarena\views\challenge.py:302
+#, docstring
+msgid "Async portion of layout building - fetches currency name"
+msgstr ""
+
+#: botarena\views\challenge.py:306
+#, docstring
+msgid "Convert selected chassis IDs to Bot objects, sorted by spawn order"
+msgstr ""
+
+#: botarena\views\challenge.py:452
+#, docstring
+msgid "Handle ready button clicks"
+msgstr ""
+
+#: botarena\views\challenge.py:501
+#, docstring
+msgid "Handle cancel/decline"
+msgstr ""
+
+#: botarena\views\challenge.py:521
+#, docstring
+msgid "Start the battle once both players are ready"
+msgstr ""
+
+#: botarena\views\hub.py:43
+#, docstring
+msgid "\n"
+"    Create a composite preview image showing all 3 bot parts side by side.\n\n"
+"    This is the sync version that does blocking IO - call via asyncio.to_thread.\n\n"
+"    Returns BytesIO buffer with the PNG image, or None if parts not found.\n"
+"    "
+msgstr ""
+
+#: botarena\views\hub.py:100
+#, docstring
+msgid "\n"
+"    Create a composite preview image showing all 3 bot parts side by side.\n\n"
+"    Async wrapper that runs PIL operations in a thread to avoid blocking.\n\n"
+"    Returns BytesIO buffer with the PNG image, or None if parts not found.\n"
+"    "
+msgstr ""
+
+#: botarena\views\hub.py:111
+#, docstring
+msgid "\n"
+"    Format battle statistics for display in embeds.\n\n"
+"    Args:\n"
+"        result: The battle result dictionary from the engine\n"
+"        winner_team: The winning team (1 or 2, or 0 for draw)\n\n"
+"    Returns:\n"
+"        Formatted string showing battle statistics\n"
+"    "
+msgstr ""
+
+#: botarena\views\hub.py:160
+#, docstring
+msgid "Battle result view with optional Return to Hub button"
+msgstr ""
+
+#: botarena\views\hub.py:180
+#, docstring
+msgid "Override to handle optional ctx case."
+msgstr ""
+
+#: botarena\views\hub.py:189
+#, docstring
+msgid "Actions row for battle result view with Return to Hub button"
+msgstr ""
+
+#: botarena\views\hub.py:225
+#, docstring
+msgid "\n"
+"    Create a LayoutView for battle results with an embedded video.\n\n"
+"    Args:\n"
+"        title: The result title (e.g., \"🏆 Victory!\")\n"
+"        description: Main result description\n"
+"        color: Accent color for the container\n"
+"        duration: Battle duration in seconds\n"
+"        battle_stats: Formatted battle statistics string\n"
+"        extra_fields: Optional list of (name, value) tuples for additional info\n"
+"        video_file: The video file to embed in the gallery\n"
+"        ctx: Optional context for Return to Hub button\n"
+"        cog: Optional cog reference for Return to Hub button\n"
+"        user: The user who initiated the battle (for display in results)\n"
+"        mission_name: Optional mission name for campaign battles\n"
+"        chapter_name: Optional chapter name for campaign battles\n\n"
+"    Returns:\n"
+"        Tuple of (LayoutView, list of files to attach)\n"
+"    "
+msgstr ""
+
+#: botarena\views\hub.py:378
+#, docstring
+msgid "Action buttons for the step-by-step tutorial"
+msgstr ""
+
+#: botarena\views\hub.py:416
+#, docstring
+msgid "Go back to the previous tutorial step"
+msgstr ""
+
+#: botarena\views\hub.py:426
+#, docstring
+msgid "Navigate to the relevant view for this step"
+msgstr ""
+
+#: botarena\views\hub.py:479
+#, docstring
+msgid "Quick Start option for players who want to skip the tutorial"
+msgstr ""
+
+#: botarena\views\hub.py:483
+#, docstring
+msgid "Skip the tutorial without buying anything"
+msgstr ""
+
+#: botarena\views\hub.py:506
+#, docstring
+msgid "Give the player TWO starter bots for a strong opening!"
+msgstr ""
+
+#: botarena\views\hub.py:572
+#, docstring
+msgid "Interactive step-by-step tutorial for new players"
+msgstr ""
+
+#: botarena\views\hub.py:581
+#, docstring
+msgid "Check player's progress to determine which step they're on"
+msgstr ""
+
+#: botarena\views\hub.py:614
+#, docstring
+msgid "Check if a specific step is complete"
+msgstr ""
+
+#: botarena\views\hub.py:644
+#, docstring
+msgid "Get a visual progress bar for the tutorial"
+msgstr ""
+
+#: botarena\views\hub.py:661
+#, docstring
+msgid "Get a summary of what the player currently has"
+msgstr ""
+
+#: botarena\views\hub.py:739
+#, docstring
+msgid "Main menu navigation buttons"
+msgstr ""
+
+#: botarena\views\hub.py:782
+#, docstring
+msgid "Secondary menu actions"
+msgstr ""
+
+#: botarena\views\hub.py:822
+#, docstring
+msgid "Main game hub - central navigation for all features"
+msgstr ""
+
+#: botarena\views\hub.py:917
+#, docstring
+msgid "Rebuild layout and refresh the message"
+msgstr ""
+
+#: botarena\views\hub.py:924
+#, docstring
+msgid "Dropdown for selecting a chapter"
+msgstr ""
+
+#: botarena\views\hub.py:949
+#, docstring
+msgid "Dropdown for selecting a mission"
+msgstr ""
+
+#: botarena\views\hub.py:1027
+#, docstring
+msgid "Campaign chapter and mission selection"
+msgstr ""
+
+#: botarena\views\hub.py:1038
+#, docstring
+msgid "Find the chapter that has the first uncompleted mission."
+msgstr ""
+
+#: botarena\views\hub.py:1112
+#, docstring
+msgid "Dropdown for selecting bots for the mission"
+msgstr ""
+
+#: botarena\views\hub.py:1175
+#, docstring
+msgid "Actions for mission briefing"
+msgstr ""
+
+#: botarena\views\hub.py:1197
+#, docstring
+msgid "Mission briefing and bot selection before battle"
+msgstr ""
+
+#: botarena\views\hub.py:1212
+#, docstring
+msgid "Get the mission-specific arena background image file"
+msgstr ""
+
+#: botarena\views\hub.py:1690
+#, docstring
+msgid "Send ephemeral messages for each unlocked part with images"
+msgstr ""
+
+#: botarena\views\hub.py:1757
+#, docstring
+msgid "Dropdown for selecting team color"
+msgstr ""
+
+#: botarena\views\hub.py:1798
+#, docstring
+msgid "Detailed player profile - can view own or another player's profile"
+msgstr ""
+
+#: botarena\views\hub.py:1929
+#, docstring
+msgid "PvP challenge interface - select an opponent and launch a challenge"
+msgstr ""
+
+#: botarena\views\inventory.py:39
+#, docstring
+msgid "Ephemeral confirmation view for sell actions.\n\n"
+"    Shows a confirmation prompt with item details before executing a sale.\n"
+"    "
+msgstr ""
+
+#: botarena\views\inventory.py:58
+#, docstring
+msgid "Execute the sale"
+msgstr ""
+
+#: botarena\views\inventory.py:64
+#, docstring
+msgid "Cancel the sale"
+msgstr ""
+
+#: botarena\views\inventory.py:75
+#, docstring
+msgid "Dropdown for equipping plating"
+msgstr ""
+
+#: botarena\views\inventory.py:137
+#, docstring
+msgid "Dropdown for equipping weapons"
+msgstr ""
+
+#: botarena\views\inventory.py:199
+#, docstring
+msgid "Dropdown for quickly switching between bots in the editor"
+msgstr ""
+
+#: botarena\views\inventory.py:252
+#, docstring
+msgid "Dropdown for setting bot spawn order priority"
+msgstr ""
+
+#: botarena\views\inventory.py:293
+#, docstring
+msgid "Layout view for editing a single chassis/bot"
+msgstr ""
+
+#: botarena\views\inventory.py:307
+#, docstring
+msgid "Create a ChassisEditorLayout and wait for the layout to be built."
+msgstr ""
+
+#: botarena\views\inventory.py:313
+#, docstring
+msgid "Refresh the view after changes"
+msgstr ""
+
+#: botarena\views\inventory.py:318 botarena\views\parts_viewer.py:188
+#, docstring
+msgid "Get the list of image files for attachment"
+msgstr ""
+
+#: botarena\views\inventory.py:322
+#, docstring
+msgid "Build the container layout with generated bot image"
+msgstr ""
+
+#: botarena\views\inventory.py:548
+#, docstring
+msgid "Dropdown row for selecting a bot to edit in the garage.\n\n"
+"    This replaces individual edit buttons with a single dropdown,\n"
+"    which scales better when users have many bots.\n"
+"    "
+msgstr ""
+
+#: botarena\views\inventory.py:595
+#, docstring
+msgid "Control buttons for the garage view."
+msgstr ""
+
+#: botarena\views\inventory.py:667
+#, docstring
+msgid "View for configuring tactical orders from the chassis editor"
+msgstr ""
+
+#: botarena\views\inventory.py:831
+#, docstring
+msgid "Layout view for the Garage - shows ALL owned bots at once with Edit buttons.\n\n"
+"    This is the main bot management interface. Each bot is displayed with its\n"
+"    key stats, and users can click Edit to open the ChassisEditorLayout for\n"
+"    that specific bot.\n"
+"    "
+msgstr ""
+
+#: botarena\views\inventory.py:849
+#, docstring
+msgid "Create a GarageLayout and wait for the layout to be built."
+msgstr ""
+
+#: botarena\views\inventory.py:855 botarena\views\inventory.py:981
+#, docstring
+msgid "Update the display after changes"
+msgstr ""
+
+#: botarena\views\inventory.py:861
+#, docstring
+msgid "Build the container layout showing all bots with images"
+msgstr ""
+
+#: botarena\views\inventory.py:944
+#, docstring
+msgid "Get the list of bot image files for attachment"
+msgstr ""
+
+#: botarena\views\inventory.py:956
+#, docstring
+msgid "Layout view for viewing equipment inventory and selling items"
+msgstr ""
+
+#: botarena\views\inventory.py:967
+#, docstring
+msgid "Get discord.File objects for item images in current category"
+msgstr ""
+
+#: botarena\views\inventory.py:987
+#, docstring
+msgid "Build the container layout"
+msgstr ""
+
+#: botarena\views\leaderboard.py:23
+#, docstring
+msgid "Available leaderboard categories"
+msgstr ""
+
+#: botarena\views\leaderboard.py:80
+#, docstring
+msgid "Dropdown for selecting leaderboard mode"
+msgstr ""
+
+#: botarena\views\leaderboard.py:111
+#, docstring
+msgid "Pagination buttons for navigating leaderboard pages"
+msgstr ""
+
+#: botarena\views\leaderboard.py:142
+#, docstring
+msgid "Dynamic leaderboard view with mode selection and pagination"
+msgstr ""
+
+#: botarena\views\leaderboard.py:182
+#, docstring
+msgid "Gather and sort leaderboard entries for the current mode"
+msgstr ""
+
+#: botarena\views\leaderboard.py:204
+#, docstring
+msgid "Rebuild the pages list based on current data and mode"
+msgstr ""
+
+#: botarena\views\leaderboard.py:278
+#, docstring
+msgid "Refresh the view with current page"
+msgstr ""
+
+#: botarena\views\leaderboard.py:294
+#, docstring
+msgid "Entry point - initialize and send the view"
+msgstr ""
+
+#: botarena\views\parts_viewer.py:25
+#, docstring
+msgid "Load a part image scaled up 2x for Discord preview visibility"
+msgstr ""
+
+#: botarena\views\parts_viewer.py:47
+#, docstring
+msgid "Dropdown for selecting chassis"
+msgstr ""
+
+#: botarena\views\parts_viewer.py:146
+#, docstring
+msgid "Layout view for viewing rendered bot combinations (debug tool)"
+msgstr ""
+
+#: botarena\views\parts_viewer.py:201
+#, docstring
+msgid "Refresh the view and update the message"
+msgstr ""
+
+#: botarena\views\parts_viewer.py:208
+#, docstring
+msgid "Generate the combined bot image and individual part images"
+msgstr ""
+
+#: botarena\views\parts_viewer.py:250
+#, docstring
+msgid "Build the layout with current part selections"
+msgstr ""
+
+#: botarena\views\parts_viewer.py:333
+#, docstring
+msgid "Create and initialize the parts viewer with rendered bot image"
+msgstr ""
+
+#: botarena\views\shop.py:23
+#, docstring
+msgid "Get the path to a part's image file using shared image_utils"
+msgstr ""
+
+#: botarena\views\shop.py:31
+#, docstring
+msgid "Row for changing shop category"
+msgstr ""
+
+#: botarena\views\shop.py:65
+#, docstring
+msgid "Dropdown for item selection"
+msgstr ""
+
+#: botarena\views\shop.py:109
+#, docstring
+msgid "Navigation and actions"
+msgstr ""
+
+#: botarena\views\shop.py:169
+#, docstring
+msgid "Interactive shop for browsing and purchasing parts"
+msgstr ""
+
+#: botarena\views\shop.py:191
+#, docstring
+msgid "Get available items for current category (starter parts + unlocked parts only)"
+msgstr ""
+
+#: botarena\views\shop.py:210
+#, docstring
+msgid "Get the currently displayed item"
+msgstr ""
+
+#: botarena\views\shop.py:217
+#, docstring
+msgid "Get discord.File objects for this view's thumbnails"
+msgstr ""
+
+#: botarena\views\shop.py:228
+#, docstring
+msgid "Get a helpful tip for first-time buyers based on what they own."
+msgstr ""
+
+#: botarena\views\shop.py:373
+#, docstring
+msgid "Confirmation view for purchasing items"
+msgstr ""
+
+#: botarena\views\shop.py:385
+#, docstring
+msgid "Confirm the purchase"
+msgstr ""
+
+#: botarena\views\shop.py:463
+#, docstring
+msgid "Check if player has all 3 part types needed to build a bot"
+msgstr ""
+
+#: botarena\views\shop.py:471
+#, docstring
+msgid "Cancel the purchase"
+msgstr ""
+
+#: botarena\views\shop.py:477
+#, docstring
+msgid "Dropdown for quick item selection"
+msgstr ""
+

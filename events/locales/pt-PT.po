@@ -1,0 +1,174 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:58\n"
+"Last-Translator: \n"
+"Language-Team: Portuguese\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: pt-PT\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/events/locales/messages.pot\n"
+"X-Crowdin-File-ID: 656\n"
+"Language: pt_PT\n"
+
+#: events\events.py:51
+#, docstring
+msgid "\n"
+"    Host and manage events in your server with a variety of customization options.\n\n"
+"    Create an event, set a channel for submissions and entry requirements/options.\n"
+"    Users can enter the event and make submissions according to the parameters set.\n"
+"    "
+msgstr ""
+
+#: events\events.py:66
+#, docstring
+msgid "No data to delete"
+msgstr ""
+
+#: events\events.py:137
+#, docstring
+msgid "\n"
+"        Enable/Disable event notifications for yourself\n\n"
+"        You will be notified when events start and end\n"
+"        "
+msgstr ""
+
+#: events\events.py:157
+#, docstring
+msgid "Enter an event if one exists"
+msgstr ""
+
+#: events\events.py:364
+#, docstring
+msgid "Create, manage and view events"
+msgstr ""
+
+#: events\events.py:369
+#, docstring
+msgid "View the current events and settings"
+msgstr ""
+
+#: events\events.py:469
+#, docstring
+msgid "(Toggle) Ping staff on event completion"
+msgstr ""
+
+#: events\events.py:480
+#, docstring
+msgid "\n"
+"        (Toggle) Auto delete events from config when they complete\n\n"
+"        If auto delete is enabled, the messages in the event channel will need to be cleaned up manually\n"
+"        "
+msgstr ""
+
+#: events\events.py:495
+#, docstring
+msgid "\n"
+"        (Toggle) Include event results in the messages to delete on cleanup\n\n"
+"        If this is on when an event is deleted and the user chooses to clean up the messages,\n"
+"        the results announcement will also be deleted\n"
+"        "
+msgstr ""
+
+#: events\events.py:511
+#, docstring
+msgid "\n"
+"        Add/Remove staff roles\n\n"
+"        If ping staff is enabled, these roles will be pinged on event completion\n"
+"        "
+msgstr ""
+
+#: events\events.py:528
+#, docstring
+msgid "\n"
+"        Add/Remove notify roles\n\n"
+"        These roles will be pinged on event start and completion\n"
+"        "
+msgstr ""
+
+#: events\events.py:545
+#, docstring
+msgid "\n"
+"        Add/Remove blacklisted roles\n\n"
+"        These roles are not allowed to enter events, but can still vote on them\n"
+"        "
+msgstr ""
+
+#: events\events.py:562
+#, docstring
+msgid "\n"
+"        Add/Remove blacklisted users\n\n"
+"        These users are not allowed to enter events, but can still vote on them\n"
+"        "
+msgstr ""
+
+#: events\events.py:579
+#, docstring
+msgid "\n"
+"        Set the default emoji for votes\n\n"
+"        Changing the vote emoji only affects events created after this is changed.\n"
+"        Existing events will still use the previous emoji for votes\n"
+"        "
+msgstr ""
+
+#: events\events.py:599
+#, docstring
+msgid "\n"
+"        End an event early, counting votes/announcing the winner\n\n"
+"        This will also delete the event afterwards\n"
+"        "
+msgstr ""
+
+#: events\events.py:645
+#, docstring
+msgid "\n"
+"        Extend the runtime of an event\n\n"
+"        **Examples**\n"
+"        `10d` - 10 days\n"
+"        `7d4h` - 7 days 4 hours\n"
+"        "
+msgstr ""
+
+#: events\events.py:681
+#, docstring
+msgid "\n"
+"        Shorten the runtime of an event\n\n"
+"        **Examples**\n"
+"        `10d` - 10 days\n"
+"        `7d4h` - 7 days 4 hours\n"
+"        "
+msgstr ""
+
+#: events\events.py:717
+#, docstring
+msgid "Remove a user from an active event"
+msgstr ""
+
+#: events\events.py:753
+#, docstring
+msgid "Delete an event outright"
+msgstr ""
+
+#: events\events.py:789
+#, docstring
+msgid "Create a new event"
+msgstr ""
+
+#: events\utils.py:17
+#, docstring
+msgid "\n"
+"    Async context manager for getting message replies and auto deleting the user's response\n"
+"    "
+msgstr ""
+
+#: events\utils.py:156
+#, docstring
+msgid "Get all attachments from context"
+msgstr ""
+

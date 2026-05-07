@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2024-02-08 18:30-0500\n"
-"PO-Revision-Date: 2024-12-03 14:55\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:53\n"
 "Last-Translator: \n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -17,7 +17,7 @@ msgstr ""
 "X-Crowdin-File-ID: 25\n"
 "Language: de_DE\n"
 
-#: autodocs.py:25
+#: autodocs\autodocs.py:27
 #, docstring
 msgid "\n"
 "    Document your cogs with ease!\n\n"
@@ -26,225 +26,213 @@ msgid "\n"
 msgstr "Dokumentieren Sie Ihre Koggen mit Leichtigkeit!\n\n"
 "Erstellen Sie mühelos Dokumentationen für jedes Zahnrad im Markdown-Format    "
 
-#: autodocs.py:36
+#: autodocs\autodocs.py:38
 msgid "{}\n"
 "Cog Version: {}\n"
 "Author: {}"
 msgstr "{}\n"
 "Kogge Version: {}\\nAutor: {}"
 
-#: autodocs.py:40
+#: autodocs\autodocs.py:42
 #, docstring
 msgid "No data to delete"
 msgstr "Keine Daten zu löschen"
 
-#: autodocs.py:58
+#: autodocs\autodocs.py:60
 msgid "name"
 msgstr "Name"
 
-#: autodocs.py:58
+#: autodocs\autodocs.py:60
 msgid "text"
 msgstr "Text"
 
-#: autodocs.py:61
-msgid "Help"
-msgstr "Hilfe"
-
-#: autodocs.py:68
+#: autodocs\autodocs.py:74
 msgid "{} cog description"
 msgstr "{} Cog-Beschreibung"
 
-#: autodocs.py:120
+#: autodocs\autodocs.py:122
 msgid "Create docs for a cog"
 msgstr "Dokumentation für ein Zahnrad erstellen"
 
-#: autodocs.py:122
+#: autodocs\autodocs.py:124
 msgid "The name of the cog you want to make docs for (Case Sensitive)"
 msgstr "Der Name des Zahnrads, für das Sie Dokumente erstellen möchten (Groß-/Kleinschreibung beachten)"
 
-#: autodocs.py:123
+#: autodocs\autodocs.py:125
 msgid "Replace all occurrences of [p] with the bots prefix"
 msgstr "Ersetzen Sie alle Vorkommen von [p] durch das Präfix des Bots"
 
-#: autodocs.py:124
+#: autodocs\autodocs.py:126
 msgid "Replace all occurrences of [botname] with the bots name"
 msgstr "Ersetze alle Vorkommen von [botname] durch den Namen des Bots"
 
-#: autodocs.py:125
+#: autodocs\autodocs.py:127
 msgid "Include extra info like converters and their docstrings"
 msgstr "Zusätzliche Informationen wie Konverter und deren Docstrings einbeziehen"
 
-#: autodocs.py:126
+#: autodocs\autodocs.py:128
 msgid "Include hidden commands"
 msgstr "Versteckte Befehle einbeziehen"
 
-#: autodocs.py:127
+#: autodocs\autodocs.py:129
 msgid "Hide commands above specified privilege level (user, mod, admin, guildowner, botowner)"
 msgstr "Ausblenden von Befehlen oberhalb einer bestimmten Berechtigungsstufe (User, Mod, Admin, Gildenbesitzer, Botbesitzer)"
 
-#: autodocs.py:128
-msgid "Include a csv with each command isolated per row"
-msgstr "Fügen Sie eine CSV-Datei ein, bei der jeder Befehl pro Zeile isoliert ist."
-
-#: autodocs.py:129
+#: autodocs\autodocs.py:130
 msgid "Hide commands below specified privilege level (user, mod, admin, guildowner, botowner)"
 msgstr ""
 
-#: autodocs.py:145
+#: autodocs\autodocs.py:131
+msgid "Include a csv with each command isolated per row"
+msgstr "Fügen Sie eine CSV-Datei ein, bei der jeder Befehl pro Zeile isoliert ist."
+
+#: autodocs\autodocs.py:149
 #, docstring
 msgid "\n"
 "        Create a Markdown docs page for a cog and send to discord\n\n"
 "        **Arguments**\n"
-"        `cog_name:           `(str) The name of the cog you want to make docs for (Case Sensitive)\n"
-"        `replace_prefix:     `(bool) If True, replaces the `prefix` placeholder with the bots prefix\n"
-"        `replace_botname:    `(bool) If True, replaces the `botname` placeholder with the bots name\n"
-"        `extended_info:      `(bool) If True, include extra info like converters and their docstrings\n"
-"        `include_hidden:     `(bool) If True, includes hidden commands\n"
-"        `privilege_level:    `(str) Hide commands above specified privilege level\n"
+"        `cog_name:            `(str) The name of the cog you want to make docs for (Case Sensitive)\n"
+"        `replace_prefix:      `(bool) If True, replaces the `prefix` placeholder with the bots prefix\n"
+"        `replace_botname:     `(bool) If True, replaces the `botname` placeholder with the bots name\n"
+"        `extended_info:       `(bool) If True, include extra info like converters and their docstrings\n"
+"        `include_hidden:      `(bool) If True, includes hidden commands\n"
+"        `include_help:        `(bool) If True, includes the cog help text at the top of the docs\n"
+"        `max_privilege_level: `(str) Hide commands above specified privilege level\n"
+"        `min_privilege_level: `(str) Hide commands below specified privilege level\n"
 "        - (user, mod, admin, guildowner, botowner)\n"
-"        `csv_export:         `(bool) Include a csv with each command isolated per row for use as embeddings\n\n"
+"        `csv_export:          `(bool) Include a csv with each command isolated per row for use as embeddings\n\n"
 "        **Note** If `all` is specified for cog_name, all currently loaded non-core cogs will have docs generated for\n"
 "        them and sent in a zip file\n"
 "        "
-msgstr "Erstelle eine Markdown-Dokumentationsseite für ein Cog und sende sie an Discord.\n\n"
-"**Argumente**\n"
-"`cog_name:           `(str) Der Name des Cogs, für das du die Dokumentation erstellen möchtest (Groß-/Kleinschreibung beachten)\n"
-"`replace_prefix:     `(bool) Wenn true, wird der Platzhalter `prefix` durch den Präfix des Bots ersetzt\n"
-"`replace_botname:    `(bool) Wenn true, wird der Platzhalter `botname` durch den Namen des Bots ersetzt\n"
-"`extended_info:      `(bool) Wenn true, werden zusätzliche Informationen wie Konverter und ihre Dokumentationszeichenfolgen einbezogen\n"
-"`include_hidden:     `(bool) Wenn true, werden versteckte Befehle einbezogen\n"
-"`privilege_level:    `(str) Verbirgt Befehle über der angegebenen Privilegstufe\n"
-"- (User, Mod, Admin, Guildowner, Botowner)\n"
-"`csv_export:         `(bool) Enthält eine CSV-Datei mit jedem Befehl isoliert pro Zeile zur Verwendung als Einbettung\n\n"
-"**Hinweis** Wenn `all` für `cog_name` angegeben ist, werden für alle derzeit geladenen Nicht-Kern-Cogs Dokumentationen generiert und in einer Zip-Datei verschickt        "
+msgstr ""
 
-#: autodocs.py:166
+#: autodocs\autodocs.py:172
 msgid "AllCogDocs"
 msgstr "AllCogDocs"
 
-#: autodocs.py:208
+#: autodocs\autodocs.py:217
 msgid "Here are the docs for all of your currently loaded cogs!"
 msgstr "Hier sind die Dokumente für alle Ihre derzeit geladenen Koggen!"
 
-#: autodocs.py:212
+#: autodocs\autodocs.py:221
 msgid "I could not find that cog, maybe it is not loaded?"
 msgstr "Ich konnte dieses Rädchen nicht finden, vielleicht ist es nicht geladen?"
 
-#: autodocs.py:236
+#: autodocs\autodocs.py:245
 msgid "Here are your docs for {}!"
 msgstr "Hier sind Ihre Dokumente für {}!"
 
-#: autodocs.py:309
+#: autodocs\autodocs.py:325
 #, docstring
 msgid "Registers a command with Assistant enabling it to access to command docs"
 msgstr ""
 
-#: converters.py:64
+#: autodocs\converters.py:64
 msgid "A single word, if not using slash and multiple words are necessary use a quote e.g \"Hello world\"."
 msgstr "Ein einzelnes Wort, wenn kein Schrägstrich verwendet wird und mehrere Wörter erforderlich sind, verwenden Sie ein Anführungszeichen, z. B. \"Hello world\"."
 
-#: converters.py:65
+#: autodocs\converters.py:65
 msgid "A number without decimal places."
 msgstr "Eine Zahl ohne Dezimalstellen."
 
-#: converters.py:66
+#: autodocs\converters.py:66
 msgid "A number with or without decimal places."
 msgstr "Eine Zahl mit oder ohne Dezimalstellen."
 
-#: converters.py:67
+#: autodocs\converters.py:67
 msgid "Can be 1, 0, true, false, t, f"
 msgstr "Kann 1, 0, wahr, falsch, t, f sein"
 
-#: formatter.py:40
+#: autodocs\formatter.py:44
 #, docstring
 msgid "Formats documentation for a single command"
 msgstr "Formatiert die Dokumentation für einen einzelnen Befehl"
 
-#: formatter.py:101
+#: autodocs\formatter.py:102
 msgid "per"
 msgstr "pro"
 
-#: formatter.py:102
+#: autodocs\formatter.py:103
 msgid "seconds"
 msgstr "sekunden"
 
-#: formatter.py:103
+#: autodocs\formatter.py:104
 msgid "second"
 msgstr "zweite"
 
-#: formatter.py:112
+#: autodocs\formatter.py:121
 msgid "Slash"
 msgstr "Schrägstrich"
 
-#: formatter.py:113
+#: autodocs\formatter.py:122
 msgid "Command"
 msgstr "Befehl"
 
-#: formatter.py:117
+#: autodocs\formatter.py:127
 msgid "Hybrid"
 msgstr "Hybride"
 
-#: formatter.py:125
+#: autodocs\formatter.py:139
 msgid "Usage"
 msgstr "Verwendung"
 
-#: formatter.py:126
+#: autodocs\formatter.py:140
 msgid "Checks"
 msgstr "Schecks"
 
-#: formatter.py:138
+#: autodocs\formatter.py:152
 msgid "Required"
 msgstr "Erforderlich"
 
-#: formatter.py:142
+#: autodocs\formatter.py:156
 msgid "Optional"
 msgstr "Optional"
 
-#: formatter.py:154
+#: autodocs\formatter.py:168
 msgid "Server Only"
 msgstr "Nur Server"
 
-#: formatter.py:188
+#: autodocs\formatter.py:202
 msgid "Restricted to"
 msgstr "Eingeschränkt auf"
 
-#: formatter.py:192
+#: autodocs\formatter.py:206
 msgid "Aliases"
 msgstr "Aliasnamen"
 
-#: formatter.py:195
+#: autodocs\formatter.py:209
 msgid "Cooldown"
 msgstr "Abklingzeit"
 
-#: formatter.py:216
+#: autodocs\formatter.py:225
 msgid "Could not get docstring or class for {} converter"
 msgstr "Konnte keinen Docstring oder keine Klasse für {} Konverter erhalten"
 
-#: formatter.py:220 formatter.py:280
+#: autodocs\formatter.py:229 autodocs\formatter.py:289
 msgid "Could not get docstring for {} converter"
 msgstr "Konnte keinen Docstring für {} Konverter erhalten"
 
-#: formatter.py:224
+#: autodocs\formatter.py:233
 msgid "Could not get class for {} converter"
 msgstr "Konnte keine Klasse für {} Konverter erhalten"
 
-#: formatter.py:233
+#: autodocs\formatter.py:242
 msgid "Autocomplete"
 msgstr "Autovervollständigen"
 
-#: formatter.py:237
+#: autodocs\formatter.py:246
 msgid "Default"
 msgstr "Standard"
 
-#: formatter.py:242
+#: autodocs\formatter.py:251
 msgid "Choices"
 msgstr "Auswahlmöglichkeiten"
 
-#: formatter.py:272
+#: autodocs\formatter.py:281
 msgid "Could not find {} for the {} argument of the {} command"
 msgstr "Konnte {} für das {}-Argument des {}-Befehls nicht finden"
 
-#: formatter.py:307
-msgid "Extended Arg Info\n"
-msgstr "Erweiterte Arg-Informationen\n"
+#: autodocs\formatter.py:316
+msgid "Extended Arg Info"
+msgstr ""
 

@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2024-07-29 21:29-0400\n"
-"PO-Revision-Date: 2024-12-03 14:56\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 03:00\n"
 "Last-Translator: \n"
 "Language-Team: Russian\n"
 "MIME-Version: 1.0\n"
@@ -17,7 +17,7 @@ msgstr ""
 "X-Crowdin-File-ID: 78\n"
 "Language: ru_RU\n"
 
-#: common\formatting.py:17
+#: cartographer\common\formatting.py:17
 msgid "## {}\n"
 "`Size:           `{}\n"
 "`Created:        `{}\n"
@@ -37,359 +37,640 @@ msgid "## {}\n"
 "`Forums:         `{}\n"
 msgstr ""
 
-#: common\formatting.py:60
+#: cartographer\common\formatting.py:60
 #, docstring
 msgid "Recursively finds the size of an object in memory"
 msgstr ""
 
-#: common\serializers.py:121 common\serializers.py:132
-#: common\serializers.py:164 common\serializers.py:204
-#: common\serializers.py:211 common\serializers.py:342
-#: common\serializers.py:356 common\serializers.py:706
-#: common\serializers.py:803 common\serializers.py:820
-#: common\serializers.py:928 common\serializers.py:937
+#: cartographer\common\models.py:21
+#, docstring
+msgid "Options for granular restore control."
+msgstr ""
+
+#: cartographer\common\models.py:40
+#, docstring
+msgid "Return a summary of what will be restored."
+msgstr ""
+
+#: cartographer\common\models.py:43
+msgid "✅ Server Settings"
+msgstr ""
+
+#: cartographer\common\models.py:45
+msgid "✅ Roles"
+msgstr ""
+
+#: cartographer\common\models.py:47
+msgid "✅ Emojis"
+msgstr ""
+
+#: cartographer\common\models.py:49
+msgid "✅ Stickers"
+msgstr ""
+
+#: cartographer\common\models.py:51
+msgid "✅ Categories"
+msgstr ""
+
+#: cartographer\common\models.py:53
+msgid "✅ Text Channels"
+msgstr ""
+
+#: cartographer\common\models.py:55
+msgid "✅ Voice Channels"
+msgstr ""
+
+#: cartographer\common\models.py:57
+msgid "✅ Forum Channels"
+msgstr ""
+
+#: cartographer\common\models.py:59
+msgid "✅ Bans"
+msgstr ""
+
+#: cartographer\common\models.py:62
+msgid "✅ Member Role Assignments"
+msgstr ""
+
+#: cartographer\common\models.py:64
+msgid "❌ Member Role Assignments"
+msgstr ""
+
+#: cartographer\common\models.py:67
+msgid "⚠️ Delete items not in backup"
+msgstr ""
+
+#: cartographer\common\models.py:69
+msgid "➕ Additive restore (keep existing items)"
+msgstr ""
+
+#: cartographer\common\models.py:72
+msgid "🆕 Only restore missing items (skip existing)"
+msgstr ""
+
+#: cartographer\common\serializers.py:127
+#: cartographer\common\serializers.py:141
+#: cartographer\common\serializers.py:173
+#: cartographer\common\serializers.py:213
+#: cartographer\common\serializers.py:220
+#: cartographer\common\serializers.py:365
+#: cartographer\common\serializers.py:379
+#: cartographer\common\serializers.py:753
+#: cartographer\common\serializers.py:863
+#: cartographer\common\serializers.py:882
+#: cartographer\common\serializers.py:956
+#: cartographer\common\serializers.py:963
+#: cartographer\common\serializers.py:1010
+#: cartographer\common\serializers.py:1019
 msgid "Restored from backup"
 msgstr ""
 
-#: common\serializers.py:207
+#: cartographer\common\serializers.py:216
 msgid "Failed to add the following roles to {}: {} - {}\n"
 msgstr ""
 
-#: common\serializers.py:214
+#: cartographer\common\serializers.py:223
 msgid "Failed to remove the following roles from {}: {} - {}\n"
 msgstr ""
 
-#: common\serializers.py:290
+#: cartographer\common\serializers.py:307
 msgid "Channel {} missing role or member overwrite: {} - {}\n"
 msgstr ""
 
-#: common\serializers.py:306
+#: cartographer\common\serializers.py:323
 #, docstring
 msgid "Just base attributes"
 msgstr ""
 
-#: common\serializers.py:513 common\serializers.py:830
-#: common\serializers.py:1110
+#: cartographer\common\serializers.py:550
+#: cartographer\common\serializers.py:893
+#: cartographer\common\serializers.py:1207
 msgid "Cartographer Restore"
 msgstr ""
 
-#: common\serializers.py:513 common\serializers.py:830
+#: cartographer\common\serializers.py:550
+#: cartographer\common\serializers.py:893
 msgid "Restoring messages from backup"
 msgstr ""
 
-#: common\serializers.py:1066
+#: cartographer\common\serializers.py:1151
 #, docstring
-msgid "Restore a guild backup to a target guild."
+msgid "Restore a guild backup to a target guild.\n\n"
+"        Args:\n"
+"            target_guild: The guild to restore to\n"
+"            ctx: The channel to send status updates to\n"
+"            options: Granular restore options. If None, restores everything with delete_unmatched=True (legacy behavior)\n"
+"        "
 msgstr ""
 
-#: common\serializers.py:1071
-msgid "Restoring backup"
-msgstr ""
-
-#: common\serializers.py:1075
+#: cartographer\common\serializers.py:1170
+#: cartographer\common\serializers.py:1241
 msgid "Restoring server settings"
 msgstr ""
 
-#: common\serializers.py:1076
-msgid "Step 1 of 9"
-msgstr ""
-
-#: common\serializers.py:1078
-msgid "Restoring emojis and stickers"
-msgstr ""
-
-#: common\serializers.py:1079
-msgid "Step 2 of 9"
-msgstr ""
-
-#: common\serializers.py:1081
+#: cartographer\common\serializers.py:1172
+#: cartographer\common\serializers.py:1274
 msgid "Restoring roles"
 msgstr ""
 
-#: common\serializers.py:1082
-msgid "Step 3 of 9"
+#: cartographer\common\serializers.py:1174
+#: cartographer\common\serializers.py:1315
+msgid "Restoring emojis and stickers"
 msgstr ""
 
-#: common\serializers.py:1084
+#: cartographer\common\serializers.py:1176
+#: cartographer\common\serializers.py:1382
 msgid "Restoring channels"
 msgstr ""
 
-#: common\serializers.py:1085
-msgid "Step 4 of 9"
-msgstr ""
-
-#: common\serializers.py:1087
+#: cartographer\common\serializers.py:1178
+#: cartographer\common\serializers.py:1441
 msgid "Restoring AFK settings"
 msgstr ""
 
-#: common\serializers.py:1088
-msgid "Step 5 of 9"
-msgstr ""
-
-#: common\serializers.py:1090
+#: cartographer\common\serializers.py:1179
+#: cartographer\common\serializers.py:1451
 msgid "Restoring system channels"
 msgstr ""
 
-#: common\serializers.py:1091
-msgid "Step 6 of 9"
+#: cartographer\common\serializers.py:1180
+#: cartographer\common\serializers.py:1480
+msgid "Restoring remainder of settings"
 msgstr ""
 
-#: common\serializers.py:1093
-msgid "Restoring remainder of the server settings"
-msgstr ""
-
-#: common\serializers.py:1094
-msgid "Step 7 of 9"
-msgstr ""
-
-#: common\serializers.py:1096
+#: cartographer\common\serializers.py:1182
+#: cartographer\common\serializers.py:1523
 msgid "Restoring member roles"
 msgstr ""
 
-#: common\serializers.py:1097
-msgid "Step 8 of 9"
-msgstr ""
-
-#: common\serializers.py:1099
+#: cartographer\common\serializers.py:1184
+#: cartographer\common\serializers.py:1529
 msgid "Restoring bans"
 msgstr ""
 
-#: common\serializers.py:1100
-msgid "Step 9 of 9"
-msgstr ""
-
-#: common\serializers.py:1102
+#: cartographer\common\serializers.py:1185
+#: cartographer\common\serializers.py:1199
+#: cartographer\common\serializers.py:1541
 msgid "Restoration complete!"
 msgstr ""
 
-#: common\serializers.py:1106
+#: cartographer\common\serializers.py:1192
+msgid "Restoring backup"
+msgstr ""
+
+#: cartographer\common\serializers.py:1197
+msgid "Step {} of {}"
+msgstr ""
+
+#: cartographer\common\serializers.py:1203
 msgid "Server restoration took {}"
 msgstr ""
 
-#: common\serializers.py:1129
+#: cartographer\common\serializers.py:1208
+msgid "Starting restoration..."
+msgstr ""
+
+#: cartographer\common\serializers.py:1226
 msgid "Banner too large to restore\n"
 msgstr ""
 
-#: common\serializers.py:1132
+#: cartographer\common\serializers.py:1229
 msgid "Icon too large to restore\n"
 msgstr ""
 
-#: common\serializers.py:1135
+#: cartographer\common\serializers.py:1232
 msgid "Splash too large to restore\n"
 msgstr ""
 
-#: common\serializers.py:1138
+#: cartographer\common\serializers.py:1235
 msgid "Discovery splash too large to restore\n"
 msgstr ""
 
-#: common\serializers.py:1197
+#: cartographer\common\serializers.py:1339
 msgid "Backup has more emojis than the target server can hold. Some emojis will not be restored.\n"
 msgstr ""
 
-#: common\serializers.py:1201
+#: cartographer\common\serializers.py:1343
 msgid "Emoji '{}' not restored due to limit\n"
 msgstr ""
 
-#: common\serializers.py:1225
+#: cartographer\common\serializers.py:1368
 msgid "Backup has more stickers than the target server can hold. Some stickers will not be restored.\n"
 msgstr ""
 
-#: common\serializers.py:1229
+#: cartographer\common\serializers.py:1372
 msgid "Sticker '{}' not restored due to limit\n"
 msgstr ""
 
-#: common\serializers.py:1309
+#: cartographer\common\serializers.py:1429
 msgid "This channel isn't part of the backup, it can be deleted after the restore is complete."
 msgstr ""
 
-#: common\views.py:43
+#: cartographer\common\serializers.py:1513
+msgid "\n"
+"--- Missing Permission Overwrites ---\n"
+msgstr ""
+
+#: cartographer\common\serializers.py:1516
+msgid "{} is missing from the server. Skipped overwrites for {} channels: {}\n"
+msgstr ""
+
+#: cartographer\common\views.py:33
+#, docstring
+msgid "Select menu for choosing what to restore and behavior options."
+msgstr ""
+
+#: cartographer\common\views.py:41
+msgid "Server Settings"
+msgstr ""
+
+#: cartographer\common\views.py:43
+msgid "Name, icon, banner, verification, etc."
+msgstr ""
+
+#: cartographer\common\views.py:47
+msgid "Roles ({})"
+msgstr ""
+
+#: cartographer\common\views.py:49
+msgid "Role definitions and permissions"
+msgstr ""
+
+#: cartographer\common\views.py:53
+msgid "Emojis ({})"
+msgstr ""
+
+#: cartographer\common\views.py:55
+msgid "Custom emojis"
+msgstr ""
+
+#: cartographer\common\views.py:59
+msgid "Stickers ({})"
+msgstr ""
+
+#: cartographer\common\views.py:61
+msgid "Custom stickers"
+msgstr ""
+
+#: cartographer\common\views.py:65
+msgid "Categories ({})"
+msgstr ""
+
+#: cartographer\common\views.py:67
+msgid "Category channels"
+msgstr ""
+
+#: cartographer\common\views.py:71
+msgid "Text Channels ({})"
+msgstr ""
+
+#: cartographer\common\views.py:73
+msgid "Text channels"
+msgstr ""
+
+#: cartographer\common\views.py:77
+msgid "Voice Channels ({})"
+msgstr ""
+
+#: cartographer\common\views.py:79
+msgid "Voice channels"
+msgstr ""
+
+#: cartographer\common\views.py:83
+msgid "Forum Channels ({})"
+msgstr ""
+
+#: cartographer\common\views.py:85
+msgid "Forum channels"
+msgstr ""
+
+#: cartographer\common\views.py:89
+msgid "Bans ({})"
+msgstr ""
+
+#: cartographer\common\views.py:91
+msgid "User bans"
+msgstr ""
+
+#: cartographer\common\views.py:95
+msgid "Restore Member Roles ({} members)"
+msgstr ""
+
+#: cartographer\common\views.py:97
+msgid "Assign saved roles to members"
+msgstr ""
+
+#: cartographer\common\views.py:101
+msgid "Delete Unmatched Items"
+msgstr ""
+
+#: cartographer\common\views.py:103
+msgid "⚠️ Remove items not in backup"
+msgstr ""
+
+#: cartographer\common\views.py:108
+msgid "Only Restore Missing"
+msgstr ""
+
+#: cartographer\common\views.py:110
+msgid "Skip existing items, only recreate deleted ones"
+msgstr ""
+
+#: cartographer\common\views.py:116
+msgid "Select what to restore..."
+msgstr ""
+
+#: cartographer\common\views.py:145
+#, docstring
+msgid "View for selecting granular restore options."
+msgstr ""
+
+#: cartographer\common\views.py:166
+msgid "Restore Options"
+msgstr ""
+
+#: cartographer\common\views.py:167
+msgid "Configure what you want to restore from the backup **{}**"
+msgstr ""
+
+#: cartographer\common\views.py:171
+msgid "Selected Options"
+msgstr ""
+
+#: cartographer\common\views.py:177
+msgid "⚠️ Warning"
+msgstr ""
+
+#: cartographer\common\views.py:178
+msgid "**Delete Unmatched Items** is enabled!\n"
+"This will remove roles, channels, emojis, and stickers that are not in the backup."
+msgstr ""
+
+#: cartographer\common\views.py:184
+msgid "Click Confirm to start the restore"
+msgstr ""
+
+#: cartographer\common\views.py:189 cartographer\common\views.py:299
+#: cartographer\common\views.py:461
+msgid "This isn't your menu!"
+msgstr ""
+
+#: cartographer\common\views.py:212
+msgid "Please select at least one thing to restore!"
+msgstr ""
+
+#: cartographer\common\views.py:221
+msgid "⚠️ **WARNING: Delete Unmatched Items is ENABLED!** ⚠️\n\n"
+"This will **permanently delete** any roles, channels, emojis, and stickers that are not in the backup.\n\n"
+"**This action cannot be undone!**\n\n"
+"Are you absolutely sure you want to continue?"
+msgstr ""
+
+#: cartographer\common\views.py:279 cartographer\common\views.py:312
+msgid "Restore cancelled."
+msgstr ""
+
+#: cartographer\common\views.py:290
+#, docstring
+msgid "Extra confirmation view for delete_unmatched option."
+msgstr ""
+
+#: cartographer\common\views.py:306
+msgid "Proceeding with restore..."
+msgstr ""
+
+#: cartographer\common\views.py:330
 msgid "That is not a number!"
 msgstr ""
 
-#: common\views.py:54
+#: cartographer\common\views.py:341
 msgid "Confirmation"
 msgstr ""
 
-#: common\views.py:57
+#: cartographer\common\views.py:344
 msgid "THIS CANNOT BE UNDONE!"
 msgstr ""
 
-#: common\views.py:59
+#: cartographer\common\views.py:346
 msgid "Are you SURE?"
 msgstr ""
 
-#: common\views.py:67
+#: cartographer\common\views.py:354
 msgid "How many messages to backup? (0 = None)"
 msgstr ""
 
-#: common\views.py:77
+#: cartographer\common\views.py:364
 msgid "response must be a string!"
 msgstr ""
 
-#: common\views.py:80
+#: cartographer\common\views.py:367
 msgid "Message backup limit must be a number!"
 msgstr ""
 
-#: common\views.py:101
+#: cartographer\common\views.py:391
 msgid "Close"
 msgstr ""
 
-#: common\views.py:104
+#: cartographer\common\views.py:394
 msgid "Cartographer Backups"
 msgstr ""
 
-#: common\views.py:105
+#: cartographer\common\views.py:395
 msgid "Controls"
 msgstr ""
 
-#: common\views.py:106
+#: cartographer\common\views.py:396
 msgid "- Backup Current Server: 📥\n"
 "- Restore Here: 🔄\n"
 "- Switch Servers: 🔍\n"
 "- Set AutoBackup Interval: ⌛\n"
 "- Delete Backup: 🗑️\n"
+"- Download Backup: 📤\n"
 "- Print Details: ℹ️\n"
 msgstr ""
 
-#: common\views.py:114
+#: cartographer\common\views.py:405
 msgid "Settings"
 msgstr ""
 
-#: common\views.py:115
+#: cartographer\common\views.py:406
 msgid "- Auto Backup Interval Hours: {}\n"
-"- Last Backup: {}"
+"- Last Backup: {}\n"
+"**Global Settings**\n"
+"-# The following settings are configured by the bot owner\n"
+"- Max Backups Per Guild: {}\n"
+"- Backup Message Limit: {}\n"
+"- Backup Members: {}\n"
+"- Backup Roles: {}\n"
+"- Backup Emojis: {}\n"
+"- Backup Stickers: {}\n"
 msgstr ""
 
-#: common\views.py:124
+#: cartographer\common\views.py:436
+msgid "\n"
+"-# Viewing backups from: **{}**"
+msgstr ""
+
+#: cartographer\common\views.py:441
 msgid "## {}\n"
 "`Size:    `{}\n"
 "`Created: `{}\n"
+"{}"
 msgstr ""
 
-#: common\views.py:132
+#: cartographer\common\views.py:450
 msgid "Page {}"
 msgstr ""
 
-#: common\views.py:134
-msgid "There are no backups for this server yet!"
+#: cartographer\common\views.py:452
+msgid "There are no backups for this server yet!{}"
 msgstr ""
 
-#: common\views.py:143
-msgid "This isn't your menu!"
-msgstr ""
-
-#: common\views.py:180 common\views.py:239
+#: cartographer\common\views.py:498 cartographer\common\views.py:557
 msgid "I need administrator permissions to restore a backup in this server!"
 msgstr ""
 
-#: common\views.py:190 common\views.py:253
+#: cartographer\common\views.py:508
 msgid "Restore has been cancelled!"
 msgstr ""
 
-#: common\views.py:194
+#: cartographer\common\views.py:512
 msgid "The maximum amount of messages that can be backed up per channel is {}!"
 msgstr ""
 
-#: common\views.py:203
+#: cartographer\common\views.py:521
 msgid "Warning! I need to have the highest role in the server to restore roles properly!"
 msgstr ""
 
-#: common\views.py:206
+#: cartographer\common\views.py:524
 msgid "Backing up {}!\n"
 "-# This may take a while..."
 msgstr ""
 
-#: common\views.py:208
+#: cartographer\common\views.py:526
 msgid "Backup in Progress"
 msgstr ""
 
-#: common\views.py:225
+#: cartographer\common\views.py:543
 msgid "An error occurred while backing up the server!\n"
 "{}"
 msgstr ""
 
-#: common\views.py:229
+#: cartographer\common\views.py:547
 msgid "Backup created in {}!"
 msgstr ""
 
-#: common\views.py:229
+#: cartographer\common\views.py:547
 msgid "0 seconds"
 msgstr ""
 
-#: common\views.py:230
+#: cartographer\common\views.py:548
 msgid "Backup Created"
 msgstr ""
 
-#: common\views.py:243
+#: cartographer\common\views.py:561
 msgid "No backups to restore!"
 msgstr ""
 
-#: common\views.py:262
-msgid "Your backup is being restored!"
+#: cartographer\common\views.py:568
+msgid "The server you're viewing backups for no longer exists!"
 msgstr ""
 
-#: common\views.py:268
+#: cartographer\common\views.py:571
+msgid "Only the owner of **{}** can restore its backups to another server!"
+msgstr ""
+
+#: cartographer\common\views.py:599
+msgid "Your backup is being restored with the selected options!"
+msgstr ""
+
+#: cartographer\common\views.py:605
 msgid "The following errors occurred while restoring the backup"
 msgstr ""
 
-#: common\views.py:273
+#: cartographer\common\views.py:610
 msgid "Switch Servers"
 msgstr ""
 
-#: common\views.py:273
+#: cartographer\common\views.py:610
 msgid "Server ID"
 msgstr ""
 
-#: common\views.py:273
+#: cartographer\common\views.py:610
 msgid "Enter the ID of the server"
 msgstr ""
 
-#: common\views.py:280
+#: cartographer\common\views.py:617
 msgid "I am not in that server!"
 msgstr ""
 
-#: common\views.py:284
+#: cartographer\common\views.py:621
 msgid "You do not appear to be in that server!"
 msgstr ""
 
-#: common\views.py:287
+#: cartographer\common\views.py:624
 msgid "You can only switch to servers that you are an administrator of!"
 msgstr ""
 
-#: common\views.py:296
+#: cartographer\common\views.py:636
 msgid "Auto backups have been disabled by the bot owner!"
 msgstr ""
 
-#: common\views.py:298
+#: cartographer\common\views.py:640
+msgid "You can only modify auto-backup settings for the server you're currently in!"
+msgstr ""
+
+#: cartographer\common\views.py:642
 msgid "Auto Backup Interval"
 msgstr ""
 
-#: common\views.py:298
+#: cartographer\common\views.py:642
 msgid "Interval Hours"
 msgstr ""
 
-#: common\views.py:298
+#: cartographer\common\views.py:642
 msgid "Hours in-between backups"
 msgstr ""
 
-#: common\views.py:304
+#: cartographer\common\views.py:648
 msgid "Auto-backup interval hours has been set to {}"
 msgstr ""
 
-#: common\views.py:316
+#: cartographer\common\views.py:661
 msgid "No backups to delete!"
 msgstr ""
 
-#: common\views.py:323
+#: cartographer\common\views.py:665
+msgid "You can only delete backups for the server you're currently in!"
+msgstr ""
+
+#: cartographer\common\views.py:676
 msgid "Backup deleted!"
 msgstr ""
 
-#: common\views.py:329
+#: cartographer\common\views.py:682
+#, docstring
+msgid "Download the backup file"
+msgstr ""
+
+#: cartographer\common\views.py:684
+msgid "No backups to download!"
+msgstr ""
+
+#: cartographer\common\views.py:688
+msgid "You can only download backups for the server you're currently in!"
+msgstr ""
+
+#: cartographer\common\views.py:693
+msgid "Here is your backup file:"
+msgstr ""
+
+#: cartographer\common\views.py:700
 #, docstring
 msgid "Load the backup and show details"
 msgstr ""
 
-#: common\views.py:331
+#: cartographer\common\views.py:702
 msgid "No backups to get info for!"
 msgstr ""
 

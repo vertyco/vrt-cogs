@@ -1,0 +1,191 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:56\n"
+"Last-Translator: \n"
+"Language-Team: Korean\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: ko\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/metrics/commands/locales/messages.pot\n"
+"X-Crowdin-File-ID: 694\n"
+"Language: ko_KR\n"
+
+#: metrics\commands\__init__.py:8
+#, docstring
+msgid "Subclass all command classes"
+msgstr ""
+
+#: metrics\commands\admin.py:32
+#, docstring
+msgid "Configure the Metrics cog."
+msgstr ""
+
+#: metrics\commands\admin.py:38
+#, docstring
+msgid "View the current settings for this server."
+msgstr ""
+
+#: metrics\commands\admin.py:59
+#, docstring
+msgid "Toggle tracking for a specific metric in this server."
+msgstr ""
+
+#: metrics\commands\admin.py:77
+#, docstring
+msgid "Set the timezone for this server."
+msgstr ""
+
+#: metrics\commands\admin.py:95
+#, docstring
+msgid "Autocomplete for timezone."
+msgstr ""
+
+#: metrics\commands\admin.py:106
+#, docstring
+msgid "View and manage global settings."
+msgstr ""
+
+#: metrics\commands\admin.py:111
+#, docstring
+msgid "View the current global settings."
+msgstr ""
+
+#: metrics\commands\admin.py:138
+#, docstring
+msgid "Set the interval in minutes between economy snapshots."
+msgstr ""
+
+#: metrics\commands\admin.py:147
+#, docstring
+msgid "Set the interval in minutes between member snapshots."
+msgstr ""
+
+#: metrics\commands\admin.py:156
+#, docstring
+msgid "Set the interval in minutes between performance snapshots."
+msgstr ""
+
+#: metrics\commands\admin.py:165
+#, docstring
+msgid "Set the maximum age in days to keep snapshots."
+msgstr ""
+
+#: metrics\commands\admin.py:173
+#, docstring
+msgid "Toggle tracking for a specific global metric."
+msgstr ""
+
+#: metrics\commands\admin.py:191
+#, docstring
+msgid "Prune statistical outliers from the database.\n\n"
+"        This detects and removes data points that are anomalous based on standard\n"
+"        deviation analysis. For example, if member count suddenly drops to 0 when\n"
+"        surrounding data points are ~1000, that's an outlier.\n\n"
+"        **Arguments:**\n"
+"        - `metric`: Which metric to analyze - \"members\", \"economy\", or \"performance\"\n"
+"        - `scope`: Which snapshots to prune - \"global\", \"guild\", or \"all\"\n"
+"        - `threshold`: Number of standard deviations from mean to consider outlier (default: 3.0)\n"
+"        - `dry_run`: If True (default), only show what would be deleted without deleting\n\n"
+"        **Examples:**\n"
+"        - `[p]setmetrics global prune members all 3.0 True` - Preview member outliers\n"
+"        - `[p]setmetrics global prune economy guild 2.5 False` - Delete guild economy outliers\n"
+"        "
+msgstr ""
+
+#: metrics\commands\admin.py:247
+#, docstring
+msgid "Prune guild member snapshots that have 0 total members.\n\n"
+"        These are typically caused by Discord API issues and are not valid data points.\n\n"
+"        **Arguments:**\n"
+"        - `dry_run`: If True (default), only show what would be deleted without deleting\n\n"
+"        **Examples:**\n"
+"        - `[p]setmetrics global prunezero True` - Preview zero-member snapshots\n"
+"        - `[p]setmetrics global prunezero False` - Delete zero-member snapshots\n"
+"        "
+msgstr ""
+
+#: metrics\commands\admin.py:310
+#, docstring
+msgid "Find outlier IDs from a list of (id, value) tuples.\n\n"
+"        Returns: (outlier_ids, mean, stdev, valid_count)\n"
+"        "
+msgstr ""
+
+#: metrics\commands\admin.py:342
+#, docstring
+msgid "Prune member count outliers."
+msgstr ""
+
+#: metrics\commands\admin.py:412
+#, docstring
+msgid "Prune economy/bank total outliers."
+msgstr ""
+
+#: metrics\commands\admin.py:481
+#, docstring
+msgid "Prune performance metric outliers (latency-based)."
+msgstr ""
+
+#: metrics\commands\admin.py:516
+#, docstring
+msgid "Import data from the EconomyTrack cog.\n\n"
+"        This imports legacy EconomyTrack data into the new GuildEconomySnapshot\n"
+"        and GlobalEconomySnapshot tables.\n\n"
+"        **Arguments:**\n"
+"        - `overwrite`: If True, delete all existing economy data before importing\n"
+"        "
+msgstr ""
+
+#: metrics\commands\database.py:18
+#, docstring
+msgid "Database Commands"
+msgstr ""
+
+#: metrics\commands\database.py:22
+#, docstring
+msgid "Set the Postgres connection info"
+msgstr ""
+
+#: metrics\commands\database.py:28
+#, docstring
+msgid "Delete the database for this cog and reinitialize it\n\n"
+"        THIS CANNOT BE UNDONE!"
+msgstr ""
+
+#: metrics\commands\database.py:68
+#, docstring
+msgid "Check the database connection"
+msgstr ""
+
+#: metrics\commands\user.py:29
+#, docstring
+msgid "View metrics about the bot and server."
+msgstr ""
+
+#: metrics\commands\user.py:34
+#, docstring
+msgid "Open the interactive metrics dashboard."
+msgstr ""
+
+#: metrics\commands\user.py:48
+#, docstring
+msgid "View bank-related metrics."
+msgstr ""
+
+#: metrics\commands\user.py:154
+#, docstring
+msgid "View member-related metrics."
+msgstr ""
+
+#: metrics\commands\user.py:265
+#, docstring
+msgid "View bot performance metrics."
+msgstr ""
+

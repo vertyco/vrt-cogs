@@ -1,0 +1,57 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 03:05\n"
+"Last-Translator: \n"
+"Language-Team: Croatian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: hr\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/botarena/constants/locales/messages.pot\n"
+"X-Crowdin-File-ID: 628\n"
+"Language: hr_HR\n"
+
+#: botarena\constants\agility.py:19
+#, docstring
+msgid "Get the short quirk name for an agility value (e.g. '⚡ Lightning Agility')"
+msgstr ""
+
+#: botarena\constants\agility.py:27
+#, docstring
+msgid "Get the quirk name and description for an agility value"
+msgstr ""
+
+#: botarena\constants\parts.py:590
+#, docstring
+msgid "Return the names of parts that new players can purchase from the start.\n\n"
+"    In original BA3, you start with one DLZ-100 chassis already equipped.\n"
+"    Early game you can buy: Zintek, Kedron, Raptor DT-01, Santrin, Chromitrex\n"
+"    "
+msgstr ""
+
+#: botarena\constants\parts.py:602
+#, docstring
+msgid "Check if a part is available from the start (doesn't need to be unlocked)"
+msgstr ""
+
+#: botarena\constants\parts.py:608
+#, docstring
+msgid "Build and return a fully populated PartsRegistry with all parts."
+msgstr ""
+
+#: botarena\constants\tips.py:42
+#, docstring
+msgid "Get a random gameplay tip."
+msgstr ""
+
+#: botarena\constants\tips.py:47
+#, docstring
+msgid "Get multiple random unique tips."
+msgstr ""
+

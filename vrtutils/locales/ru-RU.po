@@ -1,0 +1,41 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 03:02\n"
+"Last-Translator: \n"
+"Language-Team: Russian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=4; plural=((n%10==1 && n%100!=11) ? 0 : ((n%10 >= 2 && n%10 <=4 && (n%100 < 12 || n%100 > 14)) ? 1 : ((n%10 == 0 || (n%10 >= 5 && n%10 <=9)) || (n%100 >= 11 && n%100 <= 14)) ? 2 : 3));\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: ru\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/vrtutils/locales/messages.pot\n"
+"X-Crowdin-File-ID: 796\n"
+"Language: ru_RU\n"
+
+#: vrtutils\abc.py:9
+#, docstring
+msgid "Type detection"
+msgstr ""
+
+#: vrtutils\abc.py:13
+#, docstring
+msgid "Type hinting"
+msgstr ""
+
+#: vrtutils\vrtutils.py:14
+#, docstring
+msgid "\n"
+"    A collection of stateless utility commands for getting info about various things.\n"
+"    "
+msgstr ""
+
+#: vrtutils\vrtutils.py:26
+#, docstring
+msgid "No data to delete"
+msgstr ""
+

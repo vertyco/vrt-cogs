@@ -1,0 +1,109 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:56\n"
+"Last-Translator: \n"
+"Language-Team: Korean\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: ko\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/guildlog/locales/messages.pot\n"
+"X-Crowdin-File-ID: 684\n"
+"Language: ko_KR\n"
+
+#: guildlog\guildlog.py:12
+#, docstring
+msgid "\n"
+"    Log when the bot joins or leaves a guild\n"
+"    "
+msgstr ""
+
+#: guildlog\guildlog.py:24
+#, docstring
+msgid "No data to delete"
+msgstr ""
+
+#: guildlog\guildlog.py:137
+#, docstring
+msgid "Configure GuildLog Settings"
+msgstr ""
+
+#: guildlog\guildlog.py:143
+#, docstring
+msgid "View GuildLog Settings"
+msgstr ""
+
+#: guildlog\guildlog.py:167
+#, docstring
+msgid "Set a channel for the bot to log guilds it leaves/joins"
+msgstr ""
+
+#: guildlog\guildlog.py:177
+#, docstring
+msgid "(Toggle) Embeds for join/leave log"
+msgstr ""
+
+#: guildlog\guildlog.py:188
+#, docstring
+msgid "Configure join settings"
+msgstr ""
+
+#: guildlog\guildlog.py:193
+#, docstring
+msgid "\n"
+"        Set the guild join message\n\n"
+"        Valid placeholders are:\n"
+"        `{guild}` - the name of the guild the bot just joined\n"
+"        `{guildid}` - the id of the guild the bot just joined\n"
+"        `{servers}` - the amount of servers the bot is now in\n"
+"        `{botname}` - the name of the bot\n"
+"        `{bots}` - the amount of bots in the guild\n"
+"        `{members}` - the member count of the guild\n\n"
+"        To set back to default just to `default` as the message value\n"
+"        "
+msgstr ""
+
+#: guildlog\guildlog.py:212
+#, docstring
+msgid "\n"
+"        Set the color of the guild join embed\n\n"
+"        If embeds are on, this will be the join color.\n"
+"        Color value must be an integer\n"
+"        "
+msgstr ""
+
+#: guildlog\guildlog.py:228
+#, docstring
+msgid "Configure leave settings"
+msgstr ""
+
+#: guildlog\guildlog.py:233
+#, docstring
+msgid "\n"
+"        Set the guild leave message\n\n"
+"        Valid placeholders are:\n"
+"        `{guild}` - the name of the guild the bot just joined\n"
+"        `{guildid}` - the id of the guild the bot just joined\n"
+"        `{servers}` - the amount of servers the bot is now in\n"
+"        `{botname}` - the name of the bot\n"
+"        `{bots}` - the amount of bots that were in the guild\n"
+"        `{members}` - the member count of the guild\n\n"
+"        To set back to default just to `default` as the message value\n"
+"        "
+msgstr ""
+
+#: guildlog\guildlog.py:252
+#, docstring
+msgid "\n"
+"        Set the color of the guild leave embed\n\n"
+"        If embeds are on, this will be the leave color.\n"
+"        Color value must be an integer\n"
+"        "
+msgstr ""
+

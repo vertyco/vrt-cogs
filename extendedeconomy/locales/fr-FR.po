@@ -1,0 +1,46 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:49\n"
+"Last-Translator: \n"
+"Language-Team: French\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: fr\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/extendedeconomy/locales/messages.pot\n"
+"X-Crowdin-File-ID: 662\n"
+"Language: fr_FR\n"
+
+#: extendedeconomy\abc.py:13
+#, docstring
+msgid "Type detection"
+msgstr ""
+
+#: extendedeconomy\abc.py:17
+#, docstring
+msgid "Type hinting"
+msgstr ""
+
+#: extendedeconomy\main.py:31
+#, docstring
+msgid "\n"
+"    Set prices for commands, customize how prices are applied, log bank events and more!\n"
+"    "
+msgstr ""
+
+#: extendedeconomy\main.py:59
+#, docstring
+msgid "Nothing to delete"
+msgstr ""
+
+#: extendedeconomy\main.py:62
+#, docstring
+msgid "Nothing to get"
+msgstr ""
+

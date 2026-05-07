@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2024-06-22 17:56-0400\n"
-"PO-Revision-Date: 2024-12-03 14:56\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 03:02\n"
 "Last-Translator: \n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -17,49 +17,43 @@ msgstr ""
 "X-Crowdin-File-ID: 63\n"
 "Language: tr_TR\n"
 
-#: fluent\fluent.py:22 fluent\fluent.py:115
+#: fluent\fluent.py:26 fluent\fluent.py:204
 #, docstring
 msgid "Translate a message"
 msgstr "Bir mesajı çevirin"
 
-#: fluent\fluent.py:24
+#: fluent\fluent.py:28 fluent\fluent.py:34
 msgid "❌ No content to translate."
 msgstr ""
 
-#: fluent\fluent.py:31 fluent\fluent.py:141
+#: fluent\fluent.py:37 fluent\fluent.py:232
 msgid "❌ Translation failed."
 msgstr "❌ Çeviri başarısız oldu."
 
-#: fluent\fluent.py:34
+#: fluent\fluent.py:40
 msgid "❌ The detected language is the same as the target language."
 msgstr ""
 
-#: fluent\fluent.py:37
+#: fluent\fluent.py:43
 msgid "❌ Translated content matches the source."
 msgstr ""
 
-#: fluent\fluent.py:48
+#: fluent\fluent.py:54
 #, docstring
 msgid "\n"
 "    Seamless translation between two languages in one channel. Or manual translation to various languages.\n\n"
 "    Fluent uses google translate by default, with [Flowery](https://flowery.pw/) as a fallback.\n\n"
-"    Fluent also supports the [Deepl](https://www.deepl.com/pro#developer) tranlsation api.\n"
-"    1. Register your free Deepl account **[Here](https://www.deepl.com/pro#developer)**.\n"
-"    2. Obtain your API key **[Here](https://www.deepl.com/account/summary)**.\n"
-"    3. Set your API key with:\n"
-"    `[p]set api deepl key YOUR_KEY_HERE`\n\n"
-"    If a deepl key is set, it will use that before falling back to google translate and then flowery.\n"
+"    Fluent also supports Deeple and OpenAI for translations.\n"
+"    Use `[p]fluent openai` and `[p]fluent deepl` to set your keys.\n\n"
+"    Fallback order (If translation fails):\n"
+"    1. OpenAI\n"
+"    2. Deepl\n"
+"    3. Google Translate\n"
+"    4. Flowery\n"
 "    "
-msgstr "    Tek kanalda iki dil arasında sorunsuz çeviri. Veya çeşitli dillere manuel çeviri.\n\n"
-"    Fluent varsayılan olarak google translate'i kullanır ve [Flowery](https://flowery.pw/) bir yedektir.\n\n"
-"    Fluent ayrıca [Deepl](https://www.deepl.com/pro#developer) çeviri api'sini de destekler.\n"
-"    1. Ücretsiz Deepl hesabınızı **[Buradan](https://www.deepl.com/pro#developer)** kaydedin.\n"
-"    2. API anahtarınızı **[Buradan](https://www.deepl.com/account/summary)** edinin.\n"
-"    3. API anahtarınızı şu şekilde ayarlayın:\n"
-"    `[p]set api deepl key YOUR_KEY_HERE`\n\n"
-"    Bir deepl anahtarı ayarlanmışsa, google translate'e ve ardından flowery'ye geri dönmeden önce bunu kullanacaktır    "
+msgstr ""
 
-#: fluent\fluent.py:67
+#: fluent\fluent.py:74
 msgid "{}\n"
 "Cog Version: {}\n"
 "Author: {}"
@@ -67,112 +61,213 @@ msgstr "{}\n"
 "Cog Versiyonu: {}\n"
 "Yazar: {}"
 
-#: fluent\fluent.py:70
+#: fluent\fluent.py:77
 #, docstring
 msgid "No data to delete"
 msgstr "Silinecek veri yok"
 
-#: fluent\fluent.py:91
+#: fluent\fluent.py:176
 #, docstring
 msgid "Get the translation of a message\n\n"
 "        Args:\n"
 "            msg (str): the message to be translated\n"
 "            dest (str): the target language\n"
-"            force (bool, optional): If False, force res back to None if result is same as source text. Defaults to False.\n\n"
+"            force (bool, optional): If False, force res back to None if api.Result is same as source text. Defaults to False.\n\n"
 "        Returns:\n"
-"            t.Optional[Result]: Result object containing source/target lang and translated text\n"
+"            t.Optional[api.Result]: api.Result object containing source/target lang and translated text\n"
 "        "
 msgstr ""
 
-#: fluent\fluent.py:107
+#: fluent\fluent.py:196
 #, docstring
 msgid "Check the current server's locale"
 msgstr ""
 
-#: fluent\fluent.py:119
+#: fluent\fluent.py:210
 msgid "The target language `{}` was not found."
 msgstr "Hedef dil `{}` bulunamadı."
 
-#: fluent\fluent.py:128
+#: fluent\fluent.py:219
 msgid "Could not find any content to translate!"
 msgstr "Çevrilecek herhangi bir içerik bulunamadı!"
 
-#: fluent\fluent.py:134
+#: fluent\fluent.py:225
 msgid "An error occured while translating, Check logs for more info."
 msgstr "Çeviri sırasında bir hata oluştu, daha fazla bilgi için günlükleri kontrol edin."
 
-#: fluent\fluent.py:166
+#: fluent\fluent.py:257
 #, docstring
 msgid "Base command"
 msgstr "Temel komut"
 
-#: fluent\fluent.py:184
+#: fluent\fluent.py:269
+#, docstring
+msgid "Add a translation button to a message"
+msgstr ""
+
+#: fluent\fluent.py:273
+msgid "That message already has a translation button for that language."
+msgstr ""
+
+#: fluent\fluent.py:278 fluent\fluent.py:475
+msgid "Target language is invalid."
+msgstr ""
+
+#: fluent\fluent.py:291
+msgid "Button added successfully to {} for {}"
+msgstr ""
+
+#: fluent\fluent.py:295
+#, docstring
+msgid "Remove a translation button from a message"
+msgstr ""
+
+#: fluent\fluent.py:310
+msgid "Button removed successfully from {}"
+msgstr ""
+
+#: fluent\fluent.py:312
+msgid "No button found for that message."
+msgstr ""
+
+#: fluent\fluent.py:316
+#, docstring
+msgid "Reset the translations for saved buttons, to force a re-translation"
+msgstr ""
+
+#: fluent\fluent.py:322
+msgid "Translations reset for all buttons."
+msgstr ""
+
+#: fluent\fluent.py:326
+#, docstring
+msgid "View all translation buttons"
+msgstr ""
+
+#: fluent\fluent.py:329
+msgid "There are no translation buttons at this time."
+msgstr ""
+
+#: fluent\fluent.py:353
+#, docstring
+msgid "Set an openai key for translations"
+msgstr ""
+
+#: fluent\fluent.py:355
+msgid "1. Go to [OpenAI](https://platform.openai.com/signup) and sign up for an account.\n"
+"2. Go to the [API keys](https://platform.openai.com/account/api-keys) page.\n"
+"3. Click the `+ Create new secret key` button to create a new API key.\n"
+"4. Copy the API key click the button below to set it."
+msgstr ""
+
+#: fluent\fluent.py:372
+#, docstring
+msgid "Set a deepl key for translations"
+msgstr ""
+
+#: fluent\fluent.py:374
+msgid "1. Go to [Deepl](https://www.deepl.com/pro#developer) and sign up for an account.\n"
+"2. Go to the [API keys](https://www.deepl.com/en/your-account/keys) page.\n"
+"3. Copy the API key click the button below to set it."
+msgstr ""
+
+#: fluent\fluent.py:403
 #, docstring
 msgid "\n"
 "        Add a channel and languages to translate between\n\n"
 "        Tip: Language 1 is the first to be converted. For example, if you expect most of the conversation to be\n"
-"        in english, then make english language 2 to use less api calls.\n"
+"        in english, then make english language 2 to use less api calls.\n\n"
+"        You can also specify a category channel to translate all channels within it.\n"
 "        "
-msgstr "        Bir kanal ve çeviri yapmak için diller ekleyin\n\n"
-"        İpucu: Dil 1 ilk dönüştürülecek dildir. Örneğin, konuşmanın çoğunun İngilizce olmasını bekliyorsanız, İngilizce dilini 2. dil olarak ekleyin ve daha az API çağrısı yapın        "
+msgstr ""
 
-#: fluent\fluent.py:194
+#: fluent\fluent.py:415
 msgid "You can't use the same language for both parameters. {} to {} is still {}..."
 msgstr ""
 
-#: fluent\fluent.py:204
+#: fluent\fluent.py:425
 msgid "Both of those languages are invalid."
 msgstr "Her ikisi de geçersiz dillerdir."
 
-#: fluent\fluent.py:207
+#: fluent\fluent.py:428
 msgid "Language 1 is invalid."
 msgstr "Dil 1 geçersiz."
 
-#: fluent\fluent.py:210
+#: fluent\fluent.py:431
 msgid "Language 2 is invalid."
 msgstr "Dil 2 geçersizdir."
 
-#: fluent\fluent.py:216
+#: fluent\fluent.py:437 fluent\fluent.py:481
 msgid "❌ {} is already a fluent channel."
 msgstr "❌ {} zaten akıcı bir kanaldır."
 
-#: fluent\fluent.py:220
+#: fluent\fluent.py:441
 msgid "✅ Fluent channel has been set!"
 msgstr "✅ Akıcı kanal ayarlandı!"
 
-#: fluent\fluent.py:236
+#: fluent\fluent.py:459
 #, docstring
-msgid "Remove a channel from Fluent"
-msgstr "Fluent'ten bir kanalı kaldırın"
+msgid "\n"
+"        Add a channel that translates all messages to a single language\n\n"
+"        Unlike `[p]fluent add` which translates between two languages,\n"
+"        this translates all messages to the specified target language\n"
+"        regardless of the source language.\n\n"
+"        You can also specify a category channel to translate all channels within it.\n"
+"        "
+msgstr ""
 
-#: fluent\fluent.py:244
+#: fluent\fluent.py:485
+msgid "✅ Fluent channel has been set to translate all messages to {}!"
+msgstr ""
+
+#: fluent\fluent.py:502
+#, docstring
+msgid "Remove a channel or category from Fluent"
+msgstr ""
+
+#: fluent\fluent.py:510
 msgid "✅ Fluent channel has been deleted!"
 msgstr "✅ Fluent kanalı silindi!"
 
-#: fluent\fluent.py:246
+#: fluent\fluent.py:512
 msgid "❌ {} isn't a fluent channel!"
 msgstr "❌ {} akıcı bir kanal değil!"
 
-#: fluent\fluent.py:250
+#: fluent\fluent.py:516
 #, docstring
-msgid "View all fluent channels"
-msgstr "Tüm akıcı kanalları görüntüle"
+msgid "View all fluent channels and categories"
+msgstr ""
 
-#: fluent\fluent.py:262
+#: fluent\fluent.py:538
 msgid "There are no fluent channels at this time."
 msgstr "Şu anda akıcı kanallar bulunmamaktadır."
 
-#: fluent\fluent.py:263
+#: fluent\fluent.py:539
 msgid "**Fluent Settings**\n"
 "{}"
 msgstr "**Akıcı Ayarlar**\n"
 "{}"
 
-#: fluent\fluent.py:321
+#: fluent\fluent.py:544
+#, docstring
+msgid "Extract translatable content from a message.\n\n"
+"        Strips out non-translatable elements and returns the cleaned text,\n"
+"        or None if there's nothing worth translating.\n\n"
+"        Filters out:\n"
+"        - URLs/links\n"
+"        - Custom Discord emoji\n"
+"        - Discord mentions (@user, #channel, @role)\n"
+"        - Code blocks (```multiline``` and `inline`)\n"
+"        - Messages with no alphabetic characters\n"
+"        - Very short content (less than 2 letters)\n"
+"        "
+msgstr ""
+
+#: fluent\fluent.py:697
 msgid "Unable to finish translation, perhaps the API is down."
 msgstr "Çeviri tamamlanamıyor, belki de API çalışmıyor."
 
-#: fluent\fluent.py:363
+#: fluent\fluent.py:739
 msgid "Invalid target language"
 msgstr "Geçersiz hedef dil"
 

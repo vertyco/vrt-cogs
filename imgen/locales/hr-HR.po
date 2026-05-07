@@ -1,0 +1,211 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 03:05\n"
+"Last-Translator: \n"
+"Language-Team: Croatian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: hr\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/imgen/locales/messages.pot\n"
+"X-Crowdin-File-ID: 690\n"
+"Language: hr_HR\n"
+
+#: imgen\main.py:48
+#, docstring
+msgid "Edit an image from a message using AI."
+msgstr ""
+
+#: imgen\main.py:101
+#, docstring
+msgid "\n"
+"    Create and edit images with OpenAI's GPT-Image models.\n\n"
+"    Generate images from text prompts or edit existing images using AI.\n"
+"    Supports turn-based editing where you can iteratively refine images.\n"
+"    "
+msgstr ""
+
+#: imgen\main.py:127
+#, docstring
+msgid "Delete usage data for user."
+msgstr ""
+
+#: imgen\main.py:134
+#, docstring
+msgid "No meaningful user data stored."
+msgstr ""
+
+#: imgen\main.py:177
+#, docstring
+msgid "Get the OpenAI client with the guild's configured API key."
+msgstr ""
+
+#: imgen\main.py:323
+#, docstring
+msgid "Generate or edit an image using OpenAI's Images API.\n\n"
+"        Args:\n"
+"            reference_images: List of tuples (filename, bytes, content_type) for editing\n"
+"        "
+msgstr ""
+
+#: imgen\main.py:522
+#, docstring
+msgid "Check your current image generation quota usage."
+msgstr ""
+
+#: imgen\main.py:596
+#, docstring
+msgid "Generate an image from a text prompt."
+msgstr ""
+
+#: imgen\main.py:636
+#, docstring
+msgid "Edit an existing image with AI assistance."
+msgstr ""
+
+#: imgen\main.py:679
+#, docstring
+msgid "View current settings."
+msgstr ""
+
+#: imgen\main.py:769
+#, docstring
+msgid "Open the access management menu."
+msgstr ""
+
+#: imgen\main.py:775
+#, docstring
+msgid "Set the OpenAI API key for image generation."
+msgstr ""
+
+#: imgen\main.py:796
+#, docstring
+msgid "Remove the OpenAI API key."
+msgstr ""
+
+#: imgen\main.py:812
+#, docstring
+msgid "Set the channel for generation logs. Leave empty to disable."
+msgstr ""
+
+#: imgen\main.py:827
+#, docstring
+msgid "Clear all role restrictions, allowing open access."
+msgstr ""
+
+#: imgen\main.py:861
+#, docstring
+msgid "Set default generation settings for the server."
+msgstr ""
+
+#: imgen\main.py:889
+#, docstring
+msgid "View available tier presets and their configurations."
+msgstr ""
+
+#: imgen\main.py:965
+#, docstring
+msgid "Apply a subscription tier preset to a role."
+msgstr ""
+
+#: imgen\manual_tests.py:33
+#, docstring
+msgid "Test the Images API for direct image generation."
+msgstr ""
+
+#: imgen\manual_tests.py:69
+#, docstring
+msgid "Test the Images API for image editing (requires an input image)."
+msgstr ""
+
+#: imgen\manual_tests.py:127
+#, docstring
+msgid "Test the Responses API with image_generation tool."
+msgstr ""
+
+#: imgen\manual_tests.py:172
+#, docstring
+msgid "Test the Responses API turn-based editing with previous_response_id."
+msgstr ""
+
+#: imgen\manual_tests.py:218
+#, docstring
+msgid "Test the Responses API with reference images in input."
+msgstr ""
+
+#: imgen\manual_tests.py:294
+#, docstring
+msgid "Test different gpt-image models."
+msgstr ""
+
+#: imgen\manual_tests.py:325
+#, docstring
+msgid "Run all tests."
+msgstr ""
+
+#: imgen\views.py:30
+#, docstring
+msgid "Create model options with the specified default."
+msgstr ""
+
+#: imgen\views.py:42
+#, docstring
+msgid "Create size options with the specified default."
+msgstr ""
+
+#: imgen\views.py:54
+#, docstring
+msgid "Create quality options with the specified default."
+msgstr ""
+
+#: imgen\views.py:66
+#, docstring
+msgid "Create output format options with the specified default."
+msgstr ""
+
+#: imgen\views.py:73
+#, docstring
+msgid "Modal for editing an image with a new prompt and settings dropdowns."
+msgstr ""
+
+#: imgen\views.py:200
+#, docstring
+msgid "Dynamic button for editing an image by fetching the message attachment."
+msgstr ""
+
+#: imgen\views.py:289
+#, docstring
+msgid "Create an embed displaying the generated image with its settings."
+msgstr ""
+
+#: imgen\views.py:320
+#, docstring
+msgid "Modal for adding or updating role-based access."
+msgstr ""
+
+#: imgen\views.py:466
+#, docstring
+msgid "Modal for removing role-based access."
+msgstr ""
+
+#: imgen\views.py:619
+#, docstring
+msgid "Modal for setting the OpenAI API key."
+msgstr ""
+
+#: imgen\views.py:646
+#, docstring
+msgid "Button that opens the API key modal."
+msgstr ""
+
+#: imgen\views.py:662
+#, docstring
+msgid "View for setting the API key."
+msgstr ""
+

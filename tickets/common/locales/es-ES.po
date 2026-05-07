@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2024-02-08 18:31-0500\n"
-"PO-Revision-Date: 2024-12-03 14:57\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:51\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -17,19 +17,179 @@ msgstr ""
 "X-Crowdin-File-ID: 130\n"
 "Language: es_ES\n"
 
-#: common\menu.py:65 common\views.py:75
+#: tickets\common\menu.py:65 tickets\common\views.py:87
 msgid "You are not allowed to interact with this button."
 msgstr "No está permitido interactuar con este botón."
 
-#: common\utils.py:102
+#: tickets\common\utils.py:54
+#, docstring
+msgid "Remove embedded data URIs from HTML and add a banner notice.\n\n"
+"    This reduces transcript size when chat-exporter output becomes too large.\n"
+"    "
+msgstr ""
+
+#: tickets\common\utils.py:106
+#, docstring
+msgid "Fit transcript content within an upload limit.\n\n"
+"    Prefers keeping the existing format. For HTML, first strips embedded data URIs.\n"
+"    If still too large, falls back to a truncated plain text transcript.\n"
+"    "
+msgstr ""
+
+#: tickets\common\utils.py:135
+#, docstring
+msgid "Proxy wrapper for discord.Message that allows setting the 'interaction' property.\n\n"
+"    The chat-exporter library tries to set message.interaction = \"\" which fails in newer\n"
+"    discord.py versions where 'interaction' is a read-only property. This proxy intercepts\n"
+"    that assignment while delegating all other attribute access to the wrapped message.\n"
+"    "
+msgstr ""
+
+#: tickets\common\utils.py:170
+#, docstring
+msgid "Wrap messages in proxy objects that allow chat-exporter to set 'interaction'.\n\n"
+"    Args:\n"
+"        messages: List of discord.Message objects\n\n"
+"    Returns:\n"
+"        List of _MessageProxy objects wrapping the original messages\n"
+"    "
+msgstr ""
+
+#: tickets\common\utils.py:194
+#, docstring
+msgid "Check if the current time is within working hours for a panel.\n\n"
+"    Args:\n"
+"        panel: The panel configuration model\n\n"
+"    Returns:\n"
+"        Tuple of (is_within_hours, today_start_timestamp, today_end_timestamp)\n"
+"        - is_within_hours: True if within working hours or no hours set, False otherwise\n"
+"        - today_start_timestamp: Unix timestamp for today's start time or None\n"
+"        - today_end_timestamp: Unix timestamp for today's end time or None\n"
+"    "
+msgstr ""
+
+#: tickets\common\utils.py:249
+#, docstring
+msgid "Generate an embed for the outside working hours message.\n\n"
+"    Args:\n"
+"        panel: The panel configuration model\n"
+"        user: The user who opened the ticket\n\n"
+"    Returns:\n"
+"        Discord embed if there's a custom message, None otherwise\n"
+"    "
+msgstr ""
+
+#: tickets\common\utils.py:275
+msgid "You've created a ticket outside of our working hours, so please be aware that our "
+msgstr ""
+
+#: tickets\common\utils.py:276
+msgid "response time may be slightly delayed."
+msgstr ""
+
+#: tickets\common\utils.py:286
+msgid " Our working hours today are <t:{}:t> to <t:{}:t>."
+msgstr ""
+
+#: tickets\common\utils.py:293 tickets\common\views.py:366
+msgid "Outside Working Hours"
+msgstr ""
+
+#: tickets\common\utils.py:348
+#, docstring
+msgid "Get the owner ID of a ticket channel.\n\n"
+"    Args:\n"
+"        opened: Dict mapping user IDs to their open tickets\n"
+"        channel_id: The channel ID to look up\n\n"
+"    Returns:\n"
+"        The user ID of the ticket owner, or None if not found\n"
+"    "
+msgstr ""
+
+#: tickets\common\utils.py:364
+#, docstring
+msgid "Calculate the average response time from a list of response times.\n\n"
+"    Args:\n"
+"        response_times: List of response times in seconds\n\n"
+"    Returns:\n"
+"        Average response time in seconds, or None if no data\n"
+"    "
+msgstr ""
+
+#: tickets\common\utils.py:378
+#, docstring
+msgid "Format response time in a human-readable way.\n\n"
+"    Args:\n"
+"        seconds: Response time in seconds\n\n"
+"    Returns:\n"
+"        Human-readable string (e.g., \"5 minutes\", \"2 hours\", \"1 day\")\n"
+"    "
+msgstr ""
+
+#: tickets\common\utils.py:387
+msgid "less than a minute"
+msgstr ""
+
+#: tickets\common\utils.py:392
+msgid "{} minute"
+msgstr ""
+
+#: tickets\common\utils.py:392
+msgid "{} minutes"
+msgstr ""
+
+#: tickets\common\utils.py:397
+msgid "{} hour"
+msgstr ""
+
+#: tickets\common\utils.py:397
+msgid "{} hours"
+msgstr ""
+
+#: tickets\common\utils.py:401
+msgid "{} day"
+msgstr ""
+
+#: tickets\common\utils.py:401
+msgid "{} days"
+msgstr ""
+
+#: tickets\common\utils.py:411
+#, docstring
+msgid "Record staff first response time for a ticket.\n\n"
+"    Args:\n"
+"        cog: The Tickets cog instance\n"
+"        guild: Discord guild\n"
+"        channel_id: Channel ID of ticket\n"
+"        ticket: OpenedTicket model\n"
+"        staff_id: User ID of staff member who responded\n"
+"    "
+msgstr ""
+
+#: tickets\common\utils.py:440
+#, docstring
+msgid "Close a ticket.\n\n"
+"    Args:\n"
+"        bot: The Red bot instance\n"
+"        member: The member who owns the ticket\n"
+"        guild: The guild the ticket is in\n"
+"        channel: The ticket channel\n"
+"        conf: Guild settings model\n"
+"        reason: Reason for closing\n"
+"        closedby: User ID of who closed the ticket\n"
+"        cog: The Tickets cog instance\n"
+"    "
+msgstr ""
+
+#: tickets\common\utils.py:468
 msgid "I am missing the `Manage Channels` permission to close this ticket!"
 msgstr "¡Me falta el permiso `Manage Channels` para cerrar este ticket!"
 
-#: common\utils.py:104
+#: tickets\common\utils.py:471
 msgid "I am missing the `Manage Threads` permission to close this ticket!"
 msgstr "¡Me falta el permiso `Manage Threads` para cerrar este ticket!"
 
-#: common\utils.py:110
+#: tickets\common\utils.py:481
 msgid "Ticket created by **{}-{}** has been closed.\n"
 "`PanelType: `{}\n"
 "`Opened on: `<t:{}:F>\n"
@@ -43,11 +203,11 @@ msgstr "El ticket creado por **{}-{}** ha sido cerrado.\n"
 "`Cerrado por: `{}\n"
 "`Motivo:    `{}\n"
 
-#: common\utils.py:127
+#: tickets\common\utils.py:498
 msgid "`Thread:    `{}\n"
 msgstr "`Hilo:    `{}\n"
 
-#: common\utils.py:129
+#: tickets\common\utils.py:500
 msgid "Ticket Closed\n"
 "{}\n"
 "Currently missing permissions to send embeds to this channel!"
@@ -55,173 +215,246 @@ msgstr "¡Ticket Cerrado!\n"
 "{}\n"
 "¡Actualmente faltan permisos para enviar incrustaciones a este canal!"
 
-#: common\utils.py:130
+#: tickets\common\utils.py:501
 msgid "Ticket Closed"
 msgstr "Billete cerrado"
 
-#: common\utils.py:148
+#: tickets\common\utils.py:518
 msgid "Archiving Ticket..."
 msgstr "Archivando Ticket..."
 
-#: common\utils.py:176
+#: tickets\common\utils.py:562 tickets\common\utils.py:564
 msgid "Question: {}\n"
 "Response: {}\n"
 msgstr "Pregunta: {}\n"
 "Respuesta: {}\n"
 
-#: common\utils.py:195
-msgid "Files uploaded: "
-msgstr "Archivos cargados: "
+#: tickets\common\utils.py:591 tickets\common\utils.py:595
+msgid "Files Uploaded:\n"
+msgstr ""
 
-#: common\utils.py:233
-msgid "View Transcript"
-msgstr "Ver Transcripción"
+#: tickets\common\utils.py:776
+#, docstring
+msgid "Prune tickets for channels that no longer exist.\n\n"
+"    This function records closing analytics for pruned tickets to maintain\n"
+"    accurate statistics when tickets are cleaned up due to:\n"
+"    - Member leaving while bot was down\n"
+"    - Channel being deleted externally\n\n"
+"    Args:\n"
+"        guild: The Discord guild\n"
+"        conf: Guild settings model\n"
+"        ctx: Optional command context for sending messages\n\n"
+"    Returns:\n"
+"        True if any tickets were pruned, False otherwise\n"
+"    "
+msgstr ""
 
-#: common\utils.py:358
+#: tickets\common\utils.py:794
 msgid "There are no tickets stored in the database."
 msgstr "No hay entradas almacenadas en la base de datos."
 
-#: common\utils.py:410
+#: tickets\common\utils.py:862
 msgid "ticket"
 msgstr "billete"
 
-#: common\utils.py:410
+#: tickets\common\utils.py:862
 msgid "tickets"
 msgstr "entradas"
 
-#: common\utils.py:412
+#: tickets\common\utils.py:864
 msgid "Pruned `{}` invalid {}"
 msgstr "Podado `{}` inválido {}"
 
-#: common\utils.py:415
+#: tickets\common\utils.py:867
 msgid "There are no tickets to prune"
 msgstr "No hay entradas para podar"
 
-#: common\utils.py:445
+#: tickets\common\utils.py:877
+#, docstring
+msgid "Prepare the text for the ticket overview panel."
+msgstr ""
+
+#: tickets\common\utils.py:900
 msgid "There are no active tickets."
 msgstr "No hay entradas activas."
 
-#: common\utils.py:457
+#: tickets\common\utils.py:912
 #, docstring
 msgid "Update active ticket overview\n\n"
 "    Args:\n"
-"        guild (discord.Guild): discord server\n"
-"        conf (dict): settings for the guild\n\n"
+"        guild: discord server\n"
+"        conf: settings for the guild\n\n"
 "    Returns:\n"
-"        int: Message ID of the overview panel\n"
+"        Message ID of the overview panel if created/updated\n"
 "    "
-msgstr "Actualizar resumen de tickets activos\n\n"
-"    Argumentos:\n"
-"        guild (discord.Guild): servidor de Discord\n"
-"        conf (dict): configuración para el servidor\n\n"
-"    Devuelve:\n"
-"        int: ID del mensaje del panel de resumen    "
+msgstr ""
 
-#: common\utils.py:473
+#: tickets\common\utils.py:930
 msgid "Ticket Overview"
 msgstr "Resumen de tickets"
 
-#: common\utils.py:496
+#: tickets\common\utils.py:953
 msgid "Too many active tickets to include in message!"
 msgstr "¡Demasiados tickets activos para incluir en el mensaje!"
 
-#: common\utils.py:501
+#: tickets\common\utils.py:958
 msgid "Active Tickets"
 msgstr "Tickets Activos"
 
-#: common\views.py:37
+#: tickets\common\utils.py:980
+msgid "Failed to send overview message due to missing permissions"
+msgstr ""
+
+#: tickets\common\views.py:49
 msgid "cancel"
 msgstr "cancelar"
 
-#: common\views.py:129
+#: tickets\common\views.py:113
+#, docstring
+msgid "Show a confirmation dialog with Yes/No buttons.\n\n"
+"    Args:\n"
+"        ctx: The command context\n"
+"        message: Either a string to send as a new message, or an existing Message to edit\n\n"
+"    Returns:\n"
+"        True if confirmed, False if denied, None if timed out\n"
+"    "
+msgstr ""
+
+#: tickets\common\views.py:159
 msgid "Closing your ticket"
 msgstr "Cerrar su ticket"
 
-#: common\views.py:131
+#: tickets\common\views.py:161
 msgid "Reason for closing"
 msgstr "Motivo del cierre"
 
-#: common\views.py:171
+#: tickets\common\views.py:206
+msgid "This ticket has already been closed! Please delete it manually."
+msgstr ""
+
+#: tickets\common\views.py:222
 msgid "You do not have permissions to close this ticket"
 msgstr "No tienes permisos para cerrar este ticket"
 
-#: common\views.py:183 common\views.py:185
+#: tickets\common\views.py:234
+msgid "Something went wrong, please try again."
+msgstr ""
+
+#: tickets\common\views.py:247 tickets\common\views.py:249
 msgid "Closing..."
 msgstr "Cerrando..."
 
-#: common\views.py:256
+#: tickets\common\views.py:331
+msgid "Ticket System Suspended"
+msgstr ""
+
+#: tickets\common\views.py:340
 msgid "You been blacklisted from creating tickets!"
 msgstr "¡Se te ha prohibido crear entradas!"
 
-#: common\views.py:262
+#: tickets\common\views.py:346
 msgid "You have a role that has been blacklisted from creating tickets!"
 msgstr "¡Tienes un rol que ha sido incluido en la lista negra para crear tickets!"
 
-#: common\views.py:272
+#: tickets\common\views.py:356
 msgid "You must have one of the following roles to open this ticket: "
 msgstr "Usted debe tener uno de los siguientes roles para abrir este ticket: "
 
-#: common\views.py:284
+#: tickets\common\views.py:367
+msgid "Tickets cannot be opened outside of working hours. Please try again later."
+msgstr ""
+
+#: tickets\common\views.py:372
+msgid "Working Hours"
+msgstr ""
+
+#: tickets\common\views.py:388
 msgid "You have the maximum amount of tickets opened already!{}"
 msgstr "¡Ya tienes la cantidad máxima de tickets abiertos!{}"
 
-#: common\views.py:292
+#: tickets\common\views.py:396
 msgid "The category for this support panel cannot be found!\n"
 "please contact an admin!"
 msgstr "¡No se puede encontrar la categoría para este panel de soporte!\n"
 "¡Por favor, contacta a un administrador!"
 
-#: common\views.py:307
+#: tickets\common\views.py:402
+msgid "The category for this support panel is not a category channel!\n"
+"please contact an admin!"
+msgstr ""
+
+#: tickets\common\views.py:419
 msgid "Submission Info"
 msgstr "Información de envío"
 
-#: common\views.py:325
+#: tickets\common\views.py:440
 msgid "Unanswered"
 msgstr "Sin respuesta"
 
-#: common\views.py:330
+#: tickets\common\views.py:445
 msgid "Your response cannot contain the word 'Discord' in discoverable servers."
 msgstr "Tu respuesta no puede contener la palabra 'Discord' en los servidores descubiertos."
 
-#: common\views.py:347
+#: tickets\common\views.py:462
 msgid "Your ticket is being created, one moment..."
 msgstr "Su billete se está creando, un momento..."
 
-#: common\views.py:425
+#: tickets\common\views.py:547
 msgid "{} ticket for {}"
 msgstr "{} billete para {}"
 
-#: common\views.py:449
+#: tickets\common\views.py:557
+msgid "I don't have permissions to create threads!"
+msgstr ""
+
+#: tickets\common\views.py:568 tickets\common\views.py:607
+msgid "I was not able to name the ticket properly due to Discord's filter!\n"
+"Intended name: {}"
+msgstr ""
+
+#: tickets\common\views.py:591
+msgid "I don't have permissions to create channels!"
+msgstr ""
+
+#: tickets\common\views.py:598
+msgid "I don't have permissions to create channels under this category!"
+msgstr ""
+
+#: tickets\common\views.py:614
 msgid "I am missing the required permissions to create a ticket for you. Please contact an admin so they may fix my permissions."
 msgstr "Me faltan los permisos necesarios para crear un ticket para ti. Por favor, contacta a un administrador para que pueda solucionar mis permisos."
 
-#: common\views.py:458
+#: tickets\common\views.py:623
 msgid "There was an error while preparing your ticket, please contact an admin!\n"
 "{}"
 msgstr "Se ha producido un error al preparar su ticket, por favor póngase en contacto con un administrador. {}"
 
-#: common\views.py:467
+#: tickets\common\views.py:635
 msgid "Welcome to your ticket channel "
 msgstr "Bienvenido a su canal de entradas "
 
-#: common\views.py:469
+#: tickets\common\views.py:637
 msgid "\n"
 "You or an admin can close this with the `{}close` command"
 msgstr "Usted o un administrador pueden cerrar esto con el comando `{}close`"
 
-#: common\views.py:529
+#: tickets\common\views.py:711
 msgid "Ticket form questions"
 msgstr "Preguntas del formulario de tickets"
 
-#: common\views.py:531
+#: tickets\common\views.py:713
 msgid "I tried to pin the response message but don't have the manage messages permissions!"
 msgstr "¡He intentado fijar el mensaje de respuesta, pero no tengo los permisos para gestionar mensajes!"
 
-#: common\views.py:534
+#: tickets\common\views.py:729
+msgid "⏱️ Our average staff response time is **{}**."
+msgstr ""
+
+#: tickets\common\views.py:735
 msgid "Your ticket has been created! {}"
 msgstr "Su billete se está creando, un momento! {}"
 
-#: common\views.py:552
+#: tickets\common\views.py:762
 msgid "`Created By: `{user}\n"
 "`User ID:    `{userid}\n"
 "`Opened:     `{timestamp}\n"
@@ -235,27 +468,31 @@ msgstr "`Creado por: `{user}\n"
 "`Nombre del panel: `{panelname}\n"
 "**[Haz clic para saltar!]({jumpurl})**"
 
-#: common\views.py:561
+#: tickets\common\views.py:771
 msgid "Ticket Opened"
 msgstr "Ticket abierto"
 
-#: common\views.py:638
+#: tickets\common\views.py:825
+msgid "There was an error saving your ticket. The channel has been cleaned up. Please try again."
+msgstr ""
+
+#: tickets\common\views.py:894
+msgid "This ticket has been escalated to admins only. You do not have permission to join."
+msgstr ""
+
+#: tickets\common\views.py:902
 msgid "You have already been added to the ticket **{}**!"
 msgstr "¡Ya has sido añadido al ticket **{}**!"
 
-#: common\views.py:644
+#: tickets\common\views.py:908
 msgid "The maximum amount of staff have claimed this ticket!"
 msgstr "El máximo número de empleados ha reclamado esta entrada"
 
-#: common\views.py:655
-msgid "You already have access to the ticket **{}**!"
-msgstr "¡Ya tienes acceso a la entrada **{}**!"
-
-#: common\views.py:660
+#: tickets\common\views.py:919
 msgid "{} was added to the ticket"
 msgstr "{} se ha añadido al ticket"
 
-#: common\views.py:665
+#: tickets\common\views.py:935
 msgid "You have been added to the ticket **{}**"
 msgstr "Ha sido añadido al ticket **{}**"
 

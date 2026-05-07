@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2024-01-04 12:10-0500\n"
-"PO-Revision-Date: 2024-12-03 14:57\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:51\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -17,7 +17,7 @@ msgstr ""
 "X-Crowdin-File-ID: 108\n"
 "Language: es_ES\n"
 
-#: commands\admin.py:23
+#: bankdecay\commands\admin.py:26
 #, docstring
 msgid "\n"
 "        Setup economy credit decay for your server\n"
@@ -26,16 +26,16 @@ msgstr "\n"
 "        Configura la caída de créditos de la economía para tu servidor\n"
 "        "
 
-#: commands\admin.py:31
+#: bankdecay\commands\admin.py:34
 #, docstring
 msgid "View Bank Decay Settings"
 msgstr "Ver Configuraciones de Caída del Banco"
 
-#: commands\admin.py:48
+#: bankdecay\commands\admin.py:51
 msgid "Not Set"
 msgstr "No fijado"
 
-#: commands\admin.py:53
+#: bankdecay\commands\admin.py:56
 msgid "`Decay Enabled: `{}\n"
 "`Inactive Days: `{}\n"
 "`Percent Decay: `{}\n"
@@ -55,19 +55,19 @@ msgstr "`Decadencia Activada: `{}\n"
 "`Total Decadente: `{}\n"
 "`Canal de Registro:   `{}\n"
 
-#: commands\admin.py:75
+#: bankdecay\commands\admin.py:78
 msgid "`Next Runtime:  `{}\n"
 msgstr "`Próxima Ejecución:  `{}\n"
 
-#: commands\admin.py:78
+#: bankdecay\commands\admin.py:81
 msgid "**Ignored Roles**\n"
 msgstr "**Funciones ignoradas**\n"
 
-#: commands\admin.py:80
+#: bankdecay\commands\admin.py:83
 msgid "BankDecay Settings"
 msgstr "Configuraciones de Decadencia del Banco"
 
-#: commands\admin.py:88
+#: bankdecay\commands\admin.py:91
 #, docstring
 msgid "\n"
 "        Toggle the bank decay feature on or off.\n"
@@ -76,25 +76,26 @@ msgstr "\n"
 "        Activa o desactiva la función de caída del banco.\n"
 "        "
 
-#: commands\admin.py:92 commands\admin.py:144 commands\admin.py:186
-#: commands\admin.py:213 commands\admin.py:249 commands\admin.py:318
-#: commands\admin.py:350
+#: bankdecay\commands\admin.py:95 bankdecay\commands\admin.py:144
+#: bankdecay\commands\admin.py:186 bankdecay\commands\admin.py:214
+#: bankdecay\commands\admin.py:265 bankdecay\commands\admin.py:334
+#: bankdecay\commands\admin.py:366
 msgid "This command is not available when using global bank."
 msgstr "Este comando no está disponible cuando se usa el banco global."
 
-#: commands\admin.py:96
+#: bankdecay\commands\admin.py:99
 msgid "Bank decay has been {}."
 msgstr "La caída del banco ha sido {}."
 
-#: commands\admin.py:96
+#: bankdecay\commands\admin.py:99
 msgid "enabled"
 msgstr "activada"
 
-#: commands\admin.py:96
+#: bankdecay\commands\admin.py:99
 msgid "disabled"
 msgstr "desactivada"
 
-#: commands\admin.py:101
+#: bankdecay\commands\admin.py:104
 #, docstring
 msgid "\n"
 "        Set the number of inactive days before decay starts.\n"
@@ -103,15 +104,11 @@ msgstr "\n"
 "        Establece el número de días inactivos antes de que comience la decadencia.\n"
 "        "
 
-#: commands\admin.py:105
-msgid "Inactive days cannot be negative."
-msgstr "Los días inactivos no pueden ser negativos."
-
-#: commands\admin.py:109
+#: bankdecay\commands\admin.py:109
 msgid "Inactive days set to {}."
 msgstr "Días inactivos establecidos en {}."
 
-#: commands\admin.py:114
+#: bankdecay\commands\admin.py:114
 #, docstring
 msgid "\n"
 "        Set the percentage of decay that occurs after the inactive period.\n\n"
@@ -124,15 +121,15 @@ msgstr "\n"
 "        Si la decadencia es del 5%, después de los días establecidos de inactividad perderán el 5% de su saldo cada día.\n"
 "        "
 
-#: commands\admin.py:121
+#: bankdecay\commands\admin.py:121
 msgid "Percent decay must be between 0 and 1."
 msgstr "El porcentaje de decadencia debe estar entre 0 y 1."
 
-#: commands\admin.py:125
+#: bankdecay\commands\admin.py:125
 msgid "Percent decay set to {}%."
 msgstr "Porcentaje de decadencia establecido en {}%."
 
-#: commands\admin.py:130
+#: bankdecay\commands\admin.py:130
 #, docstring
 msgid "\n"
 "        Reset the total amount decayed to zero.\n"
@@ -141,11 +138,11 @@ msgstr "\n"
 "        Restablece la cantidad total decadente a cero.\n"
 "        "
 
-#: commands\admin.py:135
+#: bankdecay\commands\admin.py:135
 msgid "Total decayed amount has been reset to 0."
 msgstr "La cantidad total decadente ha sido restablecida a 0."
 
-#: commands\admin.py:140
+#: bankdecay\commands\admin.py:140
 #, docstring
 msgid "\n"
 "        Run a decay cycle on this server right now\n"
@@ -154,35 +151,35 @@ msgstr "\n"
 "        Ejecuta un ciclo de decadencia en este servidor ahora mismo\n"
 "        "
 
-#: commands\admin.py:148
+#: bankdecay\commands\admin.py:148
 msgid "The decay system is currently disabled!"
 msgstr "¡El sistema de decadencia está actualmente desactivado!"
 
-#: commands\admin.py:155
+#: bankdecay\commands\admin.py:155
 msgid "There were no users affected by the decay cycle"
 msgstr "No hubo usuarios afectados por el ciclo de decadencia"
 
-#: commands\admin.py:157 commands\admin.py:194
+#: bankdecay\commands\admin.py:157 bankdecay\commands\admin.py:194
 msgid "account"
 msgstr "cuenta"
 
-#: commands\admin.py:157 commands\admin.py:194
+#: bankdecay\commands\admin.py:157 bankdecay\commands\admin.py:194
 msgid "accounts"
 msgstr "cuentas"
 
-#: commands\admin.py:158
+#: bankdecay\commands\admin.py:158
 msgid "Are you sure you want to decay {} for a total of {}?"
 msgstr "¿Estás seguro de que quieres decaer {} por un total de {}?"
 
-#: commands\admin.py:166
+#: bankdecay\commands\admin.py:166
 msgid "Decay cycle cancelled"
 msgstr "Ciclo de decadencia cancelado"
 
-#: commands\admin.py:168 commands\admin.py:171
+#: bankdecay\commands\admin.py:168 bankdecay\commands\admin.py:171
 msgid "Decaying user accounts, one moment..."
 msgstr "Decayendo cuentas de usuarios, un momento..."
 
-#: commands\admin.py:176
+#: bankdecay\commands\admin.py:176
 msgid "User accounts have been decayed!\n"
 "- Users Affected: {}\n"
 "- Total {} Decayed: {}"
@@ -190,49 +187,47 @@ msgstr "¡Las cuentas de usuario han decaído!\n"
 "- Usuarios Afectados: {}\n"
 "- Total {} Decadido: {}"
 
-#: commands\admin.py:184
+#: bankdecay\commands\admin.py:184
 #, docstring
 msgid "Get a list of users who are currently expired and how much they will lose if decayed"
 msgstr "Obtener una lista de usuarios que están actualmente expirados y cuánto perderán si se descomponen"
 
-#: commands\admin.py:191
+#: bankdecay\commands\admin.py:191
 msgid "There were no users that would be affected by the decay cycle"
 msgstr "No hubo usuarios que se verían afectados por el ciclo de descomposición"
 
-#: commands\admin.py:195
+#: bankdecay\commands\admin.py:195
 msgid "This would decay {} for a total of {}"
 msgstr "Esto descompondría {} por un total de {}"
 
-#: commands\admin.py:209
+#: bankdecay\commands\admin.py:210
 #, docstring
 msgid "\n"
-"        Remove users from the config that are no longer in the server or have no balance\n"
+"        Remove users from the config that have no balance\n"
 "        "
-msgstr "\n"
-"        Eliminar usuarios de la configuración que ya no están en el servidor o no tienen saldo\n"
-"        "
+msgstr ""
 
-#: commands\admin.py:217
+#: bankdecay\commands\admin.py:218
 msgid "Not removing users from the config"
 msgstr "No se están eliminando usuarios de la configuración"
 
-#: commands\admin.py:232
+#: bankdecay\commands\admin.py:248
 msgid "No users were removed from the config."
 msgstr "No se eliminaron usuarios de la configuración."
 
-#: commands\admin.py:235
+#: bankdecay\commands\admin.py:251
 msgid "user"
 msgstr "usuario"
 
-#: commands\admin.py:235
+#: bankdecay\commands\admin.py:251
 msgid "users"
 msgstr "usuarios"
 
-#: commands\admin.py:236
+#: bankdecay\commands\admin.py:252
 msgid "Removed {} from the config."
 msgstr "Eliminado {} de la configuración."
 
-#: commands\admin.py:242
+#: bankdecay\commands\admin.py:258
 #, docstring
 msgid "\n"
 "        Initialize the server and add every member to the config.\n\n"
@@ -245,19 +240,19 @@ msgstr "\n"
 "        - as_expired: (t/f) si es True, inicializa a los usuarios como ya expirados\n"
 "        "
 
-#: commands\admin.py:265
+#: bankdecay\commands\admin.py:281
 msgid "member"
 msgstr "miembro"
 
-#: commands\admin.py:265
+#: bankdecay\commands\admin.py:281
 msgid "members"
 msgstr "miembros"
 
-#: commands\admin.py:266
+#: bankdecay\commands\admin.py:282
 msgid "Server initialized! {} added to the config."
 msgstr "¡Servidor inicializado! {} añadido a la configuración."
 
-#: commands\admin.py:271
+#: bankdecay\commands\admin.py:287
 #, docstring
 msgid "\n"
 "        Check when a user was last active (if at all)\n"
@@ -266,15 +261,15 @@ msgstr "\n"
 "        Verifica cuándo fue la última vez que un usuario estuvo activo (si es que alguna vez)\n"
 "        "
 
-#: commands\admin.py:277
+#: bankdecay\commands\admin.py:293
 msgid "This user is not in the config yet!"
 msgstr "¡Este usuario aún no está en la configuración!"
 
-#: commands\admin.py:280
+#: bankdecay\commands\admin.py:296
 msgid "User was last seen {}"
 msgstr "El usuario fue visto por última vez {}"
 
-#: commands\admin.py:285
+#: bankdecay\commands\admin.py:301
 #, docstring
 msgid "\n"
 "        Add/Remove a role from the ignore list\n\n"
@@ -285,15 +280,15 @@ msgstr "\n"
 "        Los usuarios con un rol ignorado no verán decaer su saldo\n"
 "        "
 
-#: commands\admin.py:293
+#: bankdecay\commands\admin.py:309
 msgid "Role removed from the ignore list."
 msgstr "Rol eliminado de la lista de ignorados."
 
-#: commands\admin.py:296
+#: bankdecay\commands\admin.py:312
 msgid "Role added to the ignore list."
 msgstr "Rol añadido a la lista de ignorados."
 
-#: commands\admin.py:302
+#: bankdecay\commands\admin.py:318
 #, docstring
 msgid "\n"
 "        Set the log channel, each time the decay cycle runs this will be updated\n"
@@ -302,11 +297,11 @@ msgstr "\n"
 "        Configurar el canal de registro, cada vez que se ejecute el ciclo de descomposición esto se actualizará\n"
 "        "
 
-#: commands\admin.py:307
+#: bankdecay\commands\admin.py:323
 msgid "Log channel has been set!"
 msgstr "¡Se ha establecido el canal de registro!"
 
-#: commands\admin.py:312
+#: bankdecay\commands\admin.py:328
 #, docstring
 msgid "\n"
 "        Add a percentage to all member balances.\n\n"
@@ -317,19 +312,19 @@ msgstr "\n"
 "        ¿Dismuiste accidentalmente demasiados créditos? Añadir en masa a cada saldo de usuario en el servidor basado en un porcentaje de su saldo actual.\n"
 "        "
 
-#: commands\admin.py:322
+#: bankdecay\commands\admin.py:338
 msgid "Not adding credits to users"
 msgstr "No agregando créditos a los usuarios"
 
-#: commands\admin.py:326 commands\admin.py:358
+#: bankdecay\commands\admin.py:342 bankdecay\commands\admin.py:374
 msgid "Percent must be greater than 1!"
 msgstr "¡El porcentaje debe ser mayor que 1!"
 
-#: commands\admin.py:340
+#: bankdecay\commands\admin.py:356
 msgid "Credits added: {}"
 msgstr "Créditos agregados: {}"
 
-#: commands\admin.py:344
+#: bankdecay\commands\admin.py:360
 #, docstring
 msgid "\n"
 "        Remove a percentage from all member balances.\n\n"
@@ -340,11 +335,11 @@ msgstr "\n"
 "        ¿Reembolsaste accidentalmente demasiados créditos con bulkaddpercent? Eliminar en masa de cada saldo de usuario en el servidor basado en un porcentaje de su saldo actual.\n"
 "        "
 
-#: commands\admin.py:354
+#: bankdecay\commands\admin.py:370
 msgid "Not removing credits from users"
 msgstr "No eliminando créditos a los usuarios"
 
-#: commands\admin.py:372
+#: bankdecay\commands\admin.py:388
 msgid "Credits removed: {}"
 msgstr "Créditos eliminados: {}"
 

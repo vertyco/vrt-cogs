@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2025-08-31 20:23-0400\n"
-"PO-Revision-Date: 2025-09-01 00:32\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:51\n"
 "Last-Translator: \n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -190,117 +190,127 @@ msgstr "Modelo base personalizado con métodos adicionales para cargar y guardar
 msgid "Non-config model for tracking voice activity"
 msgstr ""
 
-#: levelup\common\models.py:237
+#: levelup\common\models.py:216
+#, docstring
+msgid "Anti-spam settings for message XP"
+msgstr ""
+
+#: levelup\common\models.py:249
 #, docstring
 msgid "Calculate the level that corresponds to the given XP amount"
 msgstr "Calcular el nivel que corresponde a la cantidad de XP dada"
 
-#: levelup\common\models.py:241
+#: levelup\common\models.py:253
 #, docstring
 msgid "Calculate XP required to reach specified level"
 msgstr "Calcular el XP requerido para alcanzar el nivel especificado"
 
-#: levelup\common\models.py:365
+#: levelup\common\models.py:389
 #, docstring
 msgid "Sanitize old config data to be validated by the new schema"
 msgstr "Sanear datos de configuración antiguos para ser validados por el nuevo esquema"
 
-#: levelup\common\utils.py:83
+#: levelup\common\utils.py:50
+#, docstring
+msgid "Check if a URL is a Discord attachment URL (which expires)."
+msgstr ""
+
+#: levelup\common\utils.py:93
 #, docstring
 msgid "Format time in seconds into a human readable string"
 msgstr "Formatear el tiempo en segundos en una cadena legible por humanos"
 
-#: levelup\common\utils.py:91
+#: levelup\common\utils.py:101
 msgid "None"
 msgstr "Ninguno"
 
-#: levelup\common\utils.py:94
+#: levelup\common\utils.py:104
 msgid " second"
 msgstr " segundo"
 
-#: levelup\common\utils.py:96
+#: levelup\common\utils.py:106
 msgid " seconds"
 msgstr " segundos"
 
-#: levelup\common\utils.py:99
+#: levelup\common\utils.py:109
 msgid " minute"
 msgstr " minuto"
 
-#: levelup\common\utils.py:101
+#: levelup\common\utils.py:111
 msgid " minutes"
 msgstr " minutos"
 
-#: levelup\common\utils.py:112
+#: levelup\common\utils.py:122
 #, docstring
 msgid "Fetch the url of unicode emojis from Twemoji CDN"
 msgstr "Obtener la url de los emojis unicode desde Twemoji CDN"
 
-#: levelup\common\utils.py:130
+#: levelup\common\utils.py:140
 #, docstring
 msgid "Get all attachments from context"
 msgstr "Obtener todos los archivos adjuntos del contexto"
 
-#: levelup\common\utils.py:145
+#: levelup\common\utils.py:155
 #, docstring
 msgid "Recursively finds the size of an object in memory"
 msgstr "Encuentra recursivamente el tamaño de un objeto en memoria"
 
-#: levelup\common\utils.py:191
+#: levelup\common\utils.py:201
 msgid "Monday"
 msgstr "Lunes"
 
-#: levelup\common\utils.py:192
+#: levelup\common\utils.py:202
 msgid "Tuesday"
 msgstr "Martes"
 
-#: levelup\common\utils.py:193
+#: levelup\common\utils.py:203
 msgid "Wednesday"
 msgstr "Miércoles"
 
-#: levelup\common\utils.py:194
+#: levelup\common\utils.py:204
 msgid "Thursday"
 msgstr "Jueves"
 
-#: levelup\common\utils.py:195
+#: levelup\common\utils.py:205
 msgid "Friday"
 msgstr "Viernes"
 
-#: levelup\common\utils.py:196
+#: levelup\common\utils.py:206
 msgid "Saturday"
 msgstr "Sábado"
 
-#: levelup\common\utils.py:197
+#: levelup\common\utils.py:207
 msgid "Sunday"
 msgstr "Domingo"
 
-#: levelup\common\utils.py:213
+#: levelup\common\utils.py:223
 #, docstring
 msgid "Wait for user to respond yes or no"
 msgstr "Esperar a que el usuario responda sí o no"
 
-#: levelup\common\utils.py:284
+#: levelup\common\utils.py:294
 #, docstring
 msgid "Get a level that would be achieved from the amount of XP"
 msgstr "Obtener un nivel que se lograría con la cantidad de XP"
 
-#: levelup\common\utils.py:289
+#: levelup\common\utils.py:299
 #, docstring
 msgid "Get how much XP is needed to reach a level"
 msgstr "Obtener cuánta XP se necesita para alcanzar un nivel"
 
-#: levelup\common\utils.py:318
+#: levelup\common\utils.py:328
 msgid "• lvl {}, {} xp, {}\n"
 msgstr "• lvl {}, {} xp, {}\n"
 
-#: levelup\common\utils.py:326
+#: levelup\common\utils.py:336
 msgid "XP Curve"
 msgstr "Curva XP"
 
-#: levelup\common\utils.py:332
+#: levelup\common\utils.py:342
 msgid "Level"
 msgstr "Nivel"
 
-#: levelup\common\utils.py:333
+#: levelup\common\utils.py:343
 msgid "Experience Required"
 msgstr "Experiencia necesaria"
 

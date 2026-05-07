@@ -1,0 +1,97 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:54\n"
+"Last-Translator: \n"
+"Language-Team: German\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: de\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/hunting/locales/messages.pot\n"
+"X-Crowdin-File-ID: 686\n"
+"Language: de_DE\n"
+
+#: hunting\hunting.py:27 hunting\hunting.py:77
+#, docstring
+msgid "Hunting, it hunts birds and things that fly."
+msgstr ""
+
+#: hunting\hunting.py:117
+#, docstring
+msgid "\n"
+"        This will show the top 50 hunters for the server.\n"
+"        Use True for the global_leaderboard variable to show the global leaderboard.\n"
+"        "
+msgstr ""
+
+#: hunting\hunting.py:177
+#, docstring
+msgid "Toggle displaying the bang response time from users."
+msgstr ""
+
+#: hunting\hunting.py:186
+#, docstring
+msgid "Toggle whether shooting an eagle is bad."
+msgstr ""
+
+#: hunting\hunting.py:195
+#, docstring
+msgid "Toggle whether the bot listens for 'bang' or a reaction."
+msgstr ""
+
+#: hunting\hunting.py:204
+#, docstring
+msgid "\n"
+"        Set a credit reward range for successfully shooting a bird\n\n"
+"        Leave the options blank to disable bang rewards\n"
+"        "
+msgstr ""
+
+#: hunting\hunting.py:234
+#, docstring
+msgid "When will the next occurrence happen?"
+msgstr ""
+
+#: hunting\hunting.py:250
+#, docstring
+msgid "This will show the score of a hunter."
+msgstr ""
+
+#: hunting\hunting.py:272
+#, docstring
+msgid "Start the hunt."
+msgstr ""
+
+#: hunting\hunting.py:290
+#, docstring
+msgid "Stop the hunt."
+msgstr ""
+
+#: hunting\hunting.py:305
+#, docstring
+msgid "\n"
+"        Clear all the scores from the leaderboard.\n"
+"        "
+msgstr ""
+
+#: hunting\hunting.py:335
+#, docstring
+msgid "\n"
+"        Change the hunting timing.\n\n"
+"        `interval_min` = Minimum time in seconds for a new bird. (60 min)\n"
+"        `interval_max` = Maximum time in seconds for a new bird. (120 min)\n"
+"        `bang_timeout` = Time in seconds for users to shoot a bird before it flies away. (10s min)\n"
+"        "
+msgstr ""
+
+#: hunting\hunting.py:365
+#, docstring
+msgid "Show the cog version."
+msgstr ""
+

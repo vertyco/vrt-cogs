@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2024-02-08 18:29-0500\n"
-"PO-Revision-Date: 2024-12-03 14:55\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 02:48\n"
 "Last-Translator: \n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
@@ -17,31 +17,40 @@ msgstr ""
 "X-Crowdin-File-ID: 57\n"
 "Language: fr_FR\n"
 
-#: views.py:33
-msgid "Set OpenAI Key"
-msgstr "Définir la clé OpenAI"
+#: assistant\views.py:46
+msgid "Custom"
+msgstr ""
 
-#: views.py:35
-msgid "Enter your OpenAI Key below"
-msgstr "Traduisez le texte suivant en français"
+#: assistant\views.py:58
+msgid "Set API Key"
+msgstr ""
 
-#: views.py:56 views.py:142 views.py:462
+#: assistant\views.py:60
+msgid "Enter your API Key below"
+msgstr ""
+
+#: assistant\views.py:81 assistant\views.py:214 assistant\views.py:663
+#: assistant\views.py:905
 msgid "This isn't your menu!"
 msgstr "Ce n'est pas votre menu !"
 
-#: views.py:77
+#: assistant\views.py:104
+msgid "This approval prompt isn't for you!"
+msgstr ""
+
+#: assistant\views.py:145
 msgid "Entry name"
 msgstr "Nom d'entrée"
 
-#: views.py:85
+#: assistant\views.py:153
 msgid "Training context"
 msgstr "Contexte de formation"
 
-#: views.py:104
+#: assistant\views.py:172
 msgid "Search Query"
 msgstr "Requête de recherche"
 
-#: views.py:192
+#: assistant\views.py:264
 msgid "Failed to process embedding `{}`\n"
 "Content: ```\n"
 "{}\n"
@@ -52,93 +61,165 @@ msgstr "Échec du traitement de l'intégration `{}`\n"
 "{}\n"
 "```"
 
-#: views.py:194
+#: assistant\views.py:266
 msgid "An embedding with the name `{}` already exists!"
 msgstr "Un encastrement portant le nom `{}` existe déjà !"
 
-#: views.py:199
+#: assistant\views.py:271
 msgid "Your embedding labeled `{}` has been processed!"
 msgstr "Votre intégration étiquetée `{}` a été traitée !"
 
-#: views.py:211
+#: assistant\views.py:282
 msgid "No embeddings to inspect!"
 msgstr "Pas d'encastrement à inspecter !"
 
-#: views.py:232
+#: assistant\views.py:287
+msgid "Embedding not found!"
+msgstr ""
+
+#: assistant\views.py:305
 msgid "No embeddings to edit!"
 msgstr "Pas d'embeddings à éditer !"
 
-#: views.py:243
+#: assistant\views.py:317
 msgid "Failed to edit that embedding, please try again later"
 msgstr "La modification de l'intégration a échoué, veuillez réessayer plus tard"
 
-#: views.py:253
+#: assistant\views.py:324
 msgid "Your embedding has been modified!"
 msgstr "Votre intégration a été modifiée !"
 
-#: views.py:294
+#: assistant\views.py:364
 msgid "Add an embedding"
 msgstr "Ajouter un encastrement"
 
-#: views.py:300
+#: assistant\views.py:370
 msgid "Your embedding is processing and will appear when ready!"
 msgstr "Votre intégration est en cours de traitement et apparaîtra dès qu'elle sera prête !"
 
-#: views.py:316
+#: assistant\views.py:386
 msgid "No embeddings to delete!"
 msgstr "Pas d'encastrements à supprimer !"
 
-#: views.py:318
+#: assistant\views.py:388
 msgid "Deleted `{}` embedding."
 msgstr "Suppression de l'intégration `{}`."
 
-#: views.py:344
+#: assistant\views.py:414
 msgid "No embeddings to search!"
 msgstr "Pas d'embeddings à rechercher !"
 
-#: views.py:345
+#: assistant\views.py:415
 msgid "Search for an embedding"
 msgstr "Recherche d'un encastrement"
 
-#: views.py:370
+#: assistant\views.py:437
 msgid "Search result: **{}**"
 msgstr "Résultat de la recherche : **{}**"
 
-#: views.py:400
+#: assistant\views.py:474
 msgid "Function Edit"
 msgstr "Fonction Modifier"
 
-#: views.py:406
+#: assistant\views.py:483
 msgid "JSON Schema"
 msgstr "Schéma JSON"
 
-#: views.py:413
+#: assistant\views.py:489
 msgid "Code"
 msgstr "Code"
 
-#: views.py:570
+#: assistant\views.py:495
+msgid "Permission Level"
+msgstr ""
+
+#: assistant\views.py:496
+msgid "User, Mod, Admin, or Owner"
+msgstr ""
+
+#: assistant\views.py:502
+msgid "Required Discord Permissions"
+msgstr ""
+
+#: assistant\views.py:503
+msgid "e.g. manage_messages, kick_members (comma-separated, or leave blank)"
+msgstr ""
+
+#: assistant\views.py:510
+msgid "Category"
+msgstr ""
+
+#: assistant\views.py:511
+msgid "memory, web, utility"
+msgstr ""
+
+#: assistant\views.py:523
+msgid "Invalid permission level, must be one of `User`, `Mod`, `Admin`, or `Owner`"
+msgstr ""
+
+#: assistant\views.py:536
+msgid "Invalid Discord permission names: {}"
+msgstr ""
+
+#: assistant\views.py:552
+msgid "Toggle"
+msgstr ""
+
+#: assistant\views.py:582
+msgid "Choose tools for {} ({}/{})..."
+msgstr ""
+
+#: assistant\views.py:588
+msgid "Choose tools for {}..."
+msgstr ""
+
+#: assistant\views.py:593
+msgid "No tools available"
+msgstr ""
+
+#: assistant\views.py:606
+msgid "Prev"
+msgstr ""
+
+#: assistant\views.py:615
+msgid "Next"
+msgstr ""
+
+#: assistant\views.py:623
+msgid "Close"
+msgstr ""
+
+#: assistant\views.py:718
+msgid "{} {}/{} enabled • {} categories • Page {}/{}"
+msgstr ""
+
+#: assistant\views.py:839 assistant\views.py:859
+msgid "That category no longer exists."
+msgstr ""
+
+#: assistant\views.py:1014
 msgid "No code to inspect!"
 msgstr "Pas de code à inspecter !"
 
-#: views.py:594
+#: assistant\views.py:1038
 msgid "Here are your custom functions"
 msgstr "Voici vos fonctions personnalisées"
 
-#: views.py:599
+#: assistant\views.py:1043
 msgid "Reply to this message with the json schema for your function\n"
 "- [Example Functions](https://github.com/vertyco/vrt-cogs/tree/main/assistant/example-funcs)"
 msgstr "Répondez à ce message avec le schéma JSON de votre fonction"
 
-#: views.py:620 views.py:695
+#: assistant\views.py:1064 assistant\views.py:1142
 msgid "SchemaError\n"
 "{}"
 msgstr "Erreur de schéma {}"
 
-#: views.py:622 views.py:697
+#: assistant\views.py:1066 assistant\views.py:1144
 msgid "Empty schema!"
 msgstr "Schéma vide !"
 
-#: views.py:625 views.py:700
+#: assistant\views.py:1069 assistant\views.py:1147
 msgid "Invalid schema!\n"
 "**Missing**\n"
 "{}"
@@ -146,63 +227,63 @@ msgstr "Schéma non valide !\n"
 "**Manquant**\n"
 "{}"
 
-#: views.py:629
+#: assistant\views.py:1073
 msgid "Reply to this message with the custom code"
 msgstr "Répondez à ce message avec le code personnalisé"
 
-#: views.py:644 views.py:706
+#: assistant\views.py:1088 assistant\views.py:1153
 msgid "Invalid function"
 msgstr "Fonction non valide"
 
-#: views.py:648
+#: assistant\views.py:1092
 msgid "`{}` has been overwritten!"
 msgstr "`{}` a été écrasé !"
 
-#: views.py:650
+#: assistant\views.py:1094
 msgid "`{}` has been created!"
 msgstr "`{}` a été créé !"
 
-#: views.py:661
+#: assistant\views.py:1105
 msgid "No code to edit!"
 msgstr "Aucun code à modifier !"
 
-#: views.py:669 views.py:729
+#: assistant\views.py:1113 assistant\views.py:1185
 msgid "Could not find function!"
 msgstr "Je n'ai pas pu trouver la fonction !"
 
-#: views.py:671
+#: assistant\views.py:1115
 msgid "This function is managed by the `{}` cog and cannot be edited"
 msgstr "Cette fonction est gérée par le rouage `{}` et ne peut pas être modifiée"
 
-#: views.py:677
+#: assistant\views.py:1121
 msgid "The json schema for this function is too long, you'll need to re-upload it to modify"
 msgstr "Le schéma json de cette fonction est trop long, vous devrez le recharger pour le modifier"
 
-#: views.py:682
+#: assistant\views.py:1126
 msgid "The code for this function is too long, you'll need to re-upload it to modify"
 msgstr "Le code de cette fonction est trop long, vous devrez le télécharger à nouveau pour le modifier"
 
-#: views.py:714
+#: assistant\views.py:1170
 msgid "`{}` function updated!"
 msgstr "La fonction `{}` a été mise à jour !"
 
-#: views.py:722
+#: assistant\views.py:1178
 msgid "No code to delete!"
 msgstr "Pas de code à supprimer !"
 
-#: views.py:731
+#: assistant\views.py:1187
 msgid "This function is managed by the `{}` cog and cannot be deleted"
 msgstr "Cette fonction est gérée par le cog `{}` et ne peut pas être supprimée"
 
-#: views.py:738
+#: assistant\views.py:1194
 msgid "`{}` has been deleted!"
 msgstr "`{}` a été supprimé !"
 
-#: views.py:745
+#: assistant\views.py:1201
 msgid "No code to toggle!"
 msgstr "Pas de code à basculer !"
 
-#: views.py:758
+#: assistant\views.py:1215
 msgid "Search for a function"
 msgstr ""
 
