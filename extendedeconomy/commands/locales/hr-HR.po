@@ -1,0 +1,553 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: vrt-cogs\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-05-07 03:05\n"
+"Last-Translator: \n"
+"Language-Team: Croatian\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 3.4.2\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"X-Crowdin-Project: vrt-cogs\n"
+"X-Crowdin-Project-ID: 550681\n"
+"X-Crowdin-Language: hr\n"
+"X-Crowdin-File: /[vertyco.vrt-cogs] main/extendedeconomy/commands/locales/messages.pot\n"
+"X-Crowdin-File-ID: 658\n"
+"Language: hr_HR\n"
+
+#: extendedeconomy\commands\__init__.py:7
+#, docstring
+msgid "Subclass all command classes"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:29
+#, docstring
+msgid "\n"
+"        Extended Economy settings\n\n"
+"        **NOTE**\n"
+"        Although setting prices for pure slash commands works, there is no refund mechanism in place for them.\n\n"
+"        Should a hybrid or text command fail due to an unhandled exception, the user will be refunded.\n"
+"        "
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:42
+#, docstring
+msgid "\n"
+"        Diagnose issues with the cog for a user\n"
+"        "
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:48
+msgid "**Global Bank:** `{}`\n"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:49
+msgid "**Economy Cog:** `{}`\n"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:49
+msgid "Loaded"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:49
+msgid "Not Loaded"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:50
+msgid "**Auto Paydays:** `{}`\n"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:54
+msgid "**Auto Payday Roles:** {}\n"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:55
+msgid "None"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:81
+msgid "- {} has not used the bank yet.\n"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:84
+msgid "- {} has not used the economy commands yet.\n"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:89
+msgid "- {} has {} seconds left until their next payday.\n"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:91
+msgid "- {} is ready for their next payday.\n"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:97
+#, docstring
+msgid "\n"
+"        View the current settings\n"
+"        "
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:102
+msgid "You must be a bot owner to view these settings when global bank is enabled."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:108
+#, docstring
+msgid "Reset the payday cooldown for a user"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:111 extendedeconomy\commands\admin.py:615
+msgid "Economy cog is not loaded."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:113
+msgid "You must be a bot owner to reset cooldowns when global bank is enabled!"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:123
+msgid "Payday cooldown reset for **{}**."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:127
+#, docstring
+msgid "Toggle whether payday roles stack or not"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:130 extendedeconomy\commands\admin.py:145
+#: extendedeconomy\commands\admin.py:172 extendedeconomy\commands\admin.py:204
+#: extendedeconomy\commands\admin.py:287
+msgid "This setting is not available when global bank is enabled."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:134
+msgid "Payday role amounts will now stack."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:136
+msgid "Payday role amounts will no longer stack."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:142
+#, docstring
+msgid "Add/Remove auto payday roles"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:147
+msgid "\n"
+"Use {} to allow auto-claiming for for all users."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:154
+msgid "This role will no longer recieve paydays automatically."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:157
+msgid "This role will now receive paydays automatically."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:163
+#, docstring
+msgid "\n"
+"        Add/Remove Payday role bonuses\n\n"
+"        Example: `[p]ecoset rolebonus @role 0.1` - Adds a 10% bonus to the user's payday if they have the role.\n\n"
+"        To remove a bonus, set the bonus to 0.\n"
+"        "
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:177
+msgid "Role bonus removed."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:180
+msgid "That role does not have a bonus."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:185
+msgid "That role already has that bonus."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:186
+msgid "Role bonus updated."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:188
+msgid "Role bonus added."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:195
+#, docstring
+msgid "\n"
+"        Add/Remove Payday static role bonuses\n\n"
+"        Example: `[p]ecoset rolestaticbonus @role 500` - Adds a flat 500 credit bonus to the user's payday if they have the role.\n\n"
+"        To remove a bonus, set the bonus to 0.\n"
+"        "
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:209
+msgid "Static role bonus removed."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:212
+msgid "That role does not have a static bonus."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:217
+msgid "That role already has that static bonus."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:218
+msgid "Static role bonus updated."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:220
+msgid "Static role bonus added."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:228
+#, docstring
+msgid "Toggle whether paydays are claimed automatically (Global bank)"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:233
+msgid "Paydays will now be claimed automatically for all users."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:235
+msgid "Paydays will now be claimed automatically for set roles."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:237
+msgid "Paydays will no longer be claimed automatically."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:243
+#, docstring
+msgid "Set the auto claim channel"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:246
+msgid "There is no auto claim channel when global bank is enabled!"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:247
+msgid "Auto claim channel set to {}"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:247
+msgid "Auto claim channel removed."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:258
+#, docstring
+msgid "\n"
+"        Set the transfer tax percentage as a decimal\n\n"
+"        *Example: `0.05` is for 5% tax*\n\n"
+"        - Set to 0 to disable\n"
+"        - Default is 0\n"
+"        "
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:268
+msgid "You must be a bot owner to set the transfer tax when global bank is enabled."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:270
+msgid "Invalid tax percentage. Must be between 0 and 1."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:277
+msgid "Transfer tax set to {}%"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:282
+#, docstring
+msgid "\n"
+"        Add/Remove roles from the transfer tax whitelist\n"
+"        "
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:291
+msgid "Role removed from the transfer tax whitelist."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:294
+msgid "Role added to the transfer tax whitelist."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:300
+#, docstring
+msgid "\n"
+"        Set the main log channel\n"
+"        "
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:305
+msgid "You must be a bot owner to set the main log channel when global bank is enabled."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:312
+msgid "Removing the main log channel."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:317
+msgid "That is already the main log channel."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:318
+msgid "Main log channel changed to {}"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:320
+msgid "Main log channel set to {}"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:336
+#, docstring
+msgid "\n"
+"        Set an event log channel\n\n"
+"        **Events:**\n"
+"        - set_balance\n"
+"        - transfer_credits\n"
+"        - bank_wipe\n"
+"        - prune\n"
+"        - set_global\n"
+"        - payday_claim\n\n"
+"        "
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:350
+msgid "You must be a bot owner to set an event log channel when global bank is enabled."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:365
+msgid "Invalid event. Must be one of: {}"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:368
+msgid "No channel set for this event."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:370
+msgid "Event log channel for {} removed."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:373
+msgid "That is already the event log channel for {}."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:374
+msgid "Event log channel for {} changed to {}"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:376
+msgid "Event log channel for {} set to {}"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:388
+#, docstring
+msgid "\n"
+"        Set the delete after time for cost check messages\n\n"
+"        - Set to 0 to disable (Recommended for public bots)\n"
+"        - Default is 0 (disabled)\n"
+"        "
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:396
+msgid "Delete after time disabled."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:399
+msgid "Delete after time set to {} seconds."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:428
+#, docstring
+msgid "\n"
+"        Add a cost to a command\n"
+"        "
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:432
+msgid "- **cost**: The amount of currency to charge\n"
+"- **duration**(`default: 3600`): The time in seconds before the cost resets\n"
+"- **level**(`default: all`): The minimum permission level to apply the cost\n"
+" - admin: Admins and above can use the command for free\n"
+" - mod: Mods and above can use the command for free\n"
+" - all: Everyone must pay the cost to use the command\n"
+" - user: All users must pay the cost to use the command unless they are mod or admin\n"
+" - global: The cost is applied to all users globally\n"
+"- **prompt**(`default: notify`): How the user will be prompted to confirm the cost\n"
+" - text: The bot will send a text message asking the user to confirm the cost with yes or no\n"
+" - reaction: The bot will send a message with emoji reactions to confirm the cost\n"
+" - button: The bot will send a message with buttons to confirm the cost\n"
+" - silent: The bot will not prompt the user to confirm the cost\n"
+" - notify: The bot will simply notify the user of the cost without asking for confirmation\n"
+"- **modifier**(`default: static`): The type of cost modifier\n"
+" - static: The cost is a fixed amount\n"
+" - percent: The cost is a percentage of the user's balance on top of the base cost\n"
+" - exponential: The cost increases exponentially based on how frequently the command is used\n"
+"   - Ex: `Cost = cost + (value * uses over the duration^2)`\n"
+" - linear: The cost increases linearly based on how frequently the command is used\n"
+"   - Ex: `Cost = cost + (value * uses over the duration)`\n"
+"- **value**(`default: 0.0`): The value of the cost modifier depends on the modifier type\n"
+" - static: This will be 0 and does nothing\n"
+" - percent: Value will be the percentage of the user's balance to add to the base cost\n"
+" - exponential: Value will be the base cost multiplier\n"
+" - linear: Value will be multiplied by the number of uses in the last hour to get the cost increase\n"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:464
+msgid "You can't add a cost to the addcost command."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:469 extendedeconomy\commands\admin.py:607
+msgid "You must be a bot owner to use this command while global bank is active."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:471
+msgid "Global bank is active, you must use the global level."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:475
+msgid "You must be a bot owner to use the global level."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:476
+msgid "You must enable global bank to use the global level."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:482
+msgid "Command not found."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:484
+msgid "That is not a valid app command"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:487
+msgid "You can't add costs to commands that are always available!"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:490
+msgid "You can't add costs to commands you don't have permission to run!"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:500
+msgid "This will overwrite the existing cost for this command. Continue?"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:507
+msgid "Not adding cost."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:508
+msgid "{} cost updated."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:510
+msgid "{} cost added."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:523
+#, docstring
+msgid "Set the balance of all user accounts that have a specific role\n\n"
+"        Putting + or - signs before the amount will add/remove currency on the user's bank account instead.\n\n"
+"        Examples:\n"
+"        - `[p]banksetrole @everyone 420` - Sets everyones balance to 420\n"
+"        - `[p]banksetrole @role +69` - Increases balance by 69 for everyone with the role\n"
+"        - `[p]banksetrole @role -42` - Decreases balance by 42 for everyone with the role\n\n"
+"        **Arguments**\n\n"
+"        - `<role>` The role to set the currency of for each user that has it.\n"
+"        - `<creds>` The amount of currency to set their balance to.\n"
+"        "
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:551
+msgid "No users found with that role."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:577
+msgid "No users were affected."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:579
+msgid "No balances were changed."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:580
+msgid "user was"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:580
+msgid "users were"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:581
+msgid "Balances for {} updated, total change was {}."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:591
+#, docstring
+msgid "Calculate and award missed paydays for all members within a time period.\n\n"
+"        This will calculate how many paydays each member could have claimed within the\n"
+"        specified time period and award them accordingly.\n\n"
+"        By default, this command will only show a preview. Use `confirm=True` to apply changes.\n\n"
+"        Examples:\n"
+"        - `[p]backpay 48h` - Preview paydays missed in the last 48 hours\n"
+"        - `[p]backpay 7d True` - Calculate and give paydays missed in the last 7 days\n\n"
+"        **Arguments**\n"
+"        - `<duration>` How far back to check for missed paydays. Use time abbreviations like 1d, 12h, etc.\n"
+"        - `[confirm]` Set to True to actually apply the changes. Default: False (preview only)\n"
+"        "
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:610
+msgid "Duration must be positive!"
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:638
+msgid "The specified duration is too short for any paydays."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:798
+msgid "Backpay complete for {duration}!\n"
+"{users} users received a total of {credits} {currency}."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:808
+msgid "Backpay preview for {duration}:\n"
+"{users} users would receive a total of {credits} {currency}.\n"
+"Run with `confirm=True` to apply these changes."
+msgstr ""
+
+#: extendedeconomy\commands\admin.py:819
+msgid "No users were eligible for backpay in that time period."
+msgstr ""
+
+#: extendedeconomy\commands\user.py:18
+#, docstring
+msgid "Get the balance of a user by ID.\n\n"
+"        Helpful for checking a user's balance if they are not in the server.\n"
+"        "
+msgstr ""
+
+#: extendedeconomy\commands\user.py:31
+msgid "User ID not found."
+msgstr ""
+
+#: extendedeconomy\commands\user.py:36
+#, docstring
+msgid "View a pie chart of the top X bank balances."
+msgstr ""
+
+#: extendedeconomy\commands\user.py:51
+msgid "No users found."
+msgstr ""
+
+#: extendedeconomy\commands\user.py:69
+msgid "Bank Balances for {}"
+msgstr ""
+
