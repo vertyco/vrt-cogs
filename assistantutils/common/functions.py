@@ -1,7 +1,10 @@
 import asyncio
+import contextlib
 import html as html_module
 import logging
 import re
+import textwrap
+import traceback
 from datetime import datetime, timedelta, timezone
 from io import BytesIO, StringIO
 from typing import Literal, Union
@@ -12,6 +15,7 @@ import resvg_py
 from dateutil import parser
 from redbot.core import commands, modlog
 from redbot.core.bot import Red
+from redbot.core.utils import chat_formatting as cf
 from redbot.core.utils.chat_formatting import text_to_file
 
 from ..abc import MixinMeta
@@ -180,7 +184,11 @@ class Functions(MixinMeta):
                     content_type = response.headers.get("Content-Type", "")
                     if allowed_prefixes and not any(content_type.startswith(prefix) for prefix in allowed_prefixes):
                         allowed_text = ", ".join(allowed_prefixes)
-                        return None, None, f"`{field_name}` URL must point to one of these content types: {allowed_text}."
+                        return (
+                            None,
+                            None,
+                            f"`{field_name}` URL must point to one of these content types: {allowed_text}.",
+                        )
                     data = await response.read()
                     if not data:
                         return None, None, f"`{field_name}` URL returned empty content."
@@ -3606,7 +3614,9 @@ class Functions(MixinMeta):
             return permission_error
         if guild.me is None:
             return "I cannot verify my permissions to manage custom emojis."
-        bot_permission_error = self.ensure_any_guild_permission(guild.me, expression_permissions, "manage custom emojis")
+        bot_permission_error = self.ensure_any_guild_permission(
+            guild.me, expression_permissions, "manage custom emojis"
+        )
         if bot_permission_error:
             return bot_permission_error
 
@@ -3733,7 +3743,9 @@ class Functions(MixinMeta):
                 return "`emoji` is required for create."
             if not image_url:
                 return "`image_url` is required for create."
-            image_bytes, content_type, image_error = await self.fetch_remote_resource(image_url, "image_url", ("image/",))
+            image_bytes, content_type, image_error = await self.fetch_remote_resource(
+                image_url, "image_url", ("image/",)
+            )
             if image_error:
                 return image_error
             extension = self.extension_from_content_type(content_type, "png")
@@ -3815,7 +3827,9 @@ class Functions(MixinMeta):
             return permission_error
         if guild.me is None:
             return "I cannot verify my permissions to manage soundboard sounds."
-        bot_permission_error = self.ensure_any_guild_permission(guild.me, expression_permissions, "manage soundboard sounds")
+        bot_permission_error = self.ensure_any_guild_permission(
+            guild.me, expression_permissions, "manage soundboard sounds"
+        )
         if bot_permission_error:
             return bot_permission_error
 
@@ -3947,7 +3961,9 @@ class Functions(MixinMeta):
                     f"- Prompt: {prompt.title} (ID: {prompt.id}, Type: {prompt.type.name}, Required: {prompt.required}, Single Select: {prompt.single_select}, In Onboarding: {prompt.in_onboarding})\n"
                 )
                 for option in prompt.options:
-                    channel_names = ", ".join(channel.name for channel in option.channels) if option.channels else "none"
+                    channel_names = (
+                        ", ".join(channel.name for channel in option.channels) if option.channels else "none"
+                    )
                     role_names = ", ".join(role.name for role in option.roles) if option.roles else "none"
                     buffer.write(
                         f"  - Option: {option.title} | Description: {option.description or 'none'} | Channels: {channel_names} | Roles: {role_names} | Emoji: {option.emoji or 'none'}\n"
@@ -3972,7 +3988,9 @@ class Functions(MixinMeta):
         mode_enum, mode_error = self.parse_named_enum(discord.OnboardingMode, mode, "mode")
         if mode_error:
             return mode_error
-        prompt_type_enum, prompt_type_error = self.parse_named_enum(discord.OnboardingPromptType, prompt_type, "prompt_type")
+        prompt_type_enum, prompt_type_error = self.parse_named_enum(
+            discord.OnboardingPromptType, prompt_type, "prompt_type"
+        )
         if prompt_type_error:
             return prompt_type_error
 
@@ -3999,7 +4017,9 @@ class Functions(MixinMeta):
                 return self.format_change_summary("Dry run: would update onboarding defaults.", changes)
             await guild.edit_onboarding(
                 prompts=list(onboarding.prompts),
-                default_channels=resolved_default_channels if resolved_default_channels is not None else list(onboarding.default_channels),
+                default_channels=resolved_default_channels
+                if resolved_default_channels is not None
+                else list(onboarding.default_channels),
                 enabled=enabled if enabled is not None else onboarding.enabled,
                 mode=mode_enum if mode_enum is not None else onboarding.mode,
                 reason=reason,
@@ -4090,9 +4110,15 @@ class Functions(MixinMeta):
             type=prompt_type_value,
             title=prompt_title,
             options=prompt_options,
-            single_select=single_select if single_select is not None else (existing_prompt.single_select if existing_prompt is not None else True),
-            required=required if required is not None else (existing_prompt.required if existing_prompt is not None else True),
-            in_onboarding=in_onboarding if in_onboarding is not None else (existing_prompt.in_onboarding if existing_prompt is not None else True),
+            single_select=single_select
+            if single_select is not None
+            else (existing_prompt.single_select if existing_prompt is not None else True),
+            required=required
+            if required is not None
+            else (existing_prompt.required if existing_prompt is not None else True),
+            in_onboarding=in_onboarding
+            if in_onboarding is not None
+            else (existing_prompt.in_onboarding if existing_prompt is not None else True),
         )
 
         if existing_prompt is None:
@@ -4171,3 +4197,80 @@ class Functions(MixinMeta):
         buf.seek(0)
         file = discord.File(buf, filename=filename)
         return {"content": "Image rendered successfully.", "defer_files": [file]}
+
+    async def execute_python(
+        self,
+        code: str,
+        bot: Red,
+        guild: discord.Guild,
+        channel: discord.TextChannel,
+        user: discord.Member,
+        message_obj: discord.Message,
+        *args,
+        **kwargs,
+    ) -> str:
+        """
+        Execute a Python code snippet in the bot's runtime.
+
+        Pre-injected variables match the Red dev cog eval environment:
+        ctx, bot, guild, channel, author, message, discord, aiohttp, asyncio, commands, cf.
+
+        Args:
+            code: The Python code to execute (may be multi-line)
+            bot: The bot instance
+            guild: Current guild
+            channel: Current channel
+            user: The invoking member (exposed as 'author')
+            message_obj: The triggering message (exposed as 'message')
+
+        Returns:
+            stdout output and/or return value, or the traceback on error
+        """
+        log.info(f"execute_python called by {user} in {guild} / {channel}")
+
+        ctx = None
+        if message_obj is not None:
+            with contextlib.suppress(Exception):
+                ctx = await bot.get_context(message_obj)
+
+        env: dict = {
+            "ctx": ctx,
+            "bot": bot,
+            "guild": guild,
+            "channel": channel,
+            "author": user,
+            "message": message_obj,
+            "discord": discord,
+            "aiohttp": aiohttp,
+            "asyncio": asyncio,
+            "commands": commands,
+            "cf": cf,
+            "_": None,
+        }
+
+        code_body = textwrap.indent(code.strip(), "    ")
+        func_src = f"async def __eval_func__():\n{code_body}"
+
+        stdout_buf = StringIO()
+        result = None
+        error = None
+
+        try:
+            exec(compile(func_src, "<execute_python>", "exec"), env)
+            with contextlib.redirect_stdout(stdout_buf):
+                result = await asyncio.wait_for(env["__eval_func__"](), timeout=60.0)
+        except asyncio.TimeoutError:
+            error = "TimeoutError: Code execution exceeded 60 seconds and was cancelled."
+        except Exception:
+            error = traceback.format_exc()
+
+        parts: list[str] = []
+        stdout_val = stdout_buf.getvalue()
+        if stdout_val:
+            parts.append(f"stdout:\n{stdout_val.rstrip()}")
+        if error:
+            parts.append(f"error:\n{error.rstrip()}")
+        elif result is not None:
+            parts.append(f"return value: {result!r}")
+
+        return "\n".join(parts) if parts else "Code executed with no output."

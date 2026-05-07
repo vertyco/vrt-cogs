@@ -59,6 +59,7 @@ class AssistantUtils(Functions, commands.Cog, metaclass=CompositeMetaClass):
             ),
             ("files", "user", (schemas.CREATE_AND_SEND_FILE, schemas.RENDER_SVG)),
             ("utility", "mod", (schemas.GET_MODLOG_CASES,)),
+            ("code_execution", "owner", (schemas.EXECUTE_PYTHON,)),
         )
 
         for category, permission_level, registered_schemas in grouped_registrations:
@@ -68,6 +69,6 @@ class AssistantUtils(Functions, commands.Cog, metaclass=CompositeMetaClass):
                     schema,
                     permission_level=permission_level,
                     category=category,
-                    requires_user_approval=permission_level == "admin",
+                    requires_user_approval=permission_level in ("admin", "owner"),
                 )
         log.info("Functions have been registered")
