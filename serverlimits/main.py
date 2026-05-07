@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import discord
@@ -9,8 +10,6 @@ from redbot.core.bot import Red
 
 log = logging.getLogger("red.vrt.serverlimits")
 
-MAX_UPLOAD_SIZE = 100 * 1024 * 1024
-MAX_AUDIO_BITRATE = 384_000
 ROLE_LIMIT = 250
 CATEGORY_LIMIT = 50
 CHANNEL_LIMIT = 500
@@ -158,7 +157,7 @@ def make_progress_metric(
     name: str,
     current: int,
     limit: int,
-    formatter=format_number,
+    formatter: Callable[[int | None], str] = format_number,
     bar_width: int = 12,
     note: str | None = None,
 ) -> Metric:
@@ -194,7 +193,7 @@ def build_utilization_metrics(snapshot: GuildSnapshot) -> list[Metric]:
                 name="Invite Codes",
                 current="Unavailable",
                 limit=format_number(INVITE_LIMIT),
-                note="⚠️needs Manage Server permissions",
+                note="⚠️ needs Manage Server permissions",
             )
         )
     else:
@@ -311,8 +310,8 @@ async def build_snapshot(guild: discord.Guild) -> GuildSnapshot:
         max_channels_in_category=max((len(category.channels) for category in guild.categories), default=0),
         longest_role_name=max((len(role.name) for role in guild.roles), default=0),
         invite_count=invite_count,
-        filesize_limit=guild.filesize_limit,
-        bitrate_limit=guild.bitrate_limit,
+        filesize_limit=int(guild.filesize_limit),
+        bitrate_limit=int(guild.bitrate_limit),
         emoji_limit=guild.emoji_limit,
         sticker_limit=guild.sticker_limit,
         soundboard_limit=SOUNDBOARD_LIMITS.get(tier, SOUNDBOARD_LIMITS[3]),
@@ -341,7 +340,8 @@ class DashboardControls(ui.ActionRow["ServerLimitsView"]):
         self.view.stop()
         await interaction.response.defer()
         try:
-            await interaction.message.delete()
+            if interaction.message is not None:
+                await interaction.message.delete()
         except (discord.Forbidden, discord.NotFound, discord.HTTPException):
             pass
 
@@ -362,7 +362,7 @@ class ServerLimitsView(ui.LayoutView):
 
     async def on_timeout(self) -> None:
         for child in self.children:
-            if hasattr(child, "children"):
+            if isinstance(child, ui.ActionRow):
                 for nested in child.children:
                     if hasattr(nested, "disabled"):
                         nested.disabled = True
@@ -384,7 +384,12 @@ class ServerLimitsView(ui.LayoutView):
             await interaction.response.send_message("Guild context missing.", ephemeral=True)
             return
         await interaction.response.defer()
-        self.snapshot = await build_snapshot(guild)
+        try:
+            self.snapshot = await build_snapshot(guild)
+        except (discord.HTTPException, discord.Forbidden, Exception) as e:
+            log.exception("Failed to refresh snapshot", exc_info=e)
+            await interaction.followup.send("Failed to refresh server limits.", ephemeral=True)
+            return
         self.build_layout()
         await interaction.edit_original_response(view=self)
 
@@ -401,6 +406,7 @@ class ServerLimits(commands.Cog):
     def __init__(self, bot: Red):
         super().__init__()
         self.bot: Red = bot
+        self._init_task: asyncio.Task[None] | None = None
 
     def format_help_for_context(self, ctx: commands.Context) -> str:
         helpcmd = super().format_help_for_context(ctx)
@@ -414,7 +420,11 @@ class ServerLimits(commands.Cog):
         return
 
     async def cog_load(self) -> None:
-        asyncio.create_task(self.initialize())
+        self._init_task = asyncio.create_task(self.initialize())
+
+    def cog_unload(self) -> None:
+        if self._init_task is not None:
+            self._init_task.cancel()
 
     async def initialize(self) -> None:
         await self.bot.wait_until_red_ready()
