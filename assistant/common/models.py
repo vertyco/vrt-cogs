@@ -149,10 +149,10 @@ class GuildSettings(AssistantBaseModel):
     api_key: t.Optional[str] = None
     endswith_questionmark: bool = False
     min_length: int = 7
-    max_retention: int = 50
-    max_retention_time: int = 1800
+    max_retention: int = 0
+    max_retention_time: int = 0
     max_response_tokens: int = 0
-    max_tokens: int = 10000
+    max_tokens: int = 4000
     mention: bool = False
     mention_respond: bool = False
     enabled: bool = True  # Auto-reply channel
