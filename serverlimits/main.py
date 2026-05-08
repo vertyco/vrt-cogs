@@ -386,7 +386,7 @@ class ServerLimitsView(ui.LayoutView):
         await interaction.response.defer()
         try:
             self.snapshot = await build_snapshot(guild)
-        except (discord.HTTPException, discord.Forbidden, Exception) as e:
+        except Exception as e:
             log.exception("Failed to refresh snapshot", exc_info=e)
             await interaction.followup.send("Failed to refresh server limits.", ephemeral=True)
             return
@@ -401,7 +401,7 @@ class ServerLimits(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.1.1"
+    __version__ = "0.1.2"
 
     def __init__(self, bot: Red):
         super().__init__()
