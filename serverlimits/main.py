@@ -310,7 +310,7 @@ async def build_snapshot(guild: discord.Guild) -> GuildSnapshot:
         max_channels_in_category=max((len(category.channels) for category in guild.categories), default=0),
         longest_role_name=max((len(role.name) for role in guild.roles), default=0),
         invite_count=invite_count,
-        filesize_limit=int(guild.filesize_limit),
+        filesize_limit=guild.filesize_limit,
         bitrate_limit=int(guild.bitrate_limit),
         emoji_limit=guild.emoji_limit,
         sticker_limit=guild.sticker_limit,
@@ -362,10 +362,11 @@ class ServerLimitsView(ui.LayoutView):
 
     async def on_timeout(self) -> None:
         for child in self.children:
-            if isinstance(child, ui.ActionRow):
-                for nested in child.children:
-                    if hasattr(nested, "disabled"):
-                        nested.disabled = True
+            if hasattr(child, "disabled"):
+                setattr(child, "disabled", True)
+            for nested in getattr(child, "children", []):
+                if hasattr(nested, "disabled"):
+                    setattr(nested, "disabled", True)
         if self.message is None:
             return
         try:
@@ -401,7 +402,7 @@ class ServerLimits(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.1.2"
+    __version__ = "0.1.3"
 
     def __init__(self, bot: Red):
         super().__init__()
