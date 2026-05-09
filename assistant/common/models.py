@@ -206,7 +206,7 @@ class GuildSettings(AssistantBaseModel):
     compaction_threshold: int = 0  # Token threshold to trigger compaction (0 = use max_tokens)
 
     use_function_calls: bool = False
-    max_function_calls: int = 20  # Max calls in a row
+    max_function_calls: int = 100  # Max calls in a row
     max_scheduled_tasks: int = 25  # Max pending scheduled tasks per user in this guild
     function_statuses: t.Dict[str, bool] = {}  # {"function_name": True/False for enabled/disabled}
     functions_called: int = 0
