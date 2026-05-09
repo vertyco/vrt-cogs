@@ -708,11 +708,6 @@ Set the maximum function calls allowed in a row<br/>
 
 This sets how many times the model can call functions in a row<br/>
 
-Only the following models can call functions at the moment<br/>
-- gpt-4o-mini<br/>
-- gpt-4o<br/>
-- ect..<br/>
-
  - Usage: `[p]assistant maxrecursion <recursion>`
 
 ### [p]assistant frequency
