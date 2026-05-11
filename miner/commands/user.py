@@ -564,29 +564,34 @@ class User(MixinMeta):
 
         settings = await self.db_utils.get_create_guild_settings(ctx.guild.id)
         global_settings = await self.db_utils.get_create_global_settings()
-        cooldown_remaining = self.get_guild_spawn_cooldown_remaining(
-            ctx.guild.id, global_settings.spawn_cooldown_seconds
-        )
-
-        if cooldown_remaining > 0:
-            ready_timestamp = int(discord.utils.utcnow().timestamp() + math.ceil(cooldown_remaining))
-            return await ctx.send(
-                f"Rock spawn cooldown is active. You can summon more rocks <t:{ready_timestamp}:R>.",
-                ephemeral=True,
-            )
-
-        rock_type_result = self.choose_rock_type(ctx.channel.id)
-        modifiers = self.choose_modifiers(rock_type_result)
+        view = None
 
         try:
-            await self.notify_spawn_subscribers(ctx.guild, settings, ctx.send)
+            async with self.get_guild_spawn_lock(ctx.guild.id):
+                cooldown_remaining = self.get_guild_spawn_cooldown_remaining(
+                    ctx.guild.id, global_settings.spawn_cooldown_seconds
+                )
 
-            rock: constants.RockType = constants.ROCK_TYPES[rock_type_result]
-            view = RockView(self, rock, modifiers)
-            await view.start(ctx.channel)
-            # Consume cooldown only after the rock message is successfully posted.
-            self.guild_spawn_cooldowns[ctx.guild.id] = perf_counter()
-            await view.wait()
+                if cooldown_remaining > 0:
+                    ready_timestamp = int(discord.utils.utcnow().timestamp() + math.ceil(cooldown_remaining))
+                    return await ctx.send(
+                        f"Rock spawn cooldown is active. You can summon more rocks <t:{ready_timestamp}:R>.",
+                        ephemeral=True,
+                    )
+
+                rock_type_result = self.choose_rock_type(ctx.channel.id)
+                modifiers = self.choose_modifiers(rock_type_result)
+
+                await self.notify_spawn_subscribers(ctx.guild, settings, ctx.send)
+
+                rock: constants.RockType = constants.ROCK_TYPES[rock_type_result]
+                view = RockView(self, rock, modifiers)
+                await view.start(ctx.channel)
+                # Consume cooldown only after the rock message is successfully posted.
+                self.guild_spawn_cooldowns[ctx.guild.id] = perf_counter()
+
+            if view is not None:
+                await view.wait()
         except Exception as e:
             log.error(f"Error spawning rock in {ctx.channel.id}: {e}")
             await ctx.send("An error occurred while spawning the rock.", ephemeral=True)
