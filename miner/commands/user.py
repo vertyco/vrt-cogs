@@ -520,10 +520,9 @@ class User(MixinMeta):
         )
 
         if cooldown_remaining > 0:
-            minutes = int(cooldown_remaining // 60)
-            seconds = int(cooldown_remaining % 60)
+            ready_timestamp = int(discord.utils.utcnow().timestamp() + math.ceil(cooldown_remaining))
             return await ctx.send(
-                f"Rock spawn cooldown is active. Try again in `{minutes}m {seconds}s`.",
+                f"Rock spawn cooldown is active. You can summon more rocks <t:{ready_timestamp}:R>.",
                 ephemeral=True,
             )
 
