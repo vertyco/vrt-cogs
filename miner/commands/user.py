@@ -9,8 +9,9 @@ from redbot.core.errors import BalanceTooHigh
 from redbot.core.utils.chat_formatting import humanize_number
 
 from ..abc import MixinMeta
-from ..common import constants
+from ..common import achievements, constants
 from ..db.tables import ActiveChannel, GuildSettings, Player, ensure_db_connection
+from ..views.dynamic_menu import DynamicMenu
 from ..views.leaderboard_menu import LeaderboardView
 from ..views.mining_view import RockView
 from ..views.trade_panel import TradePanel
@@ -32,7 +33,9 @@ class User(MixinMeta):
         """View your stats."""
         if not user:
             user = ctx.author
+        await self.sync_player_achievements(user)
         player = await self.db_utils.get_create_player(user)
+        achievement_rows = await self.get_player_achievements(user)
         tool = constants.TOOLS[player.tool]
         # Show current/max durability with percentage (non-wood tools)
         if player.tool != "wood" and isinstance(tool.max_durability, int) and tool.max_durability > 0:
@@ -61,6 +64,22 @@ class User(MixinMeta):
         embed.add_field(
             name="Inventory", value="\n".join(inv_lines) if inv_lines else "No resources yet.", inline=False
         )
+
+        unlocked_count = len(achievement_rows)
+        completion_pct = (
+            (unlocked_count / achievements.TOTAL_ACHIEVEMENTS) * 100 if achievements.TOTAL_ACHIEVEMENTS else 0.0
+        )
+        achievement_lines = [
+            f"Unlocked: `{unlocked_count}` / `{achievements.TOTAL_ACHIEVEMENTS}` ({completion_pct:.0f}%)",
+        ]
+        recent_unlocks = [row for row in achievement_rows if row.key in achievements.ACHIEVEMENTS_BY_KEY][:3]
+        if recent_unlocks:
+            achievement_lines.append("Recent unlocks:")
+            achievement_lines.extend(f"• {achievements.ACHIEVEMENTS_BY_KEY[row.key].name}" for row in recent_unlocks)
+        else:
+            achievement_lines.append("No achievements unlocked yet.")
+        achievement_lines.append(f"Use `{ctx.clean_prefix}miner achievements` to browse the full list.")
+        embed.add_field(name="Achievements", value="\n".join(achievement_lines), inline=False)
 
         # Next upgrade info
         next_idx = constants.TOOL_ORDER.index(player.tool) + 1
@@ -92,6 +111,18 @@ class User(MixinMeta):
 
         embed.set_thumbnail(url=user.display_avatar)
         await ctx.send(embed=embed)
+
+    @miner_group.command(name="achievements", aliases=["achievement", "achs"], description="Browse Miner achievements.")
+    @ensure_db_connection()
+    async def miner_achievements(self, ctx: commands.Context, user: t.Optional[discord.User | discord.Member] = None):
+        """Browse unlocked and locked achievements."""
+        if not user:
+            user = ctx.author
+
+        await self.sync_player_achievements(user)
+        unlocked_rows = await self.get_player_achievements(user)
+        pages = await self.build_achievement_pages(ctx, user, unlocked_rows)
+        await DynamicMenu(ctx.author, pages, ctx.channel).refresh()
 
     @miner_group.command(name="notify", description="Toggle rock spawn notifications.")
     @ensure_db_connection()
@@ -138,6 +169,8 @@ class User(MixinMeta):
         if player.durability >= max_dura:
             await ctx.send(f"Your {tool.display_name} is already at full durability! ({max_dura})")
             return
+
+        critical_repair = max_dura > 0 and player.durability > 0 and (player.durability / max_dura) <= 0.10
 
         # Calculate repair cost dynamically based on missing durability percentage.
         # Base cost scales by tool tier, then by the missing durability ratio.
@@ -196,6 +229,16 @@ class User(MixinMeta):
             color=discord.Color.green(),
         )
         await ctx.send(embed=embed)
+        unlocked = await self.sync_player_achievements(ctx.author)
+        if critical_repair:
+            unlocked.extend(
+                await self.unlock_player_achievements(
+                    ctx.author,
+                    ["tool_repaired_from_critical"],
+                )
+            )
+        if unlocked:
+            await self.announce_achievement_unlocks(ctx.channel, ctx.author, unlocked)
 
     @miner_group.command(name="trade", description="Trade with another miner")
     @ensure_db_connection()
@@ -345,6 +388,9 @@ class User(MixinMeta):
         )
         await msg.edit(content=None, embed=done_embed, view=None)
         await self.db_utils.get_cached_player_tool.cache.delete(f"miner_player_tool:{player.id}")  # type: ignore
+        unlocked = await self.sync_player_achievements(ctx.author)
+        if unlocked:
+            await self.announce_achievement_unlocks(ctx.channel, ctx.author, unlocked)
 
     @miner_group.command(name="leaderboard", aliases=["lb"], description="View the leaderboard.")
     @ensure_db_connection()
@@ -544,3 +590,190 @@ class User(MixinMeta):
         except Exception as e:
             log.error(f"Error spawning rock in {ctx.channel.id}: {e}")
             await ctx.send("An error occurred while spawning the rock.", ephemeral=True)
+
+    async def build_achievement_pages(
+        self,
+        ctx: commands.Context,
+        user: discord.User | discord.Member,
+        unlocked_rows: list,
+    ) -> list[discord.Embed]:
+        color = await self.bot.get_embed_color(ctx.channel)
+        stats = await self.get_player_achievement_stats(user)
+        resource_lower_bounds = await self.db_utils.get_player_resource_lower_bounds(user)
+        unlocked_lookup = {row.key: row for row in unlocked_rows}
+        pages: list[discord.Embed] = []
+
+        summary = discord.Embed(
+            title=f"{user.display_name}'s Miner Achievements",
+            color=color,
+            description=(
+                f"Unlocked `{len(unlocked_lookup)}` / `{achievements.TOTAL_ACHIEVEMENTS}` achievements.\n"
+                "Locked achievements show their full condition text.\n"
+                "Retroactive sync currently awards only achievements provable from persisted miner data."
+            ),
+        )
+        category_lines = []
+        for category, items in achievements.iter_achievements_by_category():
+            unlocked_count = sum(1 for item in items if item.key in unlocked_lookup)
+            category_lines.append(f"• {category}: `{unlocked_count}/{len(items)}`")
+        summary.add_field(name="Categories", value="\n".join(category_lines), inline=False)
+
+        recent_lines = []
+        for row in unlocked_rows[:5]:
+            definition = achievements.ACHIEVEMENTS_BY_KEY.get(row.key)
+            if definition is None:
+                continue
+            recent_lines.append(f"• {definition.name} ({discord.utils.format_dt(row.created_on, style='R')})")
+        if recent_lines:
+            summary.add_field(name="Recent Unlocks", value="\n".join(recent_lines), inline=False)
+        else:
+            summary.add_field(name="Recent Unlocks", value="No achievements unlocked yet.", inline=False)
+        summary.set_thumbnail(url=user.display_avatar)
+        pages.append(summary)
+
+        for category, items in achievements.iter_achievements_by_category():
+            unlocked_count = sum(1 for item in items if item.key in unlocked_lookup)
+            lines: list[str] = []
+            for item in items:
+                unlocked = unlocked_lookup.get(item.key)
+                if unlocked is not None:
+                    lines.append(
+                        f"✅ **{item.name}**\n"
+                        f"-# {item.condition}\n"
+                        f"-# Unlocked {discord.utils.format_dt(unlocked.created_on, style='R')}"
+                    )
+                else:
+                    progress_line = self.format_achievement_progress(item, stats, resource_lower_bounds)
+                    if progress_line:
+                        lines.append(f"🔒 **{item.name}**\n-# {item.condition}\n-# {progress_line}")
+                    else:
+                        lines.append(f"🔒 **{item.name}**\n-# {item.condition}")
+
+            embed = discord.Embed(
+                title=f"{user.display_name} • {category}",
+                color=color,
+                description="\n\n".join(lines),
+            )
+            embed.add_field(name="Progress", value=f"Unlocked `{unlocked_count}` / `{len(items)}`", inline=False)
+            embed.set_thumbnail(url=user.display_avatar)
+            pages.append(embed)
+
+        return pages
+
+    def format_achievement_progress(
+        self,
+        item: achievements.AchievementDef,
+        stats: t.Any,
+        resource_lower_bounds: dict[constants.Resource, int],
+    ) -> str | None:
+        if item.key.startswith("clean_streak_") and item.threshold is None:
+            threshold = int(item.key.split("_")[-1])
+            current = int(stats.clean_streak_current or 0)
+            return f"Current clean streak: `{min(current, threshold)}` / `{threshold}`"
+
+        if item.key in achievements.SOLO_SPEED_THRESHOLDS:
+            return None
+
+        if item.key == "solo_speed_small":
+            return self.format_solo_progress(stats.best_solo_small_seconds or 0.0, 20.0)
+        if item.key == "solo_speed_medium":
+            return self.format_solo_progress(stats.best_solo_medium_seconds or 0.0, 40.0)
+        if item.key == "solo_speed_large":
+            return self.format_solo_progress(stats.best_solo_large_seconds or 0.0, 60.0)
+        if item.key == "solo_speed_meteor":
+            return self.format_solo_progress(stats.best_solo_meteor_seconds or 0.0, 90.0)
+        if item.key == "solo_speed_geode":
+            return self.format_solo_progress(stats.best_solo_geode_seconds or 0.0, 130.0)
+
+        if item.retroactive_rule == "tool_at_least_tier" and item.tool is not None:
+            return f"Current tool milestone target: `{constants.TOOLS[item.tool].display_name}`"
+
+        if item.key == "perf_max_streak_3":
+            current = int(stats.perf_max_streak_current or 0)
+            return f"Current 90+ streak: `{min(current, 3)}` / `3`"
+
+        if item.key == "modifier_total_50":
+            current = int(stats.modifier_rocks_mined_total or 0)
+            return f"Modifier rocks mined: `{min(current, 50)}` / `50`"
+
+        if item.retroactive_rule == "resource_any_positive":
+            total = sum(resource_lower_bounds.values())
+            return f"Tracked mined resources total: `{humanize_number(total)}`"
+
+        if item.retroactive_rule == "resource_lower_bound" and item.resource and item.threshold is not None:
+            current = int(resource_lower_bounds.get(item.resource, 0))
+            return (
+                f"Mined {item.resource}: `{humanize_number(min(current, item.threshold))}` / "
+                f"`{humanize_number(item.threshold)}`"
+            )
+
+        if item.key == "party_role_breaker":
+            current = int(stats.role_breaker_total or 0)
+            return f"Breaker roles earned: `{current}`"
+        if item.key == "party_role_stabilizer":
+            current = int(stats.role_stabilizer_total or 0)
+            return f"Stabilizer roles earned: `{current}`"
+        if item.key == "party_role_finisher":
+            current = int(stats.role_finisher_total or 0)
+            return f"Finisher roles earned: `{current}`"
+        if item.key == "party_group_sessions_25":
+            current = int(stats.group_sessions_total or 0)
+            return f"Group mining sessions: `{min(current, 25)}` / `25`"
+        if item.key == "party_all_roles":
+            earned_roles = [
+                name
+                for name, total in (
+                    ("Breaker", int(stats.role_breaker_total or 0)),
+                    ("Stabilizer", int(stats.role_stabilizer_total or 0)),
+                    ("Finisher", int(stats.role_finisher_total or 0)),
+                )
+                if total > 0
+            ]
+            missing_roles = [name for name in ("Breaker", "Stabilizer", "Finisher") if name not in earned_roles]
+            return (
+                f"Roles earned: `{len(earned_roles)}` / `3`"
+                if not missing_roles
+                else f"Roles earned: `{len(earned_roles)}` / `3` | missing {', '.join(missing_roles)}"
+            )
+
+        if item.key == "rocks_mined_50":
+            current = int(stats.rocks_mined_total or 0)
+            return f"Rocks mined: `{min(current, 50)}` / `50`"
+        if item.key == "rocks_mined_250":
+            current = int(stats.rocks_mined_total or 0)
+            return f"Rocks mined: `{min(current, 250)}` / `250`"
+        if item.key == "rocks_mined_1000":
+            current = int(stats.rocks_mined_total or 0)
+            return f"Rocks mined: `{min(current, 1000)}` / `1000`"
+        if item.key == "rock_variety_all":
+            mined_types = [
+                name
+                for name, seen in (
+                    ("Small", bool(stats.mined_small)),
+                    ("Medium", bool(stats.mined_medium)),
+                    ("Large", bool(stats.mined_large)),
+                    ("Meteor", bool(stats.mined_meteor)),
+                    ("Geode", bool(stats.mined_geode)),
+                )
+                if seen
+            ]
+            missing_types = [
+                name for name in ("Small", "Medium", "Large", "Meteor", "Geode") if name not in mined_types
+            ]
+            return (
+                f"Rock types mined: `{len(mined_types)}` / `5`"
+                if not missing_types
+                else f"Rock types mined: `{len(mined_types)}` / `5` | missing {', '.join(missing_types)}"
+            )
+
+        if item.key == "tool_shatter_comeback":
+            if int(stats.shatter_recovery_stage or 0) > 0:
+                return "Comeback is primed: successfully mine any later rock encounter."
+            return "Shatter a tool first, then finish a later rock encounter."
+
+        return None
+
+    def format_solo_progress(self, best_time: float, target_time: float) -> str:
+        if best_time <= 0:
+            return f"Best solo clear: `none yet` | target `<= {target_time:.0f}s`"
+        return f"Best solo clear: `{best_time:.1f}s` | target `<= {target_time:.0f}s`"

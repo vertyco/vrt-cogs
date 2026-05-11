@@ -14,8 +14,14 @@ from redbot.core.bot import Red
 
 from .abc import CompositeMetaClass
 from .commands import Commands
-from .common import constants, tracker
-from .db.tables import TABLES, GuildSettings, Player
+from .common import achievements, constants, tracker
+from .db.tables import (
+    TABLES,
+    GuildSettings,
+    Player,
+    PlayerAchievement,
+    PlayerAchievementStats,
+)
 from .db.utils import DBUtils
 from .engine import engine
 from .listeners import Listeners
@@ -29,7 +35,7 @@ class Miner(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMet
     """Pickaxe in hand, fortune awaits"""
 
     __author__ = "Vertyco"
-    __version__ = "1.1.2"
+    __version__ = "1.2.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -47,8 +53,19 @@ class Miner(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMet
         return f"{helpcmd}\n\n{txt}"
 
     async def red_get_data_for_user(self, *, user_id: int) -> t.MutableMapping[str, BytesIO]:
-        users = await Player.select(Player.all_columns()).where(Player.id == user_id)
-        return {"data.json": BytesIO(json.dumps(users).encode())}
+        player_rows = await Player.select(Player.all_columns()).where(Player.id == user_id)
+        achievement_rows = await PlayerAchievement.select(PlayerAchievement.all_columns()).where(
+            PlayerAchievement.player == user_id
+        )
+        achievement_stats_rows = await PlayerAchievementStats.select(PlayerAchievementStats.all_columns()).where(
+            PlayerAchievementStats.player == user_id
+        )
+        payload = {
+            "player": player_rows,
+            "achievements": achievement_rows,
+            "achievement_stats": achievement_stats_rows,
+        }
+        return {"data.json": BytesIO(json.dumps(payload, default=str).encode())}
 
     async def red_delete_data_for_user(self, *, requester: RequestType, user_id: int):
         if not self.db:
@@ -227,3 +244,68 @@ class Miner(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMet
 
         mention_str = " ".join(f"<@{uid}>" for uid in valid_users)
         await destination(mention_str)
+
+    async def get_player_achievements(self, user: discord.User | discord.Member | int) -> list[PlayerAchievement]:
+        return await self.db_utils.get_player_achievements(user)
+
+    async def get_player_achievement_stats(self, user: discord.User | discord.Member | int) -> PlayerAchievementStats:
+        return await self.db_utils.get_create_player_achievement_stats(user)
+
+    async def unlock_player_achievements(
+        self,
+        user: discord.User | discord.Member | int,
+        keys: list[str],
+        destination: discord.abc.Messageable | None = None,
+        notify: bool = False,
+    ) -> list[achievements.AchievementDef]:
+        new_rows = await self.db_utils.ensure_player_achievements(user, keys)
+        unlocked = [
+            achievements.ACHIEVEMENTS_BY_KEY[row.key] for row in new_rows if row.key in achievements.ACHIEVEMENTS_BY_KEY
+        ]
+        if notify and destination and unlocked:
+            await self.announce_achievement_unlocks(destination, user, unlocked)
+        return unlocked
+
+    async def sync_player_achievements(
+        self,
+        user: discord.User | discord.Member | int,
+        destination: discord.abc.Messageable | None = None,
+        notify: bool = False,
+    ) -> list[achievements.AchievementDef]:
+        player = await self.db_utils.get_create_player(user)
+        await self.db_utils.get_create_player_achievement_stats(player.id)
+        resource_lower_bounds = await self.db_utils.get_player_resource_lower_bounds(player.id)
+        exact_unlock_keys = achievements.get_exact_retroactive_unlock_keys(player.tool, resource_lower_bounds)
+        return await self.unlock_player_achievements(
+            player.id, exact_unlock_keys, destination=destination, notify=notify
+        )
+
+    async def announce_achievement_unlocks(
+        self,
+        destination: discord.abc.Messageable,
+        user: discord.User | discord.Member | int,
+        unlocked: list[achievements.AchievementDef],
+    ) -> None:
+        unlocked = achievements.dedupe_achievement_defs(unlocked)
+        if not unlocked:
+            return
+        if isinstance(user, int):
+            mention = f"<@{user}>"
+        else:
+            mention = user.mention
+
+        title = "Achievement Unlocked!" if len(unlocked) == 1 else "Achievements Unlocked!"
+        lines = [f"{mention} unlocked `{len(unlocked)}` new Miner achievement(s).", ""]
+        for achievement in unlocked[:6]:
+            lines.append(f"**{achievement.name}**")
+            lines.append(achievement.condition)
+            lines.append("")
+        if len(unlocked) > 6:
+            lines.append(f"...and `{len(unlocked) - 6}` more.")
+
+        embed = discord.Embed(
+            title=title,
+            description="\n".join(lines).strip(),
+            color=discord.Color.gold(),
+        )
+        await destination.send(embed=embed)

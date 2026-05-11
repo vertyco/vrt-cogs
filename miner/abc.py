@@ -6,8 +6,8 @@ from discord.ext.commands.cog import CogMeta
 from piccolo.engine.postgres import PostgresEngine
 from redbot.core.bot import Red
 
-from .common import constants, tracker
-from .db.tables import GuildSettings
+from .common import achievements, constants, tracker
+from .db.tables import GuildSettings, PlayerAchievement, PlayerAchievementStats
 from .db.utils import DBUtils
 
 
@@ -64,5 +64,41 @@ class MixinMeta(ABC):
         guild: discord.Guild,
         settings: GuildSettings,
         destination: t.Callable[[str], t.Awaitable[discord.Message]],
+    ) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def get_player_achievements(self, user: discord.User | discord.Member | int) -> list[PlayerAchievement]:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def get_player_achievement_stats(self, user: discord.User | discord.Member | int) -> PlayerAchievementStats:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def unlock_player_achievements(
+        self,
+        user: discord.User | discord.Member | int,
+        keys: list[str],
+        destination: discord.abc.Messageable | None = None,
+        notify: bool = False,
+    ) -> list[achievements.AchievementDef]:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def sync_player_achievements(
+        self,
+        user: discord.User | discord.Member | int,
+        destination: discord.abc.Messageable | None = None,
+        notify: bool = False,
+    ) -> list[achievements.AchievementDef]:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def announce_achievement_unlocks(
+        self,
+        destination: discord.abc.Messageable,
+        user: discord.User | discord.Member | int,
+        unlocked: list[achievements.AchievementDef],
     ) -> None:
         raise NotImplementedError

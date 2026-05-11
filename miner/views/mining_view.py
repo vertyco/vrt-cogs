@@ -8,6 +8,7 @@ from collections import defaultdict, deque
 from contextlib import suppress
 from datetime import datetime, timedelta
 from io import StringIO
+from time import perf_counter
 from types import SimpleNamespace
 
 import discord
@@ -15,8 +16,8 @@ from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, pagify
 
 from ..abc import MixinMeta
-from ..common import constants
-from ..db.tables import Player, ResourceLedger
+from ..common import achievements, constants
+from ..db.tables import Player, PlayerAchievementStats, ResourceLedger
 
 log = logging.getLogger("red.vrt.miner.views.mining_view")
 
@@ -59,12 +60,16 @@ class RockView(discord.ui.View):
         self.overswing_damage_chance = min(1.0, rocktype.overswing_damage_chance * volatility_mult)
 
         self.message: discord.Message | None = None
+        self.started_at_perf: float = 0.0
 
         # user_id -> total damage dealt
         self.participants: dict[int, int] = defaultdict(int)
         self.hits: dict[int, int] = defaultdict(int)
         self.overswings: dict[int, int] = defaultdict(int)
+        self.crit_hits: dict[int, int] = defaultdict(int)
         self.low_hp_damage: dict[int, int] = defaultdict(int)
+        self.shatter_resist_survivors: set[int] = set()
+        self.shattered_users: set[int] = set()
         self.mine_cooldown = commands.CooldownMapping.from_cooldown(
             rate=constants.SWINGS_PER_THRESHOLD,
             per=constants.OVERSWING_THRESHOLD_SECONDS,
@@ -87,6 +92,7 @@ class RockView(discord.ui.View):
     async def start(self, channel: discord.TextChannel | discord.Thread):
         """Start the rock session"""
         ttl_seconds = self.rocktype.ttl_seconds
+        self.started_at_perf = perf_counter()
         self.end_time = datetime.now() + timedelta(seconds=ttl_seconds)
         self.message = await channel.send(embed=self.embed(), view=self)
         self.ttl_task = asyncio.create_task(self.ttl(ttl_seconds))
@@ -177,6 +183,11 @@ class RockView(discord.ui.View):
             overswing_roll = random.uniform(0.0, 1.0)
             # Apply tool shatter resistance to overswing shatter chance
             shatter_chance = self.overswing_break_chance * (1 - current_tool.shatter_resistance)
+            resisted_catastrophic = (
+                allow_catastrophic
+                and current_tool.shatter_resistance > 0
+                and shatter_chance <= overswing_roll < self.overswing_break_chance
+            )
             if allow_catastrophic and overswing_roll < shatter_chance:
                 # Players tool shattered!
                 txt = f"‼️{interaction.user.name} shattered their {current_tool.display_name}!"
@@ -184,6 +195,8 @@ class RockView(discord.ui.View):
                 await interaction.followup.send(shatter_txt, ephemeral=True)
                 kwargs = {Player.tool: downgraded_tool.key, Player.durability: downgraded_tool.max_durability or 0}
                 await player.update_self(kwargs)
+                self.shattered_users.add(interaction.user.id)
+                await self._set_shatter_recovery_stage(interaction.user.id, 1)
                 self.cog.reset_durability_warnings(player.id)
                 # Clear the tool_name cache since they broke their tool
                 await self.cog.db_utils.get_cached_player_tool.cache.delete(f"miner_player_tool:{player.id}")  # type: ignore
@@ -198,6 +211,8 @@ class RockView(discord.ui.View):
                     await interaction.followup.send(shatter_txt, ephemeral=True)
                     kwargs = {Player.tool: downgraded_tool.key, Player.durability: downgraded_tool.max_durability or 0}
                     await player.update_self(kwargs)
+                    self.shattered_users.add(interaction.user.id)
+                    await self._set_shatter_recovery_stage(interaction.user.id, 1)
                     self.cog.reset_durability_warnings(player.id)
 
                     # Clear the tool_name cache since they broke their tool
@@ -212,6 +227,8 @@ class RockView(discord.ui.View):
                     new_durability,
                     max_durability,
                 )
+            elif resisted_catastrophic:
+                self.shatter_resist_survivors.add(interaction.user.id)
             self.action_window.append(txt)
             return
 
@@ -224,6 +241,7 @@ class RockView(discord.ui.View):
             if random.random() < tool.crit_chance:
                 power = round(power * tool.crit_multiplier)
                 crit = True
+                self.crit_hits[interaction.user.id] += 1
             damage_dealt = power if power <= self.current_hp else self.current_hp
             txt = ("💥CRITICAL HIT! " if crit else "") + f"{interaction.user.name}: +{damage_dealt} damage!"
             self.action_window.append(txt)
@@ -362,6 +380,9 @@ class RockView(discord.ui.View):
             if ledgers:
                 await ResourceLedger.insert(*ledgers)
 
+        if mapped_players:
+            await self._finalize_achievements(mapped_players, performance_scores, synergy_context)
+
         embed = self.embed()
         collapsed = self.current_hp > 0
         outcome = "Collapsed" if collapsed else "Depleted"
@@ -381,6 +402,185 @@ class RockView(discord.ui.View):
                 embed.add_field(name=name, value=chunk)
 
         await self.message.edit(embed=embed, view=self)
+
+    async def _finalize_achievements(
+        self,
+        mapped_players: dict[int, Player],
+        performance_scores: dict[int, int],
+        synergy_context: dict[str, t.Any],
+    ) -> None:
+        duration_seconds = max(0.0, perf_counter() - self.started_at_perf)
+        participant_count = len(self.participants)
+        depleted = self.current_hp <= 0
+        role_by_user = {uid: role_name for role_name, uid in synergy_context.get("roles", [])}
+
+        for uid in mapped_players:
+            live_keys = await self._update_stats_and_collect_achievement_keys(
+                uid=uid,
+                performance_scores=performance_scores,
+                role_by_user=role_by_user,
+                participant_count=participant_count,
+                duration_seconds=duration_seconds,
+                depleted=depleted,
+                full_synergy=len(synergy_context.get("roles", [])) >= 3,
+            )
+            exact_unlocks = await self.cog.sync_player_achievements(uid)
+            live_unlocks = await self.cog.unlock_player_achievements(uid, live_keys)
+            combined = achievements.dedupe_achievement_defs([*exact_unlocks, *live_unlocks])
+            if combined and self.message:
+                await self.cog.announce_achievement_unlocks(self.message.channel, uid, combined)
+
+    async def _update_stats_and_collect_achievement_keys(
+        self,
+        uid: int,
+        performance_scores: dict[int, int],
+        role_by_user: dict[int, str],
+        participant_count: int,
+        duration_seconds: float,
+        depleted: bool,
+        full_synergy: bool,
+    ) -> list[str]:
+        stats = await self.cog.get_player_achievement_stats(uid)
+        keys: list[str] = []
+
+        overswings = self.overswings.get(uid, 0)
+        score = performance_scores.get(uid, 0)
+        crit_hits = self.crit_hits.get(uid, 0)
+        role_name = role_by_user.get(uid)
+        shatter_recovery_stage = int(stats.shatter_recovery_stage or 0)
+
+        rocks_mined_total = (stats.rocks_mined_total or 0) + 1
+        group_sessions_total = (stats.group_sessions_total or 0) + (1 if participant_count >= 2 else 0)
+        modifier_rocks_total = (stats.modifier_rocks_mined_total or 0) + (1 if self.modifiers else 0)
+        rock_variety_seen = {
+            "small": bool(stats.mined_small) or self.rocktype.key == "small",
+            "medium": bool(stats.mined_medium) or self.rocktype.key == "medium",
+            "large": bool(stats.mined_large) or self.rocktype.key == "large",
+            "meteor": bool(stats.mined_meteor) or self.rocktype.key == "meteor",
+            "volatile geode": bool(stats.mined_geode) or self.rocktype.key == "volatile geode",
+        }
+
+        clean_streak_current = (stats.clean_streak_current or 0) + 1 if overswings == 0 else 0
+        clean_streak_best = max(stats.clean_streak_best or 0, clean_streak_current)
+
+        perf_max_streak_current = (
+            (stats.perf_max_streak_current or 0) + 1 if score >= achievements.PERFORMANCE_MAX_THRESHOLD else 0
+        )
+        perf_max_streak_best = max(stats.perf_max_streak_best or 0, perf_max_streak_current)
+
+        role_breaker_total = (stats.role_breaker_total or 0) + (1 if role_name == "Breaker" else 0)
+        role_stabilizer_total = (stats.role_stabilizer_total or 0) + (1 if role_name == "Stabilizer" else 0)
+        role_finisher_total = (stats.role_finisher_total or 0) + (1 if role_name == "Finisher" else 0)
+
+        update_kwargs: dict[t.Any, t.Any] = {
+            PlayerAchievementStats.rocks_mined_total: rocks_mined_total,
+            PlayerAchievementStats.group_sessions_total: group_sessions_total,
+            PlayerAchievementStats.modifier_rocks_mined_total: modifier_rocks_total,
+            PlayerAchievementStats.mined_small: rock_variety_seen["small"],
+            PlayerAchievementStats.mined_medium: rock_variety_seen["medium"],
+            PlayerAchievementStats.mined_large: rock_variety_seen["large"],
+            PlayerAchievementStats.mined_meteor: rock_variety_seen["meteor"],
+            PlayerAchievementStats.mined_geode: rock_variety_seen["volatile geode"],
+            PlayerAchievementStats.clean_streak_current: clean_streak_current,
+            PlayerAchievementStats.clean_streak_best: clean_streak_best,
+            PlayerAchievementStats.perf_max_streak_current: perf_max_streak_current,
+            PlayerAchievementStats.perf_max_streak_best: perf_max_streak_best,
+            PlayerAchievementStats.role_breaker_total: role_breaker_total,
+            PlayerAchievementStats.role_stabilizer_total: role_stabilizer_total,
+            PlayerAchievementStats.role_finisher_total: role_finisher_total,
+        }
+        if shatter_recovery_stage and uid not in self.shattered_users:
+            update_kwargs[PlayerAchievementStats.shatter_recovery_stage] = 0
+
+        if depleted and participant_count == 1:
+            solo_columns = {
+                "small": (PlayerAchievementStats.best_solo_small_seconds, stats.best_solo_small_seconds or 0.0),
+                "medium": (PlayerAchievementStats.best_solo_medium_seconds, stats.best_solo_medium_seconds or 0.0),
+                "large": (PlayerAchievementStats.best_solo_large_seconds, stats.best_solo_large_seconds or 0.0),
+                "meteor": (PlayerAchievementStats.best_solo_meteor_seconds, stats.best_solo_meteor_seconds or 0.0),
+                "volatile geode": (
+                    PlayerAchievementStats.best_solo_geode_seconds,
+                    stats.best_solo_geode_seconds or 0.0,
+                ),
+            }
+            solo_column, current_best = solo_columns[self.rocktype.key]
+            if current_best <= 0 or duration_seconds < current_best:
+                update_kwargs[solo_column] = duration_seconds
+
+        await stats.update_self(update_kwargs)
+
+        for threshold, key in achievements.CLEAN_STREAK_THRESHOLDS:
+            if clean_streak_current >= threshold:
+                keys.append(key)
+
+        if depleted and participant_count == 1:
+            solo_key, solo_limit = achievements.SOLO_SPEED_THRESHOLDS[self.rocktype.key]
+            if duration_seconds <= solo_limit:
+                keys.append(solo_key)
+
+        if score >= achievements.PERFORMANCE_ANY_THRESHOLD:
+            keys.append("perf_any_bonus")
+        if score >= achievements.PERFORMANCE_MAX_THRESHOLD:
+            keys.append("perf_max_any")
+            if self.rocktype.key == "meteor":
+                keys.append("perf_max_meteor")
+            elif self.rocktype.key == "volatile geode":
+                keys.append("perf_max_geode")
+            if depleted and overswings == 0:
+                keys.append("clean_and_perf_max")
+        if perf_max_streak_current >= 3:
+            keys.append("perf_max_streak_3")
+
+        if crit_hits > 0:
+            keys.append("crit_first")
+        if crit_hits >= 5:
+            keys.append("crit_five_single_rock")
+
+        for modifier in self.modifiers:
+            modifier_key = achievements.MODIFIER_ACHIEVEMENT_KEYS.get(modifier.key)
+            if modifier_key:
+                keys.append(modifier_key)
+        if len(self.modifiers) >= 2:
+            keys.append("modifier_double")
+        if modifier_rocks_total >= 50:
+            keys.append("modifier_total_50")
+
+        if participant_count >= 3:
+            keys.append("party_three_players")
+        if role_name == "Breaker":
+            keys.append("party_role_breaker")
+        elif role_name == "Stabilizer":
+            keys.append("party_role_stabilizer")
+        elif role_name == "Finisher":
+            keys.append("party_role_finisher")
+        if full_synergy:
+            keys.append("party_full_synergy")
+        if group_sessions_total >= 25:
+            keys.append("party_group_sessions_25")
+        if role_breaker_total > 0 and role_stabilizer_total > 0 and role_finisher_total > 0:
+            keys.append("party_all_roles")
+
+        for threshold, key in achievements.ROCK_COUNT_THRESHOLDS:
+            if rocks_mined_total >= threshold:
+                keys.append(key)
+        if all(rock_variety_seen.values()):
+            keys.append("rock_variety_all")
+
+        if self.rocktype.key == "meteor":
+            keys.append("rare_first_meteor")
+        elif self.rocktype.key == "volatile geode":
+            keys.append("rare_first_geode")
+
+        if uid in self.shatter_resist_survivors:
+            keys.append("tool_shatter_survived")
+        if shatter_recovery_stage and uid not in self.shattered_users:
+            keys.append("tool_shatter_comeback")
+
+        return keys
+
+    async def _set_shatter_recovery_stage(self, user_id: int, stage: int) -> None:
+        stats = await self.cog.get_player_achievement_stats(user_id)
+        await stats.update_self({PlayerAchievementStats.shatter_recovery_stage: stage})
 
     def _compute_payouts(
         self,

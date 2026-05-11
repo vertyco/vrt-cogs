@@ -93,7 +93,6 @@ class Admin(MixinMeta):
 
         await ctx.send(embed=embed)
 
-
     @miner_set.command(name="spawn")
     @commands.is_owner()
     @ensure_db_connection()
