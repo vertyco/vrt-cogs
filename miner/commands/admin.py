@@ -5,12 +5,7 @@ from redbot.core import bank, commands
 
 from ..abc import MixinMeta
 from ..common import constants
-from ..db.tables import (
-    ActiveChannel,
-    GlobalSettings,
-    GuildSettings,
-    ensure_db_connection,
-)
+from ..db.tables import ActiveChannel, GuildSettings, ensure_db_connection
 from ..views.mining_view import RockView
 
 
@@ -41,7 +36,7 @@ class Admin(MixinMeta):
     @miner_set.command(name="view")
     @ensure_db_connection()
     async def miner_view(self, ctx: commands.Context):
-        """View active mining channels"""
+        """View active mining channels and spawn settings"""
         active_channels = (
             await ActiveChannel.select(ActiveChannel.id).where(ActiveChannel.guild == ctx.guild.id).output(as_list=True)
         )
@@ -76,97 +71,28 @@ class Admin(MixinMeta):
         field += f"Gems: `{settings.gems_convert_rate}` ({_ratio_text(settings.gems_convert_rate, 'gems')})\n"
         embed.add_field(name="Resource Conversion Settings", value=field, inline=False)
 
-        # Global rock spawn timing (owner-only configurable)
-        min_interval, max_interval = await self.db_utils.get_spawn_timing()
-        timing_text = (
-            f"Min interval: `{min_interval}s`\n"
-            f"Max interval: `{max_interval}s`\n"
-            "(Only the bot owner can change these values.)"
+        global_settings = await self.db_utils.get_create_global_settings()
+        cooldown_minutes = global_settings.spawn_cooldown_seconds // 60
+        cooldown_text = (
+            f"Time between `/rock` commands: `{cooldown_minutes} minute(s)` "
+            f"({global_settings.spawn_cooldown_seconds}s)\n"
+            "Only bot owner can change this via `/minerdb cooldown`."
         )
-        embed.add_field(name="Global Rock Spawn Timing", value=timing_text, inline=False)
-
-        trigger_mode_description = (
-            "Whether message activity is tracked per-channel or per-guild.\n"
-            "In `Per Channel` mode, activity in each channel is tracked separately, and rocks can spawn in any active channel.\n"
-            "In `Per Guild` mode, activity is tracked across the entire guild, and rocks will spawn in random active channels."
-        )
-        mode = "Per Channel" if guild_settings.per_channel_activity_trigger else "Per Guild"
-        embed.add_field(
-            name="Activity Trigger Mode",
-            value=f"Current mode: `{mode}`\n{trigger_mode_description}",
-            inline=False,
-        )
+        embed.add_field(name="Rock Spawn Cooldown", value=cooldown_text, inline=False)
 
         expectation_lines = (
-            "• Rock spawn pacing (minimum/maximum timers) is global and set by the bot owner.\n"
-            "• Server admins choose *where* rocks can appear by toggling mining channels.\n"
-            "• Per-Server settings only influence eligible channels and activity tracking; rare rocks remain globally rare."
+            "• Use `/rock` to spawn rocks (cooldown is enforced per guild).\n"
+            "• Rock quality scales with average tool tier and number of recent active miners.\n"
+            "• Admins can toggle mining channels; bot owner controls cooldown globally."
         )
         embed.add_field(
-            name="Global vs Server Expectations",
+            name="How It Works",
             value=expectation_lines,
             inline=False,
         )
 
         await ctx.send(embed=embed)
 
-    @miner_set.command(name="spawntiming")
-    @commands.is_owner()
-    @ensure_db_connection()
-    async def miner_spawn_timing(
-        self,
-        ctx: commands.Context,
-        min_seconds: int,
-        max_seconds: int,
-    ):
-        """Set the global minimum and maximum time between rock spawns in seconds.
-
-        Example: `[p]minerset spawntiming 30 600`
-        """
-
-        if min_seconds <= 0 or max_seconds <= 0:
-            await ctx.send("Values must be positive integers.")
-            return
-
-        if min_seconds >= max_seconds:
-            await ctx.send("Minimum interval must be less than maximum interval.")
-            return
-
-        # Basic sanity bounds.
-        min_allowed = 5
-        max_allowed = 3600
-        if min_seconds < min_allowed or max_seconds > max_allowed:
-            await ctx.send(
-                f"Intervals must be between `{min_allowed}` and `{max_allowed}` seconds, "
-                "and minimum must be less than maximum."
-            )
-            return
-
-        settings = await self.db_utils.get_create_global_settings()
-        settings.min_spawn_interval = min_seconds
-        settings.max_spawn_interval = max_seconds
-        await settings.save([GlobalSettings.min_spawn_interval, GlobalSettings.max_spawn_interval])
-
-        # Invalidate cached timing.
-        await self.db_utils.get_spawn_timing.cache.clear()  # type: ignore[attr-defined]
-
-        await ctx.send(
-            f"Global rock spawn timing updated:\nMin interval: `{min_seconds}s`\nMax interval: `{max_seconds}s`."
-        )
-
-    @miner_set.command(name="activitytracking")
-    @ensure_db_connection()
-    async def miner_activity_tracking(self, ctx: commands.Context):
-        """Toggle per-channel or per-guild activity tracking.
-
-        `Per Channel` mode tracks activity in each channel separately, and rocks can spawn in any active channel.
-        `Per Guild` mode tracks activity across the entire guild, and rocks will spawn in random active channels.
-        """
-        settings = await self.db_utils.get_create_guild_settings(ctx.guild.id)
-        settings.per_channel_activity_trigger = not settings.per_channel_activity_trigger
-        await settings.save()
-        mode = "Per Channel" if settings.per_channel_activity_trigger else "Per Guild"
-        await ctx.send(f"Activity tracking mode set to `{mode}`.")
 
     @miner_set.command(name="spawn")
     @commands.is_owner()
@@ -188,21 +114,6 @@ class Admin(MixinMeta):
         rock = constants.ROCK_TYPES[rock_type]
         view = RockView(self, rock)
         await view.start(channel)
-
-    @miner_set.command(name="spawnprobability", aliases=["prob"])
-    @ensure_db_connection()
-    async def miner_spawn_probability(
-        self, ctx: commands.Context, channel: t.Optional[discord.TextChannel | discord.Thread]
-    ):
-        """View the current rock spawn probability for a channel."""
-        if not channel:
-            channel = ctx.channel
-
-        settings = await self.db_utils.get_create_guild_settings(ctx.guild.id)
-        key = channel.id if settings.per_channel_activity_trigger else ctx.guild.id
-        min_interval, max_interval = await self.db_utils.get_spawn_timing()
-        probability = self.activity.get_spawn_probability(key, min_interval, max_interval) * 100
-        await ctx.send(f"Current rock spawn probability in {channel.mention} is {probability:.2f}%.")
 
     @miner_set.command(name="toggleconvert")
     @ensure_db_connection()

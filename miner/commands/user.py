@@ -1,5 +1,7 @@
+import logging
 import math
 import typing as t
+from time import perf_counter
 
 import discord
 from redbot.core import bank, commands
@@ -8,10 +10,13 @@ from redbot.core.utils.chat_formatting import humanize_number
 
 from ..abc import MixinMeta
 from ..common import constants
-from ..db.tables import GuildSettings, Player, ensure_db_connection
+from ..db.tables import ActiveChannel, GuildSettings, Player, ensure_db_connection
 from ..views.leaderboard_menu import LeaderboardView
+from ..views.mining_view import RockView
 from ..views.trade_panel import TradePanel
 from ..views.upgrade_view import UpgradeConfirmView
+
+log = logging.getLogger("red.vrt.miner.commands.user")
 
 
 class User(MixinMeta):
@@ -407,68 +412,14 @@ class User(MixinMeta):
             f"{ctx.author.mention}, you have converted `{humanize_number(amount_to_deduct)}` {resource.title()} into `{humanize_number(credits_to_give)}` {creditsname}."
         )
 
-    @miner_group.command(name="status", description="Show the current mining activity state.")
-    @ensure_db_connection()
-    async def miner_status(self, ctx: commands.Context):
-        """Show an approximate rock spawn chance for this server.
-
-        This reports a bucketed spawn chance (Low / Medium / High) based on
-        recent activity and time since the last rock, without exposing exact
-        internal percentages.
-        """
-
-        if not ctx.guild:
-            await ctx.send("This command can only be used in a server.")
-            return
-
-        settings = await self.db_utils.get_create_guild_settings(ctx.guild.id)
-        key = ctx.channel.id if settings.per_channel_activity_trigger else ctx.guild.id
-
-        min_interval, max_interval = await self.db_utils.get_spawn_timing()
-
-        try:
-            spawn_prob = self.activity.get_spawn_probability(key, min_interval, max_interval)
-        except TypeError:
-            # Backwards compatibility: fall back to basic probability if older signature.
-            spawn_prob = self.activity.get_spawn_probability(key)  # type: ignore[call-arg]
-
-        # Bucket the probability for player-friendly output.
-        if spawn_prob < constants.STATUS_PROB_LOW_MAX:
-            label = "Low"
-            desc = "Rocks are unlikely to spawn right now. Keep chatting in mining channels to raise the chance."
-        elif spawn_prob < constants.STATUS_PROB_MEDIUM_MAX:
-            label = "Medium"
-            desc = "Rocks have a reasonable chance to appear soon if activity stays steady."
-        else:
-            label = "High"
-            desc = "The air feels heavy with dust. A rock could appear at any moment if activity continues."
-
-        mode = "Per Channel" if settings.per_channel_activity_trigger else "Per Guild"
-        embed = discord.Embed(
-            title="Mining Activity Status",
-            description=desc,
-            color=discord.Color.blurple(),
-        )
-        embed.add_field(name="Approximate Spawn Chance", value=f"`{label}`", inline=True)
-        embed.add_field(name="Activity Mode", value=f"`{mode}`", inline=True)
-        embed.set_footer(
-            text=(
-                "Chatting in mining-enabled channels increases the chance for a rock "
-                "to appear over time. Exact chances may change as the game is tuned. "
-                "Spawn pacing is global; server settings only control where rocks can appear."
-            )
-        )
-
-        await ctx.send(embed=embed)
-
     @miner_group.command(name="guide", description="Overview of how Miner works and core commands.")
     @ensure_db_connection()
     async def miner_guide(self, ctx: commands.Context):
         """Send an in-game guide covering the core loop, spawns, overswing, and repairs."""
 
         description = (
-            "Chat in mining-enabled channels to build up activity, wait for rocks to appear, "
-            "then mine them with your pickaxe to earn resources you can upgrade or trade."
+            "Chat in mining-enabled channels to track your recent activity, "
+            "then use `/rock` to spawn a rock based on your group's average tool tier. Mine rocks to earn resources!"
         )
         embed = discord.Embed(
             title="Miner Guide",
@@ -477,19 +428,41 @@ class User(MixinMeta):
         )
 
         spawn_text = (
-            "• Rock spawn pacing (min / max intervals) is configured globally by the bot owner.\n"
-            "• Server admins choose *which channels* can spawn rocks via `[p]minerset toggle`.\n"
-            "• If your server uses per-channel tracking, each enabled channel builds its own chance; "
-            "otherwise activity is shared server-wide."
+            "• Use `/rock` to attempt to spawn a rock in a mining-enabled channel.\n"
+            "• Each guild has a shared cooldown (default 5 minutes) between spawns.\n"
+            "• Rock quality is determined by the average tool tier and number of recent active miners.\n"
+            "• Chat in mining channels to be counted as an active miner for quality scaling."
         )
-        embed.add_field(name="Spawns & Activity", value=spawn_text, inline=False)
+        embed.add_field(name="Spawning Rocks", value=spawn_text, inline=False)
+
+        modifiers_text = (
+            "Rocks can spawn with **modifiers** — special affixes that alter their stats:\n"
+            f"• {constants.MODIFIERS['electrified'].emoji} **Electrified**: +20% loot, +50% volatility\n"
+            f"• {constants.MODIFIERS['crystalline'].emoji} **Crystalline**: +30% loot, +15% HP\n"
+            f"• {constants.MODIFIERS['volatile'].emoji} **Volatile**: +30% volatility, unpredictable\n"
+            f"• {constants.MODIFIERS['enchanted'].emoji} **Enchanted**: +15% loot, -20% volatility, lucky\n"
+            f"• {constants.MODIFIERS['fortified'].emoji} **Fortified**: +40% HP, -10% loot\n"
+            f"• {constants.MODIFIERS['blessed'].emoji} **Blessed**: +25% loot, -50% volatility. Rare blessing!\n"
+            "Use the **Inspect** button to see a rock's modifiers before mining!"
+        )
+        embed.add_field(name="Rock Modifiers", value=modifiers_text, inline=False)
 
         overswing_text = (
             "• Swinging faster than the cooldown causes slips (overswing).\n"
             "• Overswing can damage your tool and may shatter it if durability is low.\n"
-            "• Use `[p]miner status` to gauge when a rock might appear and pace your swings."
+            "• Use steady timing to avoid overswing penalties and protect durability."
         )
         embed.add_field(name="Mining & Overswing", value=overswing_text, inline=False)
+
+        performance_text = (
+            "Your payout now includes a **performance bonus** based on how well you mine each rock:\n"
+            "• Score combines damage share, swing control (fewer overswings), and active hit count\n"
+            "• Score 40+ = +5% loot bonus\n"
+            "• Score 70+ = +10% loot bonus\n"
+            "• Score 90+ = +15% loot bonus\n"
+            "• Gem bonus is capped at +8% for economy safety"
+        )
+        embed.add_field(name="Loot Performance Bonuses", value=performance_text, inline=False)
 
         durability_text = (
             "• Every hit reduces durability; breaking a tool downgrades it.\n"
@@ -502,8 +475,8 @@ class User(MixinMeta):
         commands_text = (
             f"`{p}miner inventory` - view your tool, durability, and resources.\n"
             f"`{p}miner trade @user` - trade resources with others.\n"
-            f"`{p}miner status` - see the current spawn chance bucket for this server.\n"
-            f"`{p}minerset view` - (admins) list enabled channels and timings."
+            f"`{p}rock` - attempt to spawn a rock in this mining channel.\n"
+            f"`{p}minerset view` - (admins) list enabled channels and cooldown settings."
         )
         embed.add_field(name="Helpful Commands", value=commands_text, inline=False)
 
@@ -512,3 +485,50 @@ class User(MixinMeta):
         )
 
         await ctx.send(embed=embed)
+
+    @commands.hybrid_command(name="rock", description="Attempt to spawn a rock in this mining channel.")
+    @commands.guild_only()
+    @ensure_db_connection()
+    async def spawn_rock(self, ctx: commands.Context):
+        """Attempt to spawn a rock in this mining channel.
+
+        Has a per-guild cooldown (default 5 minutes). Rock quality scales with
+        the average tool tier and player count of recent chatters.
+        """
+        # Check if this is an active mining channel
+        is_mining_channel = await ActiveChannel.exists().where(ActiveChannel.id == ctx.channel.id)
+        if not is_mining_channel:
+            return await ctx.send(
+                "Rocks cannot spawn in this channel. Ask an admin to enable it with `/minerset toggle`.",
+                ephemeral=True,
+            )
+
+        settings = await self.db_utils.get_create_guild_settings(ctx.guild.id)
+        global_settings = await self.db_utils.get_create_global_settings()
+        cooldown_remaining = self.get_guild_spawn_cooldown_remaining(
+            ctx.guild.id, global_settings.spawn_cooldown_seconds
+        )
+
+        if cooldown_remaining > 0:
+            minutes = int(cooldown_remaining // 60)
+            seconds = int(cooldown_remaining % 60)
+            return await ctx.send(
+                f"Rock spawn cooldown is active. Try again in `{minutes}m {seconds}s`.",
+                ephemeral=True,
+            )
+
+        rock_type_result = self.choose_rock_type(ctx.channel.id)
+        modifiers = self.choose_modifiers(rock_type_result)
+
+        try:
+            await self.notify_spawn_subscribers(ctx.guild, settings, ctx.send)
+
+            rock: constants.RockType = constants.ROCK_TYPES[rock_type_result]
+            view = RockView(self, rock, modifiers)
+            await view.start(ctx.channel)
+            # Consume cooldown only after the rock message is successfully posted.
+            self.guild_spawn_cooldowns[ctx.guild.id] = perf_counter()
+            await view.wait()
+        except Exception as e:
+            log.error(f"Error spawning rock in {ctx.channel.id}: {e}")
+            await ctx.send("An error occurred while spawning the rock.", ephemeral=True)

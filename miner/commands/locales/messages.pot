@@ -153,17 +153,6 @@ msgid ""
 "        "
 msgstr ""
 
-#: miner\commands\user.py:413
-#, docstring
-msgid ""
-"Show an approximate rock spawn chance for this server.\n"
-"\n"
-"        This reports a bucketed spawn chance (Low / Medium / High) based on\n"
-"        recent activity and time since the last rock, without exposing exact\n"
-"        internal percentages.\n"
-"        "
-msgstr ""
-
 #: miner\commands\user.py:467
 #, docstring
 msgid ""

@@ -64,3 +64,21 @@ class DatabaseCommands(MixinMeta):
         issues = await engine.diagnose_issues(self, config)
         for p in pagify(issues, page_length=1980):
             await ctx.send(box(p, lang="python"))
+
+    @dbsetgroup.command(name="cooldown")
+    @ensure_db_connection()
+    async def dbsetgroup_cooldown(self, ctx: commands.Context, seconds: commands.positive_int):
+        """Set global `/rock` cooldown in seconds (enforced per guild)."""
+        if seconds < 10:
+            await ctx.send("Cooldown must be at least 10 seconds.")
+            return
+        if seconds > 3600:
+            await ctx.send("Cooldown cannot exceed 3600 seconds (1 hour).")
+            return
+
+        settings = await self.db_utils.get_create_global_settings()
+        settings.spawn_cooldown_seconds = seconds
+        await settings.save()
+
+        minutes = seconds // 60
+        await ctx.send(f"Global rock spawn cooldown set to `{minutes} minute(s)` ({seconds}s).")
