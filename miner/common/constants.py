@@ -38,7 +38,7 @@ RECENT_CHATTER_WINDOW_SECONDS: int = 5 * 60  # Time window for tracking recent c
 # Rock quality scaling factors
 TOOL_TIER_WEIGHT: float = 0.85  # How much tool tier influences rock quality (0-1)
 PLAYER_COUNT_WEIGHT: float = 0.15  # How much player count influences rock quality (0-1)
-EXPECTED_ACTIVE_PLAYERS: int = 5  # Baseline for player count scaling (channels with this many players get full bonus)
+EXPECTED_ACTIVE_PLAYERS: int = 3  # Baseline for player count scaling (channels with this many players get full bonus)
 
 # UI / visuals
 HP_BAR_SEGMENTS: int = 10
