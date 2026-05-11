@@ -36,8 +36,8 @@ RECENT_CHATTER_CACHE_SIZE: int = 20  # Number of recent active users to track pe
 RECENT_CHATTER_WINDOW_SECONDS: int = 5 * 60  # Time window for tracking recent chatters
 
 # Rock quality scaling factors
-TOOL_TIER_WEIGHT: float = 0.7  # How much tool tier influences rock quality (0-1)
-PLAYER_COUNT_WEIGHT: float = 0.3  # How much player count influences rock quality (0-1)
+TOOL_TIER_WEIGHT: float = 0.85  # How much tool tier influences rock quality (0-1)
+PLAYER_COUNT_WEIGHT: float = 0.15  # How much player count influences rock quality (0-1)
 EXPECTED_ACTIVE_PLAYERS: int = 5  # Baseline for player count scaling (channels with this many players get full bonus)
 
 # UI / visuals
