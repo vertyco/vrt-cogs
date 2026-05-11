@@ -457,12 +457,22 @@ class User(MixinMeta):
         performance_text = (
             "Your payout now includes a **performance bonus** based on how well you mine each rock:\n"
             "• Score combines damage share, swing control (fewer overswings), and active hit count\n"
-            "• Score 40+ = +5% loot bonus\n"
-            "• Score 70+ = +10% loot bonus\n"
-            "• Score 90+ = +15% loot bonus\n"
+            "• Score 40+ = +3% loot bonus\n"
+            "• Score 70+ = +5% loot bonus\n"
+            "• Score 90+ = +8% loot bonus\n"
             "• Gem bonus is capped at +8% for economy safety"
         )
         embed.add_field(name="Loot Performance Bonuses", value=performance_text, inline=False)
+
+        synergy_text = (
+            "Mining with a balanced crew can activate **party synergy** bonuses:\n"
+            "• **Breaker** brings strong damage share\n"
+            "• **Stabilizer** keeps overswings low\n"
+            "• **Finisher** dominates the last chunk of rock HP\n"
+            "• 2 roles = +2% stone/iron and -1 durability loss\n"
+            "• 3 roles = +4% stone/iron and -1 durability loss"
+        )
+        embed.add_field(name="Party Synergy", value=synergy_text, inline=False)
 
         durability_text = (
             "• Every hit reduces durability; breaking a tool downgrades it.\n"
