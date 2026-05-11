@@ -194,6 +194,8 @@ test_outputs/
 scratch*
 TODO.md
 MIGRATION*
+!*/db/migrations/
+!*/db/migrations/*.py
 templates/
 .github/skills/
 references/
