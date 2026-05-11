@@ -17,6 +17,11 @@ from piccolo.table import Table, sort_table_classes
 from redbot.core import commands
 from redbot.core.commands import check
 
+try:
+    from ..common import constants
+except ImportError:
+    from common import constants
+
 log = logging.getLogger("red.vrt.miner.db.tables")
 
 
@@ -36,10 +41,8 @@ class TableMixin:
 
 class GuildSettings(TableMixin, Table):
     id = BigInt(primary_key=True)  # Discord Guild ID
-    per_channel_activity_trigger = Boolean(default=False)  # Whether to use per-channel activity tracking
 
     notify_players = Array(base_column=BigInt(), default=list)  # List of user IDs to notify on rock spawn
-    time_between_spawns = Integer()  # Min time between spawns in seconds
 
     # When bot is using per-guild bank (amount // convert_rate = economy credits)
     conversion_enabled = Boolean(default=False)  # Whether conversion is enabled
@@ -52,17 +55,14 @@ class GlobalSettings(TableMixin, Table):
     id = Serial(primary_key=True)
     key = SmallInt(unique=True, default=1)  # Always 1
 
+    # Global spawn pacing settings
+    spawn_cooldown_seconds = Integer(default=constants.DEFAULT_SPAWN_COOLDOWN_SECONDS)
+
     # When bot is using global bank (amount // convert_rate = economy credits)
     conversion_enabled = Boolean(default=False)  # Whether conversion is enabled
     stone_convert_rate = Float(default=20.0)  # Stone to gems conversion rate
     iron_convert_rate = Float(default=5.0)  # Iron to gems conversion rate
     gems_convert_rate = Float(default=1.0)  # Gems to gems conversion rate
-
-    # Global rock spawn timing configuration (in seconds)
-    # These control the minimum and maximum time between rock spawns globally.
-    # If unset, they fall back to the constants defined in miner.common.constants.
-    min_spawn_interval = Integer(null=True)
-    max_spawn_interval = Integer(null=True)
 
 
 class Player(TableMixin, Table):

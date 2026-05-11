@@ -1,10 +1,13 @@
+import typing as t
 from abc import ABC, ABCMeta, abstractmethod
 
+import discord
 from discord.ext.commands.cog import CogMeta
 from piccolo.engine.postgres import PostgresEngine
 from redbot.core.bot import Red
 
-from .common import tracker
+from .common import constants, tracker
+from .db.tables import GuildSettings
 from .db.utils import DBUtils
 
 
@@ -20,9 +23,8 @@ class MixinMeta(ABC):
         self.db: PostgresEngine | None
         self.db_utils: DBUtils
 
-        self.activity: tracker.ActivityTracker
-        self.active_guild_rocks: dict[int, int]
-        self.active_channel_rocks: set[int]
+        self.chat_cache: tracker.ChannelChatCache
+        self.guild_spawn_cooldowns: dict[int, float]
 
     @abstractmethod
     async def initialize(self) -> None:
@@ -38,4 +40,29 @@ class MixinMeta(ABC):
 
     @abstractmethod
     def register_durability_ratio(self, player_id: int, ratio: float | None) -> float | None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_spawn_activity_metrics(self, channel_id: int) -> tuple[float, int, float]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_guild_spawn_cooldown_remaining(self, guild_id: int, cooldown_seconds: int) -> float:
+        raise NotImplementedError
+
+    @abstractmethod
+    def choose_rock_type(self, channel_id: int) -> constants.RockTierName:
+        raise NotImplementedError
+
+    @abstractmethod
+    def choose_modifiers(self, rock_type: constants.RockTierName) -> list[constants.Modifier]:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def notify_spawn_subscribers(
+        self,
+        guild: discord.Guild,
+        settings: GuildSettings,
+        destination: t.Callable[[str], t.Awaitable[discord.Message]],
+    ) -> None:
         raise NotImplementedError

@@ -30,21 +30,39 @@ def hp_bar(hp: int, max_hp: int) -> str:
 
 
 class RockView(discord.ui.View):
-    def __init__(self, cog: MixinMeta, rocktype: constants.RockType):
+    def __init__(self, cog: MixinMeta, rocktype: constants.RockType, modifiers: list[constants.Modifier] | None = None):
         super().__init__(timeout=None)
         self.cog = cog
         self.rocktype: constants.RockType = rocktype
+        self.modifiers = modifiers or []
 
-        self.current_hp = rocktype.hp
+        # Apply modifier stat multipliers
+        hp_mult = 1.0
+        loot_mult = 1.0
+        volatility_mult = 1.0
+        for mod in self.modifiers:
+            hp_mult *= mod.hp_multiplier
+            loot_mult *= mod.loot_multiplier
+            volatility_mult *= mod.volatility_multiplier
 
-        self.total_loot = rocktype.total_loot
-        self.floor_loot = rocktype.floor_loot
+        self.max_hp = max(1, int(round(rocktype.hp * hp_mult)))
+        self.current_hp = self.max_hp
+
+        # Apply loot multipliers
+        self.total_loot = {k: max(1, int(round(v * loot_mult))) for k, v in rocktype.total_loot.items() if v > 0}
+        self.floor_loot = {k: max(1, int(round(v * loot_mult))) for k, v in rocktype.floor_loot.items() if v > 0}
+
+        # Store original volatility for later use
+        self.volatility_multiplier = volatility_mult
+        self.overswing_break_chance = min(1.0, rocktype.overswing_break_chance * volatility_mult)
+        self.overswing_damage_chance = min(1.0, rocktype.overswing_damage_chance * volatility_mult)
 
         self.message: discord.Message | None = None
 
         # user_id -> total damage dealt
         self.participants: dict[int, int] = defaultdict(int)
         self.hits: dict[int, int] = defaultdict(int)
+        self.overswings: dict[int, int] = defaultdict(int)
         self.mine_cooldown = commands.CooldownMapping.from_cooldown(
             rate=constants.SWINGS_PER_THRESHOLD,
             per=constants.OVERSWING_THRESHOLD_SECONDS,
@@ -82,12 +100,19 @@ class RockView(discord.ui.View):
 
     def color(self) -> discord.Color:
         """Progressively go from white to red as the health gets closer to 0"""
-        decrement = int((255 / self.rocktype.hp) * self.current_hp)
+        decrement = int((255 / self.max_hp) * self.current_hp)
+        decrement = max(0, min(255, decrement))
         green = blue = decrement
         return discord.Color.from_rgb(255, green, blue)
 
     def embed(self):
-        embed = discord.Embed(title=self.rocktype.display_name, color=self.color())
+        title = self.rocktype.display_name
+        # Add modifier emojis to title if modifiers exist
+        if self.modifiers:
+            mod_emojis = " ".join(f"{mod.emoji}" for mod in self.modifiers)
+            title = f"{mod_emojis} {title}"
+
+        embed = discord.Embed(title=title, color=self.color())
 
         if not self.current_hp:
             embed.set_thumbnail(url=constants.DEPLETED_ROCK_URL)
@@ -96,11 +121,11 @@ class RockView(discord.ui.View):
             embed.set_image(url=self.rocktype.image_url)
             ts = round(self.end_time.timestamp())
             embed.description = f"Mineshaft is unstable and will collapse <t:{ts}:R>"
-            embed.add_field(name="HP", value=box(hp_bar(self.current_hp, self.rocktype.hp), lang="py"))
+            embed.add_field(name="HP", value=box(hp_bar(self.current_hp, self.max_hp), lang="py"))
         else:
             embed.set_image(url=constants.COLLAPSED_MINESHAFT_URL)
             embed.description = "Mineshaft has collapsed!"
-            embed.add_field(name="HP", value=box(hp_bar(self.current_hp, self.rocktype.hp), lang="py"))
+            embed.add_field(name="HP", value=box(hp_bar(self.current_hp, self.max_hp), lang="py"))
 
         if self.action_window:
             embed.description += "\n\n**Recent Actions:**\n"
@@ -123,6 +148,7 @@ class RockView(discord.ui.View):
         fake_msg = SimpleNamespace(author=SimpleNamespace(id=interaction.user.id))
         bucket = self.mine_cooldown.get_bucket(fake_msg)
         if bucket.update_rate_limit():
+            self.overswings[interaction.user.id] += 1
             txt = f"🤕{interaction.user.name} slipped and fell from swinging too fast!"
             if tool_name == "wood":
                 self.action_window.append(txt)
@@ -139,7 +165,7 @@ class RockView(discord.ui.View):
             # Tool break sets them back to previous tool tier
             overswing_roll = random.uniform(0.0, 1.0)
             # Apply tool shatter resistance to overswing shatter chance
-            shatter_chance = self.rocktype.overswing_break_chance * (1 - current_tool.shatter_resistance)
+            shatter_chance = self.overswing_break_chance * (1 - current_tool.shatter_resistance)
             if allow_catastrophic and overswing_roll < shatter_chance:
                 # Players tool shattered!
                 txt = f"‼️{interaction.user.name} shattered their {current_tool.display_name}!"
@@ -151,7 +177,7 @@ class RockView(discord.ui.View):
                 # Clear the tool_name cache since they broke their tool
                 await self.cog.db_utils.get_cached_player_tool.cache.delete(f"miner_player_tool:{player.id}")  # type: ignore
                 return
-            elif overswing_roll < self.rocktype.overswing_damage_chance:
+            elif overswing_roll < self.overswing_damage_chance:
                 new_durability = max(0, player.durability - self.rocktype.overswing_damage)
                 actual_damage_dealt = self.rocktype.overswing_damage if new_durability else player.durability
                 txt = f"⚠️{interaction.user.name} did {actual_damage_dealt} damage to their pickaxe swinging too hastily"
@@ -218,13 +244,22 @@ class RockView(discord.ui.View):
         if not self.cog.db_active():
             return await interaction.response.send_message("Database is not active.", ephemeral=True)
         embed = discord.Embed(title="Rock Inspection")
-        embed.add_field(name="Current HP", value=f"`{self.current_hp}`", inline=False)
+        embed.add_field(name="Current HP", value=f"`{self.current_hp}` / `{self.max_hp}`", inline=False)
         collapse_loot = [f"• {k.title()}: {v}" for k, v in self.floor_loot.items()]
         embed.add_field(name="Collapse Yield", value=box("\n".join(collapse_loot) or "None", lang="py"))
         full_loot = [f"• {k.title()}: {v}" for k, v in self.total_loot.items()]
         embed.add_field(name="Depletion Yield", value=box("\n".join(full_loot) or "None", lang="py"))
-        volatility = f"• {self.rocktype.overswing_break_chance * 100:.0f}%"
+        volatility = (
+            f"• Shatter chance: {self.overswing_break_chance * 100:.0f}%\n"
+            f"• Damage chance: {self.overswing_damage_chance * 100:.0f}%"
+        )
         embed.add_field(name="Volatility", value=box(volatility, lang="py"))
+
+        # Add modifier info if present
+        if self.modifiers:
+            mod_text = "\n".join([f"{mod.emoji} **{mod.display_name}**: {mod.description}" for mod in self.modifiers])
+            embed.add_field(name="Rock Modifiers", value=mod_text, inline=False)
+
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     async def finalize(self):
@@ -246,7 +281,7 @@ class RockView(discord.ui.View):
 
         buffer = StringIO()
         # {user_id: {resource: amount}}
-        payouts: dict[int, dict[constants.Resource, int]] = self._compute_payouts()
+        payouts, performance_scores, performance_bonus_pct = self._compute_payouts()
         if payouts:
             ledgers: list[ResourceLedger] = []
             sorted_participants = sorted(self.participants.items(), key=lambda x: x[1], reverse=True)
@@ -273,8 +308,14 @@ class RockView(discord.ui.View):
 
                 if update_kwargs:
                     hits = self.hits[uid]
+                    overswings = self.overswings.get(uid, 0)
+                    score = performance_scores.get(uid, 0)
+                    bonus_pct = performance_bonus_pct.get(uid, 0.0)
                     loot = " ".join(lines)
                     buffer.write(f"<@{uid}> dealt `{round(dmg)}` damage in `{hits}` hits:\n{loot}\n")
+                    buffer.write(
+                        f"Performance: score `{score}` | overswings `{overswings}` | bonus `+{bonus_pct * 100:.0f}%`\n"
+                    )
 
                     player: Player = mapped_players[uid]
                     if player.tool != "wood":
@@ -315,7 +356,11 @@ class RockView(discord.ui.View):
 
         await self.message.edit(embed=embed, view=self)
 
-    def _compute_payouts(self) -> dict[int, dict[constants.Resource, int]]:
+    def _compute_payouts(self) -> tuple[
+        dict[int, dict[constants.Resource, int]],
+        dict[int, int],
+        dict[int, float],
+    ]:
         """Evenly distribute loot pool among participants"""
         # Select pool: collapse -> floor_loot pool; depletion -> total_loot pool
         collapsed = self.current_hp > 0
@@ -328,6 +373,32 @@ class RockView(discord.ui.View):
 
         # {user_id: {resource: amount}}
         payouts: dict[int, dict[constants.Resource, int]] = defaultdict(lambda: defaultdict(int))
+        performance_scores: dict[int, int] = {}
+        performance_bonus_pct: dict[int, float] = {}
+
+        for uid, dmg in sorted_participants:
+            hits = self.hits.get(uid, 0)
+            overswings = self.overswings.get(uid, 0)
+            total_swings = hits + overswings
+
+            damage_ratio = (dmg / total_damage) if total_damage else 0.0
+            control_ratio = (hits / total_swings) if total_swings else 1.0
+            activity_ratio = min(1.0, hits / constants.PERFORMANCE_HIT_TARGET)
+
+            score = round(
+                (damage_ratio * constants.PERFORMANCE_DAMAGE_SCORE_MAX)
+                + (control_ratio * constants.PERFORMANCE_CONTROL_SCORE_MAX)
+                + (activity_ratio * constants.PERFORMANCE_ACTIVITY_SCORE_MAX)
+            )
+            performance_scores[uid] = score
+
+            bonus_pct = 0.0
+            for threshold, pct in constants.PERFORMANCE_BONUS_TIERS:
+                if score >= threshold:
+                    bonus_pct = pct
+                    break
+            performance_bonus_pct[uid] = bonus_pct
+
         for resource, total_amount in pool.items():
             assigned_sum = 0  # How much to award the user
 
@@ -355,7 +426,18 @@ class RockView(discord.ui.View):
                     payouts[uid][resource] += 1
                     leftover -= 1
 
-        return payouts
+            for uid, __ in sorted_participants:
+                base_amount = payouts[uid][resource]
+                if base_amount <= 0:
+                    continue
+                bonus_pct = performance_bonus_pct.get(uid, 0.0)
+                if resource == "gems":
+                    bonus_pct = min(bonus_pct, constants.PERFORMANCE_GEM_BONUS_CAP)
+                bonus_amount = int(base_amount * bonus_pct)
+                if bonus_amount > 0:
+                    payouts[uid][resource] += bonus_amount
+
+        return payouts, performance_scores, performance_bonus_pct
 
     async def _maybe_send_durability_warning(
         self,

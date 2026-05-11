@@ -9,6 +9,14 @@ User commands<br/>
  - Usage: `[p]miner`
  - Slash Usage: `/miner`
 
+## [p]rock (Hybrid Command)
+
+Attempt to spawn a rock in this mining channel.<br/>
+
+ - Usage: `[p]rock`
+ - Slash Usage: `/rock`
+ - Checks: `ensure_db_connection`
+
 ### [p]miner notify (Hybrid Command)
 
 Toggle rock spawn notifications.<br/>
@@ -57,18 +65,6 @@ View the leaderboard.<br/>
  - Usage: `[p]miner leaderboard [local=True]`
  - Slash Usage: `/miner leaderboard [local=True]`
  - Aliases: `lb`
- - Checks: `ensure_db_connection`
-
-### [p]miner status (Hybrid Command)
-
-Show an approximate rock spawn chance for this server.<br/>
-
-This reports a bucketed spawn chance (Low / Medium / High) based on<br/>
-recent activity and time since the last rock, without exposing exact<br/>
-internal percentages.<br/>
-
- - Usage: `[p]miner status`
- - Slash Usage: `/miner status`
  - Checks: `ensure_db_connection`
 
 ### [p]miner upgrade (Hybrid Command)
@@ -157,32 +153,12 @@ Spawn a new mining rock in the specified channel.<br/>
  - Restricted to: `BOT_OWNER`
  - Checks: `ensure_db_connection`
 
-### [p]minerset activitytracking
+### [p]minerdb cooldown
 
-Toggle per-channel or per-guild activity tracking.<br/>
+Set global `/rock` cooldown in seconds (enforced per guild).<br/>
 
-`Per Channel` mode tracks activity in each channel separately, and rocks can spawn in any active channel.<br/>
-`Per Guild` mode tracks activity across the entire guild, and rocks will spawn in random active channels.<br/>
-
- - Usage: `[p]minerset activitytracking`
- - Checks: `ensure_db_connection`
-
-### [p]minerset spawntiming
-
-Set the global minimum and maximum time between rock spawns in seconds.<br/>
-
-Example: `[p]minerset spawntiming 30 600`<br/>
-
- - Usage: `[p]minerset spawntiming <min_seconds> <max_seconds>`
+ - Usage: `[p]minerdb cooldown <seconds>`
  - Restricted to: `BOT_OWNER`
- - Checks: `ensure_db_connection`
-
-### [p]minerset spawnprobability
-
-View the current rock spawn probability for a channel.<br/>
-
- - Usage: `[p]minerset spawnprobability <channel>`
- - Aliases: `prob`
  - Checks: `ensure_db_connection`
 
 ### [p]minerset convertratio

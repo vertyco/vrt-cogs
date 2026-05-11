@@ -12,6 +12,16 @@ RESOURCES: tuple[Resource, ...] = ("stone", "iron", "gems")
 TOOL_ORDER: tuple[ToolName, ...] = ("wood", "stone", "iron", "steel", "carbide", "diamond")
 ROCK_ORDER: tuple[RockTierName, ...] = ("small", "medium", "large", "meteor", "volatile geode")
 
+# Tool tier values for rock scaling (higher = better)
+TOOL_TIER_VALUES: dict[ToolName, int] = {
+    "wood": 1,
+    "stone": 2,
+    "iron": 3,
+    "steel": 4,
+    "carbide": 5,
+    "diamond": 6,
+}
+
 # Pacing
 SWINGS_PER_THRESHOLD: int = 3
 OVERSWING_THRESHOLD_SECONDS: float = 3.2  # seconds between swings to count as overswing
@@ -20,28 +30,15 @@ OVERSWING_SHATTER_DURA_THRESHOLD: float = 0.30
 # Durability percentage thresholds where we start warning players about tool condition
 DURABILITY_WARNING_THRESHOLDS: tuple[float, ...] = (0.30, 0.10)
 
-# Spawning
-ACTIVITY_WINDOW_SECONDS: int = 5 * 60  # Length of sliding window in seconds
-MIN_TIME_BETWEEN_SPAWNS: int = 10  # seconds
-ABSOLUTE_MAX_TIME_BETWEEN_SPAWNS: int = 10 * 60  # 10 minutes, after which even a single person can spawn a rock
-SPAWN_PROB_MIN: float = 0.05  # minimum spawn chance
-SPAWN_PROB_MAX: float = 0.50  # maximum spawn chance
-SCALE_PER_MESSAGE: float = 0.03  # per-message increase to spawn chance
-SPAWN_BONUS_MAX: float = 0.15  # max activity bonus to add to spawn chance
+# Rock spawning (command-based)
+DEFAULT_SPAWN_COOLDOWN_SECONDS: int = 5 * 60  # 5 minutes, per-guild cooldown between /rock commands
+RECENT_CHATTER_CACHE_SIZE: int = 20  # Number of recent active users to track per channel
+RECENT_CHATTER_WINDOW_SECONDS: int = 5 * 60  # Time window for tracking recent chatters
 
-# Spawn feedback (UX)
-RUMBLE_MIN_INTERVAL_SECONDS: float = 60.0  # minimum time between rumble messages per key
-RUMBLE_MEDIUM_THRESHOLD: float = 0.10  # spawn probability where rumble feedback can start
-RUMBLE_HIGH_THRESHOLD: float = 0.30  # spawn probability considered "high" for rumble
-RUMBLE_CHANCE_MEDIUM: float = 0.10  # chance to send rumble when in medium range
-RUMBLE_CHANCE_HIGH: float = 0.30  # chance to send rumble when in high range
-
-# Status command spawn buckets
-STATUS_PROB_LOW_MAX: float = 0.05
-STATUS_PROB_MEDIUM_MAX: float = 0.20
-
-PER_GUILD_ROCK_CAP: int = 4
-PER_CHANNEL_ROCK_CAP: int = 1
+# Rock quality scaling factors
+TOOL_TIER_WEIGHT: float = 0.7  # How much tool tier influences rock quality (0-1)
+PLAYER_COUNT_WEIGHT: float = 0.3  # How much player count influences rock quality (0-1)
+EXPECTED_ACTIVE_PLAYERS: int = 5  # Baseline for player count scaling (channels with this many players get full bonus)
 
 # UI / visuals
 HP_BAR_SEGMENTS: int = 10
@@ -51,6 +48,20 @@ HP_BAR_EMPTY: str = "▱"
 # Tool repair cost percentage (e.g., 0.5 = 50% of upgrade cost)
 TOOL_REPAIR_COST_PCT: float = 0.5
 HITS_PER_DURA_LOST: int = 2  # 1 durability lost per 2 hits
+
+# Loot performance bonus tuning
+PERFORMANCE_DAMAGE_SCORE_MAX: int = 40
+PERFORMANCE_CONTROL_SCORE_MAX: int = 40
+PERFORMANCE_ACTIVITY_SCORE_MAX: int = 20
+PERFORMANCE_HIT_TARGET: int = 10
+# Score thresholds mapped to payout bonus percentages.
+# Ordered from highest threshold to lowest.
+PERFORMANCE_BONUS_TIERS: tuple[tuple[int, float], ...] = (
+    (90, 0.15),
+    (70, 0.10),
+    (40, 0.05),
+)
+PERFORMANCE_GEM_BONUS_CAP: float = 0.08
 
 # Emojis (adjust to your server assets if needed)
 PICKAXE_EMOJI: str = "\N{PICK}\N{VARIATION SELECTOR-16}"
@@ -245,3 +256,84 @@ ROCK_TYPES: dict[RockTierName, RockType] = {
 }
 
 MAX_ROCK_TTL_SECONDS: int = max(rock.ttl_seconds for rock in ROCK_TYPES.values())
+
+
+@dataclass(frozen=True, slots=True)
+class Modifier:
+    """Rock modifier that alters gameplay stats"""
+
+    key: str
+    emoji: str
+    display_name: str
+    description: str
+    # Stat multipliers (1.0 = no change)
+    hp_multiplier: float = 1.0
+    loot_multiplier: float = 1.0
+    volatility_multiplier: float = 1.0
+    # How likely this modifier is to appear (higher = rarer)
+    rarity: int = 1
+
+
+# Rock modifiers - appear based on rock tier and chance
+MODIFIERS: dict[str, Modifier] = {
+    "electrified": Modifier(
+        key="electrified",
+        emoji="⚡",
+        display_name="Electrified",
+        description="Crackles with energy. +20% loot, but +50% volatility.",
+        hp_multiplier=1.0,
+        loot_multiplier=1.2,
+        volatility_multiplier=1.5,
+        rarity=3,
+    ),
+    "crystalline": Modifier(
+        key="crystalline",
+        emoji="💎",
+        display_name="Crystalline",
+        description="Glimmers with crystal formations. +30% loot, +15% HP.",
+        hp_multiplier=1.15,
+        loot_multiplier=1.3,
+        volatility_multiplier=1.0,
+        rarity=5,
+    ),
+    "volatile": Modifier(
+        key="volatile",
+        emoji="🔥",
+        display_name="Volatile",
+        description="Unstable and dangerous. +30% volatility, unpredictable outcomes.",
+        hp_multiplier=1.0,
+        loot_multiplier=1.0,
+        volatility_multiplier=1.3,
+        rarity=4,
+    ),
+    "enchanted": Modifier(
+        key="enchanted",
+        emoji="🌙",
+        display_name="Enchanted",
+        description="Shimmers with magic. +15% loot, -20% volatility, good fortune.",
+        hp_multiplier=1.1,
+        loot_multiplier=1.15,
+        volatility_multiplier=0.8,
+        rarity=6,
+    ),
+    "fortified": Modifier(
+        key="fortified",
+        emoji="🛡️",
+        display_name="Fortified",
+        description="Hardened exterior. +40% HP, but -10% loot.",
+        hp_multiplier=1.4,
+        loot_multiplier=0.9,
+        volatility_multiplier=1.0,
+        rarity=4,
+    ),
+    "blessed": Modifier(
+        key="blessed",
+        emoji="✨",
+        display_name="Blessed",
+        description="Divine favor. +25% loot, -50% volatility. Rare blessing.",
+        hp_multiplier=1.0,
+        loot_multiplier=1.25,
+        volatility_multiplier=0.5,
+        rarity=8,
+    ),
+}
