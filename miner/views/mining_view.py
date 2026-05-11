@@ -367,9 +367,9 @@ class RockView(discord.ui.View):
         outcome = "Collapsed" if collapsed else "Depleted"
         modifier_summary = ", ".join(mod.display_name for mod in self.modifiers) if self.modifiers else "None"
         summary_lines = [
-            f"Outcome: `{outcome}`",
-            f"Miners: `{len(self.participants)}`",
-            f"Modifiers: `{modifier_summary}`",
+            f"-# Outcome: `{outcome}`",
+            f"-# Miners: `{len(self.participants)}`",
+            f"-# Modifiers: `{modifier_summary}`",
         ]
         embed.add_field(name="Summary", value="\n".join(summary_lines), inline=False)
         embed.set_footer(text='Run the "miner repair" command to repair your tools.')
