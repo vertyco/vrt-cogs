@@ -139,13 +139,14 @@ class User(MixinMeta):
             await ctx.send(f"Your {tool.display_name} is already at full durability! ({max_dura})")
             return
 
-        # Calculate repair cost dynamically based on missing durability percentage
-        # Base cost is TOOL_REPAIR_COST_PCT of upgrade cost, scaled by missing_ratio
+        # Calculate repair cost dynamically based on missing durability percentage.
+        # Base cost scales by tool tier, then by the missing durability ratio.
         missing_ratio = (max_dura - player.durability) / max_dura
         repair_cost = {}
         if tool.upgrade_cost:
+            repair_pct = constants.TOOL_REPAIR_COST_PCTS[player.tool]
             for resource, amount in tool.upgrade_cost.items():
-                base = amount * constants.TOOL_REPAIR_COST_PCT
+                base = amount * repair_pct
                 scaled = base * missing_ratio
                 cost = int(math.ceil(scaled))
                 if cost > 0:
@@ -469,14 +470,16 @@ class User(MixinMeta):
             "• **Breaker** brings strong damage share\n"
             "• **Stabilizer** keeps overswings low\n"
             "• **Finisher** dominates the last chunk of rock HP\n"
-            "• 2 roles = +2% stone/iron and -1 durability loss\n"
-            "• 3 roles = +4% stone/iron and -1 durability loss"
+            "• 2 roles = +2% stone/iron for the crew\n"
+            "• 3 roles = +4% stone/iron for the crew\n"
+            "• Active role holders save 1 durability when wear is applied"
         )
         embed.add_field(name="Party Synergy", value=synergy_text, inline=False)
 
         durability_text = (
             "• Every hit reduces durability; breaking a tool downgrades it.\n"
             "• Repairs cost a fraction of the upgrade resources via `[p]miner repair true`.\n"
+            "• Higher-tier pickaxes cost more to repair, so upkeep matters more later on.\n"
             "• Upgrade tools with `[p]miner upgrade` to increase power and max durability."
         )
         embed.add_field(name="Durability & Repairs", value=durability_text, inline=False)
