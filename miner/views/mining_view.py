@@ -129,7 +129,7 @@ class RockView(discord.ui.View):
 
         if self.action_window:
             embed.description += "\n\n**Recent Actions:**\n"
-            embed.description += box("\n".join([i.strip() for i in self.action_window]))
+            embed.description += "\n".join(f"-# {i.strip()}" for i in self.action_window)
         return embed
 
     @discord.ui.button(emoji=constants.PICKAXE_EMOJI, style=discord.ButtonStyle.success)
@@ -312,9 +312,10 @@ class RockView(discord.ui.View):
                     score = performance_scores.get(uid, 0)
                     bonus_pct = performance_bonus_pct.get(uid, 0.0)
                     loot = " ".join(lines)
-                    buffer.write(f"<@{uid}> dealt `{round(dmg)}` damage in `{hits}` hits:\n{loot}\n")
+                    buffer.write(f"-# <@{uid}> dealt `{round(dmg)}` damage in `{hits}` hits\n")
+                    buffer.write(f"-# Yield: {loot}\n")
                     buffer.write(
-                        f"Performance: score `{score}` | overswings `{overswings}` | bonus `+{bonus_pct * 100:.0f}%`\n"
+                        f"-# Performance: `{score}` | overswings `{overswings}` | bonus `+{bonus_pct * 100:.0f}%`\n"
                     )
 
                     player: Player = mapped_players[uid]
@@ -327,15 +328,15 @@ class RockView(discord.ui.View):
                         new_durability = max(0, player.durability - dura_deduction)
                         if new_durability:
                             buffer.write(
-                                f"-`{dura_deduction}` durability to {current_tool.display_name} (now `{new_durability}`)\n"
+                                f"-# -`{dura_deduction}` durability to {current_tool.display_name} (now `{new_durability}`)\n"
                             )
                             update_kwargs[Player.durability] = new_durability
                             warning_note = self._durability_warning_note(player.id, current_tool, new_durability)
                             if warning_note:
-                                buffer.write(f"{warning_note}\n")
+                                buffer.write(f"-# {warning_note}\n")
                         else:
                             buffer.write(
-                                f"‼️{player.tool.title()} broke due to overuse, downgraded to {downgraded_tool.display_name}\n"
+                                f"-# ‼️{player.tool.title()} broke due to overuse, downgraded to {downgraded_tool.display_name}\n"
                             )
                             update_kwargs[Player.tool] = downgraded_tool.key
                             update_kwargs[Player.durability] = downgraded_tool.max_durability or 0
@@ -356,7 +357,9 @@ class RockView(discord.ui.View):
 
         await self.message.edit(embed=embed, view=self)
 
-    def _compute_payouts(self) -> tuple[
+    def _compute_payouts(
+        self,
+    ) -> tuple[
         dict[int, dict[constants.Resource, int]],
         dict[int, int],
         dict[int, float],
