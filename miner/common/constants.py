@@ -24,7 +24,7 @@ TOOL_TIER_VALUES: dict[ToolName, int] = {
 
 # Pacing
 SWINGS_PER_THRESHOLD: int = 3
-OVERSWING_THRESHOLD_SECONDS: float = 3.2  # seconds between swings to count as overswing
+OVERSWING_THRESHOLD_SECONDS: float = 4  # seconds between swings to count as overswing
 # Fraction of max durability at or below which catastrophic overswing shatters are allowed
 OVERSWING_SHATTER_DURA_THRESHOLD: float = 0.30
 # Durability percentage thresholds where we start warning players about tool condition
@@ -57,11 +57,22 @@ PERFORMANCE_HIT_TARGET: int = 10
 # Score thresholds mapped to payout bonus percentages.
 # Ordered from highest threshold to lowest.
 PERFORMANCE_BONUS_TIERS: tuple[tuple[int, float], ...] = (
-    (90, 0.15),
-    (70, 0.10),
-    (40, 0.05),
+    (90, 0.08),
+    (70, 0.05),
+    (40, 0.03),
 )
 PERFORMANCE_GEM_BONUS_CAP: float = 0.08
+
+# Party synergy bonus tuning
+PARTY_SYNERGY_MIN_HITS: int = 2
+PARTY_SYNERGY_MIN_DAMAGE_SHARE: float = 0.10
+PARTY_BREAKER_MIN_DAMAGE_SHARE: float = 0.35
+PARTY_STABILIZER_MAX_OVERSWING_RATE: float = 0.20
+PARTY_FINISHER_HP_THRESHOLD: float = 0.25
+PARTY_FINISHER_MIN_DAMAGE_SHARE: float = 0.35
+PARTY_SYNERGY_TWO_ROLE_LOOT_BONUS: float = 0.02
+PARTY_SYNERGY_THREE_ROLE_LOOT_BONUS: float = 0.04
+PARTY_SYNERGY_DURABILITY_DISCOUNT: int = 1
 
 # Emojis (adjust to your server assets if needed)
 PICKAXE_EMOJI: str = "\N{PICK}\N{VARIATION SELECTOR-16}"

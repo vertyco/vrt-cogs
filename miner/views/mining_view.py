@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import random
+import typing as t
 from collections import defaultdict, deque
 from contextlib import suppress
 from datetime import datetime, timedelta
@@ -63,6 +64,7 @@ class RockView(discord.ui.View):
         self.participants: dict[int, int] = defaultdict(int)
         self.hits: dict[int, int] = defaultdict(int)
         self.overswings: dict[int, int] = defaultdict(int)
+        self.low_hp_damage: dict[int, int] = defaultdict(int)
         self.mine_cooldown = commands.CooldownMapping.from_cooldown(
             rate=constants.SWINGS_PER_THRESHOLD,
             per=constants.OVERSWING_THRESHOLD_SECONDS,
@@ -112,6 +114,8 @@ class RockView(discord.ui.View):
             mod_emojis = " ".join(f"{mod.emoji}" for mod in self.modifiers)
             title = f"{mod_emojis} {title}"
 
+        synergy_context = self.compute_party_synergy_context()
+
         embed = discord.Embed(title=title, color=self.color())
 
         if not self.current_hp:
@@ -130,6 +134,13 @@ class RockView(discord.ui.View):
         if self.action_window:
             embed.description += "\n\n**Recent Actions:**\n"
             embed.description += "\n".join(f"-# {i.strip()}" for i in self.action_window)
+
+        if synergy_context["roles"]:
+            embed.add_field(
+                name="Party Synergy",
+                value=self.format_party_synergy_field(synergy_context),
+                inline=False,
+            )
         return embed
 
     @discord.ui.button(emoji=constants.PICKAXE_EMOJI, style=discord.ButtonStyle.success)
@@ -216,6 +227,9 @@ class RockView(discord.ui.View):
             damage_dealt = power if power <= self.current_hp else self.current_hp
             txt = ("💥CRITICAL HIT! " if crit else "") + f"{interaction.user.name}: +{damage_dealt} damage!"
             self.action_window.append(txt)
+            low_hp_threshold = self.max_hp * constants.PARTY_FINISHER_HP_THRESHOLD
+            if self.current_hp <= low_hp_threshold:
+                self.low_hp_damage[interaction.user.id] += damage_dealt
             self.current_hp -= damage_dealt
             self.participants[interaction.user.id] += damage_dealt
             self.hits[interaction.user.id] += 1
@@ -281,7 +295,7 @@ class RockView(discord.ui.View):
 
         buffer = StringIO()
         # {user_id: {resource: amount}}
-        payouts, performance_scores, performance_bonus_pct = self._compute_payouts()
+        payouts, performance_scores, performance_bonus_pct, synergy_context = self._compute_payouts()
         if payouts:
             ledgers: list[ResourceLedger] = []
             sorted_participants = sorted(self.participants.items(), key=lambda x: x[1], reverse=True)
@@ -325,6 +339,8 @@ class RockView(discord.ui.View):
                             constants.TOOL_ORDER[constants.TOOL_ORDER.index(player.tool) - 1]
                         ]
                         dura_deduction = max(1, hits // constants.HITS_PER_DURA_LOST)
+                        if uid in synergy_context["bonus_participants"]:
+                            dura_deduction = max(0, dura_deduction - synergy_context["durability_discount"])
                         new_durability = max(0, player.durability - dura_deduction)
                         if new_durability:
                             buffer.write(
@@ -347,6 +363,15 @@ class RockView(discord.ui.View):
                 await ResourceLedger.insert(*ledgers)
 
         embed = self.embed()
+        collapsed = self.current_hp > 0
+        outcome = "Collapsed" if collapsed else "Depleted"
+        modifier_summary = ", ".join(mod.display_name for mod in self.modifiers) if self.modifiers else "None"
+        summary_lines = [
+            f"Outcome: `{outcome}`",
+            f"Miners: `{len(self.participants)}`",
+            f"Modifiers: `{modifier_summary}`",
+        ]
+        embed.add_field(name="Summary", value="\n".join(summary_lines), inline=False)
         embed.set_footer(text='Run the "miner repair" command to repair your tools.')
 
         if buffer.getvalue():
@@ -363,6 +388,7 @@ class RockView(discord.ui.View):
         dict[int, dict[constants.Resource, int]],
         dict[int, int],
         dict[int, float],
+        dict[str, t.Any],
     ]:
         """Evenly distribute loot pool among participants"""
         # Select pool: collapse -> floor_loot pool; depletion -> total_loot pool
@@ -378,6 +404,7 @@ class RockView(discord.ui.View):
         payouts: dict[int, dict[constants.Resource, int]] = defaultdict(lambda: defaultdict(int))
         performance_scores: dict[int, int] = {}
         performance_bonus_pct: dict[int, float] = {}
+        synergy_context = self.compute_party_synergy_context(sorted_participants, total_damage)
 
         for uid, dmg in sorted_participants:
             hits = self.hits.get(uid, 0)
@@ -440,7 +467,112 @@ class RockView(discord.ui.View):
                 if bonus_amount > 0:
                     payouts[uid][resource] += bonus_amount
 
-        return payouts, performance_scores, performance_bonus_pct
+                if resource in ("stone", "iron") and uid in synergy_context["bonus_participants"]:
+                    synergy_bonus = int(base_amount * synergy_context["loot_bonus_pct"])
+                    if synergy_bonus > 0:
+                        payouts[uid][resource] += synergy_bonus
+
+        return payouts, performance_scores, performance_bonus_pct, synergy_context
+
+    def compute_party_synergy_context(
+        self,
+        sorted_participants: list[tuple[int, int]] | None = None,
+        total_damage: int | None = None,
+    ) -> dict[str, t.Any]:
+        if sorted_participants is None:
+            sorted_participants = sorted(self.participants.items(), key=lambda item: item[1], reverse=True)
+        if total_damage is None:
+            total_damage = sum(damage for __, damage in sorted_participants)
+
+        eligible: list[int] = []
+        for uid, damage in sorted_participants:
+            hits = self.hits.get(uid, 0)
+            damage_share = (damage / total_damage) if total_damage else 0.0
+            if hits >= constants.PARTY_SYNERGY_MIN_HITS and damage_share >= constants.PARTY_SYNERGY_MIN_DAMAGE_SHARE:
+                eligible.append(uid)
+
+        if len(eligible) < 2:
+            return {
+                "active": False,
+                "roles": [],
+                "eligible_participants": eligible,
+                "bonus_participants": set(),
+                "loot_bonus_pct": 0.0,
+                "durability_discount": 0,
+            }
+
+        roles: list[tuple[str, int]] = []
+        used: set[int] = set()
+
+        for uid, damage in sorted_participants:
+            damage_share = (damage / total_damage) if total_damage else 0.0
+            if uid in eligible and damage_share >= constants.PARTY_BREAKER_MIN_DAMAGE_SHARE:
+                roles.append(("Breaker", uid))
+                used.add(uid)
+                break
+
+        stabilizer_candidates = sorted(
+            eligible,
+            key=lambda uid: (
+                self.overswings.get(uid, 0),
+                -(self.hits.get(uid, 0)),
+                -(self.participants.get(uid, 0)),
+            ),
+        )
+        for uid in stabilizer_candidates:
+            if uid in used:
+                continue
+            hits = self.hits.get(uid, 0)
+            overswings = self.overswings.get(uid, 0)
+            total_swings = hits + overswings
+            overswing_rate = (overswings / total_swings) if total_swings else 0.0
+            if overswing_rate <= constants.PARTY_STABILIZER_MAX_OVERSWING_RATE:
+                roles.append(("Stabilizer", uid))
+                used.add(uid)
+                break
+
+        total_low_hp_damage = sum(self.low_hp_damage.values())
+        finisher_candidates = sorted(eligible, key=lambda uid: self.low_hp_damage.get(uid, 0), reverse=True)
+        for uid in finisher_candidates:
+            if uid in used:
+                continue
+            low_hp_damage = self.low_hp_damage.get(uid, 0)
+            low_hp_share = (low_hp_damage / total_low_hp_damage) if total_low_hp_damage else 0.0
+            if low_hp_damage and low_hp_share >= constants.PARTY_FINISHER_MIN_DAMAGE_SHARE:
+                roles.append(("Finisher", uid))
+                used.add(uid)
+                break
+
+        loot_bonus_pct = 0.0
+        durability_discount = 0
+        if len(roles) >= 3:
+            loot_bonus_pct = constants.PARTY_SYNERGY_THREE_ROLE_LOOT_BONUS
+            durability_discount = constants.PARTY_SYNERGY_DURABILITY_DISCOUNT
+        elif len(roles) >= 2:
+            loot_bonus_pct = constants.PARTY_SYNERGY_TWO_ROLE_LOOT_BONUS
+            durability_discount = constants.PARTY_SYNERGY_DURABILITY_DISCOUNT
+
+        return {
+            "active": len(roles) >= 2,
+            "roles": roles,
+            "eligible_participants": eligible,
+            "bonus_participants": set(eligible),
+            "loot_bonus_pct": loot_bonus_pct,
+            "durability_discount": durability_discount,
+        }
+
+    def format_party_synergy_field(self, synergy_context: dict[str, t.Any]) -> str:
+        if not synergy_context["roles"]:
+            return "-# Forming crew bonus... mix damage, control, and finisher play styles."
+
+        role_labels = [name for name, __ in synergy_context["roles"]]
+        lines = [f"-# Roles: {' + '.join(role_labels)}"]
+        if synergy_context["active"]:
+            lines.append(f"-# Stone/Iron bonus: `+{synergy_context['loot_bonus_pct'] * 100:.0f}%`")
+            lines.append(f"-# Durability savings: `-{synergy_context['durability_discount']}`")
+        else:
+            lines.append("-# Need one more distinct role to activate.")
+        return "\n".join(lines)
 
     async def _maybe_send_durability_warning(
         self,
