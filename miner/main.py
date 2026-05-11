@@ -35,7 +35,7 @@ class Miner(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMet
     """Pickaxe in hand, fortune awaits"""
 
     __author__ = "Vertyco"
-    __version__ = "1.2.0"
+    __version__ = "1.2.1"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -45,6 +45,7 @@ class Miner(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMet
 
         self.chat_cache = tracker.ChannelChatCache()
         self.guild_spawn_cooldowns: dict[int, float] = {}  # {guild_id: last_spawn_timestamp}
+        self.guild_spawn_locks: dict[int, asyncio.Lock] = {}
         self._durability_warning_state: dict[int, float] = {}
 
     def format_help_for_context(self, ctx: commands.Context):
@@ -167,6 +168,15 @@ class Miner(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMet
         now = perf_counter()
         last_spawn = self.guild_spawn_cooldowns.get(guild_id, 0.0)
         return max(0.0, cooldown_seconds - (now - last_spawn))
+
+    def get_guild_spawn_lock(self, guild_id: int) -> asyncio.Lock:
+        """Return the guild-scoped lock used to serialize manual spawn attempts."""
+
+        lock = self.guild_spawn_locks.get(guild_id)
+        if lock is None:
+            lock = asyncio.Lock()
+            self.guild_spawn_locks[guild_id] = lock
+        return lock
 
     def choose_rock_type(self, channel_id: int) -> constants.RockTierName:
         """Choose rock type with randomness, biased by recent tool tiers and active player count."""

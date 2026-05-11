@@ -1,3 +1,4 @@
+import asyncio
 import typing as t
 from abc import ABC, ABCMeta, abstractmethod
 
@@ -25,6 +26,7 @@ class MixinMeta(ABC):
 
         self.chat_cache: tracker.ChannelChatCache
         self.guild_spawn_cooldowns: dict[int, float]
+        self.guild_spawn_locks: dict[int, asyncio.Lock]
 
     @abstractmethod
     async def initialize(self) -> None:
@@ -48,6 +50,10 @@ class MixinMeta(ABC):
 
     @abstractmethod
     def get_guild_spawn_cooldown_remaining(self, guild_id: int, cooldown_seconds: int) -> float:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_guild_spawn_lock(self, guild_id: int) -> asyncio.Lock:
         raise NotImplementedError
 
     @abstractmethod
