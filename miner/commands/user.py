@@ -457,8 +457,8 @@ class User(MixinMeta):
         performance_text = (
             "Your payout now includes a **performance bonus** based on how well you mine each rock:\n"
             "• Score combines damage share, swing control (fewer overswings), and active hit count\n"
-            "• Score 40+ = +3% loot bonus\n"
-            "• Score 70+ = +5% loot bonus\n"
+            "• Score 70+ = +3% loot bonus\n"
+            "• Score 80+ = +5% loot bonus\n"
             "• Score 90+ = +8% loot bonus\n"
             "• Gem bonus is capped at +8% for economy safety"
         )
