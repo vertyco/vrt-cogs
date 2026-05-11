@@ -45,8 +45,15 @@ HP_BAR_SEGMENTS: int = 10
 HP_BAR_FILLED: str = "▰"
 HP_BAR_EMPTY: str = "▱"
 
-# Tool repair cost percentage (e.g., 0.5 = 50% of upgrade cost)
-TOOL_REPAIR_COST_PCT: float = 0.5
+# Tool repair cost percentages by tier (e.g., 0.5 = 50% of upgrade cost)
+TOOL_REPAIR_COST_PCTS: dict[ToolName, float] = {
+    "wood": 0.0,
+    "stone": 0.5,
+    "iron": 0.5,
+    "steel": 0.55,
+    "carbide": 0.6,
+    "diamond": 0.65,
+}
 HITS_PER_DURA_LOST: int = 2  # 1 durability lost per 2 hits
 
 # Loot performance bonus tuning

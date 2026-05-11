@@ -339,8 +339,8 @@ class RockView(discord.ui.View):
                             constants.TOOL_ORDER[constants.TOOL_ORDER.index(player.tool) - 1]
                         ]
                         dura_deduction = max(1, hits // constants.HITS_PER_DURA_LOST)
-                        if uid in synergy_context["bonus_participants"]:
-                            dura_deduction = max(0, dura_deduction - synergy_context["durability_discount"])
+                        if uid in synergy_context["durability_bonus_participants"]:
+                            dura_deduction = max(1, dura_deduction - synergy_context["durability_discount"])
                         new_durability = max(0, player.durability - dura_deduction)
                         if new_durability:
                             buffer.write(
@@ -497,6 +497,7 @@ class RockView(discord.ui.View):
                 "roles": [],
                 "eligible_participants": eligible,
                 "bonus_participants": set(),
+                "durability_bonus_participants": set(),
                 "loot_bonus_pct": 0.0,
                 "durability_discount": 0,
             }
@@ -552,11 +553,14 @@ class RockView(discord.ui.View):
             loot_bonus_pct = constants.PARTY_SYNERGY_TWO_ROLE_LOOT_BONUS
             durability_discount = constants.PARTY_SYNERGY_DURABILITY_DISCOUNT
 
+        role_holders = {uid for __, uid in roles}
+
         return {
             "active": len(roles) >= 2,
             "roles": roles,
             "eligible_participants": eligible,
             "bonus_participants": set(eligible),
+            "durability_bonus_participants": role_holders,
             "loot_bonus_pct": loot_bonus_pct,
             "durability_discount": durability_discount,
         }
