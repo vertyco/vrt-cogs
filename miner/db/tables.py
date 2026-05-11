@@ -77,6 +77,45 @@ class Player(TableMixin, Table):
     gems = BigInt()
 
 
+class PlayerAchievement(TableMixin, Table):
+    id = Serial(primary_key=True)
+
+    lookup_key = Text(required=True, unique=True)
+    player = ForeignKey(required=True, references=Player)
+    key = Text(required=True, index=True)
+
+
+class PlayerAchievementStats(TableMixin, Table):
+    id = Serial(primary_key=True)
+
+    player = ForeignKey(required=True, references=Player, unique=True)
+
+    rocks_mined_total = BigInt(default=0)
+    group_sessions_total = BigInt(default=0)
+    modifier_rocks_mined_total = BigInt(default=0)
+    mined_small = Boolean(default=False)
+    mined_medium = Boolean(default=False)
+    mined_large = Boolean(default=False)
+    mined_meteor = Boolean(default=False)
+    mined_geode = Boolean(default=False)
+
+    clean_streak_current = BigInt(default=0)
+    clean_streak_best = BigInt(default=0)
+    perf_max_streak_current = BigInt(default=0)
+    perf_max_streak_best = BigInt(default=0)
+    shatter_recovery_stage = SmallInt(default=0)
+
+    role_breaker_total = BigInt(default=0)
+    role_stabilizer_total = BigInt(default=0)
+    role_finisher_total = BigInt(default=0)
+
+    best_solo_small_seconds = Float(default=0.0)
+    best_solo_medium_seconds = Float(default=0.0)
+    best_solo_large_seconds = Float(default=0.0)
+    best_solo_meteor_seconds = Float(default=0.0)
+    best_solo_geode_seconds = Float(default=0.0)
+
+
 class ResourceLedger(Table):
     id: Serial
     created_on = Timestamptz(index=True)
@@ -90,4 +129,14 @@ class ActiveChannel(TableMixin, Table):
     guild = ForeignKey(required=True, references=GuildSettings)
 
 
-TABLES: list[Table] = sort_table_classes([Player, GuildSettings, GlobalSettings, ResourceLedger, ActiveChannel])
+TABLES: list[Table] = sort_table_classes(
+    [
+        Player,
+        GuildSettings,
+        GlobalSettings,
+        ResourceLedger,
+        ActiveChannel,
+        PlayerAchievement,
+        PlayerAchievementStats,
+    ]
+)

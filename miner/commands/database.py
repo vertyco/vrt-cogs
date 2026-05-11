@@ -1,9 +1,12 @@
+import typing as t
+
 import asyncpg
+import discord
 from redbot.core import commands
 from redbot.core.utils.chat_formatting import box, pagify
 
 from ..abc import MixinMeta
-from ..db.tables import ensure_db_connection
+from ..db.tables import Player, ensure_db_connection
 from ..engine import engine
 from ..views.postgres_creds import SetConnectionView
 
@@ -82,3 +85,25 @@ class DatabaseCommands(MixinMeta):
 
         minutes = seconds // 60
         await ctx.send(f"Global rock spawn cooldown set to `{minutes} minute(s)` ({seconds}s).")
+
+    @dbsetgroup.command(name="achievementsync")
+    @ensure_db_connection()
+    async def dbsetgroup_achievement_sync(self, ctx: commands.Context, user: t.Optional[discord.User] = None):
+        """Backfill exact-only Miner achievements globally."""
+        if user is not None:
+            unlocked = await self.sync_player_achievements(user)
+            if unlocked:
+                names = ", ".join(achievement.name for achievement in unlocked)
+                await ctx.send(f"Synced `{len(unlocked)}` achievements for {user.mention}: {names}")
+            else:
+                await ctx.send(f"No new retroactive achievements were found for {user.mention}.")
+            return
+
+        player_ids = await Player.select(Player.id).output(as_list=True)
+        total_new = 0
+        for player_id in player_ids:
+            total_new += len(await self.sync_player_achievements(player_id))
+
+        await ctx.send(
+            f"Synced exact-only Miner achievements for `{len(player_ids)}` players. New unlocks recorded: `{total_new}`."
+        )
