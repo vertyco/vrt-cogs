@@ -58,8 +58,8 @@ PERFORMANCE_HIT_TARGET: int = 10
 # Ordered from highest threshold to lowest.
 PERFORMANCE_BONUS_TIERS: tuple[tuple[int, float], ...] = (
     (90, 0.08),
-    (70, 0.05),
-    (40, 0.03),
+    (80, 0.05),
+    (70, 0.03),
 )
 PERFORMANCE_GEM_BONUS_CAP: float = 0.08
 
