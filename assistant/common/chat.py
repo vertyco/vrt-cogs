@@ -1056,8 +1056,11 @@ class ChatHandler(MixinMeta):
                     function_calls = [i for i in function_calls if i["name"] != function_name]
                     continue
 
+                args = {}
+                logged_args = arguments
                 try:
                     args = orjson.loads(arguments)
+                    logged_args = args
                     func_result = None
                 except orjson.JSONDecodeError as e:
                     func_result = f"JSONDecodeError: Failed to parse arguments for function {function_name}: {str(e)}"
@@ -1190,7 +1193,7 @@ class ChatHandler(MixinMeta):
 
                 info = (
                     f"Called function {function_name} in {guild.name} for {author.display_name}\n"
-                    f"Params: {args}\nResult: {logging_content.getvalue()}"
+                    f"Params: {logged_args}\nResult: {logging_content.getvalue()}"
                 )
                 log.debug(info)
                 if isinstance(content, str):
