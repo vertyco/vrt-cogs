@@ -324,12 +324,29 @@ class ChatHandler(MixinMeta):
             "`{}` wants to run admin tool `{}` from `{}` ({})\nChoose `Approve Once`, `Allow This Session`, or `Skip`."
         ).format(self.bot.user.display_name, function_name, source, category)
 
+        inline_preview = None
+        if function_name == "run_eval":
+            code = arguments.get("code")
+            if isinstance(code, str):
+                code_preview = box(code, lang="python")
+                max_decision_suffix = max(
+                    len(_("Approved once.")),
+                    len(_("Approved for this session.")),
+                    len(_("Skipped.")),
+                    len(_("Approval timed out.")),
+                )
+                if len(prompt) + 1 + len(code_preview) + 1 + max_decision_suffix <= 2000:
+                    inline_preview = code_preview
+
         reference = None
         with suppress(discord.HTTPException, AttributeError):
             reference = message_obj.to_reference(fail_if_not_exists=False)
 
         view = AdminToolApprovalView(author.id)
-        if len(preview) > 1200:
+        if inline_preview is not None:
+            prompt += "\n" + inline_preview
+            approval_message = await channel.send(prompt, view=view, reference=reference)
+        elif len(preview) > 1200:
             file = text_to_file(preview, filename=f"{function_name}_args.json")
             approval_message = await channel.send(prompt, file=file, view=view, reference=reference)
         else:
@@ -348,7 +365,8 @@ class ChatHandler(MixinMeta):
             conversation.approved_tool_names.append(function_name)
 
         with suppress(discord.HTTPException):
-            await approval_message.edit(content=prompt + "\n" + decision_map[view.decision], attachments=[], view=view)
+            edit_kwargs = {"content": prompt + "\n" + decision_map[view.decision], "view": view}
+            await approval_message.edit(**edit_kwargs)
 
         if view.decision in {"once", "session"}:
             return True, ""
