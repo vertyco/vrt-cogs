@@ -824,6 +824,7 @@ class API(MixinMeta):
         user: Optional[discord.Member],
         conversation: Optional[Conversation] = None,
         focus: str = "",
+        force: bool = False,
     ) -> bool:
         """Summarize older messages via LLM, falling back to degrade_conversation on failure"""
         model = conf.get_user_model(user)
@@ -833,7 +834,7 @@ class API(MixinMeta):
         func_tokens = await self.count_function_tokens(function_list, model)
         total_tokens = convo_tokens + func_tokens
 
-        if total_tokens <= threshold:
+        if not force and total_tokens <= threshold:
             return False
 
         # If compaction is disabled, fall back to blind degradation
