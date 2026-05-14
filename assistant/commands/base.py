@@ -436,6 +436,7 @@ If a file has no extension it will still try to read it only if it can be decode
                 ctx.author,
                 conversation=conversation,
                 focus=focus,
+                force=True,
             )
 
         if compacted:

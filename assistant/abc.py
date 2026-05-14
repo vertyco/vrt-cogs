@@ -158,6 +158,7 @@ class MixinMeta(ABC):
         user: Optional[discord.Member],
         conversation: Optional[Conversation] = None,
         focus: str = "",
+        force: bool = False,
     ) -> bool:
         raise NotImplementedError
 
