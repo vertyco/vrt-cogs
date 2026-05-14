@@ -427,8 +427,6 @@ If a file has no extension it will still try to read it only if it can be decode
             )
 
         async with ctx.typing():
-            await self.flush_memory_before_compaction(conversation.messages, conf, ctx.author, ctx.guild)
-
             function_calls, function_map = await self.db.prep_functions(self.bot, conf, self.registry)
 
             compacted = await self.compact_conversation(
