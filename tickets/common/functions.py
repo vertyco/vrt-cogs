@@ -8,13 +8,14 @@ import discord
 import numpy as np
 from redbot.core import commands
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import pagify
 
 from ..abc import MixinMeta
 from ..common.utils import (
+    add_ticket_answer_fields,
     format_response_time,
     format_working_hours_embed,
     get_average_response_time,
+    get_modal_field_length_bounds,
     is_within_working_hours,
     update_active_overview,
 )
@@ -342,11 +343,26 @@ class Functions(MixinMeta):
         answers = {}
         if panel.modal:
             for idx, field in enumerate(list(panel.modal.values())):
-                if field.required and not responses[idx]:
+                raw_response = responses[idx] if idx < len(responses) else None
+                if field.required and not raw_response:
                     return f"THE FOLLOWING TICKET QUESTION WAS NOT ANSWERED!\n{field.label}"
-                response = str(responses[idx])
+
+                response = "" if raw_response is None else str(raw_response)
                 if "DISCOVERABLE" in guild.features:
                     response = response.replace("Discord", "").replace("discord", "")
+
+                if response:
+                    min_length, max_length = get_modal_field_length_bounds(field)
+                    if min_length is not None and len(response) < min_length:
+                        return (
+                            "THE FOLLOWING TICKET QUESTION DID NOT MEET THE MINIMUM LENGTH "
+                            f"OF {min_length} CHARACTERS!\n{field.label}"
+                        )
+                    if len(response) > max_length:
+                        return (
+                            "THE FOLLOWING TICKET QUESTION EXCEEDED THE MAXIMUM LENGTH "
+                            f"OF {max_length} CHARACTERS!\n{field.label}"
+                        )
 
                 answers[field.label] = response
 
@@ -359,18 +375,7 @@ class Functions(MixinMeta):
             else:
                 form_embed.set_author(name=title)
 
-            for question, answer in answers.items():
-                if len(answer) <= 1024:
-                    form_embed.add_field(name=question, value=answer, inline=False)
-                    continue
-
-                chunks = [ans for ans in pagify(answer, page_length=1024)]
-                for index, chunk in enumerate(chunks):
-                    form_embed.add_field(
-                        name=f"{question} ({index + 1})",
-                        value=chunk,
-                        inline=False,
-                    )
+            add_ticket_answer_fields(form_embed, answers)
 
         can_read_send = discord.PermissionOverwrite(
             read_messages=True,
@@ -620,8 +625,7 @@ class Functions(MixinMeta):
             if user.avatar:
                 em.set_thumbnail(url=user.display_avatar.url)
 
-            for question, answer in answers.items():
-                em.add_field(name=f"__{question}__", value=answer, inline=False)
+            add_ticket_answer_fields(em, answers, field_name_format="__{question}__")
 
             view = LogView(guild, channel_or_thread, panel.max_claims, cog=self)
             log_message = await logchannel.send(embed=em, view=view)

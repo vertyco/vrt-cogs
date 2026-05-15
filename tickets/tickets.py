@@ -41,7 +41,7 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "3.2.1"
+    __version__ = "3.2.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -340,7 +340,7 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
         if not tickets:
             return
 
-        for channel_id in tickets:
+        for channel_id in list(tickets):
             chan = guild.get_channel_or_thread(channel_id)
             if not chan:
                 continue

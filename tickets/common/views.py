@@ -12,18 +12,20 @@ from discord.ui.item import Item
 from redbot.core import commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import box, humanize_list, pagify
+from redbot.core.utils.chat_formatting import box, humanize_list
 from redbot.core.utils.mod import is_admin_or_superior
 
 from ..abc import MixinMeta
 from .analytics import record_ticket_opened
 from .models import GuildSettings, ModalField, OpenedTicket, Panel
 from .utils import (
+    add_ticket_answer_fields,
     can_close,
     close_ticket,
     format_response_time,
     format_working_hours_embed,
     get_average_response_time,
+    get_modal_field_length_bounds,
     is_within_working_hours,
     update_active_overview,
 )
@@ -269,14 +271,15 @@ class TicketModal(Modal):
         self.inputs: dict[str, TextInput] = {}
         self.labels: dict[str, str] = {}  # Store labels separately to avoid deprecation warning
         for key, info in data.items():
+            min_length, max_length = get_modal_field_length_bounds(info)
             field: TextInput = TextInput(
                 label=info.label,
                 style=get_modal_style(info.style),
                 placeholder=info.placeholder,
                 default=info.default,
                 required=info.required,
-                min_length=info.min_length,
-                max_length=info.max_length,
+                min_length=min_length,
+                max_length=max_length,
             )
             self.add_item(field)
             self.inputs[key] = field
@@ -447,17 +450,7 @@ class SupportButton(Button):
 
                 answers[question] = answer
 
-                if len(answer) <= 1024:
-                    form_embed.add_field(name=question, value=answer, inline=False)
-                    continue
-
-                chunks = [ans for ans in pagify(answer, page_length=1024)]
-                for index, chunk in enumerate(chunks):
-                    form_embed.add_field(
-                        name=f"{question} ({index + 1})",
-                        value=chunk,
-                        inline=False,
-                    )
+            add_ticket_answer_fields(form_embed, answers)
 
         open_txt = _("Your ticket is being created, one moment...")
         if modal:
@@ -775,8 +768,7 @@ class SupportButton(Button):
             if user.avatar:
                 em.set_thumbnail(url=user.display_avatar.url)
 
-            for question, answer in answers.items():
-                em.add_field(name=f"__{question}__", value=answer, inline=False)
+            add_ticket_answer_fields(em, answers, field_name_format="__{question}__")
 
             view = LogView(guild, channel_or_thread, panel.max_claims, cog=self.view.cog)
             log_message = await logchannel.send(embed=em, view=view)

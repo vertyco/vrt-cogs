@@ -21,7 +21,7 @@ from redbot.core.utils.mod import is_admin_or_superior
 
 from ..abc import MixinMeta
 from .analytics import record_ticket_closed
-from .models import GuildSettings, OpenedTicket, Panel
+from .models import GuildSettings, ModalField, OpenedTicket, Panel
 from .transcript import process_transcript_html
 
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
@@ -30,6 +30,38 @@ _ = Translator("Tickets", __file__)
 
 
 DM_FILESIZE_LIMIT = 8 * 1024 * 1024
+
+
+def add_ticket_answer_fields(
+    embed: discord.Embed,
+    answers: t.Mapping[str, t.Any],
+    *,
+    field_name_format: str = "{question}",
+) -> None:
+    for question, answer in answers.items():
+        question_text = str(question)
+        answer_text = str(answer) if answer is not None else ""
+        if not answer_text:
+            answer_text = "-"
+
+        chunks = [chunk for chunk in pagify(answer_text, page_length=1024)] or [answer_text[:1024]]
+        for index, chunk in enumerate(chunks, start=1):
+            field_label = question_text if len(chunks) == 1 else f"{question_text} ({index})"
+            field_name = field_name_format.format(question=field_label)
+            if len(field_name) > 256:
+                field_name = f"{field_name[:253]}..."
+            embed.add_field(name=field_name, value=chunk[:1024], inline=False)
+
+
+def get_modal_field_length_bounds(field: ModalField) -> tuple[int | None, int]:
+    max_length = field.max_length if field.max_length is not None else 1024
+    max_length = max(1, min(max_length, 1024))
+
+    min_length = field.min_length
+    if min_length is not None:
+        min_length = max(0, min(min_length, max_length))
+
+    return min_length, max_length
 
 
 def _text_size_bytes(text: str) -> int:
