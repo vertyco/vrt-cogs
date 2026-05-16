@@ -876,7 +876,7 @@ class LogView(View):
         if not user:
             return
 
-        # Check if ticket is escalated — only admins can join escalated tickets
+        # Check if ticket is escalated - only admins can join escalated tickets
         conf = self.cog.db.get_conf(self.guild)
         for _uid, tickets in conf.opened.items():
             if self.channel.id in tickets:

@@ -49,8 +49,8 @@ class Admin(MixinMeta):
         they automatically receive virtual currency as a reward.
 
         **Quick Start:**
-        1. `[p]gsurveys add #channel <reward> <name>` — create a survey
-        2. `[p]gsurveys script <survey_id>` — get the Google Apps Script
+        1. `[p]gsurveys add #channel <reward> <name>` - create a survey
+        2. `[p]gsurveys script <survey_id>` - get the Google Apps Script
         3. Add the script to your form and you're done!
 
         **Finding a survey ID:**
@@ -66,7 +66,7 @@ class Admin(MixinMeta):
 
         The bot will create a Discord webhook in the specified channel to receive
         Google Form responses. Choose a private channel that only the bot and
-        admins can see — webhook messages are deleted automatically but the
+        admins can see - webhook messages are deleted automatically but the
         channel should not be publicly visible.
 
         **Arguments**

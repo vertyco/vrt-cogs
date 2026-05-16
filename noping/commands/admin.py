@@ -107,7 +107,7 @@ class Admin(MixinMeta):
             status = BELL_OFF if active else BELL
             has_sched = "scheduled" if sched.has_schedule() else "permanent"
             tz_info = f" [{sched.timezone}]" if sched.timezone else ""
-            lines.append(f"{status} {name} — {has_sched}{tz_info}")
+            lines.append(f"{status} {name} - {has_sched}{tz_info}")
 
         lines.sort(key=lambda x: x.lower())
         txt = "\n".join(lines)

@@ -106,7 +106,7 @@ def teredo_unobfuscate(ipv6_str: str):
     raw = ipv6.packed  # 16 bytes
 
     # Teredo layout (network byte order):
-    # [0:4]   prefix (2001:0000) — not used for decoding
+    # [0:4]   prefix (2001:0000) - not used for decoding
     # [4:8]   Teredo server IPv4 (inverted)
     # [8:10]  flags (not inverted)
     # [10:12] UDP port (inverted)
