@@ -903,8 +903,8 @@ async def handle_settings_page(
     form = SettingsForm()
 
     # Assign choices to multi-select and single-select fields AFTER instantiation
-    none_channel = [("", _("— None —"))]
-    none_role = [("", _("— None —"))]
+    none_channel = [("", _("- None -"))]
+    none_role = [("", _("- None -"))]
 
     form.allowedchannels.choices = channel_choices
     form.allowedroles.choices = role_choices

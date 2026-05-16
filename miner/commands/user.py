@@ -483,7 +483,7 @@ class User(MixinMeta):
         embed.add_field(name="Spawning Rocks", value=spawn_text, inline=False)
 
         modifiers_text = (
-            "Rocks can spawn with **modifiers** — special affixes that alter their stats:\n"
+            "Rocks can spawn with **modifiers** - special affixes that alter their stats:\n"
             f"• {constants.MODIFIERS['electrified'].emoji} **Electrified**: +20% loot, +50% volatility\n"
             f"• {constants.MODIFIERS['crystalline'].emoji} **Crystalline**: +30% loot, +15% HP\n"
             f"• {constants.MODIFIERS['volatile'].emoji} **Volatile**: +30% volatility, unpredictable\n"

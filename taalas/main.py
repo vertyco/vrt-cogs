@@ -195,7 +195,7 @@ class Taalas(commands.Cog):
             try:
                 return await call()
             except (aiohttp.ClientResponseError, ValueError) as e:
-                log.warning("Taalas %s failed: %s — trying next endpoint", name, e)
+                log.warning("Taalas %s failed: %s - trying next endpoint", name, e)
                 last_error = e
 
         raise ValueError(f"All Taalas endpoints failed. Last error: {last_error}")
