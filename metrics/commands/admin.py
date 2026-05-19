@@ -13,13 +13,13 @@ from redbot.core.utils import AsyncIter
 
 from ..abc import MixinMeta
 from ..common import utils
+from ..common.checks import ensure_db_connection
 from ..db.tables import (
     GlobalEconomySnapshot,
     GlobalMemberSnapshot,
     GlobalPerformanceSnapshot,
     GuildEconomySnapshot,
     GuildMemberSnapshot,
-    ensure_db_connection,
 )
 
 log = logging.getLogger("red.vrt.metrics.admin")

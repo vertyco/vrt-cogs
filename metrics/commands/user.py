@@ -10,13 +10,13 @@ from redbot.core.utils.chat_formatting import humanize_number, humanize_timedelt
 
 from ..abc import MixinMeta
 from ..common import plots, utils
+from ..common.checks import ensure_db_connection
 from ..db.tables import (
     GlobalEconomySnapshot,
     GlobalMemberSnapshot,
     GlobalPerformanceSnapshot,
     GuildEconomySnapshot,
     GuildMemberSnapshot,
-    ensure_db_connection,
 )
 from ..views.dashboard import open_metrics_dashboard
 

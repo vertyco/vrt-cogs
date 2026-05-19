@@ -7,7 +7,7 @@ from redbot.core.utils.chat_formatting import box, pagify
 from redbot_orm.common import get_root
 
 from ..abc import MixinMeta
-from ..db.tables import ensure_db_connection
+from ..common.checks import ensure_db_connection
 from ..views.postgres_creds import SetConnectionView
 
 

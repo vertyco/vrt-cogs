@@ -1,6 +1,5 @@
 import logging
 
-from discord.ext.commands.core import check
 from piccolo.columns import (
     BigInt,
     Boolean,
@@ -12,18 +11,8 @@ from piccolo.columns import (
 )
 from piccolo.columns.defaults.timestamptz import TimestamptzNow
 from piccolo.table import Table, sort_table_classes
-from redbot.core import commands
 
 log = logging.getLogger("red.vrt.metrics")
-
-
-def ensure_db_connection():
-    async def predicate(ctx: commands.Context) -> bool:
-        if not getattr(ctx.cog, "db", None):
-            raise commands.UserFeedbackCheckFailure("Database connection is not active, try again later")
-        return True
-
-    return check(predicate)
 
 
 class TableMixin:
