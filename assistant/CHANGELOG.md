@@ -1,5 +1,9 @@
 # Assistant Changelog
 
+## v8.0.1
+
+- Fix `OpenAIError: Missing credentials` when using a local OpenAI-compatible endpoint (e.g. koboldcpp, llama.cpp) without an API key configured. `get_api_key` now returns a `not-needed` placeholder when an endpoint override is active but no key is set, so the OpenAI SDK constructor accepts the request. Local endpoints ignore the auth header.
+
 ## v8.0.0
 
 This release is a cache-aware end-to-end refactor: stable parts of every request are kept byte-for-byte identical across turns so provider-side prompt caching (OpenAI automatic caching, Anthropic / Gemini / Qwen `cache_control`, OpenRouter response caching) can actually hit. It also serializes overlapping conversation traffic, adds per-guild endpoint overrides, and reorganizes the admin command tree. There is no v7.18.0 release - the prompt-caching work originally drafted under that label ships here.

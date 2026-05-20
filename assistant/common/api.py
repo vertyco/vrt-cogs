@@ -58,11 +58,16 @@ class API(MixinMeta):
         - Global endpoint override active (no guild override): global key only
           (a stale guild key from a previous endpoint would 401 against the new one).
         - No endpoint override (OpenAI direct): guild key, fallback to global key.
+
+        When an endpoint override is active but no matching key is configured,
+        a placeholder is returned so the OpenAI SDK does not raise
+        "Missing credentials". Local endpoints (e.g. koboldcpp, llama.cpp)
+        ignore the auth header.
         """
         if conf.endpoint_override:
-            return conf.api_key or self.db.endpoint_api_key or ""
+            return conf.api_key or self.db.endpoint_api_key or "not-needed"
         if self.db.endpoint_override:
-            return self.db.endpoint_api_key or ""
+            return self.db.endpoint_api_key or "not-needed"
         return conf.api_key or self.db.endpoint_api_key or ""
 
     def get_guild_endpoint_url(self, conf: t.Optional[GuildSettings] = None) -> t.Optional[str]:
