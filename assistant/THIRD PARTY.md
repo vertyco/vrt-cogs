@@ -347,6 +347,7 @@ await cog.register_context_variable(
     permission_level="user",
     required_permissions=None,
     fetch_method="get_ticket_types",
+    cache_safe=True,  # dynamic / changes per-request (default)
 )
 ```
 
@@ -360,10 +361,18 @@ await cog.register_context_variables(
             "name": "available_tickets",
             "description": "Support ticket panels this user can open.",
             "fetch_method": "get_ticket_types",
+            "cache_safe": True,
         },
         {
             "name": "open_tickets",
             "description": "Current user's open tickets.",
+            "cache_safe": True,
+        },
+        {
+            # Stable per-guild value - fine to inline into the cached prompt
+            "name": "support_motd",
+            "description": "The current support team message of the day.",
+            "cache_safe": False,
         },
     ],
 )
@@ -379,6 +388,7 @@ Args:
 - `permission_level: Literal["user", "mod", "admin", "owner"]`
 - `required_permissions: list[str] | None`
 - `fetch_method: str | None`
+- `cache_safe: bool` - informational classification surfaced in the `[p]floatingcontext` UI and the cache warning in `[p]assistant view`. **True** (default) means the variable is **dynamic** / per-request - referencing it via `{placeholder}` in a system prompt will bust provider-side prompt-prefix caching. **False** means it's **stable** (e.g. per-guild motd) and safe to reference in the prompt. The flag does **not** affect substitution: every registered variable substitutes inline whenever its `{placeholder}` appears in a template, regardless of this flag.
 
 Returns:
 

@@ -2,6 +2,133 @@
 
 Set up and configure an AI assistant (or chat) cog for your server with one of OpenAI's ChatGPT language models.<br/><br/>Features include configurable prompt injection, admin-curated grounded RAG embeddings, custom function calling, conversation compaction, and more!<br/><br/>- **[p]assistant**: base command for setting up the assistant<br/>- **[p]chat**: talk with the assistant<br/>- **[p]convostats**: view a user's token usage/conversation message count for the channel<br/>- **[p]convocontext**: view a detailed token breakdown of your conversation context<br/>- **[p]convocompact**: compact your conversation using LLM summarization<br/>- **[p]clearconvo**: reset your conversation with the assistant in the channel
 
+## Assistant Command Groups
+
+The `[p]assistant` command uses hierarchical groups to organize configuration. Use `[p]help assistant <group>` for detailed help on any group.
+
+### Per-Guild Groups
+
+- **`[p]assistant set`** (alias: `settings`) - General guild settings
+  - `timezone` - Set the timezone for prompt placeholders
+  - `channel` - Set the primary auto-response channel
+  - `listen` - Toggle listen on the current channel
+  - `sysoverride` - Allow per-conversation system prompts
+  - `model` - Set the chat model
+  - `maxrecursion` - Max function call recursion depth
+  - `thinkprefix` - Set thinking block prefix
+  - `thinksuffix` - Set thinking block suffix
+  - `verbosity` - Switch gpt-5 response verbosity
+  - `reasoningfiles` - Toggle reasoning file output
+  - `planner` - Manage planner role/user access
+  - `customvars` - View registered custom variables
+  - `listenbots` - Toggle listening to other bots (owner)
+
+- **`[p]assistant trigger`** - Trigger phrase system
+  - `toggle` - Enable/disable trigger phrases
+  - `phrase` - Add/remove trigger phrases (supports regex)
+  - `prompt` - Set custom prompt for triggered messages
+  - `ignore` - Ignore channels/categories for triggers
+  - `list` - View configured trigger phrases
+
+- **`[p]assistant prompt`** - Prompt and context management
+  - `system` - Set the system prompt for the assistant
+  - `defaultsystem` - Set global default system prompt (owner)
+  - `initial` - Set the initial context prompt
+  - `channel` - Set the primary auto-response channel
+  - `channelcustom` - Set channel-specific system prompt
+  - `channelshow` - Display a channel's system prompt
+
+- **`[p]assistant features`** - Feature toggles
+  - `enable` - Toggle assistant on/off
+  - `draw` - Toggle image generation command
+  - `mention` - Toggle user mention pings
+  - `mention-respond` - Toggle mention responses
+  - `functions` - Toggle function calling
+  - `collaborative` - Toggle multi-user conversations
+  - `question-mode` - Toggle question-only embedding sourcing
+  - `persist` - Toggle conversation persistence (owner)
+
+- **`[p]assistant filter`** - Content filtering
+  - `question` - Toggle `?` requirement for triggering
+  - `minlength` - Set minimum character length
+  - `regex` - Add/remove regex blacklist patterns
+  - `failblock` - Toggle blocking on regex failure
+  - `blacklist` - Manage user/role/channel blacklist
+
+- **`[p]assistant embed`** (alias: `embeddings`) - Embedding management
+  - `topn` - Set RAG retrieval count
+  - `relatedness` - Set minimum relatedness score
+  - `model` - Set embedding model
+  - `reset` - Wipe server embeddings
+  - `resetglobal` - Wipe global embeddings (owner)
+  - `refresh` - Re-embed entries with current model
+  - `importcsv` - Import from CSV/Excel files
+  - `importjson` - Import from JSON
+  - `importexcel` - Import from Excel
+  - `exportexcel` - Export to Excel
+  - `exportcsv` - Export to CSV
+  - `exportjson` - Export to JSON
+
+- **`[p]assistant limits`** - Token and retention limits
+  - `maxretention` - Max messages to retain
+  - `maxtime` - Max retention time in seconds
+  - `maxtokens` - Max total token limit
+  - `maxresponse` - Max response token limit
+
+- **`[p]assistant params`** - Model behavior parameters
+  - `temperature` - Set temperature (0.0 - 2.0)
+  - `frequency` - Set frequency penalty (-2.0 to 2.0)
+  - `presence` - Set presence penalty (-2.0 to 2.0)
+  - `resolution` - Set image resolution
+  - `reasoning` - Set reasoning effort level
+  - `seed` - Set random seed for reproducibility
+
+- **`[p]assistant override`** - Role-based overrides
+  - `model` - Set model override for a role
+  - `maxtokens` - Max tokens override per role
+  - `maxresponsetokens` - Max response tokens per role
+  - `maxretention` - Max retention per role
+  - `maxtime` - Max retention time per role
+  - `reasoning` - Reasoning effort per role
+
+- **`[p]assistant compaction`** - Conversation compaction
+  - `toggle` - Enable/disable compaction
+  - `model` - Set compaction-specific model
+  - `threshold` - Set token threshold for compaction
+
+- **`[p]assistant autoanswer`** - Auto-answer system
+  - `toggle` - Enable/disable auto-answer
+  - `threshold` - Set confidence threshold
+  - `ignore` - Ignore channels for auto-answer
+  - `model` - Set model for auto-answer
+
+- **`[p]assistant scheduler`** (alias: `tasks`) - Scheduled task management
+  - `list` - View scheduled tasks
+  - `cancel` - Cancel a task by ID
+  - `clear` - Clear all tasks
+
+### Owner-Only Groups
+
+- **`[p]assistant api`** - API keys and authentication
+  - `openai` - Set server OpenAI API key
+  - `brave` - Set Brave Search API key
+  - `endpoint` - Set endpoint override API key
+  - `override` - Configure custom OpenAI-compatible endpoint
+
+- **`[p]assistant admin`** - Dangerous maintenance operations
+  - `resetusage` - Reset token usage stats
+  - `resetconversations` - Wipe server conversations
+  - `resetglobalconversations` - Wipe all conversations
+  - `probe` - Probe custom endpoint profile
+  - `wipe` - Wipe all cog data
+  - `backup` - Backup cog to JSON file
+  - `restore` - Restore cog from backup
+
+### Standalone Commands
+
+- **`[p]assistant view`** (alias: `v`) - View current configuration
+- **`[p]assistant usage`** - View token usage stats
+
 ## /draw (Slash Command)
 
 Generate an image with AI<br/>
@@ -255,6 +382,16 @@ Check out [This Guide](https://platform.openai.com/docs/guides/prompt-engineerin
 - **currency**: currency name<br/>
 - **bank**: bank name<br/>
 - **balance**: the user's current balance<br/>
+- **activities**: the user's current Discord activities<br/>
+- **userjoindate**: the user's join date for the server<br/>
+- **userjointime**: the user's join time for the server<br/>
+- **uptime**: the bot's uptime<br/>
+- **datetime**: full Python `datetime` string<br/>
+- **modelinfo**: a multi-line summary of the active chat/embed model settings<br/>
+- **prefix**: the bot's primary prefix in this guild<br/>
+- **prefixes**: humanized list of all valid prefixes<br/>
+- **botowner**: humanized list of bot-owner display names<br/>
+- **last_interaction**: time since the user's previous message in the conversation (e.g. `5 hours, 23 minutes ago`)<br/>
 
  - Usage: `[p]assistant prompt [prompt]`
  - Aliases: `pre`
@@ -654,6 +791,16 @@ Check out [This Guide](https://platform.openai.com/docs/guides/prompt-engineerin
 - **currency**: currency name<br/>
 - **bank**: bank name<br/>
 - **balance**: the user's current balance<br/>
+- **activities**: the user's current Discord activities<br/>
+- **userjoindate**: the user's join date for the server<br/>
+- **userjointime**: the user's join time for the server<br/>
+- **uptime**: the bot's uptime<br/>
+- **datetime**: full Python `datetime` string<br/>
+- **modelinfo**: a multi-line summary of the active chat/embed model settings<br/>
+- **prefix**: the bot's primary prefix in this guild<br/>
+- **prefixes**: humanized list of all valid prefixes<br/>
+- **botowner**: humanized list of bot-owner display names<br/>
+- **last_interaction**: time since the user's previous message in the conversation (e.g. `5 hours, 23 minutes ago`)<br/>
 
  - Usage: `[p]assistant system [system_prompt]`
  - Aliases: `sys`
@@ -837,6 +984,16 @@ This prompt will be appended to the initial prompt when the bot responds to a tr
 - **currency**: currency name<br/>
 - **bank**: bank name<br/>
 - **balance**: the user's current balance<br/>
+- **activities**: the user's current Discord activities<br/>
+- **userjoindate**: the user's join date for the server<br/>
+- **userjointime**: the user's join time for the server<br/>
+- **uptime**: the bot's uptime<br/>
+- **datetime**: full Python `datetime` string<br/>
+- **modelinfo**: a multi-line summary of the active chat/embed model settings<br/>
+- **prefix**: the bot's primary prefix in this guild<br/>
+- **prefixes**: humanized list of all valid prefixes<br/>
+- **botowner**: humanized list of bot-owner display names<br/>
+- **last_interaction**: time since the user's previous message in the conversation (e.g. `5 hours, 23 minutes ago`)<br/>
 
  - Usage: `[p]assistant triggerprompt [prompt]`
 
@@ -869,6 +1026,75 @@ When set, the bot will proactively compact conversations once they exceed this m
 Set to **0** to only compact when hitting the model's max token limit.<br/>
 
  - Usage: `[p]assistant compactionthreshold [token_limit]`
+
+### [p]assistant openroutercache
+
+Configure OpenRouter response & prompt caching.<br/>
+
+Only takes effect when an OpenRouter endpoint override is configured.<br/>
+
+ - Usage: `[p]assistant openroutercache`
+ - Aliases: `orcache`
+ - Restricted to: `ADMIN`
+
+### [p]assistant openroutercache enable
+
+Enable OpenRouter response caching (Mode A - caches the entire response at the OpenRouter network layer).<br/>
+
+ - Usage: `[p]assistant openroutercache enable`
+
+### [p]assistant openroutercache disable
+
+Disable OpenRouter response caching.<br/>
+
+ - Usage: `[p]assistant openroutercache disable`
+
+### [p]assistant openroutercache ttl
+
+Set the OpenRouter response cache TTL in seconds (1–86400).<br/>
+
+ - Usage: `[p]assistant openroutercache ttl <seconds>`
+
+### [p]assistant openroutercache promptcache
+
+Set the OpenRouter provider prompt cache TTL.<br/>
+
+Choices: `off`, `5m`, `1h`. Applies to Anthropic / Gemini / Qwen models routed via OpenRouter.<br/>
+
+ - Usage: `[p]assistant openroutercache promptcache <mode>`
+
+## [p]floatingcontext (Hybrid Command)
+
+Open the floating context block manager.<br/>
+
+Lets admins toggle which variables are appended to the trailing `[Current Context]` payload-only user message that the bot sends after conversation history. Because that message rides after the cached prefix, putting dynamic (per-request) values here keeps the prompt prefix stable across requests so provider-side prompt caching can hit. **Default: OFF for everything - fresh installs start with a blank slate so the admin picks exactly which variables to surface.**<br/>
+
+Prompt-template substitution is unchanged - every variable (stable or dynamic) still substitutes inline whenever its `{placeholder}` appears in a prompt template. The floating context menu is independent of substitution: it controls only what appears in the floating block.<br/>
+
+Each included variable is rendered as a self-encapsulated sentence in the floating block (e.g. `"The current date is May 16, 2026."`), so admins do **not** need to author prompts that reference the variable - toggling it on in the menu is enough for the model to receive its value.<br/>
+
+Categories include: **Dynamic - Time & Date / Balance / Activities / Session**, **Stable - Bot / Server / Channel / Bank / User Info / System**, and one **Custom - &lt;CogName&gt;** category per 3rd-party context-variable provider.<br/>
+
+The "Dynamic" vs "Stable" labelling is purely informational: **stable variables are cache-safe** (unchanging per-request, e.g. user profile, bot info) while **dynamic variables are cache-unsafe** (per-request or per-user, e.g. current time, balance). If you want to maximize prompt-prefix cache hits, avoid including dynamic-variable placeholders in your prompt templates; the ⚠️ Cache Warning embed field in `[p]assistant view` lists which prompt templates use dynamic placeholders.<br/>
+
+ - Usage: `[p]floatingcontext`
+ - Slash Usage: `/floatingcontext`
+ - Aliases: `floatcontext`, `fctx`
+ - Restricted to: `ADMIN`
+ - Checks: `guild_only`
+
+## [p]cacheinfo (Hybrid Command)
+
+Show prompt-cache stats from the most recent API call.<br/>
+
+Reports cached / total prompt tokens, cache-write tokens, and the model that served the request.<br/>
+
+Works with OpenAI direct (automatic caching), OpenRouter response caching (Mode A), and OpenRouter provider prompt caching (Mode B for Anthropic / Gemini / Qwen).<br/>
+
+ - Usage: `[p]cacheinfo`
+ - Slash Usage: `/cacheinfo`
+ - Restricted to: `ADMIN`
+ - Checks: `guild_only`
 
 ## [p]embeddings (Hybrid Command)
 

@@ -3,8 +3,12 @@ import inspect
 import json
 import logging
 import math
+import re
+import typing as t
+import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from typing import List, Optional
+from urllib.parse import urlparse
 
 import aiohttp
 import discord
@@ -37,6 +41,12 @@ from .models import (
 log = logging.getLogger("red.vrt.assistant.api")
 _ = Translator("Assistant", __file__)
 ENDPOINT_PROFILE_TTL_SECONDS = 300
+OPENROUTER_CHAT_FALLBACK_MODEL = "openrouter/auto"
+PREFERRED_EMBEDDING_FALLBACKS = (
+    "text-embedding-3-small",
+    "text-embedding-3-large",
+    "text-embedding-ada-002",
+)
 
 
 @cog_i18n(_)
@@ -44,59 +54,105 @@ class API(MixinMeta):
     def get_api_key(self, conf: GuildSettings) -> str:
         """Return the effective API key for a guild.
 
-        If the guild has its own key, use that.  Otherwise, if a global
-        endpoint override is configured, use the owner-configured endpoint
-        key if available. Fall back to a placeholder so the openai client
-        doesn't reject a ``None`` key for endpoints that don't validate it.
+        Guild key wins; if not set, falls back to the global endpoint key.
+        Used for both chat and embedding requests.
         """
-        if conf.api_key:
-            return conf.api_key
-        if self.db.endpoint_override:
-            return self.db.endpoint_api_key or "n/a"
-        return ""
+        return conf.api_key or self.db.endpoint_api_key or ""
 
-    def get_cached_endpoint_profile(self) -> Optional[EndpointProfile]:
-        profile = self.db.endpoint_profile
-        if not self.db.endpoint_override or not profile:
-            return None
-        if profile.base_url != self.db.endpoint_override:
-            return None
-        return profile
+    def get_guild_endpoint_url(self, conf: GuildSettings) -> t.Optional[str]:
+        """Return the effective endpoint URL for a guild (chat and embeddings).
 
-    def clear_endpoint_profile(self) -> None:
+        Priority:
+        1. Guild-specific endpoint override
+        2. Global endpoint override
+        3. None (use OpenAI)
+        """
+        return conf.endpoint_override or self.db.endpoint_override or None
+
+    def get_cached_endpoint_profile(self, conf: t.Optional[GuildSettings] = None) -> Optional[EndpointProfile]:
+        """Return cached endpoint profile for the effective endpoint.
+
+        If ``conf`` is provided, checks the guild-specific profile first,
+        then falls back to the global profile.
+        """
+        base_url = self.get_guild_endpoint_url(conf) if conf else self.db.endpoint_override
+        if not base_url:
+            return None
+
+        if conf and conf.endpoint_override and conf.endpoint_profile:
+            if conf.endpoint_profile.base_url == conf.endpoint_override:
+                return conf.endpoint_profile
+
+        if self.db.endpoint_profile and self.db.endpoint_override:
+            if self.db.endpoint_profile.base_url == self.db.endpoint_override:
+                return self.db.endpoint_profile
+
+        return None
+
+    def clear_endpoint_profile(self, conf: t.Optional[GuildSettings] = None) -> None:
+        if conf:
+            conf.endpoint_profile = None
         self.db.endpoint_profile = None
 
-    def resolve_chat_model(self, requested_model: str) -> str:
-        if not self.db.endpoint_override:
+    def get_openrouter_embedding_fallback(self, profile: EndpointProfile) -> str:
+        for model_id in PREFERRED_EMBEDDING_FALLBACKS:
+            if model_id in profile.embedding_models:
+                return model_id
+        if profile.active_embedding_model and profile.active_embedding_model in profile.embedding_models:
+            return profile.active_embedding_model
+        discovered = sorted(profile.embedding_models, key=str.lower)
+        if discovered:
+            return discovered[0]
+        return ""
+
+    def resolve_chat_model(self, requested_model: str, conf: t.Optional[GuildSettings] = None) -> str:
+        base_url = self.get_guild_endpoint_url(conf) if conf else self.db.endpoint_override
+        if not base_url:
             return requested_model
-        profile = self.get_cached_endpoint_profile()
+        profile = self.get_cached_endpoint_profile(conf)
         if not profile:
             return requested_model
         if requested_model in profile.chat_models:
             return requested_model
+        if profile.provider == "openrouter":
+            if requested_model.lower().startswith("openrouter/"):
+                return requested_model
+            return OPENROUTER_CHAT_FALLBACK_MODEL
         if profile.active_chat_model:
             return profile.active_chat_model
+        if len(profile.chat_models) == 1:
+            return next(iter(profile.chat_models))
         return requested_model
 
-    def resolve_embedding_model(self, requested_model: str) -> str:
-        if not self.db.endpoint_override:
+    def resolve_embedding_model(self, requested_model: str, conf: t.Optional[GuildSettings] = None) -> str:
+        base_url = self.get_guild_endpoint_url(conf) if conf else self.db.endpoint_override
+        if not base_url:
             return requested_model
-        profile = self.get_cached_endpoint_profile()
+        profile = self.get_cached_endpoint_profile(conf)
         if not profile:
             return requested_model
         if requested_model in profile.embedding_models:
             return requested_model
+        if profile.provider == "openrouter":
+            fallback_model = self.get_openrouter_embedding_fallback(profile)
+            if fallback_model:
+                return fallback_model
         if profile.active_embedding_model:
             return profile.active_embedding_model
+        if len(profile.embedding_models) == 1:
+            return next(iter(profile.embedding_models))
         return requested_model
 
-    def get_endpoint_chat_model_limit(self, requested_model: Optional[str] = None) -> int:
-        if not self.db.endpoint_override:
+    def get_endpoint_chat_model_limit(
+        self, requested_model: Optional[str] = None, conf: t.Optional[GuildSettings] = None
+    ) -> int:
+        base_url = self.get_guild_endpoint_url(conf) if conf else self.db.endpoint_override
+        if not base_url:
             return 0
-        profile = self.get_cached_endpoint_profile()
+        profile = self.get_cached_endpoint_profile(conf)
         if not profile:
             return 0
-        model_id = self.resolve_chat_model(requested_model or "")
+        model_id = self.resolve_chat_model(requested_model or "", conf)
         entry = profile.chat_models.get(model_id)
         if entry and entry.max_context_length:
             return entry.max_context_length
@@ -129,10 +185,16 @@ class API(MixinMeta):
         ]
         return "\n".join(lines)
 
-    def observe_chat_runtime(self, model_id: str, message: Optional[ChatCompletionMessage] = None) -> None:
-        if not self.db.endpoint_override or not model_id:
+    def observe_chat_runtime(
+        self,
+        model_id: str,
+        message: Optional[ChatCompletionMessage] = None,
+        conf: t.Optional[GuildSettings] = None,
+    ) -> None:
+        base_url = self.get_guild_endpoint_url(conf)
+        if not base_url or not model_id:
             return
-        profile = self.get_cached_endpoint_profile()
+        profile = self.get_cached_endpoint_profile(conf)
         if not profile:
             return
         entry = profile.chat_models.get(model_id) or EndpointModelProfile(id=model_id, kind="llm")
@@ -144,10 +206,16 @@ class API(MixinMeta):
         if model_id not in profile.available_models:
             profile.available_models.append(model_id)
 
-    def observe_embedding_runtime(self, model_id: str, dimensions: int) -> None:
-        if not self.db.endpoint_override or not model_id:
+    def observe_embedding_runtime(
+        self,
+        model_id: str,
+        dimensions: int,
+        conf: t.Optional[GuildSettings] = None,
+    ) -> None:
+        base_url = self.get_guild_endpoint_url(conf) if conf else None
+        if not base_url or not model_id:
             return
-        profile = self.get_cached_endpoint_profile()
+        profile = self.get_cached_endpoint_profile(conf)
         if not profile:
             return
         entry = profile.embedding_models.get(model_id) or EndpointModelProfile(id=model_id, kind="embedding")
@@ -158,32 +226,47 @@ class API(MixinMeta):
         if model_id not in profile.available_models:
             profile.available_models.append(model_id)
 
-    async def refresh_endpoint_profile(self, force: bool = False, save: bool = False) -> Optional[EndpointProfile]:
-        if not self.db.endpoint_override:
-            self.clear_endpoint_profile()
+    async def refresh_endpoint_profile(
+        self,
+        conf: t.Optional[GuildSettings] = None,
+        force: bool = False,
+        save: bool = False,
+    ) -> Optional[EndpointProfile]:
+        base_url = self.get_guild_endpoint_url(conf)
+        if not base_url:
+            self.clear_endpoint_profile(conf)
             if save:
                 await self.save_conf()
             return None
 
-        cached = self.get_cached_endpoint_profile()
+        cached = self.get_cached_endpoint_profile(conf)
         if cached and not force:
             age = (datetime.now(tz=timezone.utc) - cached.discovered_at).total_seconds()
             if age < ENDPOINT_PROFILE_TTL_SECONDS:
                 return cached
 
-        profile = await self.probe_endpoint_profile(self.db.endpoint_override)
+        api_key = self.get_api_key(conf) if conf else self.db.endpoint_api_key
+        profile = await self.probe_endpoint_profile(base_url, api_key)
         if profile is None:
             return cached
 
-        self.db.endpoint_profile = profile
+        if conf and conf.endpoint_override:
+            conf.endpoint_profile = profile
+        else:
+            self.db.endpoint_profile = profile
+
         if save:
             await self.save_conf()
         return profile
 
-    async def probe_endpoint_profile(self, base_url: str) -> Optional[EndpointProfile]:
+    async def probe_endpoint_profile(
+        self,
+        base_url: str,
+        api_key: t.Optional[str] = None,
+    ) -> Optional[EndpointProfile]:
         headers = {}
-        if self.db.endpoint_api_key:
-            headers["Authorization"] = f"Bearer {self.db.endpoint_api_key}"
+        if api_key and api_key != "n/a":
+            headers["Authorization"] = f"Bearer {api_key}"
 
         timeout = aiohttp.ClientTimeout(total=5)
         root_url = base_url.rstrip("/")
@@ -254,6 +337,9 @@ class API(MixinMeta):
                     data = await res.json()
                     items = data.get("data") if isinstance(data, dict) else None
                     if isinstance(items, list):
+                        if "openrouter.ai" in base_url.lower():
+                            embedding_models = await self.discover_openrouter_embedding_models(session)
+                            return self.parse_openrouter_profile(base_url, items, embedding_models)
                         return self.parse_openai_compatible_profile(base_url, items)
             except Exception as e:
                 log.debug("OpenAI-compatible model probe failed for %s", compat_url, exc_info=e)
@@ -299,6 +385,103 @@ class API(MixinMeta):
         elif version_data.get("embeddings") and len(profile.embedding_models) == 1:
             profile.active_embedding_model = next(iter(profile.embedding_models))
             profile.embedding_models[profile.active_embedding_model].loaded = True
+
+        return profile
+
+    def normalize_openrouter_embedding_model_id(self, model_id: str) -> str:
+        normalized = model_id.strip().lower()
+        if normalized.startswith("openai/text-embedding-"):
+            return normalized.split("/", 1)[1]
+        return normalized
+
+    def extract_openrouter_embedding_candidates(self, sitemap_xml: str) -> list[str]:
+        embedding_pattern = re.compile(r"(?:^|[-/])(embed|embedding)(?:[-/]|$)", re.IGNORECASE)
+        metadata_suffixes = {"providers", "performance", "pricing", "apps", "activity", "uptime", "api"}
+
+        try:
+            root = ET.fromstring(sitemap_xml)
+        except ET.ParseError as e:
+            log.debug("Failed to parse OpenRouter sitemap", exc_info=e)
+            return []
+
+        candidates: set[str] = set()
+        for element in root.iter():
+            if not element.tag.endswith("loc") or not element.text:
+                continue
+
+            segments = [segment for segment in urlparse(element.text).path.split("/") if segment]
+            if not segments:
+                continue
+
+            if segments[0] == "compare":
+                for index in range(1, len(segments), 2):
+                    if index + 1 >= len(segments):
+                        break
+                    model_id = self.normalize_openrouter_embedding_model_id(f"{segments[index]}/{segments[index + 1]}")
+                    if embedding_pattern.search(model_id):
+                        candidates.add(model_id)
+                continue
+
+            if segments[0] == "collections":
+                continue
+            if len(segments) < 2 or segments[-1] in metadata_suffixes:
+                continue
+
+            model_id = self.normalize_openrouter_embedding_model_id(f"{segments[0]}/{segments[1]}")
+            if embedding_pattern.search(model_id):
+                candidates.add(model_id)
+
+        return sorted(candidates, key=str.lower)
+
+    async def discover_openrouter_embedding_models(self, session: aiohttp.ClientSession) -> list[str]:
+        try:
+            async with session.get("https://openrouter.ai/sitemap.xml") as res:
+                if not res.ok:
+                    return []
+                sitemap_xml = await res.text()
+        except Exception as e:
+            log.debug("Failed to fetch OpenRouter sitemap", exc_info=e)
+            return []
+
+        candidates = self.extract_openrouter_embedding_candidates(sitemap_xml)
+        if not candidates:
+            return []
+
+        semaphore = asyncio.Semaphore(6)
+
+        async def validate(model_id: str) -> Optional[str]:
+            try:
+                async with semaphore:
+                    async with session.post(
+                        "https://openrouter.ai/api/v1/embeddings",
+                        json={"model": model_id, "input": ["ping"]},
+                    ) as res:
+                        if not res.ok:
+                            return None
+                        return model_id
+            except Exception as e:
+                log.debug("Failed to validate OpenRouter embedding model %s", model_id, exc_info=e)
+                return None
+
+        results = await asyncio.gather(*(validate(model_id) for model_id in candidates))
+        return sorted({model_id for model_id in results if model_id}, key=str.lower)
+
+    def parse_openrouter_profile(
+        self,
+        base_url: str,
+        items: list[dict],
+        embedding_models: Optional[list[str]] = None,
+    ) -> EndpointProfile:
+        profile = self.parse_openai_compatible_profile(base_url, items)
+        profile.provider = "openrouter"
+
+        if not profile.embedding_models and embedding_models:
+            for model_id in embedding_models:
+                profile.embedding_models[model_id] = EndpointModelProfile(id=model_id, kind="embedding")
+                if model_id not in profile.available_models:
+                    profile.available_models.append(model_id)
+            if not profile.active_embedding_model:
+                profile.active_embedding_model = embedding_models[0]
 
         return profile
 
@@ -366,10 +549,11 @@ class API(MixinMeta):
         requested_model: Optional[str] = None,
     ) -> bool:
         model = requested_model or conf.get_user_model(user)
-        if not self.db.endpoint_override:
+        base_url = self.get_guild_endpoint_url(conf)
+        if not base_url:
             return model in SUPPORTS_VISION
 
-        profile = await self.refresh_endpoint_profile()
+        profile = await self.refresh_endpoint_profile(conf)
         if profile:
             requested = profile.chat_models.get(model)
             if requested and requested.supports_vision is not None:
@@ -404,11 +588,15 @@ class API(MixinMeta):
         response_token_override: int = None,
         model_override: Optional[str] = None,
         temperature_override: Optional[float] = None,
+        session_id: Optional[str] = None,
+        guild_id: Optional[int] = None,
+        tool_choice: Optional[t.Union[str, dict]] = None,
     ) -> ChatCompletionMessage:
         requested_model = model_override or conf.get_user_model(member)
-        if self.db.endpoint_override:
-            await self.refresh_endpoint_profile()
-        model = self.resolve_chat_model(requested_model)
+        base_url = self.get_guild_endpoint_url(conf)
+        if base_url:
+            await self.refresh_endpoint_profile(conf)
+        model = self.resolve_chat_model(requested_model, conf)
 
         max_convo_tokens = self.get_max_tokens(conf, member)
         max_response_tokens = conf.get_user_max_response_tokens(member)
@@ -439,10 +627,12 @@ class API(MixinMeta):
                 # Use the lesser of caculated vs set response tokens
                 response_tokens = min(response_tokens, max_response_tokens)
 
-        if model not in MODELS and self.db.endpoint_override is None:
+        if model not in MODELS and base_url is None:
             log.error(f"This model is no longer supported: {model}. Switching to gpt-5.4")
             model = "gpt-5.4"
             await self.save_conf()
+
+        is_openrouter = bool(base_url and "openrouter.ai" in base_url.lower())
 
         response: ChatCompletion = await request_chat_completion_raw(
             model=model,
@@ -451,47 +641,66 @@ class API(MixinMeta):
             api_key=self.get_api_key(conf),
             max_tokens=response_tokens,
             functions=functions,
+            tool_choice=tool_choice,
             frequency_penalty=conf.frequency_penalty,
             presence_penalty=conf.presence_penalty,
             seed=conf.seed,
-            base_url=self.db.endpoint_override,
+            base_url=base_url,
             reasoning_effort=conf.get_user_reasoning_effort(member),
             verbosity=conf.verbosity,
+            openrouter_cache=is_openrouter and conf.openrouter_cache_enabled,
+            openrouter_cache_ttl=conf.openrouter_cache_ttl,
+            session_id=session_id if is_openrouter else None,
+            openrouter_prompt_cache_ttl=conf.openrouter_prompt_cache_ttl if is_openrouter else None,
+            guild_id=guild_id,
         )
         message: ChatCompletionMessage = response.choices[0].message
 
         if response.usage:
-            conf.update_usage(
-                response.model,
-                response.usage.total_tokens,
-                response.usage.prompt_tokens,
-                response.usage.completion_tokens,
-            )
-        self.observe_chat_runtime(response.model, message)
+            # Record cache hit metrics for `[p]cacheinfo`.
+            # OpenAI / OpenRouter (OpenAI-shaped) put cache counters under
+            # ``usage.prompt_tokens_details.cached_tokens`` (read) and
+            # ``cache_write_tokens`` (write). Anthropic surfaces them as
+            # top-level ``usage.cache_read_input_tokens`` and
+            # ``cache_creation_input_tokens``. Read whichever is populated.
+            details = getattr(response.usage, "prompt_tokens_details", None)
+            openai_cached = getattr(details, "cached_tokens", 0) or 0 if details else 0
+            openai_cache_write = getattr(details, "cache_write_tokens", 0) or 0 if details else 0
+            anthropic_cached = getattr(response.usage, "cache_read_input_tokens", 0) or 0
+            anthropic_cache_write = getattr(response.usage, "cache_creation_input_tokens", 0) or 0
+            cached = openai_cached or anthropic_cached
+            cache_write = openai_cache_write or anthropic_cache_write
+            total_prompt = response.usage.prompt_tokens or 0
+            if total_prompt > 0 and (cached or cache_write):
+                pct = (cached / total_prompt * 100) if total_prompt else 0.0
+                log.debug(
+                    f"Cache: {cached}/{total_prompt} prompt tokens cached ({pct:.0f}%), {cache_write} write tokens"
+                )
+            self.last_cache_stats = {
+                "cached": cached,
+                "cache_write": cache_write,
+                "total": total_prompt,
+                "model": response.model,
+            }
+        self.observe_chat_runtime(response.model, message, conf)
         log.debug(f"MESSAGE TYPE: {type(message)}")
         return message
 
     async def request_embedding_with_info(self, text: str, conf: GuildSettings) -> tuple[List[float], str]:
-        if self.db.endpoint_override:
-            await self.refresh_endpoint_profile()
-        requested_model = self.resolve_embedding_model(conf.embed_model)
+        base_url = self.get_guild_endpoint_url(conf)
+        if base_url:
+            await self.refresh_endpoint_profile(conf)
+        requested_model = self.resolve_embedding_model(conf.embed_model, conf)
         response: CreateEmbeddingResponse = await request_embedding_raw(
             text=text,
             api_key=self.get_api_key(conf),
             model=requested_model,
-            base_url=self.db.endpoint_override,
+            base_url=base_url,
         )
 
-        if response.usage:
-            conf.update_usage(
-                response.model,
-                response.usage.total_tokens,
-                response.usage.prompt_tokens,
-                0,
-            )
         embedding = response.data[0].embedding
         observed_model = response.model or requested_model
-        self.observe_embedding_runtime(observed_model, len(embedding))
+        self.observe_embedding_runtime(observed_model, len(embedding), conf)
         return embedding, observed_model
 
     async def request_embedding(self, text: str, conf: GuildSettings) -> List[float]:
@@ -612,7 +821,7 @@ class API(MixinMeta):
             enum_item = 3
             func_end = 12
         else:
-            log.warning(f"Incompatible model: {model}")
+            log.debug(f"Incompatible model: {model}")
 
         def _count_tokens():
             try:
@@ -686,7 +895,8 @@ class API(MixinMeta):
             return 0
 
     async def can_call_llm(self, conf: GuildSettings, ctx: Optional[commands.Context] = None) -> bool:
-        if not conf.api_key and not self.db.endpoint_override:
+        has_endpoint = bool(conf.endpoint_override or self.db.endpoint_override)
+        if not conf.api_key and not has_endpoint:
             if ctx:
                 txt = _("No model API key or endpoint override is configured!\n")
                 if ctx.author.id == ctx.guild.owner_id:
@@ -781,9 +991,10 @@ class API(MixinMeta):
     def get_max_tokens(self, conf: GuildSettings, user: Optional[discord.Member]) -> int:
         user_max = conf.get_user_max_tokens(user)
         model = conf.get_user_model(user)
-        max_model_tokens = self.get_endpoint_chat_model_limit(model) if self.db.endpoint_override else MODELS.get(model)
+        has_endpoint = bool(conf.endpoint_override or self.db.endpoint_override)
+        max_model_tokens = self.get_endpoint_chat_model_limit(model, conf) if has_endpoint else MODELS.get(model)
         if not max_model_tokens:
-            if self.db.endpoint_override:
+            if has_endpoint:
                 return user_max
             max_model_tokens = 4000
         if not user_max or user_max > max_model_tokens:
@@ -846,7 +1057,7 @@ class API(MixinMeta):
         convo_msgs = [m for m in messages if m.get("role") not in ("system", "developer")]
 
         if len(convo_msgs) <= COMPACTION_KEEP_RECENT:
-            # Too few messages to compact — fall back to degradation
+            # Too few messages to compact - fall back to degradation
             return await self.degrade_conversation(messages, function_list, conf, user)
 
         # Find the split point, respecting tool-call/result pairs
@@ -866,8 +1077,9 @@ class API(MixinMeta):
 
         # Call the LLM to summarize
         compaction_model = conf.compaction_model or model
-        if self.db.endpoint_override:
-            compaction_model = self.resolve_chat_model(compaction_model)
+        base_url = self.get_guild_endpoint_url(conf)
+        if base_url:
+            compaction_model = self.resolve_chat_model(compaction_model, conf)
         summary_prompt = COMPACTION_SYSTEM_PROMPT
         if focus:
             summary_prompt += f"\n\nFocus the summary on: {focus}"
@@ -877,7 +1089,7 @@ class API(MixinMeta):
                 {"role": "developer", "content": summary_prompt},
                 {"role": "user", "content": old_text},
             ]
-            if self.db.endpoint_override:
+            if base_url:
                 for m in summary_messages:
                     if m["role"] == "developer":
                         m["role"] = "system"
@@ -891,16 +1103,9 @@ class API(MixinMeta):
                 frequency_penalty=0.0,
                 presence_penalty=0.0,
                 seed=None,
-                base_url=self.db.endpoint_override,
+                base_url=base_url,
             )
             summary_text = response.choices[0].message.content
-            if response.usage:
-                conf.update_usage(
-                    response.model,
-                    response.usage.total_tokens,
-                    response.usage.prompt_tokens,
-                    response.usage.completion_tokens,
-                )
         except Exception as e:
             log.warning(f"Compaction LLM call failed, falling back to degradation: {e}")
             return await self.degrade_conversation(messages, function_list, conf, user)
@@ -912,7 +1117,7 @@ class API(MixinMeta):
         # Replace messages in-place: system msgs + summary + recent messages
         summary_msg = {
             "role": COMPACTION_SUMMARY_ROLE,
-            "content": f"[Conversation Summary — compacted from {len(old_messages)} earlier messages]\n{summary_text}",
+            "content": f"[Conversation Summary - compacted from {len(old_messages)} earlier messages]\n{summary_text}",
         }
 
         messages.clear()
@@ -937,12 +1142,12 @@ class API(MixinMeta):
         while idx > 0:
             msg = messages[idx - 1]
             # If the message right before the split is an assistant with tool_calls,
-            # the results are on the other side — move the split back
+            # the results are on the other side - move the split back
             if msg.get("role") == "assistant" and (msg.get("tool_calls") or msg.get("function_call")):
                 idx -= 1
                 continue
             # If the message right at the split is a tool/function result, its
-            # associated assistant call is before the split — move back
+            # associated assistant call is before the split - move back
             if idx < len(messages) and messages[idx].get("role") in ("tool", "function"):
                 idx -= 1
                 continue
@@ -1105,10 +1310,11 @@ class API(MixinMeta):
         current_chunk = []
 
         max_tokens = conf.max_tokens - 100
-        model_limit = self.get_endpoint_chat_model_limit(conf.model) if self.db.endpoint_override else 0
+        has_endpoint = bool(conf.endpoint_override or self.db.endpoint_override)
+        model_limit = self.get_endpoint_chat_model_limit(conf.model, conf) if has_endpoint else 0
         if model_limit:
             max_tokens = min(max_tokens, model_limit)
-        elif not self.db.endpoint_override or conf.model in MODELS:
+        elif not has_endpoint or conf.model in MODELS:
             max_tokens = min(max_tokens, MODELS.get(conf.model, 4000))
         for token in tokens:
             current_chunk.append(token)

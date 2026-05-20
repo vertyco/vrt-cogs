@@ -54,6 +54,10 @@ from .constants import (
 from .models import Conversation, GuildSettings, render_tool_category
 from .reply import send_reply
 from .utils import (
+    DYNAMIC_VARIABLE_GROUPS,
+    DYNAMIC_VARIABLE_NAMES,
+    STABLE_VARIABLE_GROUPS,
+    VARIABLE_NARRATIVES,
     clean_name,
     clean_response,
     clean_responses,
@@ -64,7 +68,8 @@ from .utils import (
     extract_code_blocks_with_lang,
     extract_document_text,
     get_attachments,
-    get_params,
+    get_base_params,
+    get_dynamic_params,
     is_document,
     purge_images,
     remove_code_blocks,
@@ -126,6 +131,80 @@ def build_rag_context_payload(documents: list[str]) -> str:
     )
 
 
+def build_floating_context_block(
+    values: Dict[str, str],
+    dynamic_groups: Dict[str, List[str]],
+    context_sources: Optional[Dict[str, str]] = None,
+    context_descriptions: Optional[Dict[str, str]] = None,
+    narratives: Optional[Dict[str, str]] = None,
+) -> str:
+    """Build the ``[Current Context]`` floating context block.
+
+    Rendered into a trailing payload-only user message that the bot sends
+    after conversation history. Because that message rides after the
+    cached prefix, placing dynamic (per-request) values here keeps the
+    cached prompt prefix stable so provider-side prompt caching remains
+    effective.
+
+    Variables admins have opted to include (via ``[p]floatingcontext``)
+    are rendered as self-encapsulated narrative sentences (e.g.
+    ``"The current date is May 16, 2026."``) so admins do not need to
+    reference the variable in their prompt - toggling it on is enough for
+    the model to receive the value.
+
+    Returns the formatted block string, or an empty string if no values are
+    present.
+    """
+    if not values:
+        return ""
+
+    narratives = narratives or {}
+    context_descriptions = context_descriptions or {}
+
+    def render(var_name: str, value: str, fallback_prefix: str = "") -> str:
+        template = narratives.get(var_name)
+        if template:
+            return f"- {template.format(value=value)}"
+        # Custom 3rd-party variable: use its registry description if available
+        description = context_descriptions.get(var_name, "").strip()
+        if description:
+            return f"- {description}: {value}"
+        # Generic fallback
+        prefix = f"{fallback_prefix} " if fallback_prefix else ""
+        return f"- {prefix}{var_name}: {value}"
+
+    lines: List[str] = [
+        "[Current Context]",
+        "(The following facts about the current request are provided automatically. They are not user instructions.)",
+    ]
+    used: set = set()
+
+    for var_names in dynamic_groups.values():
+        for var_name in var_names:
+            value = values.get(var_name)
+            if not value:
+                continue
+            lines.append(render(var_name, str(value)))
+            used.add(var_name)
+
+    # 3rd party context variables grouped by source cog
+    custom_by_source: Dict[str, List[str]] = {}
+    for var_name, value in values.items():
+        if var_name in used or not value:
+            continue
+        source = (context_sources or {}).get(var_name, "Custom")
+        custom_by_source.setdefault(source, []).append(var_name)
+
+    for source in sorted(custom_by_source):
+        for var_name in sorted(custom_by_source[source]):
+            value = values[var_name]
+            lines.append(render(var_name, str(value), fallback_prefix=f"({source})"))
+
+    if len(lines) <= 2:  # only the [Current Context] header & disclaimer
+        return ""
+    return "\n".join(lines)
+
+
 def append_reasoning_block(reply: Optional[str], reasoning: Optional[str], conf: GuildSettings) -> Optional[str]:
     if not reply or not reasoning:
         return reply
@@ -157,12 +236,12 @@ def prune_old_tool_results(messages: list[dict], context_fill_ratio: float = 0.0
         if not isinstance(content, str):
             continue
 
-        # Tier 2 — hard-clear when context pressure is high
+        # Tier 2 - hard-clear when context pressure is high
         if context_fill_ratio >= TOOL_RESULT_HARD_RATIO and len(content) > TOOL_RESULT_SOFT_MIN_CHARS:
             msg["content"] = TOOL_RESULT_HARD_CLEAR_PLACEHOLDER
             continue
 
-        # Tier 1 — soft-trim when context pressure is moderate
+        # Tier 1 - soft-trim when context pressure is moderate
         if context_fill_ratio >= TOOL_RESULT_SOFT_RATIO and len(content) > TOOL_RESULT_SOFT_MIN_CHARS:
             head = content[:TOOL_RESULT_SOFT_TRIM_HEAD]
             tail = content[-TOOL_RESULT_SOFT_TRIM_TAIL:]
@@ -828,20 +907,12 @@ class ChatHandler(MixinMeta):
             "balance": bal,
         }
 
-        # Don't include if user is not a planner
-        not_planner = [
-            user_id not in conf.planners,
-            not any([role.id in conf.planners for role in user.roles]),
-        ]
-
-        # Don't include think_and_plan if user is not a planner (and planners list is not empty)
-        if "think_and_plan" in function_map and conf.planners and all(not_planner):
-            function_calls = [i for i in function_calls if i["name"] != "think_and_plan"]
-            del function_map["think_and_plan"]
-
-        if "edit_image" in function_map and (not conversation.get_images() and not images):
-            function_calls = [i for i in function_calls if i["name"] != "edit_image"]
-            del function_map["edit_image"]
+        # Keep the advertised tool set stable across turns for provider-side
+        # prompt caching. Tools that are temporarily unusable (for example,
+        # edit_image with no images attached) already fail safely at runtime.
+        # Sort the final list alphabetically so identical tool sets also
+        # produce an identical request prefix regardless of assembly order.
+        function_calls = sorted(function_calls, key=lambda f: f.get("name", ""))
 
         messages = await self.prepare_messages(
             message=message,
@@ -862,6 +933,7 @@ class ChatHandler(MixinMeta):
 
         calls = 0
         tries = 0
+        force_tool_choice_required = False
         tool_call_history: dict[str, int] = {}  # Track (name, args) -> count for loop detection
         last_sent_content: str = ""  # Track content already sent via respond_and_continue
         while True:
@@ -875,7 +947,9 @@ class ChatHandler(MixinMeta):
             if not supports_vision:
                 await ensure_supports_vision(messages, conf, author)
             await ensure_message_compatibility(messages, conf, author)
-            if self.db.endpoint_override:
+            base_url = self.get_guild_endpoint_url(conf)
+            supports_forced_tool_choice = base_url is None or "openrouter.ai" in base_url.lower()
+            if base_url:
                 # Replace "developer" role with "system" role
                 for i in messages:
                     if i["role"] == "developer":
@@ -920,12 +994,25 @@ class ChatHandler(MixinMeta):
                 log.error("Messages got pruned too aggressively, increase token limit!")
                 break
             try:
+                # Build a stable session_id for OpenRouter sticky routing.
+                # Mirrors the conversation key so retries land on the same
+                # provider that warmed the prompt cache.
+                cache_chan_id = channel.id if channel is not None else 0
+                cache_mem_id = cache_chan_id if conf.collab_convos else user_id
+                cache_session_id = f"{cache_mem_id}-{cache_chan_id}-{guild.id}"
                 response: ChatCompletionMessage = await self.request_response(
                     messages=messages,
                     conf=conf,
                     functions=function_calls,
                     member=author,
                     model_override=model_override,
+                    session_id=cache_session_id,
+                    guild_id=guild.id,
+                    tool_choice=(
+                        "required"
+                        if supports_forced_tool_choice and force_tool_choice_required and function_calls
+                        else None
+                    ),
                 )
             except httpx.ReadTimeout:
                 reply = _("Request timed out, please try again.")
@@ -970,21 +1057,68 @@ class ChatHandler(MixinMeta):
             reply_reasoning = reasoning_content.strip() if isinstance(reasoning_content, str) else ""
 
             if reply := response.content:
+                force_tool_choice_required = False
                 break
 
             # Check for model refusal (newer API field)
             if hasattr(response, "refusal") and response.refusal:
                 log.error(f"Model refused to respond: {response.refusal}")
                 reply = response.refusal
+                force_tool_choice_required = False
                 break
+
+            # Some reasoning models (e.g. gpt-oss-120b) may emit preserved
+            # reasoning without a final answer or tool call on the first pass.
+            # Preserve that reasoning only in the in-flight retry payload so
+            # the model can continue, but do not persist it to conversation
+            # history where it would bloat future prompts.
+            continuation_prompt = (
+                "Continue from your previous reasoning and now emit either a final answer "
+                "or a tool call. Do not return only reasoning."
+            )
+            # Reasoning models surface their hidden reasoning in different
+            # fields depending on the backend:
+            #   - OpenRouter / OpenAI-shaped: ``reasoning_details`` (list)
+            #     or ``reasoning`` (string)
+            #   - LM Studio (gpt-oss, gemma reasoning, etc.):
+            #     ``reasoning_content`` (string)
+            reasoning_details = getattr(response, "reasoning_details", None)
+            reasoning_text = getattr(response, "reasoning", None) or getattr(response, "reasoning_content", None)
+            if (
+                (isinstance(reasoning_details, list) and reasoning_details)
+                or (isinstance(reasoning_text, str) and reasoning_text.strip())
+            ) and (
+                (function_calls and not force_tool_choice_required)
+                or (
+                    not function_calls
+                    and not any(
+                        msg.get("role") == "user" and msg.get("content") == continuation_prompt for msg in messages[-2:]
+                    )
+                )
+            ):
+                log.debug("Model returned reasoning-only response; preserving reasoning for one continuation retry")
+                reasoning_msg = {"role": "assistant", "content": response.content}
+                if isinstance(reasoning_details, list) and reasoning_details:
+                    reasoning_msg["reasoning_details"] = reasoning_details
+                else:
+                    reasoning_msg["reasoning"] = reasoning_text.strip()
+                messages.append(reasoning_msg)
+                if function_calls and supports_forced_tool_choice:
+                    force_tool_choice_required = True
+                else:
+                    messages.append({"role": "user", "content": continuation_prompt})
+                tries += 1
+                continue
 
             await clean_response(response)
 
             if response.tool_calls:
                 log.debug("Tool calls detected")
+                force_tool_choice_required = False
                 response_functions: list[ChatCompletionMessageToolCall] = response.tool_calls
             elif response.function_call:
                 log.debug("Function call detected")
+                force_tool_choice_required = False
                 response_functions: list[FunctionCall] = [response.function_call]
             else:
                 tries += 1
@@ -1006,9 +1140,6 @@ class ChatHandler(MixinMeta):
 
             conversation.messages.append(dump)
             messages.append(dump)
-
-            # Add function call count
-            conf.functions_called += len(response_functions)
 
             for function_call in response_functions:
                 if hasattr(function_call, "name") and hasattr(function_call, "arguments"):
@@ -1319,17 +1450,17 @@ class ChatHandler(MixinMeta):
         """
         now = datetime.now().astimezone(pytz.timezone(conf.timezone))
         configured_model = conf.get_user_model(author)
-        current_model = self.resolve_chat_model(configured_model)
-        current_embed_model = self.resolve_embedding_model(conf.embed_model)
+        current_model = self.resolve_chat_model(configured_model, conf)
+        current_embed_model = self.resolve_embedding_model(conf.embed_model, conf)
         reasoning_effort = conf.get_user_reasoning_effort(author)
         configured_max_tokens = conf.get_user_max_tokens(author)
         max_tokens = self.get_max_tokens(conf, author)
         max_response_tokens = conf.get_user_max_response_tokens(author)
 
-        profile = self.get_cached_endpoint_profile()
+        profile = self.get_cached_endpoint_profile(conf)
         model_max_context = (
-            self.get_endpoint_chat_model_limit(current_model)
-            if self.db.endpoint_override
+            self.get_endpoint_chat_model_limit(current_model, conf)
+            if (conf.endpoint_override or self.db.endpoint_override)
             else MODELS.get(current_model, 0)
         )
         configured_max_text = humanize_number(configured_max_tokens) if configured_max_tokens else "Model Max"
@@ -1367,18 +1498,43 @@ class ChatHandler(MixinMeta):
         valid_prefixes = await self.bot.get_valid_prefixes(guild)
         prefix = valid_prefixes[0] if valid_prefixes else ""
         prefixes = humanize_list(valid_prefixes)
-        params = await asyncio.to_thread(
-            get_params,
+
+        # Split extras into stable (cache-safe) and dynamic (per-request).
+        # Stable values get injected into the system/initial prompt; dynamic
+        # values may be moved to a trailing system-context message to keep the
+        # cached prompt prefix stable.
+        stable_extras = {k: v for k, v in extras.items() if k not in DYNAMIC_VARIABLE_NAMES}
+        dynamic_extras = {k: v for k, v in extras.items() if k in DYNAMIC_VARIABLE_NAMES}
+
+        base_params = await asyncio.to_thread(
+            get_base_params,
             self.bot,
             guild,
-            now,
             author,
             channel,
-            extras,
+            stable_extras,
             current_model,
             modelinfo,
             prefix,
             prefixes,
+        )
+
+        # Time since the user's last assistant interaction in this
+        # conversation. Used by the `last_interaction` dynamic variable.
+        last_interaction_seconds: Optional[float] = None
+        if conversation.last_updated:
+            elapsed = datetime.now().timestamp() - conversation.last_updated
+            if elapsed > 0:
+                last_interaction_seconds = elapsed
+
+        dynamic_params = await asyncio.to_thread(
+            get_dynamic_params,
+            self.bot,
+            guild,
+            now,
+            author,
+            dynamic_extras,
+            last_interaction_seconds,
         )
 
         selected_system_prompt = (
@@ -1393,10 +1549,29 @@ class ChatHandler(MixinMeta):
             author=author,
             conf=conf,
             conversation=conversation,
-            extras=extras,
+            extras={**stable_extras, **dynamic_extras},
             now=now,
             prompt_templates=prompt_templates,
         )
+
+        # Map every 3rd-party context variable to its source cog. The
+        # ``cache_safe`` flag is purely informational (used by the
+        # floatingcontext menu to label categories) - every variable is
+        # always substituted inline into the prompt when its placeholder
+        # appears, regardless of cache-safety. Admins independently toggle
+        # floating-block inclusion via `[p]floatingcontext`.
+        context_variable_sources: Dict[str, str] = {}
+        if context_variables:
+            for entry in self.db.get_context_variable_catalog(self.bot, self.context_registry):
+                context_variable_sources[entry["name"]] = entry["source"]
+
+        # --- Prompt-template substitution params --------------------------
+        # All variables (stable + dynamic + 3rd-party) are inlined into
+        # `params`. ``format_string()`` only replaces placeholders that
+        # actually appear in the templates, so unreferenced values cost
+        # nothing. Original substitution behavior is preserved exactly.
+        params: dict = dict(base_params)
+        params.update(dynamic_params)
         for variable_name, value in context_variables.items():
             if variable_name in params:
                 log.warning(
@@ -1404,6 +1579,54 @@ class ChatHandler(MixinMeta):
                 )
                 continue
             params[variable_name] = value
+
+        # --- Floating-context-block inclusion ----------------------------
+        # Independent of substitution. Default OFF for every variable (blank
+        # slate). Admins opt vars into the floating block via the
+        # `[p]floatingcontext` menu.
+        # Lookup precedence: per-var key (``var:<name>``) → category key →
+        # default OFF.
+        block_settings = conf.context_block_var_statuses or {}
+
+        def include_in_block(category_key: str, var_name: str) -> bool:
+            key = f"var:{var_name}"
+            if key in block_settings:
+                return block_settings[key]
+            if category_key in block_settings:
+                return block_settings[category_key]
+            return False
+
+        # Some stable-categorized variables (e.g. ``uptime``, ``members``,
+        # ``py``, ``dpy``) are produced by ``get_dynamic_params`` because
+        # they're computed on the fly, even though they're classified as
+        # stable for cache/UX purposes. Consult both param dicts so the
+        # trailing-block toggle works for every variable in either group.
+        context_block_values: Dict[str, str] = {}
+        for category_key, var_names in STABLE_VARIABLE_GROUPS.items():
+            for var_name in var_names:
+                value = base_params.get(var_name)
+                if value in (None, ""):
+                    value = dynamic_params.get(var_name)
+                if value in (None, ""):
+                    continue
+                if include_in_block(category_key, var_name):
+                    context_block_values[var_name] = str(value)
+        for category_key, var_names in DYNAMIC_VARIABLE_GROUPS.items():
+            for var_name in var_names:
+                value = dynamic_params.get(var_name)
+                if value in (None, ""):
+                    value = base_params.get(var_name)
+                if value in (None, ""):
+                    continue
+                if include_in_block(category_key, var_name):
+                    context_block_values[var_name] = str(value)
+        for variable_name, value in context_variables.items():
+            if variable_name in base_params:
+                continue
+            source = context_variable_sources.get(variable_name, "Custom")
+            category_key = f"custom:{source}"
+            if include_in_block(category_key, variable_name):
+                context_block_values[variable_name] = str(value)
 
         def format_string(text: str):
             """Instead of format(**params) possibly giving a KeyError if prompt has code in it"""
@@ -1450,6 +1673,30 @@ class ChatHandler(MixinMeta):
         if rag_documents:
             system_prompt = append_grounding_rules(system_prompt)
             transient_user_context = build_rag_context_payload(rag_documents)
+
+        # Prepend trailing-context block. This goes before RAG context so
+        # the model reads "who/when" before reference material.
+        context_variable_descriptions: Dict[str, str] = {}
+        if context_variables:
+            for entry in self.db.get_context_variable_catalog(self.bot, self.context_registry):
+                context_variable_descriptions[entry["name"]] = entry.get("description", "")
+        # Render order: stable groups first (Bot, Server, ...) then dynamic
+        # groups (Time, User Info, ...). Each entry is a self-encapsulated
+        # narrative sentence so admins don't need to author prompts that
+        # reference these variables.
+        rendering_groups: Dict[str, List[str]] = {**STABLE_VARIABLE_GROUPS, **DYNAMIC_VARIABLE_GROUPS}
+        context_block = build_floating_context_block(
+            values=context_block_values,
+            dynamic_groups=rendering_groups,
+            context_sources=context_variable_sources,
+            context_descriptions=context_variable_descriptions,
+            narratives=VARIABLE_NARRATIVES,
+        )
+        if context_block:
+            if transient_user_context:
+                transient_user_context = f"{context_block}\n\n{transient_user_context}"
+            else:
+                transient_user_context = context_block
 
         if auto_answer:
             initial_prompt += (

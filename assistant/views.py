@@ -4,7 +4,7 @@ import json
 import logging
 import re
 from contextlib import suppress
-from typing import Callable, Dict, List, Optional, Set, Tuple
+from typing import Awaitable, Callable, Dict, List, Optional, Set, Tuple
 
 import discord
 import json5
@@ -16,12 +16,19 @@ from redbot.core.utils.chat_formatting import box, pagify, text_to_file
 from .common.models import (
     DB,
     CustomFunction,
+    EndpointProfile,
     GuildSettings,
     get_category_state,
     normalize_tool_category,
     render_tool_category,
 )
 from .common.utils import (
+    DYNAMIC_VARIABLE_GROUP_LABELS,
+    DYNAMIC_VARIABLE_GROUPS,
+    DYNAMIC_VARIABLE_NAMES,
+    STABLE_VARIABLE_GROUP_LABELS,
+    STABLE_VARIABLE_GROUPS,
+    VARIABLE_NARRATIVES,
     code_string_valid,
     extract_code_blocks,
     get_attachments,
@@ -863,6 +870,921 @@ class AIToolsView(discord.ui.LayoutView):
             function_names = [name for name in function_names if name in available_names]
         for function_name in function_names:
             self.conf.function_statuses[function_name] = function_name in selected_names
+        await self.save()
+        await self.refresh(interaction)
+
+
+# ---------------------------------------------------------------------------
+# Endpoint model picker (`[p]assistant set model` / `embed model` with no args).
+#
+# Discovers models from the endpoint profile, groups them by provider prefix
+# (e.g. ``openai/gpt-4`` → ``openai``), and renders a paginated LayoutView
+# of provider dropdowns. Selecting a model from any dropdown immediately
+# writes it to the appropriate ``conf.<field>`` and saves.
+#
+# A "Manual entry" button opens a modal so admins can type a model id that
+# the probe missed (e.g. private routes, router-specific aliases like
+# ``openrouter/auto`` or ``openrouter/free``).
+# ---------------------------------------------------------------------------
+
+
+ROUTER_MODEL_HINTS = [
+    "openrouter/auto",
+    "openrouter/free",
+]
+MODEL_PICKER_PAGE_SIZE = 4
+MODEL_OPTION_LIMIT = 25  # Discord Select max
+PROVIDER_OTHER = "other"
+
+
+def split_model_provider(model_id: str) -> Tuple[str, str]:
+    """Split a model id into (provider, short_name).
+
+    For ids like ``openai/gpt-4-turbo`` returns ``("openai", "gpt-4-turbo")``.
+    For ids with no slash returns ``(PROVIDER_OTHER, model_id)``.
+    """
+    if "/" in model_id:
+        provider, _, short = model_id.partition("/")
+        provider = provider.strip().lower()
+        if not provider:
+            return PROVIDER_OTHER, model_id
+        return provider, short or model_id
+    return PROVIDER_OTHER, model_id
+
+
+def group_models_by_provider(model_ids: List[str]) -> Dict[str, List[str]]:
+    """Group endpoint model ids by their provider prefix.
+
+    Returns an ordered dict: providers sorted alphabetically (``other`` last),
+    each value is the list of full model ids sorted by short name.
+    """
+    grouped: Dict[str, List[str]] = {}
+    for model_id in model_ids:
+        provider, _short = split_model_provider(model_id)
+        grouped.setdefault(provider, []).append(model_id)
+
+    ordered: Dict[str, List[str]] = {}
+    sorted_providers = sorted(p for p in grouped if p != PROVIDER_OTHER)
+    if PROVIDER_OTHER in grouped:
+        sorted_providers.append(PROVIDER_OTHER)
+    for provider in sorted_providers:
+        ordered[provider] = sorted(grouped[provider], key=lambda mid: split_model_provider(mid)[1].lower())
+    return ordered
+
+
+def render_provider_label(provider: str) -> str:
+    if provider == PROVIDER_OTHER:
+        return _("Other")
+    return provider
+
+
+class ModelPickerSelect(discord.ui.Select["ModelPickerView"]):
+    def __init__(
+        self,
+        provider: str,
+        model_ids: List[str],
+        current_model: str,
+        chunk_index: int = 0,
+        chunk_total: int = 1,
+    ):
+        self.provider = provider
+        self.model_ids = model_ids
+
+        options: List[discord.SelectOption] = []
+        for model_id in model_ids[:MODEL_OPTION_LIMIT]:
+            _provider, short_name = split_model_provider(model_id)
+            label = short_name[:100] or model_id[:100]
+            options.append(
+                discord.SelectOption(
+                    label=label,
+                    value=model_id[:100],
+                    description=model_id[:MAX_SELECT_OPTION_DESCRIPTION],
+                    default=(model_id == current_model),
+                )
+            )
+
+        if chunk_total > 1:
+            placeholder = _("Pick a model from {} ({}/{})...").format(
+                render_provider_label(provider),
+                chunk_index + 1,
+                chunk_total,
+            )
+        else:
+            placeholder = _("Pick a model from {}...").format(render_provider_label(provider))
+        super().__init__(
+            placeholder=placeholder[:150],
+            min_values=0,
+            max_values=1,
+            options=options or [discord.SelectOption(label=_("No models"), value="none")],
+            disabled=not options,
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        if not self.values:
+            with suppress(discord.NotFound):
+                await interaction.response.defer()
+            return
+        chosen = self.values[0]
+        if chosen == "none":
+            with suppress(discord.NotFound):
+                await interaction.response.defer()
+            return
+        await self.view.apply_selection(interaction, chosen)
+
+
+class ModelPickerManualEntryModal(discord.ui.Modal):
+    def __init__(self, current_model: str):
+        super().__init__(title=_("Enter Model ID"), timeout=120)
+        self.value: Optional[str] = None
+        self.field = discord.ui.TextInput(
+            label=_("Model ID"),
+            placeholder=_("e.g. openrouter/auto, openai/gpt-4o, anthropic/claude-3-opus"),
+            style=discord.TextStyle.short,
+            default=current_model or None,
+            required=True,
+            max_length=200,
+        )
+        self.add_item(self.field)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        self.value = (self.field.value or "").strip()
+        await interaction.response.defer()
+        self.stop()
+
+
+class ModelPickerNavigationRow(discord.ui.ActionRow["ModelPickerView"]):
+    def __init__(self, total_pages: int, kind_label: str):
+        super().__init__()
+        prev_btn = discord.ui.Button(
+            label=_("Prev"),
+            emoji="⬅️",
+            style=discord.ButtonStyle.secondary,
+            disabled=total_pages <= 1,
+        )
+        prev_btn.callback = self.previous_page
+        self.add_item(prev_btn)
+
+        next_btn = discord.ui.Button(
+            label=_("Next"),
+            emoji="➡️",
+            style=discord.ButtonStyle.secondary,
+            disabled=total_pages <= 1,
+        )
+        next_btn.callback = self.next_page
+        self.add_item(next_btn)
+
+        manual_btn = discord.ui.Button(
+            label=_("Manual entry"),
+            emoji="✏️",
+            style=discord.ButtonStyle.primary,
+        )
+        manual_btn.callback = self.manual_entry
+        self.add_item(manual_btn)
+
+        refresh_btn = discord.ui.Button(
+            label=_("Re-probe"),
+            emoji="🔄",
+            style=discord.ButtonStyle.secondary,
+        )
+        refresh_btn.callback = self.reprobe
+        self.add_item(refresh_btn)
+
+        close_btn = discord.ui.Button(label=_("Close"), emoji="✖️", style=discord.ButtonStyle.secondary)
+        close_btn.callback = self.close_view
+        self.add_item(close_btn)
+
+    async def previous_page(self, interaction: discord.Interaction):
+        await self.view.change_page(interaction, -1)
+
+    async def next_page(self, interaction: discord.Interaction):
+        await self.view.change_page(interaction, 1)
+
+    async def manual_entry(self, interaction: discord.Interaction):
+        await self.view.open_manual_entry(interaction)
+
+    async def reprobe(self, interaction: discord.Interaction):
+        await self.view.reprobe(interaction)
+
+    async def close_view(self, interaction: discord.Interaction):
+        self.view.stop()
+        if not interaction.response.is_done():
+            with suppress(discord.NotFound):
+                await interaction.response.defer()
+        await self.view.delete_view_message(interaction)
+
+
+class ModelPickerView(discord.ui.LayoutView):
+    """Endpoint model picker grouped by provider prefix."""
+
+    def __init__(
+        self,
+        ctx: commands.Context,
+        conf: GuildSettings,
+        kind: str,  # "chat" or "embedding"
+        save_func: Callable,
+        reprobe_func: Callable,
+        get_profile: Callable[[], Optional[EndpointProfile]],
+        endpoint_url: str,
+        post_select: Optional[Callable[[str], Awaitable[Optional[str]]]] = None,
+        page_size: int = MODEL_PICKER_PAGE_SIZE,
+    ):
+        super().__init__(timeout=300)
+        if kind not in ("chat", "embedding"):
+            raise ValueError(f"Invalid model picker kind: {kind}")
+        self.ctx = ctx
+        self.conf = conf
+        self.kind = kind
+        self.save = save_func
+        self.reprobe_func = reprobe_func
+        self.get_profile = get_profile
+        self.endpoint_url = endpoint_url
+        self.post_select = post_select
+        self.page_size = page_size
+        self.page = 0
+        self.total_pages = 1
+        self.message: Optional[discord.Message] = None
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        if interaction.user.id != self.ctx.author.id:
+            await interaction.response.send_message(_("This isn't your menu!"), ephemeral=True)
+            return False
+        return True
+
+    async def on_timeout(self) -> None:
+        for item in self.walk_children():
+            if hasattr(item, "disabled"):
+                item.disabled = True
+        with suppress(discord.HTTPException):
+            if self.message:
+                await self.message.edit(view=self)
+
+    @property
+    def current_model(self) -> str:
+        if self.kind == "chat":
+            return self.conf.model
+        return self.conf.embed_model
+
+    def set_current_model(self, model: str) -> None:
+        if self.kind == "chat":
+            self.conf.model = model
+        else:
+            self.conf.embed_model = model
+
+    def get_models_for_kind(self) -> List[str]:
+        profile = self.get_profile()
+        if not profile:
+            return []
+        bucket = profile.chat_models if self.kind == "chat" else profile.embedding_models
+        return list(bucket.keys())
+
+    def get_grouped(self) -> Dict[str, List[str]]:
+        return group_models_by_provider(self.get_models_for_kind())
+
+    def chunk_models(self, model_ids: List[str]) -> List[List[str]]:
+        if not model_ids:
+            return []
+        return [model_ids[i : i + MODEL_OPTION_LIMIT] for i in range(0, len(model_ids), MODEL_OPTION_LIMIT)]
+
+    def kind_label(self) -> str:
+        return _("Chat model") if self.kind == "chat" else _("Embedding model")
+
+    def build_layout(self) -> None:
+        self.clear_items()
+        grouped = self.get_grouped()
+        providers = list(grouped)
+        container = discord.ui.Container(accent_colour=discord.Color.blue())
+
+        header_lines = [_("# 🤖 {} picker").format(self.kind_label())]
+        header_lines.append(_("-# Endpoint: `{}`").format(self.endpoint_url))
+        header_lines.append(_("Current: **{}**").format(self.current_model or _("(none)")))
+        if not providers:
+            header_lines.append(
+                _(
+                    "No models were discovered from this endpoint. Try **Re-probe** or use **Manual entry** "
+                    "to type a model id. Router endpoints like OpenRouter accept aliases such as `{}` or `{}`."
+                ).format(*ROUTER_MODEL_HINTS[:2])
+            )
+            container.add_item(discord.ui.TextDisplay("\n".join(header_lines)))
+            container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.small))
+            container.add_item(ModelPickerNavigationRow(1, self.kind_label()))
+            self.add_item(container)
+            return
+
+        total_models = sum(len(ids) for ids in grouped.values())
+        self.total_pages = max(1, (len(providers) + self.page_size - 1) // self.page_size)
+        self.page %= self.total_pages
+        start = self.page * self.page_size
+        stop = start + self.page_size
+        page_providers = providers[start:stop]
+
+        header_lines.append(
+            _("{} models across {} providers • Page {}/{}").format(
+                total_models,
+                len(providers),
+                self.page + 1,
+                self.total_pages,
+            )
+        )
+        if self.kind == "chat":
+            header_lines.append(
+                _("-# Tip: router endpoints accept aliases like `{}` or `{}` via **Manual entry**.").format(
+                    *ROUTER_MODEL_HINTS[:2]
+                )
+            )
+        container.add_item(discord.ui.TextDisplay("\n".join(header_lines)))
+        container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.small))
+
+        for index, provider in enumerate(page_providers):
+            model_ids = grouped[provider]
+            preview_short = ", ".join(split_model_provider(mid)[1] for mid in model_ids[:3])
+            remaining = len(model_ids) - 3
+            if remaining > 0:
+                preview_short += f", +{remaining}"
+            container.add_item(
+                discord.ui.TextDisplay(
+                    f"**{render_provider_label(provider)}** - {len(model_ids)} model(s)\n-# {preview_short}"
+                )
+            )
+            chunks = self.chunk_models(model_ids)
+            for chunk_index, chunk in enumerate(chunks):
+                container.add_item(
+                    discord.ui.ActionRow(
+                        ModelPickerSelect(
+                            provider,
+                            chunk,
+                            self.current_model,
+                            chunk_index=chunk_index,
+                            chunk_total=len(chunks),
+                        )
+                    )
+                )
+            if index != len(page_providers) - 1:
+                container.add_item(discord.ui.Separator(visible=False, spacing=discord.SeparatorSpacing.small))
+
+        container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.small))
+        container.add_item(ModelPickerNavigationRow(self.total_pages, self.kind_label()))
+        self.add_item(container)
+
+    async def start(self):
+        self.build_layout()
+        self.message = await self.ctx.send(view=self)
+
+    async def edit_view_message(
+        self,
+        view: Optional[discord.ui.View],
+        interaction: Optional[discord.Interaction] = None,
+    ) -> bool:
+        candidates: List[discord.Message] = []
+        if self.message is not None:
+            candidates.append(self.message)
+        if interaction is not None and interaction.message is not None:
+            if not any(m.id == interaction.message.id for m in candidates):
+                candidates.append(interaction.message)
+
+        for candidate in candidates:
+            with suppress(discord.HTTPException):
+                await candidate.edit(view=view)
+                self.message = candidate
+                return True
+
+        if interaction is not None:
+            with suppress(discord.HTTPException):
+                await interaction.edit_original_response(view=view)
+                return True
+        return False
+
+    async def delete_view_message(self, interaction: Optional[discord.Interaction] = None) -> bool:
+        candidates: List[discord.Message] = []
+        if self.message is not None:
+            candidates.append(self.message)
+        if interaction is not None and interaction.message is not None:
+            if not any(m.id == interaction.message.id for m in candidates):
+                candidates.append(interaction.message)
+
+        for candidate in candidates:
+            with suppress(discord.HTTPException):
+                await candidate.delete()
+                self.message = None
+                return True
+
+        if interaction is not None:
+            with suppress(discord.HTTPException):
+                await interaction.delete_original_response()
+                self.message = None
+                return True
+        return False
+
+    async def refresh(self, interaction: Optional[discord.Interaction] = None):
+        self.build_layout()
+        if interaction is not None and not interaction.response.is_done():
+            with suppress(discord.NotFound):
+                await interaction.response.defer()
+        if interaction is None:
+            await self.edit_view_message(self)
+            return
+        if self.message is None:
+            self.message = interaction.message
+        await self.edit_view_message(self, interaction)
+
+    async def change_page(self, interaction: discord.Interaction, delta: int):
+        self.page += delta
+        self.page %= self.total_pages
+        await self.refresh(interaction)
+
+    async def apply_selection(self, interaction: discord.Interaction, model_id: str):
+        self.set_current_model(model_id)
+        await self.save()
+        await self.refresh(interaction)
+        extra_notice = await self.post_select(model_id) if self.post_select else None
+        message = _("{} set to **{}**").format(self.kind_label(), model_id)
+        if extra_notice:
+            message = f"{message}\n{extra_notice}"
+        with suppress(discord.HTTPException):
+            await interaction.followup.send(message, ephemeral=True)
+
+    async def open_manual_entry(self, interaction: discord.Interaction):
+        modal = ModelPickerManualEntryModal(self.current_model)
+        await interaction.response.send_modal(modal)
+        await modal.wait()
+        if not modal.value:
+            return
+        self.set_current_model(modal.value)
+        await self.save()
+        await self.refresh(None)
+        extra_notice = await self.post_select(modal.value) if self.post_select else None
+        message = _("{} set to **{}**").format(self.kind_label(), modal.value)
+        if extra_notice:
+            message = f"{message}\n{extra_notice}"
+        with suppress(discord.HTTPException):
+            await self.ctx.send(message)
+
+    async def reprobe(self, interaction: discord.Interaction):
+        if not interaction.response.is_done():
+            with suppress(discord.NotFound):
+                await interaction.response.defer()
+        await self.reprobe_func()
+        await self.refresh(interaction)
+
+
+# ---------------------------------------------------------------------------
+# Floating context block manager (`[p]floatingcontext`).
+#
+# Lets admins toggle which variables are appended to the trailing
+# ``[Current Context]`` payload-only user message the bot sends after
+# conversation history. Because this message rides after the cached prefix
+# it can carry per-request values without invalidating provider prompt
+# caches. Categories cover:
+#   - Builtin **dynamic** vars - changing per-request, the prime candidates
+#     for the floating block.
+#   - Builtin **stable** vars - already substituted inline into prompts,
+#     but admins may opt to also surface them here.
+#   - Per-cog 3rd-party context variables, one category each.
+# Everything defaults to OFF; admins opt variables in explicitly.
+# ---------------------------------------------------------------------------
+
+
+def context_block_category_state(var_names: List[str], statuses: Dict[str, bool]) -> str:
+    """Return on/off/mixed for a trailing-block category.
+
+    Inclusion defaults to **off** for every variable on a fresh install.
+    """
+    if not var_names:
+        return "off"
+    enabled = sum(statuses.get(f"var:{name}", False) for name in var_names)
+    if enabled == 0:
+        return "off"
+    if enabled == len(var_names):
+        return "on"
+    return "mixed"
+
+
+def get_context_block_categories(
+    db: DB, conf: GuildSettings, bot, context_registry: Dict[str, Dict[str, dict]]
+) -> Dict[str, Dict[str, object]]:
+    """Return every category eligible for the trailing-context-block menu.
+
+    Output: ``{category_key: {"label": str, "variables": [str, ...]}}``.
+
+    Inclusion in the floating block is fully admin-controlled - there is
+    no implicit default. On a fresh install everything is OFF (blank
+    slate). Admins opt variables in one at a time via the floatingcontext
+    menu.
+    """
+    categories: Dict[str, Dict[str, object]] = {}
+
+    # Builtin dynamic groups - the prime candidates for the floating block
+    # since they change per-request and would otherwise bust the prompt
+    # cache if referenced inline in a system/initial prompt.
+    for key, names in DYNAMIC_VARIABLE_GROUPS.items():
+        categories[key] = {
+            "label": DYNAMIC_VARIABLE_GROUP_LABELS.get(key, key.title()),
+            "variables": list(names),
+        }
+
+    # Builtin stable groups.
+    for key, names in STABLE_VARIABLE_GROUPS.items():
+        categories[key] = {
+            "label": STABLE_VARIABLE_GROUP_LABELS.get(key, key.title()),
+            "variables": list(names),
+        }
+
+    # Per-cog custom context variables: one category per source cog. The
+    # cog-declared ``cache_safe`` flag is informational only; it surfaces
+    # in the variable's description so admins know which ones bust caching
+    # when inlined into a prompt template.
+    catalog = db.get_context_variable_catalog(bot, context_registry)
+    grouped: Dict[str, List[dict]] = {}
+    for entry in catalog:
+        grouped.setdefault(entry["source"], []).append(entry)
+    for source in sorted(grouped):
+        key = f"custom:{source}"
+        entries = sorted(grouped[source], key=lambda e: e["name"])
+        categories[key] = {
+            "label": f"Custom - {source}",
+            "variables": [e["name"] for e in entries],
+        }
+    return categories
+
+
+def describe_var(var_name: str, context_descriptions: Optional[Dict[str, str]] = None) -> str:
+    """Return a short human-readable description for a context variable."""
+    # Use narrative template summary if available
+    narrative = VARIABLE_NARRATIVES.get(var_name)
+    if narrative:
+        # Strip the "{value}" placeholder and trailing period for brevity
+        short = narrative.replace("{value}", "…").rstrip(".")
+        return short
+    # Fall back to 3rd-party registry description
+    if context_descriptions:
+        desc = context_descriptions.get(var_name, "").strip()
+        if desc:
+            return desc[:MAX_SELECT_OPTION_DESCRIPTION]
+    return var_name
+
+
+class FloatingContextToggleButton(discord.ui.Button["FloatingContextView"]):
+    def __init__(self, category_key: str, state: str):
+        self.category_key = category_key
+        super().__init__(label=_("Toggle"), style=discord.ButtonStyle.secondary)
+
+    async def callback(self, interaction: discord.Interaction):
+        await self.view.toggle_category(interaction, self.category_key)
+
+
+class FloatingContextVarSelect(discord.ui.Select["FloatingContextView"]):
+    def __init__(
+        self,
+        category_key: str,
+        label: str,
+        variables: List[str],
+        conf: GuildSettings,
+        context_descriptions: Optional[Dict[str, str]] = None,
+    ):
+        self.category_key = category_key
+        self.variables = list(variables)
+        context_descriptions = context_descriptions or {}
+
+        options: List[discord.SelectOption] = []
+        for var_name in self.variables:
+            # Default OFF on a fresh install; per-var key overrides.
+            current = conf.context_block_var_statuses.get(f"var:{var_name}", False)
+            # Derive a short description from the narrative template or registry
+            desc = describe_var(var_name, context_descriptions)
+            options.append(
+                discord.SelectOption(
+                    label=var_name[:100],
+                    value=var_name,
+                    description=desc[:MAX_SELECT_OPTION_DESCRIPTION],
+                    default=current,
+                )
+            )
+
+        super().__init__(
+            placeholder=_("Toggle individual vars in {}...").format(label)[:150],
+            min_values=0,
+            max_values=len(options) if options else 1,
+            options=options or [discord.SelectOption(label=_("No variables"), value="none")],
+            disabled=not options,
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        selected = set(self.values)
+        await self.view.apply_variable_selection(interaction, self.category_key, self.variables, selected)
+
+
+class FloatingContextNavigationRow(discord.ui.ActionRow["FloatingContextView"]):
+    def __init__(self, page: int, total_pages: int):
+        super().__init__()
+        previous_button = discord.ui.Button(
+            label=_("Prev"),
+            emoji="⬅️",
+            style=discord.ButtonStyle.secondary,
+            disabled=total_pages <= 1,
+        )
+        previous_button.callback = self.previous_page
+        self.add_item(previous_button)
+
+        next_button = discord.ui.Button(
+            label=_("Next"),
+            emoji="➡️",
+            style=discord.ButtonStyle.secondary,
+            disabled=total_pages <= 1,
+        )
+        next_button.callback = self.next_page
+        self.add_item(next_button)
+
+        close_button = discord.ui.Button(label=_("Close"), emoji="✖️", style=discord.ButtonStyle.secondary)
+        close_button.callback = self.close_view
+        self.add_item(close_button)
+
+    async def previous_page(self, interaction: discord.Interaction):
+        await self.view.change_page(interaction, -1)
+
+    async def next_page(self, interaction: discord.Interaction):
+        await self.view.change_page(interaction, 1)
+
+    async def close_view(self, interaction: discord.Interaction):
+        self.view.stop()
+        if not interaction.response.is_done():
+            with suppress(discord.NotFound):
+                await interaction.response.defer()
+        await self.view.delete_view_message(interaction)
+
+
+class FloatingContextView(discord.ui.LayoutView):
+    def __init__(
+        self,
+        ctx: commands.Context,
+        db: DB,
+        context_registry: Dict[str, Dict[str, dict]],
+        save_func: Callable,
+        page_size: int = 3,
+    ):
+        super().__init__(timeout=300)
+        self.ctx = ctx
+        self.bot = ctx.bot
+        self.db = db
+        self.conf = db.get_conf(ctx.guild)
+        self.context_registry = context_registry
+        self.save = save_func
+        self.page_size = page_size
+        self.page = 0
+        self.total_pages = 1
+        self.message: Optional[discord.Message] = None
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        if interaction.user.id != self.ctx.author.id:
+            await interaction.response.send_message(_("This isn't your menu!"), ephemeral=True)
+            return False
+        return True
+
+    async def on_timeout(self) -> None:
+        for item in self.walk_children():
+            if hasattr(item, "disabled"):
+                item.disabled = True
+        with suppress(discord.HTTPException):
+            if self.message:
+                await self.message.edit(view=self)
+
+    def get_categories(self) -> Dict[str, Dict[str, object]]:
+        return get_context_block_categories(self.db, self.conf, self.bot, self.context_registry)
+
+    def category_state(self, var_names: List[str]) -> str:
+        return context_block_category_state(var_names, self.conf.context_block_var_statuses)
+
+    def scan_prompt_warnings(self) -> List[str]:
+        """Return formatted warning lines for prompts containing dynamic vars."""
+        warnings: List[str] = []
+
+        def find_dyn_vars(text: str) -> List[str]:
+            if not text:
+                return []
+            return sorted({name for name in DYNAMIC_VARIABLE_NAMES if "{" + name + "}" in text})
+
+        sys_vars = find_dyn_vars(self.conf.system_prompt or "")
+        if sys_vars:
+            warnings.append(_("**System prompt** - `{}`").format(", ".join(sys_vars)))
+        init_vars = find_dyn_vars(self.conf.prompt or "")
+        if init_vars:
+            warnings.append(_("**Initial prompt** - `{}`").format(", ".join(init_vars)))
+        for channel_id, prompt in self.conf.channel_prompts.items():
+            chan_vars = find_dyn_vars(prompt)
+            if not chan_vars:
+                continue
+            warnings.append(_("<#{}> - `{}`").format(channel_id, ", ".join(chan_vars)))
+        return warnings
+
+    def get_context_descriptions(self) -> Dict[str, str]:
+        """Build a mapping of variable name → description for 3rd-party vars."""
+        context_descriptions: Dict[str, str] = {}
+        catalog = self.db.get_context_variable_catalog(self.bot, self.context_registry)
+        for entry in catalog:
+            desc = entry.get("description", "").strip()
+            if desc:
+                context_descriptions[entry["name"]] = desc
+        return context_descriptions
+
+    def build_layout(self) -> None:
+        self.clear_items()
+        categories = self.get_categories()
+        context_descriptions = self.get_context_descriptions()
+        container = discord.ui.Container(accent_colour=discord.Color.teal())
+
+        category_keys = list(categories)
+        self.total_pages = max(1, (len(category_keys) + self.page_size - 1) // self.page_size)
+        self.page %= self.total_pages
+        start = self.page * self.page_size
+        stop = start + self.page_size
+        page_keys = category_keys[start:stop]
+
+        # Summary
+        enabled_total = 0
+        var_total = 0
+        for info in categories.values():
+            for var_name in info["variables"]:
+                var_total += 1
+                if self.conf.context_block_var_statuses.get(f"var:{var_name}", False):
+                    enabled_total += 1
+
+        container.add_item(discord.ui.TextDisplay("# 🧊 Floating Context Block"))
+        container.add_item(
+            discord.ui.TextDisplay(
+                _(
+                    "Toggle which variables are included in the trailing `[Current Context]` system message that "
+                    "the bot appends after conversation history. Everything is OFF by default - opt variables in "
+                    "one at a time. Variables you toggle on are rendered as self-encapsulated sentences (e.g. "
+                    '`"The current date is May 16, 2026."`), so you do not need to author a prompt that '
+                    "references them."
+                )
+            )
+        )
+        container.add_item(
+            discord.ui.TextDisplay(
+                _("{} {}/{} variables in block • {} categories • Page {}/{}").format(
+                    ON_EMOJI,
+                    enabled_total,
+                    var_total,
+                    len(category_keys),
+                    self.page + 1,
+                    self.total_pages,
+                )
+            )
+        )
+        container.add_item(discord.ui.TextDisplay(f"{ON_EMOJI} On • {MIXED_EMOJI} Mixed • {OFF_EMOJI} Off"))
+        container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.small))
+
+        for index, category_key in enumerate(page_keys):
+            info = categories[category_key]
+            var_names: List[str] = info["variables"]  # type: ignore[assignment]
+            label: str = info["label"]  # type: ignore[assignment]
+            state = self.category_state(var_names)
+            enabled_count = sum(self.conf.context_block_var_statuses.get(f"var:{name}", False) for name in var_names)
+            preview = ", ".join(var_names[:4])
+            if len(var_names) > 4:
+                preview += f", +{len(var_names) - 4}"
+
+            container.add_item(
+                discord.ui.Section(
+                    discord.ui.TextDisplay(
+                        f"**{STATE_EMOJIS[state]} {label}**\n"
+                        f"{enabled_count}/{len(var_names)} included\n"
+                        f"{preview or _('(no variables)')}"
+                    ),
+                    accessory=FloatingContextToggleButton(category_key, state),
+                )
+            )
+            if var_names:
+                container.add_item(
+                    discord.ui.ActionRow(
+                        FloatingContextVarSelect(category_key, label, var_names, self.conf, context_descriptions)
+                    )
+                )
+
+        # Prompt warnings
+        warnings = self.scan_prompt_warnings()
+        if warnings:
+            container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.small))
+            container.add_item(discord.ui.TextDisplay(_("## ⚠️ Cache Warning")))
+            container.add_item(
+                discord.ui.TextDisplay(
+                    _(
+                        "These prompts contain dynamic variable placeholders that are substituted inline, "
+                        "which busts provider-side prompt-prefix caching on every request:"
+                    )
+                )
+            )
+            for line in warnings[:5]:
+                container.add_item(discord.ui.TextDisplay(line))
+            container.add_item(
+                discord.ui.TextDisplay(
+                    _(
+                        "Tip: remove the placeholder from your prompt and toggle the variable on in the menu above "
+                        "instead - the bot will append the value to the floating context block automatically."
+                    )
+                )
+            )
+
+        container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.small))
+        container.add_item(FloatingContextNavigationRow(self.page, self.total_pages))
+        self.add_item(container)
+
+    async def start(self):
+        self.build_layout()
+        self.message = await self.ctx.send(view=self)
+
+    async def edit_view_message(
+        self,
+        view: Optional[discord.ui.View],
+        interaction: Optional[discord.Interaction] = None,
+    ) -> bool:
+        candidate_messages: List[discord.Message] = []
+        if self.message is not None:
+            candidate_messages.append(self.message)
+        if interaction is not None and interaction.message is not None:
+            if not any(message.id == interaction.message.id for message in candidate_messages):
+                candidate_messages.append(interaction.message)
+
+        for candidate in candidate_messages:
+            with suppress(discord.HTTPException):
+                await candidate.edit(view=view)
+                self.message = candidate
+                return True
+
+        if interaction is not None:
+            with suppress(discord.HTTPException):
+                await interaction.edit_original_response(view=view)
+                return True
+
+        return False
+
+    async def delete_view_message(self, interaction: Optional[discord.Interaction] = None) -> bool:
+        candidate_messages: List[discord.Message] = []
+        if self.message is not None:
+            candidate_messages.append(self.message)
+        if interaction is not None and interaction.message is not None:
+            if not any(message.id == interaction.message.id for message in candidate_messages):
+                candidate_messages.append(interaction.message)
+
+        for candidate in candidate_messages:
+            with suppress(discord.HTTPException):
+                await candidate.delete()
+                self.message = None
+                return True
+
+        if interaction is not None:
+            with suppress(discord.HTTPException):
+                await interaction.delete_original_response()
+                self.message = None
+                return True
+
+        return False
+
+    async def refresh(self, interaction: Optional[discord.Interaction] = None):
+        self.build_layout()
+        if interaction is not None and not interaction.response.is_done():
+            with suppress(discord.NotFound):
+                await interaction.response.defer()
+        if interaction is None:
+            await self.edit_view_message(self)
+            return
+        if self.message is None:
+            self.message = interaction.message
+        await self.edit_view_message(self, interaction)
+
+    async def change_page(self, interaction: discord.Interaction, delta: int):
+        self.page += delta
+        self.page %= self.total_pages
+        await self.refresh(interaction)
+
+    async def toggle_category(self, interaction: discord.Interaction, category_key: str):
+        categories = self.get_categories()
+        info = categories.get(category_key)
+        if not info:
+            return await interaction.response.send_message(_("That category no longer exists."), ephemeral=True)
+
+        var_names: List[str] = info["variables"]  # type: ignore[assignment]
+        state = self.category_state(var_names)
+        new_state = state != "on"
+        for var_name in var_names:
+            self.conf.context_block_var_statuses[f"var:{var_name}"] = new_state
+        # Also record the category-level state so admin commands / API
+        # consumers can read it without re-aggregating.
+        self.conf.context_block_var_statuses[category_key] = new_state
+        await self.save()
+        await self.refresh(interaction)
+
+    async def apply_variable_selection(
+        self,
+        interaction: discord.Interaction,
+        category_key: str,
+        variables: List[str],
+        selected: Set[str],
+    ):
+        for var_name in variables:
+            self.conf.context_block_var_statuses[f"var:{var_name}"] = var_name in selected
+        # Update aggregate category state (all per-var True → category True).
+        all_on = all(self.conf.context_block_var_statuses.get(f"var:{name}", False) for name in variables)
+        self.conf.context_block_var_statuses[category_key] = all_on
         await self.save()
         await self.refresh(interaction)
 

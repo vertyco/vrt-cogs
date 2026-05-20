@@ -27,7 +27,6 @@ from ..abc import MixinMeta
 from ..common.calls import get_custom_endpoint_image_error, request_image_raw
 from ..common.constants import (
     COMPACTION_KEEP_RECENT,
-    IMAGE_COSTS,
     LOADING,
     READ_EXTENSIONS,
     TLDR_PROMPT,
@@ -54,6 +53,7 @@ class Base(MixinMeta):
 `[p]convocontext` - detailed token breakdown of what's consuming your context window.
 `[p]convocompact` - intelligently summarize older messages to free up context space.
 `[p]clearconvo` - reset your conversation for the current channel/thread/forum.
+`[p]unchat` - cancel the active assistant response for the current channel/thread/forum.
 `[p]showconvo` - get a json dump of your current conversation (this is mostly for debugging)
 `[p]chat` or `[p]ask` - command prefix for chatting with the bot outside of the live chat, or just @ it.
 
@@ -105,7 +105,8 @@ If a file has no extension it will still try to read it only if it can be decode
         model: t.Literal["dall-e-3", "gpt-image-1.5"] = "dall-e-3",
     ):
         conf = self.db.get_conf(interaction.guild)
-        if not conf.api_key and not self.db.endpoint_override:
+        has_endpoint = bool(conf.endpoint_override or self.db.endpoint_override)
+        if not conf.api_key and not has_endpoint:
             return await interaction.response.send_message(_("The API key is not set up!"), ephemeral=True)
         if not conf.image_command:
             return await interaction.response.send_message(_("Image generation is disabled!"), ephemeral=True)
@@ -125,9 +126,7 @@ If a file has no extension it will still try to read it only if it can be decode
         if model == "dall-e-3":
             desc += _("\n-# Style: {}").format(style)
 
-        cost_key = f"{quality}{size}"
-        cost = IMAGE_COSTS.get(cost_key, 0)
-
+        base_url = conf.endpoint_override or self.db.endpoint_override
         try:
             image = await request_image_raw(
                 prompt,
@@ -136,10 +135,10 @@ If a file has no extension it will still try to read it only if it can be decode
                 quality,
                 style,
                 model,
-                base_url=self.db.endpoint_override,
+                base_url=base_url,
             )
         except (openai.NotFoundError, openai.BadRequestError):
-            if self.db.endpoint_override:
+            if has_endpoint:
                 embed = discord.Embed(description=get_custom_endpoint_image_error(), color=color)
                 return await interaction.edit_original_response(embed=embed)
             raise
@@ -148,7 +147,6 @@ If a file has no extension it will still try to read it only if it can be decode
         file = discord.File(BytesIO(image_bytes), filename="image.png")
         embed = discord.Embed(description=desc, color=color)
         embed.set_image(url="attachment://image.png")
-        embed.set_footer(text=_("Cost: ${}").format(f"{cost:.2f}"))
 
         if hasattr(image, "revised_prompt") and image.revised_prompt:
             chunks = [p for p in pagify(image.revised_prompt, page_length=1000)]
@@ -198,8 +196,17 @@ If a file has no extension it will still try to read it only if it can be decode
             return
         if not await can_use(ctx.message, conf.blacklist):
             return
-        async with ctx.typing():
-            await self.handle_message(ctx.message, question, conf)
+        queued = await self.enqueue_message_request(
+            {
+                "message": ctx.message,
+                "question": question,
+                "conf": conf,
+            }
+        )
+        if not queued:
+            await ctx.send(
+                _("There are too many pending messages for this conversation. Please wait for the current reply.")
+            )
 
     @commands.command(name="convostats")
     @commands.guild_only()
@@ -399,7 +406,8 @@ If a file has no extension it will still try to read it only if it can be decode
         - `[p]compact coding decisions` - focus on coding decisions
         """
         conf = self.db.get_conf(ctx.guild)
-        if not conf.api_key and not self.db.endpoint_override:
+        has_endpoint = bool(conf.endpoint_override or self.db.endpoint_override)
+        if not conf.api_key and not has_endpoint:
             return await ctx.send(_("No API key has been set!"))
         if not conf.compaction_enabled:
             return await ctx.send(_("Conversation compaction is disabled in this server."))
@@ -468,8 +476,28 @@ If a file has no extension it will still try to read it only if it can be decode
             txt = _("Only moderators can clear channel conversations when collaborative conversations are enabled!")
             return await ctx.send(txt)
         conversation = self.db.get_conversation(mem_id, ctx.channel.id, ctx.guild.id)
+        self.clear_message_queue(ctx.author.id, ctx.channel.id, ctx.guild.id, conf.collab_convos)
         conversation.reset()
         await ctx.send(_("Your conversation in this channel has been reset!"))
+
+    @commands.command(name="unchat")
+    @commands.guild_only()
+    async def cancel_active_chat(self, ctx: commands.Context):
+        """Cancel the active assistant response for this channel"""
+        conf = self.db.get_conf(ctx.guild)
+        perms = [
+            await self.bot.is_mod(ctx.author),
+            ctx.channel.permissions_for(ctx.author).manage_messages,
+            ctx.author.id in self.bot.owner_ids,
+        ]
+        if conf.collab_convos and not any(perms):
+            txt = _("Only moderators can cancel channel conversations when collaborative conversations are enabled!")
+            return await ctx.send(txt)
+
+        cancelled = self.cancel_message_queue(ctx.author.id, ctx.channel.id, ctx.guild.id, conf.collab_convos)
+        if not cancelled:
+            return await ctx.send(_("There is no active assistant response to cancel in this channel."))
+        await ctx.send(_("The active assistant response for this channel has been cancelled."))
 
     @commands.command(name="convopop")
     @commands.guild_only()

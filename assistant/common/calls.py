@@ -1,4 +1,5 @@
 import logging
+import re
 import typing as t
 from typing import List, Optional
 
@@ -15,7 +16,7 @@ from tenacity import (
     wait_random_exponential,
 )
 
-from .constants import NO_DEVELOPER_ROLE, OLD_TOOL_SCHEMA, PRICES, SUPPORTS_SEED
+from .constants import MODELS, NO_DEVELOPER_ROLE, OLD_TOOL_SCHEMA, SUPPORTS_SEED
 
 log = logging.getLogger("red.vrt.assistant.calls")
 
@@ -86,10 +87,24 @@ async def request_chat_completion_raw(
     base_url: Optional[str] = None,
     reasoning_effort: Optional[str] = None,
     verbosity: Optional[str] = None,
+    tool_choice: Optional[t.Union[str, dict]] = None,
+    # ----- Prompt-caching params -----
+    # OpenRouter response caching (Mode A).
+    openrouter_cache: bool = False,
+    openrouter_cache_ttl: int = 300,
+    # OpenRouter session routing (sticky provider).
+    session_id: Optional[str] = None,
+    # OpenRouter provider prompt cache TTL (Mode B). One of None,
+    # "off", "5m", "1h". Applies to Anthropic / Gemini / Qwen models.
+    openrouter_prompt_cache_ttl: Optional[str] = None,
+    # OpenAI prompt_cache_key for direct-OpenAI routing stickiness.
+    guild_id: Optional[int] = None,
 ) -> ChatCompletion:
     client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
 
-    use_legacy_functions = bool(functions and model not in NO_DEVELOPER_ROLE and base_url is None and model in OLD_TOOL_SCHEMA)
+    use_legacy_functions = bool(
+        functions and model not in NO_DEVELOPER_ROLE and base_url is None and model in OLD_TOOL_SCHEMA
+    )
 
     kwargs = {"model": model, "messages": get_request_messages(messages, use_legacy_functions)}
 
@@ -100,7 +115,7 @@ async def request_chat_completion_raw(
         kwargs["presence_penalty"] = presence_penalty
         if max_tokens and max_tokens > 0:
             kwargs["max_tokens"] = max_tokens
-    elif model in PRICES:
+    elif model in MODELS:
         # Using an OpenAI model
         if not model.startswith("o") and "gpt-5" not in model:
             kwargs["temperature"] = temperature
@@ -147,6 +162,82 @@ async def request_chat_completion_raw(
             tools = [{"type": "function", "function": func} for func in functions]
             if tools:
                 kwargs["tools"] = tools
+                if tool_choice is not None:
+                    kwargs["tool_choice"] = tool_choice
+
+    # ------------------------------------------------------------------
+    # OpenRouter cache controls.
+    # ------------------------------------------------------------------
+    is_openrouter = bool(base_url and "openrouter.ai" in base_url.lower())
+    extra_headers: dict = {}
+    extra_body: dict = {}
+
+    if is_openrouter:
+        # Mode A - response caching at the OpenRouter network layer.
+        if openrouter_cache:
+            extra_headers["X-OpenRouter-Cache"] = "true"
+            ttl = max(1, min(int(openrouter_cache_ttl or 300), 86400))
+            extra_headers["X-OpenRouter-Cache-TTL"] = str(ttl)
+
+        # Sticky session routing.
+        if session_id:
+            extra_body["session_id"] = session_id
+
+        # Mode B - provider-level prompt cache via cache_control.
+        ttl_setting = (openrouter_prompt_cache_ttl or "").lower()
+        if ttl_setting in ("5m", "1h"):
+            model_prefix = model.split("/", 1)[0].lower() if "/" in model else ""
+
+            def build_cc() -> dict:
+                cc: dict = {"type": "ephemeral"}
+                if ttl_setting == "1h":
+                    cc["ttl"] = "1h"
+                return cc
+
+            # Qwen snapshot endpoints (e.g. qwen3.5-plus-02-15,
+            # qwen2.5-vl-72b-instruct-2024-09-19) reject cache_control.
+            # Detect a trailing -MM-DD or -YYYY-MM-DD date suffix and skip
+            # the breakpoint so we don't surface a hard error to admins.
+            qwen_supports_cc = model_prefix != "qwen" or not re.search(
+                r"-(?:\d{4}-)?\d{2}-\d{2}$", model.lower()
+            )
+
+            if model_prefix == "anthropic":
+                # Anthropic supports automatic caching via top-level
+                # cache_control on the request body. The openai-python SDK
+                # rejects unknown kwargs, so we route it through extra_body.
+                extra_body["cache_control"] = build_cc()
+            elif model_prefix in ("google", "deepseek") or (model_prefix == "qwen" and qwen_supports_cc):
+                # Gemini / Qwen / DeepSeek require explicit content-block
+                # breakpoints. Place one in the last system/developer
+                # message so the system prompt and tool defs are cached.
+                messages_payload = kwargs["messages"]
+                for idx in range(len(messages_payload) - 1, -1, -1):
+                    msg = messages_payload[idx]
+                    if msg.get("role") in ("system", "developer"):
+                        content = msg.get("content")
+                        if isinstance(content, str) and content.strip():
+                            msg["content"] = [
+                                {"type": "text", "text": content},
+                                {"type": "text", "text": "", "cache_control": build_cc()},
+                            ]
+                        elif isinstance(content, list) and content:
+                            # Append a cache_control marker to the last text block.
+                            content[-1] = {**content[-1], "cache_control": build_cc()}
+                        break
+
+    # ------------------------------------------------------------------
+    # OpenAI prompt_cache_key for direct OpenAI calls.
+    # Improves routing stickiness so per-guild traffic lands on the same
+    # inference machine more often, raising cache hit rate.
+    # ------------------------------------------------------------------
+    if base_url is None and guild_id is not None and model in MODELS:
+        kwargs["prompt_cache_key"] = f"guild-{guild_id}"
+
+    if extra_headers:
+        kwargs["extra_headers"] = extra_headers
+    if extra_body:
+        kwargs["extra_body"] = extra_body
 
     add_breadcrumb(
         category="api",

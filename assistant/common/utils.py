@@ -308,12 +308,248 @@ def json_schema_invalid(schema: dict) -> str:
             missing += "- `type` in **parameters**\n"
         if "properties" not in schema["parameters"]:
             missing += "- `properties` in **parameters**\n"
-        if "required" in schema["parameters"].get("properties", []):
-            missing += "- `required` key needs to be outside of properties!\n"
         if "required" in schema["parameters"]:
             if not isinstance(schema["parameters"]["required"], list):
                 missing += "- `required` must be a list in **parameters**\n"
     return missing
+
+
+# ---------------------------------------------------------------------------
+# Prompt template variable groupings for cache-safe context handling.
+#
+# DYNAMIC_VARIABLE_GROUPS: Variables that change per-request or per-user
+# (time, user balance, activities, etc.). If injected into the system/initial
+# prompt, they break provider-side prompt caching. They can optionally be moved
+# into a trailing system-context message to keep the prefix stable.
+#
+# STABLE_VARIABLE_GROUPS: Variables that are cache-safe and do not change
+# per-request (user profile, bot info, server info, etc.). These are always
+# substituted into the prompt. Admins can ADDITIONALLY surface them in the
+# floating context block via `[p]floatingcontext`.
+# ---------------------------------------------------------------------------
+DYNAMIC_VARIABLE_GROUPS: t.Dict[str, t.List[str]] = {
+    "time": ["timestamp", "day", "date", "time", "timetz", "datetime"],
+    "balance": ["balance"],
+    "activities": ["activities"],
+    "session": ["last_interaction"],
+}
+
+# Stable / cache-safe builtin variables. The cog hard-codes these as stable -
+# they are always substituted into the prompt regardless of any admin toggle.
+# Admins can ADDITIONALLY surface them in the floating context block via
+# `[p]floatingcontext` (useful e.g. when they want the model to see the
+# variable's value as a reminder without writing a placeholder into the prompt).
+STABLE_VARIABLE_GROUPS: t.Dict[str, t.List[str]] = {
+    "bot": ["botname", "model", "modelinfo", "prefix", "prefixes", "botowner"],
+    "server": ["server", "servercreated", "owner"],
+    "channel": ["channelname", "channelmention", "topic"],
+    "bank": ["banktype", "currency", "bank"],
+    "user_info": [
+        "username",
+        "displayname",
+        "user",
+        "roles",
+        "rolementions",
+        "avatar",
+        "userjoindate",
+        "userjointime",
+    ],
+    "system": ["py", "dpy", "red", "cogs", "uptime", "members"],
+}
+
+DYNAMIC_VARIABLE_NAMES: t.Set[str] = {name for names in DYNAMIC_VARIABLE_GROUPS.values() for name in names}
+STABLE_VARIABLE_NAMES: t.Set[str] = {name for names in STABLE_VARIABLE_GROUPS.values() for name in names}
+
+DYNAMIC_VARIABLE_GROUP_LABELS: t.Dict[str, str] = {
+    "time": "Dynamic - Time & Date",
+    "balance": "Dynamic - Balance",
+    "activities": "Dynamic - Activities",
+    "session": "Dynamic - Session",
+}
+
+STABLE_VARIABLE_GROUP_LABELS: t.Dict[str, str] = {
+    "bot": "Stable - Bot",
+    "server": "Stable - Server",
+    "channel": "Stable - Channel",
+    "bank": "Stable - Bank",
+    "user_info": "Stable - User Info",
+    "system": "Stable - System",
+}
+
+# Self-encapsulated narrative templates for the cache-safe trailing context
+# block. The model should be able to understand each variable's meaning
+# without the admin having to write a prompt referencing it - toggling a
+# dynamic variable on is enough. ``{value}`` is replaced with the rendered
+# variable value at runtime.
+#
+# Variables not listed here fall back to a generic ``{name}: {value}`` line.
+VARIABLE_NARRATIVES: t.Dict[str, str] = {
+    # Dynamic
+    "timestamp": "The current timestamp is {value}.",
+    "day": "Today is {value}.",
+    "date": "The current date is {value}.",
+    "time": "The current local time is {value}.",
+    "timetz": "The current local time (with timezone) is {value}.",
+    "datetime": "The current datetime is {value}.",
+    "username": "You are talking to a user whose Discord username is {value}.",
+    "displayname": "Their server display name is {value}.",
+    "user": "Their handle is {value}.",
+    "roles": "Their roles are: {value}.",
+    "rolementions": "Their role mentions are: {value}.",
+    "avatar": "Their avatar URL is {value}.",
+    "userjoindate": "They joined this server on {value}.",
+    "userjointime": "Their join time was {value}.",
+    "balance": "Their current balance is {value}.",
+    "activities": "They are currently: {value}.",
+    "last_interaction": "Time since their last message in this conversation: {value}.",
+    "uptime": "Bot uptime: {value}.",
+    "members": "The server currently has {value} members.",
+    "py": "Python runtime version: {value}.",
+    "dpy": "discord.py version: {value}.",
+    "red": "Red-DiscordBot version: {value}.",
+    "cogs": "Loaded cogs: {value}.",
+    # Stable
+    "botname": "Your name is {value}.",
+    "model": "You are running on the {value} model.",
+    "modelinfo": "Model info:\n{value}",
+    "prefix": "The bot's primary command prefix is {value}.",
+    "prefixes": "All valid command prefixes: {value}.",
+    "botowner": "The bot is owned by {value}.",
+    "server": "You are in the {value} Discord server.",
+    "servercreated": "The server was created on {value}.",
+    "owner": "The server is owned by {value}.",
+    "channelname": "The current channel name is {value}.",
+    "channelmention": "The current channel mention is {value}.",
+    "topic": "The current channel's topic is: {value}.",
+    "banktype": "Bank type: {value}.",
+    "currency": "The currency name is {value}.",
+    "bank": "The bank name is {value}.",
+}
+
+# Back-compat alias (still imported by chat.py)
+DYNAMIC_VARIABLE_NARRATIVES = VARIABLE_NARRATIVES
+
+
+def get_base_params(
+    bot: Red,
+    guild: discord.Guild,
+    author: t.Optional[discord.Member],
+    channel: t.Optional[discord.TextChannel | discord.Thread | discord.ForumChannel],
+    extras: dict,
+    model: str,
+    modelinfo: str,
+    prefix: str,
+    prefixes: str,
+) -> dict:
+    """Stable, cache-safe prompt template variables.
+
+    These values do not change per-request and are safe to inject into the
+    `system_prompt` and `initial_prompt` without invalidating provider-side
+    prompt caching.
+
+    The `extras` dict is expected to only contain stable values (e.g. bank
+    type, currency, bank name). Per-user balances belong in
+    `get_dynamic_params()`.
+    """
+    owner_ids = list(bot.owner_ids)
+
+    bot_owners = []
+    for owner_id in owner_ids:
+        owner = bot.get_user(owner_id) or guild.get_member(owner_id)
+        if owner is None:
+            continue
+        bot_owners.append(owner.display_name)
+
+    botowner = humanize_list(bot_owners) if bot_owners else guild.owner.name
+
+    params = {
+        **extras,
+        "botname": bot.user.name,
+        "model": model,
+        "modelinfo": modelinfo,
+        "prefix": prefix,
+        "prefixes": prefixes,
+        "owner": guild.owner.name,
+        "botowner": botowner,
+        "servercreated": f"<t:{round(guild.created_at.timestamp())}:F>",
+        "server": guild.name,
+        "channelname": channel.name if channel else "",
+        "channelmention": channel.mention if channel else "",
+        "topic": channel.topic if channel and isinstance(channel, discord.TextChannel) else "",
+    }
+    return params
+
+
+def get_dynamic_params(
+    bot: Red,
+    guild: discord.Guild,
+    now: datetime,
+    author: t.Optional[discord.Member],
+    dynamic_extras: t.Optional[dict] = None,
+    last_interaction_seconds: t.Optional[float] = None,
+) -> dict:
+    """Per-request prompt template variables that change frequently.
+
+    These values are kept separate from `get_base_params()` so callers can
+    choose to inject them into a trailing system-context block (preserving
+    prompt prefix stability for caching) rather than into the system/initial
+    prompts.
+
+    `dynamic_extras` may carry per-user dynamic values (such as the bank
+    balance) that need to be grouped with the other dynamic variables.
+
+    `last_interaction_seconds` is the elapsed time (in seconds) since the
+    user's previous message in the active conversation. Pass ``None`` if
+    this is the user's first message - the resulting value is the literal
+    string "first message".
+    """
+    roles = [role for role in author.roles if "everyone" not in role.name] if author else []
+    display_name = author.display_name if author else ""
+
+    uptime_delta = datetime.now() - bot.uptime
+    if uptime_delta.total_seconds() > 60:
+        uptime = humanize_timedelta(timedelta=timedelta(minutes=round(uptime_delta.total_seconds() / 60)))
+    else:
+        uptime = humanize_timedelta(timedelta=uptime_delta)
+
+    if last_interaction_seconds is None or last_interaction_seconds <= 0:
+        last_interaction = "first message in this conversation"
+    else:
+        # Round to nearest minute for cache stability (sub-minute differences
+        # would otherwise change the cache-safe block on every request).
+        if last_interaction_seconds < 60:
+            last_interaction = "less than a minute ago"
+        else:
+            rounded = timedelta(minutes=round(last_interaction_seconds / 60))
+            last_interaction = humanize_timedelta(timedelta=rounded) + " ago"
+
+    params: dict = {
+        "timestamp": f"<t:{round(now.timestamp())}:F>",
+        "day": now.strftime("%A"),
+        "date": now.strftime("%B %d, %Y"),
+        "time": now.strftime("%I:%M %p"),
+        "timetz": now.strftime("%I:%M %p %Z"),
+        "datetime": str(datetime.now()),
+        "members": guild.member_count,
+        "username": author.name if author else "",
+        "user": author.name if author else "",
+        "displayname": display_name,
+        "activities": format_activities(author),
+        "roles": humanize_list([role.name for role in roles]),
+        "rolementions": humanize_list([role.mention for role in roles]),
+        "avatar": author.display_avatar.url if author else "",
+        "py": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
+        "dpy": discord.__version__,
+        "red": str(version_info),
+        "cogs": humanize_list([bot.get_cog(cog).qualified_name for cog in bot.cogs]),
+        "userjoindate": author.joined_at.strftime("%B %d, %Y") if author else "[unknown date]",
+        "userjointime": author.joined_at.strftime("%I:%M %p %Z") if author else "[unknown time]",
+        "uptime": uptime,
+        "last_interaction": last_interaction,
+    }
+    if dynamic_extras:
+        params.update(dynamic_extras)
+    return params
 
 
 def get_params(
@@ -328,61 +564,27 @@ def get_params(
     prefix: str,
     prefixes: str,
 ) -> dict:
-    roles = [role for role in author.roles if "everyone" not in role.name] if author else []
-    display_name = author.display_name if author else ""
-    owner_ids = list(bot.owner_ids)
+    """Combined stable + dynamic prompt template variables.
 
-    bot_owners = []
-    for owner_id in owner_ids:
-        owner = bot.get_user(owner_id) or guild.get_member(owner_id)
-        if owner is None:
-            continue
-        bot_owners.append(owner.display_name)
-
-    botowner = humanize_list(bot_owners) if bot_owners else guild.owner.name
-    uptime_delta = datetime.now() - bot.uptime
-    # If uptime is more than a minute, round to the nearest minute for readability
-    if uptime_delta.total_seconds() > 60:
-        uptime = humanize_timedelta(timedelta=timedelta(minutes=round(uptime_delta.total_seconds() / 60)))
-    else:
-        uptime = humanize_timedelta(timedelta=uptime_delta)
-    params = {
-        **extras,
-        "botname": bot.user.name,
-        "timestamp": f"<t:{round(now.timestamp())}:F>",
-        "day": now.strftime("%A"),
-        "date": now.strftime("%B %d, %Y"),
-        "time": now.strftime("%I:%M %p"),
-        "timetz": now.strftime("%I:%M %p %Z"),
-        "members": guild.member_count,
-        "username": author.name if author else "",
-        "user": author.name if author else "",
-        "displayname": display_name,
-        "activities": format_activities(author),
-        "datetime": str(datetime.now()),
-        "model": model,
-        "modelinfo": modelinfo,
-        "prefix": prefix,
-        "prefixes": prefixes,
-        "roles": humanize_list([role.name for role in roles]),
-        "rolementions": humanize_list([role.mention for role in roles]),
-        "avatar": author.display_avatar.url if author else "",
-        "owner": guild.owner.name,
-        "botowner": botowner,
-        "servercreated": f"<t:{round(guild.created_at.timestamp())}:F>",
-        "server": guild.name,
-        "py": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
-        "dpy": discord.__version__,
-        "red": str(version_info),
-        "cogs": humanize_list([bot.get_cog(cog).qualified_name for cog in bot.cogs]),
-        "channelname": channel.name if channel else "",
-        "channelmention": channel.mention if channel else "",
-        "topic": channel.topic if channel and isinstance(channel, discord.TextChannel) else "",
-        "userjoindate": author.joined_at.strftime("%B %d, %Y") if author else "[unknown date]",
-        "userjointime": author.joined_at.strftime("%I:%M %p %Z") if author else "[unknown time]",
-        "uptime": uptime,
-    }
-    return params
+    Convenience helper that merges `get_base_params()` with
+    `get_dynamic_params()` for callers that don't care about cache-safe
+    separation. Cache-aware code paths should call the two split helpers
+    directly.
+    """
+    base = get_base_params(
+        bot=bot,
+        guild=guild,
+        author=author,
+        channel=channel,
+        extras=extras,
+        model=model,
+        modelinfo=modelinfo,
+        prefix=prefix,
+        prefixes=prefixes,
+    )
+    dynamic = get_dynamic_params(bot=bot, guild=guild, now=now, author=author)
+    base.update(dynamic)
+    return base
 
 
 async def ensure_message_compatibility(
