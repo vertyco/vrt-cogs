@@ -52,11 +52,17 @@ PREFERRED_EMBEDDING_FALLBACKS = (
 @cog_i18n(_)
 class API(MixinMeta):
     def get_api_key(self, conf: GuildSettings) -> str:
-        """Return the effective API key for a guild.
+        """Return the effective API key for a guild, paired with the active endpoint.
 
-        Guild key wins; if not set, falls back to the global endpoint key.
-        Used for both chat and embedding requests.
+        - Guild endpoint override active: guild key, fallback to global key.
+        - Global endpoint override active (no guild override): global key only
+          (a stale guild key from a previous endpoint would 401 against the new one).
+        - No endpoint override (OpenAI direct): guild key, fallback to global key.
         """
+        if conf.endpoint_override:
+            return conf.api_key or self.db.endpoint_api_key or ""
+        if self.db.endpoint_override:
+            return self.db.endpoint_api_key or ""
         return conf.api_key or self.db.endpoint_api_key or ""
 
     def get_guild_endpoint_url(self, conf: t.Optional[GuildSettings] = None) -> t.Optional[str]:
