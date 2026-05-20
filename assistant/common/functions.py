@@ -17,7 +17,7 @@ from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_timedelta, pagify
 
 from ..abc import MixinMeta
-from ..common import calls, constants, reply
+from ..common import calls, reply
 from .models import Conversation, GuildSettings, Reminder, ScheduledTask
 
 log = logging.getLogger("red.vrt.assistant.functions")
@@ -119,10 +119,10 @@ class AssistantFunctions(MixinMeta):
                 prompt=prompt,
                 api_key=self.get_api_key(conf),
                 images=image_data,
-                base_url=self.db.endpoint_override,
+                base_url=conf.endpoint_override or self.db.endpoint_override,
             )
         except (openai.NotFoundError, openai.BadRequestError):
-            if self.db.endpoint_override:
+            if conf.endpoint_override or self.db.endpoint_override:
                 return calls.get_custom_endpoint_image_error()
             raise
         color = (await self.bot.get_embed_color(channel)) if channel else discord.Color.blue()
@@ -159,15 +159,18 @@ class AssistantFunctions(MixinMeta):
         *args,
         **kwargs,
     ):
-        cost_key = f"{quality}{size}"
-        cost = constants.IMAGE_COSTS.get(cost_key, 0)
-
         try:
             image = await calls.request_image_raw(
-                prompt, self.get_api_key(conf), size, quality, style, model, base_url=self.db.endpoint_override
+                prompt,
+                self.get_api_key(conf),
+                size,
+                quality,
+                style,
+                model,
+                base_url=conf.endpoint_override or self.db.endpoint_override,
             )
         except (openai.NotFoundError, openai.BadRequestError):
-            if self.db.endpoint_override:
+            if conf.endpoint_override or self.db.endpoint_override:
                 return calls.get_custom_endpoint_image_error()
             raise
 
@@ -179,7 +182,6 @@ class AssistantFunctions(MixinMeta):
         embed = (
             discord.Embed(description=desc, color=color)
             .set_image(url="attachment://image.png")
-            .set_footer(text=_("Cost: ${}").format(f"{cost:.2f}"))
         )
         txt = "Image has been generated and sent to the user!"
         if hasattr(image, "revised_prompt") and image.revised_prompt:
@@ -363,6 +365,19 @@ class AssistantFunctions(MixinMeta):
             A short acknowledgment so the structured reasoning is captured
             in the tool call arguments without duplicating it in the result.
         """
+        # Per-call gating instead of dynamic tool-list pruning so the advertised
+        # tool schema stays byte-stable across requests (provider prompt caches
+        # invalidate the cached prefix when tool definitions drift between
+        # turns - see https://developers.openai.com/api/docs/guides/prompt-caching).
+        conf: t.Optional[GuildSettings] = kwargs.get("conf")
+        user: t.Optional[discord.Member] = kwargs.get("user")
+        if conf and conf.planners and isinstance(user, discord.Member):
+            allowed_ids = set(conf.planners)
+            if user.id not in allowed_ids and not any(role.id in allowed_ids for role in user.roles):
+                return (
+                    "This tool is restricted to designated planners in this server. "
+                    "Proceed without it - reason about the task in your own response."
+                )
         return "Plan noted."
 
     async def create_reminder(

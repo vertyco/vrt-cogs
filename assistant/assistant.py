@@ -65,7 +65,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "7.17.5"
+    __version__ = "8.0.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -95,10 +95,14 @@ class Assistant(
         self.saving = False
         self.first_run = True
 
+        # Most recent prompt-cache stats for `[p]cacheinfo`.
+        self.last_cache_stats: Dict[str, object] = {}
+
     async def cog_load(self) -> None:
         asyncio.create_task(self.init_cog())
 
     async def cog_unload(self):
+        self.cancel_all_message_queues()
         self.save_loop.cancel()
         self.scheduler.shutdown(wait=False)
         self.mp_pool.close()
@@ -563,6 +567,7 @@ class Assistant(
                 permission_level=variable.get("permission_level", "user"),
                 required_permissions=variable.get("required_permissions"),
                 fetch_method=variable.get("fetch_method"),
+                cache_safe=variable.get("cache_safe", True),
             )
 
     async def register_function(
@@ -647,8 +652,17 @@ class Assistant(
         permission_level: Literal["user", "mod", "admin", "owner"] = "user",
         required_permissions: Optional[List[str]] = None,
         fetch_method: Optional[str] = None,
+        cache_safe: bool = True,
     ) -> bool:
-        """Allow 3rd party cogs to register prompt context variables resolved at prompt-build time."""
+        """Allow 3rd party cogs to register prompt context variables resolved at prompt-build time.
+
+        Args:
+            cache_safe (bool): If True (default), this variable is treated as dynamic /
+                per-request. Admins can opt to surface it in the floating
+                ``[Current Context]`` block via ``[p]floatingcontext``, which keeps the
+                cached prompt prefix stable. If False, the variable is treated as stable
+                (admins may still opt to additionally include it in the floating block).
+        """
 
         def fail(reason: str):
             return f"Context variable registry failed for {cog_name}: {reason}"
@@ -698,8 +712,9 @@ class Assistant(
             "fetch_method": fetch_method,
             "permission_level": permission_level,
             "required_permissions": required_permissions or [],
+            "cache_safe": bool(cache_safe),
         }
-        log.info(f"The {cog_name} cog registered a context variable: {variable_name}")
+        log.info(f"The {cog_name} cog registered a context variable: {variable_name} (cache_safe={cache_safe})")
         return True
 
     async def unregister_function(self, cog_name: str, function_name: str) -> None:

@@ -4,6 +4,7 @@ import logging
 import multiprocessing as mp
 import re
 import typing as t
+from collections import deque
 from dataclasses import dataclass, field
 
 import discord
@@ -19,11 +20,10 @@ _ = Translator("Assistant", __file__)
 
 @dataclass
 class _ResponseState:
-    """Tracks an active response and any messages that arrived while processing."""
+    """Tracks pending requests for a single conversation queue."""
 
-    queued_messages: list[discord.Message] = field(default_factory=list)
-    queued_kwargs: list[dict] = field(default_factory=list)
-    cancel: asyncio.Event = field(default_factory=asyncio.Event)
+    pending: deque[dict[str, t.Any]] = field(default_factory=deque)
+    worker: asyncio.Task[None] | None = None
 
     MAX_QUEUE_DEPTH: int = 10  # Drop further messages beyond this depth
 
@@ -31,8 +31,8 @@ class _ResponseState:
 class AssistantListener(MixinMeta):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # {(author_id, channel_id): _ResponseState}
-        self._response_state: dict[tuple[int, int], _ResponseState] = {}
+        # {(conversation_owner_id, channel_id, guild_id): _ResponseState}
+        self._response_state: dict[tuple[int, int, int], _ResponseState] = {}
 
     async def safe_regex_search(self, pattern: str, content: str) -> bool:
         """Safely check if a regex pattern matches content using multiprocessing pool for timeout."""
@@ -60,6 +60,122 @@ class AssistantListener(MixinMeta):
             if await self.safe_regex_search(pattern, content):
                 return True
         return False
+
+    def get_message_queue_key(
+        self,
+        author_id: int,
+        channel_id: int,
+        guild_id: int,
+        collaborative: bool,
+    ) -> tuple[int, int, int]:
+        conversation_owner_id = channel_id if collaborative else author_id
+        return (conversation_owner_id, channel_id, guild_id)
+
+    async def enqueue_message_request(self, handle_message_kwargs: dict[str, t.Any]) -> bool:
+        message: discord.Message = handle_message_kwargs["message"]
+        conf = handle_message_kwargs["conf"]
+        state_key = self.get_message_queue_key(
+            message.author.id,
+            message.channel.id,
+            message.guild.id,
+            conf.collab_convos,
+        )
+        state = self._response_state.get(state_key)
+        if state is None:
+            state = _ResponseState()
+            self._response_state[state_key] = state
+
+        if len(state.pending) >= state.MAX_QUEUE_DEPTH:
+            log.debug(
+                f"Dropping message from {message.author} in {message.channel} "
+                f"(queue full: {len(state.pending)}/{state.MAX_QUEUE_DEPTH})"
+            )
+            return False
+
+        state.pending.append(handle_message_kwargs)
+        if state.worker is None or state.worker.done():
+            state.worker = asyncio.create_task(self._drain_message_queue(state_key))
+
+        return True
+
+    def clear_message_queue(
+        self,
+        author_id: int,
+        channel_id: int,
+        guild_id: int,
+        collaborative: bool,
+    ) -> int:
+        state_key = self.get_message_queue_key(author_id, channel_id, guild_id, collaborative)
+        state = self._response_state.get(state_key)
+        if state is None:
+            return 0
+
+        purged = len(state.pending)
+        state.pending.clear()
+        if state.worker is None or state.worker.done():
+            self._response_state.pop(state_key, None)
+
+        if purged:
+            log.debug(f"Cleared {purged} queued assistant message(s) for {state_key}")
+        return purged
+
+    def cancel_message_queue(
+        self,
+        author_id: int,
+        channel_id: int,
+        guild_id: int,
+        collaborative: bool,
+    ) -> bool:
+        state_key = self.get_message_queue_key(author_id, channel_id, guild_id, collaborative)
+        state = self._response_state.pop(state_key, None)
+        if state is None:
+            return False
+
+        had_pending = bool(state.pending)
+        state.pending.clear()
+        had_active_worker = state.worker is not None and not state.worker.done()
+        if had_active_worker:
+            state.worker.cancel()
+
+        return had_active_worker or had_pending
+
+    def cancel_all_message_queues(self) -> None:
+        states = list(self._response_state.values())
+        self._response_state.clear()
+        for state in states:
+            if state.worker and not state.worker.done():
+                state.worker.cancel()
+
+    async def _drain_message_queue(self, state_key: tuple[int, int, int]) -> None:
+        current_task = asyncio.current_task()
+        try:
+            while True:
+                state = self._response_state.get(state_key)
+                if state is None or not state.pending:
+                    return
+
+                handle_message_kwargs = state.pending.popleft()
+                message: discord.Message = handle_message_kwargs["message"]
+                try:
+                    async with message.channel.typing():
+                        await self.handle_message(**handle_message_kwargs)
+                except asyncio.CancelledError:
+                    raise
+                except Exception as e:
+                    log.error(
+                        f"Failed processing queued assistant message for {message.author} in {message.channel}",
+                        exc_info=e,
+                    )
+        finally:
+            state = self._response_state.get(state_key)
+            if state is None:
+                return
+            if state.worker is current_task:
+                state.worker = None
+            if state.pending and state.worker is None:
+                state.worker = asyncio.create_task(self._drain_message_queue(state_key))
+            elif not state.pending and state.worker is None:
+                self._response_state.pop(state_key, None)
 
     @commands.Cog.listener("on_message_without_command")
     async def handler(self, message: discord.Message):
@@ -93,7 +209,8 @@ class AssistantListener(MixinMeta):
             return
 
         conf = self.db.get_conf(message.guild)
-        if not conf.enabled or (not conf.api_key and not self.db.endpoint_override):
+        has_endpoint = bool(conf.endpoint_override or self.db.endpoint_override)
+        if not conf.enabled or (not conf.api_key and not has_endpoint):
             return
 
         channel = message.channel
@@ -187,122 +304,7 @@ class AssistantListener(MixinMeta):
             # Message was in the assistant channel and didn't end with a question mark while the config requires it
             return
 
-        state_key = (message.author.id, channel.id)
-        coalesce_enabled = conf.message_coalesce_delay > 0
-
-        # If the bot is already responding to this user in this channel
-        if state_key in self._response_state:
-            state = self._response_state[state_key]
-            if coalesce_enabled and len(state.queued_messages) < state.MAX_QUEUE_DEPTH:
-                # Queue the follow-up for combining with the in-progress request
-                state.queued_messages.append(message)
-                state.queued_kwargs.append(handle_message_kwargs)
-                state.cancel.set()
-                log.debug(
-                    f"Queued message from {message.author} in {channel} (queue size: {len(state.queued_messages)})"
-                )
-            else:
-                reason = "queue full" if coalesce_enabled else "coalescing disabled"
-                log.debug(f"Dropping message from {message.author} in {channel} (already responding, {reason})")
-            return
-
-        # Normal flow — process message (with coalesce support)
-        state = _ResponseState()
-        self._response_state[state_key] = state
-
-        try:
-            # If coalescing is enabled, use a sliding window: keep re-waiting
-            # as long as new messages keep arriving within the delay.  This
-            # gathers *all* rapid-fire follow-ups before hitting the API.
-            if coalesce_enabled:
-                while True:
-                    try:
-                        await asyncio.wait_for(state.cancel.wait(), timeout=conf.message_coalesce_delay)
-                        # A follow-up arrived — reset and wait again
-                        state.cancel.clear()
-                    except asyncio.TimeoutError:
-                        # Window expired with no new messages — proceed
-                        break
-
-                # Combine any messages that arrived during the coalesce window
-                if state.queued_messages:
-                    handle_message_kwargs = self._combine_queued(message, handle_message_kwargs, state)
-
-            async with channel.typing():
-                await self._process_with_coalesce(state, handle_message_kwargs, conf)
-        finally:
-            self._response_state.pop(state_key, None)
-
-    def _combine_queued(
-        self,
-        original_message: discord.Message,
-        original_kwargs: dict,
-        state: _ResponseState,
-    ) -> dict:
-        """Combine the original message with all queued follow-up messages into a single kwargs dict."""
-        all_messages = [original_message] + state.queued_messages
-        all_kwargs = [original_kwargs] + state.queued_kwargs
-
-        # Use the last message as the anchor for replying
-        last_message = all_messages[-1]
-        last_kwargs = all_kwargs[-1]
-
-        # Combine question text from all messages
-        combined_question = "\n".join(kw["question"] for kw in all_kwargs)
-
-        # Build merged kwargs using the last message's kwargs as base
-        merged = {**last_kwargs}
-        merged["message"] = last_message
-        merged["question"] = combined_question
-
-        # Preserve trigger_prompt/auto_answer/model_override if any kwargs had them
-        for kw in all_kwargs:
-            if "trigger_prompt" in kw and "trigger_prompt" not in merged:
-                merged["trigger_prompt"] = kw["trigger_prompt"]
-            if kw.get("auto_answer"):
-                merged["auto_answer"] = True
-            if "model_override" in kw and "model_override" not in merged:
-                merged["model_override"] = kw["model_override"]
-
-        # Clear the queue
-        state.queued_messages.clear()
-        state.queued_kwargs.clear()
-        state.cancel.clear()
-
-        log.debug(f"Coalesced {len(all_messages)} messages into one request")
-        return merged
-
-    async def _process_with_coalesce(self, state: _ResponseState, kwargs: dict, conf) -> None:
-        """Process a message, then handle any follow-ups that arrived during the API call."""
-        # Run the actual API call
-        await self.handle_message(**kwargs)
-
-        # If follow-ups arrived while the API was processing, combine them
-        # and process as a new message (the prior exchange is already in
-        # conversation history, giving the model full context).
-        if state.queued_messages:
-            combined_question = "\n".join(kw["question"] for kw in state.queued_kwargs)
-            last_kwargs = state.queued_kwargs[-1].copy()
-            last_kwargs["message"] = state.queued_messages[-1]
-            last_kwargs["question"] = combined_question
-
-            # Preserve trigger/auto_answer from any queued message
-            for kw in state.queued_kwargs:
-                if "trigger_prompt" in kw and "trigger_prompt" not in last_kwargs:
-                    last_kwargs["trigger_prompt"] = kw["trigger_prompt"]
-                if kw.get("auto_answer"):
-                    last_kwargs["auto_answer"] = True
-                if "model_override" in kw and "model_override" not in last_kwargs:
-                    last_kwargs["model_override"] = kw["model_override"]
-
-            state.queued_messages.clear()
-            state.queued_kwargs.clear()
-            state.cancel.clear()
-
-            log.debug(
-                f"Processing {len(state.queued_messages) + 1} coalesced follow-up(s) for {kwargs['message'].author}"
-            )
-            await self.handle_message(**last_kwargs)
+        await self.enqueue_message_request(handle_message_kwargs)
 
     @commands.Cog.listener("on_guild_remove")
     async def cleanup(self, guild: discord.Guild):

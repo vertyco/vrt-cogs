@@ -31,17 +31,26 @@ from redbot.core.utils.chat_formatting import (
 from redbot.core.utils.views import SimpleMenu
 
 from ..abc import MixinMeta
-from ..common.constants import MODELS, PRICES
+from ..common.calls import request_embedding_raw
+from ..common.constants import MODELS, get_min_cache_tokens
 from ..common.models import (
     DB,
     DEFAULT_SYSTEM_PROMPT,
     DEFAULT_THINK_TAG_PREFIX,
     DEFAULT_THINK_TAG_SUFFIX,
+    GuildSettings,
     get_category_state,
     render_tool_category,
 )
-from ..common.utils import get_attachments
-from ..views import AIToolsView, CodeMenu, EmbeddingMenu, SetAPI
+from ..common.utils import DYNAMIC_VARIABLE_NAMES, get_attachments
+from ..views import (
+    AIToolsView,
+    CodeMenu,
+    EmbeddingMenu,
+    FloatingContextView,
+    ModelPickerView,
+    SetAPI,
+)
 
 log = logging.getLogger("red.vrt.assistant.admin")
 _ = Translator("Assistant", __file__)
@@ -96,6 +105,90 @@ class Admin(MixinMeta):
         """
         pass
 
+    # ---- Group definitions (must be before any subcommand references) ----
+    @assistant.group(name="api")
+    async def api(self, ctx: commands.Context):
+        """Manage API keys and endpoint URLs"""
+        pass
+
+    @api.group(name="guild")
+    async def api_guild(self, ctx: commands.Context):
+        """Per-guild endpoint and key overrides (chat + embeddings)"""
+        pass
+
+    @assistant.group(name="set", aliases=["settings"])
+    async def asettings(self, ctx: commands.Context):
+        """Configure general guild settings"""
+        pass
+
+    @assistant.group(name="prompt")
+    async def prompt(self, ctx: commands.Context):
+        """Configure assistant prompts"""
+        pass
+
+    @assistant.group(name="features")
+    async def features(self, ctx: commands.Context):
+        """Configure feature toggles"""
+        pass
+
+    @assistant.group(name="autoanswer", aliases=["autoanswers"])
+    async def autoanswer(self, ctx: commands.Context):
+        """Configure auto-answer settings"""
+        pass
+
+    @assistant.group(name="trigger")
+    async def trigger(self, ctx: commands.Context):
+        """Configure trigger phrase system"""
+        pass
+
+    @assistant.group(name="filter")
+    async def afilter(self, ctx: commands.Context):
+        """Configure content filtering"""
+        pass
+
+    @assistant.group(name="limits")
+    async def limits(self, ctx: commands.Context):
+        """Configure token and retention limits"""
+        pass
+
+    @assistant.group(name="params", aliases=["parameters"])
+    async def params(self, ctx: commands.Context):
+        """Configure model behavior parameters"""
+        pass
+
+    @assistant.group(name="embed", aliases=["embeddings"])
+    async def embed(self, ctx: commands.Context):
+        """Configure embeddings and RAG settings"""
+        pass
+
+    @assistant.group(name="admin")
+    async def assistant_admin(self, ctx: commands.Context):
+        """Admin maintenance commands"""
+        pass
+
+    @assistant.group(name="openroutercache", aliases=["orcache"])
+    @commands.admin_or_permissions(administrator=True)
+    async def openrouter_cache(self, ctx: commands.Context):
+        """Configure OpenRouter response & prompt caching."""
+        pass
+
+    @assistant.group(name="override")
+    async def override(self, ctx: commands.Context):
+        """Manage role-based overrides"""
+        pass
+
+    @assistant.group(name="scheduler", aliases=["tasks"])
+    async def scheduler(self, ctx: commands.Context):
+        """Manage scheduled autonomous tasks"""
+        pass
+
+    @assistant.group(name="compaction")
+    async def compaction(self, ctx: commands.Context):
+        """Configure conversation compaction"""
+        pass
+
+    # ---- Helper methods ----
+
     def get_tool_catalog(self) -> list[dict]:
         catalog = self.db.get_function_catalog(self.bot, self.registry)
         return sorted(catalog, key=lambda entry: (entry["category"], entry["name"].lower()))
@@ -140,8 +233,9 @@ class Admin(MixinMeta):
         ctx: commands.Context,
         configured_model: str,
         configured_label: t.Optional[str] = None,
+        conf: t.Optional[GuildSettings] = None,
     ) -> str:
-        profile = await self.refresh_endpoint_profile()
+        profile = await self.refresh_endpoint_profile(conf)
         label = configured_label or _("Configured chat model")
         lines = [_("{}: **{}**").format(label, configured_model)]
         if not profile:
@@ -174,8 +268,10 @@ class Admin(MixinMeta):
         )
         return "\n".join(lines)
 
-    async def describe_endpoint_embedding_model_options(self, ctx: commands.Context, configured_model: str) -> str:
-        profile = await self.refresh_endpoint_profile()
+    async def describe_endpoint_embedding_model_options(
+        self, ctx: commands.Context, configured_model: str, conf: t.Optional[GuildSettings] = None
+    ) -> str:
+        profile = await self.refresh_endpoint_profile(conf)
         lines = [_("Configured embedding model: **{}**").format(configured_model)]
         if not profile:
             lines.append(
@@ -209,20 +305,112 @@ class Admin(MixinMeta):
         )
         return "\n".join(lines)
 
-    async def get_endpoint_model_warning(self, model: str, embedding: bool = False) -> t.Optional[str]:
-        profile = await self.refresh_endpoint_profile()
+    async def get_endpoint_model_warning(
+        self, model: str, embedding: bool = False, conf: t.Optional[GuildSettings] = None
+    ) -> t.Optional[str]:
+        profile = await self.refresh_endpoint_profile(conf)
         if not profile:
             return None
 
         discovered = profile.embedding_models if embedding else profile.chat_models
-        runtime_model = profile.active_embedding_model if embedding else profile.active_chat_model
         kind = _("embedding") if embedding else _("chat")
+        resolved_model = (
+            self.resolve_embedding_model(model, conf) if embedding else self.resolve_chat_model(model, conf)
+        )
 
-        if discovered and model not in discovered and runtime_model:
+        if profile.provider == "openrouter" and not embedding and model.lower().startswith("openrouter/"):
+            return None
+
+        if discovered and model not in discovered:
+            if resolved_model and resolved_model != model:
+                return _(
+                    "Note: `{}` is not in the endpoint's discovered {} model list. Requests on this endpoint will automatically use `{}` instead."
+                ).format(model, kind, resolved_model)
             return _(
-                "Note: `{}` is not in the endpoint's discovered {} model list. Requests will currently resolve to `{}` unless the endpoint starts advertising or returning that model."
-            ).format(model, kind, runtime_model)
+                "Note: `{}` is not in the endpoint's discovered {} model list. The cog will still try to use it directly, but the endpoint may reject it."
+            ).format(model, kind)
         return None
+
+    async def get_embedding_model_dimensions(self, model: str, conf: GuildSettings) -> t.Optional[int]:
+        try:
+            response = await request_embedding_raw(
+                text="ping",
+                api_key=self.get_api_key(conf),
+                model=model,
+                base_url=self.get_guild_endpoint_url(conf),
+            )
+        except Exception as e:
+            log.debug("Failed to probe embedding dimensions for %s", model, exc_info=e)
+            return None
+
+        if not response.data:
+            return None
+
+        dimensions = len(response.data[0].embedding)
+        observed_model = response.model or model
+        self.observe_embedding_runtime(observed_model, dimensions, conf)
+        return dimensions
+
+    async def get_embedding_dimension_sync_warning(
+        self,
+        guild: discord.Guild,
+        model: str,
+        conf: GuildSettings,
+        prefix: str,
+    ) -> t.Optional[str]:
+        all_meta = await self.embedding_store.get_all_metadata(guild.id)
+        stored_dimensions = sorted(
+            {
+                int(meta.get("dimensions", 0) or 0)
+                for meta in all_meta.values()
+                if int(meta.get("dimensions", 0) or 0) > 0
+            }
+        )
+        if not stored_dimensions:
+            return None
+
+        sync_command = f"{prefix}assistant embed refresh"
+        if len(stored_dimensions) > 1:
+            dims_display = humanize_list([humanize_number(dimension) for dimension in stored_dimensions])
+            return _(
+                "Warning: stored embeddings currently use mixed dimensions ({}). Run `{}` to resync them with `{}`."
+            ).format(dims_display, sync_command, model)
+
+        new_dimensions = await self.get_embedding_model_dimensions(model, conf)
+        if not new_dimensions:
+            return None
+
+        stored_dimension = stored_dimensions[0]
+        if new_dimensions == stored_dimension:
+            return None
+
+        return _(
+            "Warning: stored embeddings are `{}` dimensions, but `{}` returns `{}` dimensions. Run `{}` to resync them after switching models."
+        ).format(
+            humanize_number(stored_dimension),
+            model,
+            humanize_number(new_dimensions),
+            sync_command,
+        )
+
+    async def get_embedding_model_change_notice(
+        self,
+        guild: discord.Guild,
+        model: str,
+        conf: GuildSettings,
+        prefix: str,
+    ) -> t.Optional[str]:
+        notices: list[str] = []
+        endpoint_warning = await self.get_endpoint_model_warning(model, embedding=True, conf=conf)
+        if endpoint_warning:
+            notices.append(endpoint_warning)
+        effective_model = self.resolve_embedding_model(model, conf)
+        dimension_warning = await self.get_embedding_dimension_sync_warning(guild, effective_model, conf, prefix)
+        if dimension_warning:
+            notices.append(dimension_warning)
+        if not notices:
+            return None
+        return "\n".join(notices)
 
     @assistant.command(name="view", aliases=["v"])
     @commands.bot_has_permissions(embed_links=True)
@@ -239,6 +427,8 @@ class Admin(MixinMeta):
 
         conf = self.db.get_conf(ctx.guild)
         model = conf.get_user_model(ctx.author)
+        effective_model = self.resolve_chat_model(conf.model, conf)
+        effective_embed_model = self.resolve_embedding_model(conf.embed_model, conf)
         effective_system_prompt = self.db.get_effective_system_prompt(conf)
         system_tokens = await self.count_tokens(effective_system_prompt, model) if effective_system_prompt else 0
         prompt_tokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
@@ -263,7 +453,6 @@ class Admin(MixinMeta):
             + _("`Mention on Reply:    `{}\n").format(conf.mention)
             + _("`Respond to Mentions: `{}\n").format(conf.mention_respond)
             + _("`Collaborative Mode:  `{}\n").format(conf.collab_convos)
-            + _("`Coalesce Delay:      `{}s\n").format(conf.message_coalesce_delay)
             + _("`Max Retention:       `{}\n").format(conf.max_retention)
             + _("`Retention Expire:    `{}s\n").format(conf.max_retention_time)
             + _("`Max Tokens:          `{}\n").format(conf.max_tokens)
@@ -278,8 +467,14 @@ class Admin(MixinMeta):
             + _("`Verbosity:           `{}\n").format(conf.verbosity)
             + _("`System Prompt:       `{} tokens\n").format(humanize_number(system_tokens))
             + _("`User Prompt:         `{} tokens\n").format(humanize_number(prompt_tokens))
-            + _("`Endpoint Override:   `{}\n").format(self.db.endpoint_override)
+            + _("`Endpoint Override:   `{}\n").format(self.db.endpoint_override or _("Not set"))
+            + _("`Guild Endpoint:      `{}\n").format(conf.endpoint_override or _("Not set"))
         )
+
+        if effective_model != conf.model:
+            desc += _("`Effective Model:     `{}\n").format(effective_model)
+        if effective_embed_model != conf.embed_model:
+            desc += _("`Effective Embed:     `{}\n").format(effective_embed_model)
 
         embed = discord.Embed(
             title=_("Assistant Settings"),
@@ -287,8 +482,9 @@ class Admin(MixinMeta):
             color=ctx.author.color,
         )
 
-        if self.db.endpoint_override:
-            profile = await self.refresh_endpoint_profile()
+        effective_endpoint = conf.endpoint_override or self.db.endpoint_override
+        if effective_endpoint:
+            profile = await self.refresh_endpoint_profile(conf)
             if profile:
                 embed.add_field(
                     name=_("Endpoint Runtime"),
@@ -340,6 +536,59 @@ class Admin(MixinMeta):
             embed.add_field(
                 name=_("Channel Prompt Overrides"),
                 value=humanize_list([f"<#{i}>" for i in valid]),
+                inline=False,
+            )
+
+        # Dynamic variable warning: any prompt containing dynamic-variable
+        # placeholders bypasses cache-safe mode and breaks prompt prefix
+        # caching on every request.
+        def find_dyn_vars(text: t.Optional[str]) -> list[str]:
+            if not text:
+                return []
+            return sorted({name for name in DYNAMIC_VARIABLE_NAMES if "{" + name + "}" in text})
+
+        warning_lines: list[str] = []
+        sys_vars = find_dyn_vars(conf.system_prompt)
+        if sys_vars:
+            warning_lines.append(_("• System prompt - `{}`").format(", ".join(sys_vars)))
+        init_vars = find_dyn_vars(conf.prompt)
+        if init_vars:
+            warning_lines.append(_("• Initial prompt - `{}`").format(", ".join(init_vars)))
+        for channel_id, channel_prompt in conf.channel_prompts.items():
+            chan_vars = find_dyn_vars(channel_prompt)
+            if not chan_vars:
+                continue
+            warning_lines.append(_("• <#{}> - `{}`").format(channel_id, ", ".join(chan_vars)))
+        if warning_lines:
+            embed.add_field(
+                name=_("⚠️ Cache Warning"),
+                value=_(
+                    "These prompts contain dynamic variable placeholders that break prompt prefix caching on every "
+                    "request. Use `{prefix}floatingcontext` to move them to the floating context block instead.\n"
+                ).format(prefix=ctx.clean_prefix)
+                + "\n".join(warning_lines[:10]),
+                inline=False,
+            )
+
+        # OpenRouter cache settings (only shown if endpoint override is set)
+        effective_endpoint = conf.endpoint_override or self.db.endpoint_override
+        if effective_endpoint and "openrouter.ai" in effective_endpoint.lower():
+            cache_state = (
+                _("Enabled ({}s TTL)").format(conf.openrouter_cache_ttl)
+                if conf.openrouter_cache_enabled
+                else _("Disabled")
+            )
+            prompt_cache_label = {
+                "off": _("Off"),
+                "5m": _("5 minutes"),
+                "1h": _("1 hour"),
+            }.get(conf.openrouter_prompt_cache_ttl, conf.openrouter_prompt_cache_ttl)
+            embed.add_field(
+                name=_("OpenRouter Caching"),
+                value=(
+                    _("`Response Cache:        `{}\n").format(cache_state)
+                    + _("`Provider Prompt Cache: `{}\n").format(prompt_cache_label)
+                ),
                 inline=False,
             )
 
@@ -574,102 +823,15 @@ class Admin(MixinMeta):
         else:
             await ctx.send(embed=embed, files=files)
 
-    @assistant.command(name="usage")
+    @api.command(name="key", aliases=["openai", "apikey"])
     @commands.bot_has_permissions(embed_links=True)
-    async def view_usage(self, ctx: commands.Context):
-        """View the token usage stats for this server"""
-        conf = self.db.get_conf(ctx.guild)
-        if not conf.usage:
-            return await ctx.send(_("There is no usage data yet!"))
-        embed = discord.Embed(color=ctx.author.color)
-
-        overall_input = 0
-        overall_output = 0
-        overall_tokens = 0
-
-        total_input_cost = 0
-        total_output_cost = 0
-        total_cost = 0
-
-        usage_data = conf.usage.copy()
-        for model_name, usage in usage_data.items():
-            input_price, output_price = PRICES.get(model_name, [0, 0])
-            input_cost = (usage.input_tokens / 1000) * input_price
-            output_cost = (usage.output_tokens / 1000) * output_price
-            model_cost = input_cost + output_cost
-
-            overall_tokens += usage.total_tokens
-            overall_input += usage.input_tokens
-            overall_output += usage.output_tokens
-            total_cost += model_cost
-            total_input_cost += input_cost
-            total_output_cost += output_cost
-
-            if model_name in [
-                "text-embedding-ada-002",
-                "text-embedding-ada-002-v2",
-                "text-embedding-3-small",
-                "text-embedding-3-large",
-            ]:
-                field = _("`Total:  `{} (${} @ ${}/1k tokens)").format(
-                    humanize_number(usage.input_tokens),
-                    round(input_cost, 2),
-                    input_price,
-                )
-                embed.add_field(name=model_name, value=field, inline=False)
-                continue
-
-            if model_name not in MODELS:
-                field = _("Free/Self-Hosted")
-                embed.add_field(name=model_name, value=field, inline=False)
-                continue
-
-            field = _(
-                "`Input:  `{} (${} @ ${}/1k tokens)\n`Output: `{} (${} @ ${}/1k tokens)\n`Total:  `{} (${})"
-            ).format(
-                humanize_number(usage.input_tokens),
-                round(input_cost, 2),
-                input_price,
-                humanize_number(usage.output_tokens),
-                round(output_cost, 2),
-                output_price,
-                humanize_number(usage.total_tokens),
-                round(model_cost, 2),
-            )
-            embed.add_field(name=model_name, value=field, inline=False)
-
-        desc = _(
-            "**Overall Token Usage and Cost**\n"
-            "`Input:      `{} (${})\n"
-            "`Output:     `{} (${})\n"
-            "`Total:      `{} (${})\n"
-            "`Tool Calls: `{}\n"
-        ).format(
-            humanize_number(overall_input),
-            round(total_input_cost, 2),
-            humanize_number(overall_output),
-            round(total_output_cost, 2),
-            humanize_number(overall_tokens),
-            round(total_cost, 2),
-            humanize_number(conf.functions_called),
-        )
-        embed.description = desc
-        return await ctx.send(embed=embed)
-
-    @assistant.command(name="resetusage")
-    @commands.bot_has_permissions(embed_links=True)
-    async def reset_usage(self, ctx: commands.Context):
-        """Reset the token usage stats for this server"""
-        conf = self.db.get_conf(ctx.guild)
-        conf.usage = {}
-        await ctx.send(_("Token usage stats have been reset!"))
-        await self.save_conf()
-
-    @assistant.command(name="openaikey", aliases=["key"])
-    @commands.bot_has_permissions(embed_links=True)
-    async def set_openai_key(self, ctx: commands.Context):
+    async def api_openai(self, ctx: commands.Context):
         """
         Set this server's API key
+
+        Used for all requests from this guild - whether routing to OpenAI
+        directly, the guild's endpoint override, or the global endpoint
+        override. If not set, the global endpoint key is used as a fallback.
         """
         conf = self.db.get_conf(ctx.guild)
 
@@ -695,14 +857,14 @@ class Admin(MixinMeta):
 
         await self.save_conf()
 
-    @assistant.command(name="braveapikey", aliases=["brave"])
+    @api.command(name="brave")
     @commands.bot_has_permissions(embed_links=True)
     @commands.is_owner()
-    async def set_brave_key(self, ctx: commands.Context):
+    async def api_brave(self, ctx: commands.Context):
         """
-        Enables use of the `search_web_brave` function
+        Set the Brave Search API key (owner) - used by the web-search tool
 
-        Get your API key **[Here](https://brave.com/search/api/)**
+        Get your API key **[here](https://brave.com/search/api/)**.
         """
         view = SetAPI(ctx.author, self.db.brave_api_key)
         txt = _("Click to set your API key\n\nTo remove your keys, enter `none`")
@@ -722,14 +884,15 @@ class Admin(MixinMeta):
 
         await self.save_conf()
 
-    @assistant.command(name="endpointapikey", aliases=["endpointkey"])
+    @api.command(name="globalkey", aliases=["endpoint", "endpointkey"])
     @commands.bot_has_permissions(embed_links=True)
     @commands.is_owner()
-    async def set_endpoint_key(self, ctx: commands.Context):
+    async def api_endpoint(self, ctx: commands.Context):
         """
-        Set the global API key used for the custom endpoint override
+        Set the global API key for the default endpoint override (owner)
 
-        This key is only used when an endpoint override is configured and a guild
+        This key is only used when a global endpoint override is set
+        (see `[p]assistant api globalendpoint`) and the requesting guild
         has not provided its own API key.
         """
         view = SetAPI(ctx.author, self.db.endpoint_api_key)
@@ -758,7 +921,126 @@ class Admin(MixinMeta):
 
         await self.save_conf()
 
-    @assistant.command(name="timezone")
+    @api_guild.command(name="endpoint")
+    @commands.bot_has_permissions(embed_links=True)
+    async def api_guild_endpoint(self, ctx: commands.Context, *, endpoint: str = None):
+        """
+        Set this guild's endpoint URL (used for both chat and embeddings)
+
+        The endpoint must be a full base URL ending in `/v1`, for example:
+        `https://openrouter.ai/api/v1`
+
+        Set the API key for this endpoint with `[p]assistant api key`.
+
+        After setting, use `[p]assistant set model` (no args) to open an
+        interactive model picker. Router endpoints like OpenRouter also
+        accept special aliases like `openrouter/auto` or `openrouter/free`.
+
+        Run without arguments to view the current guild endpoint.
+        Use `none` to remove the guild endpoint override.
+        """
+        conf = self.db.get_conf(ctx.guild)
+
+        if endpoint is None:
+            if conf.endpoint_override:
+                embed = discord.Embed(
+                    title=_("Guild Endpoint Override"),
+                    description=_("Current endpoint: `{}`").format(conf.endpoint_override),
+                    color=ctx.author.color,
+                )
+                if conf.endpoint_profile:
+                    embed.add_field(
+                        name=_("Endpoint Runtime"),
+                        value=self.describe_endpoint_profile(conf.endpoint_profile),
+                        inline=False,
+                    )
+                return await ctx.send(embed=embed)
+            return await ctx.send(_("No guild endpoint override is set."))
+
+        normalized = endpoint.strip().lower()
+        if normalized == "none":
+            if conf.endpoint_override:
+                conf.endpoint_override = None
+                conf.endpoint_profile = None
+                await ctx.send(_("Guild endpoint override has been removed!"))
+                await self.save_conf()
+            else:
+                await ctx.send(_("No guild endpoint override was set."))
+            return
+
+        url, error = normalize_endpoint_override(endpoint)
+        if error:
+            return await ctx.send(error)
+
+        conf.endpoint_override = url
+        conf.endpoint_profile = None
+        await ctx.send(_("Guild endpoint override set to `{}`").format(url))
+        await self.save_conf()
+
+        # Try to probe the endpoint immediately
+        async with ctx.typing():
+            profile = await self.refresh_endpoint_profile(conf, force=True)
+            if profile:
+                txt = _("Endpoint probed successfully!\n{}").format(self.describe_endpoint_profile(profile))
+                chat_warning = await self.get_endpoint_model_warning(conf.model, conf=conf)
+                if chat_warning:
+                    txt += f"\n\n\N{WARNING SIGN} {chat_warning}"
+                embed_notice = await self.get_embedding_model_change_notice(
+                    ctx.guild,
+                    conf.embed_model,
+                    conf,
+                    ctx.clean_prefix,
+                )
+                if embed_notice:
+                    txt += f"\n\n\N{WARNING SIGN} {embed_notice}"
+                await ctx.send(txt)
+            else:
+                await ctx.send(
+                    _(
+                        "Could not probe the endpoint automatically. "
+                        "You can still use it, but model discovery may be limited."
+                    )
+                )
+
+    @api_guild.command(name="clear")
+    async def api_guild_clear(self, ctx: commands.Context):
+        """Clear this guild's endpoint override (URL and cached profile)"""
+        conf = self.db.get_conf(ctx.guild)
+        if not conf.endpoint_override:
+            return await ctx.send(_("No per-guild endpoint override is set."))
+        conf.endpoint_override = None
+        conf.endpoint_profile = None
+        await ctx.send(_("Guild endpoint override has been cleared!"))
+        await self.save_conf()
+
+    @api_guild.command(name="view")
+    @commands.bot_has_permissions(embed_links=True)
+    async def api_guild_view(self, ctx: commands.Context):
+        """Show this guild's API key and endpoint override status"""
+        conf = self.db.get_conf(ctx.guild)
+        embed = discord.Embed(
+            title=_("Guild API Overrides"),
+            color=ctx.author.color,
+        )
+        embed.add_field(
+            name=_("Guild API Key"),
+            value=_("Set") if conf.api_key else _("Not set (using global key)"),
+            inline=False,
+        )
+        embed.add_field(
+            name=_("Endpoint Override"),
+            value=conf.endpoint_override or _("Not set (using global)"),
+            inline=False,
+        )
+        if conf.endpoint_override and conf.endpoint_profile:
+            embed.add_field(
+                name=_("Endpoint Runtime"),
+                value=self.describe_endpoint_profile(conf.endpoint_profile),
+                inline=False,
+            )
+        await ctx.send(embed=embed)
+
+    @asettings.command(name="timezone")
     async def set_timezone(self, ctx: commands.Context, timezone: str):
         """Set the timezone used for prompt placeholders"""
         timezone = timezone.lower()
@@ -777,161 +1059,8 @@ class Admin(MixinMeta):
         conf.timezone = timezone
         await self.save_conf()
 
-    @assistant.command(name="prompt", aliases=["pre"])
-    async def set_initial_prompt(self, ctx: commands.Context, *, prompt: str = ""):
-        """
-        Set the initial prompt for GPT to use
-
-        Check out [This Guide](https://platform.openai.com/docs/guides/prompt-engineering) for prompting help.
-
-        **Placeholders**
-        - **botname**: [botname]
-        - **timestamp**: discord timestamp
-        - **day**: Mon-Sun
-        - **date**: MM-DD-YYYY
-        - **time**: HH:MM AM/PM
-        - **timetz**: HH:MM AM/PM Timezone
-        - **members**: server member count
-        - **username**: user's name
-        - **displayname**: user's display name
-        - **activities**: the user's current Discord activities and statuses
-        - **roles**: the names of the user's roles
-        - **rolementions**: the mentions of the user's roles
-        - **avatar**: the user's avatar url
-        - **owner**: the owner of the server
-        - **servercreated**: the create date/time of the server
-        - **server**: the name of the server
-        - **py**: python version
-        - **dpy**: discord.py version
-        - **red**: red version
-        - **cogs**: list of currently loaded cogs
-        - **channelname**: name of the channel the conversation is taking place in
-        - **channelmention**: current channel mention
-        - **topic**: topic of current channel (if not forum or thread)
-        - **banktype**: whether the bank is global or not
-        - **currency**: currency name
-        - **bank**: bank name
-        - **balance**: the user's current balance
-        - **model**: the current chat model being used
-        - **botowner**: the bot owner's name
-        - **modelinfo**: bundled information about the current model/runtime
-        - **prefix**: one active bot prefix for this server
-        - **prefixes**: all active bot prefixes for this server
-        - **uptime**: the bot's current uptime
-        """
-        attachments = get_attachments(ctx.message)
-        if attachments:
-            try:
-                prompt = (await attachments[0].read()).decode()
-            except Exception as e:
-                txt = _("Failed to read `{}`, bot owner can use `{}` for more information").format(
-                    attachments[0].filename, f"{ctx.clean_prefix}traceback"
-                )
-                await ctx.send(txt)
-                log.error("Failed to parse initial prompt", exc_info=e)
-                self.bot._last_exception = traceback.format_exc()  # type: ignore
-                return
-
-        conf = self.db.get_conf(ctx.guild)
-        model = conf.get_user_model(ctx.author)
-        ptokens = await self.count_tokens(prompt, model) if prompt else 0
-        effective_system_prompt = self.db.get_effective_system_prompt(conf)
-        stokens = await self.count_tokens(effective_system_prompt, model) if effective_system_prompt else 0
-        combined = ptokens + stokens
-        if conf.max_tokens:
-            max_tokens = round(conf.max_tokens * 0.9)
-            if combined >= max_tokens:
-                return await ctx.send(
-                    _(
-                        "Your system and initial prompt combined will use {} tokens!\n"
-                        "Write a prompt combination using {} tokens or less to leave 10% of your configured max tokens for your response."
-                    ).format(humanize_number(combined), humanize_number(max_tokens))
-                )
-
-        if not prompt and conf.prompt:
-            conf.prompt = ""
-            await ctx.send(_("The initial prompt has been removed!"))
-        elif not prompt and not conf.prompt:
-            await ctx.send(
-                _("Please include an initial prompt or .txt file!\nUse `{}` to view details for this command").format(
-                    f"{ctx.clean_prefix}help assistant prompt"
-                )
-            )
-        elif prompt and conf.prompt:
-            conf.prompt = prompt.strip()
-            await ctx.send(_("The initial prompt has been overwritten!"))
-        else:
-            conf.prompt = prompt.strip()
-            await ctx.send(_("Initial prompt has been set!"))
-
-        await self.save_conf()
-
-    @assistant.command(name="channelpromptshow")
-    @commands.has_permissions(attach_files=True)
-    async def show_channel_prompt(
-        self,
-        ctx: commands.Context,
-        channel: discord.TextChannel = commands.CurrentChannel,
-    ):
-        """Show the channel specific system prompt"""
-        conf = self.db.get_conf(ctx.guild)
-        if channel.id not in conf.channel_prompts:
-            return await ctx.send(_("No channel prompt set for {}").format(channel.mention))
-        file = text_to_file(conf.channel_prompts[channel.id], f"{channel.name}_prompt.txt")
-        await ctx.send(file=file)
-
-    @assistant.command(name="channelprompt")
-    async def set_channel_prompt(
-        self,
-        ctx: commands.Context,
-        channel: discord.TextChannel = commands.CurrentChannel,
-        *,
-        system_prompt: t.Optional[str] = None,
-    ):
-        """Set a channel specific system prompt"""
-        conf = self.db.get_conf(ctx.guild)
-        attachments = get_attachments(ctx.message)
-        if attachments:
-            try:
-                system_prompt = (await attachments[0].read()).decode()
-            except Exception as e:
-                txt = _("Failed to read `{}`, bot owner can use `{}` for more information").format(
-                    attachments[0].filename, f"{ctx.clean_prefix}traceback"
-                )
-                await ctx.send(txt)
-                log.error("Failed to parse initial prompt", exc_info=e)
-                self.bot._last_exception = traceback.format_exc()  # type: ignore
-                return
-        if system_prompt is None:
-            if channel.id in conf.channel_prompts:
-                del conf.channel_prompts[channel.id]
-                await ctx.send(_("Channel prompt has been removed from {}!").format(channel.mention))
-                await self.save_conf()
-            else:
-                await ctx.send(_("No channel prompt set for {}!").format(channel.mention))
-            return
-        model = conf.get_user_model(ctx.author)
-        ptokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
-        stokens = await self.count_tokens(system_prompt, model) if system_prompt else 0
-        combined = ptokens + stokens
-        if conf.max_tokens:
-            max_tokens = round(conf.max_tokens * 0.9)
-            if combined >= max_tokens:
-                return await ctx.send(
-                    _(
-                        "Your system and initial prompt combined will use {} tokens!\n"
-                        "Write a prompt combination using {} tokens or less to leave 10% of your configured max tokens for your response."
-                    ).format(humanize_number(combined), humanize_number(max_tokens))
-                )
-        if channel.id in conf.channel_prompts:
-            await ctx.send(_("Channel prompt has been overwritten for {}!").format(channel.mention))
-        else:
-            await ctx.send(_("Channel prompt has been set for {}!").format(channel.mention))
-        conf.channel_prompts[channel.id] = system_prompt
-        await self.save_conf()
-
-    @assistant.command(name="system", aliases=["sys"])
-    async def set_system_prompt(self, ctx: commands.Context, *, system_prompt: str = None):
+    @prompt.command(name="system", aliases=["sys"])
+    async def prompt_system(self, ctx: commands.Context, *, system_prompt: str = None):
         """
         Set the system prompt for GPT to use
 
@@ -1019,9 +1148,9 @@ class Admin(MixinMeta):
 
         await self.save_conf()
 
-    @assistant.command(name="defaultsystem")
+    @prompt.command(name="defaultsystem")
     @commands.is_owner()
-    async def set_default_system_prompt(self, ctx: commands.Context, *, system_prompt: str = None):
+    async def prompt_default_system(self, ctx: commands.Context, *, system_prompt: str = None):
         """
         Set the global default system prompt used by servers that inherit the default prompt
 
@@ -1081,7 +1210,160 @@ class Admin(MixinMeta):
         )
         await self.save_conf()
 
-    @assistant.command(name="channel")
+    @prompt.command(name="initial", aliases=["pre"])
+    async def prompt_initial(self, ctx: commands.Context, *, prompt: str = ""):
+        """
+        Set the initial prompt for GPT to use
+
+        Check out [This Guide](https://platform.openai.com/docs/guides/prompt-engineering) for prompting help.
+
+        **Placeholders**
+        - **botname**: [botname]
+        - **timestamp**: discord timestamp
+        - **day**: Mon-Sun
+        - **date**: MM-DD-YYYY
+        - **time**: HH:MM AM/PM
+        - **timetz**: HH:MM AM/PM Timezone
+        - **members**: server member count
+        - **username**: user's name
+        - **displayname**: user's display name
+        - **activities**: the user's current Discord activities and statuses
+        - **roles**: the names of the user's roles
+        - **rolementions**: the mentions of the user's roles
+        - **avatar**: the user's avatar url
+        - **owner**: the owner of the server
+        - **servercreated**: the create date/time of the server
+        - **server**: the name of the server
+        - **py**: python version
+        - **dpy**: discord.py version
+        - **red**: red version
+        - **cogs**: list of currently loaded cogs
+        - **channelname**: name of the channel the conversation is taking place in
+        - **channelmention**: current channel mention
+        - **topic**: topic of current channel (if not forum or thread)
+        - **banktype**: whether the bank is global or not
+        - **currency**: currency name
+        - **bank**: bank name
+        - **balance**: the user's current balance
+        - **model**: the current chat model being used
+        - **botowner**: the bot owner's name
+        - **modelinfo**: bundled information about the current model/runtime
+        - **prefix**: one active bot prefix for this server
+        - **prefixes**: all active bot prefixes for this server
+        - **uptime**: the bot's current uptime
+        """
+        attachments = get_attachments(ctx.message)
+        if attachments:
+            try:
+                prompt = (await attachments[0].read()).decode()
+            except Exception as e:
+                txt = _("Failed to read `{}`, bot owner can use `{}` for more information").format(
+                    attachments[0].filename, f"{ctx.clean_prefix}traceback"
+                )
+                await ctx.send(txt)
+                log.error("Failed to parse initial prompt", exc_info=e)
+                self.bot._last_exception = traceback.format_exc()  # type: ignore
+                return
+
+        conf = self.db.get_conf(ctx.guild)
+        model = conf.get_user_model(ctx.author)
+        ptokens = await self.count_tokens(prompt, model) if prompt else 0
+        effective_system_prompt = self.db.get_effective_system_prompt(conf)
+        stokens = await self.count_tokens(effective_system_prompt, model) if effective_system_prompt else 0
+        combined = ptokens + stokens
+        if conf.max_tokens:
+            max_tokens = round(conf.max_tokens * 0.9)
+            if combined >= max_tokens:
+                return await ctx.send(
+                    _(
+                        "Your system and initial prompt combined will use {} tokens!\n"
+                        "Write a prompt combination using {} tokens or less to leave 10% of your configured max tokens for your response."
+                    ).format(humanize_number(combined), humanize_number(max_tokens))
+                )
+
+        if not prompt and conf.prompt:
+            conf.prompt = ""
+            await ctx.send(_("The initial prompt has been removed!"))
+        elif not prompt and not conf.prompt:
+            await ctx.send(
+                _("Please include an initial prompt or .txt file!\nUse `{}` to view details for this command").format(
+                    f"{ctx.clean_prefix}help assistant prompt"
+                )
+            )
+        elif prompt and conf.prompt:
+            conf.prompt = prompt.strip()
+            await ctx.send(_("The initial prompt has been overwritten!"))
+        else:
+            conf.prompt = prompt.strip()
+            await ctx.send(_("Initial prompt has been set!"))
+
+        await self.save_conf()
+
+    @prompt.command(name="channelshow")
+    @commands.bot_has_permissions(attach_files=True)
+    async def prompt_channel_show(
+        self,
+        ctx: commands.Context,
+        channel: discord.TextChannel = commands.CurrentChannel,
+    ):
+        """Show the channel specific system prompt"""
+        conf = self.db.get_conf(ctx.guild)
+        if channel.id not in conf.channel_prompts:
+            return await ctx.send(_("No channel prompt set for {}").format(channel.mention))
+        f = text_to_file(conf.channel_prompts[channel.id], f"{channel.name}_prompt.txt")
+        await ctx.send(file=f)
+
+    @prompt.command(name="channelcustom")
+    async def prompt_channel_custom(
+        self,
+        ctx: commands.Context,
+        channel: discord.TextChannel = commands.CurrentChannel,
+        *,
+        system_prompt: t.Optional[str] = None,
+    ):
+        """Set a channel specific system prompt"""
+        conf = self.db.get_conf(ctx.guild)
+        attachments = get_attachments(ctx.message)
+        if attachments:
+            try:
+                system_prompt = (await attachments[0].read()).decode()
+            except Exception as e:
+                txt = _("Failed to read `{}`, bot owner can use `{}` for more information").format(
+                    attachments[0].filename, f"{ctx.clean_prefix}traceback"
+                )
+                await ctx.send(txt)
+                log.error("Failed to parse initial prompt", exc_info=e)
+                self.bot._last_exception = traceback.format_exc()  # type: ignore
+                return
+        if system_prompt is None:
+            if channel.id in conf.channel_prompts:
+                del conf.channel_prompts[channel.id]
+                await ctx.send(_("Channel prompt has been removed from {}!").format(channel.mention))
+                await self.save_conf()
+            else:
+                await ctx.send(_("No channel prompt set for {}!").format(channel.mention))
+            return
+        model = conf.get_user_model(ctx.author)
+        ptokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
+        stokens = await self.count_tokens(system_prompt, model) if system_prompt else 0
+        combined = ptokens + stokens
+        if conf.max_tokens:
+            max_tokens = round(conf.max_tokens * 0.9)
+            if combined >= max_tokens:
+                return await ctx.send(
+                    _(
+                        "Your system and initial prompt combined will use {} tokens!\n"
+                        "Write a prompt combination using {} tokens or less to leave 10% of your configured max tokens for your response."
+                    ).format(humanize_number(combined), humanize_number(max_tokens))
+                )
+        if channel.id in conf.channel_prompts:
+            await ctx.send(_("Channel prompt has been overwritten for {}!").format(channel.mention))
+        else:
+            await ctx.send(_("Channel prompt has been set for {}!").format(channel.mention))
+        conf.channel_prompts[channel.id] = system_prompt
+        await self.save_conf()
+
+    @asettings.command(name="channel")
     async def set_channel(
         self,
         ctx: commands.Context,
@@ -1102,7 +1384,7 @@ class Admin(MixinMeta):
             conf.channel_id = channel.id
         await self.save_conf()
 
-    @assistant.command(name="listen")
+    @asettings.command(name="listen")
     async def toggle_listen(self, ctx: commands.Context):
         """Toggle this channel as an auto-response channel"""
         conf = self.db.get_conf(ctx.guild)
@@ -1116,7 +1398,7 @@ class Admin(MixinMeta):
             await ctx.send(_("I will now auto-respond to messages in this channel!"))
         await self.save_conf()
 
-    @assistant.command(name="sysoverride")
+    @asettings.command(name="sysoverride")
     async def toggle_systemoverride(self, ctx: commands.Context):
         """Toggle allowing per-conversation system prompt overriding"""
         conf = self.db.get_conf(ctx.guild)
@@ -1128,8 +1410,8 @@ class Admin(MixinMeta):
             await ctx.send(_("System prompt overriding **Enabled**, users can now set per-convo system prompts"))
         await self.save_conf()
 
-    @assistant.command(name="toggle")
-    async def toggle_gpt(self, ctx: commands.Context):
+    @features.command(name="enable")
+    async def features_enable(self, ctx: commands.Context):
         """Toggle the assistant on or off"""
         conf = self.db.get_conf(ctx.guild)
         if conf.enabled:
@@ -1140,8 +1422,8 @@ class Admin(MixinMeta):
             await ctx.send(_("The assistant is now **Enabled**"))
         await self.save_conf()
 
-    @assistant.command(name="toggledraw", aliases=["drawtoggle"])
-    async def toggle_draw_command(self, ctx: commands.Context):
+    @features.command(name="draw", aliases=["drawtoggle"])
+    async def features_draw(self, ctx: commands.Context):
         """Toggle the draw command on or off"""
         conf = self.db.get_conf(ctx.guild)
         if conf.image_command:
@@ -1152,8 +1434,8 @@ class Admin(MixinMeta):
             await ctx.send(_("The draw command is now **Enabled**"))
         await self.save_conf()
 
-    @assistant.command(name="autoanswer")
-    async def toggle_autoanswer(self, ctx: commands.Context):
+    @autoanswer.command(name="toggle")
+    async def autoanswer_toggle(self, ctx: commands.Context):
         """Toggle the auto-answer feature on or off"""
         conf = self.db.get_conf(ctx.guild)
         if conf.auto_answer:
@@ -1164,16 +1446,16 @@ class Admin(MixinMeta):
             await ctx.send(_("Auto-answer has been **Enabled**"))
         await self.save_conf()
 
-    @assistant.command(name="autoanswerthreshold")
-    async def set_autoanswer_threshold(self, ctx: commands.Context, threshold: float):
+    @autoanswer.command(name="threshold")
+    async def autoanswer_threshold(self, ctx: commands.Context, threshold: float):
         """Set the auto-answer threshold for the bot"""
         conf = self.db.get_conf(ctx.guild)
         conf.auto_answer_threshold = threshold
         await ctx.send(_("Auto-answer threshold has been set to **{}**").format(threshold))
         await self.save_conf()
 
-    @assistant.command(name="autoanswerignore")
-    async def autoanswer_ignore_channel(
+    @autoanswer.command(name="ignore")
+    async def autoanswer_ignore(
         self,
         ctx: commands.Context,
         channel: discord.TextChannel | discord.CategoryChannel | int,
@@ -1197,33 +1479,32 @@ class Admin(MixinMeta):
             await ctx.send(_("Auto-answer will now ignore {}").format(mention))
         await self.save_conf()
 
-    @assistant.command(name="autoanswermodel")
-    async def set_autoanswer_model(self, ctx: commands.Context, model: str = None):
+    @autoanswer.command(name="model")
+    async def autoanswer_model(self, ctx: commands.Context, model: str = None):
         """Set the model used for auto-answer"""
         model = model.lower().strip() if model else None
         conf = self.db.get_conf(ctx.guild)
+        has_endpoint = bool(self.db.endpoint_override or conf.endpoint_override)
         if not model:
-            if self.db.endpoint_override:
+            if has_endpoint:
                 return await ctx.send(
                     await self.describe_endpoint_chat_model_options(
-                        ctx, conf.auto_answer_model, _("Configured auto-answer model")
+                        ctx, conf.auto_answer_model, _("Configured auto-answer model"), conf=conf
                     )
                 )
             return await ctx.send(_("Valid models are:\n{}").format(box(humanize_list(list(MODELS.keys())))))
-        if not self.db.endpoint_override and model not in MODELS:
+        if not has_endpoint and model not in MODELS:
             return await ctx.send(_("Invalid model, valid models are: {}").format(humanize_list(MODELS)))
         conf.auto_answer_model = model
         await ctx.send(_("Auto-answer model has been set to **{}**").format(model))
-        if self.db.endpoint_override:
-            warning = await self.get_endpoint_model_warning(model)
+        if has_endpoint:
+            warning = await self.get_endpoint_model_warning(model, conf=conf)
             if warning:
                 await ctx.send(warning)
         await self.save_conf()
 
-    # ---------- Trigger Word Commands ----------
-
-    @assistant.command(name="trigger")
-    async def toggle_trigger(self, ctx: commands.Context):
+    @trigger.command(name="toggle")
+    async def trigger_toggle(self, ctx: commands.Context):
         """Toggle the trigger word feature on or off"""
         conf = self.db.get_conf(ctx.guild)
         if conf.trigger_enabled:
@@ -1234,8 +1515,8 @@ class Admin(MixinMeta):
             await ctx.send(_("Trigger word feature has been **Enabled**"))
         await self.save_conf()
 
-    @assistant.command(name="triggerphrase")
-    async def add_trigger_phrase(self, ctx: commands.Context, *, phrase: str):
+    @trigger.command(name="phrase")
+    async def trigger_phrase(self, ctx: commands.Context, *, phrase: str):
         """
         Add or remove a trigger phrase (supports regex)
 
@@ -1266,8 +1547,8 @@ class Admin(MixinMeta):
             await ctx.send(_("Trigger phrase `{}` has been **Added**").format(phrase))
         await self.save_conf()
 
-    @assistant.command(name="triggerprompt")
-    async def set_trigger_prompt(self, ctx: commands.Context, *, prompt: str = None):
+    @trigger.command(name="prompt")
+    async def trigger_prompt(self, ctx: commands.Context, *, prompt: str = None):
         """
         Set the prompt to use when a trigger phrase is matched
 
@@ -1341,8 +1622,8 @@ class Admin(MixinMeta):
 
         await self.save_conf()
 
-    @assistant.command(name="triggerignore")
-    async def trigger_ignore_channel(
+    @trigger.command(name="ignore")
+    async def trigger_ignore(
         self,
         ctx: commands.Context,
         channel: discord.TextChannel | discord.CategoryChannel | int,
@@ -1366,9 +1647,9 @@ class Admin(MixinMeta):
             await ctx.send(_("Trigger phrases will now ignore {}").format(mention))
         await self.save_conf()
 
-    @assistant.command(name="triggerlist")
+    @trigger.command(name="list")
     @commands.bot_has_permissions(embed_links=True)
-    async def list_triggers(self, ctx: commands.Context):
+    async def trigger_list(self, ctx: commands.Context):
         """View configured trigger phrases"""
         conf = self.db.get_conf(ctx.guild)
         if not conf.trigger_phrases:
@@ -1396,44 +1677,7 @@ class Admin(MixinMeta):
 
         await ctx.send(embed=embed)
 
-    @assistant.command(name="resolution")
-    async def switch_vision_resolution(self, ctx: commands.Context):
-        """Switch vision resolution between high and low for relevant GPT-4-Turbo models"""
-        conf = self.db.get_conf(ctx.guild)
-        if conf.vision_detail == "auto":
-            conf.vision_detail = "low"
-            await ctx.send(_("Vision resolution has been set to **Low**"))
-        elif conf.vision_detail == "low":
-            conf.vision_detail = "high"
-            await ctx.send(_("Vision resolution has been set to **High**"))
-        else:
-            conf.vision_detail = "auto"
-            await ctx.send(_("Vision resolution has been set to **Auto**"))
-        await self.save_conf()
-
-    @assistant.command(name="reasoning")
-    async def switch_reasoning_effort(self, ctx: commands.Context):
-        """Switch reasoning effort between none, minimal, low, medium, high, and xhigh
-
-        Not all models support every level. Unsupported levels are automatically mapped to the closest supported value.
-        - **none**: No reasoning (gpt-5.4 only, skipped for other models)
-        - **minimal**: Minimal reasoning (gpt-5 only, mapped to low for o-series)
-        - **low**: Low reasoning effort
-        - **medium**: Medium reasoning effort
-        - **high**: High reasoning effort
-        - **xhigh**: Maximum reasoning (gpt-5.4 only, mapped to high for other models)
-        """
-        cycle = ["none", "minimal", "low", "medium", "high", "xhigh"]
-        conf = self.db.get_conf(ctx.guild)
-        try:
-            idx = cycle.index(conf.reasoning_effort)
-            conf.reasoning_effort = cycle[(idx + 1) % len(cycle)]
-        except ValueError:
-            conf.reasoning_effort = "low"
-        await ctx.send(_("Reasoning effort has been set to **{}**").format(conf.reasoning_effort.capitalize()))
-        await self.save_conf()
-
-    @assistant.command(name="thinkprefix")
+    @asettings.command(name="thinkprefix")
     async def set_think_prefix(self, ctx: commands.Context, *, prefix: str = None):
         """
         Set the prefix used to detect model thinking blocks
@@ -1475,7 +1719,7 @@ class Admin(MixinMeta):
         await ctx.send(_("Think tag prefix has been set to:\n{}").format(box(format_think_tag(prefix))))
         await self.save_conf()
 
-    @assistant.command(name="thinksuffix")
+    @asettings.command(name="thinksuffix")
     async def set_think_suffix(self, ctx: commands.Context, *, suffix: str = None):
         """
         Set the suffix used to detect model thinking blocks
@@ -1517,7 +1761,7 @@ class Admin(MixinMeta):
         await ctx.send(_("Think tag suffix has been set to:\n{}").format(box(format_think_tag(suffix))))
         await self.save_conf()
 
-    @assistant.command(name="questionmark")
+    @afilter.command(name="question")
     async def toggle_question(self, ctx: commands.Context):
         """Toggle whether questions need to end with **__?__**"""
         conf = self.db.get_conf(ctx.guild)
@@ -1529,8 +1773,8 @@ class Admin(MixinMeta):
             await ctx.send(_("Questions must end in **?** to be answered"))
         await self.save_conf()
 
-    @assistant.command(name="mentionrespond")
-    async def toggle_mentionrespond(self, ctx: commands.Context):
+    @features.command(name="mention-respond")
+    async def features_mention_respond(self, ctx: commands.Context):
         """Toggle whether the bot responds to mentions in any channel"""
         conf = self.db.get_conf(ctx.guild)
         if conf.mention_respond:
@@ -1541,8 +1785,8 @@ class Admin(MixinMeta):
             await ctx.send(_("The bot will now respond to mentions"))
         await self.save_conf()
 
-    @assistant.command(name="mention")
-    async def toggle_mention(self, ctx: commands.Context):
+    @features.command(name="mention")
+    async def features_mention(self, ctx: commands.Context):
         """Toggle whether to ping the user on replies"""
         conf = self.db.get_conf(ctx.guild)
         if conf.mention:
@@ -1553,8 +1797,8 @@ class Admin(MixinMeta):
             await ctx.send(_("Mentions are now **Enabled**"))
         await self.save_conf()
 
-    @assistant.command(name="collab")
-    async def toggle_collab(self, ctx: commands.Context):
+    @features.command(name="collaborative")
+    async def features_collaborative(self, ctx: commands.Context):
         """
         Toggle collaborative conversations
 
@@ -1569,33 +1813,8 @@ class Admin(MixinMeta):
             await ctx.send(_("Collaborative conversations are now **Enabled**"))
         await self.save_conf()
 
-    @assistant.command(name="coalesce")
-    async def set_coalesce_delay(self, ctx: commands.Context, delay: float):
-        """
-        Set the message coalesce delay in seconds
-
-        When a user sends multiple messages in quick succession, the bot will wait this many seconds
-        for follow-up messages before responding. All messages within the window are combined into a
-        single request. If follow-up messages arrive while the bot is already processing, the current
-        response is discarded and the messages are combined for a fresh request.
-
-        This prevents the bot from responding to half-finished thoughts when a user accidentally hits
-        send too early.
-
-        Set to 0 to disable (default). Recommended: 1.5
-        """
-        if delay < 0 or delay > 10:
-            return await ctx.send(_("Delay must be between 0 and 10 seconds"))
-        conf = self.db.get_conf(ctx.guild)
-        conf.message_coalesce_delay = delay
-        if delay == 0:
-            await ctx.send(_("Message coalescing is now **Disabled**"))
-        else:
-            await ctx.send(_("Messages will be coalesced with a **{}s** delay").format(delay))
-        await self.save_conf()
-
-    @assistant.command(name="maxretention")
-    async def max_retention(self, ctx: commands.Context, max_retention: int):
+    @limits.command(name="retention")
+    async def limits_retention(self, ctx: commands.Context, max_retention: int):
         """
         Set the max messages for a conversation
 
@@ -1618,8 +1837,8 @@ class Admin(MixinMeta):
             await ctx.send(_("Conversations can now retain up to **{}** messages").format(max_retention))
         await self.save_conf()
 
-    @assistant.command(name="maxtime")
-    async def max_retention_time(self, ctx: commands.Context, retention_seconds: int):
+    @limits.command(name="time")
+    async def limits_time(self, ctx: commands.Context, retention_seconds: int):
         """
         Set the conversation expiration time
 
@@ -1638,141 +1857,8 @@ class Admin(MixinMeta):
             await ctx.send(_("Conversations will be considered active for **{}** seconds").format(retention_seconds))
         await self.save_conf()
 
-    @assistant.command(name="temperature")
-    async def set_temperature(self, ctx: commands.Context, temperature: float):
-        """
-        Set the temperature for the model (0.0 - 2.0)
-        - Defaults is 1
-
-        Closer to 0 is more concise and accurate while closer to 2 is more imaginative
-        """
-        if not 0 <= temperature <= 2:
-            return await ctx.send(_("Temperature must be between **0.0** and **2.0**"))
-        temperature = round(temperature, 2)
-        conf = self.db.get_conf(ctx.guild)
-        conf.temperature = temperature
-        await self.save_conf()
-        await ctx.send(_("Temperature has been set to **{}**").format(temperature))
-
-    @assistant.command(name="frequency")
-    async def set_frequency_penalty(self, ctx: commands.Context, frequency_penalty: float):
-        """
-        Set the frequency penalty for the model (-2.0 to 2.0)
-        - Defaults is 0
-
-        Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
-        """
-        if not -2 <= frequency_penalty <= 2:
-            return await ctx.send(_("Frequency penalty must be between **-2.0** and **2.0**"))
-        frequency_penalty = round(frequency_penalty, 2)
-        conf = self.db.get_conf(ctx.guild)
-        conf.frequency_penalty = frequency_penalty
-        await self.save_conf()
-        await ctx.send(_("Frequency penalty has been set to **{}**").format(frequency_penalty))
-
-    @assistant.command(name="presence")
-    async def set_presence_penalty(self, ctx: commands.Context, presence_penalty: float):
-        """
-        Set the presence penalty for the model (-2.0 to 2.0)
-        - Defaults is 0
-
-        Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics.
-        """
-        if not -2 <= presence_penalty <= 2:
-            return await ctx.send(_("Presence penalty must be between **-2.0** and **2.0**"))
-        presence_penalty = round(presence_penalty, 2)
-        conf = self.db.get_conf(ctx.guild)
-        conf.presence_penalty = presence_penalty
-        await self.save_conf()
-        await ctx.send(_("Presence penalty has been set to **{}**").format(presence_penalty))
-
-    @assistant.command(name="seed")
-    async def set_seed(self, ctx: commands.Context, seed: int = None):
-        """
-        Make the model more deterministic by setting a seed for the model.
-        - Default is None
-
-        If specified, the system will make a best effort to sample deterministically, such that repeated requests with the same seed and parameters should return the same result.
-        """
-        if seed is not None and seed < 0:
-            return await ctx.send(_("Seed must be a positive integer"))
-        conf = self.db.get_conf(ctx.guild)
-        conf.seed = seed
-        await self.save_conf()
-        await ctx.send(_("The seed has been set to **{}**").format(seed))
-
-    @assistant.command(
-        name="refreshembeds",
-        aliases=["refreshembeddings", "syncembeds", "syncembeddings"],
-    )
-    async def refresh_embeddings(self, ctx: commands.Context):
-        """
-        Refresh embedding weights
-
-        *This command can be used when changing the embedding model*
-
-        Embeddings that were created using OpenAI cannot be use with the self-hosted model and vice versa
-        """
-        conf = self.db.get_conf(ctx.guild)
-        if not await self.can_call_llm(conf, ctx):
-            return
-        async with ctx.typing():
-            synced = await self.resync_embeddings(conf, ctx.guild.id)
-            if synced:
-                await ctx.send(_("{} embeddings have been updated").format(synced))
-            else:
-                await ctx.send(_("No embeddings needed to be refreshed"))
-
-    @assistant.command(name="functioncalls", aliases=["usefunctions"])
-    async def toggle_function_calls(self, ctx: commands.Context):
-        """Toggle whether GPT can call functions"""
-        conf = self.db.get_conf(ctx.guild)
-        if conf.use_function_calls:
-            conf.use_function_calls = False
-            await ctx.send(_("Assistant will not call functions"))
-        else:
-            conf.use_function_calls = True
-            await ctx.send(_("Assistant will now call functions as needed"))
-        await self.save_conf()
-
-    @assistant.command(name="maxrecursion")
-    async def set_max_recursion(self, ctx: commands.Context, recursion: int):
-        """Set the maximum function calls allowed in a row
-
-        This sets how many times the model can call functions in a row
-        """
-        conf = self.db.get_conf(ctx.guild)
-        recursion = max(0, recursion)
-        if recursion == 0:
-            await ctx.send(_("Function calls will not be used since recursion is 0"))
-        await ctx.send(
-            _("The model can now call various functions up to {} times before returning a response").format(recursion)
-        )
-        conf.max_function_calls = recursion
-
-    @assistant.command(name="minlength")
-    async def min_length(self, ctx: commands.Context, min_question_length: int):
-        """
-        set min character length for questions
-
-        Set to 0 to respond to anything
-        """
-        if min_question_length < 0:
-            return await ctx.send(_("Minimum length needs to be at least 0 or higher"))
-        conf = self.db.get_conf(ctx.guild)
-        conf.min_length = min_question_length
-        if min_question_length == 0:
-            await ctx.send(_("{} will respond regardless of message length").format(ctx.bot.user.name))
-        else:
-            await ctx.send(
-                _("{} will respond to messages with more than **{}** characters").format(
-                    ctx.bot.user.name, min_question_length
-                )
-            )
-        await self.save_conf()
-
-    @assistant.command(name="maxtokens")
-    async def max_tokens(self, ctx: commands.Context, max_tokens: commands.positive_int):
+    @limits.command(name="tokens")
+    async def limits_tokens(self, ctx: commands.Context, max_tokens: commands.positive_int):
         """
         Set maximum tokens a convo can consume
 
@@ -1797,8 +1883,8 @@ class Admin(MixinMeta):
         await ctx.send(txt)
         await self.save_conf()
 
-    @assistant.command(name="maxresponsetokens")
-    async def max_response_tokens(self, ctx: commands.Context, max_tokens: commands.positive_int):
+    @limits.command(name="response")
+    async def limits_response(self, ctx: commands.Context, max_tokens: commands.positive_int):
         """
         Set the max response tokens the model can respond with
 
@@ -1813,25 +1899,221 @@ class Admin(MixinMeta):
         await ctx.send(txt)
         await self.save_conf()
 
-    @assistant.command(name="model")
+    @params.command(name="temperature")
+    async def params_temperature(self, ctx: commands.Context, temperature: float):
+        """
+        Set the temperature for the model (0.0 - 2.0)
+        - Defaults is 1
+
+        Closer to 0 is more concise and accurate while closer to 2 is more imaginative
+        """
+        if not 0 <= temperature <= 2:
+            return await ctx.send(_("Temperature must be between **0.0** and **2.0**"))
+        temperature = round(temperature, 2)
+        conf = self.db.get_conf(ctx.guild)
+        conf.temperature = temperature
+        await self.save_conf()
+        await ctx.send(_("Temperature has been set to **{}**").format(temperature))
+
+    @params.command(name="frequency")
+    async def params_frequency(self, ctx: commands.Context, frequency_penalty: float):
+        """
+        Set the frequency penalty for the model (-2.0 to 2.0)
+        - Defaults is 0
+
+        Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
+        """
+        if not -2 <= frequency_penalty <= 2:
+            return await ctx.send(_("Frequency penalty must be between **-2.0** and **2.0**"))
+        frequency_penalty = round(frequency_penalty, 2)
+        conf = self.db.get_conf(ctx.guild)
+        conf.frequency_penalty = frequency_penalty
+        await self.save_conf()
+        await ctx.send(_("Frequency penalty has been set to **{}**").format(frequency_penalty))
+
+    @params.command(name="presence")
+    async def params_presence(self, ctx: commands.Context, presence_penalty: float):
+        """
+        Set the presence penalty for the model (-2.0 to 2.0)
+        - Defaults is 0
+
+        Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics.
+        """
+        if not -2 <= presence_penalty <= 2:
+            return await ctx.send(_("Presence penalty must be between **-2.0** and **2.0**"))
+        presence_penalty = round(presence_penalty, 2)
+        conf = self.db.get_conf(ctx.guild)
+        conf.presence_penalty = presence_penalty
+        await self.save_conf()
+        await ctx.send(_("Presence penalty has been set to **{}**").format(presence_penalty))
+
+    @params.command(name="resolution")
+    async def params_resolution(self, ctx: commands.Context):
+        """Switch vision resolution between high and low for relevant GPT-4-Turbo models"""
+        conf = self.db.get_conf(ctx.guild)
+        if conf.vision_detail == "auto":
+            conf.vision_detail = "low"
+            await ctx.send(_("Vision resolution has been set to **Low**"))
+        elif conf.vision_detail == "low":
+            conf.vision_detail = "high"
+            await ctx.send(_("Vision resolution has been set to **High**"))
+        else:
+            conf.vision_detail = "auto"
+            await ctx.send(_("Vision resolution has been set to **Auto**"))
+        await self.save_conf()
+
+    @params.command(name="reasoning")
+    async def params_reasoning(self, ctx: commands.Context):
+        """Switch reasoning effort between none, minimal, low, medium, high, and xhigh
+
+        Not all models support every level. Unsupported levels are automatically mapped to the closest supported value.
+        - **none**: No reasoning (gpt-5.4 only, skipped for other models)
+        - **minimal**: Minimal reasoning (gpt-5 only, mapped to low for o-series)
+        - **low**: Low reasoning effort
+        - **medium**: Medium reasoning effort
+        - **high**: High reasoning effort
+        - **xhigh**: Maximum reasoning (gpt-5.4 only, mapped to high for other models)
+        """
+        cycle = ["none", "minimal", "low", "medium", "high", "xhigh"]
+        conf = self.db.get_conf(ctx.guild)
+        try:
+            idx = cycle.index(conf.reasoning_effort)
+            conf.reasoning_effort = cycle[(idx + 1) % len(cycle)]
+        except ValueError:
+            conf.reasoning_effort = "low"
+        await ctx.send(_("Reasoning effort has been set to **{}**").format(conf.reasoning_effort.capitalize()))
+        await self.save_conf()
+
+    @params.command(name="seed")
+    async def params_seed(self, ctx: commands.Context, seed: int = None):
+        """
+        Make the model more deterministic by setting a seed for the model.
+        - Default is None
+
+        If specified, the system will make a best effort to sample deterministically, such that repeated requests with the same seed and parameters should return the same result.
+        """
+        if seed is not None and seed < 0:
+            return await ctx.send(_("Seed must be a positive integer"))
+        conf = self.db.get_conf(ctx.guild)
+        conf.seed = seed
+        await self.save_conf()
+        await ctx.send(_("The seed has been set to **{}**").format(seed))
+
+    @embed.command(
+        name="refresh",
+        aliases=["refreshembeddings", "syncembeds", "syncembeddings"],
+    )
+    async def refresh_embeddings(self, ctx: commands.Context):
+        """
+        Refresh embedding weights
+
+        *This command can be used when changing the embedding model*
+
+        Embeddings that were created using OpenAI cannot be use with the self-hosted model and vice versa
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if not await self.can_call_llm(conf, ctx):
+            return
+        async with ctx.typing():
+            synced = await self.resync_embeddings(conf, ctx.guild.id)
+            if synced:
+                await ctx.send(_("{} embeddings have been updated").format(synced))
+            else:
+                await ctx.send(_("No embeddings needed to be refreshed"))
+
+    @features.command(name="functions", aliases=["usefunctions"])
+    async def features_functions(self, ctx: commands.Context):
+        """Toggle whether GPT can call functions"""
+        conf = self.db.get_conf(ctx.guild)
+        if conf.use_function_calls:
+            conf.use_function_calls = False
+            await ctx.send(_("Assistant will not call functions"))
+        else:
+            conf.use_function_calls = True
+            await ctx.send(_("Assistant will now call functions as needed"))
+        await self.save_conf()
+
+    @asettings.command(name="maxrecursion")
+    async def set_max_recursion(self, ctx: commands.Context, recursion: int):
+        """Set the maximum function calls allowed in a row
+
+        This sets how many times the model can call functions in a row
+        """
+        conf = self.db.get_conf(ctx.guild)
+        recursion = max(0, recursion)
+        if recursion == 0:
+            await ctx.send(_("Function calls will not be used since recursion is 0"))
+        await ctx.send(
+            _("The model can now call various functions up to {} times before returning a response").format(recursion)
+        )
+        conf.max_function_calls = recursion
+
+    @afilter.command(name="minlength")
+    async def min_length(self, ctx: commands.Context, min_question_length: int):
+        """
+        set min character length for questions
+
+        Set to 0 to respond to anything
+        """
+        if min_question_length < 0:
+            return await ctx.send(_("Minimum length needs to be at least 0 or higher"))
+        conf = self.db.get_conf(ctx.guild)
+        conf.min_length = min_question_length
+        if min_question_length == 0:
+            await ctx.send(_("{} will respond regardless of message length").format(ctx.bot.user.name))
+        else:
+            await ctx.send(
+                _("{} will respond to messages with more than **{}** characters").format(
+                    ctx.bot.user.name, min_question_length
+                )
+            )
+        await self.save_conf()
+
+    @asettings.command(name="model")
     async def set_model(self, ctx: commands.Context, model: str = None):
         """
-        Set the OpenAI model to use
+        Set the chat model to use
+
+        Run without arguments to open an interactive picker that lists every
+        model your endpoint advertises, grouped by provider. The picker also
+        accepts manual entry - useful for router aliases like
+        `openrouter/auto` or `openrouter/free`.
         """
         model = model.lower().strip() if model else None
         conf = self.db.get_conf(ctx.guild)
         if not await self.can_call_llm(conf, ctx):
             return
 
+        has_endpoint = bool(self.db.endpoint_override or conf.endpoint_override)
+
         if not model:
-            if self.db.endpoint_override:
-                return await ctx.send(await self.describe_endpoint_chat_model_options(ctx, conf.model))
+            if has_endpoint:
+                endpoint_url = self.get_guild_endpoint_url(conf)
+                async with ctx.typing():
+                    profile = await self.refresh_endpoint_profile(conf)
+                if not profile:
+                    return await ctx.send(
+                        _(
+                            "Could not probe `{}` to discover available models. "
+                            "Try setting a model id manually, e.g. `{}assistant set model openrouter/auto`."
+                        ).format(endpoint_url, ctx.clean_prefix)
+                    )
+                view = ModelPickerView(
+                    ctx=ctx,
+                    conf=conf,
+                    kind="chat",
+                    save_func=self.save_conf,
+                    reprobe_func=lambda: self.refresh_endpoint_profile(conf, force=True, save=True),
+                    get_profile=lambda: self.get_cached_endpoint_profile(conf),
+                    endpoint_url=endpoint_url,
+                )
+                return await view.start()
             valid = [i for i in MODELS]
             humanized = humanize_list(valid)
             formatted = box(humanized)
             return await ctx.send(_("Valid models are:\n{}").format(formatted))
 
-        if conf.api_key and "deepseek" not in model and not self.db.endpoint_override:
+        if conf.api_key and "deepseek" not in model and not has_endpoint:
             try:
                 client = openai.AsyncOpenAI(api_key=conf.api_key)
                 await client.models.retrieve(model)
@@ -1841,8 +2123,8 @@ class Admin(MixinMeta):
 
         conf.model = model
         await ctx.send(_("The **{}** model will now be used").format(model))
-        if self.db.endpoint_override:
-            warning = await self.get_endpoint_model_warning(model)
+        if has_endpoint:
+            warning = await self.get_endpoint_model_warning(model, conf=conf)
             if warning:
                 await ctx.send(warning)
         await self.save_conf()
@@ -1854,13 +2136,22 @@ class Admin(MixinMeta):
             )
             await ctx.send(txt)
 
-    @assistant.command(name="embedmodel")
+    @embed.command(name="model")
     async def set_embedding_model(self, ctx: commands.Context, model: str = None):
-        """Set the OpenAI Embedding model to use"""
+        """
+        Set the embedding model to use
+
+        Run without arguments to open an interactive picker that lists
+        every embedding model your endpoint advertises, grouped by provider.
+        Embeddings use the same endpoint as chat.
+        """
         model = model.lower().strip() if model else None
         conf = self.db.get_conf(ctx.guild)
         if not await self.can_call_llm(conf, ctx):
             return
+
+        has_endpoint = bool(self.db.endpoint_override or conf.endpoint_override)
+        endpoint_url = self.get_guild_endpoint_url(conf)
 
         valid = [
             "text-embedding-ada-002",
@@ -1868,20 +2159,43 @@ class Admin(MixinMeta):
             "text-embedding-3-large",
         ]
         if not model:
-            if self.db.endpoint_override:
-                return await ctx.send(await self.describe_endpoint_embedding_model_options(ctx, conf.embed_model))
+            if endpoint_url:
+                async with ctx.typing():
+                    profile = await self.refresh_endpoint_profile(conf)
+                if not profile:
+                    return await ctx.send(
+                        _(
+                            "Could not probe `{}` to discover available embedding models. "
+                            "Try setting an id manually, e.g. `{}assistant embed model text-embedding-3-small`."
+                        ).format(endpoint_url, ctx.clean_prefix)
+                    )
+                view = ModelPickerView(
+                    ctx=ctx,
+                    conf=conf,
+                    kind="embedding",
+                    save_func=self.save_conf,
+                    reprobe_func=lambda: self.refresh_endpoint_profile(conf, force=True, save=True),
+                    get_profile=lambda: self.get_cached_endpoint_profile(conf),
+                    endpoint_url=endpoint_url,
+                    post_select=lambda model_id: self.get_embedding_model_change_notice(
+                        ctx.guild,
+                        model_id,
+                        conf,
+                        ctx.clean_prefix,
+                    ),
+                )
+                return await view.start()
             return await ctx.send(_("Valid models are:\n{}").format(box(humanize_list(valid))))
-        if not self.db.endpoint_override and model not in valid:
+        if not has_endpoint and model not in valid:
             return await ctx.send(_("Valid models are:\n{}").format(box(humanize_list(valid))))
         conf.embed_model = model
         await ctx.send(_("The **{}** model will now be used for embeddings").format(model))
-        if self.db.endpoint_override:
-            warning = await self.get_endpoint_model_warning(model, embedding=True)
-            if warning:
-                await ctx.send(warning)
+        warning = await self.get_embedding_model_change_notice(ctx.guild, model, conf, ctx.clean_prefix)
+        if warning:
+            await ctx.send(warning)
         await self.save_conf()
 
-    @assistant.command(name="resetembeddings")
+    @embed.command(name="reset")
     async def wipe_embeddings(self, ctx: commands.Context, yes_or_no: bool):
         """
         Wipe saved embeddings for the assistant
@@ -1896,7 +2210,7 @@ class Admin(MixinMeta):
         await ctx.send(_("All embedding data has been wiped!"))
         await self.save_conf()
 
-    @assistant.command(name="resetconversations")
+    @assistant_admin.command(name="resetconversations")
     async def wipe_conversations(self, ctx: commands.Context, yes_or_no: bool):
         """
         Wipe saved conversations for the assistant in this server
@@ -1911,7 +2225,7 @@ class Admin(MixinMeta):
         await ctx.send(_("Conversations have been wiped in this server!"))
         await self.save_conf()
 
-    @assistant.command(name="topn")
+    @embed.command(name="topn")
     async def set_topn(self, ctx: commands.Context, top_n: int):
         """
         Set the embedding inclusion amout
@@ -1928,7 +2242,7 @@ class Admin(MixinMeta):
             await ctx.send(_("Up to **{}** embeddings will be pulled for each interaction").format(top_n))
         await self.save_conf()
 
-    @assistant.command(name="relatedness")
+    @embed.command(name="relatedness")
     async def set_min_relatedness(self, ctx: commands.Context, mimimum_relatedness: float):
         """
         Set the minimum relatedness an embedding must be to include with the prompt
@@ -1946,7 +2260,7 @@ class Admin(MixinMeta):
         await ctx.send(_("Minimum relatedness has been set to **{}**").format(mimimum_relatedness))
         await self.save_conf()
 
-    @assistant.command(name="regexblacklist")
+    @afilter.command(name="regex")
     async def regex_blacklist(self, ctx: commands.Context, *, regex: str):
         """Remove certain words/phrases in the bot's responses"""
         try:
@@ -1962,7 +2276,7 @@ class Admin(MixinMeta):
             await ctx.send(_("`{}` has been **Added** to the blacklist").format(regex))
         await self.save_conf()
 
-    @assistant.command(name="regexfailblock")
+    @afilter.command(name="failblock")
     async def toggle_regex_fail_blocking(self, ctx: commands.Context):
         """
         Toggle whether failed regex blocks the assistant's reply
@@ -1979,8 +2293,8 @@ class Admin(MixinMeta):
             await ctx.send(_("If a reges blacklist fails, the bot will still reply"))
         await self.save_conf()
 
-    @assistant.command(name="questionmode")
-    async def toggle_question_mode(self, ctx: commands.Context):
+    @features.command(name="question-mode")
+    async def features_question_mode(self, ctx: commands.Context):
         """
         Toggle question mode
 
@@ -1995,7 +2309,7 @@ class Admin(MixinMeta):
             await ctx.send(_("Question mode is now **Enabled**"))
         await self.save_conf()
 
-    @assistant.command(name="importcsv")
+    @embed.command(name="importcsv")
     async def import_embeddings_csv(self, ctx: commands.Context, overwrite: bool):
         """Import embeddings to use with the assistant
 
@@ -2077,7 +2391,7 @@ class Admin(MixinMeta):
         await ctx.send(_("Successfully imported {} embeddings!").format(humanize_number(imported)))
         await self.save_conf()
 
-    @assistant.command(name="importjson")
+    @embed.command(name="importjson")
     async def import_embeddings_json(self, ctx: commands.Context, overwrite: bool):
         """Import embeddings to use with the assistant
 
@@ -2138,7 +2452,7 @@ class Admin(MixinMeta):
             )
         await self.save_conf()
 
-    @assistant.command(name="importexcel")
+    @embed.command(name="importexcel")
     async def import_embeddings_excel(self, ctx: commands.Context, overwrite: bool):
         """Import embeddings from an .xlsx file
 
@@ -2229,7 +2543,7 @@ class Admin(MixinMeta):
                 await message.edit(content=_("{}\n**COMPLETE**").format(message_text))
                 await ctx.send(_("No embeddings needed to be updated!"))
 
-    @assistant.command(name="exportexcel")
+    @embed.command(name="exportexcel")
     @commands.bot_has_permissions(attach_files=True)
     async def export_embeddings_excel(self, ctx: commands.Context):
         """
@@ -2276,7 +2590,7 @@ class Admin(MixinMeta):
             file = await asyncio.to_thread(_get_file)
             await ctx.send(file=file)
 
-    @assistant.command(name="exportcsv")
+    @embed.command(name="exportcsv")
     @commands.bot_has_permissions(attach_files=True)
     async def export_embeddings_csv(self, ctx: commands.Context):
         """Export embeddings to a .csv file
@@ -2323,7 +2637,7 @@ class Admin(MixinMeta):
             except discord.HTTPException:
                 await ctx.send(_("File is still too large even with compression!"))
 
-    @assistant.command(name="exportjson")
+    @embed.command(name="exportjson")
     @commands.bot_has_permissions(attach_files=True)
     async def export_embeddings_json(self, ctx: commands.Context):
         """Export embeddings to a json file"""
@@ -2455,7 +2769,7 @@ class Admin(MixinMeta):
             break
         await view.start()
 
-    @assistant.command(name="customvariables", aliases=["customvars"])
+    @asettings.command(name="customvars", aliases=["customvariables"])
     @commands.bot_has_permissions(embed_links=True)
     async def custom_variables(self, ctx: commands.Context):
         """List custom prompt context variables registered by other cogs."""
@@ -2558,6 +2872,148 @@ class Admin(MixinMeta):
         """Open the mobile-friendly AI tools manager."""
         view = AIToolsView(ctx, self.db, self.registry, self.save_conf)
         await view.start()
+
+    @commands.hybrid_command(name="floatingcontext", aliases=["floatcontext", "fctx"])
+    @commands.guild_only()
+    @commands.admin_or_permissions(administrator=True)
+    async def floating_context_vars(self, ctx: commands.Context):
+        """Open the floating context block manager.
+
+        Toggled variables are appended to a trailing payload-only user
+        message after conversation history. Because that message rides
+        after the cached prefix, putting dynamic (per-request) values
+        there keeps the prompt prefix stable across requests so
+        provider-side prompt caching can hit.
+        """
+        view = FloatingContextView(ctx, self.db, self.context_registry, self.save_conf)
+        await view.start()
+
+    @commands.hybrid_command(name="cacheinfo")
+    @commands.guild_only()
+    @commands.admin_or_permissions(administrator=True)
+    async def cache_info(self, ctx: commands.Context):
+        """Show prompt-cache stats from the most recent API call."""
+
+        stats = getattr(self, "last_cache_stats", None)
+        if not stats:
+            return await ctx.send(_("No cache stats yet - make a request first."))
+        cached = stats.get("cached", 0)
+        cache_write = stats.get("cache_write", 0)
+        total = stats.get("total", 0)
+        model = stats.get("model", _("Unknown"))
+        pct = (cached / total * 100) if total else 0.0
+
+        lines = [
+            _(
+                "Last API call: **{cached}**/**{total}** prompt tokens cached "
+                "({pct:.0f}%) · **{write}** cache-write tokens · model `{model}`"
+            ).format(
+                cached=humanize_number(cached),
+                total=humanize_number(total),
+                pct=pct,
+                write=humanize_number(cache_write),
+                model=model,
+            ),
+        ]
+
+        min_tokens = get_min_cache_tokens(model)
+        model_lower = str(model).lower()
+        if min_tokens > 0 and total < min_tokens and not cached and not cache_write:
+            lines.append(
+                _(
+                    "\n💡 This model requires at least **{min_tokens}** prompt tokens "
+                    "before the provider will cache. Your prompt was only "
+                    "**{total}** tokens - below the threshold, so no cache write "
+                    "or read occurred. A longer system prompt, more conversation "
+                    "history, or enabling variables in the "
+                    "`[p]floatingcontext` block will push it over."
+                ).format(min_tokens=humanize_number(min_tokens), total=humanize_number(total))
+            )
+
+        automatic_cache_model = model_lower.startswith(
+            ("openai/", "gpt-", "o1", "o3", "grok", "deepseek/", "groq/", "moonshot/")
+        )
+        if automatic_cache_model and total >= min_tokens and not cached and not cache_write:
+            lines.append(
+                _(
+                    "\nℹ️ This provider uses automatic prompt caching. A **0** "
+                    "cache-write count does not necessarily mean caching is "
+                    "disabled, because some automatic-cache providers do not "
+                    "charge for or clearly expose cache writes. The more useful "
+                    "signal is whether similar follow-up turns start showing "
+                    "non-zero cached tokens. Also note that the relevant threshold "
+                    "is the repeated stable prefix, not the full prompt length, so "
+                    "a large request can still miss if most of its tokens are in "
+                    "the changing tail of the payload."
+                )
+            )
+
+        if "gpt-oss" in model_lower and not cached:
+            lines.append(
+                _(
+                    "\nℹ️ `gpt-oss` is a reasoning model running over Chat "
+                    "Completions. Cache reuse can be weaker than on non-reasoning "
+                    "chat models because not all reasoning state is preserved "
+                    "between turns."
+                )
+            )
+
+        if cache_write > 0 and not cached:
+            lines.append(
+                _(
+                    "\n⚠️ **Cache writes occurred but no reads.** This means the "
+                    "provider cached your prompt prefix, but the next request "
+                    "didn't match it - the prefix changed between calls. Common "
+                    "causes include dynamic variables like `{{time}}`, `{{date}}`, "
+                    "or `{{username}}` being substituted into your prompt prefix, "
+                    "per-turn context being injected before the cacheable tail, or "
+                    "tool definitions changing between calls. Use `[p]floatingcontext` "
+                    "to move dynamic context out of the prompt prefix."
+                )
+            )
+
+        await ctx.send("\n".join(lines))
+
+    @openrouter_cache.command(name="enable")
+    async def openrouter_cache_enable(self, ctx: commands.Context):
+        """Enable OpenRouter response caching (Mode A)."""
+        conf = self.db.get_conf(ctx.guild)
+        conf.openrouter_cache_enabled = True
+        await self.save_conf()
+        await ctx.send(_("OpenRouter response caching **enabled** (TTL: {}s).").format(conf.openrouter_cache_ttl))
+
+    @openrouter_cache.command(name="disable")
+    async def openrouter_cache_disable(self, ctx: commands.Context):
+        """Disable OpenRouter response caching (Mode A)."""
+        conf = self.db.get_conf(ctx.guild)
+        conf.openrouter_cache_enabled = False
+        await self.save_conf()
+        await ctx.send(_("OpenRouter response caching **disabled**."))
+
+    @openrouter_cache.command(name="ttl")
+    async def openrouter_cache_ttl_cmd(self, ctx: commands.Context, seconds: int):
+        """Set the OpenRouter response cache TTL in seconds (1–86400)."""
+        if seconds < 1 or seconds > 86400:
+            return await ctx.send(_("TTL must be between 1 and 86400 seconds (24 hours)."))
+        conf = self.db.get_conf(ctx.guild)
+        conf.openrouter_cache_ttl = seconds
+        await self.save_conf()
+        await ctx.send(_("OpenRouter response cache TTL set to **{}** seconds.").format(seconds))
+
+    @openrouter_cache.command(name="promptcache")
+    async def openrouter_prompt_cache_cmd(self, ctx: commands.Context, mode: str):
+        """Set the OpenRouter provider prompt cache TTL.
+
+        Choices: `off`, `5m`, `1h`. Applies to Anthropic / Gemini / Qwen
+        models routed via OpenRouter.
+        """
+        mode = mode.lower().strip()
+        if mode not in ("off", "5m", "1h"):
+            return await ctx.send(_("Mode must be one of: `off`, `5m`, `1h`."))
+        conf = self.db.get_conf(ctx.guild)
+        conf.openrouter_prompt_cache_ttl = mode
+        await self.save_conf()
+        await ctx.send(_("OpenRouter provider prompt cache set to **{}**.").format(mode))
 
     @commands.hybrid_command(name="listcategories", aliases=["listcats", "toolcategories"])
     @commands.guild_only()
@@ -2855,7 +3311,7 @@ class Admin(MixinMeta):
                 entries.append(key)
         return [Choice(name=i, value=i) for i in entries if current.lower() in i.lower()][:25]
 
-    @assistant.command(name="blacklist")
+    @afilter.command(name="blacklist")
     async def blacklist_settings(
         self,
         ctx: commands.Context,
@@ -2883,7 +3339,7 @@ class Admin(MixinMeta):
             await ctx.send(_("{} has been added to the blacklist").format(channel_role_member.name))
         await self.save_conf()
 
-    @assistant.command(name="planner", aliases=["planners"])
+    @asettings.command(name="planner", aliases=["planners"])
     async def planner_settings(
         self,
         ctx: commands.Context,
@@ -2926,15 +3382,6 @@ class Admin(MixinMeta):
             await ctx.send(_("{} has been added to the planner list").format(role_or_member.name))
         await self.save_conf()
 
-    @assistant.group(name="override")
-    async def override(self, ctx: commands.Context):
-        """
-        Override settings for specific roles
-
-        **NOTE**
-        If a user has two roles with override settings, override associated with the higher role will be used.
-        """
-
     @override.command(name="model")
     async def model_role_override(self, ctx: commands.Context, model: str, *, role: discord.Role):
         """
@@ -2947,15 +3394,17 @@ class Admin(MixinMeta):
         if not await self.can_call_llm(conf, ctx):
             return
 
+        has_endpoint = bool(self.db.endpoint_override or conf.endpoint_override)
+
         if not model:
-            if self.db.endpoint_override:
+            if has_endpoint:
                 txt = _(
                     "Enter a model id supported by your custom endpoint. If it exposes `/v1/models`, you can copy one from there."
                 )
                 return await ctx.send(txt)
             return await ctx.send(_("Valid models are:\n{}").format(box(humanize_list(list(MODELS.keys())))))
 
-        if conf.api_key and "deepseek" not in model and not self.db.endpoint_override:
+        if conf.api_key and "deepseek" not in model and not has_endpoint:
             try:
                 client = openai.AsyncOpenAI(api_key=conf.api_key)
                 await client.models.retrieve(model)
@@ -3101,7 +3550,7 @@ class Admin(MixinMeta):
             await ctx.send(_("Reasoning effort override for {} added!").format(role.mention))
         await self.save_conf()
 
-    @assistant.command(name="verbosity")
+    @asettings.command(name="verbosity")
     async def switch_verbosity(self, ctx: commands.Context):
         """
         Switch verbosity level for gpt-5 model between low, medium, and high
@@ -3126,24 +3575,28 @@ class Admin(MixinMeta):
     # --------------------------------------------------------------------------------------
     # --------------------------------------------------------------------------------------
 
-    @assistant.command(name="endpointoverride")
+    @api.command(name="globalendpoint", aliases=["override"])
     @commands.is_owner()
-    async def endpoint_override(self, ctx: commands.Context, endpoint: str = None):
+    async def api_override(self, ctx: commands.Context, endpoint: str = None):
         """
-        Override the global OpenAI-compatible API base URL
+        Set the global default endpoint URL (owner)
 
-        Pass the full API base URL, including the scheme and the `/v1` suffix.
+        When set, every guild without its own endpoint override calls this
+        URL instead of OpenAI's default. Pass the full base URL including
+        the scheme and the `/v1` suffix.
 
         **Examples**
         - `http://127.0.0.1:1234/v1`
         - `http://localhost:5001/v1`
         - `https://example.com/api/v1`
+        - `https://openrouter.ai/api/v1`
 
         **Notes**
-        - When set, all servers can use the assistant without needing their own API key
-        - Custom endpoints must be OpenAI-compatible
-        - This should be the SDK `base_url`, not a specific route like `/chat/completions`
-        - Use `[p]assistant endpointapikey` to set a global key for authenticated custom endpoints
+        - Endpoints must be OpenAI-compatible
+        - This is the SDK `base_url`, not a specific route like `/chat/completions`
+        - Use `[p]assistant api globalkey` to set the API key for this endpoint
+        - Router endpoints like OpenRouter accept special model aliases
+          (e.g. `openrouter/auto`, `openrouter/free`) via `[p]assistant set model`
         - Omit the argument to remove the override
         """
         endpoint, error = normalize_endpoint_override(endpoint)
@@ -3173,22 +3626,29 @@ class Admin(MixinMeta):
             await ctx.send(_("Endpoint override has been removed!"))
         await self.save_conf()
 
-    @assistant.command(name="endpointprobe")
-    @commands.is_owner()
+    @assistant_admin.command(name="probe")
+    @commands.guild_only()
+    @commands.admin_or_permissions(administrator=True)
     async def endpoint_probe(self, ctx: commands.Context):
-        """Probe the configured custom endpoint and cache its runtime model/capability profile"""
-        if not self.db.endpoint_override:
-            return await ctx.send(_("No endpoint override is configured."))
+        """Probe the active endpoint and refresh its cached model/capability profile
+
+        Checks the guild endpoint override first; if none is set, probes the
+        global endpoint override. Reports an error if no endpoint is configured.
+        """
+        conf = self.db.get_conf(ctx.guild)
+        endpoint_url = self.get_guild_endpoint_url(conf)
+        if not endpoint_url:
+            return await ctx.send(_("No endpoint override is configured for this guild or globally."))
 
         async with ctx.typing():
-            profile = await self.refresh_endpoint_profile(force=True, save=True)
+            profile = await self.refresh_endpoint_profile(conf, force=True, save=True)
 
         if not profile:
-            return await ctx.send(_("Failed to probe the configured endpoint."))
+            return await ctx.send(_("Failed to probe `{}`.").format(endpoint_url))
 
         await ctx.send(self.describe_endpoint_profile(profile))
 
-    @assistant.command(name="wipecog")
+    @assistant_admin.command(name="wipe")
     @commands.is_owner()
     async def wipe_cog(self, ctx: commands.Context, confirm: bool):
         """Wipe all settings and data for entire cog"""
@@ -3200,7 +3660,7 @@ class Admin(MixinMeta):
         await self.save_conf()
         await ctx.send(_("Cog has been wiped!"))
 
-    @assistant.command(name="backupcog")
+    @assistant_admin.command(name="backup")
     @commands.is_owner()
     async def backup_cog(self, ctx: commands.Context):
         """
@@ -3247,7 +3707,7 @@ class Admin(MixinMeta):
         except discord.HTTPException:
             await ctx.send(_("File is still too large even with compression!"))
 
-    @assistant.command(name="restorecog")
+    @assistant_admin.command(name="restore")
     @commands.is_owner()
     async def restore_cog(self, ctx: commands.Context):
         """
@@ -3263,7 +3723,7 @@ class Admin(MixinMeta):
         await ctx.send(_("Cog has been restored!"))
         await self.save_conf()
 
-    @assistant.command(name="resetglobalconversations")
+    @assistant_admin.command(name="resetglobalconversations")
     @commands.is_owner()
     async def wipe_global_conversations(self, ctx: commands.Context, yes_or_no: bool):
         """
@@ -3278,9 +3738,9 @@ class Admin(MixinMeta):
         await ctx.send(_("Conversations have been wiped for all servers!"))
         await self.save_conf()
 
-    @assistant.command(name="persist")
+    @features.command(name="persist")
     @commands.is_owner()
-    async def toggle_persistent_conversations(self, ctx: commands.Context):
+    async def features_persist(self, ctx: commands.Context):
         """Toggle persistent conversations"""
         if self.db.persistent_conversations:
             self.db.persistent_conversations = False
@@ -3290,7 +3750,7 @@ class Admin(MixinMeta):
             await ctx.send(_("Persistent conversations have been **Enabled**"))
         await self.save_conf()
 
-    @assistant.command(name="reasoningfiles")
+    @asettings.command(name="reasoningfiles")
     @commands.is_owner()
     async def toggle_reasoning_files(self, ctx: commands.Context):
         """Toggle whether reasoning/think blocks are uploaded as files globally"""
@@ -3302,7 +3762,7 @@ class Admin(MixinMeta):
             await ctx.send(_("Reasoning blocks will now be uploaded as think files when present."))
         await self.save_conf()
 
-    @assistant.command(name="resetglobalembeddings")
+    @embed.command(name="resetglobal")
     @commands.is_owner()
     async def wipe_global_embeddings(self, ctx: commands.Context, yes_or_no: bool):
         """
@@ -3318,7 +3778,7 @@ class Admin(MixinMeta):
         await ctx.send(_("All embedding data has been wiped for all servers!"))
         await self.save_conf()
 
-    @assistant.command(name="listentobots", aliases=["botlisten", "ignorebots"])
+    @asettings.command(name="listenbots", aliases=["botlisten", "ignorebots"])
     @commands.is_owner()
     async def toggle_bot_listen(self, ctx: commands.Context):
         """
@@ -3334,7 +3794,7 @@ class Admin(MixinMeta):
             await ctx.send(_("Assistant will listen to other bot messages"))
         await self.save_conf()
 
-    @assistant.command(name="scheduledtasks", aliases=["tasks", "listtasks"])
+    @scheduler.command(name="list", aliases=["view"])
     @commands.guild_only()
     @commands.admin_or_permissions(administrator=True)
     @commands.bot_has_permissions(embed_links=True)
@@ -3367,7 +3827,7 @@ class Admin(MixinMeta):
         )
         await ctx.send(embed=embed)
 
-    @assistant.command(name="canceltask")
+    @scheduler.command(name="cancel")
     @commands.guild_only()
     @commands.admin_or_permissions(administrator=True)
     async def cancel_task_admin(self, ctx: commands.Context, task_id: str):
@@ -3387,7 +3847,7 @@ class Admin(MixinMeta):
         await self.save_conf()
         await ctx.send(_("Scheduled task `{}` has been cancelled.").format(task_id))
 
-    @assistant.command(name="cleartasks")
+    @scheduler.command(name="clear")
     @commands.guild_only()
     @commands.admin_or_permissions(administrator=True)
     async def clear_all_tasks(self, ctx: commands.Context, yes_or_no: bool):
@@ -3406,10 +3866,8 @@ class Admin(MixinMeta):
         await self.save_conf()
         await ctx.send(_("Cleared {} scheduled tasks.").format(len(task_ids)))
 
-    # ---------- Compaction Commands ----------
-
-    @assistant.command(name="compaction")
-    async def toggle_compaction(self, ctx: commands.Context):
+    @compaction.command(name="toggle")
+    async def compaction_toggle(self, ctx: commands.Context):
         """Toggle LLM-based conversation compaction on or off"""
         conf = self.db.get_conf(ctx.guild)
         if conf.compaction_enabled:
@@ -3420,22 +3878,23 @@ class Admin(MixinMeta):
             await ctx.send(_("Conversation compaction is now **Enabled**"))
         await self.save_conf()
 
-    @assistant.command(name="compactionmodel")
-    async def set_compaction_model(self, ctx: commands.Context, model: str = ""):
+    @compaction.command(name="model")
+    async def compaction_model(self, ctx: commands.Context, model: str = ""):
         """Set the model used for compaction (leave blank to use the chat model)"""
         conf = self.db.get_conf(ctx.guild)
+        has_endpoint = bool(self.db.endpoint_override or conf.endpoint_override)
         if not model:
             conf.compaction_model = ""
             await ctx.send(_("Compaction model cleared, the main chat model will be used"))
-        elif not self.db.endpoint_override and model not in MODELS:
+        elif not has_endpoint and model not in MODELS:
             return await ctx.send(_("Invalid model, valid models are: {}").format(humanize_list(MODELS)))
         else:
             conf.compaction_model = model
             await ctx.send(_("Compaction model set to **{}**").format(model))
         await self.save_conf()
 
-    @assistant.command(name="compactionthreshold")
-    async def set_compaction_threshold(self, ctx: commands.Context, token_limit: int = 0):
+    @compaction.command(name="threshold")
+    async def compaction_threshold(self, ctx: commands.Context, token_limit: int = 0):
         """Set the token threshold at which compaction triggers
 
         When set, the bot will proactively compact conversations once they
@@ -3444,8 +3903,8 @@ class Admin(MixinMeta):
         Set to **0** to only compact when hitting the model's max token limit.
 
         **Examples**
-        - `[p]assistant compactionthreshold 16000` - compact at 16k tokens
-        - `[p]assistant compactionthreshold 0` - reset to default behavior
+        - `[p]assistant compaction threshold 16000` - compact at 16k tokens
+        - `[p]assistant compaction threshold 0` - reset to default behavior
         """
         if token_limit < 0:
             return await ctx.send(_("Token limit must be 0 or higher"))

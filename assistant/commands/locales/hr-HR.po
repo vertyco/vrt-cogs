@@ -176,9 +176,6 @@ msgstr ""
 msgid "`Collaborative Mode:  `{}\n"
 msgstr ""
 
-#: assistant\commands\admin.py:261
-msgid "`Coalesce Delay:      `{}s\n"
-msgstr ""
 
 #: assistant\commands\admin.py:262
 msgid "`Max Retention:       `{}\n"
@@ -1264,31 +1261,6 @@ msgstr ""
 msgid "Collaborative conversations are now **Enabled**"
 msgstr ""
 
-#: assistant\commands\admin.py:1531
-#, docstring
-msgid "\n"
-"        Set the message coalesce delay in seconds\n\n"
-"        When a user sends multiple messages in quick succession, the bot will wait this many seconds\n"
-"        for follow-up messages before responding. All messages within the window are combined into a\n"
-"        single request. If follow-up messages arrive while the bot is already processing, the current\n"
-"        response is discarded and the messages are combined for a fresh request.\n\n"
-"        This prevents the bot from responding to half-finished thoughts when a user accidentally hits\n"
-"        send too early.\n\n"
-"        Set to 0 to disable (default). Recommended: 1.5\n"
-"        "
-msgstr ""
-
-#: assistant\commands\admin.py:1545
-msgid "Delay must be between 0 and 10 seconds"
-msgstr ""
-
-#: assistant\commands\admin.py:1549
-msgid "Message coalescing is now **Disabled**"
-msgstr ""
-
-#: assistant\commands\admin.py:1551
-msgid "Messages will be coalesced with a **{}s** delay"
-msgstr ""
 
 #: assistant\commands\admin.py:1556
 #, docstring

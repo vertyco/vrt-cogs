@@ -54,78 +54,7 @@ MODELS = {
     "gpt-5.4-nano": 400000,
     "gpt-5.4-nano-2026-03-17": 400000,
 }
-PRICES = {  # Price per 1k tokens
-    "gpt-3.5-turbo": [0.001, 0.0015],
-    "gpt-3.5-turbo-0301": [0.0015, 0.002],
-    "gpt-3.5-turbo-0613": [0.0015, 0.002],
-    "gpt-3.5-turbo-1106": [0.001, 0.002],
-    "gpt-3.5-turbo-0125": [0.0005, 0.0015],
-    "gpt-3.5-turbo-16k": [0.003, 0.004],
-    "gpt-3.5-turbo-16k-0301": [0.003, 0.004],
-    "gpt-3.5-turbo-16k-0613": [0.003, 0.004],
-    "gpt-3.5-turbo-instruct": [0.0015, 0.002],
-    "gpt-3.5-turbo-instruct-0914": [0.0015, 0.002],
-    "gpt-4": [0.03, 0.06],
-    "gpt-4-0301": [0.03, 0.06],
-    "gpt-4-0613": [0.03, 0.06],
-    "gpt-4-turbo": [0.01, 0.03],
-    "gpt-4-turbo-preview": [0.01, 0.03],
-    "gpt-4-1106-preview": [0.01, 0.03],
-    "gpt-4-0125-preview": [0.01, 0.03],
-    "gpt-4-vision-preview": [0.01, 0.03],
-    "gpt-4-1106-vision-preview": [0.01, 0.03],
-    "gpt-4-turbo-2024-04-09": [0.01, 0.03],
-    "gpt-4-32k": [0.06, 0.12],
-    "gpt-4-32k-0301": [0.06, 0.12],
-    "gpt-4o": [0.005, 0.015],
-    "gpt-4o-2024-05-13": [0.005, 0.015],
-    "gpt-4o-2024-08-06": [0.0025, 0.01],
-    "gpt-4o-2024-11-20": [0.0025, 0.01],
-    "chatgpt-4o-latest": [0.0025, 0.01],
-    "gpt-4o-mini": [0.00015, 0.0006],
-    "gpt-4o-mini-2024-07-18": [0.00015, 0.0006],
-    "gpt-4.1": [0.002, 0.008],
-    "gpt-4.1-2025-04-14": [0.002, 0.008],
-    "gpt-4.1-mini": [0.0004, 0.0016],
-    "gpt-4.1-mini-2025-04-14": [0.0004, 0.0016],
-    "gpt-4.1-nano": [0.0001, 0.0004],
-    "gpt-4.1-nano-2025-04-14": [0.0001, 0.0004],
-    "gpt-5": [0.00125, 0.010],
-    "gpt-5-2025-08-07": [0.00125, 0.010],
-    "gpt-5-mini": [0.00025, 0.002],
-    "gpt-5-mini-2025-08-07": [0.00025, 0.002],
-    "gpt-5-nano": [0.00005, 0.0004],
-    "gpt-5-nano-2025-08-07": [0.00005, 0.0004],
-    "gpt-5.1": [0.00125, 0.010],
-    "gpt-5.1-2025-11-13": [0.00125, 0.010],
-    "gpt-5.2": [0.00175, 0.014],
-    "gpt-5.2-2025-12-11": [0.00175, 0.014],
-    "gpt-5.4": [0.0025, 0.015],
-    "gpt-5.4-2026-03-05": [0.0025, 0.015],
-    "gpt-5.4-mini": [0.00075, 0.0045],
-    "gpt-5.4-mini-2026-03-17": [0.00075, 0.0045],
-    "gpt-5.4-nano": [0.0002, 0.00125],
-    "gpt-5.4-nano-2026-03-17": [0.0002, 0.00125],
-    "o1": [0.015, 0.06],
-    "o1-2024-12-17": [0.015, 0.06],
-    "o1-preview": [0.015, 0.06],
-    "o1-preview-2024-09-12": [0.015, 0.06],
-    "o1-mini": [0.003, 0.012],
-    "o1-mini-2024-09-12": [0.003, 0.012],
-    "o3": [0.002, 0.008],
-    "o3-mini": [0.0011, 0.0044],
-    "o3-mini-2025-01-31": [0.0011, 0.0044],
-    "text-ada-001": [0.0004, 0.0016],
-    "text-babbage-001": [0.0006, 0.0024],
-    "text-curie-001": [0.003, 0.012],
-    "text-davinci-002": [0.03, 0.12],
-    "text-davinci-003": [0.03, 0.12],
-    "code-davinci-002": [0.03, 0.12],
-    "text-embedding-ada-002": [0.0001, 0.0001],
-    "text-embedding-ada-002-v2": [0.0001, 0.0001],
-    "text-embedding-3-small": [0.00002, 0.00002],
-    "text-embedding-3-large": [0.00013, 0.00013],
-}
+
 VISION_COSTS = {
     "gpt-4o": [85, 170],  # 85 base tokens, 170 per (32x32) pixel tile in the image
     "gpt-4o-2024-05-13": [85, 170],
@@ -139,23 +68,7 @@ VISION_COSTS = {
     "o1-2024-12-17": [75, 150],
     # 75 base tokens, 150 per (32x32) pixel tile in the image
 }
-IMAGE_COSTS = {
-    "standard1024x1024": 0.04,
-    "standard1792x1024": 0.08,
-    "standard1024x1792": 0.08,
-    "hd1024x1024": 0.08,
-    "hd1792x1024": 0.12,
-    "hd1024x1792": 0.12,
-    "low1024x1024": 0.011,
-    "low1024x1536": 0.016,
-    "low1536x1024": 0.016,
-    "medium1024x1024": 0.042,
-    "medium1024x1536": 0.063,
-    "medium1536x1024": 0.063,
-    "high1024x1024": 0.167,
-    "high1024x1536": 0.25,
-    "high1536x1024": 0.25,
-}
+
 SUPPORTS_SEED = [
     "gpt-3.5-turbo",
     "gpt-3.5-turbo-1106",
@@ -490,7 +403,7 @@ CREATE_REMINDER = {
                     "1. Relative duration from now: '5 minutes', '2 hours', '1 day', '1d3h', '30m'\n"
                     "2. ISO 8601 datetime: '2025-08-04T15:00:00' (interpreted in the server's timezone)\n"
                     "IMPORTANT: Do NOT pass vague or relative day references like 'next Monday' or 'tomorrow'. "
-                    "You know the current date and time from the system prompt — compute the exact date yourself "
+                    "You know the current date and time from the system prompt - compute the exact date yourself "
                     "and pass it as an ISO 8601 datetime (YYYY-MM-DDTHH:MM:SS). "
                     "For simple offsets (e.g. 'in 2 hours'), use a relative duration instead."
                 ),
@@ -542,7 +455,7 @@ SCHEDULE_TASK = {
                 "type": "string",
                 "description": (
                     "The detailed instruction for what to do when the task fires. "
-                    "Be specific — include what to check, what to report, and any context needed. "
+                    "Be specific - include what to check, what to report, and any context needed. "
                     "This will be your prompt when the task executes."
                 ),
             },
@@ -553,7 +466,7 @@ SCHEDULE_TASK = {
                     "1. Relative duration from now: '30 minutes', '1 hour', '2 days', '1w2d3h'\n"
                     "2. ISO 8601 datetime: '2025-08-04T15:00:00' (interpreted in the server's timezone)\n"
                     "IMPORTANT: Do NOT pass vague or relative day references like 'next Monday' or 'tomorrow'. "
-                    "You know the current date and time from the system prompt — compute the exact date yourself "
+                    "You know the current date and time from the system prompt - compute the exact date yourself "
                     "and pass it as an ISO 8601 datetime (YYYY-MM-DDTHH:MM:SS). "
                     "For simple offsets (e.g. 'in 2 hours'), use a relative duration instead."
                 ),
@@ -625,3 +538,56 @@ COMPACTION_SYSTEM_PROMPT = (
     "that are still relevant. Write in third person. Keep the summary under 500 words. "
     "Do NOT include greetings, filler, or redundant exchanges."
 )
+
+# ---------------------------------------------------------------------------
+# Minimum prompt token counts required for provider-side prompt caching.
+# ---------------------------------------------------------------------------
+# Each entry is (model_prefix, min_tokens). The prefix is matched
+# case-insensitively against the start of the model string. Entries are
+# checked in order; the first match wins.
+# Sources: OpenRouter docs (openrouter.ai/docs/guides/features/prompt-caching)
+MIN_CACHE_TOKENS: list[tuple[str, int]] = [
+    # Anthropic (via OpenRouter): explicit cache_control breakpoints required.
+    # Match the dated snapshot slugs returned by providers, e.g.
+    # ``anthropic/claude-4.5-haiku-20251001``.
+    ("anthropic/claude-4.7-opus", 4096),
+    ("anthropic/claude-4.6-opus", 4096),
+    ("anthropic/claude-4.5-opus", 4096),
+    ("anthropic/claude-4.6-sonnet", 2048),
+    ("anthropic/claude-4.5-haiku", 4096),
+    ("anthropic/claude-3.5-haiku", 2048),
+    ("anthropic/claude-4.5-sonnet", 1024),
+    ("anthropic/claude-4.1-opus", 1024),
+    ("anthropic/claude-4-opus", 1024),
+    ("anthropic/claude-4-sonnet", 1024),
+    ("anthropic/claude-3.7-sonnet", 1024),
+    ("anthropic/claude", 1024),
+    # Google Gemini: implicit (auto) + explicit cache_control. 2.5 Flash is
+    # 1,024; 2.5 Pro is 4,096. Default conservative.
+    ("google/gemini-2.5-pro", 4096),
+    ("google/gemini-2.5-flash", 1024),
+    ("google/gemini", 4096),
+    # OpenAI / Grok / DeepSeek / Groq / Moonshot: automatic, min 1,024.
+    ("openai/", 1024),
+    ("gpt-", 1024),
+    ("o1", 1024),
+    ("o3", 1024),
+    ("grok", 1024),
+    ("deepseek/", 1024),
+    ("groq/", 1024),
+    ("moonshot/", 1024),
+    # Qwen: explicit cache_control required, 1,024 minimum.
+    ("qwen/", 1024),
+]
+
+
+def get_min_cache_tokens(model: str) -> int:
+    """Return the minimum prompt token count required for cache eligibility.
+
+    If the model does not match any known prefix, returns 0 (unknown).
+    """
+    model_lower = model.lower()
+    for prefix, min_tokens in MIN_CACHE_TOKENS:
+        if model_lower.startswith(prefix.lower()):
+            return min_tokens
+    return 0

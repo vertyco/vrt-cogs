@@ -105,12 +105,6 @@ class CustomFunction(AssistantBaseModel):
         return globals()[self.jsonschema["name"]]
 
 
-class Usage(AssistantBaseModel):
-    total_tokens: int = 0
-    input_tokens: int = 0
-    output_tokens: int = 0
-
-
 class EndpointModelProfile(AssistantBaseModel):
     id: str
     kind: str = "llm"
@@ -139,7 +133,6 @@ class GuildSettings(AssistantBaseModel):
     channel_prompts: t.Dict[int, str] = {}
     allow_sys_prompt_override: bool = False  # Per convo system prompt
     embeddings: t.Dict[str, Embedding] = {}
-    usage: t.Dict[str, Usage] = {}
     blacklist: t.List[int] = []  # Channel/Role/User IDs
     top_n: int = 3
     min_relatedness: float = 0.78
@@ -159,7 +152,6 @@ class GuildSettings(AssistantBaseModel):
     model: str = "gpt-5.4"
     embed_model: str = "text-embedding-3-small"  # Or text-embedding-3-large, text-embedding-ada-002
     collab_convos: bool = False
-    message_coalesce_delay: float = 0.0  # seconds to wait for follow-up messages before responding (0 = disabled)
     reasoning_effort: str = "low"  # none, minimal, low, medium, high, xhigh (model-dependent)
     verbosity: str = "low"  # low, medium, high (gpt-5 only)
     think_tag_prefix: str = DEFAULT_THINK_TAG_PREFIX
@@ -200,6 +192,10 @@ class GuildSettings(AssistantBaseModel):
 
     vision_detail: str = "auto"  # high, low, auto
 
+    # Per-guild endpoint overrides
+    endpoint_override: t.Optional[str] = None
+    endpoint_profile: t.Optional[EndpointProfile] = None
+
     # Compaction (LLM-based context summarization)
     compaction_enabled: bool = True  # Enable automatic LLM compaction before blind degradation
     compaction_model: str = ""  # Model to use for compaction (empty = use same model as chat)
@@ -209,23 +205,36 @@ class GuildSettings(AssistantBaseModel):
     max_function_calls: int = 100  # Max calls in a row
     max_scheduled_tasks: int = 25  # Max pending scheduled tasks per user in this guild
     function_statuses: t.Dict[str, bool] = {}  # {"function_name": True/False for enabled/disabled}
-    functions_called: int = 0
 
-    def update_usage(
-        self,
-        model: str,
-        total_tokens: int,
-        input_tokens: int,
-        output_tokens: int,
-    ) -> None:
-        if model not in self.usage:
-            self.usage[model] = Usage()
-        if total_tokens:
-            self.usage[model].total_tokens += total_tokens
-        if input_tokens:
-            self.usage[model].input_tokens += input_tokens
-        if output_tokens:
-            self.usage[model].output_tokens += output_tokens
+    # ------------------------------------------------------------------
+    # Trailing-context-block inclusion toggles.
+    #
+    # Maps a variable key to bool - True means "include in the trailing
+    # ``[Current Context]`` user-context message". Keys can be:
+    #   - ``var:<name>`` - individual variable inclusion (highest priority)
+    #   - a builtin category key (e.g. ``time``, ``user_info``, ``bot``,
+    #     ``channel``) - category-wide override for any variable in that
+    #     category not explicitly set via ``var:<name>``
+    #   - ``custom:<CogName>`` - override for an entire 3rd-party context
+    #     variable source cog
+    # When neither a per-var nor per-category key is present, the default
+    # is **off** - fresh installs start with a blank slate so the admin
+    # picks exactly which variables to surface in the trailing block.
+    # ------------------------------------------------------------------
+    context_block_var_statuses: t.Dict[str, bool] = {}
+
+    # ------------------------------------------------------------------
+    # Prompt caching: OpenRouter cache controls.
+    # ------------------------------------------------------------------
+    # Mode A - OpenRouter response caching (X-OpenRouter-Cache header).
+    # Caches the entire response at the OpenRouter network layer.
+    openrouter_cache_enabled: bool = True
+    openrouter_cache_ttl: int = 300  # 1..86400 seconds
+    # Mode B - Provider-level prompt cache via cache_control.
+    # One of "off", "5m", "1h". Anthropic uses top-level cache_control;
+    # Gemini / Qwen use explicit content-block breakpoints in the last
+    # system message.
+    openrouter_prompt_cache_ttl: str = "5m"
 
     def get_user_model(self, member: t.Optional[discord.Member] = None) -> str:
         if not member or not self.role_overrides:
@@ -393,7 +402,7 @@ class Conversation(AssistantBaseModel):
             position (int): the index to place the message in
         """
         message: dict = {"role": role, "content": message}
-        if name:
+        if name and role == "user":
             message["name"] = name
         if tool_id:
             message["tool_call_id"] = tool_id
@@ -413,18 +422,27 @@ class Conversation(AssistantBaseModel):
         resolution: str = "auto",
         transient_user_context: str = "",
     ) -> t.List[dict]:
-        """Pre-appends the prmompts before the user's messages without motifying them"""
+        """Pre-appends the prompts before the user's messages without modifying them.
+
+        ``transient_user_context`` is sent as a payload-only trailing message
+        after the user's clean turn, and it is NOT stored in conversation
+        history. This preserves the clean conversation transcript while also
+        allowing provider-side prompt caches to reuse the latest real user turn
+        on the next request.
+        """
         prepared = []
         if system_prompt.strip():
             prepared.append({"role": "developer", "content": system_prompt})
         if initial_prompt.strip():
             prepared.append({"role": "user", "content": initial_prompt})
-        prepared.extend(self.messages)
-        if transient_user_context.strip():
-            prepared.append({"role": "user", "content": transient_user_context})
+        for stored_message in self.messages:
+            copied = stored_message.copy()
+            if copied.get("role") != "user":
+                copied.pop("name", None)
+            prepared.append(copied)
 
         if images:
-            content = [{"type": "text", "text": user_message}]
+            content: list = [{"type": "text", "text": user_message}]
             for img in images:
                 if img.lower().startswith("http"):
                     content.append(
@@ -444,15 +462,30 @@ class Conversation(AssistantBaseModel):
                             "image_url": {"url": image_string, "detail": resolution},
                         }
                     )
-
         else:
             content = user_message
 
-        user_message_payload = {"role": "user", "content": content}
+        # Store the clean message (no transient context) in conversation history.
+        history_payload = {"role": "user", "content": content}
         if name:
-            user_message_payload["name"] = name
-        prepared.append(user_message_payload)
-        self.messages.append(user_message_payload)
+            history_payload["name"] = name
+        self.messages.append(history_payload)
+
+        # Send the clean user turn to the API so it can become part of the
+        # reusable cached prefix on the next request.
+        api_payload = {"role": "user", "content": content}
+        if name:
+            api_payload["name"] = name
+        prepared.append(api_payload)
+
+        if transient_user_context.strip():
+            prepared.append(
+                {
+                    "role": "user",
+                    "content": f"Additional context for the previous user message:\n\n{transient_user_context}",
+                }
+            )
+
         self.refresh()
         return prepared
 
@@ -584,6 +617,12 @@ class DB(AssistantBaseModel):
                         "permission_level": data["permission_level"],
                         "required_permissions": list(data.get("required_permissions", [])),
                         "fetch_method": fetch_method,
+                        # cache_safe = the *cog* declares this variable as dynamic
+                        # (cache_safe=True → dynamic, default) versus stable
+                        # (cache_safe=False → always inlined into prompts).
+                        # Admins control floating-block inclusion separately via
+                        # the `[p]floatingcontext` view.
+                        "cache_safe": bool(data.get("cache_safe", True)),
                     }
                 )
         return catalog
@@ -741,6 +780,11 @@ class DB(AssistantBaseModel):
                 continue
             function_calls.append(entry["schema"])
             function_map[function_name] = callable_obj
+
+        # Sort tools deterministically by name so the cached prompt prefix
+        # stays stable across requests even if registry iteration order
+        # differs (Tool Stabilization).
+        function_calls.sort(key=lambda schema: schema.get("name", ""))
 
         log.debug(f"Prepped: {function_map.keys()}")
         return function_calls, function_map

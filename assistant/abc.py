@@ -1,6 +1,6 @@
 from abc import ABC, ABCMeta, abstractmethod
 from multiprocessing.pool import Pool
-from typing import Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import discord
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -28,6 +28,8 @@ class MixinMeta(ABC):
         self.context_registry: Dict[str, Dict[str, dict]]
         self.embedding_store: EmbeddingStore
         self.scheduler: AsyncIOScheduler
+        # Keys: "cached", "cache_write", "total", "model".
+        self.last_cache_stats: Dict[str, object]
 
     @abstractmethod
     async def _fire_reminder(self, reminder_id: str) -> None:
@@ -55,6 +57,8 @@ class MixinMeta(ABC):
         response_token_override: int = None,
         model_override: Optional[str] = None,
         temperature_override: Optional[float] = None,
+        session_id: Optional[str] = None,
+        guild_id: Optional[int] = None,
     ) -> Union[ChatCompletionMessage, str]:
         raise NotImplementedError
 
@@ -75,23 +79,25 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_cached_endpoint_profile(self) -> Optional[EndpointProfile]:
+    def get_cached_endpoint_profile(self, conf: Optional[GuildSettings] = None) -> Optional[EndpointProfile]:
         raise NotImplementedError
 
     @abstractmethod
-    def clear_endpoint_profile(self) -> None:
+    def clear_endpoint_profile(self, conf: Optional[GuildSettings] = None) -> None:
         raise NotImplementedError
 
     @abstractmethod
-    def resolve_chat_model(self, requested_model: str) -> str:
+    def resolve_chat_model(self, requested_model: str, conf: Optional[GuildSettings] = None) -> str:
         raise NotImplementedError
 
     @abstractmethod
-    def resolve_embedding_model(self, requested_model: str) -> str:
+    def resolve_embedding_model(self, requested_model: str, conf: Optional[GuildSettings] = None) -> str:
         raise NotImplementedError
 
     @abstractmethod
-    def get_endpoint_chat_model_limit(self, requested_model: Optional[str] = None) -> int:
+    def get_endpoint_chat_model_limit(
+        self, requested_model: Optional[str] = None, conf: Optional[GuildSettings] = None
+    ) -> int:
         raise NotImplementedError
 
     @abstractmethod
@@ -99,7 +105,13 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def refresh_endpoint_profile(self, force: bool = False, save: bool = False) -> Optional[EndpointProfile]:
+    def get_guild_endpoint_url(self, conf: GuildSettings) -> Optional[str]:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def refresh_endpoint_profile(
+        self, conf: Optional[GuildSettings] = None, force: bool = False, save: bool = False
+    ) -> Optional[EndpointProfile]:
         raise NotImplementedError
 
     @abstractmethod
@@ -217,6 +229,44 @@ class MixinMeta(ABC):
 
     @abstractmethod
     async def save_conf(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_message_queue_key(
+        self,
+        author_id: int,
+        channel_id: int,
+        guild_id: int,
+        collaborative: bool,
+    ) -> tuple[int, int, int]:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def enqueue_message_request(self, handle_message_kwargs: Dict[str, Any]) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
+    def clear_message_queue(
+        self,
+        author_id: int,
+        channel_id: int,
+        guild_id: int,
+        collaborative: bool,
+    ) -> int:
+        raise NotImplementedError
+
+    @abstractmethod
+    def cancel_message_queue(
+        self,
+        author_id: int,
+        channel_id: int,
+        guild_id: int,
+        collaborative: bool,
+    ) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
+    def cancel_all_message_queues(self) -> None:
         raise NotImplementedError
 
     @abstractmethod
