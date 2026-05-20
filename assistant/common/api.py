@@ -59,7 +59,7 @@ class API(MixinMeta):
         """
         return conf.api_key or self.db.endpoint_api_key or ""
 
-    def get_guild_endpoint_url(self, conf: GuildSettings) -> t.Optional[str]:
+    def get_guild_endpoint_url(self, conf: t.Optional[GuildSettings] = None) -> t.Optional[str]:
         """Return the effective endpoint URL for a guild (chat and embeddings).
 
         Priority:
@@ -67,7 +67,9 @@ class API(MixinMeta):
         2. Global endpoint override
         3. None (use OpenAI)
         """
-        return conf.endpoint_override or self.db.endpoint_override or None
+        if conf is not None and conf.endpoint_override:
+            return conf.endpoint_override
+        return self.db.endpoint_override or None
 
     def get_cached_endpoint_profile(self, conf: t.Optional[GuildSettings] = None) -> Optional[EndpointProfile]:
         """Return cached endpoint profile for the effective endpoint.
