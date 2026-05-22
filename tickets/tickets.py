@@ -41,7 +41,7 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "3.2.2"
+    __version__ = "3.2.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -62,6 +62,11 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
         self.saving: bool = False
         self.initialized: bool = False
 
+        # Debounced save state
+        self.save_dirty: bool = False
+        self.save_task: asyncio.Task | None = None
+        self.save_debounce_seconds: float = 5.0
+
         # Cache
         self.valid = []  # Valid ticket channels
         self.views = []  # Saved views to end on reload
@@ -72,11 +77,29 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
         self.auto_close.start()
 
     async def save(self) -> None:
-        """Save the Pydantic DB to Config."""
-        if self.saving:
+        """Mark the DB dirty; flush is debounced via a background task.
+
+        Callers can keep `await self.save()` semantics; the awaited coroutine
+        only schedules a flush. The actual Config write happens at most once
+        per `save_debounce_seconds`, on a background task.
+        """
+        self.save_dirty = True
+        if self.save_task is None or self.save_task.done():
+            self.save_task = asyncio.create_task(self._debounced_flush())
+
+    async def _debounced_flush(self) -> None:
+        try:
+            await asyncio.sleep(self.save_debounce_seconds)
+            await self._flush_save()
+        except asyncio.CancelledError:
+            raise
+
+    async def _flush_save(self) -> None:
+        if not self.save_dirty or self.saving:
             return
         try:
             self.saving = True
+            self.save_dirty = False
             dump = self.db.model_dump(mode="json")
             await self.config.db.set(dump)
         finally:
@@ -89,6 +112,10 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
         for view in self.views:
             view.stop()
         self.auto_close.cancel()
+        if self.save_task is not None and not self.save_task.done():
+            self.save_task.cancel()
+        if self.save_dirty:
+            await self._flush_save()
 
     async def _startup(self) -> None:
         await self.bot.wait_until_red_ready()
