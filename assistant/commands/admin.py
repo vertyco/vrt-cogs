@@ -3478,9 +3478,21 @@ class Admin(MixinMeta):
         await self.save_conf()
 
     @smartmod.command(name="threshold")
-    async def smartmod_threshold(self, ctx: commands.Context, category: str, value: float):
-        """Set a category's flag threshold (0.0-1.0), e.g. `harassment 0.4`."""
+    async def smartmod_threshold(self, ctx: commands.Context, category: str = None, value: float = None):
+        """Set a category's flag threshold (0.0-1.0), e.g. `harassment 0.4`.
+
+        Run with no arguments to list every moderation category and its current threshold.
+        """
         conf = self.db.get_conf(ctx.guild)
+        if category is None or value is None:
+            eff = conf.smartmod.effective_thresholds()
+            lines = [f"{c:<28}{eff[c]:.2f}" for c in sorted(eff)]
+            await ctx.send(
+                _("Set one with `{p}assistant smartmod threshold <category> <0.0-1.0>`:\n{box}").format(
+                    p=ctx.clean_prefix, box=box("\n".join(lines), "ini")
+                )
+            )
+            return
         category = category.strip().lower()
         if category not in MOD_CATEGORY_DEFAULTS:
             valid = ", ".join(f"`{c}`" for c in MOD_CATEGORY_DEFAULTS)
