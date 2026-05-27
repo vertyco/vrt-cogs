@@ -1,5 +1,9 @@
 # Assistant Changelog
 
+## v8.5.0
+
+- `[p]assistant smartmod defaultprompt` returns the built-in default moderation prompt as a file to copy and customize. `[p]assistant smartmod prompt` with no text now shows the current prompt (as a file) instead of silently resetting it; `[p]assistant smartmod resetprompt` restores the default.
+
 ## v8.4.0
 
 - Tool-approval prompt (`requires_user_approval` tools like `run_eval`) gained a 4th button, **Skip With Feedback**, which opens a modal to optionally explain *why* you're skipping. The feedback is appended to the skip message fed back to the model so it can course-correct. Submitting blank behaves like a normal Skip.
