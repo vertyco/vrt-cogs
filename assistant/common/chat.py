@@ -400,7 +400,8 @@ class ChatHandler(MixinMeta):
         preview = orjson.dumps(arguments, option=orjson.OPT_INDENT_2).decode()
 
         prompt = _(
-            "`{}` wants to run admin tool `{}` from `{}` ({})\nChoose `Approve Once`, `Allow This Session`, or `Skip`."
+            "`{}` wants to run admin tool `{}` from `{}` ({})\n"
+            "Choose `Approve Once`, `Allow This Session`, `Skip`, or `Skip With Feedback`."
         ).format(self.bot.user.display_name, function_name, source, category)
 
         inline_preview = None
@@ -438,6 +439,7 @@ class ChatHandler(MixinMeta):
             "once": _("Approved once."),
             "session": _("Approved for this session."),
             "skip": _("Skipped."),
+            "skip_feedback": _("Skipped with feedback."),
             "timeout": _("Approval timed out."),
         }
         if view.decision == "session" and function_name not in conversation.approved_tool_names:
@@ -459,6 +461,8 @@ class ChatHandler(MixinMeta):
         denial = _(
             "SKIPPED: The user skipped admin tool `{}` for this call. Do not claim it ran. You may continue without it, ask for approval again later, or try a different tool."
         ).format(function_name)
+        if view.decision == "skip_feedback" and view.feedback.strip():
+            denial += _("\n\nThe user's feedback on why they skipped: {}").format(view.feedback.strip())
         return False, denial
 
     async def resolve_prompt_context_variables(
