@@ -306,6 +306,22 @@ class AssistantListener(MixinMeta):
 
         await self.enqueue_message_request(handle_message_kwargs)
 
+    @commands.Cog.listener("on_message_without_command")
+    async def smartmod_listener(self, message: discord.Message):
+        """Independent AI-moderation scan over every eligible message."""
+        if not message or not message.guild or message.author.bot:
+            return
+        if await self.bot.cog_disabled_in_guild(self, message.guild):
+            return
+        conf = self.db.get_conf(message.guild)
+        if not self.smartmod_passes_filters(message, conf):
+            return
+        # Run scan + review out-of-band so chat handling is never blocked. Retain a strong
+        # reference until done so the loop doesn't garbage-collect the task mid-flight.
+        task = asyncio.create_task(self.run_smartmod(message, conf))
+        self.smartmod_tasks.add(task)
+        task.add_done_callback(self.smartmod_tasks.discard)
+
     @commands.Cog.listener("on_guild_remove")
     async def cleanup(self, guild: discord.Guild):
         if guild.id in self.db.configs:

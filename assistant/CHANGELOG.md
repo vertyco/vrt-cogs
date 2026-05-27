@@ -1,5 +1,19 @@
 # Assistant Changelog
 
+## v8.1.0
+
+### Smartmod (AI moderation)
+
+- New `[p]assistant smartmod` feature: every eligible message is screened by OpenAI's free `/moderations` endpoint (`omni-moderation-latest`), gated by admin-configurable per-category thresholds.
+- When a category trips its threshold, a configured LLM reviews the surrounding conversation (pulled on demand via `channel.history`), grounded RAG knowledge, and the server's rules, then must call one of two terminal tools: `no_action_needed` or `propose_mod_action`. The reviewer may also call the bot's other enabled tools, scoped to what the bot itself is permitted to use (owner-only tools are never exposed).
+- A proposed action posts an interactive `LayoutView` panel to a staff channel showing a jump link, flagged categories/scores, the context excerpt, and the LLM's reasoning. Staff click an action button (suggested action highlighted, plus alternatives and "No action"); ban/kick/timeout open a reason modal pre-filled with the LLM's reason (editable, or left blank to use it).
+- Panel buttons are permission-gated (ban→ban_members, kick→kick_members, timeout→moderate_members, delete→manage_messages, or a configured staff role). On timeout the buttons disable with no action by default; `autoaction` can opt into auto-executing the suggestion instead.
+- Per-guild config: report channel, review model, moderation prompt, category thresholds, channel/category/role/member blacklist & whitelist, staff ping roles, context window size, panel timeout, staff exemption, and an OpenAI key override (`smartmod key`) so guilds on a custom/non-OpenAI chat endpoint (OpenRouter, LM Studio, etc.) can still run the OpenAI moderation scan.
+- `[p]assistant smartmod test <content>` runs the moderation scan on sample text and prints every category's score against its threshold, so admins can tune thresholds before enabling.
+- `[p]assistant smartmod simulate <content>` (alias `dryrun`) dry-runs the whole pipeline end to end: real scan → real review model (tools, embeddings, channel context, with the admin as the simulated offender) → the actual action panel posted to the current channel, but its buttons are no-ops so nobody is actually punished. The review only runs when a category trips its threshold, mirroring production.
+- If the review model can't reach a decision (loop exhausted, or an endpoint without tool-calling support), Smartmod posts a "manual review needed" notice to the report channel instead of silently dropping the flagged message.
+- Fixed `MixinMeta.request_response` in `abc.py` missing the `tool_choice` parameter that `chat.py` and the new review loop pass (the shared-method contract was out of sync with the implementation).
+
 ## v8.0.1
 
 - Fix `OpenAIError: Missing credentials` when using a local OpenAI-compatible endpoint (e.g. koboldcpp, llama.cpp) without an API key configured. `get_api_key` now returns a `not-needed` placeholder when an endpoint override is active but no key is set, so the OpenAI SDK constructor accepts the request. Local endpoints ignore the auth header.
