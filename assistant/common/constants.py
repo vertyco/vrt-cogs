@@ -591,3 +591,112 @@ def get_min_cache_tokens(model: str) -> int:
         if model_lower.startswith(prefix.lower()):
             return min_tokens
     return 0
+
+
+# ---------------------------------------------------------------------------
+# Smartmod (AI moderation)
+# ---------------------------------------------------------------------------
+# Default per-category score thresholds (0.0 - 1.0) for OpenAI's
+# omni-moderation-latest endpoint. A message is flagged for LLM review when a
+# category's score meets or exceeds its threshold. Categories not listed fall
+# back to a threshold of 1.1 (never flags) so new OpenAI categories stay
+# inert until an admin opts in. Keys mirror the moderation API category names.
+MOD_CATEGORY_DEFAULTS: dict[str, float] = {
+    "harassment": 0.5,
+    "harassment/threatening": 0.3,
+    "hate": 0.5,
+    "hate/threatening": 0.3,
+    "illicit": 0.5,
+    "illicit/violent": 0.4,
+    "self-harm": 0.4,
+    "self-harm/intent": 0.3,
+    "self-harm/instructions": 0.3,
+    "sexual": 0.6,
+    "sexual/minors": 0.2,
+    "violence": 0.6,
+    "violence/graphic": 0.5,
+}
+
+# Special moderation system prompt, injected after the guild's normal system
+# prompt for the smartmod review pass. {flagged_categories} is filled at runtime.
+DEFAULT_MOD_PROMPT = """You are acting as an impartial moderation reviewer for this Discord server.
+
+A message tripped the automated content filter for: {flagged_categories}
+
+Your job is to decide, IN CONTEXT, whether the flagged message actually warrants moderator action.
+
+Guidelines:
+- Read the surrounding conversation. Banter, sarcasm, quoting, song lyrics, and venting are often NOT violations.
+- Weigh intent, target, and severity. A heated insult is not the same as a credible threat or slur directed at someone.
+- Use the server rules, your grounded knowledge/embeddings, and any tools available to you to inform the decision.
+- Be conservative: when in doubt, prefer no action or the lightest reasonable action. Humans make the final call.
+- Do NOT message the channel or address users directly. This is a silent background review.
+
+You MUST finish by calling exactly one of these two tools:
+- `no_action_needed` - the content does not warrant action in context.
+- `propose_mod_action` - the content warrants action; this sends an interactive panel to the staff team for confirmation (it does NOT take the action itself).
+
+Pick the lightest action that fits the violation, and write a clear, specific reason staff can act on."""
+
+
+PROPOSE_MOD_ACTION = {
+    "name": "propose_mod_action",
+    "description": (
+        "Propose a moderation action against the flagged user for staff review. Call this ONLY when the "
+        "flagged content warrants action in context. This sends an interactive panel to the staff channel "
+        "for a human to confirm; it does NOT perform the action automatically."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "action": {
+                "type": "string",
+                "enum": ["timeout", "kick", "ban", "delete"],
+                "description": (
+                    "The recommended action. 'delete' only removes the message; 'timeout' temporarily mutes "
+                    "the member; 'kick' removes them; 'ban' bans them. Pick the lightest action that fits."
+                ),
+            },
+            "reason": {
+                "type": "string",
+                "description": (
+                    "Clear, concise reason citing the behavior/rule violated. Shown to staff and pre-filled "
+                    "into the action's reason field."
+                ),
+            },
+            "severity": {
+                "type": "string",
+                "enum": ["low", "medium", "high"],
+                "description": "How severe the violation is, in context.",
+            },
+            "timeout_minutes": {
+                "type": "integer",
+                "description": "Required only when action is 'timeout'. Duration in minutes (max 40320 = 28 days).",
+            },
+            "delete_message": {
+                "type": "boolean",
+                "description": "Whether the flagged message should also be deleted when the action is taken.",
+                "default": False,
+            },
+        },
+        "required": ["action", "reason", "severity"],
+    },
+}
+
+NO_ACTION_NEEDED = {
+    "name": "no_action_needed",
+    "description": (
+        "Conclude the review with no moderation action. Call this when the flagged content does not actually "
+        "violate the rules in context (false positive, banter, quoting, venting, etc.)."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "reason": {
+                "type": "string",
+                "description": "Brief explanation of why no action is warranted.",
+            },
+        },
+        "required": ["reason"],
+    },
+}
