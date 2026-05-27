@@ -187,9 +187,18 @@ def record_ticket_closed(
         )
     )
 
-    # --- Staff Stats (only if a staff member closed it, not self-close) ---
+    # --- Staff Stats ---
+    # If a staff member closed it, they get the credit.
+    # On a self-close by the owner, fall back to the attributed staff member
+    # (claimer, or first responder) so they still receive close credit.
+    staff_credit_id: int | None = None
     if closed_by_id != owner_id:
-        staff_stats = conf.get_staff_stats(closed_by_id)
+        staff_credit_id = closed_by_id
+    elif ticket.claimed_by is not None and ticket.claimed_by != owner_id:
+        staff_credit_id = ticket.claimed_by
+
+    if staff_credit_id is not None:
+        staff_stats = conf.get_staff_stats(staff_credit_id)
         staff_stats.tickets_closed += 1
         staff_stats.total_resolution_time += resolution_time
         staff_stats.resolution_count += 1
