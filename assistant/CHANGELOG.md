@@ -1,5 +1,9 @@
 # Assistant Changelog
 
+## v8.1.1
+
+- `[p]assistant smartmod` (alias `automod`) with no subcommand now shows the help/subcommand list instead of the config summary. The config summary moved to `[p]assistant smartmod status` (aliases `settings`, `show`).
+
 ## v8.1.0
 
 ### Smartmod (AI moderation)
