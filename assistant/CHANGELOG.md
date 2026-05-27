@@ -1,5 +1,15 @@
 # Assistant Changelog
 
+## v8.2.0
+
+### Smartmod — more actions + cog integrations
+
+- New built-in panel actions: **warn** (records a warning via Red's `Warnings` cog, falling back to a DM) and **tempban** (Discord ban with a scheduled auto-unban).
+- The panel action set is now dynamic: the suggested action is a highlighted button alongside a dropdown of every action available on the server. `propose_mod_action`'s `action` enum is constrained to the actually-available actions, and `timeout_minutes` is now `duration_minutes` (covers timeout / tempban / ark_tempban).
+- **ArkTools integration** (when the cog is loaded): if the flagged member has a linked in-game player, **Ark ban** / **Ark temp ban** actions are offered, calling `ban_unban_player` (RCON + banlist) directly.
+- **ModNotes integration** (JojoCogs, when loaded): an **Add note** action records a moderator note via the cog's `api.create_note`.
+- Action execution moved onto the cog (`execute_mod_action`); the panel only gates permissions and delegates. The reviewer never acts autonomously — staff confirm every action.
+
 ## v8.1.1
 
 - `[p]assistant smartmod` (alias `automod`) with no subcommand now shows the help/subcommand list instead of the config summary. The config summary moved to `[p]assistant smartmod status` (aliases `settings`, `show`).

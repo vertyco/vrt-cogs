@@ -1,17 +1,44 @@
 import asyncio
 import logging
 import typing as t
+from contextlib import suppress
+from copy import deepcopy
+from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from inspect import iscoroutinefunction
 from time import perf_counter
 
 import discord
 import openai
 import orjson
+from redbot.core import modlog
 
 from ..abc import MixinMeta
 from ..views import ModActionView
-from .constants import NO_ACTION_NEEDED, PROPOSE_MOD_ACTION
+from .constants import (
+    ARK_BAN_ACTION,
+    ARK_TEMPBAN_ACTION,
+    BUILTIN_MOD_ACTIONS,
+    NO_ACTION_NEEDED,
+    NOTE_ACTION,
+    PROPOSE_MOD_ACTION,
+    ModAction,
+)
 from .models import Conversation, GuildSettings
+
+
+@dataclass
+class ModActionRequest:
+    """Everything an action handler needs to carry out a confirmed moderation action."""
+
+    guild: discord.Guild
+    flagged_message: discord.Message
+    target: t.Union[discord.Member, discord.User]  # the offender
+    reason: str
+    actor: t.Union[discord.Member, discord.ClientUser]  # staff who clicked (or the bot for auto-action)
+    duration_minutes: int = 0
+    delete_message: bool = False
+
 
 log = logging.getLogger("red.vrt.assistant.smartmod")
 
@@ -208,12 +235,18 @@ class SmartMod(MixinMeta):
         context_text = await self.build_smartmod_context(message, conf, flagged_content=flagged_content)
         messages = await self.build_review_messages(message, conf, flagged_cats, context_text, flagged_content)
 
+        # Actions actually available here (built-ins + Ark/Notes when those cogs are loaded);
+        # constrain the model's propose_mod_action enum to exactly these.
+        available = await self.available_mod_actions(message.guild, message.author)
+        propose_schema = deepcopy(PROPOSE_MOD_ACTION)
+        propose_schema["parameters"]["properties"]["action"]["enum"] = [a.name for a in available]
+
         # Scope the reviewer's tools to what the BOT itself may use: the bot is never an
         # owner, so owner-only tools are excluded, without over-restricting to user-level.
         function_calls, function_map = await self.db.prep_functions(
             bot=self.bot, conf=conf, registry=self.registry, member=message.guild.me, showall=False
         )
-        function_calls = [*function_calls, PROPOSE_MOD_ACTION, NO_ACTION_NEEDED]
+        function_calls = [*function_calls, propose_schema, NO_ACTION_NEEDED]
 
         base_url = self.get_guild_endpoint_url(conf)
         supports_forced = base_url is None or "openrouter.ai" in base_url.lower()
@@ -249,7 +282,14 @@ class SmartMod(MixinMeta):
                     return "no_action", reason
                 if name == "propose_mod_action":
                     await self.send_mod_panel(
-                        message, conf, args, tripped, context_text, dry_run=dry_run, channel=output_channel
+                        message,
+                        conf,
+                        args,
+                        tripped,
+                        context_text,
+                        available,
+                        dry_run=dry_run,
+                        channel=output_channel,
                     )
                     return "proposed", str(args.get("action", ""))
                 key = f"{name}:{args_str}"
@@ -436,6 +476,7 @@ class SmartMod(MixinMeta):
         proposal: dict,
         tripped: dict[str, float],
         context_text: str,
+        available_actions: list[ModAction],
         *,
         dry_run: bool = False,
         channel: t.Optional[discord.abc.Messageable] = None,
@@ -458,6 +499,7 @@ class SmartMod(MixinMeta):
             proposal=proposal,
             tripped=tripped,
             context_text=context_text,
+            available_actions=available_actions,
             staff_ping_roles=ping_roles,
             timeout=float(sm.action_timeout),
             auto_action_on_timeout=sm.auto_action_on_timeout,
@@ -471,6 +513,216 @@ class SmartMod(MixinMeta):
             view.message = await target.send(view=view, allowed_mentions=allowed)
         except discord.HTTPException as e:
             log.error("smartmod: failed to send mod panel", exc_info=e)
+
+    # ------------------------------------------------------------------
+    # Action catalog + execution
+    # ------------------------------------------------------------------
+    async def available_mod_actions(
+        self, guild: discord.Guild, target: t.Union[discord.Member, discord.User]
+    ) -> list[ModAction]:
+        """Actions offered for this target here: built-ins, plus Ark/Notes when those cogs are loaded."""
+        actions = list(BUILTIN_MOD_ACTIONS)
+        arktools = self.bot.get_cog("ArkTools")
+        if arktools is not None and isinstance(target, discord.Member):
+            try:
+                players = await arktools.db_utils.search_players(guild, target)
+            except Exception as e:
+                log.debug("smartmod: ArkTools player lookup failed", exc_info=e)
+                players = []
+            if players:
+                actions += [ARK_BAN_ACTION, ARK_TEMPBAN_ACTION]
+        if self.bot.get_cog("ModNotes") is not None:
+            actions.append(NOTE_ACTION)
+        return actions
+
+    async def execute_mod_action(
+        self,
+        action: str,
+        *,
+        guild: discord.Guild,
+        flagged_message: discord.Message,
+        target: t.Union[discord.Member, discord.User],
+        reason: str,
+        actor: t.Union[discord.Member, discord.ClientUser],
+        duration_minutes: int = 0,
+        delete_message: bool = False,
+    ) -> tuple[str, bool]:
+        """Carry out a staff-confirmed action. Returns (outcome_text, success). Never raises."""
+        req = ModActionRequest(
+            guild=guild,
+            flagged_message=flagged_message,
+            target=target,
+            reason=reason or "No reason provided.",
+            actor=actor,
+            duration_minutes=duration_minutes,
+            delete_message=delete_message,
+        )
+        handlers = {
+            "warn": self.action_warn,
+            "timeout": self.action_timeout,
+            "kick": self.action_kick,
+            "tempban": self.action_tempban,
+            "ban": self.action_ban,
+            "delete": self.action_delete,
+            "ark_ban": self.action_ark_ban,
+            "ark_tempban": self.action_ark_tempban,
+            "note": self.action_note,
+        }
+        handler = handlers.get(action)
+        if handler is None:
+            return f"Unknown action: {action}", False
+        try:
+            text, ok = await handler(req)
+        except discord.Forbidden:
+            return f"❌ Missing permission or role hierarchy for {action}.", False
+        except discord.HTTPException as e:
+            return f"❌ {action} failed: {e}", False
+        except Exception as e:
+            log.error("smartmod: action %s failed unexpectedly", action, exc_info=e)
+            return f"❌ {action} failed unexpectedly: {e}", False
+        # Discord (temp)bans already purge messages via delete_message_seconds; for the rest,
+        # honor delete_message by removing the flagged message after a successful action.
+        if ok and delete_message and action not in ("delete", "ban", "tempban"):
+            with suppress(discord.HTTPException):
+                await flagged_message.delete()
+        return text, ok
+
+    def resolve_duration(self, req: "ModActionRequest", default_minutes: int) -> int:
+        try:
+            minutes = int(req.duration_minutes) if req.duration_minutes else default_minutes
+        except (ValueError, TypeError):
+            minutes = default_minutes
+        return max(1, minutes)
+
+    async def action_delete(self, req: "ModActionRequest") -> tuple[str, bool]:
+        await req.flagged_message.delete()
+        return "🗑️ Message deleted.", True
+
+    async def action_timeout(self, req: "ModActionRequest") -> tuple[str, bool]:
+        member = req.guild.get_member(req.target.id)
+        if member is None:
+            return "⚠️ That user is no longer in the server.", False
+        minutes = min(self.resolve_duration(req, 10), 40320)  # Discord cap: 28 days
+        await member.timeout(timedelta(minutes=minutes), reason=req.reason)
+        return f"⏳ {member} timed out for {minutes} min.\n-# {req.reason}", True
+
+    async def action_kick(self, req: "ModActionRequest") -> tuple[str, bool]:
+        member = req.guild.get_member(req.target.id)
+        if member is None:
+            return "⚠️ That user is no longer in the server.", False
+        await member.kick(reason=req.reason)
+        return f"👢 {member} was kicked.\n-# {req.reason}", True
+
+    async def action_ban(self, req: "ModActionRequest") -> tuple[str, bool]:
+        seconds = 86400 if req.delete_message else 0
+        await req.guild.ban(req.target, reason=req.reason, delete_message_seconds=seconds)
+        return f"🔨 {req.target} was banned.\n-# {req.reason}", True
+
+    async def action_tempban(self, req: "ModActionRequest") -> tuple[str, bool]:
+        minutes = self.resolve_duration(req, 1440)
+        seconds = 86400 if req.delete_message else 0
+        await req.guild.ban(req.target, reason=req.reason, delete_message_seconds=seconds)
+        unban_at = datetime.now(tz=timezone.utc) + timedelta(minutes=minutes)
+        self.scheduler.add_job(
+            self.smartmod_unban,
+            "date",
+            run_date=unban_at,
+            args=[req.guild.id, req.target.id, req.reason],
+            id=f"smartmod_unban_{req.guild.id}_{req.target.id}",
+            replace_existing=True,
+        )
+        return f"⏲️ {req.target} temp-banned for {minutes} min (auto-unban scheduled).\n-# {req.reason}", True
+
+    async def smartmod_unban(self, guild_id: int, user_id: int, reason: str) -> None:
+        guild = self.bot.get_guild(guild_id)
+        if guild is None:
+            return
+        with suppress(discord.HTTPException):
+            await guild.unban(discord.Object(id=user_id), reason=f"Smartmod temp-ban expired: {reason}"[:500])
+
+    async def action_warn(self, req: "ModActionRequest") -> tuple[str, bool]:
+        member = req.guild.get_member(req.target.id)
+        warnings_cog = self.bot.get_cog("Warnings")
+        if warnings_cog is not None and member is not None:
+            try:
+                member_conf = warnings_cog.config.member(member)
+                async with member_conf.warnings() as warns:
+                    warns[str(req.flagged_message.id)] = {
+                        "points": 1,
+                        "description": req.reason,
+                        "mod": getattr(req.actor, "id", 0),
+                    }
+                await member_conf.total_points.set(await member_conf.total_points() + 1)
+                await modlog.create_case(
+                    self.bot,
+                    req.guild,
+                    datetime.now(tz=timezone.utc),
+                    "warning",
+                    member,
+                    req.actor,
+                    req.reason,
+                    until=None,
+                    channel=None,
+                )
+                return f"📣 Warned {member} (1 pt via Red Warnings).\n-# {req.reason}", True
+            except Exception as e:
+                log.warning("smartmod: Red Warnings warn failed, falling back to DM", exc_info=e)
+        if member is not None:
+            try:
+                await member.send(f"⚠️ Warning from {req.guild.name}: {req.reason}")
+                return f"📣 Warned {member} via DM.\n-# {req.reason}", True
+            except discord.HTTPException:
+                return "⚠️ Warning recorded but the user's DMs are closed.", True
+        return "⚠️ Couldn't warn: the Warnings cog isn't loaded and the user isn't in the server.", False
+
+    async def action_note(self, req: "ModActionRequest") -> tuple[str, bool]:
+        modnotes = self.bot.get_cog("ModNotes")
+        if modnotes is None or not hasattr(modnotes, "api"):
+            return "⚠️ ModNotes cog not available.", False
+        await modnotes.api.create_note(req.guild, req.target, req.actor, req.reason)
+        return f"📝 Note added for {req.target}.\n-# {req.reason}", True
+
+    async def action_ark_ban(self, req: "ModActionRequest") -> tuple[str, bool]:
+        return await self.do_ark_ban(req, temp=False)
+
+    async def action_ark_tempban(self, req: "ModActionRequest") -> tuple[str, bool]:
+        return await self.do_ark_ban(req, temp=True)
+
+    async def do_ark_ban(self, req: "ModActionRequest", temp: bool) -> tuple[str, bool]:
+        arktools = self.bot.get_cog("ArkTools")
+        if arktools is None:
+            return "⚠️ ArkTools cog not loaded.", False
+        member = req.guild.get_member(req.target.id) or req.target
+        players = await arktools.db_utils.search_players(req.guild, member)
+        if not players:
+            return f"⚠️ No linked ARK player found for {req.target}.", False
+        banned_until = None
+        if temp:
+            banned_until = datetime.now(tz=timezone.utc) + timedelta(minutes=self.resolve_duration(req, 1440))
+        ok_any = False
+        for player in players:
+            result = await arktools.ban_unban_player(
+                guild=req.guild,
+                gameid=player.gameid,
+                ban=True,
+                reason=req.reason,
+                ctx=None,
+                banned_until=banned_until,
+            )
+            if result:
+                ok_any = True
+                if temp:
+                    arktools.delay_unban_player(
+                        guild_id=req.guild.id,
+                        gameid=player.gameid,
+                        banned_until=banned_until,
+                        original_reason=req.reason,
+                    )
+        if not ok_any:
+            return "❌ ArkTools ban failed (check the bot logs).", False
+        ids = ", ".join(p.gameid for p in players)
+        verb = "temp-banned" if temp else "banned"
+        return f"🦖 ARK {verb} {req.target} ({ids}).\n-# {req.reason}", True
 
 
 def parse_tool_call(call) -> tuple[str, str, t.Optional[str]]:
