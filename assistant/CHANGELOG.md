@@ -1,5 +1,9 @@
 # Assistant Changelog
 
+## v8.2.2
+
+- Smartmod action panel now shows the flagged message's channel right under the jump-to-message link.
+
 ## v8.2.1
 
 - Fix `[p]assistant smartmod` (alias `automod`) sending the help text twice when invoked without a subcommand (the group body called `ctx.send_help()` on top of Red's automatic group help). Added `view` as an alias for `[p]assistant smartmod status`.
