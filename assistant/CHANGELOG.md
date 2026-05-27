@@ -1,5 +1,9 @@
 # Assistant Changelog
 
+## v8.3.0
+
+- Smartmod now scans **images**: image attachments are sent to `omni-moderation-latest` alongside any text, and image-only messages (previously skipped) are now screened. A message is flagged if any part (text or any image) trips a threshold — the per-category score is the max across all parts. The review prompt labels image-only messages as `[image attachment]`.
+
 ## v8.2.3
 
 - `[p]assistant smartmod threshold` with no arguments now lists every moderation category and its current threshold (instead of an argument error).
