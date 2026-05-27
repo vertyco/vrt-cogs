@@ -192,31 +192,11 @@ class Admin(MixinMeta):
         """Configure conversation compaction"""
         pass
 
-    @assistant.group(name="smartmod", aliases=["automod"], invoke_without_command=True)
+    @assistant.group(name="smartmod", aliases=["automod"])
     async def smartmod(self, ctx: commands.Context):
         """AI moderation: scan messages, review flagged ones, and propose staff actions."""
-        if ctx.invoked_subcommand is not None:
-            return
-        conf = self.db.get_conf(ctx.guild)
-        sm = conf.smartmod
-        chan = ctx.guild.get_channel(sm.report_channel) if sm.report_channel else None
-        key_ok = self.resolve_smartmod_key(conf) is not None
-        roles = ", ".join(f"<@&{r}>" for r in sm.staff_ping_roles) or _("None")
-        desc = (
-            _("`Enabled:       `{}\n").format("✅" if sm.enabled else "❌")
-            + _("`Report channel:`{}\n").format(chan.mention if chan else _("Not set"))
-            + _("`OpenAI key:    `{}\n").format(_("OK") if key_ok else _("Missing"))
-            + _("`Review model:  `{}\n").format(f"`{sm.review_model}`" if sm.review_model else _("(default)"))
-            + _("`Context:       `{} before / {} after\n").format(sm.context_before, sm.context_after)
-            + _("`Panel timeout: `{}s\n").format(sm.action_timeout)
-            + _("`Auto-action:   `{}\n").format("✅" if sm.auto_action_on_timeout else "❌")
-            + _("`Exempt staff:  `{}\n").format("✅" if sm.exempt_staff else "❌")
-            + _("`Staff ping:    `{}\n").format(roles)
-            + _("`Blacklist:     `{} items\n").format(len(sm.blacklist))
-            + _("`Whitelist:     `{} items").format(len(sm.whitelist))
-        )
-        embed = discord.Embed(title=_("Smartmod (AI Moderation)"), description=desc, color=await ctx.embed_color())
-        await ctx.send(embed=embed)
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help()
 
     # ---- Helper methods ----
 
@@ -3423,6 +3403,30 @@ class Admin(MixinMeta):
             obj = ctx.guild.get_role(i) or ctx.guild.get_member(i) or ctx.guild.get_channel_or_thread(i)
             names.append(obj.mention if obj and hasattr(obj, "mention") else f"`{i}`")
         await ctx.send(_("**{}:** {}").format(title, ", ".join(names)))
+
+    @smartmod.command(name="status", aliases=["settings", "show"])
+    async def smartmod_status(self, ctx: commands.Context):
+        """Show the current smartmod configuration."""
+        conf = self.db.get_conf(ctx.guild)
+        sm = conf.smartmod
+        chan = ctx.guild.get_channel(sm.report_channel) if sm.report_channel else None
+        key_ok = self.resolve_smartmod_key(conf) is not None
+        roles = ", ".join(f"<@&{r}>" for r in sm.staff_ping_roles) or _("None")
+        desc = (
+            _("`Enabled:       `{}\n").format("✅" if sm.enabled else "❌")
+            + _("`Report channel:`{}\n").format(chan.mention if chan else _("Not set"))
+            + _("`OpenAI key:    `{}\n").format(_("OK") if key_ok else _("Missing"))
+            + _("`Review model:  `{}\n").format(f"`{sm.review_model}`" if sm.review_model else _("(default)"))
+            + _("`Context:       `{} before / {} after\n").format(sm.context_before, sm.context_after)
+            + _("`Panel timeout: `{}s\n").format(sm.action_timeout)
+            + _("`Auto-action:   `{}\n").format("✅" if sm.auto_action_on_timeout else "❌")
+            + _("`Exempt staff:  `{}\n").format("✅" if sm.exempt_staff else "❌")
+            + _("`Staff ping:    `{}\n").format(roles)
+            + _("`Blacklist:     `{} items\n").format(len(sm.blacklist))
+            + _("`Whitelist:     `{} items").format(len(sm.whitelist))
+        )
+        embed = discord.Embed(title=_("Smartmod (AI Moderation)"), description=desc, color=await ctx.embed_color())
+        await ctx.send(embed=embed)
 
     @smartmod.command(name="toggle")
     async def smartmod_toggle(self, ctx: commands.Context, state: bool = None):
