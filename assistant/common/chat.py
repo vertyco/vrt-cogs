@@ -998,12 +998,14 @@ class ChatHandler(MixinMeta):
                 log.error("Messages got pruned too aggressively, increase token limit!")
                 break
             try:
-                # Build a stable session_id for OpenRouter sticky routing.
-                # Mirrors the conversation key so retries land on the same
-                # provider that warmed the prompt cache.
-                cache_chan_id = channel.id if channel is not None else 0
-                cache_mem_id = cache_chan_id if conf.collab_convos else user_id
-                cache_session_id = f"{cache_mem_id}-{cache_chan_id}-{guild.id}"
+                # Build a readable session_id for OpenRouter sticky routing using names
+                # (not IDs) so retries land on the same provider that warmed the prompt cache.
+                # Per-channel for collaborative convos, per-user otherwise.
+                cache_chan_name = getattr(channel, "name", None) or "dm"
+                cache_parts = [guild.name, cache_chan_name]
+                if not conf.collab_convos:
+                    cache_parts.append(user.name if user else str(user_id))
+                cache_session_id = "_".join(cache_parts)
                 response: ChatCompletionMessage = await self.request_response(
                     messages=messages,
                     conf=conf,

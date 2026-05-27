@@ -1,5 +1,9 @@
 # Assistant Changelog
 
+## v8.6.1
+
+- OpenRouter sticky-routing `session_id` now uses readable names (`guild_channel_user`, per-channel for collaborative conversations) instead of numeric IDs.
+
 ## v8.6.0
 
 - `[p]assistant smartmod model` with no argument now opens the interactive model picker (endpoint-discovered models when a custom endpoint is set, otherwise the built-in OpenAI list), targeting the smartmod review model.
