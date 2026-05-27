@@ -3467,14 +3467,40 @@ class Admin(MixinMeta):
 
     @smartmod.command(name="prompt")
     async def smartmod_prompt(self, ctx: commands.Context, *, text: str = ""):
-        """Set the moderation review prompt. Omit to reset. Supports the {flagged_categories} placeholder."""
+        """Set the moderation review prompt (supports the {flagged_categories} placeholder).
+
+        Run with no text to view the current prompt. Use `defaultprompt` to grab the built-in
+        default to customize, and `resetprompt` to restore it.
+        """
         conf = self.db.get_conf(ctx.guild)
         if not text.strip():
-            conf.smartmod.mod_prompt = DEFAULT_MOD_PROMPT
-            await ctx.send(_("Moderation prompt reset to default."))
-        else:
-            conf.smartmod.mod_prompt = text.strip()
-            await ctx.send(_("Moderation prompt updated."))
+            await ctx.send(
+                _("Current moderation prompt (edit and re-set with `{p}assistant smartmod prompt <text>`):").format(
+                    p=ctx.clean_prefix
+                ),
+                file=text_to_file(conf.smartmod.mod_prompt, filename="smartmod_prompt.txt"),
+            )
+            return
+        conf.smartmod.mod_prompt = text.strip()
+        await ctx.send(_("Moderation prompt updated."))
+        await self.save_conf()
+
+    @smartmod.command(name="defaultprompt", aliases=["promptdefault"])
+    async def smartmod_default_prompt(self, ctx: commands.Context):
+        """Get the built-in default moderation prompt to copy and customize."""
+        await ctx.send(
+            _("Default moderation prompt - copy, edit, then set with `{p}assistant smartmod prompt <text>`:").format(
+                p=ctx.clean_prefix
+            ),
+            file=text_to_file(DEFAULT_MOD_PROMPT, filename="smartmod_default_prompt.txt"),
+        )
+
+    @smartmod.command(name="resetprompt")
+    async def smartmod_reset_prompt(self, ctx: commands.Context):
+        """Reset the moderation review prompt to the built-in default."""
+        conf = self.db.get_conf(ctx.guild)
+        conf.smartmod.mod_prompt = DEFAULT_MOD_PROMPT
+        await ctx.send(_("Moderation prompt reset to default."))
         await self.save_conf()
 
     @smartmod.command(name="threshold")
