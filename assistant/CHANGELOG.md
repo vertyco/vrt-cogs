@@ -1,5 +1,9 @@
 # Assistant Changelog
 
+## v8.2.3
+
+- `[p]assistant smartmod threshold` with no arguments now lists every moderation category and its current threshold (instead of an argument error).
+
 ## v8.2.2
 
 - Smartmod action panel now shows the flagged message's channel right under the jump-to-message link.
