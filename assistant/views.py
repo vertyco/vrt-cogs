@@ -257,8 +257,11 @@ class ModActionView(discord.ui.LayoutView):
         )
         container.add_item(
             discord.ui.TextDisplay(
-                _("**User:** {mention} `{uid}`\n**Message:** [jump to message]({url})").format(
-                    mention=author.mention, uid=author.id, url=self.flagged_message.jump_url
+                _("**User:** {mention} `{uid}`\n**Message:** [jump to message]({url})\n**Channel:** {channel}").format(
+                    mention=author.mention,
+                    uid=author.id,
+                    url=self.flagged_message.jump_url,
+                    channel=getattr(self.flagged_message.channel, "mention", "#?"),
                 )
             )
         )
