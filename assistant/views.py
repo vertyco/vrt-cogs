@@ -4,6 +4,7 @@ import json
 import logging
 import re
 from contextlib import suppress
+from datetime import timedelta
 from typing import Awaitable, Callable, Dict, List, Optional, Set, Tuple
 
 import discord
@@ -140,6 +141,277 @@ class AdminToolApprovalView(discord.ui.View):
     @discord.ui.button(label="Skip", style=discord.ButtonStyle.secondary)
     async def skip(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.finish(interaction, "skip")
+
+
+# ---------------------------------------------------------------------------
+# Smartmod (AI moderation) action panel
+# ---------------------------------------------------------------------------
+# action -> (required guild permission, button style, emoji, label)
+MOD_ACTION_META: Dict[str, Tuple[str, discord.ButtonStyle, str, str]] = {
+    "timeout": ("moderate_members", discord.ButtonStyle.secondary, "⏳", "Timeout"),
+    "kick": ("kick_members", discord.ButtonStyle.secondary, "👢", "Kick"),
+    "ban": ("ban_members", discord.ButtonStyle.danger, "🔨", "Ban"),
+    "delete": ("manage_messages", discord.ButtonStyle.secondary, "🗑️", "Delete message"),
+}
+
+
+class ModReasonModal(discord.ui.Modal):
+    def __init__(self, view: "ModActionView", action: str, default_reason: str):
+        super().__init__(title=_("Confirm: {}").format(action.title())[:45], timeout=300)
+        self.view_ref = view
+        self.action = action
+        self.field = discord.ui.TextInput(
+            label=_("Reason (blank = use AI's reason)"),
+            style=discord.TextStyle.paragraph,
+            default=default_reason[:512],
+            required=False,
+            max_length=512,
+        )
+        self.add_item(self.field)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        reason = self.field.value.strip() or self.view_ref.proposal_reason
+        await self.view_ref.execute_and_finalize(interaction, self.action, reason, via_modal=True)
+
+
+class ModActionButton(discord.ui.Button):
+    def __init__(self, action: str, label: str, style: discord.ButtonStyle, emoji: Optional[str] = None):
+        super().__init__(label=label[:80], style=style, emoji=emoji)
+        self.action = action
+
+    async def callback(self, interaction: discord.Interaction):
+        await self.view.handle_action(interaction, self.action)
+
+
+class ModActionView(discord.ui.LayoutView):
+    """Interactive staff panel proposing a moderation action suggested by the LLM."""
+
+    def __init__(
+        self,
+        cog,
+        flagged_message: discord.Message,
+        proposal: dict,
+        tripped: Dict[str, float],
+        context_text: str = "",
+        staff_ping_roles: Optional[List[int]] = None,
+        timeout: float = 3600,
+        auto_action_on_timeout: bool = False,
+        dry_run: bool = False,
+    ):
+        super().__init__(timeout=timeout)
+        self.cog = cog
+        self.flagged_message = flagged_message
+        self.proposal = proposal
+        self.tripped = tripped
+        self.context_text = context_text
+        self.staff_ping_roles = staff_ping_roles or []
+        self.auto_action_on_timeout = auto_action_on_timeout
+        self.dry_run = dry_run
+        proposed = proposal.get("action", "delete")
+        self.proposed_action = proposed if proposed in MOD_ACTION_META else "delete"
+        self.proposal_reason = proposal.get("reason", "") or _("No reason provided.")
+        self.message: Optional[discord.Message] = None
+        self.resolved = False
+        self.outcome_text = ""
+
+    # ---------------- layout ----------------
+    def build_layout(self) -> None:
+        self.clear_items()
+        action = self.proposed_action
+        severity = str(self.proposal.get("severity", "?")).title()
+        cats = ", ".join(f"{c} ({self.tripped[c]:.2f})" for c in sorted(self.tripped))
+        author = self.flagged_message.author
+        emoji = MOD_ACTION_META.get(action, ("", discord.ButtonStyle.secondary, "⚠️", action))[2]
+
+        accent = (
+            discord.Color.purple()
+            if self.dry_run
+            else (discord.Color.red() if action == "ban" else discord.Color.orange())
+        )
+        container = discord.ui.Container(accent_colour=accent)
+        if self.dry_run:
+            container.add_item(discord.ui.TextDisplay(_("# 🧪 SIMULATION — dry run")))
+            container.add_item(discord.ui.TextDisplay(_("-# Buttons take no real action; this is a test.")))
+        if self.staff_ping_roles and not self.resolved:
+            container.add_item(discord.ui.TextDisplay(" ".join(f"<@&{rid}>" for rid in self.staff_ping_roles)))
+        container.add_item(discord.ui.TextDisplay(_("# ⚠️ Proposed Moderation Action")))
+        container.add_item(
+            discord.ui.TextDisplay(
+                _("**Suggested:** {emoji} {action} • **Severity:** {sev}").format(
+                    emoji=emoji, action=action.title(), sev=severity
+                )
+            )
+        )
+        container.add_item(
+            discord.ui.TextDisplay(
+                _("**User:** {mention} `{uid}`\n**Message:** [jump to message]({url})").format(
+                    mention=author.mention, uid=author.id, url=self.flagged_message.jump_url
+                )
+            )
+        )
+        container.add_item(discord.ui.TextDisplay(_("-# Flagged for: {}").format(cats)))
+        container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.small))
+        container.add_item(discord.ui.TextDisplay(_("**Reason**\n{}").format(self.proposal_reason[:1024])))
+        excerpt = self.context_excerpt()
+        if excerpt:
+            container.add_item(discord.ui.TextDisplay(excerpt))
+        if self.resolved:
+            container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.small))
+            container.add_item(discord.ui.TextDisplay(self.outcome_text))
+        else:
+            container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.small))
+            container.add_item(self.build_action_row())
+        self.add_item(container)
+
+    def context_excerpt(self) -> str:
+        if not self.context_text:
+            return ""
+        tail = self.context_text[-1000:]
+        rendered = "\n".join(f"-# {line[:160]}" for line in tail.splitlines() if line.strip())
+        # Keep the whole panel's text well under the components-v2 ~4000-char aggregate budget.
+        return _("**Context**\n{}").format(rendered[:1200]) if rendered else ""
+
+    def build_action_row(self) -> discord.ui.ActionRow:
+        buttons: List[ModActionButton] = [self.make_button(self.proposed_action, proposed=True)]
+        for action in ("timeout", "kick", "ban", "delete"):
+            if action != self.proposed_action:
+                buttons.append(self.make_button(action, proposed=False))
+        buttons.append(ModActionButton("none", _("No action"), discord.ButtonStyle.success, "✅"))
+        return discord.ui.ActionRow(*buttons)
+
+    def make_button(self, action: str, proposed: bool) -> ModActionButton:
+        style, emoji, label = MOD_ACTION_META[action][1:]
+        if proposed:
+            style = discord.ButtonStyle.primary
+            label = _("{} (suggested)").format(label)
+        return ModActionButton(action, label, style, emoji)
+
+    # ---------------- interaction ----------------
+    def disable_all(self) -> None:
+        for item in self.walk_children():
+            if hasattr(item, "disabled"):
+                item.disabled = True
+
+    def user_authorized(self, user: discord.Member, action: str) -> bool:
+        if user.id in self.cog.bot.owner_ids:
+            return True
+        if any(role.id in self.staff_ping_roles for role in getattr(user, "roles", [])):
+            return True
+        perms = user.guild_permissions
+        if perms.administrator:
+            return True
+        required = MOD_ACTION_META.get(action, ("manage_messages", None, None, None))[0]
+        return getattr(perms, required, False)
+
+    async def handle_action(self, interaction: discord.Interaction, action: str) -> None:
+        if self.resolved:
+            await interaction.response.send_message(_("This panel was already resolved."), ephemeral=True)
+            return
+        if not self.user_authorized(interaction.user, action):
+            await interaction.response.send_message(
+                _("You don't have permission to perform that action."), ephemeral=True
+            )
+            return
+        if action == "none":
+            await self.finalize(
+                interaction,
+                _("✅ Dismissed — no action taken.\n-# By {}").format(interaction.user.mention),
+                edit_via_response=True,
+            )
+            return
+        if action == "delete":
+            await self.execute_and_finalize(interaction, "delete", self.proposal_reason, via_modal=False)
+            return
+        await interaction.response.send_modal(ModReasonModal(self, action, self.proposal_reason))
+
+    async def execute_and_finalize(
+        self, interaction: discord.Interaction, action: str, reason: str, via_modal: bool
+    ) -> None:
+        if self.resolved:
+            with suppress(discord.HTTPException):
+                await interaction.response.send_message(_("This panel was already resolved."), ephemeral=True)
+            return
+        # Claim the panel before the awaited action so a concurrent click can't double-act.
+        self.resolved = True
+        outcome, ok = await self.perform_action(action, reason)
+        if ok and not self.dry_run and action != "delete" and self.proposal.get("delete_message"):
+            with suppress(discord.HTTPException):
+                await self.flagged_message.delete()
+        outcome = _("{outcome}\n-# Action by {user}").format(outcome=outcome, user=interaction.user.mention)
+        await self.finalize(interaction, outcome, edit_via_response=not via_modal)
+
+    async def perform_action(self, action: str, reason: str) -> Tuple[str, bool]:
+        guild = self.flagged_message.guild
+        target = self.flagged_message.author
+        if self.dry_run:
+            return _("🧪 (dry-run) Would **{action}** {target}.\n-# {reason}").format(
+                action=action, target=getattr(target, "mention", target), reason=reason
+            ), True
+        member = guild.get_member(target.id)
+        try:
+            if action == "delete":
+                await self.flagged_message.delete()
+                return _("🗑️ Message deleted."), True
+            if action == "ban":
+                seconds = 86400 if self.proposal.get("delete_message") else 0
+                await guild.ban(target, reason=reason, delete_message_seconds=seconds)
+                return _("🔨 {user} was banned.\n-# {reason}").format(user=target, reason=reason), True
+            if member is None:
+                return _("⚠️ That user is no longer in the server."), False
+            if action == "timeout":
+                try:
+                    minutes = int(self.proposal.get("timeout_minutes") or 10)
+                except (ValueError, TypeError):
+                    minutes = 10
+                minutes = max(1, min(minutes, 40320))
+                await member.timeout(timedelta(minutes=minutes), reason=reason)
+                return _("⏳ {user} timed out for {m} min.\n-# {reason}").format(
+                    user=member, m=minutes, reason=reason
+                ), True
+            if action == "kick":
+                await member.kick(reason=reason)
+                return _("👢 {user} was kicked.\n-# {reason}").format(user=member, reason=reason), True
+        except discord.Forbidden:
+            return _("❌ I lack permission or role hierarchy to {} that user.").format(action), False
+        except discord.HTTPException as e:
+            return _("❌ Action failed: {}").format(e), False
+        except Exception as e:
+            # Total fallback so a malformed proposal can never leave the panel stuck unresolved.
+            return _("❌ Action failed unexpectedly: {}").format(e), False
+        return _("Unknown action."), False
+
+    async def finalize(self, interaction: discord.Interaction, outcome_text: str, edit_via_response: bool) -> None:
+        self.resolved = True
+        self.outcome_text = outcome_text
+        self.build_layout()
+        self.stop()
+        if edit_via_response and not interaction.response.is_done():
+            with suppress(discord.HTTPException):
+                await interaction.response.edit_message(view=self)
+            return
+        if not interaction.response.is_done():
+            with suppress(discord.HTTPException):
+                await interaction.response.defer()
+        if self.message:
+            with suppress(discord.HTTPException):
+                await self.message.edit(view=self)
+
+    async def on_timeout(self) -> None:
+        if self.resolved:
+            return
+        if self.auto_action_on_timeout and not self.dry_run:
+            outcome, ok = await self.perform_action(self.proposed_action, self.proposal_reason)
+            if ok and self.proposed_action != "delete" and self.proposal.get("delete_message"):
+                with suppress(discord.HTTPException):
+                    await self.flagged_message.delete()
+            self.resolved = True
+            self.outcome_text = _("⏱️ Auto-action on timeout: {}").format(outcome)
+            self.build_layout()
+        else:
+            self.disable_all()
+        with suppress(discord.HTTPException):
+            if self.message:
+                await self.message.edit(view=self)
 
 
 class EmbeddingModal(discord.ui.Modal):

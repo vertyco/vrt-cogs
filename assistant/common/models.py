@@ -7,6 +7,8 @@ import orjson
 from pydantic import VERSION, BaseModel, Field, field_validator
 from redbot.core.bot import Red
 
+from .constants import DEFAULT_MOD_PROMPT, MOD_CATEGORY_DEFAULTS
+
 log = logging.getLogger("red.vrt.assistant.models")
 
 DEFAULT_THINK_TAG_PREFIX = "<think>"
@@ -127,6 +129,42 @@ class EndpointProfile(AssistantBaseModel):
     active_embedding_dimensions: int = 0
 
 
+class SmartModSettings(AssistantBaseModel):
+    """AI moderation (smartmod) per-guild configuration."""
+
+    enabled: bool = False
+    # Stage-1 scan uses OpenAI's free /moderations endpoint, which is OpenAI-only.
+    # If the guild's chat endpoint is not OpenAI, set this override key so the scan
+    # can still authenticate against api.openai.com directly.
+    openai_key: t.Optional[str] = None
+    # Review model (stage-2). Empty = use the guild's main chat model.
+    review_model: str = ""
+    mod_prompt: str = DEFAULT_MOD_PROMPT
+    report_channel: t.Optional[int] = None
+    staff_ping_roles: t.List[int] = []  # Roles to ping when an action is proposed
+    # Per-category score overrides (0.0-1.0), merged over MOD_CATEGORY_DEFAULTS.
+    thresholds: t.Dict[str, float] = {}
+    # How many messages of context to pull around the flagged message.
+    context_before: int = 10
+    context_after: int = 5
+    # Ignore these channel/category/role/user IDs.
+    blacklist: t.List[int] = []
+    # Only moderate these channel/category/role/user IDs (used only if blacklist is empty).
+    whitelist: t.List[int] = []
+    # Skip authors who have ban/kick/manage-messages permissions.
+    exempt_staff: bool = True
+    # Seconds the action panel buttons stay active before timing out.
+    action_timeout: int = 3600
+    # On panel timeout, execute the LLM's proposed action instead of just disabling buttons.
+    auto_action_on_timeout: bool = False
+
+    def effective_thresholds(self) -> t.Dict[str, float]:
+        """Defaults merged with admin overrides; categories absent here never flag."""
+        merged = dict(MOD_CATEGORY_DEFAULTS)
+        merged.update(self.thresholds)
+        return merged
+
+
 class GuildSettings(AssistantBaseModel):
     system_prompt: t.Optional[str] = DEFAULT_SYSTEM_PROMPT
     prompt: str = ""
@@ -235,6 +273,9 @@ class GuildSettings(AssistantBaseModel):
     # Gemini / Qwen use explicit content-block breakpoints in the last
     # system message.
     openrouter_prompt_cache_ttl: str = "5m"
+
+    # Smartmod (AI moderation)
+    smartmod: SmartModSettings = Field(default_factory=SmartModSettings)
 
     def get_user_model(self, member: t.Optional[discord.Member] = None) -> str:
         if not member or not self.role_overrides:

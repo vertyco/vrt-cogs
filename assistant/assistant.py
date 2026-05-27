@@ -35,6 +35,7 @@ from .common.constants import (
 from .common.embedding_store import EmbeddingStore
 from .common.functions import AssistantFunctions
 from .common.models import DB, EmbeddingEntryExists, NoAPIKey, normalize_tool_category
+from .common.smartmod import SmartMod
 from .common.utils import clean_name, json_schema_invalid
 from .listener import AssistantListener
 
@@ -49,6 +50,7 @@ class Assistant(
     AssistantCommands,
     AssistantFunctions,
     AssistantListener,
+    SmartMod,
     ChatHandler,
     commands.Cog,
     metaclass=CompositeMetaClass,
@@ -65,7 +67,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "8.0.1"
+    __version__ = "8.1.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)

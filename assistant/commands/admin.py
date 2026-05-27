@@ -32,7 +32,12 @@ from redbot.core.utils.views import SimpleMenu
 
 from ..abc import MixinMeta
 from ..common.calls import request_embedding_raw
-from ..common.constants import MODELS, get_min_cache_tokens
+from ..common.constants import (
+    DEFAULT_MOD_PROMPT,
+    MOD_CATEGORY_DEFAULTS,
+    MODELS,
+    get_min_cache_tokens,
+)
 from ..common.models import (
     DB,
     DEFAULT_SYSTEM_PROMPT,
@@ -186,6 +191,32 @@ class Admin(MixinMeta):
     async def compaction(self, ctx: commands.Context):
         """Configure conversation compaction"""
         pass
+
+    @assistant.group(name="smartmod", aliases=["automod"], invoke_without_command=True)
+    async def smartmod(self, ctx: commands.Context):
+        """AI moderation: scan messages, review flagged ones, and propose staff actions."""
+        if ctx.invoked_subcommand is not None:
+            return
+        conf = self.db.get_conf(ctx.guild)
+        sm = conf.smartmod
+        chan = ctx.guild.get_channel(sm.report_channel) if sm.report_channel else None
+        key_ok = self.resolve_smartmod_key(conf) is not None
+        roles = ", ".join(f"<@&{r}>" for r in sm.staff_ping_roles) or _("None")
+        desc = (
+            _("`Enabled:       `{}\n").format("✅" if sm.enabled else "❌")
+            + _("`Report channel:`{}\n").format(chan.mention if chan else _("Not set"))
+            + _("`OpenAI key:    `{}\n").format(_("OK") if key_ok else _("Missing"))
+            + _("`Review model:  `{}\n").format(f"`{sm.review_model}`" if sm.review_model else _("(default)"))
+            + _("`Context:       `{} before / {} after\n").format(sm.context_before, sm.context_after)
+            + _("`Panel timeout: `{}s\n").format(sm.action_timeout)
+            + _("`Auto-action:   `{}\n").format("✅" if sm.auto_action_on_timeout else "❌")
+            + _("`Exempt staff:  `{}\n").format("✅" if sm.exempt_staff else "❌")
+            + _("`Staff ping:    `{}\n").format(roles)
+            + _("`Blacklist:     `{} items\n").format(len(sm.blacklist))
+            + _("`Whitelist:     `{} items").format(len(sm.whitelist))
+        )
+        embed = discord.Embed(title=_("Smartmod (AI Moderation)"), description=desc, color=await ctx.embed_color())
+        await ctx.send(embed=embed)
 
     # ---- Helper methods ----
 
@@ -3380,6 +3411,297 @@ class Admin(MixinMeta):
         else:
             conf.planners.append(role_or_member.id)
             await ctx.send(_("{} has been added to the planner list").format(role_or_member.name))
+        await self.save_conf()
+
+    # ---- Smartmod (AI moderation) ----
+    async def show_smartmod_id_list(self, ctx: commands.Context, ids: List[int], title: str) -> None:
+        if not ids:
+            await ctx.send(_("**{}:** empty").format(title))
+            return
+        names = []
+        for i in ids:
+            obj = ctx.guild.get_role(i) or ctx.guild.get_member(i) or ctx.guild.get_channel_or_thread(i)
+            names.append(obj.mention if obj and hasattr(obj, "mention") else f"`{i}`")
+        await ctx.send(_("**{}:** {}").format(title, ", ".join(names)))
+
+    @smartmod.command(name="toggle")
+    async def smartmod_toggle(self, ctx: commands.Context, state: bool = None):
+        """Enable or disable AI moderation. Omit the state to flip it."""
+        conf = self.db.get_conf(ctx.guild)
+        sm = conf.smartmod
+        sm.enabled = (not sm.enabled) if state is None else state
+        warning = ""
+        if sm.enabled and self.resolve_smartmod_key(conf) is None:
+            warning += _("\n⚠️ No OpenAI key for the scan. Set one with `{p}assistant smartmod key`.").format(
+                p=ctx.clean_prefix
+            )
+        if sm.enabled and not sm.report_channel:
+            warning += _("\n⚠️ No report channel set. Set one with `{p}assistant smartmod channel`.").format(
+                p=ctx.clean_prefix
+            )
+        await ctx.send(_("Smartmod is now **{}**.").format(_("enabled") if sm.enabled else _("disabled")) + warning)
+        await self.save_conf()
+
+    @smartmod.command(name="channel")
+    async def smartmod_channel(self, ctx: commands.Context, channel: discord.TextChannel = None):
+        """Set the channel where moderation proposals are posted. Omit to clear."""
+        conf = self.db.get_conf(ctx.guild)
+        conf.smartmod.report_channel = channel.id if channel else None
+        msg = _("set to {}").format(channel.mention) if channel else _("cleared")
+        await ctx.send(_("Report channel {}.").format(msg))
+        await self.save_conf()
+
+    @smartmod.command(name="model")
+    async def smartmod_model(self, ctx: commands.Context, *, model: str = ""):
+        """Set the review model. Omit to use the server's default chat model."""
+        conf = self.db.get_conf(ctx.guild)
+        conf.smartmod.review_model = model.strip()
+        if model.strip():
+            await ctx.send(_("Review model set to `{}`.").format(model.strip()))
+        else:
+            await ctx.send(_("Review model reset to the default chat model."))
+        await self.save_conf()
+
+    @smartmod.command(name="prompt")
+    async def smartmod_prompt(self, ctx: commands.Context, *, text: str = ""):
+        """Set the moderation review prompt. Omit to reset. Supports the {flagged_categories} placeholder."""
+        conf = self.db.get_conf(ctx.guild)
+        if not text.strip():
+            conf.smartmod.mod_prompt = DEFAULT_MOD_PROMPT
+            await ctx.send(_("Moderation prompt reset to default."))
+        else:
+            conf.smartmod.mod_prompt = text.strip()
+            await ctx.send(_("Moderation prompt updated."))
+        await self.save_conf()
+
+    @smartmod.command(name="threshold")
+    async def smartmod_threshold(self, ctx: commands.Context, category: str, value: float):
+        """Set a category's flag threshold (0.0-1.0), e.g. `harassment 0.4`."""
+        conf = self.db.get_conf(ctx.guild)
+        category = category.strip().lower()
+        if category not in MOD_CATEGORY_DEFAULTS:
+            valid = ", ".join(f"`{c}`" for c in MOD_CATEGORY_DEFAULTS)
+            await ctx.send(_("Unknown category. Valid categories:\n{}").format(valid))
+            return
+        if not 0.0 <= value <= 1.0:
+            await ctx.send(_("Value must be between 0.0 and 1.0."))
+            return
+        conf.smartmod.thresholds[category] = value
+        await ctx.send(_("Threshold for `{}` set to `{}`.").format(category, value))
+        await self.save_conf()
+
+    @smartmod.command(name="thresholds")
+    async def smartmod_thresholds(self, ctx: commands.Context):
+        """View the effective per-category flag thresholds."""
+        conf = self.db.get_conf(ctx.guild)
+        eff = conf.smartmod.effective_thresholds()
+        lines = [f"{c:<28}{eff[c]:.2f}" for c in sorted(eff)]
+        await ctx.send(box("\n".join(lines), "ini"))
+
+    def smartmod_score_lines(self, scores: dict, thr: dict) -> tuple[list, list]:
+        """Return (flagged_categories, formatted_table_lines) comparing each score to its threshold."""
+        flagged = []
+        lines = []
+        for cat in sorted(scores):
+            score = scores[cat] or 0.0
+            limit = thr.get(cat, 1.1)
+            hit = score >= limit
+            if hit:
+                flagged.append(cat)
+            lines.append(f"{'>>' if hit else '  '} {cat:<26}{score:>7.3f} / {limit:.2f}")
+        return flagged, lines
+
+    @smartmod.command(name="test")
+    async def smartmod_test(self, ctx: commands.Context, *, content: str):
+        """Run only the moderation scan on sample text and show every category score vs its threshold."""
+        conf = self.db.get_conf(ctx.guild)
+        if self.resolve_smartmod_key(conf) is None:
+            await ctx.send(
+                _("No OpenAI key available for the scan. Set one with `{p}assistant smartmod key`.").format(
+                    p=ctx.clean_prefix
+                )
+            )
+            return
+        async with ctx.typing():
+            scores = await self.smartmod_score(content, conf)
+        if scores is None:
+            await ctx.send(_("Moderation scan failed — check the key or the bot logs."))
+            return
+        flagged, lines = self.smartmod_score_lines(scores, conf.smartmod.effective_thresholds())
+        header = _("🚩 Would flag: {}").format(", ".join(flagged)) if flagged else _("✅ Would not flag")
+        body = box("\n".join(lines))
+        await ctx.send(f"**{header}**\n{body}")
+
+    @smartmod.command(name="simulate", aliases=["dryrun"])
+    async def smartmod_simulate(self, ctx: commands.Context, *, content: str):
+        """Dry-run the FULL pipeline on sample text: scan -> review model -> action panel.
+
+        The review model runs for real (tools, embeddings, this channel's recent context) with you as
+        the simulated offender, but the panel's buttons take no real action. The review only runs if a
+        category actually trips its threshold (same as production).
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if self.resolve_smartmod_key(conf) is None:
+            await ctx.send(
+                _("No OpenAI key available for the scan. Set one with `{p}assistant smartmod key`.").format(
+                    p=ctx.clean_prefix
+                )
+            )
+            return
+        async with ctx.typing():
+            scores = await self.smartmod_score(content, conf)
+        if scores is None:
+            await ctx.send(_("Moderation scan failed — check the key or the bot logs."))
+            return
+        flagged, lines = self.smartmod_score_lines(scores, conf.smartmod.effective_thresholds())
+        body = box("\n".join(lines))
+        if not flagged:
+            await ctx.send(
+                _(
+                    "✅ Would not trigger — no category is over its threshold, so the review model won't run.\n{}"
+                ).format(body)
+            )
+            return
+        await ctx.send(_("🚩 Flagged: {}\n{}").format(", ".join(flagged), body))
+        tripped = {c: scores[c] for c in flagged}
+        try:
+            async with ctx.typing():
+                outcome, detail = await self.simulate_smartmod(ctx.message, conf, tripped, content, ctx.channel)
+        except Exception as e:
+            await ctx.send(_("Simulation error: {}").format(e))
+            return
+        if outcome == "no_action":
+            await ctx.send(_("🧪 Model chose **no action**.\n-# {}").format(detail or _("no reason given")))
+        elif outcome == "no_decision":
+            await ctx.send(_("🧪 Model didn't reach a decision within the review turn limit."))
+        else:
+            await ctx.send(_("🧪 Model **proposed** an action — see the dry-run panel above (buttons are no-ops)."))
+
+    @smartmod.command(name="blacklist", aliases=["bl"])
+    async def smartmod_blacklist(
+        self,
+        ctx: commands.Context,
+        *,
+        target: Union[
+            discord.Member,
+            discord.Role,
+            discord.TextChannel,
+            discord.CategoryChannel,
+            discord.Thread,
+            discord.ForumChannel,
+        ] = None,
+    ):
+        """Toggle a channel/category/role/member on the moderation ignore list. Omit to view."""
+        conf = self.db.get_conf(ctx.guild)
+        if target is None:
+            await self.show_smartmod_id_list(ctx, conf.smartmod.blacklist, _("Smartmod blacklist (ignored)"))
+            return
+        lst = conf.smartmod.blacklist
+        if target.id in lst:
+            lst.remove(target.id)
+            await ctx.send(_("{} removed from the smartmod blacklist.").format(target.name))
+        else:
+            lst.append(target.id)
+            await ctx.send(_("{} added to the smartmod blacklist.").format(target.name))
+        await self.save_conf()
+
+    @smartmod.command(name="whitelist", aliases=["wl"])
+    async def smartmod_whitelist(
+        self,
+        ctx: commands.Context,
+        *,
+        target: Union[
+            discord.Member,
+            discord.Role,
+            discord.TextChannel,
+            discord.CategoryChannel,
+            discord.Thread,
+            discord.ForumChannel,
+        ] = None,
+    ):
+        """Only moderate these channel/category/role/members (used only when the blacklist is empty). Omit to view."""
+        conf = self.db.get_conf(ctx.guild)
+        if target is None:
+            await self.show_smartmod_id_list(ctx, conf.smartmod.whitelist, _("Smartmod whitelist (only these)"))
+            return
+        lst = conf.smartmod.whitelist
+        if target.id in lst:
+            lst.remove(target.id)
+            await ctx.send(_("{} removed from the smartmod whitelist.").format(target.name))
+        else:
+            lst.append(target.id)
+            await ctx.send(_("{} added to the smartmod whitelist.").format(target.name))
+        await self.save_conf()
+
+    @smartmod.command(name="staffrole", aliases=["pingrole"])
+    async def smartmod_staffrole(self, ctx: commands.Context, *, role: discord.Role = None):
+        """Toggle a role to ping (and authorize) when an action is proposed. Omit to view."""
+        conf = self.db.get_conf(ctx.guild)
+        if role is None:
+            await self.show_smartmod_id_list(ctx, conf.smartmod.staff_ping_roles, _("Smartmod staff ping roles"))
+            return
+        lst = conf.smartmod.staff_ping_roles
+        if role.id in lst:
+            lst.remove(role.id)
+            await ctx.send(_("{} removed from the staff ping roles.").format(role.name))
+        else:
+            lst.append(role.id)
+            await ctx.send(_("{} added to the staff ping roles.").format(role.name))
+        await self.save_conf()
+
+    @smartmod.command(name="context")
+    async def smartmod_context(self, ctx: commands.Context, before: int, after: int):
+        """Set how many messages of context to capture before/after a flagged message."""
+        conf = self.db.get_conf(ctx.guild)
+        conf.smartmod.context_before = max(0, min(before, 50))
+        conf.smartmod.context_after = max(0, min(after, 25))
+        await ctx.send(
+            _("Context window set to {} before / {} after.").format(
+                conf.smartmod.context_before, conf.smartmod.context_after
+            )
+        )
+        await self.save_conf()
+
+    @smartmod.command(name="timeout")
+    async def smartmod_timeout(self, ctx: commands.Context, seconds: int):
+        """Set how long the action panel stays interactive, in seconds (60-86400)."""
+        conf = self.db.get_conf(ctx.guild)
+        conf.smartmod.action_timeout = max(60, min(seconds, 86400))
+        await ctx.send(_("Panel timeout set to {} seconds.").format(conf.smartmod.action_timeout))
+        await self.save_conf()
+
+    @smartmod.command(name="autoaction")
+    async def smartmod_autoaction(self, ctx: commands.Context, state: bool = None):
+        """Toggle whether the proposed action auto-executes when the panel times out."""
+        conf = self.db.get_conf(ctx.guild)
+        sm = conf.smartmod
+        sm.auto_action_on_timeout = (not sm.auto_action_on_timeout) if state is None else state
+        state_txt = _("on") if sm.auto_action_on_timeout else _("off")
+        await ctx.send(_("Auto-action on timeout is now **{}**.").format(state_txt))
+        await self.save_conf()
+
+    @smartmod.command(name="exemptstaff", aliases=["exempt"])
+    async def smartmod_exempt(self, ctx: commands.Context, state: bool = None):
+        """Toggle skipping moderation for members with ban/kick/manage-messages permissions."""
+        conf = self.db.get_conf(ctx.guild)
+        sm = conf.smartmod
+        sm.exempt_staff = (not sm.exempt_staff) if state is None else state
+        await ctx.send(_("Exempt staff is now **{}**.").format(_("on") if sm.exempt_staff else _("off")))
+        await self.save_conf()
+
+    @smartmod.command(name="key", aliases=["openaikey"])
+    async def smartmod_key(self, ctx: commands.Context, key: str = None):
+        """Set a dedicated OpenAI key for the moderation scan.
+
+        Use this when your chat endpoint is a custom/non-OpenAI endpoint (OpenRouter, LM Studio, etc.):
+        the free OpenAI moderation scan still runs against api.openai.com with this key, while the
+        review LLM keeps using your configured endpoint. Omit the key to clear it.
+        """
+        conf = self.db.get_conf(ctx.guild)
+        conf.smartmod.openai_key = key
+        with contextlib.suppress(discord.HTTPException):
+            await ctx.message.delete()
+        await ctx.send(_("Smartmod OpenAI key {}.").format(_("set") if key else _("cleared")))
         await self.save_conf()
 
     @override.command(name="model")

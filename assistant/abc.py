@@ -30,6 +30,9 @@ class MixinMeta(ABC):
         self.scheduler: AsyncIOScheduler
         # Keys: "cached", "cache_write", "total", "model".
         self.last_cache_stats: Dict[str, object]
+        # Smartmod review state (actually assigned in SmartMod.__init__).
+        self.smartmod_cooldowns: Dict[tuple[int, int], float]
+        self.smartmod_tasks: set
 
     @abstractmethod
     async def _fire_reminder(self, reminder_id: str) -> None:
@@ -59,7 +62,8 @@ class MixinMeta(ABC):
         temperature_override: Optional[float] = None,
         session_id: Optional[str] = None,
         guild_id: Optional[int] = None,
-    ) -> Union[ChatCompletionMessage, str]:
+        tool_choice: Optional[Union[str, dict]] = None,
+    ) -> ChatCompletionMessage:
         raise NotImplementedError
 
     @abstractmethod
@@ -121,6 +125,10 @@ class MixinMeta(ABC):
         user: Optional[discord.Member] = None,
         requested_model: Optional[str] = None,
     ) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
+    def observe_embedding_runtime(self, model_id: str, dimensions: int, conf: Optional[GuildSettings] = None) -> None:
         raise NotImplementedError
 
     @abstractmethod
@@ -188,6 +196,39 @@ class MixinMeta(ABC):
 
     @abstractmethod
     async def get_embedding_menu_embeds(self, conf: GuildSettings, place: int) -> List[discord.Embed]:
+        raise NotImplementedError
+
+    # -------------------------------------------------------
+    # -------------------------------------------------------
+    # -------------------- SMARTMOD -------------------------
+    # -------------------------------------------------------
+    # -------------------------------------------------------
+
+    @abstractmethod
+    def resolve_smartmod_key(self, conf: GuildSettings) -> Optional[str]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def smartmod_passes_filters(self, message: discord.Message, conf: GuildSettings) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def smartmod_score(self, content: str, conf: GuildSettings) -> Optional[Dict[str, float]]:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def run_smartmod(self, message: discord.Message, conf: GuildSettings) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def simulate_smartmod(
+        self,
+        message: discord.Message,
+        conf: GuildSettings,
+        tripped: Dict[str, float],
+        content: str,
+        output_channel: discord.abc.Messageable,
+    ) -> tuple:
         raise NotImplementedError
 
     # -------------------------------------------------------
