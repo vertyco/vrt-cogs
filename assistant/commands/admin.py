@@ -195,8 +195,7 @@ class Admin(MixinMeta):
     @assistant.group(name="smartmod", aliases=["automod"])
     async def smartmod(self, ctx: commands.Context):
         """AI moderation: scan messages, review flagged ones, and propose staff actions."""
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help()
+        pass
 
     # ---- Helper methods ----
 
@@ -3404,7 +3403,7 @@ class Admin(MixinMeta):
             names.append(obj.mention if obj and hasattr(obj, "mention") else f"`{i}`")
         await ctx.send(_("**{}:** {}").format(title, ", ".join(names)))
 
-    @smartmod.command(name="status", aliases=["settings", "show"])
+    @smartmod.command(name="status", aliases=["settings", "show", "view"])
     async def smartmod_status(self, ctx: commands.Context):
         """Show the current smartmod configuration."""
         conf = self.db.get_conf(ctx.guild)
