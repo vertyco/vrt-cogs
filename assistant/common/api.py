@@ -605,7 +605,7 @@ class API(MixinMeta):
         guild_id: Optional[int] = None,
         tool_choice: Optional[t.Union[str, dict]] = None,
     ) -> ChatCompletionMessage:
-        requested_model = model_override or conf.get_user_model(member)
+        requested_model = model_override or self.db.get_effective_model(conf, member)
         base_url = self.get_guild_endpoint_url(conf)
         if base_url:
             await self.refresh_endpoint_profile(conf)

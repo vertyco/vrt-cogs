@@ -3985,6 +3985,32 @@ class Admin(MixinMeta):
     # --------------------------------------------------------------------------------------
     # --------------------------------------------------------------------------------------
 
+    @api.command(name="globalmodel", aliases=["defaultmodel"])
+    @commands.is_owner()
+    async def api_globalmodel(self, ctx: commands.Context, *, model: str = None):
+        """Set the global default chat model for guilds that haven't picked their own (owner).
+
+        Pairs with `[p]assistant api globalendpoint`: e.g. set `openrouter/free` so new servers
+        route to OpenRouter's free models instead of the built-in `gpt-5.4` default. Guilds that
+        chose their own model are unaffected. Omit to view; pass `none` to clear.
+        """
+        if not model:
+            current = self.db.default_model or _("(not set - guilds use their own model)")
+            return await ctx.send(
+                _("Global default model: `{}`\nSet with `{}assistant api globalmodel <model>`.").format(
+                    current, ctx.clean_prefix
+                )
+            )
+        if model.strip().lower() == "none":
+            self.db.default_model = ""
+            await ctx.send(_("Global default model cleared."))
+        else:
+            self.db.default_model = model.strip()
+            await ctx.send(
+                _("Global default model set to `{}`. Guilds without their own model will use it.").format(model.strip())
+            )
+        await self.save_conf()
+
     @api.command(name="globalendpoint", aliases=["override"])
     @commands.is_owner()
     async def api_override(self, ctx: commands.Context, endpoint: str = None):
