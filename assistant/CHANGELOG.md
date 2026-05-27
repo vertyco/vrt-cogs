@@ -1,5 +1,9 @@
 # Assistant Changelog
 
+## v8.7.0
+
+- New `[p]assistant api globalmodel <model>` (owner): a global default chat model that any guild which hasn't picked its own falls back to — pairs with the global endpoint override. For example set it to `openrouter/free` so fresh servers route to OpenRouter's Free Models Router instead of the built-in `gpt-5.4` default (which otherwise resolves to `openrouter/auto` and can be blocked by OpenRouter allow-list / data-policy rules). Guilds that chose their own model are unaffected.
+
 ## v8.6.1
 
 - OpenRouter sticky-routing `session_id` now uses readable names (`guild_channel_user`, per-channel for collaborative conversations) instead of numeric IDs.

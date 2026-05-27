@@ -14,6 +14,7 @@ log = logging.getLogger("red.vrt.assistant.models")
 DEFAULT_THINK_TAG_PREFIX = "<think>"
 DEFAULT_THINK_TAG_SUFFIX = "</think>"
 DEFAULT_SYSTEM_PROMPT = "You are a discord bot named {botname}, and are chatting with {username}."
+DEFAULT_GUILD_MODEL = "gpt-5.4"
 UNCATEGORIZED = "uncategorized"
 
 
@@ -187,7 +188,7 @@ class GuildSettings(AssistantBaseModel):
     mention: bool = False
     mention_respond: bool = False
     enabled: bool = True  # Auto-reply channel
-    model: str = "gpt-5.4"
+    model: str = DEFAULT_GUILD_MODEL
     embed_model: str = "text-embedding-3-small"  # Or text-embedding-3-large, text-embedding-ada-002
     collab_convos: bool = False
     reasoning_effort: str = "low"  # none, minimal, low, medium, high, xhigh (model-dependent)
@@ -540,6 +541,7 @@ class DB(AssistantBaseModel):
     reasoning_as_files: bool = True
     brave_api_key: t.Optional[str] = None
     default_system_prompt: str = DEFAULT_SYSTEM_PROMPT
+    default_model: str = ""  # Global fallback chat model for guilds that haven't set their own
     endpoint_override: t.Optional[str] = None
     endpoint_api_key: t.Optional[str] = None
     endpoint_profile: t.Optional[EndpointProfile] = None
@@ -550,6 +552,13 @@ class DB(AssistantBaseModel):
         if not conf.system_prompt or conf.system_prompt == DEFAULT_SYSTEM_PROMPT:
             return self.default_system_prompt
         return conf.system_prompt
+
+    def get_effective_model(self, conf: GuildSettings, member: t.Optional[discord.Member] = None) -> str:
+        """Guild's chosen model, falling back to the global default_model when it's untouched."""
+        model = conf.get_user_model(member)
+        if self.default_model and model == DEFAULT_GUILD_MODEL:
+            return self.default_model
+        return model
 
     def get_conf(self, guild: t.Union[discord.Guild, int]) -> GuildSettings:
         gid = guild if isinstance(guild, int) else guild.id
