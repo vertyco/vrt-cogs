@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 MODELS = {
     "gpt-3.5-turbo": 4096,
     "gpt-3.5-turbo-1106": 16385,
@@ -651,10 +653,14 @@ PROPOSE_MOD_ACTION = {
         "properties": {
             "action": {
                 "type": "string",
-                "enum": ["timeout", "kick", "ban", "delete"],
+                "enum": ["warn", "timeout", "kick", "tempban", "ban", "delete", "ark_ban", "ark_tempban", "note"],
                 "description": (
-                    "The recommended action. 'delete' only removes the message; 'timeout' temporarily mutes "
-                    "the member; 'kick' removes them; 'ban' bans them. Pick the lightest action that fits."
+                    "The recommended action; pick the lightest that fits. "
+                    "'warn' issues a tracked warning (or DMs the user); 'timeout' temporarily mutes the member; "
+                    "'kick' removes them; 'tempban' bans then auto-unbans after a duration; 'ban' permanently bans; "
+                    "'delete' only removes the message; 'note' records a private moderator note; "
+                    "'ark_ban'/'ark_tempban' ban the user's linked in-game ARK player. "
+                    "ONLY the actions present in this enum are available on this server - do not pick others."
                 ),
             },
             "reason": {
@@ -669,9 +675,12 @@ PROPOSE_MOD_ACTION = {
                 "enum": ["low", "medium", "high"],
                 "description": "How severe the violation is, in context.",
             },
-            "timeout_minutes": {
+            "duration_minutes": {
                 "type": "integer",
-                "description": "Required only when action is 'timeout'. Duration in minutes (max 40320 = 28 days).",
+                "description": (
+                    "Duration in minutes. Required for 'timeout' (max 40320 = 28 days), 'tempban', and "
+                    "'ark_tempban'. Ignored for other actions."
+                ),
             },
             "delete_message": {
                 "type": "boolean",
@@ -699,4 +708,35 @@ NO_ACTION_NEEDED = {
         },
         "required": ["reason"],
     },
+}
+
+
+@dataclass(frozen=True)
+class ModAction:
+    """A moderation action offered on the smartmod panel."""
+
+    name: str
+    label: str
+    emoji: str
+    perm: str  # discord guild permission required to click ("" => any staff / manage_messages)
+    needs_duration: bool = False
+
+
+# Built-in actions, always available. Ordered lightest -> heaviest.
+BUILTIN_MOD_ACTIONS: list[ModAction] = [
+    ModAction("warn", "Warn", "📣", "manage_messages"),
+    ModAction("timeout", "Timeout", "⏳", "moderate_members", needs_duration=True),
+    ModAction("kick", "Kick", "👢", "kick_members"),
+    ModAction("tempban", "Temp ban", "⏲️", "ban_members", needs_duration=True),
+    ModAction("ban", "Ban", "🔨", "ban_members"),
+    ModAction("delete", "Delete message", "🗑️", "manage_messages"),
+]
+
+# Optional actions, surfaced only when the backing cog is loaded (and, for Ark, the flagged
+# member has a linked in-game player). Assembled by SmartMod.available_mod_actions.
+ARK_BAN_ACTION = ModAction("ark_ban", "Ark ban", "🦖", "ban_members")
+ARK_TEMPBAN_ACTION = ModAction("ark_tempban", "Ark temp ban", "🦖", "ban_members", needs_duration=True)
+NOTE_ACTION = ModAction("note", "Add note", "📝", "manage_messages")
+MOD_ACTIONS_BY_NAME: dict[str, ModAction] = {
+    a.name: a for a in [*BUILTIN_MOD_ACTIONS, ARK_BAN_ACTION, ARK_TEMPBAN_ACTION, NOTE_ACTION]
 }
