@@ -100,10 +100,28 @@ class SetAPI(discord.ui.View):
             self.stop()
 
 
+class ToolSkipFeedbackModal(discord.ui.Modal):
+    def __init__(self, view: "AdminToolApprovalView"):
+        super().__init__(title=_("Skip with feedback"), timeout=120)
+        self.view_ref = view
+        self.field = discord.ui.TextInput(
+            label=_("Why are you skipping? (optional)"),
+            style=discord.TextStyle.paragraph,
+            required=False,
+            max_length=1000,
+        )
+        self.add_item(self.field)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        self.view_ref.feedback = self.field.value.strip()
+        await self.view_ref.finish(interaction, "skip_feedback")
+
+
 class AdminToolApprovalView(discord.ui.View):
     def __init__(self, author_id: int, timeout: float = 120):
         self.author_id = author_id
         self.decision: str = "timeout"
+        self.feedback: str = ""
         self.message: Optional[discord.Message] = None
         super().__init__(timeout=timeout)
 
@@ -141,6 +159,10 @@ class AdminToolApprovalView(discord.ui.View):
     @discord.ui.button(label="Skip", style=discord.ButtonStyle.secondary)
     async def skip(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.finish(interaction, "skip")
+
+    @discord.ui.button(label="Skip With Feedback", style=discord.ButtonStyle.danger)
+    async def skip_with_feedback(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(ToolSkipFeedbackModal(self))
 
 
 # ---------------------------------------------------------------------------

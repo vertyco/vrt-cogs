@@ -1,5 +1,9 @@
 # Assistant Changelog
 
+## v8.4.0
+
+- Tool-approval prompt (`requires_user_approval` tools like `run_eval`) gained a 4th button, **Skip With Feedback**, which opens a modal to optionally explain *why* you're skipping. The feedback is appended to the skip message fed back to the model so it can course-correct. Submitting blank behaves like a normal Skip.
+
 ## v8.3.0
 
 - Smartmod now scans **images**: image attachments are sent to `omni-moderation-latest` alongside any text, and image-only messages (previously skipped) are now screened. A message is flagged if any part (text or any image) trips a threshold — the per-category score is the max across all parts. The review prompt labels image-only messages as `[image attachment]`.
