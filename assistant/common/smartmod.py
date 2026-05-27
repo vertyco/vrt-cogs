@@ -63,6 +63,16 @@ def smartmod_target_ids(message: discord.Message) -> set[int]:
     return ids
 
 
+def smartmod_image_urls(message: discord.Message) -> list[str]:
+    """Public URLs of image attachments on the message (for the omni-moderation image scan)."""
+    urls = []
+    for att in message.attachments:
+        content_type = att.content_type or ""
+        if content_type.startswith("image/"):
+            urls.append(att.url)
+    return urls
+
+
 class SmartMod(MixinMeta):
     """AI moderation: free OpenAI moderation pre-filter -> LLM review -> staff action panel."""
 
@@ -97,7 +107,8 @@ class SmartMod(MixinMeta):
             return False
         if message.author.bot:
             return False
-        if not message.content or not message.content.strip():
+        has_text = bool(message.content and message.content.strip())
+        if not has_text and not smartmod_image_urls(message):
             return False
         if self.resolve_smartmod_key(conf) is None:
             return False
@@ -123,31 +134,54 @@ class SmartMod(MixinMeta):
     # ------------------------------------------------------------------
     # Stage 1: moderation scan
     # ------------------------------------------------------------------
-    async def smartmod_score(self, content: str, conf: GuildSettings) -> t.Optional[dict[str, float]]:
-        """Raw moderation scan of arbitrary text: ALL category scores (API names), or None on failure.
+    async def smartmod_score(
+        self, content: str, conf: GuildSettings, image_urls: t.Optional[list[str]] = None
+    ) -> t.Optional[dict[str, float]]:
+        """Raw moderation scan of text (and optional images): max category score across all inputs.
 
-        Independent of the message filters/thresholds so it can also power the
-        `[p]assistant smartmod test` command. Hits OpenAI directly (no base_url).
+        Returns ALL category scores (API names), or None on failure. Independent of the message
+        filters/thresholds so it can also power the `[p]assistant smartmod test` command. Hits
+        OpenAI directly (no base_url).
         """
         key = self.resolve_smartmod_key(conf)
-        if not key or not content.strip():
+        image_urls = image_urls or []
+        if not key or (not content.strip() and not image_urls):
             return None
         try:
             client = openai.AsyncOpenAI(api_key=key)
-            resp = await client.moderations.create(model=MODERATION_MODEL, input=content[:40000])
+            resp = await client.moderations.create(
+                model=MODERATION_MODEL, input=self.build_moderation_input(content, image_urls)
+            )
         except openai.AuthenticationError:
             log.warning("smartmod: OpenAI moderation key rejected; set a valid key with `smartmod key`")
             return None
         except Exception as e:
             log.warning("smartmod: moderation scan failed", exc_info=e)
             return None
-        # by_alias=True yields the API's category names ("harassment/threatening",
-        # "self-harm", ...) so they line up with MOD_CATEGORY_DEFAULTS / admin thresholds.
-        return resp.results[0].category_scores.model_dump(by_alias=True)
+        # A list input (text + each image) yields one result per item; the message as a whole is
+        # flagged if ANY part trips, so take the max score per category. by_alias=True gives the
+        # API category names ("harassment/threatening", "self-harm", ...).
+        merged: dict[str, float] = {}
+        for result in resp.results:
+            for cat, score in result.category_scores.model_dump(by_alias=True).items():
+                if score is not None and score > merged.get(cat, -1.0):
+                    merged[cat] = score
+        return merged or None
+
+    def build_moderation_input(self, content: str, image_urls: list[str]) -> t.Union[str, list[dict]]:
+        """Plain string for text-only; a multimodal list (text + image_url blocks) when images present."""
+        if not image_urls:
+            return content[:40000]
+        items: list[dict] = []
+        if content.strip():
+            items.append({"type": "text", "text": content[:40000]})
+        for url in image_urls[:10]:
+            items.append({"type": "image_url", "image_url": {"url": url}})
+        return items
 
     async def smartmod_scan(self, message: discord.Message, conf: GuildSettings) -> dict[str, float]:
-        """Categories from the flagged message that meet/exceed their threshold."""
-        scores = await self.smartmod_score(message.content, conf)
+        """Categories from the flagged message (text + image attachments) that meet/exceed their threshold."""
+        scores = await self.smartmod_score(message.content, conf, smartmod_image_urls(message))
         if not scores:
             return {}
         thresholds = conf.smartmod.effective_thresholds()
@@ -231,6 +265,8 @@ class SmartMod(MixinMeta):
         the admin simulation command.
         """
         flagged_content = content if content is not None else message.content
+        if not flagged_content.strip() and smartmod_image_urls(message):
+            flagged_content = "[image attachment]"
         flagged_cats = ", ".join(f"{c} ({tripped[c]:.2f})" for c in sorted(tripped))
         context_text = await self.build_smartmod_context(message, conf, flagged_content=flagged_content)
         messages = await self.build_review_messages(message, conf, flagged_cats, context_text, flagged_content)
