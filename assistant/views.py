@@ -1385,6 +1385,8 @@ class ModelPickerView(discord.ui.LayoutView):
         endpoint_url: str,
         post_select: Optional[Callable[[str], Awaitable[Optional[str]]]] = None,
         page_size: int = MODEL_PICKER_PAGE_SIZE,
+        get_current: Optional[Callable[[], str]] = None,
+        set_current: Optional[Callable[[str], None]] = None,
     ):
         super().__init__(timeout=300)
         if kind not in ("chat", "embedding"):
@@ -1398,6 +1400,10 @@ class ModelPickerView(discord.ui.LayoutView):
         self.endpoint_url = endpoint_url
         self.post_select = post_select
         self.page_size = page_size
+        # Optional overrides so a caller can target a non-default field (e.g. smartmod.review_model)
+        # instead of conf.model / conf.embed_model, while still discovering models from the endpoint.
+        self.get_current = get_current
+        self.set_current = set_current
         self.page = 0
         self.total_pages = 1
         self.message: Optional[discord.Message] = None
@@ -1418,12 +1424,16 @@ class ModelPickerView(discord.ui.LayoutView):
 
     @property
     def current_model(self) -> str:
+        if self.get_current is not None:
+            return self.get_current()
         if self.kind == "chat":
             return self.conf.model
         return self.conf.embed_model
 
     def set_current_model(self, model: str) -> None:
-        if self.kind == "chat":
+        if self.set_current is not None:
+            self.set_current(model)
+        elif self.kind == "chat":
             self.conf.model = model
         else:
             self.conf.embed_model = model

@@ -1,5 +1,10 @@
 # Assistant Changelog
 
+## v8.6.0
+
+- `[p]assistant smartmod model` with no argument now opens the interactive model picker (endpoint-discovered models when a custom endpoint is set, otherwise the built-in OpenAI list), targeting the smartmod review model.
+- `[p]assistant smartmod key` now collects the OpenAI key through a secure modal (matching the cog's other key commands) instead of taking it as a command argument.
+
 ## v8.5.0
 
 - `[p]assistant smartmod defaultprompt` returns the built-in default moderation prompt as a file to copy and customize. `[p]assistant smartmod prompt` with no text now shows the current prompt (as a file) instead of silently resetting it; `[p]assistant smartmod resetprompt` restores the default.

@@ -3456,14 +3456,51 @@ class Admin(MixinMeta):
 
     @smartmod.command(name="model")
     async def smartmod_model(self, ctx: commands.Context, *, model: str = ""):
-        """Set the review model. Omit to use the server's default chat model."""
+        """Set the smartmod review model (empty = use the server's default chat model).
+
+        Run with no model to open the interactive model picker — endpoint-discovered models when a
+        custom endpoint is set, otherwise the built-in OpenAI list.
+        """
         conf = self.db.get_conf(ctx.guild)
-        conf.smartmod.review_model = model.strip()
-        if model.strip():
-            await ctx.send(_("Review model set to `{}`.").format(model.strip()))
-        else:
-            await ctx.send(_("Review model reset to the default chat model."))
-        await self.save_conf()
+        model = model.strip()
+        if model:
+            conf.smartmod.review_model = model
+            await ctx.send(_("Review model set to `{}`.").format(model))
+            return await self.save_conf()
+
+        endpoint_url = self.get_guild_endpoint_url(conf)
+        if endpoint_url:
+            if not await self.can_call_llm(conf, ctx):
+                return
+            async with ctx.typing():
+                profile = await self.refresh_endpoint_profile(conf)
+            if not profile:
+                return await ctx.send(
+                    _(
+                        "Could not probe `{}` to discover models. Set one manually with "
+                        "`{}assistant smartmod model <name>`."
+                    ).format(endpoint_url, ctx.clean_prefix)
+                )
+            view = ModelPickerView(
+                ctx=ctx,
+                conf=conf,
+                kind="chat",
+                save_func=self.save_conf,
+                reprobe_func=lambda: self.refresh_endpoint_profile(conf, force=True, save=True),
+                get_profile=lambda: self.get_cached_endpoint_profile(conf),
+                endpoint_url=endpoint_url,
+                get_current=lambda: conf.smartmod.review_model or conf.model,
+                set_current=lambda chosen: setattr(conf.smartmod, "review_model", chosen),
+            )
+            return await view.start()
+
+        # No custom endpoint (OpenAI): no live discovery, so show the built-in model list.
+        await ctx.send(
+            _(
+                "The review model uses the server's default chat model unless set. Valid OpenAI models:\n{}\n"
+                "Set one with `{}assistant smartmod model <name>`."
+            ).format(box(humanize_list(list(MODELS))), ctx.clean_prefix)
+        )
 
     @smartmod.command(name="prompt")
     async def smartmod_prompt(self, ctx: commands.Context, *, text: str = ""):
@@ -3731,18 +3768,28 @@ class Admin(MixinMeta):
         await self.save_conf()
 
     @smartmod.command(name="key", aliases=["openaikey"])
-    async def smartmod_key(self, ctx: commands.Context, key: str = None):
-        """Set a dedicated OpenAI key for the moderation scan.
+    async def smartmod_key(self, ctx: commands.Context):
+        """Set a dedicated OpenAI key for the moderation scan (opens a secure modal).
 
-        Use this when your chat endpoint is a custom/non-OpenAI endpoint (OpenRouter, LM Studio, etc.):
-        the free OpenAI moderation scan still runs against api.openai.com with this key, while the
-        review LLM keeps using your configured endpoint. Omit the key to clear it.
+        Use this when your chat endpoint is a custom/non-OpenAI endpoint (OpenRouter, LM Studio,
+        etc.): the free OpenAI moderation scan still runs against api.openai.com with this key,
+        while the review LLM keeps using your configured endpoint. Enter `none` to clear it.
         """
         conf = self.db.get_conf(ctx.guild)
-        conf.smartmod.openai_key = key
-        with contextlib.suppress(discord.HTTPException):
-            await ctx.message.delete()
-        await ctx.send(_("Smartmod OpenAI key {}.").format(_("set") if key else _("cleared")))
+        view = SetAPI(ctx.author, conf.smartmod.openai_key)
+        txt = _("Click to set the OpenAI key used for the smartmod moderation scan\n\nTo remove the key, enter `none`")
+        embed = discord.Embed(description=txt, color=ctx.author.color)
+        msg = await ctx.send(embed=embed, view=view)
+        await view.wait()
+        key = view.key.strip() if view.key else "none"
+        if key == "none" and conf.smartmod.openai_key:
+            conf.smartmod.openai_key = None
+            await msg.edit(content=_("Smartmod OpenAI key has been removed!"), embed=None, view=None)
+        elif key == "none":
+            return await msg.edit(content=_("No API key was entered!"), embed=None, view=None)
+        else:
+            conf.smartmod.openai_key = key
+            await msg.edit(content=_("Smartmod OpenAI key has been set!"), embed=None, view=None)
         await self.save_conf()
 
     @override.command(name="model")
