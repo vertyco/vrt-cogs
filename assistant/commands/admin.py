@@ -3504,7 +3504,11 @@ class Admin(MixinMeta):
 
     @smartmod.command(name="prompt")
     async def smartmod_prompt(self, ctx: commands.Context, *, text: str = ""):
-        """Set the moderation review prompt (supports the {flagged_categories} placeholder).
+        """Set the moderation review prompt.
+
+        Supports the {flagged_categories} placeholder plus the same standard prompt variables
+        as the main system prompt (server name, channel name, display name, custom cog
+        variables, etc.).
 
         Run with no text to view the current prompt. Use `defaultprompt` to grab the built-in
         default to customize, and `resetprompt` to restore it.

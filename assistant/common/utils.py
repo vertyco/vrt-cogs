@@ -430,6 +430,17 @@ VARIABLE_NARRATIVES: t.Dict[str, str] = {
 DYNAMIC_VARIABLE_NARRATIVES = VARIABLE_NARRATIVES
 
 
+def format_template(text: str, params: dict) -> str:
+    """Substitute ``{key}`` placeholders in ``text`` from ``params``.
+
+    Uses ``str.replace`` rather than ``str.format`` so prompts containing
+    code blocks with curly braces don't raise ``KeyError``.
+    """
+    for key, value in params.items():
+        text = text.replace("{" + key + "}", str(value))
+    return text
+
+
 def get_base_params(
     bot: Red,
     guild: discord.Guild,

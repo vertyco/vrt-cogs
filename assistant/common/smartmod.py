@@ -12,9 +12,11 @@ import discord
 import openai
 import orjson
 from redbot.core import modlog
+from redbot.core.utils.chat_formatting import humanize_list
 
 from ..abc import MixinMeta
 from ..views import ModActionView
+from .chat import build_floating_context_block
 from .constants import (
     ARK_BAN_ACTION,
     ARK_TEMPBAN_ACTION,
@@ -25,6 +27,14 @@ from .constants import (
     ModAction,
 )
 from .models import Conversation, GuildSettings
+from .utils import (
+    DYNAMIC_VARIABLE_GROUPS,
+    STABLE_VARIABLE_GROUPS,
+    VARIABLE_NARRATIVES,
+    format_template,
+    get_base_params,
+    get_dynamic_params,
+)
 
 
 @dataclass
@@ -377,13 +387,132 @@ class SmartMod(MixinMeta):
         context_text: str,
         flagged_content: str,
     ) -> list[dict]:
+        guild = message.guild
+        channel = (
+            message.channel
+            if isinstance(message.channel, (discord.TextChannel, discord.Thread, discord.ForumChannel))
+            else None
+        )
+        author = message.author if isinstance(message.author, discord.Member) else None
+        now = datetime.now()
+
+        valid_prefixes = await self.bot.get_valid_prefixes(guild)
+        prefix = valid_prefixes[0] if valid_prefixes else ""
+        prefixes = humanize_list(valid_prefixes)
+        review_model = conf.smartmod.review_model or ""
+
+        base_params = await asyncio.to_thread(
+            get_base_params,
+            self.bot,
+            guild,
+            author,
+            channel,
+            {},
+            review_model,
+            "",
+            prefix,
+            prefixes,
+        )
+        dynamic_params = await asyncio.to_thread(
+            get_dynamic_params,
+            self.bot,
+            guild,
+            now,
+            author,
+            None,
+            None,
+        )
+
         base_prompt = self.db.get_effective_system_prompt(conf)
-        mod_prompt = conf.smartmod.mod_prompt.replace("{flagged_categories}", flagged_cats)
-        messages: list[dict] = [{"role": "system", "content": f"{base_prompt}\n\n{mod_prompt}"}]
+        mod_prompt = conf.smartmod.mod_prompt
+
+        context_variables = await self.resolve_prompt_context_variables(
+            guild=guild,
+            channel=channel,
+            author=author,
+            conf=conf,
+            conversation=Conversation(),
+            extras={},
+            now=now,
+            prompt_templates=[base_prompt, mod_prompt],
+        )
+
+        context_variable_sources: dict[str, str] = {}
+        if context_variables:
+            for entry in self.db.get_context_variable_catalog(self.bot, self.context_registry):
+                context_variable_sources[entry["name"]] = entry["source"]
+
+        params: dict = dict(base_params)
+        params.update(dynamic_params)
+        for variable_name, value in context_variables.items():
+            if variable_name in params:
+                log.warning(
+                    "smartmod: context variable %s conflicts with a built-in prompt parameter; skipped",
+                    variable_name,
+                )
+                continue
+            params[variable_name] = value
+        params["flagged_categories"] = flagged_cats
+
+        formatted_base = format_template(base_prompt, params)
+        formatted_mod = format_template(mod_prompt, params)
+        messages: list[dict] = [{"role": "system", "content": f"{formatted_base}\n\n{formatted_mod}"}]
 
         rag_block = await self.build_review_rag(message, conf, flagged_content)
         if rag_block:
             messages.append({"role": "system", "content": f"Relevant server knowledge / rules:\n{rag_block}"})
+
+        block_settings = conf.context_block_var_statuses or {}
+
+        def include_in_block(category_key: str, var_name: str) -> bool:
+            key = f"var:{var_name}"
+            if key in block_settings:
+                return block_settings[key]
+            if category_key in block_settings:
+                return block_settings[category_key]
+            return False
+
+        context_block_values: dict[str, str] = {}
+        for category_key, var_names in STABLE_VARIABLE_GROUPS.items():
+            for var_name in var_names:
+                value = base_params.get(var_name)
+                if value in (None, ""):
+                    value = dynamic_params.get(var_name)
+                if value in (None, ""):
+                    continue
+                if include_in_block(category_key, var_name):
+                    context_block_values[var_name] = str(value)
+        for category_key, var_names in DYNAMIC_VARIABLE_GROUPS.items():
+            for var_name in var_names:
+                value = dynamic_params.get(var_name)
+                if value in (None, ""):
+                    value = base_params.get(var_name)
+                if value in (None, ""):
+                    continue
+                if include_in_block(category_key, var_name):
+                    context_block_values[var_name] = str(value)
+
+        context_variable_descriptions: dict[str, str] = {}
+        if context_variables:
+            for entry in self.db.get_context_variable_catalog(self.bot, self.context_registry):
+                context_variable_descriptions[entry["name"]] = entry.get("description", "")
+        for variable_name, value in context_variables.items():
+            if variable_name in base_params:
+                continue
+            source = context_variable_sources.get(variable_name, "Custom")
+            category_key = f"custom:{source}"
+            if include_in_block(category_key, variable_name):
+                context_block_values[variable_name] = str(value)
+
+        context_block = build_floating_context_block(
+            values=context_block_values,
+            dynamic_groups={**STABLE_VARIABLE_GROUPS, **DYNAMIC_VARIABLE_GROUPS},
+            context_sources=context_variable_sources,
+            context_descriptions=context_variable_descriptions,
+            narratives=VARIABLE_NARRATIVES,
+        )
+        if context_block:
+            messages.append({"role": "system", "content": context_block})
 
         messages.append(
             {
