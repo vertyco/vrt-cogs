@@ -278,8 +278,8 @@ class SmartMod(MixinMeta):
         if not flagged_content.strip() and smartmod_image_urls(message):
             flagged_content = "[image attachment]"
         flagged_cats = ", ".join(f"{c} ({tripped[c]:.2f})" for c in sorted(tripped))
-        context_text = await self.build_smartmod_context(message, conf, flagged_content=flagged_content)
-        messages = await self.build_review_messages(message, conf, flagged_cats, context_text, flagged_content)
+        context_entries = await self.build_smartmod_context(message, conf, flagged_content=flagged_content)
+        messages = await self.build_review_messages(message, conf, flagged_cats, context_entries, flagged_content)
 
         # Actions actually available here (built-ins + Ark/Notes when those cogs are loaded);
         # constrain the model's propose_mod_action enum to exactly these.
@@ -332,7 +332,7 @@ class SmartMod(MixinMeta):
                         conf,
                         args,
                         tripped,
-                        context_text,
+                        self.render_smartmod_context_text(context_entries),
                         available,
                         dry_run=dry_run,
                         channel=output_channel,
@@ -384,7 +384,7 @@ class SmartMod(MixinMeta):
         message: discord.Message,
         conf: GuildSettings,
         flagged_cats: str,
-        context_text: str,
+        context_entries: list[dict],
         flagged_content: str,
     ) -> list[dict]:
         guild = message.guild
@@ -514,19 +514,29 @@ class SmartMod(MixinMeta):
         if context_block:
             messages.append({"role": "system", "content": context_block})
 
-        messages.append(
-            {
-                "role": "user",
-                "content": (
-                    f"FLAGGED MESSAGE\n"
-                    f"Author: {message.author} (ID: {message.author.id})\n"
-                    f"Channel: #{getattr(message.channel, 'name', message.channel.id)}\n"
-                    f"Jump URL: {message.jump_url}\n"
-                    f"Tripped categories: {flagged_cats}\n\n"
-                    f"CONVERSATION CONTEXT (chronological; the flagged message is marked with >>>):\n{context_text}"
-                ),
-            }
+        header = (
+            f"FLAGGED MESSAGE\n"
+            f"Author: {message.author} (ID: {message.author.id})\n"
+            f"Channel: #{getattr(message.channel, 'name', message.channel.id)}\n"
+            f"Jump URL: {message.jump_url}\n"
+            f"Tripped categories: {flagged_cats}\n\n"
+            "CONVERSATION CONTEXT (chronological; the flagged message is marked with >>>):"
         )
+        supports_vision = await self.endpoint_supports_vision(conf, author, requested_model=review_model)
+        any_images = any(entry["image_urls"] for entry in context_entries)
+
+        if supports_vision and any_images:
+            content_blocks: list[dict] = [{"type": "text", "text": header}]
+            for entry in context_entries:
+                marker = ">>> " if entry["is_flagged"] else ""
+                line_text = entry["text"] or "[no text]"
+                content_blocks.append({"type": "text", "text": f"{marker}[{entry['author']}]: {line_text}"})
+                for url in entry["image_urls"][:10]:
+                    content_blocks.append({"type": "image_url", "image_url": {"url": url}})
+            messages.append({"role": "user", "content": content_blocks})
+        else:
+            text_body = self.render_smartmod_context_text(context_entries)
+            messages.append({"role": "user", "content": f"{header}\n{text_body}"})
         return messages
 
     async def build_review_rag(self, message: discord.Message, conf: GuildSettings, query: str) -> str:
@@ -549,7 +559,13 @@ class SmartMod(MixinMeta):
 
     async def build_smartmod_context(
         self, message: discord.Message, conf: GuildSettings, flagged_content: t.Optional[str] = None
-    ) -> str:
+    ) -> list[dict]:
+        """Surrounding chat history as structured entries.
+
+        Each entry: ``{"author": str, "text": str, "image_urls": list[str], "is_flagged": bool}``.
+        Callers render this into a plain-text block or a multimodal content list depending on
+        whether the review model supports vision.
+        """
         sm = conf.smartmod
         before = max(0, min(sm.context_before, 50))
         after = max(0, min(sm.context_after, 25))
@@ -565,13 +581,34 @@ class SmartMod(MixinMeta):
             log.warning("smartmod: context fetch failed", exc_info=e)
             collected = [message]
 
-        lines = []
+        entries: list[dict] = []
         for msg in collected:
             is_flagged = msg.id == message.id
-            marker = ">>> " if is_flagged else ""
-            # For simulations the flagged "message" is the admin's command; show the test text instead.
-            text = flagged_content if (is_flagged and flagged_content is not None) else (msg.content or "[no text]")
-            lines.append(f"{marker}[{msg.author}]: {text}")
+            text = flagged_content if (is_flagged and flagged_content is not None) else (msg.content or "")
+            entries.append(
+                {
+                    "author": str(msg.author),
+                    "text": text,
+                    "image_urls": smartmod_image_urls(msg),
+                    "is_flagged": is_flagged,
+                }
+            )
+        return entries
+
+    @staticmethod
+    def render_smartmod_context_text(entries: list[dict]) -> str:
+        """Plain-text rendering of the surrounding context (no images).
+
+        Used when the review model does not support vision or simply as the textual
+        backbone of the multimodal payload.
+        """
+        lines: list[str] = []
+        for entry in entries:
+            marker = ">>> " if entry["is_flagged"] else ""
+            text = entry["text"] or "[no text]"
+            image_count = len(entry["image_urls"])
+            suffix = f"  [{image_count} image attachment(s)]" if image_count else ""
+            lines.append(f"{marker}[{entry['author']}]: {text}{suffix}")
         return "\n".join(lines)
 
     async def exec_review_tool(
