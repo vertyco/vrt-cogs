@@ -1,5 +1,10 @@
 # Assistant Changelog
 
+## v8.7.2
+
+- Smartmod review now passes each surrounding-context message's image attachments to the moderator model when the review endpoint supports vision (each image is included as an `image_url` content block inline with the chronological transcript). Text-only fallback still notes attachment counts for non-vision endpoints.
+- `MixinMeta` (abc): added `execute_mod_action` and `smartmod_unban` declarations and fixed `smartmod_score` signature to include `image_urls`.
+
 ## v8.7.1
 
 - Smartmod review prompt now substitutes the same placeholder variables as the main system prompt ({servername}, {channelname}, {displayname}, custom cog-registered variables, etc.) in both the base system prompt and the per-guild `mod_prompt`. The dynamic floating context block (time, last interaction, opted-in variables via `[p]floatingcontext`) is also injected into the review call so the moderator model sees the same situational context as the regular chat path. `{flagged_categories}` continues to work.

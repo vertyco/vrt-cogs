@@ -213,7 +213,12 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def smartmod_score(self, content: str, conf: GuildSettings) -> Optional[Dict[str, float]]:
+    async def smartmod_score(
+        self,
+        content: str,
+        conf: GuildSettings,
+        image_urls: Optional[List[str]] = None,
+    ) -> Optional[Dict[str, float]]:
         raise NotImplementedError
 
     @abstractmethod
@@ -229,6 +234,25 @@ class MixinMeta(ABC):
         content: str,
         output_channel: discord.abc.Messageable,
     ) -> tuple:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def execute_mod_action(
+        self,
+        action: str,
+        *,
+        guild: discord.Guild,
+        flagged_message: discord.Message,
+        target: Union[discord.Member, discord.User],
+        reason: str,
+        actor: Union[discord.Member, discord.ClientUser],
+        duration_minutes: int = 0,
+        delete_message: bool = False,
+    ) -> tuple[str, bool]:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def smartmod_unban(self, guild_id: int, user_id: int, reason: str) -> None:
         raise NotImplementedError
 
     # -------------------------------------------------------
