@@ -67,6 +67,7 @@ from .utils import (
     extract_code_blocks,
     extract_code_blocks_with_lang,
     extract_document_text,
+    format_template,
     get_attachments,
     get_base_params,
     get_dynamic_params,
@@ -1573,7 +1574,7 @@ class ChatHandler(MixinMeta):
 
         # --- Prompt-template substitution params --------------------------
         # All variables (stable + dynamic + 3rd-party) are inlined into
-        # `params`. ``format_string()`` only replaces placeholders that
+        # `params`. ``format_template()`` only replaces placeholders that
         # actually appear in the templates, so unreferenced values cost
         # nothing. Original substitution behavior is preserved exactly.
         params: dict = dict(base_params)
@@ -1634,21 +1635,15 @@ class ChatHandler(MixinMeta):
             if include_in_block(category_key, variable_name):
                 context_block_values[variable_name] = str(value)
 
-        def format_string(text: str):
-            """Instead of format(**params) possibly giving a KeyError if prompt has code in it"""
-            for k, v in params.items():
-                key = "{" + k + "}"
-                text = text.replace(key, str(v))
-            return text
-
         if channel.id in conf.channel_prompts:
-            system_prompt = format_string(conf.channel_prompts[channel.id])
+            system_prompt = format_template(conf.channel_prompts[channel.id], params)
         else:
-            system_prompt = format_string(
-                conversation.system_prompt_override or self.db.get_effective_system_prompt(conf)
+            system_prompt = format_template(
+                conversation.system_prompt_override or self.db.get_effective_system_prompt(conf),
+                params,
             )
 
-        initial_prompt = format_string(conf.prompt)
+        initial_prompt = format_template(conf.prompt, params)
         model = configured_model
         current_tokens = await self.count_tokens(message + system_prompt + initial_prompt, model)
         current_tokens += await self.count_payload_tokens(conversation.messages, model)
@@ -1712,7 +1707,7 @@ class ChatHandler(MixinMeta):
             )
 
         if trigger_prompt:
-            formatted_trigger = format_string(trigger_prompt)
+            formatted_trigger = format_template(trigger_prompt, params)
             initial_prompt += f"\n# TRIGGER RESPONSE:\n{formatted_trigger}"
 
         supports_vision = await self.endpoint_supports_vision(conf, author, requested_model=model)

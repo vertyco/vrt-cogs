@@ -625,6 +625,8 @@ DEFAULT_MOD_PROMPT = """You are acting as an impartial moderation reviewer for t
 
 A message tripped the automated content filter for: {flagged_categories}
 
+This prompt supports the same placeholder variables as the main system prompt (server name, channel name, display name, custom variables from other cogs, etc.).
+
 Your job is to decide, IN CONTEXT, whether the flagged message actually warrants moderator action.
 
 Guidelines:
