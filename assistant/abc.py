@@ -187,6 +187,20 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    async def resolve_prompt_context_variables(
+        self,
+        guild: discord.Guild,
+        channel: Optional[Union[discord.TextChannel, discord.Thread, discord.ForumChannel]],
+        author: Optional[discord.Member],
+        conf: GuildSettings,
+        conversation: Conversation,
+        extras: dict,
+        now: Any,
+        prompt_templates: List[str],
+    ) -> Dict[str, str]:
+        raise NotImplementedError
+
+    @abstractmethod
     async def token_pagify(self, text: str, conf: GuildSettings) -> List[str]:
         raise NotImplementedError
 
