@@ -215,14 +215,19 @@ class SmartMod(MixinMeta):
         self.smartmod_cooldowns[(message.guild.id, message.author.id)] = now
         log.debug("smartmod flagged %s in %s: %s", message.author, message.guild, tripped)
         outcome = "error"
+        detail = ""
         try:
-            outcome, _ = await self.smartmod_review(message, conf, tripped)
+            outcome, detail = await self.smartmod_review(message, conf, tripped)
         except Exception as e:
             log.error("smartmod review failed for %s", message.author, exc_info=e)
         # Never silently drop a flagged message: if the model couldn't decide (loop exhausted,
         # endpoint without tool support, etc.) or errored, post a manual-review notice for staff.
         if outcome in ("no_decision", "error"):
             await self.notify_review_incomplete(message, conf, tripped)
+        elif outcome == "no_action":
+            # Flagged + model cleared it: log to the report channel WITHOUT pinging staff,
+            # so admins have a paper trail of every trip without alert fatigue.
+            await self.notify_no_action(message, conf, tripped, detail)
 
     async def notify_review_incomplete(
         self, message: discord.Message, conf: GuildSettings, tripped: dict[str, float]
@@ -253,6 +258,39 @@ class SmartMod(MixinMeta):
             await target.send(content=content or None, embed=embed, allowed_mentions=allowed)
         except discord.HTTPException as e:
             log.error("smartmod: failed to post manual-review notice", exc_info=e)
+
+    async def notify_no_action(
+        self, message: discord.Message, conf: GuildSettings, tripped: dict[str, float], reason: str
+    ) -> None:
+        """Silent paper-trail log when the reviewer cleared a flagged message.
+
+        Posts to the report channel with NO role pings, so staff can audit every trip
+        without alert noise on benign hits.
+        """
+        sm = conf.smartmod
+        target = message.guild.get_channel(sm.report_channel) if sm.report_channel else None
+        me = message.guild.me
+        if not isinstance(target, (discord.TextChannel, discord.Thread, discord.VoiceChannel)):
+            return
+        if me is None or not target.permissions_for(me).send_messages:
+            return
+        cats = ", ".join(f"{c} ({tripped[c]:.2f})" for c in sorted(tripped))
+        description = (
+            f"A message by {message.author.mention} tripped the filter ({cats}) "
+            f"but the reviewer decided no action was warranted.\n"
+            f"[Jump to message]({message.jump_url})"
+        )
+        embed = discord.Embed(
+            title="✅ Smartmod: no action",
+            description=description,
+            color=discord.Color.greyple(),
+        )
+        if reason.strip():
+            embed.add_field(name="Reviewer reason", value=reason[:1024], inline=False)
+        try:
+            await target.send(embed=embed, allowed_mentions=discord.AllowedMentions.none())
+        except discord.HTTPException as e:
+            log.error("smartmod: failed to post no-action notice", exc_info=e)
 
     # ------------------------------------------------------------------
     # Stage 2: LLM review
