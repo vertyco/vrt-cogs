@@ -1,5 +1,11 @@
 # Assistant Changelog
 
+## v8.8.0
+
+- **Fix**: `resolve_chat_model()` now recognises OpenRouter model slug suffixes (`:nitro`, `:floor`, `:extended`) — models stored as e.g. `xiaomi/mimo-v2.5-pro:nitro` no longer fall back to `openrouter/auto`. The "not in discovered model list" warning is also suppressed for suffix models whose base is in the profile.
+- **New**: OpenRouter provider routing preferences — `[p]assistant orprovider providers <p1> [p2 ...]` sets an ordered provider list; `[p]assistant orprovider fallbacks false` hard-pins to those providers; `[p]assistant orprovider suffix :nitro` applies a guild-wide model slug suffix to every request; `[p]assistant orprovider settings` shows current config.
+- **New**: Model picker search — Search 🔍 button filters the model list by query; Suffix 🏷️ button sets/clears the `:nitro`/`:floor`/`:extended` suffix on the currently selected model inline; Clear ✖️ resets the search.
+
 ## v8.7.2
 
 - Smartmod review now passes each surrounding-context message's image attachments to the moderator model when the review endpoint supports vision (each image is included as an `image_url` content block inline with the chronological transcript). Text-only fallback still notes attachment counts for non-vision endpoints.

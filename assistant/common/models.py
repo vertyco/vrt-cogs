@@ -275,6 +275,20 @@ class GuildSettings(AssistantBaseModel):
     # system message.
     openrouter_prompt_cache_ttl: str = "5m"
 
+    # ------------------------------------------------------------------
+    # OpenRouter provider routing preferences.
+    # Sent as extra_body["provider"] on every OpenRouter request.
+    # ------------------------------------------------------------------
+    # Guild-wide model slug suffix (e.g. ":nitro", ":floor", ":extended").
+    # Applied after model resolution; replaces any per-model suffix on conf.model.
+    openrouter_model_suffix: t.Optional[str] = None
+    # Ordered list of provider slugs to try (e.g. ["Fireworks", "Together"]).
+    # Set allow_fallbacks=False to hard-pin to only these providers.
+    openrouter_provider_order: t.List[str] = []
+    # Whether to allow fallback providers when pinned ones are unavailable.
+    # None = use OpenRouter default (True).
+    openrouter_allow_fallbacks: t.Optional[bool] = None
+
     # Smartmod (AI moderation)
     smartmod: SmartModSettings = Field(default_factory=SmartModSettings)
 

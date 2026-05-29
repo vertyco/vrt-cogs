@@ -36,6 +36,7 @@ from ..common.constants import (
     DEFAULT_MOD_PROMPT,
     MOD_CATEGORY_DEFAULTS,
     MODELS,
+    OR_SUFFIXES,
     get_min_cache_tokens,
 )
 from ..common.models import (
@@ -328,8 +329,17 @@ class Admin(MixinMeta):
             self.resolve_embedding_model(model, conf) if embedding else self.resolve_chat_model(model, conf)
         )
 
-        if profile.provider == "openrouter" and not embedding and model.lower().startswith("openrouter/"):
-            return None
+        if profile.provider == "openrouter" and not embedding:
+            if model.lower().startswith("openrouter/"):
+                return None
+            # Suppress warning when the model has a known OR suffix but the base is discovered.
+            base = model
+            for sfx in OR_SUFFIXES:
+                if base.endswith(sfx):
+                    base = base[: -len(sfx)]
+                    break
+            if base in discovered:
+                return None
 
         if discovered and model not in discovered:
             if resolved_model and resolved_model != model:
@@ -3024,6 +3034,93 @@ class Admin(MixinMeta):
         conf.openrouter_prompt_cache_ttl = mode
         await self.save_conf()
         await ctx.send(_("OpenRouter provider prompt cache set to **{}**.").format(mode))
+
+    # ------------------------------------------------------------------
+    # OpenRouter provider routing preferences
+    # ------------------------------------------------------------------
+
+    @assistant.group(name="openrouterprovider", aliases=["orprovider"])
+    @commands.admin_or_permissions(administrator=True)
+    async def openrouter_provider(self, ctx: commands.Context):
+        """Configure OpenRouter provider routing and model slug preferences."""
+        pass
+
+    @openrouter_provider.command(name="settings")
+    async def or_provider_settings(self, ctx: commands.Context):
+        """Show current OpenRouter provider routing settings."""
+        conf = self.db.get_conf(ctx.guild)
+
+        def fmt_list(lst: list) -> str:
+            return humanize_list([f"`{v}`" for v in lst]) if lst else _("not set")
+
+        def fmt_opt(val) -> str:
+            return f"`{val}`" if val is not None else _("not set (OR default)")
+
+        embed = discord.Embed(title=_("OpenRouter Provider Settings"), color=discord.Color.blue())
+        embed.add_field(name=_("Model suffix"), value=fmt_opt(conf.openrouter_model_suffix), inline=True)
+        embed.add_field(name=_("Allow fallbacks"), value=fmt_opt(conf.openrouter_allow_fallbacks), inline=True)
+        embed.add_field(name=_("Provider order"), value=fmt_list(conf.openrouter_provider_order), inline=False)
+        embed.set_footer(text=_("Tip: `providers Fireworks` + `fallbacks false` hard-pins to that provider."))
+        await ctx.send(embed=embed)
+
+    @openrouter_provider.command(name="suffix")
+    async def or_provider_suffix(self, ctx: commands.Context, value: str):
+        """Set a guild-wide model slug suffix applied to every OpenRouter request.
+
+        Valid values: `:nitro` (throughput priority), `:floor` (price priority),
+        `:extended`, `clear` (remove suffix).
+        The suffix is appended after model resolution and replaces any per-model suffix.
+        """
+        value = value.strip()
+        if value.lower() == "clear":
+            self.db.get_conf(ctx.guild).openrouter_model_suffix = None
+            await self.save_conf()
+            return await ctx.send(_("OpenRouter model suffix cleared."))
+        if value not in OR_SUFFIXES:
+            return await ctx.send(
+                _("Invalid suffix `{}`. Valid: {}.").format(value, humanize_list([f"`{s}`" for s in OR_SUFFIXES]))
+            )
+        self.db.get_conf(ctx.guild).openrouter_model_suffix = value
+        await self.save_conf()
+        await ctx.send(_("OpenRouter model suffix set to `{}`.").format(value))
+
+    @openrouter_provider.command(name="providers")
+    async def or_provider_providers(self, ctx: commands.Context, *providers: str):
+        """Set the ordered list of providers OpenRouter should use (space-separated).
+
+        Pass `clear` to reset. Combined with `fallbacks false` this hard-pins routing
+        to only the listed providers in order.
+        Example: `providers Fireworks Together`
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if not providers or providers[0].lower() == "clear":
+            conf.openrouter_provider_order = []
+            await self.save_conf()
+            return await ctx.send(_("OpenRouter provider list cleared."))
+        conf.openrouter_provider_order = list(providers)
+        await self.save_conf()
+        await ctx.send(
+            _("OpenRouter will try providers in order: {}.").format(humanize_list([f"`{p}`" for p in providers]))
+        )
+
+    @openrouter_provider.command(name="fallbacks")
+    async def or_provider_fallbacks(self, ctx: commands.Context, value: str):
+        """Set whether OpenRouter may fall back to other providers.
+
+        Values: `true`, `false`, `clear` (restore OR default which is true).
+        Set to `false` with `providers` to hard-pin routing to those providers only.
+        """
+        val = value.lower().strip()
+        conf = self.db.get_conf(ctx.guild)
+        if val == "clear":
+            conf.openrouter_allow_fallbacks = None
+            await self.save_conf()
+            return await ctx.send(_("OpenRouter fallbacks reset to OR default (enabled)."))
+        if val not in ("true", "false"):
+            return await ctx.send(_("Value must be `true`, `false`, or `clear`."))
+        conf.openrouter_allow_fallbacks = val == "true"
+        await self.save_conf()
+        await ctx.send(_("OpenRouter fallbacks set to `{}`.").format(val))
 
     @commands.hybrid_command(name="listcategories", aliases=["listcats", "toolcategories"])
     @commands.guild_only()
