@@ -762,7 +762,7 @@ class SmartMod(MixinMeta):
     ) -> list[ModAction]:
         """Actions offered for this target here: built-ins, plus Ark/Notes when those cogs are loaded."""
         actions = list(BUILTIN_MOD_ACTIONS)
-        arktools = self.bot.get_cog("ArkTools")
+        arktools: t.Any = self.bot.get_cog("ArkTools")
         if arktools is not None and isinstance(target, discord.Member):
             try:
                 players = await arktools.db_utils.search_players(guild, target)
@@ -882,7 +882,7 @@ class SmartMod(MixinMeta):
 
     async def action_warn(self, req: "ModActionRequest") -> tuple[str, bool]:
         member = req.guild.get_member(req.target.id)
-        warnings_cog = self.bot.get_cog("Warnings")
+        warnings_cog: t.Any = self.bot.get_cog("Warnings")
         if warnings_cog is not None and member is not None:
             try:
                 member_conf = warnings_cog.config.member(member)
@@ -916,7 +916,7 @@ class SmartMod(MixinMeta):
         return "⚠️ Couldn't warn: the Warnings cog isn't loaded and the user isn't in the server.", False
 
     async def action_note(self, req: "ModActionRequest") -> tuple[str, bool]:
-        modnotes = self.bot.get_cog("ModNotes")
+        modnotes: t.Any = self.bot.get_cog("ModNotes")
         if modnotes is None or not hasattr(modnotes, "api"):
             return "⚠️ ModNotes cog not available.", False
         await modnotes.api.create_note(req.guild, req.target, req.actor, req.reason)
@@ -929,7 +929,7 @@ class SmartMod(MixinMeta):
         return await self.do_ark_ban(req, temp=True)
 
     async def do_ark_ban(self, req: "ModActionRequest", temp: bool) -> tuple[str, bool]:
-        arktools = self.bot.get_cog("ArkTools")
+        arktools: t.Any = self.bot.get_cog("ArkTools")
         if arktools is None:
             return "⚠️ ArkTools cog not loaded.", False
         member = req.guild.get_member(req.target.id) or req.target
