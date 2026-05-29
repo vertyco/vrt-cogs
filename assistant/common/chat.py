@@ -1027,6 +1027,12 @@ class ChatHandler(MixinMeta):
             except httpx.ReadTimeout:
                 reply = _("Request timed out, please try again.")
                 break
+            except openai.NotFoundError as e:
+                if "image input" in str(e).lower():
+                    await purge_images(messages)
+                    tries += 1
+                    continue
+                raise e
             except openai.BadRequestError as e:
                 if "Invalid image" in str(e):
                     await purge_images(messages)
