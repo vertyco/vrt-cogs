@@ -13,7 +13,7 @@ from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box, pagify, text_to_file
 
-from .common.constants import ModAction
+from .common.constants import OR_SUFFIXES, ModAction
 from .common.models import (
     DB,
     CustomFunction,
@@ -1310,6 +1310,76 @@ class ModelPickerManualEntryModal(discord.ui.Modal):
         self.stop()
 
 
+class ModelPickerSearchModal(discord.ui.Modal):
+    def __init__(self, current_query: str):
+        super().__init__(title=_("Search Models"), timeout=120)
+        self.value: Optional[str] = None
+        self.field = discord.ui.TextInput(
+            label=_("Filter"),
+            placeholder=_("e.g. claude, gpt-4, mistral"),
+            style=discord.TextStyle.short,
+            default=current_query or None,
+            required=False,
+            max_length=100,
+        )
+        self.add_item(self.field)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        self.value = (self.field.value or "").strip()
+        await interaction.response.defer()
+        self.stop()
+
+
+class ModelPickerSuffixModal(discord.ui.Modal):
+    def __init__(self, current_suffix: str):
+        super().__init__(title=_("Model Slug Suffix"), timeout=120)
+        self.value: Optional[str] = None
+        self.field = discord.ui.TextInput(
+            label=_("Suffix"),
+            placeholder=_(":nitro (throughput)  :floor (price)  :extended  (blank = remove)"),
+            style=discord.TextStyle.short,
+            default=current_suffix or None,
+            required=False,
+            max_length=20,
+        )
+        self.add_item(self.field)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        self.value = (self.field.value or "").strip()
+        await interaction.response.defer()
+        self.stop()
+
+
+class ModelPickerSearchRow(discord.ui.ActionRow["ModelPickerView"]):
+    def __init__(self, has_query: bool):
+        super().__init__()
+        search_btn = discord.ui.Button(label=_("Search"), emoji="🔍", style=discord.ButtonStyle.secondary)
+        search_btn.callback = self.open_search
+        self.add_item(search_btn)
+
+        suffix_btn = discord.ui.Button(label=_("Suffix"), emoji="🏷️", style=discord.ButtonStyle.secondary)
+        suffix_btn.callback = self.open_suffix
+        self.add_item(suffix_btn)
+
+        clear_btn = discord.ui.Button(
+            label=_("Clear search"),
+            emoji="✖️",
+            style=discord.ButtonStyle.danger,
+            disabled=not has_query,
+        )
+        clear_btn.callback = self.clear_search
+        self.add_item(clear_btn)
+
+    async def open_search(self, interaction: discord.Interaction):
+        await self.view.open_search(interaction)
+
+    async def open_suffix(self, interaction: discord.Interaction):
+        await self.view.open_suffix(interaction)
+
+    async def clear_search(self, interaction: discord.Interaction):
+        await self.view.clear_search(interaction)
+
+
 class ModelPickerNavigationRow(discord.ui.ActionRow["ModelPickerView"]):
     def __init__(self, total_pages: int, kind_label: str):
         super().__init__()
@@ -1406,6 +1476,7 @@ class ModelPickerView(discord.ui.LayoutView):
         self.set_current = set_current
         self.page = 0
         self.total_pages = 1
+        self.search_query: str = ""
         self.message: Optional[discord.Message] = None
 
     async def interaction_check(self, interaction: discord.Interaction):
@@ -1443,7 +1514,11 @@ class ModelPickerView(discord.ui.LayoutView):
         if not profile:
             return []
         bucket = profile.chat_models if self.kind == "chat" else profile.embedding_models
-        return list(bucket.keys())
+        models = list(bucket.keys())
+        if self.search_query:
+            q = self.search_query.lower()
+            models = [m for m in models if q in m.lower()]
+        return models
 
     def get_grouped(self) -> Dict[str, List[str]]:
         return group_models_by_provider(self.get_models_for_kind())
@@ -1475,6 +1550,7 @@ class ModelPickerView(discord.ui.LayoutView):
             container.add_item(discord.ui.TextDisplay("\n".join(header_lines)))
             container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.small))
             container.add_item(ModelPickerNavigationRow(1, self.kind_label()))
+            container.add_item(ModelPickerSearchRow(bool(self.search_query)))
             self.add_item(container)
             return
 
@@ -1485,14 +1561,17 @@ class ModelPickerView(discord.ui.LayoutView):
         stop = start + self.page_size
         page_providers = providers[start:stop]
 
-        header_lines.append(
-            _("{} models across {} providers • Page {}/{}").format(
-                total_models,
-                len(providers),
-                self.page + 1,
-                self.total_pages,
+        if self.search_query:
+            header_lines.append(_("-# Search: `{}`  •  {} result(s)").format(self.search_query, total_models))
+        else:
+            header_lines.append(
+                _("{} models across {} providers • Page {}/{}").format(
+                    total_models,
+                    len(providers),
+                    self.page + 1,
+                    self.total_pages,
+                )
             )
-        )
         if self.kind == "chat":
             header_lines.append(
                 _("-# Tip: router endpoints accept aliases like `{}` or `{}` via **Manual entry**.").format(
@@ -1531,6 +1610,7 @@ class ModelPickerView(discord.ui.LayoutView):
 
         container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.small))
         container.add_item(ModelPickerNavigationRow(self.total_pages, self.kind_label()))
+        container.add_item(ModelPickerSearchRow(bool(self.search_query)))
         self.add_item(container)
 
     async def start(self):
@@ -1632,6 +1712,55 @@ class ModelPickerView(discord.ui.LayoutView):
                 await interaction.response.defer()
         await self.reprobe_func()
         await self.refresh(interaction)
+
+    async def open_search(self, interaction: discord.Interaction):
+        modal = ModelPickerSearchModal(self.search_query)
+        await interaction.response.send_modal(modal)
+        await modal.wait()
+        self.search_query = modal.value or ""
+        self.page = 0
+        await self.refresh(None)
+
+    async def clear_search(self, interaction: discord.Interaction):
+        self.search_query = ""
+        self.page = 0
+        await self.refresh(interaction)
+
+    async def open_suffix(self, interaction: discord.Interaction):
+        current = self.current_model
+        existing_suffix = ""
+        for sfx in OR_SUFFIXES:
+            if current.endswith(sfx):
+                existing_suffix = sfx
+                break
+        modal = ModelPickerSuffixModal(existing_suffix)
+        await interaction.response.send_modal(modal)
+        await modal.wait()
+        raw = (modal.value or "").strip()
+        if raw and raw not in OR_SUFFIXES:
+            with suppress(discord.HTTPException):
+                await interaction.followup.send(
+                    _("Invalid suffix `{}`. Valid: {}.").format(
+                        raw, ", ".join(f"`{s}`" for s in OR_SUFFIXES)
+                    ),
+                    ephemeral=True,
+                )
+            return
+        # Strip existing suffix then append new one (if any).
+        base = current
+        for sfx in OR_SUFFIXES:
+            if base.endswith(sfx):
+                base = base[: -len(sfx)]
+                break
+        new_model = base + raw
+        self.set_current_model(new_model)
+        await self.save()
+        await self.refresh(None)
+        with suppress(discord.HTTPException):
+            label = f"`{raw}`" if raw else _("(none)")
+            await interaction.followup.send(
+                _("Model set to **{}** (suffix: {})").format(new_model, label), ephemeral=True
+            )
 
 
 # ---------------------------------------------------------------------------

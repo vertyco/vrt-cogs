@@ -99,6 +99,8 @@ async def request_chat_completion_raw(
     openrouter_prompt_cache_ttl: Optional[str] = None,
     # OpenAI prompt_cache_key for direct-OpenAI routing stickiness.
     guild_id: Optional[int] = None,
+    # OpenRouter provider routing preferences dict (injected as extra_body["provider"]).
+    openrouter_provider: Optional[dict] = None,
 ) -> ChatCompletion:
     client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
 
@@ -225,6 +227,9 @@ async def request_chat_completion_raw(
                             # Append a cache_control marker to the last text block.
                             content[-1] = {**content[-1], "cache_control": build_cc()}
                         break
+
+        if openrouter_provider:
+            extra_body["provider"] = openrouter_provider
 
     # ------------------------------------------------------------------
     # OpenAI prompt_cache_key for direct OpenAI calls.

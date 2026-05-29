@@ -595,6 +595,12 @@ def get_min_cache_tokens(model: str) -> int:
     return 0
 
 
+# OpenRouter model slug suffixes for provider routing shortcuts.
+# Stripping these before profile lookups lets admins store model IDs like
+# "anthropic/claude-3.5-sonnet:nitro" without triggering the auto fallback.
+OR_SUFFIXES: tuple[str, ...] = (":nitro", ":floor", ":extended")
+
+
 # ---------------------------------------------------------------------------
 # Smartmod (AI moderation)
 # ---------------------------------------------------------------------------

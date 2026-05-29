@@ -27,6 +27,7 @@ from .constants import (
     COMPACTION_SUMMARY_ROLE,
     COMPACTION_SYSTEM_PROMPT,
     MODELS,
+    OR_SUFFIXES,
     SUPPORTS_VISION,
     VISION_COSTS,
 )
@@ -129,6 +130,14 @@ class API(MixinMeta):
             return requested_model
         if profile.provider == "openrouter":
             if requested_model.lower().startswith("openrouter/"):
+                return requested_model
+            # Strip known OR suffixes for profile lookup; preserve suffix in return value.
+            base_model = requested_model
+            for sfx in OR_SUFFIXES:
+                if base_model.endswith(sfx):
+                    base_model = base_model[: -len(sfx)]
+                    break
+            if base_model in profile.chat_models:
                 return requested_model
             return OPENROUTER_CHAT_FALLBACK_MODEL
         if profile.active_chat_model:
@@ -647,6 +656,28 @@ class API(MixinMeta):
 
         is_openrouter = bool(base_url and "openrouter.ai" in base_url.lower())
 
+        # Apply global guild suffix (e.g. ":nitro") AFTER resolve_chat_model so the
+        # resolver still works against clean profile model IDs. If the model already
+        # carries a per-model suffix, replace it with the global one.
+        # Skip if resolve_chat_model fell back to the auto-router (suffix on auto is meaningless).
+        if is_openrouter and conf.openrouter_model_suffix and model != OPENROUTER_CHAT_FALLBACK_MODEL:
+            for sfx in OR_SUFFIXES:
+                if model.endswith(sfx):
+                    model = model[: -len(sfx)]
+                    break
+            model += conf.openrouter_model_suffix
+
+        # Build OpenRouter provider routing preferences dict.
+        openrouter_provider: Optional[dict] = None
+        if is_openrouter:
+            prefs: dict = {}
+            if conf.openrouter_provider_order:
+                prefs["order"] = conf.openrouter_provider_order
+            if conf.openrouter_allow_fallbacks is not None:
+                prefs["allow_fallbacks"] = conf.openrouter_allow_fallbacks
+            if prefs:
+                openrouter_provider = prefs
+
         response: ChatCompletion = await request_chat_completion_raw(
             model=model,
             messages=messages,
@@ -665,6 +696,7 @@ class API(MixinMeta):
             openrouter_cache_ttl=conf.openrouter_cache_ttl,
             session_id=session_id if is_openrouter else None,
             openrouter_prompt_cache_ttl=conf.openrouter_prompt_cache_ttl if is_openrouter else None,
+            openrouter_provider=openrouter_provider,
             guild_id=guild_id,
         )
         message: ChatCompletionMessage = response.choices[0].message
