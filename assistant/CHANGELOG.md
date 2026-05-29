@@ -1,5 +1,9 @@
 # Assistant Changelog
 
+## v8.8.1
+
+- **Fix**: Sentry SDK bug — when OpenRouter returns HTTP 200 with `choices: null` (e.g. model temporarily unavailable), Sentry's OpenAI integration crashed with a `TypeError` that surfaced as an unhandled exception. Now caught in `request_chat_completion_raw` with a descriptive `RuntimeError`, and handled in `handle_message` with a user-facing message instead of the generic "something went wrong" fallback.
+
 ## v8.8.0
 
 - **Fix**: `resolve_chat_model()` now recognises OpenRouter model slug suffixes (`:nitro`, `:floor`, `:extended`) — models stored as e.g. `xiaomi/mimo-v2.5-pro:nitro` no longer fall back to `openrouter/auto`. The "not in discovered model list" warning is also suppressed for suffix models whose base is in the profile.

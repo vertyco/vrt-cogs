@@ -250,7 +250,23 @@ async def request_chat_completion_raw(
         level="info",
         data=kwargs,
     )
-    response: ChatCompletion = await client.chat.completions.create(**kwargs)
+    try:
+        response: ChatCompletion = await client.chat.completions.create(**kwargs)
+    except TypeError as exc:
+        # Sentry SDK bug: its OpenAI integration iterates response.choices without
+        # a null guard.  Some OpenRouter models return HTTP 200 with choices=null
+        # (e.g. when the provider is warming up or the response is malformed).
+        # The TypeError surfaces here instead of from our code.
+        raise RuntimeError(
+            f"Model {model!r} returned an empty response (choices=null). "
+            "The provider may be temporarily unavailable — try again or switch models."
+        ) from exc
+
+    if not response.choices:
+        raise RuntimeError(
+            f"Model {model!r} returned an empty choices list. "
+            "The provider may be temporarily unavailable — try again or switch models."
+        )
 
     log.debug(f"request_chat_completion_raw: {model} -> {response.model}")
     return response
