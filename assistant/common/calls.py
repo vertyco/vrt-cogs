@@ -252,6 +252,17 @@ async def request_chat_completion_raw(
     )
     try:
         response: ChatCompletion = await client.chat.completions.create(**kwargs)
+    except openai.NotFoundError as exc:
+        # Some OpenRouter provider endpoints for the routed model do not support a
+        # forced tool_choice value and reply 404 "No endpoints found that support
+        # the provided 'tool_choice' value". Drop tool_choice and retry once.
+        body = getattr(exc, "body", None)
+        message_text = body.get("error", {}).get("message", "") if isinstance(body, dict) else str(exc)
+        if "tool_choice" in (message_text or "") and "tool_choice" in kwargs:
+            kwargs.pop("tool_choice", None)
+            response = await client.chat.completions.create(**kwargs)
+        else:
+            raise
     except TypeError as exc:
         # Sentry SDK bug: its OpenAI integration iterates response.choices without
         # a null guard.  Some OpenRouter models return HTTP 200 with choices=null
