@@ -1770,13 +1770,48 @@ class Functions(MixinMeta):
         except commands.CommandError as e:
             return f"Cannot run command: {e}"
 
-        # Execute the command
+        # Execute the command, capturing any output the command sends to the channel
+        cutoff = discord.utils.utcnow()
         try:
             await bot.invoke(context)
-            return f"Successfully executed command: `{command}`"
         except Exception as e:
             log.error(f"Error running command {command}", exc_info=e)
             return f"Error executing command: {e}"
+
+        # Give any deferred sends a moment to land, then collect the bot's output
+        await asyncio.sleep(1)
+        output = await self.collect_command_output(channel, cutoff)
+        if not output:
+            return f"Successfully executed command: `{command}`. The command produced no visible output."
+        return f"Successfully executed command: `{command}`. Output:\n{output}"
+
+    async def collect_command_output(self, channel: discord.TextChannel, cutoff: datetime) -> str:
+        """Collect messages the bot posted to the channel after the given cutoff."""
+        if not channel.permissions_for(channel.guild.me).read_message_history:
+            return ""
+        lines: list[str] = []
+        try:
+            async for message in channel.history(limit=25, after=cutoff, oldest_first=True):
+                if message.author.id != self.bot.user.id:
+                    continue
+                content = message.clean_content
+                if message.attachments:
+                    content += " " + " ".join(a.url for a in message.attachments)
+                for embed in message.embeds:
+                    if embed.title:
+                        content += f"\n**{embed.title}**"
+                    if embed.description:
+                        content += f"\n{embed.description}"
+                    for field in embed.fields:
+                        content += f"\n**{field.name}**\n{field.value}"
+                    if embed.footer and embed.footer.text:
+                        content += f"\n{embed.footer.text}"
+                if content.strip():
+                    lines.append(content.strip())
+        except discord.HTTPException as e:
+            log.warning("Failed to collect command output", exc_info=e)
+            return ""
+        return "\n".join(lines)
 
     async def get_modlog_cases(
         self,

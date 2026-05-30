@@ -255,7 +255,11 @@ SEARCH_MESSAGES = {
 }
 RUN_COMMAND = {
     "name": "run_command",
-    "description": "Run a bot command as the current user, using their permissions.",
+    "description": (
+        "Run a bot command as the current user, using their permissions. "
+        "Any output the command posts to the channel is captured and returned in the result, "
+        "so you do not need to call fetch_channel_history afterward to read it."
+    ),
     "parameters": {
         "type": "object",
         "properties": {

@@ -29,7 +29,7 @@ class AssistantUtils(Functions, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.8.0"
+    __version__ = "1.9.0"
 
     def __init__(self, bot: Red):
         super().__init__()
