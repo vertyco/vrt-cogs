@@ -1116,8 +1116,18 @@ class ChatHandler(MixinMeta):
                 reasoning_msg = {"role": "assistant", "content": response.content}
                 if isinstance(reasoning_details, list) and reasoning_details:
                     reasoning_msg["reasoning_details"] = reasoning_details
+                    reasoning_str = " ".join(
+                        d.get("text", "") for d in reasoning_details if isinstance(d, dict)
+                    ).strip()
                 else:
-                    reasoning_msg["reasoning"] = reasoning_text.strip()
+                    reasoning_str = reasoning_text.strip()
+                    reasoning_msg["reasoning"] = reasoning_str
+                # Strict providers (e.g. Xiaomi/MiMo) reject assistant messages whose
+                # content is null unless ``reasoning_content`` or ``tool_calls`` is set;
+                # they do not recognize ``reasoning_details``/``reasoning``. Mirror the
+                # reasoning into ``reasoning_content`` so the continuation retry is accepted.
+                if not reasoning_msg["content"] and reasoning_str:
+                    reasoning_msg["reasoning_content"] = reasoning_str
                 messages.append(reasoning_msg)
                 if function_calls and supports_forced_tool_choice:
                     force_tool_choice_required = True
