@@ -26,7 +26,7 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
     """Schedule bot commands with ease"""
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.0.14"
+    __version__ = "1.0.15"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -37,6 +37,9 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
         self._save_path = cog_data_path(self) / "taskr.json"
         self._saving = False
         self._last_save = perf_counter()
+        # Snapshots of the schedule state each job was built from, keyed by task id.
+        # Used to detect edits, since the live task object is passed to the job by reference.
+        self.job_snapshots: dict[str, ScheduledCommand] = {}
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -142,8 +145,9 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
         changed = False
         log.debug("Ensuring %s scheduled tasks", len(tasks))
         for task in tasks:
-            if existing_job := self.scheduler.get_job(task.id):
-                if existing_job.args[0] == task:
+            if self.scheduler.get_job(task.id):
+                snapshot = self.job_snapshots.get(task.id)
+                if snapshot is not None and snapshot == task:
                     # Job already exists and is up to date
                     # log.debug("Task %s already scheduled", task)
                     continue
@@ -165,6 +169,7 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
                 next_run_time=task.next_run(timezone),
                 misfire_grace_time=10,
             )
+            self.job_snapshots[task.id] = task.model_copy(deep=True)
             log.info("Task %s scheduled", task)
             changed = True
 
@@ -175,6 +180,7 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
                 continue
             log.info("Removing job %s", job)
             self.scheduler.remove_job(job.id)
+            self.job_snapshots.pop(job.id, None)
             changed = True
         return changed
 
@@ -186,6 +192,7 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
         job = self.scheduler.get_job(task.id)
         if job:
             self.scheduler.remove_job(job.id)
+            self.job_snapshots.pop(task.id, None)
             log.info("Removed job %s", job)
             return True
         return False
