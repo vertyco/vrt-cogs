@@ -1,5 +1,9 @@
 # Assistant Changelog
 
+## v8.8.2
+
+- **Fix**: Reasoning-only continuation retry no longer 400s on strict providers. When a reasoning model (e.g. Xiaomi/MiMo v2.5 via OpenRouter) returned reasoning with no content/tool call, the in-flight retry payload carried an assistant message with `content: null` and only `reasoning_details`/`reasoning` — which Xiaomi rejects (`assistant must provide content, reasoning_content or tool_calls`). The reasoning is now also mirrored into `reasoning_content` so the continuation request is accepted.
+
 ## v8.8.1
 
 - **Fix**: Sentry SDK bug — when OpenRouter returns HTTP 200 with `choices: null` (e.g. model temporarily unavailable), Sentry's OpenAI integration crashed with a `TypeError` that surfaced as an unhandled exception. Now caught in `request_chat_completion_raw` with a descriptive `RuntimeError`, and handled in `handle_message` with a user-facing message instead of the generic "something went wrong" fallback.
