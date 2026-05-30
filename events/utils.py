@@ -40,12 +40,11 @@ class GetReply:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         if self.reply:
             if self.reply.guild:
-                with contextlib.suppress(
-                    discord.HTTPException, discord.NotFound, discord.Forbidden
-                ):
+                with contextlib.suppress(discord.HTTPException, discord.NotFound, discord.Forbidden):
                     await self.reply.delete(delay=30)
             else:
-                await self.reply.add_reaction("✅")
+                with contextlib.suppress(discord.HTTPException, discord.NotFound, discord.Forbidden):
+                    await self.reply.add_reaction("✅")
 
 
 def get_size(num: float) -> str:
@@ -81,9 +80,7 @@ def profile_icon(user: discord.Member) -> Optional[str]:
     return icon
 
 
-async def select_event(
-    ctx: commands.Context, events: dict, skip_completed: bool = True
-) -> Union[dict, None]:
+async def select_event(ctx: commands.Context, events: dict, skip_completed: bool = True) -> Union[dict, None]:
     selectable = {}
     if len(events.keys()) > 1:
         grammar = "are"
@@ -116,11 +113,7 @@ async def select_event(
             grammar = "days" if days_in_server > 1 else "day"
             field += f"• Must be in the server for at least {days_in_server} {grammar}\n"
 
-        roles = [
-            ctx.guild.get_role(rid).mention
-            for rid in info["roles_required"]
-            if ctx.guild.get_role(rid)
-        ]
+        roles = [ctx.guild.get_role(rid).mention for rid in info["roles_required"] if ctx.guild.get_role(rid)]
         if info["need_all_roles"] and roles:
             field += f"• Need All roles: {humanize_list(roles)}\n"
         elif not info["need_all_roles"] and roles:

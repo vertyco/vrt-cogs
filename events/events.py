@@ -56,7 +56,7 @@ class Events(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.2.5"
+    __version__ = "0.2.6"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -106,6 +106,8 @@ class Events(commands.Cog):
         self.submission_schema = {str(int): list}
 
         self._lock = set()
+        # Guards against an event being ended twice concurrently (manual end + auto loop)
+        self._ending = set()
         # Event check loop
         self.check_events.start()
 
@@ -125,7 +127,10 @@ class Events(commands.Cog):
                 ends = event["end_date"]
                 if now < ends:
                     continue
-                await self._end_event(guild, event)
+                try:
+                    await self._end_event(guild, event)
+                except Exception:
+                    log.exception(f"Failed to end event '{event['event_name']}' in {guild.name} ({guild.id})")
 
     @check_events.before_loop
     async def before_event_check(self):
@@ -230,7 +235,7 @@ class Events(commands.Cog):
         if days_required:
             now = datetime.now()
             joined_on = author.joined_at
-            if (now.timestamp() - joined_on.timestamp()) / (60 * 60 * 24) < days_required:
+            if joined_on and (now.timestamp() - joined_on.timestamp()) / (60 * 60 * 24) < days_required:
                 txt = f"You must be in the server for at least `{days_required}` day(s) in order to enter this event."
                 return await edit(msg, txt)
 
@@ -293,7 +298,7 @@ class Events(commands.Cog):
             await ctx.send("Entry added!", delete_after=5)
 
         if not submissions:
-            return await edit(msg, "No submissions send, entry cancelled")
+            return await edit(msg, "No submissions sent, entry cancelled")
 
         await edit(msg, "Are you sure you want to enter with these submissions? (y/n)")
         async with GetReply(ctx) as reply:
@@ -301,7 +306,7 @@ class Events(commands.Cog):
                 return await cancel(msg)
             if reply.content.lower() == "cancel":
                 return await cancel(msg)
-            if "n" in reply.content.lower():
+            if reply.content.lower().strip().startswith("n"):
                 return await cancel(msg)
 
         await edit(msg, "Your entries have been submitted!")
@@ -350,6 +355,9 @@ class Events(commands.Cog):
             to_save.append(entry_message.id)
 
         async with self.config.guild(ctx.guild).events() as events:
+            if event_name not in events:
+                # Event was ended or deleted while the user was entering
+                return await edit(msg, "This event ended before your entry could be saved.")
             if uid in events[event_name]["submissions"]:
                 existing_entries = list(iter_message_ids(events[event_name]["submissions"][uid]))
                 existing_entries.extend(to_save)
@@ -426,7 +434,7 @@ class Events(commands.Cog):
             start = i["start_date"]
             end = i["end_date"]
             roles = i["roles_required"]
-            required = [ctx.guild.get_role(rid).mention for rid in roles] if roles else []
+            required = [ctx.guild.get_role(rid).mention for rid in roles if ctx.guild.get_role(rid)] if roles else []
             need_all_roles = i["need_all_roles"]
             days_in_server = i["days_in_server"]
             rewards = i["rewards"]
@@ -737,13 +745,14 @@ class Events(commands.Cog):
         deleted = 0
         async with ctx.typing():
             async with self.config.guild(ctx.guild).events() as events:
-                for mid in iter_message_ids(events[event_name]["submissions"][uid].copy()):
-                    try:
-                        message = await channel.fetch_message(mid)
-                    except discord.NotFound:
-                        continue
-                    await message.delete()
-                    deleted += 1
+                if channel is not None:
+                    for mid in iter_message_ids(events[event_name]["submissions"][uid].copy()):
+                        try:
+                            message = await channel.fetch_message(mid)
+                            await message.delete()
+                            deleted += 1
+                        except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+                            continue
                 del events[event_name]["submissions"][uid]
 
         await msg.edit(content=f"Removed {deleted} entries by {user.name} from the {event_name} event")
@@ -1127,7 +1136,21 @@ class Events(commands.Cog):
             events[name] = event
 
     async def _end_event(self, guild: discord.Guild, event: dict):
+        key = (guild.id, event["event_name"])
+        if key in self._ending:
+            return
+        self._ending.add(key)
+        try:
+            await self._run_end_event(guild, event)
+        finally:
+            self._ending.discard(key)
+
+    async def _run_end_event(self, guild: discord.Guild, event: dict):
         conf = await self.config.guild(guild).all()
+        # Re-check fresh state; the event may have been completed/deleted since this was queued
+        fresh = conf["events"].get(event["event_name"])
+        if fresh is None or fresh["completed"]:
+            return
         rblacklist = conf["role_blacklist"]
         ublacklist = conf["user_blacklist"]
         emoji_id = conf["default_emoji"]
@@ -1141,6 +1164,16 @@ class Events(commands.Cog):
             emoji = self.bot.get_emoji(event["emoji"])
 
         channel: discord.TextChannel = guild.get_channel(int(event["channel_id"]))
+        if channel is None:
+            # Channel was deleted; we can't post results. Close the event so the loop stops retrying.
+            log.warning(f"Channel {event['channel_id']} for event '{event['event_name']}' not found; closing event")
+            async with self.config.guild(guild).events() as events:
+                if event["event_name"] in events:
+                    if conf["auto_delete"]:
+                        del events[event["event_name"]]
+                    else:
+                        events[event["event_name"]]["completed"] = True
+            return
         subs = event["submissions"]
         rewards = event["rewards"]
         currency = await bank.get_currency_name(guild)
@@ -1175,7 +1208,7 @@ class Events(commands.Cog):
                             continue
                         votes += 1
 
-                attachment = message.embeds[0].image
+                attachment = message.embeds[0].image if message.embeds else None
                 attachment_url = None
                 filename = None
                 if attachment:
