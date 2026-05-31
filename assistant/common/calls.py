@@ -250,6 +250,32 @@ async def request_chat_completion_raw(
         level="info",
         data=kwargs,
     )
+    # Final wire-gate sanitation: some reasoning models emit an assistant turn
+    # with null content and no tool_calls; providers like qwen via OpenRouter
+    # reject it with 400 'Provider returned error'. Salvage reasoning into
+    # content (or drop to a stub) so the payload is always valid.
+    def sanitize_messages_for_wire(payload):
+        if not isinstance(payload, list):
+            return
+        for entry in payload:
+            if not isinstance(entry, dict):
+                continue
+            if entry.get("role") != "assistant":
+                continue
+            if entry.get("content") or entry.get("tool_calls") or entry.get("function_call"):
+                continue
+            salvaged = entry.get("reasoning_content") or entry.get("reasoning") or ""
+            if not salvaged and isinstance(entry.get("reasoning_details"), list):
+                salvaged = " ".join(
+                    d.get("text", "") for d in entry["reasoning_details"] if isinstance(d, dict)
+                ).strip()
+            entry["content"] = salvaged or "Continuing."
+            entry.pop("reasoning_content", None)
+            entry.pop("reasoning", None)
+            entry.pop("reasoning_details", None)
+
+    sanitize_messages_for_wire(kwargs.get("messages"))
+
     try:
         response: ChatCompletion = await client.chat.completions.create(**kwargs)
     except openai.NotFoundError as exc:
