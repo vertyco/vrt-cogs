@@ -1,5 +1,9 @@
 # Assistant Changelog
 
+## v8.8.3
+
+- **Fix**: OpenRouter `404 No endpoints found that support the provided 'tool_choice' value` (raised when the routed provider for a model — e.g. `qwen/qwen3.6-plus` — doesn't accept a forced `tool_choice`) no longer crashes the response. `request_chat_completion_raw` now retries the request once without `tool_choice` on that error. Body parsing handles both the inner error dict and full envelope shapes.
+
 ## v8.8.2
 
 - **Fix**: Reasoning-only continuation retry no longer 400s on strict providers. When a reasoning model (e.g. Xiaomi/MiMo v2.5 via OpenRouter) returned reasoning with no content/tool call, the in-flight retry payload carried an assistant message with `content: null` and only `reasoning_details`/`reasoning` — which Xiaomi rejects (`assistant must provide content, reasoning_content or tool_calls`). The reasoning is now also mirrored into `reasoning_content` so the continuation request is accepted.
