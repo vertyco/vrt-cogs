@@ -256,9 +256,14 @@ async def request_chat_completion_raw(
         # Some OpenRouter provider endpoints for the routed model do not support a
         # forced tool_choice value and reply 404 "No endpoints found that support
         # the provided 'tool_choice' value". Drop tool_choice and retry once.
+        # exc.body may be the inner error dict ({"message": ...}) or the full
+        # envelope ({"error": {"message": ...}}); fall back to str(exc) either way.
         body = getattr(exc, "body", None)
-        message_text = body.get("error", {}).get("message", "") if isinstance(body, dict) else str(exc)
-        if "tool_choice" in (message_text or "") and "tool_choice" in kwargs:
+        message_text = str(exc)
+        if isinstance(body, dict):
+            inner = body.get("error") if isinstance(body.get("error"), dict) else body
+            message_text = f"{message_text} {inner.get('message', '')}"
+        if "tool_choice" in message_text and "tool_choice" in kwargs:
             kwargs.pop("tool_choice", None)
             response = await client.chat.completions.create(**kwargs)
         else:
