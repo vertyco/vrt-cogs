@@ -1,5 +1,9 @@
 # Assistant Changelog
 
+## v8.8.4
+
+- **Fix**: Final wire-gate sanitation in `request_chat_completion_raw`. A reasoning-only assistant turn (null `content`, no `tool_calls`) could reach the provider and trigger `400 Provider returned error` on strict endpoints (e.g. `qwen/qwen3.6-plus` via OpenRouter). Such messages now have their reasoning salvaged into `content` (or a stub) immediately before the API call, regardless of upstream cleaning.
+
 ## v8.8.3
 
 - **Fix**: OpenRouter `404 No endpoints found that support the provided 'tool_choice' value` (raised when the routed provider for a model — e.g. `qwen/qwen3.6-plus` — doesn't accept a forced `tool_choice`) no longer crashes the response. `request_chat_completion_raw` now retries the request once without `tool_choice` on that error. Body parsing handles both the inner error dict and full envelope shapes.
