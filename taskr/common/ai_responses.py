@@ -32,4 +32,7 @@ class CommandCreationResponse(CronDataResponse):
     author_id: t.Optional[int] = Field(
         description="The author ID to run the command as, default to current user if not provided in request"
     )
-    command: str = Field(description="The command to run")
+    command: str = Field(
+        description="The command to run, WITHOUT the bot prefix and WITHOUT surrounding backticks "
+        "(e.g. 'ping' not '.ping' or '`ping`')"
+    )

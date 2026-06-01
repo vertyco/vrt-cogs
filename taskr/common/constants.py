@@ -20,6 +20,7 @@ SYSTEM_PROMPT = (
     "- If using cron expressions, leave intervals blank.\n"
     "- When using between times and intervals at the same time, the interval using can only be minutes or hours.\n"
     "- Ensure that the task interval is not less than the minimum interval provided.\n"
+    "- The command field must NOT include the bot prefix (e.g. a leading '.') or surrounding backticks. Use 'ping', not '.ping' or '`ping`'.\n"
     "# EXAMPLES\n"
     "1: 'First Friday of every 3 months at 3:30PM starting on January':\n"
     "- hour: 15\n"
