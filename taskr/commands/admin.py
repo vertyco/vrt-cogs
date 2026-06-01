@@ -10,12 +10,12 @@ from rapidfuzz import fuzz
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_timedelta, pagify
-from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 
 from ..abc import MixinMeta
 from ..common import constants as C, utils
 from ..common.ai_responses import CommandCreationResponse
 from ..common.models import ScheduledCommand
+from ..components.dynamic_menu import DynamicMenu
 from ..components.task_menu import TaskMenu
 
 log = logging.getLogger("red.vrt.taskr.commands.admin")
@@ -53,7 +53,7 @@ class Admin(MixinMeta):
         timezone = self.db.timezone(ctx.guild)
         lines = []
         for task in tasks:
-            state = _("on") if task.enabled else _("off")
+            state = "🟢" if task.enabled else "🔴"
             try:
                 next_run = task.next_run(timezone) if task.enabled else None
             except ValueError:
@@ -64,22 +64,21 @@ class Admin(MixinMeta):
                 trigger = _("never")
             else:
                 trigger = _("disabled")
-            lines.append(f"- [{state}] **{task.name}** - {trigger}")
+            lines.append(f"-# {state} **{task.name}** - {trigger}")
 
         description = "\n".join(lines)
         pages = list(pagify(description, page_length=2000))
-        embeds = []
-        for idx, page in enumerate(pages):
-            embed = discord.Embed(
+        color = await self.bot.get_embed_color(ctx.channel)
+        embeds = [
+            discord.Embed(
                 title=_("Scheduled Tasks ({})").format(len(tasks)),
                 description=page,
-                color=await self.bot.get_embed_color(ctx.channel),
+                color=color,
             )
-            if len(pages) > 1:
-                embed.set_footer(text=_("Page {}/{}").format(idx + 1, len(pages)))
-            embeds.append(embed)
+            for page in pages
+        ]
 
-        await menu(ctx, embeds, DEFAULT_CONTROLS)
+        await DynamicMenu(ctx, embeds).refresh()
 
     @commands.hybrid_command(name="tasktimezone")
     async def set_timezone(self, ctx: commands.Context, timezone: str):
