@@ -9,7 +9,8 @@ from discord import app_commands
 from rapidfuzz import fuzz
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import humanize_timedelta
+from redbot.core.utils.chat_formatting import humanize_timedelta, pagify
+from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 
 from ..abc import MixinMeta
 from ..common import constants as C, utils
@@ -38,6 +39,47 @@ class Admin(MixinMeta):
             for x in self.db.tasks.values()
             if current.casefold() in x.name.casefold() and x.guild_id == interaction.guild.id
         ][:25]
+
+    @commands.hybrid_command(name="tasklist", aliases=["tasks"], description=_("List all scheduled tasks"))
+    @commands.admin_or_permissions(manage_guild=True)
+    @commands.bot_has_permissions(embed_links=True)
+    @commands.guild_only()
+    async def task_list(self, ctx: commands.Context):
+        """List all scheduled tasks in a condensed view"""
+        tasks = self.db.get_tasks(ctx.guild)
+        if not tasks:
+            return await ctx.send(_("There are no scheduled tasks in this server."), ephemeral=True)
+
+        timezone = self.db.timezone(ctx.guild)
+        lines = []
+        for task in tasks:
+            state = _("on") if task.enabled else _("off")
+            try:
+                next_run = task.next_run(timezone) if task.enabled else None
+            except ValueError:
+                next_run = None
+            if next_run:
+                trigger = f"<t:{int(next_run.timestamp())}:R>"
+            elif task.enabled:
+                trigger = _("never")
+            else:
+                trigger = _("disabled")
+            lines.append(f"- [{state}] **{task.name}** - {trigger}")
+
+        description = "\n".join(lines)
+        pages = list(pagify(description, page_length=2000))
+        embeds = []
+        for idx, page in enumerate(pages):
+            embed = discord.Embed(
+                title=_("Scheduled Tasks ({})").format(len(tasks)),
+                description=page,
+                color=await self.bot.get_embed_color(ctx.channel),
+            )
+            if len(pages) > 1:
+                embed.set_footer(text=_("Page {}/{}").format(idx + 1, len(pages)))
+            embeds.append(embed)
+
+        await menu(ctx, embeds, DEFAULT_CONTROLS)
 
     @commands.hybrid_command(name="tasktimezone")
     async def set_timezone(self, ctx: commands.Context, timezone: str):
