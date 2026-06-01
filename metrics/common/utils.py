@@ -67,13 +67,13 @@ def get_timespan(
     if start_time:
         try:
             parsed_start = parser.parse(start_time)
-        except parser.ParserError:
+        except (parser.ParserError, OverflowError, ValueError):
             pass
     parsed_end: None | datetime = None
     if end_time:
         try:
             parsed_end = parser.parse(end_time)
-        except parser.ParserError:
+        except (parser.ParserError, OverflowError, ValueError):
             pass
 
     if start_time and end_time and not parsed_start and not parsed_end:
@@ -82,7 +82,7 @@ def get_timespan(
         start_time = start_time + " " + end_time
         try:
             parsed_start = parser.parse(start_time)
-        except parser.ParserError:
+        except (parser.ParserError, OverflowError, ValueError):
             pass
 
     if parsed_start and parsed_start.tzinfo is None:

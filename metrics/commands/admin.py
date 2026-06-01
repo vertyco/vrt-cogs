@@ -2,6 +2,7 @@ import asyncio
 import logging
 import statistics
 import typing as t
+from collections import defaultdict
 from datetime import datetime, timezone
 
 import discord
@@ -302,7 +303,7 @@ class Admin(MixinMeta):
                 )
                 await ctx.send(f"Deleted {len(deleted)} guild member snapshots with 0 members.")
 
-    async def _find_outlier_ids(
+    def _find_outlier_ids(
         self,
         values: list[tuple[int, int | float | None]],
         threshold: float,
@@ -332,6 +333,57 @@ class Admin(MixinMeta):
 
         return outlier_ids, mean, stdev, len(valid_values)
 
+    async def _prune_outliers_for_table(
+        self,
+        results: list[str],
+        table,
+        value_field: str,
+        label: str,
+        threshold: float,
+        dry_run: bool,
+        per_guild: bool,
+    ) -> int:
+        """Detect and optionally delete statistical outliers for one table/metric.
+
+        When per_guild is True, outliers are computed independently per guild so a
+        large guild's normal values aren't flagged against smaller guilds.
+        """
+        columns = [table.id, getattr(table, value_field)]
+        if per_guild:
+            columns.append(table.guild)
+        rows = await table.select(*columns)
+
+        # One combined series globally, or one series per guild.
+        series: dict[int | None, list[tuple[int, int | float | None]]] = defaultdict(list)
+        for row in rows:
+            key = row["guild"] if per_guild else None
+            series[key].append((row["id"], row[value_field]))
+
+        outlier_ids: list[int] = []
+        analyzed = 0
+        last_mean = last_stdev = 0.0
+        for vals in series.values():
+            ids, last_mean, last_stdev, valid_count = self._find_outlier_ids(vals, threshold)
+            outlier_ids.extend(ids)
+            analyzed += valid_count
+
+        if per_guild:
+            detail = f"analyzed {analyzed} points across {len(series)} guilds"
+        else:
+            detail = f"mean={last_mean:.1f}, stdev={last_stdev:.1f}, analyzed {analyzed} points"
+
+        if not outlier_ids:
+            results.append(f"**{label}:** No outliers found ({detail})")
+            return 0
+
+        if dry_run:
+            results.append(f"**{label}:** Would delete {len(outlier_ids)} outliers ({detail})")
+            return 0
+
+        deleted = await table.delete().where(table.id.is_in(outlier_ids)).returning(table.id)
+        results.append(f"**{label}:** Deleted {len(deleted)} outliers")
+        return len(deleted)
+
     async def _prune_member_outliers(
         self,
         results: list[str],
@@ -341,65 +393,14 @@ class Admin(MixinMeta):
     ) -> int:
         """Prune member count outliers."""
         total_deleted = 0
-
         if scope in ("global", "all"):
-            # Get all global member snapshots
-            rows = await GlobalMemberSnapshot.select(
-                GlobalMemberSnapshot.id,
-                GlobalMemberSnapshot.member_total,
+            total_deleted += await self._prune_outliers_for_table(
+                results, GlobalMemberSnapshot, "member_total", "Global Member Snapshots", threshold, dry_run, False
             )
-            values = [(r["id"], r["member_total"]) for r in rows]
-            outlier_ids, mean, stdev, valid_count = await self._find_outlier_ids(values, threshold)
-
-            if outlier_ids:
-                if dry_run:
-                    results.append(
-                        f"**Global Member Snapshots:** Would delete {len(outlier_ids)} outliers "
-                        f"(mean={mean:.1f}, stdev={stdev:.1f}, analyzed {valid_count} points)"
-                    )
-                else:
-                    deleted = (
-                        await GlobalMemberSnapshot.delete()
-                        .where(GlobalMemberSnapshot.id.is_in(outlier_ids))
-                        .returning(GlobalMemberSnapshot.id)
-                    )
-                    total_deleted += len(deleted)
-                    results.append(f"**Global Member Snapshots:** Deleted {len(deleted)} outliers")
-            else:
-                results.append(
-                    f"**Global Member Snapshots:** No outliers found "
-                    f"(mean={mean:.1f}, stdev={stdev:.1f}, analyzed {valid_count} points)"
-                )
-
         if scope in ("guild", "all"):
-            # Get all guild member snapshots
-            rows = await GuildMemberSnapshot.select(
-                GuildMemberSnapshot.id,
-                GuildMemberSnapshot.member_total,
+            total_deleted += await self._prune_outliers_for_table(
+                results, GuildMemberSnapshot, "member_total", "Guild Member Snapshots", threshold, dry_run, True
             )
-            values = [(r["id"], r["member_total"]) for r in rows]
-            outlier_ids, mean, stdev, valid_count = await self._find_outlier_ids(values, threshold)
-
-            if outlier_ids:
-                if dry_run:
-                    results.append(
-                        f"**Guild Member Snapshots:** Would delete {len(outlier_ids)} outliers "
-                        f"(mean={mean:.1f}, stdev={stdev:.1f}, analyzed {valid_count} points)"
-                    )
-                else:
-                    deleted = (
-                        await GuildMemberSnapshot.delete()
-                        .where(GuildMemberSnapshot.id.is_in(outlier_ids))
-                        .returning(GuildMemberSnapshot.id)
-                    )
-                    total_deleted += len(deleted)
-                    results.append(f"**Guild Member Snapshots:** Deleted {len(deleted)} outliers")
-            else:
-                results.append(
-                    f"**Guild Member Snapshots:** No outliers found "
-                    f"(mean={mean:.1f}, stdev={stdev:.1f}, analyzed {valid_count} points)"
-                )
-
         return total_deleted
 
     async def _prune_economy_outliers(
@@ -411,65 +412,14 @@ class Admin(MixinMeta):
     ) -> int:
         """Prune economy/bank total outliers."""
         total_deleted = 0
-
         if scope in ("global", "all"):
-            # Get all global economy snapshots
-            rows = await GlobalEconomySnapshot.select(
-                GlobalEconomySnapshot.id,
-                GlobalEconomySnapshot.bank_total,
+            total_deleted += await self._prune_outliers_for_table(
+                results, GlobalEconomySnapshot, "bank_total", "Global Economy Snapshots", threshold, dry_run, False
             )
-            values = [(r["id"], r["bank_total"]) for r in rows]
-            outlier_ids, mean, stdev, valid_count = await self._find_outlier_ids(values, threshold)
-
-            if outlier_ids:
-                if dry_run:
-                    results.append(
-                        f"**Global Economy Snapshots:** Would delete {len(outlier_ids)} outliers "
-                        f"(mean={mean:.1f}, stdev={stdev:.1f}, analyzed {valid_count} points)"
-                    )
-                else:
-                    deleted = (
-                        await GlobalEconomySnapshot.delete()
-                        .where(GlobalEconomySnapshot.id.is_in(outlier_ids))
-                        .returning(GlobalEconomySnapshot.id)
-                    )
-                    total_deleted += len(deleted)
-                    results.append(f"**Global Economy Snapshots:** Deleted {len(deleted)} outliers")
-            else:
-                results.append(
-                    f"**Global Economy Snapshots:** No outliers found "
-                    f"(mean={mean:.1f}, stdev={stdev:.1f}, analyzed {valid_count} points)"
-                )
-
         if scope in ("guild", "all"):
-            # Get all guild economy snapshots
-            rows = await GuildEconomySnapshot.select(
-                GuildEconomySnapshot.id,
-                GuildEconomySnapshot.bank_total,
+            total_deleted += await self._prune_outliers_for_table(
+                results, GuildEconomySnapshot, "bank_total", "Guild Economy Snapshots", threshold, dry_run, True
             )
-            values = [(r["id"], r["bank_total"]) for r in rows]
-            outlier_ids, mean, stdev, valid_count = await self._find_outlier_ids(values, threshold)
-
-            if outlier_ids:
-                if dry_run:
-                    results.append(
-                        f"**Guild Economy Snapshots:** Would delete {len(outlier_ids)} outliers "
-                        f"(mean={mean:.1f}, stdev={stdev:.1f}, analyzed {valid_count} points)"
-                    )
-                else:
-                    deleted = (
-                        await GuildEconomySnapshot.delete()
-                        .where(GuildEconomySnapshot.id.is_in(outlier_ids))
-                        .returning(GuildEconomySnapshot.id)
-                    )
-                    total_deleted += len(deleted)
-                    results.append(f"**Guild Economy Snapshots:** Deleted {len(deleted)} outliers")
-            else:
-                results.append(
-                    f"**Guild Economy Snapshots:** No outliers found "
-                    f"(mean={mean:.1f}, stdev={stdev:.1f}, analyzed {valid_count} points)"
-                )
-
         return total_deleted
 
     async def _prune_performance_outliers(
@@ -479,37 +429,9 @@ class Admin(MixinMeta):
         dry_run: bool,
     ) -> int:
         """Prune performance metric outliers (latency-based)."""
-        total_deleted = 0
-
-        # Get all global performance snapshots - use latency as the primary metric
-        rows = await GlobalPerformanceSnapshot.select(
-            GlobalPerformanceSnapshot.id,
-            GlobalPerformanceSnapshot.latency_ms,
+        return await self._prune_outliers_for_table(
+            results, GlobalPerformanceSnapshot, "latency_ms", "Global Performance Snapshots", threshold, dry_run, False
         )
-        values = [(r["id"], r["latency_ms"]) for r in rows]
-        outlier_ids, mean, stdev, valid_count = await self._find_outlier_ids(values, threshold)
-
-        if outlier_ids:
-            if dry_run:
-                results.append(
-                    f"**Global Performance Snapshots:** Would delete {len(outlier_ids)} outliers "
-                    f"(latency mean={mean:.1f}ms, stdev={stdev:.1f}ms, analyzed {valid_count} points)"
-                )
-            else:
-                deleted = (
-                    await GlobalPerformanceSnapshot.delete()
-                    .where(GlobalPerformanceSnapshot.id.is_in(outlier_ids))
-                    .returning(GlobalPerformanceSnapshot.id)
-                )
-                total_deleted += len(deleted)
-                results.append(f"**Global Performance Snapshots:** Deleted {len(deleted)} outliers")
-        else:
-            results.append(
-                f"**Global Performance Snapshots:** No outliers found "
-                f"(latency mean={mean:.1f}ms, stdev={stdev:.1f}ms, analyzed {valid_count} points)"
-            )
-
-        return total_deleted
 
     @global_settings.command(name="importeconomytrack")
     async def import_economytrack_data(self, ctx: commands.Context, overwrite: bool):
@@ -525,7 +447,7 @@ class Admin(MixinMeta):
             path = cog_data_path(self).parent / "EconomyTrack" / "settings.json"
             if not path.exists():
                 return await ctx.send("No config found for EconomyTrack cog!")
-            data_raw = path.read_text()
+            data_raw = await asyncio.to_thread(path.read_text)
             data = await asyncio.to_thread(orjson.loads, data_raw)
             if not data:
                 return await ctx.send("No data found in EconomyTrack config!")

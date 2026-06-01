@@ -50,11 +50,15 @@ class User(MixinMeta):
             show_global = True
 
         settings = await self.db_utils.get_create_guild_settings(ctx.guild.id)
-        if not settings.track_bank:
+        global_settings = await self.db_utils.get_create_global_settings()
+        if show_global:
+            if not global_settings.track_bank:
+                txt = f"Global bank tracking is not enabled. The bot owner can enable it with `{ctx.clean_prefix}setmetrics global track bank`."
+                return await ctx.send(txt, ephemeral=True)
+        elif not settings.track_bank:
             txt = f"Bank tracking is not enabled for this server. An admin can enable it with `{ctx.clean_prefix}setmetrics track bank`."
             return await ctx.send(txt, ephemeral=True)
 
-        global_settings = await self.db_utils.get_create_global_settings()
         interval_minutes = global_settings.economy_interval
 
         currency_name = await bank.get_currency_name(ctx.guild)
@@ -77,7 +81,7 @@ class User(MixinMeta):
                 (GuildEconomySnapshot.guild == ctx.guild.id) & (getattr(GuildEconomySnapshot, query_key).is_not_null())
             )
 
-        if timespan.lower() == "none":
+        if timespan and timespan.lower() == "none":
             timespan = None
         start_time, end_time = utils.get_timespan(
             timespan=timespan,
