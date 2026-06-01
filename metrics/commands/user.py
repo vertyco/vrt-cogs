@@ -268,7 +268,7 @@ class User(MixinMeta):
         if not global_settings.track_performance:
             txt = (
                 "Performance tracking is not enabled. "
-                f"An admin can enable it with `{ctx.clean_prefix}setmetrics track performance`."
+                f"An admin can enable it with `{ctx.clean_prefix}setmetrics global track performance`."
             )
             await ctx.send(txt, ephemeral=True)
             return
