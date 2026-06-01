@@ -227,6 +227,10 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def smartmod_match_triggers(self, content: str, conf: GuildSettings) -> List[str]:
+        raise NotImplementedError
+
+    @abstractmethod
     async def smartmod_score(
         self,
         content: str,

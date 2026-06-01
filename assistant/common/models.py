@@ -154,6 +154,12 @@ class SmartModSettings(AssistantBaseModel):
     whitelist: t.List[int] = []
     # Skip authors who have ban/kick/manage-messages permissions.
     exempt_staff: bool = True
+    # Staff-defined trigger phrases that fire the review pipeline directly, in place of the
+    # OpenAI moderation scan (and without needing an OpenAI key). Only '*' acts as a wildcard
+    # (any run of characters); everything else is escaped, so patterns can never inject
+    # catastrophic regex and lock the bot up on a public instance. A phrase with no leading/
+    # trailing '*' matches on word boundaries.
+    triggers: t.List[str] = []
     # Seconds the action panel buttons stay active before timing out.
     action_timeout: int = 3600
     # On panel timeout, execute the LLM's proposed action instead of just disabling buttons.

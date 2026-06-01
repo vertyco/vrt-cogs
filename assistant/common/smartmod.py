@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 import typing as t
 from contextlib import suppress
 from copy import deepcopy
@@ -34,6 +35,7 @@ from .utils import (
     format_template,
     get_base_params,
     get_dynamic_params,
+    wildcard_to_regex,
 )
 
 
@@ -60,6 +62,8 @@ REVIEW_COOLDOWN = 30.0
 # Hard cap on review tool-loop turns.
 MAX_REVIEW_ITERS = 10
 EXEMPT_PERMS = ("ban_members", "kick_members", "manage_messages")
+# Only scan the first N chars of a message for trigger words.
+MAX_TRIGGER_SCAN = 40000
 
 
 def smartmod_target_ids(message: discord.Message) -> set[int]:
@@ -120,7 +124,9 @@ class SmartMod(MixinMeta):
         has_text = bool(message.content and message.content.strip())
         if not has_text and not smartmod_image_urls(message):
             return False
-        if self.resolve_smartmod_key(conf) is None:
+        # Trigger words run locally and need no key; only bail when there's no key AND
+        # no triggers, since then there's nothing that could ever flag the message.
+        if self.resolve_smartmod_key(conf) is None and not sm.triggers:
             return False
 
         target_ids = smartmod_target_ids(message)
@@ -201,9 +207,38 @@ class SmartMod(MixinMeta):
             if score is not None and score >= thresholds.get(cat, NEVER_FLAG)
         }
 
+    def smartmod_match_triggers(self, content: str, conf: GuildSettings) -> list[str]:
+        """Configured trigger phrases whose safe wildcard regex matches the message text.
+
+        Local, key-free pre-filter that fires the review pipeline 'in place of' the OpenAI
+        moderation scan. Uses only the linear regex from ``wildcard_to_regex``, so a public
+        bot's staff can't lock it up with a pathological pattern.
+        """
+        triggers = conf.smartmod.triggers
+        if not triggers or not content or not content.strip():
+            return []
+        text = content[:MAX_TRIGGER_SCAN]
+        matched: list[str] = []
+        for pattern in triggers:
+            try:
+                if re.search(wildcard_to_regex(pattern), text, re.IGNORECASE):
+                    matched.append(pattern)
+            except re.error:
+                continue
+        return matched
+
     async def run_smartmod(self, message: discord.Message, conf: GuildSettings) -> None:
-        """Entry point scheduled by the listener: scan, then review on a hit."""
+        """Entry point scheduled by the listener: scan, then review on a hit.
+
+        A message trips if the OpenAI moderation scan flags a category OR a staff-defined
+        trigger phrase matches; keyword matches fire the review even with no OpenAI key.
+        """
         tripped = await self.smartmod_scan(message, conf)
+        keyword_hits = self.smartmod_match_triggers(message.content, conf)
+        if keyword_hits:
+            tripped = dict(tripped)
+            for phrase in keyword_hits:
+                tripped[f"keyword '{phrase}'"] = 1.0
         if not tripped:
             return
         # Stamp the per-user review cooldown only AFTER a real trip, so a benign message
