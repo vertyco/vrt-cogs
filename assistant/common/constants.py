@@ -711,7 +711,10 @@ NO_ACTION_NEEDED = {
         "properties": {
             "reason": {
                 "type": "string",
-                "description": "Brief explanation of why no action is warranted.",
+                "description": (
+                    "One or two short sentences on why no action is warranted. Do not restate the rules, "
+                    "list everything you reviewed, or explain your reasoning step by step — just the conclusion."
+                ),
             },
         },
         "required": ["reason"],
