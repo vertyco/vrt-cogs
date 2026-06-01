@@ -21,6 +21,29 @@ from .models import GuildSettings
 log = logging.getLogger("red.vrt.assistant.utils")
 _ = Translator("Assistant", __file__)
 
+# Cap trigger pattern length so the translated regex stays cheap to evaluate.
+MAX_TRIGGER_LEN = 200
+
+
+def wildcard_to_regex(pattern: str) -> str:
+    """Translate a simple wildcard trigger phrase into a SAFE, linear regex string.
+
+    Only ``*`` (any run of characters, including none) is honored as a metacharacter;
+    everything else is escaped via ``re.escape``. This means staff of a public bot can
+    paste arbitrary text — including real regex like ``(a+)+`` — and it can never inject
+    catastrophic backtracking (ReDoS): the output contains only literals, ``.*`` and ``\\b``,
+    which the engine matches in linear time, so no multiprocessing timeout guard is needed.
+
+    A phrase with no leading/trailing ``*`` is anchored on word boundaries, so ``idiot``
+    hits the whole word ``idiot`` but not ``idiotic``. Add ``*`` to loosen it:
+    ``idiot*`` (prefix), ``*idiot`` (suffix), ``*idiot*`` (substring anywhere).
+    """
+    collapsed = re.sub(r"\*+", "*", pattern.strip())[:MAX_TRIGGER_LEN]
+    body = re.escape(collapsed).replace(r"\*", ".*")
+    prefix = "" if collapsed.startswith("*") else r"\b"
+    suffix = "" if collapsed.endswith("*") else r"\b"
+    return f"{prefix}{body}{suffix}"
+
 
 def get_activity_type_label(activity: object) -> str:
     activity_type = getattr(activity, "type", None)

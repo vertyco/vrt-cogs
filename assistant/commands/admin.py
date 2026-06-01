@@ -48,7 +48,12 @@ from ..common.models import (
     get_category_state,
     render_tool_category,
 )
-from ..common.utils import DYNAMIC_VARIABLE_NAMES, get_attachments
+from ..common.utils import (
+    DYNAMIC_VARIABLE_NAMES,
+    MAX_TRIGGER_LEN,
+    get_attachments,
+    wildcard_to_regex,
+)
 from ..views import (
     AIToolsView,
     CodeMenu,
@@ -3519,7 +3524,8 @@ class Admin(MixinMeta):
             + _("`Exempt staff:  `{}\n").format("✅" if sm.exempt_staff else "❌")
             + _("`Staff ping:    `{}\n").format(roles)
             + _("`Blacklist:     `{} items\n").format(len(sm.blacklist))
-            + _("`Whitelist:     `{} items").format(len(sm.whitelist))
+            + _("`Whitelist:     `{} items\n").format(len(sm.whitelist))
+            + _("`Triggers:      `{} phrases").format(len(sm.triggers))
         )
         embed = discord.Embed(title=_("Smartmod (AI Moderation)"), description=desc, color=await ctx.embed_color())
         await ctx.send(embed=embed)
@@ -3692,57 +3698,66 @@ class Admin(MixinMeta):
 
     @smartmod.command(name="test")
     async def smartmod_test(self, ctx: commands.Context, *, content: str):
-        """Run only the moderation scan on sample text and show every category score vs its threshold."""
+        """Preview a sample message: which trigger phrases match plus each moderation score vs its threshold."""
         conf = self.db.get_conf(ctx.guild)
-        if self.resolve_smartmod_key(conf) is None:
-            await ctx.send(
+        keyword_hits = self.smartmod_match_triggers(content, conf)
+        key_ok = self.resolve_smartmod_key(conf) is not None
+        if not key_ok and not conf.smartmod.triggers:
+            return await ctx.send(
                 _("No OpenAI key available for the scan. Set one with `{p}assistant smartmod key`.").format(
                     p=ctx.clean_prefix
                 )
             )
-            return
-        async with ctx.typing():
-            scores = await self.smartmod_score(content, conf)
-        if scores is None:
-            await ctx.send(_("Moderation scan failed — check the key or the bot logs."))
-            return
-        flagged, lines = self.smartmod_score_lines(scores, conf.smartmod.effective_thresholds())
-        header = _("🚩 Would flag: {}").format(", ".join(flagged)) if flagged else _("✅ Would not flag")
-        body = box("\n".join(lines))
-        await ctx.send(f"**{header}**\n{body}")
+        scores = None
+        if key_ok:
+            async with ctx.typing():
+                scores = await self.smartmod_score(content, conf)
+            if scores is None:
+                return await ctx.send(_("Moderation scan failed — check the key or the bot logs."))
+        flagged, lines = self.smartmod_score_lines(scores or {}, conf.smartmod.effective_thresholds())
+        would_trigger = bool(flagged or keyword_hits)
+        parts = [_("🚩 **Would trigger review**") if would_trigger else _("✅ **Would not trigger**")]
+        if keyword_hits:
+            parts.append(_("Matched triggers: {}").format(", ".join(f"`{p}`" for p in keyword_hits)))
+        if flagged:
+            parts.append(_("Scan flagged: {}").format(", ".join(flagged)))
+        if lines:
+            parts.append(box("\n".join(lines)))
+        await ctx.send("\n".join(parts))
 
     @smartmod.command(name="simulate", aliases=["dryrun"])
     async def smartmod_simulate(self, ctx: commands.Context, *, content: str):
-        """Dry-run the FULL pipeline on sample text: scan -> review model -> action panel.
+        """Dry-run the FULL pipeline on sample text: scan / triggers -> review model -> action panel.
 
         The review model runs for real (tools, embeddings, this channel's recent context) with you as
-        the simulated offender, but the panel's buttons take no real action. The review only runs if a
-        category actually trips its threshold (same as production).
+        the simulated offender, but the panel's buttons take no real action. The review runs if a
+        category trips its threshold OR a trigger phrase matches (same as production).
         """
         conf = self.db.get_conf(ctx.guild)
-        if self.resolve_smartmod_key(conf) is None:
-            await ctx.send(
+        keyword_hits = self.smartmod_match_triggers(content, conf)
+        key_ok = self.resolve_smartmod_key(conf) is not None
+        if not key_ok and not conf.smartmod.triggers:
+            return await ctx.send(
                 _("No OpenAI key available for the scan. Set one with `{p}assistant smartmod key`.").format(
                     p=ctx.clean_prefix
                 )
             )
-            return
-        async with ctx.typing():
-            scores = await self.smartmod_score(content, conf)
-        if scores is None:
-            await ctx.send(_("Moderation scan failed — check the key or the bot logs."))
-            return
-        flagged, lines = self.smartmod_score_lines(scores, conf.smartmod.effective_thresholds())
-        body = box("\n".join(lines))
-        if not flagged:
-            await ctx.send(
-                _(
-                    "✅ Would not trigger — no category is over its threshold, so the review model won't run.\n{}"
-                ).format(body)
+        tripped: dict = {}
+        if key_ok:
+            async with ctx.typing():
+                scores = await self.smartmod_score(content, conf)
+            if scores is None:
+                return await ctx.send(_("Moderation scan failed — check the key or the bot logs."))
+            flagged, lines = self.smartmod_score_lines(scores, conf.smartmod.effective_thresholds())
+            tripped.update({c: scores[c] for c in flagged})
+            await ctx.send(box("\n".join(lines)))
+        for phrase in keyword_hits:
+            tripped[f"keyword '{phrase}'"] = 1.0
+        if not tripped:
+            return await ctx.send(
+                _("✅ Would not trigger — no category over its threshold and no trigger phrase matched.")
             )
-            return
-        await ctx.send(_("🚩 Flagged: {}\n{}").format(", ".join(flagged), body))
-        tripped = {c: scores[c] for c in flagged}
+        await ctx.send(_("🚩 Tripped: {}").format(", ".join(tripped)))
         try:
             async with ctx.typing():
                 outcome, detail = await self.simulate_smartmod(ctx.message, conf, tripped, content, ctx.channel)
@@ -3867,6 +3882,53 @@ class Admin(MixinMeta):
         sm.exempt_staff = (not sm.exempt_staff) if state is None else state
         await ctx.send(_("Exempt staff is now **{}**.").format(_("on") if sm.exempt_staff else _("off")))
         await self.save_conf()
+
+    @smartmod.command(name="trigger", aliases=["triggerword", "addtrigger"])
+    async def smartmod_trigger(self, ctx: commands.Context, *, phrase: str):
+        """Add or remove a trigger phrase that sends a message straight to moderation review.
+
+        A match fires the review pipeline **in place of** the OpenAI moderation scan — so
+        triggers work even with no OpenAI key set. Re-run with the exact same phrase to remove it.
+
+        Only `*` is a wildcard (it matches any run of characters); everything else is literal,
+        so pasting real regex is safe and can never lock the bot up. With no `*`, the phrase
+        matches on word boundaries (`idiot` hits the word "idiot" but not "idiotic"); add `*`
+        to loosen it: `idiot*` (prefix), `*idiot` (suffix), `*idiot*` (substring anywhere).
+        """
+        conf = self.db.get_conf(ctx.guild)
+        sm = conf.smartmod
+        phrase = phrase.strip()
+        if phrase in sm.triggers:
+            sm.triggers.remove(phrase)
+            await ctx.send(_("Removed smartmod trigger: `{}`").format(phrase))
+            return await self.save_conf()
+        if not phrase.replace("*", "").strip():
+            return await ctx.send(_("A trigger needs at least one non-`*` character."))
+        if len(phrase) > MAX_TRIGGER_LEN:
+            return await ctx.send(_("That trigger is too long (max {} characters).").format(MAX_TRIGGER_LEN))
+        sm.triggers.append(phrase)
+        await ctx.send(
+            _("Added smartmod trigger `{phrase}` (matches as `{regex}`).").format(
+                phrase=phrase, regex=wildcard_to_regex(phrase)
+            )
+        )
+        await self.save_conf()
+
+    @smartmod.command(name="triggers", aliases=["triggerlist"])
+    async def smartmod_triggers(self, ctx: commands.Context):
+        """List the smartmod trigger phrases and the safe pattern each one compiles to."""
+        conf = self.db.get_conf(ctx.guild)
+        sm = conf.smartmod
+        if not sm.triggers:
+            return await ctx.send(
+                _("No smartmod triggers set. Add one with `{p}assistant smartmod trigger <phrase>`.").format(
+                    p=ctx.clean_prefix
+                )
+            )
+        text = "\n".join(f"{p}  ->  {wildcard_to_regex(p)}" for p in sm.triggers)
+        if len(text) > 1900:
+            return await ctx.send(file=text_to_file(text, filename="smartmod_triggers.txt"))
+        await ctx.send(box(text, "ini"))
 
     @smartmod.command(name="key", aliases=["openaikey"])
     async def smartmod_key(self, ctx: commands.Context):

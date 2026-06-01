@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"POT-Creation-Date: 2026-06-01 09:46-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -11,40 +11,153 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: redgettext 3.4.2\n"
 
-#: assistant\views.py:46
+#: assistant\views.py:54
 msgid "Custom"
 msgstr ""
 
-#: assistant\views.py:58
+#: assistant\views.py:66
 msgid "Set API Key"
 msgstr ""
 
-#: assistant\views.py:60
+#: assistant\views.py:68
 msgid "Enter your API Key below"
 msgstr ""
 
-#: assistant\views.py:81 assistant\views.py:214 assistant\views.py:663
-#: assistant\views.py:905
+#: assistant\views.py:89 assistant\views.py:519 assistant\views.py:968
+#: assistant\views.py:1484 assistant\views.py:1974 assistant\views.py:2264
 msgid "This isn't your menu!"
 msgstr ""
 
-#: assistant\views.py:104
+#: assistant\views.py:105
+msgid "Skip with feedback"
+msgstr ""
+
+#: assistant\views.py:108
+msgid "Why are you skipping? (optional)"
+msgstr ""
+
+#: assistant\views.py:130
 msgid "This approval prompt isn't for you!"
 msgstr ""
 
-#: assistant\views.py:145
+#: assistant\views.py:177
+msgid "Confirm: {}"
+msgstr ""
+
+#: assistant\views.py:181
+msgid "Reason (blank = use AI's reason)"
+msgstr ""
+
+#: assistant\views.py:204
+#, docstring
+msgid ""
+"Dropdown of every action available on this server (built-ins + Ark/Notes)."
+msgstr ""
+
+#: assistant\views.py:208
+msgid "Choose a different action…"
+msgstr ""
+
+#: assistant\views.py:215
+#, docstring
+msgid ""
+"Interactive staff panel proposing a moderation action suggested by the LLM."
+msgstr ""
+
+#: assistant\views.py:245
+msgid "No reason provided."
+msgstr ""
+
+#: assistant\views.py:268
+msgid "# 🧪 SIMULATION — dry run"
+msgstr ""
+
+#: assistant\views.py:269
+msgid "-# Buttons take no real action; this is a test."
+msgstr ""
+
+#: assistant\views.py:272
+msgid "# ⚠️ Proposed Moderation Action"
+msgstr ""
+
+#: assistant\views.py:275
+msgid "**Suggested:** {emoji} {action} • **Severity:** {sev}"
+msgstr ""
+
+#: assistant\views.py:282
+msgid ""
+"**User:** {mention} `{uid}`\n"
+"**Message:** [jump to message]({url})\n"
+"**Channel:** {channel}"
+msgstr ""
+
+#: assistant\views.py:290
+msgid "-# Flagged for: {}"
+msgstr ""
+
+#: assistant\views.py:292
+msgid ""
+"**Reason**\n"
+"{}"
+msgstr ""
+
+#: assistant\views.py:311
+msgid ""
+"**Context**\n"
+"{}"
+msgstr ""
+
+#: assistant\views.py:323
+msgid "{} (suggested)"
+msgstr ""
+
+#: assistant\views.py:328
+msgid "No action"
+msgstr ""
+
+#: assistant\views.py:354 assistant\views.py:378
+msgid "This panel was already resolved."
+msgstr ""
+
+#: assistant\views.py:358
+msgid "You don't have permission to perform that action."
+msgstr ""
+
+#: assistant\views.py:364
+msgid ""
+"✅ Dismissed — no action taken.\n"
+"-# By {}"
+msgstr ""
+
+#: assistant\views.py:383
+msgid ""
+"{outcome}\n"
+"-# Action by {user}"
+msgstr ""
+
+#: assistant\views.py:389
+msgid ""
+"🧪 (dry-run) Would **{action}** {target}.\n"
+"-# {reason}"
+msgstr ""
+
+#: assistant\views.py:434
+msgid "⏱️ Auto-action on timeout: {}"
+msgstr ""
+
+#: assistant\views.py:450
 msgid "Entry name"
 msgstr ""
 
-#: assistant\views.py:153
+#: assistant\views.py:458
 msgid "Training context"
 msgstr ""
 
-#: assistant\views.py:172
+#: assistant\views.py:477
 msgid "Search Query"
 msgstr ""
 
-#: assistant\views.py:264
+#: assistant\views.py:569
 msgid ""
 "Failed to process embedding `{}`\n"
 "Content: ```\n"
@@ -52,234 +165,476 @@ msgid ""
 "```"
 msgstr ""
 
-#: assistant\views.py:266
+#: assistant\views.py:571
 msgid "An embedding with the name `{}` already exists!"
 msgstr ""
 
-#: assistant\views.py:271
+#: assistant\views.py:576
 msgid "Your embedding labeled `{}` has been processed!"
 msgstr ""
 
-#: assistant\views.py:282
+#: assistant\views.py:587
 msgid "No embeddings to inspect!"
 msgstr ""
 
-#: assistant\views.py:287
+#: assistant\views.py:592
 msgid "Embedding not found!"
 msgstr ""
 
-#: assistant\views.py:305
+#: assistant\views.py:610
 msgid "No embeddings to edit!"
 msgstr ""
 
-#: assistant\views.py:317
+#: assistant\views.py:622
 msgid "Failed to edit that embedding, please try again later"
 msgstr ""
 
-#: assistant\views.py:324
+#: assistant\views.py:629
 msgid "Your embedding has been modified!"
 msgstr ""
 
-#: assistant\views.py:364
+#: assistant\views.py:669
 msgid "Add an embedding"
 msgstr ""
 
-#: assistant\views.py:370
+#: assistant\views.py:675
 msgid "Your embedding is processing and will appear when ready!"
 msgstr ""
 
-#: assistant\views.py:386
+#: assistant\views.py:691
 msgid "No embeddings to delete!"
 msgstr ""
 
-#: assistant\views.py:388
+#: assistant\views.py:693
 msgid "Deleted `{}` embedding."
 msgstr ""
 
-#: assistant\views.py:414
+#: assistant\views.py:719
 msgid "No embeddings to search!"
 msgstr ""
 
-#: assistant\views.py:415
+#: assistant\views.py:720
 msgid "Search for an embedding"
 msgstr ""
 
-#: assistant\views.py:437
+#: assistant\views.py:742
 msgid "Search result: **{}**"
 msgstr ""
 
-#: assistant\views.py:474
+#: assistant\views.py:779
 msgid "Function Edit"
 msgstr ""
 
-#: assistant\views.py:483
+#: assistant\views.py:788
 msgid "JSON Schema"
 msgstr ""
 
-#: assistant\views.py:489
+#: assistant\views.py:794
 msgid "Code"
 msgstr ""
 
-#: assistant\views.py:495
+#: assistant\views.py:800
 msgid "Permission Level"
 msgstr ""
 
-#: assistant\views.py:496
+#: assistant\views.py:801
 msgid "User, Mod, Admin, or Owner"
 msgstr ""
 
-#: assistant\views.py:502
+#: assistant\views.py:807
 msgid "Required Discord Permissions"
 msgstr ""
 
-#: assistant\views.py:503
+#: assistant\views.py:808
 msgid "e.g. manage_messages, kick_members (comma-separated, or leave blank)"
 msgstr ""
 
-#: assistant\views.py:510
+#: assistant\views.py:815
 msgid "Category"
 msgstr ""
 
-#: assistant\views.py:511
+#: assistant\views.py:816
 msgid "memory, web, utility"
 msgstr ""
 
-#: assistant\views.py:523
+#: assistant\views.py:828
 msgid ""
 "Invalid permission level, must be one of `User`, `Mod`, `Admin`, or `Owner`"
 msgstr ""
 
-#: assistant\views.py:536
+#: assistant\views.py:841
 msgid "Invalid Discord permission names: {}"
 msgstr ""
 
-#: assistant\views.py:552
+#: assistant\views.py:857 assistant\views.py:1865
 msgid "Toggle"
 msgstr ""
 
-#: assistant\views.py:582
+#: assistant\views.py:887
 msgid "Choose tools for {} ({}/{})..."
 msgstr ""
 
-#: assistant\views.py:588
+#: assistant\views.py:893
 msgid "Choose tools for {}..."
 msgstr ""
 
-#: assistant\views.py:593
+#: assistant\views.py:898
 msgid "No tools available"
 msgstr ""
 
-#: assistant\views.py:606
+#: assistant\views.py:911 assistant\views.py:1387 assistant\views.py:1916
 msgid "Prev"
 msgstr ""
 
-#: assistant\views.py:615
+#: assistant\views.py:920 assistant\views.py:1396 assistant\views.py:1925
 msgid "Next"
 msgstr ""
 
-#: assistant\views.py:623
+#: assistant\views.py:928 assistant\views.py:1420 assistant\views.py:1933
 msgid "Close"
 msgstr ""
 
-#: assistant\views.py:718
+#: assistant\views.py:1023
 msgid "{} {}/{} enabled • {} categories • Page {}/{}"
 msgstr ""
 
-#: assistant\views.py:839 assistant\views.py:859
+#: assistant\views.py:1144 assistant\views.py:1164 assistant\views.py:2200
 msgid "That category no longer exists."
 msgstr ""
 
-#: assistant\views.py:1014
+#: assistant\views.py:1199
+#, docstring
+msgid ""
+"Split a model id into (provider, short_name).\n"
+"\n"
+"    For ids like ``openai/gpt-4-turbo`` returns ``(\"openai\", \"gpt-4-turbo\")``.\n"
+"    For ids with no slash returns ``(PROVIDER_OTHER, model_id)``.\n"
+"    "
+msgstr ""
+
+#: assistant\views.py:1214
+#, docstring
+msgid ""
+"Group endpoint model ids by their provider prefix.\n"
+"\n"
+"    Returns an ordered dict: providers sorted alphabetically (``other`` last),\n"
+"    each value is the list of full model ids sorted by short name.\n"
+"    "
+msgstr ""
+
+#: assistant\views.py:1235
+msgid "Other"
+msgstr ""
+
+#: assistant\views.py:1265
+msgid "Pick a model from {} ({}/{})..."
+msgstr ""
+
+#: assistant\views.py:1271
+msgid "Pick a model from {}..."
+msgstr ""
+
+#: assistant\views.py:1276
+msgid "No models"
+msgstr ""
+
+#: assistant\views.py:1295
+msgid "Enter Model ID"
+msgstr ""
+
+#: assistant\views.py:1298
+msgid "Model ID"
+msgstr ""
+
+#: assistant\views.py:1299
+msgid "e.g. openrouter/auto, openai/gpt-4o, anthropic/claude-3-opus"
+msgstr ""
+
+#: assistant\views.py:1315
+msgid "Search Models"
+msgstr ""
+
+#: assistant\views.py:1318
+msgid "Filter"
+msgstr ""
+
+#: assistant\views.py:1319
+msgid "e.g. claude, gpt-4, mistral"
+msgstr ""
+
+#: assistant\views.py:1335
+msgid "Model Slug Suffix"
+msgstr ""
+
+#: assistant\views.py:1338 assistant\views.py:1360
+msgid "Suffix"
+msgstr ""
+
+#: assistant\views.py:1339
+msgid ":nitro (throughput)  :floor (price)  :extended  (blank = remove)"
+msgstr ""
+
+#: assistant\views.py:1356
+msgid "Search"
+msgstr ""
+
+#: assistant\views.py:1365
+msgid "Clear search"
+msgstr ""
+
+#: assistant\views.py:1405
+msgid "Manual entry"
+msgstr ""
+
+#: assistant\views.py:1413
+msgid "Re-probe"
+msgstr ""
+
+#: assistant\views.py:1445
+#, docstring
+msgid "Endpoint model picker grouped by provider prefix."
+msgstr ""
+
+#: assistant\views.py:1532
+msgid "Chat model"
+msgstr ""
+
+#: assistant\views.py:1532
+msgid "Embedding model"
+msgstr ""
+
+#: assistant\views.py:1540
+msgid "# 🤖 {} picker"
+msgstr ""
+
+#: assistant\views.py:1541
+msgid "-# Endpoint: `{}`"
+msgstr ""
+
+#: assistant\views.py:1542
+msgid "Current: **{}**"
+msgstr ""
+
+#: assistant\views.py:1542 assistant\views.py:1760
+msgid "(none)"
+msgstr ""
+
+#: assistant\views.py:1545
+msgid ""
+"No models were discovered from this endpoint. Try **Re-probe** or use "
+"**Manual entry** to type a model id. Router endpoints like OpenRouter accept"
+" aliases such as `{}` or `{}`."
+msgstr ""
+
+#: assistant\views.py:1565
+msgid "-# Search: `{}`  •  {} result(s)"
+msgstr ""
+
+#: assistant\views.py:1568
+msgid "{} models across {} providers • Page {}/{}"
+msgstr ""
+
+#: assistant\views.py:1577
+msgid ""
+"-# Tip: router endpoints accept aliases like `{}` or `{}` via **Manual "
+"entry**."
+msgstr ""
+
+#: assistant\views.py:1687 assistant\views.py:1703
+msgid "{} set to **{}**"
+msgstr ""
+
+#: assistant\views.py:1743
+msgid "Invalid suffix `{}`. Valid: {}."
+msgstr ""
+
+#: assistant\views.py:1762
+msgid "Model set to **{}** (suffix: {})"
+msgstr ""
+
+#: assistant\views.py:1784
+#, docstring
+msgid ""
+"Return on/off/mixed for a trailing-block category.\n"
+"\n"
+"    Inclusion defaults to **off** for every variable on a fresh install.\n"
+"    "
+msgstr ""
+
+#: assistant\views.py:1801
+#, docstring
+msgid ""
+"Return every category eligible for the trailing-context-block menu.\n"
+"\n"
+"    Output: ``{category_key: {\"label\": str, \"variables\": [str, ...]}}``.\n"
+"\n"
+"    Inclusion in the floating block is fully admin-controlled - there is\n"
+"    no implicit default. On a fresh install everything is OFF (blank\n"
+"    slate). Admins opt variables in one at a time via the floatingcontext\n"
+"    menu.\n"
+"    "
+msgstr ""
+
+#: assistant\views.py:1847
+#, docstring
+msgid "Return a short human-readable description for a context variable."
+msgstr ""
+
+#: assistant\views.py:1900
+msgid "Toggle individual vars in {}..."
+msgstr ""
+
+#: assistant\views.py:1903
+msgid "No variables"
+msgstr ""
+
+#: assistant\views.py:1993
+#, docstring
+msgid "Return formatted warning lines for prompts containing dynamic vars."
+msgstr ""
+
+#: assistant\views.py:2003
+msgid "**System prompt** - `{}`"
+msgstr ""
+
+#: assistant\views.py:2006
+msgid "**Initial prompt** - `{}`"
+msgstr ""
+
+#: assistant\views.py:2011
+msgid "<#{}> - `{}`"
+msgstr ""
+
+#: assistant\views.py:2015
+#, docstring
+msgid "Build a mapping of variable name → description for 3rd-party vars."
+msgstr ""
+
+#: assistant\views.py:2049
+msgid ""
+"Toggle which variables are included in the trailing `[Current Context]` "
+"system message that the bot appends after conversation history. Everything "
+"is OFF by default - opt variables in one at a time. Variables you toggle on "
+"are rendered as self-encapsulated sentences (e.g. `\"The current date is May"
+" 16, 2026.\"`), so you do not need to author a prompt that references them."
+msgstr ""
+
+#: assistant\views.py:2060
+msgid "{} {}/{} variables in block • {} categories • Page {}/{}"
+msgstr ""
+
+#: assistant\views.py:2088
+msgid "(no variables)"
+msgstr ""
+
+#: assistant\views.py:2104
+msgid "## ⚠️ Cache Warning"
+msgstr ""
+
+#: assistant\views.py:2107
+msgid ""
+"These prompts contain dynamic variable placeholders that are substituted "
+"inline, which busts provider-side prompt-prefix caching on every request:"
+msgstr ""
+
+#: assistant\views.py:2117
+msgid ""
+"Tip: remove the placeholder from your prompt and toggle the variable on in "
+"the menu above instead - the bot will append the value to the floating "
+"context block automatically."
+msgstr ""
+
+#: assistant\views.py:2373
 msgid "No code to inspect!"
 msgstr ""
 
-#: assistant\views.py:1038
+#: assistant\views.py:2397
 msgid "Here are your custom functions"
 msgstr ""
 
-#: assistant\views.py:1043
+#: assistant\views.py:2402
 msgid ""
 "Reply to this message with the json schema for your function\n"
 "- [Example Functions](https://github.com/vertyco/vrt-cogs/tree/main/assistant/example-funcs)"
 msgstr ""
 
-#: assistant\views.py:1064 assistant\views.py:1142
+#: assistant\views.py:2423 assistant\views.py:2501
 msgid ""
 "SchemaError\n"
 "{}"
 msgstr ""
 
-#: assistant\views.py:1066 assistant\views.py:1144
+#: assistant\views.py:2425 assistant\views.py:2503
 msgid "Empty schema!"
 msgstr ""
 
-#: assistant\views.py:1069 assistant\views.py:1147
+#: assistant\views.py:2428 assistant\views.py:2506
 msgid ""
 "Invalid schema!\n"
 "**Missing**\n"
 "{}"
 msgstr ""
 
-#: assistant\views.py:1073
+#: assistant\views.py:2432
 msgid "Reply to this message with the custom code"
 msgstr ""
 
-#: assistant\views.py:1088 assistant\views.py:1153
+#: assistant\views.py:2447 assistant\views.py:2512
 msgid "Invalid function"
 msgstr ""
 
-#: assistant\views.py:1092
+#: assistant\views.py:2451
 msgid "`{}` has been overwritten!"
 msgstr ""
 
-#: assistant\views.py:1094
+#: assistant\views.py:2453
 msgid "`{}` has been created!"
 msgstr ""
 
-#: assistant\views.py:1105
+#: assistant\views.py:2464
 msgid "No code to edit!"
 msgstr ""
 
-#: assistant\views.py:1113 assistant\views.py:1185
+#: assistant\views.py:2472 assistant\views.py:2544
 msgid "Could not find function!"
 msgstr ""
 
-#: assistant\views.py:1115
+#: assistant\views.py:2474
 msgid "This function is managed by the `{}` cog and cannot be edited"
 msgstr ""
 
-#: assistant\views.py:1121
+#: assistant\views.py:2480
 msgid ""
 "The json schema for this function is too long, you'll need to re-upload it "
 "to modify"
 msgstr ""
 
-#: assistant\views.py:1126
+#: assistant\views.py:2485
 msgid ""
 "The code for this function is too long, you'll need to re-upload it to "
 "modify"
 msgstr ""
 
-#: assistant\views.py:1170
+#: assistant\views.py:2529
 msgid "`{}` function updated!"
 msgstr ""
 
-#: assistant\views.py:1178
+#: assistant\views.py:2537
 msgid "No code to delete!"
 msgstr ""
 
-#: assistant\views.py:1187
+#: assistant\views.py:2546
 msgid "This function is managed by the `{}` cog and cannot be deleted"
 msgstr ""
 
-#: assistant\views.py:1194
+#: assistant\views.py:2553
 msgid "`{}` has been deleted!"
 msgstr ""
 
-#: assistant\views.py:1201
+#: assistant\views.py:2560
 msgid "No code to toggle!"
 msgstr ""
 
-#: assistant\views.py:1215
+#: assistant\views.py:2574
 msgid "Search for a function"
 msgstr ""
