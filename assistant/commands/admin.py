@@ -3512,7 +3512,7 @@ class Admin(MixinMeta):
             _("`Enabled:       `{}\n").format("✅" if sm.enabled else "❌")
             + _("`Report channel:`{}\n").format(chan.mention if chan else _("Not set"))
             + _("`OpenAI key:    `{}\n").format(_("OK") if key_ok else _("Missing"))
-            + _("`Review model:  `{}\n").format(f"`{sm.review_model}`" if sm.review_model else _("(default)"))
+            + _("`Review model:  `{}\n").format(f"{sm.review_model}" if sm.review_model else _("(default)"))
             + _("`Context:       `{} before / {} after\n").format(sm.context_before, sm.context_after)
             + _("`Panel timeout: `{}s\n").format(sm.action_timeout)
             + _("`Auto-action:   `{}\n").format("✅" if sm.auto_action_on_timeout else "❌")
