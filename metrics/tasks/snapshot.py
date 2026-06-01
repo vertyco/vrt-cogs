@@ -27,12 +27,9 @@ log = logging.getLogger("red.vrt.metrics.tasks.snapshot")
 class Snapshot(MixinMeta):
     def configure_task_intervals(self, settings: GlobalSettings) -> None:
         """Configure all task loop intervals based on settings."""
-        if settings.economy_interval != 10:
-            self.economy_snapshot_task.change_interval(minutes=settings.economy_interval)
-        if settings.member_interval != 15:
-            self.member_snapshot_task.change_interval(minutes=settings.member_interval)
-        if settings.performance_interval != 3:
-            self.performance_snapshot_task.change_interval(minutes=settings.performance_interval)
+        self.economy_snapshot_task.change_interval(minutes=settings.economy_interval)
+        self.member_snapshot_task.change_interval(minutes=settings.member_interval)
+        self.performance_snapshot_task.change_interval(minutes=settings.performance_interval)
 
     def change_economy_interval(self, minutes: int) -> None:
         """Change the economy snapshot interval in minutes."""
@@ -63,55 +60,55 @@ class Snapshot(MixinMeta):
             global_config: GlobalSettings = await self.db_utils.get_create_global_settings()
 
             is_global = await bank.is_global()
+            track_global_bank = global_config.track_bank
             global_bank_balances: dict[int, int] = defaultdict(int)
-
-            # Collect global bank data first
-            if is_global:
-                members = await bank._config.all_users()
-                for user_id, wallet in members.items():
-                    global_bank_balances[user_id] += wallet["balance"]
-
-            # Guild-level economy snapshots
             guild_snapshots: list[GuildEconomySnapshot] = []
-            guild_settings = await GuildSettings.objects().where(GuildSettings.track_bank.eq(True))
 
-            for settings in guild_settings:
-                if is_global:
-                    continue  # Skip guild-level tracking when economy is global
+            if is_global:
+                # No per-guild bank in global mode; only gather for the global
+                # snapshot, and only when global tracking is enabled.
+                if track_global_bank:
+                    members = await bank._config.all_users()
+                    for user_id, wallet in members.items():
+                        global_bank_balances[user_id] += wallet["balance"]
+            else:
+                # Guild-level economy snapshots
+                guild_settings = await GuildSettings.objects().where(GuildSettings.track_bank.eq(True))
+                for settings in guild_settings:
+                    guild = self.bot.get_guild(settings.id)
+                    if not guild:
+                        continue
 
-                guild = self.bot.get_guild(settings.id)
-                if not guild:
-                    continue
+                    members = await bank._config.all_members(guild)
+                    if not members:
+                        continue
 
-                members = await bank._config.all_members(guild)
-                if not members:
-                    continue
+                    bank_total = sum(value["balance"] for value in members.values())
+                    average_balance = bank_total // len(members)
 
-                bank_total = sum(value["balance"] for value in members.values())
-                average_balance = bank_total // len(members) if members else 0
+                    if track_global_bank:
+                        # Aggregate into the global snapshot
+                        for user_id, wallet in members.items():
+                            global_bank_balances[user_id] += wallet["balance"]
 
-                # Add to global tracking
-                for user_id, wallet in members.items():
-                    global_bank_balances[user_id] += wallet["balance"]
-
-                guild_snapshots.append(
-                    GuildEconomySnapshot(
-                        guild=settings.id,
-                        bank_total=bank_total,
-                        average_balance=average_balance,
-                        member_count=len(members),
+                    guild_snapshots.append(
+                        GuildEconomySnapshot(
+                            guild=settings.id,
+                            bank_total=bank_total,
+                            average_balance=average_balance,
+                            member_count=len(members),
+                        )
                     )
-                )
 
-            if guild_snapshots:
-                await GuildEconomySnapshot.insert(*guild_snapshots)
+                if guild_snapshots:
+                    await GuildEconomySnapshot.insert(*guild_snapshots)
 
-            if not global_config.track_bank:
+            if not track_global_bank:
                 return
             # Global economy snapshot
             if global_bank_balances:
                 global_bank_total = sum(global_bank_balances.values())
-                global_average_balance = global_bank_total // len(global_bank_balances) if global_bank_balances else 0
+                global_average_balance = global_bank_total // len(global_bank_balances)
 
                 await GlobalEconomySnapshot(
                     bank_total=global_bank_total,
@@ -187,7 +184,7 @@ class Snapshot(MixinMeta):
 
             # Global member snapshot
             members: dict[int, discord.Member] = {}
-            for member in self.bot.get_all_members():
+            async for member in AsyncIter(self.bot.get_all_members(), steps=500):
                 if member.bot:
                     continue
                 members[member.id] = member
@@ -240,7 +237,8 @@ class Snapshot(MixinMeta):
             start = perf_counter()
 
             bot_process = psutil.Process(os.getpid())
-            cpu_usage_percent = bot_process.cpu_percent(interval=0.1)
+            # cpu_percent(interval=...) blocks synchronously; offload it off the event loop
+            cpu_usage_percent = await asyncio.to_thread(bot_process.cpu_percent, 0.1)
             memory_info = bot_process.memory_info()
             memory_used_mb = memory_info.rss / (1024 * 1024)
             memory_usage_percent = psutil.virtual_memory().percent

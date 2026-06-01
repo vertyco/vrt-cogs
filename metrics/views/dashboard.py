@@ -9,6 +9,7 @@ and view multi-metric graphs.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import typing as t
 from datetime import datetime
@@ -62,6 +63,12 @@ PERFORMANCE_METRICS = {
 }
 
 LOADING = "https://upload.wikimedia.org/wikipedia/commons/a/ad/YouTube_loading_symbol_3_%28transparent%29.gif"
+
+CATEGORY_DEFAULT_METRICS: dict[str, list[str]] = {
+    "members": ["member_total"],
+    "economy": ["bank_total", "average_balance"],
+    "performance": ["cpu_usage_percent", "memory_usage_percent"],
+}
 
 # =============================================================================
 # Modals
@@ -149,8 +156,13 @@ class MetricCategoryRow(ui.ActionRow["MetricsDashboardLayout"]):
 
     @ui.select(placeholder="Select metric category...")
     async def category_select(self, interaction: discord.Interaction, select: ui.Select):
-        self.view.selected_category = select.values[0]
-        self.view.selected_metrics = []  # Reset selected metrics when category changes
+        category = select.values[0]
+        self.view.selected_category = category
+        # Default to a sensible selection so the graph isn't blank after switching
+        self.view.selected_metrics = list(CATEGORY_DEFAULT_METRICS[category])
+        if category == "performance":
+            # Performance data is global-only; force scope so the label/buttons match the data
+            self.view.show_global = True
         await self.view.refresh(interaction, regenerate_graph=True)
 
 
@@ -248,7 +260,7 @@ class MetricsDashboardLayout(ui.LayoutView):
 
         # State
         self.selected_category: str = "members"
-        self.selected_metrics: list[str] = ["member_total", "online_members", "offline_members"]
+        self.selected_metrics: list[str] = list(CATEGORY_DEFAULT_METRICS["members"])
         self.show_global: bool = False  # Default to guild scope
         self.timespan: str = "24h"
         self.start_time: str | None = None
@@ -276,6 +288,9 @@ class MetricsDashboardLayout(ui.LayoutView):
                 for item in getattr(child, "children", []):
                     if hasattr(item, "disabled"):
                         setattr(item, "disabled", True)
+        if self.message:
+            with contextlib.suppress(discord.HTTPException):
+                await self.message.edit(view=self)
 
     def _build_layout(self):
         """Build the dashboard layout."""
@@ -319,6 +334,15 @@ class MetricsDashboardLayout(ui.LayoutView):
         if self._graph_stats:
             container.add_item(ui.Separator(spacing=discord.SeparatorSpacing.small))
             stats_lines = ["**📈 Statistics:**"]
+            is_perf = self.selected_category == "performance"
+
+            def fmt(value: float) -> str:
+                if pd.isna(value):
+                    return "N/A"
+                if is_perf:
+                    return f"{value:,.2f}"
+                return humanize_number(int(value))
+
             for metric_key, stats in self._graph_stats.items():
                 if self.selected_category == "members":
                     label = MEMBER_METRICS.get(metric_key, (metric_key, ""))[0]
@@ -327,14 +351,16 @@ class MetricsDashboardLayout(ui.LayoutView):
                 else:
                     label = PERFORMANCE_METRICS.get(metric_key, (metric_key, ""))[0]
 
-                delta_val = int(stats["delta"])
-                delta_str = f"+{humanize_number(delta_val)}" if delta_val >= 0 else humanize_number(delta_val)
+                delta_val = stats["delta"]
+                delta_str = fmt(delta_val)
+                if not pd.isna(delta_val) and delta_val >= 0:
+                    delta_str = f"+{delta_str}"
                 stats_lines.append(
                     f"**{label}:** "
-                    f"Current: {humanize_number(int(stats['current']))} | "
-                    f"Min: {humanize_number(int(stats['lowest']))} | "
-                    f"Max: {humanize_number(int(stats['highest']))} | "
-                    f"Avg: {humanize_number(int(stats['average']))} | "
+                    f"Current: {fmt(stats['current'])} | "
+                    f"Min: {fmt(stats['lowest'])} | "
+                    f"Max: {fmt(stats['highest'])} | "
+                    f"Avg: {fmt(stats['average'])} | "
                     f"Δ: {delta_str}"
                 )
             container.add_item(ui.TextDisplay("\n".join(stats_lines)))
