@@ -67,7 +67,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "8.10.0"
+    __version__ = "8.10.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -479,7 +479,6 @@ class Assistant(
             text,
             embedding,
             observed_model,
-            ai_created,
         )
         asyncio.create_task(self.save_conf())
         return embedding
