@@ -125,15 +125,15 @@ async def request_chat_completion_raw(
             kwargs["presence_penalty"] = presence_penalty
 
         if (model.startswith("o") or "gpt-5" in model) and reasoning_effort is not None:
-            if "gpt-5.4" in model:
-                # gpt-5.4 supports: none, low, medium, high, xhigh (not minimal)
-                # Chat Completions does not support reasoning_effort + tools together for gpt-5.4
+            if "gpt-5.4" in model or "gpt-5.5" in model:
+                # gpt-5.4/5.5 support: none, low, medium, high, xhigh (not minimal)
+                # Chat Completions does not support reasoning_effort + tools together for these
                 if reasoning_effort == "minimal":
                     reasoning_effort = "low"
                 if not functions:
                     kwargs["reasoning_effort"] = reasoning_effort
             elif "gpt-5" in model:
-                # gpt-5 (non-5.4) supports: minimal, low, medium, high (not none/xhigh)
+                # gpt-5 (non-5.4/5.5) supports: minimal, low, medium, high (not none/xhigh)
                 if reasoning_effort == "none":
                     reasoning_effort = "minimal"
                 elif reasoning_effort == "xhigh":

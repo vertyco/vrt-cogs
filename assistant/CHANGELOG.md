@@ -1,5 +1,9 @@
 # Assistant Changelog
 
+## v8.10.0
+
+- **New**: Localhost RPC handlers for prompt/embedding management (requires Red's `--rpc` launch flag; no effect otherwise). JSON-RPC methods `ASSISTANT__RPC_GET_SYSTEM_PROMPT`, `ASSISTANT__RPC_SET_SYSTEM_PROMPT`, `ASSISTANT__RPC_LIST_EMBEDDINGS`, `ASSISTANT__RPC_UPSERT_EMBEDDING` (re-embeds via the configured API), `ASSISTANT__RPC_DELETE_EMBEDDING`. Intended for external tooling to keep the system prompt and RAG entries in sync programmatically. RPC binds 127.0.0.1 only; box access is the auth boundary.
+
 ## v8.9.0
 
 - **New**: Smartmod trigger phrases. Staff can set keyword triggers that fire the moderation review pipeline **in place of** the OpenAI moderation scan, so smartmod works even with no OpenAI key. Manage them with `[p]assistant smartmod trigger <phrase>` (re-run to remove) and `[p]assistant smartmod triggers` (list). Only `*` acts as a wildcard (any run of characters); everything else is escaped, so pasting real regex is safe and can never lock the bot up with catastrophic backtracking — no multiprocessing timeout guard is needed. A phrase with no leading/trailing `*` matches on word boundaries (`idiot` hits "idiot" but not "idiotic"); add `*` for prefix/suffix/substring matching. A keyword match runs the review alongside any category hits. `smartmod test` / `smartmod simulate` now report trigger matches and run key-free when triggers are configured.
