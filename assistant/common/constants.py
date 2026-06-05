@@ -55,6 +55,8 @@ MODELS = {
     "gpt-5.4-mini-2026-03-17": 400000,
     "gpt-5.4-nano": 400000,
     "gpt-5.4-nano-2026-03-17": 400000,
+    "gpt-5.5": 1050000,
+    "gpt-5.5-2026-04-23": 1050000,
 }
 
 VISION_COSTS = {
@@ -111,6 +113,8 @@ SUPPORTS_SEED = [
     "gpt-5.4-mini-2026-03-17",
     "gpt-5.4-nano",
     "gpt-5.4-nano-2026-03-17",
+    "gpt-5.5",
+    "gpt-5.5-2026-04-23",
 ]
 NO_DEVELOPER_ROLE = [  # Also doesnt support system messages
     "o1-mini",
@@ -159,6 +163,8 @@ SUPPORTS_VISION = [
     "gpt-5.4-mini-2026-03-17",
     "gpt-5.4-nano",
     "gpt-5.4-nano-2026-03-17",
+    "gpt-5.5",
+    "gpt-5.5-2026-04-23",
 ]
 SUPPORTS_TOOLS = [
     "gpt-3.5-turbo-1106",
@@ -204,6 +210,8 @@ SUPPORTS_TOOLS = [
     "gpt-5.4-mini-2026-03-17",
     "gpt-5.4-nano",
     "gpt-5.4-nano-2026-03-17",
+    "gpt-5.5",
+    "gpt-5.5-2026-04-23",
 ]
 OLD_TOOL_SCHEMA = [i for i in MODELS.keys() if i not in SUPPORTS_TOOLS]
 READ_EXTENSIONS = [

@@ -67,7 +67,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "8.9.0"
+    __version__ = "8.10.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -162,6 +162,13 @@ class Assistant(
         logging.getLogger("httpcore.connection").setLevel(logging.WARNING)
         logging.getLogger("httpx").setLevel(logging.WARNING)
         self.bot.dispatch("assistant_cog_add", self)
+
+        # Expose shepherd handlers on Red's localhost RPC (no-op unless --rpc flag is set)
+        self.bot.register_rpc_handler(self.rpc_get_system_prompt)
+        self.bot.register_rpc_handler(self.rpc_set_system_prompt)
+        self.bot.register_rpc_handler(self.rpc_list_embeddings)
+        self.bot.register_rpc_handler(self.rpc_upsert_embedding)
+        self.bot.register_rpc_handler(self.rpc_delete_embedding)
 
         await asyncio.sleep(30)
         self.save_loop.start()
@@ -476,6 +483,67 @@ class Assistant(
         )
         asyncio.create_task(self.save_conf())
         return embedding
+
+    # ------------------ RPC HANDLERS ------------------
+    # Exposed on Red's localhost JSON-RPC server (requires the --rpc launch flag).
+    # Method names over the wire: ASSISTANT__RPC_<NAME> (e.g. ASSISTANT__RPC_GET_SYSTEM_PROMPT).
+    # Localhost binding is the access control; all args/returns are JSON serializable.
+
+    def rpc_guild(self, guild_id: int) -> Optional[discord.Guild]:
+        return self.bot.get_guild(int(guild_id))
+
+    async def rpc_get_system_prompt(self, guild_id: int) -> dict:
+        """Return the guild's current system prompt."""
+        guild = self.rpc_guild(guild_id)
+        if not guild:
+            return {"ok": False, "error": f"guild {guild_id} not found"}
+        conf = self.db.get_conf(guild)
+        return {"ok": True, "prompt": conf.system_prompt or ""}
+
+    async def rpc_set_system_prompt(self, guild_id: int, prompt: str) -> dict:
+        """Set the guild's system prompt."""
+        guild = self.rpc_guild(guild_id)
+        if not guild:
+            return {"ok": False, "error": f"guild {guild_id} not found"}
+        if not isinstance(prompt, str) or not prompt.strip():
+            return {"ok": False, "error": "prompt must be a non-empty string"}
+        conf = self.db.get_conf(guild)
+        conf.system_prompt = prompt
+        await self.save_conf()
+        return {"ok": True, "length": len(prompt)}
+
+    async def rpc_list_embeddings(self, guild_id: int) -> dict:
+        """List all embedding entries: {name: {text, created, modified, model, dimensions}}."""
+        guild = self.rpc_guild(guild_id)
+        if not guild:
+            return {"ok": False, "error": f"guild {guild_id} not found"}
+        meta = await self.embedding_store.get_all_metadata(guild.id)
+        return {"ok": True, "embeddings": meta}
+
+    async def rpc_upsert_embedding(self, guild_id: int, name: str, text: str) -> dict:
+        """Create or overwrite an embedding entry (re-embeds via the configured API)."""
+        guild = self.rpc_guild(guild_id)
+        if not guild:
+            return {"ok": False, "error": f"guild {guild_id} not found"}
+        if not str(name).strip() or not str(text).strip():
+            return {"ok": False, "error": "name and text must be non-empty strings"}
+        try:
+            embedding = await self.add_embedding(guild, str(name), str(text), overwrite=True)
+        except NoAPIKey:
+            return {"ok": False, "error": "no API key configured for this guild"}
+        if embedding is None:
+            return {"ok": False, "error": "embedding request returned nothing"}
+        return {"ok": True, "name": str(name), "dimensions": len(embedding)}
+
+    async def rpc_delete_embedding(self, guild_id: int, name: str) -> dict:
+        """Delete an embedding entry by name."""
+        guild = self.rpc_guild(guild_id)
+        if not guild:
+            return {"ok": False, "error": f"guild {guild_id} not found"}
+        if not await self.embedding_store.exists(guild.id, str(name)):
+            return {"ok": False, "error": f"no embedding named '{name}'"}
+        await self.embedding_store.delete(guild.id, str(name))
+        return {"ok": True, "deleted": str(name)}
 
     async def get_chat(
         self,

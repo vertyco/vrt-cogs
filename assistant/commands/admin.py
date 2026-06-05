@@ -1992,12 +1992,12 @@ class Admin(MixinMeta):
         """Switch reasoning effort between none, minimal, low, medium, high, and xhigh
 
         Not all models support every level. Unsupported levels are automatically mapped to the closest supported value.
-        - **none**: No reasoning (gpt-5.4 only, skipped for other models)
+        - **none**: No reasoning (gpt-5.4/5.5 only, skipped for other models)
         - **minimal**: Minimal reasoning (gpt-5 only, mapped to low for o-series)
         - **low**: Low reasoning effort
         - **medium**: Medium reasoning effort
         - **high**: High reasoning effort
-        - **xhigh**: Maximum reasoning (gpt-5.4 only, mapped to high for other models)
+        - **xhigh**: Maximum reasoning (gpt-5.4/5.5 only, mapped to high for other models)
         """
         cycle = ["none", "minimal", "low", "medium", "high", "xhigh"]
         conf = self.db.get_conf(ctx.guild)
