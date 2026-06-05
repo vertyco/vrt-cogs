@@ -1,3 +1,5 @@
+import inspect
+import json
 import logging
 
 from redbot.core import commands
@@ -16,7 +18,7 @@ class VrtUtils(Utils, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "2.16.0"
+    __version__ = "2.17.0"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -33,8 +35,38 @@ class VrtUtils(Utils, commands.Cog, metaclass=CompositeMetaClass):
 
     async def cog_load(self) -> None:
         # Localhost JSON-RPC (requires Red's --rpc flag, no-op otherwise).
-        # Wire name: VRTUTILS__RPC_QUICKPULL
+        # Wire names: VRTUTILS__RPC_QUICKPULL, VRTUTILS__RPC_MASTER
         self.bot.register_rpc_handler(self.rpc_quickpull)
+        self.bot.register_rpc_handler(self.rpc_master)
+
+    async def rpc_master(self, cog: str, method: str, args: list = None, kwargs: dict = None) -> dict:
+        """Generic bot-control bridge: call any method on a loaded cog (or the bot itself).
+
+        One RPC endpoint instead of one handler per feature. Pass cog="bot" to
+        target the Red bot object. Args/kwargs must be JSON values; the result
+        comes back as-is when JSON-serializable, otherwise as repr(). Localhost
+        binding is the access control, same as quickpull. Ops automation only,
+        nothing here is reachable by guild users.
+        """
+        args = args or []
+        kwargs = kwargs or {}
+        target = self.bot if cog.lower() == "bot" else self.bot.get_cog(cog)
+        if target is None:
+            return {"ok": False, "error": f"cog not loaded: {cog}"}
+        func = getattr(target, method, None)
+        if not callable(func):
+            return {"ok": False, "error": f"no callable '{method}' on {cog}"}
+        try:
+            result = func(*args, **kwargs)
+            if inspect.isawaitable(result):
+                result = await result
+        except Exception as e:
+            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+        try:
+            json.dumps(result)
+            return {"ok": True, "result": result}
+        except (TypeError, ValueError):
+            return {"ok": True, "result": repr(result)}
 
     async def rpc_quickpull(self, cogs: list, repo_name: str = "vrt-cogs") -> dict:
         """Update a downloader repo and reinstall + reload the given cogs.
