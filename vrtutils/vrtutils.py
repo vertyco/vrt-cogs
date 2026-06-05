@@ -1,6 +1,4 @@
-import asyncio
 import logging
-from pathlib import Path
 
 from redbot.core import commands
 from redbot.core.bot import Red
@@ -38,30 +36,39 @@ class VrtUtils(Utils, commands.Cog, metaclass=CompositeMetaClass):
         # Wire name: VRTUTILS__RPC_QUICKPULL
         self.bot.register_rpc_handler(self.rpc_quickpull)
 
-    async def rpc_quickpull(self, cogs: list) -> dict:
-        """git pull the repo this cog runs from, then reload the given cogs.
+    async def rpc_quickpull(self, cogs: list, repo_name: str = "vrt-cogs") -> dict:
+        """Update a downloader repo and reinstall + reload the given cogs.
 
-        RPC equivalent of [p]quickpull for the local-clone install. Localhost
+        RPC equivalent of [p]quickpull (no dependency installs). Localhost
         binding is the access control. If 'vrtutils' itself is in the list,
         reload it via a separate call last; reloading the cog that owns this
         handler may drop the response.
         """
-        repo_root = Path(__file__).resolve().parent.parent
-        proc = await asyncio.create_subprocess_exec(
-            "git",
-            "-C",
-            str(repo_root),
-            "pull",
-            "--ff-only",
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.STDOUT,
-        )
-        out_bytes, _ = await proc.communicate()
-        git_output = out_bytes.decode(errors="replace").strip()
-        if proc.returncode != 0:
-            return {"ok": False, "stage": "git", "output": git_output}
+        downloader = self.bot.get_cog("Downloader")
+        if downloader is None:
+            return {"ok": False, "stage": "downloader", "output": "Downloader cog not loaded"}
         core = self.bot.get_cog("Core")
         if core is None:
             return {"ok": False, "stage": "reload", "output": "Core cog not loaded"}
-        results = await core._reload([str(c) for c in cogs])
-        return {"ok": True, "git": git_output, "reload": results}
+
+        repo, (old_commit, new_commit) = await downloader._repo_manager.update_repo(repo_name)
+        wanted = {str(c) for c in cogs}
+        available = {cog.name: cog for cog in repo.available_cogs}
+        missing = sorted(wanted - set(available))
+        if missing:
+            return {"ok": False, "stage": "lookup", "output": f"not in repo '{repo_name}': {missing}"}
+
+        targets = [available[name] for name in sorted(wanted)]
+        installed, failed = await downloader._install_cogs(targets)
+        if installed:
+            await downloader._save_to_installed(installed)
+        reload_results = await core._reload([m.name for m in installed])
+        return {
+            "ok": not failed,
+            "repo": repo_name,
+            "old_commit": old_commit,
+            "new_commit": new_commit,
+            "installed": [m.name for m in installed],
+            "failed": [c.name for c in failed],
+            "reload": reload_results,
+        }
