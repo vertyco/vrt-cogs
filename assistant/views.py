@@ -187,7 +187,7 @@ class ModReasonModal(discord.ui.Modal):
         self.add_item(self.field)
 
     async def on_submit(self, interaction: discord.Interaction):
-        reason = self.field.value.strip() or self.view_ref.proposal_reason
+        reason = self.field.value.strip() or self.view_ref.action_reason
         await self.view_ref.execute_and_finalize(interaction, self.action, reason, via_modal=True)
 
 
@@ -243,6 +243,9 @@ class ModActionView(discord.ui.LayoutView):
             proposed = self.available_actions[0].name if self.available_actions else proposed
         self.proposed_action = proposed
         self.proposal_reason = proposal.get("reason", "") or _("No reason provided.")
+        # Concise user-facing reason used for the action itself (audit log, warn DM, modal
+        # pre-fill); falls back to the staff analysis when the model didn't provide one.
+        self.action_reason = str(proposal.get("user_reason", "") or "").strip() or self.proposal_reason
         self.message: Optional[discord.Message] = None
         self.resolved = False
         self.outcome_text = ""
@@ -290,6 +293,8 @@ class ModActionView(discord.ui.LayoutView):
         container.add_item(discord.ui.TextDisplay(_("-# Flagged for: {}").format(cats)))
         container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.small))
         container.add_item(discord.ui.TextDisplay(_("**Reason**\n{}").format(self.proposal_reason[:1024])))
+        if self.action_reason != self.proposal_reason:
+            container.add_item(discord.ui.TextDisplay(_("-# Action reason: {}").format(self.action_reason[:512])))
         excerpt = self.context_excerpt()
         if excerpt:
             container.add_item(discord.ui.TextDisplay(excerpt))
@@ -306,6 +311,9 @@ class ModActionView(discord.ui.LayoutView):
         if not self.context_text:
             return ""
         tail = self.context_text[-1000:]
+        if len(self.context_text) > 1000:
+            # The slice usually lands mid-line; drop the partial first line.
+            tail = tail.split("\n", 1)[-1]
         rendered = "\n".join(f"-# {line[:160]}" for line in tail.splitlines() if line.strip())
         # Keep the whole panel's text well under the components-v2 ~4000-char aggregate budget.
         return _("**Context**\n{}").format(rendered[:1200]) if rendered else ""
@@ -366,9 +374,9 @@ class ModActionView(discord.ui.LayoutView):
             )
             return
         if action == "delete":
-            await self.execute_and_finalize(interaction, "delete", self.proposal_reason, via_modal=False)
+            await self.execute_and_finalize(interaction, "delete", self.action_reason, via_modal=False)
             return
-        await interaction.response.send_modal(ModReasonModal(self, action, self.proposal_reason))
+        await interaction.response.send_modal(ModReasonModal(self, action, self.action_reason))
 
     async def execute_and_finalize(
         self, interaction: discord.Interaction, action: str, reason: str, via_modal: bool
@@ -429,12 +437,15 @@ class ModActionView(discord.ui.LayoutView):
             return
         if self.auto_action_on_timeout and not self.dry_run:
             actor = self.flagged_message.guild.me
-            outcome = (await self.run_action(self.proposed_action, self.proposal_reason, actor))[0]
+            outcome = (await self.run_action(self.proposed_action, self.action_reason, actor))[0]
             self.resolved = True
             self.outcome_text = _("⏱️ Auto-action on timeout: {}").format(outcome)
             self.build_layout()
         else:
-            self.disable_all()
+            # Make silent expiry visible instead of just greying the buttons out.
+            self.resolved = True
+            self.outcome_text = _("⏱️ Panel expired with no staff action.")
+            self.build_layout()
         with suppress(discord.HTTPException):
             if self.message:
                 await self.message.edit(view=self)

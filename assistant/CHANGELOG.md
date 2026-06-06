@@ -1,5 +1,11 @@
 # Assistant Changelog
 
+## v8.11.0
+
+- **Fix/New**: Smartmod now asks the reviewer for a separate `user_reason` alongside its staff analysis: a short, action-agnostic statement of what the user did and which rule it broke. That text (instead of the full staff-facing analysis, which previously read as nonsense when staff picked a different action than suggested) is what pre-fills the action's reason modal, falls back on blank submit, and is recorded for the action itself (audit log, warn DM, modnote). The panel shows an `Action reason:` line whenever it differs from the analysis.
+- **New**: A mod panel that times out with no staff action is now stamped `⏱️ Panel expired with no staff action.` instead of silently greying out its buttons.
+- **Fix**: Panel context excerpts no longer start mid-word; the partial first line left by the tail slice is dropped.
+
 ## v8.10.1
 
 - **Fix**: third-party/RPC `add_embedding` crashed with `EmbeddingStore.add() takes 6 positional arguments but 7 were given` — it still passed the vestigial `ai_created` flag dropped from the store in the chromadb refactor. The parameter stays in `add_embedding`'s signature for API compatibility but is no longer forwarded.
