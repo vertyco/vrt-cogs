@@ -654,7 +654,7 @@ You MUST finish by calling exactly one of these two tools:
 - `no_action_needed` - the content does not warrant action in context.
 - `propose_mod_action` - the content warrants action; this sends an interactive panel to the staff team for confirmation (it does NOT take the action itself).
 
-Pick the lightest action that fits the violation, and write a clear, specific reason staff can act on."""
+Pick the lightest action that fits the violation. Give staff a clear, specific analysis in `reason`, and put a short self-contained statement of what the user did and which rule it broke in `user_reason` (it becomes the actual reason recorded for whatever action staff confirms)."""
 
 
 PROPOSE_MOD_ACTION = {
@@ -682,8 +682,18 @@ PROPOSE_MOD_ACTION = {
             "reason": {
                 "type": "string",
                 "description": (
-                    "Clear, concise reason citing the behavior/rule violated. Shown to staff and pre-filled "
-                    "into the action's reason field."
+                    "Your analysis for staff: what happened, the context, relevant history, and why the "
+                    "suggested action fits. Shown only on the staff review panel."
+                ),
+            },
+            "user_reason": {
+                "type": "string",
+                "description": (
+                    "Short, self-contained reason (1-2 sentences) stating what the user did and which rule it "
+                    "violated, e.g. 'Slur directed at another member in #general (Rule 1.1 Hate Speech)'. This "
+                    "is used as the actual reason for whatever action staff confirms (audit log, warn DM), so "
+                    "keep it action-agnostic - staff may pick a different action than the one you suggest. Do "
+                    "NOT include escalation rationale, history, or meta commentary here."
                 ),
             },
             "severity": {
@@ -704,7 +714,7 @@ PROPOSE_MOD_ACTION = {
                 "default": False,
             },
         },
-        "required": ["action", "reason", "severity"],
+        "required": ["action", "reason", "user_reason", "severity"],
     },
 }
 
