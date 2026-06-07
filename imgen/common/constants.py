@@ -1,21 +1,33 @@
 VALID_SIZES = ["auto", "1024x1024", "1536x1024", "1024x1536", "2048x2048", "3840x2160", "2160x3840"]
 VALID_QUALITIES = ["auto", "low", "medium", "high"]
 VALID_FORMATS = ["png", "jpeg", "webp"]
-VALID_MODELS = ["gpt-image-2"]
+VALID_BACKGROUNDS = ["auto", "transparent", "opaque"]
+# gpt-image-1.5 is kept (until its Dec 1, 2026 shutdown) because gpt-image-2
+# doesn't currently support transparent backgrounds
+VALID_MODELS = ["gpt-image-2", "gpt-image-1.5"]
 
-MODEL_ORDER = ["gpt-image-2"]
+MODEL_ORDER = ["gpt-image-2", "gpt-image-1.5"]
 SIZE_ORDER = ["auto", "1024x1024", "1536x1024", "1024x1536", "2048x2048", "3840x2160", "2160x3840"]
 QUALITY_ORDER = ["auto", "low", "medium", "high"]
 
 MODEL_LABELS = {
     "gpt-image-2": "GPT Image 2",
+    "gpt-image-1.5": "GPT Image 1.5 (transparency)",
 }
+
+# Sizes each model accepts ("auto" always allowed)
+MODEL_SIZES = {
+    "gpt-image-2": ["auto", "1024x1024", "1536x1024", "1024x1536", "2048x2048", "3840x2160", "2160x3840"],
+    "gpt-image-1.5": ["auto", "1024x1024", "1536x1024", "1024x1536"],
+}
+
+# Models that support background="transparent"
+TRANSPARENCY_MODELS = {"gpt-image-1.5"}
 
 # Deprecated model names mapped to their replacement.
 # OpenAI shuts down gpt-image-1 on Oct 23, 2026 and gpt-image-1.5 / gpt-image-1-mini on Dec 1, 2026.
 LEGACY_MODEL_MAP = {
     "gpt-image-1": "gpt-image-2",
-    "gpt-image-1.5": "gpt-image-2",
     "gpt-image-1-mini": "gpt-image-2",
 }
 
@@ -81,11 +93,39 @@ PRICING: dict[str, dict[str, dict[str, float]]] = {
             "2160x3840": 0.12,
         },
     },
+    "gpt-image-1.5": {
+        "low": {
+            "auto": 0.009,
+            "1024x1024": 0.009,
+            "1536x1024": 0.013,
+            "1024x1536": 0.013,
+        },
+        "medium": {
+            "auto": 0.034,
+            "1024x1024": 0.034,
+            "1536x1024": 0.05,
+            "1024x1536": 0.05,
+        },
+        "high": {
+            "auto": 0.133,
+            "1024x1024": 0.133,
+            "1536x1024": 0.20,
+            "1024x1536": 0.20,
+        },
+        # Auto quality defaults to medium pricing
+        "auto": {
+            "auto": 0.034,
+            "1024x1024": 0.034,
+            "1536x1024": 0.05,
+            "1024x1536": 0.05,
+        },
+    },
 }
 
 # Token pricing per 1M tokens (input, output) for exact cost from API usage
 TOKEN_PRICING: dict[str, tuple[float, float]] = {
     "gpt-image-2": (8.0, 30.0),
+    "gpt-image-1.5": (8.0, 32.0),
 }
 
 
@@ -143,8 +183,11 @@ class TierPreset:
         """Get the min and max cost for this tier's options."""
         costs: list[float] = []
         for model in self.models:
+            model_sizes = MODEL_SIZES.get(model, VALID_SIZES)
             for quality in self.qualities:
                 for size in self.sizes:
+                    if size not in model_sizes:
+                        continue
                     cost = get_generation_cost(model, quality, size)
                     if cost > 0:
                         costs.append(cost)
@@ -184,8 +227,8 @@ TIER_PRESETS: dict[str, TierPreset] = {
     ),
     "standard": TierPreset(
         name="Standard",
-        description="Low/medium quality with all sizes",
-        models=["gpt-image-2"],
+        description="All models with low/medium quality and all sizes",
+        models=["gpt-image-2", "gpt-image-1.5"],
         qualities=["low", "medium"],
         sizes=["1024x1024", "1536x1024", "1024x1536", "2048x2048", "3840x2160", "2160x3840"],
         quota=30,
@@ -194,8 +237,8 @@ TIER_PRESETS: dict[str, TierPreset] = {
     ),
     "premium": TierPreset(
         name="Premium",
-        description="Full access to all qualities and sizes",
-        models=["gpt-image-2"],
+        description="Full access to all models, qualities, and sizes",
+        models=["gpt-image-2", "gpt-image-1.5"],
         qualities=["low", "medium", "high"],
         sizes=["1024x1024", "1536x1024", "1024x1536", "2048x2048", "3840x2160", "2160x3840"],
         quota=0,  # Unlimited
