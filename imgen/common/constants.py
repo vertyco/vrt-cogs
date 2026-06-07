@@ -1,15 +1,22 @@
-VALID_SIZES = ["auto", "1024x1024", "1536x1024", "1024x1536"]
+VALID_SIZES = ["auto", "1024x1024", "1536x1024", "1024x1536", "2048x2048", "3840x2160", "2160x3840"]
 VALID_QUALITIES = ["auto", "low", "medium", "high"]
 VALID_FORMATS = ["png", "jpeg", "webp"]
-VALID_MODELS = ["gpt-image-1.5", "gpt-image-1-mini"]
+VALID_MODELS = ["gpt-image-2"]
 
-MODEL_ORDER = ["gpt-image-1.5", "gpt-image-1-mini"]
-SIZE_ORDER = ["auto", "1024x1024", "1536x1024", "1024x1536"]
+MODEL_ORDER = ["gpt-image-2"]
+SIZE_ORDER = ["auto", "1024x1024", "1536x1024", "1024x1536", "2048x2048", "3840x2160", "2160x3840"]
 QUALITY_ORDER = ["auto", "low", "medium", "high"]
 
 MODEL_LABELS = {
-    "gpt-image-1.5": "GPT Image 1.5",
-    "gpt-image-1-mini": "GPT Image 1 Mini",
+    "gpt-image-2": "GPT Image 2",
+}
+
+# Deprecated model names mapped to their replacement.
+# OpenAI shuts down gpt-image-1 on Oct 23, 2026 and gpt-image-1.5 / gpt-image-1-mini on Dec 1, 2026.
+LEGACY_MODEL_MAP = {
+    "gpt-image-1": "gpt-image-2",
+    "gpt-image-1.5": "gpt-image-2",
+    "gpt-image-1-mini": "gpt-image-2",
 }
 
 SIZE_LABELS = {
@@ -17,6 +24,9 @@ SIZE_LABELS = {
     "1024x1024": "1024x1024 (Square)",
     "1536x1024": "1536x1024 (Landscape)",
     "1024x1536": "1024x1536 (Portrait)",
+    "2048x2048": "2048x2048 (Large Square)",
+    "3840x2160": "3840x2160 (4K Landscape)",
+    "2160x3840": "2160x3840 (4K Portrait)",
 }
 
 QUALITY_LABELS = {
@@ -29,61 +39,53 @@ QUALITY_LABELS = {
 # Pricing per generation in USD
 # Format: PRICING[model][quality][size] = cost
 # "auto" size uses 1024x1024 pricing as default
+# gpt-image-2 is token-billed; 1024-class values come from OpenAI's cost table,
+# 2048x2048 and 4K values are estimates (actual cost is computed from response usage when available)
 PRICING: dict[str, dict[str, dict[str, float]]] = {
-    "gpt-image-1.5": {
+    "gpt-image-2": {
         "low": {
-            "auto": 0.009,
-            "1024x1024": 0.009,
-            "1536x1024": 0.013,
-            "1024x1536": 0.013,
+            "auto": 0.006,
+            "1024x1024": 0.006,
+            "1536x1024": 0.005,
+            "1024x1536": 0.005,
+            "2048x2048": 0.011,
+            "3840x2160": 0.014,
+            "2160x3840": 0.014,
         },
         "medium": {
-            "auto": 0.034,
-            "1024x1024": 0.034,
-            "1536x1024": 0.05,
-            "1024x1536": 0.05,
+            "auto": 0.053,
+            "1024x1024": 0.053,
+            "1536x1024": 0.041,
+            "1024x1536": 0.041,
+            "2048x2048": 0.09,
+            "3840x2160": 0.12,
+            "2160x3840": 0.12,
         },
         "high": {
-            "auto": 0.133,
-            "1024x1024": 0.133,
-            "1536x1024": 0.20,
-            "1024x1536": 0.20,
+            "auto": 0.211,
+            "1024x1024": 0.211,
+            "1536x1024": 0.165,
+            "1024x1536": 0.165,
+            "2048x2048": 0.32,
+            "3840x2160": 0.41,
+            "2160x3840": 0.41,
         },
         # Auto quality defaults to medium pricing
         "auto": {
-            "auto": 0.034,
-            "1024x1024": 0.034,
-            "1536x1024": 0.05,
-            "1024x1536": 0.05,
+            "auto": 0.053,
+            "1024x1024": 0.053,
+            "1536x1024": 0.041,
+            "1024x1536": 0.041,
+            "2048x2048": 0.09,
+            "3840x2160": 0.12,
+            "2160x3840": 0.12,
         },
     },
-    "gpt-image-1-mini": {
-        "low": {
-            "auto": 0.005,
-            "1024x1024": 0.005,
-            "1536x1024": 0.006,
-            "1024x1536": 0.006,
-        },
-        "medium": {
-            "auto": 0.011,
-            "1024x1024": 0.011,
-            "1536x1024": 0.015,
-            "1024x1536": 0.015,
-        },
-        "high": {
-            "auto": 0.036,
-            "1024x1024": 0.036,
-            "1536x1024": 0.052,
-            "1024x1536": 0.052,
-        },
-        # Auto quality defaults to medium pricing
-        "auto": {
-            "auto": 0.011,
-            "1024x1024": 0.011,
-            "1536x1024": 0.015,
-            "1024x1536": 0.015,
-        },
-    },
+}
+
+# Token pricing per 1M tokens (input, output) for exact cost from API usage
+TOKEN_PRICING: dict[str, tuple[float, float]] = {
+    "gpt-image-2": (8.0, 30.0),
 }
 
 
@@ -96,11 +98,20 @@ def get_generation_cost(model: str, quality: str, size: str) -> float:
     return quality_pricing.get(size, quality_pricing.get("auto", 0.0))
 
 
+def get_actual_cost(model: str, input_tokens: int, output_tokens: int) -> float:
+    """Calculate the exact cost from API-reported token usage."""
+    rates = TOKEN_PRICING.get(model)
+    if not rates:
+        return 0.0
+    input_rate, output_rate = rates
+    return (input_tokens * input_rate + output_tokens * output_rate) / 1_000_000
+
+
 def format_cost(cost: float) -> str:
     """Format a cost value as a string with appropriate precision."""
     if cost < 0.01:
-        return f"${cost:.4f}"
-    return f"${cost:.3f}"
+        return f"~${cost:.4f}"
+    return f"~${cost:.3f}"
 
 
 # Subscription tier presets for easy configuration
@@ -153,8 +164,8 @@ def format_quota(quota: int, interval: str) -> str:
 TIER_PRESETS: dict[str, TierPreset] = {
     "free": TierPreset(
         name="Free",
-        description="Basic access with mini model and low quality",
-        models=["gpt-image-1-mini"],
+        description="Basic access with low quality square images",
+        models=["gpt-image-2"],
         qualities=["low"],
         sizes=["1024x1024"],
         quota=5,
@@ -163,8 +174,8 @@ TIER_PRESETS: dict[str, TierPreset] = {
     ),
     "basic": TierPreset(
         name="Basic",
-        description="Mini model with low/medium quality and all sizes",
-        models=["gpt-image-1-mini"],
+        description="Low/medium quality with standard sizes",
+        models=["gpt-image-2"],
         qualities=["low", "medium"],
         sizes=["1024x1024", "1536x1024", "1024x1536"],
         quota=15,
@@ -173,20 +184,20 @@ TIER_PRESETS: dict[str, TierPreset] = {
     ),
     "standard": TierPreset(
         name="Standard",
-        description="All models with low/medium quality",
-        models=["gpt-image-1.5", "gpt-image-1-mini"],
+        description="Low/medium quality with all sizes",
+        models=["gpt-image-2"],
         qualities=["low", "medium"],
-        sizes=["1024x1024", "1536x1024", "1024x1536"],
+        sizes=["1024x1024", "1536x1024", "1024x1536", "2048x2048", "3840x2160", "2160x3840"],
         quota=30,
         quota_interval="daily",
         emoji="🥈",
     ),
     "premium": TierPreset(
         name="Premium",
-        description="Full access to all models, qualities, and sizes",
-        models=["gpt-image-1.5", "gpt-image-1-mini"],
+        description="Full access to all qualities and sizes",
+        models=["gpt-image-2"],
         qualities=["low", "medium", "high"],
-        sizes=["1024x1024", "1536x1024", "1024x1536"],
+        sizes=["1024x1024", "1536x1024", "1024x1536", "2048x2048", "3840x2160", "2160x3840"],
         quota=0,  # Unlimited
         quota_interval="daily",
         emoji="🥇",

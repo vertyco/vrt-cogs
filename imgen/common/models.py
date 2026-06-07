@@ -6,6 +6,7 @@ from typing import Literal
 import discord
 
 from . import Base
+from .constants import LEGACY_MODEL_MAP, VALID_MODELS
 
 log = logging.getLogger("red.vrt.imgen.models")
 
@@ -60,7 +61,7 @@ class GuildSettings(Base):
     user_usage: dict[int, UserUsage] = {}
 
     # Default generation settings
-    default_model: str = "gpt-image-1.5"
+    default_model: str = "gpt-image-2"
     default_size: str = "auto"
     default_quality: str = "auto"
 
@@ -217,3 +218,26 @@ class DB(Base):
     def get_conf(self, guild: discord.Guild | int) -> GuildSettings:
         gid = guild if isinstance(guild, int) else guild.id
         return self.configs.setdefault(gid, GuildSettings())
+
+    def migrate_models(self) -> bool:
+        """Remap deprecated model names in stored configs. Returns True if anything changed."""
+        changed = False
+        for conf in self.configs.values():
+            mapped = LEGACY_MODEL_MAP.get(conf.default_model, conf.default_model)
+            if mapped not in VALID_MODELS:
+                mapped = VALID_MODELS[0]
+            if mapped != conf.default_model:
+                conf.default_model = mapped
+                changed = True
+            for access in conf.role_access.values():
+                if not access.allowed_models:
+                    continue
+                migrated: list[str] = []
+                for model in access.allowed_models:
+                    new = LEGACY_MODEL_MAP.get(model, model)
+                    if new in VALID_MODELS and new not in migrated:
+                        migrated.append(new)
+                if migrated != access.allowed_models:
+                    access.allowed_models = migrated
+                    changed = True
+        return changed
