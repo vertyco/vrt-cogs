@@ -28,6 +28,7 @@ from .common.constants import (
     VALID_SIZES,
     format_cost,
     format_quota,
+    get_actual_cost,
     get_generation_cost,
 )
 from .common.models import DB, AccessLimits, GuildSettings, RoleAccess
@@ -152,10 +153,15 @@ class ImGen(commands.Cog):
             self.db = DB()
         log.info("Config loaded")
 
+        migrated = self.db.migrate_models()
+
         # Register dynamic items for persistent views
         self.bot.add_dynamic_items(EditImageButton)
 
         self.initialized = True
+        if migrated:
+            log.info("Migrated deprecated model names in config")
+            await self.save()
         log.info("ImGen initialized")
 
     async def save(self) -> None:
@@ -444,8 +450,16 @@ class ImGen(commands.Cog):
                     log_embed.add_field(name="Model", value=resolved_model, inline=True)
                     log_embed.add_field(name="Size", value=resolved_size, inline=True)
                     log_embed.add_field(name="Quality", value=resolved_quality, inline=True)
-                    # Add cost to log
-                    cost = get_generation_cost(resolved_model, resolved_quality, resolved_size)
+                    # Add cost to log: exact from API token usage when available, else table estimate
+                    usage = getattr(response, "usage", None)
+                    if usage and getattr(usage, "output_tokens", 0):
+                        cost = get_actual_cost(
+                            resolved_model,
+                            getattr(usage, "input_tokens", 0) or 0,
+                            usage.output_tokens,
+                        )
+                    else:
+                        cost = get_generation_cost(resolved_model, resolved_quality, resolved_size)
                     if cost > 0:
                         log_embed.add_field(name="Cost", value=format_cost(cost), inline=True)
                     if message:

@@ -79,7 +79,7 @@ class EditImageModal(discord.ui.Modal):
         allowed_models: list[str],
         allowed_sizes: list[str],
         allowed_qualities: list[str],
-        default_model: str = "gpt-image-1.5",
+        default_model: str = "gpt-image-2",
         default_size: str = "auto",
         default_quality: str = "auto",
         default_output_format: str = "png",
@@ -138,7 +138,7 @@ class EditImageModal(discord.ui.Modal):
         size_select = self.size_label.component
         quality_select = self.quality_label.component
 
-        model = model_select.values[0] if model_select.values else "gpt-image-1.5"
+        model = model_select.values[0] if model_select.values else "gpt-image-2"
         size = size_select.values[0] if size_select.values else "auto"
         quality = quality_select.values[0] if quality_select.values else "auto"
         format_select = self.format_label.component
