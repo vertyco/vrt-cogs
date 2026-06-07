@@ -17,11 +17,14 @@ from redbot.core.bot import Red
 from .common.constants import (
     MODEL_LABELS,
     MODEL_ORDER,
+    MODEL_SIZES,
     QUALITY_LABELS,
     QUALITY_ORDER,
     SIZE_LABELS,
     SIZE_ORDER,
     TIER_PRESETS,
+    TRANSPARENCY_MODELS,
+    VALID_BACKGROUNDS,
     VALID_FORMATS,
     VALID_MODELS,
     VALID_QUALITIES,
@@ -292,6 +295,19 @@ class ImGen(commands.Cog):
             elif resolved_size not in allowed_sizes:
                 return False, "That size is not available for your role.", "", "", "", access
 
+        model_sizes = MODEL_SIZES.get(resolved_model, VALID_SIZES)
+        if resolved_size not in model_sizes:
+            supported = ", ".join(s for s in model_sizes if s != "auto")
+            return (
+                False,
+                f"{MODEL_LABELS.get(resolved_model, resolved_model)} doesn't support {resolved_size}. "
+                f"Supported sizes: {supported}",
+                "",
+                "",
+                "",
+                access,
+            )
+
         resolved_quality = quality or conf.default_quality
         if resolved_quality not in VALID_QUALITIES:
             return False, "Invalid quality selection.", "", "", "", access
@@ -324,6 +340,7 @@ class ImGen(commands.Cog):
         size: str = "auto",
         quality: str = "auto",
         output_format: str = "png",
+        background: str = "auto",
         reference_images: list[tuple[str, bytes, str]] | None = None,
     ) -> bool:
         """Generate or edit an image using OpenAI's Images API.
@@ -348,6 +365,24 @@ class ImGen(commands.Cog):
             await interaction.followup.send(reason, ephemeral=True)
             return False
 
+        if background not in VALID_BACKGROUNDS:
+            background = "auto"
+        if background == "transparent":
+            if resolved_model not in TRANSPARENCY_MODELS:
+                supported = ", ".join(MODEL_LABELS.get(m, m) for m in sorted(TRANSPARENCY_MODELS))
+                await interaction.followup.send(
+                    f"{MODEL_LABELS.get(resolved_model, resolved_model)} doesn't support transparent backgrounds. "
+                    f"Use {supported} for transparency.",
+                    ephemeral=True,
+                )
+                return False
+            if output_format not in ("png", "webp"):
+                await interaction.followup.send(
+                    "Transparent backgrounds require `png` or `webp` output format.",
+                    ephemeral=True,
+                )
+                return False
+
         client = self.get_openai_client(conf)
 
         if not client:
@@ -362,6 +397,9 @@ class ImGen(commands.Cog):
             # GPT image models support "auto" for size directly
             actual_size = resolved_size if resolved_size != "auto" else "auto"
 
+            # Only send background when explicitly chosen; "auto" is the API default
+            extra_kwargs = {} if background == "auto" else {"background": background}
+
             if is_edit:
                 # Use images.edit endpoint for editing
                 response: ImagesResponse = await client.images.edit(
@@ -372,6 +410,7 @@ class ImGen(commands.Cog):
                     quality=resolved_quality,
                     output_format=output_format,
                     n=1,
+                    **extra_kwargs,
                 )
                 title = "✏️ Edited Image"
             else:
@@ -383,6 +422,7 @@ class ImGen(commands.Cog):
                     quality=resolved_quality,
                     output_format=output_format,
                     n=1,
+                    **extra_kwargs,
                 )
                 title = "🎨 Generated Image"
 
@@ -426,6 +466,7 @@ class ImGen(commands.Cog):
                 title=title,
                 quota_text=quota_text,
                 show_cost=show_cost,
+                background=background,
             )
             embed.set_image(url=f"attachment://generated.{output_format}")
 
@@ -450,6 +491,8 @@ class ImGen(commands.Cog):
                     log_embed.add_field(name="Model", value=resolved_model, inline=True)
                     log_embed.add_field(name="Size", value=resolved_size, inline=True)
                     log_embed.add_field(name="Quality", value=resolved_quality, inline=True)
+                    if background != "auto":
+                        log_embed.add_field(name="Background", value=background, inline=True)
                     # Add cost to log: exact from API token usage when available, else table estimate
                     usage = getattr(response, "usage", None)
                     if usage and getattr(usage, "output_tokens", 0):
@@ -592,8 +635,12 @@ class ImGen(commands.Cog):
         size="Size of the generated image",
         quality="Quality level of the image",
         output_format="Output image format",
+        background="Background type (transparent requires GPT Image 1.5 and png/webp)",
     )
-    @app_commands.choices(output_format=[app_commands.Choice(name=f, value=f) for f in VALID_FORMATS])
+    @app_commands.choices(
+        output_format=[app_commands.Choice(name=f, value=f) for f in VALID_FORMATS],
+        background=[app_commands.Choice(name=b, value=b) for b in VALID_BACKGROUNDS],
+    )
     @app_commands.guild_only()
     @app_commands.autocomplete(model=_autocomplete_models)
     @app_commands.autocomplete(size=_autocomplete_sizes)
@@ -606,6 +653,7 @@ class ImGen(commands.Cog):
         size: str = "auto",
         quality: str = "auto",
         output_format: str = "png",
+        background: str = "auto",
     ):
         """Generate an image from a text prompt."""
         await interaction.response.defer()
@@ -617,6 +665,7 @@ class ImGen(commands.Cog):
             size=size,
             quality=quality,
             output_format=output_format,
+            background=background,
         )
 
     @app_commands.command(name="editimage", description="Edit an existing image using AI")
@@ -629,8 +678,12 @@ class ImGen(commands.Cog):
         size="Size of the output image",
         quality="Quality level of the image",
         output_format="Output image format",
+        background="Background type (transparent requires GPT Image 1.5 and png/webp)",
     )
-    @app_commands.choices(output_format=[app_commands.Choice(name=f, value=f) for f in VALID_FORMATS])
+    @app_commands.choices(
+        output_format=[app_commands.Choice(name=f, value=f) for f in VALID_FORMATS],
+        background=[app_commands.Choice(name=b, value=b) for b in VALID_BACKGROUNDS],
+    )
     @app_commands.guild_only()
     @app_commands.autocomplete(model=_autocomplete_models)
     @app_commands.autocomplete(size=_autocomplete_sizes)
@@ -646,6 +699,7 @@ class ImGen(commands.Cog):
         size: str = "auto",
         quality: str = "auto",
         output_format: str = "png",
+        background: str = "auto",
     ):
         """Edit an existing image with AI assistance."""
         await interaction.response.defer()
@@ -676,6 +730,7 @@ class ImGen(commands.Cog):
             size=size,
             quality=quality,
             output_format=output_format,
+            background=background,
             reference_images=reference_images,
         )
 

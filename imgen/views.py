@@ -63,10 +63,23 @@ def _make_quality_options(default: str, allowed_qualities: list[str]) -> list[di
 
 
 def _make_format_options(default: str = "png") -> list[discord.SelectOption]:
-    """Create output format options with the specified default."""
-    return [
+    """Create output format options with the specified default.
+
+    Transparent variants are folded into this select because modals cap at 5 components.
+    Values are "format" or "format:transparent".
+    """
+    options = [
         discord.SelectOption(label=value.upper(), value=value, default=(value == default)) for value in VALID_FORMATS
     ]
+    for value in ("png", "webp"):
+        options.append(
+            discord.SelectOption(
+                label=f"{value.upper()} (Transparent, GPT Image 1.5 only)",
+                value=f"{value}:transparent",
+                default=(f"{value}:transparent" == default),
+            )
+        )
+    return options
 
 
 class EditImageModal(discord.ui.Modal):
@@ -142,7 +155,10 @@ class EditImageModal(discord.ui.Modal):
         size = size_select.values[0] if size_select.values else "auto"
         quality = quality_select.values[0] if quality_select.values else "auto"
         format_select = self.format_label.component
-        output_format = format_select.values[0] if format_select.values else "png"
+        format_value = format_select.values[0] if format_select.values else "png"
+        # Format values can be "png" or "png:transparent"
+        output_format, _, background_flag = format_value.partition(":")
+        background = "transparent" if background_flag == "transparent" else "auto"
 
         try:
             # Download the reference image with content type
@@ -187,6 +203,7 @@ class EditImageModal(discord.ui.Modal):
                 size=size,
                 quality=quality,
                 output_format=output_format,
+                background=background,
             )
         except Exception as e:
             log.exception("Error editing image", exc_info=e)
@@ -285,6 +302,7 @@ def create_image_embed(
     title: str = "🎨 Generated Image",
     quota_text: str = "",
     show_cost: bool = False,
+    background: str = "auto",
 ) -> discord.Embed:
     """Create an embed displaying the generated image with its settings."""
     # Truncate prompt if too long for embed description
@@ -301,6 +319,8 @@ def create_image_embed(
     embed.add_field(name="Model", value=model, inline=True)
     embed.add_field(name="Size", value=size, inline=True)
     embed.add_field(name="Quality", value=quality, inline=True)
+    if background != "auto":
+        embed.add_field(name="Background", value=background, inline=True)
 
     # Only show cost for admins/owners
     if show_cost:
