@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Iterable
 
 import discord
@@ -74,19 +74,19 @@ class AnalyticsCommands(MixinMeta):
         self,
         ctx: commands.Context,
         member: discord.Member | None = None,
-        timespan: commands.TimedeltaConverter = None,
+        timespan: commands.TimedeltaConverter = timedelta(days=7),
     ):
         """
         View detailed statistics for a support staff member.
 
         **Arguments:**
         - `[member]` - The staff member to view stats for (defaults to you)
-        - `[timespan]` - Time period to filter stats (e.g., 7d, 24h, 30m, 2w, 1mo)
+        - `[timespan]` - Time period to filter stats (e.g., 7d, 24h, 30m, 2w, 1mo). Defaults to last 7 days.
 
         **Examples:**
-        - `[p]ticketstats staff` - Your all-time stats
-        - `[p]ticketstats staff @User` - User's all-time stats
-        - `[p]ticketstats staff @User 7d` - User's stats for last 7 days
+        - `[p]ticketstats staff` - Your last-7-days stats
+        - `[p]ticketstats staff @User` - User's last-7-days stats
+        - `[p]ticketstats staff @User 30d` - User's stats for last 30 days
         """
         conf = self.db.get_conf(ctx.guild)
         target = member or ctx.author
@@ -146,14 +146,14 @@ class AnalyticsCommands(MixinMeta):
         self,
         ctx: commands.Context,
         user: discord.User,
-        timespan: commands.TimedeltaConverter = None,
+        timespan: commands.TimedeltaConverter = timedelta(days=7),
     ):
         """
         View statistics for a user who has opened tickets.
 
         **Arguments:**
         - `<user>` - The user to view stats for
-        - `[timespan]` - Time period to filter stats (e.g., 7d, 24h, 30m)
+        - `[timespan]` - Time period to filter stats (e.g., 7d, 24h, 30m). Defaults to last 7 days.
 
         **Examples:**
         - `[p]ticketstats user @User`
@@ -214,7 +214,7 @@ class AnalyticsCommands(MixinMeta):
         self,
         ctx: commands.Context,
         limit: int = 10,
-        timespan: commands.TimedeltaConverter = None,
+        timespan: commands.TimedeltaConverter = timedelta(days=7),
     ):
         """
         View users who open the most tickets.
@@ -266,7 +266,7 @@ class AnalyticsCommands(MixinMeta):
         await ctx.send(embed=embed)
 
     @ticketstats.command(name="server", aliases=["global", "overview"])
-    async def serverstats(self, ctx: commands.Context, timespan: commands.TimedeltaConverter = None):
+    async def serverstats(self, ctx: commands.Context, timespan: commands.TimedeltaConverter = timedelta(days=7)):
         """
         View server-wide ticket statistics.
 
@@ -341,7 +341,7 @@ class AnalyticsCommands(MixinMeta):
         await ctx.send(embed=embed)
 
     @ticketstats.command(name="busytimes", aliases=["peak", "busy"])
-    async def busytimes(self, ctx: commands.Context, timespan: commands.TimedeltaConverter = None):
+    async def busytimes(self, ctx: commands.Context, timespan: commands.TimedeltaConverter = timedelta(days=7)):
         """
         View when tickets are opened most frequently.
 
@@ -411,7 +411,7 @@ class AnalyticsCommands(MixinMeta):
         self,
         ctx: commands.Context,
         panel_name: str | None = None,
-        timespan: commands.TimedeltaConverter = None,
+        timespan: commands.TimedeltaConverter = timedelta(days=7),
     ):
         """
         View statistics for ticket panels.
