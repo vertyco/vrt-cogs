@@ -109,11 +109,8 @@ class AnalyticsCommands(MixinMeta):
         embed.set_footer(text=_("Period: {}").format(timespan_text))
 
         # Ticket Activity
-        activity = _(
-            "**Tickets Claimed:** {claimed}\n**Tickets Closed:** {closed}\n**Messages Sent:** {messages}"
-        ).format(
+        activity = _("**Tickets Claimed:** {claimed}\n**Messages Sent:** {messages}").format(
             claimed=filtered["tickets_claimed"],
-            closed=filtered["tickets_closed"],
             messages=filtered["messages_sent"],
         )
         embed.add_field(name=_("📊 Activity"), value=activity, inline=False)
@@ -141,97 +138,6 @@ class AnalyticsCommands(MixinMeta):
                 value=f"<t:{int(stats.last_active.timestamp())}:R>",
                 inline=True,
             )
-
-        await ctx.send(embed=embed)
-
-    @ticketstats.command(name="staffboard", aliases=["leaderboard", "lb"])
-    async def staffboard(
-        self,
-        ctx: commands.Context,
-        metric: str = "response",
-        timespan: commands.TimedeltaConverter = None,
-    ):
-        """
-        View staff leaderboard for a specific metric.
-
-        **Metrics:**
-        - `response` - Fastest average response time
-        - `closed` - Most tickets closed
-        - `claimed` - Most tickets claimed
-        - `messages` - Most messages sent
-        - `resolution` - Fastest average resolution time
-
-        **Arguments:**
-        - `<metric>` - The metric to rank by
-        - `[timespan]` - Time period to filter (e.g., 7d, 24h, 2w)
-
-        **Examples:**
-        - `[p]ticketstats staffboard response`
-        - `[p]ticketstats staffboard closed 7d`
-        """
-        conf = self.db.get_conf(ctx.guild)
-        valid_metrics = ["closed", "response", "claimed", "messages", "resolution"]
-
-        if metric.lower() not in valid_metrics:
-            return await ctx.send(
-                _("Invalid metric. Choose from: {}").format(", ".join(f"`{m}`" for m in valid_metrics))
-            )
-
-        metric = metric.lower()
-        oldest = _oldest_ts(e.timestamp for s in conf.staff_stats.values() for e in s.events)
-        timespan_text = _period_text(timespan, oldest)
-
-        # Gather all staff stats
-        staff_data: list[tuple[int, dict]] = []
-        for user_id, stats in conf.staff_stats.items():
-            filtered = get_staff_stats_for_timespan(stats, timespan)
-            staff_data.append((user_id, filtered))
-
-        # Sort based on metric
-        if metric == "closed":
-            staff_data.sort(key=lambda x: x[1]["tickets_closed"], reverse=True)
-            title = _("🏆 Staff Leaderboard: Tickets Closed")
-            get_value = lambda d: str(d["tickets_closed"])  # noqa
-        elif metric == "response":
-            # Filter out those with no response data, sort ascending (faster is better)
-            staff_data = [(u, d) for u, d in staff_data if d["avg_response_time"] is not None]
-            staff_data.sort(key=lambda x: x[1]["avg_response_time"])
-            title = _("🏆 Staff Leaderboard: Response Time")
-            get_value = lambda d: format_time(d["avg_response_time"])  # noqa
-        elif metric == "claimed":
-            staff_data = [(u, d) for u, d in staff_data if d["tickets_claimed"] > 0]
-            staff_data.sort(key=lambda x: x[1]["tickets_claimed"], reverse=True)
-            title = _("🏆 Staff Leaderboard: Tickets Claimed")
-            get_value = lambda d: str(d["tickets_claimed"])  # noqa
-        elif metric == "messages":
-            staff_data.sort(key=lambda x: x[1]["messages_sent"], reverse=True)
-            title = _("🏆 Staff Leaderboard: Messages Sent")
-            get_value = lambda d: str(d["messages_sent"])  # noqa
-        elif metric == "resolution":
-            staff_data = [(u, d) for u, d in staff_data if d["avg_resolution_time"] is not None]
-            staff_data.sort(key=lambda x: x[1]["avg_resolution_time"])
-            title = _("🏆 Staff Leaderboard: Resolution Time")
-            get_value = lambda d: format_time(d["avg_resolution_time"])  # noqa
-
-        if not staff_data:
-            return await ctx.send(_("No staff data available for this metric."))
-
-        # Build leaderboard
-        lines = []
-        medals = ["🥇", "🥈", "🥉"]
-        for i, (user_id, data) in enumerate(staff_data[:15]):  # Top 15
-            member = ctx.guild.get_member(user_id)
-            name = member.display_name if member else f"Unknown ({user_id})"
-            prefix = medals[i] if i < 3 else f"`{i + 1}.`"
-            lines.append(f"{prefix} **{name}** - {get_value(data)}")
-
-        embed = discord.Embed(
-            title=title,
-            description="\n".join(lines) if lines else _("No data"),
-            color=discord.Color.gold(),
-            timestamp=oldest if (timespan is None and oldest is not None) else None,
-        )
-        embed.set_footer(text=_("Period: {}").format(timespan_text))
 
         await ctx.send(embed=embed)
 
@@ -422,12 +328,12 @@ class AnalyticsCommands(MixinMeta):
             usage = "\n".join(f"**{name}:** {count}" for name, count in sorted_panels)
             embed.add_field(name=_("📋 Top Panels"), value=usage, inline=True)
 
-        # Staff count - count any staff with activity (closed, claimed, messaged, or responded)
+        # Staff count - count any staff with activity (claimed, messaged, or responded)
         active_staff = len(
             [
                 s
                 for s in conf.staff_stats.values()
-                if s.tickets_closed > 0 or s.tickets_claimed > 0 or s.messages_sent > 0 or s.response_count > 0
+                if s.tickets_claimed > 0 or s.messages_sent > 0 or s.response_count > 0
             ]
         )
         embed.add_field(name=_("👥 Active Staff"), value=str(active_staff), inline=True)

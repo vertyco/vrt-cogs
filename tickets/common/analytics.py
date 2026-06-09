@@ -199,7 +199,6 @@ def record_ticket_closed(
 
     if staff_credit_id is not None:
         staff_stats = conf.get_staff_stats(staff_credit_id)
-        staff_stats.tickets_closed += 1
         staff_stats.total_resolution_time += resolution_time
         staff_stats.resolution_count += 1
         staff_stats.last_active = now
