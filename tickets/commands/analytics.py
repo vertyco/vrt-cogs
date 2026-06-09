@@ -213,19 +213,19 @@ class AnalyticsCommands(MixinMeta):
     async def frequentusers(
         self,
         ctx: commands.Context,
-        limit: int = 10,
         timespan: commands.TimedeltaConverter = timedelta(days=7),
+        limit: int = 10,
     ):
         """
         View users who open the most tickets.
 
         **Arguments:**
+        - `[timespan]` - Time period to filter (e.g., 7d, 30d). Defaults to last 7 days.
         - `[limit]` - Number of users to show (default: 10, max: 25)
-        - `[timespan]` - Time period to filter (e.g., 7d, 30d)
 
         **Examples:**
         - `[p]ticketstats frequent`
-        - `[p]ticketstats frequent 20 30d`
+        - `[p]ticketstats frequent 30d 20`
         """
         conf = self.db.get_conf(ctx.guild)
         limit = min(max(1, limit), 25)
