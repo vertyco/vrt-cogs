@@ -118,28 +118,6 @@ View detailed statistics for a support staff member.<br/>
 
  - Usage: `[p]ticketstats staff [member=None] [timespan=None]`
 
-### [p]ticketstats staffboard
-
-View staff leaderboard for a specific metric.<br/>
-
-**Metrics:**<br/>
-- `response` - Fastest average response time<br/>
-- `closed` - Most tickets closed<br/>
-- `claimed` - Most tickets claimed<br/>
-- `messages` - Most messages sent<br/>
-- `resolution` - Fastest average resolution time<br/>
-
-**Arguments:**<br/>
-- `<metric>` - The metric to rank by<br/>
-- `[timespan]` - Time period to filter (e.g., 7d, 24h, 2w)<br/>
-
-**Examples:**<br/>
-- `[p]ticketstats staffboard response`<br/>
-- `[p]ticketstats staffboard closed 7d`<br/>
-
- - Usage: `[p]ticketstats staffboard [metric=response] [timespan=None]`
- - Aliases: `leaderboard and lb`
-
 ### [p]ticketstats responsetime
 
 View the average staff response time for tickets.<br/>

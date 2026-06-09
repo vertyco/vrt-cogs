@@ -229,7 +229,6 @@ class StaffStats(Base):
 
     # Ticket counts (cumulative, all-time)
     tickets_claimed: int = 0
-    tickets_closed: int = 0
     tickets_reopened: int = 0  # Tickets reopened after they closed
 
     # Response time tracking (cumulative)
@@ -550,7 +549,6 @@ def get_staff_stats_for_timespan(
         # Return cumulative all-time stats
         return {
             "tickets_claimed": stats.tickets_claimed,
-            "tickets_closed": stats.tickets_closed,
             "messages_sent": stats.messages_sent,
             "avg_response_time": stats.avg_response_time,
             "avg_resolution_time": stats.avg_resolution_time,
@@ -566,7 +564,6 @@ def get_staff_stats_for_timespan(
 
     # Calculate stats from filtered events
     claimed = sum(1 for e in relevant_events if e.event_type == EventType.TICKET_CLAIMED)
-    closed = sum(1 for e in relevant_events if e.event_type == EventType.TICKET_CLOSED)
     messages = sum(1 for e in relevant_events if e.event_type == EventType.MESSAGE_SENT)
 
     response_events = [e for e in relevant_events if e.event_type == EventType.FIRST_RESPONSE]
@@ -577,7 +574,6 @@ def get_staff_stats_for_timespan(
 
     return {
         "tickets_claimed": claimed,
-        "tickets_closed": closed,
         "messages_sent": messages,
         "avg_response_time": sum(response_times) / len(response_times) if response_times else None,
         "avg_resolution_time": sum(resolution_times) / len(resolution_times) if resolution_times else None,
