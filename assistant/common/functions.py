@@ -27,6 +27,7 @@ from .command_index import (
     get_privilege_hint,
     member_can_run,
 )
+from .command_ui import expand_command_ui_source
 from .models import Conversation, GuildSettings, Reminder, ScheduledTask
 
 log = logging.getLogger("red.vrt.assistant.functions")
@@ -379,7 +380,9 @@ class AssistantFunctions(MixinMeta):
             buffer.write(f"## {qualified_name} (relevance: {round(score, 3)})\n{text}\nPermission: {annotation}\n\n")
         return buffer.getvalue().strip() or "No matching commands found."
 
-    async def get_command_source(self, command_name: str, *args, **kwargs) -> str:
+    async def get_command_source(
+        self, command_name: str, follow_ui: bool = False, *args, **kwargs
+    ) -> str:
         command = self.bot.get_command(command_name)
         note = ""
         if command is None:
@@ -391,6 +394,9 @@ class AssistantFunctions(MixinMeta):
             if command is None:
                 return f"No command found matching '{command_name}'"
             note = f"NOTE: No exact match for '{command_name}', showing closest match.\n"
+        if follow_ui:
+            expanded = await asyncio.to_thread(expand_command_ui_source, command)
+            return f"{note}{expanded}"
         try:
             source = inspect.getsource(command.callback)
         except (OSError, TypeError) as e:
