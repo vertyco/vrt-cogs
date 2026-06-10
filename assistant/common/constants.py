@@ -350,6 +350,42 @@ SEARCH_INTERNET = {
     },
 }
 
+SEARCH_COMMANDS = {
+    "name": "search_commands",
+    "description": (
+        "Semantically search the bot's commands to find ones relevant to a topic or task. "
+        "Use this to answer questions like 'is there a command to do X' or 'how do I configure Y'."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "query": {
+                "type": "string",
+                "description": "What the user wants to do, e.g. 'delete old messages in a channel'",
+            },
+        },
+        "required": ["query"],
+    },
+}
+
+GET_COMMAND_SOURCE = {
+    "name": "get_command_source",
+    "description": (
+        "Fetch the Python source code of a bot command by its qualified name. "
+        "Use search_commands first to find the exact command name."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "command_name": {
+                "type": "string",
+                "description": "The full qualified name of the command, e.g. 'assistant prompt'",
+            },
+        },
+        "required": ["command_name"],
+    },
+}
+
 THINK_AND_PLAN = {
     "name": "think_and_plan",
     "description": "Break a complex task into clear steps before doing it. Call this before multi-step work.",

@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 import logging
 import typing as t
 from base64 import b64decode
@@ -12,12 +13,20 @@ import openai
 import pytz
 from dateutil import parser as dateutil_parser
 from duckduckgo_search import DDGS
+from rapidfuzz import fuzz, process
 from redbot.core import commands
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import humanize_timedelta, pagify
 
 from ..abc import MixinMeta
 from ..common import calls, reply
+from .command_index import (
+    build_command_documents,
+    collection_name_for_model,
+    fuzzy_search_commands,
+    get_privilege_hint,
+    member_can_run,
+)
 from .models import Conversation, GuildSettings, Reminder, ScheduledTask
 
 log = logging.getLogger("red.vrt.assistant.functions")
@@ -319,6 +328,137 @@ class AssistantFunctions(MixinMeta):
 
         # Fallback to DuckDuckGo
         return await self._search_duckduckgo(query, num_results)
+
+    async def search_commands(
+        self,
+        guild: discord.Guild,
+        conf: GuildSettings,
+        query: str,
+        user: discord.Member = None,
+        *args,
+        **kwargs,
+    ) -> str:
+        try:
+            return await self.semantic_command_search(conf, query, user)
+        except Exception as e:
+            log.warning(f"Semantic command search failed, using fuzzy fallback: {e}")
+            hits = await asyncio.to_thread(fuzzy_search_commands, self.bot, query)
+            return await self.format_command_search_results(hits, user, semantic=False)
+
+    async def semantic_command_search(self, conf: GuildSettings, query: str, user: discord.Member) -> str:
+        embedding = await self.request_embedding(query, conf)
+        model = self.resolve_embedding_model(conf.embed_model, conf)
+        collection = collection_name_for_model(model)
+        if await self.command_index.count(collection) == 0:
+            await self.build_command_index(conf, model)
+        hits = await self.command_index.query(collection, embedding, top_k=8)
+        return await self.format_command_search_results(hits, user, semantic=True)
+
+    async def format_command_search_results(
+        self,
+        hits: list[tuple[str, str, float]],
+        user: discord.Member,
+        semantic: bool,
+    ) -> str:
+        if not hits:
+            return "No matching commands found."
+        buffer = StringIO()
+        if not semantic:
+            buffer.write("NOTE: Semantic search unavailable. Results are fuzzy name matches.\n\n")
+        for qualified_name, text, score in hits:
+            command = self.bot.get_command(qualified_name)
+            if command is None:
+                continue
+            if isinstance(user, discord.Member):
+                runnable = await member_can_run(self.bot, command, user)
+                annotation = (
+                    "the user CAN run this" if runnable else f"the user CANNOT run this ({get_privilege_hint(command)})"
+                )
+            else:
+                annotation = get_privilege_hint(command)
+            buffer.write(f"## {qualified_name} (relevance: {round(score, 3)})\n{text}\nPermission: {annotation}\n\n")
+        return buffer.getvalue().strip() or "No matching commands found."
+
+    async def get_command_source(self, command_name: str, *args, **kwargs) -> str:
+        command = self.bot.get_command(command_name)
+        note = ""
+        if command is None:
+            names = [c.qualified_name for c in self.bot.walk_commands()]
+            match = process.extractOne(command_name, names, scorer=fuzz.WRatio, score_cutoff=70)
+            if not match:
+                return f"No command found matching '{command_name}'"
+            command = self.bot.get_command(match[0])
+            if command is None:
+                return f"No command found matching '{command_name}'"
+            note = f"NOTE: No exact match for '{command_name}', showing closest match.\n"
+        try:
+            source = inspect.getsource(command.callback)
+        except (OSError, TypeError) as e:
+            return f"Could not fetch source for '{command.qualified_name}': {e}"
+        if len(source) > 6000:
+            source = source[:6000] + "\n# ... truncated ..."
+        return f"{note}Source for [p]{command.qualified_name}:\n```python\n{source}\n```"
+
+    async def build_command_index(self, conf: GuildSettings, model: str) -> None:
+        """Full (re)build of one model's command index collection. Batched embedding calls."""
+        documents = await asyncio.to_thread(build_command_documents, self.bot)
+        names = list(documents)
+        texts = [documents[name]["text"] for name in names]
+        embeddings, observed = await self.request_embeddings_batch(texts, conf)
+        collection = collection_name_for_model(model)
+        entries = [{"qualified_name": name, **documents[name]} for name in names]
+        await self.command_index.upsert(collection, entries, embeddings)
+        log.info(f"Built command index {collection} with {len(entries)} commands (model: {observed})")
+
+    def schedule_command_index_sync(self) -> None:
+        """Debounce sync so startup cog-load bursts coalesce into one pass."""
+        if self.cmdindex_task and not self.cmdindex_task.done():
+            self.cmdindex_task.cancel()
+        self.cmdindex_task = asyncio.create_task(self.command_index_sync_runner())
+
+    async def command_index_sync_runner(self) -> None:
+        try:
+            await asyncio.sleep(30)
+            await self.sync_command_index()
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            log.error("Command index sync failed", exc_info=e)
+
+    async def sync_command_index(self) -> None:
+        documents = await asyncio.to_thread(build_command_documents, self.bot)
+        for collection in await self.command_index.list_collections():
+            await self.sync_command_index_collection(collection, documents)
+
+    async def sync_command_index_collection(self, collection: str, documents: dict[str, dict]) -> None:
+        existing = await self.command_index.get_hashes(collection)
+        stale = [name for name in existing if name not in documents]
+        changed = [name for name, data in documents.items() if existing.get(name) != data["hash"]]
+        await self.command_index.delete_ids(collection, stale)
+        if not changed:
+            if stale:
+                log.info(f"Command index {collection}: removed {len(stale)} stale entries")
+            return
+        conf = self.find_conf_for_collection(collection)
+        if conf is None:
+            log.info(f"No guild config matches {collection}, dropping it for lazy rebuild on next search")
+            await self.command_index.drop(collection)
+            return
+        texts = [documents[name]["text"] for name in changed]
+        embeddings, observed = await self.request_embeddings_batch(texts, conf)
+        entries = [{"qualified_name": name, **documents[name]} for name in changed]
+        await self.command_index.upsert(collection, entries, embeddings)
+        log.info(f"Command index {collection}: updated {len(changed)}, removed {len(stale)} (model: {observed})")
+
+    def find_conf_for_collection(self, collection: str) -> t.Optional[GuildSettings]:
+        """Find a guild whose configured embedding model maps to this collection and has an API key."""
+        for conf in self.db.configs.values():
+            if not self.get_api_key(conf):
+                continue
+            model = self.resolve_embedding_model(conf.embed_model, conf)
+            if collection_name_for_model(model) == collection:
+                return conf
+        return None
 
     async def respond_and_continue(
         self,

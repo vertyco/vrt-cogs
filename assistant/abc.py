@@ -1,3 +1,4 @@
+import asyncio
 from abc import ABC, ABCMeta, abstractmethod
 from multiprocessing.pool import Pool
 from typing import Any, Callable, Dict, List, Optional, Union
@@ -9,6 +10,7 @@ from openai.types.chat.chat_completion_message import ChatCompletionMessage
 from redbot.core import commands
 from redbot.core.bot import Red
 
+from .common.command_index import CommandIndexStore
 from .common.embedding_store import EmbeddingStore
 from .common.models import DB, Conversation, EndpointProfile, GuildSettings
 
@@ -27,6 +29,8 @@ class MixinMeta(ABC):
         self.registry: Dict[str, Dict[str, dict]]
         self.context_registry: Dict[str, Dict[str, dict]]
         self.embedding_store: EmbeddingStore
+        self.command_index: CommandIndexStore
+        self.cmdindex_task: Optional[asyncio.Task]
         self.scheduler: AsyncIOScheduler
         # Keys: "cached", "cache_write", "total", "model".
         self.last_cache_stats: Dict[str, object]
@@ -72,6 +76,14 @@ class MixinMeta(ABC):
 
     @abstractmethod
     async def request_embedding_with_info(self, text: str, conf: GuildSettings) -> tuple[List[float], str]:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def request_embeddings_batch(self, texts: List[str], conf: GuildSettings) -> tuple[List[List[float]], str]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def schedule_command_index_sync(self) -> None:
         raise NotImplementedError
 
     @abstractmethod

@@ -18,6 +18,7 @@ from .abc import CompositeMetaClass
 from .commands import AssistantCommands
 from .common.api import API
 from .common.chat import ChatHandler
+from .common.command_index import CommandIndexStore
 from .common.constants import (
     CANCEL_REMINDER,
     CANCEL_SCHEDULED_TASK,
@@ -25,10 +26,12 @@ from .common.constants import (
     DO_NOT_RESPOND_SCHEMA,
     EDIT_IMAGE,
     GENERATE_IMAGE,
+    GET_COMMAND_SOURCE,
     LIST_REMINDERS,
     LIST_SCHEDULED_TASKS,
     RESPOND_AND_CONTINUE,
     SCHEDULE_TASK,
+    SEARCH_COMMANDS,
     SEARCH_INTERNET,
     THINK_AND_PLAN,
 )
@@ -67,7 +70,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "8.11.0"
+    __version__ = "8.12.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -87,6 +90,8 @@ class Assistant(
         self.db: DB = DB()
         self.mp_pool = Pool()
         self.embedding_store = EmbeddingStore(cog_data_path(self))
+        self.command_index = CommandIndexStore(self.embedding_store)
+        self.cmdindex_task: Optional[asyncio.Task] = None
         self.scheduler = AsyncIOScheduler()
 
         # {cog_name: {function_name: {"permission_level": "user", "schema": function_json_schema, "required_permissions": [], "category": "uncategorized"}}}
@@ -108,6 +113,8 @@ class Assistant(
         self.save_loop.cancel()
         self.scheduler.shutdown(wait=False)
         self.mp_pool.close()
+        if self.cmdindex_task and not self.cmdindex_task.done():
+            self.cmdindex_task.cancel()
         self.bot.dispatch("assistant_cog_remove")
 
     async def init_cog(self):
@@ -150,6 +157,13 @@ class Assistant(
             permission_level="mod",
             category="scheduling",
         )
+        await self.register_function(self.qualified_name, SEARCH_COMMANDS, category="documentation")
+        await self.register_function(
+            self.qualified_name,
+            GET_COMMAND_SOURCE,
+            permission_level="admin",
+            category="documentation",
+        )
 
         # Start scheduler and reschedule existing reminders/tasks
         self.scheduler.start()
@@ -162,6 +176,7 @@ class Assistant(
         logging.getLogger("httpcore.connection").setLevel(logging.WARNING)
         logging.getLogger("httpx").setLevel(logging.WARNING)
         self.bot.dispatch("assistant_cog_add", self)
+        self.schedule_command_index_sync()
 
         # Expose shepherd handlers on Red's localhost RPC (no-op unless --rpc flag is set)
         self.bot.register_rpc_handler(self.rpc_get_system_prompt)
@@ -598,10 +613,13 @@ class Assistant(
         funcs = [func for event_name, func in cog.get_listeners() if event_name == event]
         for func in funcs:
             self.bot._schedule_event(func, event, self)
+        if cog.qualified_name != self.qualified_name:
+            self.schedule_command_index_sync()
 
     @commands.Cog.listener()
     async def on_cog_remove(self, cog: commands.Cog):
         await self.unregister_cog(cog.qualified_name)
+        self.schedule_command_index_sync()
 
     async def register_functions(
         self,
