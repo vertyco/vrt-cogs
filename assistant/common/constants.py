@@ -372,7 +372,10 @@ GET_COMMAND_SOURCE = {
     "name": "get_command_source",
     "description": (
         "Fetch the Python source code of a bot command by its qualified name. "
-        "Use search_commands first to find the exact command name."
+        "Use search_commands first to find the exact command name. "
+        "Set follow_ui=true when the user asks how to use an interactive menu, what buttons to "
+        "click, or wants a setup walkthrough: it expands the result with the View/Modal classes "
+        "the command launches so you can narrate the click path."
     ),
     "parameters": {
         "type": "object",
@@ -380,6 +383,15 @@ GET_COMMAND_SOURCE = {
             "command_name": {
                 "type": "string",
                 "description": "The full qualified name of the command, e.g. 'assistant prompt'",
+            },
+            "follow_ui": {
+                "type": "boolean",
+                "description": (
+                    "When true, follow the command into the interactive Discord menu it opens "
+                    "(buttons, selects, modals) so you can explain the step-by-step UI flow. "
+                    "Use for 'how do I set up X', 'what buttons', 'walk me through the menu'."
+                ),
+                "default": False,
             },
         },
         "required": ["command_name"],
