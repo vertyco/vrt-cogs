@@ -328,7 +328,7 @@ async def request_chat_completion_raw(
     reraise=True,
 )
 async def request_embedding_raw(
-    text: str,
+    text: t.Union[str, list[str]],
     api_key: str,
     model: str,
     base_url: Optional[str] = None,

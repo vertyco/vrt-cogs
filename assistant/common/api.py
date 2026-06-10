@@ -752,6 +752,28 @@ class API(MixinMeta):
         embedding, __ = await self.request_embedding_with_info(text, conf)
         return embedding
 
+    async def request_embeddings_batch(self, texts: List[str], conf: GuildSettings) -> tuple[List[List[float]], str]:
+        """Embed many texts with batched API calls. Returns (embeddings, observed_model)."""
+        base_url = self.get_guild_endpoint_url(conf)
+        if base_url:
+            await self.refresh_endpoint_profile(conf)
+        requested_model = self.resolve_embedding_model(conf.embed_model, conf)
+        embeddings: List[List[float]] = []
+        observed_model = requested_model
+        for start in range(0, len(texts), 100):
+            chunk = texts[start : start + 100]
+            response: CreateEmbeddingResponse = await request_embedding_raw(
+                text=chunk,
+                api_key=self.get_api_key(conf),
+                model=requested_model,
+                base_url=base_url,
+            )
+            observed_model = response.model or requested_model
+            embeddings.extend(item.embedding for item in sorted(response.data, key=lambda d: d.index))
+        if embeddings:
+            self.observe_embedding_runtime(observed_model, len(embeddings[0]), conf)
+        return embeddings, observed_model
+
     # -------------------------------------------------------
     # -------------------------------------------------------
     # ----------------------- HELPERS -----------------------
