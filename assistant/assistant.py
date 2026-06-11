@@ -29,6 +29,8 @@ from .common.constants import (
     GET_COMMAND_SOURCE,
     LIST_REMINDERS,
     LIST_SCHEDULED_TASKS,
+    LOAD_SKILL,
+    PROPOSE_SKILL,
     RESPOND_AND_CONTINUE,
     SCHEDULE_TASK,
     SEARCH_COMMANDS,
@@ -70,7 +72,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "8.12.1"
+    __version__ = "8.13.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -164,6 +166,8 @@ class Assistant(
             permission_level="admin",
             category="documentation",
         )
+        await self.register_function(self.qualified_name, LOAD_SKILL, category="skills")
+        await self.register_function(self.qualified_name, PROPOSE_SKILL, category="skills")
 
         # Start scheduler and reschedule existing reminders/tasks
         self.scheduler.start()

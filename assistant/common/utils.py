@@ -10,6 +10,7 @@ from tempfile import NamedTemporaryFile
 import discord
 import pandas as pd
 from openai.types.chat.chat_completion_message import ChatCompletionMessage
+from rapidfuzz import fuzz
 from redbot.core import commands, version_info
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator
@@ -994,3 +995,16 @@ def _extract_excel_text(filename: str, file_bytes: bytes, ext: str) -> str:
         content.write(df.to_markdown(index=False))
         content.write("\n")
     return content.getvalue()
+
+
+def normalize_skill_name(name: str) -> str:
+    """Normalize a skill name to its storage key form (kebab-case, max 64 chars)."""
+    return name.strip().lower().replace(" ", "-")[:64]
+
+
+def find_similar_skill(description: str, skills: t.Dict[str, t.Any], threshold: int = 85) -> t.Optional[str]:
+    """Return the name of an existing skill whose description closely matches, else None."""
+    for name, skill in skills.items():
+        if fuzz.token_set_ratio(description.lower(), skill.description.lower()) >= threshold:
+            return name
+    return None

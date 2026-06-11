@@ -31,9 +31,10 @@ from redbot.core.utils.chat_formatting import (
 from redbot.core.utils.views import SimpleMenu
 
 from ..abc import MixinMeta
-from ..common.calls import request_embedding_raw
+from ..common.calls import request_chat_completion_raw, request_embedding_raw
 from ..common.constants import (
     DEFAULT_MOD_PROMPT,
+    MAX_SKILL_BODY,
     MOD_CATEGORY_DEFAULTS,
     MODELS,
     OR_SUFFIXES,
@@ -52,6 +53,7 @@ from ..common.utils import (
     DYNAMIC_VARIABLE_NAMES,
     MAX_TRIGGER_LEN,
     get_attachments,
+    normalize_skill_name,
     wildcard_to_regex,
 )
 from ..views import (
@@ -61,12 +63,23 @@ from ..views import (
     FloatingContextView,
     ModelPickerView,
     SetAPI,
+    SkillMenuView,
 )
 
 log = logging.getLogger("red.vrt.assistant.admin")
 _ = Translator("Assistant", __file__)
 ON_STATUS_EMOJI = "🟢"
 OFF_STATUS_EMOJI = "🔴"
+SKILL_AUDIT_PROMPT = (
+    "You are auditing the stored skills of a Discord assistant bot. For each skill below, flag:\n"
+    "1. OVERLAP: skills whose descriptions or bodies cover the same ground and should merge\n"
+    "2. STALE: skills unused for a long time relative to their age (timestamps provided)\n"
+    "3. CONFLICT: skills whose procedures contradict each other\n"
+    "4. QUALITY: vague descriptions (the model won't know when to load them) or bodies that "
+    "are not actionable step-by-step procedures\n"
+    "Be terse. Output one section per finding with the skill name(s), the problem, and a concrete fix. "
+    "If everything is fine say so in one line."
+)
 MIXED_STATUS_EMOJI = "🟡"
 STATUS_EMOJIS = {
     "on": ON_STATUS_EMOJI,
@@ -201,6 +214,11 @@ class Admin(MixinMeta):
     @assistant.group(name="smartmod", aliases=["automod"])
     async def smartmod(self, ctx: commands.Context):
         """AI moderation: scan messages, review flagged ones, and propose staff actions."""
+        pass
+
+    @assistant.group(name="skills", aliases=["skill"])
+    async def skills_group(self, ctx: commands.Context):
+        """Manage on-demand skills (stored procedures the AI can load and propose)"""
         pass
 
     # ---- Helper methods ----
@@ -3556,6 +3574,180 @@ class Admin(MixinMeta):
         msg = _("set to {}").format(channel.mention) if channel else _("cleared")
         await ctx.send(_("Report channel {}.").format(msg))
         await self.save_conf()
+
+    @skills_group.command(name="toggle")
+    async def skills_toggle(self, ctx: commands.Context):
+        """Toggle the skills system for this server (also enables/disables the skill tools)"""
+        conf = self.db.get_conf(ctx.guild)
+        conf.skills_enabled = not conf.skills_enabled
+        conf.function_statuses["load_skill"] = conf.skills_enabled
+        conf.function_statuses["propose_skill"] = conf.skills_enabled
+        status = _("**enabled**") if conf.skills_enabled else _("**disabled**")
+        await ctx.send(_("Skills system is now {}").format(status))
+        await self.save_conf()
+
+    @skills_group.command(name="channel")
+    async def skills_channel(self, ctx: commands.Context, channel: discord.TextChannel = None):
+        """Set (or clear) a dedicated channel for skill proposals
+
+        When set, all proposals post here instead of the conversation they came from.
+        When cleared, proposals fall back to whatever channel the chat happened in.
+        """
+        conf = self.db.get_conf(ctx.guild)
+        conf.skill_channel = channel.id if channel else None
+        if channel:
+            await ctx.send(_("Skill proposals will be posted in {}").format(channel.mention))
+        else:
+            await ctx.send(_("Skill proposal channel cleared. Proposals will post in the current chat channel."))
+        await self.save_conf()
+
+    @skills_group.command(name="pingrole")
+    async def skills_pingrole(self, ctx: commands.Context, role: discord.Role):
+        """Add or remove a role to ping when a skill proposal is posted"""
+        conf = self.db.get_conf(ctx.guild)
+        if role.id in conf.skill_ping_roles:
+            conf.skill_ping_roles.remove(role.id)
+            await ctx.send(_("{} will no longer be pinged for skill proposals").format(role.name))
+        else:
+            conf.skill_ping_roles.append(role.id)
+            await ctx.send(_("{} will be pinged for skill proposals").format(role.name))
+        await self.save_conf()
+
+    @skills_group.command(name="proposeusers")
+    async def skills_propose_users(self, ctx: commands.Context):
+        """Toggle whether the AI may propose skills from conversations with normal users"""
+        conf = self.db.get_conf(ctx.guild)
+        conf.skill_propose_users = not conf.skill_propose_users
+        status = _("**enabled**") if conf.skill_propose_users else _("**disabled**")
+        await ctx.send(_("Skill proposals from normal-user conversations: {}").format(status))
+        await self.save_conf()
+
+    @skills_group.command(name="adminmode")
+    async def skills_admin_mode(self, ctx: commands.Context, mode: str):
+        """Set how skills behave in admin conversations: off, propose, or auto
+
+        - off: the AI never drafts skills from admin chats
+        - propose: drafts go to the review channel like everyone else's
+        - auto: skills bake immediately with no approval panel
+        """
+        mode = mode.lower().strip()
+        if mode not in ("off", "propose", "auto"):
+            await ctx.send(_("Mode must be one of: off, propose, auto"))
+            return
+        conf = self.db.get_conf(ctx.guild)
+        conf.skill_admin_mode = mode
+        await ctx.send(_("Admin skill mode set to **{}**").format(mode))
+        await self.save_conf()
+
+    @skills_group.command(name="list")
+    async def skills_list(self, ctx: commands.Context):
+        """List this server's skills with usage stats"""
+        conf = self.db.get_conf(ctx.guild)
+        if not conf.skills:
+            await ctx.send(_("No skills configured."))
+            return
+        lines = []
+        for name, skill in sorted(conf.skills.items()):
+            flags = []
+            if not skill.enabled:
+                flags.append(_("disabled"))
+            if skill.permission_level != "user":
+                flags.append(skill.permission_level)
+            suffix = f" ({', '.join(flags)})" if flags else ""
+            lines.append(f"`{name}`{suffix}: {skill.description} - used {skill.use_count}x")
+        for page in pagify("\n".join(lines), page_length=1900):
+            await ctx.send(page)
+
+    @skills_group.command(name="add")
+    async def skills_add(self, ctx: commands.Context, name: str, description: str, *, body: str):
+        """Add a skill manually
+
+        Wrap the description in quotes. The rest of the message is the procedure body.
+        Attach a .md/.txt file instead of typing the body to use longer content.
+        """
+        conf = self.db.get_conf(ctx.guild)
+        name = normalize_skill_name(name)
+        attachments = get_attachments(ctx.message)
+        if attachments:
+            body = (await attachments[0].read()).decode("utf-8", errors="replace")
+        if len(body) > MAX_SKILL_BODY:
+            await ctx.send(_("Body too long ({} chars, max {})").format(len(body), MAX_SKILL_BODY))
+            return
+        if name in conf.skills:
+            await ctx.send(_("A skill named `{}` already exists. Use the menu to edit it.").format(name))
+            return
+        if len(conf.skills) >= conf.max_skills:
+            await ctx.send(_("Skill limit reached ({})").format(conf.max_skills))
+            return
+        self.bake_skill(
+            conf=conf,
+            name=name,
+            description=description,
+            body=body,
+            author_id=ctx.author.id,
+            approver_id=ctx.author.id,
+        )
+        await ctx.send(_("Skill `{}` added and active.").format(name))
+        await self.save_conf()
+
+    @skills_group.command(name="delete", aliases=["del", "remove"])
+    async def skills_delete(self, ctx: commands.Context, name: str):
+        """Delete a skill"""
+        conf = self.db.get_conf(ctx.guild)
+        name = normalize_skill_name(name)
+        if name not in conf.skills:
+            await ctx.send(_("No skill named `{}`").format(name))
+            return
+        del conf.skills[name]
+        await ctx.send(_("Skill `{}` deleted.").format(name))
+        await self.save_conf()
+
+    @skills_group.command(name="menu", aliases=["view"])
+    async def skills_menu(self, ctx: commands.Context):
+        """Open the interactive skill management menu"""
+        conf = self.db.get_conf(ctx.guild)
+        view = SkillMenuView(self, ctx, conf)
+        view.message = await ctx.send(view=view)
+
+    @skills_group.command(name="audit")
+    async def skills_audit(self, ctx: commands.Context, name: str = None):
+        """Have the AI audit all skills (or one) for overlap, staleness, conflicts, and quality"""
+        conf = self.db.get_conf(ctx.guild)
+        if not conf.skills:
+            await ctx.send(_("No skills to audit."))
+            return
+        name = normalize_skill_name(name) if name else None
+        if name and name not in conf.skills:
+            await ctx.send(_("No skill named `{}`").format(name))
+            return
+        targets = {name: conf.skills[name]} if name else conf.skills
+        now = datetime.now(tz=timezone.utc)
+        blocks = []
+        for skill_name, skill in sorted(targets.items()):
+            age_days = (now - skill.created).days
+            idle_days = (now - skill.last_used).days if skill.last_used else None
+            idle = f"{idle_days}d ago" if idle_days is not None else "never"
+            blocks.append(
+                f"## {skill_name}\nWhen: {skill.description}\nAge: {age_days}d | Last used: {idle} | "
+                f"Uses: {skill.use_count} | Level: {skill.permission_level} | Enabled: {skill.enabled}\n"
+                f"Body:\n{skill.body}"
+            )
+        messages = [
+            {"role": "system", "content": SKILL_AUDIT_PROMPT},
+            {"role": "user", "content": "\n\n".join(blocks)},
+        ]
+        async with ctx.typing():
+            response = await request_chat_completion_raw(
+                model=self.db.get_effective_model(conf, ctx.author),
+                messages=messages,
+                temperature=0.0,
+                api_key=self.get_api_key(conf),
+                max_tokens=2000,
+                base_url=conf.endpoint_override or self.db.endpoint_override,
+            )
+        report = response.choices[0].message.content or _("No response from model.")
+        for page in pagify(report, page_length=1900):
+            await ctx.send(page)
 
     @smartmod.command(name="model")
     async def smartmod_model(self, ctx: commands.Context, *, model: str = ""):

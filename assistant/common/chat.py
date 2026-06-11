@@ -51,7 +51,13 @@ from .constants import (
     TOOL_RESULT_SOFT_TRIM_MAX,
     TOOL_RESULT_SOFT_TRIM_TAIL,
 )
-from .models import Conversation, GuildSettings, render_tool_category
+from .models import (
+    Conversation,
+    GuildSettings,
+    build_skill_index,
+    member_meets_level,
+    render_tool_category,
+)
 from .reply import send_reply
 from .utils import (
     DYNAMIC_VARIABLE_GROUPS,
@@ -371,6 +377,19 @@ class ChatHandler(MixinMeta):
         if privileged:
             return discord.AllowedMentions(everyone=False, roles=True, users=True)
         return discord.AllowedMentions(everyone=False, roles=False, users=False)
+
+    async def build_skill_index_for_member(self, conf: GuildSettings, member: Optional[discord.Member]) -> str:
+        if not conf.skills_enabled or not conf.skills:
+            return ""
+        allowed = []
+        level_ok: dict[str, bool] = {}
+        for name, skill in conf.skills.items():
+            level = skill.permission_level
+            if level not in level_ok:
+                level_ok[level] = await member_meets_level(self.bot, member, level)
+            if level_ok[level]:
+                allowed.append(name)
+        return build_skill_index(conf.skills, allowed)
 
     async def request_tool_approval(
         self,
@@ -1660,6 +1679,10 @@ class ChatHandler(MixinMeta):
                 conversation.system_prompt_override or self.db.get_effective_system_prompt(conf),
                 params,
             )
+
+        skill_index = await self.build_skill_index_for_member(conf, author)
+        if skill_index:
+            system_prompt = f"{system_prompt}\n\n{skill_index}"
 
         initial_prompt = format_template(conf.prompt, params)
         model = configured_model

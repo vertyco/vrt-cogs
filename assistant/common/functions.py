@@ -20,6 +20,7 @@ from redbot.core.utils.chat_formatting import humanize_timedelta, pagify
 
 from ..abc import MixinMeta
 from ..common import calls, reply
+from ..views import SkillProposalView
 from .command_index import (
     build_command_documents,
     collection_name_for_model,
@@ -28,7 +29,16 @@ from .command_index import (
     member_can_run,
 )
 from .command_ui import expand_command_ui_source
-from .models import Conversation, GuildSettings, Reminder, ScheduledTask
+from .constants import MAX_SKILL_BODY
+from .models import (
+    Conversation,
+    GuildSettings,
+    Reminder,
+    ScheduledTask,
+    Skill,
+    member_meets_level,
+)
+from .utils import find_similar_skill, normalize_skill_name
 
 log = logging.getLogger("red.vrt.assistant.functions")
 _ = Translator("Assistant", __file__)
@@ -189,10 +199,7 @@ class AssistantFunctions(MixinMeta):
             desc += _("\n-# Style: {}").format(style)
 
         color = (await self.bot.get_embed_color(channel)) if channel else discord.Color.blue()
-        embed = (
-            discord.Embed(description=desc, color=color)
-            .set_image(url="attachment://image.png")
-        )
+        embed = discord.Embed(description=desc, color=color).set_image(url="attachment://image.png")
         txt = "Image has been generated and sent to the user!"
         if hasattr(image, "revised_prompt") and image.revised_prompt:
             embed.add_field(name=_("Revised Prompt"), value=image.revised_prompt)
@@ -380,9 +387,7 @@ class AssistantFunctions(MixinMeta):
             buffer.write(f"## {qualified_name} (relevance: {round(score, 3)})\n{text}\nPermission: {annotation}\n\n")
         return buffer.getvalue().strip() or "No matching commands found."
 
-    async def get_command_source(
-        self, command_name: str, follow_ui: bool = False, *args, **kwargs
-    ) -> str:
+    async def get_command_source(self, command_name: str, follow_ui: bool = False, *args, **kwargs) -> str:
         command = self.bot.get_command(command_name)
         note = ""
         if command is None:
@@ -734,3 +739,161 @@ class AssistantFunctions(MixinMeta):
             lines.append(f"- `{utask.id}`: <t:{timestamp}:R> - {instruction_preview}")
 
         return "**Your scheduled tasks:**\n" + "\n".join(lines)
+
+    def bake_skill(
+        self,
+        conf: GuildSettings,
+        name: str,
+        description: str,
+        body: str,
+        permission_level: str = "user",
+        source: str = "manual",
+        author_id: int = 0,
+        approver_id: int = 0,
+        source_message: str = "",
+        replaces: str = "",
+    ) -> Skill:
+        """Create or update an active skill. Caller is responsible for save_conf()."""
+        key = replaces or name
+        existing = conf.skills.get(key)
+        if existing:
+            existing.description = description
+            existing.body = body
+            existing.permission_level = permission_level
+            existing.status = "active"
+            existing.approver_id = approver_id or existing.approver_id
+            if source_message:
+                existing.source_message = source_message
+            existing.touch()
+            if replaces and name and name != replaces and name not in conf.skills:
+                conf.skills[name] = conf.skills.pop(replaces)
+            return existing
+        skill = Skill(
+            description=description,
+            body=body,
+            permission_level=permission_level,
+            source=source,
+            author_id=author_id,
+            approver_id=approver_id,
+            source_message=source_message,
+        )
+        conf.skills[key] = skill
+        return skill
+
+    async def load_skill(
+        self,
+        skill_name: str,
+        guild: discord.Guild = None,
+        conf: GuildSettings = None,
+        user: discord.Member = None,
+        *args,
+        **kwargs,
+    ) -> str:
+        if not conf or not conf.skills_enabled:
+            return "Skills are disabled in this server."
+        skill_name = normalize_skill_name(skill_name)
+        skill = conf.skills.get(skill_name)
+        if not skill or skill.status != "active" or not skill.enabled:
+            visible = [
+                name
+                for name, s in sorted(conf.skills.items())
+                if s.enabled and s.status == "active" and await member_meets_level(self.bot, user, s.permission_level)
+            ]
+            names = ", ".join(visible) if visible else "none"
+            return f"No active skill named '{skill_name}'. Available skills: {names}"
+        if not await member_meets_level(self.bot, user, skill.permission_level):
+            return f"The current user does not have permission to use the '{skill_name}' skill."
+        skill.mark_used()
+        await self.save_conf()
+        return f"Skill '{skill_name}' loaded. Follow this procedure:\n\n{skill.body}"
+
+    async def skill_proposal_allowed(self, conf: GuildSettings, user: discord.Member) -> t.Tuple[bool, bool]:
+        """Returns (allowed, is_admin) for the proposing context."""
+        is_admin = await member_meets_level(self.bot, user, "admin")
+        if is_admin:
+            return conf.skill_admin_mode in ("propose", "auto"), True
+        return conf.skill_propose_users, False
+
+    async def post_skill_proposal(
+        self, guild: discord.Guild, conf: GuildSettings, proposal: dict, fallback_channel=None
+    ) -> str:
+        """Post the proposal panel. Routes to the configured review channel when set,
+        otherwise falls back to the current chat channel so proposals work out of the box."""
+        channel = guild.get_channel(conf.skill_channel) if conf.skill_channel else None
+        if not isinstance(channel, discord.abc.Messageable):
+            channel = fallback_channel
+        if not isinstance(channel, discord.abc.Messageable):
+            return (
+                "There is nowhere to post the skill proposal (no review channel configured and no "
+                "current channel available). Tell the user an admin can set one with the "
+                "`assistant skills channel` command."
+            )
+        view = SkillProposalView(self, guild, proposal, ping_roles=conf.skill_ping_roles)
+        allowed = discord.AllowedMentions(roles=True)
+        view.message = await channel.send(view=view, allowed_mentions=allowed)
+        return (
+            f"Skill proposal '{proposal['name']}' submitted for staff review in {channel.mention}. "
+            "It will not take effect unless approved."
+        )
+
+    async def propose_skill(
+        self,
+        skill_name: str,
+        description: str,
+        body: str,
+        reason: str,
+        replaces: str = "",
+        guild: discord.Guild = None,
+        conf: GuildSettings = None,
+        user: discord.Member = None,
+        channel: discord.abc.GuildChannel = None,
+        message_obj: discord.Message = None,
+        *args,
+        **kwargs,
+    ) -> str:
+        skill_name = normalize_skill_name(skill_name)
+        replaces = normalize_skill_name(replaces)
+        if not conf or not conf.skills_enabled:
+            return "Skills are disabled in this server."
+        if len(body) > MAX_SKILL_BODY:
+            return f"Skill body too long ({len(body)} chars, max {MAX_SKILL_BODY}). Shorten it."
+        if replaces and replaces not in conf.skills:
+            return f"No skill named '{replaces}' exists to replace. Check the Skills index for the exact name."
+        if not replaces and len(conf.skills) >= conf.max_skills:
+            return "This server has reached its skill limit. Propose an update to an existing skill instead."
+        if not replaces:
+            similar = find_similar_skill(description, conf.skills)
+            if similar:
+                return (
+                    f"An existing skill '{similar}' covers similar ground. Call propose_skill again "
+                    f"with replaces='{similar}' to propose an update to it instead."
+                )
+        allowed, is_admin = await self.skill_proposal_allowed(conf, user)
+        if not allowed:
+            return "Skill proposals are not enabled for this type of user. Do not retry."
+        proposal = {
+            "name": skill_name,
+            "description": description.strip(),
+            "body": body,
+            "reason": reason,
+            "replaces": replaces,
+            "permission_level": conf.skills[replaces].permission_level if replaces else "user",
+            "author_id": user.id if user else 0,
+            "source_message": message_obj.jump_url if message_obj else "",
+        }
+        if is_admin and conf.skill_admin_mode == "auto":
+            self.bake_skill(
+                conf=conf,
+                name=skill_name,
+                description=proposal["description"],
+                body=body,
+                permission_level=proposal["permission_level"],
+                source="correction",
+                author_id=proposal["author_id"],
+                approver_id=proposal["author_id"],
+                source_message=proposal["source_message"],
+                replaces=replaces,
+            )
+            await self.save_conf()
+            return f"Skill '{replaces or skill_name}' saved and active immediately (admin auto mode)."
+        return await self.post_skill_proposal(guild, conf, proposal, fallback_channel=channel)

@@ -1,5 +1,13 @@
 # Assistant Changelog
 
+## v8.13.0
+
+- **New**: Skills system. Named procedure packs the model loads on demand via a `load_skill` tool, with a lightweight name+description index appended to the end of the system prompt (cache-stable; full bodies only enter context as tool results, so the prompt prefix stays byte-identical for provider prompt caching).
+- **New**: The model can propose new skills, or fixes to existing ones, via a `propose_skill` tool when staff corrects it. Proposals post to an optional dedicated review channel (`[p]assistant skills channel`), falling back to the current chat channel when none is set, with optional role pings (`[p]assistant skills pingrole`) and an Approve / Edit & Approve / Reject components-v2 panel.
+- **New**: Per-guild controls: master toggle (`[p]assistant skills toggle`), proposals from normal-user chats (`[p]assistant skills proposeusers`), and an admin conversation mode (`[p]assistant skills adminmode off|propose|auto`) where `auto` bakes admin-taught skills with no approval panel.
+- **New**: Skills carry permission levels (user/mod/admin/owner) that filter both index visibility and loading, plus created/modified/last-used/use-count metadata. A fuzzy description match forces an update-an-existing proposal instead of a near-duplicate new skill, capped per guild (`max_skills`, default 50) and per body size (8000 chars).
+- **New**: Management commands `[p]assistant skills list/add/delete/menu` (the menu is an interactive components-v2 browser) and `[p]assistant skills audit [name]`, an LLM pass that flags overlapping, stale, conflicting, or low-quality skills.
+
 ## v8.11.0
 
 - **Fix/New**: Smartmod now asks the reviewer for a separate `user_reason` alongside its staff analysis: a short, action-agnostic statement of what the user did and which rule it broke. That text (instead of the full staff-facing analysis, which previously read as nonsense when staff picked a different action than suggested) is what pre-fills the action's reason modal, falls back on blank submit, and is recorded for the action itself (audit log, warn DM, modnote). The panel shows an `Action reason:` line whenever it differs from the analysis.
