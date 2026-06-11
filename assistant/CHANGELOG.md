@@ -1,5 +1,11 @@
 # Assistant Changelog
 
+## v8.15.0
+
+- **New**: `[p]convostats` now renders a colored-square context-window map (🟩 prompts, 🟦 function schemas, 🟨 skills index, 🟥 conversation, ⬛ free) like a `/context` view, with a token legend. Native emoji squares so it renders on desktop and mobile without ANSI.
+- **Change**: merged `[p]convocontext` into `[p]convostats`. `convostats` shows the compact stats + bar; `convostats full` (or the `convocontext`/`contextinfo` aliases) adds the detailed token + message breakdown. Append a member to view theirs (e.g. `convostats full @user`).
+- **New**: both views account for the Skills index appended to the system prompt - its tokens are folded into the context total/overhead and shown with a permission-filtered skill count. Previously the skill index was live context but invisible in the breakdown.
+
 ## v8.14.0
 
 - **New**: RPC handlers for skill management over Red's localhost JSON-RPC, mirroring the existing prompt/embedding handlers: `rpc_list_skills`, `rpc_add_skill` (create or overwrite an active skill via the same `bake_skill` path as the add command), and `rpc_delete_skill`. Lets ops tooling curate a guild's skills out of band without a Discord command.
