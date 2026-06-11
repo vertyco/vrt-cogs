@@ -1,5 +1,9 @@
 # Assistant Changelog
 
+## v8.14.0
+
+- **New**: RPC handlers for skill management over Red's localhost JSON-RPC, mirroring the existing prompt/embedding handlers: `rpc_list_skills`, `rpc_add_skill` (create or overwrite an active skill via the same `bake_skill` path as the add command), and `rpc_delete_skill`. Lets ops tooling curate a guild's skills out of band without a Discord command.
+
 ## v8.13.0
 
 - **New**: Skills system. Named procedure packs the model loads on demand via a `load_skill` tool, with a lightweight name+description index appended to the end of the system prompt (cache-stable; full bodies only enter context as tool results, so the prompt prefix stays byte-identical for provider prompt caching).
