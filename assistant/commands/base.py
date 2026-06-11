@@ -292,17 +292,15 @@ If a file has no extension it will still try to read it only if it can be decode
             (convo_tokens, "\N{LARGE RED SQUARE}"),
         ]
         bar = self.render_context_bar(segments, max_tokens)
-        legend = (
-            _(
-                "\N{LARGE GREEN SQUARE} prompt {}  \N{LARGE BLUE SQUARE} func {}  \N{LARGE YELLOW SQUARE} skills {}\n"
-                "\N{LARGE RED SQUARE} convo {}  \N{BLACK LARGE SQUARE} free {}"
-            ).format(
-                humanize_number(prompt_overhead),
-                humanize_number(func_tokens),
-                humanize_number(skill_tokens),
-                humanize_number(convo_tokens),
-                humanize_number(free_tokens),
-            )
+        legend = _(
+            "\N{LARGE GREEN SQUARE} prompt {}  \N{LARGE BLUE SQUARE} func {}  \N{LARGE YELLOW SQUARE} skills {}\n"
+            "\N{LARGE RED SQUARE} convo {}  \N{BLACK LARGE SQUARE} free {}"
+        ).format(
+            humanize_number(prompt_overhead),
+            humanize_number(func_tokens),
+            humanize_number(skill_tokens),
+            humanize_number(convo_tokens),
+            humanize_number(free_tokens),
         )
 
         max_retention = conf.get_user_max_retention(ctx.author)
@@ -312,21 +310,21 @@ If a file has no extension it will still try to read it only if it can be decode
             + "\n"
             + _(
                 "`Messages:    `{}/{}\n"
+                "`Expired:     `{}\n"
+                "`Model:       `{}"
                 "`Context:     `{}/{} ({:.1f}%)\n"
                 "`Conversation:`{}\n"
                 "`Overhead:    `{}\n"
-                "`Expired:     `{}\n"
-                "`Model:       `{}"
             ).format(
                 messages,
+                conversation.is_expired(conf, ctx.author),
+                model,
                 retention_display,
                 humanize_number(total_tokens),
                 humanize_number(max_tokens),
                 fill_pct,
                 humanize_number(convo_tokens),
                 humanize_number(overhead),
-                conversation.is_expired(conf, ctx.author),
-                model,
             )
         )
         if skill_count:

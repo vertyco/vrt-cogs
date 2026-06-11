@@ -398,7 +398,9 @@ GET_COMMAND_SOURCE = {
     },
 }
 
-MAX_SKILL_BODY = 8000  # chars; keeps a loaded skill well under one context "page"
+MAX_SKILL_BODY = 4000  # chars; matches the Discord modal TextInput cap and the
+# Components V2 displayable-text cap (both 4000) so every skill body stays editable
+# in the edit modal and renderable in a single V2 message.
 
 LOAD_SKILL = {
     "name": "load_skill",
