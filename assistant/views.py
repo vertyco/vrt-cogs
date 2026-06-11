@@ -20,6 +20,7 @@ from .common.models import (
     EndpointProfile,
     GuildSettings,
     get_category_state,
+    member_meets_level,
     normalize_tool_category,
     render_tool_category,
 )
@@ -34,6 +35,7 @@ from .common.utils import (
     extract_code_blocks,
     get_attachments,
     json_schema_invalid,
+    normalize_skill_name,
     wait_message,
 )
 
@@ -1751,9 +1753,7 @@ class ModelPickerView(discord.ui.LayoutView):
         if raw and raw not in OR_SUFFIXES:
             with suppress(discord.HTTPException):
                 await interaction.followup.send(
-                    _("Invalid suffix `{}`. Valid: {}.").format(
-                        raw, ", ".join(f"`{s}`" for s in OR_SUFFIXES)
-                    ),
+                    _("Invalid suffix `{}`. Valid: {}.").format(raw, ", ".join(f"`{s}`" for s in OR_SUFFIXES)),
                     ephemeral=True,
                 )
             return
@@ -2630,3 +2630,321 @@ class CodeMenu(discord.ui.View):
         self.update_button()
 
         await self.message.edit(embed=self.pages[self.page], view=self)
+
+
+class SkillEditModal(discord.ui.Modal):
+    """Edit a skill draft or an existing skill."""
+
+    def __init__(self, name: str, description: str, body: str, permission_level: str = "user"):
+        super().__init__(title=_("Edit Skill"), timeout=600)
+        self.result: Optional[dict] = None
+        self.original_body = body
+        self.original_level = permission_level
+        self.name_field = discord.ui.TextInput(label=_("Name (kebab-case)"), default=name, max_length=64, required=True)
+        self.description_field = discord.ui.TextInput(
+            label=_("Description (when to use)"), default=description, max_length=300, required=True
+        )
+        self.body_field = discord.ui.TextInput(
+            label=_("Procedure body"),
+            default=body[:4000],
+            style=discord.TextStyle.paragraph,
+            max_length=4000,
+            required=True,
+        )
+        self.permission_field = discord.ui.TextInput(
+            label=_("Permission level (user/mod/admin/owner)"),
+            default=permission_level,
+            max_length=10,
+            required=True,
+        )
+        self.add_item(self.name_field)
+        self.add_item(self.description_field)
+        self.add_item(self.body_field)
+        self.add_item(self.permission_field)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        warnings = []
+        level = self.permission_field.value.strip().lower()
+        if level not in ("user", "mod", "admin", "owner"):
+            warnings.append(
+                _("Permission level must be one of: user, mod, admin, owner - kept `{level}`").format(
+                    level=self.original_level
+                )
+            )
+            level = self.original_level
+        body = self.body_field.value
+        if len(self.original_body) > 4000:
+            if body == self.original_body[:4000]:
+                body = self.original_body
+            else:
+                warnings.append(
+                    _("The body was longer than the modal's 4000 char limit; everything past 4000 chars was dropped.")
+                )
+        self.result = {
+            "name": normalize_skill_name(self.name_field.value),
+            "description": self.description_field.value.strip(),
+            "body": body,
+            "permission_level": level,
+        }
+        if warnings:
+            await interaction.response.send_message("\n".join(warnings), ephemeral=True)
+        else:
+            await interaction.response.defer()
+        self.stop()
+
+
+class SkillProposalButton(discord.ui.Button):
+    def __init__(self, action: str, label: str, style: discord.ButtonStyle):
+        super().__init__(label=label, style=style)
+        self.action = action
+
+    async def callback(self, interaction: discord.Interaction):
+        view: "SkillProposalView" = self.view
+        await view.resolve(interaction, self.action)
+
+
+class SkillProposalView(discord.ui.LayoutView):
+    """Staff review panel for a model-proposed skill (new or edit)."""
+
+    def __init__(
+        self,
+        cog,
+        guild: discord.Guild,
+        proposal: dict,
+        ping_roles: Optional[List[int]] = None,
+        timeout: float = None,
+    ):
+        super().__init__(timeout=timeout)
+        self.cog = cog
+        self.guild = guild
+        # proposal keys: name, description, body, reason, replaces, permission_level,
+        # author_id, source_message
+        self.proposal = proposal
+        self.ping_roles = ping_roles or []
+        self.message: Optional[discord.Message] = None
+        self.resolved = False
+        self.outcome_text = ""
+        self.build_layout()
+
+    def build_layout(self) -> None:
+        self.clear_items()
+        p = self.proposal
+        is_edit = bool(p.get("replaces"))
+        accent = discord.Color.blue() if is_edit else discord.Color.green()
+        container = discord.ui.Container(accent_colour=accent)
+        if self.ping_roles and not self.resolved:
+            container.add_item(discord.ui.TextDisplay(" ".join(f"<@&{rid}>" for rid in self.ping_roles)))
+        title = _("# 🔁 Skill Update Proposed") if is_edit else _("# 💡 New Skill Proposed")
+        container.add_item(discord.ui.TextDisplay(title))
+        target = p["replaces"] if is_edit else p["name"]
+        container.add_item(
+            discord.ui.TextDisplay(
+                _("**Skill:** `{name}`\n**Proposed by conversation with:** <@{uid}>").format(
+                    name=target, uid=p.get("author_id", 0)
+                )
+            )
+        )
+        if p.get("source_message"):
+            container.add_item(
+                discord.ui.TextDisplay(_("[jump to conversation]({url})").format(url=p["source_message"]))
+            )
+        container.add_item(discord.ui.TextDisplay(_("**When to use:** {desc}").format(desc=p["description"][:300])))
+        container.add_item(discord.ui.TextDisplay(_("**Why:** {reason}").format(reason=p.get("reason", "")[:500])))
+        container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.small))
+        body_preview = p["body"][:1500]
+        if len(p["body"]) > 1500:
+            body_preview += _("\n... (truncated, {n} chars total)").format(n=len(p["body"]))
+        container.add_item(discord.ui.TextDisplay(body_preview))
+        container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.small))
+        if self.resolved:
+            container.add_item(discord.ui.TextDisplay(self.outcome_text))
+        else:
+            row = discord.ui.ActionRow()
+            row.add_item(SkillProposalButton("approve", _("Approve"), discord.ButtonStyle.success))
+            row.add_item(SkillProposalButton("edit", _("Edit & Approve"), discord.ButtonStyle.primary))
+            row.add_item(SkillProposalButton("reject", _("Reject"), discord.ButtonStyle.danger))
+            container.add_item(row)
+        self.add_item(container)
+
+    async def refresh(self):
+        self.build_layout()
+        if self.message:
+            await self.message.edit(view=self)
+
+    async def staff_check(self, interaction: discord.Interaction) -> bool:
+        if await member_meets_level(self.cog.bot, interaction.user, "admin"):
+            return True
+        await interaction.response.send_message(_("Only admins can review skill proposals."), ephemeral=True)
+        return False
+
+    async def resolve(self, interaction: discord.Interaction, action: str):
+        if not await self.staff_check(interaction):
+            return
+        p = self.proposal
+        if action == "reject":
+            self.resolved = True
+            self.outcome_text = _("❌ Rejected by {user}").format(user=interaction.user.mention)
+            await interaction.response.defer()
+            await self.refresh()
+            self.stop()
+            return
+        if action == "edit":
+            modal = SkillEditModal(p["name"], p["description"], p["body"], p.get("permission_level", "user"))
+            await interaction.response.send_modal(modal)
+            await modal.wait()
+            if not modal.result:
+                return
+            p.update(modal.result)
+        else:
+            await interaction.response.defer()
+        conf = self.cog.db.get_conf(self.guild)
+        skill = self.cog.bake_skill(
+            conf=conf,
+            name=p["name"],
+            description=p["description"],
+            body=p["body"],
+            permission_level=p.get("permission_level", "user"),
+            source="correction",
+            author_id=p.get("author_id", 0),
+            approver_id=interaction.user.id,
+            source_message=p.get("source_message", ""),
+            replaces=p.get("replaces", ""),
+        )
+        await self.cog.save_conf()
+        final_name = next(k for k, v in conf.skills.items() if v is skill)
+        self.resolved = True
+        self.outcome_text = _("✅ Approved by {user} - skill `{name}` is now active").format(
+            user=interaction.user.mention, name=final_name
+        )
+        await self.refresh()
+        self.stop()
+
+
+class SkillSelect(discord.ui.Select):
+    def __init__(self, names: List[str], selected: Optional[str]):
+        options = [discord.SelectOption(label=n, default=(n == selected)) for n in names]
+        super().__init__(placeholder=_("Select a skill..."), options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        view: "SkillMenuView" = self.view
+        view.selected = self.values[0]
+        await interaction.response.defer()
+        await view.refresh()
+
+
+class SkillMenuButton(discord.ui.Button):
+    def __init__(self, action: str, label: str, style: discord.ButtonStyle):
+        super().__init__(label=label, style=style)
+        self.action = action
+
+    async def callback(self, interaction: discord.Interaction):
+        view: "SkillMenuView" = self.view
+        await view.handle_action(interaction, self.action)
+
+
+class SkillMenuView(discord.ui.LayoutView):
+    """Browse, toggle, edit, and delete this guild's skills."""
+
+    def __init__(self, cog, ctx, conf):
+        super().__init__(timeout=600)
+        self.cog = cog
+        self.ctx = ctx
+        self.conf = conf
+        self.selected: Optional[str] = None
+        self.message: Optional[discord.Message] = None
+        self.build_layout()
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.ctx.author.id:
+            await interaction.response.send_message(_("This menu is not for you."), ephemeral=True)
+            return False
+        return True
+
+    def build_layout(self) -> None:
+        self.clear_items()
+        container = discord.ui.Container(accent_colour=discord.Color.blurple())
+        container.add_item(discord.ui.TextDisplay(_("# 🧠 Assistant Skills")))
+        if not self.conf.skills:
+            container.add_item(discord.ui.TextDisplay(_("No skills yet. Add one with the skills add command.")))
+            self.add_item(container)
+            return
+        skill = self.conf.skills.get(self.selected) if self.selected else None
+        if skill:
+            status = _("enabled") if skill.enabled else _("disabled")
+            last_used = f"<t:{int(skill.last_used.timestamp())}:R>" if skill.last_used else _("never")
+            container.add_item(
+                discord.ui.TextDisplay(
+                    _(
+                        "**`{name}`** ({status}, {level})\n{desc}\n"
+                        "-# created <t:{created}:R> • modified <t:{modified}:R> • "
+                        "last used {last_used} • used {count}x • source: {source}"
+                    ).format(
+                        name=self.selected,
+                        status=status,
+                        level=skill.permission_level,
+                        desc=skill.description,
+                        created=int(skill.created.timestamp()),
+                        modified=int(skill.modified.timestamp()),
+                        last_used=last_used,
+                        count=skill.use_count,
+                        source=skill.source,
+                    )
+                )
+            )
+            container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.small))
+            container.add_item(discord.ui.TextDisplay(skill.body[:1500]))
+        else:
+            container.add_item(discord.ui.TextDisplay(_("Select a skill to view details.")))
+        select_row = discord.ui.ActionRow()
+        select_row.add_item(SkillSelect(sorted(self.conf.skills)[:25], self.selected))
+        container.add_item(select_row)
+        if skill:
+            container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.small))
+            button_row = discord.ui.ActionRow()
+            toggle_label = _("Disable") if skill.enabled else _("Enable")
+            button_row.add_item(SkillMenuButton("toggle", toggle_label, discord.ButtonStyle.secondary))
+            button_row.add_item(SkillMenuButton("edit", _("Edit"), discord.ButtonStyle.primary))
+            button_row.add_item(SkillMenuButton("delete", _("Delete"), discord.ButtonStyle.danger))
+            container.add_item(button_row)
+        self.add_item(container)
+
+    async def refresh(self):
+        self.build_layout()
+        if self.message:
+            await self.message.edit(view=self)
+
+    async def handle_action(self, interaction: discord.Interaction, action: str):
+        skill = self.conf.skills.get(self.selected)
+        if not skill:
+            await interaction.response.defer()
+            return
+        if action == "toggle":
+            skill.enabled = not skill.enabled
+            skill.touch()
+            await interaction.response.defer()
+        elif action == "delete":
+            del self.conf.skills[self.selected]
+            self.selected = None
+            await interaction.response.defer()
+        elif action == "edit":
+            modal = SkillEditModal(self.selected, skill.description, skill.body, skill.permission_level)
+            await interaction.response.send_modal(modal)
+            await modal.wait()
+            if not modal.result:
+                return
+            new_name = modal.result["name"]
+            skill.description = modal.result["description"]
+            skill.body = modal.result["body"]
+            skill.permission_level = modal.result["permission_level"]
+            skill.touch()
+            if new_name != self.selected:
+                if new_name in self.conf.skills:
+                    await interaction.followup.send(
+                        _("A skill named `{name}` already exists; the rename was skipped.").format(name=new_name),
+                        ephemeral=True,
+                    )
+                else:
+                    self.conf.skills[new_name] = self.conf.skills.pop(self.selected)
+                    self.selected = new_name
+        await self.cog.save_conf()
+        await self.refresh()

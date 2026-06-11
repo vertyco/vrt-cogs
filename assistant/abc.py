@@ -12,7 +12,7 @@ from redbot.core.bot import Red
 
 from .common.command_index import CommandIndexStore
 from .common.embedding_store import EmbeddingStore
-from .common.models import DB, Conversation, EndpointProfile, GuildSettings
+from .common.models import DB, Conversation, EndpointProfile, GuildSettings, Skill
 
 
 class CompositeMetaClass(CogMeta, ABCMeta):
@@ -314,6 +314,26 @@ class MixinMeta(ABC):
         extend_function_calls: bool = True,
         message_obj: Optional[discord.Message] = None,
     ) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
+    def bake_skill(
+        self,
+        conf: GuildSettings,
+        name: str,
+        description: str,
+        body: str,
+        permission_level: str = "user",
+        source: str = "manual",
+        author_id: int = 0,
+        approver_id: int = 0,
+        source_message: str = "",
+        replaces: str = "",
+    ) -> Skill:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def build_skill_index_for_member(self, conf: GuildSettings, member: Optional[discord.Member]) -> str:
         raise NotImplementedError
 
     # -------------------------------------------------------

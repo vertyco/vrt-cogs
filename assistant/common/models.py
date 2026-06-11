@@ -7,7 +7,7 @@ import orjson
 from pydantic import VERSION, BaseModel, Field, field_validator
 from redbot.core.bot import Red
 
-from .constants import DEFAULT_MOD_PROMPT, MOD_CATEGORY_DEFAULTS
+from .constants import DEFAULT_MOD_PROMPT, MOD_CATEGORY_DEFAULTS, SKILL_INDEX_HEADER
 
 log = logging.getLogger("red.vrt.assistant.models")
 
@@ -106,6 +106,68 @@ class CustomFunction(AssistantBaseModel):
         """Prep function for execution"""
         exec(self.code, globals())
         return globals()[self.jsonschema["name"]]
+
+
+class Skill(AssistantBaseModel):
+    """A named text procedure the model loads on demand (progressive disclosure).
+
+    Skills are markdown-only - they orchestrate existing tools, they never
+    execute code themselves.
+    """
+
+    description: str  # One line stating WHEN to use this skill (shown in the index)
+    body: str  # The full procedure, returned by the load_skill tool
+    enabled: bool = True
+    status: str = "active"  # "draft" (pending staff approval) or "active"
+    permission_level: str = "user"  # user, mod, admin, owner
+    source: str = "manual"  # "manual" (command) or "correction" (proposed by the model)
+    author_id: int = 0  # who triggered creation (staff member or proposing user)
+    approver_id: int = 0  # staff member who approved/baked it
+    source_message: str = ""  # jump URL of the conversation that spawned it
+    created: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
+    modified: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
+    last_used: t.Optional[datetime] = None
+    use_count: int = 0
+
+    def touch(self):
+        self.modified = datetime.now(tz=timezone.utc)
+
+    def mark_used(self):
+        self.last_used = datetime.now(tz=timezone.utc)
+        self.use_count += 1
+
+
+async def member_meets_level(bot: Red, member: t.Optional[discord.Member], level: str) -> bool:
+    """Same permission ladder as prep_functions: user < mod < admin < owner."""
+    if level == "user":
+        return True
+    if member is None or not isinstance(member, discord.Member):
+        return False
+    if level == "mod":
+        return member.guild_permissions.manage_messages or await bot.is_mod(member)
+    if level == "admin":
+        return member.guild_permissions.administrator or await bot.is_admin(member)
+    if level == "owner":
+        return await bot.is_owner(member)
+    return False
+
+
+def build_skill_index(skills: t.Dict[str, Skill], allowed: t.Iterable[str]) -> str:
+    """Render the Skills index appended to the system prompt.
+
+    Only active, enabled skills whose name is in ``allowed`` (the caller's
+    permission-filtered list) appear. Sorted by name so the rendered block is
+    byte-identical across requests (prompt-cache stability).
+    """
+    allowed_set = set(allowed)
+    lines = [
+        f"- {name}: {skill.description}"
+        for name, skill in sorted(skills.items())
+        if name in allowed_set and skill.enabled and skill.status == "active"
+    ]
+    if not lines:
+        return ""
+    return SKILL_INDEX_HEADER + "\n".join(lines)
 
 
 class EndpointModelProfile(AssistantBaseModel):
@@ -297,6 +359,15 @@ class GuildSettings(AssistantBaseModel):
 
     # Smartmod (AI moderation)
     smartmod: SmartModSettings = Field(default_factory=SmartModSettings)
+
+    # Skills (on-demand procedure packs, see common/functions.py load_skill/propose_skill)
+    skills: t.Dict[str, Skill] = {}
+    skills_enabled: bool = False
+    skill_propose_users: bool = False  # allow the model to propose skills from normal-user chats
+    skill_admin_mode: str = "propose"  # off | propose | auto (auto = admin-triggered skills bake instantly)
+    skill_channel: t.Optional[int] = None  # proposal review channel
+    skill_ping_roles: t.List[int] = []  # roles pinged on new proposals
+    max_skills: int = 50
 
     def get_user_model(self, member: t.Optional[discord.Member] = None) -> str:
         if not member or not self.role_overrides:
