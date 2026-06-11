@@ -5,6 +5,7 @@
 - **New**: `[p]convostats` now renders a colored-square context-window map (🟩 prompts, 🟦 function schemas, 🟨 skills index, 🟥 conversation, ⬛ free) like a `/context` view, with a token legend. Native emoji squares so it renders on desktop and mobile without ANSI.
 - **Change**: merged `[p]convocontext` into `[p]convostats`. `convostats` shows the compact stats + bar; `convostats full` (or the `convocontext`/`contextinfo` aliases) adds the detailed token + message breakdown. Append a member to view theirs (e.g. `convostats full @user`).
 - **New**: both views account for the Skills index appended to the system prompt - its tokens are folded into the context total/overhead and shown with a permission-filtered skill count. Previously the skill index was live context but invisible in the breakdown.
+- **Change**: `MAX_SKILL_BODY` lowered from 8000 to 4000 chars. This matches the skill edit modal's TextInput cap and the Components V2 displayable-text cap (both 4000 and not raisable), so every skill body now stays fully editable in the modal and renderable in a single Components V2 message. Bodies over 4000 were previously creatable but silently truncated when edited.
 
 ## v8.14.0
 
