@@ -49,8 +49,7 @@ class Base(MixinMeta):
 # How to Use
 
 ### Commands
-`[p]convostats` - view your conversation message count/token usage for that convo.
-`[p]convocontext` - detailed token breakdown of what's consuming your context window.
+`[p]convostats` - message/token usage + a context-window map for that convo (`full` or `[p]convocontext` for the detailed breakdown).
 `[p]convocompact` - intelligently summarize older messages to free up context space.
 `[p]clearconvo` - reset your conversation for the current channel/thread/forum.
 `[p]unchat` - cancel the active assistant response for the current channel/thread/forum.
@@ -208,46 +207,66 @@ If a file has no extension it will still try to read it only if it can be decode
                 _("There are too many pending messages for this conversation. Please wait for the current reply.")
             )
 
-    @commands.command(name="convostats")
+    @staticmethod
+    def render_context_bar(segments: t.List[tuple], max_tokens: int, cells: int = 20) -> str:
+        """Render a colored-square bar of the context window (like a /context map).
+
+        ``segments`` is an ordered list of (tokens, emoji) for the used
+        categories; the remainder fills with the free square. Any nonzero
+        category gets at least one cell so it stays visible.
+        """
+        if max_tokens <= 0:
+            return "\N{BLACK LARGE SQUARE}" * cells
+        bar = ""
+        allocated = 0
+        for tok, emoji in segments:
+            if allocated >= cells:
+                break
+            n = round(tok / max_tokens * cells)
+            if tok > 0 and n == 0:
+                n = 1
+            n = min(n, cells - allocated)
+            bar += emoji * n
+            allocated += n
+        bar += "\N{BLACK LARGE SQUARE}" * max(cells - allocated, 0)
+        return bar
+
+    @commands.command(name="convostats", aliases=["convocontext", "contextinfo"])
     @commands.guild_only()
-    async def show_convo_stats(self, ctx: commands.Context, *, user: discord.Member = None):
+    @commands.bot_has_permissions(embed_links=True)
+    async def show_convo_stats(self, ctx: commands.Context, *, args: str = ""):
         """
-        Check the token and message count of yourself or another user's conversation for this channel
+        Token + message stats for your (or another user's) conversation in this channel, with a context-window map.
 
-        Conversations are *Per* user *Per* channel, meaning a conversation you have in one channel will be kept in memory separately from another conversation in a separate channel
+        Conversations are *Per* user *Per* channel and only kept in memory until the bot restarts or the cog reloads.
 
-        Conversations are only stored in memory until the bot restarts or the cog reloads
+        - `[p]convostats` - compact stats + context bar
+        - `[p]convostats full` - also show the detailed token/message breakdown
+        - `[p]convocontext` - alias that opens the detailed view
+        - append a member to view theirs, e.g. `[p]convostats full @user`
         """
+        detailed = ctx.invoked_with in ("convocontext", "contextinfo")
+        parts = args.split()
+        if parts and parts[0].lower() in ("full", "detailed", "-d"):
+            detailed = True
+            parts = parts[1:]
+        user = None
+        if parts:
+            try:
+                user = await commands.MemberConverter().convert(ctx, " ".join(parts))
+            except commands.BadArgument:
+                return await ctx.send(_("Could not find a member matching `{}`.").format(" ".join(parts)))
         if not user:
             user = ctx.author
+
         conf = self.db.get_conf(ctx.guild)
         mem_id = ctx.channel.id if conf.collab_convos else user.id
         conversation = self.db.get_conversation(mem_id, ctx.channel.id, ctx.guild.id)
         messages = len(conversation.messages)
-
         max_tokens = self.get_max_tokens(conf, ctx.author)
-
-        def generate_color(index: int, limit: int):
-            if not limit:
-                return (0, 0)
-            if index > limit:
-                return (0, 0)
-
-            # RGB for white is (255, 255, 255) and for red is (255, 0, 0)
-            # As we progress from white to red, we need to decrease the values of green and blue from 255 to 0
-
-            # Calculate the decrement in green and blue values
-            decrement = int((255 / limit) * index)
-
-            # Calculate the new green and blue values
-            green = blue = 255 - decrement
-
-            # Return the new RGB color
-            return (green, blue)
-
         model = conf.get_user_model(user)
-        convo_tokens = await self.count_payload_tokens(conversation.messages, model)
 
+        convo_tokens = await self.count_payload_tokens(conversation.messages, model)
         effective_system_prompt = self.db.get_effective_system_prompt(conf)
         system_tokens = await self.count_tokens(effective_system_prompt, model) if effective_system_prompt else 0
         prompt_tokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
@@ -255,13 +274,36 @@ If a file has no extension it will still try to read it only if it can be decode
         channel_tokens = await self.count_tokens(channel_prompt, model) if channel_prompt else 0
         func_list, function_map = await self.db.prep_functions(self.bot, conf, self.registry, showall=True)
         func_tokens = await self.count_function_tokens(func_list, model)
-        total_tokens = system_tokens + prompt_tokens + channel_tokens + func_tokens + convo_tokens
-        fill_pct = (total_tokens / max_tokens * 100) if max_tokens else 0
+        skill_index = await self.build_skill_index_for_member(conf, user)
+        skill_tokens = await self.count_tokens(skill_index, model) if skill_index else 0
+        skill_count = sum(1 for line in skill_index.splitlines() if line.startswith("- ")) if skill_index else 0
 
-        g, b = generate_color(messages, conf.get_user_max_retention(ctx.author))
-        gg, bb = generate_color(total_tokens, max_tokens)
-        # Whatever limit is more severe get that color
-        color = discord.Color.from_rgb(255, min(g, gg), min(b, bb))
+        prompt_overhead = system_tokens + prompt_tokens + channel_tokens
+        overhead = prompt_overhead + func_tokens + skill_tokens
+        total_tokens = overhead + convo_tokens
+        fill_pct = (total_tokens / max_tokens * 100) if max_tokens else 0
+        free_tokens = max(max_tokens - total_tokens, 0)
+
+        # Context-window map: 🟩 prompts, 🟦 functions, 🟨 skills, 🟥 conversation, ⬛ free
+        segments = [
+            (prompt_overhead, "\N{LARGE GREEN SQUARE}"),
+            (func_tokens, "\N{LARGE BLUE SQUARE}"),
+            (skill_tokens, "\N{LARGE YELLOW SQUARE}"),
+            (convo_tokens, "\N{LARGE RED SQUARE}"),
+        ]
+        bar = self.render_context_bar(segments, max_tokens)
+        legend = (
+            _(
+                "\N{LARGE GREEN SQUARE} prompt {}  \N{LARGE BLUE SQUARE} func {}  \N{LARGE YELLOW SQUARE} skills {}\n"
+                "\N{LARGE RED SQUARE} convo {}  \N{BLACK LARGE SQUARE} free {}"
+            ).format(
+                humanize_number(prompt_overhead),
+                humanize_number(func_tokens),
+                humanize_number(skill_tokens),
+                humanize_number(convo_tokens),
+                humanize_number(free_tokens),
+            )
+        )
 
         max_retention = conf.get_user_max_retention(ctx.author)
         retention_display = "\N{INFINITY}" if max_retention == 0 else max_retention
@@ -282,25 +324,64 @@ If a file has no extension it will still try to read it only if it can be decode
                 humanize_number(max_tokens),
                 fill_pct,
                 humanize_number(convo_tokens),
-                humanize_number(system_tokens + prompt_tokens + channel_tokens + func_tokens),
+                humanize_number(overhead),
                 conversation.is_expired(conf, ctx.author),
                 model,
             )
         )
+        if skill_count:
+            desc += _("\n`Skills:      `{} ({})").format(humanize_number(skill_tokens), skill_count)
         desc += _("\n`Tool Calls:  `{}").format(conversation.function_count())
         if conversation.compaction_count:
             desc += _("\n`Compacted:   `{} time(s)").format(conversation.compaction_count)
         if conf.collab_convos:
-            desc += "\n" + _("*Collabroative conversations are enabled*")
-        embed = discord.Embed(
-            description=desc,
-            color=color,
-        )
+            desc += "\n" + _("*Collaborative conversations are enabled*")
+        desc += f"\n\n{bar}\n{legend}"
+
+        if detailed:
+            system_msgs = sum(1 for m in conversation.messages if m.get("role") in ("system", "developer"))
+            user_msgs = sum(1 for m in conversation.messages if m.get("role") == "user")
+            assistant_msgs = sum(1 for m in conversation.messages if m.get("role") == "assistant")
+            tool_msgs = sum(1 for m in conversation.messages if m.get("role") in ("tool", "function"))
+            image_count = len(conversation.get_images())
+            summary_msgs = sum(
+                1
+                for m in conversation.messages
+                if m.get("content") and isinstance(m.get("content"), str) and "[Conversation Summary" in m["content"]
+            )
+            desc += (
+                "\n\n"
+                + _("**Token Breakdown**\n")
+                + _("`System Prompt:      `{}\n").format(humanize_number(system_tokens))
+                + _("`Initial Prompt:     `{}\n").format(humanize_number(prompt_tokens))
+                + _("`Channel Prompt:     `{}\n").format(humanize_number(channel_tokens))
+                + _("`Function Schemas:   `{} ({} functions)\n").format(
+                    humanize_number(func_tokens), humanize_number(len(func_list))
+                )
+                + _("`Skills Index:       `{} ({} skills)\n").format(humanize_number(skill_tokens), skill_count)
+                + _("`Conversation:       `{}\n").format(humanize_number(convo_tokens))
+                + "\n"
+                + _("**Message Breakdown**\n")
+                + _("`User Messages:      `{}\n").format(user_msgs)
+                + _("`Assistant Messages: `{}\n").format(assistant_msgs)
+                + _("`Tool Results:       `{}\n").format(tool_msgs)
+                + _("`System/Developer:   `{}\n").format(system_msgs)
+                + _("`Images:             `{}\n").format(image_count)
+                + _("`Compaction Summaries:`{}").format(summary_msgs)
+            )
+
+        if fill_pct < 70:
+            color = discord.Color.green()
+        elif fill_pct < 90:
+            color = discord.Color.orange()
+        else:
+            color = discord.Color.red()
+        embed = discord.Embed(description=desc, color=color)
         embed.set_author(
             name=_("Conversation stats for {}").format(ctx.channel.name if conf.collab_convos else user.display_name),
             icon_url=ctx.guild.icon if conf.collab_convos else user.display_avatar,
         )
-        embed.set_footer(text=_("Context = conversation + overhead (prompts + function schemas)"))
+        embed.set_footer(text=_("Context = conversation + overhead (prompt + functions + skills)"))
         await ctx.send(embed=embed)
         if await self.bot.is_mod(ctx.author) or ctx.author.id in self.bot.owner_ids or not conf.collab_convos:
             if conversation.system_prompt_override:
@@ -309,89 +390,6 @@ If a file has no extension it will still try to read it only if it can be decode
             elif ctx.channel.id in conf.channel_prompts:
                 file = text_to_file(conf.channel_prompts[ctx.channel.id])
                 await ctx.send(_("System prompt override for this channel"), file=file)
-
-    @commands.command(name="convocontext", aliases=["contextinfo"])
-    @commands.guild_only()
-    @commands.bot_has_permissions(embed_links=True)
-    async def convo_context(self, ctx: commands.Context, *, user: discord.Member = None):
-        """Show a detailed token breakdown for your conversation context"""
-        if not user:
-            user = ctx.author
-        conf = self.db.get_conf(ctx.guild)
-        model = conf.get_user_model(user)
-        max_tokens = self.get_max_tokens(conf, user)
-
-        mem_id = ctx.channel.id if conf.collab_convos else user.id
-        conversation = self.db.get_conversation(mem_id, ctx.channel.id, ctx.guild.id)
-
-        effective_system_prompt = self.db.get_effective_system_prompt(conf)
-        system_tokens = await self.count_tokens(effective_system_prompt, model) if effective_system_prompt else 0
-        prompt_tokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
-        channel_prompt = conf.channel_prompts.get(ctx.channel.id, "")
-        channel_tokens = await self.count_tokens(channel_prompt, model) if channel_prompt else 0
-
-        func_list, function_map = await self.db.prep_functions(self.bot, conf, self.registry, showall=True)
-        func_tokens = await self.count_function_tokens(func_list, model)
-
-        convo_tokens = await self.count_payload_tokens(conversation.messages, model)
-
-        system_msgs = sum(1 for m in conversation.messages if m.get("role") in ("system", "developer"))
-        user_msgs = sum(1 for m in conversation.messages if m.get("role") == "user")
-        assistant_msgs = sum(1 for m in conversation.messages if m.get("role") == "assistant")
-        tool_msgs = sum(1 for m in conversation.messages if m.get("role") in ("tool", "function"))
-        image_count = len(conversation.get_images())
-        summary_msgs = sum(
-            1
-            for m in conversation.messages
-            if m.get("content") and isinstance(m.get("content"), str) and "[Conversation Summary" in m["content"]
-        )
-
-        total_tokens = system_tokens + prompt_tokens + channel_tokens + func_tokens + convo_tokens
-        fill_pct = (total_tokens / max_tokens * 100) if max_tokens else 0
-
-        desc = (
-            _("`Max Context:        `{} tokens\n").format(humanize_number(max_tokens))
-            + _("`Context Fill:       `{:.1f}%\n").format(fill_pct)
-            + _("`Model:              `{}\n").format(model)
-            + "\n"
-            + _("**Token Breakdown**\n")
-            + _("`System Prompt:      `{}\n").format(humanize_number(system_tokens))
-            + _("`Initial Prompt:     `{}\n").format(humanize_number(prompt_tokens))
-            + _("`Channel Prompt:     `{}\n").format(humanize_number(channel_tokens))
-            + _("`Function Schemas:   `{} ({} functions)\n").format(
-                humanize_number(func_tokens), humanize_number(len(func_list))
-            )
-            + _("`Conversation:       `{}\n").format(humanize_number(convo_tokens))
-            + _("`Total:              `{}\n").format(humanize_number(total_tokens))
-            + "\n"
-            + _("**Message Breakdown**\n")
-            + _("`System/Developer:   `{}\n").format(system_msgs)
-            + _("`User Messages:      `{}\n").format(user_msgs)
-            + _("`Assistant Messages: `{}\n").format(assistant_msgs)
-            + _("`Tool Results:       `{}\n").format(tool_msgs)
-            + _("`Images:             `{}\n").format(image_count)
-            + _("`Compaction Summaries:`{}\n").format(summary_msgs)
-            + "\n"
-            + _("**Compaction**\n")
-            + _("`Times Compacted:    `{}\n").format(conversation.compaction_count)
-        )
-
-        if fill_pct < 70:
-            color = discord.Color.green()
-        elif fill_pct < 90:
-            color = discord.Color.orange()
-        else:
-            color = discord.Color.red()
-        embed = discord.Embed(
-            title=_("Context Breakdown"),
-            description=desc,
-            color=color,
-        )
-        embed.set_author(
-            name=_("Context for {}").format(user.display_name),
-            icon_url=user.display_avatar,
-        )
-        await ctx.send(embed=embed)
 
     @commands.command(name="convocompact", aliases=["compact"])
     @commands.guild_only()
