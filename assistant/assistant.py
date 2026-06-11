@@ -30,6 +30,7 @@ from .common.constants import (
     LIST_REMINDERS,
     LIST_SCHEDULED_TASKS,
     LOAD_SKILL,
+    MAX_SKILL_BODY,
     PROPOSE_SKILL,
     RESPOND_AND_CONTINUE,
     SCHEDULE_TASK,
@@ -41,7 +42,7 @@ from .common.embedding_store import EmbeddingStore
 from .common.functions import AssistantFunctions
 from .common.models import DB, EmbeddingEntryExists, NoAPIKey, normalize_tool_category
 from .common.smartmod import SmartMod
-from .common.utils import clean_name, json_schema_invalid
+from .common.utils import clean_name, json_schema_invalid, normalize_skill_name
 from .listener import AssistantListener
 
 log = logging.getLogger("red.vrt.assistant")
@@ -72,7 +73,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "8.13.0"
+    __version__ = "8.14.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -188,6 +189,10 @@ class Assistant(
         self.bot.register_rpc_handler(self.rpc_list_embeddings)
         self.bot.register_rpc_handler(self.rpc_upsert_embedding)
         self.bot.register_rpc_handler(self.rpc_delete_embedding)
+        self.bot.register_rpc_handler(self.rpc_list_skills)
+        self.bot.register_rpc_handler(self.rpc_add_skill)
+        self.bot.register_rpc_handler(self.rpc_delete_skill)
+        self.bot.register_rpc_handler(self.rpc_set_skills_enabled)
 
         await asyncio.sleep(30)
         self.save_loop.start()
@@ -562,6 +567,89 @@ class Assistant(
             return {"ok": False, "error": f"no embedding named '{name}'"}
         await self.embedding_store.delete(guild.id, str(name))
         return {"ok": True, "deleted": str(name)}
+
+    async def rpc_list_skills(self, guild_id: int) -> dict:
+        """List a guild's skills: {name: {description, permission_level, enabled, status, use_count}}."""
+        guild = self.rpc_guild(guild_id)
+        if not guild:
+            return {"ok": False, "error": f"guild {guild_id} not found"}
+        conf = self.db.get_conf(guild)
+        skills = {
+            name: {
+                "description": skill.description,
+                "permission_level": skill.permission_level,
+                "enabled": skill.enabled,
+                "status": skill.status,
+                "use_count": skill.use_count,
+            }
+            for name, skill in conf.skills.items()
+        }
+        return {"ok": True, "skills": skills, "count": len(skills), "max": conf.max_skills}
+
+    async def rpc_add_skill(
+        self,
+        guild_id: int,
+        name: str,
+        description: str,
+        body: str,
+        permission_level: str = "user",
+        replaces: str = "",
+    ) -> dict:
+        """Create or overwrite an active skill (same path as the skills add command)."""
+        guild = self.rpc_guild(guild_id)
+        if not guild:
+            return {"ok": False, "error": f"guild {guild_id} not found"}
+        if not all(isinstance(value, str) and value.strip() for value in (name, description, body)):
+            return {"ok": False, "error": "name, description and body must be non-empty strings"}
+        if permission_level not in ("user", "mod", "admin", "owner"):
+            return {"ok": False, "error": "permission_level must be user, mod, admin or owner"}
+        if len(body) > MAX_SKILL_BODY:
+            return {"ok": False, "error": f"body too long ({len(body)} chars, max {MAX_SKILL_BODY})"}
+        conf = self.db.get_conf(guild)
+        name = normalize_skill_name(name)
+        replaces = normalize_skill_name(replaces) if replaces else ""
+        if replaces and replaces not in conf.skills:
+            return {"ok": False, "error": f"no skill named '{replaces}' to replace"}
+        # An existing same-name skill is an in-place update, not a limit hit.
+        if not replaces and name in conf.skills:
+            replaces = name
+        if not replaces and len(conf.skills) >= conf.max_skills:
+            return {"ok": False, "error": f"skill limit reached ({conf.max_skills})"}
+        self.bake_skill(
+            conf=conf,
+            name=name,
+            description=description,
+            body=body,
+            permission_level=permission_level,
+            replaces=replaces,
+        )
+        await self.save_conf()
+        return {"ok": True, "name": name, "count": len(conf.skills)}
+
+    async def rpc_delete_skill(self, guild_id: int, name: str) -> dict:
+        """Delete a skill by name."""
+        guild = self.rpc_guild(guild_id)
+        if not guild:
+            return {"ok": False, "error": f"guild {guild_id} not found"}
+        conf = self.db.get_conf(guild)
+        name = normalize_skill_name(name)
+        if name not in conf.skills:
+            return {"ok": False, "error": f"no skill named '{name}'"}
+        del conf.skills[name]
+        await self.save_conf()
+        return {"ok": True, "deleted": name}
+
+    async def rpc_set_skills_enabled(self, guild_id: int, enabled: bool) -> dict:
+        """Enable or disable the skills system for a guild (also flips the skill tools)."""
+        guild = self.rpc_guild(guild_id)
+        if not guild:
+            return {"ok": False, "error": f"guild {guild_id} not found"}
+        conf = self.db.get_conf(guild)
+        conf.skills_enabled = bool(enabled)
+        conf.function_statuses["load_skill"] = conf.skills_enabled
+        conf.function_statuses["propose_skill"] = conf.skills_enabled
+        await self.save_conf()
+        return {"ok": True, "skills_enabled": conf.skills_enabled}
 
     async def get_chat(
         self,
