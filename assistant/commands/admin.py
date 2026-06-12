@@ -31,7 +31,11 @@ from redbot.core.utils.chat_formatting import (
 from redbot.core.utils.views import SimpleMenu
 
 from ..abc import MixinMeta
-from ..common.calls import request_chat_completion_raw, request_embedding_raw
+from ..common.calls import (
+    get_client,
+    request_chat_completion_raw,
+    request_embedding_raw,
+)
 from ..common.constants import (
     DEFAULT_MOD_PROMPT,
     MAX_SKILL_BODY,
@@ -2158,7 +2162,7 @@ class Admin(MixinMeta):
 
         if conf.api_key and "deepseek" not in model and not has_endpoint:
             try:
-                client = openai.AsyncOpenAI(api_key=conf.api_key)
+                client = get_client(conf.api_key)
                 await client.models.retrieve(model)
             except openai.NotFoundError as e:
                 txt = _("Error: {}").format(e.response.json()["error"]["message"])
@@ -4171,7 +4175,7 @@ class Admin(MixinMeta):
 
         if conf.api_key and "deepseek" not in model and not has_endpoint:
             try:
-                client = openai.AsyncOpenAI(api_key=conf.api_key)
+                client = get_client(conf.api_key)
                 await client.models.retrieve(model)
             except openai.NotFoundError as e:
                 txt = _("Error: {}").format(e.response.json()["error"]["message"])

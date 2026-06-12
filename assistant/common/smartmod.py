@@ -17,6 +17,7 @@ from redbot.core.utils.chat_formatting import humanize_list
 
 from ..abc import MixinMeta
 from ..views import ModActionView
+from .calls import get_client
 from .chat import build_floating_context_block
 from .constants import (
     ARK_BAN_ACTION,
@@ -164,7 +165,7 @@ class SmartMod(MixinMeta):
         if not key or (not content.strip() and not image_urls):
             return None
         try:
-            client = openai.AsyncOpenAI(api_key=key)
+            client = get_client(key)
             resp = await client.moderations.create(
                 model=MODERATION_MODEL, input=self.build_moderation_input(content, image_urls)
             )

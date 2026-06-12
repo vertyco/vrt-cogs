@@ -17,6 +17,7 @@ from redbot.core.utils.chat_formatting import pagify
 from .abc import CompositeMetaClass
 from .commands import AssistantCommands
 from .common.api import API
+from .common.calls import close_clients
 from .common.chat import ChatHandler
 from .common.command_index import CommandIndexStore
 from .common.constants import (
@@ -73,7 +74,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "8.15.0"
+    __version__ = "8.15.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -119,6 +120,7 @@ class Assistant(
         if self.cmdindex_task and not self.cmdindex_task.done():
             self.cmdindex_task.cancel()
         self.bot.dispatch("assistant_cog_remove")
+        asyncio.create_task(close_clients())
 
     async def init_cog(self):
         await self.bot.wait_until_red_ready()
