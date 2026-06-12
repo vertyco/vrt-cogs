@@ -20,6 +20,33 @@ from .constants import MODELS, NO_DEVELOPER_ROLE, OLD_TOOL_SCHEMA, SUPPORTS_SEED
 
 log = logging.getLogger("red.vrt.assistant.calls")
 
+_clients: dict[tuple[str, str], openai.AsyncOpenAI] = {}
+
+
+def get_client(api_key: str, base_url: Optional[str] = None) -> openai.AsyncOpenAI:
+    """Return a cached AsyncOpenAI client for this (api_key, base_url) pair.
+
+    Constructing AsyncOpenAI builds a new httpx client and TLS context per call,
+    which shows up as per-message CPU and forfeits connection pooling.
+    """
+    key = (api_key, base_url or "")
+    client = _clients.get(key)
+    if client is None:
+        client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
+        _clients[key] = client
+    return client
+
+
+async def close_clients() -> None:
+    """Close all cached clients (called on cog unload)."""
+    clients = list(_clients.values())
+    _clients.clear()
+    for client in clients:
+        try:
+            await client.close()
+        except Exception:
+            pass
+
 
 def get_custom_endpoint_image_error() -> str:
     return (
@@ -102,7 +129,7 @@ async def request_chat_completion_raw(
     # OpenRouter provider routing preferences dict (injected as extra_body["provider"]).
     openrouter_provider: Optional[dict] = None,
 ) -> ChatCompletion:
-    client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
+    client = get_client(api_key, base_url)
 
     use_legacy_functions = bool(
         functions and model not in NO_DEVELOPER_ROLE and base_url is None and model in OLD_TOOL_SCHEMA
@@ -333,7 +360,7 @@ async def request_embedding_raw(
     model: str,
     base_url: Optional[str] = None,
 ) -> CreateEmbeddingResponse:
-    client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
+    client = get_client(api_key, base_url)
     add_breadcrumb(
         category="api",
         message="Calling request_embedding_raw",
@@ -366,7 +393,7 @@ async def request_image_raw(
     model: t.Literal["dall-e-3", "gpt-image-1.5"] = "dall-e-3",
     base_url: Optional[str] = None,
 ) -> Image:
-    client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
+    client = get_client(api_key, base_url)
 
     kwargs = {
         "model": model,
@@ -402,7 +429,7 @@ async def request_image_edit_raw(
     assert all(isinstance(image, tuple) and len(image) == 3 for image in images), (
         "All images must be tuples of (filename, file_data, mime_type)."
     )
-    client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
+    client = get_client(api_key, base_url)
 
     response: ImagesResponse = await client.images.edit(
         model="gpt-image-1.5",
