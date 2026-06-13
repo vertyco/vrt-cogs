@@ -50,6 +50,7 @@ from ..common.models import (
     DEFAULT_THINK_TAG_PREFIX,
     DEFAULT_THINK_TAG_SUFFIX,
     GuildSettings,
+    RolePrompt,
     get_category_state,
     render_tool_category,
 )
@@ -606,6 +607,11 @@ class Admin(MixinMeta):
             if not chan_vars:
                 continue
             warning_lines.append(_("• <#{}> - `{}`").format(channel_id, ", ".join(chan_vars)))
+        for role_id, role_prompt in conf.role_prompts.items():
+            role_vars = find_dyn_vars(role_prompt.text)
+            if not role_vars:
+                continue
+            warning_lines.append(_("• <@&{}> role prompt - `{}`").format(role_id, ", ".join(role_vars)))
         if warning_lines:
             embed.add_field(
                 name=_("⚠️ Cache Warning"),
@@ -831,6 +837,19 @@ class Admin(MixinMeta):
                         value=field,
                         inline=False,
                     )
+
+            if role_prompts := conf.role_prompts:
+                roles = {ctx.guild.get_role(k): v for k, v in role_prompts.items() if ctx.guild.get_role(k)}
+                lines = []
+                for role, rp in roles.items():
+                    mode = _("replace") if rp.replace else _("append")
+                    lines.append(f"{role.mention} ({mode})")
+                stack_state = _("stack") if conf.role_prompts_stack else _("highest-only")
+                embed.add_field(
+                    name=_("Role Prompts [{}]").format(stack_state),
+                    value="\n".join(lines) if lines else _("None"),
+                    inline=False,
+                )
 
         if ctx.author.id in self.bot.owner_ids:
             if self.db.brave_api_key:
@@ -4193,6 +4212,84 @@ class Admin(MixinMeta):
             await ctx.send(_("Role override for {} added!").format(role.mention))
 
         await self.save_conf()
+
+    @override.command(name="roleprompt", aliases=["roleprompts"])
+    async def role_prompt_set(
+        self,
+        ctx: commands.Context,
+        role: discord.Role,
+        *,
+        text: t.Optional[str] = None,
+    ):
+        """
+        Set a system prompt for a role (append-mode by default)
+
+        Attach a `.txt` file or type the prompt inline.
+        Run with no text and no attachment to remove the role's prompt.
+        Use `[p]assistant override rolepromptreplace <role>` to toggle replace mode.
+        """
+        conf = self.db.get_conf(ctx.guild)
+        attachments = get_attachments(ctx.message)
+        if attachments:
+            try:
+                text = (await attachments[0].read()).decode()
+            except Exception as e:
+                await ctx.send(
+                    _("Failed to read `{}`, bot owner can use `{}` for more information").format(
+                        attachments[0].filename, f"{ctx.clean_prefix}traceback"
+                    )
+                )
+                log.error("Failed to parse role prompt", exc_info=e)
+                self.bot._last_exception = traceback.format_exc()  # type: ignore
+                return
+        if text is None:
+            if role.id in conf.role_prompts:
+                del conf.role_prompts[role.id]
+                await self.save_conf()
+                return await ctx.send(_("Role prompt removed for {}!").format(role.mention))
+            return await ctx.send(_("No role prompt set for {}!").format(role.mention))
+        if role.id in conf.role_prompts:
+            conf.role_prompts[role.id].text = text
+            await ctx.send(_("Role prompt overwritten for {}!").format(role.mention))
+        else:
+            conf.role_prompts[role.id] = RolePrompt(text=text)
+            await ctx.send(_("Role prompt set for {}! (append mode)").format(role.mention))
+        await self.save_conf()
+
+    @override.command(name="rolepromptreplace")
+    async def role_prompt_replace(self, ctx: commands.Context, *, role: discord.Role):
+        """Toggle whether a role's prompt REPLACES the base prompt (vs appends)"""
+        conf = self.db.get_conf(ctx.guild)
+        if role.id not in conf.role_prompts:
+            return await ctx.send(_("No role prompt set for {}!").format(role.mention))
+        rp = conf.role_prompts[role.id]
+        rp.replace = not rp.replace
+        await self.save_conf()
+        mode = _("replace") if rp.replace else _("append")
+        await ctx.send(_("Role prompt for {} is now in **{}** mode.").format(role.mention, mode))
+
+    @override.command(name="rolepromptstack")
+    async def role_prompt_stack(self, ctx: commands.Context):
+        """Toggle whether matched role prompts stack, or only the highest role applies"""
+        conf = self.db.get_conf(ctx.guild)
+        conf.role_prompts_stack = not conf.role_prompts_stack
+        await self.save_conf()
+        state = _("STACK all matched roles") if conf.role_prompts_stack else _("HIGHEST role only")
+        await ctx.send(_("Role prompts now use: **{}**.").format(state))
+
+    @override.command(name="rolepromptshow")
+    @commands.bot_has_permissions(attach_files=True)
+    async def role_prompt_show(self, ctx: commands.Context, *, role: discord.Role):
+        """Show a role's prompt and its mode"""
+        conf = self.db.get_conf(ctx.guild)
+        if role.id not in conf.role_prompts:
+            return await ctx.send(_("No role prompt set for {}!").format(role.mention))
+        rp = conf.role_prompts[role.id]
+        mode = _("replace") if rp.replace else _("append")
+        await ctx.send(
+            _("Mode: **{}**").format(mode),
+            file=text_to_file(rp.text, f"{role.name}_prompt.txt"),
+        )
 
     @override.command(name="maxtokens")
     async def max_token_override(self, ctx: commands.Context, max_tokens: int, *, role: discord.Role):

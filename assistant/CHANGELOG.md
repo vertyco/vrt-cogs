@@ -1,5 +1,10 @@
 # Assistant Changelog
 
+## v8.16.0
+
+- **New**: Role Prompts. Bind a system prompt to a Discord role via `[p]assistant override roleprompt`. Per-role append or replace mode (`rolepromptreplace`), and a global stack vs highest-role-only toggle (`rolepromptstack`). Role prompts support variable placeholders and are included in the cache-safe dynamic-variable warning. View them with `rolepromptshow`.
+- **Fix**: Bound the regex-guard multiprocessing pool (`processes=2`, `maxtasksperchild=100`) so worker RSS no longer ratchets on large regex inputs, and force-terminate it on cog unload so a wedged regex can't block reload.
+
 ## v8.15.0
 
 - **New**: `[p]convostats` now renders a colored-square context-window map (🟩 prompts, 🟦 function schemas, 🟨 skills index, 🟥 conversation, ⬛ free) like a `/context` view, with a token legend. Native emoji squares so it renders on desktop and mobile without ANSI.

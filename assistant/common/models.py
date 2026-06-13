@@ -234,6 +234,11 @@ class SmartModSettings(AssistantBaseModel):
         return merged
 
 
+class RolePrompt(BaseModel):
+    text: str = ""
+    replace: bool = False  # True = replace resolved base; False = append to it
+
+
 class GuildSettings(AssistantBaseModel):
     system_prompt: t.Optional[str] = DEFAULT_SYSTEM_PROMPT
     prompt: str = ""
@@ -296,6 +301,8 @@ class GuildSettings(AssistantBaseModel):
     role_overrides: t.Dict[int, str] = {}  # Role overrides for model selection
     max_time_role_override: t.Dict[int, int] = {}
     reasoning_effort_role_override: t.Dict[int, str] = {}  # Role overrides for reasoning effort
+    role_prompts: t.Dict[int, RolePrompt] = {}  # Per-role system prompt layers
+    role_prompts_stack: bool = True  # Stack all matched role prompts vs highest-only
 
     vision_detail: str = "auto"  # high, low, auto
 
@@ -377,6 +384,32 @@ class GuildSettings(AssistantBaseModel):
             if role.id in self.role_overrides:
                 return self.role_overrides[role.id]
         return self.model
+
+    def get_role_prompt_layers(
+        self, member: t.Optional[discord.Member] = None
+    ) -> t.Tuple[t.Optional[str], t.List[str]]:
+        """Resolve role prompts for a member.
+
+        Returns (replacement_base, append_texts):
+          - replacement_base: text that replaces the resolved base, or None to keep it
+          - append_texts: prompt texts appended after the (possibly replaced) base
+        Texts are raw; the caller runs format_template on them.
+        """
+        if not member or not self.role_prompts:
+            return None, []
+        matched = [
+            self.role_prompts[role.id]
+            for role in sorted(member.roles, reverse=True)
+            if role.id in self.role_prompts and self.role_prompts[role.id].text.strip()
+        ]
+        if not matched:
+            return None, []
+        if not self.role_prompts_stack:
+            top = matched[0]
+            return (top.text, []) if top.replace else (None, [top.text])
+        replacement = next((rp.text for rp in matched if rp.replace), None)
+        appends = [rp.text for rp in reversed(matched) if not rp.replace]
+        return replacement, appends
 
     def get_user_max_tokens(self, member: t.Optional[discord.Member] = None) -> int:
         if not member or not self.max_token_role_override:
