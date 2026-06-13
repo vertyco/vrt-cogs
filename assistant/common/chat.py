@@ -1680,6 +1680,15 @@ class ChatHandler(MixinMeta):
                 params,
             )
 
+        replacement, append_texts = conf.get_role_prompt_layers(author)
+        if replacement is not None:
+            system_prompt = format_template(replacement, params)
+        for append_text in append_texts:
+            formatted = format_template(append_text, params)
+            if not formatted.strip():
+                continue
+            system_prompt = f"{system_prompt}\n\n{formatted}" if system_prompt.strip() else formatted
+
         skill_index = await self.build_skill_index_for_member(conf, author)
         if skill_index:
             system_prompt = f"{system_prompt}\n\n{skill_index}"

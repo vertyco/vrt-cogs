@@ -74,7 +74,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "8.15.1"
+    __version__ = "8.16.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -92,7 +92,10 @@ class Assistant(
         self.config = Config.get_conf(self, 117117117, force_registration=True)
         self.config.register_global(db={})
         self.db: DB = DB()
-        self.mp_pool = Pool()
+        # Regex-guard pool: short re.findall/re.sub tasks only, never CPU-bound batch work.
+        # maxtasksperchild forces worker respawn so a single large-input regex can't
+        # permanently inflate a worker's RSS (CPython doesn't return big frees to the OS).
+        self.mp_pool = Pool(processes=2, maxtasksperchild=100)
         self.embedding_store = EmbeddingStore(cog_data_path(self))
         self.command_index = CommandIndexStore(self.embedding_store)
         self.cmdindex_task: Optional[asyncio.Task] = None
@@ -116,7 +119,8 @@ class Assistant(
         self.cancel_all_message_queues()
         self.save_loop.cancel()
         self.scheduler.shutdown(wait=False)
-        self.mp_pool.close()
+        self.mp_pool.terminate()
+        await asyncio.to_thread(self.mp_pool.join)
         if self.cmdindex_task and not self.cmdindex_task.done():
             self.cmdindex_task.cancel()
         self.bot.dispatch("assistant_cog_remove")
