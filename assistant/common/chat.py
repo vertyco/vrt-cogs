@@ -867,6 +867,7 @@ class ChatHandler(MixinMeta):
         finally:
             conversation.cleanup(conf, author)
             conversation.refresh()
+            asyncio.create_task(self.save_conversation(f"{mem_id}-{chan_id}-{guild.id}"))
 
     async def _get_chat_response(
         self,
