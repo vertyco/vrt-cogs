@@ -2387,7 +2387,9 @@ class Admin(MixinMeta):
         """
         if not yes_or_no:
             return await ctx.send(_("Not wiping conversations"))
-        for key, convo in self.db.conversations.items():
+        # Snapshot the items: save_conversation awaits, so a concurrent chat turn could
+        # insert a key mid-loop and trigger "dict changed size during iteration".
+        for key, convo in list(self.db.conversations.items()):
             if ctx.guild.id == int(key.split("-")[2]):
                 convo.messages.clear()
                 await self.save_conversation(key)
@@ -4661,6 +4663,8 @@ class Admin(MixinMeta):
         """Toggle persistent conversations"""
         if self.db.persistent_conversations:
             self.db.persistent_conversations = False
+            # Purge the on-disk files now. In-memory conversations are left intact (this
+            # session keeps working); they just won't survive a restart anymore.
             await asyncio.to_thread(self.conversation_store.clear)
             await ctx.send(_("Persistent conversations have been **Disabled**"))
         else:
