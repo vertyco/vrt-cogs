@@ -68,7 +68,7 @@ GET_USER_INFO = {
 }
 FETCH_CHANNEL_HISTORY = {
     "name": "fetch_channel_history",
-    "description": "Fetch recent messages from a Discord channel by limit or time delta.",
+    "description": "Fetch recent messages from a Discord channel by limit or time delta. Can also surface image attachments (screenshots) for you to view and inline the contents of attached text files.",
     "parameters": {
         "type": "object",
         "properties": {
@@ -83,6 +83,14 @@ FETCH_CHANNEL_HISTORY = {
             "delta": {
                 "type": "string",
                 "description": "The time delta to filter messages by, in the format 'XdXhXmXs' (e.g., '1d2h30m' for 1 day, 2 hours, and 30 minutes). If omitted, no time-based cutoff is applied.",
+            },
+            "include_images": {
+                "type": "boolean",
+                "description": "Whether to include image attachments (screenshots) so you can visually see them. Defaults to true. Set false if you only need text and want to save tokens.",
+            },
+            "include_text_attachments": {
+                "type": "boolean",
+                "description": "Whether to read and inline the contents of attached text files (json, txt, csv, yaml, log, etc.) into the result. Defaults to true.",
             },
         },
     },
