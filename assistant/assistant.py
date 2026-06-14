@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 from datetime import datetime, timezone
 from multiprocessing.pool import Pool
@@ -39,9 +40,16 @@ from .common.constants import (
     SEARCH_INTERNET,
     THINK_AND_PLAN,
 )
+from .common.conversation_store import ConversationStore
 from .common.embedding_store import EmbeddingStore
 from .common.functions import AssistantFunctions
-from .common.models import DB, EmbeddingEntryExists, NoAPIKey, normalize_tool_category
+from .common.models import (
+    DB,
+    Conversation,
+    EmbeddingEntryExists,
+    NoAPIKey,
+    normalize_tool_category,
+)
 from .common.smartmod import SmartMod
 from .common.utils import clean_name, json_schema_invalid, normalize_skill_name
 from .listener import AssistantListener
@@ -97,6 +105,7 @@ class Assistant(
         # permanently inflate a worker's RSS (CPython doesn't return big frees to the OS).
         self.mp_pool = Pool(processes=2, maxtasksperchild=100)
         self.embedding_store = EmbeddingStore(cog_data_path(self))
+        self.conversation_store = ConversationStore(cog_data_path(self))
         self.command_index = CommandIndexStore(self.embedding_store)
         self.cmdindex_task: Optional[asyncio.Task] = None
         self.scheduler = AsyncIOScheduler()
@@ -131,13 +140,31 @@ class Assistant(
         await self.bot.wait_until_red_ready()
         start = perf_counter()
         data = await self.config.db()
-        try:
-            self.db = await asyncio.to_thread(DB.model_validate, data)
-        except ValidationError:
-            # Try clearing conversations
-            if "conversations" in data:
-                del data["conversations"]
-            self.db = await asyncio.to_thread(DB.model_validate, data)
+
+        # One-time migration: conversations no longer live in the db blob. Back up any
+        # legacy in-blob conversations to a file and strip them so save_conf stays tiny.
+        legacy = data.pop("conversations", None)
+        if legacy:
+            backup = cog_data_path(self) / f"conversations_backup_{int(datetime.now().timestamp())}.json"
+            await asyncio.to_thread(backup.write_text, json.dumps(legacy), "utf-8")
+            await self.config.db.set(data)
+            log.warning(
+                "Migrated %s legacy in-blob conversations to %s and dropped them from the db blob",
+                len(legacy),
+                backup.name,
+            )
+
+        self.db = await asyncio.to_thread(DB.model_validate, data)
+
+        # Load per-file conversations into the in-memory cache (persistent setups only).
+        if self.db.persistent_conversations:
+            raw = await asyncio.to_thread(self.conversation_store.load_all)
+            for key, cdata in raw.items():
+                try:
+                    self.db.conversations[key] = Conversation.model_validate(cdata)
+                except ValidationError:
+                    log.error("Dropping invalid stored conversation %s", key)
+            log.info("Loaded %s conversations from disk", len(self.db.conversations))
 
         log.info(f"Config loaded in {round((perf_counter() - start) * 1000, 2)}ms")
         await self.embedding_store.initialize()
