@@ -1,5 +1,9 @@
 # Assistant Changelog
 
+## v8.16.1
+
+- **Fix**: `[p]convostats` rendered misaligned rows: the `Expired` field showed the model, `Model` showed the retention cap, and `Model`/`Context` collapsed onto one line. Realigned the `.format()` args and added the missing newline so `Messages`, `Expired`, and `Model` each show their own value.
+
 ## v8.16.0
 
 - **New**: Role Prompts. Bind a system prompt to a Discord role via `[p]assistant override roleprompt`. Per-role append or replace mode (`rolepromptreplace`), and a global stack vs highest-role-only toggle (`rolepromptstack`). Role prompts support variable placeholders and are included in the cache-safe dynamic-variable warning. View them with `rolepromptshow`.
