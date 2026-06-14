@@ -1,5 +1,9 @@
 # Assistant Changelog
 
+## v8.17.2
+
+- **Fix**: All conversation deletion and wipe paths now sync to the on-disk file store. `red_delete_data_for_user` deletes per-key files; `wipe_conversations` re-saves each cleared convo; `wipe_global_conversations`, `wipe_cog`, and disabling persistent conversations all call `conversation_store.clear()`.
+
 ## v8.17.1
 
 - **Fix**: Tool-result debug logging now prints `images: N image(s)` for the `images` key instead of dumping the full list of attachment URLs.

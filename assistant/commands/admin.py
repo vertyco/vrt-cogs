@@ -2390,8 +2390,8 @@ class Admin(MixinMeta):
         for key, convo in self.db.conversations.items():
             if ctx.guild.id == int(key.split("-")[2]):
                 convo.messages.clear()
+                await self.save_conversation(key)
         await ctx.send(_("Conversations have been wiped in this server!"))
-        await self.save_conf()
 
     @embed.command(name="topn")
     async def set_topn(self, ctx: commands.Context, top_n: int):
@@ -4573,6 +4573,7 @@ class Admin(MixinMeta):
         self.db.configs.clear()
         self.db.conversations.clear()
         self.db.persistent_conversations = False
+        await asyncio.to_thread(self.conversation_store.clear)
         await self.save_conf()
         await ctx.send(_("Cog has been wiped!"))
 
@@ -4651,8 +4652,8 @@ class Admin(MixinMeta):
             return await ctx.send(_("Not wiping conversations"))
         for convo in self.db.conversations.values():
             convo.messages.clear()
+        await asyncio.to_thread(self.conversation_store.clear)
         await ctx.send(_("Conversations have been wiped for all servers!"))
-        await self.save_conf()
 
     @features.command(name="persist")
     @commands.is_owner()
@@ -4660,6 +4661,7 @@ class Admin(MixinMeta):
         """Toggle persistent conversations"""
         if self.db.persistent_conversations:
             self.db.persistent_conversations = False
+            await asyncio.to_thread(self.conversation_store.clear)
             await ctx.send(_("Persistent conversations have been **Disabled**"))
         else:
             self.db.persistent_conversations = True
