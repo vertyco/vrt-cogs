@@ -82,17 +82,17 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "8.17.1"
+    __version__ = "8.17.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
         return f"{helpcmd}\nVersion: {self.__version__}\nAuthor: {self.__author__}"
 
     async def red_delete_data_for_user(self, *, requester, user_id: int):
-        """No data to delete"""
         for key in self.db.conversations.copy():
             if key.split("-")[0] == str(user_id):
                 del self.db.conversations[key]
+                await asyncio.to_thread(self.conversation_store.delete, key)
 
     def __init__(self, bot: Red, *args, **kwargs):
         super().__init__(*args, **kwargs)
