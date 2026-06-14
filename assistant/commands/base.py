@@ -518,6 +518,7 @@ If a file has no extension it will still try to read it only if it can be decode
             txt = _("There are no messages in this conversation yet!")
             return await ctx.send(txt)
         last = conversation.messages.pop()
+        await self.save_conversation(f"{mem_id}-{ctx.channel.id}-{ctx.guild.id}")
         dump = json.dumps(last, indent=2)
         file = text_to_file(dump, "popped.json")
         await ctx.send(_("Removed the last message from this conversation"), file=file)
