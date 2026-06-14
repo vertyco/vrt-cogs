@@ -1008,3 +1008,16 @@ def find_similar_skill(description: str, skills: t.Dict[str, t.Any], threshold: 
         if fuzz.token_set_ratio(description.lower(), skill.description.lower()) >= threshold:
             return name
     return None
+
+
+def build_tool_image_message(image_urls: list[str], detail: str) -> dict | None:
+    """Build a user vision message carrying image attachments returned by a tool.
+
+    Returns None when there are no images so callers can skip injection.
+    """
+    if not image_urls:
+        return None
+    content: list[dict] = [{"type": "text", "text": "Image attachments from the previous tool result:"}]
+    for url in image_urls:
+        content.append({"type": "image_url", "image_url": {"url": url, "detail": detail}})
+    return {"role": "user", "content": content}

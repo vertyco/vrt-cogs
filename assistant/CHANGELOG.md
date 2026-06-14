@@ -1,5 +1,9 @@
 # Assistant Changelog
 
+## v8.17.0
+
+- **New**: Tool results that return an `images` list are now injected as a user vision message after the tool batch, so functions (e.g. `fetch_channel_history`) can show the model screenshots. Injected into the in-flight payload only, not persisted to conversation history (Discord CDN URLs expire). Added `build_tool_image_message` helper.
+
 ## v8.16.1
 
 - **Fix**: `[p]convostats` rendered misaligned rows: the `Expired` field showed the model, `Model` showed the retention cap, and `Model`/`Context` collapsed onto one line. Realigned the `.format()` args and added the missing newline so `Messages`, `Expired`, and `Model` each show their own value.
