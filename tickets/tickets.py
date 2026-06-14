@@ -41,7 +41,7 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "3.3.1"
+    __version__ = "3.3.2"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -104,6 +104,60 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
             await self.config.db.set(dump)
         finally:
             self.saving = False
+
+    async def rpc_close_ticket(
+        self,
+        guild_id: int,
+        channel_id: int,
+        reason: str | None = None,
+        closedby: int | None = None,
+    ) -> dict:
+        """Close a ticket by channel id over RPC (ops automation only).
+
+        Reached via VrtUtils' VRTUTILS__RPC_MASTER bridge from discord-ops
+        (mesh-handler closes stale no-coords tickets here). Resolves the owner
+        from config and runs the exact same close path as the `[p]close`
+        command: transcript, log embed, channel delete, config cleanup. The
+        bridge is localhost-bound, so this is not reachable by guild users.
+
+        Returns {"ok": True, "closed": "<cid>", "owner": "<uid>"} on success,
+        else {"ok": False, "error": "..."} -- never raises into the bridge.
+        """
+        guild = self.bot.get_guild(int(guild_id))
+        if guild is None:
+            return {"ok": False, "error": f"guild not loaded: {guild_id}"}
+        channel = guild.get_channel_or_thread(int(channel_id))
+        if channel is None:
+            return {"ok": False, "error": f"channel not found: {channel_id}"}
+        conf = self.db.get_conf(guild)
+        owner_id = get_ticket_owner(conf.opened, int(channel_id))
+        if not owner_id:
+            return {"ok": False, "error": "not a tracked ticket channel (no owner in config)"}
+        if int(channel_id) in self.closing_channels:
+            return {"ok": False, "error": "ticket already closing"}
+        owner = guild.get_member(int(owner_id))
+        if owner is None:
+            owner = await self.bot.fetch_user(int(owner_id))
+        closer = int(closedby) if closedby else self.bot.user.id
+
+        self.closing_channels.add(int(channel_id))
+        try:
+            await close_ticket(
+                bot=self.bot,
+                member=owner,
+                guild=guild,
+                channel=channel,
+                conf=conf,
+                reason=reason,
+                closedby=closer,
+                cog=self,
+            )
+        except Exception as e:
+            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+        finally:
+            self.closing_channels.discard(int(channel_id))
+        await self.save()
+        return {"ok": True, "closed": str(channel_id), "owner": str(owner_id)}
 
     async def cog_load(self) -> None:
         asyncio.create_task(self._startup())
