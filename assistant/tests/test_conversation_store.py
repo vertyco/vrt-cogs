@@ -1,3 +1,5 @@
+import threading
+
 from assistant.common.conversation_store import ConversationStore
 
 
@@ -62,3 +64,25 @@ def test_corrupt_file_is_skipped_not_fatal(tmp_path):
     loaded = store.load_all()
 
     assert set(loaded) == {"1-2-3"}  # good file loads, corrupt one skipped
+
+
+def test_concurrent_saves_same_key_do_not_raise(tmp_path):
+    store = ConversationStore(tmp_path)
+    errors = []
+
+    def writer(n):
+        try:
+            for _i in range(20):
+                store.save("1-2-3", {"messages": [{"role": "user", "content": str(n)}]})
+        except Exception as e:  # noqa: BLE001
+            errors.append(e)
+
+    threads = [threading.Thread(target=writer, args=(n,)) for n in range(4)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert errors == []
+    loaded = store.load_all()
+    assert "1-2-3" in loaded  # a valid final file survives, no orphans break load
