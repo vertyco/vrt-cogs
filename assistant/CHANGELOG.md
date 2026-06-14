@@ -1,5 +1,9 @@
 # Assistant Changelog
 
+## v8.18.0
+
+- **New**: Conversations now persist as one JSON file per conversation on disk (`<cog_data_path>/conversations/<key>.json`) instead of inside the single Config `db` blob. This eliminates the multi-second event-loop freeze that occurred on every save as the conversation store grew. Legacy in-blob conversations are backed up to `conversations_backup_<ts>.json` and dropped from the blob on first load after updating.
+
 ## v8.17.1
 
 - **Fix**: Tool-result debug logging now prints `images: N image(s)` for the `images` key instead of dumping the full list of attachment URLs.
