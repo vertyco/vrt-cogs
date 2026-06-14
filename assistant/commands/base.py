@@ -311,15 +311,15 @@ If a file has no extension it will still try to read it only if it can be decode
             + _(
                 "`Messages:    `{}/{}\n"
                 "`Expired:     `{}\n"
-                "`Model:       `{}"
+                "`Model:       `{}\n"
                 "`Context:     `{}/{} ({:.1f}%)\n"
                 "`Conversation:`{}\n"
                 "`Overhead:    `{}\n"
             ).format(
                 messages,
+                retention_display,
                 conversation.is_expired(conf, ctx.author),
                 model,
-                retention_display,
                 humanize_number(total_tokens),
                 humanize_number(max_tokens),
                 fill_pct,
