@@ -107,6 +107,7 @@ class Assistant(
         self.context_registry: Dict[str, Dict[str, dict]] = {}
 
         self.saving = False
+        self.save_pending = False
         self.first_run = True
 
         # Most recent prompt-cache stats for `[p]cacheinfo`.
@@ -205,22 +206,32 @@ class Assistant(
 
     async def save_conf(self):
         if self.saving:
+            # A save is already running. Coalesce: flag a trailing save so changes
+            # made during this one get persisted, instead of silently dropping them
+            # (dropped saves would otherwise wait for the 30-min save_loop, which is
+            # cancelled entirely when conversations aren't persistent).
+            self.save_pending = True
             return
         try:
             self.saving = True
-            start = perf_counter()
-            if not self.db.persistent_conversations:
-                self.db.conversations.clear()
-            dump = await asyncio.to_thread(self.db.model_dump)
-            await self.config.db.set(dump)
-            txt = f"Config saved in {round((perf_counter() - start) * 1000, 2)}ms"
-            if self.first_run:
-                log.info(txt)
-                self.first_run = False
+            while True:
+                self.save_pending = False
+                start = perf_counter()
+                if not self.db.persistent_conversations:
+                    self.db.conversations.clear()
+                dump = await asyncio.to_thread(self.db.model_dump)
+                await self.config.db.set(dump)
+                txt = f"Config saved in {round((perf_counter() - start) * 1000, 2)}ms"
+                if self.first_run:
+                    log.info(txt)
+                    self.first_run = False
+                if not self.save_pending:
+                    break
         except Exception as e:
             log.error("Failed to save config", exc_info=e)
         finally:
             self.saving = False
+            self.save_pending = False
         if not self.db.persistent_conversations and self.save_loop.is_running():  # type: ignore
             self.save_loop.cancel()  # type: ignore
 
