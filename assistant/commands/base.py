@@ -444,7 +444,7 @@ If a file has no extension it will still try to read it only if it can be decode
             )
 
         if compacted:
-            await self.save_conf()
+            await self.save_conversation(f"{mem_id}-{ctx.channel.id}-{ctx.guild.id}")
             await ctx.send(
                 _("Conversation compacted! ({} compactions total for this conversation)").format(
                     conversation.compaction_count
@@ -474,6 +474,7 @@ If a file has no extension it will still try to read it only if it can be decode
         conversation = self.db.get_conversation(mem_id, ctx.channel.id, ctx.guild.id)
         self.clear_message_queue(ctx.author.id, ctx.channel.id, ctx.guild.id, conf.collab_convos)
         conversation.reset()
+        await self.save_conversation(f"{mem_id}-{ctx.channel.id}-{ctx.guild.id}")
         await ctx.send(_("Your conversation in this channel has been reset!"))
 
     @commands.command(name="unchat")
@@ -797,7 +798,7 @@ If a file has no extension it will still try to read it only if it can be decode
 
         self.db.conversations[key] = Conversation.model_validate(conversation.model_dump())
 
-        await self.save_conf()
+        await self.save_conversation(key)
 
     @commands.command(name="convoprompt")
     @commands.guild_only()
@@ -849,6 +850,7 @@ If a file has no extension it will still try to read it only if it can be decode
 
         conversation = self.db.get_conversation(mem_id, ctx.channel.id, ctx.guild.id)
         conversation.system_prompt_override = prompt
+        await self.save_conversation(f"{mem_id}-{ctx.channel.id}-{ctx.guild.id}")
         if prompt:
             txt = _("System prompt has been set for this conversation!")
         else:
@@ -932,7 +934,7 @@ If a file has no extension it will still try to read it only if it can be decode
         conversation.messages = messages
 
         await ctx.send(_("Conversation has been imported successfully!"))
-        await self.save_conf()
+        await self.save_conversation(f"{mem_id}-{ctx.channel.id}-{ctx.guild.id}")
 
     @commands.command(name="query")
     @commands.bot_has_permissions(embed_links=True)
