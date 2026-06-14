@@ -64,6 +64,7 @@ from .utils import (
     DYNAMIC_VARIABLE_NAMES,
     STABLE_VARIABLE_GROUPS,
     VARIABLE_NARRATIVES,
+    build_tool_image_message,
     clean_name,
     clean_response,
     clean_responses,
@@ -1185,6 +1186,7 @@ class ChatHandler(MixinMeta):
             conversation.messages.append(dump)
             messages.append(dump)
 
+            batch_images: list[str] = []
             for function_call in response_functions:
                 if hasattr(function_call, "name") and hasattr(function_call, "arguments"):
                     # This is a FunctionCall
@@ -1327,6 +1329,13 @@ class ChatHandler(MixinMeta):
                         content = func_result.get("content")
                     return_null = func_result.get("return_null", False)
 
+                    # Images returned by a tool are injected as a trailing user
+                    # vision message after the whole tool batch (see below), so
+                    # parallel tool-call ordering stays valid.
+                    tool_images = func_result.get("images")
+                    if isinstance(tool_images, list):
+                        batch_images.extend(i for i in tool_images if isinstance(i, str))
+
                     # Collect deferred files for attachment to the final reply
                     if "defer_files" in func_result and deferred_files is not None:
                         for f in func_result["defer_files"]:
@@ -1410,6 +1419,14 @@ class ChatHandler(MixinMeta):
                             pass
                         deferred_files.clear()
                     return None
+
+            # Inject tool-returned images as a single user vision message so the
+            # next model turn can actually see them. In-flight only: Discord CDN
+            # URLs expire, so we don't persist these to conversation history.
+            if batch_images and supports_vision:
+                image_message = build_tool_image_message(batch_images[:10], conf.vision_detail)
+                if image_message:
+                    messages.append(image_message)
 
         # Handle the rest of the reply
         if calls > 1:
