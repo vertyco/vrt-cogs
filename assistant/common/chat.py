@@ -1387,9 +1387,12 @@ class ChatHandler(MixinMeta):
                     logging_content.write(str(func_result)[:20] + "... (bytes content)")
                 elif isinstance(func_result, dict):
                     for k, v in func_result.items():
-                        txt = str(v)
-                        if txt.startswith("data:image/"):
-                            txt = txt[:20] + "... (image content)"
+                        if k == "images" and isinstance(v, list):
+                            txt = f"{len(v)} image(s)"
+                        else:
+                            txt = str(v)
+                            if txt.startswith("data:image/"):
+                                txt = txt[:20] + "... (image content)"
 
                         logging_content.write(f"{k}: {txt[:1000]}\n")
 

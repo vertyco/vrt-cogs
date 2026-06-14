@@ -1,5 +1,9 @@
 # Assistant Changelog
 
+## v8.17.1
+
+- **Fix**: Tool-result debug logging now prints `images: N image(s)` for the `images` key instead of dumping the full list of attachment URLs.
+
 ## v8.17.0
 
 - **New**: Tool results that return an `images` list are now injected as a user vision message after the tool batch, so functions (e.g. `fetch_channel_history`) can show the model screenshots. Injected into the in-flight payload only, not persisted to conversation history (Discord CDN URLs expire). Added `build_tool_image_message` helper.
