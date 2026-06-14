@@ -32,6 +32,40 @@ from .utils import (
 
 log = logging.getLogger("red.vrt.assistantutils")
 
+IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".webp")
+TEXT_EXTENSIONS = (
+    ".txt",
+    ".json",
+    ".csv",
+    ".yml",
+    ".yaml",
+    ".xml",
+    ".md",
+    ".ini",
+    ".toml",
+    ".cfg",
+    ".conf",
+    ".log",
+)
+
+
+def classify_attachment(filename: str) -> str | None:
+    """Return 'image', 'text', or None based on the file extension."""
+    lowered = filename.lower()
+    if lowered.endswith(IMAGE_EXTENSIONS):
+        return "image"
+    if lowered.endswith(TEXT_EXTENSIONS):
+        return "text"
+    return None
+
+
+def decode_text_attachment(data: bytes, max_chars: int = 4000) -> str:
+    """Decode bytes as UTF-8 (replacing bad bytes) and cap the length."""
+    text = data.decode("utf-8", errors="replace").strip()
+    if len(text) > max_chars:
+        text = text[:max_chars] + "\n... [truncated]"
+    return text
+
 
 class Functions(MixinMeta):
     def get_channel_parent(self, channel: discord.abc.GuildChannel | discord.Thread):
@@ -736,6 +770,8 @@ class Functions(MixinMeta):
         channel_name_or_id: str | int = None,
         limit: int = None,
         delta: str | None = None,
+        include_images: bool = True,
+        include_text_attachments: bool = True,
         *args,
         **kwargs,
     ):
@@ -777,6 +813,10 @@ class Functions(MixinMeta):
         # Start fetching the content
         buffer = StringIO()
         added = 0
+        collected_images: list[str] = []
+        max_images = 10
+        max_text_files = 10
+        text_files_read = 0
         async for message in channel.history(limit=limit):
             if timedelta:
                 if message.created_at < (discord.utils.utcnow() - timedelta):
@@ -807,6 +847,33 @@ class Functions(MixinMeta):
                         embed_text = " | ".join(embed_parts)
                         buffer.write(f"{timestamp} - {message.author.name}(ID: {message.id}): [Embed] {embed_text}\n")
                         added += 1
+            if message.attachments and (include_images or include_text_attachments):
+                image_names: list[str] = []
+                for attachment in message.attachments:
+                    kind = classify_attachment(attachment.filename)
+                    if kind == "image" and include_images and len(collected_images) < max_images:
+                        collected_images.append(attachment.url)
+                        image_names.append(attachment.filename)
+                    elif kind == "text" and include_text_attachments and text_files_read < max_text_files:
+                        if attachment.size and attachment.size > 1_000_000:
+                            continue
+                        try:
+                            file_bytes = await attachment.read()
+                        except discord.HTTPException:
+                            continue
+                        text_files_read += 1
+                        text = decode_text_attachment(file_bytes)
+                        buffer.write(
+                            f"{timestamp} - {message.author.name}(ID: {message.id}): "
+                            f"[Attachment: {attachment.filename}]\n{text}\n"
+                        )
+                        added += 1
+                if image_names:
+                    buffer.write(
+                        f"{timestamp} - {message.author.name}(ID: {message.id}): "
+                        f"[Image attachments: {', '.join(image_names)}]\n"
+                    )
+                    added += 1
 
         final = buffer.getvalue().strip()
         if not final:
@@ -819,6 +886,8 @@ class Functions(MixinMeta):
             f"# Message History (Current time: {discord.utils.utcnow()})\n"
             f"{final}"
         )
+        if collected_images:
+            return {"result_text": final, "images": collected_images}
         return final
 
     async def convert_datetime_timestamp(
