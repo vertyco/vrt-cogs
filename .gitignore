@@ -200,6 +200,7 @@ templates/
 .github/skills/
 references/
 makelocales.py
+.tmp/
 
 # WIP cogs
 arkadia/
@@ -211,3 +212,4 @@ inkblade/
 memories/
 docs/
 graphify-out/
+settings.local.json
