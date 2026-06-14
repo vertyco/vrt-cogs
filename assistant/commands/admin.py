@@ -4669,6 +4669,10 @@ class Admin(MixinMeta):
             await ctx.send(_("Persistent conversations have been **Disabled**"))
         else:
             self.db.persistent_conversations = True
+            # Flush current in-memory conversations to disk so this session persists too,
+            # not only conversations that get mutated after enabling.
+            for key in list(self.db.conversations):
+                await self.save_conversation(key)
             await ctx.send(_("Persistent conversations have been **Enabled**"))
         await self.save_conf()
 
