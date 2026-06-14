@@ -246,7 +246,7 @@ class Assistant(
                 start = perf_counter()
                 if not self.db.persistent_conversations:
                     self.db.conversations.clear()
-                dump = await asyncio.to_thread(self.db.model_dump)
+                dump = await asyncio.to_thread(self.db.model_dump, exclude={"conversations"})
                 await self.config.db.set(dump)
                 txt = f"Config saved in {round((perf_counter() - start) * 1000, 2)}ms"
                 if self.first_run:
@@ -261,6 +261,17 @@ class Assistant(
             self.save_pending = False
         if not self.db.persistent_conversations and self.save_loop.is_running():  # type: ignore
             self.save_loop.cancel()  # type: ignore
+
+    async def save_conversation(self, key: str):
+        """Persist a single conversation to its own file. No-op when not persistent."""
+        if not self.db.persistent_conversations:
+            return
+        convo = self.db.conversations.get(key)
+        if convo is None:
+            await asyncio.to_thread(self.conversation_store.delete, key)
+            return
+        dump = await asyncio.to_thread(convo.model_dump, mode="json")
+        await asyncio.to_thread(self.conversation_store.save, key, dump)
 
     async def _cleanup_db(self):
         cleaned = False
