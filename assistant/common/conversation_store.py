@@ -21,14 +21,14 @@ class ConversationStore:
         self.dir.mkdir(parents=True, exist_ok=True)
         # Per-key locks so concurrent saves for the same key are serialized.
         # A unique temp name per call keeps different keys fully independent.
-        self._locks: dict[str, threading.Lock] = {}
-        self._locks_lock = threading.Lock()
+        self.locks: dict[str, threading.Lock] = {}
+        self.locks_guard = threading.Lock()
 
-    def _lock_for(self, key: str) -> threading.Lock:
-        with self._locks_lock:
-            if key not in self._locks:
-                self._locks[key] = threading.Lock()
-            return self._locks[key]
+    def lock_for(self, key: str) -> threading.Lock:
+        with self.locks_guard:
+            if key not in self.locks:
+                self.locks[key] = threading.Lock()
+            return self.locks[key]
 
     def path_for(self, key: str) -> Path:
         return self.dir / f"{key}.json"
@@ -42,7 +42,7 @@ class ConversationStore:
         path = self.path_for(key)
         tmp = self.dir / f"{key}.{uuid4().hex}.json.tmp"
         tmp.write_text(json.dumps(data), encoding="utf-8")
-        with self._lock_for(key):
+        with self.lock_for(key):
             os.replace(tmp, path)
 
     def delete(self, key: str) -> None:
