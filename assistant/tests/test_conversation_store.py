@@ -72,7 +72,7 @@ def test_concurrent_saves_same_key_do_not_raise(tmp_path):
 
     def writer(n):
         try:
-            for _i in range(20):
+            for _ in range(20):
                 store.save("1-2-3", {"messages": [{"role": "user", "content": str(n)}]})
         except Exception as e:  # noqa: BLE001
             errors.append(e)
