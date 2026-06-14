@@ -347,6 +347,10 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    async def save_conversation(self, key: str):
+        raise NotImplementedError
+
+    @abstractmethod
     def get_message_queue_key(
         self,
         author_id: int,
