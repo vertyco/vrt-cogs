@@ -1,6 +1,7 @@
 import threading
 
 from assistant.common.conversation_store import ConversationStore
+from assistant.common.models import Conversation
 
 
 def test_save_and_load_roundtrip(tmp_path):
@@ -86,3 +87,15 @@ def test_concurrent_saves_same_key_do_not_raise(tmp_path):
     assert errors == []
     loaded = store.load_all()
     assert "1-2-3" in loaded  # a valid final file survives, no orphans break load
+
+
+def test_conversation_roundtrips_through_store(tmp_path):
+    # Mirrors save_conversation's real path: Conversation.model_dump() (the override already
+    # forces mode="json"; passing mode= again is a TypeError) -> store.save -> load_all -> validate.
+    store = ConversationStore(tmp_path)
+    convo = Conversation(messages=[{"role": "user", "content": "hi"}])
+
+    store.save("1-2-3", convo.model_dump())
+    restored = Conversation.model_validate(store.load_all()["1-2-3"])
+
+    assert restored.messages == [{"role": "user", "content": "hi"}]

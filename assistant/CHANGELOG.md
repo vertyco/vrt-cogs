@@ -1,5 +1,9 @@
 # Assistant Changelog
 
+## v8.18.1
+
+- **Fix**: `save_conversation` crashed with `TypeError: model_dump() got multiple values for keyword argument 'mode'` because `AssistantBaseModel.model_dump` already forces `mode="json"`. Dropped the redundant arg so per-turn conversation saves work.
+
 ## v8.18.0
 
 - **New**: Conversations now persist as one JSON file per conversation on disk (`<cog_data_path>/conversations/<key>.json`) instead of inside the single Config `db` blob. This eliminates the multi-second event-loop freeze that occurred on every save as the conversation store grew. Legacy in-blob conversations are backed up to `conversations_backup_<ts>.json` and dropped from the blob on first load after updating.
