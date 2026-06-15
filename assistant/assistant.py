@@ -82,7 +82,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "8.18.2"
+    __version__ = "8.18.3"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -142,17 +142,30 @@ class Assistant(
         data = await self.config.db()
 
         # One-time migration: conversations no longer live in the db blob. Back up any
-        # legacy in-blob conversations to a file and strip them so save_conf stays tiny.
+        # legacy in-blob conversations to disk and strip them so save_conf stays tiny.
+        # Stream the backup with json.dump (NOT json.dumps) so we never hold a second full
+        # copy of a 100MB+ conversation set in memory, free it before validating, and drop
+        # the blob even if the backup fails so an oversized store can't OOM-crash the bot
+        # in a load loop.
         legacy = data.pop("conversations", None)
         if legacy:
             backup = cog_data_path(self) / f"conversations_backup_{int(datetime.now().timestamp())}.json"
-            await asyncio.to_thread(backup.write_text, json.dumps(legacy), "utf-8")
+
+            def write_backup():
+                with backup.open("w", encoding="utf-8") as f:
+                    json.dump(legacy, f)
+
+            try:
+                await asyncio.to_thread(write_backup)
+                log.warning(
+                    "Backed up %s legacy in-blob conversations to %s and dropped them from the db blob",
+                    len(legacy),
+                    backup.name,
+                )
+            except Exception as e:
+                log.error("Failed to back up legacy conversations; dropping them from the blob anyway", exc_info=e)
+            del legacy
             await self.config.db.set(data)
-            log.warning(
-                "Migrated %s legacy in-blob conversations to %s and dropped them from the db blob",
-                len(legacy),
-                backup.name,
-            )
 
         self.db = await asyncio.to_thread(DB.model_validate, data)
 
