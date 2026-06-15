@@ -4589,9 +4589,10 @@ class Admin(MixinMeta):
         """
 
         def _dump():
-            # Delete and convo data
-            self.db.conversations.clear()
-            return self.db.json()
+            # Exclude conversation data from the backup without wiping the live store
+            # (clearing self.db.conversations here would destroy in-memory history and,
+            # on persistent setups, the on-disk files would be overwritten on next use).
+            return self.db.model_dump_json(exclude={"conversations"})
 
         dump = await asyncio.to_thread(_dump)
 
