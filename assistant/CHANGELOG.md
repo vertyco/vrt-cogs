@@ -1,5 +1,9 @@
 # Assistant Changelog
 
+## v8.18.2
+
+- **Fix**: `[p]assistant backup` no longer wipes live conversations. It excluded conversation data by clearing `self.db.conversations` on the real in-memory store; with per-file persistence that also caused the on-disk files to be overwritten on next use. Now excludes conversations from the dump non-destructively via `model_dump_json(exclude=...)`.
+
 ## v8.18.1
 
 - **Fix**: `save_conversation` crashed with `TypeError: model_dump() got multiple values for keyword argument 'mode'` because `AssistantBaseModel.model_dump` already forces `mode="json"`. Dropped the redundant arg so per-turn conversation saves work.
