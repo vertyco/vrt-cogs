@@ -126,7 +126,33 @@ class Assistant(
     async def cog_load(self) -> None:
         asyncio.create_task(self.init_cog())
 
+    @property
+    def _rpc_handlers(self) -> tuple:
+        # Single source of truth for the localhost JSON-RPC handlers so init_cog
+        # registers and cog_unload unregisters exactly the same set. Registration
+        # raises on a duplicate name, so without the matching unregister a reload
+        # (old instance never cleans up) aborts before any newly-added handler and
+        # the new verb stays "method not found" until a full process restart.
+        return (
+            self.rpc_get_system_prompt,
+            self.rpc_set_system_prompt,
+            self.rpc_list_embeddings,
+            self.rpc_upsert_embedding,
+            self.rpc_delete_embedding,
+            self.rpc_list_skills,
+            self.rpc_add_skill,
+            self.rpc_delete_skill,
+            self.rpc_set_skills_enabled,
+            self.rpc_list_role_prompts,
+            self.rpc_set_role_prompt,
+        )
+
     async def cog_unload(self):
+        for handler in self._rpc_handlers:
+            try:
+                self.bot.unregister_rpc_handler(handler)
+            except Exception:
+                pass
         self.cancel_all_message_queues()
         self.save_loop.cancel()
         self.scheduler.shutdown(wait=False)
@@ -231,18 +257,15 @@ class Assistant(
         self.bot.dispatch("assistant_cog_add", self)
         self.schedule_command_index_sync()
 
-        # Expose shepherd handlers on Red's localhost RPC (no-op unless --rpc flag is set)
-        self.bot.register_rpc_handler(self.rpc_get_system_prompt)
-        self.bot.register_rpc_handler(self.rpc_set_system_prompt)
-        self.bot.register_rpc_handler(self.rpc_list_embeddings)
-        self.bot.register_rpc_handler(self.rpc_upsert_embedding)
-        self.bot.register_rpc_handler(self.rpc_delete_embedding)
-        self.bot.register_rpc_handler(self.rpc_list_skills)
-        self.bot.register_rpc_handler(self.rpc_add_skill)
-        self.bot.register_rpc_handler(self.rpc_delete_skill)
-        self.bot.register_rpc_handler(self.rpc_set_skills_enabled)
-        self.bot.register_rpc_handler(self.rpc_list_role_prompts)
-        self.bot.register_rpc_handler(self.rpc_set_role_prompt)
+        # Expose shepherd handlers on Red's localhost RPC (no-op unless --rpc flag is set).
+        # Unregister first so a reload (which leaves the old instance's handlers
+        # registered) doesn't abort on a duplicate name. See _rpc_handlers.
+        for handler in self._rpc_handlers:
+            try:
+                self.bot.unregister_rpc_handler(handler)
+            except Exception:
+                pass
+            self.bot.register_rpc_handler(handler)
 
         await asyncio.sleep(30)
         self.save_loop.start()
