@@ -82,7 +82,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "8.18.0"
+    __version__ = "8.18.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -270,7 +270,8 @@ class Assistant(
         if convo is None:
             await asyncio.to_thread(self.conversation_store.delete, key)
             return
-        dump = await asyncio.to_thread(convo.model_dump, mode="json")
+        # AssistantBaseModel.model_dump already forces mode="json"; passing it again collides.
+        dump = await asyncio.to_thread(convo.model_dump)
         await asyncio.to_thread(self.conversation_store.save, key, dump)
 
     async def _cleanup_db(self):
