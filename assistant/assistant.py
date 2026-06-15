@@ -48,6 +48,7 @@ from .common.models import (
     Conversation,
     EmbeddingEntryExists,
     NoAPIKey,
+    RolePrompt,
     normalize_tool_category,
 )
 from .common.smartmod import SmartMod
@@ -240,6 +241,8 @@ class Assistant(
         self.bot.register_rpc_handler(self.rpc_add_skill)
         self.bot.register_rpc_handler(self.rpc_delete_skill)
         self.bot.register_rpc_handler(self.rpc_set_skills_enabled)
+        self.bot.register_rpc_handler(self.rpc_list_role_prompts)
+        self.bot.register_rpc_handler(self.rpc_set_role_prompt)
 
         await asyncio.sleep(30)
         self.save_loop.start()
@@ -719,6 +722,54 @@ class Assistant(
         conf.function_statuses["propose_skill"] = conf.skills_enabled
         await self.save_conf()
         return {"ok": True, "skills_enabled": conf.skills_enabled}
+
+    async def rpc_list_role_prompts(self, guild_id: int) -> dict:
+        """List per-role system prompt layers: {role_id: {text, replace}} + the stack flag."""
+        guild = self.rpc_guild(guild_id)
+        if not guild:
+            return {"ok": False, "error": f"guild {guild_id} not found"}
+        conf = self.db.get_conf(guild)
+        prompts = {
+            str(role_id): {"text": rp.text, "replace": rp.replace}
+            for role_id, rp in conf.role_prompts.items()
+        }
+        return {"ok": True, "role_prompts": prompts, "stack": conf.role_prompts_stack}
+
+    async def rpc_set_role_prompt(
+        self,
+        guild_id: int,
+        role_id: int,
+        text: str = "",
+        replace: bool = False,
+    ) -> dict:
+        """Set, overwrite, or remove a role's system prompt layer.
+
+        Empty/whitespace text removes the role's prompt (mirrors the
+        `[p]assistant override roleprompt` command run with no text).
+        replace=True swaps the resolved base prompt instead of appending.
+        """
+        guild = self.rpc_guild(guild_id)
+        if not guild:
+            return {"ok": False, "error": f"guild {guild_id} not found"}
+        try:
+            role_id = int(role_id)
+        except (TypeError, ValueError):
+            return {"ok": False, "error": "role_id must be an integer"}
+        if guild.get_role(role_id) is None:
+            return {"ok": False, "error": f"role {role_id} not found in guild"}
+        conf = self.db.get_conf(guild)
+        if not isinstance(text, str) or not text.strip():
+            existed = conf.role_prompts.pop(role_id, None)
+            await self.save_conf()
+            return {"ok": True, "removed": existed is not None, "role_id": str(role_id)}
+        conf.role_prompts[role_id] = RolePrompt(text=text, replace=bool(replace))
+        await self.save_conf()
+        return {
+            "ok": True,
+            "role_id": str(role_id),
+            "length": len(text),
+            "replace": bool(replace),
+        }
 
     async def get_chat(
         self,
