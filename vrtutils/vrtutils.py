@@ -33,33 +33,74 @@ class VrtUtils(Utils, commands.Cog, metaclass=CompositeMetaClass):
         self.path = cog_data_path(self)
         self.core = core_data_path()
 
+    @property
+    def _rpc_handlers(self) -> tuple:
+        # Single source of truth so cog_load registers and cog_unload unregisters
+        # the same set. register_rpc_handler raises on a duplicate name, so without
+        # the matching unregister a reload (the old instance never cleans up) aborts
+        # and the handler keeps serving stale code until a full restart. Unregister-
+        # first on load lets a plain reload swap the handlers live, no reboot.
+        return (self.rpc_quickpull, self.rpc_master)
+
     async def cog_load(self) -> None:
         # Localhost JSON-RPC (requires Red's --rpc flag, no-op otherwise).
         # Wire names: VRTUTILS__RPC_QUICKPULL, VRTUTILS__RPC_MASTER
-        self.bot.register_rpc_handler(self.rpc_quickpull)
-        self.bot.register_rpc_handler(self.rpc_master)
+        for handler in self._rpc_handlers:
+            try:
+                self.bot.unregister_rpc_handler(handler)
+            except Exception:
+                pass
+            self.bot.register_rpc_handler(handler)
+
+    async def cog_unload(self) -> None:
+        for handler in self._rpc_handlers:
+            try:
+                self.bot.unregister_rpc_handler(handler)
+            except Exception:
+                pass
 
     async def rpc_master(self, cog: str, method: str, args: list = None, kwargs: dict = None) -> dict:
-        """Generic bot-control bridge: call any method on a loaded cog (or the bot itself).
+        """Generic bot-control bridge: read or call any attribute on a loaded cog (or the bot).
 
         One RPC endpoint instead of one handler per feature. Pass cog="bot" to
-        target the Red bot object. Args/kwargs must be JSON values; the result
-        comes back as-is when JSON-serializable, otherwise as repr(). Localhost
-        binding is the access control, same as quickpull. Ops automation only,
-        nothing here is reachable by guild users.
+        target the Red bot object; the cog name match is case-insensitive. `method`
+        may be a dotted path to walk nested attributes (e.g. "db.get_conf"); the
+        leaf is called with args/kwargs when callable, otherwise its value is
+        returned (so the bridge reads attributes, not just calls methods). On a miss
+        it reports the loaded cogs / available members. Args/kwargs must be JSON
+        values; the result comes back as-is when JSON-serializable, else as repr().
+        Localhost binding is the access control, same as quickpull. Ops automation
+        only, nothing here is reachable by guild users.
         """
         args = args or []
         kwargs = kwargs or {}
-        target = self.bot if cog.lower() == "bot" else self.bot.get_cog(cog)
+        # Resolve the target cog (case-insensitive) or the bot object.
+        if cog.lower() == "bot":
+            target = self.bot
+        else:
+            target = self.bot.get_cog(cog)
+            if target is None:
+                match = next((c for c in self.bot.cogs if c.lower() == cog.lower()), None)
+                target = self.bot.get_cog(match) if match else None
         if target is None:
-            return {"ok": False, "error": f"cog not loaded: {cog}"}
-        func = getattr(target, method, None)
-        if not callable(func):
-            return {"ok": False, "error": f"no callable '{method}' on {cog}"}
+            return {"ok": False, "error": f"cog not loaded: {cog}", "loaded_cogs": sorted(self.bot.cogs)}
+        # Walk a (possibly dotted) attribute path; the leaf is read or called.
+        obj = target
+        path = method.split(".")
+        for i, seg in enumerate(path):
+            if not hasattr(obj, seg):
+                where = ".".join([cog, *path[:i]])
+                members = sorted(m for m in dir(obj) if not m.startswith("_"))
+                return {"ok": False, "error": f"no attribute '{seg}' on {where}", "available": members}
+            obj = getattr(obj, seg)
+        # Leaf: call if callable, else return the value as-is.
         try:
-            result = func(*args, **kwargs)
-            if inspect.isawaitable(result):
-                result = await result
+            if callable(obj):
+                result = obj(*args, **kwargs)
+                if inspect.isawaitable(result):
+                    result = await result
+            else:
+                result = obj
         except Exception as e:
             return {"ok": False, "error": f"{type(e).__name__}: {e}"}
         try:
