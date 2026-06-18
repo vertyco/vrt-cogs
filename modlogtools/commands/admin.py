@@ -81,10 +81,6 @@ class Admin(MixinMeta):
         "warning_expired": "warning_expired",
     }
 
-    async def maybe_send_command_help(self, ctx: commands.Context, *, show: bool) -> None:
-        if show:
-            await ctx.send_help()
-
     def get_status_lines(self, guild: discord.Guild) -> list[str]:
         conf = self.db.get_conf(guild)
         expiry = conf.get_warning_expiry()
@@ -220,18 +216,16 @@ class Admin(MixinMeta):
             return reason
         return reason[: limit - 3] + "..."
 
-    @commands.group(name="modlogtool", aliases=["mlt"], invoke_without_command=True)
+    @commands.group(name="modlogtool", aliases=["mlt"])
     @commands.guild_only()
     @commands.mod_or_permissions(manage_messages=True)
     async def modlogtool(self, ctx: commands.Context):
         """Configure ModLogTools and view warning insights."""
-        await self.maybe_send_command_help(ctx, show=True)
-        await ctx.send("\n".join(self.get_status_lines(ctx.guild)))
+        pass
 
-    @modlogtool.command(name="status")
-    async def mlt_status(self, ctx: commands.Context):
+    @modlogtool.command(name="view", aliases=["status", "settings"])
+    async def mlt_view(self, ctx: commands.Context):
         """Show current expiry setting and tracked warning counts."""
-        await self.maybe_send_command_help(ctx, show=True)
         await ctx.send("\n".join(self.get_status_lines(ctx.guild)))
 
     @modlogtool.command(name="expiry")
@@ -246,7 +240,6 @@ class Admin(MixinMeta):
         if self.get_warnings_cog() is None:
             return await ctx.send("Warnings cog not loaded.")
 
-        await self.maybe_send_command_help(ctx, show=duration is None)
         conf = self.db.get_conf(ctx.guild)
         if duration is None:
             expiry = conf.get_warning_expiry()
@@ -326,7 +319,6 @@ class Admin(MixinMeta):
     @commands.admin_or_permissions(manage_guild=True)
     async def mlt_deletemodlogmessages(self, ctx: commands.Context, enabled: bool | None = None):
         """Toggle deleting original warning modlog messages when warnings expire."""
-        await self.maybe_send_command_help(ctx, show=enabled is None)
         conf = self.db.get_conf(ctx.guild)
         if enabled is None:
             state = "enabled" if conf.delete_expired_modlog_messages else "disabled"
@@ -343,7 +335,6 @@ class Admin(MixinMeta):
         """Rescan Red warnings and modlog data."""
         if self.get_warnings_cog() is None:
             return await ctx.send("Warnings cog not loaded.")
-        await self.maybe_send_command_help(ctx, show=True)
         summary = await self.sync_guild_records(ctx.guild, full_scan=True)
         await ctx.send(
             "\n".join(
@@ -361,7 +352,6 @@ class Admin(MixinMeta):
     @commands.admin_or_permissions(manage_guild=True)
     async def mlt_exportconfig(self, ctx: commands.Context):
         """Export current guild warnings/modlog/modlogtools config."""
-        await self.maybe_send_command_help(ctx, show=True)
         try:
             payload = await self.export_guild_config(ctx.guild)
         except RuntimeError as exc:
@@ -388,7 +378,6 @@ class Admin(MixinMeta):
     @commands.admin_or_permissions(manage_guild=True)
     async def mlt_importconfig(self, ctx: commands.Context, dry_run: bool = True):
         """Import guild warnings/modlog/modlogtools config. Dry run defaults to true."""
-        await self.maybe_send_command_help(ctx, show=dry_run)
         attachment = self.get_import_attachment(ctx)
         if attachment is None:
             return await ctx.send("Attach an export JSON file to this command or reply to one.")
@@ -449,7 +438,6 @@ class Admin(MixinMeta):
         if conf.warning_expiry_seconds is None:
             return await ctx.send("Warning expiry disabled.")
 
-        await self.maybe_send_command_help(ctx, show=dry_run)
         async with ctx.typing():
             if dry_run:
                 summary = await self.preview_guild_expiry(ctx.guild)
@@ -490,7 +478,6 @@ class Admin(MixinMeta):
         """Show warning trends for the guild."""
         if self.get_warnings_cog() is None:
             return await ctx.send("Warnings cog not loaded.")
-        await self.maybe_send_command_help(ctx, show=timespan is None)
         await self.sync_guild_records(ctx.guild)
 
         conf = self.db.get_conf(ctx.guild)
@@ -534,7 +521,6 @@ class Admin(MixinMeta):
         """Show top warned members. Options: [active|warns|points] [timespan] [limit]."""
         if self.get_warnings_cog() is None:
             return await ctx.send("Warnings cog not loaded.")
-        await self.maybe_send_command_help(ctx, show=not options)
         try:
             sort_by, timespan, limit = self.parse_leaderboard_args(options)
         except commands.BadArgument as exc:
