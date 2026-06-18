@@ -17,7 +17,7 @@ Extended tooling for Red-DiscordBot's core modlog and warnings systems.
 
 - `[p]modlogtool`
   - Show help for subcommands.
-- `[p]modlogtool status`
+- `[p]modlogtool view`
   - Show current expiry setting and tracked warning counts.
 - `[p]modlogtool expiry <duration|off>`
   - Dry run defaults to `true`; append `false` to apply.
