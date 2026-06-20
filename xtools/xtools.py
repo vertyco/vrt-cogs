@@ -238,8 +238,9 @@ class XTools(commands.Cog):
             )
             return None
         client_secret = await self.config.clientsecret()
-        auth_mgr = AuthenticationManager(self.session, client_id, client_secret, REDIRECT_URI)
-        auth_url = auth_mgr.generate_authorization_url()
+        async with SignedSession() as session:
+            auth_mgr = AuthenticationManager(session, client_id, client_secret, REDIRECT_URI)
+            auth_url = auth_mgr.generate_authorization_url()
         await ctx.send("Sending you a DM to authorize your tokens.")
         await self.ask_auth(ctx, ctx.author, auth_url)
 
