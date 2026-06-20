@@ -5,6 +5,7 @@ import logging
 import traceback
 from io import BytesIO, StringIO
 from typing import Optional
+from urllib.parse import parse_qs, urlsplit
 
 import aiohttp
 import discord
@@ -45,7 +46,7 @@ class XTools(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "3.11.9"
+    __version__ = "3.11.10"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -106,12 +107,7 @@ class XTools(commands.Cog):
         auth_mgr = AuthenticationManager(session, client_id, client_secret, REDIRECT_URI)
         if tokens == {}:
             if ctx.author.id in self.bot.owner_ids:
-                url = "https://login.live.com/oauth20_authorize.srf?"
-                cid = f"client_id={client_id}"
-                types = "&response_type=code&approval_prompt=auto"
-                scopes = "&scope=Xboxlive.signin+Xboxlive.offline_access&"
-                redirect_uri = "&redirect_uri=http://localhost/auth/callback"
-                auth_url = f"{url}{cid}{types}{scopes}{redirect_uri}"
+                auth_url = auth_mgr.generate_authorization_url()
                 if ctx:
                     await ctx.send("Sending you a DM to authorize your tokens.")
                 await self.ask_auth(ctx, ctx.author, auth_url)
@@ -143,6 +139,18 @@ class XTools(commands.Cog):
         xbl_client = XboxLiveClient(auth_mgr)
         return xbl_client
 
+    # Extract the OAuth code from a pasted address bar / redirect URL
+    @staticmethod
+    def parse_auth_code(raw: str) -> Optional[str]:
+        raw = raw.strip()
+        if "code=" not in raw:
+            return None
+        if "://" in raw or "?" in raw:
+            values = parse_qs(urlsplit(raw).query).get("code")
+            if values:
+                return values[0]
+        return raw.split("code=", maxsplit=1)[-1].split("&", maxsplit=1)[0]
+
     # Send user DM asking for authentication
     async def ask_auth(self, ctx, author: discord.User, auth_url):
         plz_auth = (
@@ -165,9 +173,8 @@ class XTools(commands.Cog):
         except asyncio.TimeoutError:
             return await author.send("Authorization timeout.")
 
-        if "code" in reply.content:
-            code = reply.content.split("code=")[-1]
-        else:
+        code = self.parse_auth_code(reply.content)
+        if not code:
             return await author.send("Invalid response")
 
         client_id = await self.config.clientid()
@@ -230,12 +237,9 @@ class XTools(commands.Cog):
                 f"Client ID and Secret have not been set yet!\nBot owner needs to run `{ctx.clean_prefix}apiset tokens`"
             )
             return None
-        url = "https://login.live.com/oauth20_authorize.srf?"
-        cid = f"client_id={client_id}"
-        types = "&response_type=code&approval_prompt=auto"
-        scopes = "&scope=Xboxlive.signin+Xboxlive.offline_access&"
-        redirect_uri = "&redirect_uri=http://localhost/auth/callback"
-        auth_url = f"{url}{cid}{types}{scopes}{redirect_uri}"
+        client_secret = await self.config.clientsecret()
+        auth_mgr = AuthenticationManager(self.session, client_id, client_secret, REDIRECT_URI)
+        auth_url = auth_mgr.generate_authorization_url()
         await ctx.send("Sending you a DM to authorize your tokens.")
         await self.ask_auth(ctx, ctx.author, auth_url)
 
