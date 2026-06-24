@@ -8,7 +8,15 @@ from typing import Union
 
 import colorgram
 import requests
-from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont, ImageSequence
+from PIL import (
+    Image,
+    ImageDraw,
+    ImageEnhance,
+    ImageFilter,
+    ImageFont,
+    ImageSequence,
+    UnidentifiedImageError,
+)
 from redbot.core.i18n import Translator
 
 ROOT = Path(__file__).parent.parent
@@ -42,13 +50,41 @@ def download_image(url: str) -> t.Union[bytes, None]:
         if response.status_code == 404:
             return None
         response.raise_for_status()
-        return response.content
+        content = response.content
+        # A 200 does not guarantee an image: Discord's CDN can return an HTML/text body
+        # for expired or unavailable assets. Shipping that downstream produces a broken
+        # image (Discord rejects it with HTTP 415 "failed to get asset"), so validate here.
+        try:
+            Image.open(BytesIO(content)).verify()
+        except (UnidentifiedImageError, OSError, SyntaxError, ValueError) as e:
+            log.warning(f"URL returned non-image content ({len(content)} bytes): {url} ({e})")
+            return None
+        return content
     except requests.HTTPError as e:
         log.warning(f"Failed to download image URL: {url}\n{e}")
         return None
     except Exception as e:
         log.error(f"Failed to download image URL: {url}", exc_info=e)
         return None
+
+
+def open_avatar(avatar_bytes: t.Union[bytes, str, None]) -> Image.Image:
+    """Open avatar bytes (or a URL) as a PIL image, falling back to the default pfp on missing/invalid data.
+
+    Guards every profile/levelup style against avatars that are absent or not a real image
+    (expired CDN response, truncated download). Without this a non-image avatar would raise
+    or be shipped to Discord as a broken asset (HTTP 415 "failed to get asset").
+    """
+    if isinstance(avatar_bytes, str):
+        avatar_bytes = download_image(avatar_bytes) if avatar_bytes.startswith("http") else None
+    if avatar_bytes:
+        try:
+            pfp = Image.open(BytesIO(avatar_bytes))
+            pfp.load()  # force-decode now so bad bytes fail here, not deep in the render
+            return pfp
+        except (UnidentifiedImageError, OSError, SyntaxError, ValueError, TypeError) as e:
+            log.warning(f"Avatar was not a valid image ({len(avatar_bytes)} bytes); using default pfp: {e}")
+    return DEFAULT_PFP.copy()
 
 
 def abbreviate_number(number: int) -> str:

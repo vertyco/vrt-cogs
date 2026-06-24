@@ -99,10 +99,7 @@ def generate_minimal_profile(
         bg = imgtools.get_random_background()
 
     # Load avatar
-    if avatar_bytes:
-        pfp = Image.open(BytesIO(avatar_bytes))
-    else:
-        pfp = imgtools.DEFAULT_PFP.copy()
+    pfp = imgtools.open_avatar(avatar_bytes)
 
     pfp_animated = getattr(pfp, "is_animated", False)
     bg_animated = getattr(bg, "is_animated", False)
