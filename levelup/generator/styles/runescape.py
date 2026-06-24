@@ -57,10 +57,7 @@ def generate_runescape_profile(
         log.debug("Avatar image is a URL, attempting to download")
         avatar_bytes = imgtools.download_image(avatar_bytes)
 
-    if avatar_bytes:
-        pfp = Image.open(BytesIO(avatar_bytes))
-    else:
-        pfp = imgtools.DEFAULT_PFP
+    pfp = imgtools.open_avatar(avatar_bytes)
 
     pfp_animated = getattr(pfp, "is_animated", False)
     log.debug(f"PFP animated: {pfp_animated}")

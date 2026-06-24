@@ -180,10 +180,7 @@ def generate_default_profile(
             card = imgtools.get_random_background()
     else:
         card = imgtools.get_random_background()
-    if avatar_bytes:
-        pfp = Image.open(BytesIO(avatar_bytes))
-    else:
-        pfp = imgtools.DEFAULT_PFP
+    pfp = imgtools.open_avatar(avatar_bytes)
 
     pfp_animated = getattr(pfp, "is_animated", False)
     bg_animated = getattr(card, "is_animated", False)

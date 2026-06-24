@@ -82,12 +82,14 @@ def get_asset_bytes(url: str | None, b64: str | None) -> bytes | None:
 
 def generate_profile(input_data: dict, output_path: Path) -> dict:
     """Generate a profile image from input data."""
-    # Import here to avoid loading PIL until needed
-    from levelup.generator import imgtools
-    from levelup.generator.styles.default import generate_default_profile
-    from levelup.generator.styles.gaming import generate_gaming_profile
-    from levelup.generator.styles.minimal import generate_minimal_profile
-    from levelup.generator.styles.runescape import generate_runescape_profile
+    # Import here to avoid loading PIL until needed. Import the generator standalone
+    # (the generator dir is on sys.path) rather than via the `levelup` package, which
+    # would execute levelup/__init__.py and pull the entire cog into the subprocess.
+    import imgtools
+    from styles.default import generate_default_profile
+    from styles.gaming import generate_gaming_profile
+    from styles.minimal import generate_minimal_profile
+    from styles.runescape import generate_runescape_profile
 
     style = input_data.get("style", "default")
 
@@ -189,8 +191,8 @@ def generate_profile(input_data: dict, output_path: Path) -> dict:
 
 def generate_levelup(input_data: dict, output_path: Path) -> dict:
     """Generate a level-up alert image from input data."""
-    from levelup.generator import imgtools
-    from levelup.generator.levelalert import generate_level_img
+    import imgtools
+    from levelalert import generate_level_img
 
     # Resolve assets
     avatar_bytes = get_asset_bytes(input_data.get("avatar_url"), input_data.get("avatar_b64"))

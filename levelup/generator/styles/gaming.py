@@ -164,10 +164,7 @@ def generate_gaming_profile(
     else:
         bg = imgtools.get_random_background()
 
-    if avatar_bytes:
-        pfp = Image.open(BytesIO(avatar_bytes))
-    else:
-        pfp = imgtools.DEFAULT_PFP.copy()
+    pfp = imgtools.open_avatar(avatar_bytes)
 
     pfp_animated = getattr(pfp, "is_animated", False)
     bg_animated = getattr(bg, "is_animated", False)
