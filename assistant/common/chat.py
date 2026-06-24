@@ -567,7 +567,10 @@ class ChatHandler(MixinMeta):
         outputfile_pattern = r"--outputfile\s+([^\s]+)"
         extract_pattern = r"--extract"
         get_last_message_pattern = r"--last"
-        image_url_pattern = r"(https?:\/\/\S+\.(?:png|gif|webp|jpg|jpeg)(?:\?\S*)?)"
+        # NOTE: gif is intentionally excluded. The vision API cannot process (animated) gifs and
+        # responds with a 400 "Error while downloading" which breaks the response. This mirrors the
+        # attachment handling below which also excludes gif.
+        image_url_pattern = r"(https?:\/\/\S+\.(?:png|webp|jpg|jpeg)(?:\?\S*)?)"
 
         # Extract the optional arguments and their values
         outputfile_match = re.search(outputfile_pattern, question)
@@ -1054,7 +1057,10 @@ class ChatHandler(MixinMeta):
                     continue
                 raise e
             except openai.BadRequestError as e:
-                if "Invalid image" in str(e):
+                err_text = str(e)
+                # Some image URLs (e.g. gifs, or links the API can't fetch) cause a 400. Rather than
+                # failing the whole response, strip images from the payload and retry without them.
+                if "Invalid image" in err_text or "Error while downloading" in err_text:
                     await purge_images(messages)
                     tries += 1
                     continue
