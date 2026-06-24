@@ -1,5 +1,9 @@
 # Assistant Changelog
 
+## v8.18.3
+
+- **Fix**: A gif URL in a message no longer breaks the response. Gif URLs were matched and sent to the vision API, which returned a 400 `Error while downloading ...gif` (the API can't process animated gifs). Excluded gif from the image URL regex to match the attachment handler (which already skipped gif), and the `BadRequestError` handler now also strips images and retries on `Error while downloading` so any unfetchable image URL degrades gracefully instead of failing the whole reply.
+
 ## v8.18.2
 
 - **Fix**: `[p]assistant backup` no longer wipes live conversations. It excluded conversation data by clearing `self.db.conversations` on the real in-memory store; with per-file persistence that also caused the on-disk files to be overwritten on next use. Now excludes conversations from the dump non-destructively via `model_dump_json(exclude=...)`.
