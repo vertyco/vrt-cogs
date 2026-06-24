@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2024-02-08 18:30-0500\n"
-"PO-Revision-Date: 2024-12-03 14:57\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-06-24 13:20\n"
 "Last-Translator: \n"
 "Language-Team: Russian\n"
 "MIME-Version: 1.0\n"
@@ -17,7 +17,7 @@ msgstr ""
 "X-Crowdin-File-ID: 110\n"
 "Language: ru_RU\n"
 
-#: main.py:29
+#: bankdecay\main.py:29
 #, docstring
 msgid "\n"
 "    Economy decay!\n\n"
@@ -27,20 +27,20 @@ msgid "\n"
 "    "
 msgstr ""
 
-#: main.py:157
+#: bankdecay\main.py:169
 msgid "Bank Decay Cycle"
 msgstr ""
 
-#: main.py:159
+#: bankdecay\main.py:171
 msgid "- User Balances Decayed: {}\n"
 "- Total Amount Decayed: {}"
 msgstr ""
 
-#: main.py:164
+#: bankdecay\main.py:176
 msgid "No user balances were decayed during this cycle."
 msgstr ""
 
-#: main.py:214
+#: bankdecay\main.py:226
 #, docstring
 msgid "No data to delete"
 msgstr ""
