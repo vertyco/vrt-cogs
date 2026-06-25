@@ -156,6 +156,7 @@ out/
 *.sublime-workspace
 tests/
 !assistant/tests/
+!tickets/tests/
 /levelup/data/backgrounds/Thumbs.db
 testcog/
 /reqbackup.txt
