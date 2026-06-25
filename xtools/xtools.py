@@ -139,6 +139,29 @@ class XTools(commands.Cog):
         xbl_client = XboxLiveClient(auth_mgr)
         return xbl_client
 
+    # --- read-only RPC profile/gamerscore fetch (no ctx) for the vrtutils RPC bridge ---
+    # Reuses the cog's own auth so stored OAuth tokens rotate IN-PROCESS (config stays
+    # consistent), never out-of-band. Call via the vrtutils bridge:
+    #   VRTUTILS__RPC_MASTER ["XTools","rpc_get_profile",["<gamertag-or-xuid>"]]
+    async def rpc_get_profile(self, gamertag_or_xuid: str):
+        s = str(gamertag_or_xuid).strip()
+        async with SignedSession() as session:
+            xbl_client = await self.auth_manager(session)
+            if not xbl_client:
+                return {"ok": False, "error": "xtools not authorized or XSAPI unreachable"}
+            try:
+                if s.isdigit():
+                    pdata = await xbl_client.profile.get_profile_by_xuid(s)
+                else:
+                    pdata = await xbl_client.profile.get_profile_by_gamertag(s)
+            except Exception as e:
+                return {"ok": False, "error": "%s: %s" % (type(e).__name__, e)}
+            data = pdata.model_dump(mode="json") if V2 else json.loads(pdata.json())
+            gt, xuid, bio, location, gs, pfp, tenure, tier, rep = profile(data)
+            return {"ok": True, "gamertag": gt, "xuid": xuid, "gamerscore": gs,
+                    "tier": tier, "rep": rep, "location": location, "bio": bio,
+                    "tenure": tenure}
+
     # Extract the OAuth code from a pasted address bar / redirect URL
     @staticmethod
     def parse_auth_code(raw: str) -> Optional[str]:
