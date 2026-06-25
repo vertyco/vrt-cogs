@@ -358,7 +358,8 @@ async def can_close(
     elif await is_admin_or_superior(bot, author):
         can_close = True
     elif owner_id == author.id and conf.user_can_close:
-        can_close = True
+        if not conf.opened[owner_id][channel.id].locked:
+            can_close = True
     return can_close
 
 

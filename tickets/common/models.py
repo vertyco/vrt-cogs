@@ -161,6 +161,7 @@ class OpenedTicket(Base):
     overview_msg: int | None = None  # Overview message ID
     first_response: datetime | None = None
     closed_by: int | None = None  # User ID of who closed (set on close)
+    locked: bool = False  # When True, only staff/admins may close/rename/add-user
 
 
 # =============================================================================

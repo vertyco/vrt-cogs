@@ -48,7 +48,8 @@ class BaseCommands(MixinMeta):
         elif await is_admin_or_superior(self.bot, ctx.author):
             can_add = True
         elif owner_id == ctx.author.id and conf.user_can_manage:
-            can_add = True
+            if not opened[owner_id][ctx.channel.id].locked:
+                can_add = True
 
         if not can_add:
             return await ctx.send(_("You do not have permissions to add users to this ticket"))
@@ -91,7 +92,8 @@ class BaseCommands(MixinMeta):
         elif await is_admin_or_superior(self.bot, ctx.author):
             can_rename = True
         elif owner_id == ctx.author.id and conf.user_can_rename:
-            can_rename = True
+            if not opened[owner_id][ctx.channel.id].locked:
+                can_rename = True
 
         if not can_rename:
             return await ctx.send(_("You do not have permissions to rename this ticket"))
@@ -338,3 +340,45 @@ class BaseCommands(MixinMeta):
                     channel=target_channel.mention,
                 )
             )
+
+    @commands.hybrid_command(name="lockticket", description="Lock a ticket so only staff can close it")
+    @commands.guild_only()
+    async def lock_ticket(self, ctx: commands.Context):
+        """Lock a ticket so only staff can close, rename, or add users to it."""
+        conf = self.db.get_conf(ctx.guild)
+        owner_id = get_ticket_owner(conf.opened, ctx.channel.id)
+        if not owner_id:
+            return await ctx.send(_("This is not a ticket channel, or it has been removed from config"))
+
+        ticket = conf.opened[owner_id][ctx.channel.id]
+        panel = conf.panels.get(ticket.panel)
+        if not conf.is_support_staff(ctx.author, panel) and not await is_admin_or_superior(self.bot, ctx.author):
+            return await ctx.send(_("You do not have permission to lock tickets."))
+
+        if ticket.locked:
+            return await ctx.send(_("This ticket is already locked."))
+
+        ticket.locked = True
+        await self.save()
+        await ctx.send(_("🔒 This ticket has been locked by staff. Only staff can close it."))
+
+    @commands.hybrid_command(name="unlockticket", description="Unlock a ticket so the owner can close it again")
+    @commands.guild_only()
+    async def unlock_ticket(self, ctx: commands.Context):
+        """Unlock a ticket, restoring the owner's close/rename/add permissions."""
+        conf = self.db.get_conf(ctx.guild)
+        owner_id = get_ticket_owner(conf.opened, ctx.channel.id)
+        if not owner_id:
+            return await ctx.send(_("This is not a ticket channel, or it has been removed from config"))
+
+        ticket = conf.opened[owner_id][ctx.channel.id]
+        panel = conf.panels.get(ticket.panel)
+        if not conf.is_support_staff(ctx.author, panel) and not await is_admin_or_superior(self.bot, ctx.author):
+            return await ctx.send(_("You do not have permission to unlock tickets."))
+
+        if not ticket.locked:
+            return await ctx.send(_("This ticket is not locked."))
+
+        ticket.locked = False
+        await self.save()
+        await ctx.send(_("🔓 This ticket has been unlocked."))
