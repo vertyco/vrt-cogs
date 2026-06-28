@@ -1,8 +1,8 @@
 import asyncio
 import json
 import logging
+import multiprocessing as mp
 from datetime import datetime, timezone
-from multiprocessing.pool import Pool
 from time import perf_counter
 from typing import Callable, Dict, List, Literal, Optional, Union
 
@@ -83,7 +83,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "8.18.3"
+    __version__ = "8.18.4"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -104,7 +104,7 @@ class Assistant(
         # Regex-guard pool: short re.findall/re.sub tasks only, never CPU-bound batch work.
         # maxtasksperchild forces worker respawn so a single large-input regex can't
         # permanently inflate a worker's RSS (CPython doesn't return big frees to the OS).
-        self.mp_pool = Pool(processes=2, maxtasksperchild=100)
+        self.mp_pool = mp.get_context("spawn").Pool(processes=1, maxtasksperchild=100)
         self.embedding_store = EmbeddingStore(cog_data_path(self))
         self.conversation_store = ConversationStore(cog_data_path(self))
         self.command_index = CommandIndexStore(self.embedding_store)
@@ -752,10 +752,7 @@ class Assistant(
         if not guild:
             return {"ok": False, "error": f"guild {guild_id} not found"}
         conf = self.db.get_conf(guild)
-        prompts = {
-            str(role_id): {"text": rp.text, "replace": rp.replace}
-            for role_id, rp in conf.role_prompts.items()
-        }
+        prompts = {str(role_id): {"text": rp.text, "replace": rp.replace} for role_id, rp in conf.role_prompts.items()}
         return {"ok": True, "role_prompts": prompts, "stack": conf.role_prompts_stack}
 
     async def rpc_set_role_prompt(
