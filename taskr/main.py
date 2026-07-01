@@ -26,7 +26,7 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
     """Schedule bot commands with ease"""
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.0.15"
+    __version__ = "1.0.16"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -61,6 +61,52 @@ class Taskr(Commands, commands.Cog, metaclass=CompositeMetaClass):
             }
 
         return await asyncio.to_thread(_exe)
+
+    async def rpc_add_scheduled_command(self, payload: dict, overwrite: bool = False) -> dict:
+        """Programmatically add a scheduled command and register its job.
+
+        `payload` is a ScheduledCommand field dict (name, guild_id, channel_id,
+        author_id, command, enabled, plus any cron/interval fields). Builds the
+        model, stores it, persists, and reconciles the scheduler so the job is
+        live without a reload. If a task with the same guild + command + schedule
+        already exists and `overwrite` is False, it is a no-op and returns the
+        existing task's id.
+        """
+        task = ScheduledCommand(**payload)
+        if not overwrite:
+            for existing in self.db.tasks.values():
+                if (
+                    existing.guild_id == task.guild_id
+                    and existing.command.strip() == task.command.strip()
+                    and existing.days_of_month == task.days_of_month
+                    and existing.days_of_week == task.days_of_week
+                    and existing.months_of_year == task.months_of_year
+                    and existing.hour == task.hour
+                    and existing.minute == task.minute
+                    and existing.interval == task.interval
+                ):
+                    return {
+                        "ok": True,
+                        "created": False,
+                        "duplicate_of": existing.id,
+                        "name": existing.name,
+                        "schedule": existing.humanize(),
+                    }
+        self.db.add_task(task, overwrite=overwrite)
+        self.save()
+        await self.ensure_jobs()
+        tz = self.db.timezones.get(task.guild_id, "UTC")
+        nxt = task.next_run(tz)
+        return {
+            "ok": True,
+            "created": True,
+            "id": task.id,
+            "name": task.name,
+            "command": task.command,
+            "enabled": task.enabled,
+            "schedule": task.humanize(),
+            "next_run": nxt.isoformat() if nxt else None,
+        }
 
     async def cog_load(self) -> None:
         asyncio.create_task(self.initialize())
