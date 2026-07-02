@@ -1173,7 +1173,7 @@ class CampaignLayout(BotArenaView):
             can_afford = player.credits >= entry_fee
 
             if is_completed:
-                status = "✅🔁"
+                status = "✅"
             elif not is_available:
                 status = "🔒"
             elif not can_afford:
