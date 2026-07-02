@@ -69,33 +69,43 @@ class ResetConfirmButtonsRow(ui.ActionRow["ResetConfirmLayout"]):
 
     @ui.button(label="Yes, Reset My Account", style=discord.ButtonStyle.danger, emoji="🗑️")
     async def confirm_button(self, interaction: discord.Interaction, button: ui.Button):
+        view = self.view
+        if view is None:
+            await interaction.response.send_message("This reset confirmation is no longer active.", ephemeral=True)
+            return
+
         # Reset the player data to a fresh PlayerData instance
-        self.view.cog.db.players[interaction.user.id] = PlayerData()
-        self.view.cog.save()
+        view.cog.db.players[interaction.user.id] = PlayerData()
+        view.cog.save()
 
         # Show success message
-        self.view.clear_items()
+        view.clear_items()
         container = ui.Container(accent_colour=discord.Color.green())
         container.add_item(
             ui.TextDisplay(
                 "# ✅ Account Reset!\n\n"
                 "Your Bot Arena account has been reset.\n"
                 f"You now have **{DEFAULT_CREDITS_STR} credits** to start fresh.\n\n"
-                f"Use `{self.view.ctx.clean_prefix}botarena` to begin the tutorial!"
+                f"Use `{view.ctx.clean_prefix}botarena` to begin the tutorial!"
             )
         )
-        self.view.add_item(container)
-        await interaction.response.edit_message(view=self.view)
-        self.view.stop()
+        view.add_item(container)
+        await interaction.response.edit_message(view=view)
+        view.stop()
 
     @ui.button(label="Cancel", style=discord.ButtonStyle.secondary)
     async def cancel_button(self, interaction: discord.Interaction, button: ui.Button):
-        self.view.clear_items()
+        view = self.view
+        if view is None:
+            await interaction.response.send_message("This reset confirmation is no longer active.", ephemeral=True)
+            return
+
+        view.clear_items()
         container = ui.Container(accent_colour=discord.Color.blue())
         container.add_item(ui.TextDisplay("# Reset Cancelled\n\nYour account is safe!"))
-        self.view.add_item(container)
-        await interaction.response.edit_message(view=self.view)
-        self.view.stop()
+        view.add_item(container)
+        await interaction.response.edit_message(view=view)
+        view.stop()
 
 
 class UserCommands(MixinMeta):
