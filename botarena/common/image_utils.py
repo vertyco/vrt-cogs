@@ -5,6 +5,7 @@ Shared image loading and path resolution utilities.
 This module centralizes all image file discovery to avoid code duplication.
 """
 
+import io
 import typing as t
 from pathlib import Path
 
@@ -13,6 +14,11 @@ from PIL import Image
 
 # Path to data directory with part images
 DATA_DIR = Path(__file__).parent.parent / "data"
+
+# Scale factor applied to bot sprites in battle rendering (renderer draws sprites
+# at arena_scale * SPRITE_SCALE). Collision masks must use the same factor so the
+# hitbox matches the visuals.
+SPRITE_SCALE = 1.3
 
 
 def find_image_path(folder: str, name: str) -> t.Optional[Path]:
@@ -77,8 +83,6 @@ def load_image_bytes(folder: str, name: str, scale: int = 1) -> t.Optional[bytes
     Returns:
         WEBP image bytes, or None if not found.
     """
-    import io
-
     img = load_image(folder, name)
     if not img:
         return None

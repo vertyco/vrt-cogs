@@ -1,9 +1,3 @@
-"""
-Bot Arena 3 - A Discord cog recreation of the classic robot combat game.
-
-Build custom battle bots from modular parts and fight other players!
-"""
-
 import asyncio
 import json
 import logging
@@ -27,7 +21,7 @@ from .constants import CHASSIS, COMPONENTS, PLATING
 log = logging.getLogger("red.vrt.botarena")
 
 __author__ = "Vertyco"
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 
 class BotArena(Commands, commands.Cog, metaclass=CompositeMetaClass):
@@ -49,7 +43,12 @@ class BotArena(Commands, commands.Cog, metaclass=CompositeMetaClass):
         self.io_lock: asyncio.Lock = asyncio.Lock()
         self.last_save: float = 0.0
         self.initialized: bool = False
+        self.save_dirty: bool = False  # Set when a save request arrives while a save is in flight
         self._pending_save_tasks: set[asyncio.Task] = set()  # Strong references to save tasks
+
+        # Battle concurrency controls
+        self.active_battles: set[int] = set()  # User IDs with a battle in progress
+        self.battle_semaphore: asyncio.Semaphore = asyncio.Semaphore(2)  # Max concurrent render subprocesses
 
         # Telemetry
         self.telemetry: BattleTelemetry = BattleTelemetry(self.data_path)
@@ -81,8 +80,14 @@ class BotArena(Commands, commands.Cog, metaclass=CompositeMetaClass):
         if self._pending_save_tasks:
             log.info(f"Waiting for {len(self._pending_save_tasks)} pending save task(s) to complete...")
             await asyncio.gather(*self._pending_save_tasks, return_exceptions=True)
-        # Final save before unload
-        self.save(force=True)
+        # Final save before unload - awaited directly so it can't be cancelled with the task
+        if self.initialized:
+            try:
+                async with self.io_lock:
+                    await asyncio.to_thread(self.db.to_file, self.db_path, True)
+                log.info("Final config save complete")
+            except Exception as e:
+                log.error("Failed final save on unload", exc_info=e)
 
     async def initialize(self):
         """Initialize the cog - load data"""
@@ -106,19 +111,24 @@ class BotArena(Commands, commands.Cog, metaclass=CompositeMetaClass):
 
         async def _save():
             try:
+                if not self.initialized:
+                    # Do not save if not initialized, we don't want to overwrite the config with default data
+                    return
                 if self.io_lock.locked():
-                    # Already saving, skip this
+                    # A save is already in flight - flag it so the in-flight save runs one more pass
+                    self.save_dirty = True
                     return
                 if not force and perf_counter() - self.last_save < 30:
                     # Do not save more than once every 30 seconds if not forced
                     return
-                if not self.initialized:
-                    # Do not save if not initialized, we don't want to overwrite the config with default data
-                    return
                 try:
                     log.debug("Saving config")
                     async with self.io_lock:
-                        await asyncio.to_thread(self.db.to_file, self.db_path, True)
+                        while True:
+                            self.save_dirty = False
+                            await asyncio.to_thread(self.db.to_file, self.db_path, True)
+                            if not self.save_dirty:
+                                break
                     log.info("Config saved successfully")
                 except Exception as e:
                     log.error("Failed to save config", exc_info=e)
@@ -224,14 +234,15 @@ class BotArena(Commands, commands.Cog, metaclass=CompositeMetaClass):
 
             log.debug(f"Running battle subprocess: {' '.join(cmd)}")
 
-            # Run subprocess asynchronously
-            proc = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
+            # Run subprocess asynchronously, capped globally so N users can't fork N render processes
+            async with self.battle_semaphore:
+                proc = await asyncio.create_subprocess_exec(
+                    *cmd,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                )
 
-            stdout, stderr = await proc.communicate()
+                stdout, stderr = await proc.communicate()
             stderr_text = stderr.decode() if stderr else ""
             stdout_text = stdout.decode() if stdout else ""
 
@@ -255,14 +266,8 @@ class BotArena(Commands, commands.Cog, metaclass=CompositeMetaClass):
                     log.error(f"Stderr: {stderr_text}")
                 if stdout_text:
                     log.error(f"Stdout: {stdout_text}")
-                # Extract meaningful error from stderr or provide generic message
-                error_msg = f"Battle process failed (exit code {proc.returncode})"
-                if stderr_text:
-                    # Get the last non-empty line of stderr for a concise error
-                    error_lines = [i.strip() for i in stderr_text.split("\n") if i.strip()]
-                    if error_lines:
-                        error_msg = error_lines[-1][:200]  # Truncate to reasonable length
-                return None, None, error_msg
+                # Details are logged above; return a generic message so raw stderr never reaches users
+                return None, None, f"Battle process failed (exit code {proc.returncode})"
 
             # Parse result from stdout
             try:

@@ -5,8 +5,11 @@ Renders battle frames to images and compiles them into a video file.
 Uses Pillow for drawing and ffmpeg for video encoding.
 """
 
+import itertools
 import logging
 import math
+import shutil
+import subprocess
 import sys
 import tempfile
 import typing as t
@@ -14,7 +17,18 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-from .bot_sprite import render_bot_sprite
+from .bot_sprite import render_bot_sprite, render_bot_sprite_to_bytes
+from .image_utils import SPRITE_SCALE
+
+try:
+    import av
+except ImportError:
+    av = None
+
+try:
+    import imageio_ffmpeg
+except ImportError:
+    imageio_ffmpeg = None
 
 if t.TYPE_CHECKING:
     from .models import PartsRegistry
@@ -288,8 +302,9 @@ class BattleRenderer:
 
         if is_alive and plating_name:
             # Use the unified bot sprite renderer (no tint - team color shown via name text)
-            # Scale factor: base image scale * 1.3 for visibility
-            sprite_scale = self.scale * 1.3
+            # Scale factor: base image scale * SPRITE_SCALE for visibility
+            # (shared with collision.py so hitbox matches visuals)
+            sprite_scale = self.scale * SPRITE_SCALE
 
             bot_sprite = render_bot_sprite(
                 plating_name=plating_name,
@@ -633,29 +648,12 @@ class BattleRenderer:
             "arena_height": battle_result.get("arena_height", self.arena_height),
         }
 
-        # Render all frames to PIL Images
-        rendered_frames = []
-        for i, frame in enumerate(frames):
-            if show_progress and i % 30 == 0:
-                print(f"Rendering frame {i}/{len(frames)}", file=sys.stderr)
-
-            img = self.render_frame(frame, battle_info)
-            rendered_frames.append(img)
-
-        # Add freeze frames at the end to show final state
-        if rendered_frames and freeze_duration > 0:
-            freeze_frame_count = int(freeze_duration * self.fps)
-            last_frame = rendered_frames[-1]
-            if show_progress:
-                print(f"Adding {freeze_frame_count} freeze frames ({freeze_duration}s)...", file=sys.stderr)
-            rendered_frames.extend([last_frame] * freeze_frame_count)
-
-        if show_progress:
-            print(f"Writing video with {len(rendered_frames)} frames...", file=sys.stderr)
-
+        # Frames are rendered lazily and streamed to the encoder one at a time
+        # (a fresh generator is created per encoder attempt so fallbacks re-render)
         # Try PyAV directly first (best Discord compatibility)
         try:
-            self._write_video_pyav(rendered_frames, output_path)
+            frame_gen = self._iter_rendered_frames(frames, battle_info, freeze_duration, show_progress)
+            self._write_video_pyav(frame_gen, output_path)
             return output_path
         except Exception as e:
             if show_progress:
@@ -663,7 +661,8 @@ class BattleRenderer:
 
         # Try ffmpeg subprocess
         try:
-            self._write_video_ffmpeg(rendered_frames, output_path)
+            frame_gen = self._iter_rendered_frames(frames, battle_info, freeze_duration, show_progress)
+            self._write_video_ffmpeg(frame_gen, output_path)
             return output_path
         except Exception as e:
             if show_progress:
@@ -674,14 +673,45 @@ class BattleRenderer:
         self.render_to_gif(battle_result, gif_path, frame_skip=2, show_progress=show_progress)
         return gif_path
 
-    def _write_video_pyav(self, frames: list[Image.Image], output_path: Path):
+    def _iter_rendered_frames(
+        self,
+        frames: list[dict],
+        battle_info: dict,
+        freeze_duration: float,
+        show_progress: bool,
+    ) -> t.Iterator[Image.Image]:
+        """Yield rendered frames one at a time, ending with freeze frames of the final state.
+
+        Streaming frames to the encoder avoids materializing the whole battle
+        (potentially thousands of images) in memory at once.
+        """
+        last_img = None
+        for i, frame in enumerate(frames):
+            if show_progress and i % 30 == 0:
+                print(f"Rendering frame {i}/{len(frames)}", file=sys.stderr)
+            last_img = self.render_frame(frame, battle_info)
+            yield last_img
+
+        # Freeze on the final frame to show the battle outcome
+        if last_img is not None and freeze_duration > 0:
+            freeze_frame_count = int(freeze_duration * self.fps)
+            if show_progress:
+                print(f"Adding {freeze_frame_count} freeze frames ({freeze_duration}s)...", file=sys.stderr)
+            for _ in range(freeze_frame_count):
+                yield last_img
+
+    def _write_video_pyav(self, frames: t.Iterable[Image.Image], output_path: Path):
         """Write video using PyAV directly with Discord-compatible settings."""
-        import av
+        if av is None:
+            raise RuntimeError("PyAV not installed")
+
+        frame_iter = iter(frames)
+        first_img = next(frame_iter)
 
         container = av.open(str(output_path), mode="w")
         stream = container.add_stream("libx264", rate=self.fps)
-        stream.width = frames[0].width
-        stream.height = frames[0].height
+        stream.width = first_img.width
+        stream.height = first_img.height
         stream.pix_fmt = "yuv420p"  # Required for Discord
         # H.264 encoding options for maximum compatibility
         stream.options = {
@@ -691,7 +721,7 @@ class BattleRenderer:
             "crf": "23",  # Quality (lower = better, 23 is default)
         }
 
-        for img in frames:
+        for img in itertools.chain([first_img], frame_iter):
             # Convert PIL Image to av.VideoFrame
             frame = av.VideoFrame.from_image(img)
             frame = frame.reformat(format="yuv420p")
@@ -704,19 +734,12 @@ class BattleRenderer:
 
         container.close()
 
-    def _write_video_ffmpeg(self, frames: list[Image.Image], output_path: Path):
+    def _write_video_ffmpeg(self, frames: t.Iterable[Image.Image], output_path: Path):
         """Write video using ffmpeg subprocess with Discord-compatible settings."""
-        import shutil
-        import subprocess
-
         # Check if ffmpeg is available - try imageio-ffmpeg first, then system ffmpeg
         ffmpeg_path = None
-        try:
-            import imageio_ffmpeg
-
+        if imageio_ffmpeg is not None:
             ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
-        except ImportError:
-            pass
 
         if not ffmpeg_path:
             ffmpeg_path = shutil.which("ffmpeg")
@@ -728,7 +751,7 @@ class BattleRenderer:
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir = Path(tmpdir)
 
-            # Save frames as images
+            # Save frames as images one at a time (streamed, never held in a list)
             for i, img in enumerate(frames):
                 img.save(tmpdir / f"frame_{i:06d}.png")
 
@@ -864,15 +887,13 @@ class BattleRenderer:
         Returns:
             PNG image bytes
         """
-        from .bot_sprite import render_bot_sprite_to_bytes
-
-        # Use scale * 1.3 to match battle rendering
+        # Use scale * SPRITE_SCALE to match battle rendering
         return render_bot_sprite_to_bytes(
             plating_name=plating_name,
             weapon_name=weapon_name,
             orientation=orientation,
             weapon_orientation=orientation,
-            scale=self.scale * 1.3,
+            scale=self.scale * SPRITE_SCALE,
             registry=self.parts_registry,
             output_size=(65, 65),
         )

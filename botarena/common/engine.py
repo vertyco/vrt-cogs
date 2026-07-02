@@ -70,7 +70,7 @@ DEFAULT_CHASSIS_BEHAVIORS = {
     "DLZ-100": AIBehavior.TACTICAL,  # Starter chassis, good all-rounder
     "DLZ-250": AIBehavior.AGGRESSIVE,  # Upgraded light, more aggressive
     # Medium chassis - balanced
-    "SmartMove": AIBehavior.TACTICAL,  # Smart AI chassis
+    "Smartmove": AIBehavior.TACTICAL,  # Smart AI chassis
     "CLR-Z050": AIBehavior.DEFENSIVE,  # Tanky medium
     "Electron": AIBehavior.TACTICAL,  # High-capacity medium
     # Heavy chassis - slow but tough
@@ -396,6 +396,7 @@ class BattleConfig:
     max_duration: float = 120.0  # seconds
     projectile_speed: float = 500.0  # pixels per second
     bot_radius: float = 32.0  # collision radius
+    seed: t.Optional[int] = None  # RNG seed for reproducible battles (None = random)
 
 
 class BattleEngine:
@@ -416,6 +417,9 @@ class BattleEngine:
 
     def __init__(self, config: BattleConfig = None):
         self.config = config or BattleConfig()
+        # Dedicated RNG instance for deterministic, reproducible battles
+        self.seed: int = self.config.seed if self.config.seed is not None else random.randrange(2**32)
+        self.rng = random.Random(self.seed)
         self.bots: dict[str, BotRuntimeState] = {}
         self.projectiles: list[Projectile] = []
         self.frames: list[FrameData] = []
@@ -527,7 +531,7 @@ class BattleEngine:
             agility=max(0.0, min(1.0, agility)),  # Clamp to 0-1
             weapon_archetype=weapon_archetype,
             commitment_timer=0.0,
-            dodge_timer=random.uniform(0.5, 2.0),  # Stagger initial dodge timers
+            dodge_timer=self.rng.uniform(0.5, 2.0),  # Stagger initial dodge timers
         )
         self.bots[bot_id] = state
 
@@ -680,7 +684,7 @@ class BattleEngine:
                     # We're being attacked by someone we're not targeting!
                     # Higher intelligence = more likely to react
                     react_chance = 0.3 + (bot.intelligence / 10.0) * 0.5  # 30-80% chance
-                    if random.random() < react_chance:
+                    if self.rng.random() < react_chance:
                         should_reevaluate = True
 
             if should_reevaluate or not bot.target_id:
@@ -767,7 +771,7 @@ class BattleEngine:
             # Sort by health (lowest first), with intelligence-based noise
             # Threat bonus makes us prefer enemies who hurt us (revenge targeting)
             def score(c: BotRuntimeState) -> float:
-                noise = random.uniform(0, 20) * (10 - bot.intelligence) / 10
+                noise = self.rng.uniform(0, 20) * (10 - bot.intelligence) / 10
                 threat_bonus = get_threat_bonus(c.bot_id)
                 # Lower score = higher priority, so subtract threat bonus
                 return c.health + noise - threat_bonus
@@ -778,7 +782,7 @@ class BattleEngine:
             # Sort by distance (closest first), with noise and threat weighting
             def score(c: BotRuntimeState) -> float:
                 dist = bot.position.distance_to(c.position)
-                noise = random.uniform(0, 50) * (10 - bot.intelligence) / 10
+                noise = self.rng.uniform(0, 50) * (10 - bot.intelligence) / 10
                 threat_bonus = get_threat_bonus(c.bot_id)
                 # Lower score = higher priority, so subtract threat bonus from distance
                 return dist + noise - threat_bonus
@@ -866,7 +870,7 @@ class BattleEngine:
             # Calculate and commit to target position
             if bot.commitment_timer <= 0:
                 bot.target_position = self._calculate_target_position(bot, target)
-                bot.commitment_timer = random.uniform(1.0, 2.0)
+                bot.commitment_timer = self.rng.uniform(1.0, 2.0)
 
             # Check for dodge opportunity
             self._maybe_dodge(bot, target)
@@ -954,7 +958,7 @@ class BattleEngine:
                         push_dir = ally_to_base.normalized()
                     else:
                         # Same position - pick random direction
-                        push_dir = Vector2(perp_x, perp_y) * random.choice([-1, 1])
+                        push_dir = Vector2(perp_x, perp_y) * self.rng.choice([-1, 1])
                     spread_offset_x += push_dir.x * (120 - dist_to_ally) * 0.5
                     spread_offset_y += push_dir.y * (120 - dist_to_ally) * 0.5
 
@@ -967,13 +971,13 @@ class BattleEngine:
         if bot.weapon_archetype == "SNIPER":
             # Snipers prefer positions with clear sightlines - slight lateral offset
             # to avoid being directly in front of melee allies
-            lateral_offset = random.uniform(30, 80) * random.choice([-1, 1])
+            lateral_offset = self.rng.uniform(30, 80) * self.rng.choice([-1, 1])
             archetype_offset_x += perp_x * lateral_offset
             archetype_offset_y += perp_y * lateral_offset
         elif bot.weapon_archetype == "BRAWLER":
             # Brawlers try to flank - approach from angles
             if bot.behavior == AIBehavior.AGGRESSIVE:
-                flank_offset = random.uniform(20, 60) * random.choice([-1, 1])
+                flank_offset = self.rng.uniform(20, 60) * self.rng.choice([-1, 1])
                 archetype_offset_x += perp_x * flank_offset
                 archetype_offset_y += perp_y * flank_offset
 
@@ -981,7 +985,7 @@ class BattleEngine:
         tactical_offset_x = 0.0
         tactical_offset_y = 0.0
         if bot.behavior == AIBehavior.TACTICAL:
-            offset = random.uniform(-50, 50)
+            offset = self.rng.uniform(-50, 50)
             tactical_offset_x = perp_x * offset
             tactical_offset_y = perp_y * offset
 
@@ -1043,13 +1047,13 @@ class BattleEngine:
         # REACTIVE DODGE TRIGGERS
         # ─────────────────────────────────────────────────────────────────────
         dodge_triggered = False
-        dodge_direction = random.choice([-1, 1])
+        dodge_direction = self.rng.choice([-1, 1])
 
         # 1. PAIN RESPONSE: Just took damage - dodge away!
         if bot.was_recently_damaged(self.current_time, threshold=0.25):
             # Higher intelligence = more likely to react to pain
             pain_dodge_chance = 0.15 + (bot.intelligence / 10.0) * 0.35  # 15-50%
-            if random.random() < pain_dodge_chance:
+            if self.rng.random() < pain_dodge_chance:
                 dodge_triggered = True
                 # Try to dodge away from damage source
                 if bot.last_damage_source and bot.last_damage_source in self.bots:
@@ -1059,7 +1063,7 @@ class BattleEngine:
                         to_attacker = attacker.position - bot.position
                         if to_attacker.magnitude() > 0:
                             # Pick perpendicular direction randomly
-                            dodge_direction = 1 if random.random() > 0.5 else -1
+                            dodge_direction = 1 if self.rng.random() > 0.5 else -1
 
         # 2. INCOMING PROJECTILES: Check if any projectiles are heading our way
         if not dodge_triggered:
@@ -1067,10 +1071,10 @@ class BattleEngine:
             if incoming_threat:
                 # Intelligence affects reaction to incoming fire
                 projectile_dodge_chance = 0.1 + (bot.intelligence / 10.0) * 0.4  # 10-50%
-                if random.random() < projectile_dodge_chance:
+                if self.rng.random() < projectile_dodge_chance:
                     dodge_triggered = True
                     # Pick a perpendicular direction randomly to evade
-                    dodge_direction = random.choice([-1, 1])
+                    dodge_direction = self.rng.choice([-1, 1])
 
         # 3. LOW HEALTH SURVIVAL: More likely to dodge when hurt
         if not dodge_triggered:
@@ -1078,14 +1082,14 @@ class BattleEngine:
             if health_pct < 0.4:  # Below 40% health
                 # Desperate dodging - low health makes bots more evasive
                 survival_dodge_chance = 0.05 * (1.0 - health_pct)  # Up to 3% per frame
-                if random.random() < survival_dodge_chance:
+                if self.rng.random() < survival_dodge_chance:
                     dodge_triggered = True
 
         # 4. BASELINE RANDOM DODGE: Intelligence-scaled evasion
         if not dodge_triggered:
             # Base chance + intelligence bonus
             base_chance = 0.015 + (bot.intelligence / 100.0) * 0.025  # 1.5-4% per frame
-            if random.random() < base_chance:
+            if self.rng.random() < base_chance:
                 dodge_triggered = True
 
         if not dodge_triggered:
@@ -1099,7 +1103,7 @@ class BattleEngine:
 
         # Cooldown scales inversely with intelligence (smarter = can dodge more often)
         base_cooldown = 2.0 - (bot.intelligence / 10.0) * 0.8  # 1.2-2.0s base
-        bot.dodge_timer = base_cooldown + random.uniform(-0.3, 0.5)
+        bot.dodge_timer = base_cooldown + self.rng.uniform(-0.3, 0.5)
 
     def _check_incoming_projectiles(self, bot: BotRuntimeState) -> t.Optional[Projectile]:
         """Check if any enemy projectiles are heading toward this bot.
@@ -1218,12 +1222,12 @@ class BattleEngine:
             center_y = self.config.arena_height / 2
 
             # Add some randomness to the center target
-            target_x = center_x + random.uniform(-100, 100)
-            target_y = center_y + random.uniform(-100, 100)
+            target_x = center_x + self.rng.uniform(-100, 100)
+            target_y = center_y + self.rng.uniform(-100, 100)
 
             bot.target_position = Vector2(target_x, target_y)
             # Longer commitment when wandering - smooth movement
-            bot.commitment_timer = random.uniform(1.5, 3.0)
+            bot.commitment_timer = self.rng.uniform(1.5, 3.0)
 
         # Use the committed target position
         dx = bot.target_position.x - bot.position.x
@@ -1233,8 +1237,8 @@ class BattleEngine:
         if distance < 50:
             # Near target, pick a new random direction smoothly
             if bot.commitment_timer <= 0:
-                bot.target_orientation = (bot.orientation + random.uniform(-45, 45)) % 360
-                bot.commitment_timer = random.uniform(1.0, 2.0)
+                bot.target_orientation = (bot.orientation + self.rng.uniform(-45, 45)) % 360
+                bot.commitment_timer = self.rng.uniform(1.0, 2.0)
             self._rotate_chassis_towards(bot, bot.target_orientation)
             return
 
@@ -1495,7 +1499,7 @@ class BattleEngine:
             desired_angle = math.degrees(math.atan2(flee_dir.y, flee_dir.x)) % 360
         else:
             # On top of enemy - pick random direction
-            desired_angle = random.uniform(0, 360)
+            desired_angle = self.rng.uniform(0, 360)
 
         # Rotate toward flee direction
         self._rotate_chassis_towards(bot, desired_angle, speed_mult=1.5)
@@ -1812,8 +1816,11 @@ class BattleEngine:
                     # Damage projectiles hit ANY bot they touch (including teammates blocking)
                     if is_friendly_fire:
                         # Teammate blocked the shot - reduced friendly fire damage (25%)
-                        # Don't track threat for friendly fire
-                        actual = hit_bot.take_damage(proj.damage // 4)
+                        actual = hit_bot.take_damage(
+                            proj.damage // 4, source_id=proj.shooter_id, current_time=self.current_time
+                        )
+                        if actual > 0:
+                            self.last_damage_time = self.current_time
                         self.events.append(
                             {
                                 "type": "blocked",
@@ -1822,6 +1829,18 @@ class BattleEngine:
                                 "target_id": proj.target_id,
                             }
                         )
+                        # If the teammate died from the blocked shot, emit the same
+                        # kill event as the normal damage path so stats/render stay in sync
+                        if not hit_bot.is_alive:
+                            if proj.shooter_id in self.bots:
+                                self.bots[proj.shooter_id].kills += 1
+                            self.events.append(
+                                {
+                                    "type": "kill",
+                                    "killer_id": proj.shooter_id,
+                                    "victim_id": hit_bot.bot_id,
+                                }
+                            )
                     else:
                         # Enemy hit - full damage with threat tracking
                         actual = hit_bot.take_damage(
@@ -1924,9 +1943,12 @@ class BattleEngine:
 
             # Calculate muzzle position - spawn projectile at weapon's barrel, not bot center
             # muzzle_offset is the distance from bot center along the weapon's facing direction
+            # Clamp the spawn distance so the projectile never spawns past the target
+            # (a target inside the muzzle offset would otherwise be impossible to hit)
+            spawn_distance = min(bot.muzzle_offset, max(0.0, distance - 1.0))
             muzzle_pos = Vector2(
-                bot.position.x + direction.x * bot.muzzle_offset,
-                bot.position.y + direction.y * bot.muzzle_offset,
+                bot.position.x + direction.x * spawn_distance,
+                bot.position.y + direction.y * spawn_distance,
             )
 
             # For point-blank weapons, check if target is closer than the muzzle offset
@@ -2034,6 +2056,7 @@ class BattleEngine:
 
         return {
             "winner_team": winner,
+            "seed": self.seed,
             "total_frames": len(self.frames),
             "duration": self.current_time,
             "fps": self.config.fps,

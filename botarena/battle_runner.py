@@ -76,6 +76,7 @@ def run_battle_from_json(input_data: dict, output_path: str, format: str = "gif"
         arena_height=config_data.get("arena_height", 1000),
         fps=config_data.get("fps", 30),
         max_duration=config_data.get("max_duration", 60.0),
+        seed=config_data.get("seed"),
     )
 
     # Create engine
@@ -130,6 +131,7 @@ def run_battle_from_json(input_data: dict, output_path: str, format: str = "gif"
     # Return result without frames (too large)
     return {
         "winner_team": result["winner_team"],
+        "seed": result["seed"],
         "total_frames": result["total_frames"],
         "duration": result["duration"],
         "team1_survivors": result["team1_survivors"],

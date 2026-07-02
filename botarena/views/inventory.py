@@ -760,6 +760,7 @@ class EditorStanceSelectRow(ui.ActionRow["EditorTacticsView"]):
     async def stance_select(self, interaction: discord.Interaction, select: ui.Select):
         new_stance = MovementStance(select.values[0])
         self.view.chassis.tactical_orders.movement_stance = new_stance
+        self.view.cog.save()
         await self.view.refresh(interaction)
 
 
@@ -789,18 +790,16 @@ class EditorTargetSelectRow(ui.ActionRow["EditorTacticsView"]):
     async def target_select(self, interaction: discord.Interaction, select: ui.Select):
         new_priority = TargetPriority(select.values[0])
         self.view.chassis.tactical_orders.target_priority = new_priority
+        self.view.cog.save()
         await self.view.refresh(interaction)
 
 
 class EditorTacticsControlsRow(ui.ActionRow["EditorTacticsView"]):
     """Control buttons for tactics view"""
 
-    @ui.button(label="Save & Back", style=discord.ButtonStyle.success, row=2)
+    @ui.button(label="Back", style=discord.ButtonStyle.success, row=2)
     async def save_button(self, interaction: discord.Interaction, button: ui.Button):
-        # Save changes
-        self.view.cog.save()
-
-        # Return to editor
+        # Changes are saved as they're made - just return to the editor
         await self.view.editor.refresh()
         await self.view.editor.send(interaction)
         self.view.stop()
@@ -809,6 +808,7 @@ class EditorTacticsControlsRow(ui.ActionRow["EditorTacticsView"]):
     async def reset_button(self, interaction: discord.Interaction, button: ui.Button):
         # Reset to defaults
         self.view.chassis.tactical_orders = TacticalOrders()
+        self.view.cog.save()
         await self.view.refresh(interaction)
 
 
