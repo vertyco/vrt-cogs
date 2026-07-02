@@ -1,0 +1,32 @@
+{
+  "author": [
+    "Vertyco"
+  ],
+  "description": "Easily edit any message sent by the bot via context menu commands. Quick Edit opens a modal pre-filled with the message's existing parts, and Full Edit opens a fully interactive editor with control over content, embeds, fields, and v2 text containers.",
+  "disabled": false,
+  "end_user_data_statement": "This cog does not store any user data.",
+  "hidden": false,
+  "install_msg": "Thank you for installing EmbEditor! Right click (or long press) any of my messages and use the `Quick Edit` or `Full Edit` context commands under Apps.\n\nDOCUMENTATION: https://github.com/vertyco/vrt-cogs/blob/main/embeditor/README.md",
+  "min_bot_version": "3.5.0",
+  "min_python_version": [
+    3,
+    11,
+    0
+  ],
+  "permissions": [
+    "send_messages",
+    "embed_links"
+  ],
+  "required_cogs": {},
+  "requirements": [
+    "python-dateutil"
+  ],
+  "short": "Edit the bot's messages with an interactive editor",
+  "tags": [
+    "utility",
+    "embed",
+    "editor",
+    "admin"
+  ],
+  "type": "COG"
+}
