@@ -1729,6 +1729,25 @@ class Admin(MixinMeta):
         self.save()
         await ctx.send(_("Role and emoji have been set for prestige level {}").format(prestige))
 
+    @prestige_group.command(name="emoji")
+    async def edit_prestige_emoji(
+        self,
+        ctx: commands.Context,
+        prestige: int,
+        emoji: t.Union[discord.Emoji, discord.PartialEmoji, str],
+    ):
+        """
+        Update the emoji for an existing prestige level
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if prestige not in conf.prestigedata:
+            return await ctx.send(_("That prestige level does not exist!"))
+        url = utils.get_twemoji(emoji) if isinstance(emoji, str) else emoji.url
+        conf.prestigedata[prestige].emoji_string = str(emoji)
+        conf.prestigedata[prestige].emoji_url = url
+        self.save()
+        await ctx.send(_("Emoji has been updated for prestige level {}").format(prestige))
+
     @prestige_group.command(name="remove", aliases=["rem", "del"])
     async def remove_prestige_level(self, ctx: commands.Context, prestige: int):
         """
