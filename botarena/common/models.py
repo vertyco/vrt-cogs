@@ -8,7 +8,7 @@ from pathlib import Path
 from uuid import uuid4
 
 import orjson
-from pydantic import VERSION, BaseModel, Field, field_validator
+from pydantic import VERSION, BaseModel, ConfigDict, Field, field_validator
 
 from .bot_sprite import render_bot_sprite_to_bytes
 from .image_utils import load_image_bytes
@@ -101,6 +101,10 @@ async def render_bot_image(
 
 class ArenaBaseModel(BaseModel):
     """Base model with serialization helpers"""
+
+    # from_attributes lets validation accept instances of a stale class copy left
+    # behind by a hot reload, instead of failing the model_type isinstance check
+    model_config = ConfigDict(from_attributes=True)
 
     @classmethod
     def model_validate(cls, obj: t.Any, *args, **kwargs):
