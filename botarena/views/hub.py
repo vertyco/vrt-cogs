@@ -11,6 +11,7 @@ import asyncio
 import io
 import logging
 import typing as t
+from datetime import datetime, timezone
 
 import discord
 from discord import ui
@@ -25,10 +26,14 @@ if t.TYPE_CHECKING:
 
 from ..common.campaign import (
     CAMPAIGN_CHAPTERS,
+    SKIRMISH_MISSION_ID,
+    build_skirmish_mission,
     get_available_missions,
     get_chapter_for_mission,
     get_chapter_progress,
     get_mission_by_id,
+    get_replay_entry_fee,
+    get_replay_reward,
 )
 from ..common.image_utils import find_image_path, load_image
 from ..common.models import TEAM_COLOR_EMOJIS, TEAM_COLORS, Chassis, Component, Plating
@@ -165,6 +170,7 @@ class BattleResultLayout(BotArenaView):
         cog: t.Optional["BotArena"] = None,
         parent: t.Optional[ui.LayoutView] = None,
         retry_mission: t.Optional["Mission"] = None,
+        retry_selected_bots: t.Optional[list[str]] = None,
     ):
         # BattleResultLayout has optional ctx/cog, so we handle None case
         if ctx is not None and cog is not None:
@@ -177,6 +183,7 @@ class BattleResultLayout(BotArenaView):
             self.parent = parent
             self.message: t.Optional[discord.Message] = None
         self.retry_mission = retry_mission
+        self.retry_selected_bots = retry_selected_bots or []
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         """Override to handle optional ctx case."""
@@ -218,7 +225,9 @@ class CampaignBattleActionsRow(ui.ActionRow["BattleResultLayout"]):
         if not self.view.ctx or not self.view.cog or not self.view.retry_mission:
             await interaction.response.send_message("Cannot retry.", ephemeral=True)
             return
-        view = MissionBriefingLayout(self.view.ctx, self.view.cog, self.view.retry_mission)
+        view = MissionBriefingLayout(
+            self.view.ctx, self.view.cog, self.view.retry_mission, selected_bots=self.view.retry_selected_bots
+        )
         await interaction.response.send_message(view=view)
         msg = await interaction.original_response()
         view.message = msg
@@ -256,6 +265,7 @@ def create_battle_result_view(
     mission_name: t.Optional[str] = None,
     chapter_name: t.Optional[str] = None,
     mission: t.Optional["Mission"] = None,
+    retry_selected_bots: t.Optional[list[str]] = None,
 ) -> tuple[BattleResultLayout, list[discord.File]]:
     """
     Create a LayoutView for battle results with an embedded video.
@@ -277,7 +287,7 @@ def create_battle_result_view(
     Returns:
         Tuple of (LayoutView, list of files to attach)
     """
-    layout = BattleResultLayout(ctx=ctx, cog=cog, retry_mission=mission)
+    layout = BattleResultLayout(ctx=ctx, cog=cog, retry_mission=mission, retry_selected_bots=retry_selected_bots)
     container = ui.Container(accent_colour=color)
 
     # Title and description with user attribution and mission info
@@ -821,10 +831,12 @@ class SecondaryMenuRow(ui.ActionRow["GameHubLayout"]):
 
     def __init__(self, has_battle_ready_bots: bool = True):
         super().__init__()
-        # Disable PvP button if player has no battle-ready bots
+        # Disable PvP/Skirmish buttons if player has no battle-ready bots
         if not has_battle_ready_bots:
             self.pvp_button.disabled = True
             self.pvp_button.style = discord.ButtonStyle.secondary
+            self.skirmish_button.disabled = True
+            self.skirmish_button.style = discord.ButtonStyle.secondary
 
     @ui.button(label="Profile", style=discord.ButtonStyle.secondary, emoji="📊")
     async def profile_button(self, interaction: discord.Interaction, button: ui.Button):
@@ -848,6 +860,38 @@ class SecondaryMenuRow(ui.ActionRow["GameHubLayout"]):
         view = PvPLayout(self.view.ctx, self.view.cog, parent=self.view)
         self.view.navigate_to_child(view)
         await interaction.response.edit_message(view=view)
+
+    @ui.button(label="Skirmish", style=discord.ButtonStyle.primary, emoji="🗡️")
+    async def skirmish_button(self, interaction: discord.Interaction, button: ui.Button):
+        player = self.view.cog.db.get_player(self.view.ctx.author.id)
+        battle_ready = player.get_battle_ready_bots()
+        if not battle_ready:
+            await interaction.response.send_message(
+                "❌ You need at least one **battle-ready bot** to fight a skirmish!", ephemeral=True
+            )
+            return
+
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        if getattr(player, "last_skirmish", "") == today:
+            await interaction.response.send_message(
+                "🗡️ You've already fought your daily skirmish! Come back tomorrow (resets at midnight UTC).",
+                ephemeral=True,
+            )
+            return
+
+        # Match enemy team to the player's 3 heaviest battle-ready bots
+        weights = []
+        for chassis in battle_ready:
+            bot = chassis.to_bot(self.view.cog.registry)
+            if bot:
+                weights.append(bot.total_weight)
+        weights.sort(reverse=True)
+        team_weight = sum(weights[:3])
+
+        mission = build_skirmish_mission(self.view.cog.registry, team_weight)
+        view = MissionBriefingLayout(self.view.ctx, self.view.cog, mission, parent=self.view)
+        self.view.navigate_to_child(view)
+        await view.send(interaction)
 
     @ui.button(label="Tutorial", style=discord.ButtonStyle.secondary, emoji="❓")
     async def tutorial_button(self, interaction: discord.Interaction, button: ui.Button):
@@ -943,7 +987,8 @@ class GameHubLayout(BotArenaView):
         else:
             container.add_item(
                 ui.TextDisplay(
-                    "## 🎯 Campaign Complete!\nYou've conquered all missions! Challenge other players in PvP!"
+                    "## 🎯 Campaign Complete!\nYou've conquered all missions! "
+                    "Replay missions for 25% rewards, fight the daily 🗡️ Skirmish, or challenge other players in PvP!"
                 )
             )
 
@@ -994,10 +1039,14 @@ class MissionSelectRow(ui.ActionRow["CampaignLayout"]):
         for mission in chapter.missions:
             is_completed = mission.id in completed_set
             is_available = mission.required_mission is None or mission.required_mission in completed_set
-            can_afford = player_credits >= mission.entry_fee
+
+            # Completed missions are replayable at 25% fee/reward
+            entry_fee = get_replay_entry_fee(mission) if is_completed else mission.entry_fee
+            reward = get_replay_reward(mission) if is_completed else mission.credit_reward
+            can_afford = player_credits >= entry_fee
 
             if is_completed:
-                status = "✅"
+                status = "🔁"
             elif not is_available:
                 status = "🔒"
             elif not can_afford:
@@ -1006,13 +1055,14 @@ class MissionSelectRow(ui.ActionRow["CampaignLayout"]):
                 status = "🔓"
 
             # Build description showing entry fee and reward
-            if mission.entry_fee > 0:
-                fee_text = f"Fee: {humanize_number(mission.entry_fee)}"
+            if entry_fee > 0:
+                fee_text = f"Fee: {humanize_number(entry_fee)}"
                 if not can_afford and is_available and not is_completed:
                     fee_text += " (need more credits!)"
             else:
                 fee_text = "Free entry"
-            desc = f"{mission.difficulty.value} | {fee_text} | 🏆 {humanize_number(mission.credit_reward)}"
+            replay_text = "Replay | " if is_completed else ""
+            desc = f"{replay_text}{mission.difficulty.value} | {fee_text} | 🏆 {humanize_number(reward)}"
 
             options.append(
                 discord.SelectOption(
@@ -1117,10 +1167,13 @@ class CampaignLayout(BotArenaView):
         for mission in chapter.missions:
             is_completed = mission.id in completed_set
             is_available = mission.required_mission is None or mission.required_mission in completed_set
-            can_afford = player.credits >= mission.entry_fee
+
+            # Completed missions are replayable at 25% fee/reward
+            entry_fee = get_replay_entry_fee(mission) if is_completed else mission.entry_fee
+            can_afford = player.credits >= entry_fee
 
             if is_completed:
-                status = "✅"
+                status = "✅🔁"
             elif not is_available:
                 status = "🔒"
             elif not can_afford:
@@ -1131,9 +1184,13 @@ class CampaignLayout(BotArenaView):
             diff_emoji = {"Tutorial": "🟢", "Easy": "🟢", "Medium": "🟡", "Hard": "🟠", "Extreme": "🔴", "Boss": "💀"}
             diff = diff_emoji.get(mission.difficulty.value, "⚪")
 
-            # Show entry fee for non-completed missions
+            # Show entry fee (replay pricing for completed missions)
             fee_text = ""
-            if not is_completed and mission.entry_fee > 0:
+            if is_completed:
+                fee_parts = [f"💰 {humanize_number(entry_fee)}"] if entry_fee > 0 else []
+                fee_parts.append(f"🏆 {humanize_number(get_replay_reward(mission))}")
+                fee_text = f" | Replay: {' / '.join(fee_parts)}"
+            elif mission.entry_fee > 0:
                 fee_text = f" | 💰 {humanize_number(mission.entry_fee)}"
 
             mission_text += f"\n**{status} {mission.name}** {diff}{fee_text}\n-# {mission.description}\n"
@@ -1235,16 +1292,35 @@ class MissionBriefingLayout(BotArenaView):
     """Mission briefing and bot selection before battle"""
 
     def __init__(
-        self, ctx: commands.Context, cog: "BotArena", mission: "Mission", parent: t.Optional[ui.LayoutView] = None
+        self,
+        ctx: commands.Context,
+        cog: "BotArena",
+        mission: "Mission",
+        parent: t.Optional[ui.LayoutView] = None,
+        selected_bots: t.Optional[list[str]] = None,
     ):
         super().__init__(ctx=ctx, cog=cog, timeout=300, parent=parent)
         self.mission = mission
         self.battle_in_progress = False
 
-        # Start with no bots selected - user must actively choose
-        self.selected_bots: list[str] = []
+        # Pre-seed squad if provided (e.g. Try Again), otherwise user must actively choose
+        player = cog.db.get_player(ctx.author.id)
+        valid_ids = {chassis.id for chassis in player.get_battle_ready_bots()}
+        self.selected_bots: list[str] = [bot_id for bot_id in (selected_bots or []) if bot_id in valid_ids]
 
         self._build_layout()
+
+    @property
+    def is_skirmish(self) -> bool:
+        return self.mission.id == SKIRMISH_MISSION_ID
+
+    def is_replay(self, player) -> bool:
+        return not self.is_skirmish and player.has_completed_mission(self.mission.id)
+
+    def effective_entry_fee(self, player) -> int:
+        if self.is_skirmish:
+            return 0
+        return get_replay_entry_fee(self.mission) if self.is_replay(player) else self.mission.entry_fee
 
     def get_attachments(self) -> list[discord.File]:
         """Get the mission-specific arena background image file"""
@@ -1292,7 +1368,8 @@ class MissionBriefingLayout(BotArenaView):
 
         weight_limit = self.mission.weight_limit
         is_overweight = weight_limit > 0 and total_team_weight > weight_limit
-        can_afford = player.credits >= self.mission.entry_fee
+        entry_fee = self.effective_entry_fee(player)
+        can_afford = player.credits >= entry_fee
 
         container = ui.Container(accent_colour=discord.Color.red() if is_overweight else discord.Color.orange())
 
@@ -1323,15 +1400,31 @@ class MissionBriefingLayout(BotArenaView):
         weight_status = "✅" if not is_overweight else "❌"
         fee_status = "✅" if can_afford else "❌"
 
+        if self.is_skirmish:
+            reward_line = "🏆 **Reward:** 15% of your squad's total value (min 500 credits)"
+        elif self.is_replay(player):
+            reward_line = f"🏆 **Reward:** {humanize_number(get_replay_reward(self.mission))} credits (🔁 replay rate)"
+        else:
+            reward_line = f"🏆 **Reward:** {humanize_number(self.mission.credit_reward)} credits"
+
+        fee_line = f"💰 **Entry Fee:** {humanize_number(entry_fee)} credits"
+        if self.is_replay(player):
+            fee_line += " (🔁 replay rate)"
+
         mission_info = (
-            f"⚖️ **Weight Limit:** {weight_limit}\n"
+            f"⚖️ **Weight Limit:** {weight_limit if weight_limit > 0 else 'None'}\n"
             f"🤖 **Your Team's Weight:** {weight_status} {weight_display}\n"
-            f"💰 **Entry Fee:** {humanize_number(self.mission.entry_fee)} credits\n"
+            f"{fee_line}\n"
             f"💳 **Your Credits:** {fee_status} {humanize_number(player.credits)}\n"
-            f"🏆 **Reward:** {humanize_number(self.mission.credit_reward)} credits"
+            f"{reward_line}"
         )
+        if self.is_replay(player):
+            mission_info = "🔁 **Replay Mission** - 25% entry fee and reward\n" + mission_info
         if self.mission.unlock_parts:
-            mission_info += f"\n🔓 **Unlocks:** {', '.join(self.mission.unlock_parts)}"
+            if self.is_replay(player):
+                mission_info += f"\n🔓 **Unlocks:** {', '.join(self.mission.unlock_parts)} (already unlocked)"
+            else:
+                mission_info += f"\n🔓 **Unlocks:** {', '.join(self.mission.unlock_parts)}"
 
         container.add_item(ui.TextDisplay(mission_info))
 
@@ -1444,23 +1537,42 @@ class MissionBriefingLayout(BotArenaView):
             can_start = False
             start_disabled_reason = (
                 f"❌ **Not enough credits!**\n\n"
-                f"Entry fee: **{humanize_number(self.mission.entry_fee)}** credits\n"
+                f"Entry fee: **{humanize_number(entry_fee)}** credits\n"
                 f"Your credits: **{humanize_number(player.credits)}**"
             )
 
         self.add_item(MissionActionRow(can_start=can_start, start_disabled_reason=start_disabled_reason))
 
     async def run_battle(self, interaction: discord.Interaction):
+        """Guarded entry point - one battle per user at a time, always released on exit."""
+        user_id = self.ctx.author.id
+        if user_id in self.cog.active_battles:
+            await interaction.response.send_message("❌ You already have a battle in progress.", ephemeral=True)
+            return
+        self.cog.active_battles.add(user_id)
+        try:
+            await self.execute_battle(interaction)
+        finally:
+            self.cog.active_battles.discard(user_id)
+
+    async def execute_battle(self, interaction: discord.Interaction):
         if not self.selected_bots:
             await interaction.response.send_message("❌ Select at least one bot!", ephemeral=True)
             return
 
         player = self.cog.db.get_player(self.ctx.author.id)
+        entry_fee = self.effective_entry_fee(player)
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
-        if self.mission.entry_fee > 0:
-            if player.credits < self.mission.entry_fee:
-                await interaction.response.send_message("❌ Not enough credits!", ephemeral=True)
-                return
+        if self.is_skirmish and getattr(player, "last_skirmish", "") == today:
+            await interaction.response.send_message(
+                "🗡️ You've already fought your daily skirmish! Come back tomorrow.", ephemeral=True
+            )
+            return
+
+        if entry_fee > 0 and player.credits < entry_fee:
+            await interaction.response.send_message("❌ Not enough credits!", ephemeral=True)
+            return
 
         my_bots = []
         my_bots_with_order = []  # (spawn_order, index, bot) tuples for sorting
@@ -1512,11 +1624,24 @@ class MissionBriefingLayout(BotArenaView):
             await interaction.response.send_message("❌ Could not load enemy bots!", ephemeral=True)
             return
 
+        # Compute reward: skirmish pays 15% of the squad's total value (min 500), replays pay 25%
+        is_skirmish = self.is_skirmish
+        if is_skirmish:
+            credit_reward = max(500, round(sum(bot.total_cost for bot in my_bots) * 0.15))
+        elif self.is_replay(player):
+            credit_reward = get_replay_reward(self.mission)
+        else:
+            credit_reward = self.mission.credit_reward
+
         # Deduct fee
         entry_fee_paid = 0
-        if self.mission.entry_fee > 0:
-            entry_fee_paid = self.mission.entry_fee
+        if entry_fee > 0:
+            entry_fee_paid = entry_fee
             player.credits -= entry_fee_paid
+
+        # Skirmish consumes the daily attempt win or lose
+        if is_skirmish:
+            player.last_skirmish = today
 
         # Mark mission as attempted (reveals enemy info for future attempts)
         player.attempt_mission(self.mission.id)
@@ -1537,15 +1662,26 @@ class MissionBriefingLayout(BotArenaView):
         )
 
         if not result or not video_path:
-            # Revert state or show error
+            log.error(
+                f"Battle failed for user {self.ctx.author.id} on mission {self.mission.id}: "
+                f"{error or 'Unknown error'}"
+            )
+            # Refund the entry fee - the battle never happened
+            if entry_fee_paid > 0:
+                player.credits += entry_fee_paid
+                self.cog.save()
+            # Revert state and show a friendly error (details are in the logs)
             self.battle_in_progress = False
             self.clear_items()
             self._build_layout()
             # Interaction already responded, use message.edit instead
             if self.message:
                 await self.message.edit(view=self)
-            error_msg = error or "Unknown error occurred"
-            await interaction.followup.send(f"❌ **Battle Error**\n```\n{error_msg}\n```", ephemeral=True)
+            if entry_fee_paid > 0:
+                error_msg = "❌ The battle failed to run, your entry fee has been refunded."
+            else:
+                error_msg = "❌ The battle failed to run. Please try again later."
+            await interaction.followup.send(error_msg, ephemeral=True)
             return
 
         # Process result (same logic as before)
@@ -1558,10 +1694,10 @@ class MissionBriefingLayout(BotArenaView):
         is_first_completion = False  # Track if this is the first time completing this mission
 
         if player_won:
-            is_first_completion = not player.has_completed_mission(self.mission.id)
+            is_first_completion = not is_skirmish and not player.has_completed_mission(self.mission.id)
 
-            # Always award credits for winning
-            player.credits += entry_fee_paid + self.mission.credit_reward
+            # Always award credits for winning (replay/skirmish rewards computed above)
+            player.credits += entry_fee_paid + credit_reward
 
             # Always increment campaign_wins for leaderboard progression
             player.campaign_wins += 1
@@ -1646,8 +1782,13 @@ class MissionBriefingLayout(BotArenaView):
 
         extra_fields = []
         if player_won:
-            reward_text = f"💰 **+{self.mission.credit_reward}** credits"
-            if is_first_completion:
+            reward_text = f"💰 **+{humanize_number(credit_reward)}** credits"
+            if is_skirmish:
+                title = "🗡️ Skirmish Victory!"
+                description = self.mission.victory_text or f"You won the **{self.mission.name}**!"
+                color = discord.Color.green()
+                extra_fields.append(("🎁 Rewards", reward_text))
+            elif is_first_completion:
                 title = "🏆 Victory!"
                 description = self.mission.victory_text or f"You completed **{self.mission.name}**!"
                 color = discord.Color.green()
@@ -1670,14 +1811,23 @@ class MissionBriefingLayout(BotArenaView):
             if entry_fee_paid > 0:
                 extra_fields.append(("💸 Lost", f"**-{entry_fee_paid}** credits"))
 
-        try:
-            ext = video_path.suffix.lstrip(".")
-            filename = f"battle.{ext}"
-            file = discord.File(video_path, filename=filename)
+        # Get chapter name for display
+        chapter = get_chapter_for_mission(self.mission.id)
+        chapter_name = f"Chapter {chapter.id}: {chapter.name}" if chapter else None
 
-            # Get chapter name for display
-            chapter = get_chapter_for_mission(self.mission.id)
-            chapter_name = f"Chapter {chapter.id}: {chapter.name}" if chapter else None
+        # Skip the video if it exceeds the guild's upload limit, but still show results
+        size_limit = self.ctx.guild.filesize_limit if self.ctx.guild else discord.utils.DEFAULT_FILE_SIZE_LIMIT_BYTES
+        video_size = video_path.stat().st_size
+        video_too_large = video_size > size_limit
+        if video_too_large:
+            log.warning(f"Battle video too large to upload ({video_size} bytes > {size_limit} byte limit)")
+            extra_fields.append(("📹 Video", "Battle video too large to upload"))
+
+        try:
+            file = None
+            if not video_too_large:
+                ext = video_path.suffix.lstrip(".")
+                file = discord.File(video_path, filename=f"battle.{ext}")
 
             result_view, files = create_battle_result_view(
                 title=title,
@@ -1693,6 +1843,7 @@ class MissionBriefingLayout(BotArenaView):
                 mission_name=self.mission.name,
                 chapter_name=chapter_name,
                 mission=self.mission,
+                retry_selected_bots=self.selected_bots,
             )
             result_view.message = self.message
             await self.message.edit(view=result_view, embed=None, attachments=files)
@@ -1700,10 +1851,6 @@ class MissionBriefingLayout(BotArenaView):
             # Video attachment failed - still show result but without video
             # This is an acceptable degradation since the battle already happened
             log.exception("Failed to attach battle video to result message", exc_info=e)
-
-            # Get chapter name for display
-            chapter = get_chapter_for_mission(self.mission.id)
-            chapter_name = f"Chapter {chapter.id}: {chapter.name}" if chapter else None
 
             result_view, _ = create_battle_result_view(
                 title=title,
@@ -1718,6 +1865,7 @@ class MissionBriefingLayout(BotArenaView):
                 mission_name=self.mission.name,
                 chapter_name=chapter_name,
                 mission=self.mission,
+                retry_selected_bots=self.selected_bots,
             )
             result_view.message = self.message
             await self.message.edit(view=result_view, embed=None)

@@ -10,12 +10,11 @@ independently from the chassis (weapon_orientation vs bot orientation).
 """
 
 import typing as t
-from functools import lru_cache
 
 import numpy as np
 from PIL import Image
 
-from .image_utils import load_image
+from .image_utils import SPRITE_SCALE, load_image
 
 
 class CollisionMask:
@@ -160,9 +159,10 @@ class CollisionManager:
 
     def __init__(self):
         self._masks: dict[str, CollisionMask] = {}
-        # Scale factor from source image pixels to arena coordinates
-        # Chassis images are 64x64, and they should occupy ~64 pixels in the 1000x1000 arena
-        self._scale: float = 1.0
+        # Scale factor from source image pixels to arena coordinates.
+        # The renderer draws battle sprites at SPRITE_SCALE (1.3x) for visibility,
+        # so the collision mask must use the same factor to match the visuals.
+        self._scale: float = SPRITE_SCALE
 
     def register_bot(
         self,
@@ -214,13 +214,3 @@ class CollisionManager:
     def clear(self):
         """Clear all registered collision masks."""
         self._masks.clear()
-
-
-# Module-level cache for collision masks (shared across battles)
-@lru_cache(maxsize=64)
-def get_collision_mask(plating_name: str, weapon_name: t.Optional[str] = None) -> CollisionMask:
-    """Get a cached collision mask for the given plating.
-
-    Note: weapon_name is kept for API compatibility but not used for collision.
-    """
-    return CollisionMask(plating_name, weapon_name)

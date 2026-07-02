@@ -1,3 +1,4 @@
+import asyncio
 from abc import ABC, ABCMeta
 from pathlib import Path
 
@@ -20,8 +21,9 @@ class MixinMeta(ABC):
         self.db: DB
         self.registry: PartsRegistry
         self.data_path: Path
-        self.saving: bool
         self.telemetry: BattleTelemetry
+        self.active_battles: set[int]
+        self.battle_semaphore: asyncio.Semaphore
 
     def save(self) -> None:
         raise NotImplementedError

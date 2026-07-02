@@ -19,7 +19,7 @@ BATTLE_TIPS: list[str] = [
     "💡 **Tip:** Higher intelligence means smarter AI decision-making.",
     "💡 **Tip:** Unlock new parts by completing campaign missions!",
     "💡 **Tip:** PvP battles don't cost credits but don't give rewards either.",
-    "💡 **Tip:** Stakes challenges let you bet credits against other players!",
+    "💡 **Tip:** Use 'Set Your Bet' in a PvP challenge to wager against other players!",
     "💡 **Tip:** Each chassis can only equip one plating and one weapon.",
     "💡 **Tip:** Shielding = HP in battle. More shielding = more survivability.",
     "💡 **Tip:** Fire rate matters! High RPM weapons deal consistent damage.",

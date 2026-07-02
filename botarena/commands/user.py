@@ -15,6 +15,10 @@ from ..common.models import PlayerData
 from ..views.hub import GameHubLayout, ProfileLayout, TutorialLayout
 from ..views.leaderboard import LeaderboardMode, LeaderboardView
 
+# Starting credits for a fresh account, derived from the PlayerData default
+DEFAULT_CREDITS: int = PlayerData().credits
+DEFAULT_CREDITS_STR: str = f"{DEFAULT_CREDITS:,}"
+
 
 class ResetConfirmLayout(ui.LayoutView):
     """Confirmation view for account reset"""
@@ -36,7 +40,7 @@ class ResetConfirmLayout(ui.LayoutView):
                 "- All bots and parts\n"
                 "- All campaign progress\n"
                 "- All battle statistics\n\n"
-                "You will start fresh with **8,200 credits** and the tutorial.\n\n"
+                f"You will start fresh with **{DEFAULT_CREDITS_STR} credits** and the tutorial.\n\n"
                 "**This cannot be undone!**"
             )
         )
@@ -76,8 +80,8 @@ class ResetConfirmButtonsRow(ui.ActionRow["ResetConfirmLayout"]):
             ui.TextDisplay(
                 "# ✅ Account Reset!\n\n"
                 "Your Bot Arena account has been reset.\n"
-                "You now have **8,200 credits** to start fresh.\n\n"
-                "Use `[p]botarena` to begin the tutorial!"
+                f"You now have **{DEFAULT_CREDITS_STR} credits** to start fresh.\n\n"
+                f"Use `{self.view.ctx.clean_prefix}botarena` to begin the tutorial!"
             )
         )
         self.view.add_item(container)
@@ -99,6 +103,7 @@ class UserCommands(MixinMeta):
 
     @commands.command(name="botarena", aliases=["ba"])
     @commands.guild_only()
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def botarena(self, ctx: commands.Context):
         """Bot Arena - Build and battle robots!
 
@@ -122,6 +127,7 @@ class UserCommands(MixinMeta):
 
     @commands.command(name="botprofile", aliases=["bp"])
     @commands.guild_only()
+    @commands.cooldown(1, 5, commands.BucketType.user)
     async def botprofile(self, ctx: commands.Context, member: t.Optional[discord.Member] = None):
         """View a player's Bot Arena profile and stats.
 
@@ -149,7 +155,7 @@ class UserCommands(MixinMeta):
         - All campaign progress will be reset
         - All battle statistics will be cleared
 
-        You will start fresh with 8,200 credits.
+        You will start fresh with your starting credits.
 
         Use this if you're stuck and can't afford to continue.
         """
@@ -158,6 +164,7 @@ class UserCommands(MixinMeta):
 
     @commands.command(name="botleaderboard", aliases=["botlb"])
     @commands.guild_only()
+    @commands.cooldown(1, 5, commands.BucketType.user)
     async def botleaderboard(self, ctx: commands.Context, mode: str = "wins"):
         """View the Bot Arena leaderboard.
 

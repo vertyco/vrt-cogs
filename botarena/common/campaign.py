@@ -26,6 +26,7 @@ Original Arena Order & Stats (from wiki):
 | 15| The Final Hour        | 150    | 22000 | 50000 | 2       |
 """
 
+import random
 import typing as t
 from enum import Enum
 
@@ -879,18 +880,80 @@ def get_chapter_for_mission(mission_id: str) -> t.Optional[Chapter]:
     return None
 
 
-def get_available_missions(completed_missions: set[str]) -> list[Mission]:
-    """Get missions that are available based on completed missions"""
+def get_available_missions(completed_missions: set[str], include_replays: bool = False) -> list[Mission]:
+    """
+    Get missions that are available based on completed missions.
+
+    Uncompleted-but-unlocked missions come first; if include_replays is True,
+    completed missions are appended after them (replayable at reduced fee/reward).
+    """
     available = []
+    replays = []
     for chapter in CAMPAIGN_CHAPTERS:
         for mission in chapter.missions:
             if mission.id in completed_missions:
-                continue  # Already completed
-            if mission.required_mission is None:
+                replays.append(mission)  # Already completed - replayable
+            elif mission.required_mission is None or mission.required_mission in completed_missions:
                 available.append(mission)
-            elif mission.required_mission in completed_missions:
-                available.append(mission)
+    if include_replays:
+        available.extend(replays)
     return available
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# REPLAY & SKIRMISH SUPPORT
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Replays cost/pay 25% of the original mission values
+REPLAY_RATE = 0.25
+
+SKIRMISH_MISSION_ID = "skirmish"
+
+
+def get_replay_entry_fee(mission: Mission) -> int:
+    """Entry fee when replaying an already-completed mission (25% of original)"""
+    return round(mission.entry_fee * REPLAY_RATE)
+
+
+def get_replay_reward(mission: Mission) -> int:
+    """Credit reward when replaying an already-completed mission (25% of original)"""
+    return round(mission.credit_reward * REPLAY_RATE)
+
+
+def build_skirmish_mission(registry: PartsRegistry, team_weight: int) -> Mission:
+    """
+    Build a random daily skirmish mission roughly matched to the player's team weight.
+
+    Picks the enemy lineup from an existing campaign mission whose enemy team weight
+    is close to the player's team weight (randomly among the 3 closest matches).
+    """
+    scored: list[tuple[int, Mission]] = []
+    for chapter in CAMPAIGN_CHAPTERS:
+        for mission in chapter.missions:
+            bots = [npc.to_bot(registry) for npc in mission.enemies]
+            if not all(bots):
+                continue
+            enemy_weight = sum(bot.total_weight for bot in bots)
+            scored.append((abs(enemy_weight - team_weight), mission))
+    scored.sort(key=lambda x: x[0])
+    source = random.choice([mission for _, mission in scored[:3]])
+    return Mission(
+        id=SKIRMISH_MISSION_ID,
+        name="Daily Skirmish",
+        description="A once-per-day exhibition match against a random crew matched to your squad.",
+        difficulty=source.difficulty,
+        chapter=source.chapter,
+        enemies=source.enemies,
+        credit_reward=0,  # Computed at battle time: 15% of squad value, minimum 500
+        entry_fee=0,
+        weight_limit=0,
+        briefing=(
+            "A daily exhibition match - no entry fee!\n"
+            "Win to earn **15% of your squad's total value** in credits (minimum 500)."
+        ),
+        victory_text="Skirmish won! Come back tomorrow for another.",
+        defeat_text="Skirmish lost. Your daily attempt is used - come back tomorrow!",
+    )
 
 
 def get_chapter_progress(chapter_id: int, completed_missions: set[str]) -> tuple[int, int]:

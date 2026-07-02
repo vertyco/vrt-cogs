@@ -25,6 +25,44 @@ class AdminCommands(MixinMeta):
         """Configure Bot Arena settings for this server"""
         pass
 
+    @botarenaset.command(name="maxbet")
+    @commands.is_owner()
+    async def baset_maxbet(self, ctx: commands.Context, amount: int):
+        """[Owner] Set the maximum PvP bet (0 = unlimited)"""
+        if amount < 0:
+            await ctx.send("❌ Max bet cannot be negative! Use 0 for unlimited.")
+            return
+
+        self.db.max_bet = amount
+        self.save()
+        if amount == 0:
+            await ctx.send("✅ Max PvP bet set to **unlimited**.")
+        else:
+            await ctx.send(f"✅ Max PvP bet set to **{humanize_number(amount)}**.")
+
+    @botarenaset.command(name="givecredits")
+    @commands.is_owner()
+    async def baset_givecredits(self, ctx: commands.Context, user: discord.Member, amount: int):
+        """[Owner] Give (or deduct with a negative amount) Bot Arena game credits
+
+        This adjusts the player's in-game Bot Arena credits, not the Red bank balance.
+        Balance is floored at 0.
+        """
+        if amount == 0:
+            await ctx.send("❌ Amount cannot be zero!")
+            return
+
+        player = self.db.get_player(user.id)
+        player.credits = max(0, player.credits + amount)
+        self.save()
+
+        verb = "Gave" if amount > 0 else "Deducted"
+        await ctx.send(
+            f"✅ {verb} **{humanize_number(abs(amount))}** credits "
+            f"{'to' if amount > 0 else 'from'} {user.display_name}. "
+            f"New balance: **{humanize_number(player.credits)}** credits."
+        )
+
     @botarenaset.command(name="resetplayer")
     @commands.is_owner()
     async def baset_resetplayer(self, ctx: commands.Context, user: discord.Member, confirm: bool = False):

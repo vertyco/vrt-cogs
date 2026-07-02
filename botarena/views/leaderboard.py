@@ -125,11 +125,18 @@ class PaginationRow(ui.ActionRow["LeaderboardView"]):
 
     @ui.button(emoji="\N{HEAVY MULTIPLICATION X}\N{VARIATION SELECTOR-16}", style=discord.ButtonStyle.danger)
     async def close_btn(self, interaction: discord.Interaction, button: ui.Button) -> None:
-        with suppress(discord.NotFound):
-            await interaction.response.defer()
-        if self._lb_view.message:
-            with suppress(discord.NotFound):
-                await self._lb_view.message.delete()
+        # Disable all components and edit in place (matches base view behavior)
+        if self._lb_view.pages:
+            page = self._lb_view.pages[self._lb_view.page]
+            for item in page.children:
+                if hasattr(item, "disabled"):
+                    setattr(item, "disabled", True)
+                elif isinstance(item, ui.ActionRow):
+                    for child in item.children:
+                        if hasattr(child, "disabled"):
+                            setattr(child, "disabled", True)
+        with suppress(discord.HTTPException):
+            await self._lb_view.refresh(interaction)
         self._lb_view.stop()
 
     @ui.button(emoji="\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}", style=discord.ButtonStyle.primary)

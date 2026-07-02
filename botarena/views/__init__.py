@@ -5,7 +5,6 @@ from ..constants.agility import (
     get_agility_quirk_detailed,
 )
 from .base import BotArenaView
-from .builder import BotBuilderView
 from .challenge import ChallengeLayout
 from .hub import (
     CampaignLayout,
@@ -22,7 +21,6 @@ from .shop import ShopView
 __all__ = [
     "AGILITY_QUIRKS",
     "BotArenaView",
-    "BotBuilderView",
     "CampaignLayout",
     "ChallengeLayout",
     "ChassisEditorLayout",

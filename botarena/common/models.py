@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import typing as t
@@ -8,6 +9,9 @@ from uuid import uuid4
 
 import orjson
 from pydantic import VERSION, BaseModel, Field, field_validator
+
+from .bot_sprite import render_bot_sprite_to_bytes
+from .image_utils import load_image_bytes
 
 log = logging.getLogger("red.vrt.botarena")
 
@@ -75,9 +79,8 @@ async def render_bot_image(
     Returns:
         PNG image bytes showing the bot with its equipped parts
     """
-    import asyncio
-
-    from ..common.bot_sprite import render_bot_sprite_to_bytes
+    # Imported here (not at file top) because constants.parts imports from this
+    # module - a top-level import would create a circular import.
     from ..constants.parts import build_registry
 
     registry = build_registry()
@@ -554,8 +557,6 @@ class OwnedChassis(ArenaBaseModel):
             )
 
         # No plating - just show the chassis image
-        from ..common.image_utils import load_image_bytes
-
         chassis_bytes = load_image_bytes("chassis", self.chassis_name)
         if not chassis_bytes:
             raise RuntimeError(f"Failed to load chassis image for '{self.chassis_name}'")
@@ -618,6 +619,9 @@ class PlayerData(ArenaBaseModel):
     pvp_wins: int = 0
     pvp_losses: int = 0
     pvp_draws: int = 0
+
+    # Daily skirmish tracking (ISO date string of last daily skirmish, UTC)
+    last_skirmish: str = ""
 
     # Combat stats
     total_damage_dealt: int = 0
@@ -942,6 +946,7 @@ class DB(ArenaBaseModel):
     """Root database model"""
 
     players: dict[int, PlayerData] = Field(default_factory=dict)  # user_id -> PlayerData
+    max_bet: int = 0  # Global max PvP bet (0 = unlimited)
 
     def get_player(self, user_id: int) -> PlayerData:
         """Get or create player data"""

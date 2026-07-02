@@ -28,6 +28,20 @@ log = logging.getLogger("red.vrt.botarena.challenge")
 MAX_BOTS_IN_BATTLE = 3  # Max bots each player can bring
 
 
+async def deposit_up_to_max(member: discord.Member, amount: int) -> int:
+    """Deposit credits, capping at the bank's max balance.
+
+    Returns the overflow amount that could not be deposited (0 if none).
+    """
+    try:
+        await bank.deposit_credits(member, amount)
+        return 0
+    except BalanceTooHigh as e:
+        old_balance = await bank.get_balance(member)
+        await bank.set_balance(member, e.max_balance)
+        return amount - (e.max_balance - old_balance)
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # CHALLENGE BOT SELECT ROWS
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -190,6 +204,13 @@ class BetModal(ui.Modal):
         if amount > self.balance:
             await interaction.response.send_message(
                 f"❌ You only have **{humanize_number(self.balance)}** {self.currency_name}!", ephemeral=True
+            )
+            return
+
+        max_bet = self.challenge_view.cog.db.max_bet
+        if max_bet > 0 and amount > max_bet:
+            await interaction.response.send_message(
+                f"❌ The maximum bet is **{humanize_number(max_bet)}** {self.currency_name}!", ephemeral=True
             )
             return
 
@@ -537,55 +558,76 @@ class ChallengeLayout(BotArenaView):
             self._unready_both()
             return
 
-        # Deduct bets from Red economy upfront
-        currency_name = await bank.get_currency_name(self.ctx.guild)
-        if self.challenger_bet > 0:
-            try:
-                await bank.withdraw_credits(self.challenger, self.challenger_bet)
-            except ValueError:
-                await interaction.response.send_message(
-                    f"❌ {self.challenger.display_name} doesn't have enough {currency_name} for their bet!",
-                    ephemeral=True,
-                )
-                self._unready_both()
-                return
-
-        if self.opponent_bet > 0:
-            try:
-                await bank.withdraw_credits(self.opponent, self.opponent_bet)
-            except ValueError:
-                # Refund challenger if opponent can't afford
-                if self.challenger_bet > 0:
-                    await bank.deposit_credits(self.challenger, self.challenger_bet)
-                await interaction.response.send_message(
-                    f"❌ {self.opponent.display_name} doesn't have enough {currency_name} for their bet!",
-                    ephemeral=True,
-                )
-                self._unready_both()
-                return
-
-        # Start battle
-        self.battle_in_progress = True
-        await self.refresh(interaction)
-
-        # Run battle
-        video_path, result, error = await self.cog.run_battle_subprocess(
-            team1=challenger_bots,
-            team2=opponent_bots,
-            output_format="mp4",
-            team1_color=self.challenger_player.team_color,
-            team2_color=self.opponent_player.team_color,
-            mission_id="pvp",  # Use PvP arena background
-        )
-
-        self.battle_in_progress = False
-
-        if not result or not video_path:
-            error_msg = error or "Unknown error occurred"
-            await self.message.channel.send(f"❌ **Battle Error**\n```\n{error_msg}\n```", delete_after=30)
+        # One battle at a time per player (shared with campaign battles)
+        if self.challenger.id in self.cog.active_battles or self.opponent.id in self.cog.active_battles:
+            await interaction.response.send_message(
+                "❌ One of the players already has a battle in progress!", ephemeral=True
+            )
             self._unready_both()
-            await self.refresh(interaction)
             return
+        self.cog.active_battles.add(self.challenger.id)
+        self.cog.active_battles.add(self.opponent.id)
+
+        try:
+            # Deduct bets from Red economy upfront
+            currency_name = await bank.get_currency_name(self.ctx.guild)
+            if self.challenger_bet > 0:
+                try:
+                    await bank.withdraw_credits(self.challenger, self.challenger_bet)
+                except ValueError:
+                    await interaction.response.send_message(
+                        f"❌ {self.challenger.display_name} doesn't have enough {currency_name} for their bet!",
+                        ephemeral=True,
+                    )
+                    self._unready_both()
+                    return
+
+            if self.opponent_bet > 0:
+                try:
+                    await bank.withdraw_credits(self.opponent, self.opponent_bet)
+                except ValueError:
+                    # Refund challenger if opponent can't afford
+                    if self.challenger_bet > 0:
+                        await bank.deposit_credits(self.challenger, self.challenger_bet)
+                    await interaction.response.send_message(
+                        f"❌ {self.opponent.display_name} doesn't have enough {currency_name} for their bet!",
+                        ephemeral=True,
+                    )
+                    self._unready_both()
+                    return
+
+            # Start battle
+            self.battle_in_progress = True
+            await self.refresh(interaction)
+
+            # Run battle
+            video_path, result, error = await self.cog.run_battle_subprocess(
+                team1=challenger_bots,
+                team2=opponent_bots,
+                output_format="mp4",
+                team1_color=self.challenger_player.team_color,
+                team2_color=self.opponent_player.team_color,
+                mission_id="pvp",  # Use PvP arena background
+            )
+
+            self.battle_in_progress = False
+
+            if not result or not video_path:
+                log.error("PvP battle subprocess failed: %s", error or "Unknown error occurred")
+                # Refund both players' bets
+                if self.challenger_bet > 0:
+                    await deposit_up_to_max(self.challenger, self.challenger_bet)
+                if self.opponent_bet > 0:
+                    await deposit_up_to_max(self.opponent, self.opponent_bet)
+                await self.message.channel.send(
+                    "❌ The battle failed to run, bets have been refunded.", delete_after=30
+                )
+                self._unready_both()
+                await self.refresh(interaction)
+                return
+        finally:
+            self.cog.active_battles.discard(self.challenger.id)
+            self.cog.active_battles.discard(self.opponent.id)
 
         # Process results
         winner_team = result.get("winner_team", 0)
@@ -624,11 +666,16 @@ class ChallengeLayout(BotArenaView):
             self.opponent_player.pvp_losses += 1
 
             # Winner gets the entire pot from Red economy
+            overflow = 0
             if total_pot > 0:
-                await bank.deposit_credits(self.challenger, total_pot)
+                overflow = await deposit_up_to_max(self.challenger, total_pot)
 
             result_text = f"🏆 **{self.challenger.display_name}** wins!"
             reward_text = f"Won **{humanize_number(total_pot)}** {currency_name}!" if total_pot > 0 else ""
+            if overflow > 0:
+                reward_text += (
+                    f"\n⚠️ **{humanize_number(overflow)}** {currency_name} were lost, balance is at the maximum!"
+                )
             color = discord.Color.green()
 
         elif winner_team == 2:
@@ -638,11 +685,16 @@ class ChallengeLayout(BotArenaView):
             self.challenger_player.pvp_losses += 1
 
             # Winner gets the entire pot from Red economy
+            overflow = 0
             if total_pot > 0:
-                await bank.deposit_credits(self.opponent, total_pot)
+                overflow = await deposit_up_to_max(self.opponent, total_pot)
 
             result_text = f"🏆 **{self.opponent.display_name}** wins!"
             reward_text = f"Won **{humanize_number(total_pot)}** {currency_name}!" if total_pot > 0 else ""
+            if overflow > 0:
+                reward_text += (
+                    f"\n⚠️ **{humanize_number(overflow)}** {currency_name} were lost, balance is at the maximum!"
+                )
             color = discord.Color.green()
 
         else:
@@ -653,15 +705,9 @@ class ChallengeLayout(BotArenaView):
 
             # Return bets to both players
             if self.challenger_bet > 0:
-                try:
-                    await bank.deposit_credits(self.challenger, self.challenger_bet)
-                except BalanceTooHigh as e:
-                    await bank.set_balance(self.challenger, e.max_balance)
+                await deposit_up_to_max(self.challenger, self.challenger_bet)
             if self.opponent_bet > 0:
-                try:
-                    await bank.deposit_credits(self.opponent, self.opponent_bet)
-                except BalanceTooHigh as e:
-                    await bank.set_balance(self.opponent, e.max_balance)
+                await deposit_up_to_max(self.opponent, self.opponent_bet)
 
             result_text = "🤝 It's a draw!"
             reward_text = f"{currency_name} bets returned to both players." if total_pot > 0 else ""
