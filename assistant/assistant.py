@@ -681,6 +681,28 @@ class Assistant(
         }
         return {"ok": True, "skills": skills, "count": len(skills), "max": conf.max_skills}
 
+    async def rpc_get_skill(self, guild_id: int, name: str) -> dict:
+        """Fetch one skill in full, including its body (rpc_list_skills omits body)."""
+        guild = self.rpc_guild(guild_id)
+        if not guild:
+            return {"ok": False, "error": f"guild {guild_id} not found"}
+        conf = self.db.get_conf(guild)
+        key = normalize_skill_name(name)
+        skill = conf.skills.get(key)
+        if not skill:
+            return {"ok": False, "error": f"no skill named '{key}'"}
+        return {
+            "ok": True,
+            "name": key,
+            "description": skill.description,
+            "body": skill.body,
+            "permission_level": skill.permission_level,
+            "enabled": skill.enabled,
+            "status": skill.status,
+            "source": skill.source,
+            "use_count": skill.use_count,
+        }
+
     async def rpc_add_skill(
         self,
         guild_id: int,
