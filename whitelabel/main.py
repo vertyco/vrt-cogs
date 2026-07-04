@@ -30,7 +30,7 @@ class Whitelabel(commands.Cog):
     """Allow server owners to set a custom bot avatar, banner and bio."""
 
     __author__ = "vertyco"
-    __version__ = "1.0.4"
+    __version__ = "1.0.5"
     set_bot_profile = BotProfileGroup(name="botprofile", description="Manage bot's bio, banner, and avatar.")
 
     def __init__(self, bot: Red):
@@ -441,7 +441,7 @@ class Whitelabel(commands.Cog):
                 allowed, __ = await self.is_allowed(guild)
                 if allowed:
                     continue
-                route: Route = Route(method="PATCH", path=ENDPOINT.format(guild.id))
+                route: Route = Route(method="PATCH", path=ENDPOINT.format(guild_id=guild.id))
                 data = {}
                 if guild.me.display_avatar.url != self.bot.user.display_avatar.url:
                     data["avatar"] = ""
@@ -478,7 +478,7 @@ class Whitelabel(commands.Cog):
             for guild in self.bot.guilds:
                 if guild.owner_id != after.id:
                     continue
-                route: Route = Route(method="PATCH", path=ENDPOINT.format(guild.id))
+                route: Route = Route(method="PATCH", path=ENDPOINT.format(guild_id=guild.id))
                 try:
                     data = {"avatar": "", "banner": "", "bio": ""}
                     await self.bot.http.request(route, json=data)
@@ -502,7 +502,7 @@ class Whitelabel(commands.Cog):
             for guild in self.bot.guilds:
                 if guild.owner_id != member.id:
                     continue
-                route: Route = Route(method="PATCH", path=ENDPOINT.format(guild.id))
+                route: Route = Route(method="PATCH", path=ENDPOINT.format(guild_id=guild.id))
                 try:
                     data = {"avatar": "", "banner": "", "bio": ""}
                     await self.bot.http.request(route, json=data)
