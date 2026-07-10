@@ -576,9 +576,8 @@ class BackupMenu(discord.ui.View):
         # Load the backup first to show options
         self.page %= len(self.backups)
         backup_file = self.backups[self.page]
-        backup: GuildBackup = await asyncio.to_thread(
-            GuildBackup.model_validate_json, backup_file.read_text(encoding="utf-8")
-        )
+        text = await asyncio.to_thread(backup_file.read_text, encoding="utf-8")
+        backup: GuildBackup = await asyncio.to_thread(GuildBackup.model_validate_json, text)
 
         # Show the restore options view
         options_view = RestoreOptionsView(
