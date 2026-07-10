@@ -45,7 +45,7 @@ class Cartographer(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "2.1.1"
+    __version__ = "2.2.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -116,6 +116,7 @@ class Cartographer(commands.Cog):
                     for backup in path.iterdir():
                         backup.unlink()
                     path.rmdir()
+                save = True
                 continue
 
             delta_hours = (now.timestamp() - settings.last_backup.timestamp()) / 3600
@@ -230,10 +231,21 @@ class Cartographer(commands.Cog):
 
     @cartographer_base.command(name="restorelatest")
     @commands.bot_has_permissions(administrator=True)
-    async def restore_server_latest(self, ctx: commands.Context):
+    async def restore_server_latest(self, ctx: commands.Context, confirm: bool = False):
         """
         Restore the latest backup for this server
+
+        ⚠️**Warning**⚠️
+        This restores everything and deletes any roles, channels, emojis, and stickers that
+        are not in the backup. This action cannot be undone!
         """
+        if not confirm:
+            txt = _(
+                "This will restore everything and **delete** any roles, channels, emojis, and stickers "
+                "that are not in the backup. This cannot be undone!\n"
+                "Please confirm this action by passing `True` as an argument"
+            )
+            return await ctx.send(txt)
         if ctx.guild.id in self.db.ignored_guilds:
             txt = _("This server is in the ignored list!")
             return await ctx.send(txt)
@@ -246,8 +258,14 @@ class Cartographer(commands.Cog):
             if not backups.exists():
                 txt = _("There are no backups for this guild!")
                 return await ctx.send(txt)
-            latest = sorted(backups.iterdir(), key=lambda x: x.stat().st_mtime)[-1]
-            backup = await asyncio.to_thread(GuildBackup.model_validate_json, latest.read_text(encoding="utf-8"))
+            backup_files = sorted(backups.iterdir(), key=lambda x: x.stat().st_mtime)
+            if not backup_files:
+                txt = _("There are no backups for this guild!")
+                return await ctx.send(txt)
+            latest = backup_files[-1]
+            backup = await asyncio.to_thread(
+                lambda: GuildBackup.model_validate_json(latest.read_text(encoding="utf-8"))
+            )
             results = await backup.restore(ctx.guild, ctx.channel)
             await ctx.send(_("Server restore is complete!"))
             if results:
