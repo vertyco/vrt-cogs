@@ -248,19 +248,14 @@ def prune_old_tool_results(messages: list[dict], context_fill_ratio: float = 0.0
             msg["content"] = TOOL_RESULT_HARD_CLEAR_PLACEHOLDER
             continue
 
-        # Tier 1 - soft-trim when context pressure is moderate
-        if context_fill_ratio >= TOOL_RESULT_SOFT_RATIO and len(content) > TOOL_RESULT_SOFT_MIN_CHARS:
+        # Tier 1 - soft-trim when context pressure is moderate, or always for truly huge results
+        soft_trim = (context_fill_ratio >= TOOL_RESULT_SOFT_RATIO and len(content) > TOOL_RESULT_SOFT_MIN_CHARS) or (
+            len(content) > TOOL_RESULT_SOFT_TRIM_MAX * 4
+        )
+        if soft_trim:
             head = content[:TOOL_RESULT_SOFT_TRIM_HEAD]
             tail = content[-TOOL_RESULT_SOFT_TRIM_TAIL:]
-            trimmed = len(content) - TOOL_RESULT_SOFT_TRIM_MAX
-            msg["content"] = head + f"\n... [trimmed {trimmed} chars] ...\n" + tail
-            continue
-
-        # Fallback: always soft-trim truly huge results even at low context pressure
-        if len(content) > TOOL_RESULT_SOFT_TRIM_MAX * 4:
-            head = content[:TOOL_RESULT_SOFT_TRIM_HEAD]
-            tail = content[-TOOL_RESULT_SOFT_TRIM_TAIL:]
-            trimmed = len(content) - TOOL_RESULT_SOFT_TRIM_MAX
+            trimmed = len(content) - (TOOL_RESULT_SOFT_TRIM_HEAD + TOOL_RESULT_SOFT_TRIM_TAIL)
             msg["content"] = head + f"\n... [trimmed {trimmed} chars] ...\n" + tail
 
 
@@ -907,7 +902,7 @@ class ChatHandler(MixinMeta):
         message = message[:1048576]
 
         # Determine if we should embed the user's message
-        message_tokens = await self.count_tokens(message, model)
+        message_tokens = await self.count_tokens(message)
         words = message.split(" ")
         has_embeds = await self.embedding_store.has_embeddings(guild.id)
         get_embed_conditions = [
@@ -991,8 +986,8 @@ class ChatHandler(MixinMeta):
 
             # Compute context fill ratio for context-aware pruning
             max_tokens = self.get_max_tokens(conf, author)
-            convo_tokens = await self.count_payload_tokens(messages, model)
-            func_tokens = await self.count_function_tokens(function_calls, model)
+            convo_tokens = await self.count_payload_tokens(messages)
+            func_tokens = await self.count_function_tokens(function_calls)
             context_fill_ratio = (convo_tokens + func_tokens) / max_tokens if max_tokens else 0.0
 
             # Cap individual tool results to a fraction of the context window
@@ -1404,7 +1399,7 @@ class ChatHandler(MixinMeta):
                         logging_content.write(f"{k}: {txt[:1000]}\n")
 
                 info = (
-                    f"Called function {function_name} in {guild.name} for {author.display_name}\n"
+                    f"Called function {function_name} in {guild.name} for {getattr(author, 'display_name', author)}\n"
                     f"Params: {logged_args}\nResult: {logging_content.getvalue()}"
                 )
                 log.debug(info)
@@ -1722,10 +1717,10 @@ class ChatHandler(MixinMeta):
 
         initial_prompt = format_template(conf.prompt, params)
         model = configured_model
-        current_tokens = await self.count_tokens(message + system_prompt + initial_prompt, model)
-        current_tokens += await self.count_payload_tokens(conversation.messages, model)
-        current_tokens += await self.count_function_tokens(function_calls, model)
-        grounding_rule_tokens = await self.count_tokens(RAG_GROUNDING_RULES, model)
+        current_tokens = await self.count_tokens(message + system_prompt + initial_prompt)
+        current_tokens += await self.count_payload_tokens(conversation.messages)
+        current_tokens += await self.count_function_tokens(function_calls)
+        grounding_rule_tokens = await self.count_tokens(RAG_GROUNDING_RULES)
         transient_user_context = ""
 
         related = await self.embedding_store.get_related(
@@ -1741,7 +1736,7 @@ class ChatHandler(MixinMeta):
             name, text, relatedness, __ = item
             metadata = await self.embedding_store.get(guild.id, name) or {}
             document_xml = build_rag_document_xml(index, name, text, relatedness, metadata)
-            document_tokens = await self.count_tokens(document_xml, model)
+            document_tokens = await self.count_tokens(document_xml)
             if document_tokens + rag_budget_tokens > max_tokens:
                 log.debug("Cannot fit anymore embeddings")
                 break

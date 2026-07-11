@@ -83,7 +83,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "8.18.4"
+    __version__ = "8.19.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -283,8 +283,6 @@ class Assistant(
             while True:
                 self.save_pending = False
                 start = perf_counter()
-                if not self.db.persistent_conversations:
-                    self.db.conversations.clear()
                 dump = await asyncio.to_thread(self.db.model_dump, exclude={"conversations"})
                 await self.config.db.set(dump)
                 txt = f"Config saved in {round((perf_counter() - start) * 1000, 2)}ms"
@@ -343,10 +341,17 @@ class Assistant(
                     del self.context_registry[cog_name][variable_name]
                     cleaned = True
 
-        # Clean up any stale channels
+        # Clean up any stale channels. Deleting a guild's config wipes its settings and
+        # embeddings permanently, so never do it while the gateway looks degraded: a guild
+        # that is merely unavailable (Discord outage, chunking at startup) must not be
+        # treated as "bot was removed".
+        outage_suspected = not self.bot.guilds or any(g.unavailable for g in self.bot.guilds)
         for guild_id in self.db.configs.copy().keys():
             guild = self.bot.get_guild(guild_id)
             if not guild:
+                if outage_suspected:
+                    log.warning(f"Guild {guild_id} missing but gateway looks degraded, skipping cleanup")
+                    continue
                 log.debug("Cleaning up guild")
                 del self.db.configs[guild_id]
                 await self.embedding_store.delete_all(guild_id)
@@ -390,9 +395,12 @@ class Assistant(
             if not conf.embeddings:
                 continue
             count = await self.embedding_store.migrate_from_config(guild_id, conf.embeddings)
-            if count:
-                conf.embeddings.clear()
-                migrated_any = True
+            # Clear even when nothing was migrated (entries without vectors are unrecoverable),
+            # otherwise the next load re-runs the migration and drops the live collection.
+            conf.embeddings.clear()
+            migrated_any = True
+            if not count:
+                log.warning(f"No embeddings migrated for guild {guild_id}, clearing stale config entries")
         if migrated_any:
             log.info("Embedding migration complete. Saving config now.")
             await self.save_conf()
@@ -526,11 +534,13 @@ class Assistant(
         guild = self.bot.get_guild(reminder.guild_id)
         if not guild:
             del self.db.reminders[reminder_id]
+            asyncio.create_task(self.save_conf())
             return
 
         user = guild.get_member(reminder.user_id)
         if not user:
             del self.db.reminders[reminder_id]
+            asyncio.create_task(self.save_conf())
             return
 
         try:

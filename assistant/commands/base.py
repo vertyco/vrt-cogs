@@ -266,16 +266,16 @@ If a file has no extension it will still try to read it only if it can be decode
         max_tokens = self.get_max_tokens(conf, ctx.author)
         model = conf.get_user_model(user)
 
-        convo_tokens = await self.count_payload_tokens(conversation.messages, model)
+        convo_tokens = await self.count_payload_tokens(conversation.messages)
         effective_system_prompt = self.db.get_effective_system_prompt(conf)
-        system_tokens = await self.count_tokens(effective_system_prompt, model) if effective_system_prompt else 0
-        prompt_tokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
+        system_tokens = await self.count_tokens(effective_system_prompt) if effective_system_prompt else 0
+        prompt_tokens = await self.count_tokens(conf.prompt) if conf.prompt else 0
         channel_prompt = conf.channel_prompts.get(ctx.channel.id, "")
-        channel_tokens = await self.count_tokens(channel_prompt, model) if channel_prompt else 0
+        channel_tokens = await self.count_tokens(channel_prompt) if channel_prompt else 0
         func_list, function_map = await self.db.prep_functions(self.bot, conf, self.registry, showall=True)
-        func_tokens = await self.count_function_tokens(func_list, model)
+        func_tokens = await self.count_function_tokens(func_list)
         skill_index = await self.build_skill_index_for_member(conf, user)
-        skill_tokens = await self.count_tokens(skill_index, model) if skill_index else 0
+        skill_tokens = await self.count_tokens(skill_index) if skill_index else 0
         skill_count = sum(1 for line in skill_index.splitlines() if line.startswith("- ")) if skill_index else 0
 
         prompt_overhead = system_tokens + prompt_tokens + channel_tokens
@@ -839,8 +839,7 @@ If a file has no extension it will still try to read it only if it can be decode
                 self.bot._last_exception = traceback.format_exc()  # type: ignore
                 return
 
-        model = conf.get_user_model(ctx.author)
-        ptokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
+        ptokens = await self.count_tokens(conf.prompt) if conf.prompt else 0
         max_tokens = conf.get_user_max_tokens(ctx.author)
         if ptokens > (max_tokens * 0.9):
             txt = _(

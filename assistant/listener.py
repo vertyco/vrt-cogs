@@ -226,6 +226,9 @@ class AssistantListener(MixinMeta):
                     ref = await message.channel.fetch_message(message.reference.message_id)
                 except discord.HTTPException:
                     pass
+            if not isinstance(ref, discord.Message):
+                # Referenced message was deleted (DeletedReferencedMessage has no .author)
+                ref = None
 
         # Ignore common prefixes from other bots
         if message.content.startswith((",", ".", "+", "!", "-", "><", "?", "$", "%", "^", "&", "*", "_")):
@@ -278,13 +281,17 @@ class AssistantListener(MixinMeta):
         if all(check_auto_answer):
             if is_question(message.content):
                 # Check if any embeddings match above the threshold
-                embedding = await self.request_embedding(message.content, conf)
-                related = await self.embedding_store.get_related(
-                    guild_id=message.guild.id,
-                    query_embedding=embedding,
-                    top_n=1,
-                    min_relatedness=conf.auto_answer_threshold,
-                )
+                try:
+                    embedding = await self.request_embedding(message.content, conf)
+                    related = await self.embedding_store.get_related(
+                        guild_id=message.guild.id,
+                        query_embedding=embedding,
+                        top_n=1,
+                        min_relatedness=conf.auto_answer_threshold,
+                    )
+                except Exception as e:
+                    log.error("Auto-answer embedding check failed, skipping auto-answer", exc_info=e)
+                    related = []
                 conditions.append(len(related) == 0)
                 if len(related) > 0:
                     handle_message_kwargs["model_override"] = conf.auto_answer_model

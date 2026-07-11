@@ -478,11 +478,11 @@ class Admin(MixinMeta):
         effective_model = self.resolve_chat_model(conf.model, conf)
         effective_embed_model = self.resolve_embedding_model(conf.embed_model, conf)
         effective_system_prompt = self.db.get_effective_system_prompt(conf)
-        system_tokens = await self.count_tokens(effective_system_prompt, model) if effective_system_prompt else 0
-        prompt_tokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
+        system_tokens = await self.count_tokens(effective_system_prompt) if effective_system_prompt else 0
+        prompt_tokens = await self.count_tokens(conf.prompt) if conf.prompt else 0
 
         func_list, __ = await self.db.prep_functions(self.bot, conf, self.registry, showall=True)
-        func_tokens = await self.count_function_tokens(func_list, model)
+        func_tokens = await self.count_function_tokens(func_list)
         func_count = len(func_list)
 
         status = await self.openai_status()
@@ -1168,9 +1168,8 @@ class Admin(MixinMeta):
                 return
 
         conf = self.db.get_conf(ctx.guild)
-        model = conf.get_user_model(ctx.author)
-        ptokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
-        stokens = await self.count_tokens(system_prompt, model) if system_prompt else 0
+        ptokens = await self.count_tokens(conf.prompt) if conf.prompt else 0
+        stokens = await self.count_tokens(system_prompt) if system_prompt else 0
 
         combined = ptokens + stokens
         if conf.max_tokens:
@@ -1319,10 +1318,9 @@ class Admin(MixinMeta):
                 return
 
         conf = self.db.get_conf(ctx.guild)
-        model = conf.get_user_model(ctx.author)
-        ptokens = await self.count_tokens(prompt, model) if prompt else 0
+        ptokens = await self.count_tokens(prompt) if prompt else 0
         effective_system_prompt = self.db.get_effective_system_prompt(conf)
-        stokens = await self.count_tokens(effective_system_prompt, model) if effective_system_prompt else 0
+        stokens = await self.count_tokens(effective_system_prompt) if effective_system_prompt else 0
         combined = ptokens + stokens
         if conf.max_tokens:
             max_tokens = round(conf.max_tokens * 0.9)
@@ -1396,9 +1394,8 @@ class Admin(MixinMeta):
             else:
                 await ctx.send(_("No channel prompt set for {}!").format(channel.mention))
             return
-        model = conf.get_user_model(ctx.author)
-        ptokens = await self.count_tokens(conf.prompt, model) if conf.prompt else 0
-        stokens = await self.count_tokens(system_prompt, model) if system_prompt else 0
+        ptokens = await self.count_tokens(conf.prompt) if conf.prompt else 0
+        stokens = await self.count_tokens(system_prompt) if system_prompt else 0
         combined = ptokens + stokens
         if conf.max_tokens:
             max_tokens = round(conf.max_tokens * 0.9)
@@ -2135,12 +2132,12 @@ class Admin(MixinMeta):
         """Switch reasoning effort between none, minimal, low, medium, high, and xhigh
 
         Not all models support every level. Unsupported levels are automatically mapped to the closest supported value.
-        - **none**: No reasoning (gpt-5.4/5.5 only, skipped for other models)
+        - **none**: No reasoning (gpt-5.4 and newer only, skipped for other models)
         - **minimal**: Minimal reasoning (gpt-5 only, mapped to low for o-series)
         - **low**: Low reasoning effort
         - **medium**: Medium reasoning effort
         - **high**: High reasoning effort
-        - **xhigh**: Maximum reasoning (gpt-5.4/5.5 only, mapped to high for other models)
+        - **xhigh**: Maximum reasoning (gpt-5.4 and newer only, mapped to high for other models)
         """
         cycle = ["none", "minimal", "low", "medium", "high", "xhigh"]
         conf = self.db.get_conf(ctx.guild)
