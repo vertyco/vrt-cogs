@@ -2,7 +2,8 @@
 
 ## v8.19.0
 
-- **New**: Added the GPT-5.6 family (`gpt-5.6-sol`, `gpt-5.6-terra`, `gpt-5.6-luna`): 1.05M context, vision, tools, and the full reasoning-effort range handled like gpt-5.4/5.5.
+- **New**: Added the GPT-5.6 family (`gpt-5.6-sol`, `gpt-5.6-terra`, `gpt-5.6-luna`): 1.05M context, vision, tools, and the full reasoning-effort range.
+- **Fix**: The GPT-5.6 family no longer errors out when function tools are registered (`Function tools with reasoning_effort are not supported ... use /v1/responses or set reasoning_effort to 'none'`). Unlike gpt-5.4/5.5 — where omitting `reasoning_effort` is enough — 5.6's default effort is non-`none` and Chat Completions rejects it alongside tools, so `reasoning_effort` is now set to `none` explicitly whenever tools are sent to a 5.6 model.
 - **New**: Token counting is now model-agnostic. One cached `o200k_base` encoding replaces per-model `encoding_for_model` lookups, the per-model function-token overhead tables are gone (tool schemas are estimated by encoding their JSON dump plus a small per-function overhead), and the `model` param was removed from all counting helpers. Counts are estimates for budgeting/compaction, slightly overcounting by design, and new model releases can no longer silently undercount (dated gpt-5 snapshots previously counted function schemas as 0). Also halves the thread hops per count.
 - **Fix**: `save_conf` no longer clears all live conversations when `persistent_conversations` is off; the dump already excluded them, so the clear only destroyed active sessions (any admin command or reminder could wipe every user's conversation mid-chat).
 - **Fix**: Startup cleanup no longer deletes a guild's config and embeddings when the guild is merely unavailable (gateway degraded/chunking); deletion is skipped whenever the guild cache looks degraded.

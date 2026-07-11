@@ -152,9 +152,18 @@ async def request_chat_completion_raw(
             kwargs["presence_penalty"] = presence_penalty
 
         if (model.startswith("o") or "gpt-5" in model) and reasoning_effort is not None:
-            if "gpt-5.4" in model or "gpt-5.5" in model or "gpt-5.6" in model:
-                # gpt-5.4/5.5/5.6 support: none, low, medium, high, xhigh (not minimal; 5.6 adds max)
-                # Chat Completions does not support reasoning_effort + tools together for these
+            if "gpt-5.6" in model:
+                # gpt-5.6 (sol/terra/luna) supports: none, low, medium, high, xhigh, max (not minimal)
+                # On Chat Completions, function tools require reasoning_effort='none'. Unlike 5.4/5.5,
+                # omitting the param is not enough: the model's default effort is non-none and is
+                # rejected alongside tools, so it must be set to 'none' explicitly when tools are sent.
+                if reasoning_effort == "minimal":
+                    reasoning_effort = "low"
+                kwargs["reasoning_effort"] = "none" if functions else reasoning_effort
+            elif "gpt-5.4" in model or "gpt-5.5" in model:
+                # gpt-5.4/5.5 support: none, low, medium, high, xhigh (not minimal)
+                # Chat Completions does not support reasoning_effort + tools together for these,
+                # so omit it entirely when function tools are present.
                 if reasoning_effort == "minimal":
                     reasoning_effort = "low"
                 if not functions:
