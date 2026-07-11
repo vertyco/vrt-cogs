@@ -152,23 +152,23 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def count_payload_tokens(self, messages: List[dict], model: str = "gpt-5.1") -> int:
+    async def count_payload_tokens(self, messages: List[dict]) -> int:
         raise NotImplementedError
 
     @abstractmethod
-    async def count_function_tokens(self, functions: List[dict], model: str = "gpt-5.1") -> int:
+    async def count_function_tokens(self, functions: List[dict]) -> int:
         raise NotImplementedError
 
     @abstractmethod
-    async def count_tokens(self, text: str, model: str) -> int:
+    async def count_tokens(self, text: str) -> int:
         raise NotImplementedError
 
     @abstractmethod
-    async def get_tokens(self, text: str, model: str = "gpt-5.1") -> list[int]:
+    async def get_tokens(self, text: str) -> list[int]:
         raise NotImplementedError
 
     @abstractmethod
-    async def get_text(self, tokens: list, model: str = "gpt-5.1") -> str:
+    async def get_text(self, tokens: list) -> str:
         raise NotImplementedError
 
     @abstractmethod
@@ -221,7 +221,7 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_embedding_menu_embeds(self, conf: GuildSettings, place: int) -> List[discord.Embed]:
+    async def get_embedding_menu_embeds(self, guild_id: int, conf: GuildSettings, place: int) -> List[discord.Embed]:
         raise NotImplementedError
 
     # -------------------------------------------------------
@@ -395,6 +395,9 @@ class MixinMeta(ABC):
         question: str,
         conf: GuildSettings,
         listener: bool = False,
-        trigger_prompt: str = None,
+        model_override: Optional[str] = None,
+        auto_answer: Optional[bool] = False,
+        trigger_prompt: Optional[str] = None,
+        **kwargs,
     ) -> str:
         raise NotImplementedError

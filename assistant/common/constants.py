@@ -57,20 +57,9 @@ MODELS = {
     "gpt-5.4-nano-2026-03-17": 400000,
     "gpt-5.5": 1050000,
     "gpt-5.5-2026-04-23": 1050000,
-}
-
-VISION_COSTS = {
-    "gpt-4o": [85, 170],  # 85 base tokens, 170 per (32x32) pixel tile in the image
-    "gpt-4o-2024-05-13": [85, 170],
-    "gpt-4o-2024-08-06": [85, 170],
-    "gpt-4o-2024-11-20": [85, 170],
-    "gpt-4o-mini": [2833, 5667],  # 2833 base tokens, 5667 per (32x32) pixel tile in the image
-    "gpt-4o-mini-2024-07-18": [2833, 5667],
-    "gpt-4.1": [85, 170],  # 85 base tokens, 170 per (32x32) pixel tile in the image
-    "gpt-4.1-2025-04-14": [85, 170],
-    "o1": [75, 150],  # 75 base tokens, 150 per (32x32) pixel tile in the image
-    "o1-2024-12-17": [75, 150],
-    # 75 base tokens, 150 per (32x32) pixel tile in the image
+    "gpt-5.6-sol": 1050000,
+    "gpt-5.6-terra": 1050000,
+    "gpt-5.6-luna": 1050000,
 }
 
 SUPPORTS_SEED = [
@@ -115,6 +104,9 @@ SUPPORTS_SEED = [
     "gpt-5.4-nano-2026-03-17",
     "gpt-5.5",
     "gpt-5.5-2026-04-23",
+    "gpt-5.6-sol",
+    "gpt-5.6-terra",
+    "gpt-5.6-luna",
 ]
 NO_DEVELOPER_ROLE = [  # Also doesnt support system messages
     "o1-mini",
@@ -165,6 +157,9 @@ SUPPORTS_VISION = [
     "gpt-5.4-nano-2026-03-17",
     "gpt-5.5",
     "gpt-5.5-2026-04-23",
+    "gpt-5.6-sol",
+    "gpt-5.6-terra",
+    "gpt-5.6-luna",
 ]
 SUPPORTS_TOOLS = [
     "gpt-3.5-turbo-1106",
@@ -212,6 +207,9 @@ SUPPORTS_TOOLS = [
     "gpt-5.4-nano-2026-03-17",
     "gpt-5.5",
     "gpt-5.5-2026-04-23",
+    "gpt-5.6-sol",
+    "gpt-5.6-terra",
+    "gpt-5.6-luna",
 ]
 OLD_TOOL_SCHEMA = [i for i in MODELS.keys() if i not in SUPPORTS_TOOLS]
 READ_EXTENSIONS = [

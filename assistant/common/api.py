@@ -29,7 +29,6 @@ from .constants import (
     MODELS,
     OR_SUFFIXES,
     SUPPORTS_VISION,
-    VISION_COSTS,
 )
 from .models import (
     Conversation,
@@ -42,6 +41,20 @@ from .models import (
 log = logging.getLogger("red.vrt.assistant.api")
 _ = Translator("Assistant", __file__)
 ENDPOINT_PROFILE_TTL_SECONDS = 300
+
+# Token counts are estimates for budgeting/compaction only, so one encoding fits all
+# models (o200k_base is wrong-but-close for non-OpenAI endpoints). Lazy because the
+# first get_encoding() call may read/download BPE files; always call inside a thread.
+ENCODING: Optional[tiktoken.Encoding] = None
+
+
+def get_encoding() -> tiktoken.Encoding:
+    global ENCODING
+    if ENCODING is None:
+        ENCODING = tiktoken.get_encoding("o200k_base")
+    return ENCODING
+
+
 OPENROUTER_CHAT_FALLBACK_MODEL = "openrouter/auto"
 PREFERRED_EMBEDDING_FALLBACKS = (
     "text-embedding-3-small",
@@ -623,9 +636,9 @@ class API(MixinMeta):
         max_convo_tokens = self.get_max_tokens(conf, member)
         max_response_tokens = conf.get_user_max_response_tokens(member)
 
-        current_convo_tokens = await self.count_payload_tokens(messages, model)
+        current_convo_tokens = await self.count_payload_tokens(messages)
         if functions:
-            current_convo_tokens += await self.count_function_tokens(functions, model)
+            current_convo_tokens += await self.count_function_tokens(functions)
 
         # Dynamically adjust to lower model to save on cost
         if "-16k" in model and current_convo_tokens < 3000:
@@ -780,16 +793,12 @@ class API(MixinMeta):
     # -------------------------------------------------------
     # -------------------------------------------------------
 
-    async def count_payload_tokens(self, messages: List[dict], model: str = "gpt-5.1") -> int:
+    async def count_payload_tokens(self, messages: List[dict]) -> int:
         if not messages:
             return 0
 
         def _count_payload():
-            try:
-                encoding = tiktoken.encoding_for_model(model)
-            except KeyError:
-                encoding = tiktoken.get_encoding("o200k_base")
-
+            encoding = get_encoding()
             tokens_per_message = 3
             tokens_per_name = 1
             num_tokens = 0
@@ -804,9 +813,7 @@ class API(MixinMeta):
                             if item["type"] == "text":
                                 num_tokens += len(encoding.encode(item["text"]))
                             elif item["type"] == "image_url":
-                                num_tokens += VISION_COSTS.get(model, [1000])[
-                                    0
-                                ]  # Just assume around 1k tokens for images
+                                num_tokens += 1000  # Just assume around 1k tokens for images
                     else:  # String, probably
                         num_tokens += len(encoding.encode(str(value)))
 
@@ -815,125 +822,20 @@ class API(MixinMeta):
 
         return await asyncio.to_thread(_count_payload)
 
-    async def count_function_tokens(self, functions: List[dict], model: str = "gpt-5.1") -> int:
-        # Initialize function settings to 0
-        func_init = 0
-        prop_init = 0
-        prop_key = 0
-        enum_init = 0
-        enum_item = 0
-        func_end = 0
+    async def count_function_tokens(self, functions: List[dict]) -> int:
+        """Estimate tool-schema tokens by encoding the JSON dump plus a small per-function
+        overhead. Slightly overcounts (JSON punctuation), which is the safe direction for
+        budget math, and needs no per-model accounting tables."""
+        if not functions:
+            return 0
 
-        if model in [
-            "gpt-4o",
-            "gpt-4o-2024-05-13",
-            "gpt-4o-2024-08-06",
-            "gpt-4o-2024-11-20",
-            "gpt-4o-mini",
-            "gpt-4o-mini-2024-07-18",
-            "gpt-4.1",
-            "gpt-4.1-2025-04-14",
-            "gpt-4.1-mini",
-            "gpt-4.1-mini-2025-04-14",
-            "gpt-4.1-nano",
-            "gpt-4.1-nano-2025-04-14",
-            "o1-preview",
-            "o1-preview-2024-09-12",
-            "o1",
-            "o1-2024-12-17",
-            "o1-mini",
-            "o1-mini-2024-09-12",
-            "o3-mini",
-            "o3-mini-2025-01-31",
-            "o3",
-            "o3-2025-04-16",
-            "gpt-5",
-            "gpt-5-2025-04-16",
-            "gpt-5-mini",
-            "gpt-5-mini-2025-04-16",
-            "gpt-5-nano",
-            "gpt-5-nano-2025-04-16",
-            "gpt-5.1",
-            "gpt-5.1-2025-11-13",
-            "gpt-5.2",
-            "gpt-5.2-2025-12-11",
-            "gpt-5.4",
-            "gpt-5.4-2026-03-05",
-            "gpt-5.4-mini",
-            "gpt-5.4-mini-2026-03-17",
-            "gpt-5.4-nano",
-            "gpt-5.4-nano-2026-03-17",
-            "gpt-5.5",
-            "gpt-5.5-2026-04-23",
-        ]:
-            # Set function settings for the above models
-            func_init = 7
-            prop_init = 3
-            prop_key = 3
-            enum_init = -3
-            enum_item = 3
-            func_end = 12
-        elif model in [
-            "gpt-3.5-turbo-1106",
-            "gpt-3.5-turbo-0125",
-            "gpt-4",
-            "gpt-4-turbo",
-            "gpt-4-turbo-preview",
-            "gpt-4-0125-preview",
-            "gpt-4-1106-preview",
-        ]:
-            # Set function settings for the above models
-            func_init = 10
-            prop_init = 3
-            prop_key = 3
-            enum_init = -3
-            enum_item = 3
-            func_end = 12
-        else:
-            log.debug(f"Incompatible model: {model}")
+        def _count():
+            encoding = get_encoding()
+            return len(encoding.encode(json.dumps(functions))) + 10 * len(functions)
 
-        def _count_tokens():
-            try:
-                encoding = tiktoken.encoding_for_model(model)
-            except KeyError:
-                encoding = tiktoken.get_encoding("o200k_base")
+        return await asyncio.to_thread(_count)
 
-            func_token_count = 0
-
-            if len(functions) > 0:
-                for f in functions:
-                    if "function" not in f.keys():
-                        f = {"function": f, "name": f["name"], "description": f["description"]}
-                    func_token_count += func_init  # Add tokens for start of each function
-                    function = f["function"]
-                    f_name = function["name"]
-                    f_desc = function["description"]
-                    if f_desc.endswith("."):
-                        f_desc = f_desc[:-1]
-                    line = f_name + ":" + f_desc
-                    func_token_count += len(encoding.encode(line))  # Add tokens for set name and description
-                    if len(function["parameters"]["properties"]) > 0:
-                        func_token_count += prop_init  # Add tokens for start of each property
-                        for key in list(function["parameters"]["properties"].keys()):
-                            func_token_count += prop_key  # Add tokens for each set property
-                            p_name = key
-                            p_type = function["parameters"]["properties"][key].get("type", "")
-                            p_desc = function["parameters"]["properties"][key].get("description", "")
-                            if "enum" in function["parameters"]["properties"][key].keys():
-                                func_token_count += enum_init  # Add tokens if property has enum list
-                                for item in function["parameters"]["properties"][key]["enum"]:
-                                    func_token_count += enum_item
-                                    func_token_count += len(encoding.encode(item))
-                            if p_desc.endswith("."):
-                                p_desc = p_desc[:-1]
-                            line = f"{p_name}:{p_type}:{p_desc}"
-                            func_token_count += len(encoding.encode(line))
-                func_token_count += func_end
-            return func_token_count
-
-        return await asyncio.to_thread(_count_tokens)
-
-    async def get_tokens(self, text: str, model: str = "gpt-5.1") -> list[int]:
+    async def get_tokens(self, text: str) -> list[int]:
         """Get token list from text"""
         if not text:
             log.debug("No text to get tokens from!")
@@ -941,24 +843,21 @@ class API(MixinMeta):
         if isinstance(text, bytes):
             text = text.decode(encoding="utf-8")
 
-        def _get_encoding():
-            try:
-                enc = tiktoken.encoding_for_model(model)
-            except KeyError:
-                enc = tiktoken.get_encoding("o200k_base")
-            return enc
+        def _encode():
+            return get_encoding().encode(text)
 
-        encoding = await asyncio.to_thread(_get_encoding)
+        return await asyncio.to_thread(_encode)
 
-        return await asyncio.to_thread(encoding.encode, text)
-
-    async def count_tokens(self, text: str, model: str) -> int:
+    async def count_tokens(self, text: str) -> int:
         if not text:
             log.debug("No text to get token count from!")
             return 0
+
+        def _count():
+            return len(get_encoding().encode(str(text)))
+
         try:
-            tokens = await self.get_tokens(text, model)
-            return len(tokens)
+            return await asyncio.to_thread(_count)
         except TypeError as e:
             log.error(f"Failed to count tokens for: {text}", exc_info=e)
             return 0
@@ -1074,22 +973,16 @@ class API(MixinMeta):
         if not text:
             log.debug("No text to cut by tokens!")
             return text
-        tokens = await self.get_tokens(text, conf.get_user_model(user))
-        return await self.get_text(tokens[: self.get_max_tokens(conf, user)], conf.get_user_model(user))
+        tokens = await self.get_tokens(text)
+        return await self.get_text(tokens[: self.get_max_tokens(conf, user)])
 
-    async def get_text(self, tokens: list, model: str = "gpt-5.1") -> str:
+    async def get_text(self, tokens: list) -> str:
         """Get text from token list"""
 
-        def _get_encoding():
-            try:
-                enc = tiktoken.encoding_for_model(model)
-            except KeyError:
-                enc = tiktoken.get_encoding("o200k_base")
-            return enc
+        def _decode():
+            return get_encoding().decode(tokens)
 
-        encoding = await asyncio.to_thread(_get_encoding)
-
-        return await asyncio.to_thread(encoding.decode, tokens)
+        return await asyncio.to_thread(_decode)
 
     # -------------------------------------------------------
     # -------------------------------------------------------
@@ -1110,8 +1003,8 @@ class API(MixinMeta):
         model = conf.get_user_model(user)
         max_tokens = self.get_max_tokens(conf, user)
         threshold = conf.compaction_threshold or max_tokens
-        convo_tokens = await self.count_payload_tokens(messages, model)
-        func_tokens = await self.count_function_tokens(function_list, model)
+        convo_tokens = await self.count_payload_tokens(messages)
+        func_tokens = await self.count_function_tokens(function_list)
         total_tokens = convo_tokens + func_tokens
 
         if not force and total_tokens <= threshold:
@@ -1271,10 +1164,9 @@ class API(MixinMeta):
         user: Optional[discord.Member],
     ) -> bool:
         """Last-resort fallback: remove oldest messages to fit within token limit"""
-        model = conf.get_user_model(user)
         max_tokens = self.get_max_tokens(conf, user)
-        convo_tokens = await self.count_payload_tokens(messages, model)
-        function_tokens = await self.count_function_tokens(function_list, model)
+        convo_tokens = await self.count_payload_tokens(messages)
+        function_tokens = await self.count_function_tokens(function_list)
 
         total_tokens = convo_tokens + function_tokens
 
@@ -1320,15 +1212,15 @@ class API(MixinMeta):
                         if isinstance(content, list):
                             for i in content:
                                 if i["type"] == "text":
-                                    reduction += await self.count_tokens(i["text"], model)
+                                    reduction += await self.count_tokens(i["text"])
                                 else:
                                     reduction += 2
                         else:
-                            reduction += await self.count_tokens(str(content), model)
+                            reduction += await self.count_tokens(str(content))
                     elif tool_calls := removed.get("tool_calls"):
-                        reduction += await self.count_tokens(str(tool_calls), model)
+                        reduction += await self.count_tokens(str(tool_calls))
                     elif function_call := removed.get("function_call"):
-                        reduction += await self.count_tokens(str(function_call), model)
+                        reduction += await self.count_tokens(str(function_call))
                 return reduction
             return 0
 
@@ -1434,7 +1326,6 @@ class API(MixinMeta):
                 }
 
         conf = self.db.get_conf(user.guild)
-        model = conf.get_user_model(user)
 
         pages = sum(len(v) for v in registry.values())
         page = 1
@@ -1469,7 +1360,7 @@ class API(MixinMeta):
                     inline=True,
                 )
                 schema = json.dumps(data["jsonschema"], indent=2)
-                tokens = await self.count_tokens(schema, model)
+                tokens = await self.count_tokens(schema)
 
                 schema_text = _("This function consumes `{}` input tokens each call\n").format(humanize_number(tokens))
 
@@ -1520,7 +1411,6 @@ class API(MixinMeta):
             ]
         embeds = []
         pages = math.ceil(len(embeddings) / 5)
-        model = conf.get_user_model()
         start = 0
         stop = 5
         for page in range(pages):
@@ -1531,7 +1421,7 @@ class API(MixinMeta):
             for i in range(start, stop):
                 name, meta = embeddings[i]
                 raw_text = meta.get("text", "")
-                tokens = await self.count_tokens(raw_text, model)
+                tokens = await self.count_tokens(raw_text)
                 text = box(f"{raw_text[:30].strip()}...") if len(raw_text) > 33 else box(raw_text.strip())
 
                 created_str = meta.get("created", "")

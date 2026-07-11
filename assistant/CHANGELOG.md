@@ -1,6 +1,18 @@
 # Assistant Changelog
 
-## v8.18.3
+## v8.19.0
+
+- **New**: Added the GPT-5.6 family (`gpt-5.6-sol`, `gpt-5.6-terra`, `gpt-5.6-luna`): 1.05M context, vision, tools, and the full reasoning-effort range handled like gpt-5.4/5.5.
+- **New**: Token counting is now model-agnostic. One cached `o200k_base` encoding replaces per-model `encoding_for_model` lookups, the per-model function-token overhead tables are gone (tool schemas are estimated by encoding their JSON dump plus a small per-function overhead), and the `model` param was removed from all counting helpers. Counts are estimates for budgeting/compaction, slightly overcounting by design, and new model releases can no longer silently undercount (dated gpt-5 snapshots previously counted function schemas as 0). Also halves the thread hops per count.
+- **Fix**: `save_conf` no longer clears all live conversations when `persistent_conversations` is off; the dump already excluded them, so the clear only destroyed active sessions (any admin command or reminder could wipe every user's conversation mid-chat).
+- **Fix**: Startup cleanup no longer deletes a guild's config and embeddings when the guild is merely unavailable (gateway degraded/chunking); deletion is skipped whenever the guild cache looks degraded.
+- **Fix**: Reminders whose guild or member no longer exists are now removed from persisted config too, instead of re-firing on every cog reload.
+- **Fix**: Embedding migration clears migrated config entries even when nothing was recoverable, so a stale entry can't re-drop the live ChromaDB collection on every load.
+- **Fix**: Replying to a since-deleted message no longer crashes the listener (`DeletedReferencedMessage` has no `.author`).
+- **Fix**: Auto-answer's embedding gate is wrapped in try/except; a transient embedding API error now skips auto-answer instead of dropping the message.
+- **Fix**: Tool-result soft-trim notes reported the wrong trimmed char count (off by 1000); the duplicate trim blocks were merged.
+- **Fix**: Tool-call logging no longer crashes when the author resolves to None (uncached member id).
+- **Fix**: `MixinMeta` contracts realigned with implementations (`get_embedding_menu_embeds` guild_id param, `handle_message` kwarg order).
 
 - **Fix**: A gif URL in a message no longer breaks the response. Gif URLs were matched and sent to the vision API, which returned a 400 `Error while downloading ...gif` (the API can't process animated gifs). Excluded gif from the image URL regex to match the attachment handler (which already skipped gif), and the `BadRequestError` handler now also strips images and retries on `Error while downloading` so any unfetchable image URL degrades gracefully instead of failing the whole reply.
 
