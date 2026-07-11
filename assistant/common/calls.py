@@ -154,10 +154,17 @@ async def request_chat_completion_raw(
         if (model.startswith("o") or "gpt-5" in model) and reasoning_effort is not None:
             if "gpt-5.4" in model or "gpt-5.5" in model or "gpt-5.6" in model:
                 # gpt-5.4/5.5/5.6 support: none, low, medium, high, xhigh (not minimal; 5.6 adds max)
-                # Chat Completions does not support reasoning_effort + tools together for these
                 if reasoning_effort == "minimal":
                     reasoning_effort = "low"
-                if not functions:
+                if functions:
+                    # On /v1/chat/completions these models reject function tools
+                    # combined with any active reasoning effort. Omitting the
+                    # param is not enough because the model applies a default
+                    # (non-none) effort, so we must explicitly disable reasoning
+                    # to use tools. OpenAI's own error points to this fix:
+                    # "To use function tools, ... set reasoning_effort to 'none'".
+                    kwargs["reasoning_effort"] = "none"
+                else:
                     kwargs["reasoning_effort"] = reasoning_effort
             elif "gpt-5" in model:
                 # gpt-5 (non-5.4/5.5) supports: minimal, low, medium, high (not none/xhigh)
