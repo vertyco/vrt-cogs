@@ -16,7 +16,14 @@ from tenacity import (
     wait_random_exponential,
 )
 
-from .constants import MODELS, NO_DEVELOPER_ROLE, OLD_TOOL_SCHEMA, SUPPORTS_SEED
+from .constants import (
+    MODELS,
+    NO_DEVELOPER_ROLE,
+    OLD_TOOL_SCHEMA,
+    RESPONSES_API_MODEL_PREFIXES,
+    SUPPORTS_SEED,
+)
+from .responses import responses_to_chat_completion, to_responses_input, to_responses_tools
 
 log = logging.getLogger("red.vrt.assistant.calls")
 
@@ -89,6 +96,81 @@ def get_request_messages(messages: List[dict], use_legacy_functions: bool) -> li
     return payload
 
 
+def needs_responses_api(
+    model: str,
+    functions: Optional[List[dict]],
+    reasoning_effort: Optional[str],
+    base_url: Optional[str] = None,
+) -> bool:
+    """Whether this call must go through the Responses API.
+
+    The gpt-5.4/5.5/5.6 family can only combine a configurable ``reasoning_effort``
+    with function tools on ``/v1/responses``. Only reroute direct-OpenAI calls that
+    actually need both (tools present and reasoning enabled); everything else stays
+    on Chat Completions, which is cheaper and unchanged.
+    """
+    if base_url is not None:
+        return False
+    if not functions:
+        return False
+    if not reasoning_effort or reasoning_effort == "none":
+        return False
+    return any(model.startswith(prefix) for prefix in RESPONSES_API_MODEL_PREFIXES)
+
+
+async def request_responses_raw(
+    model: str,
+    messages: List[dict],
+    api_key: str,
+    functions: Optional[List[dict]] = None,
+    reasoning_effort: Optional[str] = None,
+    verbosity: Optional[str] = None,
+    max_tokens: Optional[int] = None,
+    tool_choice: Optional[t.Union[str, dict]] = None,
+    guild_id: Optional[int] = None,
+    base_url: Optional[str] = None,
+) -> ChatCompletion:
+    """Call the Responses API and adapt the result back into a ``ChatCompletion``.
+
+    Used for the gpt-5.4/5.5/5.6 family when reasoning + tools are both needed.
+    Stateless (``store=False``): the full conversation is translated and sent each
+    call, so the Chat-Completions-format conversation store remains the source of
+    truth. Retries are handled by the calling ``request_chat_completion_raw``.
+    """
+    client = get_client(api_key, base_url)
+
+    # 5.4/5.5/5.6 support none/low/medium/high/xhigh (+max on 5.6); not minimal.
+    effort = "low" if reasoning_effort == "minimal" else reasoning_effort
+
+    kwargs: dict = {
+        "model": model,
+        "input": to_responses_input(messages),
+        "store": False,
+    }
+    if functions:
+        kwargs["tools"] = to_responses_tools(functions)
+        if tool_choice is not None:
+            kwargs["tool_choice"] = tool_choice
+    if effort and effort != "none":
+        kwargs["reasoning"] = {"effort": effort}
+    if verbosity is not None:
+        kwargs["text"] = {"verbosity": verbosity}
+    if max_tokens and max_tokens > 0:
+        kwargs["max_output_tokens"] = max_tokens
+    if guild_id is not None:
+        kwargs["prompt_cache_key"] = f"guild-{guild_id}"
+
+    add_breadcrumb(
+        category="api",
+        message=f"Calling request_responses_raw: {model}",
+        level="info",
+        data={k: v for k, v in kwargs.items() if k != "input"},
+    )
+    resp = await client.responses.create(**kwargs)
+    log.debug(f"request_responses_raw: {model} -> {getattr(resp, 'model', model)}")
+    return responses_to_chat_completion(resp, model)
+
+
 @retry(
     retry=retry_if_exception_type(
         t.Union[
@@ -130,6 +212,23 @@ async def request_chat_completion_raw(
     openrouter_provider: Optional[dict] = None,
 ) -> ChatCompletion:
     client = get_client(api_key, base_url)
+
+    # The gpt-5.4/5.5/5.6 family only supports configurable reasoning_effort + tools
+    # on the Responses API. Route those calls there and adapt the result back so the
+    # rest of the pipeline is unchanged. All other cases stay on Chat Completions.
+    if needs_responses_api(model, functions, reasoning_effort, base_url):
+        return await request_responses_raw(
+            model=model,
+            messages=messages,
+            api_key=api_key,
+            functions=functions,
+            reasoning_effort=reasoning_effort,
+            verbosity=verbosity,
+            max_tokens=max_tokens,
+            tool_choice=tool_choice,
+            guild_id=guild_id,
+            base_url=base_url,
+        )
 
     use_legacy_functions = bool(
         functions and model not in NO_DEVELOPER_ROLE and base_url is None and model in OLD_TOOL_SCHEMA
