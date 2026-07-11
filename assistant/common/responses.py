@@ -1,13 +1,13 @@
 """Adapter between Chat Completions and the Responses API.
 
 The gpt-5.4/5.5/5.6 reasoning family cannot use a configurable ``reasoning_effort``
-alongside function tools on ``/v1/chat/completions`` — that combination is only
+alongside function tools on ``/v1/chat/completions``. That combination is only
 supported on ``/v1/responses``. To keep the rest of the cog (conversation storage,
 ``chat.py`` parsing, usage/cache accounting) unchanged, this module translates a
 Chat-Completions-shaped request into a Responses request and translates the
-Responses result back into a real ``ChatCompletion`` object.
+Responses result back into a ``ChatCompletion`` object.
 
-The conversation store stays in Chat Completions format; translation is stateless
+The conversation store stays in Chat Completions format. Translation is stateless
 and per-call (``store=False``), so switching models mid-conversation still works.
 """
 
