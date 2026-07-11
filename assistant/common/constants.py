@@ -850,7 +850,7 @@ NO_ACTION_NEEDED = {
                 "type": "string",
                 "description": (
                     "One or two short sentences on why no action is warranted. Do not restate the rules, "
-                    "list everything you reviewed, or explain your reasoning step by step — just the conclusion."
+                    "list everything you reviewed, or explain your reasoning step by step, just the conclusion."
                 ),
             },
         },

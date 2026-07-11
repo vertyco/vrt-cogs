@@ -436,13 +436,13 @@ async def request_chat_completion_raw(
         # The TypeError surfaces here instead of from our code.
         raise RuntimeError(
             f"Model {model!r} returned an empty response (choices=null). "
-            "The provider may be temporarily unavailable — try again or switch models."
+            "The provider may be temporarily unavailable. Try again or switch models."
         ) from exc
 
     if not response.choices:
         raise RuntimeError(
             f"Model {model!r} returned an empty choices list. "
-            "The provider may be temporarily unavailable — try again or switch models."
+            "The provider may be temporarily unavailable. Try again or switch models."
         )
 
     log.debug(f"request_chat_completion_raw: {model} -> {response.model}")

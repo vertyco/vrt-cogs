@@ -74,7 +74,7 @@
 
 ## v8.10.1
 
-- **Fix**: third-party/RPC `add_embedding` crashed with `EmbeddingStore.add() takes 6 positional arguments but 7 were given` — it still passed the vestigial `ai_created` flag dropped from the store in the chromadb refactor. The parameter stays in `add_embedding`'s signature for API compatibility but is no longer forwarded.
+- **Fix**: third-party/RPC `add_embedding` crashed with `EmbeddingStore.add() takes 6 positional arguments but 7 were given`, it still passed the vestigial `ai_created` flag dropped from the store in the chromadb refactor. The parameter stays in `add_embedding`'s signature for API compatibility but is no longer forwarded.
 
 ## v8.10.0
 
@@ -82,7 +82,7 @@
 
 ## v8.9.0
 
-- **New**: Smartmod trigger phrases. Staff can set keyword triggers that fire the moderation review pipeline **in place of** the OpenAI moderation scan, so smartmod works even with no OpenAI key. Manage them with `[p]assistant smartmod trigger <phrase>` (re-run to remove) and `[p]assistant smartmod triggers` (list). Only `*` acts as a wildcard (any run of characters); everything else is escaped, so pasting real regex is safe and can never lock the bot up with catastrophic backtracking — no multiprocessing timeout guard is needed. A phrase with no leading/trailing `*` matches on word boundaries (`idiot` hits "idiot" but not "idiotic"); add `*` for prefix/suffix/substring matching. A keyword match runs the review alongside any category hits. `smartmod test` / `smartmod simulate` now report trigger matches and run key-free when triggers are configured.
+- **New**: Smartmod trigger phrases. Staff can set keyword triggers that fire the moderation review pipeline **in place of** the OpenAI moderation scan, so smartmod works even with no OpenAI key. Manage them with `[p]assistant smartmod trigger <phrase>` (re-run to remove) and `[p]assistant smartmod triggers` (list). Only `*` acts as a wildcard (any run of characters); everything else is escaped, so pasting real regex is safe and can never lock the bot up with catastrophic backtracking, no multiprocessing timeout guard is needed. A phrase with no leading/trailing `*` matches on word boundaries (`idiot` hits "idiot" but not "idiotic"); add `*` for prefix/suffix/substring matching. A keyword match runs the review alongside any category hits. `smartmod test` / `smartmod simulate` now report trigger matches and run key-free when triggers are configured.
 
 ## v8.8.4
 
@@ -90,21 +90,21 @@
 
 ## v8.8.3
 
-- **Fix**: OpenRouter `404 No endpoints found that support the provided 'tool_choice' value` (raised when the routed provider for a model — e.g. `qwen/qwen3.6-plus` — doesn't accept a forced `tool_choice`) no longer crashes the response. `request_chat_completion_raw` now retries the request once without `tool_choice` on that error. Body parsing handles both the inner error dict and full envelope shapes.
+- **Fix**: OpenRouter `404 No endpoints found that support the provided 'tool_choice' value` (raised when the routed provider for a model, e.g. `qwen/qwen3.6-plus`, doesn't accept a forced `tool_choice`) no longer crashes the response. `request_chat_completion_raw` now retries the request once without `tool_choice` on that error. Body parsing handles both the inner error dict and full envelope shapes.
 
 ## v8.8.2
 
-- **Fix**: Reasoning-only continuation retry no longer 400s on strict providers. When a reasoning model (e.g. Xiaomi/MiMo v2.5 via OpenRouter) returned reasoning with no content/tool call, the in-flight retry payload carried an assistant message with `content: null` and only `reasoning_details`/`reasoning` — which Xiaomi rejects (`assistant must provide content, reasoning_content or tool_calls`). The reasoning is now also mirrored into `reasoning_content` so the continuation request is accepted.
+- **Fix**: Reasoning-only continuation retry no longer 400s on strict providers. When a reasoning model (e.g. Xiaomi/MiMo v2.5 via OpenRouter) returned reasoning with no content/tool call, the in-flight retry payload carried an assistant message with `content: null` and only `reasoning_details`/`reasoning`, which Xiaomi rejects (`assistant must provide content, reasoning_content or tool_calls`). The reasoning is now also mirrored into `reasoning_content` so the continuation request is accepted.
 
 ## v8.8.1
 
-- **Fix**: Sentry SDK bug — when OpenRouter returns HTTP 200 with `choices: null` (e.g. model temporarily unavailable), Sentry's OpenAI integration crashed with a `TypeError` that surfaced as an unhandled exception. Now caught in `request_chat_completion_raw` with a descriptive `RuntimeError`, and handled in `handle_message` with a user-facing message instead of the generic "something went wrong" fallback.
+- **Fix**: Sentry SDK bug: when OpenRouter returns HTTP 200 with `choices: null` (e.g. model temporarily unavailable), Sentry's OpenAI integration crashed with a `TypeError` that surfaced as an unhandled exception. Now caught in `request_chat_completion_raw` with a descriptive `RuntimeError`, and handled in `handle_message` with a user-facing message instead of the generic "something went wrong" fallback.
 
 ## v8.8.0
 
-- **Fix**: `resolve_chat_model()` now recognises OpenRouter model slug suffixes (`:nitro`, `:floor`, `:extended`) — models stored as e.g. `xiaomi/mimo-v2.5-pro:nitro` no longer fall back to `openrouter/auto`. The "not in discovered model list" warning is also suppressed for suffix models whose base is in the profile.
-- **New**: OpenRouter provider routing preferences — `[p]assistant orprovider providers <p1> [p2 ...]` sets an ordered provider list; `[p]assistant orprovider fallbacks false` hard-pins to those providers; `[p]assistant orprovider suffix :nitro` applies a guild-wide model slug suffix to every request; `[p]assistant orprovider settings` shows current config.
-- **New**: Model picker search — Search 🔍 button filters the model list by query; Suffix 🏷️ button sets/clears the `:nitro`/`:floor`/`:extended` suffix on the currently selected model inline; Clear ✖️ resets the search.
+- **Fix**: `resolve_chat_model()` now recognises OpenRouter model slug suffixes (`:nitro`, `:floor`, `:extended`), models stored as e.g. `xiaomi/mimo-v2.5-pro:nitro` no longer fall back to `openrouter/auto`. The "not in discovered model list" warning is also suppressed for suffix models whose base is in the profile.
+- **New**: OpenRouter provider routing preferences: `[p]assistant orprovider providers <p1> [p2 ...]` sets an ordered provider list; `[p]assistant orprovider fallbacks false` hard-pins to those providers; `[p]assistant orprovider suffix :nitro` applies a guild-wide model slug suffix to every request; `[p]assistant orprovider settings` shows current config.
+- **New**: Model picker search: Search 🔍 button filters the model list by query; Suffix 🏷️ button sets/clears the `:nitro`/`:floor`/`:extended` suffix on the currently selected model inline; Clear ✖️ resets the search.
 
 ## v8.7.2
 
@@ -117,7 +117,7 @@
 
 ## v8.7.0
 
-- New `[p]assistant api globalmodel <model>` (owner): a global default chat model that any guild which hasn't picked its own falls back to — pairs with the global endpoint override. For example set it to `openrouter/free` so fresh servers route to OpenRouter's Free Models Router instead of the built-in `gpt-5.4` default (which otherwise resolves to `openrouter/auto` and can be blocked by OpenRouter allow-list / data-policy rules). Guilds that chose their own model are unaffected.
+- New `[p]assistant api globalmodel <model>` (owner): a global default chat model that any guild which hasn't picked its own falls back to, pairs with the global endpoint override. For example set it to `openrouter/free` so fresh servers route to OpenRouter's Free Models Router instead of the built-in `gpt-5.4` default (which otherwise resolves to `openrouter/auto` and can be blocked by OpenRouter allow-list / data-policy rules). Guilds that chose their own model are unaffected.
 
 ## v8.6.1
 
@@ -138,7 +138,7 @@
 
 ## v8.3.0
 
-- Smartmod now scans **images**: image attachments are sent to `omni-moderation-latest` alongside any text, and image-only messages (previously skipped) are now screened. A message is flagged if any part (text or any image) trips a threshold — the per-category score is the max across all parts. The review prompt labels image-only messages as `[image attachment]`.
+- Smartmod now scans **images**: image attachments are sent to `omni-moderation-latest` alongside any text, and image-only messages (previously skipped) are now screened. A message is flagged if any part (text or any image) trips a threshold, the per-category score is the max across all parts. The review prompt labels image-only messages as `[image attachment]`.
 
 ## v8.2.3
 
@@ -154,13 +154,13 @@
 
 ## v8.2.0
 
-### Smartmod — more actions + cog integrations
+### Smartmod: more actions + cog integrations
 
 - New built-in panel actions: **warn** (records a warning via Red's `Warnings` cog, falling back to a DM) and **tempban** (Discord ban with a scheduled auto-unban).
 - The panel action set is now dynamic: the suggested action is a highlighted button alongside a dropdown of every action available on the server. `propose_mod_action`'s `action` enum is constrained to the actually-available actions, and `timeout_minutes` is now `duration_minutes` (covers timeout / tempban / ark_tempban).
 - **ArkTools integration** (when the cog is loaded): if the flagged member has a linked in-game player, **Ark ban** / **Ark temp ban** actions are offered, calling `ban_unban_player` (RCON + banlist) directly.
 - **ModNotes integration** (JojoCogs, when loaded): an **Add note** action records a moderator note via the cog's `api.create_note`.
-- Action execution moved onto the cog (`execute_mod_action`); the panel only gates permissions and delegates. The reviewer never acts autonomously — staff confirm every action.
+- Action execution moved onto the cog (`execute_mod_action`); the panel only gates permissions and delegates. The reviewer never acts autonomously, staff confirm every action.
 
 ## v8.1.1
 
