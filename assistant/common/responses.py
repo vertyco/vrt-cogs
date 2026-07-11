@@ -100,7 +100,7 @@ def to_responses_input(messages: list[dict]) -> list[dict]:
             tool_calls = msg.get("tool_calls")
             if tool_calls:
                 for tc in tool_calls:
-                    fn = tc.get("function", {}) if isinstance(tc, dict) else {}
+                    fn = tc.get("function", {})
                     items.append(
                         {
                             "type": "function_call",
