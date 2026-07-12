@@ -129,6 +129,30 @@ TOKEN_PRICING: dict[str, tuple[float, float]] = {
 }
 
 
+def normalize_option(raw: str | None, valid: list[str], labels: dict[str, str]) -> str | None:
+    """Map a raw user-submitted option to its canonical value.
+
+    editimage/makeimage expose model/size/quality via autocomplete, which does not restrict
+    input, so Discord can submit free text (e.g. the display label "GPT Image 2" or wrong casing
+    "High"). Match against the exact value, case-insensitively, or a display label before validation
+    so a typed label resolves instead of being rejected. Unresolved input is returned unchanged so
+    the caller's VALID_* check still surfaces a clear error.
+    """
+    if raw is None:
+        return None
+    stripped = raw.strip()
+    if stripped in valid:
+        return stripped
+    lowered = stripped.lower()
+    for value in valid:
+        if value.lower() == lowered:
+            return value
+    for value, label in labels.items():
+        if label.lower() == lowered:
+            return value
+    return stripped
+
+
 def get_generation_cost(model: str, quality: str, size: str) -> float:
     """Calculate the cost for a generation based on model, quality, and size."""
     model_pricing = PRICING.get(model)
