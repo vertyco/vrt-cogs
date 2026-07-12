@@ -109,7 +109,9 @@ class LeaderboardView(ui.LayoutView):
         self.bot = bot
         self.author: discord.Member | discord.User = ctx.author
         self.channel: discord.abc.MessageableChannel = ctx.channel
-        self.local = local
+        self.guild: discord.Guild | None = ctx.guild
+        # Local leaderboards require a guild; fall back to global when there isn't one (e.g. DMs)
+        self.local = local and ctx.guild is not None
 
         self.page = 0
         self.page_count = 0
@@ -163,8 +165,8 @@ class LeaderboardView(ui.LayoutView):
         self.data = []
 
         for entry in data:
-            if self.local:
-                user = self.channel.guild.get_member(entry["player"])
+            if self.local and self.guild is not None:
+                user = self.guild.get_member(entry["player"])
             else:
                 user = self.bot.get_user(entry["player"])
             if not user:
