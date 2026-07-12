@@ -399,6 +399,7 @@ class User(MixinMeta):
         await LeaderboardView(self.bot, ctx, local=local).start()
 
     @commands.hybrid_command(name="minerlb", description="View the leaderboard.")
+    @commands.guild_only()
     @ensure_db_connection()
     async def miner_leaderboard(self, ctx: commands.Context, local: bool = True):
         """View the leaderboard."""
