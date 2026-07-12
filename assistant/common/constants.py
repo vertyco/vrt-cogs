@@ -212,6 +212,10 @@ SUPPORTS_TOOLS = [
     "gpt-5.6-luna",
 ]
 OLD_TOOL_SCHEMA = [i for i in MODELS.keys() if i not in SUPPORTS_TOOLS]
+# Model families that only support configurable reasoning_effort + function tools
+# via the Responses API (/v1/responses). Chat Completions rejects the combination
+# for these, so calls that need both are routed through the Responses adapter.
+RESPONSES_API_MODEL_PREFIXES = ("gpt-5.4", "gpt-5.5", "gpt-5.6")
 READ_EXTENSIONS = [
     ".txt",
     ".py",
@@ -846,7 +850,7 @@ NO_ACTION_NEEDED = {
                 "type": "string",
                 "description": (
                     "One or two short sentences on why no action is warranted. Do not restate the rules, "
-                    "list everything you reviewed, or explain your reasoning step by step — just the conclusion."
+                    "list everything you reviewed, or explain your reasoning step by step, just the conclusion."
                 ),
             },
         },
