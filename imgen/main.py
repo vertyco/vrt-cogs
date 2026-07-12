@@ -33,6 +33,7 @@ from .common.constants import (
     format_quota,
     get_actual_cost,
     get_generation_cost,
+    normalize_option,
 )
 from .common.models import DB, AccessLimits, GuildSettings, RoleAccess
 from .views import (
@@ -110,7 +111,7 @@ class ImGen(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "1.5.2"
+    __version__ = "1.5.3"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -250,6 +251,11 @@ class ImGen(commands.Cog):
         )
         if not ok:
             return False, reason, "", "", "", access
+
+        # Autocomplete lets Discord submit free text, so normalize labels/casing to canonical values.
+        model = normalize_option(model, VALID_MODELS, MODEL_LABELS)
+        size = normalize_option(size, VALID_SIZES, SIZE_LABELS)
+        quality = normalize_option(quality, VALID_QUALITIES, QUALITY_LABELS)
 
         resolved_model = model or conf.default_model
         if resolved_model not in VALID_MODELS:
