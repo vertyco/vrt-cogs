@@ -57,6 +57,8 @@ class Admin(MixinMeta):
             "`Decay Enabled: `{}\n"
             "`Inactive Days: `{}\n"
             "`Percent Decay: `{}\n"
+            "`Notify Users:  `{}\n"
+            "`Warn Days:     `{}\n"
             "`Saved Users:   `{}\n"
             "`Active Users:  `{}\n"
             "`Expired Users: `{}\n"
@@ -67,6 +69,8 @@ class Admin(MixinMeta):
             conf.enabled,
             conf.inactive_days,
             round(conf.percent_decay * 100),
+            conf.notify_users,
+            conf.warn_days,
             humanize_number(len(conf.users)),
             humanize_number(active),
             humanize_number(expired),
@@ -123,6 +127,32 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         conf.percent_decay = percent
         await ctx.send(_("Percent decay set to {}%.").format(round(percent * 100)))
+        await self.save()
+
+    @bankdecay.command(name="notify")
+    async def toggle_notify(self, ctx: commands.Context):
+        """
+        Toggle DMing users a heads-up before/when their balance decays.
+        """
+        conf = self.db.get_conf(ctx.guild)
+        conf.notify_users = not conf.notify_users
+        state = _("**enabled**") if conf.notify_users else _("**disabled**")
+        await ctx.send(_("Decay notification DMs are now {}.").format(state))
+        await self.save()
+
+    @bankdecay.command(name="setwarndays")
+    async def set_warn_days(self, ctx: commands.Context, days: commands.positive_int):
+        """
+        Set how many days before decay begins to DM users a heads-up.
+
+        Set to 0 to only notify once decay has actually started.
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if days > conf.inactive_days:
+            await ctx.send(_("Warn days cannot be greater than the inactive days ({}).").format(conf.inactive_days))
+            return
+        conf.warn_days = days
+        await ctx.send(_("Users will be warned {} day(s) before decay begins.").format(days))
         await self.save()
 
     @bankdecay.command(name="resettotal")
