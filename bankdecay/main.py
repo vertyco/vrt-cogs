@@ -35,7 +35,7 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.3.16"
+    __version__ = "0.4.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -122,23 +122,32 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
                 continue
 
             user = self.bot.get_user(user_id)
-
-            credits_to_remove = math.ceil(balance * conf.percent_decay)
-            new_balance = balance - credits_to_remove
+            member = guild.get_member(user_id)
 
             userdata = conf.users[user_id]
             last_active = userdata.last_active
             delta = now - last_active
+
+            # Don't decay (or warn) balances with roles in the ignore list
+            if member and any(r.id in conf.ignored_roles for r in member.roles):
+                continue
+
+            # Send a one-time heads-up DM as the user nears or enters decay, so nobody is
+            # blindsided. Reset when they become active again (see DB.refresh_user).
+            warn_at = max(conf.inactive_days - conf.warn_days, 0)
+            if conf.notify_users and member and not userdata.warned and delta.days >= warn_at and not check_only:
+                await self.notify_decay(member, conf, delta.days)
+                userdata.warned = True
+
             if delta.days <= conf.inactive_days:
                 continue
 
-            if member := guild.get_member(user_id):
-                # Don't decay user balances with roles in the ignore list
-                if any(r.id in conf.ignored_roles for r in member.roles):
-                    continue
-            else:
+            if not member:
                 # User no longer in guild, keep decaying until balance is zero
                 pass
+
+            credits_to_remove = math.ceil(balance * conf.percent_decay)
+            new_balance = balance - credits_to_remove
 
             if not check_only:
                 if member:
@@ -204,6 +213,35 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
             log.error(f"Failed to send decay log to {log_channel.name} in {guild.name}", exc_info=e)
 
         return decayed
+
+    async def notify_decay(self, member: discord.Member, conf: "GuildSettings", inactive_days: int) -> None:
+        """DM a member a one-time heads-up that their balance is about to (or has begun to) decay."""
+        currency = await bank.get_currency_name(member.guild)
+        percent = round(conf.percent_decay * 100)
+        if inactive_days > conf.inactive_days:
+            desc = _(
+                "Heads up: your **{currency}** balance in **{guild}** has started decaying by "
+                "**{percent}% per day** because your account has been inactive for over {days} days.\n\n"
+                "Hop back into the server (send a message or add a reaction) to stop the decay. "
+                "Anything already lost can't be restored, so the sooner the better."
+            ).format(currency=currency, guild=member.guild.name, percent=percent, days=conf.inactive_days)
+        else:
+            days_left = max(conf.inactive_days - inactive_days, 0)
+            desc = _(
+                "Heads up: your **{currency}** balance in **{guild}** will start decaying by "
+                "**{percent}% per day** in about **{left} day(s)** if you stay inactive.\n\n"
+                "Just send a message or add a reaction in the server to reset the timer and keep your balance safe."
+            ).format(currency=currency, guild=member.guild.name, percent=percent, left=days_left)
+        embed = discord.Embed(
+            title=_("VertCoin Inactivity Decay"),
+            description=desc,
+            color=discord.Color.orange(),
+        )
+        try:
+            await member.send(embed=embed)
+        except (discord.Forbidden, discord.HTTPException):
+            # DMs closed or blocked; nothing else to do
+            pass
 
     async def save(self) -> None:
         if self.saving:
