@@ -60,6 +60,19 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
         data = await self.config.db()
         self.db = await asyncio.to_thread(DB.model_validate, data)
         log.info("Config loaded")
+        # One-time grandfather: mark every already-tracked user as warned so turning on decay
+        # DMs doesn't blast the users who are already inactive/decaying. Active users get reset
+        # to un-warned on their next activity, so only NEW decays going forward will notify.
+        if not self.db.notify_migrated:
+            migrated = 0
+            for conf in self.db.configs.values():
+                for userdata in conf.users.values():
+                    if not userdata.warned:
+                        userdata.warned = True
+                        migrated += 1
+            self.db.notify_migrated = True
+            await self.save()
+            log.info(f"Notify migration: grandfathered {migrated} existing users (no decay DM blast)")
         await self.start_jobs()
 
     async def start_jobs(self):
