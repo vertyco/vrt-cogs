@@ -38,6 +38,7 @@ class GuildSettings(Base):
 class DB(Base):
     configs: dict[int, GuildSettings] = {}
     last_run: datetime = None
+    notify_migrated: bool = False  # one-time grandfather so enabling notify DMs doesn't blast existing users
 
     def get_conf(self, guild: discord.Guild | int) -> GuildSettings:
         gid = guild if isinstance(guild, int) else guild.id
