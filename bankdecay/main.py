@@ -14,7 +14,7 @@ from redbot.core.utils.chat_formatting import humanize_number, text_to_file
 from .abc import CompositeMetaClass
 from .commands.admin import Admin
 from .common.listeners import Listeners
-from .common.models import DB
+from .common.models import DB, GuildSettings
 from .common.scheduler import scheduler
 
 log = logging.getLogger("red.vrt.bankdecay")
@@ -35,7 +35,7 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.4.0"
+    __version__ = "0.5.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -227,7 +227,7 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
 
         return decayed
 
-    async def notify_decay(self, member: discord.Member, conf: "GuildSettings", inactive_days: int) -> None:
+    async def notify_decay(self, member: discord.Member, conf: GuildSettings, inactive_days: int) -> None:
         """DM a member a one-time heads-up that their balance is about to (or has begun to) decay."""
         currency = await bank.get_currency_name(member.guild)
         percent = round(conf.percent_decay * 100)
@@ -246,15 +246,32 @@ class BankDecay(Admin, Listeners, commands.Cog, metaclass=CompositeMetaClass):
                 "Just send a message or add a reaction in the server to reset the timer and keep your balance safe."
             ).format(currency=currency, guild=member.guild.name, percent=percent, left=days_left)
         embed = discord.Embed(
-            title=_("VertCoin Inactivity Decay"),
+            title=_("{currency} Inactivity Decay").format(currency=currency),
             description=desc,
             color=discord.Color.orange(),
         )
         try:
             await member.send(embed=embed)
-        except (discord.Forbidden, discord.HTTPException):
-            # DMs closed or blocked; nothing else to do
-            pass
+        except (discord.Forbidden, discord.HTTPException) as e:
+            log.warning(f"Failed to DM decay warning to {member} ({member.id}) in {member.guild.name}: {e}")
+            await self.notify_dm_failure(member, conf)
+
+    async def notify_dm_failure(self, member: discord.Member, conf: GuildSettings) -> None:
+        """Post to the configured log channel so staff can see a decay-warning DM never reached the user."""
+        log_channel = member.guild.get_channel(conf.log_channel)
+        if not log_channel or not log_channel.permissions_for(member.guild.me).embed_links:
+            return
+        embed = discord.Embed(
+            title=_("Decay Warning DM Failed"),
+            description=_("Could not DM {member} their inactivity decay warning (DMs are closed or blocked).").format(
+                member=member.mention
+            ),
+            color=discord.Color.red(),
+        )
+        try:
+            await log_channel.send(embed=embed)
+        except Exception as e:
+            log.error(f"Failed to post DM-failure notice to log channel in {member.guild.name}", exc_info=e)
 
     async def save(self) -> None:
         if self.saving:
