@@ -25,7 +25,7 @@ class UpgradeChat(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.2.3"
+    __version__ = "0.3.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -306,6 +306,20 @@ class UpgradeChat(commands.Cog):
                 await bank.deposit_credits(ctx.author, amount_to_give)
             except BalanceTooHigh as e:
                 await bank.set_balance(ctx.author, e.max_balance)
+
+            self.bot.dispatch(
+                "upgradechat_claim",
+                ctx.author,
+                {
+                    "guild": ctx.guild,
+                    "channel": ctx.channel,
+                    "amount_spent": amount_spent,
+                    "amount_awarded": amount_to_give,
+                    "valid_purchases": valid_purchases,
+                    "currency_name": currency_name,
+                    "purchases": purchase_data,
+                },
+            )
 
             title = "🎉Purchase claimed successfully!" if valid_purchases == 1 else "🎉Purchases claimed successfully!"
             desc = f"{ctx.author.display_name}, you have claimed {'{:,}'.format(amount_to_give)} {currency_name}!"
