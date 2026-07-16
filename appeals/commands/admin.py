@@ -1,10 +1,12 @@
 import logging
 import typing as t
 from copy import deepcopy
+from datetime import datetime, timezone
 
 import discord
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import box, pagify
+from redbot.core.commands import parse_timedelta
+from redbot.core.utils.chat_formatting import box, humanize_timedelta, pagify
 
 from ..abc import MixinMeta
 from ..common.checks import ensure_db_connection
@@ -16,6 +18,15 @@ log = logging.getLogger("red.vrt.appeals.commands.admin")
 
 
 class Admin(MixinMeta):
+    def parse_cooldown(self, duration: str | None) -> int | None:
+        """Parse a duration string into seconds. Returns 0 to disable, None if unparseable."""
+        if duration is None or duration.strip().lower() in {"0", "none", "off", "disable", "clear"}:
+            return 0
+        delta = parse_timedelta(duration)
+        if delta is None:
+            return None
+        return int(delta.total_seconds())
+
     async def no_appealguild(self, ctx: commands.Context):
         txt = (
             "This server hasn't been set up for the appeal system yet!\n"
@@ -167,6 +178,8 @@ class Admin(MixinMeta):
             f"**Appeal Message**: {appeal_msg}\n"
             f"**Alert Channel**: {cname(appealguild.alert_channel)}\n"
             f"**Appeal Limit**: {appealguild.appeal_limit}\n"
+            f"**Ban Cooldown**: {humanize_timedelta(seconds=appealguild.ban_appeal_cooldown) if appealguild.ban_appeal_cooldown else 'Disabled'}\n"
+            f"**Re-appeal Cooldown**: {humanize_timedelta(seconds=appealguild.reappeal_cooldown) if appealguild.reappeal_cooldown else 'Disabled'}\n"
             f"**Discussion Threads**: {'Enabled' if appealguild.discussion_threads else 'Disabled'}\n"
             f"**Vote Emojis**: {'Enabled' if appealguild.vote_emojis else 'Disabled'}\n"
             f"**Alert Roles**: {', '.join([r for r in roles]) if roles else 'None set'}\n"
@@ -201,6 +214,45 @@ class Admin(MixinMeta):
         await ctx.send(f"Successfully set the appeal limit to {limit}")
 
     @ensure_db_connection()
+    @appealset.command(name="bancooldown")
+    async def ban_cooldown(self, ctx: commands.Context, *, duration: str = None):
+        """
+        Set how long a user must wait after being banned before they can appeal.
+
+        Pass `0`, `off`, or `disable` to turn it off.
+        Examples: `[p]appeal bancooldown 7d`, `[p]appeal bancooldown 12h`
+        """
+        seconds = self.parse_cooldown(duration)
+        if seconds is None:
+            return await ctx.send("I couldn't understand that duration. Try something like `7d` or `12h`.")
+        await AppealGuild.update({AppealGuild.ban_appeal_cooldown: seconds}).where(AppealGuild.id == ctx.guild.id)
+        if seconds == 0:
+            return await ctx.send("Ban cooldown disabled.")
+        await ctx.send(
+            f"Users must now wait {humanize_timedelta(seconds=seconds)} after being banned before appealing."
+        )
+
+    @ensure_db_connection()
+    @appealset.command(name="reappealcooldown")
+    async def reappeal_cooldown(self, ctx: commands.Context, *, duration: str = None):
+        """
+        Set how long a user must wait after a denial before they can appeal again.
+
+        Only applies when the appeal limit is greater than 1.
+        Pass `0`, `off`, or `disable` to turn it off.
+        Examples: `[p]appeal reappealcooldown 30d`, `[p]appeal reappealcooldown 1w`
+        """
+        seconds = self.parse_cooldown(duration)
+        if seconds is None:
+            return await ctx.send("I couldn't understand that duration. Try something like `30d` or `1w`.")
+        await AppealGuild.update({AppealGuild.reappeal_cooldown: seconds}).where(AppealGuild.id == ctx.guild.id)
+        if seconds == 0:
+            return await ctx.send("Re-appeal cooldown disabled.")
+        await ctx.send(
+            f"Users must now wait {humanize_timedelta(seconds=seconds)} after a denial before appealing again."
+        )
+
+    @ensure_db_connection()
     @appealset.command(name="wipeappeals")
     async def wipe_appeals(self, ctx: commands.Context, confirm: bool):
         """Wipe all appeal submissions"""
@@ -225,7 +277,10 @@ class Admin(MixinMeta):
             return await ctx.send("This submission has already been approved.")
         elif submission.status == "denied":
             return await ctx.send("This submission has already been denied.")
-        update_kwargs = {AppealSubmission.status: "approved"}
+        update_kwargs = {
+            AppealSubmission.status: "approved",
+            AppealSubmission.decided_at: datetime.now(tz=timezone.utc),
+        }
         if reason:
             update_kwargs[AppealSubmission.reason] = reason
         await AppealSubmission.update(update_kwargs).where(
@@ -326,7 +381,10 @@ class Admin(MixinMeta):
             return await ctx.send("This submission has already been denied.")
         elif submission.status == "approved":
             return await ctx.send("This submission has already been approved.")
-        update_kwargs = {AppealSubmission.status: "denied"}
+        update_kwargs = {
+            AppealSubmission.status: "denied",
+            AppealSubmission.decided_at: datetime.now(tz=timezone.utc),
+        }
         if reason:
             update_kwargs[AppealSubmission.reason] = reason
         await AppealSubmission.update(update_kwargs).where(

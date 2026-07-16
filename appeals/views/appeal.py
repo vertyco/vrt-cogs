@@ -1,3 +1,6 @@
+import logging
+from datetime import datetime, timedelta, timezone
+
 import discord
 from redbot.core import commands
 from redbot.core.bot import Red
@@ -5,6 +8,8 @@ from redbot.core.bot import Red
 from ..abc import MixinMeta
 from ..db.tables import AppealGuild, AppealSubmission
 from .submission import SubmissionView
+
+log = logging.getLogger("red.vrt.appeals.views.appeal")
 
 
 class AppealView(discord.ui.View):
@@ -84,6 +89,24 @@ class AppealView(discord.ui.View):
                     "You're not banned from the server you're appealing for!", ephemeral=True
                 )
 
+        now = datetime.now(tz=timezone.utc)
+
+        if not is_admin and appealguild.ban_appeal_cooldown > 0:
+            banned_at = None
+            try:
+                async for entry in target_guild.audit_logs(limit=200, action=discord.AuditLogAction.ban):
+                    if entry.target and entry.target.id == interaction.user.id:
+                        banned_at = entry.created_at  # newest-first, so first match is the latest ban
+                        break
+            except discord.Forbidden:
+                log.warning("Missing View Audit Log in %s, skipping ban appeal cooldown", target_guild.id)
+            if banned_at and now - banned_at < timedelta(seconds=appealguild.ban_appeal_cooldown):
+                eligible = int((banned_at + timedelta(seconds=appealguild.ban_appeal_cooldown)).timestamp())
+                return await interaction.followup.send(
+                    f"You were banned too recently to appeal. You can submit an appeal <t:{eligible}:R>.",
+                    ephemeral=True,
+                )
+
         if appealguild.appeal_limit == 1:
             existing = await AppealSubmission.objects().get(
                 (AppealSubmission.guild == interaction.guild.id) & (AppealSubmission.user_id == interaction.user.id)
@@ -104,6 +127,29 @@ class AppealView(discord.ui.View):
                 ts, relative = pending.created("F"), pending.created("R")
                 txt = f"You still have a pending appeal submitted on {ts} ({relative})"
                 return await interaction.followup.send(txt, ephemeral=True)
+            if not is_admin and appealguild.reappeal_cooldown > 0:
+                last_denied = (
+                    await AppealSubmission.objects()
+                    .where(
+                        (AppealSubmission.guild == interaction.guild.id)
+                        & (AppealSubmission.user_id == interaction.user.id)
+                        & (AppealSubmission.status == "denied")
+                    )
+                    .order_by(AppealSubmission.created_at, ascending=False)
+                    .first()
+                )
+                if (
+                    last_denied
+                    and last_denied.decided_at
+                    and now - last_denied.decided_at < timedelta(seconds=appealguild.reappeal_cooldown)
+                ):
+                    eligible = int(
+                        (last_denied.decided_at + timedelta(seconds=appealguild.reappeal_cooldown)).timestamp()
+                    )
+                    return await interaction.followup.send(
+                        f"Your last appeal was denied recently. You can submit another appeal <t:{eligible}:R>.",
+                        ephemeral=True,
+                    )
             existing = await AppealSubmission.objects().where(
                 (AppealSubmission.guild == interaction.guild.id) & (AppealSubmission.user_id == interaction.user.id)
             )

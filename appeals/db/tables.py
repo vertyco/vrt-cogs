@@ -31,6 +31,8 @@ class AppealGuild(Table):
     alert_roles = Array(BigInt())  # Roles to alert when a new appeal is submitted
     alert_channel = BigInt()  # Channel to alert when a new appeal is submitted
     appeal_limit = Integer(default=1)  # Maximum number of times a user can submit an appeal
+    ban_appeal_cooldown = Integer(default=0)  # Seconds after ban before first appeal (0 = disabled)
+    reappeal_cooldown = Integer(default=0)  # Seconds after a denial before re-appealing (0 = disabled)
     discussion_threads = Boolean(default=True)  # Whether to create discussion threads for appeals
     vote_emojis = Boolean(default=False)  # Whether to add basic check and cross emojis to the appeal message
 
@@ -106,8 +108,16 @@ class AppealSubmission(Table):
     # 0.2.0+
     discussion_thread = BigInt()  # ID of the discussion thread for this question, if applicable
 
+    # 0.3.0+
+    decided_at = Timestamptz(null=True, default=None)  # When the appeal was approved/denied
+
     def created(self, type: t.Literal["t", "T", "d", "D", "f", "F", "R"]) -> str:
         return f"<t:{int(self.created_at.timestamp())}:{type}>"
+
+    def decided(self, type: t.Literal["t", "T", "d", "D", "f", "F", "R"]) -> str:
+        if self.decided_at is None:
+            return ""
+        return f"<t:{int(self.decided_at.timestamp())}:{type}>"
 
     def embed(self, user: discord.Member | discord.User = None) -> discord.Embed:
         colors = {
