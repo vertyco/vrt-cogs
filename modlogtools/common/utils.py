@@ -35,10 +35,13 @@ def from_snowflake(value: int | str) -> datetime | None:
 def extract_warn_id(reason: str | None) -> str | None:
     if not reason:
         return None
-    match = WARN_ID_RE.search(reason)
-    if match is None:
+    # Red appends the "Use `[p]unwarn <user> <warn_id>`" hint to the END of the case reason,
+    # after the moderator-supplied description. Take the last match so pasted text in the
+    # description that happens to contain an old unwarn hint cannot hijack the warn id.
+    matches = WARN_ID_RE.findall(reason)
+    if not matches:
         return None
-    return match.group(1)
+    return matches[-1]
 
 
 def get_user_id(user: discord.abc.User | discord.Object | int) -> int:

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import io
+import asyncio
 import json
 import logging
 from collections import Counter, defaultdict
@@ -8,7 +8,12 @@ from datetime import timedelta
 
 import discord
 from redbot.core import commands, modlog
-from redbot.core.utils.chat_formatting import humanize_number, humanize_timedelta
+from redbot.core.utils.chat_formatting import (
+    humanize_number,
+    humanize_timedelta,
+    pagify,
+    text_to_file,
+)
 
 from ..abc import MixinMeta
 from ..common.models import WarningRecord
@@ -86,9 +91,12 @@ class Admin(MixinMeta):
         expiry = conf.get_warning_expiry()
         active = sum(1 for record in conf.records.values() if record.is_active)
         expiry_text = humanize_timedelta(timedelta=expiry) if expiry else "disabled"
+        decay_text = f"{conf.point_decay_per_day} points/day" if conf.point_decay_per_day else "disabled"
         return [
             f"Warning expiry: {expiry_text}",
+            f"Warning point decay: {decay_text}",
             f"Delete original modlog messages on expiry: {'enabled' if conf.delete_expired_modlog_messages else 'disabled'}",
+            f"DM members on expiry: {'enabled' if conf.dm_on_expiry else 'disabled'}",
             f"Tracked warnings: {humanize_number(len(conf.records))}",
             f"Active warnings: {humanize_number(active)}",
         ]
@@ -166,8 +174,8 @@ class Admin(MixinMeta):
     ) -> list[modlog.Case]:
         try:
             cases = await modlog.get_all_cases(guild, self.bot)
-        except Exception:
-            log.exception("Failed to fetch modlog cases for guild %s", guild.id)
+        except Exception as e:
+            log.error("Failed to fetch modlog cases for guild %s", guild.id, exc_info=e)
             return []
 
         if timespan is None:
@@ -252,68 +260,48 @@ class Admin(MixinMeta):
             return await ctx.send("\n".join(lines))
 
         duration = duration.strip()
-        apply_arg = duration
         if duration.lower() in {"off", "none", "disable", "disabled"}:
-            preview = self.preview_warning_expiry_update(ctx.guild, None)
-            if dry_run:
-                return await ctx.send(
-                    "\n".join(
-                        [
-                            "Dry run only. No changes applied.",
-                            "New warning expiry: disabled",
-                            f"Active tracked warnings: {humanize_number(preview['active'])}",
-                            f"Warnings with updated expiry: {humanize_number(preview['changed'])}",
-                            f"Run `{ctx.clean_prefix}modlogtool expiry off false` to apply.",
-                        ]
-                    )
-                )
-            conf.update_expiry(None)
-            summary = await self.sync_guild_records(ctx.guild, save=False)
-            await self.save()
-            return await ctx.send(
-                "\n".join(
-                    [
-                        "Warning expiry disabled.",
-                        f"Warnings with updated expiry: {humanize_number(preview['changed'])}",
-                        f"Sync updates: {humanize_number(summary['updated'])}",
-                    ]
-                )
-            )
-
-        delta = commands.parse_timedelta(duration, minimum=timedelta(hours=1))
-        if delta is None:
-            return await ctx.send("Could not parse duration. Example: `30d`, `12h`, `2w`. Minimum: `1h`.")
+            delta = None
+        else:
+            try:
+                # parse_timedelta raises BadArgument for sub-minimum values instead of returning None.
+                delta = commands.parse_timedelta(duration, minimum=timedelta(hours=1))
+            except commands.BadArgument:
+                delta = None
+            if delta is None:
+                return await ctx.send("Could not parse duration. Example: `30d`, `12h`, `2w`. Minimum: `1h`.")
 
         preview = self.preview_warning_expiry_update(ctx.guild, delta)
+        expiry_label = humanize_timedelta(timedelta=delta) if delta else "disabled"
         if dry_run:
-            return await ctx.send(
-                "\n".join(
-                    [
-                        "Dry run only. No changes applied.",
-                        f"New warning expiry: {humanize_timedelta(timedelta=delta)}",
-                        f"Active tracked warnings: {humanize_number(preview['active'])}",
-                        f"Warnings with updated expiry: {humanize_number(preview['changed'])}",
-                        f"Warnings already past new limit: {humanize_number(preview['overdue'])}",
-                        f"Run `{ctx.clean_prefix}modlogtool expiry {apply_arg} false` to apply.",
-                    ]
-                )
-            )
+            # Quote multi-word durations so the suggested apply command parses correctly.
+            apply_arg = f'"{duration}"' if " " in duration else duration
+            lines = [
+                "Dry run only. No changes applied.",
+                f"New warning expiry: {expiry_label}",
+                f"Active tracked warnings: {humanize_number(preview['active'])}",
+                f"Warnings with updated expiry: {humanize_number(preview['changed'])}",
+            ]
+            if delta:
+                lines.append(f"Warnings already past new limit: {humanize_number(preview['overdue'])}")
+            lines.append(f"Run `{ctx.clean_prefix}modlogtool expiry {apply_arg} false` to apply.")
+            return await ctx.send("\n".join(lines))
 
         conf.update_expiry(delta)
         summary = await self.sync_guild_records(ctx.guild, save=False)
         await self.save()
-        await ctx.send(
-            "\n".join(
-                [
-                    f"Warning expiry set to {humanize_timedelta(timedelta=delta)}.",
-                    f"Delete original modlog messages on expiry: {'enabled' if conf.delete_expired_modlog_messages else 'disabled'}",
-                    f"Warnings with updated expiry: {humanize_number(preview['changed'])}",
-                    f"Warnings already past new limit: {humanize_number(preview['overdue'])}",
-                    f"Sync updates: {humanize_number(summary['updated'])}",
-                    f"Tracked warnings: {humanize_number(len(conf.records))}",
-                ]
+        lines = ["Warning expiry disabled." if delta is None else f"Warning expiry set to {expiry_label}."]
+        if delta:
+            lines.append(
+                f"Delete original modlog messages on expiry: {'enabled' if conf.delete_expired_modlog_messages else 'disabled'}"
             )
-        )
+        lines.append(f"Warnings with updated expiry: {humanize_number(preview['changed'])}")
+        if delta:
+            lines.append(f"Warnings already past new limit: {humanize_number(preview['overdue'])}")
+        lines.append(f"Sync updates: {humanize_number(summary['updated'])}")
+        if delta:
+            lines.append(f"Tracked warnings: {humanize_number(len(conf.records))}")
+        await ctx.send("\n".join(lines))
 
     @modlogtool.command(name="deletemodlogmessages", aliases=["delmodlogmessages"])
     @commands.admin_or_permissions(manage_guild=True)
@@ -328,6 +316,109 @@ class Admin(MixinMeta):
         await self.save()
         state = "enabled" if enabled else "disabled"
         await ctx.send(f"Delete original modlog messages on expiry: {state}")
+
+    @modlogtool.command(name="dmexpiry", aliases=["dmonexpiry"])
+    @commands.admin_or_permissions(manage_guild=True)
+    async def mlt_dmexpiry(self, ctx: commands.Context, enabled: bool | None = None):
+        """Toggle DMing members when their warnings expire or fully decay."""
+        conf = self.db.get_conf(ctx.guild)
+        if enabled is None:
+            state = "enabled" if conf.dm_on_expiry else "disabled"
+            return await ctx.send(f"DM members on warning expiry: {state}")
+
+        conf.dm_on_expiry = enabled
+        await self.save()
+        state = "enabled" if enabled else "disabled"
+        await ctx.send(f"DM members on warning expiry: {state}")
+
+    @modlogtool.command(name="decay")
+    @commands.admin_or_permissions(manage_guild=True)
+    async def mlt_decay(self, ctx: commands.Context, points_per_day: str | None = None):
+        """Set warning point decay per day. Use `off` to disable.
+
+        Each active warning gradually loses points per day since it was issued.
+        A warning is removed entirely once it reaches 0 points. Works alongside
+        or instead of the hard expiry duration.
+        """
+        if self.get_warnings_cog() is None:
+            return await ctx.send("Warnings cog not loaded.")
+        conf = self.db.get_conf(ctx.guild)
+        if points_per_day is None:
+            state = f"{conf.point_decay_per_day} points/day" if conf.point_decay_per_day else "disabled"
+            return await ctx.send(f"Warning point decay: {state}")
+
+        if points_per_day.lower() in {"off", "none", "disable", "disabled", "0"}:
+            conf.point_decay_per_day = 0
+            await self.save()
+            return await ctx.send("Warning point decay disabled.")
+
+        try:
+            rate = int(points_per_day)
+        except ValueError:
+            return await ctx.send("Points per day must be a whole number or `off`.")
+        if not 1 <= rate <= 1000:
+            return await ctx.send("Points per day must be between 1 and 1000.")
+
+        conf.point_decay_per_day = rate
+        await self.save()
+        await ctx.send(
+            f"Warning point decay set to {rate} point{'s' if rate != 1 else ''} per day. "
+            "Warnings are removed once they decay to 0 points."
+        )
+
+    @modlogtool.command(name="extend", aliases=["setexpiry"])
+    @commands.admin_or_permissions(manage_guild=True)
+    async def mlt_extend(
+        self,
+        ctx: commands.Context,
+        member: discord.Member | commands.RawUserIdConverter,
+        warn_id: str,
+        *,
+        duration: str,
+    ):
+        """Override one warning's expiry.
+
+        `duration` - time from now (e.g. `30d`, `12h`, minimum `10m`),
+        `never` to keep it active indefinitely, or `reset` to follow the
+        guild-wide expiry again.
+        """
+        if self.get_warnings_cog() is None:
+            return await ctx.send("Warnings cog not loaded.")
+        await self.sync_guild_records(ctx.guild)
+
+        user_id = member.id if isinstance(member, discord.Member) else int(member)
+        conf = self.db.get_conf(ctx.guild)
+        record = conf.get_record(user_id, warn_id)
+        if record is None:
+            return await ctx.send("No tracked warning with that ID for that member.")
+        if not record.is_active:
+            return await ctx.send(f"That warning is no longer active ({record.resolution}).")
+
+        lowered = duration.strip().lower()
+        if lowered in {"reset", "default"}:
+            record.expiry_override = False
+            expiry = conf.get_warning_expiry()
+            record.expires_at = (record.created_at + expiry) if expiry else None
+            await self.save()
+            when = f"<t:{record.expires_ts}:F>" if record.expires_at else "never (guild expiry disabled)"
+            return await ctx.send(f"Warning `{warn_id}` follows the guild expiry again. Expires: {when}")
+        if lowered in {"never", "off"}:
+            record.expiry_override = True
+            record.expires_at = None
+            await self.save()
+            return await ctx.send(f"Warning `{warn_id}` will never expire automatically.")
+
+        try:
+            delta = commands.parse_timedelta(duration, minimum=timedelta(minutes=10))
+        except commands.BadArgument:
+            delta = None
+        if delta is None:
+            return await ctx.send("Could not parse duration. Example: `30d`, `12h`, `never`, `reset`. Minimum: `10m`.")
+
+        record.expiry_override = True
+        record.expires_at = utcnow() + delta
+        await self.save()
+        await ctx.send(f"Warning `{warn_id}` now expires <t:{record.expires_ts}:F>.")
 
     @modlogtool.command(name="sync")
     @commands.admin_or_permissions(manage_guild=True)
@@ -358,7 +449,9 @@ class Admin(MixinMeta):
             return await ctx.send(str(exc))
 
         summary = self.summarize_guild_import(ctx.guild, payload)
-        buffer = io.BytesIO(json.dumps(payload, indent=2).encode("utf-8"))
+        content = await asyncio.to_thread(json.dumps, payload, indent=2)
+        if len(content.encode("utf-8")) > ctx.guild.filesize_limit:
+            return await ctx.send("Export is too large to upload to this guild.")
         filename = f"modlogtools-{ctx.guild.id}-config-export.json"
         await ctx.send(
             "\n".join(
@@ -371,7 +464,7 @@ class Admin(MixinMeta):
                     f"Tracked records: {humanize_number(summary['tracked_records'])}",
                 ]
             ),
-            file=discord.File(buffer, filename=filename),
+            file=text_to_file(content, filename=filename),
         )
 
     @modlogtool.command(name="importconfig", aliases=["importcfg", "import"])
@@ -381,10 +474,13 @@ class Admin(MixinMeta):
         attachment = self.get_import_attachment(ctx)
         if attachment is None:
             return await ctx.send("Attach an export JSON file to this command or reply to one.")
+        if attachment.size > 25 * 1024 * 1024:
+            return await ctx.send("Import file too large (25MB max).")
 
         try:
-            payload = json.loads((await attachment.read()).decode("utf-8"))
-            summary = self.summarize_guild_import(ctx.guild, payload)
+            raw = (await attachment.read()).decode("utf-8")
+            payload = await asyncio.to_thread(json.loads, raw)
+            summary = await asyncio.to_thread(self.summarize_guild_import, ctx.guild, payload)
         except UnicodeDecodeError:
             return await ctx.send("Import file must be UTF-8 JSON.")
         except json.JSONDecodeError as exc:
@@ -413,8 +509,8 @@ class Admin(MixinMeta):
             result = await self.import_guild_config(ctx.guild, payload)
         except RuntimeError as exc:
             return await ctx.send(str(exc))
-        except Exception:
-            log.exception("Failed to import config for guild %s", ctx.guild.id)
+        except Exception as e:
+            log.error("Failed to import config for guild %s", ctx.guild.id, exc_info=e)
             return await ctx.send("Import failed. Check logs.")
 
         lines.extend(
@@ -435,11 +531,13 @@ class Admin(MixinMeta):
         if self.get_warnings_cog() is None:
             return await ctx.send("Warnings cog not loaded.")
         conf = self.db.get_conf(ctx.guild)
-        if conf.warning_expiry_seconds is None:
-            return await ctx.send("Warning expiry disabled.")
+        if conf.get_warning_expiry() is None and not conf.point_decay_per_day:
+            return await ctx.send("Warning expiry and point decay are both disabled.")
 
         async with ctx.typing():
             if dry_run:
+                # Sync first so the dry run reflects the same state the real run would act on.
+                await self.sync_guild_records(ctx.guild)
                 summary = await self.preview_guild_expiry(ctx.guild)
                 if not any(summary.values()):
                     return await ctx.send("Dry run complete. No warnings eligible for expiry.")
@@ -467,6 +565,9 @@ class Admin(MixinMeta):
             f"Already missing: {humanize_number(summary['stale'])}",
             f"Affected members: {humanize_number(summary['members'])}",
         ]
+        if conf.point_decay_per_day:
+            lines.append(f"Points decayed: {humanize_number(summary['decayed_points'])}")
+            lines.append(f"Fully decayed warnings: {humanize_number(summary['decayed'])}")
         if conf.delete_expired_modlog_messages:
             lines.append(f"Original modlog messages deleted: {humanize_number(summary['messages_deleted'])}")
         else:
@@ -567,7 +668,8 @@ class Admin(MixinMeta):
             lines.append(
                 f"{index}. {self.get_label(ctx.guild, user_id)} -> {stats['warns']} warns | {stats['points']} pts | {stats['active']} active"
             )
-        await ctx.send("\n".join(lines))
+        for page in pagify("\n".join(lines)):
+            await ctx.send(page)
 
     @modlogtool.command(name="moderators", aliases=["topmods"])
     async def mlt_moderators(
@@ -591,8 +693,8 @@ class Admin(MixinMeta):
 
         try:
             all_casetypes = await modlog.get_all_casetypes(guild=ctx.guild)
-        except Exception:
-            log.exception("Failed to fetch casetypes for guild %s", ctx.guild.id)
+        except Exception as e:
+            log.error("Failed to fetch casetypes for guild %s", ctx.guild.id, exc_info=e)
             all_casetypes = []
 
         valid_names = {ct.name for ct in all_casetypes}
@@ -620,7 +722,8 @@ class Admin(MixinMeta):
         lines = [f"Moderator leaderboard for {case_label} in {self.format_period(timespan)}"]
         for index, (user_id, count) in enumerate(ranked, start=1):
             lines.append(f"{index}. {self.get_label(ctx.guild, user_id)} -> {count} cases")
-        await ctx.send("\n".join(lines))
+        for page in pagify("\n".join(lines)):
+            await ctx.send(page)
 
     @modlogtool.command(name="member")
     async def mlt_member(
@@ -667,5 +770,41 @@ class Admin(MixinMeta):
                 lines.append(
                     f"- <t:{record.created_ts}:d> | {record.points} pts | {reason} | {record.resolution or 'active'}"
                 )
+        lines.append(f"Use `{ctx.clean_prefix}modlogtool history` for the full list.")
 
         await ctx.send("\n".join(lines))
+
+    @modlogtool.command(name="history")
+    async def mlt_history(
+        self,
+        ctx: commands.Context,
+        member: discord.Member | commands.RawUserIdConverter,
+        timespan: commands.TimedeltaConverter = None,
+    ):
+        """Show a member's full warning history."""
+        if self.get_warnings_cog() is None:
+            return await ctx.send("Warnings cog not loaded.")
+        await self.sync_guild_records(ctx.guild)
+
+        user_id = member.id if isinstance(member, discord.Member) else int(member)
+        records = [record for record in self.db.get_conf(ctx.guild).records.values() if record.user_id == user_id]
+        if timespan is not None:
+            cutoff = utcnow() - timespan
+            records = [record for record in records if record.created_at >= cutoff]
+        if not records:
+            return await ctx.send("No tracked warnings for that member in that period.")
+
+        records.sort(key=lambda record: record.created_at, reverse=True)
+        lines = [
+            f"Warning history for {self.get_label(ctx.guild, user_id)} "
+            f"({self.format_period(timespan)}) - {humanize_number(len(records))} total"
+        ]
+        for record in records:
+            reason = self.shorten_reason(record.description or "No reason provided")
+            status = record.resolution or "active"
+            case = f" | case #{record.modlog_case_number}" if record.modlog_case_number is not None else ""
+            lines.append(
+                f"- <t:{record.created_ts}:d> | `{record.warn_id}` | {record.points} pts | {status}{case} | {reason}"
+            )
+        for page in pagify("\n".join(lines)):
+            await ctx.send(page)

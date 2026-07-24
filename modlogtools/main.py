@@ -1,4 +1,6 @@
 import asyncio
+import io
+import json
 import logging
 import typing as t
 from datetime import datetime, timedelta
@@ -13,6 +15,7 @@ from .abc import CompositeMetaClass
 from .commands import Commands
 from .common.models import DB, GuildSettings, WarningRecord
 from .common.utils import (
+    DELETED_USER_SENTINEL,
     extract_warn_id,
     from_snowflake,
     from_unix,
@@ -36,14 +39,17 @@ class ModLogTools(
     """Extended tooling for Red's core modlog and warning system."""
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.0.1"
+    __version__ = "0.1.0"
 
     def __init__(self, bot: Red):
         super().__init__()
         self.bot: Red = bot
         self.db: DB = DB()
         self.save_lock = asyncio.Lock()
+        self.expiry_lock = asyncio.Lock()
         self.initialized = False
+        self.init_task: asyncio.Task | None = None
+        self.backfill_task: asyncio.Task | None = None
         self.config = Config.get_conf(self, 117, force_registration=True)
         self.config.register_global(db={})
 
@@ -52,13 +58,47 @@ class ModLogTools(
         txt = "Version: {}\nAuthor: {}".format(self.__version__, self.__author__)
         return f"{helpcmd}\n\n{txt}"
 
-    async def red_get_data_for_user(self, *, requester: RequestType, user_id: int):
-        return {}
+    async def red_get_data_for_user(self, *, user_id: int) -> dict[str, io.BytesIO]:
+        data: dict[str, list[dict[str, t.Any]]] = {}
+        for guild_id, conf in self.db.configs.items():
+            user_records = [
+                record.model_dump(mode="json") for record in conf.records.values() if record.user_id == user_id
+            ]
+            if user_records:
+                data[str(guild_id)] = user_records
+        if not data:
+            return {}
+        return {"modlogtools.json": io.BytesIO(json.dumps(data, indent=2).encode("utf-8"))}
+
+    async def red_delete_data_for_user(self, *, requester: RequestType, user_id: int) -> None:
+        # Mirror core Warnings: only purge when Discord itself deleted the user.
+        if requester != "discord_deleted_user":
+            return
+        changed = False
+        for conf in self.db.configs.values():
+            for key in [key for key, record in conf.records.items() if record.user_id == user_id]:
+                del conf.records[key]
+                changed = True
+            for record in conf.records.values():
+                if record.moderator_id == user_id:
+                    record.moderator_id = DELETED_USER_SENTINEL
+                    changed = True
+        if changed:
+            await self.save()
+
+    async def cog_check(self, ctx: commands.Context) -> bool:  # noqa: ARG002
+        if not self.initialized:
+            raise commands.UserFeedbackCheckFailure("ModLogTools is still initializing, try again in a moment.")
+        return True
 
     async def cog_load(self) -> None:
-        asyncio.create_task(self.initialize())
+        self.init_task = asyncio.create_task(self.initialize())
 
     async def cog_unload(self) -> None:
+        if self.init_task is not None:
+            self.init_task.cancel()
+        if self.backfill_task is not None:
+            self.backfill_task.cancel()
         if self.expiry_loop.is_running():
             self.expiry_loop.cancel()
         if self.initialized:
@@ -72,42 +112,26 @@ class ModLogTools(
         self.initialized = True
         if not self.expiry_loop.is_running():
             self.expiry_loop.start()
-        asyncio.create_task(self.backfill_all_guilds())
+        self.backfill_task = asyncio.create_task(self.backfill_all_guilds())
         log.info("Config loaded")
 
     async def register_casetypes(self) -> None:
-        casetypes_to_register = [
-            {
-                "name": "warning_expired",
-                "default_setting": True,
-                "image": "⌛",
-                "case_str": "Warning Expired",
-            }
-        ]
-        try:
-            await modlog.register_casetypes(casetypes_to_register)
-        except RuntimeError:
-            pass
+        # register_casetypes (plural) already tolerates previously registered casetypes internally.
+        await modlog.register_casetypes(
+            [
+                {
+                    "name": "warning_expired",
+                    "default_setting": True,
+                    "image": "⌛",
+                    "case_str": "Warning Expired",
+                }
+            ]
+        )
 
     def get_warnings_cog(self) -> Warnings | None:
-        candidates: list[object] = []
-        for name in ("Warnings", "warnings"):
-            cog = self.bot.get_cog(name)
-            if cog is not None:
-                candidates.append(cog)
-
-        if not candidates:
-            candidates.extend(
-                cog
-                for cog in getattr(self.bot, "cogs", {}).values()
-                if getattr(cog, "qualified_name", "").lower() == "warnings"
-            )
-
-        for cog in candidates:
-            config = getattr(cog, "config", None)
-            if callable(getattr(config, "all_members", None)) and callable(getattr(config, "member_from_ids", None)):
-                return t.cast(Warnings, cog)
-
+        cog = self.bot.get_cog("Warnings")
+        if isinstance(cog, Warnings):
+            return cog
         return None
 
     def get_modlog_config(self) -> Config | None:
@@ -126,8 +150,8 @@ class ModLogTools(
             try:
                 previous_full_sync = self.db.get_conf(guild).last_full_sync
                 summary = await self.sync_guild_records(guild, save=False)
-            except Exception:
-                log.exception("Failed to backfill warning records for guild %s", guild.id)
+            except Exception as e:
+                log.error("Failed to backfill warning records for guild %s", guild.id, exc_info=e)
                 continue
             changed = changed or any(summary.values()) or self.db.get_conf(guild).last_full_sync != previous_full_sync
             await asyncio.sleep(0)
@@ -139,8 +163,8 @@ class ModLogTools(
         mapping: dict[str, tuple[datetime, int]] = {}
         try:
             cases = await modlog.get_all_cases(guild, self.bot)
-        except Exception:
-            log.exception("Failed to fetch modlog cases for guild %s", guild.id)
+        except Exception as e:
+            log.error("Failed to fetch modlog cases for guild %s", guild.id, exc_info=e)
             return mapping
 
         conf = self.db.get_conf(guild)
@@ -151,8 +175,83 @@ class ModLogTools(
             if warn_id is None:
                 continue
             key = conf.make_key(get_user_id(case.user), warn_id)
-            mapping[key] = (from_unix(case.created_at), case.case_number)
+            # get_all_cases passes config keys straight through, so case_number is a str here.
+            mapping[key] = (from_unix(case.created_at), int(case.case_number))
         return mapping
+
+    def build_record(
+        self,
+        user_id: int,
+        warn_id: str,
+        warning: dict[str, t.Any],
+        case_data: tuple[datetime, int] | None,
+        expiry: timedelta | None,
+        now: datetime,
+    ) -> WarningRecord:
+        snowflake_created_at = from_snowflake(warn_id)
+        created_at = case_data[0] if case_data else snowflake_created_at or now
+        return WarningRecord(
+            user_id=user_id,
+            warn_id=warn_id,
+            points=int(warning.get("points", 0) or 0),
+            description=str(warning.get("description", "") or ""),
+            moderator_id=int(warning.get("mod", 0) or 0),
+            created_at=created_at,
+            modlog_case_number=case_data[1] if case_data else None,
+            expires_at=(created_at + expiry) if expiry else None,
+        )
+
+    def apply_warning_payload(self, record: WarningRecord, warning: dict[str, t.Any]) -> bool:
+        changed = False
+        points = int(warning.get("points", record.points) or 0)
+        if record.points != points:
+            record.points = points
+            changed = True
+        description = str(warning.get("description", record.description) or "")
+        if record.description != description:
+            record.description = description
+            changed = True
+        moderator_id = int(warning.get("mod", record.moderator_id) or 0)
+        if record.moderator_id != moderator_id:
+            record.moderator_id = moderator_id
+            changed = True
+        return changed
+
+    def update_record(
+        self,
+        record: WarningRecord,
+        warning: dict[str, t.Any],
+        case_data: tuple[datetime, int] | None,
+        expiry: timedelta | None,
+    ) -> tuple[bool, int]:
+        changed = self.apply_warning_payload(record, warning)
+        if record.resolution is not None:
+            record.resolution = None
+            record.resolved_at = None
+            record.resolution_case_number = None
+            changed = True
+
+        backfilled = 0
+        if case_data is not None:
+            case_created_at, case_number = case_data
+            if record.created_at > case_created_at:
+                record.created_at = case_created_at
+                changed = True
+            if record.modlog_case_number != case_number:
+                record.modlog_case_number = case_number
+                changed = True
+                backfilled = 1
+        elif record.modlog_case_number is None:
+            snowflake_created_at = from_snowflake(record.warn_id)
+            if snowflake_created_at is not None and record.created_at != snowflake_created_at:
+                record.created_at = snowflake_created_at
+                changed = True
+
+        new_expires_at = (record.created_at + expiry) if expiry else None
+        if not record.expiry_override and record.expires_at != new_expires_at:
+            record.expires_at = new_expires_at
+            changed = True
+        return changed, backfilled
 
     async def sync_guild_records(
         self,
@@ -177,72 +276,20 @@ class ModLogTools(
         now = utcnow()
 
         for user_id, member_data in all_members.items():
-            warnings_data = member_data.get("warnings", {})
-            for warn_id, warning in warnings_data.items():
+            for warn_id, warning in member_data.get("warnings", {}).items():
                 warn_id = str(warn_id)
                 key = conf.make_key(int(user_id), warn_id)
                 active_keys.add(key)
                 record = conf.records.get(key)
                 case_data = case_map.get(key)
-                snowflake_created_at = from_snowflake(warn_id)
 
                 if record is None:
-                    created_at = case_data[0] if case_data else snowflake_created_at or now
-                    record = WarningRecord(
-                        user_id=int(user_id),
-                        warn_id=warn_id,
-                        points=int(warning.get("points", 0) or 0),
-                        description=str(warning.get("description", "") or ""),
-                        moderator_id=int(warning.get("mod", 0) or 0),
-                        created_at=created_at,
-                        modlog_case_number=case_data[1] if case_data else None,
-                        expires_at=(created_at + expiry) if expiry else None,
-                    )
-                    conf.records[key] = record
+                    conf.records[key] = self.build_record(int(user_id), warn_id, warning, case_data, expiry, now)
                     summary["created"] += 1
                     continue
 
-                changed = False
-                points = int(warning.get("points", record.points) or 0)
-                if record.points != points:
-                    record.points = points
-                    changed = True
-
-                description = str(warning.get("description", record.description) or "")
-                if record.description != description:
-                    record.description = description
-                    changed = True
-
-                moderator_id = int(warning.get("mod", record.moderator_id) or 0)
-                if record.moderator_id != moderator_id:
-                    record.moderator_id = moderator_id
-                    changed = True
-
-                if record.resolution is not None:
-                    record.resolution = None
-                    record.resolved_at = None
-                    record.resolution_case_number = None
-                    changed = True
-
-                if case_data is not None:
-                    case_created_at, case_number = case_data
-                    if record.created_at > case_created_at:
-                        record.created_at = case_created_at
-                        changed = True
-                    if record.modlog_case_number != case_number:
-                        record.modlog_case_number = case_number
-                        changed = True
-                        summary["backfilled"] += 1
-                elif record.modlog_case_number is None and snowflake_created_at is not None:
-                    if record.created_at != snowflake_created_at:
-                        record.created_at = snowflake_created_at
-                        changed = True
-
-                new_expires_at = (record.created_at + expiry) if expiry else None
-                if record.expires_at != new_expires_at:
-                    record.expires_at = new_expires_at
-                    changed = True
-
+                changed, backfilled = self.update_record(record, warning, case_data, expiry)
+                summary["backfilled"] += backfilled
                 if changed:
                     summary["updated"] += 1
 
@@ -269,6 +316,8 @@ class ModLogTools(
             if not record.is_active:
                 continue
             summary["active"] += 1
+            if record.expiry_override:
+                continue
             projected_expires_at = (record.created_at + duration) if duration else None
             if record.expires_at != projected_expires_at:
                 summary["changed"] += 1
@@ -338,6 +387,17 @@ class ModLogTools(
         if not isinstance(modlogtools_guild, dict):
             raise ValueError("modlogtools.guild must be a mapping")
 
+        # Validate the entries the (destructive) import path will iterate over, so a bad
+        # payload fails here, before any existing guild data has been cleared.
+        for member_id, member_data in warning_members.items():
+            if not str(member_id).isdigit():
+                raise ValueError(f"warnings.members key {member_id!r} is not a numeric user ID")
+            if member_data is not None and not isinstance(member_data, dict):
+                raise ValueError(f"warnings.members entry {member_id!r} must be a mapping")
+        for case_number in modlog_cases:
+            if not str(case_number).isdigit():
+                raise ValueError(f"modlog.cases key {case_number!r} is not a numeric case number")
+
         tracked = GuildSettings.model_validate(modlogtools_guild)
         total_warnings = sum(len((member_data or {}).get("warnings", {})) for member_data in warning_members.values())
         source_guild_id = source_section.get("guild_id")
@@ -356,6 +416,22 @@ class ModLogTools(
             "modlog_settings": len(modlog_guild),
         }
 
+    async def replace_warning_members(
+        self,
+        warnings_cog: Warnings,
+        guild: discord.Guild,
+        warning_members: dict[str, t.Any],
+    ) -> None:
+        current_members = await warnings_cog.config.all_members(guild)
+        for index, member_id in enumerate(list(current_members.keys()), start=1):
+            await warnings_cog.config.member_from_ids(guild.id, int(member_id)).clear()
+            if not index % 100:
+                await asyncio.sleep(0)
+        for index, (member_id, member_data) in enumerate(warning_members.items(), start=1):
+            await warnings_cog.config.member_from_ids(guild.id, int(member_id)).set(member_data)
+            if not index % 100:
+                await asyncio.sleep(0)
+
     async def import_guild_config(
         self,
         guild: discord.Guild,
@@ -371,7 +447,7 @@ class ModLogTools(
         if modlog_config is None:
             raise RuntimeError("Modlog config not initialized.")
 
-        self.summarize_guild_import(guild, payload)
+        await asyncio.to_thread(self.summarize_guild_import, guild, payload)
         warnings_section = t.cast(dict[str, t.Any], payload["warnings"])
         modlog_section = t.cast(dict[str, t.Any], payload["modlog"])
         modlogtools_section = t.cast(dict[str, t.Any], payload.get("modlogtools") or {})
@@ -381,25 +457,34 @@ class ModLogTools(
         modlog_guild = dict(t.cast(dict[str, t.Any], modlog_section.get("guild") or {}))
         modlog_cases = dict(t.cast(dict[str, t.Any], modlog_section.get("cases") or {}))
         modlog_casetypes = dict(t.cast(dict[str, t.Any], modlog_section.get("casetypes") or {}))
-        tracked = GuildSettings.model_validate(modlogtools_section.get("guild") or {})
+        tracked = await asyncio.to_thread(GuildSettings.model_validate, modlogtools_section.get("guild") or {})
 
-        current_members = await warnings_cog.config.all_members(guild)
-        for index, member_id in enumerate(list(current_members.keys()), start=1):
-            await warnings_cog.config.member_from_ids(guild.id, int(member_id)).clear()
-            if not index % 100:
-                await asyncio.sleep(0)
+        source_guild_id = (payload.get("source") or {}).get("guild_id")
+        if source_guild_id is not None and int(source_guild_id) != guild.id:
+            # Channel IDs from another guild are meaningless here and would silently break
+            # modlog/warn channel output, so keep the target guild's current channels.
+            warning_guild["warn_channel"] = await warnings_cog.config.guild(guild).warn_channel()
+            modlog_guild["mod_log"] = await modlog_config.guild(guild).mod_log()
 
+        if modlog_cases:
+            # Never let an imported guild scope roll latest_case_number below the imported
+            # cases, or future create_case calls would overwrite them one by one.
+            max_case_number = max(int(number) for number in modlog_cases)
+            current_latest = int(modlog_guild.get("latest_case_number", 0) or 0)
+            modlog_guild["latest_case_number"] = max(current_latest, max_case_number)
+
+        await self.replace_warning_members(warnings_cog, guild, warning_members)
         await warnings_cog.config.guild(guild).set(warning_guild)
-        for index, (member_id, member_data) in enumerate(warning_members.items(), start=1):
-            await warnings_cog.config.member_from_ids(guild.id, int(member_id)).set(member_data)
-            if not index % 100:
-                await asyncio.sleep(0)
 
         await modlog_config.guild(guild).set(modlog_guild)
         if modlog_casetypes:
+            # Casetypes are bot-global state; only add missing names, never overwrite
+            # existing definitions from a guild-scoped import.
             existing_casetypes = await modlog_config.custom(modlog._CASETYPES).all()
-            existing_casetypes.update(modlog_casetypes)
-            await modlog_config.custom(modlog._CASETYPES).set(existing_casetypes)
+            new_casetypes = {name: data for name, data in modlog_casetypes.items() if name not in existing_casetypes}
+            if new_casetypes:
+                existing_casetypes.update(new_casetypes)
+                await modlog_config.custom(modlog._CASETYPES).set(existing_casetypes)
         await modlog_config.custom(modlog._CASES, str(guild.id)).clear()
         if modlog_cases:
             await modlog_config.custom(modlog._CASES, str(guild.id)).set(modlog_cases)
@@ -439,24 +524,14 @@ class ModLogTools(
         created_at = from_unix(case.created_at)
         record = conf.get_record(user_id, warn_id)
 
+        case_number = int(case.case_number)
         if record is None:
-            record = WarningRecord(
-                user_id=user_id,
-                warn_id=warn_id,
-                points=int(warning.get("points", 0) or 0),
-                description=str(warning.get("description", "") or ""),
-                moderator_id=int(warning.get("mod", 0) or 0),
-                created_at=created_at,
-                modlog_case_number=case.case_number,
-                expires_at=(created_at + expiry) if expiry else None,
-            )
+            record = self.build_record(user_id, warn_id, warning, (created_at, case_number), expiry, created_at)
             conf.set_record(record)
         else:
-            record.points = int(warning.get("points", record.points) or 0)
-            record.description = str(warning.get("description", record.description) or "")
-            record.moderator_id = int(warning.get("mod", record.moderator_id) or 0)
+            self.apply_warning_payload(record, warning)
             record.created_at = created_at
-            record.modlog_case_number = case.case_number
+            record.modlog_case_number = case_number
             record.expires_at = (created_at + expiry) if expiry else None
             record.resolution = None
             record.resolved_at = None
@@ -473,11 +548,17 @@ class ModLogTools(
         *,
         save: bool = True,
     ) -> None:
-        expiry = self.db.get_conf(guild).get_warning_expiry()
-        duration = humanize_timedelta(timedelta=expiry) if expiry else "configured interval"
+        if record.resolution == "decayed":
+            headline = f"Warning `{record.warn_id}` fully decayed to 0 points."
+            points_removed = record.decayed_points
+        else:
+            expiry = self.db.get_conf(guild).get_warning_expiry()
+            duration = humanize_timedelta(timedelta=expiry) if expiry else "configured interval"
+            headline = f"Warning `{record.warn_id}` expired automatically after {duration}."
+            points_removed = record.points
         lines = [
-            f"Warning `{record.warn_id}` expired automatically after {duration}.",
-            f"Points removed: {record.points}",
+            headline,
+            f"Points removed: {points_removed}",
         ]
         if record.modlog_case_number is not None:
             lines.append(f"Original case: #{record.modlog_case_number}")
@@ -509,11 +590,12 @@ class ModLogTools(
 
         try:
             case = await modlog.get_case(record.modlog_case_number, guild, self.bot)
-        except Exception:
-            log.exception(
+        except Exception as e:
+            log.error(
                 "Failed to fetch original warning case %s for guild %s",
                 record.modlog_case_number,
                 guild.id,
+                exc_info=e,
             )
             return False
 
@@ -531,11 +613,12 @@ class ModLogTools(
                 guild.id,
             )
             return False
-        except discord.HTTPException:
-            log.exception(
+        except discord.HTTPException as e:
+            log.error(
                 "Failed to delete original warning case message %s for guild %s",
                 record.modlog_case_number,
                 guild.id,
+                exc_info=e,
             )
             return False
 
@@ -547,13 +630,24 @@ class ModLogTools(
                     "modified_at": utcnow().timestamp(),
                 }
             )
-        except Exception:
-            log.exception(
+        except Exception as e:
+            log.error(
                 "Deleted original warning case message but failed to clear case reference %s for guild %s",
                 record.modlog_case_number,
                 guild.id,
+                exc_info=e,
             )
         return True
+
+    def collect_pending_expiry(self, conf: GuildSettings, now: datetime) -> dict[int, list[WarningRecord]]:
+        pending: dict[int, list[WarningRecord]] = {}
+        for record in conf.records.values():
+            if not record.is_active:
+                continue
+            if record.expires_at is None or record.expires_at > now:
+                continue
+            pending.setdefault(record.user_id, []).append(record)
+        return pending
 
     async def preview_guild_expiry(self, guild: discord.Guild) -> dict[str, int]:
         summary = {"expired": 0, "stale": 0, "points": 0, "members": 0, "linked_cases": 0}
@@ -562,18 +656,11 @@ class ModLogTools(
             return summary
 
         conf = self.db.get_conf(guild)
-        if conf.warning_expiry_seconds is None:
+        if conf.get_warning_expiry() is None:
             return summary
 
         now = utcnow()
-        pending: dict[int, list[WarningRecord]] = {}
-        for record in conf.records.values():
-            if not record.is_active:
-                continue
-            if record.expires_at is None or record.expires_at > now:
-                continue
-            pending.setdefault(record.user_id, []).append(record)
-
+        pending = self.collect_pending_expiry(conf, now)
         summary["members"] = len(pending)
         for user_id, records in pending.items():
             warnings_data = await warnings_cog.config.member_from_ids(guild.id, user_id).get_raw("warnings", default={})
@@ -590,69 +677,184 @@ class ModLogTools(
         return summary
 
     async def expire_guild_warnings(self, guild: discord.Guild, *, save: bool = True) -> dict[str, int]:
-        summary = {"expired": 0, "stale": 0, "points": 0, "members": 0, "linked_cases": 0, "messages_deleted": 0}
+        summary = {
+            "expired": 0,
+            "stale": 0,
+            "points": 0,
+            "members": 0,
+            "linked_cases": 0,
+            "messages_deleted": 0,
+            "decayed": 0,
+            "decayed_points": 0,
+        }
         warnings_cog = self.get_warnings_cog()
         if warnings_cog is None:
             return summary
 
         conf = self.db.get_conf(guild)
-        if conf.warning_expiry_seconds is None:
+        expiry_enabled = conf.get_warning_expiry() is not None
+        decay_enabled = conf.point_decay_per_day > 0
+        if not expiry_enabled and not decay_enabled:
             return summary
 
-        await self.sync_guild_records(guild, save=False)
-        now = utcnow()
-        changed = False
+        # Serialize with the expiry loop so a manual run can't double-expire the same records.
+        async with self.expiry_lock:
+            sync_summary = await self.sync_guild_records(guild, save=False)
+            # Surface sync-side mutations (e.g. manual unwarns marked "removed") so callers
+            # checking any(summary.values()) still persist them when nothing expired.
+            summary["synced"] = sum(sync_summary.values())
+            changed = bool(summary["synced"])
+            now = utcnow()
+            pending = self.collect_pending_expiry(conf, now) if expiry_enabled else {}
+            summary["members"] = len(pending)
+
+            for user_id, records in pending.items():
+                expired_records = await self.expire_member_warnings(warnings_cog, guild, user_id, records, now, summary)
+                changed = changed or bool(expired_records) or bool(summary["stale"])
+                for record in expired_records:
+                    await self.create_expired_warning_case(guild, record, save=False)
+                    if conf.delete_expired_modlog_messages:
+                        summary["messages_deleted"] += int(
+                            await self.delete_original_warning_case_message(guild, record)
+                        )
+                    await asyncio.sleep(0)
+                if conf.dm_on_expiry and expired_records:
+                    await self.notify_member_expiry(guild, user_id, expired_records)
+
+            if decay_enabled:
+                decayed_map = await self.decay_guild_warnings(warnings_cog, guild, conf, now, summary)
+                changed = changed or bool(summary["decayed"] or summary["decayed_points"])
+                for user_id, records in decayed_map.items():
+                    for record in records:
+                        await self.create_expired_warning_case(guild, record, save=False)
+                        await asyncio.sleep(0)
+                    if conf.dm_on_expiry:
+                        await self.notify_member_expiry(guild, user_id, records)
+
+            if save and changed:
+                await self.save()
+        return summary
+
+    async def expire_member_warnings(
+        self,
+        warnings_cog: Warnings,
+        guild: discord.Guild,
+        user_id: int,
+        records: list[WarningRecord],
+        now: datetime,
+        summary: dict[str, int],
+    ) -> list[WarningRecord]:
+        member_group = warnings_cog.config.member_from_ids(guild.id, user_id)
+        expired_records: list[WarningRecord] = []
+        async with member_group.all() as member_data:
+            warnings_data = member_data.setdefault("warnings", {})
+            total_points = int(member_data.get("total_points", 0) or 0)
+            removed_points = 0
+            for record in records:
+                payload = warnings_data.pop(record.warn_id, None)
+                if payload is None:
+                    record.resolution = "removed"
+                    record.resolved_at = now
+                    summary["stale"] += 1
+                    continue
+
+                self.apply_warning_payload(record, payload)
+                record.resolution = "expired"
+                record.resolved_at = now
+                removed_points += record.points
+                summary["points"] += record.points
+                if record.modlog_case_number is not None:
+                    summary["linked_cases"] += 1
+                expired_records.append(record)
+                summary["expired"] += 1
+
+            if removed_points:
+                member_data["total_points"] = max(0, total_points - removed_points)
+        return expired_records
+
+    async def decay_guild_warnings(
+        self,
+        warnings_cog: Warnings,
+        guild: discord.Guild,
+        conf: GuildSettings,
+        now: datetime,
+        summary: dict[str, int],
+    ) -> dict[int, list[WarningRecord]]:
         pending: dict[int, list[WarningRecord]] = {}
         for record in conf.records.values():
-            if not record.is_active:
-                continue
-            if record.expires_at is None or record.expires_at > now:
-                continue
-            pending.setdefault(record.user_id, []).append(record)
+            if record.is_active and record.points > 0:
+                pending.setdefault(record.user_id, []).append(record)
 
-        summary["members"] = len(pending)
-
+        fully_decayed: dict[int, list[WarningRecord]] = {}
         for user_id, records in pending.items():
-            member_group = warnings_cog.config.member_from_ids(guild.id, user_id)
-            expired_records: list[WarningRecord] = []
-            async with member_group.all() as member_data:
-                warnings_data = member_data.setdefault("warnings", {})
-                total_points = int(member_data.get("total_points", 0) or 0)
-                removed_points = 0
-                for record in records:
-                    payload = warnings_data.pop(record.warn_id, None)
-                    if payload is None:
-                        record.resolution = "removed"
-                        record.resolved_at = now
-                        summary["stale"] += 1
-                        changed = True
-                        continue
+            decayed = await self.decay_member_points(
+                warnings_cog, guild, user_id, records, conf.point_decay_per_day, now, summary
+            )
+            if decayed:
+                fully_decayed[user_id] = decayed
+            await asyncio.sleep(0)
+        return fully_decayed
 
-                    record.points = int(payload.get("points", record.points) or 0)
-                    record.description = str(payload.get("description", record.description) or "")
-                    record.moderator_id = int(payload.get("mod", record.moderator_id) or 0)
-                    record.resolution = "expired"
+    async def decay_member_points(
+        self,
+        warnings_cog: Warnings,
+        guild: discord.Guild,
+        user_id: int,
+        records: list[WarningRecord],
+        rate: int,
+        now: datetime,
+        summary: dict[str, int],
+    ) -> list[WarningRecord]:
+        member_group = warnings_cog.config.member_from_ids(guild.id, user_id)
+        fully_decayed: list[WarningRecord] = []
+        async with member_group.all() as member_data:
+            warnings_data = member_data.setdefault("warnings", {})
+            total_points = int(member_data.get("total_points", 0) or 0)
+            removed_points = 0
+            for record in records:
+                payload = warnings_data.get(record.warn_id)
+                if payload is None:
+                    continue
+                # record.points tracks the CURRENT payload points (sync keeps them equal), so the
+                # originally issued total is current + already-decayed. Decay is computed from the
+                # issued total so runs are idempotent regardless of cadence.
+                issued = record.points + record.decayed_points
+                elapsed_days = (now - record.created_at).total_seconds() / 86400
+                target = min(issued, int(elapsed_days * rate))
+                delta = target - record.decayed_points
+                if delta <= 0:
+                    continue
+                record.decayed_points = target
+                record.points = issued - target
+                removed_points += delta
+                summary["decayed_points"] += delta
+                if record.points <= 0:
+                    warnings_data.pop(record.warn_id, None)
+                    record.resolution = "decayed"
                     record.resolved_at = now
-                    removed_points += record.points
-                    summary["points"] += record.points
-                    if record.modlog_case_number is not None:
-                        summary["linked_cases"] += 1
-                    expired_records.append(record)
-                    summary["expired"] += 1
-                    changed = True
+                    summary["decayed"] += 1
+                    fully_decayed.append(record)
+                else:
+                    payload["points"] = record.points
+            if removed_points:
+                member_data["total_points"] = max(0, total_points - removed_points)
+        return fully_decayed
 
-                if removed_points:
-                    member_data["total_points"] = max(0, total_points - removed_points)
-
-            for record in expired_records:
-                await self.create_expired_warning_case(guild, record, save=False)
-                if conf.delete_expired_modlog_messages:
-                    summary["messages_deleted"] += int(await self.delete_original_warning_case_message(guild, record))
-                await asyncio.sleep(0)
-
-        if save and changed:
-            await self.save()
-        return summary
+    async def notify_member_expiry(self, guild: discord.Guild, user_id: int, records: list[WarningRecord]) -> None:
+        member = guild.get_member(user_id)
+        if member is None or member.bot:
+            return
+        lines = [f"The following warnings you received in **{guild.name}** have been cleared:"]
+        for record in records:
+            reason = record.description or "No reason provided"
+            if record.resolution == "decayed":
+                lines.append(f"- `{record.warn_id}` decayed to 0 points ({record.decayed_points} pts): {reason}")
+            else:
+                lines.append(f"- `{record.warn_id}` expired ({record.points} pts): {reason}")
+        try:
+            await member.send("\n".join(lines))
+        except discord.HTTPException as e:
+            log.debug("Failed to DM warning expiry notice to %s in guild %s", user_id, guild.id, exc_info=e)
 
     async def save(self) -> None:
         if not self.initialized:

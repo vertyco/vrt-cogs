@@ -14,5 +14,5 @@ class CaseListeners(MixinMeta):
             return
         try:
             await self.capture_warning_case(case)
-        except Exception:
-            log.exception("Failed to capture warning case %s", case.case_number)
+        except Exception as e:
+            log.error("Failed to capture warning case %s", case.case_number, exc_info=e)

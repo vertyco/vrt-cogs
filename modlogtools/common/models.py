@@ -19,6 +19,8 @@ class WarningRecord(Base):
     resolved_at: datetime | None = None
     resolution: str | None = None
     resolution_case_number: int | None = None
+    expiry_override: bool = False
+    decayed_points: int = 0
 
     @property
     def is_active(self) -> bool:
@@ -38,6 +40,8 @@ class WarningRecord(Base):
 class GuildSettings(Base):
     warning_expiry_seconds: int | None = None
     delete_expired_modlog_messages: bool = False
+    dm_on_expiry: bool = False
+    point_decay_per_day: int = 0
     records: dict[str, WarningRecord] = {}
     last_full_sync: datetime | None = None
 
@@ -52,7 +56,9 @@ class GuildSettings(Base):
         self.records[self.make_key(record.user_id, record.warn_id)] = record
 
     def get_warning_expiry(self) -> timedelta | None:
-        if self.warning_expiry_seconds is None:
+        # Treat 0 the same as unset so a zero value (only reachable via imported payloads)
+        # cannot pass `is None` gates while every expiry computation treats it as disabled.
+        if not self.warning_expiry_seconds:
             return None
         return timedelta(seconds=self.warning_expiry_seconds)
 
