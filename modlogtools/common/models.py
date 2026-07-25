@@ -39,7 +39,7 @@ class WarningRecord(Base):
 
 class GuildSettings(Base):
     warning_expiry_seconds: int | None = None
-    delete_expired_modlog_messages: bool = False
+    amend_expired_cases: bool = True
     dm_on_expiry: bool = False
     point_decay_per_day: int = 0
     records: dict[str, WarningRecord] = {}

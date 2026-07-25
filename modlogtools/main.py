@@ -39,7 +39,7 @@ class ModLogTools(
     """Extended tooling for Red's core modlog and warning system."""
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.1.0"
+    __version__ = "0.2.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -584,7 +584,7 @@ class ModLogTools(
         if save:
             await self.save()
 
-    async def delete_original_warning_case_message(self, guild: discord.Guild, record: WarningRecord) -> bool:
+    async def amend_original_warning_case(self, guild: discord.Guild, record: WarningRecord) -> bool:
         if record.modlog_case_number is None:
             return False
 
@@ -599,44 +599,34 @@ class ModLogTools(
             )
             return False
 
-        if case.message is None:
+        tag = "[Decayed to 0 points" if record.resolution == "decayed" else "[Expired"
+        reason = (case.reason or "").strip()
+        # Only a tag on the first line is ours; a moderator description that merely quotes
+        # "[Expired ...]" must not block the real amendment.
+        if reason.startswith(f"{tag} "):
             return False
 
-        try:
-            await case.message.delete()
-        except discord.NotFound:
-            return False
-        except discord.Forbidden:
-            log.warning(
-                "Missing permissions to delete original warning case message %s for guild %s",
-                record.modlog_case_number,
-                guild.id,
-            )
-            return False
-        except discord.HTTPException as e:
-            log.error(
-                "Failed to delete original warning case message %s for guild %s",
-                record.modlog_case_number,
-                guild.id,
-                exc_info=e,
-            )
-            return False
-
+        # Prepend rather than append: Red truncates a long reason to its first page when
+        # rendering the case (2048 chars in embeds, 1000 in plain text), so a trailing tag
+        # on a long warning reason would never be visible in the modlog.
+        stamp = f"<t:{int((record.resolved_at or utcnow()).timestamp())}:f>"
+        amended = f"{tag} {stamp}]\n{reason}" if reason else f"{tag} {stamp}]"
         try:
             await case.edit(
                 {
-                    "message": None,
+                    "reason": amended,
                     "amended_by": guild.me or self.bot.user,
                     "modified_at": utcnow().timestamp(),
                 }
             )
         except Exception as e:
             log.error(
-                "Deleted original warning case message but failed to clear case reference %s for guild %s",
+                "Failed to amend expired warning case %s for guild %s",
                 record.modlog_case_number,
                 guild.id,
                 exc_info=e,
             )
+            return False
         return True
 
     def collect_pending_expiry(self, conf: GuildSettings, now: datetime) -> dict[int, list[WarningRecord]]:
@@ -683,7 +673,7 @@ class ModLogTools(
             "points": 0,
             "members": 0,
             "linked_cases": 0,
-            "messages_deleted": 0,
+            "cases_amended": 0,
             "decayed": 0,
             "decayed_points": 0,
         }
@@ -713,10 +703,8 @@ class ModLogTools(
                 changed = changed or bool(expired_records) or bool(summary["stale"])
                 for record in expired_records:
                     await self.create_expired_warning_case(guild, record, save=False)
-                    if conf.delete_expired_modlog_messages:
-                        summary["messages_deleted"] += int(
-                            await self.delete_original_warning_case_message(guild, record)
-                        )
+                    if conf.amend_expired_cases:
+                        summary["cases_amended"] += int(await self.amend_original_warning_case(guild, record))
                     await asyncio.sleep(0)
                 if conf.dm_on_expiry and expired_records:
                     await self.notify_member_expiry(guild, user_id, expired_records)
@@ -727,6 +715,8 @@ class ModLogTools(
                 for user_id, records in decayed_map.items():
                     for record in records:
                         await self.create_expired_warning_case(guild, record, save=False)
+                        if conf.amend_expired_cases:
+                            summary["cases_amended"] += int(await self.amend_original_warning_case(guild, record))
                         await asyncio.sleep(0)
                     if conf.dm_on_expiry:
                         await self.notify_member_expiry(guild, user_id, records)

@@ -95,7 +95,7 @@ class Admin(MixinMeta):
         return [
             f"Warning expiry: {expiry_text}",
             f"Warning point decay: {decay_text}",
-            f"Delete original modlog messages on expiry: {'enabled' if conf.delete_expired_modlog_messages else 'disabled'}",
+            f"Amend original modlog cases on expiry: {'enabled' if conf.amend_expired_cases else 'disabled'}",
             f"DM members on expiry: {'enabled' if conf.dm_on_expiry else 'disabled'}",
             f"Tracked warnings: {humanize_number(len(conf.records))}",
             f"Active warnings: {humanize_number(active)}",
@@ -255,7 +255,7 @@ class Admin(MixinMeta):
                 "Warning expiry disabled."
                 if expiry is None
                 else f"Warning expiry: {humanize_timedelta(timedelta=expiry)}",
-                f"Delete original modlog messages on expiry: {'enabled' if conf.delete_expired_modlog_messages else 'disabled'}",
+                f"Amend original modlog cases on expiry: {'enabled' if conf.amend_expired_cases else 'disabled'}",
             ]
             return await ctx.send("\n".join(lines))
 
@@ -293,7 +293,7 @@ class Admin(MixinMeta):
         lines = ["Warning expiry disabled." if delta is None else f"Warning expiry set to {expiry_label}."]
         if delta:
             lines.append(
-                f"Delete original modlog messages on expiry: {'enabled' if conf.delete_expired_modlog_messages else 'disabled'}"
+                f"Amend original modlog cases on expiry: {'enabled' if conf.amend_expired_cases else 'disabled'}"
             )
         lines.append(f"Warnings with updated expiry: {humanize_number(preview['changed'])}")
         if delta:
@@ -303,19 +303,24 @@ class Admin(MixinMeta):
             lines.append(f"Tracked warnings: {humanize_number(len(conf.records))}")
         await ctx.send("\n".join(lines))
 
-    @modlogtool.command(name="deletemodlogmessages", aliases=["delmodlogmessages"])
+    @modlogtool.command(name="amendcases", aliases=["amendexpired"])
     @commands.admin_or_permissions(manage_guild=True)
-    async def mlt_deletemodlogmessages(self, ctx: commands.Context, enabled: bool | None = None):
-        """Toggle deleting original warning modlog messages when warnings expire."""
+    async def mlt_amendcases(self, ctx: commands.Context, enabled: bool | None = None):
+        """Toggle amending original modlog cases with an expired/decayed tag.
+
+        When enabled (default), the original warning case's reason gets an
+        `[Expired ...]` or `[Decayed to 0 points ...]` note appended when the
+        warning expires, so the record stays visible but clearly resolved.
+        """
         conf = self.db.get_conf(ctx.guild)
         if enabled is None:
-            state = "enabled" if conf.delete_expired_modlog_messages else "disabled"
-            return await ctx.send(f"Delete original modlog messages on expiry: {state}")
+            state = "enabled" if conf.amend_expired_cases else "disabled"
+            return await ctx.send(f"Amend original modlog cases on expiry: {state}")
 
-        conf.delete_expired_modlog_messages = enabled
+        conf.amend_expired_cases = enabled
         await self.save()
         state = "enabled" if enabled else "disabled"
-        await ctx.send(f"Delete original modlog messages on expiry: {state}")
+        await ctx.send(f"Amend original modlog cases on expiry: {state}")
 
     @modlogtool.command(name="dmexpiry", aliases=["dmonexpiry"])
     @commands.admin_or_permissions(manage_guild=True)
@@ -549,10 +554,14 @@ class Admin(MixinMeta):
                     f"Already missing: {humanize_number(summary['stale'])}",
                     f"Affected members: {humanize_number(summary['members'])}",
                 ]
-                if conf.delete_expired_modlog_messages:
-                    lines.append(f"Would delete original modlog messages: {humanize_number(summary['linked_cases'])}")
+                if conf.amend_expired_cases:
+                    # linked_cases counts hard-expiry records that have a case number; the real
+                    # run also amends decayed warnings and skips already-tagged cases.
+                    lines.append(f"Would amend original modlog cases: up to {humanize_number(summary['linked_cases'])}")
                 else:
-                    lines.append("Delete original modlog messages on expiry: disabled")
+                    lines.append("Amend original modlog cases on expiry: disabled")
+                if conf.point_decay_per_day:
+                    lines.append("Point decay is applied and reported on the real run only.")
                 lines.append(f"Run `{ctx.clean_prefix}modlogtool expire false` to apply.")
                 return await ctx.send("\n".join(lines))
 
@@ -568,10 +577,10 @@ class Admin(MixinMeta):
         if conf.point_decay_per_day:
             lines.append(f"Points decayed: {humanize_number(summary['decayed_points'])}")
             lines.append(f"Fully decayed warnings: {humanize_number(summary['decayed'])}")
-        if conf.delete_expired_modlog_messages:
-            lines.append(f"Original modlog messages deleted: {humanize_number(summary['messages_deleted'])}")
+        if conf.amend_expired_cases:
+            lines.append(f"Original modlog cases amended: {humanize_number(summary['cases_amended'])}")
         else:
-            lines.append("Delete original modlog messages on expiry: disabled")
+            lines.append("Amend original modlog cases on expiry: disabled")
         await ctx.send("\n".join(lines))
 
     @modlogtool.command(name="overview")
