@@ -10,6 +10,10 @@ Extended tooling for Red-DiscordBot's core modlog and warnings systems.
 - Optional DM notification when a member's warnings expire or fully decay.
 - Preserve a warning history ledger with active, expired, decayed, and manually removed states.
 - Add a dedicated modlog case when a warning expires or fully decays automatically.
+- Amend the original warning case with an `[Expired ...]`/`[Decayed to 0 points ...]` tag on
+  expiry, so the record stays visible but clearly resolved. Cases are never deleted.
+  The tag goes on the first line of the reason so it stays visible even on long reasons,
+  which Red truncates when rendering the case.
 - Show guild warning insights:
   - overall warning overview for a time window
   - top warned members
@@ -26,8 +30,9 @@ Extended tooling for Red-DiscordBot's core modlog and warnings systems.
 - `[p]modlogtool expiry <duration|off>`
   - Dry run defaults to `true`; append `false` to apply.
   - Example: `30d false`, `12h false`, `2w false`, `off false`
-- `[p]modlogtool deletemodlogmessages [true|false]`
-  - Toggle deleting original warning modlog messages when warnings expire. Defaults to `false`.
+- `[p]modlogtool amendcases [true|false]`
+  - Toggle tagging the original warning case reason as expired/decayed when the warning
+    expires. Defaults to `true`.
 - `[p]modlogtool dmexpiry [true|false]`
   - Toggle DMing members when their warnings expire or fully decay. Defaults to `false`.
 - `[p]modlogtool decay <points_per_day|off>`
@@ -65,7 +70,7 @@ Extended tooling for Red-DiscordBot's core modlog and warnings systems.
 - Automatic expiry does NOT run Red's `warnaction` drop commands. If a member crossed a point
   threshold action (e.g. an auto-mute), expiring their warnings will not reverse it; staff must
   undo threshold actions manually.
-- Deleting original modlog messages on expiry only works while the case message is still in the
-  guild's current modlog channel; messages posted to a previous modlog channel are left behind.
+- Modlog cases are never deleted; expiry amends the original case reason instead so the full
+  record survives. Amending re-renders the case message when Red can still edit it.
 - The `[p]modlogtool expire` dry run previews hard expiry only; point decay amounts are applied
   and reported on the real run.

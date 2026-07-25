@@ -1,3 +1,10 @@
+# 0.2.0 (2026-07-25)
+
+- Removed deleting original modlog messages on expiry; modlog cases are never deleted anymore.
+- Expiry now tags the original warning case reason with an `[Expired ...]` or
+  `[Decayed to 0 points ...]` line instead (`[p]modlogtool amendcases`, default enabled), so
+  severe infractions keep their full records while clearly showing they are resolved.
+
 # 0.1.0 (2026-07-24)
 
 - Added `[p]mywarnings` so members can view their own active warnings, points, and expiry times.
