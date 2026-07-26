@@ -123,12 +123,15 @@ class Admin(MixinMeta):
     @commands.is_owner()
     @ensure_db_connection()
     async def paltools_logips(self, ctx: commands.Context):
-        """Toggle player IPs in join logs and player lookups (both should be staff-only)"""
+        """Toggle player IP history in `findplayer` (staff-only, in a staff-only channel)
+
+        Addresses are recorded either way. The join log never shows them.
+        """
         settings = await get_create_guild_settings(ctx.guild.id)
         settings.log_ips = not settings.log_ips
         await settings.save(columns=[GuildSettings.log_ips])
         state = _("enabled") if settings.log_ips else _("disabled")
-        await ctx.send(_("IP display in join logs and `findplayer` is now {}").format(state))
+        await ctx.send(_("IP display in `findplayer` is now {}").format(state))
 
     @paltools.command(name="timezone")
     @commands.is_owner()

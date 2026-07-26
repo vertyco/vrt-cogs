@@ -14,7 +14,12 @@ from ..abc import MixinMeta
 from ..common.api import PalApiError, PalClient, ServerUnreachable, Unauthorized
 from ..common.graph import render_player_graph
 from ..common.models import PalPlayer, ServerStatus
-from ..common.utils import diff_snapshots, format_playtime, snapshot_from_players
+from ..common.utils import (
+    chunk_lines,
+    diff_snapshots,
+    format_playtime,
+    snapshot_from_players,
+)
 from ..db.tables import GuildSettings, Server
 from ..db.utils import (
     close_open_sessions,
@@ -41,6 +46,8 @@ PANEL_CHROME = 300
 GRAPH_SPAN = timedelta(hours=12)
 GRAPH_STEP = timedelta(minutes=5)
 GRAPH_INTERVAL = timedelta(minutes=10)
+# Discord's message content limit, which the batched join log lines are packed against
+MAX_MESSAGE_CHARS = 2000
 
 
 class PlayerPoll(MixinMeta):
@@ -175,15 +182,19 @@ class PlayerPoll(MixinMeta):
         # Leaves before joins: a same-tick relog (same userId, new playerId) resolves to one
         # player row, and the join processed first would keep the old session open only for the
         # leave to close it, stranding an online player with no open session
+        lines: list[str] = []
         for pal in left:
             player = await upsert_player(server.guild_id, pal, now)
             seconds = await close_session(player, server.id, now)
-            await self.send_leave_log(channel, server, pal, seconds)
+            lines.append(self.leave_line(server, pal, seconds))
         for pal in joined:
             player = await upsert_player(server.guild_id, pal, now)
             await upsert_player_ip(player, pal.ip, now)
             await open_session(player, server.id, now)
-            await self.send_join_log(channel, server, pal, settings.log_ips)
+            lines.append(self.join_line(server, pal))
+        # One send for the whole tick: a restart lands a dozen joins at once, and a message each
+        # would be a dozen round trips and an unreadable channel
+        await self.send_log(channel, server.guild_id, lines)
 
         # Everyone who stayed: full upsert only when a persisted field actually moved,
         # otherwise a single bulk last_seen bump instead of a read+write per player per tick.
@@ -403,55 +414,43 @@ class PlayerPoll(MixinMeta):
         if channel is None:
             return
         if online:
-            embed = discord.Embed(
-                title=_("Server Online"),
-                description=_("**{}** is reachable again").format(server.name),
-                color=discord.Color.green(),
-            )
+            line = ":full_moon: " + _("**{}** came online").format(server.name)
+        elif reason is None:
+            line = ":new_moon: " + _("**{}** went offline").format(server.name)
         else:
-            embed = discord.Embed(
-                title=_("Server Offline"),
-                description=_("**{}** is not responding").format(server.name)
-                if reason is None
-                else _("**{}** is not responding: {}").format(server.name, reason),
-                color=discord.Color.red(),
-            )
-        await self.send_log(channel, server.guild_id, embed)
+            line = ":new_moon: " + _("**{}** went offline: {}").format(server.name, reason)
+        await self.send_log(channel, server.guild_id, [line])
 
-    async def send_join_log(
-        self, channel: discord.abc.Messageable | None, server: Server, pal: PalPlayer, log_ips: bool
-    ) -> None:
-        embed = discord.Embed(
-            title=_("Player Joined"),
-            description=_("**{}** joined **{}**").format(pal.name, server.name),
-            color=discord.Color.green(),
+    @classmethod
+    def join_line(cls, server: Server, pal: PalPlayer) -> str:
+        return ":green_circle: " + _("`{}` joined **{}** (Lvl {}, {:.0f}ms)").format(
+            cls.identity(pal), server.name, pal.level, pal.ping
         )
-        embed.add_field(name=_("Account"), value=pal.account_name or _("Unknown"))
-        embed.add_field(name=_("Level"), value=str(pal.level))
-        embed.add_field(name=_("Ping"), value=f"{pal.ping:.0f}ms")
-        if log_ips and pal.ip:
-            embed.add_field(name=_("IP"), value=pal.ip)
-        embed.set_footer(text=pal.user_id)
-        await self.send_log(channel, server.guild_id, embed)
 
-    async def send_leave_log(
-        self, channel: discord.abc.Messageable | None, server: Server, pal: PalPlayer, seconds: int
-    ) -> None:
-        embed = discord.Embed(
-            title=_("Player Left"),
-            description=_("**{}** left **{}**").format(pal.name, server.name),
-            color=discord.Color.orange(),
-        )
-        if seconds:
-            embed.add_field(name=_("Session"), value=format_playtime(seconds))
-        embed.set_footer(text=pal.user_id)
-        await self.send_log(channel, server.guild_id, embed)
+    @classmethod
+    def leave_line(cls, server: Server, pal: PalPlayer, seconds: int) -> str:
+        line = ":red_circle: " + _("`{}` left **{}**").format(cls.identity(pal), server.name)
+        # No open session to close means no playtime worth quoting, rather than a "<1m" that
+        # reads like the player really was on for seconds
+        return f"{line} ({format_playtime(seconds)})" if seconds else line
 
     @staticmethod
-    async def send_log(channel: discord.abc.Messageable | None, guild_id: int, embed: discord.Embed) -> None:
-        if channel is None:
+    def identity(pal: PalPlayer) -> str:
+        # Backticks are the one character a player can put in their name that breaks out of the
+        # code span, and the account name is not fully under their control but is not guaranteed
+        # clean either
+        parts = [pal.name, pal.account_name or _("Unknown"), pal.user_id]
+        return ", ".join(part.replace("`", "") for part in parts)
+
+    @staticmethod
+    async def send_log(channel: discord.abc.Messageable | None, guild_id: int, lines: list[str]) -> None:
+        if channel is None or not lines:
             return
-        try:
-            await channel.send(embed=embed)
-        except discord.HTTPException as e:
-            log.warning("Failed to send the '%s' embed in guild %s", embed.title, guild_id, exc_info=e)
+        for block in chunk_lines(lines, MAX_MESSAGE_CHARS):
+            try:
+                # Player names reach this as message content rather than embed text, so an
+                # everyone/here/role mention in one would ping the whole server
+                await channel.send(block, allowed_mentions=discord.AllowedMentions.none())
+            except discord.HTTPException as e:
+                log.warning("Failed to send %s log lines in guild %s", len(lines), guild_id, exc_info=e)
+                return
