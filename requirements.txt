@@ -1,5 +1,4 @@
 aiocache
-aiohttp
 aiohttp>=3.9.5
 aiosmtplib
 aiosqlite
@@ -20,6 +19,7 @@ imageio-ffmpeg
 jinja2
 json5
 kaleido
+markdownify
 matplotlib
 msgpack
 numpy
@@ -42,6 +42,7 @@ pydantic[email]
 Pympler
 PyMuPDF
 pypandoc_binary
+python-dateutil
 python-decouple
 python-dotenv
 python-multipart
@@ -49,10 +50,12 @@ pytz
 rapidfuzz
 redbot-orm
 requests
+resvg-py
 sentry_sdk
 speedtest-cli>=2.1.3
 tabulate
 tenacity
+tiktoken
 tiktoken>=0.9.0
 ujson
 utils
