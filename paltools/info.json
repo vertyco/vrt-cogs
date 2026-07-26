@@ -1,0 +1,35 @@
+{
+  "author": [
+    "Vertyco"
+  ],
+  "description": "Manage PalWorld dedicated servers via the official REST API. Join/leave logging, a live status panel with per-server player counts, playtime and session tracking, player lookups with name/IP history, and admin controls (announce, kick, ban, save, shutdown).\n**REQUIRES A POSTGRES INSTANCE**",
+  "disabled": false,
+  "end_user_data_statement": "This cog stores PalWorld game player data (names, platform user IDs, IP addresses, sessions, playtime). It does not store Discord user data.",
+  "hidden": false,
+  "install_msg": "# PalTools\nRequires a Postgres instance. After loading, run `[p]paltools postgres` to set connection info, then `[p]paltools servers` to add your PalWorld servers (RESTAPIEnabled=True required in PalWorldSettings.ini). Player IPs are collected for moderation; see the README.",
+  "min_bot_version": "3.5.21",
+  "min_python_version": [
+    3,
+    11,
+    0
+  ],
+  "permissions": [],
+  "required_cogs": {},
+  "requirements": [
+    "redbot-orm",
+    "asyncpg",
+    "matplotlib",
+    "pydantic>=2.11,<2.12",
+    "tzdata"
+  ],
+  "short": "PalWorld server management via REST API",
+  "tags": [
+    "palworld",
+    "gameserver",
+    "rest",
+    "admin",
+    "piccolo",
+    "postgres"
+  ],
+  "type": "COG"
+}
