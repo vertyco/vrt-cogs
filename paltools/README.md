@@ -16,7 +16,7 @@ RCON is deliberately unsupported: Pocketpair has deprecated it, and the REST API
 
 - The PalWorld REST API is not designed for raw internet exposure. Keep it LAN-only or firewalled so that only your bot host can reach the port.
 - The `AdminPassword` for each server is stored in plaintext in the cog's database. Treat database access accordingly.
-- Player IP addresses are collected for moderation purposes. Public commands never show IPs. The join log embeds show them only when the bot owner has enabled `[p]paltools logips`.
+- Player IP addresses are collected for moderation purposes. Public commands never show IPs, and neither does the join log: the only place an address is ever displayed is `[p]paltools findplayer`, under the three conditions below.
 - `[p]paltools findplayer` shows IP history and shared-IP overlaps only when **all three** of these hold, since any one alone leaks addresses:
   1. `[p]paltools logips` is enabled.
   2. The person running it is a mod or admin (by Red's mod/admin roles), the Discord server owner, or the bot owner. Manage Server alone is not enough, even though it is enough to run the command.
@@ -28,9 +28,9 @@ RCON is deliberately unsupported: Pocketpair has deprecated it, and the REST API
 
 1. `[p]paltools postgres` (bot owner): set the Postgres connection info. The cog creates and migrates its own `paltools` database.
 2. `[p]paltools servers` (bot owner): opens the interactive server manager panel. Click Add Server and enter a name, host, REST port, and admin password. Use Test Connection to verify the cog can reach the API.
-3. `[p]paltools logchannel #channel` (bot owner): set the channel for join/leave and server online/offline embeds.
+3. `[p]paltools logchannel #channel` (bot owner): set the channel for join/leave and server online/offline logging.
 4. Optional: `[p]paltools statuschannel #channel` (bot owner): set the channel for the live status panel.
-5. Optional: `[p]paltools logips` (bot owner) to include player IPs in join embeds and in `[p]paltools findplayer`. Only enable this if the log channel and your admins are staff-only.
+5. Optional: `[p]paltools logips` (bot owner) to allow player IPs in `[p]paltools findplayer`. Only enable this if your admins are staff-only.
 
 The poll loop starts automatically once the database is configured. It checks all enabled servers every 30 seconds.
 
@@ -95,7 +95,7 @@ Owner-only:
 | `servers` | Interactive server manager (add/edit/test/toggle/remove servers) |
 | `logchannel [channel]` | Set or clear the join/leave log channel |
 | `statuschannel [channel]` | Set or clear the live status panel channel |
-| `logips` | Toggle IP display in join embeds and `findplayer` |
+| `logips` | Toggle IP display in `findplayer` |
 | `timezone [name]` | Set the timezone the status panel graph is labelled in, or show the current one |
 | `backup` | DM a backup file of this Discord server's PalTools data |
 | `restore` | Restore an attached backup file, replacing this Discord server's data |
