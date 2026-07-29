@@ -552,6 +552,9 @@ class TextChannel(ChannelBase):
                     messages.append(await MessageBackup.serialize(message, store))
             except discord.HTTPException as e:
                 log.warning("Failed to fetch messages for text channel %s: %s", channel.name, e)
+            # history() returns newest first, but restore replays the list in order,
+            # which put the channel back in reverse. Store oldest first instead.
+            messages.reverse()
         return cls(
             id=channel.id,
             name=channel.name,
@@ -876,6 +879,9 @@ class VoiceChannel(ChannelBase):
                     messages.append(await MessageBackup.serialize(message, store))
             except discord.HTTPException as e:
                 log.warning("Failed to fetch messages for voice channel %s: %s", channel.name, e)
+            # history() returns newest first, but restore replays the list in order,
+            # which put the channel back in reverse. Store oldest first instead.
+            messages.reverse()
         kwargs = {
             "id": channel.id,
             "name": channel.name,
