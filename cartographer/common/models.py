@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import zipfile
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -11,7 +12,7 @@ from pydantic import Field
 from redbot.core.i18n import Translator
 
 from . import Base
-from .serializers import GuildBackup
+from .serializers import BACKUP_MEMBER, AttachmentStore, GuildBackup
 
 log = logging.getLogger("red.vrt.cartographer.models")
 _ = Translator("Cartographer", __file__)
@@ -96,25 +97,37 @@ class GuildSettings(Base):
         backup_emojis: bool = True,
         backup_stickers: bool = True,
     ) -> None:
-        backup_obj = await GuildBackup.serialize(
-            guild=guild,
-            limit=limit,
-            backup_members=backup_members,
-            backup_roles=backup_roles,
-            backup_emojis=backup_emojis,
-            backup_stickers=backup_stickers,
-        )
-        dump = await asyncio.to_thread(backup_obj.model_dump_json)
         backup_dir = backups_dir / str(guild.id)
         backup_dir.mkdir(parents=True, exist_ok=True)
 
         # Clean the guild name to make it filename safe
         guild_name = "".join(c for c in guild.name if c.isalnum())
-        backup_file = backup_dir / f"{guild_name}_{int(datetime.now().timestamp())}.json"
-        with open(backup_file, "w", encoding="utf-8") as f:
-            f.write(dump)
-            f.flush()
-            os.fsync(f.fileno())
+        backup_file = backup_dir / f"{guild_name}_{int(datetime.now().timestamp())}.zip"
+
+        # The archive is opened *before* serializing so attachments can be streamed into
+        # it as they download. Holding them on the model until the end is what used to
+        # push memory into the gigabytes on servers with a lot of media.
+        try:
+            with open(backup_file, "wb") as f:
+                with zipfile.ZipFile(f, "w", zipfile.ZIP_DEFLATED) as archive:
+                    backup_obj = await GuildBackup.serialize(
+                        guild=guild,
+                        limit=limit,
+                        backup_members=backup_members,
+                        backup_roles=backup_roles,
+                        backup_emojis=backup_emojis,
+                        backup_stickers=backup_stickers,
+                        store=AttachmentStore(archive),
+                    )
+                    dump = await asyncio.to_thread(backup_obj.model_dump_json)
+                    await asyncio.to_thread(archive.writestr, BACKUP_MEMBER, dump)
+                f.flush()
+                os.fsync(f.fileno())
+        except BaseException:
+            # Serializing now happens with the file already open, so a failure would
+            # otherwise leave a truncated archive behind for the menu to trip over.
+            backup_file.unlink(missing_ok=True)
+            raise
 
         if hasattr(os, "O_DIRECTORY"):
             fd = os.open(backup_file.parent, os.O_DIRECTORY)

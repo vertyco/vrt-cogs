@@ -1,5 +1,11 @@
 # Cartographer Changelog
 
+## v2.3.0
+
+- **Fix**: Backing up a server with many message attachments could exhaust the host's memory and get the bot OOM-killed. Every attachment was downloaded, base64-encoded, and held on the model until the whole guild had been serialized — roughly 4x the attachment size resident at once, before the JSON document was built on top. The v2.2.0 per-file check (`attachment.size < guild.filesize_limit`) only rejects individual oversized files and puts no ceiling on the total, so a media-heavy server produced a multi-GB backup and a peak RSS several times larger. Restoring such a backup had the same problem in reverse, since the whole file was read into a string and parsed.
+- **Change**: Backups are now written as `.zip` archives (`backup.json` plus an `attachments/` folder) instead of a single `.json` file. Attachments stream into the archive as they download and are read back out one at a time, so memory stays flat regardless of how much media a server has. Nothing is skipped — a large backup simply takes longer. Backups are also considerably smaller, since base64 inflated every file by a third and the JSON is now compressed.
+- **Note**: Existing `.json` backups are still readable and restorable; `load_backup` picks the format by extension. New backups are always `.zip`.
+
 ## v2.2.0
 
 - **New**: Message attachments are now backed up and restored. Files are stored base64 inside the backup (`FileBackup`), capped at the guild's upload size limit so oversized files can't balloon the backup or fail re-upload.
