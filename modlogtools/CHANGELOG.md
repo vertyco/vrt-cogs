@@ -1,3 +1,8 @@
+# 0.2.1 (2026-07-25)
+
+- Removed the `[p]mywarnings` command. Red's core `Warnings` cog already registers that name,
+  and this cog requires `Warnings` to be loaded, so it blocked the cog from loading entirely.
+
 # 0.2.0 (2026-07-25)
 
 - Removed deleting original modlog messages on expiry; modlog cases are never deleted anymore.

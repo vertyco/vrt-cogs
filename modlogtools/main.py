@@ -39,7 +39,7 @@ class ModLogTools(
     """Extended tooling for Red's core modlog and warning system."""
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.2.0"
+    __version__ = "0.2.1"
 
     def __init__(self, bot: Red):
         super().__init__()

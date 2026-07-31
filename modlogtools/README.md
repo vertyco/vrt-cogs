@@ -19,7 +19,6 @@ Extended tooling for Red-DiscordBot's core modlog and warnings systems.
   - top warned members
   - top moderators issuing warnings
   - member-specific warning summaries and full history
-- Members can view their own active warnings with `[p]mywarnings`.
 
 ## Commands
 
@@ -59,8 +58,6 @@ Extended tooling for Red-DiscordBot's core modlog and warnings systems.
   - Warning summary for a single member.
 - `[p]modlogtool history <member> [timespan]`
   - Full pagified warning history for a single member.
-- `[p]mywarnings`
-  - Members view their own active warnings, points, and expiry times.
 
 ## Notes
 
