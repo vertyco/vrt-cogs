@@ -11,7 +11,7 @@ from redbot.core.utils.chat_formatting import box, humanize_timedelta, text_to_f
 
 from .formatting import backup_str, humanize_size
 from .models import DB, GuildSettings, RestoreOptions
-from .serializers import GuildBackup
+from .serializers import GuildBackup, load_backup
 
 log = logging.getLogger("red.vrt.cartographer.views")
 _ = Translator("Cartographer", __file__)
@@ -576,8 +576,7 @@ class BackupMenu(discord.ui.View):
         # Load the backup first to show options
         self.page %= len(self.backups)
         backup_file = self.backups[self.page]
-        text = await asyncio.to_thread(backup_file.read_text, encoding="utf-8")
-        backup: GuildBackup = await asyncio.to_thread(GuildBackup.model_validate_json, text)
+        backup: GuildBackup = await asyncio.to_thread(load_backup, backup_file)
 
         # Show the restore options view
         options_view = RestoreOptionsView(
@@ -599,7 +598,9 @@ class BackupMenu(discord.ui.View):
         await interaction.followup.send(txt, ephemeral=True)
 
         async with self.ctx.typing():
-            results = await backup.restore(self.guild, interaction.channel, options_view.options)
+            results = await backup.restore(
+                self.guild, interaction.channel, options_view.options, archive_path=backup_file
+            )
             if results:
                 txt = _("The following errors occurred while restoring the backup")
                 await interaction.channel.send(txt, file=text_to_file(results, "restore_results.txt"))

@@ -13,7 +13,7 @@ from redbot.core.utils.chat_formatting import humanize_number, text_to_file
 
 from .common.formatting import humanize_size
 from .common.models import DB
-from .common.serializers import GuildBackup
+from .common.serializers import load_backup
 from .common.views import BackupMenu
 
 log = logging.getLogger("red.vrt.cartographer")
@@ -45,7 +45,7 @@ class Cartographer(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "2.2.0"
+    __version__ = "2.3.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -263,10 +263,8 @@ class Cartographer(commands.Cog):
                 txt = _("There are no backups for this guild!")
                 return await ctx.send(txt)
             latest = backup_files[-1]
-            backup = await asyncio.to_thread(
-                lambda: GuildBackup.model_validate_json(latest.read_text(encoding="utf-8"))
-            )
-            results = await backup.restore(ctx.guild, ctx.channel)
+            backup = await asyncio.to_thread(load_backup, latest)
+            results = await backup.restore(ctx.guild, ctx.channel, archive_path=latest)
             await ctx.send(_("Server restore is complete!"))
             if results:
                 txt = _("The following errors occurred while restoring the backup")
