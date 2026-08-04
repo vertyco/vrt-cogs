@@ -256,6 +256,36 @@ class Functions(MixinMeta):
 
         return "\n".join(lines)
 
+    async def rpc_create_ticket(
+        self,
+        guild_id: int,
+        user_id: int,
+        panel_name: str,
+        answer1: str = None,
+        answer2: str = None,
+        answer3: str = None,
+        answer4: str = None,
+        answer5: str = None,
+    ) -> dict:
+        """Open a ticket for a member by id, for RPC callers.
+
+        create_ticket_for_user needs a discord.Member, which an RPC caller cannot
+        construct - this resolves the ids and defers to it. Reached via the
+        vrtutils rpc_master bridge; no handler registration of its own.
+        """
+        guild = self.bot.get_guild(int(guild_id))
+        if guild is None:
+            return {"ok": False, "error": f"guild not found: {guild_id}"}
+        member = guild.get_member(int(user_id))
+        if member is None:
+            return {"ok": False, "error": f"member not in guild: {user_id}"}
+        conf = self.db.get_conf(guild)
+        before = set(conf.opened.get(member.id, {}))
+        status = await self.create_ticket_for_user(member, panel_name, answer1, answer2, answer3, answer4, answer5)
+        new = set(conf.opened.get(member.id, {})) - before
+        channel_id = next(iter(new), None)
+        return {"ok": channel_id is not None, "user_id": member.id, "panel": panel_name, "status": str(status), "channel_id": channel_id}
+
     async def create_ticket_for_user(
         self,
         user: discord.Member,
