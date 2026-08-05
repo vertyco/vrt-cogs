@@ -223,7 +223,7 @@ class Admin(MixinMeta):
 
     @assistant.group(name="skills", aliases=["skill"])
     async def skills_group(self, ctx: commands.Context):
-        """Manage on-demand skills (stored procedures the AI can load and propose)"""
+        """Manage on-demand skills (stored procedures the AI can load)"""
         pass
 
     # ---- Helper methods ----
@@ -3701,66 +3701,12 @@ class Admin(MixinMeta):
 
     @skills_group.command(name="toggle")
     async def skills_toggle(self, ctx: commands.Context):
-        """Toggle the skills system for this server (also enables/disables the skill tools)"""
+        """Toggle the skills system for this server (also enables/disables the skill tool)"""
         conf = self.db.get_conf(ctx.guild)
         conf.skills_enabled = not conf.skills_enabled
         conf.function_statuses["load_skill"] = conf.skills_enabled
-        conf.function_statuses["propose_skill"] = conf.skills_enabled
         status = _("**enabled**") if conf.skills_enabled else _("**disabled**")
         await ctx.send(_("Skills system is now {}").format(status))
-        await self.save_conf()
-
-    @skills_group.command(name="channel")
-    async def skills_channel(self, ctx: commands.Context, channel: discord.TextChannel = None):
-        """Set (or clear) a dedicated channel for skill proposals
-
-        When set, all proposals post here instead of the conversation they came from.
-        When cleared, proposals fall back to whatever channel the chat happened in.
-        """
-        conf = self.db.get_conf(ctx.guild)
-        conf.skill_channel = channel.id if channel else None
-        if channel:
-            await ctx.send(_("Skill proposals will be posted in {}").format(channel.mention))
-        else:
-            await ctx.send(_("Skill proposal channel cleared. Proposals will post in the current chat channel."))
-        await self.save_conf()
-
-    @skills_group.command(name="pingrole")
-    async def skills_pingrole(self, ctx: commands.Context, role: discord.Role):
-        """Add or remove a role to ping when a skill proposal is posted"""
-        conf = self.db.get_conf(ctx.guild)
-        if role.id in conf.skill_ping_roles:
-            conf.skill_ping_roles.remove(role.id)
-            await ctx.send(_("{} will no longer be pinged for skill proposals").format(role.name))
-        else:
-            conf.skill_ping_roles.append(role.id)
-            await ctx.send(_("{} will be pinged for skill proposals").format(role.name))
-        await self.save_conf()
-
-    @skills_group.command(name="proposeusers")
-    async def skills_propose_users(self, ctx: commands.Context):
-        """Toggle whether the AI may propose skills from conversations with normal users"""
-        conf = self.db.get_conf(ctx.guild)
-        conf.skill_propose_users = not conf.skill_propose_users
-        status = _("**enabled**") if conf.skill_propose_users else _("**disabled**")
-        await ctx.send(_("Skill proposals from normal-user conversations: {}").format(status))
-        await self.save_conf()
-
-    @skills_group.command(name="adminmode")
-    async def skills_admin_mode(self, ctx: commands.Context, mode: str):
-        """Set how skills behave in admin conversations: off, propose, or auto
-
-        - off: the AI never drafts skills from admin chats
-        - propose: drafts go to the review channel like everyone else's
-        - auto: skills bake immediately with no approval panel
-        """
-        mode = mode.lower().strip()
-        if mode not in ("off", "propose", "auto"):
-            await ctx.send(_("Mode must be one of: off, propose, auto"))
-            return
-        conf = self.db.get_conf(ctx.guild)
-        conf.skill_admin_mode = mode
-        await ctx.send(_("Admin skill mode set to **{}**").format(mode))
         await self.save_conf()
 
     @skills_group.command(name="list")
@@ -3803,14 +3749,7 @@ class Admin(MixinMeta):
         if len(conf.skills) >= conf.max_skills:
             await ctx.send(_("Skill limit reached ({})").format(conf.max_skills))
             return
-        self.bake_skill(
-            conf=conf,
-            name=name,
-            description=description,
-            body=body,
-            author_id=ctx.author.id,
-            approver_id=ctx.author.id,
-        )
+        self.bake_skill(conf=conf, name=name, description=description, body=body)
         await ctx.send(_("Skill `{}` added and active.").format(name))
         await self.save_conf()
 

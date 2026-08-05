@@ -33,7 +33,6 @@ from .common.constants import (
     LIST_SCHEDULED_TASKS,
     LOAD_SKILL,
     MAX_SKILL_BODY,
-    PROPOSE_SKILL,
     RESPOND_AND_CONTINUE,
     SCHEDULE_TASK,
     SEARCH_COMMANDS,
@@ -83,7 +82,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "8.19.1"
+    __version__ = "8.20.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -242,7 +241,6 @@ class Assistant(
             category="documentation",
         )
         await self.register_function(self.qualified_name, LOAD_SKILL, category="skills")
-        await self.register_function(self.qualified_name, PROPOSE_SKILL, category="skills")
 
         # Start scheduler and reschedule existing reminders/tasks
         self.scheduler.start()
@@ -674,7 +672,7 @@ class Assistant(
         return {"ok": True, "deleted": str(name)}
 
     async def rpc_list_skills(self, guild_id: int) -> dict:
-        """List a guild's skills: {name: {description, permission_level, enabled, status, use_count}}."""
+        """List a guild's skills: {name: {description, permission_level, enabled, use_count}}."""
         guild = self.rpc_guild(guild_id)
         if not guild:
             return {"ok": False, "error": f"guild {guild_id} not found"}
@@ -684,7 +682,6 @@ class Assistant(
                 "description": skill.description,
                 "permission_level": skill.permission_level,
                 "enabled": skill.enabled,
-                "status": skill.status,
                 "use_count": skill.use_count,
             }
             for name, skill in conf.skills.items()
@@ -708,8 +705,6 @@ class Assistant(
             "body": skill.body,
             "permission_level": skill.permission_level,
             "enabled": skill.enabled,
-            "status": skill.status,
-            "source": skill.source,
             "use_count": skill.use_count,
         }
 
@@ -774,7 +769,6 @@ class Assistant(
         conf = self.db.get_conf(guild)
         conf.skills_enabled = bool(enabled)
         conf.function_statuses["load_skill"] = conf.skills_enabled
-        conf.function_statuses["propose_skill"] = conf.skills_enabled
         await self.save_conf()
         return {"ok": True, "skills_enabled": conf.skills_enabled}
 

@@ -423,42 +423,6 @@ LOAD_SKILL = {
     },
 }
 
-PROPOSE_SKILL = {
-    "name": "propose_skill",
-    "description": (
-        "Draft a new skill, or an update to an existing one, when staff corrects your behavior or "
-        "teaches you a procedure worth remembering. Drafts go to staff for approval and do NOT take "
-        "effect immediately. Write the body as a concise step-by-step procedure addressed to your "
-        "future self. If an existing skill contains the wrong information, set 'replaces' to its name."
-    ),
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "skill_name": {
-                "type": "string",
-                "description": "Short kebab-case name, e.g. 'dino-loss-investigation'",
-            },
-            "description": {
-                "type": "string",
-                "description": "One line stating WHEN this skill should be used (shown in the index)",
-            },
-            "body": {
-                "type": "string",
-                "description": "The full procedure in markdown, step-by-step",
-            },
-            "reason": {
-                "type": "string",
-                "description": "Why this skill is needed, citing the correction or conversation that prompted it",
-            },
-            "replaces": {
-                "type": "string",
-                "description": "Existing skill name to update instead of creating a new skill",
-            },
-        },
-        "required": ["skill_name", "description", "body", "reason"],
-    },
-}
-
 THINK_AND_PLAN = {
     "name": "think_and_plan",
     "description": "Break a complex task into clear steps before doing it. Call this before multi-step work.",
@@ -722,9 +686,7 @@ SKILL_INDEX_HEADER = (
     "# Skills\n"
     "You have named skills: stored procedures for handling specific situations. "
     "When a user's request matches a skill's description, call load_skill with its exact name "
-    "BEFORE answering, then follow the procedure it returns. "
-    "If a staff member corrects information that came from a skill, call propose_skill with "
-    "'replaces' set to that skill's name to submit a fix for review.\n"
+    "BEFORE answering, then follow the procedure it returns.\n"
 )
 
 

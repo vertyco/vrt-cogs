@@ -1,5 +1,10 @@
 # Assistant Changelog
 
+## v8.20.0
+
+- **Removed**: The model can no longer propose or update its own skills. The `propose_skill` tool, the staff approval panel, and the admin auto-bake mode are gone. Even frontier models handled the update path badly: asked to amend a skill they regenerated the whole body from memory and dropped most of the original procedure, so an approved "fix" routinely left a gutted, useless skill. Skills are now staff-authored only, via `[p]assistant skills add`, the skills menu, or RPC. The model keeps `load_skill` and reads skills exactly as before.
+- **Removed**: The `[p]assistant skills channel`, `pingrole`, `proposeusers`, and `adminmode` subcommands, along with their stored settings (they only configured the proposal flow). Skill provenance fields (draft status, source, author/approver ids, source message) were dropped from stored skills too; existing skills load fine and simply lose those values on next save.
+
 ## v8.19.0
 
 - **New**: Added the GPT-5.6 family (`gpt-5.6-sol`, `gpt-5.6-terra`, `gpt-5.6-luna`): 1.05M context, vision, tools, and the full reasoning-effort range.
