@@ -118,12 +118,7 @@ class Skill(AssistantBaseModel):
     description: str  # One line stating WHEN to use this skill (shown in the index)
     body: str  # The full procedure, returned by the load_skill tool
     enabled: bool = True
-    status: str = "active"  # "draft" (pending staff approval) or "active"
     permission_level: str = "user"  # user, mod, admin, owner
-    source: str = "manual"  # "manual" (command) or "correction" (proposed by the model)
-    author_id: int = 0  # who triggered creation (staff member or proposing user)
-    approver_id: int = 0  # staff member who approved/baked it
-    source_message: str = ""  # jump URL of the conversation that spawned it
     created: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
     modified: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
     last_used: t.Optional[datetime] = None
@@ -155,7 +150,7 @@ async def member_meets_level(bot: Red, member: t.Optional[discord.Member], level
 def build_skill_index(skills: t.Dict[str, Skill], allowed: t.Iterable[str]) -> str:
     """Render the Skills index appended to the system prompt.
 
-    Only active, enabled skills whose name is in ``allowed`` (the caller's
+    Only enabled skills whose name is in ``allowed`` (the caller's
     permission-filtered list) appear. Sorted by name so the rendered block is
     byte-identical across requests (prompt-cache stability).
     """
@@ -163,7 +158,7 @@ def build_skill_index(skills: t.Dict[str, Skill], allowed: t.Iterable[str]) -> s
     lines = [
         f"- {name}: {skill.description}"
         for name, skill in sorted(skills.items())
-        if name in allowed_set and skill.enabled and skill.status == "active"
+        if name in allowed_set and skill.enabled
     ]
     if not lines:
         return ""
@@ -367,13 +362,9 @@ class GuildSettings(AssistantBaseModel):
     # Smartmod (AI moderation)
     smartmod: SmartModSettings = Field(default_factory=SmartModSettings)
 
-    # Skills (on-demand procedure packs, see common/functions.py load_skill/propose_skill)
+    # Skills (on-demand procedure packs, see common/functions.py load_skill)
     skills: t.Dict[str, Skill] = {}
     skills_enabled: bool = False
-    skill_propose_users: bool = False  # allow the model to propose skills from normal-user chats
-    skill_admin_mode: str = "propose"  # off | propose | auto (auto = admin-triggered skills bake instantly)
-    skill_channel: t.Optional[int] = None  # proposal review channel
-    skill_ping_roles: t.List[int] = []  # roles pinged on new proposals
     max_skills: int = 50
 
     def get_user_model(self, member: t.Optional[discord.Member] = None) -> str:

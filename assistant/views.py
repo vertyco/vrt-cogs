@@ -20,7 +20,6 @@ from .common.models import (
     EndpointProfile,
     GuildSettings,
     get_category_state,
-    member_meets_level,
     normalize_tool_category,
     render_tool_category,
 )
@@ -2693,133 +2692,6 @@ class SkillEditModal(discord.ui.Modal):
         self.stop()
 
 
-class SkillProposalButton(discord.ui.Button):
-    def __init__(self, action: str, label: str, style: discord.ButtonStyle):
-        super().__init__(label=label, style=style)
-        self.action = action
-
-    async def callback(self, interaction: discord.Interaction):
-        view: "SkillProposalView" = self.view
-        await view.resolve(interaction, self.action)
-
-
-class SkillProposalView(discord.ui.LayoutView):
-    """Staff review panel for a model-proposed skill (new or edit)."""
-
-    def __init__(
-        self,
-        cog,
-        guild: discord.Guild,
-        proposal: dict,
-        ping_roles: Optional[List[int]] = None,
-        timeout: float = None,
-    ):
-        super().__init__(timeout=timeout)
-        self.cog = cog
-        self.guild = guild
-        # proposal keys: name, description, body, reason, replaces, permission_level,
-        # author_id, source_message
-        self.proposal = proposal
-        self.ping_roles = ping_roles or []
-        self.message: Optional[discord.Message] = None
-        self.resolved = False
-        self.outcome_text = ""
-        self.build_layout()
-
-    def build_layout(self) -> None:
-        self.clear_items()
-        p = self.proposal
-        is_edit = bool(p.get("replaces"))
-        accent = discord.Color.blue() if is_edit else discord.Color.green()
-        container = discord.ui.Container(accent_colour=accent)
-        if self.ping_roles and not self.resolved:
-            container.add_item(discord.ui.TextDisplay(" ".join(f"<@&{rid}>" for rid in self.ping_roles)))
-        title = _("# 🔁 Skill Update Proposed") if is_edit else _("# 💡 New Skill Proposed")
-        container.add_item(discord.ui.TextDisplay(title))
-        target = p["replaces"] if is_edit else p["name"]
-        container.add_item(
-            discord.ui.TextDisplay(
-                _("**Skill:** `{name}`\n**Proposed by conversation with:** <@{uid}>").format(
-                    name=target, uid=p.get("author_id", 0)
-                )
-            )
-        )
-        if p.get("source_message"):
-            container.add_item(
-                discord.ui.TextDisplay(_("[jump to conversation]({url})").format(url=p["source_message"]))
-            )
-        container.add_item(discord.ui.TextDisplay(_("**When to use:** {desc}").format(desc=p["description"][:300])))
-        container.add_item(discord.ui.TextDisplay(_("**Why:** {reason}").format(reason=p.get("reason", "")[:500])))
-        container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.small))
-        body_preview = p["body"][:1500]
-        if len(p["body"]) > 1500:
-            body_preview += _("\n... (truncated, {n} chars total)").format(n=len(p["body"]))
-        container.add_item(discord.ui.TextDisplay(body_preview))
-        container.add_item(discord.ui.Separator(spacing=discord.SeparatorSpacing.small))
-        if self.resolved:
-            container.add_item(discord.ui.TextDisplay(self.outcome_text))
-        else:
-            row = discord.ui.ActionRow()
-            row.add_item(SkillProposalButton("approve", _("Approve"), discord.ButtonStyle.success))
-            row.add_item(SkillProposalButton("edit", _("Edit & Approve"), discord.ButtonStyle.primary))
-            row.add_item(SkillProposalButton("reject", _("Reject"), discord.ButtonStyle.danger))
-            container.add_item(row)
-        self.add_item(container)
-
-    async def refresh(self):
-        self.build_layout()
-        if self.message:
-            await self.message.edit(view=self)
-
-    async def staff_check(self, interaction: discord.Interaction) -> bool:
-        if await member_meets_level(self.cog.bot, interaction.user, "admin"):
-            return True
-        await interaction.response.send_message(_("Only admins can review skill proposals."), ephemeral=True)
-        return False
-
-    async def resolve(self, interaction: discord.Interaction, action: str):
-        if not await self.staff_check(interaction):
-            return
-        p = self.proposal
-        if action == "reject":
-            self.resolved = True
-            self.outcome_text = _("❌ Rejected by {user}").format(user=interaction.user.mention)
-            await interaction.response.defer()
-            await self.refresh()
-            self.stop()
-            return
-        if action == "edit":
-            modal = SkillEditModal(p["name"], p["description"], p["body"], p.get("permission_level", "user"))
-            await interaction.response.send_modal(modal)
-            await modal.wait()
-            if not modal.result:
-                return
-            p.update(modal.result)
-        else:
-            await interaction.response.defer()
-        conf = self.cog.db.get_conf(self.guild)
-        skill = self.cog.bake_skill(
-            conf=conf,
-            name=p["name"],
-            description=p["description"],
-            body=p["body"],
-            permission_level=p.get("permission_level", "user"),
-            source="correction",
-            author_id=p.get("author_id", 0),
-            approver_id=interaction.user.id,
-            source_message=p.get("source_message", ""),
-            replaces=p.get("replaces", ""),
-        )
-        await self.cog.save_conf()
-        final_name = next(k for k, v in conf.skills.items() if v is skill)
-        self.resolved = True
-        self.outcome_text = _("✅ Approved by {user} - skill `{name}` is now active").format(
-            user=interaction.user.mention, name=final_name
-        )
-        await self.refresh()
-        self.stop()
-
-
 class SkillSelect(discord.ui.Select):
     def __init__(self, names: List[str], selected: Optional[str]):
         options = [discord.SelectOption(label=n, default=(n == selected)) for n in names]
@@ -2877,7 +2749,7 @@ class SkillMenuView(discord.ui.LayoutView):
                     _(
                         "**`{name}`** ({status}, {level})\n{desc}\n"
                         "-# created <t:{created}:R> • modified <t:{modified}:R> • "
-                        "last used {last_used} • used {count}x • source: {source}"
+                        "last used {last_used} • used {count}x"
                     ).format(
                         name=self.selected,
                         status=status,
@@ -2887,7 +2759,6 @@ class SkillMenuView(discord.ui.LayoutView):
                         modified=int(skill.modified.timestamp()),
                         last_used=last_used,
                         count=skill.use_count,
-                        source=skill.source,
                     )
                 )
             )

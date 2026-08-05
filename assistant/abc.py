@@ -324,10 +324,6 @@ class MixinMeta(ABC):
         description: str,
         body: str,
         permission_level: str = "user",
-        source: str = "manual",
-        author_id: int = 0,
-        approver_id: int = 0,
-        source_message: str = "",
         replaces: str = "",
     ) -> Skill:
         raise NotImplementedError
