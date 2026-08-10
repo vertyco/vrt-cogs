@@ -1,5 +1,11 @@
 # SwearJar Changelog
 
+## 0.2.0
+
+- Fixed: a word followed by an exclamation mark was never matched. `!` was folded to `i` everywhere, so `damn!` normalized to `damni` and the whole-word boundary could not close on it. `!` now only stands in for `i` when another letter or digit follows it in the same token, so `sh!t` is still caught while `damn!`, `fuck!` and `hell!` match again.
+- Words can now be digits only, so `[p]swearjarset addword 67` works. Boundary rules still apply: it catches `that is so 67` but not `1967` or `670`. Entries with neither letters nor digits (`!!!`, `$$$`) are still rejected.
+- `addword` takes `boundary` before `fine`, so a word can be set to substring matching without also naming a price: `[p]swearjarset addword damn false`. To give a word its own fine, pass both: `[p]swearjarset addword damn true 25`.
+
 ## 0.1.0
 
 Initial release.

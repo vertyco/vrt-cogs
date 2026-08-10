@@ -6,6 +6,10 @@ SYMBOL_SUBSTITUTIONS = {
     "!": "i",
     "’": "'",
 }
+# Symbols that double as ordinary sentence punctuation. They only stand in for a
+# letter when another alphanumeric follows them in the same token, so "sh!t" is
+# caught while "damn!" keeps its trailing "!" and stays a closable whole word.
+PUNCTUATION_LEET = {"!"}
 DIGIT_SUBSTITUTIONS = {
     "0": "o",
     "1": "i",
@@ -26,8 +30,12 @@ LOOSE = r"[\W_]*"
 def normalize(text: str) -> str:
     """Casefold and map leetspeak characters to letters.
 
-    Symbol substitutions always apply, including folding the curly apostrophe
-    (’) to the straight one (') so "y'all" and "y’all" normalize identically.
+    Symbol substitutions apply, including folding the curly apostrophe (’) to
+    the straight one (') so "y'all" and "y’all" normalize identically. The
+    characters in PUNCTUATION_LEET double as ordinary sentence punctuation, so
+    they only stand in for a letter when another alphanumeric follows them in
+    the same token: "sh!t" becomes "shit", while "damn!" keeps its "!" and
+    stays a whole word the \\b boundary can still close on.
     Digit substitutions apply only inside a whitespace-token that already
     holds a letter, so "d4mn" becomes "damn" while a bare number like "455"
     is left alone.
@@ -35,8 +43,11 @@ def normalize(text: str) -> str:
     out = []
     for token in re.split(r"(\s+)", text.casefold()):
         has_letter = any(char.isalpha() for char in token)
-        for char in token:
-            if char in SYMBOL_SUBSTITUTIONS:
+        for index, char in enumerate(token):
+            following = token[index + 1] if index + 1 < len(token) else ""
+            if char in PUNCTUATION_LEET and not following.isalnum():
+                out.append(char)
+            elif char in SYMBOL_SUBSTITUTIONS:
                 out.append(SYMBOL_SUBSTITUTIONS[char])
             elif has_letter and char in DIGIT_SUBSTITUTIONS:
                 out.append(DIGIT_SUBSTITUTIONS[char])
@@ -58,9 +69,13 @@ def build_pattern(word: str, boundary: bool) -> str | None:
     a required apostrophe at either edge would need a word character right
     outside the \\b boundary, which real text essentially never provides;
     this lets entries like "fuckin'" or "'tis" build a pattern that can
-    actually match. Returns None for entries holding no letters.
+    actually match. Returns None for entries holding no letters or digits.
+
+    Digit-only entries such as "67" are allowed. normalize() leaves a bare
+    number alone (its digit substitutions only fire inside a token that
+    already holds a letter), so such an entry matches the literal digits.
     """
-    if not re.sub(r"[^a-z]+", "", word.casefold()):
+    if not re.sub(r"[^a-z0-9]+", "", word.casefold()):
         return None
     parts = []
     for part in normalize(word).split():

@@ -50,14 +50,17 @@ class Admin(MixinMeta):
         await ctx.send(f"Swear jar {status}.")
 
     @swearjarset.command(name="addword")
-    async def add_word(self, ctx: commands.Context, word: str, fine: int = None, boundary: bool = True):
+    async def add_word(self, ctx: commands.Context, word: str, boundary: bool = True, fine: int = None):
         """Add or update a swear word.
 
-        **fine**: credits charged for this word; leave empty to use the server default.
         **boundary**: `true` (default) matches whole words only, `false` matches inside other words.
+        **fine**: credits charged for this word; leave empty to use the server default.
+
+        Boundary comes first so you can set it without also naming a fine:
+        `[p]swearjarset addword damn false`
 
         Wrap a multi-word entry in quotes so it is not parsed as extra arguments, for example:
-        `[p]swearjarset addword "son of a bitch" 25`
+        `[p]swearjarset addword "son of a bitch" true 25`
         """
         if fine is not None and fine < 0:
             await ctx.send("Fine cannot be negative.")
@@ -67,7 +70,7 @@ class Admin(MixinMeta):
             await ctx.send("That word is empty.")
             return
         if build_pattern(word, boundary) is None:
-            await ctx.send("That word has no letters for me to match on.")
+            await ctx.send("That word has no letters or numbers for me to match on.")
             return
         async with self.config.guild(ctx.guild).words() as words:
             updating = word in words
