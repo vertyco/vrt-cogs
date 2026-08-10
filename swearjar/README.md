@@ -44,7 +44,7 @@ Requires admin or the Manage Server permission, guild only:
 | `toggle` | Enable or disable the swear jar |
 | `addword <word> [boundary] [fine]` | Add or update a swear word. `boundary` comes first so you can set it without naming a fine (`addword damn false`). Wrap multi-word entries in quotes, e.g. `[p]swearjarset addword "son of a bitch" true 25` |
 | `delword <word>` | Remove a swear word |
-| `words` | DM you the configured word list (fine and match type per word), to avoid printing profanity in-channel |
+| `words` | List the configured words with the fine and match type for each. Sent as a file if the list is too long for one message |
 | `fine <amount>` | Set the default fine for words without their own fine |
 | `respond` | Toggle the in-channel message posted when someone is fined |
 | `ignorechannel <channel>` | Add or remove a channel from the ignore list |
@@ -56,4 +56,4 @@ Requires admin or the Manage Server permission, guild only:
 
 - Bot accounts and DMs are always ignored.
 - This cog respects Red's per-server cog disable list; disabling the cog in a server stops fining immediately.
-- `[p]swearjarset words` and `[p]swearjarset view` never print the configured word list in-channel; the word list only ever goes out over DM.
+- `[p]swearjarset view` reports how many words are configured rather than listing them; use `[p]swearjarset words` for the full list.
