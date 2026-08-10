@@ -1,17 +1,16 @@
-import logging
 from io import StringIO
 
 import discord
 from redbot.core import commands
-from redbot.core.utils.chat_formatting import humanize_number
+from redbot.core.utils.chat_formatting import box, humanize_number, pagify, text_to_file
 
 from ..abc import MixinMeta
 from ..common.utils import build_pattern
 
-log = logging.getLogger("red.vrt.swearjar")
-
 # Discord embed field values cap at 1024 characters; reserve room for the trailing "and N more" note.
 EMBED_FIELD_LIMIT = 1024
+# Messages cap at 2000 characters; leave room for the code block fence around the listing.
+MAX_INLINE_LISTING = 1900
 
 
 def join_mentions(mentions: list[str]) -> str:
@@ -92,7 +91,7 @@ class Admin(MixinMeta):
 
     @swearjarset.command(name="words")
     async def list_words(self, ctx: commands.Context):
-        """DM you the configured swear words."""
+        """List the configured swear words."""
         conf = await self.config.guild(ctx.guild).all()
         if not conf["words"]:
             await ctx.send("No words configured.")
@@ -104,12 +103,12 @@ class Admin(MixinMeta):
             fine_txt = str(fine) if fine is not None else f"default ({conf['default_fine']})"
             match_txt = "whole word" if settings.get("boundary", True) else "substring"
             buffer.write(f"- {word}: fine {fine_txt}, {match_txt}\n")
-        try:
-            await ctx.author.send(buffer.getvalue())
-            await ctx.send("Sent you a DM with the word list.")
-        except discord.HTTPException as e:
-            log.warning("Failed to DM swear word list to %s", ctx.author.id, exc_info=e)
-            await ctx.send("I could not DM you. Enable DMs from this server and try again.")
+        listing = buffer.getvalue()
+        if len(listing) > MAX_INLINE_LISTING:
+            await ctx.send(file=text_to_file(listing, filename="swearjar_words.txt"))
+            return
+        for page in pagify(listing, page_length=MAX_INLINE_LISTING):
+            await ctx.send(box(page))
 
     @swearjarset.command(name="fine")
     async def set_default_fine(self, ctx: commands.Context, amount: int):

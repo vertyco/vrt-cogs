@@ -1,5 +1,9 @@
 # SwearJar Changelog
 
+## 0.3.0
+
+- `[p]swearjarset words` now lists the words in the channel instead of DMing them. It is an admin-only command showing words the admin configured themselves, so the DM bought nothing and broke the command outright for anyone with DMs closed. Long lists come back as a text file.
+
 ## 0.2.0
 
 - Fixed: a word followed by an exclamation mark was never matched. `!` was folded to `i` everywhere, so `damn!` normalized to `damni` and the whole-word boundary could not close on it. `!` now only stands in for `i` when another letter or digit follows it in the same token, so `sh!t` is still caught while `damn!`, `fuck!` and `hell!` match again.
