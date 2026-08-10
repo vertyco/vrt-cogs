@@ -33,7 +33,7 @@ If a member's balance is lower than the fine, they are drained to zero rather th
 | Command | Description |
 |---|---|
 | `[p]swearjar` | Show the server's swear jar total |
-| `[p]swearjar leaderboard` (alias `lb`) | Top swear jar payers in this server |
+| `[p]swearjar leaderboard` (alias `lb`) | Top swear jar payers in this server, paged with buttons |
 
 ### Admin group `[p]swearjarset` (alias `sjset`)
 
