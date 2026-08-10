@@ -158,6 +158,7 @@ tests/
 !assistant/tests/
 !tickets/tests/
 !paltools/tests/
+!swearjar/tests/
 /levelup/data/backgrounds/Thumbs.db
 testcog/
 /reqbackup.txt
