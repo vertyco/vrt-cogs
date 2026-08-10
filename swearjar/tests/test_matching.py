@@ -25,6 +25,42 @@ def test_build_pattern_substring_has_no_boundaries():
 def test_build_pattern_rejects_wordless_entries():
     assert build_pattern("", True) is None
     assert build_pattern("!!!", True) is None
+    assert build_pattern("'''", True) is None
+
+
+def test_trailing_exclamation_does_not_break_the_word():
+    words = {"damn": cfg()}
+    assert find_matches("damn!", words) == ["damn"]
+    assert find_matches("damn!!", words) == ["damn"]
+    assert find_matches("what a damn! day", words) == ["damn"]
+
+
+def test_exclamation_still_stands_in_for_a_letter_mid_word():
+    assert normalize("Sh!7") == "shit"
+    assert find_matches("sh!t", {"shit": cfg()}) == ["shit"]
+    assert find_matches("!diot", {"idiot": cfg()}) == ["idiot"]
+
+
+def test_build_pattern_allows_digit_only_entries():
+    assert build_pattern("67", True) is not None
+    assert build_pattern("1337", True) is not None
+
+
+def test_digit_only_word_matches_the_literal_number():
+    words = {"67": cfg()}
+    assert find_matches("that is so 67", words) == ["67"]
+    assert find_matches("67", words) == ["67"]
+
+
+def test_digit_only_word_respects_boundaries():
+    words = {"67": cfg()}
+    assert find_matches("it was 1967 back then", words) == []
+    assert find_matches("we hit 670 damage", words) == []
+
+
+def test_digit_only_word_does_not_disturb_letter_words():
+    words = {"67": cfg(), "damn": cfg()}
+    assert sorted(find_matches("damn that is 67", words)) == ["67", "damn"]
 
 
 def test_boundary_word_does_not_match_inside_other_word():
