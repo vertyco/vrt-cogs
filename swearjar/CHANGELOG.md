@@ -1,5 +1,9 @@
 # SwearJar Changelog
 
+## 0.4.0
+
+- The leaderboard now pages with buttons instead of reactions. It was using redbot's reaction-driven `menus.menu`, which needs the reactions intent, needs Manage Messages to clear reactions, and is awkward on mobile. It now uses the repo's standard button-based `DynamicMenu` view, which also brings first/last page jumps and a search box.
+
 ## 0.3.0
 
 - `[p]swearjarset words` now lists the words in the channel instead of DMing them. It is an admin-only command showing words the admin configured themselves, so the DM bought nothing and broke the command outright for anyone with DMs closed. Long lists come back as a text file.

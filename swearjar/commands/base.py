@@ -1,9 +1,9 @@
 import discord
 from redbot.core import bank, commands
 from redbot.core.utils.chat_formatting import humanize_number
-from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 
 from ..abc import MixinMeta
+from ..views.dynamic_menu import DynamicMenu
 
 
 class User(MixinMeta):
@@ -43,4 +43,4 @@ class User(MixinMeta):
             )
             embed.set_footer(text=f"Page {page_index + 1}/{total_pages}")
             pages.append(embed)
-        await menu(ctx, pages, DEFAULT_CONTROLS, timeout=120)
+        await DynamicMenu(ctx, pages).refresh()
