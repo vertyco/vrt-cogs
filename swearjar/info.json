@@ -1,0 +1,16 @@
+{
+  "author": ["Vertyco"],
+  "description": "Fine members Red credits for using admin-defined swear words, with a server swear jar total and leaderboard",
+  "disabled": false,
+  "end_user_data_statement": "This cog stores user IDs with a lifetime total of credits paid in fines.",
+  "hidden": false,
+  "install_msg": "Thank you for installing! Type `[p]swearjarset` to configure and `[p]swearjar` to view the jar.",
+  "min_bot_version": "3.5.3",
+  "min_python_version": [3, 10, 0],
+  "permissions": [],
+  "required_cogs": {},
+  "requirements": [],
+  "short": "Swear jar fines for the Red economy",
+  "tags": ["economy", "fun", "moderation"],
+  "type": "COG"
+}
