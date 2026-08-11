@@ -20,7 +20,7 @@ class SwearJar(Admin, User, Listeners, commands.Cog, metaclass=CompositeMetaClas
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.4.0"
+    __version__ = "0.5.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -30,6 +30,7 @@ class SwearJar(Admin, User, Listeners, commands.Cog, metaclass=CompositeMetaClas
             enabled=False,
             words={},
             default_fine=10,
+            stack_fines=True,
             respond=False,
             ignored_channels=[],
             ignored_roles=[],

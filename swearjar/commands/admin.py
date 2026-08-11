@@ -119,6 +119,19 @@ class Admin(MixinMeta):
         await self.config.guild(ctx.guild).default_fine.set(amount)
         await ctx.send(f"Default fine set to {humanize_number(amount)}.")
 
+    @swearjarset.command(name="stack")
+    async def toggle_stack(self, ctx: commands.Context):
+        """Toggle whether multiple swear words in one message add their fines together.
+
+        When off, a message is charged a single fine: the highest one among the words it matched.
+        """
+        stack = await self.config.guild(ctx.guild).stack_fines()
+        await self.config.guild(ctx.guild).stack_fines.set(not stack)
+        if stack:
+            await ctx.send("Multiple swear words in one message will now charge only the highest fine.")
+        else:
+            await ctx.send("Fines for multiple swear words in one message will now be added together.")
+
     @swearjarset.command(name="respond")
     async def toggle_respond(self, ctx: commands.Context):
         """Toggle the in-channel message when someone is fined."""
@@ -159,6 +172,7 @@ class Admin(MixinMeta):
         embed.add_field(name="Enabled", value=str(conf["enabled"]))
         embed.add_field(name="Words configured", value=str(len(conf["words"])))
         embed.add_field(name="Default fine", value=humanize_number(conf["default_fine"]))
+        embed.add_field(name="Stack fines", value=str(conf["stack_fines"]))
         embed.add_field(name="Respond in channel", value=str(conf["respond"]))
         embed.add_field(name="Jar total", value=humanize_number(conf["jar_total"]))
         embed.add_field(name="Ignored channels", value=join_mentions(channels))

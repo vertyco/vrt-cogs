@@ -5,7 +5,7 @@ from redbot.core import bank, commands
 from redbot.core.utils.chat_formatting import humanize_number
 
 from ..abc import MixinMeta
-from .utils import find_matches
+from .utils import calculate_fine, find_matches
 
 log = logging.getLogger("red.vrt.swearjar")
 
@@ -33,10 +33,7 @@ class Listeners(MixinMeta):
         matched = find_matches(message.content, conf["words"])
         if not matched:
             return
-        fine = 0
-        for word in matched:
-            word_fine = conf["words"][word].get("fine")
-            fine += word_fine if word_fine is not None else conf["default_fine"]
+        fine = calculate_fine(matched, conf["words"], conf["default_fine"], conf["stack_fines"])
         if fine <= 0:
             return
         try:
