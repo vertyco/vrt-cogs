@@ -1,5 +1,10 @@
 # SwearJar Changelog
 
+## 0.5.0
+
+- New `[p]swearjarset stack` toggle controls how a message matching several different words is priced. It stays on by default, which is the existing behavior: every matched word's fine is added together. Turned off, the message is charged a single fine, the highest one among the words it matched, so configuring both `fuck` and `fucked` no longer bills a sentence twice.
+- Repeats of the same word still count once per message either way, unchanged.
+
 ## 0.4.0
 
 - The leaderboard now pages with buttons instead of reactions. It was using redbot's reaction-driven `menus.menu`, which needs the reactions intent, needs Manage Messages to clear reactions, and is awkward on mobile. It now uses the repo's standard button-based `DynamicMenu` view, which also brings first/last page jumps and a search box.

@@ -1,8 +1,12 @@
-from swearjar.common.utils import build_pattern, find_matches, normalize
+from swearjar.common.utils import build_pattern, calculate_fine, find_matches, normalize
 
 
 def cfg(boundary: bool = True) -> dict:
     return {"fine": None, "boundary": boundary}
+
+
+def priced(fine: int | None) -> dict:
+    return {"fine": fine, "boundary": True}
 
 
 def test_normalize_casefold_and_symbol_leet():
@@ -175,3 +179,38 @@ def test_contraction_guard_still_holds_with_curly_apostrophe():
     assert find_matches("he'll be here", words) == []
     assert find_matches("he’ll be here", words) == []
     assert find_matches("hell yeah", words) == ["hell"]
+
+
+def test_stacked_fines_are_summed():
+    words = {"fuck": priced(20), "fucked": priced(30)}
+    assert calculate_fine(["fuck", "fucked"], words, 10, True) == 50
+
+
+def test_unstacked_fines_take_the_highest():
+    words = {"fuck": priced(20), "fucked": priced(30)}
+    assert calculate_fine(["fuck", "fucked"], words, 10, False) == 30
+    assert calculate_fine(["fucked", "fuck"], words, 10, False) == 30
+
+
+def test_word_without_a_fine_uses_the_default():
+    words = {"damn": priced(None)}
+    assert calculate_fine(["damn"], words, 10, True) == 10
+    assert calculate_fine(["damn"], words, 10, False) == 10
+
+
+def test_mixed_explicit_and_default_fines():
+    words = {"damn": priced(None), "shit": priced(25)}
+    assert calculate_fine(["damn", "shit"], words, 10, True) == 35
+    assert calculate_fine(["damn", "shit"], words, 10, False) == 25
+    assert calculate_fine(["damn", "shit"], words, 40, False) == 40
+
+
+def test_single_match_is_the_same_either_way():
+    words = {"damn": priced(15)}
+    assert calculate_fine(["damn"], words, 10, True) == 15
+    assert calculate_fine(["damn"], words, 10, False) == 15
+
+
+def test_no_matches_costs_nothing():
+    assert calculate_fine([], {}, 10, True) == 0
+    assert calculate_fine([], {}, 10, False) == 0

@@ -100,3 +100,19 @@ def find_matches(content: str, words: dict[str, dict]) -> list[str]:
         if pattern and re.search(pattern, norm):
             matched.append(word)
     return matched
+
+
+def calculate_fine(matched: list[str], words: dict[str, dict], default_fine: int, stack: bool) -> int:
+    """Total fine for the matched words.
+
+    Stacking sums every matched word's fine; otherwise one fine is charged per
+    message, the highest among the words that matched. A word whose configured
+    fine is None uses the server default.
+    """
+    fines = []
+    for word in matched:
+        fine = words[word].get("fine")
+        fines.append(default_fine if fine is None else fine)
+    if not fines:
+        return 0
+    return sum(fines) if stack else max(fines)

@@ -14,6 +14,7 @@ Matching is fuzzy and normalization-based, not a literal substring search:
 - An apostrophe is never treated as a separator, so a word like `hell` does not false-positive on contractions such as `he'll`, `she'll`, or `we'll`. Straight `'` and curly `’` apostrophes are interchangeable everywhere, in both the message and the configured word, so `y'all` and `y’all` match each other regardless of which form either side used (handy since iOS/macOS auto-curl typed apostrophes). If you deliberately configure a word that contains an interior apostrophe (e.g. `y'all`), it's kept as a literal required character in the match. A leading or trailing apostrophe (e.g. `fuckin'`) is stripped instead, so the word still matches normally.
 - Multi-word entries (e.g. `son of a bitch`) tolerate any separator, including none, between the words, so they also catch the squashed form (`sonofabitch`).
 - Each word counts at most once per message, no matter how many times it appears.
+- When a message matches several different configured words, their fines are added together by default. Turn that off with `[p]swearjarset stack` to charge a single fine per message instead: the highest one among the words that matched.
 - Per word, choose **boundary** matching (default: whole words only) or **substring** matching (matches anywhere, even inside other words).
 
 ## Setup
@@ -23,6 +24,7 @@ Matching is fuzzy and normalization-based, not a literal substring search:
 3. Optional: `[p]swearjarset fine <amount>` to change the server-wide default fine used by words that don't have their own.
 4. Optional: `[p]swearjarset ignorechannel #channel` / `[p]swearjarset ignorerole @role` to exempt channels or roles.
 5. Optional: `[p]swearjarset respond` to have the bot post a short in-channel message whenever someone gets fined (default off).
+6. Optional: `[p]swearjarset stack` to stop fines from adding up when one message trips several words (default on).
 
 If a member's balance is lower than the fine, they are drained to zero rather than going into debt, and only the amount actually taken is added to the jar total and their lifetime paid counter.
 
@@ -46,10 +48,11 @@ Requires admin or the Manage Server permission, guild only:
 | `delword <word>` | Remove a swear word |
 | `words` | List the configured words with the fine and match type for each. Sent as a file if the list is too long for one message |
 | `fine <amount>` | Set the default fine for words without their own fine |
+| `stack` | Toggle whether several matched words in one message add their fines together. Off charges only the highest matched fine |
 | `respond` | Toggle the in-channel message posted when someone is fined |
 | `ignorechannel <channel>` | Add or remove a channel from the ignore list |
 | `ignorerole <role>` | Add or remove a role from the ignore list |
-| `view` | View current settings: enabled state, word count, default fine, respond toggle, jar total, and ignored channels/roles |
+| `view` | View current settings: enabled state, word count, default fine, stack toggle, respond toggle, jar total, and ignored channels/roles |
 | `reset [confirm]` | Reset the jar total and every member's paid stats. Requires `[p]swearjarset reset true` to confirm |
 
 ## Notes
