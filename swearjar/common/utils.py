@@ -102,6 +102,18 @@ def find_matches(content: str, words: dict[str, dict]) -> list[str]:
     return matched
 
 
+def channel_passes(candidate_ids: list[int], allowed: list[int], ignored: list[int]) -> bool:
+    """Whether a message's channel should be checked for swears.
+
+    candidate_ids holds the channel id plus its thread parent and category ids
+    when present. A non-empty whitelist overrides the ignore list entirely:
+    only whitelisted channels/categories pass and the ignore list is unused.
+    """
+    if allowed:
+        return any(cid in allowed for cid in candidate_ids)
+    return not any(cid in ignored for cid in candidate_ids)
+
+
 def calculate_fine(matched: list[str], words: dict[str, dict], default_fine: int, stack: bool) -> int:
     """Total fine for the matched words.
 

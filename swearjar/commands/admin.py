@@ -141,8 +141,12 @@ class Admin(MixinMeta):
         await ctx.send(f"I will {status} respond in-channel when fining someone.")
 
     @swearjarset.command(name="ignorechannel")
-    async def ignore_channel(self, ctx: commands.Context, channel: discord.TextChannel):
-        """Add or remove a channel from the ignore list."""
+    async def ignore_channel(self, ctx: commands.Context, channel: discord.TextChannel | discord.CategoryChannel):
+        """Add or remove a channel or category from the ignore list.
+
+        Ignoring a category ignores every channel under it.
+        Note: if any channel or category is whitelisted, the ignore list is not used.
+        """
         async with self.config.guild(ctx.guild).ignored_channels() as channels:
             if channel.id in channels:
                 channels.remove(channel.id)
@@ -150,6 +154,25 @@ class Admin(MixinMeta):
             else:
                 channels.append(channel.id)
                 await ctx.send(f"{channel.mention} is now ignored.")
+
+    @swearjarset.command(name="whitelistchannel", aliases=["allowchannel"])
+    async def whitelist_channel(self, ctx: commands.Context, channel: discord.TextChannel | discord.CategoryChannel):
+        """Add or remove a channel or category from the whitelist.
+
+        Whitelisting a category covers every channel under it.
+        If ANY channel or category is whitelisted, the swear jar only runs in
+        whitelisted channels and the ignore list is not used at all.
+        """
+        async with self.config.guild(ctx.guild).allowed_channels() as channels:
+            if channel.id in channels:
+                channels.remove(channel.id)
+                await ctx.send(f"{channel.mention} removed from the whitelist.")
+            else:
+                channels.append(channel.id)
+                await ctx.send(
+                    f"{channel.mention} added to the whitelist. "
+                    "The swear jar now only runs in whitelisted channels; the ignore list is not used."
+                )
 
     @swearjarset.command(name="ignorerole")
     async def ignore_role(self, ctx: commands.Context, role: discord.Role):
@@ -167,6 +190,7 @@ class Admin(MixinMeta):
         """View swear jar settings."""
         conf = await self.config.guild(ctx.guild).all()
         channels = [f"<#{cid}>" for cid in conf["ignored_channels"]]
+        allowed = [f"<#{cid}>" for cid in conf["allowed_channels"]]
         roles = [f"<@&{rid}>" for rid in conf["ignored_roles"]]
         embed = discord.Embed(title="Swear Jar Settings", color=ctx.author.color)
         embed.add_field(name="Enabled", value=str(conf["enabled"]))
@@ -175,7 +199,9 @@ class Admin(MixinMeta):
         embed.add_field(name="Stack fines", value=str(conf["stack_fines"]))
         embed.add_field(name="Respond in channel", value=str(conf["respond"]))
         embed.add_field(name="Jar total", value=humanize_number(conf["jar_total"]))
-        embed.add_field(name="Ignored channels", value=join_mentions(channels))
+        embed.add_field(name="Whitelisted channels", value=join_mentions(allowed))
+        ignored_name = "Ignored channels (unused: whitelist set)" if allowed else "Ignored channels"
+        embed.add_field(name=ignored_name, value=join_mentions(channels))
         embed.add_field(name="Ignored roles", value=join_mentions(roles))
         await ctx.send(embed=embed)
 
