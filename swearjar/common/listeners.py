@@ -5,7 +5,7 @@ from redbot.core import bank, commands
 from redbot.core.utils.chat_formatting import humanize_number
 
 from ..abc import MixinMeta
-from .utils import calculate_fine, find_matches
+from .utils import calculate_fine, channel_passes, find_matches
 
 log = logging.getLogger("red.vrt.swearjar")
 
@@ -25,8 +25,14 @@ class Listeners(MixinMeta):
         conf = await self.config.guild(message.guild).all()
         if not conf["enabled"] or not conf["words"]:
             return
+        candidate_ids = [message.channel.id]
         parent_id = getattr(message.channel, "parent_id", None)
-        if message.channel.id in conf["ignored_channels"] or parent_id in conf["ignored_channels"]:
+        if parent_id is not None:
+            candidate_ids.append(parent_id)
+        category_id = getattr(message.channel, "category_id", None)
+        if category_id is not None:
+            candidate_ids.append(category_id)
+        if not channel_passes(candidate_ids, conf["allowed_channels"], conf["ignored_channels"]):
             return
         if any(role.id in conf["ignored_roles"] for role in member.roles):
             return

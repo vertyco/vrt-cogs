@@ -1,5 +1,10 @@
 # SwearJar Changelog
 
+## 0.6.0
+
+- `[p]swearjarset ignorechannel` now also accepts a category; ignoring a category ignores every channel under it (threads included, via their parent's category).
+- New `[p]swearjarset whitelistchannel` (alias `allowchannel`) builds a channel/category whitelist with the same category logic. If ANY channel or category is whitelisted, the swear jar only runs in whitelisted channels and the ignore list is not used at all. The settings view labels the ignore list as unused while a whitelist is set.
+
 ## 0.5.0
 
 - New `[p]swearjarset stack` toggle controls how a message matching several different words is priced. It stays on by default, which is the existing behavior: every matched word's fine is added together. Turned off, the message is charged a single fine, the highest one among the words it matched, so configuring both `fuck` and `fucked` no longer bills a sentence twice.
