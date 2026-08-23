@@ -7,7 +7,6 @@ from datetime import datetime
 from uuid import uuid4
 
 import discord
-import openai
 import pytz
 from apscheduler.triggers.cron import CronTrigger
 from dateutil import parser
@@ -186,6 +185,8 @@ class TaskMenu(BaseMenu):
         self.filter: str = filter.lower()
         self.is_premium: bool = True
         self.timezone: str = self.db.timezone(ctx.guild)
+        if not utils.AI_AVAILABLE:
+            self.remove_item(self.ai_helper)
 
     async def on_timeout(self) -> None:
         page = await self.get_page()
@@ -1009,6 +1010,10 @@ class TaskMenu(BaseMenu):
 
     @discord.ui.button(emoji=C.WAND, style=discord.ButtonStyle.secondary, row=4)
     async def ai_helper(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not utils.AI_AVAILABLE:
+            return await interaction.response.send_message(
+                _("AI helper unavailable: the `openai` package failed to load."), ephemeral=True
+            )
         openai_token = await utils.get_openai_token(self.bot)
         if not openai_token:
             return await interaction.response.send_message(
@@ -1074,7 +1079,7 @@ class TaskMenu(BaseMenu):
         ]
 
         try:
-            client = openai.AsyncClient(api_key=openai_token)
+            client = utils.openai.AsyncClient(api_key=openai_token)
             response = await client.beta.chat.completions.parse(
                 model="gpt-5-mini",
                 messages=messages,

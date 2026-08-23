@@ -2,7 +2,6 @@ import logging
 from datetime import datetime
 
 import discord
-import openai
 import pytz
 from dateutil import parser
 from discord import app_commands
@@ -122,6 +121,8 @@ class Admin(MixinMeta):
         - Please run the ping command on the 15th of each month at 3pm
         """
         assert isinstance(ctx.author, discord.Member)
+        if not utils.AI_AVAILABLE:
+            return await ctx.send(_("AI helper unavailable: the `openai` package failed to load."))
         if len(request) > 1000:
             return await ctx.send(_("Your request is too long, please keep it under 1000 characters."))
 
@@ -155,7 +156,7 @@ class Admin(MixinMeta):
             ]
 
             try:
-                client = openai.AsyncClient(api_key=openai_token)
+                client = utils.openai.AsyncClient(api_key=openai_token)
                 response = await client.beta.chat.completions.parse(
                     model="gpt-5-mini",
                     messages=messages,

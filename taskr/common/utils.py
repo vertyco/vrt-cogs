@@ -161,6 +161,15 @@ async def invoke_command(
     return context
 
 
+try:
+    import openai
+
+    AI_AVAILABLE = True
+except Exception:  # ImportError, or AttributeError from an openai/aiohttp mismatch
+    openai = None
+    AI_AVAILABLE = False
+
+
 async def get_openai_token(bot: Red) -> str | None:
     """Retrieve OpenAI API token from Red's shared API tokens.
 
