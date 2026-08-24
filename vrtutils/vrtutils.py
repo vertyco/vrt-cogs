@@ -34,7 +34,7 @@ class VrtUtils(Utils, RPCMethods, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "2.18.0"
+    __version__ = "2.19.0"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -48,6 +48,9 @@ class VrtUtils(Utils, RPCMethods, commands.Cog, metaclass=CompositeMetaClass):
         self.bot: Red = bot
         self.path = cog_data_path(self)
         self.core = core_data_path()
+        # Live rpc_ask_operator questions, keyed by ask_id. In-memory only;
+        # a reload/restart drops unanswered asks by design.
+        self.pending_asks: dict = {}
 
     async def cog_load(self) -> None:
         # register_casetypes updates a type that already exists rather than

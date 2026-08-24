@@ -1,6 +1,7 @@
 import inspect
 import json
 import logging
+import uuid
 from abc import ABC
 from datetime import datetime, timedelta, timezone
 
@@ -8,6 +9,7 @@ import discord
 from redbot.core import modlog
 
 from .abc import MixinMeta
+from .common.ask_views import AskOperatorView
 
 log = logging.getLogger("red.vrt.vrtutils.rpc")
 
@@ -52,6 +54,8 @@ class RPCMethods(MixinMeta, ABC):
             self.rpc_timeout,
             self.rpc_untimeout,
             self.rpc_modnote,
+            self.rpc_ask_operator,
+            self.rpc_get_ask_answer,
         )
 
     # ------------------------------------------------------------------ helpers
@@ -412,6 +416,83 @@ class RPCMethods(MixinMeta, ABC):
             channel=None,
         )
         return {"ok": True, "user_id": int(user_id), "case": self._case_out(case) if case else None}
+
+    # ---------------------------------------------------------- operator asks
+
+    async def rpc_ask_operator(
+        self,
+        guild_id: int,
+        channel_id: int,
+        question: str,
+        options: list,
+        target_user_id: int = None,
+        timeout_seconds: int = 3600,
+    ) -> dict:
+        """Post an interactive question to a channel and return an ask_id to poll.
+
+        One button per option plus an 'Other...' free-text button. Answers land
+        in self.pending_asks; poll with rpc_get_ask_answer. If target_user_id is
+        set only that user may answer.
+        """
+        guild = self.bot.get_guild(int(guild_id))
+        if guild is None:
+            return {"ok": False, "error": f"guild not found: {guild_id}"}
+        channel = self.bot.get_channel(int(channel_id))
+        if channel is None:
+            return {"ok": False, "error": f"channel not found: {channel_id}"}
+        options = [str(o) for o in (options or [])]
+        # 25 component ceiling minus headroom for the Other button; refuse, never truncate.
+        if len(options) > 20:
+            return {"ok": False, "error": "too many options"}
+
+        ask_id = uuid.uuid4().hex
+        embed = discord.Embed(
+            title="NoA asks",
+            description=str(question),
+            color=await self.bot.get_embed_color(channel),
+        )
+        view = AskOperatorView(
+            pending_asks=self.pending_asks,
+            ask_id=ask_id,
+            options=options,
+            target_user_id=target_user_id,
+            timeout_seconds=int(timeout_seconds),
+        )
+        try:
+            message = await channel.send(embed=embed, view=view)
+        except discord.HTTPException as e:
+            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+        view.message = message
+        self.pending_asks[ask_id] = {
+            "message_id": message.id,
+            "channel_id": channel.id,
+            "guild_id": guild.id,
+            "question": str(question),
+            "options": options,
+            "target_user_id": int(target_user_id) if target_user_id else None,
+            "answered": False,
+            "answer": None,
+            "custom": False,
+            "by_user_id": None,
+            "ts": None,
+            "timed_out": False,
+        }
+        return {"ok": True, "ask_id": ask_id, "message_id": message.id, "channel_id": channel.id}
+
+    async def rpc_get_ask_answer(self, ask_id: str) -> dict:
+        """Read the state of a question posted by rpc_ask_operator."""
+        record = self.pending_asks.get(str(ask_id))
+        if record is None:
+            return {"ok": False, "error": "unknown ask_id"}
+        return {
+            "ok": True,
+            "answered": record["answered"],
+            "timed_out": record["timed_out"],
+            "answer": record["answer"],
+            "custom": record["custom"],
+            "by_user_id": record["by_user_id"],
+            "ts": record["ts"],
+        }
 
     # -------------------------------------------------------------- bot control
 
