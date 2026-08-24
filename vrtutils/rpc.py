@@ -47,6 +47,7 @@ class RPCMethods(MixinMeta, ABC):
         return (
             self.rpc_quickpull,
             self.rpc_master,
+            self.rpc_voice_members,
             self.rpc_warn,
             self.rpc_unwarn,
             self.rpc_get_warnings,
@@ -495,6 +496,35 @@ class RPCMethods(MixinMeta, ABC):
         }
 
     # -------------------------------------------------------------- bot control
+
+    async def rpc_voice_members(self, guild_id: int, channel_id: int, include_bots: bool = False) -> dict:
+        """Members currently connected to a voice/stage channel, from the gateway cache.
+
+        Discord's REST API does not expose channel occupants; that lives only in the
+        gateway voice-state cache the bot already holds. Read-only. Returns id +
+        display name + bot flag per member (bots dropped unless include_bots).
+        """
+        guild = self.bot.get_guild(int(guild_id))
+        if guild is None:
+            return {"ok": False, "error": f"guild not found: {guild_id}"}
+        channel = guild.get_channel(int(channel_id))
+        if channel is None:
+            return {"ok": False, "error": f"channel not found: {channel_id}"}
+        members = getattr(channel, "members", None)
+        if members is None:
+            return {"ok": False, "error": f"channel is not a voice/stage channel: {channel_id}"}
+        out = [
+            {"id": m.id, "name": m.display_name, "bot": m.bot}
+            for m in members
+            if include_bots or not m.bot
+        ]
+        return {
+            "ok": True,
+            "guild_id": int(guild_id),
+            "channel_id": int(channel_id),
+            "count": len(out),
+            "members": out,
+        }
 
     async def rpc_master(self, cog: str, method: str, args: list = None, kwargs: dict = None) -> dict:
         """Generic bot-control bridge: read or call any attribute on a loaded cog (or the bot).
