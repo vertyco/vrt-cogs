@@ -40,8 +40,8 @@ class AskOperatorView(discord.ui.View):
         self.ask_id = ask_id
         self.target_user_id = int(target_user_id) if target_user_id else None
         self.message: discord.Message = None
-        for option in options:
-            button = discord.ui.Button(label=str(option)[:80], style=discord.ButtonStyle.primary)
+        for idx, option in enumerate(options, start=1):
+            button = discord.ui.Button(label=str(idx), style=discord.ButtonStyle.primary)
             button.callback = self._make_callback(str(option))
             self.add_item(button)
         other = discord.ui.Button(label="Other...", style=discord.ButtonStyle.grey)

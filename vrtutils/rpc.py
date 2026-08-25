@@ -447,9 +447,12 @@ class RPCMethods(MixinMeta, ABC):
             return {"ok": False, "error": "too many options"}
 
         ask_id = uuid.uuid4().hex
+        description = str(question)
+        if options:
+            description += "\n\n" + "\n".join(f"{i}. {o}" for i, o in enumerate(options, start=1))
         embed = discord.Embed(
             title="NoA asks",
-            description=str(question),
+            description=description,
             color=await self.bot.get_embed_color(channel),
         )
         view = AskOperatorView(
