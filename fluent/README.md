@@ -96,3 +96,7 @@ Add a translation button to a message<br/>
 
  - Usage: `[p]fluent addbutton <message> <target_lang> <button_text>`
 
+
+## RPC
+
+When Red is started with `--rpc`, Fluent registers localhost JSON-RPC methods for managing translate buttons without a command context: `FLUENT__RPC_ADD_TRANSLATE_BUTTON` (guild_id, channel_id, message_id, target_lang, button_text), `FLUENT__RPC_REMOVE_TRANSLATE_BUTTON` (guild_id, channel_id, message_id, target_lang), and `FLUENT__RPC_LIST_TRANSLATE_BUTTONS` (guild_id, message_id=None). All return `{"ok": bool, ...}` dicts.

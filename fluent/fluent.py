@@ -146,7 +146,7 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "2.6.0"
+    __version__ = "2.7.0"
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -166,12 +166,35 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
         logging.getLogger("httpcore").setLevel(logging.WARNING)
         logging.getLogger("openai").setLevel(logging.WARNING)
 
+    @property
+    def _rpc_handlers(self) -> tuple:
+        # Single source of truth so cog_load registers and cog_unload unregisters
+        # the same set. Unregister-first on load lets a plain reload swap the
+        # handlers live. Wire names are the method name uppercased:
+        # FLUENT__RPC_ADD_TRANSLATE_BUTTON etc.
+        return (
+            self.rpc_add_translate_button,
+            self.rpc_remove_translate_button,
+            self.rpc_list_translate_buttons,
+        )
+
     async def cog_load(self):
         self.bot.tree.add_command(translate_message_ctx)
+        for handler in self._rpc_handlers:
+            try:
+                self.bot.unregister_rpc_handler(handler)
+            except Exception:
+                pass
+            self.bot.register_rpc_handler(handler)
         asyncio.create_task(self.initialize())
 
     async def cog_unload(self):
         self.bot.tree.remove_command(translate_message_ctx)
+        for handler in self._rpc_handlers:
+            try:
+                self.bot.unregister_rpc_handler(handler)
+            except Exception:
+                pass
 
     async def initialize(self):
         await self.bot.wait_until_red_ready()
@@ -340,6 +363,75 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
         """Base command"""
         pass
 
+    async def add_translate_button(
+        self,
+        guild: discord.Guild,
+        channel_id: int,
+        message_id: int,
+        target_lang: str,
+        button_text: str,
+    ) -> str:
+        """Shared add-button logic for the addbutton command and RPC.
+
+        Returns a status string: "added", "exists", or "invalid_lang".
+        """
+        buttons = await self.get_buttons(guild)
+        for b in buttons:
+            if b.message_id == message_id and b.target_lang == target_lang:
+                return "exists"
+
+        translator = api.TranslateManager()
+        lang = await translator.get_lang(target_lang)
+        if not lang:
+            return "invalid_lang"
+
+        button = models.TranslateButton(
+            channel_id=channel_id,
+            message_id=message_id,
+            target_lang=target_lang,
+            button_text=button_text,
+        )
+        async with self.config.guild(guild).buttons() as raw_buttons:
+            raw_buttons.append(button.model_dump())
+
+        await self.init_buttons(guild, target_message_id=message_id)
+        return "added"
+
+    async def remove_translate_button(
+        self,
+        guild: discord.Guild,
+        channel_id: int,
+        message_id: int,
+        target_lang: str,
+    ) -> str:
+        """Shared remove-button logic for the removebutton command and RPC.
+
+        Returns a status string: "removed" or "not_found".
+        """
+        buttons = await self.get_buttons(guild)
+        found = any(b.message_id == message_id and b.target_lang == target_lang for b in buttons)
+        if not found:
+            return "not_found"
+
+        # Remove the view from the message if this was its only button
+        if len([x for x in buttons if x.message_id == message_id]) == 1:
+            channel = self.bot.get_channel(channel_id)
+            if channel and isinstance(channel, discord.abc.Messageable):
+                try:
+                    message = await channel.fetch_message(message_id)
+                    await message.edit(view=None)
+                except (discord.NotFound, discord.HTTPException):
+                    pass
+
+        async with self.config.guild(guild).buttons() as raw_buttons:
+            for idx, b in enumerate(raw_buttons):
+                if b.get("message_id") == message_id and b.get("target_lang") == target_lang:
+                    del raw_buttons[idx]
+                    break
+
+        await self.init_buttons(guild, target_message_id=message_id)
+        return "removed"
+
     @fluent.command()
     async def addbutton(
         self,
@@ -350,49 +442,23 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
         button_text: str,
     ):
         """Add a translation button to a message"""
-        buttons = await self.get_buttons(ctx.guild)
-        for b in buttons:
-            if b.message_id == message.id and b.target_lang == target_lang:
-                return await ctx.send(_("That message already has a translation button for that language."))
-
-        translator = api.TranslateManager()
-        lang = await translator.get_lang(target_lang)
-        if not lang:
+        status = await self.add_translate_button(
+            ctx.guild, message.channel.id, message.id, target_lang, button_text
+        )
+        if status == "exists":
+            return await ctx.send(_("That message already has a translation button for that language."))
+        if status == "invalid_lang":
             txt = _("Target language is invalid.")
             return await ctx.send(txt)
-
-        button = models.TranslateButton(
-            channel_id=message.channel.id,
-            message_id=message.id,
-            target_lang=target_lang,
-            button_text=button_text,
-        )
-        async with self.config.guild(ctx.guild).buttons() as buttons:
-            buttons.append(button.model_dump())
-
-        await self.init_buttons(ctx.guild, target_message_id=message.id)
         await ctx.send(_("Button added successfully to {} for {}").format(message.jump_url, target_lang))
 
     @fluent.command()
     async def removebutton(self, ctx: commands.Context, message: discord.Message, target_lang: str):
         """Remove a translation button from a message"""
-        buttons = await self.get_buttons(ctx.guild)
-        for idx, b in enumerate(buttons):
-            if b.message_id == message.id and b.target_lang == target_lang:
-                # Make sure to remove the view from the message if there are no other buttons for it
-                if len([x for x in buttons if x.message_id == message.id]) == 1:
-                    channel = message.channel
-                    try:
-                        message = await channel.fetch_message(message.id)
-                        await message.edit(view=None)
-                    except discord.NotFound:
-                        pass
-                async with self.config.guild(ctx.guild).buttons() as buttons:
-                    del buttons[idx]
-                await self.init_buttons(ctx.guild, target_message_id=message.id)
-                return await ctx.send(_("Button removed successfully from {}").format(message.jump_url))
-
-        await ctx.send(_("No button found for that message."))
+        status = await self.remove_translate_button(ctx.guild, message.channel.id, message.id, target_lang)
+        if status == "not_found":
+            return await ctx.send(_("No button found for that message."))
+        await ctx.send(_("Button removed successfully from {}").format(message.jump_url))
 
     @fluent.command()
     async def resetbuttontranslations(self, ctx: commands.Context):
@@ -831,3 +897,99 @@ class Fluent(commands.Cog, metaclass=CompositeMetaClass):
             return f"{translation.text}\n({translation.src} -> {lang})"
         except Exception as e:
             return f"Error: {e}"
+
+    # ------------------------------------------------------------------ RPC
+    # Localhost JSON-RPC surface (requires Red's --rpc flag, no-op otherwise).
+    # Wire names are the method name uppercased: FLUENT__RPC_ADD_TRANSLATE_BUTTON etc.
+
+    def _rpc_resolve(self, guild_id, channel_id, message_id) -> tuple:
+        """-> (guild, channel, message_id, error_dict). Exactly one of guild/error is None."""
+        try:
+            guild_id, channel_id, message_id = int(guild_id), int(channel_id), int(message_id)
+        except (TypeError, ValueError):
+            return None, None, None, {"ok": False, "error": "ids must be integers"}
+        guild = self.bot.get_guild(guild_id)
+        if guild is None:
+            return None, None, None, {"ok": False, "error": f"guild not found: {guild_id}"}
+        channel = guild.get_channel_or_thread(channel_id)
+        if channel is None or not isinstance(channel, discord.abc.Messageable):
+            return None, None, None, {"ok": False, "error": f"channel not found: {channel_id}"}
+        return guild, channel, message_id, None
+
+    async def rpc_add_translate_button(
+        self,
+        guild_id: int,
+        channel_id: int,
+        message_id: int,
+        target_lang: str,
+        button_text: str,
+    ) -> dict:
+        """Add a translation button to any message. Same logic as [p]fluent addbutton."""
+        try:
+            guild, channel, message_id, err = self._rpc_resolve(guild_id, channel_id, message_id)
+            if err:
+                return err
+            try:
+                message = await channel.fetch_message(message_id)
+            except discord.NotFound:
+                return {"ok": False, "error": f"message not found: {message_id}"}
+
+            status = await self.add_translate_button(
+                guild, channel.id, message_id, str(target_lang), str(button_text)
+            )
+            if status == "invalid_lang":
+                return {"ok": False, "error": f"invalid target language: {target_lang}"}
+
+            buttons = await self.get_buttons(guild)
+            langs = sorted(b.target_lang for b in buttons if b.message_id == message_id)
+            res = {"ok": True, "jump_url": message.jump_url, "buttons": langs}
+            if status == "exists":
+                res["existing"] = True
+            return res
+        except Exception as e:
+            log.error("rpc_add_translate_button failed", exc_info=e)
+            return {"ok": False, "error": str(e)}
+
+    async def rpc_remove_translate_button(
+        self,
+        guild_id: int,
+        channel_id: int,
+        message_id: int,
+        target_lang: str,
+    ) -> dict:
+        """Remove a translation button from a message. Same logic as [p]fluent removebutton."""
+        try:
+            guild, channel, message_id, err = self._rpc_resolve(guild_id, channel_id, message_id)
+            if err:
+                return err
+
+            status = await self.remove_translate_button(guild, channel.id, message_id, str(target_lang))
+            if status == "not_found":
+                return {"ok": False, "error": "no button found for that message/language"}
+
+            buttons = await self.get_buttons(guild)
+            langs = sorted(b.target_lang for b in buttons if b.message_id == message_id)
+            return {"ok": True, "buttons": langs}
+        except Exception as e:
+            log.error("rpc_remove_translate_button failed", exc_info=e)
+            return {"ok": False, "error": str(e)}
+
+    async def rpc_list_translate_buttons(self, guild_id: int, message_id: int = None) -> dict:
+        """List stored translation buttons, optionally filtered to one message."""
+        try:
+            try:
+                guild_id = int(guild_id)
+                message_id = int(message_id) if message_id is not None else None
+            except (TypeError, ValueError):
+                return {"ok": False, "error": "ids must be integers"}
+            guild = self.bot.get_guild(guild_id)
+            if guild is None:
+                return {"ok": False, "error": f"guild not found: {guild_id}"}
+            buttons = await self.get_buttons(guild)
+            if message_id is not None:
+                buttons = [b for b in buttons if b.message_id == message_id]
+            buttons.sort(key=lambda x: (x.message_id, x.target_lang))
+            return {"ok": True, "buttons": [b.model_dump() for b in buttons]}
+        except Exception as e:
+            log.error("rpc_list_translate_buttons failed", exc_info=e)
+            return {"ok": False, "error": str(e)}
