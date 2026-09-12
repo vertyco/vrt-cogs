@@ -1,5 +1,9 @@
 # Assistant Changelog
 
+## v8.23.0
+
+- **Feature**: Memory search keeps working when the embedding request fails. If the assistant cannot get an embedding for a message (no API key, a rejected key, an OpenRouter key with no endpoint override, a non-OpenAI embedding model), it now runs a plain keyword search (BM25) over the same saved memories instead of answering with no memories at all. Embeddings still take priority whenever they work; nothing changes on a healthy setup. The keyword index is built in memory from the stored memory text the first time it is needed and rebuilt after any memory is added, edited, or removed. `[p]query` uses the same fallback and labels the scores as keyword scores when it does. The one-time "memory search is failing" notice now says the assistant is using the keyword fallback.
+
 ## v8.22.1
 
 - **Change**: Text pulled out of uploaded files (logs, code, PDFs, Word, Excel, and the other readable types) is now budgeted against the model's context window instead of being pasted in whole. One file may use up to 25% of the window and all files on one message up to 50%. A file over its share keeps its beginning and end with a `[truncated N tokens from the middle of this file]` marker, and files past the total budget are listed as skipped. Before, a large log or long PDF made the request bigger than the model could take and the message failed.

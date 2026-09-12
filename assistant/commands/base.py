@@ -953,23 +953,32 @@ If a file has no extension it will still try to read it only if it can be decode
         if not await self.can_call_llm(conf, ctx):
             return
         async with ctx.typing():
-            query_embedding = await self.request_embedding(query, conf)
-            if not query_embedding:
-                return await ctx.send(_("Failed to get embedding for your query"))
-
-            embeddings = await self.embedding_store.get_related(
-                guild_id=ctx.guild.id,
-                query_embedding=query_embedding,
-                top_n=conf.top_n,
-                min_relatedness=0.1,
-            )
+            keyword_fallback = False
+            try:
+                query_embedding = await self.request_embedding(query, conf)
+            except Exception as e:
+                log.warning(f"Query embedding failed in guild {ctx.guild.id}, using keyword search", exc_info=e)
+                query_embedding = []
+            if query_embedding:
+                embeddings = await self.embedding_store.get_related(
+                    guild_id=ctx.guild.id,
+                    query_embedding=query_embedding,
+                    top_n=conf.top_n,
+                    min_relatedness=0.1,
+                )
+            else:
+                keyword_fallback = True
+                embeddings = await self.embedding_store.keyword_search(ctx.guild.id, query, conf.top_n)
             if not embeddings:
                 return await ctx.send(_("No embeddings could be related to this query with the current settings"))
+            if keyword_fallback:
+                await ctx.send(_("Embedding request failed, showing keyword search results instead."))
+            score_label = _("`Keyword Score: `{}\n") if keyword_fallback else _("`Relatedness: `{}\n")
             for name, em, score, dimension in embeddings:
                 for p in pagify(em, page_length=4000):
                     txt = (
                         _("`Entry Name:  `{}\n").format(name)
-                        + _("`Relatedness: `{}\n").format(round(score, 4))
+                        + score_label.format(round(score, 4))
                         + _("`Dimensions:  `{}\n").format(dimension)
                     )
                     escaped = escape(p)

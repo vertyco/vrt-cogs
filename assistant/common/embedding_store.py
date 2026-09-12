@@ -10,6 +10,8 @@ import chromadb.api
 from chromadb.api.types import GetResult
 from chromadb.errors import ChromaError
 
+from .keyword_index import KeywordIndex
+
 log = logging.getLogger("red.vrt.assistant.embedding_store")
 
 
@@ -34,6 +36,8 @@ class EmbeddingStore:
     def __init__(self, data_path: Path):
         self.data_path = data_path / "chromadb"
         self._client: t.Optional[chromadb.api.ClientAPI] = None
+        # Per-server BM25 index, built lazily from stored text and dropped on every write
+        self.keyword_indexes: dict[int, KeywordIndex] = {}
 
     async def initialize(self) -> None:
         """Create the PersistentClient in a thread to avoid blocking."""
@@ -193,6 +197,7 @@ class EmbeddingStore:
                     raise DimensionMismatchError(expected, len(embedding)) from e
                 raise
 
+        self.invalidate_keyword_index(guild_id)
         await asyncio.to_thread(_add)
 
     async def update(
@@ -236,6 +241,7 @@ class EmbeddingStore:
                 raise
             return True
 
+        self.invalidate_keyword_index(guild_id)
         result = await asyncio.to_thread(_update)
         if not result:
             await self.add(guild_id, name, text, embedding, model)
@@ -250,6 +256,7 @@ class EmbeddingStore:
             except (ChromaError, ValueError):
                 pass
 
+        self.invalidate_keyword_index(guild_id)
         await asyncio.to_thread(_delete)
 
     async def delete_all(self, guild_id: int) -> None:
@@ -261,7 +268,11 @@ class EmbeddingStore:
             except (ChromaError, ValueError):
                 pass
 
+        self.invalidate_keyword_index(guild_id)
         await asyncio.to_thread(_delete)
+
+    def invalidate_keyword_index(self, guild_id: int) -> None:
+        self.keyword_indexes.pop(guild_id, None)
 
     # ---- query operations ----
 
@@ -402,4 +413,30 @@ class EmbeddingStore:
 
             return len(ids)
 
+        self.invalidate_keyword_index(guild_id)
         return await asyncio.to_thread(_migrate)
+
+    async def keyword_search(self, guild_id: int, query: str, top_n: int) -> list[tuple[str, str, float, int]]:
+        """BM25 fallback for when no query embedding could be made.
+
+        Returns the same ``(name, text, score, dimensions)`` shape as ``get_related``, score normalised to 0..1.
+        """
+        if not query.strip() or top_n <= 0:
+            return []
+        index = self.keyword_indexes.get(guild_id)
+        metadata = await self.get_all_metadata(guild_id)
+        if index is None:
+            start = perf_counter()
+            index = KeywordIndex()
+            index.build({name: str(meta.get("text", "")) for name, meta in metadata.items()})
+            self.keyword_indexes[guild_id] = index
+            log.debug(
+                f"Built keyword index of {len(metadata)} memories in {perf_counter() - start:.3f}s for guild {guild_id}"
+            )
+        hits = await asyncio.to_thread(index.search, query, top_n)
+        results: list[tuple[str, str, float, int]] = []
+        for name, score in hits:
+            meta = metadata.get(name, {})
+            results.append((name, str(meta.get("text", "")), score, int(meta.get("dimensions", 0))))
+        log.debug(f"Keyword search returned {len(results)} memories for guild {guild_id}")
+        return results

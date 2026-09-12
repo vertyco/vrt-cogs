@@ -172,7 +172,7 @@ class API(MixinMeta):
         cause = await self.check_openai_key(conf, prefix) or f"`{str(error)[:300]}`"
         txt = _(
             "\N{WARNING SIGN} Memory search is failing on this server, so the assistant is "
-            "answering without its saved memories.\n{}"
+            "using a plain keyword search over its saved memories instead (less accurate).\n{}"
         ).format(cause)
         try:
             await channel.send(txt)

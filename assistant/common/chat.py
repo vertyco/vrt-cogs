@@ -943,6 +943,7 @@ class ChatHandler(MixinMeta):
         allowed_mentions = await self.get_mention_permissions(member) if member else discord.AllowedMentions.none()
 
         query_embedding = []
+        keyword_fallback = False
         user = author if isinstance(author, discord.Member) else guild.get_member(author)
         user_id = author.id if isinstance(author, discord.Member) else author
         model = conf.get_user_model(user)
@@ -969,7 +970,8 @@ class ChatHandler(MixinMeta):
                 else:
                     query_embedding = await self.request_embedding(message, conf)
             except Exception as e:
-                log.error("Failed to get query embedding, continuing without embeddings", exc_info=e)
+                log.error("Failed to get query embedding, falling back to keyword memory search", exc_info=e)
+                keyword_fallback = True
                 if hasattr(channel, "send"):
                     prefix = (await self.bot.get_valid_prefixes(guild))[0]
                     await self.notify_embedding_failure(guild.id, channel, conf, prefix, e)
@@ -1007,6 +1009,7 @@ class ChatHandler(MixinMeta):
             images=images,
             auto_answer=auto_answer,
             trigger_prompt=trigger_prompt,
+            keyword_fallback=keyword_fallback,
         )
         reply = None
         reply_reasoning = ""
@@ -1552,6 +1555,7 @@ class ChatHandler(MixinMeta):
         images: list[str] | None,
         auto_answer: Optional[bool] = False,
         trigger_prompt: Optional[str] = None,
+        keyword_fallback: bool = False,
     ) -> List[dict]:
         """Prepare content for calling the GPT API
 
@@ -1781,12 +1785,15 @@ class ChatHandler(MixinMeta):
         grounding_rule_tokens = await self.count_tokens(RAG_GROUNDING_RULES)
         transient_user_context = ""
 
-        related = await self.embedding_store.get_related(
-            guild_id=guild.id,
-            query_embedding=query_embedding,
-            top_n=conf.top_n,
-            min_relatedness=conf.min_relatedness,
-        )
+        if keyword_fallback and not query_embedding:
+            related = await self.embedding_store.keyword_search(guild.id, message, conf.top_n)
+        else:
+            related = await self.embedding_store.get_related(
+                guild_id=guild.id,
+                query_embedding=query_embedding,
+                top_n=conf.top_n,
+                min_relatedness=conf.min_relatedness,
+            )
 
         rag_documents: List[str] = []
         rag_budget_tokens = current_tokens + grounding_rule_tokens
