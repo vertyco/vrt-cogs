@@ -602,6 +602,9 @@ class ChatHandler(MixinMeta):
                 images.append(f"data:image/{name.rsplit('.', 1)[-1]};base64,{image_b64}")
                 continue
             if "." in name and not name.endswith(tuple(READ_EXTENSIONS)):
+                sections.append(
+                    f"\n\n### Uploaded File ({i.filename}): [unsupported file type, contents could not be read]\n"
+                )
                 continue
             remaining = total_budget - used
             if remaining <= 0:

@@ -1,5 +1,9 @@
 # Assistant Changelog
 
+## v8.24.1
+
+- **Fix**: Attachments the assistant cannot read (videos, archives, any type outside the image and readable-file lists) are now mentioned in the prompt as `[unsupported file type, contents could not be read]` instead of being dropped silently. Before, a message that was only a video reached the model as an empty turn, the model answered with nothing three times, and the assistant went quiet with no reply.
+
 ## v8.24.0
 
 - **Feature**: Admin-configured jobs. `[p]assistant jobs` lets server admins save a prompt the assistant runs on its own: on a fixed interval (`interval`), on a cron schedule in UTC (`cron`), or when something happens in Discord (`event`): a member joins or leaves, a message lands in a chosen channel, a reaction is added, a thread or forum post is created, roles change, someone joins voice, a ticket is opened through the Tickets cog, or any discord.py event by name (`raw:on_member_ban`). A run uses the same system prompt, tools, and credentials as a normal chat (Codex serves it when configured) and posts its reply in the job's channel. `silent` jobs post nothing there; every run, silent or not, is logged as an embed to the channel set with `logchannel`. `memory` lets a job keep a running conversation between firings (default: fresh each run). Jobs run as the admin who created them. After a run of errors (default 5) a job pauses itself and says so in its channel; `enable` restarts it. Bot owners tune the limits with `[p]assistant jobs limits` (max jobs per server, minimum interval, error threshold). The model's own one-shot scheduled-task tool is unchanged.
