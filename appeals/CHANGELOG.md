@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.1
+
+- Fixed `[p]appeal appealmessage` always replying "Invalid message ID provided": it fetched the message using the channel ID instead of the message ID.
+
 ## 0.4.0
 
 - When the ArkTools cog is loaded, the appeal button now refuses users whose linked Ark player is currently temp banned, showing when the ban expires. Permanent bans are still appealable, and bots without ArkTools are unaffected.

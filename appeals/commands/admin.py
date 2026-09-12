@@ -577,7 +577,7 @@ class Admin(MixinMeta):
         if not isinstance(channel, discord.TextChannel):
             return await ctx.send("The provided channel ID is not a text channel.")
         try:
-            msg = await channel.fetch_message(message.channel.id)
+            msg = await channel.fetch_message(message.id)
         except discord.NotFound:
             return await ctx.send("Invalid message ID provided.")
         except discord.Forbidden:
