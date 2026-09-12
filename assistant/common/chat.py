@@ -213,6 +213,18 @@ def build_floating_context_block(
     return "\n".join(lines)
 
 
+def remember_reasoning(store: dict[str, list[dict]], response: ChatCompletionMessage) -> None:
+    """Keep a tool-calling turn's encrypted reasoning items, keyed by its first tool call id.
+
+    The Responses adapter attaches them as ``reasoning_items``; ``to_responses_input``
+    replays them in front of that call on the next round of the same tool loop.
+    """
+    items = getattr(response, "reasoning_items", None)
+    if not items or not response.tool_calls:
+        return
+    store[response.tool_calls[0].id] = items
+
+
 def append_reasoning_block(reply: Optional[str], reasoning: Optional[str], conf: GuildSettings) -> Optional[str]:
     if not reply or not reasoning:
         return reply
@@ -931,6 +943,11 @@ class ChatHandler(MixinMeta):
                     query_embedding = await self.request_embedding(message, conf)
             except Exception as e:
                 log.error("Failed to get query embedding, continuing without embeddings", exc_info=e)
+                if hasattr(channel, "send"):
+                    prefix = (await self.bot.get_valid_prefixes(guild))[0]
+                    await self.notify_embedding_failure(guild.id, channel, conf, prefix, e)
+            else:
+                self.mark_embedding_success(guild.id)
 
         log.debug(f"Query embedding: {len(query_embedding)}")
 
@@ -972,6 +989,7 @@ class ChatHandler(MixinMeta):
         force_tool_choice_required = False
         tool_call_history: dict[str, int] = {}  # Track (name, args) -> count for loop detection
         last_sent_content: str = ""  # Track content already sent via respond_and_continue
+        reasoning_items: dict[str, list[dict]] = {}  # Encrypted reasoning replayed within this tool loop
         while True:
             if tries > 2:
                 log.error("Breaking after 3 retries (image purge or empty model response)")
@@ -1051,6 +1069,7 @@ class ChatHandler(MixinMeta):
                         if supports_forced_tool_choice and force_tool_choice_required and function_calls
                         else None
                     ),
+                    reasoning_items=reasoning_items,
                 )
             except httpx.ReadTimeout:
                 reply = _("Request timed out, please try again.")
@@ -1188,12 +1207,14 @@ class ChatHandler(MixinMeta):
             if len(response_functions) > 1:
                 log.debug(f"Calling {len(response_functions)} functions at once")
 
+            remember_reasoning(reasoning_items, response)
             dump = response.model_dump()
             if not dump["function_call"]:
                 del dump["function_call"]
             if not dump["tool_calls"]:
                 del dump["tool_calls"]
             dump.pop("reasoning_content", None)
+            dump.pop("reasoning_items", None)
 
             conversation.messages.append(dump)
             messages.append(dump)

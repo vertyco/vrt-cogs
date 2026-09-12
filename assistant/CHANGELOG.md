@@ -1,5 +1,14 @@
 # Assistant Changelog
 
+## v8.22.0
+
+- **Change**: On the Responses API paths (the Codex subscription, and API-key chat with gpt-5.4+ plus tools) the model's encrypted reasoning is now carried between rounds of a single tool loop. Each request asks for `reasoning.encrypted_content`, and the reasoning items that led to a tool call are replayed in front of that call on the next request, so a multi-step tool chain continues its earlier thinking instead of starting over and the prompt cache matches further into the conversation. Nothing is stored: the items live only for the duration of one message and are never written to the conversation or config. `[p]cacheinfo` already shows the resulting cached token counts.
+
+## v8.21.1
+
+- **Change**: A server or global Codex login now serves chat even while an endpoint override is active. Before, any override switched Codex off, which forced a choice between subscription chat and a router (OpenRouter and the like) for embeddings. Embeddings, image generation, and the fallback when Codex fails still use the override and its key. Only the host `auth.json` login still steps aside when an override is set, so a machine that happens to have the Codex CLI installed does not change behavior. `[p]assistant codex status` explains this in its "not in use" reason.
+- **New**: When memory search breaks (the embedding request fails), the assistant now posts one notice in the channel where it happened: "Memory search is failing on this server", followed by the same Key Check explanation `[p]assistant view` shows, or the raw error when the check has nothing to say (for example a 401 from a router). It is sent once per server per cog load and again after a later embedding succeeds and then fails, so a fixed key does not hide the next break. Before, the failure was only in the bot log.
+
 ## v8.21.0
 
 - **New**: Chat can run on a ChatGPT/Codex subscription instead of an API key. `[p]assistant codex login` signs a server in with a device code (open the link, enter the code), `[p]assistant codex globallogin` does the same for the whole bot (owner), and `logout` / `globallogout` remove them. If the bot host already has the Codex CLI logged in (`~/.codex/auth.json`), that login is picked up automatically with no command needed, and the cog refreshes it in place so the CLI stays signed in. A "Paste token" button on the login message accepts an access token from another Codex login as a fallback (pasted tokens cannot auto-refresh).

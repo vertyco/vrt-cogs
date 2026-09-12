@@ -5,9 +5,7 @@ import aiohttp
 from redbot.core.bot import Red
 
 
-async def get_weather(
-    bot: Red, location: str, temp_scale: str = "imperial", *args, **kwargs
-) -> str:
+async def get_weather(bot: Red, location: str, temp_scale: str = "imperial", *args, **kwargs) -> str:
     tokens = await bot.get_shared_api_tokens("openweathermap")
     if not tokens:
         return "No API key has been set!"

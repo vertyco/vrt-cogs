@@ -82,7 +82,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "8.21.0"
+    __version__ = "8.22.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -123,6 +123,8 @@ class Assistant(
         self.last_cache_stats: Dict[str, object] = {}
         # One asyncio.Lock per Codex credential so a token is never refreshed twice at once.
         self.codex_locks: Dict[str, asyncio.Lock] = {}
+        # Servers already told that memory search is failing (see notify_embedding_failure)
+        self.embedding_failure_notified: set[int] = set()
 
     async def cog_load(self) -> None:
         asyncio.create_task(self.init_cog())

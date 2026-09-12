@@ -126,9 +126,7 @@ def collect_ui_classes(
         visited.add(key)
         found.append(obj)
         child_source = class_source_with_bases(obj)
-        found.extend(
-            collect_ui_classes(child_source, class_namespace(obj), visited, depth + 1, max_depth)
-        )
+        found.extend(collect_ui_classes(child_source, class_namespace(obj), visited, depth + 1, max_depth))
     return found
 
 
@@ -179,8 +177,6 @@ def expand_command_ui_source(
         used += len(block)
 
     if len(visited) > len(class_sources):
-        parts.append(
-            f"\n# Note: some nested menus omitted (depth cap {max_depth} or output budget reached)."
-        )
+        parts.append(f"\n# Note: some nested menus omitted (depth cap {max_depth} or output budget reached).")
 
     return "".join(parts)

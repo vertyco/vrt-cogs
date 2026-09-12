@@ -37,6 +37,7 @@ class MixinMeta(ABC):
         self.last_cache_stats: Dict[str, object]
         # One lock per Codex credential, keyed by scope (or "guild-<id>").
         self.codex_locks: Dict[str, asyncio.Lock]
+        self.embedding_failure_notified: set[int]
         # Smartmod review state (actually assigned in SmartMod.__init__).
         self.smartmod_cooldowns: Dict[tuple[int, int], float]
         self.smartmod_tasks: set
@@ -141,6 +142,16 @@ class MixinMeta(ABC):
 
     @abstractmethod
     async def check_openai_key(self, conf: GuildSettings, prefix: str) -> Optional[str]:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def notify_embedding_failure(
+        self, guild_id: int, channel: Any, conf: GuildSettings, prefix: str, error: Exception
+    ) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def mark_embedding_success(self, guild_id: int) -> None:
         raise NotImplementedError
 
     @abstractmethod

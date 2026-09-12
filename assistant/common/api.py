@@ -157,6 +157,32 @@ class API(MixinMeta):
             )
         return "\n".join(problems) or None
 
+    async def notify_embedding_failure(
+        self,
+        guild_id: int,
+        channel: t.Any,
+        conf: GuildSettings,
+        prefix: str,
+        error: Exception,
+    ) -> None:
+        """Tell the channel once per server that memory search is broken, with the likely cause."""
+        if guild_id in self.embedding_failure_notified:
+            return
+        self.embedding_failure_notified.add(guild_id)
+        cause = await self.check_openai_key(conf, prefix) or f"`{str(error)[:300]}`"
+        txt = _(
+            "\N{WARNING SIGN} Memory search is failing on this server, so the assistant is "
+            "answering without its saved memories.\n{}"
+        ).format(cause)
+        try:
+            await channel.send(txt)
+        except Exception as e:
+            log.warning(f"Could not post the memory search notice in guild {guild_id}", exc_info=e)
+
+    def mark_embedding_success(self, guild_id: int) -> None:
+        """A working embedding clears the notice so the next break is reported again."""
+        self.embedding_failure_notified.discard(guild_id)
+
     def codex_lock(self, scope: str, guild_id: int) -> asyncio.Lock:
         """One lock per credential so parallel chats never refresh the same token twice.
 
@@ -169,21 +195,24 @@ class API(MixinMeta):
         return lock
 
     def pick_codex_auth(self, conf: GuildSettings) -> tuple[t.Optional[CodexAuth], str]:
-        """Resolution order when no endpoint override is active.
+        """Resolution order for the login that serves chat.
 
         1. This server's Codex login
         2. The global Codex login stored in config
-        3. The Codex CLI's auth.json on the bot host
-        API keys are not checked here. A Codex login is always tried first, and the
-        caller falls back to the API-key path when this returns None or the
+        3. The Codex CLI's auth.json on the bot host, only when no endpoint override is active
+        An explicit login (1 or 2) serves chat even with an endpoint override, so a server
+        can keep a router for embeddings and still chat on the subscription. The host file
+        respects the override so a machine that happens to have the CLI installed does not
+        change behavior. API keys are not checked here. A Codex login is always tried first,
+        and the caller falls back to the API-key path when this returns None or the
         subscription request fails.
         """
-        if self.get_guild_endpoint_url(conf):
-            return None, ""
         if conf.codex_auth:
             return conf.codex_auth, "guild"
         if self.db.codex_auth:
             return self.db.codex_auth, "global"
+        if self.get_guild_endpoint_url(conf):
+            return None, ""
         file_auth = codex.read_auth_file()
         if file_auth:
             return file_auth, "file"
@@ -860,6 +889,7 @@ class API(MixinMeta):
         model: str,
         guild_id: Optional[int],
         tool_choice: Optional[t.Union[str, dict]],
+        reasoning_items: Optional[dict[str, list[dict]]] = None,
     ) -> Optional[ChatCompletion]:
         """Try the Codex subscription first.
 
@@ -883,6 +913,7 @@ class API(MixinMeta):
                 verbosity=conf.verbosity,
                 tool_choice=tool_choice,
                 guild_id=guild_id,
+                reasoning_items=reasoning_items,
             )
         except openai.AuthenticationError as e:
             await self.forget_rejected_codex_auth(scope, conf, e)
@@ -910,6 +941,7 @@ class API(MixinMeta):
         session_id: Optional[str],
         guild_id: Optional[int],
         tool_choice: Optional[t.Union[str, dict]],
+        reasoning_items: Optional[dict[str, list[dict]]] = None,
     ) -> ChatCompletion:
         """Chat through an API key or endpoint override."""
         current_convo_tokens = await self.count_payload_tokens(messages)
@@ -953,6 +985,7 @@ class API(MixinMeta):
             openrouter_prompt_cache_ttl=conf.openrouter_prompt_cache_ttl if is_openrouter else None,
             openrouter_provider=openrouter_provider,
             guild_id=guild_id,
+            reasoning_items=reasoning_items,
         )
 
     async def request_response(
@@ -967,6 +1000,7 @@ class API(MixinMeta):
         session_id: Optional[str] = None,
         guild_id: Optional[int] = None,
         tool_choice: Optional[t.Union[str, dict]] = None,
+        reasoning_items: Optional[dict[str, list[dict]]] = None,
     ) -> ChatCompletionMessage:
         requested_model = model_override or self.db.get_effective_model(conf, member)
         base_url = self.get_guild_endpoint_url(conf)
@@ -974,7 +1008,9 @@ class API(MixinMeta):
             await self.refresh_endpoint_profile(conf)
         model = self.resolve_chat_model(requested_model, conf)
 
-        response = await self.request_codex_response(messages, conf, functions, member, model, guild_id, tool_choice)
+        response = await self.request_codex_response(
+            messages, conf, functions, member, model, guild_id, tool_choice, reasoning_items
+        )
         if response is None:
             response = await self.request_api_response(
                 messages,
@@ -988,6 +1024,7 @@ class API(MixinMeta):
                 session_id,
                 guild_id,
                 tool_choice,
+                reasoning_items,
             )
         message: ChatCompletionMessage = response.choices[0].message
 

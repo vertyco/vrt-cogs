@@ -1304,7 +1304,7 @@ class Admin(MixinMeta):
             return await ctx.send(_("Could not refresh the Codex login right now: {}").format(e))
         if auth is None:
             if self.get_guild_endpoint_url(conf):
-                reason = _("an endpoint override is active")
+                reason = _("an endpoint override is active and no server or global login is stored")
             else:
                 reason = _("no login found")
             txt = _("Codex is not in use for this server ({}).").format(reason)

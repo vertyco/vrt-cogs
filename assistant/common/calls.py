@@ -137,6 +137,7 @@ async def request_responses_raw(
     tool_choice: Optional[t.Union[str, dict]] = None,
     guild_id: Optional[int] = None,
     base_url: Optional[str] = None,
+    reasoning_items: Optional[dict[str, list[dict]]] = None,
 ) -> ChatCompletion:
     """Call the Responses API and adapt the result back into a ``ChatCompletion``.
 
@@ -152,8 +153,9 @@ async def request_responses_raw(
 
     kwargs: dict = {
         "model": model,
-        "input": to_responses_input(messages),
+        "input": to_responses_input(messages, reasoning_items),
         "store": False,
+        "include": ["reasoning.encrypted_content"],
     }
     if functions:
         kwargs["tools"] = to_responses_tools(functions)
@@ -231,6 +233,7 @@ async def request_codex_raw(
     verbosity: Optional[str] = None,
     tool_choice: Optional[t.Union[str, dict]] = None,
     guild_id: Optional[int] = None,
+    reasoning_items: Optional[dict[str, list[dict]]] = None,
 ) -> ChatCompletion:
     """Chat via the ChatGPT/Codex subscription backend.
 
@@ -242,9 +245,10 @@ async def request_codex_raw(
     effort = "low" if reasoning_effort == "minimal" else reasoning_effort
     kwargs: dict = {
         "model": model,
-        "input": to_responses_input(messages),
+        "input": to_responses_input(messages, reasoning_items),
         "store": False,
         "stream": True,
+        "include": ["reasoning.encrypted_content"],
     }
     if functions:
         kwargs["tools"] = to_responses_tools(functions)
@@ -308,6 +312,8 @@ async def request_chat_completion_raw(
     guild_id: Optional[int] = None,
     # OpenRouter provider routing preferences dict (injected as extra_body["provider"]).
     openrouter_provider: Optional[dict] = None,
+    # Encrypted reasoning items keyed by tool call id, replayed on the Responses API only.
+    reasoning_items: Optional[dict[str, list[dict]]] = None,
 ) -> ChatCompletion:
     client = get_client(api_key, base_url)
 
@@ -326,6 +332,7 @@ async def request_chat_completion_raw(
             tool_choice=tool_choice,
             guild_id=guild_id,
             base_url=base_url,
+            reasoning_items=reasoning_items,
         )
 
     use_legacy_functions = bool(

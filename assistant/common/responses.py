@@ -71,15 +71,20 @@ def _stringify(content: t.Any) -> str:
     if isinstance(content, str):
         return content
     if isinstance(content, list):
-        return "".join(
-            part.get("text", "") for part in content if isinstance(part, dict) and part.get("text")
-        )
+        return "".join(part.get("text", "") for part in content if isinstance(part, dict) and part.get("text"))
     return "" if content is None else str(content)
 
 
-def to_responses_input(messages: list[dict]) -> list[dict]:
-    """Translate Chat Completions ``messages`` into Responses ``input`` items."""
+def to_responses_input(messages: list[dict], reasoning_items: t.Optional[dict[str, list[dict]]] = None) -> list[dict]:
+    """Translate Chat Completions ``messages`` into Responses ``input`` items.
+
+    ``reasoning_items`` maps a tool call id to the encrypted ``reasoning`` items the
+    model produced right before that call. They are replayed directly in front of
+    the matching ``function_call`` item so a stateless (``store=False``) request can
+    continue the same chain of thought across tool rounds.
+    """
     items: list[dict] = []
+    reasoning_items = reasoning_items or {}
     for msg in messages:
         role = msg.get("role")
         content = msg.get("content")
@@ -101,6 +106,7 @@ def to_responses_input(messages: list[dict]) -> list[dict]:
             if tool_calls:
                 for tc in tool_calls:
                     fn = tc.get("function", {})
+                    items.extend(reasoning_items.get(tc.get("id"), []))
                     items.append(
                         {
                             "type": "function_call",
@@ -148,6 +154,7 @@ def responses_to_chat_completion(resp: t.Any, model: str) -> ChatCompletion:
     content_text: t.Optional[str] = None
     refusal: t.Optional[str] = None
     reasoning_text: t.Optional[str] = None
+    reasoning_items: list[dict] = []
     tool_calls: list[ChatCompletionMessageToolCall] = []
 
     for item in getattr(resp, "output", None) or []:
@@ -172,11 +179,20 @@ def responses_to_chat_completion(resp: t.Any, model: str) -> ChatCompletion:
             )
         elif itype == "reasoning":
             summary = getattr(item, "summary", None) or []
-            joined = " ".join(
-                getattr(s, "text", "") for s in summary if getattr(s, "text", "")
-            ).strip()
+            texts = [getattr(s, "text", "") for s in summary if getattr(s, "text", "")]
+            joined = " ".join(texts).strip()
             if joined:
                 reasoning_text = joined
+            encrypted = getattr(item, "encrypted_content", None)
+            if encrypted:
+                reasoning_items.append(
+                    {
+                        "type": "reasoning",
+                        "id": getattr(item, "id", None),
+                        "encrypted_content": encrypted,
+                        "summary": [{"type": "summary_text", "text": text} for text in texts],
+                    }
+                )
 
     message_kwargs: dict = {
         "role": "assistant",
@@ -188,6 +204,9 @@ def responses_to_chat_completion(resp: t.Any, model: str) -> ChatCompletion:
         # openai's BaseModel allows extra fields; chat.py reads this via getattr and
         # strips it from the persisted dump.
         message_kwargs["reasoning_content"] = reasoning_text
+    if reasoning_items:
+        # Replayed by chat.py's tool loop on the next round; never persisted.
+        message_kwargs["reasoning_items"] = reasoning_items
     message = ChatCompletionMessage(**message_kwargs)
 
     usage: t.Optional[CompletionUsage] = None

@@ -61,9 +61,7 @@ def test_stack_off_highest_replace():
 
 
 def test_stack_off_ignores_lower():
-    conf = make_conf(
-        {1: RolePrompt(text="mod", replace=True), 2: RolePrompt(text="admin")}, stack=False
-    )
+    conf = make_conf({1: RolePrompt(text="mod", replace=True), 2: RolePrompt(text="admin")}, stack=False)
     member = FakeMember([FakeRole(1, 1), FakeRole(2, 2)])
     assert conf.get_role_prompt_layers(member) == (None, ["admin"])
 
@@ -75,9 +73,7 @@ def test_stack_on_two_appends_low_to_high():
 
 
 def test_stack_on_replace_plus_append():
-    conf = make_conf(
-        {1: RolePrompt(text="mod"), 2: RolePrompt(text="admin", replace=True)}
-    )
+    conf = make_conf({1: RolePrompt(text="mod"), 2: RolePrompt(text="admin", replace=True)})
     member = FakeMember([FakeRole(1, 1), FakeRole(2, 2)])
     assert conf.get_role_prompt_layers(member) == ("admin", ["mod"])
 

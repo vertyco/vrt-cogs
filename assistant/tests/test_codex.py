@@ -481,9 +481,18 @@ async def test_get_codex_auth_falls_back_to_auth_file(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_get_codex_auth_skips_when_endpoint_override(monkeypatch):
+async def test_get_codex_auth_guild_login_wins_over_endpoint_override(monkeypatch):
     monkeypatch.setattr(codex, "read_auth_file", lambda: fresh_auth("file", source="file"))
     conf = GuildSettings(codex_auth=fresh_auth("guild"), endpoint_override="http://localhost:1234/v1")
+    api = FakeAPI(DB(configs={1: conf}))
+    auth, scope = await api.get_codex_auth(conf)
+    assert (auth.account_id, scope) == ("guild", "guild")
+
+
+@pytest.mark.asyncio
+async def test_get_codex_auth_skips_auth_file_when_endpoint_override(monkeypatch):
+    monkeypatch.setattr(codex, "read_auth_file", lambda: fresh_auth("file", source="file"))
+    conf = GuildSettings(endpoint_override="http://localhost:1234/v1")
     api = FakeAPI(DB(configs={1: conf}))
     assert await api.get_codex_auth(conf) == (None, "")
 
@@ -577,13 +586,14 @@ def test_write_auth_file_updates_the_cache(tmp_path, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_get_codex_auth_skips_when_global_endpoint_override(monkeypatch):
+async def test_get_codex_auth_global_login_wins_over_global_endpoint_override(monkeypatch):
     monkeypatch.setattr(codex, "read_auth_file", lambda: fresh_auth("file", source="file"))
-    conf = GuildSettings(codex_auth=fresh_auth("guild"))
+    conf = GuildSettings()
     db = DB(configs={1: conf}, codex_auth=fresh_auth("global"))
     db.endpoint_override = "http://localhost:1234/v1"
     api = FakeAPI(db)
-    assert await api.get_codex_auth(conf) == (None, "")
+    auth, scope = await api.get_codex_auth(conf)
+    assert (auth.account_id, scope) == ("global", "global")
 
 
 @pytest.mark.asyncio

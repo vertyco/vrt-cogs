@@ -25,7 +25,9 @@ def get_think_block_pattern(conf: GuildSettings) -> Optional[re.Pattern[str]]:
     )
 
 
-def extract_think_blocks(content: str, conf: GuildSettings, include_files: bool = True) -> tuple[str, List[discord.File]]:
+def extract_think_blocks(
+    content: str, conf: GuildSettings, include_files: bool = True
+) -> tuple[str, List[discord.File]]:
     pattern = get_think_block_pattern(conf)
     if pattern is None:
         return content, []
