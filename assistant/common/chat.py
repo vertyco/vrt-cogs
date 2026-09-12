@@ -38,6 +38,8 @@ from ..abc import MixinMeta
 from ..views import AdminToolApprovalView
 from .codex import CodexLoginExpired, CodexRefreshFailed
 from .constants import (
+    ATTACHMENT_FILE_CONTEXT_SHARE,
+    ATTACHMENT_TOTAL_CONTEXT_SHARE,
     DO_NOT_RESPOND_SCHEMA,
     IMAGE_RETAIN_TURNS,
     MODELS,
@@ -561,6 +563,68 @@ class ChatHandler(MixinMeta):
 
         return resolved
 
+    async def cap_attachment_text(self, text: str, limit: int) -> str:
+        """Keep the head and tail of *text* within *limit* tokens, marking what was cut."""
+        tokens = await self.get_tokens(text)
+        if len(tokens) <= limit:
+            return text
+        head = limit // 2
+        tail = limit - head
+        cut = len(tokens) - limit
+        head_text = await self.get_text(tokens[:head])
+        tail_text = await self.get_text(tokens[-tail:]) if tail else ""
+        marker = f"... [truncated {cut} tokens from the middle of this file] ..."
+        return f"{head_text}\n{marker}\n{tail_text}"
+
+    async def read_attachments(
+        self,
+        message: discord.Message,
+        conf: GuildSettings,
+        author: Optional[discord.Member],
+    ) -> tuple[list[str], str]:
+        """Split a message's attachments into vision images and a text block for the prompt.
+
+        Images come back as data URLs. Readable files are decoded or extracted and appended as
+        ``### Uploaded File`` sections, each capped to a share of the context window and all of
+        them together to a larger share. Files past the total budget are listed as skipped.
+        """
+        img_ext = ("png", "jpg", "jpeg", "webp")
+        max_tokens = self.get_max_tokens(conf, author)
+        file_budget = int(max_tokens * ATTACHMENT_FILE_CONTEXT_SHARE)
+        total_budget = int(max_tokens * ATTACHMENT_TOTAL_CONTEXT_SHARE)
+        images: list[str] = []
+        sections: list[str] = []
+        used = 0
+        for i in get_attachments(message):
+            name = i.filename.lower()
+            if name.endswith(img_ext):
+                image_b64 = base64.b64encode(await i.read()).decode()
+                images.append(f"data:image/{name.rsplit('.', 1)[-1]};base64,{image_b64}")
+                continue
+            if "." in name and not name.endswith(tuple(READ_EXTENSIONS)):
+                continue
+            remaining = total_budget - used
+            if remaining <= 0:
+                sections.append(f"\n\n### Uploaded File ({i.filename}): [skipped, attachment budget used up]\n")
+                continue
+            file_bytes = await i.read()
+            if is_document(i.filename):
+                header = f"### Uploaded Document ({i.filename}):"
+                text = await extract_document_text(i.filename, file_bytes)
+            else:
+                header = "### Uploaded File:" if i.filename == "message.txt" else f"### Uploaded File ({i.filename}):"
+                try:
+                    text = file_bytes.decode()
+                except UnicodeDecodeError:
+                    text = f"[Unable to decode file: {i.filename}]"
+                except Exception as e:
+                    log.error(f"Failed to decode content of {i.filename}", exc_info=e)
+                    text = f"[Failed to read file: {i.filename}]"
+            text = await self.cap_attachment_text(text, min(file_budget, remaining))
+            used += await self.count_tokens(text)
+            sections.append(f"\n\n{header}\n{text}\n")
+        return images, "".join(sections)
+
     async def handle_message(
         self,
         message: discord.Message,
@@ -618,46 +682,9 @@ class ChatHandler(MixinMeta):
                 f"[Role: {mention.name} | Mention: {mention.mention}]",
             )
 
-        img_ext = ["png", "jpg", "jpeg", "webp"]
-        for i in get_attachments(message):
-            has_extension = i.filename.count(".") > 0
-            if any(i.filename.lower().endswith(ext) for ext in img_ext):
-                # No reason to download the image now, we can just use the url
-                image_bytes: bytes = await i.read()
-                image_b64 = base64.b64encode(image_bytes).decode()
-                image_format = i.filename.split(".")[-1].lower()
-                image_string = f"data:image/{image_format};base64,{image_b64}"
-                images.append(image_string)
-                continue
-
-            if has_extension and not i.filename.lower().endswith(tuple(READ_EXTENSIONS)):
-                # Skip unsupported file types
-                continue
-
-            file_bytes = await i.read()
-
-            # Check if this is a document type that needs special extraction
-            if is_document(i.filename):
-                text = await extract_document_text(i.filename, file_bytes)
-                question += f"\n\n### Uploaded Document ({i.filename}):\n{text}\n"
-                continue
-
-            # Handle as text file
-            if isinstance(file_bytes, bytes):
-                try:
-                    text = file_bytes.decode()
-                except UnicodeDecodeError:
-                    text = f"[Unable to decode file: {i.filename}]"
-                except Exception as e:
-                    log.error(f"Failed to decode content of {i.filename}", exc_info=e)
-                    text = f"[Failed to read file: {i.filename}]"
-            else:
-                text = file_bytes
-
-            if i.filename == "message.txt":
-                question += f"\n\n### Uploaded File:\n{text}\n"
-            else:
-                question += f"\n\n### Uploaded File ({i.filename}):\n{text}\n"
+        attachment_images, attachment_text = await self.read_attachments(message, conf, message.author)
+        images.extend(attachment_images)
+        question += attachment_text
 
         if conf.collab_convos:
             mem_id = message.channel.id

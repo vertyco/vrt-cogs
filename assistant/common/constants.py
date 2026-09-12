@@ -607,6 +607,12 @@ TOOL_RESULT_HARD_RATIO = 0.5  # hard-clear when context > 50% full
 # Max fraction of context window a single tool result may consume
 TOOL_RESULT_MAX_CONTEXT_SHARE = 0.15
 
+# ---- Attachment reading ----
+# Text pulled out of uploaded files is budgeted against the model's context window:
+# one file may use this share, and all files on one message may use the total share.
+ATTACHMENT_FILE_CONTEXT_SHARE = 0.25
+ATTACHMENT_TOTAL_CONTEXT_SHARE = 0.5
+
 # ---- Image retention ----
 # Number of assistant response turns after which old images are evicted from history.
 # Images are enormously expensive (thousands of tokens each); once the model has

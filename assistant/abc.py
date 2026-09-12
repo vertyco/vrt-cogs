@@ -415,6 +415,19 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    async def cap_attachment_text(self, text: str, limit: int) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def read_attachments(
+        self,
+        message: discord.Message,
+        conf: GuildSettings,
+        author: Optional[discord.Member],
+    ) -> tuple[list[str], str]:
+        raise NotImplementedError
+
+    @abstractmethod
     async def handle_message(
         self,
         message: discord.Message,

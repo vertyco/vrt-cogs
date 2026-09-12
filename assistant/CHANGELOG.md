@@ -1,5 +1,9 @@
 # Assistant Changelog
 
+## v8.22.1
+
+- **Change**: Text pulled out of uploaded files (logs, code, PDFs, Word, Excel, and the other readable types) is now budgeted against the model's context window instead of being pasted in whole. One file may use up to 25% of the window and all files on one message up to 50%. A file over its share keeps its beginning and end with a `[truncated N tokens from the middle of this file]` marker, and files past the total budget are listed as skipped. Before, a large log or long PDF made the request bigger than the model could take and the message failed.
+
 ## v8.22.0
 
 - **Change**: On the Responses API paths (the Codex subscription, and API-key chat with gpt-5.4+ plus tools) the model's encrypted reasoning is now carried between rounds of a single tool loop. Each request asks for `reasoning.encrypted_content`, and the reasoning items that led to a tool call are replayed in front of that call on the next request, so a multi-step tool chain continues its earlier thinking instead of starting over and the prompt cache matches further into the conversation. Nothing is stored: the items live only for the duration of one message and are never written to the conversation or config. `[p]cacheinfo` already shows the resulting cached token counts.
