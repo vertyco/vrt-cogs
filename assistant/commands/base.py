@@ -699,6 +699,7 @@ If a file has no extension it will still try to read it only if it can be decode
                 conf=conf,
                 model_override="gpt-5.1",
                 temperature_override=0.0,
+                guild_id=interaction.guild.id,
             )
         except httpx.ReadTimeout:
             return await interaction.followup.send(_("The request timed out!"))

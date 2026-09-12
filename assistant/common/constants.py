@@ -58,6 +58,7 @@ MODELS = {
     "gpt-5.5": 1050000,
     "gpt-5.5-2026-04-23": 1050000,
     "gpt-5.6-sol": 1050000,
+    "gpt-6-astra": 1050000,
     "gpt-5.6-terra": 1050000,
     "gpt-5.6-luna": 1050000,
 }
@@ -107,6 +108,7 @@ SUPPORTS_SEED = [
     "gpt-5.6-sol",
     "gpt-5.6-terra",
     "gpt-5.6-luna",
+    "gpt-6-astra",
 ]
 NO_DEVELOPER_ROLE = [  # Also doesnt support system messages
     "o1-mini",
@@ -160,6 +162,7 @@ SUPPORTS_VISION = [
     "gpt-5.6-sol",
     "gpt-5.6-terra",
     "gpt-5.6-luna",
+    "gpt-6-astra",
 ]
 SUPPORTS_TOOLS = [
     "gpt-3.5-turbo-1106",
@@ -210,12 +213,13 @@ SUPPORTS_TOOLS = [
     "gpt-5.6-sol",
     "gpt-5.6-terra",
     "gpt-5.6-luna",
+    "gpt-6-astra",
 ]
 OLD_TOOL_SCHEMA = [i for i in MODELS.keys() if i not in SUPPORTS_TOOLS]
 # Model families that only support configurable reasoning_effort + function tools
 # via the Responses API (/v1/responses). Chat Completions rejects the combination
 # for these, so calls that need both are routed through the Responses adapter.
-RESPONSES_API_MODEL_PREFIXES = ("gpt-5.4", "gpt-5.5", "gpt-5.6")
+RESPONSES_API_MODEL_PREFIXES = ("gpt-5.4", "gpt-5.5", "gpt-5.6", "gpt-6")
 READ_EXTENSIONS = [
     ".txt",
     ".py",

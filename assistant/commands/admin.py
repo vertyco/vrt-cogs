@@ -10,6 +10,7 @@ from typing import List, Union
 from urllib.parse import urlparse
 from zipfile import ZIP_DEFLATED, ZipFile
 
+import aiohttp
 import discord
 import openai
 import orjson
@@ -31,11 +32,14 @@ from redbot.core.utils.chat_formatting import (
 from redbot.core.utils.views import SimpleMenu
 
 from ..abc import MixinMeta
+from ..common import codex
+from ..common.api import CODEX_TIMEOUT
 from ..common.calls import (
     get_client,
     request_chat_completion_raw,
     request_embedding_raw,
 )
+from ..common.codex import CodexAuth
 from ..common.constants import (
     DEFAULT_MOD_PROMPT,
     MAX_SKILL_BODY,
@@ -64,6 +68,7 @@ from ..common.utils import (
 from ..views import (
     AIToolsView,
     CodeMenu,
+    CodexLoginView,
     EmbeddingMenu,
     FloatingContextView,
     ModelPickerView,
@@ -143,6 +148,11 @@ class Admin(MixinMeta):
     @api.group(name="guild")
     async def api_guild(self, ctx: commands.Context):
         """Per-guild endpoint and key overrides (chat + embeddings)"""
+        pass
+
+    @assistant.group(name="codex")
+    async def codex_group(self, ctx: commands.Context):
+        """Use a ChatGPT/Codex subscription instead of an API key"""
         pass
 
     @assistant.group(name="set", aliases=["settings"])
@@ -441,6 +451,14 @@ class Admin(MixinMeta):
             sync_command,
         )
 
+    async def endpoint_removed_message(self, conf: GuildSettings, prefix: str) -> str:
+        """Confirm the override is gone and warn if the key left behind will not work on OpenAI."""
+        txt = _("Endpoint override has been removed! Requests now go straight to OpenAI.")
+        key_warning = await self.check_openai_key(conf, prefix)
+        if key_warning:
+            txt += f"\n\n\N{WARNING SIGN} {key_warning}"
+        return txt
+
     async def get_embedding_model_change_notice(
         self,
         guild: discord.Guild,
@@ -517,7 +535,18 @@ class Admin(MixinMeta):
             + _("`User Prompt:         `{} tokens\n").format(humanize_number(prompt_tokens))
             + _("`Endpoint Override:   `{}\n").format(self.db.endpoint_override or _("Not set"))
             + _("`Guild Endpoint:      `{}\n").format(conf.endpoint_override or _("Not set"))
+            + _("`Codex (server):      `{}\n").format(conf.codex_auth.redacted() if conf.codex_auth else _("Not set"))
+            + _("`Codex (global):      `{}\n").format(
+                self.db.codex_auth.redacted() if self.db.codex_auth else _("Not set")
+            )
         )
+
+        key_warning = await self.check_openai_key(conf, ctx.clean_prefix)
+        if self.get_guild_endpoint_url(conf):
+            key_check = _("Skipped (endpoint override active)")
+        else:
+            key_check = _("See below") if key_warning else _("OK")
+        desc += _("`Key Check:           `{}\n").format(key_check)
 
         if effective_model != conf.model:
             desc += _("`Effective Model:     `{}\n").format(effective_model)
@@ -529,6 +558,9 @@ class Admin(MixinMeta):
             description=desc,
             color=ctx.author.color,
         )
+
+        if key_warning:
+            embed.add_field(name=_("Key Check"), value=f"\N{WARNING SIGN} {key_warning}", inline=False)
 
         effective_endpoint = conf.endpoint_override or self.db.endpoint_override
         if effective_endpoint:
@@ -904,7 +936,11 @@ class Admin(MixinMeta):
                 await msg.edit(content=_("No API key was entered!"), embed=None, view=None)
             else:
                 conf.api_key = key
-                await msg.edit(content=_("API key has been set!"), embed=None, view=None)
+                content = _("API key has been set!")
+                key_warning = await self.check_openai_key(conf, ctx.clean_prefix)
+                if key_warning:
+                    content += f"\n\n\N{WARNING SIGN} {key_warning}"
+                await msg.edit(content=content, embed=None, view=None)
         except discord.NotFound:
             pass
 
@@ -966,11 +1002,11 @@ class Admin(MixinMeta):
             return await msg.edit(content=_("No API key was entered!"), embed=None, view=None)
         else:
             self.db.endpoint_api_key = key
-            await msg.edit(
-                content=_("Endpoint override API key has been set!"),
-                embed=None,
-                view=None,
-            )
+            content = _("Endpoint override API key has been set!")
+            key_warning = await self.check_openai_key(GuildSettings(), ctx.clean_prefix)
+            if key_warning:
+                content += f"\n\n\N{WARNING SIGN} {key_warning}"
+            await msg.edit(content=content, embed=None, view=None)
 
         await self.save_conf()
 
@@ -1015,7 +1051,7 @@ class Admin(MixinMeta):
             if conf.endpoint_override:
                 conf.endpoint_override = None
                 conf.endpoint_profile = None
-                await ctx.send(_("Guild endpoint override has been removed!"))
+                await ctx.send(await self.endpoint_removed_message(conf, ctx.clean_prefix))
                 await self.save_conf()
             else:
                 await ctx.send(_("No guild endpoint override was set."))
@@ -1063,7 +1099,7 @@ class Admin(MixinMeta):
             return await ctx.send(_("No per-guild endpoint override is set."))
         conf.endpoint_override = None
         conf.endpoint_profile = None
-        await ctx.send(_("Guild endpoint override has been cleared!"))
+        await ctx.send(await self.endpoint_removed_message(conf, ctx.clean_prefix))
         await self.save_conf()
 
     @api_guild.command(name="view")
@@ -1091,6 +1127,205 @@ class Admin(MixinMeta):
                 value=self.describe_endpoint_profile(conf.endpoint_profile),
                 inline=False,
             )
+        await ctx.send(embed=embed)
+
+    def build_codex_login_embed(self, ctx: commands.Context, login: codex.DeviceLogin, where: str) -> discord.Embed:
+        """Embed shown under the device-code login buttons."""
+        embed = discord.Embed(
+            title=_("Sign in with ChatGPT"),
+            description=_(
+                "1. Open {url} and sign in.\n"
+                "2. Enter this one-time code (expires in 15 minutes):\n{code}\n\n"
+                "Only continue if you started this login in Discord. If someone else gave you this code, cancel."
+            ).format(url=login.verification_url, code=box(login.user_code)),
+            color=ctx.author.color,
+        )
+        embed.set_footer(text=_("Login will be saved for {}").format(where))
+        return embed
+
+    async def probe_model_with_api_key(
+        self, conf: GuildSettings, model: str, has_endpoint: bool, codex_auth: t.Optional[CodexAuth]
+    ) -> str:
+        """Ask OpenAI whether the model exists, returning an error message when it does not."""
+        if not conf.api_key or "deepseek" in model or has_endpoint or codex_auth is not None:
+            return ""
+        try:
+            client = get_client(conf.api_key)
+            await client.models.retrieve(model)
+        except openai.NotFoundError as e:
+            log.warning("Model %s was rejected by the API", model, exc_info=e)
+            return _("Error: {}").format(e.response.json()["error"]["message"])
+        return ""
+
+    async def resolve_codex_auth(self, conf: GuildSettings, has_endpoint: bool, guild_id: int) -> t.Optional[CodexAuth]:
+        """Codex auth for admin commands, treating an unusable login as no login at all."""
+        if has_endpoint:
+            return None
+        try:
+            auth, scope = await self.get_codex_auth(conf, guild_id=guild_id)
+        except (codex.CodexLoginExpired, codex.CodexRefreshFailed) as e:
+            log.warning("Could not resolve Codex auth for an admin command", exc_info=e)
+            return None
+        return auth
+
+    async def warn_if_model_missing_from_codex(
+        self, ctx: commands.Context, model: str, codex_auth: t.Optional[CodexAuth]
+    ) -> None:
+        """Tell the user when the model they picked is not on the Codex subscription."""
+        if codex_auth is None or (await self.ensure_codex_model(model, codex_auth)) == model:
+            return
+        await ctx.send(
+            _("Note: `{}` is not on the Codex subscription, chats will use `{}` until you pick one of: {}").format(
+                model, codex.CODEX_DEFAULT_MODEL, humanize_list(self.db.codex_models)
+            )
+        )
+
+    async def edit_codex_login_message(self, msg: discord.Message, content: str) -> None:
+        """Replace the device-code embed with a final status line."""
+        try:
+            await msg.edit(content=content, embed=None, view=None)
+        except discord.NotFound as e:
+            log.warning("Codex login message was deleted", exc_info=e)
+
+    async def run_codex_login(self, ctx: commands.Context, scope: str) -> None:
+        """Device-code login shared by the server and global commands.
+
+        Posts the link and code, polls the auth server in the background, and lets the
+        user paste a token or cancel from the buttons. First of poll / paste / cancel /
+        timeout wins.
+        """
+        conf = self.db.get_conf(ctx.guild)
+        try:
+            async with aiohttp.ClientSession(timeout=CODEX_TIMEOUT) as session:
+                login = await codex.start_device_login(session)
+        except codex.CodexDeviceLoginUnavailable as e:
+            log.warning("Codex device login unavailable", exc_info=e)
+            await ctx.send(
+                _(
+                    "Device code login is turned off for this ChatGPT account. A workspace admin can enable it "
+                    "under Workspace Settings > Permissions > Allow device code login."
+                )
+            )
+            return
+        except codex.CodexRefreshFailed as e:
+            log.error("Could not start Codex device login", exc_info=e)
+            await ctx.send(_("Could not reach the OpenAI login server: {}").format(e))
+            return
+
+        where = _("this server") if scope == "guild" else _("the whole bot")
+        view = CodexLoginView(ctx.author)
+        msg = await ctx.send(embed=self.build_codex_login_embed(ctx, login, where), view=view)
+
+        async def poll() -> None:
+            try:
+                async with aiohttp.ClientSession(timeout=CODEX_TIMEOUT) as session:
+                    view.finish(await codex.poll_device_login(session, login))
+            except Exception as e:
+                log.error("Codex device login failed", exc_info=e)
+                view.finish(None)
+
+        task = asyncio.create_task(poll())
+        await view.wait()
+        task.cancel()
+
+        if view.cancelled or view.result is None:
+            return await self.edit_codex_login_message(msg, _("Codex login cancelled or timed out."))
+
+        auth: CodexAuth = view.result
+        if scope == "guild":
+            conf.codex_auth = auth
+        else:
+            self.db.codex_auth = auth
+        self.db.codex_models = []
+        self.db.codex_models_fetched = 0.0
+        await self.save_conf()
+        note = _(" Pasted tokens cannot auto-refresh; log in again when it expires.") if auth.source == "pasted" else ""
+        await self.edit_codex_login_message(
+            msg, _("Codex login saved for {} ({}).{}").format(where, auth.redacted(), note)
+        )
+
+    @codex_group.command(name="login")
+    @commands.admin_or_permissions(manage_guild=True)
+    @commands.bot_has_permissions(embed_links=True)
+    async def codex_login(self, ctx: commands.Context):
+        """
+        Sign this server in with a ChatGPT/Codex subscription
+
+        Chat requests from this server then use the subscription instead of an API key.
+        Embeddings still need an API key or an endpoint that serves them.
+        """
+        await self.run_codex_login(ctx, "guild")
+
+    @codex_group.command(name="globallogin")
+    @commands.is_owner()
+    @commands.bot_has_permissions(embed_links=True)
+    async def codex_global_login(self, ctx: commands.Context):
+        """
+        Sign the whole bot in with a ChatGPT/Codex subscription (owner)
+
+        Used by every server that has no API key, endpoint override, or Codex login of its own.
+        If the bot host has the Codex CLI logged in (`~/.codex/auth.json`) that login is used
+        automatically and this command is not needed.
+        """
+        await self.run_codex_login(ctx, "global")
+
+    @codex_group.command(name="logout")
+    @commands.admin_or_permissions(manage_guild=True)
+    async def codex_logout(self, ctx: commands.Context):
+        """Remove this server's Codex login"""
+        conf = self.db.get_conf(ctx.guild)
+        if not conf.codex_auth:
+            return await ctx.send(_("This server has no Codex login."))
+        await self.clear_codex_auth("guild", conf)
+        await ctx.send(_("Codex login removed for this server."))
+
+    @codex_group.command(name="globallogout")
+    @commands.is_owner()
+    async def codex_global_logout(self, ctx: commands.Context):
+        """Remove the global Codex login (owner)"""
+        if not self.db.codex_auth:
+            return await ctx.send(_("There is no global Codex login stored."))
+        await self.clear_codex_auth("global", self.db.get_conf(ctx.guild))
+        await ctx.send(_("Global Codex login removed."))
+
+    @codex_group.command(name="status")
+    @commands.admin_or_permissions(manage_guild=True)
+    @commands.bot_has_permissions(embed_links=True)
+    async def codex_status(self, ctx: commands.Context):
+        """Show which Codex login this server would use and the models it can run"""
+        conf = self.db.get_conf(ctx.guild)
+        try:
+            auth, scope = await self.get_codex_auth(conf, guild_id=ctx.guild.id)
+        except codex.CodexLoginExpired as e:
+            log.warning("Codex status: login expired", exc_info=e)
+            return await ctx.send(_("The Codex login has expired, please log in again."))
+        except codex.CodexRefreshFailed as e:
+            log.error("Codex status: refresh failed", exc_info=e)
+            return await ctx.send(_("Could not refresh the Codex login right now: {}").format(e))
+        if auth is None:
+            if self.get_guild_endpoint_url(conf):
+                reason = _("an endpoint override is active")
+            else:
+                reason = _("no login found")
+            txt = _("Codex is not in use for this server ({}).").format(reason)
+            key_warning = await self.check_openai_key(conf, ctx.clean_prefix)
+            if key_warning:
+                txt += f"\n\n\N{WARNING SIGN} {key_warning}"
+            return await ctx.send(txt)
+        scope_text = {"guild": _("this server"), "global": _("global"), "file": _("bot host auth.json")}[scope]
+        model = await self.ensure_codex_model(self.db.get_effective_model(conf), auth)
+        embed = discord.Embed(title=_("Codex login"), color=ctx.author.color)
+        embed.add_field(name=_("Source"), value=scope_text, inline=True)
+        embed.add_field(name=_("Login"), value=auth.redacted(), inline=False)
+        embed.add_field(name=_("Model in use"), value=model, inline=True)
+        embed.add_field(
+            name=_("Available models"),
+            value=humanize_list(self.db.codex_models) or _("unknown"),
+            inline=False,
+        )
+        key_warning = await self.check_openai_key(conf, ctx.clean_prefix)
+        if key_warning:
+            embed.add_field(name=_("Key Check"), value=f"\N{WARNING SIGN} {key_warning}", inline=False)
         await ctx.send(embed=embed)
 
     @asettings.command(name="timezone")
@@ -1489,11 +1724,7 @@ class Admin(MixinMeta):
         conf = self.db.get_conf(ctx.guild)
         conf.role_prompts_stack = not conf.role_prompts_stack
         await self.save_conf()
-        state = (
-            _("stack all matched roles together")
-            if conf.role_prompts_stack
-            else _("use only the highest role")
-        )
+        state = _("stack all matched roles together") if conf.role_prompts_stack else _("use only the highest role")
         await ctx.send(_("Role prompts will now {}.").format(state))
 
     @prompt_role.command(name="view", aliases=["list", "settings"])
@@ -2250,6 +2481,7 @@ class Admin(MixinMeta):
             return
 
         has_endpoint = bool(self.db.endpoint_override or conf.endpoint_override)
+        codex_auth = await self.resolve_codex_auth(conf, has_endpoint, ctx.guild.id)
 
         if not model:
             if has_endpoint:
@@ -2273,21 +2505,23 @@ class Admin(MixinMeta):
                     endpoint_url=endpoint_url,
                 )
                 return await view.start()
+            if codex_auth is not None:
+                await self.ensure_codex_model(conf.model, codex_auth)
+                return await ctx.send(
+                    _("Models on the Codex subscription:\n{}").format(box(humanize_list(self.db.codex_models)))
+                )
             valid = [i for i in MODELS]
             humanized = humanize_list(valid)
             formatted = box(humanized)
             return await ctx.send(_("Valid models are:\n{}").format(formatted))
 
-        if conf.api_key and "deepseek" not in model and not has_endpoint:
-            try:
-                client = get_client(conf.api_key)
-                await client.models.retrieve(model)
-            except openai.NotFoundError as e:
-                txt = _("Error: {}").format(e.response.json()["error"]["message"])
-                return await ctx.send(txt)
+        probe_error = await self.probe_model_with_api_key(conf, model, has_endpoint, codex_auth)
+        if probe_error:
+            return await ctx.send(probe_error)
 
         conf.model = model
         await ctx.send(_("The **{}** model will now be used").format(model))
+        await self.warn_if_model_missing_from_codex(ctx, model, codex_auth)
         if has_endpoint:
             warning = await self.get_endpoint_model_warning(model, conf=conf)
             if warning:
@@ -4477,7 +4711,8 @@ class Admin(MixinMeta):
         else:
             self.db.endpoint_override = None
             self.clear_endpoint_profile()
-            await ctx.send(_("Endpoint override has been removed!"))
+            conf = self.db.get_conf(ctx.guild) if ctx.guild else GuildSettings()
+            await ctx.send(await self.endpoint_removed_message(conf, ctx.clean_prefix))
         await self.save_conf()
 
     @assistant_admin.command(name="probe")

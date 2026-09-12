@@ -13,6 +13,7 @@ from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import box, pagify, text_to_file
 
+from .common.codex import CodexAuth, auth_from_tokens
 from .common.constants import OR_SUFFIXES, ModAction
 from .common.models import (
     DB,
@@ -99,6 +100,73 @@ class SetAPI(discord.ui.View):
         self.key = modal.key
         if modal.key:
             self.stop()
+
+
+class CodexTokenModal(discord.ui.Modal):
+    """Paste an access token from another Codex login (no refresh possible)."""
+
+    def __init__(self):
+        super().__init__(title=_("Paste Codex access token"), timeout=120)
+        self.auth: Optional[CodexAuth] = None
+        self.error: str = ""
+        self.field = discord.ui.TextInput(
+            label=_("Access token"),
+            style=discord.TextStyle.long,
+            required=True,
+        )
+        self.add_item(self.field)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            self.auth = auth_from_tokens(self.field.value.strip(), "", "", source="pasted")
+        except ValueError as e:
+            log.warning("Rejected pasted Codex token", exc_info=e)
+            self.error = _("That does not look like a Codex access token (no account id inside it).")
+        await interaction.response.defer()
+        self.stop()
+
+
+class CodexLoginView(discord.ui.View):
+    """Sits under the device-code embed while the cog polls for approval."""
+
+    def __init__(self, author: discord.Member):
+        super().__init__(timeout=900)
+        self.author = author
+        self.result: Optional[CodexAuth] = None
+        self.cancelled = False
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        if interaction.user.id != self.author.id:
+            await interaction.response.send_message(_("This isn't your menu!"), ephemeral=True)
+            return False
+        return True
+
+    def finish(self, auth: Optional[CodexAuth]) -> None:
+        self.result = auth
+        self.stop()
+
+    @discord.ui.button(label="Paste token instead", style=discord.ButtonStyle.secondary)
+    async def paste(self, interaction: discord.Interaction, button: discord.ui.Button):
+        modal = CodexTokenModal()
+        await interaction.response.send_modal(modal)
+        await modal.wait()
+        if self.is_finished():
+            await interaction.followup.send(
+                _("This login already finished, run the command again if you still need to paste a token."),
+                ephemeral=True,
+            )
+            return
+        if modal.error:
+            await interaction.followup.send(modal.error, ephemeral=True)
+            return
+        if modal.auth:
+            self.finish(modal.auth)
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger)
+    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        self.cancelled = True
+        self.stop()
 
 
 class ToolSkipFeedbackModal(discord.ui.Modal):

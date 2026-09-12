@@ -10,6 +10,7 @@ from openai.types.chat.chat_completion_message import ChatCompletionMessage
 from redbot.core import commands
 from redbot.core.bot import Red
 
+from .common.codex import CodexAuth
 from .common.command_index import CommandIndexStore
 from .common.embedding_store import EmbeddingStore
 from .common.models import DB, Conversation, EndpointProfile, GuildSettings, Skill
@@ -34,6 +35,8 @@ class MixinMeta(ABC):
         self.scheduler: AsyncIOScheduler
         # Keys: "cached", "cache_write", "total", "model".
         self.last_cache_stats: Dict[str, object]
+        # One lock per Codex credential, keyed by scope (or "guild-<id>").
+        self.codex_locks: Dict[str, asyncio.Lock]
         # Smartmod review state (actually assigned in SmartMod.__init__).
         self.smartmod_cooldowns: Dict[tuple[int, int], float]
         self.smartmod_tasks: set
@@ -48,6 +51,18 @@ class MixinMeta(ABC):
 
     @abstractmethod
     def get_api_key(self, conf: GuildSettings) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def get_codex_auth(self, conf: GuildSettings, guild_id: int = 0) -> tuple[Optional[CodexAuth], str]:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def ensure_codex_model(self, model: str, auth: CodexAuth) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def clear_codex_auth(self, scope: str, conf: GuildSettings) -> None:
         raise NotImplementedError
 
     @abstractmethod
@@ -122,6 +137,10 @@ class MixinMeta(ABC):
 
     @abstractmethod
     def get_guild_endpoint_url(self, conf: GuildSettings) -> Optional[str]:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def check_openai_key(self, conf: GuildSettings, prefix: str) -> Optional[str]:
         raise NotImplementedError
 
     @abstractmethod

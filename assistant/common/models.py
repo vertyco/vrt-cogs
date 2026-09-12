@@ -7,6 +7,7 @@ import orjson
 from pydantic import VERSION, BaseModel, Field, field_validator
 from redbot.core.bot import Red
 
+from .codex import CodexAuth
 from .constants import DEFAULT_MOD_PROMPT, MOD_CATEGORY_DEFAULTS, SKILL_INDEX_HEADER
 
 log = logging.getLogger("red.vrt.assistant.models")
@@ -247,6 +248,7 @@ class GuildSettings(AssistantBaseModel):
     channel_id: t.Optional[int] = 0  # The main auto-response channel ID
     listen_channels: t.List[int] = []  # Channels to listen to for auto-reply
     api_key: t.Optional[str] = None
+    codex_auth: t.Optional[CodexAuth] = None  # ChatGPT/Codex subscription login for this server
     endswith_questionmark: bool = False
     min_length: int = 7
     max_retention: int = 0
@@ -659,6 +661,9 @@ class DB(AssistantBaseModel):
     default_model: str = ""  # Global fallback chat model for guilds that haven't set their own
     endpoint_override: t.Optional[str] = None
     endpoint_api_key: t.Optional[str] = None
+    codex_auth: t.Optional[CodexAuth] = None  # Global ChatGPT/Codex subscription login
+    codex_models: t.List[str] = []  # Cached model catalog from the Codex backend
+    codex_models_fetched: float = 0.0  # Unix time the catalog was last fetched
     endpoint_profile: t.Optional[EndpointProfile] = None
     reminders: t.Dict[str, Reminder] = {}  # reminder_id -> Reminder
     scheduled_tasks: t.Dict[str, ScheduledTask] = {}  # task_id -> ScheduledTask

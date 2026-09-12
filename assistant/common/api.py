@@ -4,6 +4,7 @@ import json
 import logging
 import math
 import re
+import time
 import typing as t
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
@@ -12,6 +13,7 @@ from urllib.parse import urlparse
 
 import aiohttp
 import discord
+import openai
 import tiktoken
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.chat.chat_completion_message import ChatCompletionMessage
@@ -21,7 +23,9 @@ from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import box, humanize_number
 
 from ..abc import MixinMeta
-from .calls import request_chat_completion_raw, request_embedding_raw
+from . import codex
+from .calls import request_chat_completion_raw, request_codex_raw, request_embedding_raw
+from .codex import CodexAuth, CodexLoginExpired
 from .constants import (
     COMPACTION_KEEP_RECENT,
     COMPACTION_SUMMARY_ROLE,
@@ -41,6 +45,7 @@ from .models import (
 log = logging.getLogger("red.vrt.assistant.api")
 _ = Translator("Assistant", __file__)
 ENDPOINT_PROFILE_TTL_SECONDS = 300
+CODEX_TIMEOUT = aiohttp.ClientTimeout(total=codex.CODEX_HTTP_TIMEOUT_SECONDS)
 
 # Token counts are estimates for budgeting/compaction only, so one encoding fits all
 # models (o200k_base is wrong-but-close for non-OpenAI endpoints). Lazy because the
@@ -56,6 +61,7 @@ def get_encoding() -> tiktoken.Encoding:
 
 
 OPENROUTER_CHAT_FALLBACK_MODEL = "openrouter/auto"
+OPENAI_MODELS_URL = "https://api.openai.com/v1/models"
 PREFERRED_EMBEDDING_FALLBACKS = (
     "text-embedding-3-small",
     "text-embedding-3-large",
@@ -95,6 +101,182 @@ class API(MixinMeta):
         if conf is not None and conf.endpoint_override:
             return conf.endpoint_override
         return self.db.endpoint_override or None
+
+    async def probe_openai_key(self, api_key: str) -> Optional[int]:
+        """Ask OpenAI whether a key works. Returns the HTTP status, or None if the request itself failed."""
+        timeout = aiohttp.ClientTimeout(total=5)
+        headers = {"Authorization": f"Bearer {api_key}"}
+        try:
+            async with aiohttp.ClientSession(timeout=timeout, headers=headers) as session:
+                async with session.get(OPENAI_MODELS_URL) as res:
+                    return res.status
+        except Exception as e:
+            log.warning("Could not check the API key against OpenAI", exc_info=e)
+            return None
+
+    async def check_openai_key(self, conf: GuildSettings, prefix: str) -> Optional[str]:
+        """Explain why requests that go straight to OpenAI would fail with the current key or embed model.
+
+        Only applies when no endpoint override is active, since a router's model list is
+        public and cannot prove a key works. Returns None when everything looks fine.
+        """
+        if self.get_guild_endpoint_url(conf):
+            return None
+        api_key = self.get_api_key(conf)
+        key_command = f"{prefix}assistant api key" if conf.api_key else f"{prefix}assistant api globalkey"
+        problems: list[str] = []
+        if not api_key:
+            problems.append(
+                _("No API key is set. Memory search, and the fallback when Codex fails, need one: `{}`").format(
+                    key_command
+                )
+            )
+        elif api_key.startswith("sk-or-"):
+            problems.append(
+                _(
+                    "The saved API key looks like an OpenRouter key, but requests now go straight to OpenAI. "
+                    "Memory search, and the fallback when Codex fails, will not work. "
+                    "Set the OpenRouter endpoint again, or replace the key with an OpenAI key: `{}`"
+                ).format(key_command)
+            )
+        else:
+            status = await self.probe_openai_key(api_key)
+            if status == 401:
+                problems.append(
+                    _(
+                        "OpenAI rejected the saved API key. Memory search, and the fallback when Codex fails, "
+                        "will not work until it is replaced: `{}`"
+                    ).format(key_command)
+                )
+        if conf.embed_model not in PREFERRED_EMBEDDING_FALLBACKS:
+            problems.append(
+                _(
+                    "The embedding model `{}` is not an OpenAI model, so memory search will fail. "
+                    "Pick one with `{}assistant embed model`"
+                ).format(conf.embed_model, prefix)
+            )
+        return "\n".join(problems) or None
+
+    def codex_lock(self, scope: str, guild_id: int) -> asyncio.Lock:
+        """One lock per credential so parallel chats never refresh the same token twice.
+
+        Refresh tokens rotate, so a double refresh would strand one caller with a dead token.
+        """
+        key = f"guild-{guild_id}" if scope == "guild" else scope
+        lock = self.codex_locks.get(key)
+        if lock is None:
+            lock = self.codex_locks[key] = asyncio.Lock()
+        return lock
+
+    def pick_codex_auth(self, conf: GuildSettings) -> tuple[t.Optional[CodexAuth], str]:
+        """Resolution order when no endpoint override is active.
+
+        1. This server's Codex login
+        2. The global Codex login stored in config
+        3. The Codex CLI's auth.json on the bot host
+        API keys are not checked here. A Codex login is always tried first, and the
+        caller falls back to the API-key path when this returns None or the
+        subscription request fails.
+        """
+        if self.get_guild_endpoint_url(conf):
+            return None, ""
+        if conf.codex_auth:
+            return conf.codex_auth, "guild"
+        if self.db.codex_auth:
+            return self.db.codex_auth, "global"
+        file_auth = codex.read_auth_file()
+        if file_auth:
+            return file_auth, "file"
+        return None, ""
+
+    async def store_codex_auth(self, auth: t.Optional[CodexAuth], scope: str, conf: GuildSettings) -> None:
+        if scope == "guild":
+            conf.codex_auth = auth
+        elif scope == "global":
+            self.db.codex_auth = auth
+        elif scope == "file" and auth is not None:
+            codex.write_auth_file(auth)
+            return
+        await self.save_conf()
+
+    async def clear_codex_auth(self, scope: str, conf: GuildSettings) -> None:
+        """Forget a dead login. The auth.json file is left alone; the CLI owns it."""
+        if scope == "file":
+            return
+        await self.store_codex_auth(None, scope, conf)
+
+    async def forget_rejected_codex_auth(self, scope: str, conf: GuildSettings, error: Exception) -> None:
+        """Drop a login the Codex backend refused so the next request falls back to API keys."""
+        verb = "ignoring the host auth.json login" if scope == "file" else f"clearing the {scope} login"
+        log.error(f"The Codex backend rejected the {scope} login, {verb}", exc_info=error)
+        if scope == "file":
+            codex.ignore_auth_file()
+        else:
+            await self.clear_codex_auth(scope, conf)
+
+    async def get_codex_auth(self, conf: GuildSettings, guild_id: int = 0) -> tuple[t.Optional[CodexAuth], str]:
+        """Return the effective, non-expired Codex login for this server and where it came from.
+
+        Raises ``CodexLoginExpired`` (after clearing the stored login) when the refresh
+        token is dead, and ``CodexRefreshFailed`` when the auth server is unreachable.
+        """
+        auth, scope = self.pick_codex_auth(conf)
+        if auth is None or not codex.needs_refresh(auth):
+            return auth, scope
+        async with self.codex_lock(scope, guild_id):
+            fresh_auth, fresh_scope = self.pick_codex_auth(conf)
+            if fresh_scope != scope:
+                # The winning credential changed while we waited; retry so the right lock is held.
+                return await self.get_codex_auth(conf, guild_id)
+            auth, scope = fresh_auth, fresh_scope
+            if auth is None or not codex.needs_refresh(auth):
+                return auth, scope
+            try:
+                async with aiohttp.ClientSession(timeout=CODEX_TIMEOUT) as session:
+                    renewed = await codex.refresh(auth, session)
+            except CodexLoginExpired as e:
+                if scope == "file":
+                    log.error(
+                        "The Codex auth.json login on this bot's host is dead, falling back to API keys. "
+                        "Run `codex login` on the host to restore it.",
+                        exc_info=e,
+                    )
+                    codex.ignore_auth_file()
+                    return None, ""
+                log.error(f"Codex login ({scope}) can no longer be refreshed, clearing it", exc_info=e)
+                await self.clear_codex_auth(scope, conf)
+                raise
+            await self.store_codex_auth(renewed, scope, conf)
+            log.info(f"Refreshed Codex login ({scope}), expires in {int(codex.expires_at(renewed) - time.time())}s")
+            return renewed, scope
+
+    async def ensure_codex_model(self, model: str, auth: CodexAuth) -> str:
+        """Return ``model`` if the subscription serves it, else the Codex default model."""
+        # The stamp is what gates the fetch (not the list), so an empty catalog is cached too.
+        age = time.time() - self.db.codex_models_fetched
+        if age > codex.CODEX_CATALOG_TTL_SECONDS:
+            try:
+                async with aiohttp.ClientSession(timeout=CODEX_TIMEOUT) as session:
+                    self.db.codex_models = await codex.fetch_model_catalog(auth, session)
+            except codex.CodexRefreshFailed as e:
+                log.warning("Could not fetch the Codex model catalog, using cached list", exc_info=e)
+            # Stamped even when the fetch failed so a broken catalog is not retried every request.
+            self.db.codex_models_fetched = time.time()
+        if not self.db.codex_models:
+            return model
+        if model in self.db.codex_models:
+            return model
+        log.info(f"Model {model} is not available on the Codex subscription, using {codex.CODEX_DEFAULT_MODEL}")
+        return codex.CODEX_DEFAULT_MODEL
+
+    async def resolve_codex(
+        self, conf: GuildSettings, model: str, guild_id: Optional[int] = None
+    ) -> tuple[t.Optional[CodexAuth], str, str]:
+        """Return the Codex login for this request, its scope, and the model the subscription serves."""
+        auth, scope = await self.get_codex_auth(conf, guild_id or 0)
+        if auth is not None:
+            model = await self.ensure_codex_model(model, auth)
+        return auth, scope, model
 
     def get_cached_endpoint_profile(self, conf: t.Optional[GuildSettings] = None) -> Optional[EndpointProfile]:
         """Return cached endpoint profile for the effective endpoint.
@@ -614,59 +796,10 @@ class API(MixinMeta):
             status = _("Failed to fetch: {}").format(str(e))
         return status
 
-    async def request_response(
-        self,
-        messages: List[dict],
-        conf: GuildSettings,
-        functions: Optional[List[dict]] = None,
-        member: Optional[discord.Member] = None,
-        response_token_override: int = None,
-        model_override: Optional[str] = None,
-        temperature_override: Optional[float] = None,
-        session_id: Optional[str] = None,
-        guild_id: Optional[int] = None,
-        tool_choice: Optional[t.Union[str, dict]] = None,
-    ) -> ChatCompletionMessage:
-        requested_model = model_override or self.db.get_effective_model(conf, member)
-        base_url = self.get_guild_endpoint_url(conf)
-        if base_url:
-            await self.refresh_endpoint_profile(conf)
-        model = self.resolve_chat_model(requested_model, conf)
-
-        max_convo_tokens = self.get_max_tokens(conf, member)
-        max_response_tokens = conf.get_user_max_response_tokens(member)
-
-        current_convo_tokens = await self.count_payload_tokens(messages)
-        if functions:
-            current_convo_tokens += await self.count_function_tokens(functions)
-
-        # Dynamically adjust to lower model to save on cost
-        if "-16k" in model and current_convo_tokens < 3000:
-            model = model.replace("-16k", "")
-        if "-32k" in model and current_convo_tokens < 4000:
-            model = model.replace("-32k", "")
-
-        max_model_tokens = MODELS.get(model)
-
-        # Ensure that user doesn't set max response tokens higher than model can handle
-        if response_token_override:
-            response_tokens = response_token_override
-        else:
-            response_tokens = 0  # Dynamic
-            if max_response_tokens:
-                # Calculate max response tokens
-                response_tokens = max(max_convo_tokens - current_convo_tokens, 0)
-                # If current convo exceeds the max convo tokens for that user, use max model tokens
-                if not response_tokens and max_model_tokens:
-                    response_tokens = max(max_model_tokens - current_convo_tokens, 0)
-                # Use the lesser of caculated vs set response tokens
-                response_tokens = min(response_tokens, max_response_tokens)
-
-        if model not in MODELS and base_url is None:
-            log.error(f"This model is no longer supported: {model}. Switching to gpt-5.4")
-            model = "gpt-5.4"
-            await self.save_conf()
-
+    def build_openrouter_options(
+        self, model: str, conf: GuildSettings, base_url: Optional[str]
+    ) -> tuple[str, Optional[dict], bool]:
+        """Return the OpenRouter-adjusted model, provider routing prefs, and whether the endpoint is OpenRouter."""
         is_openrouter = bool(base_url and "openrouter.ai" in base_url.lower())
 
         # Apply global guild suffix (e.g. ":nitro") AFTER resolve_chat_model so the
@@ -691,7 +824,116 @@ class API(MixinMeta):
             if prefs:
                 openrouter_provider = prefs
 
-        response: ChatCompletion = await request_chat_completion_raw(
+        return model, openrouter_provider, is_openrouter
+
+    def compute_response_tokens(
+        self,
+        conf: GuildSettings,
+        member: Optional[discord.Member],
+        model: str,
+        current_convo_tokens: int,
+        response_token_override: Optional[int],
+    ) -> int:
+        """Return the max_tokens budget for a reply, capped by what the model can still fit."""
+        # Ensure that user doesn't set max response tokens higher than model can handle
+        if response_token_override:
+            return response_token_override
+        max_response_tokens = conf.get_user_max_response_tokens(member)
+        if not max_response_tokens:
+            return 0  # Dynamic
+        max_convo_tokens = self.get_max_tokens(conf, member)
+        max_model_tokens = MODELS.get(model)
+        # Calculate max response tokens
+        response_tokens = max(max_convo_tokens - current_convo_tokens, 0)
+        # If current convo exceeds the max convo tokens for that user, use max model tokens
+        if not response_tokens and max_model_tokens:
+            response_tokens = max(max_model_tokens - current_convo_tokens, 0)
+        # Use the lesser of caculated vs set response tokens
+        return min(response_tokens, max_response_tokens)
+
+    async def request_codex_response(
+        self,
+        messages: List[dict],
+        conf: GuildSettings,
+        functions: Optional[List[dict]],
+        member: Optional[discord.Member],
+        model: str,
+        guild_id: Optional[int],
+        tool_choice: Optional[t.Union[str, dict]],
+    ) -> Optional[ChatCompletion]:
+        """Try the Codex subscription first.
+
+        Returns None when no Codex login applies, or when the subscription failed and an
+        API key is configured to take the request instead. Raises when the subscription
+        failed and there is no API key to fall back to.
+        """
+        has_fallback = bool(self.get_api_key(conf))
+        scope = ""
+        try:
+            auth, scope, codex_model = await self.resolve_codex(conf, model, guild_id)
+            if auth is None:
+                return None
+            log.debug(f"Codex ({scope}) handling chat for guild {guild_id} with {codex_model}")
+            return await request_codex_raw(
+                model=codex_model,
+                messages=messages,
+                auth=auth,
+                functions=functions,
+                reasoning_effort=conf.get_user_reasoning_effort(member),
+                verbosity=conf.verbosity,
+                tool_choice=tool_choice,
+                guild_id=guild_id,
+            )
+        except openai.AuthenticationError as e:
+            await self.forget_rejected_codex_auth(scope, conf, e)
+            if not has_fallback:
+                raise CodexLoginExpired("Codex backend rejected the login") from e
+            return None
+        except Exception as e:
+            if not has_fallback:
+                raise
+            log.warning(
+                f"Codex subscription request failed for guild {guild_id}, using the API key instead", exc_info=e
+            )
+            return None
+
+    async def request_api_response(
+        self,
+        messages: List[dict],
+        conf: GuildSettings,
+        functions: Optional[List[dict]],
+        member: Optional[discord.Member],
+        model: str,
+        base_url: Optional[str],
+        response_token_override: Optional[int],
+        temperature_override: Optional[float],
+        session_id: Optional[str],
+        guild_id: Optional[int],
+        tool_choice: Optional[t.Union[str, dict]],
+    ) -> ChatCompletion:
+        """Chat through an API key or endpoint override."""
+        current_convo_tokens = await self.count_payload_tokens(messages)
+        if functions:
+            current_convo_tokens += await self.count_function_tokens(functions)
+
+        # Dynamically adjust to lower model to save on cost
+        if "-16k" in model and current_convo_tokens < 3000:
+            model = model.replace("-16k", "")
+        if "-32k" in model and current_convo_tokens < 4000:
+            model = model.replace("-32k", "")
+
+        response_tokens = self.compute_response_tokens(
+            conf, member, model, current_convo_tokens, response_token_override
+        )
+
+        if model not in MODELS and base_url is None:
+            log.error(f"This model is no longer supported: {model}. Switching to gpt-5.4")
+            model = "gpt-5.4"
+            await self.save_conf()
+
+        model, openrouter_provider, is_openrouter = self.build_openrouter_options(model, conf, base_url)
+
+        return await request_chat_completion_raw(
             model=model,
             messages=messages,
             temperature=temperature_override if temperature_override is not None else conf.temperature,
@@ -712,6 +954,41 @@ class API(MixinMeta):
             openrouter_provider=openrouter_provider,
             guild_id=guild_id,
         )
+
+    async def request_response(
+        self,
+        messages: List[dict],
+        conf: GuildSettings,
+        functions: Optional[List[dict]] = None,
+        member: Optional[discord.Member] = None,
+        response_token_override: int = None,
+        model_override: Optional[str] = None,
+        temperature_override: Optional[float] = None,
+        session_id: Optional[str] = None,
+        guild_id: Optional[int] = None,
+        tool_choice: Optional[t.Union[str, dict]] = None,
+    ) -> ChatCompletionMessage:
+        requested_model = model_override or self.db.get_effective_model(conf, member)
+        base_url = self.get_guild_endpoint_url(conf)
+        if base_url:
+            await self.refresh_endpoint_profile(conf)
+        model = self.resolve_chat_model(requested_model, conf)
+
+        response = await self.request_codex_response(messages, conf, functions, member, model, guild_id, tool_choice)
+        if response is None:
+            response = await self.request_api_response(
+                messages,
+                conf,
+                functions,
+                member,
+                model,
+                base_url,
+                response_token_override,
+                temperature_override,
+                session_id,
+                guild_id,
+                tool_choice,
+            )
         message: ChatCompletionMessage = response.choices[0].message
 
         if response.usage:

@@ -1,6 +1,7 @@
 import logging
 import re
 import typing as t
+from types import SimpleNamespace
 from typing import List, Optional
 
 import httpx
@@ -16,6 +17,7 @@ from tenacity import (
     wait_random_exponential,
 )
 
+from .codex import CODEX_BACKEND_URL, CodexAuth, backend_headers
 from .constants import (
     MODELS,
     NO_DEVELOPER_ROLE,
@@ -27,19 +29,25 @@ from .responses import responses_to_chat_completion, to_responses_input, to_resp
 
 log = logging.getLogger("red.vrt.assistant.calls")
 
-_clients: dict[tuple[str, str], openai.AsyncOpenAI] = {}
+_clients: dict[tuple[str, str, tuple], openai.AsyncOpenAI] = {}
 
 
-def get_client(api_key: str, base_url: Optional[str] = None) -> openai.AsyncOpenAI:
-    """Return a cached AsyncOpenAI client for this (api_key, base_url) pair.
+def get_client(
+    api_key: str,
+    base_url: Optional[str] = None,
+    extra_headers: Optional[dict] = None,
+) -> openai.AsyncOpenAI:
+    """Return a cached AsyncOpenAI client for this (api_key, base_url, headers) triple.
 
     Constructing AsyncOpenAI builds a new httpx client and TLS context per call,
-    which shows up as per-message CPU and forfeits connection pooling.
+    which shows up as per-message CPU and forfeits connection pooling. Codex
+    subscription calls need per-account default headers, hence the third key part.
     """
-    key = (api_key, base_url or "")
+    header_key = tuple(sorted((extra_headers or {}).items()))
+    key = (api_key, base_url or "", header_key)
     client = _clients.get(key)
     if client is None:
-        client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url)
+        client = openai.AsyncOpenAI(api_key=api_key, base_url=base_url, default_headers=extra_headers or None)
         _clients[key] = client
     return client
 
@@ -168,6 +176,96 @@ async def request_responses_raw(
     )
     resp = await client.responses.create(**kwargs)
     log.debug(f"request_responses_raw: {model} -> {getattr(resp, 'model', model)}")
+    return responses_to_chat_completion(resp, model)
+
+
+async def collect_codex_stream(stream: t.AsyncIterator) -> SimpleNamespace:
+    """Drain a Responses SSE stream into a Response-shaped object.
+
+    The Codex backend only streams. Its final ``response.completed`` event carries
+    usage but an empty ``output`` list; the real items arrive one per
+    ``response.output_item.done`` event, so they are collected here and stitched in.
+    """
+    items: list = []
+    completed = None
+    async for event in stream:
+        etype = getattr(event, "type", "")
+        if etype == "response.output_item.done":
+            items.append(event.item)
+        elif etype in ("response.completed", "response.incomplete"):
+            # An incomplete response still carries whatever the model managed to produce.
+            completed = event.response
+        elif etype == "response.failed":
+            error = getattr(getattr(event, "response", None), "error", None)
+            reason = getattr(error, "message", None) or "unknown error"
+            raise RuntimeError(f"Codex request failed: {reason}")
+    if completed is None:
+        raise RuntimeError("Codex stream ended without a response.completed event")
+    return SimpleNamespace(
+        id=getattr(completed, "id", None),
+        model=getattr(completed, "model", None),
+        created_at=getattr(completed, "created_at", 0),
+        usage=getattr(completed, "usage", None),
+        output=items,
+    )
+
+
+@retry(
+    retry=retry_if_exception_type(
+        t.Union[
+            httpx.TimeoutException,
+            httpx.ReadTimeout,
+            openai.InternalServerError,
+        ]
+    ),
+    wait=wait_random_exponential(min=1, max=30),
+    stop=stop_after_attempt(5),
+    reraise=True,
+)
+async def request_codex_raw(
+    model: str,
+    messages: List[dict],
+    auth: CodexAuth,
+    functions: Optional[List[dict]] = None,
+    reasoning_effort: Optional[str] = None,
+    verbosity: Optional[str] = None,
+    tool_choice: Optional[t.Union[str, dict]] = None,
+    guild_id: Optional[int] = None,
+) -> ChatCompletion:
+    """Chat via the ChatGPT/Codex subscription backend.
+
+    Responses API only, streamed, stateless. ``max_output_tokens`` is not sent because
+    the backend rejects it. The result is adapted back into a ``ChatCompletion`` so
+    the rest of the pipeline is unchanged.
+    """
+    client = get_client(auth.access_token, CODEX_BACKEND_URL, backend_headers(auth))
+    effort = "low" if reasoning_effort == "minimal" else reasoning_effort
+    kwargs: dict = {
+        "model": model,
+        "input": to_responses_input(messages),
+        "store": False,
+        "stream": True,
+    }
+    if functions:
+        kwargs["tools"] = to_responses_tools(functions)
+        if tool_choice is not None:
+            kwargs["tool_choice"] = tool_choice
+    if effort and effort != "none":
+        kwargs["reasoning"] = {"effort": effort}
+    if verbosity is not None:
+        kwargs["text"] = {"verbosity": verbosity}
+    if guild_id is not None:
+        kwargs["prompt_cache_key"] = f"guild-{guild_id}"
+
+    add_breadcrumb(
+        category="api",
+        message=f"Calling request_codex_raw: {model}",
+        level="info",
+        data={k: v for k, v in kwargs.items() if k != "input"},
+    )
+    stream = await client.responses.create(**kwargs)
+    resp = await collect_codex_stream(stream)
+    log.debug(f"request_codex_raw: {model} -> {resp.model or model}")
     return responses_to_chat_completion(resp, model)
 
 
@@ -335,9 +433,7 @@ async def request_chat_completion_raw(
             # qwen2.5-vl-72b-instruct-2024-09-19) reject cache_control.
             # Detect a trailing -MM-DD or -YYYY-MM-DD date suffix and skip
             # the breakpoint so we don't surface a hard error to admins.
-            qwen_supports_cc = model_prefix != "qwen" or not re.search(
-                r"-(?:\d{4}-)?\d{2}-\d{2}$", model.lower()
-            )
+            qwen_supports_cc = model_prefix != "qwen" or not re.search(r"-(?:\d{4}-)?\d{2}-\d{2}$", model.lower())
 
             if model_prefix == "anthropic":
                 # Anthropic supports automatic caching via top-level
@@ -385,6 +481,7 @@ async def request_chat_completion_raw(
         level="info",
         data=kwargs,
     )
+
     # Final wire-gate sanitation: some reasoning models emit an assistant turn
     # with null content and no tool_calls; providers like qwen via OpenRouter
     # reject it with 400 'Provider returned error'. Salvage reasoning into

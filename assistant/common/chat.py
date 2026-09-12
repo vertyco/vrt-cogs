@@ -36,6 +36,7 @@ from sentry_sdk import add_breadcrumb
 
 from ..abc import MixinMeta
 from ..views import AdminToolApprovalView
+from .codex import CodexLoginExpired, CodexRefreshFailed
 from .constants import (
     DO_NOT_RESPOND_SCHEMA,
     IMAGE_RETAIN_TURNS,
@@ -709,11 +710,20 @@ class ChatHandler(MixinMeta):
             except openai.APIConnectionError as e:
                 reply = _("Failed to communicate with API!")
                 log.error(f"APIConnectionError (From listener: {listener})", exc_info=e)
-            except openai.AuthenticationError:
+            except CodexLoginExpired as e:
+                log.warning(f"Codex login expired (From listener: {listener})", exc_info=e)
+                reply = _(
+                    "The Codex login has expired. An admin can log in again with `{}assistant codex login`."
+                ).format((await self.bot.get_valid_prefixes(message.guild))[0])
+            except CodexRefreshFailed as e:
+                log.error(f"Codex token refresh failed (From listener: {listener})", exc_info=e)
+                reply = _("Could not refresh the Codex login right now, please try again in a moment.")
+            except openai.AuthenticationError as e:
+                log.warning(f"AuthenticationError (From listener: {listener})", exc_info=e)
                 if message.author == message.guild.owner:
-                    reply = _("Invalid API key, please set a new valid key!")
+                    reply = _("Invalid API key or Codex login, please set a new valid one!")
                 else:
-                    reply = _("Uh oh, looks like my API key is invalid!")
+                    reply = _("Uh oh, looks like my API credentials are invalid!")
             except openai.RateLimitError as e:
                 reply = _("Rate limit error: {}").format(e.message)
             except httpx.ReadTimeout as e:
