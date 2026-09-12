@@ -854,6 +854,7 @@ class ChatHandler(MixinMeta):
         auto_answer: Optional[bool] = False,
         trigger_prompt: Optional[str] = None,
         deferred_files: Optional[List[discord.File]] = None,
+        conversation_key: Optional[str] = None,
     ) -> Union[str, None]:
         """Call the API asynchronously"""
         functions = function_calls.copy() if function_calls else []
@@ -885,11 +886,8 @@ class ChatHandler(MixinMeta):
         chan_id = channel if isinstance(channel, int) else channel.id
         if conf.collab_convos:
             mem_id = chan_id
-        conversation = self.db.get_conversation(
-            member_id=mem_id,
-            channel_id=chan_id,
-            guild_id=guild.id,
-        )
+        key = conversation_key or f"{mem_id}-{chan_id}-{guild.id}"
+        conversation = self.db.conversations.setdefault(key, Conversation())
 
         conversation.cleanup(conf, author)
         conversation.refresh()
@@ -914,7 +912,7 @@ class ChatHandler(MixinMeta):
         finally:
             conversation.cleanup(conf, author)
             conversation.refresh()
-            asyncio.create_task(self.save_conversation(f"{mem_id}-{chan_id}-{guild.id}"))
+            asyncio.create_task(self.save_conversation(key))
 
     async def _get_chat_response(
         self,

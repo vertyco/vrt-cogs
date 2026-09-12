@@ -46,7 +46,10 @@ class ConversationStore:
             os.replace(tmp, path)
 
     def delete(self, key: str) -> None:
-        self.path_for(key).unlink(missing_ok=True)
+        # Same per-key lock as save: on Windows unlinking while another thread is
+        # mid os.replace on the same path raises PermissionError.
+        with self.lock_for(key):
+            self.path_for(key).unlink(missing_ok=True)
 
     def clear(self) -> None:
         for f in self.dir.glob("*.json"):

@@ -42,6 +42,7 @@ from .common.constants import (
 from .common.conversation_store import ConversationStore
 from .common.embedding_store import EmbeddingStore
 from .common.functions import AssistantFunctions
+from .common.jobs import JobRunner
 from .common.models import (
     DB,
     Conversation,
@@ -65,6 +66,7 @@ class Assistant(
     AssistantCommands,
     AssistantFunctions,
     AssistantListener,
+    JobRunner,
     SmartMod,
     ChatHandler,
     commands.Cog,
@@ -82,7 +84,7 @@ class Assistant(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "8.23.0"
+    __version__ = "8.24.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -125,6 +127,9 @@ class Assistant(
         self.codex_locks: Dict[str, asyncio.Lock] = {}
         # Servers already told that memory search is failing (see notify_embedding_failure)
         self.embedding_failure_notified: set[int] = set()
+        # Jobs: one lock per job so a slow run is never doubled, plus dynamically registered raw listeners.
+        self.job_locks: Dict[str, asyncio.Lock] = {}
+        self.raw_listeners: Dict[str, Callable] = {}
 
     async def cog_load(self) -> None:
         asyncio.create_task(self.init_cog())
@@ -158,6 +163,9 @@ class Assistant(
                 pass
         self.cancel_all_message_queues()
         self.save_loop.cancel()
+        for event_name, func in self.raw_listeners.items():
+            self.bot.remove_listener(func, event_name)
+        self.raw_listeners.clear()
         self.scheduler.shutdown(wait=False)
         self.mp_pool.terminate()
         await asyncio.to_thread(self.mp_pool.join)
@@ -250,6 +258,7 @@ class Assistant(
         self.scheduler.start()
         await self._reschedule_reminders()
         await self._reschedule_tasks()
+        self.schedule_jobs()
 
         logging.getLogger("openai").setLevel(logging.WARNING)
         logging.getLogger("aiocache").setLevel(logging.WARNING)

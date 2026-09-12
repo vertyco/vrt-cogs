@@ -235,6 +235,28 @@ class RolePrompt(BaseModel):
     replace: bool = False  # True = replace resolved base; False = append to it
 
 
+class Job(AssistantBaseModel):
+    """An admin-configured prompt the assistant runs on a schedule or on a Discord event."""
+
+    id: str
+    name: str
+    guild_id: int
+    channel_id: int  # output channel
+    prompt: str
+    trigger_type: t.Literal["interval", "cron", "event"]
+    trigger: str  # "30m" | "0 9 * * 1-5" | "member_join" | "raw:on_member_ban"
+    event_channel_id: t.Optional[int] = None  # channel filter for message/reaction_add/thread_create/voice_join
+    enabled: bool = True
+    silent: bool = False
+    remember: bool = False
+    created_by: int
+    created_at: datetime
+    last_run: t.Optional[datetime] = None
+    run_count: int = 0
+    consecutive_errors: int = 0
+    last_error: str = ""
+
+
 class GuildSettings(AssistantBaseModel):
     system_prompt: t.Optional[str] = DEFAULT_SYSTEM_PROMPT
     prompt: str = ""
@@ -316,6 +338,8 @@ class GuildSettings(AssistantBaseModel):
     max_function_calls: int = 100  # Max calls in a row
     max_scheduled_tasks: int = 25  # Max pending scheduled tasks per user in this guild
     function_statuses: t.Dict[str, bool] = {}  # {"function_name": True/False for enabled/disabled}
+    jobs: t.Dict[str, Job] = {}  # job_id -> Job (admin-configured scheduled/event runs)
+    job_log_channel: int = 0  # every job run posts a log embed here when set
 
     # ------------------------------------------------------------------
     # Trailing-context-block inclusion toggles.
@@ -667,6 +691,9 @@ class DB(AssistantBaseModel):
     endpoint_profile: t.Optional[EndpointProfile] = None
     reminders: t.Dict[str, Reminder] = {}  # reminder_id -> Reminder
     scheduled_tasks: t.Dict[str, ScheduledTask] = {}  # task_id -> ScheduledTask
+    max_jobs_per_guild: int = 10
+    min_job_interval: int = 300  # seconds, interval jobs only
+    job_error_pause: int = 5  # consecutive errors before a job is disabled
 
     def get_effective_system_prompt(self, conf: GuildSettings) -> str:
         if not conf.system_prompt or conf.system_prompt == DEFAULT_SYSTEM_PROMPT:

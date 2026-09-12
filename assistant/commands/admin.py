@@ -190,6 +190,11 @@ class Admin(MixinMeta):
         """Configure token and retention limits"""
         pass
 
+    @assistant.group(name="jobs")
+    async def jobs(self, ctx: commands.Context):
+        """Scheduled and event-driven assistant jobs"""
+        pass
+
     @assistant.group(name="params", aliases=["parameters"])
     async def params(self, ctx: commands.Context):
         """Configure model behavior parameters"""

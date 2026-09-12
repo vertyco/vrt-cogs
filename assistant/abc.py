@@ -13,7 +13,7 @@ from redbot.core.bot import Red
 from .common.codex import CodexAuth
 from .common.command_index import CommandIndexStore
 from .common.embedding_store import EmbeddingStore
-from .common.models import DB, Conversation, EndpointProfile, GuildSettings, Skill
+from .common.models import DB, Conversation, EndpointProfile, GuildSettings, Job, Skill
 
 
 class CompositeMetaClass(CogMeta, ABCMeta):
@@ -41,6 +41,9 @@ class MixinMeta(ABC):
         # Smartmod review state (actually assigned in SmartMod.__init__).
         self.smartmod_cooldowns: Dict[tuple[int, int], float]
         self.smartmod_tasks: set
+        # Jobs: one lock per job so a slow run is never doubled, plus dynamically registered raw listeners.
+        self.job_locks: Dict[str, asyncio.Lock]
+        self.raw_listeners: Dict[str, Callable]
 
     @abstractmethod
     async def _fire_reminder(self, reminder_id: str) -> None:
@@ -251,6 +254,26 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def job_key(self, guild_id: int, job_id: str) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
+    def schedule_job(self, job: Job) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def unschedule_job(self, job: Job) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def sync_raw_listeners(self) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def run_job(self, guild_id: int, job_id: str, event_text: str = "") -> None:
+        raise NotImplementedError
+
+    @abstractmethod
     async def get_embedding_menu_embeds(self, guild_id: int, conf: GuildSettings, place: int) -> List[discord.Embed]:
         raise NotImplementedError
 
@@ -343,6 +366,8 @@ class MixinMeta(ABC):
         function_map: Optional[Dict[str, Callable]] = None,
         extend_function_calls: bool = True,
         message_obj: Optional[discord.Message] = None,
+        deferred_files: Optional[List[discord.File]] = None,
+        conversation_key: Optional[str] = None,
     ) -> str:
         raise NotImplementedError
 
