@@ -795,6 +795,7 @@ class SupportButton(Button):
 
             # Record analytics for ticket opened
             record_ticket_opened(conf, uid, self.panel_name, cid)
+            self.view.cog.bot.dispatch("ticket_opened", guild, user, channel_or_thread, self.panel_name)
 
             new_id = await update_active_overview(guild, conf)
             if new_id:

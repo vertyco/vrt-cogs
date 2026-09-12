@@ -683,6 +683,7 @@ class Functions(MixinMeta):
 
             # Record analytics for ticket opened
             record_ticket_opened(conf, uid, panel_name, cid)
+            self.bot.dispatch("ticket_opened", guild, user, channel_or_thread, panel_name)
 
             new_id = await update_active_overview(guild, conf)
             if new_id:
