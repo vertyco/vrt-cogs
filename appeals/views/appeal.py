@@ -12,6 +12,18 @@ from .submission import SubmissionView
 log = logging.getLogger("red.vrt.appeals.views.appeal")
 
 
+async def arktools_tempban_expiry(bot: Red, guild_id: int, discord_id: int) -> datetime | None:
+    """Expiry of the user's ArkTools temp ban, or None when ArkTools is absent, errors, or the user is not temp banned."""
+    cog = bot.get_cog("ArkTools")
+    if cog is None:
+        return None
+    try:
+        return await cog.db_utils.get_active_tempban(guild_id, discord_id)
+    except Exception as e:
+        log.error("ArkTools temp ban lookup failed for user %s in server %s", discord_id, guild_id, exc_info=e)
+        return None
+
+
 class AppealView(discord.ui.View):
     def __init__(self, custom_id: str) -> None:
         super().__init__(timeout=None)
@@ -87,6 +99,15 @@ class AppealView(discord.ui.View):
             except discord.NotFound:
                 return await interaction.followup.send(
                     "You're not banned from the server you're appealing for!", ephemeral=True
+                )
+
+        if not is_admin:
+            expiry = await arktools_tempban_expiry(bot, target_guild.id, interaction.user.id)
+            if expiry:
+                return await interaction.followup.send(
+                    "Temp banned users are not eligible for appeal, "
+                    f"your ban will expire in <t:{int(expiry.timestamp())}:R>",
+                    ephemeral=True,
                 )
 
         now = datetime.now(tz=timezone.utc)

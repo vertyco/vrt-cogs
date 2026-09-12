@@ -1,6 +1,5 @@
 import logging
 import typing as t
-from copy import deepcopy
 from datetime import datetime, timezone
 
 import discord
@@ -341,16 +340,14 @@ class Admin(MixinMeta):
 
         if cog := ctx.bot.get_cog("ArkTools"):
             try:
-                player = await cog.db_utils.get_player_discord(appealguild.id, member.id)
+                player = await cog.db_utils.get_player_discord(target_guild.id, member.id)
                 if player:
-                    fake_ctx = deepcopy(ctx)
-                    setattr(fake_ctx, "guild", target_guild)
                     await cog.ban_unban_player(
-                        ctx=fake_ctx,
-                        player_id=player.gameid,
+                        guild=target_guild,
+                        gameid=player.gameid,
                         ban=False,
                         reason=reason or "",
-                        prompt=True,
+                        ctx=ctx,
                     )
             except Exception as e:
                 log.error("Error unbanning player", exc_info=e)

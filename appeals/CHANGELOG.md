@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0
+
+- When the ArkTools cog is loaded, the appeal button now refuses users whose linked Ark player is currently temp banned, showing when the ban expires. Permanent bans are still appealable, and bots without ArkTools are unaffected.
+- Fixed the approve command's ArkTools unban: it looked up the player with the appeal server's ID instead of the target server's, and called the unban with arguments that no longer exist, so the Ark unban never fired.
+
 ## 0.3.0
 
 - Added a ban appeal cooldown: admins can require users to wait a set time after being banned before they can open an appeal (`[p]appeal bancooldown <duration>`). Ban time is read from the target server's audit log; if it can't be determined, the cooldown does not block.
