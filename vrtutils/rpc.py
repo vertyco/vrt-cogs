@@ -6,7 +6,7 @@ from abc import ABC
 from datetime import datetime, timedelta, timezone
 
 import discord
-from redbot.core import modlog
+from redbot.core import bank, modlog
 
 from .abc import MixinMeta
 from .common.ask_views import AskOperatorView
@@ -47,7 +47,11 @@ class RPCMethods(MixinMeta, ABC):
         return (
             self.rpc_quickpull,
             self.rpc_master,
+            self.rpc_setattr,
+            self.rpc_casino_set_raw,
             self.rpc_voice_members,
+            self.rpc_get_balance,
+            self.rpc_deposit_credits,
             self.rpc_warn,
             self.rpc_unwarn,
             self.rpc_get_warnings,
@@ -55,6 +59,8 @@ class RPCMethods(MixinMeta, ABC):
             self.rpc_timeout,
             self.rpc_untimeout,
             self.rpc_modnote,
+            self.rpc_edit_case,
+            self.rpc_delete_case,
             self.rpc_ask_operator,
             self.rpc_get_ask_answer,
         )
@@ -418,6 +424,38 @@ class RPCMethods(MixinMeta, ABC):
         )
         return {"ok": True, "user_id": int(user_id), "case": self._case_out(case) if case else None}
 
+
+    async def rpc_edit_case(self, guild_id: int, case_number: int, reason: str) -> dict:
+        """Rewrite the reason on an existing modlog case (edits the modlog message too)."""
+        guild = self.bot.get_guild(int(guild_id))
+        if guild is None:
+            return {"ok": False, "error": f"guild not found: {guild_id}"}
+        try:
+            case = await modlog.get_case(int(case_number), guild, self.bot)
+        except RuntimeError as e:
+            return {"ok": False, "error": str(e)}
+        await case.edit({"reason": str(reason)})
+        return {"ok": True, "case": self._case_out(case)}
+
+    async def rpc_delete_case(self, guild_id: int, case_number: int) -> dict:
+        """Remove a modlog case outright (config entry + its modlog message)."""
+        guild = self.bot.get_guild(int(guild_id))
+        if guild is None:
+            return {"ok": False, "error": f"guild not found: {guild_id}"}
+        try:
+            case = await modlog.get_case(int(case_number), guild, self.bot)
+        except RuntimeError as e:
+            return {"ok": False, "error": str(e)}
+        msg_deleted = False
+        if case.message:
+            try:
+                await case.message.delete()
+                msg_deleted = True
+            except Exception:
+                pass
+        await modlog._config.custom(modlog._CASES, str(guild.id), str(int(case_number))).clear()
+        return {"ok": True, "case_number": int(case_number), "message_deleted": msg_deleted}
+
     # ---------------------------------------------------------- operator asks
 
     async def rpc_ask_operator(
@@ -497,6 +535,100 @@ class RPCMethods(MixinMeta, ABC):
             "by_user_id": record["by_user_id"],
             "ts": record["ts"],
         }
+
+    # ------------------------------------------------------------------ economy
+
+    async def _vc_member(self, guild_id, user_id) -> tuple:
+        """-> (guild, member, error_dict). Fetches from the API if not cached."""
+        try:
+            gid, uid = int(guild_id), int(user_id)
+        except (TypeError, ValueError):
+            return None, None, {"ok": False, "error": "guild_id and user_id must be integers"}
+        guild = self.bot.get_guild(gid)
+        if guild is None:
+            return None, None, {"ok": False, "error": f"guild not found: {gid}"}
+        member = guild.get_member(uid)
+        if member is None:
+            try:
+                member = await guild.fetch_member(uid)
+            except discord.NotFound:
+                return guild, None, {"ok": False, "error": f"user {uid} is not a member of guild {gid}"}
+            except discord.HTTPException as e:
+                return guild, None, {"ok": False, "error": f"member fetch failed: {e}"}
+        return guild, member, None
+
+    async def rpc_get_balance(self, guild_id: int, user_id: int) -> dict:
+        """Red bank balance for a guild member (bank is per-guild here). Read-only."""
+        guild, member, err = await self._vc_member(guild_id, user_id)
+        if err:
+            return err
+        return {
+            "ok": True,
+            "user_id": member.id,
+            "balance": await bank.get_balance(member),
+            "currency_name": await bank.get_currency_name(guild),
+        }
+
+    async def rpc_deposit_credits(
+        self,
+        guild_id: int,
+        user_id: int,
+        amount: int,
+        reason: str,
+        force: bool = False,
+        audit_channel_id: int = 1226006586816729108,
+    ) -> dict:
+        """Deposit bank credits into a member's account and post an audit embed.
+
+        Red's own set_balance event still fires (BankEvents), so the ledger gets its
+        usual "Set Balance" line; the audit embed adds who sent it and why. Amounts
+        over 1,000,000 need force=True. The audit post failing does not undo the deposit.
+        """
+        if isinstance(amount, bool) or not isinstance(amount, (int, str)):
+            return {"ok": False, "error": "amount must be an integer"}
+        try:
+            amount = int(amount)
+        except ValueError:
+            return {"ok": False, "error": "amount must be an integer"}
+        if amount <= 0:
+            return {"ok": False, "error": "amount must be > 0"}
+        if amount > 1_000_000 and not force:
+            return {"ok": False, "error": "amount over 1,000,000 requires force=true"}
+        reason = str(reason or "").strip()
+        if not reason:
+            return {"ok": False, "error": "reason is required"}
+        guild, member, err = await self._vc_member(guild_id, user_id)
+        if err:
+            return err
+        old_balance = await bank.get_balance(member)
+        try:
+            new_balance = await bank.deposit_credits(member, amount)
+        except (ValueError, TypeError) as e:
+            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+        except bank.errors.BalanceTooHigh as e:
+            return {"ok": False, "error": f"BalanceTooHigh: {e}"}
+        currency = await bank.get_currency_name(guild)
+        out = {"ok": True, "user_id": member.id, "amount": amount, "old_balance": old_balance, "new_balance": new_balance}
+        channel = self.bot.get_channel(int(audit_channel_id))
+        if channel is None:
+            out["warning"] = f"audit channel not found: {audit_channel_id}"
+            return out
+        embed = discord.Embed(
+            title="Bank Event: NoA Deposit",
+            color=await self.bot.get_embed_color(channel),
+            timestamp=datetime.now(timezone.utc),
+        )
+        embed.add_field(name="Recipient", value=f"{member.mention}\n`{member.id}`")
+        embed.add_field(name="Amount", value=f"{amount:,} {currency}")
+        embed.add_field(name="Old Balance", value=f"{old_balance:,}")
+        embed.add_field(name="New Balance", value=f"{new_balance:,}")
+        embed.add_field(name="Reason", value=reason[:1024], inline=False)
+        try:
+            msg = await channel.send(embed=embed, allowed_mentions=discord.AllowedMentions.none())
+            out["audit_message_id"] = msg.id
+        except Exception as e:
+            out["warning"] = f"audit post failed: {type(e).__name__}: {e}"
+        return out
 
     # -------------------------------------------------------------- bot control
 
@@ -578,6 +710,87 @@ class RPCMethods(MixinMeta, ABC):
             return {"ok": True, "result": result}
         except (TypeError, ValueError):
             return {"ok": True, "result": repr(result)}
+
+    async def rpc_setattr(self, cog: str, path: list, value, call_after: list = None) -> dict:
+        """Assign a nested attr/item on a loaded cog, then await no-arg methods.
+
+        path: [["attr", name] | ["item", key], ...] walked from the cog root; the
+        leaf is set to value. Dict keys arrive as strings (JS mangles big ints)
+        and are coerced to the container's existing key type. NoA write bridge.
+        """
+        call_after = call_after or []
+        target = self.bot if cog == "bot" else self.bot.get_cog(cog)
+        if target is None:
+            return {"ok": False, "error": f"cog not loaded: {cog}", "loaded_cogs": sorted(self.bot.cogs)}
+        if not path:
+            return {"ok": False, "error": "empty path"}
+
+        def coerce(container, key):
+            if isinstance(container, dict) and key not in container and container:
+                kt = type(next(iter(container)))
+                try:
+                    return kt(key)
+                except Exception:
+                    return key
+            if isinstance(container, (list, tuple)):
+                return int(key)
+            return key
+
+        try:
+            obj = target
+            for kind, key in path[:-1]:
+                obj = getattr(obj, key) if kind == "attr" else obj[coerce(obj, key)]
+            kind, key = path[-1]
+            if kind == "attr":
+                setattr(obj, key, value)
+            else:
+                obj[coerce(obj, key)] = value
+            ran = []
+            for name in call_after:
+                fn = getattr(target, name)
+                res = fn()
+                if inspect.isawaitable(res):
+                    await res
+                ran.append(name)
+        except Exception as e:
+            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+        return {"ok": True, "set": path, "call_after": ran}
+
+    async def rpc_casino_set_raw(self, guild_id: int, game: str, key: str, value) -> dict:
+        """Set one Games.<game>.<key> value in the Casino (Redjumpman) cog's config.
+
+        Casino's config is a Red `Config` Group (async I/O), not a plain attribute
+        Tickets-style rpc_setattr can walk, so this mirrors the body of the
+        `casinoset <min|max|cooldown|multiplier|access|open>` command callbacks
+        (which need a ctx this bridge doesn't have) without touching any other
+        game or key. Respects casino_is_global; NoA graft 2026-09-23, Luke msg
+        1552356374363635723 (scheduled Double max -> 250).
+        """
+        cog = self.bot.get_cog("Casino")
+        if cog is None:
+            return {"ok": False, "error": "Casino not loaded"}
+        try:
+            is_global = await cog.casino_is_global()
+            settings = cog.config if is_global else cog.config.guild_from_id(int(guild_id))
+            before_all = await settings.Games.all()
+            game_key = game.title()
+            if game_key not in before_all:
+                return {"ok": False, "error": f"unknown game: {game}", "games": sorted(before_all)}
+            before = before_all[game_key]
+            await settings.Games.set_raw(game_key, key, value=value)
+            after_all = await settings.Games.all()
+            after = after_all[game_key]
+        except Exception as e:
+            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+        return {
+            "ok": True,
+            "guild_id": int(guild_id),
+            "is_global": is_global,
+            "game": game_key,
+            "key": key,
+            "before": before,
+            "after": after,
+        }
 
     async def rpc_quickpull(self, cogs: list, repo_name: str = "vrt-cogs") -> dict:
         """Update a downloader repo and reinstall + reload the given cogs.
