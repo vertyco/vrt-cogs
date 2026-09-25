@@ -1,5 +1,11 @@
 # Tickets Changelog
 
+## v3.8.0
+
+- **New**: `[p]ticketpings` lets each staff member turn on (or off) being pinged when a new ticket opens. You are only pinged for tickets you can see, and never for a ticket you opened yourself. Only ticket staff (global or any panel support role) or admins can turn it on; anyone can turn it off.
+- **New**: `[p]tickets view` lists who has new-ticket pings turned on.
+- **Change**: Red's delete-my-data request now removes the user from the new-ticket ping list.
+
 ## v3.7.0
 
 - **New**: `[p]tickets selfescalate` toggles whether ticket owners can escalate their own ticket to admins only (off by default, shown in `[p]tickets view`). It works like `selfrename`/`selfmanage`: a locked ticket can't be escalated by its owner.

@@ -12,7 +12,7 @@ from redbot.core.utils.mod import is_admin_or_superior
 
 from ..abc import MixinMeta
 from ..common.analytics import record_ticket_claimed
-from ..common.utils import can_close, can_escalate, close_ticket, escalate_ticket, get_ticket_owner
+from ..common.utils import can_close, can_escalate, can_optin, close_ticket, escalate_ticket, get_ticket_owner
 
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
 log = logging.getLogger("red.vrt.tickets.base")
@@ -305,3 +305,22 @@ class BaseCommands(MixinMeta):
         ticket.locked = False
         await self.save()
         await ctx.send(_("🔓 This ticket has been unlocked."))
+
+    @commands.hybrid_command(name="ticketpings", description="Toggle being pinged when new tickets open")
+    @commands.guild_only()
+    async def toggle_ticket_pings(self, ctx: commands.Context):
+        """Toggle being pinged when a new ticket opens.
+
+        You are only pinged for tickets you can see. Only ticket staff or admins can turn this on.
+        """
+        conf = self.db.get_conf(ctx.guild)
+        if not await can_optin(self.bot, conf, ctx.author):
+            return await ctx.send(_("Only ticket staff can turn on new-ticket pings."))
+        if ctx.author.id in conf.ping_optins:
+            conf.ping_optins.remove(ctx.author.id)
+            txt = _("You will no longer be pinged when new tickets open.")
+        else:
+            conf.ping_optins.append(ctx.author.id)
+            txt = _("You will now be pinged when a new ticket opens that you can see.")
+        await self.save()
+        await ctx.send(txt)

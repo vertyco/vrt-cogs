@@ -16,6 +16,7 @@ from ..common.utils import (
     format_working_hours_embed,
     get_average_response_time,
     get_modal_field_length_bounds,
+    get_optin_mentions,
     is_within_working_hours,
     update_active_overview,
 )
@@ -561,6 +562,7 @@ class Functions(MixinMeta):
                 text = text.replace("{" + str(k) + "}", str(v))
             return text
 
+        support_mentions.extend(get_optin_mentions(conf, guild, channel_or_thread, panel, user.id))
         content = "" if panel.threads else user.mention
         if support_mentions:
             if not panel.threads:

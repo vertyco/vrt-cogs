@@ -41,7 +41,7 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "3.7.0"
+    __version__ = "3.8.0"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -49,8 +49,14 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
         return info
 
     async def red_delete_data_for_user(self, *, requester, user_id: int):
-        """No data to delete"""
-        return
+        """Remove the user from new-ticket ping opt-ins"""
+        changed = False
+        for conf in self.db.configs.values():
+            if user_id in conf.ping_optins:
+                conf.ping_optins.remove(user_id)
+                changed = True
+        if changed:
+            await self.save()
 
     def __init__(self, bot: Red):
         self.bot: Red = bot

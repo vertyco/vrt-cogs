@@ -390,6 +390,7 @@ class GuildSettings(Base):
     user_can_close: bool = True
     user_can_manage: bool = False  # Add users to ticket
     user_can_escalate: bool = False  # Escalate own ticket to admins only
+    ping_optins: list[int] = []  # Staff user IDs pinged on every new ticket they can see
 
     # Transcript settings
     transcript: bool = False

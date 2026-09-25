@@ -513,6 +513,58 @@ def get_ticket_owner(opened: dict[int, dict[int, "OpenedTicket"]], channel_id: i
     return None
 
 
+def get_optin_mentions(
+    conf: GuildSettings,
+    guild: discord.Guild,
+    channel: discord.TextChannel | discord.Thread,
+    panel: Panel,
+    opener_id: int,
+) -> list[str]:
+    """Mentions for opted-in staff who can see this ticket, skipping the opener"""
+    mentions = []
+    for user_id in conf.ping_optins:
+        if user_id == opener_id:
+            continue
+        member = guild.get_member(user_id)
+        if not member:
+            continue
+        perms = channel.permissions_for(member)
+        if not perms.view_channel:
+            continue
+        # Threads report the parent channel's permissions, and mentioning someone adds them to a private thread,
+        # so only ping members who would have access to this panel's tickets anyway
+        if isinstance(channel, discord.Thread) and not (conf.is_support_staff(member, panel) or perms.manage_threads):
+            continue
+        mentions.append(member.mention)
+    return mentions
+
+
+def format_optin_list(mentions: list[str], limit: int = 1024) -> str:
+    """Comma-separated mentions that fit in an embed field, with a "+N more" tail when cut short"""
+    if not mentions:
+        return _("None")
+    text = ""
+    for index, mention in enumerate(mentions):
+        remaining = len(mentions) - index
+        tail = _(" +{} more").format(remaining)
+        candidate = f"{text}, {mention}" if text else mention
+        if len(candidate) + len(tail) > limit and remaining > 1:
+            return text + tail
+        text = candidate
+    return text
+
+
+async def can_optin(bot: Red, conf: GuildSettings, member: discord.Member) -> bool:
+    """Whether a member may toggle new-ticket pings (turning them off is always allowed)"""
+    if member.id in conf.ping_optins:
+        return True
+    if conf.is_support_staff(member):
+        return True
+    if any(conf.is_support_staff(member, panel) for panel in conf.panels.values()):
+        return True
+    return await is_admin_or_superior(bot, member)
+
+
 def get_average_response_time(response_times: list[float]) -> float | None:
     """Calculate the average response time from a list of response times.
 

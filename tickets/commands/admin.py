@@ -13,7 +13,7 @@ from redbot.core.utils.chat_formatting import box
 from ..abc import MixinMeta
 from ..common.menu import SMALL_CONTROLS, MenuButton, menu
 from ..common.models import DayHours, ModalField, Panel, TicketMessage
-from ..common.utils import prune_invalid_tickets, update_active_overview
+from ..common.utils import format_optin_list, prune_invalid_tickets, update_active_overview
 from ..common.views import PanelView, TestButton, confirm, wait_reply
 
 log = logging.getLogger("red.vrt.admincommands")
@@ -1102,6 +1102,9 @@ class AdminCommands(MixinMeta):
         if conf.overview_blacklist:
             hidden_panels = ", ".join(f"`{p}`" for p in conf.overview_blacklist)
             embed.add_field(name=_("Hidden From Overview"), value=hidden_panels, inline=False)
+
+        optins = [m.mention for uid in conf.ping_optins if (m := ctx.guild.get_member(uid))]
+        embed.add_field(name=_("New Ticket Pings (Opted In)"), value=format_optin_list(optins), inline=False)
 
         if conf.thread_close:
             txt = _("Thread tickets will be closed/archived rather than deleted")
