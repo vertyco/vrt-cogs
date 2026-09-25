@@ -382,6 +382,7 @@ class GuildSettings(Base):
     overview_channel: int = 0
     overview_msg: int = 0
     overview_mention: bool = False
+    overview_blacklist: list[str] = []  # Panel names hidden from the overview
 
     # User permissions
     dm: bool = False  # DM user on ticket close

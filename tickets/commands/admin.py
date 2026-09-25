@@ -1098,6 +1098,10 @@ class AdminCommands(MixinMeta):
             bl_panels = ", ".join(f"`{p}`" for p in conf.analytics_blacklist)
             embed.add_field(name=_("Analytics Blacklist"), value=bl_panels, inline=False)
 
+        if conf.overview_blacklist:
+            hidden_panels = ", ".join(f"`{p}`" for p in conf.overview_blacklist)
+            embed.add_field(name=_("Hidden From Overview"), value=hidden_panels, inline=False)
+
         if conf.thread_close:
             txt = _("Thread tickets will be closed/archived rather than deleted")
         else:
@@ -1551,10 +1555,39 @@ class AdminCommands(MixinMeta):
         else:
             await ctx.send(_("Overview channel has been set to {}").format(channel.mention))
             conf.overview_channel = channel.id
-            new_id = await update_active_overview(ctx.guild, conf, self)
+            new_id = await update_active_overview(ctx.guild, conf)
             if new_id:
                 conf.overview_msg = new_id
         await self.save()
+
+    @tickets.command()
+    async def overviewhide(self, ctx: commands.Context, *, panel_name: str):
+        """Toggle hiding a panel's tickets from the active ticket overview.
+
+        Useful for long-running tickets (like staff onboarding) that would otherwise clutter the overview.
+
+        **Arguments:**
+        - `<panel_name>` - The panel name to toggle
+
+        **Examples:**
+        - `[p]tickets overviewhide onboarding` - Hide "onboarding" tickets from the overview
+        - `[p]tickets overviewhide onboarding` - Run again to show them again
+        """
+        conf = self.db.get_conf(ctx.guild)
+        panel_name = panel_name.lower()
+        if panel_name not in conf.panels:
+            return await ctx.send(_("Panel does not exist!"))
+        if panel_name in conf.overview_blacklist:
+            conf.overview_blacklist.remove(panel_name)
+            txt = _("Tickets from the **{}** panel will now show in the overview.").format(panel_name)
+        else:
+            conf.overview_blacklist.append(panel_name)
+            txt = _("Tickets from the **{}** panel will no longer show in the overview.").format(panel_name)
+        new_id = await update_active_overview(ctx.guild, conf)
+        if new_id:
+            conf.overview_msg = new_id
+        await self.save()
+        await ctx.send(txt)
 
     @tickets.command()
     async def overviewmention(self, ctx: commands.Context):

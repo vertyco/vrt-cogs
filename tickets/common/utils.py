@@ -905,15 +905,21 @@ async def prune_invalid_tickets(
 
 
 def prep_overview_text(
-    guild: discord.Guild, opened: dict[int, dict[int, "OpenedTicket"]], mention: bool = False
+    guild: discord.Guild,
+    opened: dict[int, dict[int, "OpenedTicket"]],
+    mention: bool = False,
+    hidden_panels: list[str] | None = None,
 ) -> str:
     """Prepare the text for the ticket overview panel."""
+    hidden_panels = hidden_panels or []
     active: list[list[t.Any]] = []
     for uid, opened_tickets in opened.items():
         member = guild.get_member(uid)
         if not member:
             continue
         for ticket_channel_id, ticket_info in opened_tickets.items():
+            if ticket_info.panel.lower() in hidden_panels:
+                continue
             channel = guild.get_channel_or_thread(ticket_channel_id)
             if not channel:
                 continue
@@ -959,7 +965,7 @@ async def update_active_overview(guild: discord.Guild, conf: "GuildSettings") ->
     if not channel.permissions_for(guild.me).send_messages:
         return
 
-    txt = prep_overview_text(guild, conf.opened, conf.overview_mention)
+    txt = prep_overview_text(guild, conf.opened, conf.overview_mention, conf.overview_blacklist)
     title = _("Ticket Overview")
     embeds = []
     attachments = []

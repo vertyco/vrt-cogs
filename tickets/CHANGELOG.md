@@ -1,5 +1,10 @@
 # Tickets Changelog
 
+## v3.6.0
+
+- **New**: `[p]tickets overviewhide <panel>` toggles hiding a panel's tickets from the active ticket overview, so long-running tickets (like staff onboarding) don't clutter it. Hidden panels are listed in `[p]tickets view`.
+- **Fix**: `[p]tickets overview <channel>` crashed before saving, so the overview channel never got set.
+
 ## v3.5.1
 
 - **Change**: Opening a ticket now dispatches a `ticket_opened` bot event (server, member, ticket channel, panel name) so other cogs, such as Assistant jobs, can react to new tickets.
