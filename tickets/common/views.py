@@ -21,7 +21,9 @@ from .models import GuildSettings, ModalField, OpenedTicket, Panel
 from .utils import (
     add_ticket_answer_fields,
     can_close,
+    can_escalate,
     close_ticket,
+    escalate_ticket,
     format_response_time,
     format_working_hours_embed,
     get_average_response_time,
@@ -188,6 +190,7 @@ class CloseView(View):
         self.channel = channel
 
         self.closeticket.custom_id = str(channel.id)
+        self.escalateticket.custom_id = f"{channel.id}-escalate"
 
     async def on_error(self, interaction: Interaction, error: Exception, item: Item[t.Any]):
         log.warning(
@@ -262,6 +265,25 @@ class CloseView(View):
             closedby=interaction.user.id,
             cog=self.cog,
         )
+
+    @discord.ui.button(label="Escalate", style=ButtonStyle.secondary)
+    async def escalateticket(self, interaction: Interaction, button: Button):
+        if not interaction.guild:
+            return
+        user = interaction.guild.get_member(interaction.user.id)
+        if not user:
+            return
+        conf = self.cog.db.get_conf(interaction.guild)
+        if self.channel.id not in conf.opened.get(self.owner_id, {}):
+            txt = _("This ticket has already been closed!")
+            return await interaction.response.send_message(txt, ephemeral=True)
+        if not await can_escalate(self.bot, interaction.guild, self.channel, user, self.owner_id, conf):
+            txt = _("You do not have permissions to escalate this ticket")
+            return await interaction.response.send_message(txt, ephemeral=True)
+        await interaction.response.defer(thinking=True)
+        txt = await escalate_ticket(self.bot, self.channel, self.owner_id, conf)
+        await self.cog.save()
+        await interaction.followup.send(txt)
 
 
 class TicketModal(Modal):

@@ -1065,6 +1065,7 @@ class AdminCommands(MixinMeta):
         msg += _("`Users can Rename: `") + f"{conf.user_can_rename}\n"
         msg += _("`Users can Close:  `") + f"{conf.user_can_close}\n"
         msg += _("`Users can Manage: `") + f"{conf.user_can_manage}\n"
+        msg += _("`Users can Escal.: `") + f"{conf.user_can_escalate}\n"
         msg += _("`Save Transcripts: `") + f"{conf.transcript} ({transcript_type})\n"
         msg += _("`Show Resp. Time:  `") + f"{conf.show_response_time}\n"
         msg += _("`Auto Close:       `") + (_("On") if inactive else _("Off")) + "\n"
@@ -1704,6 +1705,21 @@ class AdminCommands(MixinMeta):
             await ctx.send(_("User can no longer manage their support ticket channel"))
 
     @tickets.command()
+    async def selfescalate(self, ctx: commands.Context):
+        """
+        (Toggle) If users can escalate their own tickets
+
+        Users will be able to escalate their ticket to admins only with the `escalate` command or button
+        """
+        conf = self.db.get_conf(ctx.guild)
+        conf.user_can_escalate = not conf.user_can_escalate
+        await self.save()
+        if conf.user_can_escalate:
+            await ctx.send(_("User can now escalate their support ticket to admins"))
+        else:
+            await ctx.send(_("User can no longer escalate their support ticket to admins"))
+
+    @tickets.command()
     async def autoadd(self, ctx: commands.Context):
         """
         (Toggle) Auto-add support and panel roles to thread tickets
@@ -1750,15 +1766,11 @@ class AdminCommands(MixinMeta):
         if panel_name in conf.analytics_blacklist:
             conf.analytics_blacklist.remove(panel_name)
             await self.save()
-            await ctx.send(
-                _("The **{}** panel will now be tracked by analytics.").format(panel_name)
-            )
+            await ctx.send(_("The **{}** panel will now be tracked by analytics.").format(panel_name))
         else:
             conf.analytics_blacklist.append(panel_name)
             await self.save()
-            await ctx.send(
-                _("The **{}** panel will no longer be tracked by analytics.").format(panel_name)
-            )
+            await ctx.send(_("The **{}** panel will no longer be tracked by analytics.").format(panel_name))
 
     @tickets.command()
     async def transcript(self, ctx: commands.Context):

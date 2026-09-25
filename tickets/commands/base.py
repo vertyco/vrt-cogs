@@ -6,14 +6,13 @@ from typing import Optional
 import discord
 from discord import app_commands
 from redbot.core import commands
-from redbot.core.bot import Red
 from redbot.core.commands import parse_timedelta
 from redbot.core.i18n import Translator
 from redbot.core.utils.mod import is_admin_or_superior
 
 from ..abc import MixinMeta
 from ..common.analytics import record_ticket_claimed
-from ..common.utils import can_close, close_ticket, get_ticket_owner
+from ..common.utils import can_close, can_escalate, close_ticket, escalate_ticket, get_ticket_owner
 
 LOADING = "https://i.imgur.com/l3p6EMX.gif"
 log = logging.getLogger("red.vrt.tickets.base")
@@ -114,101 +113,25 @@ class BaseCommands(MixinMeta):
 
     @commands.hybrid_command(name="escalate", description="Escalate a ticket to admins only")
     @commands.guild_only()
-    @commands.admin_or_permissions(manage_guild=True)
-    async def escalate_ticket(self, ctx: commands.Context):
+    async def escalate_a_ticket(self, ctx: commands.Context):
         """Escalate a ticket to admins only
 
         Removes support/moderator roles from the ticket while keeping
         the ticket owner and any users that were manually added.
         Only admin roles (set via Red's admin role config) will retain access.
+
+        Ticket owners can use this on their own ticket if `[p]tickets selfescalate` is enabled.
         """
         conf = self.db.get_conf(ctx.guild)
-        opened = conf.opened
-        owner_id = get_ticket_owner(opened, ctx.channel.id)
+        owner_id = get_ticket_owner(conf.opened, ctx.channel.id)
         if not owner_id:
             return await ctx.send(_("This is not a ticket channel, or it has been removed from config"))
-
-        ticket = opened[owner_id][ctx.channel.id]
-        panel = conf.panels.get(ticket.panel)
-        support_role_ids = conf.get_support_role_ids(panel)
-        if not support_role_ids:
-            return await ctx.send(_("There are no support roles configured to remove"))
-        bot: Red = self.bot
-        admin_role_ids = set(await bot.get_admin_role_ids(ctx.guild.id))
-
-        # Only remove support roles that are NOT admin roles
-        roles_to_remove = support_role_ids - admin_role_ids
-        if not roles_to_remove:
-            return await ctx.send(_("All support roles are also admin roles, nothing to escalate"))
-
-        channel = ctx.channel
-        removed = []
-        if isinstance(channel, discord.TextChannel):
-            # Ensure admin roles have explicit access before removing support roles
-            can_read_send = discord.PermissionOverwrite(
-                read_messages=True,
-                read_message_history=True,
-                send_messages=True,
-                attach_files=True,
-                embed_links=True,
-                use_application_commands=True,
-            )
-            for role_id in admin_role_ids:
-                role = ctx.guild.get_role(role_id)
-                if not role:
-                    continue
-                overwrite = channel.overwrites_for(role)
-                if overwrite.read_messages:
-                    continue
-                try:
-                    await channel.set_permissions(role, overwrite=can_read_send)
-                except discord.Forbidden:
-                    log.warning(f"Missing permissions to add admin role {role.name} to ticket {channel.id}")
-                except Exception as e:
-                    log.error(f"Failed to add admin role {role.name} to ticket", exc_info=e)
-
-            for role_id in roles_to_remove:
-                role = ctx.guild.get_role(role_id)
-                if not role:
-                    continue
-                overwrite = channel.overwrites_for(role)
-                if overwrite.is_empty():
-                    continue
-                try:
-                    await channel.set_permissions(role, overwrite=None)
-                    removed.append(role.name)
-                except discord.Forbidden:
-                    log.warning(f"Missing permissions to remove {role.name} from ticket {channel.id}")
-                except Exception as e:
-                    log.error(f"Failed to remove {role.name} from ticket", exc_info=e)
-        elif isinstance(channel, discord.Thread):
-            # For threads, remove individual members who belong to support roles but not admin roles
-            try:
-                thread_members = await channel.fetch_members()
-            except Exception:
-                thread_members = []
-            for tm in thread_members:
-                member = ctx.guild.get_member(tm.id)
-                if not member or member.id == owner_id or member.id == ctx.guild.me.id:
-                    continue
-                member_role_ids = {r.id for r in member.roles}
-                is_support = bool(member_role_ids & support_role_ids)
-                is_admin = bool(member_role_ids & admin_role_ids) or await is_admin_or_superior(self.bot, member)
-                if is_support and not is_admin:
-                    try:
-                        await channel.remove_user(member)
-                        removed.append(member.display_name)
-                    except Exception as e:
-                        log.error(f"Failed to remove {member} from thread ticket", exc_info=e)
-
-        ticket.escalated = True
-        await self.save()
-
-        if removed:
-            names = ", ".join(f"**{n}**" for n in removed)
-            await ctx.send(_("Ticket escalated to admins. Removed: {}").format(names))
-        else:
-            await ctx.send(_("Ticket escalated to admins. No support staff needed to be removed"))
+        if not await can_escalate(self.bot, ctx.guild, ctx.channel, ctx.author, owner_id, conf):
+            return await ctx.send(_("You do not have permissions to escalate this ticket"))
+        async with ctx.typing():
+            txt = await escalate_ticket(self.bot, ctx.channel, owner_id, conf)
+            await self.save()
+        await ctx.send(txt)
 
     @commands.hybrid_command(name="close", description="Close your ticket")
     @app_commands.describe(reason="Reason for closing the ticket")

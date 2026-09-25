@@ -363,6 +363,126 @@ async def can_close(
     return can_close
 
 
+async def can_escalate(
+    bot: Red,
+    guild: discord.Guild,
+    channel: discord.TextChannel | discord.Thread,
+    author: discord.Member,
+    owner_id: int,
+    conf: "GuildSettings",
+) -> bool:
+    if owner_id not in conf.opened or channel.id not in conf.opened[owner_id]:
+        return False
+    if author.id == guild.owner_id or author.guild_permissions.manage_guild:
+        return True
+    if await is_admin_or_superior(bot, author):
+        return True
+    if owner_id == author.id and conf.user_can_escalate:
+        return not conf.opened[owner_id][channel.id].locked
+    return False
+
+
+async def escalate_text_channel(
+    channel: discord.TextChannel, admin_role_ids: set[int], roles_to_remove: set[int]
+) -> list[str]:
+    # Ensure admin roles have explicit access before removing support roles
+    can_read_send = discord.PermissionOverwrite(
+        read_messages=True,
+        read_message_history=True,
+        send_messages=True,
+        attach_files=True,
+        embed_links=True,
+        use_application_commands=True,
+    )
+    for role_id in admin_role_ids:
+        role = channel.guild.get_role(role_id)
+        if not role or channel.overwrites_for(role).read_messages:
+            continue
+        try:
+            await channel.set_permissions(role, overwrite=can_read_send)
+        except discord.Forbidden:
+            log.warning(f"Missing permissions to add admin role {role.name} to ticket {channel.id}")
+        except Exception as e:
+            log.error(f"Failed to add admin role {role.name} to ticket", exc_info=e)
+
+    removed = []
+    for role_id in roles_to_remove:
+        role = channel.guild.get_role(role_id)
+        if not role or channel.overwrites_for(role).is_empty():
+            continue
+        try:
+            await channel.set_permissions(role, overwrite=None)
+            removed.append(role.name)
+        except discord.Forbidden:
+            log.warning(f"Missing permissions to remove {role.name} from ticket {channel.id}")
+        except Exception as e:
+            log.error(f"Failed to remove {role.name} from ticket", exc_info=e)
+    return removed
+
+
+async def escalate_thread(
+    bot: Red,
+    thread: discord.Thread,
+    owner_id: int,
+    admin_role_ids: set[int],
+    support_role_ids: set[int],
+) -> list[str]:
+    # Threads have no role overwrites, so remove support members who are not admins
+    try:
+        thread_members = await thread.fetch_members()
+    except Exception as e:
+        log.warning(f"Failed to fetch members of thread ticket {thread.id}", exc_info=e)
+        thread_members = []
+    removed = []
+    for tm in thread_members:
+        member = thread.guild.get_member(tm.id)
+        if not member or member.id == owner_id or member.id == thread.guild.me.id:
+            continue
+        member_role_ids = {r.id for r in member.roles}
+        is_support = bool(member_role_ids & support_role_ids)
+        is_admin = bool(member_role_ids & admin_role_ids) or await is_admin_or_superior(bot, member)
+        if is_support and not is_admin:
+            try:
+                await thread.remove_user(member)
+                removed.append(member.display_name)
+            except Exception as e:
+                log.error(f"Failed to remove {member} from thread ticket", exc_info=e)
+    return removed
+
+
+async def escalate_ticket(
+    bot: Red,
+    channel: discord.TextChannel | discord.Thread,
+    owner_id: int,
+    conf: "GuildSettings",
+) -> str:
+    """Restrict a ticket to admins only and return the message to show the user"""
+    ticket = conf.opened[owner_id][channel.id]
+    if ticket.escalated:
+        return _("This ticket has already been escalated to admins")
+    panel = conf.panels.get(ticket.panel)
+    support_role_ids = conf.get_support_role_ids(panel)
+    if not support_role_ids:
+        return _("There are no support roles configured to remove")
+    admin_role_ids = set(await bot.get_admin_role_ids(channel.guild.id))
+
+    # Only remove support roles that are NOT admin roles
+    roles_to_remove = support_role_ids - admin_role_ids
+    if not roles_to_remove:
+        return _("All support roles are also admin roles, nothing to escalate")
+
+    if isinstance(channel, discord.TextChannel):
+        removed = await escalate_text_channel(channel, admin_role_ids, roles_to_remove)
+    else:
+        removed = await escalate_thread(bot, channel, owner_id, admin_role_ids, support_role_ids)
+
+    ticket.escalated = True
+    if removed:
+        names = ", ".join(f"**{n}**" for n in removed)
+        return _("Ticket escalated to admins. Removed: {}").format(names)
+    return _("Ticket escalated to admins. No support staff needed to be removed")
+
+
 async def fetch_channel_history(channel: discord.TextChannel, limit: int | None = None) -> list[discord.Message]:
     history = []
     async for msg in channel.history(oldest_first=True, limit=limit):

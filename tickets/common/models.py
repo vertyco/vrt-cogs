@@ -389,6 +389,7 @@ class GuildSettings(Base):
     user_can_rename: bool = False
     user_can_close: bool = True
     user_can_manage: bool = False  # Add users to ticket
+    user_can_escalate: bool = False  # Escalate own ticket to admins only
 
     # Transcript settings
     transcript: bool = False
