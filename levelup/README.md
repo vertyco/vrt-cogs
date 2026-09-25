@@ -1023,13 +1023,6 @@ Run with a member already in the list to remove them from the list<br/>
 
  - Usage: `[p]levelset bypass member [member=None]`
 
-### [p]levelset starmentiondelete
-
-Toggle whether the bot auto-deletes the star mentions<br/>
-Set to 0 to disable auto-delete<br/>
-
- - Usage: `[p]levelset starmentiondelete <deleted_after>`
-
 ### [p]levelset defaultbackground
 
 Set the default background for all users in the guild<br/>
@@ -1323,13 +1316,6 @@ If the allow list is not empty, only roles in the list will gain XP<br/>
 Use the command with a role already in the allowed list to remove it<br/>
 
  - Usage: `[p]levelset allowed role <role>`
-
-### [p]levelset starmention
-
-Toggle star reaction mentions<br/>
-Toggle whether the bot mentions that a user reacted to a message with a star<br/>
-
- - Usage: `[p]levelset starmention`
 
 ### [p]levelset presencebonus
 

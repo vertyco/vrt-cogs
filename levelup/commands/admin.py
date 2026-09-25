@@ -849,32 +849,6 @@ class Admin(MixinMeta):
         self.save()
         await ctx.send(_("Star cooldown has been set to {} seconds").format(seconds))
 
-    @levelset.command(name="starmention")
-    async def toggle_star_mention(self, ctx: commands.Context):
-        """
-        Toggle star reaction mentions
-        Toggle whether the bot mentions that a user reacted to a message with a star
-        """
-        conf = self.db.get_conf(ctx.guild)
-        status = _("**Disabled**") if conf.starmention else _("**Enabled**")
-        conf.starmention = not conf.starmention
-        self.save()
-        await ctx.send(_("Mentioning user when they receive a star has been {}").format(status))
-
-    @levelset.command(name="starmentiondelete")
-    async def toggle_starmention_autodelete(self, ctx: commands.Context, deleted_after: int):
-        """
-        Toggle whether the bot auto-deletes the star mentions
-        Set to 0 to disable auto-delete
-        """
-        conf = self.db.get_conf(ctx.guild)
-        conf.starmentionautodelete = deleted_after
-        if deleted_after:
-            await ctx.send(_("Star mentions will be deleted after {} seconds").format(deleted_after))
-        else:
-            await ctx.send(_("Star mentions will not be auto-deleted"))
-        self.save()
-
     @levelset.group(name="allowed")
     async def allowed(self, ctx: commands.Context):
         """Base command for all allowed lists"""

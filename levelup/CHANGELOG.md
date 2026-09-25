@@ -1,3 +1,9 @@
+# [5.2.9] (2026-09-25)
+
+## Removed
+
+- `[p]levelset starmention` and `[p]levelset starmentiondelete`, which duplicated `[p]starset mention` and `[p]starset mentiondelete`
+
 # [5.2.8] (2026-09-25)
 
 ## Bug Fixes
