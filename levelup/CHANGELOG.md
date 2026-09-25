@@ -1,3 +1,10 @@
+# [5.2.8] (2026-09-25)
+
+## Bug Fixes
+
+- Colors made of only digits (like `990000`) are now read as hex instead of a decimal number, so they no longer show up as the wrong color
+- Integer colors (like `16711680`) no longer have red and blue swapped
+
 # [5.0.0] (2026-01-24)
 
 ## Release Highlights

@@ -57,11 +57,11 @@ def string_to_rgb(color: str, as_discord_color: bool = False) -> t.Union[t.Tuple
         if as_discord_color:
             return discord.Color.from_rgb(255, 255, 255)
         return 255, 255, 255
-    if color.isdigit():
+    if color.isdigit() and len(color) != 6:
         color = int(color)
-        r = color & 255
+        r = (color >> 16) & 255
         g = (color >> 8) & 255
-        b = (color >> 16) & 255
+        b = color & 255
         if as_discord_color:
             return discord.Color.from_rgb(r, g, b)
         return r, g, b
