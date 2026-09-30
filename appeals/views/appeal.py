@@ -6,6 +6,7 @@ from redbot.core import commands
 from redbot.core.bot import Red
 
 from ..abc import MixinMeta
+from ..common.utils import next_appeal_at
 from ..db.tables import AppealGuild, AppealSubmission
 from .submission import SubmissionView
 
@@ -148,7 +149,7 @@ class AppealView(discord.ui.View):
                 ts, relative = pending.created("F"), pending.created("R")
                 txt = f"You still have a pending appeal submitted on {ts} ({relative})"
                 return await interaction.followup.send(txt, ephemeral=True)
-            if not is_admin and appealguild.reappeal_cooldown > 0:
+            if not is_admin:
                 last_denied = (
                     await AppealSubmission.objects()
                     .where(
@@ -159,14 +160,13 @@ class AppealView(discord.ui.View):
                     .order_by(AppealSubmission.created_at, ascending=False)
                     .first()
                 )
-                if (
-                    last_denied
-                    and last_denied.decided_at
-                    and now - last_denied.decided_at < timedelta(seconds=appealguild.reappeal_cooldown)
-                ):
-                    eligible = int(
-                        (last_denied.decided_at + timedelta(seconds=appealguild.reappeal_cooldown)).timestamp()
+                eligible_at = None
+                if last_denied:
+                    eligible_at = next_appeal_at(
+                        last_denied.decided_at, last_denied.reappeal_at, appealguild.reappeal_cooldown
                     )
+                if eligible_at is not None and now < eligible_at:
+                    eligible = int(eligible_at.timestamp())
                     return await interaction.followup.send(
                         f"Your last appeal was denied recently. You can submit another appeal <t:{eligible}:R>.",
                         ephemeral=True,

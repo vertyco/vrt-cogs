@@ -9,6 +9,7 @@ from redbot.core.utils.chat_formatting import box, humanize_timedelta, pagify
 
 from ..abc import MixinMeta
 from ..common.checks import ensure_db_connection
+from ..common.utils import add_duration, denial_message, next_appeal_at, parse_deny_duration
 from ..db.tables import AppealGuild, AppealQuestion, AppealSubmission
 from ..views.appeal import AppealView
 from ..views.dynamic_menu import DynamicMenu
@@ -32,6 +33,27 @@ class Admin(MixinMeta):
             f"Type `{ctx.clean_prefix}appeal help` to get started."
         )
         return await ctx.send(txt)
+
+    async def remove_pending_message(
+        self, ctx: commands.Context, appealguild: AppealGuild, submission: AppealSubmission
+    ):
+        """Delete a decided submission's message and discussion thread from the pending channel."""
+        pending_channel: discord.TextChannel = ctx.guild.get_channel(appealguild.pending_channel)
+        if pending_channel:
+            if not pending_channel.permissions_for(ctx.guild.me).manage_messages:
+                await ctx.send(f"I do not have permissions to delete messages from {pending_channel.mention}")
+            else:
+                try:
+                    message = await pending_channel.fetch_message(submission.message_id)
+                    if message.thread:
+                        await message.thread.delete()
+                    elif thread := ctx.guild.get_thread(submission.discussion_thread):
+                        await thread.delete()
+                    await message.delete()
+                except discord.NotFound:
+                    await ctx.send(f"Submission message not found in {pending_channel.mention}")
+        else:
+            await ctx.send("Pending channel not found, could not delete the message.")
 
     async def appeal_guild_check(self, ctx: commands.Context):
         if not await AppealGuild.exists().where(AppealGuild.id == ctx.guild.id):
@@ -365,7 +387,19 @@ class Admin(MixinMeta):
     @ensure_db_connection()
     @appealset.command(name="deny")
     async def deny_appeal(self, ctx: commands.Context, submission_id: int, *, reason: str = None):
-        """Deny an appeal submission by ID"""
+        """
+        Deny an appeal submission by ID
+
+        Optionally start the reason with how long this user must wait before appealing again.
+        This replaces the server's re-appeal cooldown for this denial. `0` lets them appeal again right away.
+        Write durations without spaces: `2y`, `6mo`, `2w`, `30d`, `12h`, `30m` (`m` is minutes, `mo` is months).
+
+        Examples:
+        - `[p]appeal deny 12 Still harassing people`
+        - `[p]appeal deny 12 6mo Ban evasion`
+        - `[p]appeal deny 12 0 Close call, try again with more detail`
+        """
+        override, reason = parse_deny_duration(reason)
         appealguild: AppealGuild = await AppealGuild.objects().get(AppealGuild.id == ctx.guild.id)
         if not appealguild:
             return await self.no_appealguild(ctx)
@@ -378,10 +412,18 @@ class Admin(MixinMeta):
             return await ctx.send("This submission has already been denied.")
         elif submission.status == "approved":
             return await ctx.send("This submission has already been approved.")
+        now = datetime.now(tz=timezone.utc)
+        reappeal_at = None
+        if override is not None:
+            reappeal_at = add_duration(now, override)
+            if reappeal_at is None:
+                return await ctx.send("That duration is too long.")
         update_kwargs = {
             AppealSubmission.status: "denied",
-            AppealSubmission.decided_at: datetime.now(tz=timezone.utc),
+            AppealSubmission.decided_at: now,
         }
+        if reappeal_at is not None:
+            update_kwargs[AppealSubmission.reappeal_at] = reappeal_at
         if reason:
             update_kwargs[AppealSubmission.reason] = reason
         await AppealSubmission.update(update_kwargs).where(
@@ -401,29 +443,17 @@ class Admin(MixinMeta):
             await AppealSubmission.update({AppealSubmission.message_id: new_message.id}).where(
                 (AppealSubmission.id == submission_id) & (AppealSubmission.guild == ctx.guild.id)
             )
-        pending_channel: discord.TextChannel = ctx.guild.get_channel(appealguild.pending_channel)
-        if pending_channel:
-            if not pending_channel.permissions_for(ctx.guild.me).manage_messages:
-                await ctx.send(f"I do not have permissions to delete messages from {pending_channel.mention}")
-            else:
-                try:
-                    message = await pending_channel.fetch_message(submission.message_id)
-                    if message.thread:
-                        await message.thread.delete()
-                    elif thread := ctx.guild.get_thread(submission.discussion_thread):
-                        await thread.delete()
-                    await message.delete()
-                except discord.NotFound:
-                    await ctx.send(f"Submission message not found in {pending_channel.mention}")
-        else:
-            await ctx.send("Pending channel not found, could not delete the message.")
+        await self.remove_pending_message(ctx, appealguild, submission)
         # Alert the user that their appeal has been denied
         target_guild = self.bot.get_guild(appealguild.target_guild_id)
         targetname = f"**{target_guild.name}**" if target_guild else "the target server"
+        eligible_at = next_appeal_at(now, reappeal_at, appealguild.reappeal_cooldown)
+        submission_count = await AppealSubmission.count().where(
+            (AppealSubmission.guild == ctx.guild.id) & (AppealSubmission.user_id == submission.user_id)
+        )
+        can_reappeal = submission_count < appealguild.appeal_limit
         try:
-            txt = f"Your appeal has been denied in **{ctx.guild.name}**. You are still banned from {targetname}"
-            if reason:
-                txt += f"\n\n**Reason**: {reason}"
+            txt = denial_message(ctx.guild.name, targetname, reason, eligible_at, now, can_reappeal)
             await member.send(txt)
             await ctx.send("User has been notified of the denial.")
         except discord.Forbidden:

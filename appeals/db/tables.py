@@ -111,6 +111,9 @@ class AppealSubmission(Table):
     # 0.3.0+
     decided_at = Timestamptz(null=True, default=None)  # When the appeal was approved/denied
 
+    # 0.5.0+
+    reappeal_at = Timestamptz(null=True, default=None)  # When this user may appeal again; None = use the server default
+
     def created(self, type: t.Literal["t", "T", "d", "D", "f", "F", "R"]) -> str:
         return f"<t:{int(self.created_at.timestamp())}:{type}>"
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0
+
+- `[p]appeal deny` can now set how long this user must wait before appealing again, by starting the reason with a duration: `[p]appeal deny 12 6mo Ban evasion`. It replaces the server's re-appeal cooldown for that denial, whether longer or shorter; `0` lets them appeal again right away. Durations are written without spaces and accept years and months (`2y`, `6mo`, `2w`, `30d`, `12h`, `30m`; `m` is minutes, `mo` is months). Denials without a duration keep using the server default.
+- The denial DM now tells the user when they can submit another appeal, shown as a full date and a relative time. It is left out when they have no appeals left or there is no wait.
+- The re-appeal check now also runs on servers with no default re-appeal cooldown, so per-denial waits are enforced there too.
+
 ## 0.4.1
 
 - Fixed `[p]appeal appealmessage` always replying "Invalid message ID provided": it fetched the message using the channel ID instead of the message ID.
