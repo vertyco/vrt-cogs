@@ -1,5 +1,10 @@
 # Miner Changelog
 
+## 1.3.1
+
+- **Fix**: The leaderboard's page arrows now show whenever there is more than one page. Before, a fresh leaderboard never had arrows, and leaderboards with fewer than 10 pages could never get past page 1.
+- **Fix**: Two leaderboards open at once no longer swap dropdown choices. Picking Iron on one leaderboard could make another person's leaderboard show Iron selected while it still listed Stone.
+
 ## 1.3.0
 
 - **Change**: The rock message has a new look. The rock picture stays big, the **Mine** button sits next to the HP bar below the recent swings (so it stays put while they update), and the **Inspect** button sits next to the rock's modifiers. Both buttons now have labels.

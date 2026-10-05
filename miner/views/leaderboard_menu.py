@@ -26,11 +26,11 @@ class ResourceDropdown(ui.ActionRow["LeaderboardView"]):
         self.update_options()
 
     def update_options(self):
-        for option in self.options:
-            if self.__view.resource == option.label.lower():
-                option.default = True
-            else:
-                option.default = False
+        # Fresh copies per menu: the class-level options are shared by every open leaderboard
+        self.select_resource.options = [
+            discord.SelectOption(label=o.label, emoji=o.emoji, default=o.label.lower() == self.__view.resource)
+            for o in self.options
+        ]
 
     @ui.select(placeholder="Resource", options=options)
     async def select_resource(self, interaction: discord.Interaction, select: ui.Select) -> None:
@@ -57,11 +57,16 @@ class LeaderBoardDeltaDropdown(ui.ActionRow["LeaderboardView"]):
         self.update_options()
 
     def update_options(self):
-        for option in self.options:
-            if self.__view.lb_type == option.label.lower():
-                option.default = True
-            else:
-                option.default = False
+        # Fresh copies per menu: the class-level options are shared by every open leaderboard
+        self.select_delta.options = [
+            discord.SelectOption(
+                label=o.label,
+                description=o.description,
+                emoji=o.emoji,
+                default=o.label.lower() == self.__view.lb_type,
+            )
+            for o in self.options
+        ]
 
     @ui.select(placeholder="Timeframe", options=options)
     async def select_delta(self, interaction: discord.Interaction, select: ui.Select) -> None:
@@ -77,7 +82,7 @@ class PaginationButtons(ui.ActionRow["LeaderboardView"]):
     def __init__(self, view: "LeaderboardView"):
         self.__view = view
         super().__init__()
-        if self.__view.page_count < 10:
+        if self.__view.page_count < 2:
             self.remove_item(self.left)
             self.remove_item(self.right)
 
@@ -183,13 +188,14 @@ class LeaderboardView(ui.LayoutView):
 
         color = await self.bot.get_embed_color(self.channel)
         if not self.data:
+            # PaginationButtons reads page_count, so set it before building the page
+            self.page_count = 1
             container = ui.Container(accent_color=color)
             container.add_item(header)
             container.add_item(ui.TextDisplay("No players found."))
             container.add_item(ResourceDropdown(self))
             container.add_item(LeaderBoardDeltaDropdown(self))
             container.add_item(PaginationButtons(self))
-            self.page_count = 1
             self.pages = [container]
             return
 
@@ -198,6 +204,7 @@ class LeaderboardView(ui.LayoutView):
         start = 0
         stop = per_page
         max_pages = math.ceil(len(self.data) / per_page)
+        self.page_count = max_pages
         for p in range(max_pages):
             stop = min(stop, len(self.data))
             # Get max spacing of number and username so we can pad placement
@@ -234,7 +241,6 @@ class LeaderboardView(ui.LayoutView):
             start += per_page
             stop += per_page
 
-        self.page_count = max_pages
         self.pages = pages
 
     async def refresh(self, interaction: discord.Interaction | None = None, followup: bool = False):
