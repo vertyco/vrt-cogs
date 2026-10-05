@@ -9,13 +9,14 @@ from redbot.core.errors import BalanceTooHigh
 from redbot.core.utils.chat_formatting import humanize_number
 
 from ..abc import MixinMeta
-from ..common import achievement_progress, achievements, constants, spawn_pings
+from ..common import achievement_progress, achievements, constants, perks, spawn_pings
 from ..db.tables import ActiveChannel, Player, ensure_db_connection
 from ..views import achievement_menu
 from ..views.achievement_menu import AchievementMenu, CategoryCard
 from ..views.leaderboard_menu import LeaderboardView
 from ..views.mining_view import RockView
 from ..views.notify_picker import NotifyPicker
+from ..views.perk_panel import PerkPanel
 from ..views.trade_panel import TradePanel
 from ..views.upgrade_view import UpgradeConfirmView
 
@@ -58,6 +59,9 @@ class User(MixinMeta):
                 f"{dura_str}"
             ),
         )
+        perk_line = perks.inventory_line(tool, perks.owned_perks(player.perks))
+        if perk_line:
+            embed.description += f"\n{perk_line}\nUse `{ctx.clean_prefix}miner perks` to manage them."
         # Inventory
         inv_lines = []
         for resource in constants.RESOURCES:
@@ -157,6 +161,19 @@ class User(MixinMeta):
             player.notify_rock_types,
             await self.bot.get_embed_color(ctx.channel),
         )
+        # A Components V2 message carries only the view: no message text, no embed
+        view.message = await ctx.send(view=view, ephemeral=True)
+
+    @miner_group.command(name="perks", description="Add or remove perks on your pickaxe.")
+    @ensure_db_connection()
+    async def miner_perks(self, ctx: commands.Context):
+        """Spend stone, iron and gems on permanent pickaxe perks.
+
+        Iron and Steel pickaxes hold one perk, Carbide two, Diamond three.
+        A pickaxe that shatters or wears out loses its perks.
+        """
+        player = await self.db_utils.get_create_player(ctx.author)
+        view = PerkPanel(self, player, await self.bot.get_embed_color(ctx.channel))
         # A Components V2 message carries only the view: no message text, no embed
         view.message = await ctx.send(view=view, ephemeral=True)
 
@@ -348,6 +365,9 @@ class User(MixinMeta):
             description=f"{stats_str}\n\n**Cost:**\n{cost_str}",
             color=discord.Color.orange(),
         )
+        notes = perks.upgrade_notes(constants.TOOLS[current_tool], next_tool, perks.owned_perks(player.perks))
+        if notes:
+            embed.description += "\n\n" + "\n".join(notes)
         if missing:
             embed.add_field(name=":warning: Missing Resources", value="\n".join(missing), inline=False)
             await ctx.send(embed=embed)
@@ -396,7 +416,7 @@ class User(MixinMeta):
             color=discord.Color.green(),
         )
         await msg.edit(content=None, embed=done_embed, view=None)
-        await self.db_utils.get_cached_player_tool.cache.delete(f"miner_player_tool:{player.id}")  # type: ignore
+        await self.db_utils.clear_cached_loadout(player.id)
         unlocked = await self.sync_player_achievements(ctx.author)
         if unlocked:
             await self.announce_achievement_unlocks(ctx.channel, ctx.author, unlocked)
@@ -539,6 +559,13 @@ class User(MixinMeta):
             "• Upgrade tools with `[p]miner upgrade` to increase power and max durability."
         )
         embed.add_field(name="Durability & Repairs", value=durability_text, inline=False)
+        perks_text = (
+            f"• Spend stone, iron and gems on permanent perks with `{ctx.clean_prefix}miner perks`.\n"
+            f"• Perk slots: {perks.slots_text()}.\n"
+            "• Perks stay through upgrades and repairs.\n"
+            "• A pickaxe that shatters or wears out loses its perks."
+        )
+        embed.add_field(name="Pickaxe Perks", value=perks_text, inline=False)
 
         p = ctx.clean_prefix
         commands_text = (

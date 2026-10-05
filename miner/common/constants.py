@@ -126,6 +126,7 @@ class ToolTier:
     upgrade_cost: dict[Resource, int] | None
     max_durability: int | None
     shatter_resistance: float = 0.0  # Chance to resist shattering on overswing
+    perk_slots: int = 0  # How many perks this pickaxe can hold
 
 
 TOOLS: dict[ToolName, ToolTier] = {
@@ -157,6 +158,7 @@ TOOLS: dict[ToolName, ToolTier] = {
         upgrade_cost={"stone": 260, "iron": 80},
         max_durability=242,
         shatter_resistance=0.06,
+        perk_slots=1,
     ),
     "steel": ToolTier(
         key="steel",
@@ -167,6 +169,7 @@ TOOLS: dict[ToolName, ToolTier] = {
         upgrade_cost={"stone": 440, "iron": 500, "gems": 10},
         max_durability=512,
         shatter_resistance=0.12,
+        perk_slots=1,
     ),
     "carbide": ToolTier(
         key="carbide",
@@ -177,6 +180,7 @@ TOOLS: dict[ToolName, ToolTier] = {
         upgrade_cost={"stone": 3400, "iron": 1750, "gems": 30},
         max_durability=968,
         shatter_resistance=0.24,
+        perk_slots=2,
     ),
     "diamond": ToolTier(
         key="diamond",
@@ -187,6 +191,7 @@ TOOLS: dict[ToolName, ToolTier] = {
         upgrade_cost={"stone": 6750, "iron": 2220, "gems": 115},
         max_durability=1682,
         shatter_resistance=0.50,
+        perk_slots=3,
     ),
 }
 
@@ -360,5 +365,77 @@ MODIFIERS: dict[str, Modifier] = {
         loot_multiplier=1.25,
         volatility_multiplier=0.5,
         rarity=8,
+    ),
+}
+
+
+# Pickaxe perk tuning
+FORCEFUL_POWER_MULTIPLIER: float = 1.15
+LUCKY_CRIT_CHANCE_BONUS: float = 0.05
+STEADY_SWINGS_PER_THRESHOLD: int = 4  # Replaces SWINGS_PER_THRESHOLD for Steady holders
+CLOSER_DAMAGE_MULTIPLIER: float = 1.4  # Applies at or under PARTY_FINISHER_HP_THRESHOLD of the rock's HP
+STURDY_WEAR_MULTIPLIER: float = 0.5  # Rounded up, never below 1
+PROSPECTOR_GEM_BONUS: float = 0.20  # Rounded up, so any gem share gets at least +1
+
+# Price of a pickaxe's 1st, 2nd and 3rd perk
+PERK_COSTS: tuple[dict[Resource, int], ...] = (
+    {"stone": 1000, "iron": 400, "gems": 10},
+    {"stone": 2500, "iron": 1000, "gems": 25},
+    {"stone": 5000, "iron": 2000, "gems": 50},
+)
+
+
+@dataclass(frozen=True, slots=True)
+class Perk:
+    """Permanent pickaxe upgrade bought with resources"""
+
+    key: str
+    emoji: str
+    display_name: str
+    description: str
+
+
+PERKS: dict[str, Perk] = {
+    "forceful": Perk(
+        key="forceful",
+        emoji="💪",
+        display_name="Forceful",
+        description=f"+{FORCEFUL_POWER_MULTIPLIER - 1:.0%} pickaxe power",
+    ),
+    "lucky": Perk(
+        key="lucky",
+        emoji="🍀",
+        display_name="Lucky",
+        description=f"+{LUCKY_CRIT_CHANCE_BONUS:.0%} crit chance",
+    ),
+    "steady": Perk(
+        key="steady",
+        emoji="🧘",
+        display_name="Steady",
+        description=(
+            f"{STEADY_SWINGS_PER_THRESHOLD} swings per {OVERSWING_THRESHOLD_SECONDS:g} seconds before you overswing, "
+            f"instead of {SWINGS_PER_THRESHOLD}"
+        ),
+    ),
+    "closer": Perk(
+        key="closer",
+        emoji="🎯",
+        display_name="Closer",
+        description=(
+            f"+{CLOSER_DAMAGE_MULTIPLIER - 1:.0%} damage while the rock is at "
+            f"{PARTY_FINISHER_HP_THRESHOLD:.0%} HP or less"
+        ),
+    ),
+    "sturdy": Perk(
+        key="sturdy",
+        emoji="🧱",
+        display_name="Sturdy",
+        description="Half the durability loss",
+    ),
+    "prospector": Perk(
+        key="prospector",
+        emoji="🔦",
+        display_name="Prospector",
+        description=f"+{PROSPECTOR_GEM_BONUS:.0%} gems from every rock",
     ),
 }

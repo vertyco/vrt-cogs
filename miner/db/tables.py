@@ -79,6 +79,9 @@ class Player(TableMixin, Table):
     # Rock type keys to ping for; empty means every type mined
     notify_rock_types = Array(base_column=Text(), default=list)
 
+    # Perk keys on the current pickaxe (constants.PERKS); cleared when it shatters or wears out
+    perks = Array(base_column=Text(), default=list)
+
 
 class PlayerAchievement(TableMixin, Table):
     id = Serial(primary_key=True)

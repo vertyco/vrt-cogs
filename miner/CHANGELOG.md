@@ -1,5 +1,9 @@
 # Miner Changelog
 
+## 1.7.0
+
+- **New**: Pickaxe perks. Spend stone, iron and gems on permanent perks with `[p]miner perks`: Forceful, Lucky, Steady, Closer, Sturdy and Prospector. Iron and Steel pickaxes hold one perk, Carbide two, Diamond three. Perks stay through upgrades and repairs, but a pickaxe that shatters or wears out takes its perks with it.
+
 ## 1.6.1
 
 - **Fix**: A pickaxe that wears out at the end of a rock now stops hitting at its old tier right away. Before, the next few minutes of swings could still use the broken pickaxe's power and crit chance.

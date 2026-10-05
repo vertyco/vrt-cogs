@@ -25,6 +25,17 @@ Pick which rock types ping you when they spawn.<br/>
  - Slash Usage: `/miner notify`
  - Checks: `ensure_db_connection`
 
+### [p]miner perks (Hybrid Command)
+
+Spend stone, iron and gems on permanent pickaxe perks.<br/>
+
+Iron and Steel pickaxes hold one perk, Carbide two, Diamond three.<br/>
+A pickaxe that shatters or wears out loses its perks.<br/>
+
+ - Usage: `[p]miner perks`
+ - Slash Usage: `/miner perks`
+ - Checks: `ensure_db_connection`
+
 ### [p]miner transfer (Hybrid Command)
 
 Transfer resources to another miner.<br/>

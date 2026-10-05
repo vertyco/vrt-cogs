@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import random
 import typing as t
 from collections import defaultdict, deque
@@ -97,6 +98,7 @@ class RockSession:
         self.shatter_resist_survivors: set[int] = set()
         self.shattered_users: set[int] = set()
         self.tools: dict[int, constants.ToolName] = {}  # Pickaxe each miner last hit with
+        self.perks: dict[int, frozenset[str]] = {}  # Perks each miner last hit with
         self.shattered_tools: dict[int, constants.ToolName] = {}  # Pickaxe lost to an overswing
         self.actions: deque[str] = deque(maxlen=constants.RECENT_ACTIONS_SHOWN)
 
@@ -118,24 +120,33 @@ class RockSession:
         """(user_id, damage) pairs, highest damage first."""
         return sorted(self.participants.items(), key=lambda item: item[1], reverse=True)
 
-    def apply_hit(self, user_id: int, name: str, tool: constants.ToolTier) -> int:
+    def apply_hit(self, user_id: int, name: str, tool: constants.ToolTier, perks: frozenset[str] = frozenset()) -> int:
         """Apply one swing at normal pace and return the damage it dealt."""
         power = tool.power
-        crit = random.random() < tool.crit_chance
+        if "forceful" in perks:
+            power = round(power * constants.FORCEFUL_POWER_MULTIPLIER)
+        crit_chance = tool.crit_chance + (constants.LUCKY_CRIT_CHANCE_BONUS if "lucky" in perks else 0.0)
+        crit = random.random() < crit_chance
         if crit:
             power = round(power * tool.crit_multiplier)
             self.crit_hits[user_id] += 1
+        low_hp = self.current_hp <= self.max_hp * constants.PARTY_FINISHER_HP_THRESHOLD
+        if low_hp and "closer" in perks:
+            power = round(power * constants.CLOSER_DAMAGE_MULTIPLIER)
         damage = min(power, self.current_hp)
-        if self.current_hp <= self.max_hp * constants.PARTY_FINISHER_HP_THRESHOLD:
+        if low_hp:
             self.low_hp_damage[user_id] += damage
         self.current_hp -= damage
         self.participants[user_id] += damage
         self.hits[user_id] += 1
         self.tools[user_id] = tool.key
+        self.perks[user_id] = perks
         self.actions.append(("💥CRITICAL HIT! " if crit else "") + f"{name}: +{damage} damage!")
         return damage
 
-    def judge_overswing(self, tool: constants.ToolTier, durability: int, roll: float) -> OverswingResult:
+    def judge_overswing(
+        self, tool: constants.ToolTier, durability: int, roll: float, sturdy: bool = False
+    ) -> OverswingResult:
         """Decide what a too-fast swing does, given a random `roll` between 0 and 1."""
         max_durability = tool.max_durability or 0
         ratio = (durability / max_durability) if max_durability else None
@@ -144,8 +155,11 @@ class RockSession:
         if allow_catastrophic and roll < shatter_chance:
             return OverswingResult("shatter", durability, 0)
         if roll < self.overswing_damage_chance:
-            remaining = max(0, durability - self.rocktype.overswing_damage)
-            dealt = self.rocktype.overswing_damage if remaining else durability
+            hit = self.rocktype.overswing_damage
+            if sturdy:
+                hit = max(1, math.ceil(hit * constants.STURDY_WEAR_MULTIPLIER))
+            remaining = max(0, durability - hit)
+            dealt = hit if remaining else durability
             return OverswingResult("damage" if remaining else "break", remaining, dealt)
         if allow_catastrophic and tool.shatter_resistance > 0 and roll < self.overswing_break_chance:
             return OverswingResult("resisted", durability, 0)
@@ -167,6 +181,7 @@ class RockSession:
         if kind in ("shatter", "break"):
             self.shattered_users.add(user_id)
             self.shattered_tools[user_id] = tool.key
+            self.perks[user_id] = frozenset()  # The lost pickaxe took its perks with it
         if kind in ("slip", "resisted"):
             self.actions.append(f"🤕{name} slipped and fell from swinging too fast!")
         elif kind == "damage":
@@ -180,6 +195,8 @@ class RockSession:
         wear = max(1, self.hits.get(user_id, 0) // constants.HITS_PER_DURA_LOST)
         if user_id in synergy["durability_bonus_participants"]:
             wear = max(1, wear - synergy["durability_discount"])
+        if "sturdy" in self.perks.get(user_id, frozenset()):
+            wear = max(1, math.ceil(wear * constants.STURDY_WEAR_MULTIPLIER))
         return wear
 
     def performance(self, ranked: list[tuple[int, int]], total: int) -> tuple[dict[int, int], dict[int, float]]:
@@ -209,7 +226,7 @@ class RockSession:
         bonus_pct: dict[int, float],
         synergy: dict[str, t.Any],
     ) -> int:
-        """Performance bonus plus crew bonus on top of a miner's base share."""
+        """Performance, crew and Prospector bonuses on top of a miner's base share."""
         if base <= 0:
             return 0
         pct = bonus_pct.get(uid, 0.0)
@@ -218,6 +235,8 @@ class RockSession:
         extra = int(base * pct)
         if resource in ("stone", "iron") and uid in synergy["bonus_participants"]:
             extra += int(base * synergy["loot_bonus_pct"])
+        if resource == "gems" and "prospector" in self.perks.get(uid, frozenset()):
+            extra += math.ceil(base * constants.PROSPECTOR_GEM_BONUS)
         return extra
 
     def compute_payouts(self) -> Payouts:

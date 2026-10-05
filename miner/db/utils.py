@@ -4,7 +4,7 @@ import discord
 from aiocache import cached
 from piccolo.query.functions.aggregate import Sum
 
-from ..common import constants
+from ..common import constants, perks
 from ..common.rock_achievements import VARIETY_COLUMNS
 from .tables import (
     GlobalSettings,
@@ -128,12 +128,23 @@ class DBUtils:
         ).where(PlayerAchievementStats.player.is_in(user_ids))
         return await query
 
+    @staticmethod
+    async def save_perks(player: Player, keys: list[str], cost: dict[constants.Resource, int] | None = None) -> None:
+        """Set the player's perks, charging `cost` in the same write."""
+        update: dict[t.Any, t.Any] = {Player.perks: keys}
+        for resource, amount in (cost or {}).items():
+            update[getattr(Player, resource)] = getattr(Player, resource) - amount
+        await player.update_self(update)
+
     # Cached roughly for the longest possible rock lifetime
     @cached(ttl=constants.MAX_ROCK_TTL_SECONDS, key_builder=key_builder)
-    async def get_cached_player_tool(self, user: int) -> constants.ToolName:
+    async def get_cached_loadout(self, user: discord.User | discord.Member | int) -> perks.Loadout:
         player = await self.get_create_player(user)
-        tool: constants.ToolName = player.tool
-        return tool
+        return perks.Loadout(tool=player.tool, perks=frozenset(perks.owned_perks(player.perks)))
+
+    async def clear_cached_loadout(self, user_id: int) -> None:
+        """Forget a player's cached pickaxe and perks; call after anything that changes either."""
+        await self.get_cached_loadout.cache.delete(f"miner_loadout:{user_id}")  # type: ignore
 
     @cached(ttl=10, key_builder=key_builder)
     async def get_cached_guild_settings(self, guild: int) -> GuildSettings:

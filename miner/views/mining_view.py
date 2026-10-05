@@ -14,7 +14,7 @@ from redbot.core import commands
 from redbot.core.utils.chat_formatting import box
 
 from ..abc import MixinMeta
-from ..common import achievements, constants, rock_achievements
+from ..common import achievements, constants, perks, rock_achievements
 from ..common.rock_session import OverswingResult, Payouts, RockSession, downgraded_tool, redraw_interval
 from ..db.tables import Player, PlayerAchievementStats, ResourceLedger
 from . import rock_layout
@@ -49,6 +49,11 @@ class RockView(ui.LayoutView):
         self.inspect_button.callback = self.inspect
         self.mine_cooldown = commands.CooldownMapping.from_cooldown(
             rate=constants.SWINGS_PER_THRESHOLD,
+            per=constants.OVERSWING_THRESHOLD_SECONDS,
+            type=commands.BucketType.user,
+        )
+        self.steady_cooldown = commands.CooldownMapping.from_cooldown(
+            rate=constants.STEADY_SWINGS_PER_THRESHOLD,
             per=constants.OVERSWING_THRESHOLD_SECONDS,
             type=commands.BucketType.user,
         )
@@ -173,12 +178,13 @@ class RockView(ui.LayoutView):
             return
         await self.redraw(interaction)
 
-    async def tool_is_cached(self, user_id: int) -> bool:
-        cache = self.cog.db_utils.get_cached_player_tool.cache  # type: ignore
-        return await cache.exists(f"miner_player_tool:{user_id}")
+    async def loadout_is_cached(self, user_id: int) -> bool:
+        cache = self.cog.db_utils.get_cached_loadout.cache  # type: ignore
+        return await cache.exists(f"miner_loadout:{user_id}")
 
-    def swinging_too_fast(self, user_id: int) -> bool:
-        bucket = self.mine_cooldown.get_bucket(SimpleNamespace(author=SimpleNamespace(id=user_id)))
+    def swinging_too_fast(self, user_id: int, steady: bool = False) -> bool:
+        mapping = self.steady_cooldown if steady else self.mine_cooldown
+        bucket = mapping.get_bucket(SimpleNamespace(author=SimpleNamespace(id=user_id)))
         return bool(bucket.update_rate_limit())
 
     async def mine(self, interaction: discord.Interaction) -> None:
@@ -189,23 +195,24 @@ class RockView(ui.LayoutView):
             await interaction.response.send_message("This mining event is being finalized!", ephemeral=True)
             return
         user = interaction.user
-        if not await self.tool_is_cached(user.id):
+        if not await self.loadout_is_cached(user.id):
             # The lookup will hit the database, so answer Discord first
             await self.acknowledge(interaction)
-        tool = constants.TOOLS[await self.cog.db_utils.get_cached_player_tool(user)]
-        if self.swinging_too_fast(user.id):
+        loadout = await self.cog.db_utils.get_cached_loadout(user)
+        tool = constants.TOOLS[loadout.tool]
+        if self.swinging_too_fast(user.id, "steady" in loadout.perks):
             await self.overswing(interaction, tool)
-        elif self.hit(user, tool):
+        elif self.hit(user, tool, loadout.perks):
             await self.acknowledge(interaction)
             await self.finish()
             return
         await self.respond(interaction)
 
-    def hit(self, user: discord.abc.User, tool: constants.ToolTier) -> bool:
+    def hit(self, user: discord.abc.User, tool: constants.ToolTier, perk_keys: frozenset[str] = frozenset()) -> bool:
         """Apply one hit. Return True when this hit broke the rock."""
         if self.finalizing:
             return False
-        self.session.apply_hit(user.id, user.name, tool)
+        self.session.apply_hit(user.id, user.name, tool, perk_keys)
         if not self.session.depleted:
             return False
         self.finalizing = True
@@ -219,7 +226,9 @@ class RockView(ui.LayoutView):
         await self.acknowledge(interaction)
         player = await self.cog.db_utils.get_create_player(user)
         current = constants.TOOLS[player.tool]
-        result = self.session.judge_overswing(current, player.durability, random.uniform(0.0, 1.0))
+        result = self.session.judge_overswing(
+            current, player.durability, random.uniform(0.0, 1.0), "sturdy" in perks.owned_perks(player.perks)
+        )
         self.session.record_overswing(user.id, user.name, current, result)
         await self.apply_overswing(interaction, player, current, result)
 
@@ -233,6 +242,9 @@ class RockView(ui.LayoutView):
         if result.kind in ("shatter", "break"):
             rock = self.session.rocktype.display_name
             text = f"You swing too hastily at the {rock} and your {tool.display_name} shatters!"
+            lost = perks.owned_perks(player.perks)
+            if lost:
+                text += f" Its perks are gone: {perks.summary(lost)}."
             await interaction.followup.send(text, ephemeral=True)
             await self.downgrade_player(player)
         elif result.kind == "damage":
@@ -241,11 +253,13 @@ class RockView(ui.LayoutView):
 
     async def downgrade_player(self, player: Player) -> None:
         lower = downgraded_tool(player.tool)
-        await player.update_self({Player.tool: lower.key, Player.durability: lower.max_durability or 0})
+        await player.update_self(
+            {Player.tool: lower.key, Player.durability: lower.max_durability or 0, Player.perks: []}
+        )
         await self.set_shatter_stage(player.id, 1)
         self.cog.reset_durability_warnings(player.id)
-        # Clear the cached tool since it just changed
-        await self.cog.db_utils.get_cached_player_tool.cache.delete(f"miner_player_tool:{player.id}")  # type: ignore
+        # The cached pickaxe just changed
+        await self.cog.db_utils.clear_cached_loadout(player.id)
 
     async def inspect(self, interaction: discord.Interaction) -> None:
         if not self.cog.db_active():
@@ -324,7 +338,7 @@ class RockView(ui.LayoutView):
         await player.update_self(update)
         if player.tool != tool:
             # The pickaxe wore out; clear the cached tool so the next click doesn't hit at the old tier
-            await self.cog.db_utils.get_cached_player_tool.cache.delete(f"miner_player_tool:{player.id}")  # type: ignore
+            await self.cog.db_utils.clear_cached_loadout(player.id)
         return lines
 
     def wear_tool(self, player: Player, synergy: dict[str, t.Any], update: dict[t.Any, t.Any]) -> list[str]:
@@ -335,8 +349,11 @@ class RockView(ui.LayoutView):
             lower = downgraded_tool(player.tool)
             update[Player.tool] = lower.key
             update[Player.durability] = lower.max_durability or 0
+            update[Player.perks] = []
             self.cog.reset_durability_warnings(player.id)
-            return [f"‼️{player.tool.title()} broke due to overuse, downgraded to {lower.display_name}"]
+            line = f"‼️{player.tool.title()} broke due to overuse, downgraded to {lower.display_name}"
+            lost = perks.owned_perks(player.perks)
+            return [f"{line}. Perks lost: {perks.summary(lost)}" if lost else line]
         update[Player.durability] = durability
         lines = [f"-`{wear}` durability to {tool.display_name} (now `{durability}`)"]
         note = self.durability_warning_note(player.id, tool, durability)
