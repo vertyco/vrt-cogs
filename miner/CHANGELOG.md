@@ -1,5 +1,9 @@
 # Miner Changelog
 
+## 1.6.1
+
+- **Fix**: A pickaxe that wears out at the end of a rock now stops hitting at its old tier right away. Before, the next few minutes of swings could still use the broken pickaxe's power and crit chance.
+
 ## 1.6.0
 
 - **New**: Every achievement category has its own picture.

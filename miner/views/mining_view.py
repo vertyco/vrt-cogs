@@ -318,9 +318,13 @@ class RockView(ui.LayoutView):
             getattr(Player, res): getattr(Player, res) + amount for res, amount in loot.items()
         }
         lines: list[str] = []
-        if player.tool != "wood":
+        tool = player.tool
+        if tool != "wood":
             lines = self.wear_tool(player, synergy, update)
         await player.update_self(update)
+        if player.tool != tool:
+            # The pickaxe wore out; clear the cached tool so the next click doesn't hit at the old tier
+            await self.cog.db_utils.get_cached_player_tool.cache.delete(f"miner_player_tool:{player.id}")  # type: ignore
         return lines
 
     def wear_tool(self, player: Player, synergy: dict[str, t.Any], update: dict[t.Any, t.Any]) -> list[str]:
