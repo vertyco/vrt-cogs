@@ -1,5 +1,13 @@
 # Miner Changelog
 
+## 1.5.0
+
+- **New**: 38 new achievements, 92 in total. Faster solo clears, modifier combos, crew and role milestones, clutch plays, and a few hidden ones to discover.
+- **New**: Seven new achievement categories so the list is easier to browse: Elite Speed Clears, Modifier Combos, Crew Milestones, Role Mastery, Clutch Plays, Mishaps and Mastery.
+- **New**: Mastery achievements for collecting other achievements, including Completionist for unlocking every achievement that is not hidden.
+- **Change**: Achievements your saved stats already prove now unlock automatically, including older ones like clean streaks, solo speed clears, party roles and rock counts. They show up after your next rock, or when you open `[p]miner achievements`.
+- **Change**: Hidden achievements show as ??? until you unlock them.
+
 ## 1.4.0
 
 - **New**: Pick which rock types ping you. `[p]miner notify` now opens a dropdown of rock types, and you only get pinged for the ones you tick. Clear every tick to turn pings off.

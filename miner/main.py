@@ -35,7 +35,7 @@ class Miner(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMet
     """Pickaxe in hand, fortune awaits"""
 
     __author__ = "Vertyco"
-    __version__ = "1.4.0"
+    __version__ = "1.5.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -285,12 +285,22 @@ class Miner(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMet
         notify: bool = False,
     ) -> list[achievements.AchievementDef]:
         player = await self.db_utils.get_create_player(user)
-        await self.db_utils.get_create_player_achievement_stats(player.id)
+        stats = await self.db_utils.get_create_player_achievement_stats(player.id)
         resource_lower_bounds = await self.db_utils.get_player_resource_lower_bounds(player.id)
-        exact_unlock_keys = achievements.get_exact_retroactive_unlock_keys(player.tool, resource_lower_bounds)
-        return await self.unlock_player_achievements(
-            player.id, exact_unlock_keys, destination=destination, notify=notify
-        )
+        exact_unlock_keys = achievements.get_exact_retroactive_unlock_keys(player.tool, resource_lower_bounds, stats)
+        unlocked = await self.unlock_player_achievements(player.id, exact_unlock_keys)
+        unlocked.extend(await self.unlock_collections(player.id))
+        if notify and destination and unlocked:
+            await self.announce_achievement_unlocks(destination, player.id, unlocked)
+        return unlocked
+
+    async def unlock_collections(self, user: discord.User | discord.Member | int) -> list[achievements.AchievementDef]:
+        """Unlock the collection achievements the player's current unlocks complete."""
+        rows = await self.db_utils.get_player_achievements(user)
+        keys = achievements.collection_unlock_keys({row.key for row in rows})
+        if not keys:
+            return []
+        return await self.unlock_player_achievements(user, keys)
 
     async def announce_achievement_unlocks(
         self,

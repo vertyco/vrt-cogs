@@ -96,6 +96,8 @@ class RockSession:
         self.low_hp_damage: dict[int, int] = defaultdict(int)
         self.shatter_resist_survivors: set[int] = set()
         self.shattered_users: set[int] = set()
+        self.tools: dict[int, constants.ToolName] = {}  # Pickaxe each miner last hit with
+        self.shattered_tools: dict[int, constants.ToolName] = {}  # Pickaxe lost to an overswing
         self.actions: deque[str] = deque(maxlen=constants.RECENT_ACTIONS_SHOWN)
 
         self.started_at: float = 0.0
@@ -129,6 +131,7 @@ class RockSession:
         self.current_hp -= damage
         self.participants[user_id] += damage
         self.hits[user_id] += 1
+        self.tools[user_id] = tool.key
         self.actions.append(("💥CRITICAL HIT! " if crit else "") + f"{name}: +{damage} damage!")
         return damage
 
@@ -163,6 +166,7 @@ class RockSession:
             self.shatter_resist_survivors.add(user_id)
         if kind in ("shatter", "break"):
             self.shattered_users.add(user_id)
+            self.shattered_tools[user_id] = tool.key
         if kind in ("slip", "resisted"):
             self.actions.append(f"🤕{name} slipped and fell from swinging too fast!")
         elif kind == "damage":

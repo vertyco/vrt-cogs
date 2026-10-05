@@ -366,10 +366,16 @@ class RockView(ui.LayoutView):
 
     async def finish_achievements(self, players: dict[int, Player], payouts: Payouts, duration: float) -> None:
         roles = {holder: name for name, holder in payouts.synergy["roles"]}
-        full_synergy = len(payouts.synergy["roles"]) >= 3
-        for uid in players:
+        role_count = len(payouts.synergy["roles"])
+        for uid, player in players.items():
             score = payouts.scores.get(uid, 0)
-            outcome = rock_achievements.outcome_for(self.session, uid, score, roles.get(uid), duration, full_synergy)
+            # pay_out's update_self already wrote the post-wear tool and durability onto `player`
+            end_ratio = rock_achievements.end_durability_ratio(
+                self.session.tools.get(uid), player.tool, player.durability
+            )
+            outcome = rock_achievements.outcome_for(
+                self.session, uid, score, roles.get(uid), duration, role_count, end_ratio
+            )
             stats = await self.cog.get_player_achievement_stats(uid)
             totals = rock_achievements.new_totals(stats, outcome)
             await stats.update_self(rock_achievements.stat_updates(stats, outcome, totals))
@@ -377,7 +383,9 @@ class RockView(ui.LayoutView):
             live_unlocks = await self.cog.unlock_player_achievements(
                 uid, rock_achievements.achievement_keys(outcome, totals)
             )
-            combined = achievements.dedupe_achievement_defs([*exact_unlocks, *live_unlocks])
+            # Last, so a collection completed by this rock's live unlocks arrives in the same announcement
+            collection_unlocks = await self.cog.unlock_collections(uid)
+            combined = achievements.dedupe_achievement_defs([*exact_unlocks, *live_unlocks, *collection_unlocks])
             if combined and self.message:
                 await self.cog.announce_achievement_unlocks(self.message.channel, uid, combined)
 

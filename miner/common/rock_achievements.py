@@ -27,11 +27,6 @@ ROLE_COLUMNS: dict[str, str] = {
     "Stabilizer": "role_stabilizer_total",
     "Finisher": "role_finisher_total",
 }
-ROLE_KEYS: dict[str, str] = {
-    "Breaker": "party_role_breaker",
-    "Stabilizer": "party_role_stabilizer",
-    "Finisher": "party_role_finisher",
-}
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,6 +45,15 @@ class RockOutcome:
     role: str | None
     shattered: bool
     resisted_shatter: bool
+    role_count: int  # Party roles active on the rock
+    damage_share: float  # This player's damage / the rock's total damage
+    top_damage: bool  # Strictly more damage than every other miner
+    tool_key: constants.ToolName | None  # Pickaxe this player last hit with
+    weakest_tool_alone: bool  # Lower pickaxe tier than every other miner
+    seconds_left: float  # Rock time limit minus duration
+    hp_left_ratio: float  # HP left / max HP
+    shattered_tool: constants.ToolName | None  # Pickaxe lost to an overswing on this rock
+    end_durability_ratio: float | None  # See end_durability_ratio()
 
 
 @dataclass(frozen=True, slots=True)
@@ -68,27 +72,59 @@ class StatTotals:
     shatter_stage: int
 
 
+def end_durability_ratio(
+    swung: constants.ToolName | None, tool_after: constants.ToolName, durability: int | None
+) -> float | None:
+    """Pickaxe condition after this rock's wear. None for wood, or when it is not the pickaxe the miner hit with."""
+    max_durability = constants.TOOLS[tool_after].max_durability
+    if not max_durability or swung != tool_after:
+        return None
+    return (durability or 0) / max_durability
+
+
+def weakest_tool_alone(session: RockSession, user_id: int) -> bool:
+    mine = session.tools.get(user_id)
+    others = [tool for uid, tool in session.tools.items() if uid != user_id]
+    if mine is None or not others:
+        return False
+    rank = constants.TOOL_ORDER.index
+    return all(rank(mine) < rank(tool) for tool in others)
+
+
 def outcome_for(
     session: RockSession,
     user_id: int,
     score: int,
     role: str | None,
     duration_seconds: float,
-    full_synergy: bool,
+    role_count: int,
+    end_ratio: float | None = None,
 ) -> RockOutcome:
+    damage = session.participants.get(user_id, 0)
+    total = sum(session.participants.values())
+    others = [dealt for uid, dealt in session.participants.items() if uid != user_id]
     return RockOutcome(
         rock_key=session.rocktype.key,
         modifier_keys=tuple(mod.key for mod in session.modifiers),
         participant_count=len(session.participants),
         duration_seconds=duration_seconds,
         depleted=session.depleted,
-        full_synergy=full_synergy,
+        full_synergy=role_count >= 3,
         overswings=session.overswings.get(user_id, 0),
         score=score,
         crit_hits=session.crit_hits.get(user_id, 0),
         role=role,
         shattered=user_id in session.shattered_users,
         resisted_shatter=user_id in session.shatter_resist_survivors,
+        role_count=role_count,
+        damage_share=(damage / total) if total else 0.0,
+        top_damage=damage > 0 and all(damage > dealt for dealt in others),
+        tool_key=session.tools.get(user_id),
+        weakest_tool_alone=weakest_tool_alone(session, user_id),
+        seconds_left=session.rocktype.ttl_seconds - duration_seconds,
+        hp_left_ratio=session.current_hp / session.max_hp,
+        shattered_tool=session.shattered_tools.get(user_id),
+        end_durability_ratio=end_ratio,
     )
 
 
@@ -140,47 +176,40 @@ def stat_updates(stats: t.Any, outcome: RockOutcome, totals: StatTotals) -> dict
 
 
 def achievement_keys(outcome: RockOutcome, totals: StatTotals) -> list[str]:
-    """Achievement keys this rock earns, in the same order the old code produced them."""
+    """Achievement keys decided by this one rock. Counter achievements unlock in the retroactive sync instead."""
     return [
-        *streak_keys(outcome, totals),
-        *performance_keys(outcome, totals),
-        *modifier_achievement_keys(outcome, totals),
-        *party_keys(outcome, totals),
-        *progress_keys(outcome, totals),
+        *performance_keys(outcome),
+        *modifier_achievement_keys(outcome),
+        *party_keys(outcome),
+        *shatter_keys(outcome, totals),
+        *combo_keys(outcome),
+        *clutch_keys(outcome),
+        *mishap_keys(outcome),
     ]
 
 
-def streak_keys(outcome: RockOutcome, totals: StatTotals) -> list[str]:
-    keys = [key for threshold, key in achievements.CLEAN_STREAK_THRESHOLDS if totals.clean_streak >= threshold]
-    if outcome.depleted and outcome.participant_count == 1:
-        solo_key, limit = achievements.SOLO_SPEED_THRESHOLDS[outcome.rock_key]
-        if outcome.duration_seconds <= limit:
-            keys.append(solo_key)
-    return keys
-
-
-def performance_keys(outcome: RockOutcome, totals: StatTotals) -> list[str]:
+def performance_keys(outcome: RockOutcome) -> list[str]:
     keys: list[str] = []
+    # A 70-89 score is not saved anywhere, so this first stays a live check
     if outcome.score >= achievements.PERFORMANCE_ANY_THRESHOLD:
         keys.append("perf_any_bonus")
     if outcome.score >= achievements.PERFORMANCE_MAX_THRESHOLD:
-        keys.append("perf_max_any")
         if outcome.rock_key == "meteor":
             keys.append("perf_max_meteor")
         elif outcome.rock_key == "volatile geode":
             keys.append("perf_max_geode")
         if outcome.depleted and outcome.overswings == 0:
             keys.append("clean_and_perf_max")
-    if totals.perf_max_streak >= 3:
-        keys.append("perf_max_streak_3")
     if outcome.crit_hits > 0:
         keys.append("crit_first")
     if outcome.crit_hits >= 5:
         keys.append("crit_five_single_rock")
+    if outcome.crit_hits >= 10:
+        keys.append("crit_ten_single_rock")
     return keys
 
 
-def modifier_achievement_keys(outcome: RockOutcome, totals: StatTotals) -> list[str]:
+def modifier_achievement_keys(outcome: RockOutcome) -> list[str]:
     keys = [
         achievements.MODIFIER_ACHIEVEMENT_KEYS[key]
         for key in outcome.modifier_keys
@@ -188,36 +217,72 @@ def modifier_achievement_keys(outcome: RockOutcome, totals: StatTotals) -> list[
     ]
     if len(outcome.modifier_keys) >= 2:
         keys.append("modifier_double")
-    if totals.modifier_rocks >= 50:
-        keys.append("modifier_total_50")
     return keys
 
 
-def party_keys(outcome: RockOutcome, totals: StatTotals) -> list[str]:
+def party_keys(outcome: RockOutcome) -> list[str]:
     keys: list[str] = []
     if outcome.participant_count >= 3:
         keys.append("party_three_players")
-    if outcome.role in ROLE_KEYS:
-        keys.append(ROLE_KEYS[outcome.role])
+    if outcome.participant_count >= 6:
+        keys.append("party_six_players")
+    if outcome.participant_count >= 10:
+        keys.append("party_ten_players")
     if outcome.full_synergy:
         keys.append("party_full_synergy")
-    if totals.group_sessions >= 25:
-        keys.append("party_group_sessions_25")
-    if all(total > 0 for total in totals.role_totals.values()):
-        keys.append("party_all_roles")
+    if outcome.participant_count == 2 and outcome.role_count == 2:
+        keys.append("role_tag_team")
     return keys
 
 
-def progress_keys(outcome: RockOutcome, totals: StatTotals) -> list[str]:
-    keys = [key for threshold, key in achievements.ROCK_COUNT_THRESHOLDS if totals.rocks_mined >= threshold]
-    if all(totals.variety.values()):
-        keys.append("rock_variety_all")
-    if outcome.rock_key == "meteor":
-        keys.append("rare_first_meteor")
-    elif outcome.rock_key == "volatile geode":
-        keys.append("rare_first_geode")
+def shatter_keys(outcome: RockOutcome, totals: StatTotals) -> list[str]:
+    keys: list[str] = []
     if outcome.resisted_shatter:
         keys.append("tool_shatter_survived")
     if totals.shatter_stage and not outcome.shattered:
         keys.append("tool_shatter_comeback")
+    return keys
+
+
+def combo_keys(outcome: RockOutcome) -> list[str]:
+    mods = set(outcome.modifier_keys)
+    keys: list[str] = []
+    if {"blessed", "enchanted"} <= mods:
+        keys.append("combo_divine")
+    if {"electrified", "volatile"} <= mods and outcome.depleted and outcome.overswings == 0:
+        keys.append("combo_perfect_storm")
+    if "fortified" in mods and outcome.depleted and outcome.participant_count == 1:
+        keys.append("combo_siege_breaker")
+    return keys
+
+
+def clutch_keys(outcome: RockOutcome) -> list[str]:
+    keys: list[str] = []
+    crowd = outcome.participant_count >= 3
+    # A shatter's tool downgrade can land after pay_out read the row, so the ratio may describe the lost pickaxe
+    ratio = None if outcome.shattered else outcome.end_durability_ratio
+    if crowd and outcome.damage_share >= 0.70:
+        keys.append("clutch_carry")
+    if outcome.depleted and outcome.seconds_left <= 5:
+        keys.append("clutch_photo_finish")
+    if crowd and outcome.top_damage and outcome.weakest_tool_alone:
+        keys.append("clutch_underdog")
+    if outcome.depleted and ratio is not None and ratio <= 0.05:
+        keys.append("clutch_fumes")
+    geode_ace = outcome.rock_key == "volatile geode" and outcome.score >= achievements.PERFORMANCE_MAX_THRESHOLD
+    if geode_ace and ratio is not None and ratio <= 0.30:
+        keys.append("clutch_glass_cannon")
+    if outcome.depleted and outcome.rock_key in ("meteor", "volatile geode") and outcome.tool_key == "wood":
+        keys.append("clutch_splinters")
+    return keys
+
+
+def mishap_keys(outcome: RockOutcome) -> list[str]:
+    keys: list[str] = []
+    if outcome.shattered_tool == "diamond":
+        keys.append("mishap_butterfingers")
+    if outcome.shattered_tool and outcome.rock_key == "volatile geode":
+        keys.append("mishap_wrong_rock")
+    if not outcome.depleted and outcome.hp_left_ratio <= 0.05:
+        keys.append("mishap_so_close")
     return keys

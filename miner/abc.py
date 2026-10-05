@@ -97,6 +97,10 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    async def unlock_collections(self, user: discord.User | discord.Member | int) -> list[achievements.AchievementDef]:
+        raise NotImplementedError
+
+    @abstractmethod
     async def announce_achievement_unlocks(
         self,
         destination: discord.abc.Messageable,
