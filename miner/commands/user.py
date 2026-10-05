@@ -11,7 +11,8 @@ from redbot.core.utils.chat_formatting import humanize_number
 from ..abc import MixinMeta
 from ..common import achievement_progress, achievements, constants, spawn_pings
 from ..db.tables import ActiveChannel, Player, ensure_db_connection
-from ..views.dynamic_menu import DynamicMenu
+from ..views import achievement_menu
+from ..views.achievement_menu import AchievementMenu, CategoryCard
 from ..views.leaderboard_menu import LeaderboardView
 from ..views.mining_view import RockView
 from ..views.notify_picker import NotifyPicker
@@ -127,8 +128,15 @@ class User(MixinMeta):
 
         await self.sync_player_achievements(user)
         unlocked_rows = await self.get_player_achievements(user)
-        pages = await self.build_achievement_pages(ctx, user, unlocked_rows)
-        await DynamicMenu(ctx.author, pages, ctx.channel).refresh()
+        menu = AchievementMenu(
+            ctx.author.id,
+            user.display_name,
+            user.display_avatar.url,
+            achievement_menu.recent_text(unlocked_rows),
+            await self.build_achievement_cards(user, unlocked_rows),
+            await self.bot.get_embed_color(ctx.channel),
+        )
+        await menu.start(ctx)
 
     @miner_group.command(name="notify", description="Pick which rock types ping you when they spawn.")
     @ensure_db_connection()
@@ -599,48 +607,16 @@ class User(MixinMeta):
             log.error(f"Error spawning rock in {ctx.channel.id}: {e}")
             await ctx.send("An error occurred while spawning the rock.", ephemeral=True)
 
-    async def build_achievement_pages(
+    async def build_achievement_cards(
         self,
-        ctx: commands.Context,
         user: discord.User | discord.Member,
         unlocked_rows: list,
-    ) -> list[discord.Embed]:
-        color = await self.bot.get_embed_color(ctx.channel)
+    ) -> list[CategoryCard]:
         stats = await self.get_player_achievement_stats(user)
         resource_lower_bounds = await self.db_utils.get_player_resource_lower_bounds(user)
         unlocked_lookup = {row.key: row for row in unlocked_rows}
-        pages: list[discord.Embed] = []
-
-        summary = discord.Embed(
-            title=f"{user.display_name}'s Miner Achievements",
-            color=color,
-            description=(
-                f"Unlocked `{len(unlocked_lookup)}` / `{achievements.TOTAL_ACHIEVEMENTS}` achievements.\n"
-                "Locked achievements show their condition, except hidden ones.\n"
-                "Retroactive sync currently awards only achievements provable from persisted miner data."
-            ),
-        )
-        category_lines = []
+        cards: list[CategoryCard] = []
         for category, items in achievements.iter_achievements_by_category():
-            unlocked_count = sum(1 for item in items if item.key in unlocked_lookup)
-            category_lines.append(f"• {category}: `{unlocked_count}/{len(items)}`")
-        summary.add_field(name="Categories", value="\n".join(category_lines), inline=False)
-
-        recent_lines = []
-        for row in unlocked_rows[:5]:
-            definition = achievements.ACHIEVEMENTS_BY_KEY.get(row.key)
-            if definition is None:
-                continue
-            recent_lines.append(f"• {definition.name} ({discord.utils.format_dt(row.created_on, style='R')})")
-        if recent_lines:
-            summary.add_field(name="Recent Unlocks", value="\n".join(recent_lines), inline=False)
-        else:
-            summary.add_field(name="Recent Unlocks", value="No achievements unlocked yet.", inline=False)
-        summary.set_thumbnail(url=user.display_avatar)
-        pages.append(summary)
-
-        for category, items in achievements.iter_achievements_by_category():
-            unlocked_count = sum(1 for item in items if item.key in unlocked_lookup)
             lines: list[str] = []
             for item in items:
                 unlocked = unlocked_lookup.get(item.key)
@@ -650,14 +626,6 @@ class User(MixinMeta):
                         item, stats, resource_lower_bounds, set(unlocked_lookup)
                     )
                 lines.append(achievement_progress.achievement_line(item, unlocked, progress))
-
-            embed = discord.Embed(
-                title=f"{user.display_name} • {category}",
-                color=color,
-                description="\n\n".join(lines),
-            )
-            embed.add_field(name="Progress", value=f"Unlocked `{unlocked_count}` / `{len(items)}`", inline=False)
-            embed.set_thumbnail(url=user.display_avatar)
-            pages.append(embed)
-
-        return pages
+            unlocked_count = sum(1 for item in items if item.key in unlocked_lookup)
+            cards.append(CategoryCard(category, lines, unlocked_count, len(items)))
+        return cards

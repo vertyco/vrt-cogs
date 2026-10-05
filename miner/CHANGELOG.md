@@ -1,5 +1,11 @@
 # Miner Changelog
 
+## 1.6.0
+
+- **New**: Every achievement category has its own picture.
+- **Change**: `[p]miner achievements` has a new look. The first screen lists your categories with their pictures and progress bars, six to a page, plus your overall progress and recent unlocks.
+- **Change**: Pick a category from the dropdown to open it. The arrows flip between categories, and **All categories** takes you back to the list.
+
 ## 1.5.0
 
 - **New**: 38 new achievements, 92 in total. Faster solo clears, modifier combos, crew and role milestones, clutch plays, and a few hidden ones to discover.
