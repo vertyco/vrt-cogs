@@ -5,6 +5,7 @@ from aiocache import cached
 from piccolo.query.functions.aggregate import Sum
 
 from ..common import constants
+from ..common.rock_achievements import VARIETY_COLUMNS
 from .tables import (
     GlobalSettings,
     GuildSettings,
@@ -115,6 +116,17 @@ class DBUtils:
             (GuildSettings.id == gid), defaults={GuildSettings.id: gid}
         )
         return settings
+
+    @staticmethod
+    async def get_spawn_ping_rows(user_ids: list[int], rock_type: constants.RockTierName) -> list[dict[str, t.Any]]:
+        """Each listed player's mined flag for this rock type and their picked types, keyed uid/mined/picks."""
+        mined_column = getattr(PlayerAchievementStats, VARIETY_COLUMNS[rock_type])
+        query = PlayerAchievementStats.select(
+            PlayerAchievementStats.player.as_alias("uid"),
+            mined_column.as_alias("mined"),
+            PlayerAchievementStats.player.notify_rock_types.as_alias("picks"),
+        ).where(PlayerAchievementStats.player.is_in(user_ids))
+        return await query
 
     # Cached roughly for the longest possible rock lifetime
     @cached(ttl=constants.MAX_ROCK_TTL_SECONDS, key_builder=key_builder)

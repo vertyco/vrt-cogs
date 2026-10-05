@@ -76,6 +76,9 @@ class Player(TableMixin, Table):
     iron = BigInt()
     gems = BigInt()
 
+    # Rock type keys to ping for; empty means every type mined
+    notify_rock_types = Array(base_column=Text(), default=list)
+
 
 class PlayerAchievement(TableMixin, Table):
     id = Serial(primary_key=True)

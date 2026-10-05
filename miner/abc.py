@@ -64,7 +64,9 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def notify_spawn_subscribers(self, guild: discord.Guild, settings: GuildSettings) -> str | None:
+    async def notify_spawn_subscribers(
+        self, guild: discord.Guild, settings: GuildSettings, rock_type: constants.RockTierName
+    ) -> str | None:
         raise NotImplementedError
 
     @abstractmethod

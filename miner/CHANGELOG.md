@@ -1,5 +1,11 @@
 # Miner Changelog
 
+## 1.4.0
+
+- **New**: Pick which rock types ping you. `[p]miner notify` now opens a dropdown of rock types, and you only get pinged for the ones you tick. Clear every tick to turn pings off.
+- **Change**: You can only get pings for rock types you have mined. Mine a rock type once to unlock its ping. If you already had pings on, you keep them for every type you have mined since 1.2.0.
+- **Change**: `[p]miner notify` no longer takes `true` or `false`.
+
 ## 1.3.1
 
 - **Fix**: The leaderboard's page arrows now show whenever there is more than one page. Before, a fresh leaderboard never had arrows, and leaderboards with fewer than 10 pages could never get past page 1.

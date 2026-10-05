@@ -19,10 +19,10 @@ Attempt to spawn a rock in this mining channel.<br/>
 
 ### [p]miner notify (Hybrid Command)
 
-Toggle rock spawn notifications.<br/>
+Pick which rock types ping you when they spawn.<br/>
 
- - Usage: `[p]miner notify [enable=None]`
- - Slash Usage: `/miner notify [enable=None]`
+ - Usage: `[p]miner notify`
+ - Slash Usage: `/miner notify`
  - Checks: `ensure_db_connection`
 
 ### [p]miner transfer (Hybrid Command)

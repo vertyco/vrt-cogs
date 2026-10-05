@@ -14,7 +14,7 @@ from redbot.core.bot import Red
 
 from .abc import CompositeMetaClass
 from .commands import Commands
-from .common import achievements, constants, tracker
+from .common import achievements, constants, spawn_pings, tracker
 from .db.tables import (
     TABLES,
     GuildSettings,
@@ -35,7 +35,7 @@ class Miner(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMet
     """Pickaxe in hand, fortune awaits"""
 
     __author__ = "Vertyco"
-    __version__ = "1.3.1"
+    __version__ = "1.4.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -231,8 +231,10 @@ class Miner(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMet
 
         return selected
 
-    async def notify_spawn_subscribers(self, guild: discord.Guild, settings: GuildSettings) -> str | None:
-        """Return the ping line for opted-in players still in the server, and clean stale IDs."""
+    async def notify_spawn_subscribers(
+        self, guild: discord.Guild, settings: GuildSettings, rock_type: constants.RockTierName
+    ) -> str | None:
+        """Return the ping line for opted-in players who want this rock type, and clean stale IDs."""
 
         if not settings.notify_players:
             return None
@@ -247,7 +249,13 @@ class Miner(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMet
         if not valid_users:
             return None
 
-        return "-# 🔔 " + " ".join(f"<@{uid}>" for uid in valid_users)
+        rows = await self.db_utils.get_spawn_ping_rows(valid_users, rock_type)
+        wanted = {row["uid"] for row in rows if spawn_pings.wants_ping(row["mined"], row["picks"], rock_type)}
+        targets = [uid for uid in valid_users if uid in wanted]
+        if not targets:
+            return None
+
+        return "-# 🔔 " + " ".join(f"<@{uid}>" for uid in targets)
 
     async def get_player_achievements(self, user: discord.User | discord.Member | int) -> list[PlayerAchievement]:
         return await self.db_utils.get_player_achievements(user)

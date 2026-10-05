@@ -9,11 +9,12 @@ from redbot.core.errors import BalanceTooHigh
 from redbot.core.utils.chat_formatting import humanize_number
 
 from ..abc import MixinMeta
-from ..common import achievements, constants
-from ..db.tables import ActiveChannel, GuildSettings, Player, ensure_db_connection
+from ..common import achievements, constants, spawn_pings
+from ..db.tables import ActiveChannel, Player, ensure_db_connection
 from ..views.dynamic_menu import DynamicMenu
 from ..views.leaderboard_menu import LeaderboardView
 from ..views.mining_view import RockView
+from ..views.notify_picker import NotifyPicker
 from ..views.trade_panel import TradePanel
 from ..views.upgrade_view import UpgradeConfirmView
 
@@ -103,9 +104,14 @@ class User(MixinMeta):
             embed.add_field(name=f"Next Upgrade: {next_tool.display_name}", value=txt, inline=False)
 
         settings = await self.db_utils.get_create_guild_settings(ctx.guild.id)
+        stats = await self.get_player_achievement_stats(user)
+        summary = spawn_pings.ping_summary(
+            player.id in settings.notify_players, player.notify_rock_types, spawn_pings.mined_rock_types(stats)
+        )
+        status = f"`Enabled` ({summary})" if summary else "`Disabled`"
         embed.add_field(
             name="Notifications",
-            value=f"Rock Spawn Notifications: `{'Enabled' if player.id in settings.notify_players else 'Disabled'}`\nUse `{ctx.clean_prefix}miner notify` to toggle.",
+            value=f"Rock Spawn Notifications: {status}\nUse `{ctx.clean_prefix}miner notify` to change.",
             inline=False,
         )
 
@@ -124,32 +130,27 @@ class User(MixinMeta):
         pages = await self.build_achievement_pages(ctx, user, unlocked_rows)
         await DynamicMenu(ctx.author, pages, ctx.channel).refresh()
 
-    @miner_group.command(name="notify", description="Toggle rock spawn notifications.")
+    @miner_group.command(name="notify", description="Pick which rock types ping you when they spawn.")
     @ensure_db_connection()
-    async def miner_notify(self, ctx: commands.Context, enable: t.Optional[bool] = None):
-        """Toggle rock spawn notifications."""
+    async def miner_notify(self, ctx: commands.Context):
+        """Pick which rock types ping you when they spawn.
+
+        You can only pick rock types you have mined.
+        """
         player = await self.db_utils.get_create_player(ctx.author)
         settings = await self.db_utils.get_create_guild_settings(ctx.guild.id)
-
-        if enable is not None:
-            # In case user specifically wants to enable/disable
-            if enable and player.id in settings.notify_players:
-                return await ctx.send("Rock spawn notifications are already enabled.", ephemeral=True)
-            elif not enable and player.id not in settings.notify_players:
-                return await ctx.send("Rock spawn notifications are already disabled.", ephemeral=True)
-            if enable:
-                settings.notify_players.append(player.id)
-            else:
-                settings.notify_players.remove(player.id)
-        else:
-            if player.id in settings.notify_players:
-                settings.notify_players.remove(player.id)
-            else:
-                settings.notify_players.append(player.id)
-
-        await settings.save([GuildSettings.notify_players])
-        status = "enabled" if player.id in settings.notify_players else "disabled"
-        await ctx.send(f"Rock spawn notifications have been `{status}` for {ctx.author.name}.", ephemeral=True)
+        stats = await self.get_player_achievement_stats(player.id)
+        view = NotifyPicker(
+            self,
+            player.id,
+            ctx.guild.id,
+            spawn_pings.mined_rock_types(stats),
+            player.id in settings.notify_players,
+            player.notify_rock_types,
+            await self.bot.get_embed_color(ctx.channel),
+        )
+        # A Components V2 message carries only the view: no message text, no embed
+        view.message = await ctx.send(view=view, ephemeral=True)
 
     @miner_group.command(name="repair", description="Repair your mining tool for a resource cost.")
     @ensure_db_connection()
@@ -583,7 +584,7 @@ class User(MixinMeta):
                 rock_type_result = self.choose_rock_type(ctx.channel.id)
                 modifiers = self.choose_modifiers(rock_type_result)
 
-                ping = await self.notify_spawn_subscribers(ctx.guild, settings)
+                ping = await self.notify_spawn_subscribers(ctx.guild, settings, rock_type_result)
 
                 rock: constants.RockType = constants.ROCK_TYPES[rock_type_result]
                 view = RockView(self, rock, modifiers, ping=ping)
