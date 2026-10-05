@@ -45,6 +45,13 @@ HP_BAR_SEGMENTS: int = 10
 HP_BAR_FILLED: str = "▰"
 HP_BAR_EMPTY: str = "▱"
 
+# Rock message layout
+RECENT_ACTIONS_SHOWN: int = 5  # Recent actions listed on a live rock
+RESULT_ROWS_MAX: int = 8  # Miners shown as full rows on the results; the rest go in "Also mined"
+LAYOUT_TEXT_BUDGET: int = 3800  # Discord allows 4000 characters of text per message; keep headroom
+REDRAW_MIN_SECONDS: float = 1.5  # Shortest gap between two redraws of a live rock
+REDRAW_SECONDS_PER_MINER: float = 0.5  # Extra gap per miner after the first
+
 # Tool repair cost percentages by tier (e.g., 0.5 = 50% of upgrade cost)
 TOOL_REPAIR_COST_PCTS: dict[ToolName, float] = {
     "wood": 0.0,

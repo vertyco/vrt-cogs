@@ -1,5 +1,4 @@
 import asyncio
-import typing as t
 from abc import ABC, ABCMeta, abstractmethod
 
 import discord
@@ -65,12 +64,7 @@ class MixinMeta(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def notify_spawn_subscribers(
-        self,
-        guild: discord.Guild,
-        settings: GuildSettings,
-        destination: t.Callable[[str], t.Awaitable[discord.Message]],
-    ) -> None:
+    async def notify_spawn_subscribers(self, guild: discord.Guild, settings: GuildSettings) -> str | None:
         raise NotImplementedError
 
     @abstractmethod

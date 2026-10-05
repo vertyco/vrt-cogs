@@ -35,7 +35,7 @@ class Miner(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMet
     """Pickaxe in hand, fortune awaits"""
 
     __author__ = "Vertyco"
-    __version__ = "1.2.2"
+    __version__ = "1.3.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -231,16 +231,11 @@ class Miner(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMet
 
         return selected
 
-    async def notify_spawn_subscribers(
-        self,
-        guild: discord.Guild,
-        settings: GuildSettings,
-        destination: t.Callable[[str], t.Awaitable[discord.Message]],
-    ) -> None:
-        """Notify opted-in players about a new spawn and clean stale IDs."""
+    async def notify_spawn_subscribers(self, guild: discord.Guild, settings: GuildSettings) -> str | None:
+        """Return the ping line for opted-in players still in the server, and clean stale IDs."""
 
         if not settings.notify_players:
-            return
+            return None
 
         valid_users = [uid for uid in settings.notify_players if guild.get_member(uid)]
         invalid_users = [uid for uid in settings.notify_players if uid not in valid_users]
@@ -250,10 +245,9 @@ class Miner(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMet
             await self.db_utils.get_cached_guild_settings.cache.delete(f"miner_guild_settings:{guild.id}")  # type: ignore
 
         if not valid_users:
-            return
+            return None
 
-        mention_str = " ".join(f"<@{uid}>" for uid in valid_users)
-        await destination(mention_str)
+        return "-# 🔔 " + " ".join(f"<@{uid}>" for uid in valid_users)
 
     async def get_player_achievements(self, user: discord.User | discord.Member | int) -> list[PlayerAchievement]:
         return await self.db_utils.get_player_achievements(user)

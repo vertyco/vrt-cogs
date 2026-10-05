@@ -583,11 +583,12 @@ class User(MixinMeta):
                 rock_type_result = self.choose_rock_type(ctx.channel.id)
                 modifiers = self.choose_modifiers(rock_type_result)
 
-                await self.notify_spawn_subscribers(ctx.guild, settings, ctx.send)
+                ping = await self.notify_spawn_subscribers(ctx.guild, settings)
 
                 rock: constants.RockType = constants.ROCK_TYPES[rock_type_result]
-                view = RockView(self, rock, modifiers)
-                await view.start(ctx.channel)
+                view = RockView(self, rock, modifiers, ping=ping)
+                # Sending through ctx also answers /rock when it is used as a slash command
+                await view.start(ctx)
                 # Consume cooldown only after the rock message is successfully posted.
                 self.guild_spawn_cooldowns[ctx.guild.id] = perf_counter()
 
