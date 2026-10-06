@@ -203,7 +203,7 @@ def also_mined(rows: list[MinerResult], first_rank: int, used: int) -> str:
 
 def result_image(session: RockSession) -> str:
     """File name of the results card's picture, uploaded with the results edit."""
-    return constants.DEPLETED_ROCK_FILE if session.depleted else constants.COLLAPSED_MINESHAFT_FILE
+    return session.rocktype.mined_out_file if session.depleted else constants.COLLAPSED_MINESHAFT_FILE
 
 
 def build_results(

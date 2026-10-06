@@ -1,5 +1,9 @@
 # Miner Changelog
 
+## 1.10.0
+
+- **New**: Every rock type now has its own "mined out" picture on the results when players break it in time: small, medium and large rocks leave rubble that matches their size, the meteor leaves a smoking crater with glassy shards, and the Volatile Geode bursts into glowing purple crystals. A rock that runs out of time still shows the collapsed mineshaft.
+
 ## 1.9.0
 
 - **New**: Small, medium and large rocks now come with several pictures each (three small, three medium, two large), and each rock that spawns shows one at random. A rock keeps the same picture until it is mined out or collapses.
