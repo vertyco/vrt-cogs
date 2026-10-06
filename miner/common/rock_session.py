@@ -97,6 +97,7 @@ class RockSession:
         ping: str | None = None,
     ):
         self.rocktype = rocktype
+        self.image_file = random.choice(rocktype.image_files)  # Kept for the whole rock so its picture never changes
         self.modifiers = modifiers or []
         self.ping = ping
 

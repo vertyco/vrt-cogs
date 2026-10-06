@@ -144,7 +144,7 @@ def build_active(
     # The picture uploaded with the message, never a link. Discord fetches a linked picture in the background after
     # each edit, then writes that edit's whole layout back when the fetch ends; a slow fetch from one redraw can land
     # after the results and put the live rock back on screen.
-    box.add_item(gallery(f"attachment://{session.rocktype.image_file}"))
+    box.add_item(gallery(f"attachment://{session.image_file}"))
     recent = activity_text(session, synergy)
     if recent:
         box.add_item(ui.TextDisplay(recent))

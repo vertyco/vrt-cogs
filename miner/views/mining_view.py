@@ -84,7 +84,7 @@ class RockView(ui.LayoutView):
         """Post the rock and start its collapse timer."""
         self.session.start()
         self.last_text = self.render_active()
-        picture = discord.File(constants.ROCK_IMAGE_DIR / self.session.rocktype.image_file)
+        picture = discord.File(constants.ROCK_IMAGE_DIR / self.session.image_file)
         self.message = await destination.send(view=self, file=picture)
         self.last_redraw = perf_counter()
         self.ttl_task = asyncio.create_task(self.ttl(self.session.rocktype.ttl_seconds))

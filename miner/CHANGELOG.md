@@ -1,5 +1,11 @@
 # Miner Changelog
 
+## 1.9.0
+
+- **New**: Small, medium and large rocks now come with several pictures each (three small, three medium, two large), and each rock that spawns shows one at random. A rock keeps the same picture until it is mined out or collapses.
+- **Change**: The small rock no longer glows, so it stops looking like a rare rock, and the large rock is now a rough boulder instead of a polished gem.
+- **Change**: The Volatile Geode has a new, brighter picture that is easy to see and no longer looks like the meteor.
+
 ## 1.8.2
 
 - **Fix**: Rocks from 1.8.1 stopped updating after they spawned: HP stayed at 100% and clicks failed until the rock collapsed. Rock updates now keep the uploaded picture correctly.
