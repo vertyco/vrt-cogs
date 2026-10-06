@@ -36,6 +36,28 @@ Auto update & reload cogs WITHOUT updating dependencies<br/>
  - Usage: `[p]quickpull <cogs>`
  - Restricted to: `BOT_OWNER`
 
+## [p]fixcogrepos
+
+Unstick cogs that `[p]cog update` stopped updating after a repo's history was rewritten<br/>
+
+When a cog repo is force-pushed, Downloader's recorded commit for each installed cog<br/>
+is no longer in the repo's history and `[p]cog update` silently reports them as up to date.<br/>
+This finds those cogs and records a commit from the new history instead.<br/>
+
+Pinned cogs are ignored.<br/>
+
+**Arguments**<br/>
+`confirm:` (True/False) whether to apply the changes<br/>
+
+Run with confirm **False** (the default) to see which cogs would be changed.<br/>
+
+**Examples**<br/>
+`[p]fixcogrepos`<br/>
+`[p]fixcogrepos true`<br/>
+
+ - Usage: `[p]fixcogrepos [confirm=False]`
+ - Restricted to: `BOT_OWNER`
+
 ## [p]todorefresh
 
 Refresh a todo list channel.<br/>

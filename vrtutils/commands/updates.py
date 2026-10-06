@@ -6,8 +6,10 @@ from pathlib import Path
 from redbot import VersionInfo, version_info
 from redbot.cogs.downloader.converters import InstalledCog
 from redbot.core import commands
+from redbot.core.utils.chat_formatting import pagify
 
 from ..abc import MixinMeta
+from ..common import cogrepos
 
 _ORIG_FUNC = None
 _INSTALL_REQS_VAR = contextvars.ContextVar("_INSTALL_REQS_VAR")
@@ -74,3 +76,74 @@ class Updates(MixinMeta):
             await ctx.invoke(cog_update_command, True, *cogs)
         finally:
             _INSTALL_REQS_VAR.reset(token)
+
+    @commands.command(name="fixcogrepos")
+    @commands.is_owner()
+    async def fix_cog_repos(self, ctx: commands.Context, confirm: bool = False):
+        """Unstick cogs that `[p]cog update` stopped updating after a repo's history was rewritten
+
+        When a cog repo is force-pushed, Downloader's recorded commit for each installed cog
+        is no longer in the repo's history and `[p]cog update` silently reports them as up to date.
+        This finds those cogs and records a commit from the new history instead.
+
+        Pinned cogs are ignored.
+
+        **Arguments**
+        `confirm:` (True/False) whether to apply the changes
+
+        Run with confirm **False** (the default) to see which cogs would be changed.
+
+        **Examples**
+        `[p]fixcogrepos`
+        `[p]fixcogrepos true`
+        """
+        downloader = ctx.bot.get_cog("Downloader")
+        if downloader is None:
+            return await ctx.send(
+                f"Make sure you first `{ctx.clean_prefix}load downloader` before you can use this command."
+            )
+        try:
+            api = cogrepos.DownloaderAPI.from_cog(downloader)
+        except RuntimeError as e:
+            return await ctx.send(str(e))
+
+        async with ctx.typing():
+            result = await cogrepos.scan(api)
+            fixes = result.fixes
+            stored = await cogrepos.apply(api, fixes) if confirm and fixes else {}
+
+        lines = []
+        for report in result.repos.values():
+            if not (report.fixes or report.skipped or report.error):
+                continue
+            lines.append(f"**{report.name}** (HEAD `{report.head[:7] or 'unknown'}`)")
+            if report.error:
+                lines.append(f"- Skipped repo: {report.error}")
+            for fix in report.fixes:
+                line = f"- `{fix.module.name}`: `{fix.old_commit[:7]}` -> `{fix.new_commit[:7]}` ({fix.method})"
+                if confirm:
+                    saved = stored.get(fix.module.name)
+                    line += " saved" if saved == fix.new_commit else f" NOT saved (stored `{(saved or 'none')[:7]}`)"
+                lines.append(line)
+            for skipped in report.skipped:
+                lines.append(f"- Skipped `{skipped}`")
+        if result.no_repo:
+            lines.append(f"Repo removed, can't check: {', '.join(result.no_repo)}")
+        if result.pinned:
+            lines.append(f"Pinned, ignored: {', '.join(sorted(result.pinned))}")
+
+        if not fixes:
+            header = f"No stuck cogs found ({result.checked} checked)."
+        elif confirm:
+            header = (
+                f"Updated the recorded commit for {len(fixes)} cog(s). "
+                f"Now run `{ctx.clean_prefix}cog update` to pull their changes."
+            )
+        else:
+            header = (
+                f"Found {len(fixes)} stuck cog(s). "
+                f"Run `{ctx.clean_prefix}fixcogrepos true` to apply, then `{ctx.clean_prefix}cog update`."
+            )
+        text = "\n".join([header, *lines])
+        for page in pagify(text, page_length=1900):
+            await ctx.send(page)
