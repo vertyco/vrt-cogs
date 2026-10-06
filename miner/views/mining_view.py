@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import io
 import logging
 import random
 import typing as t
@@ -14,7 +15,7 @@ from redbot.core import commands
 from redbot.core.utils.chat_formatting import box
 
 from ..abc import MixinMeta
-from ..common import achievements, constants, perks, rock_achievements
+from ..common import achievements, constants, perks, rock_achievements, rock_picture
 from ..common.rock_session import OverswingResult, Payouts, RockSession, Spot, downgraded_tool, redraw_interval
 from ..db.tables import Player, PlayerAchievementStats, ResourceLedger
 from . import rock_layout
@@ -84,10 +85,22 @@ class RockView(ui.LayoutView):
         """Post the rock and start its collapse timer."""
         self.session.start()
         self.last_text = self.render_active()
-        picture = discord.File(constants.ROCK_IMAGE_DIR / self.session.image_file)
-        self.message = await destination.send(view=self, file=picture)
+        self.message = await destination.send(view=self, file=await self.live_picture())
         self.last_redraw = perf_counter()
         self.ttl_task = asyncio.create_task(self.ttl(self.session.rocktype.ttl_seconds))
+
+    async def live_picture(self) -> discord.File:
+        """The rock's picture, with its modifier effects on it when it has any."""
+        image = self.session.image_file
+        if not self.session.modifiers:
+            return discord.File(constants.ROCK_IMAGE_DIR / image)
+        try:
+            data = await asyncio.to_thread(rock_picture.with_effects, image, self.session.modifiers)
+        except Exception as e:
+            log.warning("Failed to draw modifier effects on %s", image, exc_info=e)
+            return discord.File(constants.ROCK_IMAGE_DIR / image)
+        # Same file name as the plain picture, so the layout's attachment link finds it
+        return discord.File(io.BytesIO(data), filename=image)
 
     async def ttl(self, seconds: int) -> None:
         try:

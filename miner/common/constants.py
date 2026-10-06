@@ -121,6 +121,22 @@ def resource_emoji(resource: str) -> str:
 # Rock message pictures. Each is uploaded with the message under its own file name and shown from there.
 ROCK_IMAGE_DIR = Path(__file__).parent.parent / "data" / "rocks"
 COLLAPSED_MINESHAFT_FILE = "collapsed.webp"
+# Modifier effects: one picture per MODIFIERS key, named "<key>.webp", glowing light on pure black
+EFFECT_IMAGE_DIR = Path(__file__).parent.parent / "data" / "effects"
+# Where each live rock picture's modifier effects sit, so they wrap the rock:
+# (center x, center y, effect size), all as fractions of the picture's width
+EFFECT_PLACEMENTS: dict[str, tuple[float, float, float]] = {
+    "small_1.webp": (0.52, 0.74, 0.42),
+    "small_2.webp": (0.51, 0.74, 0.40),
+    "small_3.webp": (0.555, 0.77, 0.60),
+    "medium_1.webp": (0.55, 0.68, 0.68),
+    "medium_2.webp": (0.56, 0.70, 0.70),
+    "medium_3.webp": (0.555, 0.70, 0.68),
+    "large_1.webp": (0.51, 0.56, 0.95),
+    "large_2.webp": (0.525, 0.53, 1.0),
+    "meteor.webp": (0.545, 0.55, 0.42),
+    "volatile_geode.webp": (0.55, 0.68, 0.72),
+}
 
 
 @dataclass(frozen=True, slots=True)

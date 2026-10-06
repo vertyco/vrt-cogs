@@ -1,5 +1,9 @@
 # Miner Changelog
 
+## 1.11.0
+
+- **New**: A rock's modifiers now show on its picture. Electrified rocks crackle with lightning, Crystalline rocks sparkle, Volatile rocks burn, Enchanted rocks swirl with magic, Fortified rocks sit under a shield dome, and Blessed rocks glow in golden light. A rock with two modifiers shows both. The results picture after the rock ends is unchanged.
+
 ## 1.10.0
 
 - **New**: Every rock type now has its own "mined out" picture on the results when players break it in time: small, medium and large rocks leave rubble that matches their size, the meteor leaves a smoking crater with glassy shards, and the Volatile Geode bursts into glowing purple crystals. A rock that runs out of time still shows the collapsed mineshaft.
