@@ -223,7 +223,7 @@ class TaskMenu(BaseMenu):
                 )
                 embed.set_footer(text=foot)
                 self.toggle.style = discord.ButtonStyle.success if schedule.enabled else discord.ButtonStyle.danger
-                self.toggle.label = "On" if schedule.enabled else "Off"
+                self.toggle.label = "Task is ON" if schedule.enabled else "Task is OFF"
             else:
                 embed = discord.Embed(description=_("No scheduled commands have been created."), color=self.color)
             if self.filter:
@@ -635,7 +635,7 @@ class TaskMenu(BaseMenu):
         if schedule.enabled:
             await self.cog.ensure_jobs()
 
-    @discord.ui.button(label="On", style=discord.ButtonStyle.success, row=2)
+    @discord.ui.button(label="Task is ON", style=discord.ButtonStyle.success, row=2)
     async def toggle(self, interaction: discord.Interaction, button: discord.ui.Button):
         schedule = self.tasks[self.page]
         min_interval = self.db.premium_interval if self.is_premium else self.db.minimum_interval
