@@ -1,5 +1,11 @@
 # Miner Changelog
 
+## 1.8.1
+
+- **Fix**: A finished rock could flip back to the live rock a moment after its results showed, with HP still left and buttons that no longer worked. The rock's picture is now uploaded with the rock message instead of linked, so Discord no longer reloads it after every update and can't put an older version of the message back on top of the results.
+
+- **Change**: All rock pictures (the five rocks, the depleted rock and the collapsed mineshaft) now ship with the cog and are uploaded by the bot, so rocks no longer depend on imgur.
+
 ## 1.8.0
 
 - **New**: Weak spots and gem veins. Bigger rocks now and then show an extra button for 5 seconds. The first miner to click a weak spot deals 15% of the rock's HP in one hit; the first to click a gem vein gets bonus gems. You have to have hit the rock to claim one, and clicking it never counts toward swinging too fast.

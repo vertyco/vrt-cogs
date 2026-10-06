@@ -141,7 +141,10 @@ def build_active(
     """The live rock: title, picture, recent actions, open spot, HP with Mine, modifiers with Inspect."""
     box = ui.Container(accent_colour=rock_color(session))
     box.add_item(ui.TextDisplay(f"## {active_title(session)}"))
-    box.add_item(gallery(session.rocktype.image_url))
+    # The picture uploaded with the message, never a link. Discord fetches a linked picture in the background after
+    # each edit, then writes that edit's whole layout back when the fetch ends; a slow fetch from one redraw can land
+    # after the results and put the live rock back on screen.
+    box.add_item(gallery(f"attachment://{session.rocktype.image_file}"))
     recent = activity_text(session, synergy)
     if recent:
         box.add_item(ui.TextDisplay(recent))
@@ -198,6 +201,11 @@ def also_mined(rows: list[MinerResult], first_rank: int, used: int) -> str:
     return "\n".join(lines)
 
 
+def result_image(session: RockSession) -> str:
+    """File name of the results card's picture, uploaded with the results edit."""
+    return constants.DEPLETED_ROCK_FILE if session.depleted else constants.COLLAPSED_MINESHAFT_FILE
+
+
 def build_results(
     session: RockSession,
     synergy: dict[str, t.Any],
@@ -206,7 +214,7 @@ def build_results(
 ) -> list[ui.Item]:
     """The finished rock: outcome, picture, summary, one row per paid miner, repair reminder."""
     outcome = "depleted" if session.depleted else "collapsed"
-    image = constants.DEPLETED_ROCK_URL if session.depleted else constants.COLLAPSED_MINESHAFT_URL
+    image = f"attachment://{result_image(session)}"
     box = ui.Container(accent_colour=rock_color(session))
     box.add_item(ui.TextDisplay(f"## {short_title(session)} {outcome}"))
     box.add_item(gallery(image))

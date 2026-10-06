@@ -84,7 +84,8 @@ class RockView(ui.LayoutView):
         """Post the rock and start its collapse timer."""
         self.session.start()
         self.last_text = self.render_active()
-        self.message = await destination.send(view=self)
+        picture = discord.File(constants.ROCK_IMAGE_DIR / self.session.rocktype.image_file)
+        self.message = await destination.send(view=self, file=picture)
         self.last_redraw = perf_counter()
         self.ttl_task = asyncio.create_task(self.ttl(self.session.rocktype.ttl_seconds))
 
@@ -136,11 +137,13 @@ class RockView(ui.LayoutView):
                     await self.acknowledge(interaction)
                 return
             self.last_text = text
+            # Name the uploaded picture so the edit keeps it without uploading it again
+            kept = self.message.attachments
             try:
                 if interaction:
-                    await interaction.response.edit_message(view=self)
+                    await interaction.response.edit_message(view=self, attachments=kept)
                 else:
-                    await self.message.edit(view=self)
+                    await self.message.edit(view=self, attachments=kept)
             except discord.HTTPException as e:
                 log.warning("Failed to redraw rock message %s", getattr(self.message, "id", None), exc_info=e)
                 self.last_text = ""
@@ -184,8 +187,8 @@ class RockView(ui.LayoutView):
                 continue
             await self.redraw()
 
-    async def show(self, items: list[ui.Item]) -> None:
-        """Final edit of the message (results or the zero-hits line)."""
+    async def show(self, items: list[ui.Item], image: str | None = None) -> None:
+        """Final edit of the message (results or the zero-hits line), uploading `image` for it to show."""
         async with self.edit_lock:
             # Stop listening only now, so clicks during the payout still get a reply. It must run before
             # show_items(): discord.py unregisters the buttons that are in the layout at stop() time.
@@ -195,7 +198,9 @@ class RockView(ui.LayoutView):
             self.stop()
             self.show_items(items)
             try:
-                await self.message.edit(view=self)
+                # Replaces the live rock's picture, which the final layouts don't show
+                files = [discord.File(constants.ROCK_IMAGE_DIR / image)] if image else []
+                await self.message.edit(view=self, attachments=files)
             except discord.HTTPException as e:
                 log.warning("Failed to show final rock message %s", getattr(self.message, "id", None), exc_info=e)
 
@@ -368,7 +373,8 @@ class RockView(ui.LayoutView):
             duration = self.session.duration()
             payouts = self.session.compute_payouts()
             rows, players = await self.pay_out(payouts)
-            await self.show(rock_layout.build_results(self.session, payouts.synergy, rows, duration))
+            results = rock_layout.build_results(self.session, payouts.synergy, rows, duration)
+            await self.show(results, rock_layout.result_image(self.session))
             await self.finish_achievements(players, payouts, duration)
         finally:
             # Lets `[p]rock`'s view.wait() return even if paying out failed
