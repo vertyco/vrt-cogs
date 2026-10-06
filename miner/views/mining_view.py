@@ -35,6 +35,11 @@ SPOT_REPLIES: dict[str, str] = {
 }
 
 
+def click_age(interaction: discord.Interaction) -> float:
+    """Seconds since the player clicked. Discord fails the click if it is not answered within 3."""
+    return (discord.utils.utcnow() - interaction.created_at).total_seconds()
+
+
 class RockView(ui.LayoutView):
     """One live rock message. Game rules live in RockSession, drawing in rock_layout."""
 
@@ -200,13 +205,11 @@ class RockView(ui.LayoutView):
     async def show(self, items: list[ui.Item], image: str | None = None) -> None:
         """Final edit of the message (results or the zero-hits line), uploading `image` for it to show."""
         async with self.edit_lock:
-            # Stop listening only now, so clicks during the payout still get a reply. It must run before
-            # show_items(): discord.py unregisters the buttons that are in the layout at stop() time.
-            # The spot button may have left the layout already; without it there, discord.py would keep it,
-            # and through it this whole view, registered forever.
-            self.add_item(ui.ActionRow(self.spot_button))
-            self.stop()
             self.show_items(items)
+            # Players keep seeing the live buttons until this edit reaches them, so their clicks must still
+            # get a reply. discord.py drops clicks on buttons that left the layout unless they keep the view.
+            for button in self.live_buttons():
+                button._update_view(self)
             try:
                 # Replaces the live rock's picture, which the final layouts don't show
                 files = [discord.File(constants.ROCK_IMAGE_DIR / image)] if image else []
@@ -226,6 +229,8 @@ class RockView(ui.LayoutView):
             log.warning(
                 "Failed to acknowledge a click on rock message %s", getattr(self.message, "id", None), exc_info=e
             )
+            return
+        log.info("Click %s acknowledged %.2fs after it was made", interaction.id, click_age(interaction))
 
     async def respond(self, interaction: discord.Interaction) -> None:
         """Acknowledge the click, and redraw now when one is due or later otherwise."""
@@ -248,6 +253,13 @@ class RockView(ui.LayoutView):
         return bool(bucket.update_rate_limit())
 
     async def mine(self, interaction: discord.Interaction) -> None:
+        log.info(
+            "Mine click %s by %s on rock message %s arrived %.2fs after it was made",
+            interaction.id,
+            interaction.user.id,
+            getattr(self.message, "id", None),
+            click_age(interaction),
+        )
         if not self.cog.db_active():
             await interaction.response.send_message("Database is not active.", ephemeral=True)
             return
@@ -387,8 +399,22 @@ class RockView(ui.LayoutView):
             await self.show(results, rock_layout.result_image(self.session))
             await self.finish_achievements(players, payouts, duration)
         finally:
-            # Lets `[p]rock`'s view.wait() return even if paying out failed
-            self.stop()
+            # Last, so late clicks on the live buttons are answered until now. Also lets `[p]rock`'s
+            # view.wait() return even if paying out failed.
+            self.stop_listening()
+
+    def live_buttons(self) -> tuple[ui.Button, ...]:
+        return self.mine_button, self.inspect_button, self.spot_button
+
+    def stop_listening(self) -> None:
+        """Unregister the live buttons, whether or not they are still in the layout."""
+        # discord.py unregisters only the buttons in the layout at stop() time; any left out would keep this
+        # whole view registered forever. The shown layout goes back afterwards.
+        shown = list(self.children)
+        self.clear_items()
+        self.add_item(ui.ActionRow(*self.live_buttons()))
+        self.stop()
+        self.show_items(shown)
 
     async def pay_out(self, payouts: Payouts) -> tuple[list[rock_layout.MinerResult], dict[int, Player]]:
         """Write loot, ledger rows and tool wear. Return result rows (paid miners only) and every miner's Player."""

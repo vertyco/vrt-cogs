@@ -1,5 +1,9 @@
 # Miner Changelog
 
+## 1.11.2
+
+- **Fix**: Clicking **Mine** right as a rock breaks no longer shows "This interaction failed". Clicks that land while the results are still loading now get a reply.
+
 ## 1.11.1
 
 - **Fix**: The large rock's mined out picture no longer shows a polished diamond in the middle of the rubble.
