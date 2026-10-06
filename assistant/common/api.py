@@ -794,7 +794,7 @@ class API(MixinMeta):
         user: Optional[discord.Member] = None,
         requested_model: Optional[str] = None,
     ) -> bool:
-        model = requested_model or conf.get_user_model(user)
+        model = requested_model or self.db.get_effective_model(conf, user)
         base_url = self.get_guild_endpoint_url(conf)
         if not base_url:
             return model in SUPPORTS_VISION
@@ -1272,7 +1272,7 @@ class API(MixinMeta):
 
     def get_max_tokens(self, conf: GuildSettings, user: Optional[discord.Member]) -> int:
         user_max = conf.get_user_max_tokens(user)
-        model = conf.get_user_model(user)
+        model = self.db.get_effective_model(conf, user)
         has_endpoint = bool(conf.endpoint_override or self.db.endpoint_override)
         max_model_tokens = self.get_endpoint_chat_model_limit(model, conf) if has_endpoint else MODELS.get(model)
         if not max_model_tokens:
@@ -1314,7 +1314,7 @@ class API(MixinMeta):
         force: bool = False,
     ) -> bool:
         """Summarize older messages via LLM, falling back to degrade_conversation on failure"""
-        model = conf.get_user_model(user)
+        model = self.db.get_effective_model(conf, user)
         max_tokens = self.get_max_tokens(conf, user)
         threshold = conf.compaction_threshold or max_tokens
         convo_tokens = await self.count_payload_tokens(messages)

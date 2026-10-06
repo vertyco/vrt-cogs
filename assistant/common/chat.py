@@ -947,7 +947,7 @@ class ChatHandler(MixinMeta):
         keyword_fallback = False
         user = author if isinstance(author, discord.Member) else guild.get_member(author)
         user_id = author.id if isinstance(author, discord.Member) else author
-        model = conf.get_user_model(user)
+        model = self.db.get_effective_model(conf, user)
 
         # Ensure the message is not longer than 1048576 characters
         message = message[:1048576]
@@ -1578,7 +1578,7 @@ class ChatHandler(MixinMeta):
             List[dict]: list of messages prepped for api
         """
         now = datetime.now().astimezone(pytz.timezone(conf.timezone))
-        configured_model = conf.get_user_model(author)
+        configured_model = self.db.get_effective_model(conf, author)
         current_model = self.resolve_chat_model(configured_model, conf)
         current_embed_model = self.resolve_embedding_model(conf.embed_model, conf)
         reasoning_effort = conf.get_user_reasoning_effort(author)

@@ -264,7 +264,7 @@ If a file has no extension it will still try to read it only if it can be decode
         conversation = self.db.get_conversation(mem_id, ctx.channel.id, ctx.guild.id)
         messages = len(conversation.messages)
         max_tokens = self.get_max_tokens(conf, ctx.author)
-        model = conf.get_user_model(user)
+        model = self.db.get_effective_model(conf, user)
 
         convo_tokens = await self.count_payload_tokens(conversation.messages)
         effective_system_prompt = self.db.get_effective_system_prompt(conf)
