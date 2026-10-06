@@ -122,28 +122,25 @@ class RockView(ui.LayoutView):
         return perf_counter() - self.last_redraw >= redraw_interval(len(self.session.participants))
 
     async def redraw(self, interaction: discord.Interaction | None = None) -> None:
-        """Draw the newest state. With `interaction`, the redraw is that click's one response."""
+        """Draw the newest state. With `interaction`, that click is acknowledged first."""
         async with self.edit_lock:
+            if interaction:
+                # Clicks never carry the redraw itself: every edit goes through the message, the one path
+                # proven to keep the uploaded picture
+                await self.acknowledge(interaction)
             if self.finalizing:
-                if interaction:
-                    await self.acknowledge(interaction)
                 return
             self.dirty = False
             text = self.render_active()
             spot = self.session.spot if self.session.spot_open else None
             self.last_redraw = perf_counter()
             if text == self.last_text:
-                if interaction:
-                    await self.acknowledge(interaction)
                 return
             self.last_text = text
-            # Name the uploaded picture so the edit keeps it without uploading it again
-            kept = self.message.attachments
             try:
-                if interaction:
-                    await interaction.response.edit_message(view=self, attachments=kept)
-                else:
-                    await self.message.edit(view=self, attachments=kept)
+                # No `attachments`: leaving it out keeps the picture uploaded with the message. A Components V2
+                # message lists no attachments, so passing its list would delete the picture the layout shows.
+                await self.message.edit(view=self)
             except discord.HTTPException as e:
                 log.warning("Failed to redraw rock message %s", getattr(self.message, "id", None), exc_info=e)
                 self.last_text = ""
@@ -218,7 +215,7 @@ class RockView(ui.LayoutView):
             )
 
     async def respond(self, interaction: discord.Interaction) -> None:
-        """Give the click exactly one response: a redraw when one is due, otherwise a silent acknowledgement."""
+        """Acknowledge the click, and redraw now when one is due or later otherwise."""
         if self.finalizing:
             await self.acknowledge(interaction)
             return

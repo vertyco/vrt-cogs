@@ -1,5 +1,9 @@
 # Miner Changelog
 
+## 1.8.2
+
+- **Fix**: Rocks from 1.8.1 stopped updating after they spawned: HP stayed at 100% and clicks failed until the rock collapsed. Rock updates now keep the uploaded picture correctly.
+
 ## 1.8.1
 
 - **Fix**: A finished rock could flip back to the live rock a moment after its results showed, with HP still left and buttons that no longer worked. The rock's picture is now uploaded with the rock message instead of linked, so Discord no longer reloads it after every update and can't put an older version of the message back on top of the results.
