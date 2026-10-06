@@ -13,6 +13,8 @@ User commands<br/>
 
 Attempt to spawn a rock in this mining channel.<br/>
 
+Bigger rocks sometimes show a weak spot or gem vein for 5 seconds. The first miner to click it gets a big hit or bonus gems.<br/>
+
  - Usage: `[p]rock`
  - Slash Usage: `/rock`
  - Checks: `ensure_db_connection`

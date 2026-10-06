@@ -531,6 +531,14 @@ class User(MixinMeta):
         )
         embed.add_field(name="Mining & Overswing", value=overswing_text, inline=False)
 
+        spots_text = (
+            "• Bigger rocks sometimes show an extra button for a few seconds.\n"
+            "• **Weak spot**: the first miner to click it lands a big hit.\n"
+            "• **Gem vein**: the first miner to click it grabs bonus gems.\n"
+            "• You have to hit the rock first, and the click never counts toward overswing."
+        )
+        embed.add_field(name="Weak Spots & Gem Veins", value=spots_text, inline=False)
+
         performance_text = (
             "Your payout now includes a **performance bonus** based on how well you mine each rock:\n"
             "• Score combines damage share, swing control (fewer overswings), and active hit count\n"

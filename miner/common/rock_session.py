@@ -11,6 +11,9 @@ from time import perf_counter
 from . import constants
 
 OverswingKind = t.Literal["slip", "resisted", "damage", "break", "shatter"]
+SpotKind = t.Literal["weak_spot", "gem_vein"]
+SpotState = t.Literal["open", "claimed", "gone"]
+ClaimOutcome = t.Literal["won", "beaten", "gone", "not_mining"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -30,6 +33,31 @@ class Payouts:
     scores: dict[int, int]
     bonus_pct: dict[int, float]
     synergy: dict[str, t.Any]
+
+
+@dataclass(slots=True)
+class Spot:
+    """A weak spot or gem vein on a live rock. The first miner to click it gets the reward."""
+
+    kind: SpotKind
+    damage: int = 0  # Weak spot: damage it deals to the rock
+    gems: int = 0  # Gem vein: bonus gems it pays
+    state: SpotState = "open"
+    shown: bool = False  # The redraw drawing it has landed, so it can be claimed and its countdown runs
+    closes_at: float = 0.0  # Unix time shown as the end of its countdown
+
+
+def roll_spots(rocktype: constants.RockType, max_hp: int) -> list[tuple[int, SpotKind]]:
+    """The HP marks where this rock's spots open, highest first, and the kind of each."""
+    low, high = constants.WEAK_SPOT_HP_RANGE
+    plan: list[tuple[int, SpotKind]] = []
+    for chance in rocktype.spot_chances:
+        if random.random() >= chance:
+            continue
+        mark = round(max_hp * random.uniform(low, high))
+        vein = rocktype.vein_gems > 0 and random.random() < constants.GEM_VEIN_CHANCE
+        plan.append((mark, "gem_vein" if vein else "weak_spot"))
+    return sorted(plan, reverse=True)
 
 
 def downgraded_tool(tool: constants.ToolName) -> constants.ToolTier:
@@ -101,6 +129,10 @@ class RockSession:
         self.perks: dict[int, frozenset[str]] = {}  # Perks each miner last hit with
         self.shattered_tools: dict[int, constants.ToolName] = {}  # Pickaxe lost to an overswing
         self.actions: deque[str] = deque(maxlen=constants.RECENT_ACTIONS_SHOWN)
+        self.spot_plan = roll_spots(rocktype, self.max_hp)  # (HP mark, kind) of spots still to open
+        self.spot: Spot | None = None  # The latest spot; only an open one is drawn on the rock
+        self.spots_claimed: dict[int, int] = defaultdict(int)
+        self.vein_gems: dict[int, int] = defaultdict(int)  # Bonus gems owed from gem veins
 
         self.started_at: float = 0.0
         self.end_time: datetime | None = None
@@ -112,6 +144,15 @@ class RockSession:
     @property
     def depleted(self) -> bool:
         return self.current_hp <= 0
+
+    @property
+    def low_hp(self) -> bool:
+        """At or under the Finisher threshold of the rock's full HP."""
+        return self.current_hp <= self.max_hp * constants.PARTY_FINISHER_HP_THRESHOLD
+
+    @property
+    def spot_open(self) -> bool:
+        return self.spot is not None and self.spot.state == "open"
 
     def duration(self) -> float:
         return max(0.0, perf_counter() - self.started_at)
@@ -130,19 +171,60 @@ class RockSession:
         if crit:
             power = round(power * tool.crit_multiplier)
             self.crit_hits[user_id] += 1
-        low_hp = self.current_hp <= self.max_hp * constants.PARTY_FINISHER_HP_THRESHOLD
-        if low_hp and "closer" in perks:
+        if self.low_hp and "closer" in perks:
             power = round(power * constants.CLOSER_DAMAGE_MULTIPLIER)
+        damage = self.deal(user_id, power)
+        self.tools[user_id] = tool.key
+        self.perks[user_id] = perks
+        self.actions.append(("💥CRITICAL HIT! " if crit else "") + f"{name}: +{damage} damage!")
+        self.open_due_spot()
+        return damage
+
+    def deal(self, user_id: int, power: int) -> int:
+        """Take up to `power` HP off the rock as one hit by `user_id`. Return the damage done."""
         damage = min(power, self.current_hp)
-        if low_hp:
+        if self.low_hp:
             self.low_hp_damage[user_id] += damage
         self.current_hp -= damage
         self.participants[user_id] += damage
         self.hits[user_id] += 1
-        self.tools[user_id] = tool.key
-        self.perks[user_id] = perks
-        self.actions.append(("💥CRITICAL HIT! " if crit else "") + f"{name}: +{damage} damage!")
         return damage
+
+    def open_due_spot(self) -> None:
+        """Open the next planned spot once HP reaches its mark, unless one is open or the rock is broken."""
+        if self.depleted or self.spot_open or not self.spot_plan or self.current_hp > self.spot_plan[0][0]:
+            return
+        __, kind = self.spot_plan.pop(0)
+        if kind == "gem_vein":
+            self.spot = Spot(kind, gems=self.rocktype.vein_gems)
+        else:
+            self.spot = Spot(kind, damage=max(1, round(self.max_hp * constants.WEAK_SPOT_DAMAGE_PCT)))
+
+    def claim_spot(self, user_id: int, name: str) -> ClaimOutcome:
+        """The first click on a spot that is on screen wins it. Return what this click got."""
+        spot = self.spot
+        if spot is None or not spot.shown or spot.state == "gone":
+            return "gone"
+        if spot.state == "claimed":
+            return "beaten"
+        if not self.hits.get(user_id):
+            return "not_mining"
+        spot.state = "claimed"
+        self.spots_claimed[user_id] += 1
+        if spot.kind == "gem_vein":
+            self.vein_gems[user_id] += spot.gems
+            self.actions.append(f"{constants.GEM_EMOJI}{name} grabbed a gem vein! +{spot.gems} gems")
+        else:
+            damage = self.deal(user_id, spot.damage)
+            self.actions.append(f"{constants.WEAK_SPOT_EMOJI}{name} struck a weak spot! +{damage} damage!")
+        return "won"
+
+    def close_spot(self, spot: Spot) -> bool:
+        """Close `spot` if it is still the open one. Return True when it closed."""
+        if self.spot is not spot or spot.state != "open":
+            return False
+        spot.state = "gone"
+        return True
 
     def judge_overswing(
         self, tool: constants.ToolTier, durability: int, roll: float, sturdy: bool = False
@@ -250,6 +332,10 @@ class RockSession:
         for resource, amount in pool.items():
             for uid, base in split_by_damage(amount, ranked, total).items():
                 loot[uid][resource] = base + self.bonus_for(uid, resource, base, bonus_pct, synergy)
+        # Vein gems go on after the bonuses, so no bonus multiplies them
+        for uid, gems in self.vein_gems.items():
+            if uid in loot:
+                loot[uid]["gems"] = loot[uid].get("gems", 0) + gems
         return Payouts(loot=loot, scores=scores, bonus_pct=bonus_pct, synergy=synergy)
 
     def party_synergy(self) -> dict[str, t.Any]:

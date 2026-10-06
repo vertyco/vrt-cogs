@@ -5,7 +5,7 @@ import logging
 import random
 import typing as t
 from contextlib import suppress
-from time import perf_counter
+from time import perf_counter, time
 from types import SimpleNamespace
 
 import discord
@@ -15,7 +15,7 @@ from redbot.core.utils.chat_formatting import box
 
 from ..abc import MixinMeta
 from ..common import achievements, constants, perks, rock_achievements
-from ..common.rock_session import OverswingResult, Payouts, RockSession, downgraded_tool, redraw_interval
+from ..common.rock_session import OverswingResult, Payouts, RockSession, Spot, downgraded_tool, redraw_interval
 from ..db.tables import Player, PlayerAchievementStats, ResourceLedger
 from . import rock_layout
 
@@ -24,6 +24,14 @@ log = logging.getLogger("red.vrt.miner.views.mining_view")
 # Fixed custom IDs: a click sent from a client that hasn't seen the latest redraw still matches
 MINE_ID = "miner-rock-mine"
 INSPECT_ID = "miner-rock-inspect"
+SPOT_ID = "miner-rock-spot"
+
+# Private replies to spot clicks that did not win it
+SPOT_REPLIES: dict[str, str] = {
+    "beaten": "Someone beat you to it!",
+    "gone": "That one is gone.",
+    "not_mining": "Hit the rock first to claim this.",
+}
 
 
 class RockView(ui.LayoutView):
@@ -47,6 +55,9 @@ class RockView(ui.LayoutView):
             emoji=constants.INSPECT_EMOJI, label="Inspect", style=discord.ButtonStyle.secondary, custom_id=INSPECT_ID
         )
         self.inspect_button.callback = self.inspect
+        # Label, emoji and color are set for each spot when it is drawn
+        self.spot_button = ui.Button(custom_id=SPOT_ID)
+        self.spot_button.callback = self.claim
         self.mine_cooldown = commands.CooldownMapping.from_cooldown(
             rate=constants.SWINGS_PER_THRESHOLD,
             per=constants.OVERSWING_THRESHOLD_SECONDS,
@@ -60,6 +71,7 @@ class RockView(ui.LayoutView):
         self.message: discord.Message | None = None
         self.ttl_task: asyncio.Task | None = None
         self.flush_task: asyncio.Task | None = None
+        self.spot_task: asyncio.Task | None = None  # Countdown of the spot on screen
         # Only one edit of the message may be in flight at a time
         self.edit_lock = asyncio.Lock()
         self.finalizing = False  # No more hits are accepted
@@ -93,8 +105,17 @@ class RockView(ui.LayoutView):
         return rock_layout.layout_text(self)
 
     def render_active(self) -> str:
+        spot = self.session.spot
+        if self.session.spot_open and not spot.shown:
+            # The end time drawn on screen counts from the redraw that first shows the spot
+            spot.closes_at = time() + constants.WEAK_SPOT_OPEN_SECONDS
         synergy = self.session.party_synergy()
-        return self.show_items(rock_layout.build_active(self.session, synergy, self.mine_button, self.inspect_button))
+        buttons = (self.mine_button, self.inspect_button, self.spot_button)
+        text = self.show_items(rock_layout.build_active(self.session, synergy, *buttons))
+        # discord.py unhooks buttons that leave the layout and then drops their clicks. Late clicks on a
+        # removed spot button must still reach claim() for their "beaten" or "gone" reply.
+        self.spot_button._update_view(self)
+        return text
 
     def redraw_due(self) -> bool:
         return perf_counter() - self.last_redraw >= redraw_interval(len(self.session.participants))
@@ -108,6 +129,7 @@ class RockView(ui.LayoutView):
                 return
             self.dirty = False
             text = self.render_active()
+            spot = self.session.spot if self.session.spot_open else None
             self.last_redraw = perf_counter()
             if text == self.last_text:
                 if interaction:
@@ -125,6 +147,26 @@ class RockView(ui.LayoutView):
                 if interaction:
                     # Nothing else may click again, so the background redraw shows this state
                     self.mark_dirty()
+                return
+            self.spot_drawn(spot)
+
+    def spot_drawn(self, spot: Spot | None) -> None:
+        """A redraw showing `spot` has landed: from now on it can be claimed, and its countdown runs."""
+        if spot is None or spot.shown:
+            return
+        spot.shown = True
+        if self.spot_task:
+            self.spot_task.cancel()
+        self.spot_task = asyncio.create_task(self.spot_timer(spot))
+
+    async def spot_timer(self, spot: Spot) -> None:
+        """Take `spot` off the rock when its countdown ends, unless someone claimed it first."""
+        try:
+            await asyncio.sleep(constants.WEAK_SPOT_OPEN_SECONDS)
+            if self.session.close_spot(spot):
+                self.mark_dirty()
+        except asyncio.CancelledError:
+            pass
 
     def mark_dirty(self) -> None:
         if self.finalizing:
@@ -147,6 +189,9 @@ class RockView(ui.LayoutView):
         async with self.edit_lock:
             # Stop listening only now, so clicks during the payout still get a reply. It must run before
             # show_items(): discord.py unregisters the buttons that are in the layout at stop() time.
+            # The spot button may have left the layout already; without it there, discord.py would keep it,
+            # and through it this whole view, registered forever.
+            self.add_item(ui.ActionRow(self.spot_button))
             self.stop()
             self.show_items(items)
             try:
@@ -217,6 +262,26 @@ class RockView(ui.LayoutView):
             return False
         self.finalizing = True
         return True
+
+    async def claim(self, interaction: discord.Interaction) -> None:
+        """A click on the spot button. Never counts as a swing, so it cannot overswing."""
+        if not self.cog.db_active():
+            await interaction.response.send_message("Database is not active.", ephemeral=True)
+            return
+        if self.finalizing:
+            await interaction.response.send_message("This mining event is being finalized!", ephemeral=True)
+            return
+        outcome = self.session.claim_spot(interaction.user.id, interaction.user.name)
+        if outcome != "won":
+            await interaction.response.send_message(SPOT_REPLIES[outcome], ephemeral=True)
+            return
+        if self.session.depleted:
+            # The weak spot broke the rock
+            self.finalizing = True
+            await self.acknowledge(interaction)
+            await self.finish()
+            return
+        await self.respond(interaction)
 
     async def overswing(self, interaction: discord.Interaction, tool: constants.ToolTier) -> None:
         user = interaction.user
@@ -292,6 +357,8 @@ class RockView(ui.LayoutView):
         self.finalizing = True
         if self.ttl_task and self.ttl_task is not asyncio.current_task():
             self.ttl_task.cancel()
+        if self.spot_task:
+            self.spot_task.cancel()
         # A redraw already in flight is left to land: show() waits for it on edit_lock, then the flush loop
         # sees `finalizing` and stops. Cancelling it could let the stale redraw arrive after the results.
         try:

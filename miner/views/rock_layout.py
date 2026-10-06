@@ -7,11 +7,16 @@ import discord
 from discord import ui
 
 from ..common import constants
-from ..common.rock_session import RockSession
+from ..common.rock_session import RockSession, Spot
 
 MEDALS: tuple[str, ...] = ("🥇", "🥈", "🥉")
 REPAIR_HINT = '-# Run the "miner repair" command to repair your tools.'
 ALSO_MINED_RESERVE = 60  # Text kept free for the "Also mined" heading and its "and N more" line
+# Emoji, label and color of the claim button for each kind of spot
+SPOT_BUTTONS: dict[str, tuple[str, str, discord.ButtonStyle]] = {
+    "weak_spot": (constants.WEAK_SPOT_EMOJI, "Strike", discord.ButtonStyle.danger),
+    "gem_vein": (constants.GEM_EMOJI, "Grab", discord.ButtonStyle.primary),
+}
 
 
 @dataclass(slots=True)
@@ -79,6 +84,20 @@ def activity_text(session: RockSession, synergy: dict[str, t.Any]) -> str:
     return "\n".join(lines)
 
 
+def spot_text(spot: Spot) -> str:
+    if spot.kind == "gem_vein":
+        head = f"{constants.GEM_EMOJI} **Gem vein!** First click grabs {spot.gems} bonus gems."
+    else:
+        head = f"{constants.WEAK_SPOT_EMOJI} **Weak spot!** First click lands a big hit."
+    return f"{head}\n-# Gone <t:{round(spot.closes_at)}:R>"
+
+
+def spot_section(spot: Spot, button: ui.Button) -> ui.Section:
+    """The open spot's line, with its claim button styled for the kind of spot."""
+    button.emoji, button.label, button.style = SPOT_BUTTONS[spot.kind]
+    return ui.Section(ui.TextDisplay(spot_text(spot)), accessory=button)
+
+
 def clean_name(name: str) -> str:
     """A display name that can't ping anyone or break the formatting around it."""
     return discord.utils.escape_markdown(discord.utils.escape_mentions(name))
@@ -117,8 +136,9 @@ def build_active(
     synergy: dict[str, t.Any],
     mine_button: ui.Button,
     inspect_button: ui.Button,
+    spot_button: ui.Button | None = None,
 ) -> list[ui.Item]:
-    """The live rock: title, picture, recent actions, HP with Mine, modifiers with Inspect."""
+    """The live rock: title, picture, recent actions, open spot, HP with Mine, modifiers with Inspect."""
     box = ui.Container(accent_colour=rock_color(session))
     box.add_item(ui.TextDisplay(f"## {active_title(session)}"))
     box.add_item(gallery(session.rocktype.image_url))
@@ -126,8 +146,11 @@ def build_active(
     if recent:
         box.add_item(ui.TextDisplay(recent))
         box.add_item(ui.Separator())
-    # Mine sits below the growing feed: Discord pins the newest message to the bottom of the chat,
-    # so only what is under the button can move it, and everything under it has a fixed height
+    # Mine sits below the growing feed and the spot line: Discord pins the newest message to the bottom
+    # of the chat, so only what is under the button can move it, and everything under it has a fixed height
+    if session.spot_open and spot_button is not None:
+        box.add_item(spot_section(session.spot, spot_button))
+        box.add_item(ui.Separator())
     ends = round(session.end_time.timestamp()) if session.end_time else 0
     hp_text = f"{hp_line(session)}\n-# The mineshaft collapses <t:{ends}:R>"
     box.add_item(ui.Section(ui.TextDisplay(hp_text), accessory=mine_button))

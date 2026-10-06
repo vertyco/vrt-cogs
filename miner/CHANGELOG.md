@@ -1,5 +1,9 @@
 # Miner Changelog
 
+## 1.8.0
+
+- **New**: Weak spots and gem veins. Bigger rocks now and then show an extra button for 5 seconds. The first miner to click a weak spot deals 15% of the rock's HP in one hit; the first to click a gem vein gets bonus gems. You have to have hit the rock to claim one, and clicking it never counts toward swinging too fast.
+
 ## 1.7.0
 
 - **New**: Pickaxe perks. Spend stone, iron and gems on permanent perks with `[p]miner perks`: Forceful, Lucky, Steady, Closer, Sturdy and Prospector. Iron and Steel pickaxes hold one perk, Carbide two, Diamond three. Perks stay through upgrades and repairs, but a pickaxe that shatters or wears out takes its perks with it.

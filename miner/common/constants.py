@@ -52,6 +52,12 @@ LAYOUT_TEXT_BUDGET: int = 3800  # Discord allows 4000 characters of text per mes
 REDRAW_MIN_SECONDS: float = 1.5  # Shortest gap between two redraws of a live rock
 REDRAW_SECONDS_PER_MINER: float = 0.5  # Extra gap per miner after the first
 
+# Weak spots and gem veins
+WEAK_SPOT_OPEN_SECONDS: float = 5  # How long a spot stays clickable once it is on screen
+WEAK_SPOT_DAMAGE_PCT: float = 0.15  # Share of the rock's full HP a weak spot deals
+WEAK_SPOT_HP_RANGE: tuple[float, float] = (0.15, 0.85)  # HP band, as shares of full HP, where spots open
+GEM_VEIN_CHANCE: float = 0.5  # Chance a spot is a gem vein, on rocks that have veins
+
 # Tool repair cost percentages by tier (e.g., 0.5 = 50% of upgrade cost)
 TOOL_REPAIR_COST_PCTS: dict[ToolName, float] = {
     "wood": 0.0,
@@ -96,6 +102,7 @@ INSPECT_EMOJI: str = "\N{LEFT-POINTING MAGNIFYING GLASS}"
 IRON_EMOJI: str = "\N{CHAINS}\N{VARIATION SELECTOR-16}"
 TROPHY_EMOJI: str = "\N{TROPHY}"
 CLOCK_EMOJI: str = "\N{ALARM CLOCK}"
+WEAK_SPOT_EMOJI: str = "\N{COLLISION SYMBOL}"
 
 
 def resource_emoji(resource: str) -> str:
@@ -215,6 +222,10 @@ class RockType:
     overswing_damage: int
     # How long this rock stays active before collapsing, in seconds
     ttl_seconds: int
+    # Chance of each weak spot or gem vein this rock can show, one entry per spot
+    spot_chances: tuple[float, ...] = ()
+    # Bonus gems a gem vein pays; 0 means this rock only shows weak spots
+    vein_gems: int = 0
 
 
 ROCK_TYPES: dict[RockTierName, RockType] = {
@@ -243,6 +254,7 @@ ROCK_TYPES: dict[RockTierName, RockType] = {
         overswing_damage_chance=0.1,
         overswing_damage=15,
         ttl_seconds=120,
+        spot_chances=(0.5,),
     ),
     "large": RockType(
         key="large",
@@ -256,6 +268,8 @@ ROCK_TYPES: dict[RockTierName, RockType] = {
         overswing_damage_chance=0.1,
         overswing_damage=25,
         ttl_seconds=150,
+        spot_chances=(1.0,),
+        vein_gems=2,
     ),
     "meteor": RockType(
         key="meteor",
@@ -269,6 +283,8 @@ ROCK_TYPES: dict[RockTierName, RockType] = {
         overswing_damage_chance=0.35,
         overswing_damage=50,
         ttl_seconds=180,
+        spot_chances=(1.0, 0.5),
+        vein_gems=3,
     ),
     "volatile geode": RockType(
         key="volatile geode",
@@ -282,6 +298,8 @@ ROCK_TYPES: dict[RockTierName, RockType] = {
         overswing_damage_chance=0.05,
         overswing_damage=80,
         ttl_seconds=210,
+        spot_chances=(1.0, 1.0),
+        vein_gems=5,
     ),
 }
 
