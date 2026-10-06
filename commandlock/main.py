@@ -29,7 +29,7 @@ class CommandLock(commands.Cog):
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "0.1.0"
+    __version__ = "0.1.1"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -69,23 +69,18 @@ class CommandLock(commands.Cog):
         if isinstance(ctx.channel, discord.Thread) and await self.config.guild(ctx.guild).threads_bypass():
             return True
         allowed_channels = await self.get_allowed_channels(ctx)
+        channel = ctx.channel.parent if isinstance(ctx.channel, discord.Thread) else ctx.channel
+        if channel in allowed_channels:
+            return True
         delete_after = await self.config.guild(ctx.guild).delete_after()
         kwargs = {"delete_after": delete_after} if delete_after else {}
-        if not allowed_channels:
+        # Categories are skipped because their visible inner channels are already in the set
+        mentions = [c.mention for c in allowed_channels if not isinstance(c, (discord.Thread, discord.CategoryChannel))]
+        if not mentions:
             # The allowed channels are channels they cannot access
             err = "There are no channels in which you have permission to use this command."
             await ctx.send(err, **kwargs)
             raise commands.UserFeedbackCheckFailure()
-        channel = ctx.channel.parent if isinstance(ctx.channel, discord.Thread) else ctx.channel
-        if channel in allowed_channels:
-            return True
-        mentions = []
-        for channel in allowed_channels:
-            if isinstance(channel, discord.CategoryChannel):
-                for inner_channel in channel.channels:
-                    mentions.append(inner_channel.mention)
-            else:
-                mentions.append(channel.mention)
         mentions = ", ".join(mentions)
         msg = f"{ctx.author.mention}, you can only use this command in the following channels: {mentions}"
         for p in pagify(msg, page_length=1900, delims=[",", "\n"]):
