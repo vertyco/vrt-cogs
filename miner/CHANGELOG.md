@@ -1,5 +1,9 @@
 # Miner Changelog
 
+## 1.11.1
+
+- **Fix**: The large rock's mined out picture no longer shows a polished diamond in the middle of the rubble.
+
 ## 1.11.0
 
 - **New**: A rock's modifiers now show on its picture. Electrified rocks crackle with lightning, Crystalline rocks sparkle, Volatile rocks burn, Enchanted rocks swirl with magic, Fortified rocks sit under a shield dome, and Blessed rocks glow in golden light. A rock with two modifiers shows both. The results picture after the rock ends is unchanged.
