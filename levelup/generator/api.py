@@ -161,7 +161,7 @@ def _download_url(url: str) -> t.Optional[bytes]:
     return imgtools.download_image(url)
 
 
-def _get_asset(url: t.Optional[str], b64: t.Optional[str] = None) -> t.Optional[bytes]:
+def get_asset(url: t.Optional[str], b64: t.Optional[str] = None) -> t.Optional[bytes]:
     """Download an asset, or decode it from base64 if there's no URL or the download fails."""
     if url and (data := _download_url(url)):
         return data
@@ -202,7 +202,7 @@ def _resolve_font(
     return None, None
 
 
-def _decode_font(font_b64: t.Optional[str]) -> t.Optional[bytes]:
+def decode_font(font_b64: t.Optional[str]) -> t.Optional[bytes]:
     if not font_b64:
         return None
     try:
@@ -212,7 +212,7 @@ def _decode_font(font_b64: t.Optional[str]) -> t.Optional[bytes]:
         return None
 
 
-async def _render(generator: t.Callable, kwargs: dict, temp_font: t.Optional[str] = None) -> t.Tuple[bytes, bool]:
+async def render(generator: t.Callable, kwargs: dict, temp_font: t.Optional[str] = None) -> t.Tuple[bytes, bool]:
     """Run a generator in a thread, cleaning up any temp font file afterwards."""
     try:
         return await asyncio.to_thread(generator, **kwargs)
@@ -232,7 +232,7 @@ async def generate_profile(request: ProfileRequest) -> ImageResponse:
     # Fetch assets
     avatar_bytes = await asyncio.to_thread(_download_url, request.avatar_url)
     background_bytes = (
-        await asyncio.to_thread(_get_asset, request.background_url, request.background_b64)
+        await asyncio.to_thread(get_asset, request.background_url, request.background_b64)
         if request.style != "runescape"
         else None
     )
@@ -242,7 +242,7 @@ async def generate_profile(request: ProfileRequest) -> ImageResponse:
     role_icon = await asyncio.to_thread(_download_url, request.role_icon_url) if request.style != "runescape" else None
 
     # Resolve font (supports both bundled fonts by name and custom fonts via base64)
-    font_path, temp_font = _resolve_font(request.font_name, _decode_font(request.font_b64))
+    font_path, temp_font = _resolve_font(request.font_name, decode_font(request.font_b64))
 
     # Build kwargs
     kwargs = {
@@ -288,7 +288,7 @@ async def generate_profile(request: ProfileRequest) -> ImageResponse:
         "runescape": generate_runescape_profile,
     }
     generator = generators.get(request.style, generate_default_profile)
-    img_bytes, animated = await _render(generator, kwargs, temp_font)
+    img_bytes, animated = await render(generator, kwargs, temp_font)
 
     return ImageResponse(
         b64=base64.b64encode(img_bytes).decode("utf-8"),
@@ -304,10 +304,10 @@ async def generate_levelup_image(request: LevelUpRequest) -> ImageResponse:
 
     # Fetch assets
     avatar_bytes = await asyncio.to_thread(_download_url, request.avatar_url)
-    background_bytes = await asyncio.to_thread(_get_asset, request.background_url, request.background_b64)
+    background_bytes = await asyncio.to_thread(get_asset, request.background_url, request.background_b64)
 
     # Resolve font (supports both bundled fonts by name and custom fonts via base64)
-    font_path, temp_font = _resolve_font(request.font_name, _decode_font(request.font_b64))
+    font_path, temp_font = _resolve_font(request.font_name, decode_font(request.font_b64))
 
     kwargs = {
         "avatar_bytes": avatar_bytes,
@@ -321,7 +321,7 @@ async def generate_levelup_image(request: LevelUpRequest) -> ImageResponse:
     if font_path:
         kwargs["font_path"] = font_path
 
-    img_bytes, animated = await _render(generate_level_img, kwargs, temp_font)
+    img_bytes, animated = await render(generate_level_img, kwargs, temp_font)
 
     return ImageResponse(
         b64=base64.b64encode(img_bytes).decode("utf-8"),
@@ -348,7 +348,7 @@ def _parse_color(color_str: str) -> t.Tuple[int, int, int] | None:
         return None
 
 
-_INT_FIELDS = {
+INT_FIELDS = {
     "level",
     "messages",
     "voicetime",
@@ -360,9 +360,9 @@ _INT_FIELDS = {
     "next_xp",
     "position",
 }
-_BOOL_FIELDS = {"blur", "render_gif", "square"}
+BOOL_FIELDS = {"blur", "render_gif", "square"}
 # Form field names some cog versions send, mapped to the generator argument names
-_FIELD_ALIASES = {"prestige_emoji_bytes": "prestige_emoji", "role_icon_bytes": "role_icon"}
+FIELD_ALIASES = {"prestige_emoji_bytes": "prestige_emoji", "role_icon_bytes": "role_icon"}
 
 
 def _parse_form_data(form_data: dict) -> t.Tuple[dict, t.Optional[str]]:
@@ -375,15 +375,15 @@ def _parse_form_data(form_data: dict) -> t.Tuple[dict, t.Optional[str]]:
     """
     kwargs = {}
     for k, v in form_data.items():
-        k = _FIELD_ALIASES.get(k, k)
+        k = FIELD_ALIASES.get(k, k)
         if hasattr(v, "file"):
             kwargs[k] = v.file.read()
-        elif k in _INT_FIELDS:
+        elif k in INT_FIELDS:
             try:
                 kwargs[k] = int(float(v))
             except (ValueError, TypeError, OverflowError):
                 log.warning(f"Ignoring invalid {k} value: {v}")
-        elif k in _BOOL_FIELDS:
+        elif k in BOOL_FIELDS:
             kwargs[k] = str(v).lower() == "true"
         else:
             kwargs[k] = v
@@ -418,7 +418,7 @@ async def legacy_fullprofile(request: Request):
         "gaming": generate_gaming_profile,
         "runescape": generate_runescape_profile,
     }
-    img_bytes, animated = await _render(generators.get(style, generate_default_profile), kwargs, temp_font)
+    img_bytes, animated = await render(generators.get(style, generate_default_profile), kwargs, temp_font)
     return {"b64": base64.b64encode(img_bytes).decode("utf-8"), "animated": animated}
 
 
@@ -429,7 +429,7 @@ async def legacy_runescape(request: Request):
     kwargs, temp_font = _parse_form_data(dict(form_data))
     kwargs.pop("style", None)
     log.info(f"[Legacy] Generating runescape profile for {kwargs.get('username', 'unknown')}")
-    img_bytes, animated = await _render(generate_runescape_profile, kwargs, temp_font)
+    img_bytes, animated = await render(generate_runescape_profile, kwargs, temp_font)
     return {"b64": base64.b64encode(img_bytes).decode("utf-8"), "animated": animated}
 
 

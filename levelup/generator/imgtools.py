@@ -32,24 +32,24 @@ DEFAULT_FONT = DEFAULT_FONTS / "BebasNeue.ttf"
 STOCK = ASSETS / "stock"
 
 
-def _load_stock(name: str) -> Image.Image:
+def load_stock(name: str) -> Image.Image:
     # Decode up front, Pillow's lazy loading on first use isn't safe when renders run in parallel threads
     image = Image.open(STOCK / name)
     image.load()
     return image
 
 
-STAR = _load_stock("star.webp")
-DEFAULT_PFP = _load_stock("defaultpfp.webp")
-RS_TEMPLATE = _load_stock("runescapeui_nogold.webp")
-RS_TEMPLATE_BALANCE = _load_stock("runescapeui_withgold.webp")
+STAR = load_stock("star.webp")
+DEFAULT_PFP = load_stock("defaultpfp.webp")
+RS_TEMPLATE = load_stock("runescapeui_nogold.webp")
+RS_TEMPLATE_BALANCE = load_stock("runescapeui_withgold.webp")
 COLORTABLE = STOCK / "colortable.webp"
 STATUS = {
-    "online": _load_stock("online.webp"),
-    "offline": _load_stock("offline.webp"),
-    "idle": _load_stock("idle.webp"),
-    "dnd": _load_stock("dnd.webp"),
-    "streaming": _load_stock("streaming.webp"),
+    "online": load_stock("online.webp"),
+    "offline": load_stock("offline.webp"),
+    "idle": load_stock("idle.webp"),
+    "dnd": load_stock("dnd.webp"),
+    "streaming": load_stock("streaming.webp"),
 }
 
 # GIF frame delays are stored in 10ms steps, and browsers (so Discord too) play any delay of 10ms or less at 100ms
@@ -68,7 +68,7 @@ MAX_ANIMATION_LOOP_MS = 10_000
 LAYER_CACHE_BYTES = 64 * 1024 * 1024
 # Frames where less than this much of the area changed reuse the previous frame's palette
 MAX_PARTIAL_FRAME_AREA = 0.5
-_ALPHA_LUT = [255 if a >= 128 else 0 for a in range(256)]
+ALPHA_LUT = [255 if a >= 128 else 0 for a in range(256)]
 
 log = logging.getLogger("red.vrt.levelup.imagetools")
 _ = Translator("LevelUp", __file__)
@@ -169,7 +169,7 @@ def make_circle_outline(thickness: int, color: tuple) -> Image.Image:
 
 
 @functools.lru_cache(maxsize=16)
-def _circle_mask(size: t.Tuple[int, int], method: Image.Resampling) -> Image.Image:
+def circle_mask(size: t.Tuple[int, int], method: Image.Resampling) -> Image.Image:
     # Draw the mask at 4x size so scaling it down smooths the edges
     mask = Image.new("L", (size[0] * 4, size[1] * 4), 0)
     draw = ImageDraw.Draw(mask)
@@ -182,7 +182,7 @@ def make_profile_circle(
     method: Image.Resampling = Image.Resampling.LANCZOS,
 ) -> Image.Image:
     """Crop an image into a circle"""
-    mask = _circle_mask(pfp.size, method)
+    mask = circle_mask(pfp.size, method)
     if pfp.mode == "RGBA":
         # Keep any transparency the avatar already has
         mask = ImageChops.multiply(pfp.getchannel("A"), mask)
@@ -556,35 +556,35 @@ class AnimationLayer:
         self.prepare = prepare
         self.animated = bool(getattr(image, "is_animated", False))
         self.durations = get_frame_durations(image) if self.animated else None
-        self._cache: t.Dict[int, Image.Image] = {}
-        self._cache_bytes = 0
-        self._last: t.Optional[t.Tuple[int, Image.Image]] = None
+        self.cache: t.Dict[int, Image.Image] = {}
+        self.cache_bytes = 0
+        self.last: t.Optional[t.Tuple[int, Image.Image]] = None
 
     def get(self, index: int) -> Image.Image:
         """Get the prepared frame at an index, the returned image must not be modified"""
         index = index if self.animated else 0
-        if index in self._cache:
-            return self._cache[index]
-        if self._last and self._last[0] == index:
-            return self._last[1]
+        if index in self.cache:
+            return self.cache[index]
+        if self.last and self.last[0] == index:
+            return self.last[1]
         if self.animated:
             self.image.seek(index)
         frame = self.prepare(self.image.convert("RGBA"))
         size = frame.width * frame.height * len(frame.getbands())
-        if self._cache_bytes + size <= LAYER_CACHE_BYTES:
-            self._cache[index] = frame
-            self._cache_bytes += size
-        self._last = (index, frame)
+        if self.cache_bytes + size <= LAYER_CACHE_BYTES:
+            self.cache[index] = frame
+            self.cache_bytes += size
+        self.last = (index, frame)
         return frame
 
 
-def _color_error(image: Image.Image, other: Image.Image) -> float:
+def color_error(image: Image.Image, other: Image.Image) -> float:
     """Average difference per color channel (0-255) between two RGB images"""
     channels = ImageStat.Stat(ImageChops.difference(image, other)).mean
     return sum(channels) / len(channels)
 
 
-class _PaletteReuse:
+class PaletteReuse:
     """Redraws part of a GIF frame with the palette of the last fully quantized (key) frame"""
 
     def __init__(self, source: Image.Image, keyframe: Image.Image):
@@ -615,8 +615,8 @@ class _PaletteReuse:
         mapped = region.quantize(palette=self.lookup, dither=Image.Dither.NONE)
         # New colors may have shown up that the palette doesn't cover, so allow a bit more error
         # than the palette had for this same area of the frame it was made for, but no more
-        baseline = _color_error(self.source.crop(bbox), self.keyframe.crop(bbox).convert("RGB"))
-        if _color_error(region, mapped.convert("RGB")) > baseline * 1.25 + 1:
+        baseline = color_error(self.source.crop(bbox), self.keyframe.crop(bbox).convert("RGB"))
+        if color_error(region, mapped.convert("RGB")) > baseline * 1.25 + 1:
             return None
         patch = mapped.point(self.to_index)
         if clear:
@@ -636,12 +636,12 @@ def save_gif(frames: t.Iterable[Image.Image], durations: t.Sequence[int]) -> byt
     first_alpha: t.Optional[bytes] = None
     steady = True
     previous: t.Optional[Image.Image] = None
-    reuse: t.Optional[_PaletteReuse] = None
+    reuse: t.Optional[PaletteReuse] = None
     for frame in frames:
         if frame.mode != "RGBA":
             frame = frame.convert("RGBA")
         # GIF transparency is all or nothing, so make every pixel fully opaque or fully clear
-        alpha = frame.getchannel("A").point(_ALPHA_LUT)
+        alpha = frame.getchannel("A").point(ALPHA_LUT)
         frame = Image.composite(frame, Image.new("RGBA", frame.size), alpha)
         frame.putalpha(alpha)
 
@@ -662,7 +662,7 @@ def save_gif(frames: t.Iterable[Image.Image], durations: t.Sequence[int]) -> byt
                 if len(color) == 4 and color[3] == 0:
                     palette_frame.info["transparency"] = index
                     break
-            reuse = _PaletteReuse(frame, palette_frame)
+            reuse = PaletteReuse(frame, palette_frame)
         previous = frame
 
         alpha_bytes = alpha.tobytes()
