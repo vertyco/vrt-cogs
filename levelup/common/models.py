@@ -247,7 +247,13 @@ class Algorithm(Base):
 
     def get_level(self, xp: t.Union[int, float]) -> int:
         """Calculate the level that corresponds to the given XP amount"""
-        return int((xp / self.base) ** (1 / self.exp))
+        level = int((xp / self.base) ** (1 / self.exp))
+        # Float rounding can land one level off right at a boundary, so settle it against get_xp
+        while self.get_xp(level + 1) <= xp:
+            level += 1
+        while level > 0 and self.get_xp(level) > xp:
+            level -= 1
+        return level
 
     def get_xp(self, level: int) -> int:
         """Calculate XP required to reach specified level"""

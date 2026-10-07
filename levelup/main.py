@@ -56,6 +56,8 @@ from .tasks import Tasks
 
 log = logging.getLogger("red.vrt.levelup")
 _ = Translator("LevelUp", __file__)
+# Kill image subprocesses that hang (stalled downloads etc.) so they don't hold a render slot forever
+SUBPROCESS_TIMEOUT = 120
 RequestType = t.Literal["discord_deleted_user", "owner", "user", "user_strict"]
 IS_WINDOWS: bool = sys.platform.startswith("win")
 
@@ -189,7 +191,13 @@ class LevelUp(
                     stderr=asyncio.subprocess.PIPE,
                 )
 
-                stdout, stderr = await proc.communicate()
+                try:
+                    stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=SUBPROCESS_TIMEOUT)
+                except asyncio.TimeoutError:
+                    proc.kill()
+                    await proc.wait()
+                    log.error(f"Profile subprocess timed out after {SUBPROCESS_TIMEOUT} seconds")
+                    return None, None
             stderr_text = stderr.decode() if stderr else ""
             stdout_text = stdout.decode() if stdout else ""
 

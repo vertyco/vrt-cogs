@@ -20,6 +20,8 @@ from ..generator import imgtools
 from ..generator.styles import default, gaming, minimal, runescape
 
 log = logging.getLogger("red.vrt.levelup.shared.profile")
+# Animated profiles can take a while to render, but a stalled API shouldn't hang the command forever
+API_TIMEOUT = aiohttp.ClientTimeout(total=120)
 _ = Translator("LevelUp", __file__)
 
 
@@ -200,7 +202,8 @@ class ProfileFormatting(MixinMeta):
             # Rare but possible
             log.warning(f"User {member} has more XP than needed for next level")
             await self.check_levelups(guild, member, profile, conf)
-            return await self.get_user_profile(member)
+            last_level_xp = conf.algorithm.get_xp(profile.level)
+            next_level_xp = conf.algorithm.get_xp(profile.level + 1)
 
         current_diff = next_level_xp - last_level_xp
         progress = current_diff - (next_level_xp - current_xp)
@@ -335,36 +338,15 @@ class ProfileFormatting(MixinMeta):
 
         # Try API first if configured (external or managed local)
         if api_url := self.get_api_url():
-            endpoints = {
-                "default": "fullprofile",
-                "minimal": "fullprofile",
-                "gaming": "fullprofile",
-                "runescape": "runescape",
-            }
             try:
-                # Build FormData payload for legacy endpoint compatibility
-                payload = aiohttp.FormData()
-                for key, value in request_data.items():
-                    if value is None:
-                        continue
-                    if key.endswith("_b64"):
-                        # Decode and send as file for legacy endpoints
-                        payload.add_field(key.replace("_b64", "_bytes"), base64.b64decode(value), filename="data")
-                    elif key.endswith("_url"):
-                        # Send URL as the bytes field name for legacy endpoints
-                        payload.add_field(key.replace("_url", "_bytes"), str(value))
-                    else:
-                        payload.add_field(key, str(value))
-
-                url = f"{api_url}/{endpoints[profile_style]}"
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(url, data=payload) as response:
+                async with aiohttp.ClientSession(timeout=API_TIMEOUT) as session:
+                    async with session.post(f"{api_url}/profile", json=request_data) as response:
                         if response.status == 200:
                             data = await response.json()
                             img_b64, animated = data["b64"], data["animated"]
                             img_bytes = base64.b64decode(img_b64)
                             return await asyncio.to_thread(self.make_profile_file, member, img_bytes, animated)
-                        log.error(f"Failed to fetch profile from API: {response.status}")
+                        log.error(f"Failed to fetch profile from API: {response.status} {await response.text()}")
             except Exception as e:
                 log.error("Failed to fetch profile from API, falling back to subprocess", exc_info=e)
 

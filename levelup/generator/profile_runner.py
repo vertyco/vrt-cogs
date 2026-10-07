@@ -52,19 +52,10 @@ for p in [str(_THIS_DIR), str(_COG_DIR), str(_COGS_DIR)]:
 
 
 def download_image(url: str) -> bytes | None:
-    """Download image from URL using requests (sync for subprocess)."""
-    import requests
+    """Download image from URL, None if it fails or isn't an image (expired CDN links can return error pages)."""
+    import imgtools
 
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:126.0) Gecko/20100101 Firefox/126.0"}
-    try:
-        response = requests.get(url, headers=headers, timeout=30)
-        if response.status_code == 404:
-            return None
-        response.raise_for_status()
-        return response.content
-    except Exception as e:
-        log.warning(f"Failed to download image from {url}: {e}")
-        return None
+    return imgtools.download_image(url)
 
 
 def get_asset_bytes(url: str | None, b64: str | None) -> bytes | None:
@@ -112,6 +103,7 @@ def generate_profile(input_data: dict, output_path: Path) -> dict:
                 font_path = str(custom_path)
 
     # If font_b64 is provided (custom font), write to temp file
+    temp_font_path = None
     if not font_path and (font_b64 := input_data.get("font_b64")):
         try:
             import tempfile
@@ -175,7 +167,11 @@ def generate_profile(input_data: dict, output_path: Path) -> dict:
     generator_func = generators.get(style, generate_default_profile)
 
     # Generate image
-    img_bytes, animated = generator_func(**kwargs)
+    try:
+        img_bytes, animated = generator_func(**kwargs)
+    finally:
+        if temp_font_path:
+            Path(temp_font_path).unlink(missing_ok=True)
 
     # Write output file
     output_path.write_bytes(img_bytes)
@@ -210,6 +206,7 @@ def generate_levelup(input_data: dict, output_path: Path) -> dict:
                 font_path = str(custom_path)
 
     # If font_b64 is provided (custom font), write to temp file
+    temp_font_path = None
     if not font_path and (font_b64 := input_data.get("font_b64")):
         try:
             import tempfile
@@ -237,7 +234,11 @@ def generate_levelup(input_data: dict, output_path: Path) -> dict:
         kwargs["font_path"] = font_path
 
     # Generate image
-    img_bytes, animated = generate_level_img(**kwargs)
+    try:
+        img_bytes, animated = generate_level_img(**kwargs)
+    finally:
+        if temp_font_path:
+            Path(temp_font_path).unlink(missing_ok=True)
 
     # Write output file
     output_path.write_bytes(img_bytes)

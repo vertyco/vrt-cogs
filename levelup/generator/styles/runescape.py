@@ -158,7 +158,7 @@ def generate_runescape_profile(
     # Draw xp
     current = imgtools.abbreviate_number(current_xp - previous_xp)
     goal = imgtools.abbreviate_number(next_xp - previous_xp)
-    percent = round((current_xp - previous_xp) / (next_xp - previous_xp) * 100)
+    percent = round((current_xp - previous_xp) / (next_xp - previous_xp) * 100) if next_xp > previous_xp else 0
     xp_text = f"{current}/{goal} ({percent}%)"
     xp_size = 20
     xp_font = ImageFont.truetype(str(font_path), xp_size)

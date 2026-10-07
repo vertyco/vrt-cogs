@@ -16,6 +16,8 @@ from ..common.models import GuildSettings, Profile
 from ..generator import imgtools, levelalert
 
 log = logging.getLogger("red.vrt.levelup.shared.levelups")
+# Animated images can take a while to render, but a stalled API shouldn't hang level-up alerts forever
+API_TIMEOUT = aiohttp.ClientTimeout(total=120)
 _ = Translator("LevelUp", __file__)
 
 
@@ -155,7 +157,7 @@ class LevelUps(MixinMeta):
             }
 
             # Get background URL
-            banner = await self.get_profile_background(member.id, profile, try_return_url=True)
+            banner = await self.get_profile_background(member.id, profile, try_return_url=True, guild_id=guild.id)
             if isinstance(banner, str):
                 request_data["background_url"] = banner
             elif isinstance(banner, bytes):
@@ -180,33 +182,16 @@ class LevelUps(MixinMeta):
             # Try API first if configured (external or managed local)
             if api_url := self.get_api_url():
                 try:
-                    # Build FormData payload for legacy endpoint compatibility
-                    payload = aiohttp.FormData()
-                    payload.add_field("level", str(profile.level))
-                    payload.add_field("render_gif", str(self.db.render_gifs))
-                    if color:
-                        payload.add_field("color", str(color))
-                    if font:
-                        payload.add_field("font_path", font)
-
-                    # Handle background
-                    if "background_url" in request_data:
-                        payload.add_field("background_bytes", request_data["background_url"])
-                    elif "background_b64" in request_data:
-                        payload.add_field(
-                            "background_bytes", base64.b64decode(request_data["background_b64"]), filename="data"
-                        )
-
-                    # Handle avatar
-                    payload.add_field("avatar_bytes", request_data["avatar_url"])
-
-                    url = f"{api_url}/levelup"
-                    async with aiohttp.ClientSession() as session:
-                        async with session.post(url, data=payload) as response:
+                    async with aiohttp.ClientSession(timeout=API_TIMEOUT) as session:
+                        async with session.post(f"{api_url}/levelup", json=request_data) as response:
                             if response.status == 200:
                                 data = await response.json()
                                 img_b64, animated = data["b64"], data["animated"]
                                 img_bytes = base64.b64decode(img_b64)
+                            else:
+                                log.error(
+                                    f"Failed to fetch levelup image from API: {response.status} {await response.text()}"
+                                )
                 except Exception as e:
                     log.error("Failed to fetch levelup image from API", exc_info=e)
 

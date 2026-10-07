@@ -9,6 +9,18 @@
 - Animated level-up images no longer error out for some combinations of avatar and background speeds
 - Avatars keep their own transparency inside the profile circle
 - Shrinking an oversized image to fit the upload limit no longer freezes the bot while it works
+- Profiles rendered through the managed or external API now use the right style (minimal and gaming were always drawn as default), custom font, prestige emoji and role icon
+- Level-up images rendered through the API work again, they were always rejected and fell back to the local renderer
+- The API no longer turns numeric looking usernames (like `12345`) into numbers and crashes
+- Viewing a profile with XP exactly on a level boundary no longer crashes with a recursion error, levels now always agree with the XP needed for them
+- The algorithm base can no longer be set to 0, which broke every level calculation
+- Role icons and prestige emojis in any image format show on the default style, and a broken one no longer fails the whole profile
+- The balance line on the default style no longer comes out tiny when the voice line had to shrink
+- Fixed a rare error drawing the progress bar when two levels need the same XP
+- Fixed images occasionally breaking when several profiles render at the same time
+- Image downloads and render subprocesses now time out instead of hanging a profile command
+- Temporary custom font files are cleaned up after rendering
+- Level-up images now use the server's default background like profiles do
 
 ## Improvements
 

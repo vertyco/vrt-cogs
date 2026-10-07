@@ -236,7 +236,7 @@ def generate_default_profile(
     stats = Image.new("RGBA", desired_card_size, (0, 0, 0, 0))
 
     # Setup progress bar
-    progress = (current_xp - previous_xp) / (next_xp - previous_xp)
+    progress = (current_xp - previous_xp) / (next_xp - previous_xp) if next_xp > previous_xp else 0
     level_bar = imgtools.make_progress_bar(
         bar_width,
         bar_height,
@@ -293,11 +293,15 @@ def generate_default_profile(
             font=font,
         )
         if prestige_emoji:
-            prestige_icon = Image.open(BytesIO(prestige_emoji)).resize((50, 50), Image.Resampling.LANCZOS)
-            if prestige_icon.mode != "RGBA":
-                prestige_icon = prestige_icon.convert("RGBA")
-            placement = (round(stat_start + font.getlength(text) + 10), name_y + 65)
-            stats.paste(prestige_icon, placement, prestige_icon)
+            try:
+                prestige_icon = Image.open(BytesIO(prestige_emoji)).convert("RGBA")
+                prestige_icon = prestige_icon.resize((50, 50), Image.Resampling.LANCZOS)
+                placement = (round(stat_start + font.getlength(text) + 10), name_y + 65)
+                stats.paste(prestige_icon, placement, prestige_icon)
+            except Exception as e:
+                if reraise:
+                    raise e
+                log.error(f"Failed to paste prestige emoji for {username}", exc_info=e)
     # ---------------- Stars text ----------------
     text = humanize_number(stars)
     fontsize = 60
@@ -382,7 +386,8 @@ def generate_default_profile(
     # ---------------- Balance text ----------------
     if balance:
         text = _("Balance: {}").format(f"{humanize_number(balance)} {currency_name}")
-        font = ImageFont.truetype(font_path, 40)
+        fontsize = 40
+        font = ImageFont.truetype(font_path, fontsize)
         with Pilmoji(stats) as pilmoji:
             # Ensure text doesnt pass the stat_end
             while pilmoji.getsize(text, font)[0] + stat_start > stat_end:
@@ -431,9 +436,10 @@ def generate_default_profile(
     # Paste role icon on top left of profile circle
     if role_icon_bytes:
         try:
-            role_icon_img = Image.open(BytesIO(role_icon_bytes)).resize((70, 70), Image.Resampling.LANCZOS)
+            role_icon_img = Image.open(BytesIO(role_icon_bytes)).convert("RGBA")
+            role_icon_img = role_icon_img.resize((70, 70), Image.Resampling.LANCZOS)
             stats.paste(role_icon_img, (10, 10), role_icon_img)
-        except ValueError as e:
+        except Exception as e:
             if reraise:
                 raise e
             err = (

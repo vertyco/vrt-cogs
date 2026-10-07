@@ -30,17 +30,26 @@ DEFAULT_BACKGROUNDS = ASSETS / "backgrounds"
 DEFAULT_FONTS = ASSETS / "fonts"
 DEFAULT_FONT = DEFAULT_FONTS / "BebasNeue.ttf"
 STOCK = ASSETS / "stock"
-STAR = Image.open(STOCK / "star.webp")
-DEFAULT_PFP = Image.open(STOCK / "defaultpfp.webp")
-RS_TEMPLATE = Image.open(STOCK / "runescapeui_nogold.webp")
-RS_TEMPLATE_BALANCE = Image.open(STOCK / "runescapeui_withgold.webp")
+
+
+def _load_stock(name: str) -> Image.Image:
+    # Decode up front, Pillow's lazy loading on first use isn't safe when renders run in parallel threads
+    image = Image.open(STOCK / name)
+    image.load()
+    return image
+
+
+STAR = _load_stock("star.webp")
+DEFAULT_PFP = _load_stock("defaultpfp.webp")
+RS_TEMPLATE = _load_stock("runescapeui_nogold.webp")
+RS_TEMPLATE_BALANCE = _load_stock("runescapeui_withgold.webp")
 COLORTABLE = STOCK / "colortable.webp"
 STATUS = {
-    "online": Image.open(STOCK / "online.webp"),
-    "offline": Image.open(STOCK / "offline.webp"),
-    "idle": Image.open(STOCK / "idle.webp"),
-    "dnd": Image.open(STOCK / "dnd.webp"),
-    "streaming": Image.open(STOCK / "streaming.webp"),
+    "online": _load_stock("online.webp"),
+    "offline": _load_stock("offline.webp"),
+    "idle": _load_stock("idle.webp"),
+    "dnd": _load_stock("dnd.webp"),
+    "streaming": _load_stock("streaming.webp"),
 }
 
 # GIF frame delays are stored in 10ms steps, and browsers (so Discord too) play any delay of 10ms or less at 100ms
@@ -69,7 +78,7 @@ def download_image(url: str) -> t.Union[bytes, None]:
     """Get an image from a URL"""
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:126.0) Gecko/20100101 Firefox/126.0"}
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, timeout=30)
         if response.status_code == 404:
             return None
         response.raise_for_status()

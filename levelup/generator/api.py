@@ -101,6 +101,7 @@ class ProfileRequest(BaseModel):
     # Asset URLs (server will fetch)
     avatar_url: t.Optional[str] = None
     background_url: t.Optional[str] = None
+    background_b64: t.Optional[str] = None  # Base64 encoded background, for backgrounds stored on the bot
     prestige_emoji_url: t.Optional[str] = None
     role_icon_url: t.Optional[str] = None
 
@@ -120,6 +121,7 @@ class LevelUpRequest(BaseModel):
     color: t.Optional[t.Tuple[int, int, int]] = None
     avatar_url: t.Optional[str] = None
     background_url: t.Optional[str] = None
+    background_b64: t.Optional[str] = None  # Base64 encoded background, for backgrounds stored on the bot
     font_name: t.Optional[str] = None
     font_b64: t.Optional[str] = None  # Base64 encoded font bytes for custom fonts
 
@@ -159,29 +161,67 @@ def _download_url(url: str) -> t.Optional[bytes]:
     return imgtools.download_image(url)
 
 
-def _resolve_font(font_name: t.Optional[str], font_b64: t.Optional[str] = None) -> t.Optional[str]:
-    """Resolve font name to path, or decode font_b64 to temp file."""
+def _get_asset(url: t.Optional[str], b64: t.Optional[str] = None) -> t.Optional[bytes]:
+    """Download an asset, or decode it from base64 if there's no URL or the download fails."""
+    if url and (data := _download_url(url)):
+        return data
+    if b64:
+        try:
+            return base64.b64decode(b64)
+        except Exception as e:
+            log.warning(f"Failed to decode base64 asset: {e}")
+    return None
+
+
+def _resolve_font(
+    font_name: t.Optional[str], font_bytes: t.Optional[bytes] = None
+) -> t.Tuple[t.Optional[str], t.Optional[str]]:
+    """Resolve a font name to a bundled font, or write custom font bytes to a temp file.
+
+    Returns:
+        (font path, temp file path to delete once rendered)
+    """
     # First try to resolve by name from bundled fonts
     if font_name:
-        font_path = imgtools.DEFAULT_FONTS / font_name
+        font_path = imgtools.DEFAULT_FONTS / Path(font_name).name
         if font_path.exists():
-            return str(font_path)
+            return str(font_path), None
 
-    # If font_b64 provided, write to temp file
-    if font_b64:
+    if font_bytes:
         try:
             import tempfile
 
-            font_bytes = base64.b64decode(font_b64)
             fd, temp_path = tempfile.mkstemp(suffix=".ttf")
             with os.fdopen(fd, "wb") as f:
                 f.write(font_bytes)
             log.debug(f"Wrote custom font to temp file: {temp_path}")
-            return temp_path
+            return temp_path, temp_path
         except Exception as e:
-            log.warning(f"Failed to decode font_b64: {e}")
+            log.warning(f"Failed to write custom font: {e}")
 
-    return None
+    return None, None
+
+
+def _decode_font(font_b64: t.Optional[str]) -> t.Optional[bytes]:
+    if not font_b64:
+        return None
+    try:
+        return base64.b64decode(font_b64)
+    except Exception as e:
+        log.warning(f"Failed to decode font_b64: {e}")
+        return None
+
+
+async def _render(generator: t.Callable, kwargs: dict, temp_font: t.Optional[str] = None) -> t.Tuple[bytes, bool]:
+    """Run a generator in a thread, cleaning up any temp font file afterwards."""
+    try:
+        return await asyncio.to_thread(generator, **kwargs)
+    except Exception as e:
+        log.exception(f"Image generation failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if temp_font:
+            Path(temp_font).unlink(missing_ok=True)
 
 
 @app.post("/profile", response_model=ImageResponse)
@@ -192,7 +232,9 @@ async def generate_profile(request: ProfileRequest) -> ImageResponse:
     # Fetch assets
     avatar_bytes = await asyncio.to_thread(_download_url, request.avatar_url)
     background_bytes = (
-        await asyncio.to_thread(_download_url, request.background_url) if request.style != "runescape" else None
+        await asyncio.to_thread(_get_asset, request.background_url, request.background_b64)
+        if request.style != "runescape"
+        else None
     )
     prestige_emoji = (
         await asyncio.to_thread(_download_url, request.prestige_emoji_url) if request.style != "runescape" else None
@@ -200,7 +242,7 @@ async def generate_profile(request: ProfileRequest) -> ImageResponse:
     role_icon = await asyncio.to_thread(_download_url, request.role_icon_url) if request.style != "runescape" else None
 
     # Resolve font (supports both bundled fonts by name and custom fonts via base64)
-    font_path = _resolve_font(request.font_name, request.font_b64)
+    font_path, temp_font = _resolve_font(request.font_name, _decode_font(request.font_b64))
 
     # Build kwargs
     kwargs = {
@@ -246,12 +288,7 @@ async def generate_profile(request: ProfileRequest) -> ImageResponse:
         "runescape": generate_runescape_profile,
     }
     generator = generators.get(request.style, generate_default_profile)
-
-    try:
-        img_bytes, animated = await asyncio.to_thread(generator, **kwargs)
-    except Exception as e:
-        log.exception(f"Profile generation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    img_bytes, animated = await _render(generator, kwargs, temp_font)
 
     return ImageResponse(
         b64=base64.b64encode(img_bytes).decode("utf-8"),
@@ -267,10 +304,10 @@ async def generate_levelup_image(request: LevelUpRequest) -> ImageResponse:
 
     # Fetch assets
     avatar_bytes = await asyncio.to_thread(_download_url, request.avatar_url)
-    background_bytes = await asyncio.to_thread(_download_url, request.background_url)
+    background_bytes = await asyncio.to_thread(_get_asset, request.background_url, request.background_b64)
 
     # Resolve font (supports both bundled fonts by name and custom fonts via base64)
-    font_path = _resolve_font(request.font_name, request.font_b64)
+    font_path, temp_font = _resolve_font(request.font_name, _decode_font(request.font_b64))
 
     kwargs = {
         "avatar_bytes": avatar_bytes,
@@ -284,11 +321,7 @@ async def generate_levelup_image(request: LevelUpRequest) -> ImageResponse:
     if font_path:
         kwargs["font_path"] = font_path
 
-    try:
-        img_bytes, animated = await asyncio.to_thread(generate_level_img, **kwargs)
-    except Exception as e:
-        log.exception(f"Level-up generation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    img_bytes, animated = await _render(generate_level_img, kwargs, temp_font)
 
     return ImageResponse(
         b64=base64.b64encode(img_bytes).decode("utf-8"),
@@ -315,43 +348,77 @@ def _parse_color(color_str: str) -> t.Tuple[int, int, int] | None:
         return None
 
 
-def _parse_form_data(form_data: dict) -> dict:
-    """Parse FormData into kwargs dict."""
+_INT_FIELDS = {
+    "level",
+    "messages",
+    "voicetime",
+    "stars",
+    "prestige",
+    "balance",
+    "previous_xp",
+    "current_xp",
+    "next_xp",
+    "position",
+}
+_BOOL_FIELDS = {"blur", "render_gif", "square"}
+# Form field names some cog versions send, mapped to the generator argument names
+_FIELD_ALIASES = {"prestige_emoji_bytes": "prestige_emoji", "role_icon_bytes": "role_icon"}
+
+
+def _parse_form_data(form_data: dict) -> t.Tuple[dict, t.Optional[str]]:
+    """Parse FormData into generator kwargs.
+
+    Only known numeric and boolean fields get converted, so text like a username of "12345" stays text.
+
+    Returns:
+        (kwargs, temp font file path to delete once rendered)
+    """
     kwargs = {}
     for k, v in form_data.items():
+        k = _FIELD_ALIASES.get(k, k)
         if hasattr(v, "file"):
             kwargs[k] = v.file.read()
-        elif isinstance(v, str) and v.isdigit():
-            kwargs[k] = int(v)
-        elif isinstance(v, str) and v.lower() in ("true", "false"):
-            kwargs[k] = v.lower() == "true"
-        else:
+        elif k in _INT_FIELDS:
             try:
                 kwargs[k] = int(float(v))
-            except (ValueError, TypeError):
-                kwargs[k] = v
+            except (ValueError, TypeError, OverflowError):
+                log.warning(f"Ignoring invalid {k} value: {v}")
+        elif k in _BOOL_FIELDS:
+            kwargs[k] = str(v).lower() == "true"
+        else:
+            kwargs[k] = v
 
     # Parse color strings
     for color_key in ["base_color", "user_color", "stat_color", "level_bar_color", "color"]:
         if form_data.get(color_key):
             kwargs[color_key] = _parse_color(str(form_data.get(color_key)))
 
-    return kwargs
+    # Fonts arrive by name (bundled) or as file bytes (custom)
+    temp_font = None
+    font_name = kwargs.pop("font_name", None)
+    font_bytes = kwargs.pop("font_bytes", None)
+    if font_name or font_bytes:
+        font_path, temp_font = _resolve_font(font_name, font_bytes if isinstance(font_bytes, bytes) else None)
+        if font_path:
+            kwargs["font_path"] = font_path
+
+    return kwargs, temp_font
 
 
 @app.post("/fullprofile")
 async def legacy_fullprofile(request: Request):
     """Legacy endpoint for full profile (FormData) - backward compatible."""
     form_data = await request.form()
-    kwargs = _parse_form_data(dict(form_data))
-    log.info(f"[Legacy] Generating full profile for {kwargs.get('username', 'unknown')}")
-
-    try:
-        img_bytes, animated = await asyncio.to_thread(generate_default_profile, **kwargs)
-    except Exception as e:
-        log.exception(f"Profile generation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
+    kwargs, temp_font = _parse_form_data(dict(form_data))
+    style = kwargs.pop("style", "default")
+    log.info(f"[Legacy] Generating {style} profile for {kwargs.get('username', 'unknown')}")
+    generators = {
+        "default": generate_default_profile,
+        "minimal": generate_minimal_profile,
+        "gaming": generate_gaming_profile,
+        "runescape": generate_runescape_profile,
+    }
+    img_bytes, animated = await _render(generators.get(style, generate_default_profile), kwargs, temp_font)
     return {"b64": base64.b64encode(img_bytes).decode("utf-8"), "animated": animated}
 
 
@@ -359,15 +426,10 @@ async def legacy_fullprofile(request: Request):
 async def legacy_runescape(request: Request):
     """Legacy endpoint for runescape profile (FormData) - backward compatible."""
     form_data = await request.form()
-    kwargs = _parse_form_data(dict(form_data))
+    kwargs, temp_font = _parse_form_data(dict(form_data))
+    kwargs.pop("style", None)
     log.info(f"[Legacy] Generating runescape profile for {kwargs.get('username', 'unknown')}")
-
-    try:
-        img_bytes, animated = await asyncio.to_thread(generate_runescape_profile, **kwargs)
-    except Exception as e:
-        log.exception(f"Profile generation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
+    img_bytes, animated = await _render(generate_runescape_profile, kwargs, temp_font)
     return {"b64": base64.b64encode(img_bytes).decode("utf-8"), "animated": animated}
 
 

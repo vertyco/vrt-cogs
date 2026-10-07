@@ -83,7 +83,7 @@ def get_bar(progress, total, perc=None, width: int = 15) -> str:
     if perc is not None:
         ratio = perc / 100
     else:
-        ratio = progress / total
+        ratio = progress / total if total else 0
     bar = fill * round(ratio * width) + space * round(width - (ratio * width))
     return f"{bar} {round(100 * ratio, 1)}%"
 

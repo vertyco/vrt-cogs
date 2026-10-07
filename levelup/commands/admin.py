@@ -594,7 +594,7 @@ class Admin(MixinMeta):
                 return await ctx.send(_("Exponent must be less than 10"))
         else:
             value = round(value)
-            if value < 0:
+            if value < 1:
                 return await ctx.send(_("Base must be greater than 0"))
         conf = self.db.get_conf(ctx.guild)
         setattr(conf.algorithm, part, value)
