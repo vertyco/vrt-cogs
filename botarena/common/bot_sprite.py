@@ -16,7 +16,7 @@ from PIL import Image
 from .image_utils import load_image
 
 if t.TYPE_CHECKING:
-    from .models import PartsRegistry
+    from .models import Component, PartsRegistry, Plating
 
 
 def _rotate_around_pivot(
@@ -85,6 +85,54 @@ def _apply_tint(img: Image.Image, tint_color: tuple[int, int, int], intensity: f
     return Image.merge("RGBA", (tint_r, tint_g, tint_b, a))
 
 
+def scale_image(img: Image.Image, scale: float) -> Image.Image:
+    """Resize a part image by a scale factor (the same image at 1.0)."""
+    if scale == 1.0:
+        return img
+    return img.resize((int(img.width * scale), int(img.height * scale)), Image.Resampling.LANCZOS)
+
+
+def rotate_plating(img: Image.Image, plating: "Plating", orientation: float, scale: float) -> Image.Image:
+    """Turn a scaled plating image around its pivot."""
+    rotated, _ = _rotate_around_pivot(img, orientation, plating.center_x * scale, plating.center_y * scale)
+    return rotated
+
+
+def rotate_weapon(
+    img: Image.Image, component: "Component", weapon_orientation: float, scale: float
+) -> tuple[Image.Image, tuple[int, int]]:
+    """Turn a scaled weapon image around its mount point.
+
+    Also returns the offset that keeps the mount point in place when the turned image is positioned.
+    """
+    return _rotate_around_pivot(img, weapon_orientation, component.mount_x * scale, component.mount_y * scale)
+
+
+def layer_positions(
+    rotated_plating: Image.Image,
+    plating: "Plating",
+    rotated_weapon: Image.Image,
+    weapon_offset: tuple[int, int],
+    scale: float,
+) -> tuple[tuple[int, int], tuple[int, int], tuple[int, int]]:
+    """Lay out the plating and weapon on one combined sprite.
+
+    Returns (sprite size, plating position, weapon position), positions measured from the sprite's top-left.
+    """
+    # The weapon mounts on the plating's mount point, measured from the turned plating's center
+    attachment_x = rotated_plating.width // 2 + int(plating.weapon_mount_x * scale)
+    attachment_y = rotated_plating.height // 2 + int(plating.weapon_mount_y * scale)
+    weapon_x = attachment_x - rotated_weapon.width // 2 + weapon_offset[0]
+    weapon_y = attachment_y - rotated_weapon.height // 2 + weapon_offset[1]
+
+    # The sprite grows to fit both layers
+    min_x = min(0, weapon_x)
+    min_y = min(0, weapon_y)
+    max_x = max(rotated_plating.width, weapon_x + rotated_weapon.width)
+    max_y = max(rotated_plating.height, weapon_y + rotated_weapon.height)
+    return (max_x - min_x, max_y - min_y), (-min_x, -min_y), (weapon_x - min_x, weapon_y - min_y)
+
+
 def render_bot_sprite(
     plating_name: str,
     registry: "PartsRegistry",
@@ -124,77 +172,101 @@ def render_bot_sprite(
     if not plating_img:
         return None
 
-    # Apply scale to plating
-    if scale != 1.0:
-        new_size = (int(plating_img.width * scale), int(plating_img.height * scale))
-        plating_img = plating_img.resize(new_size, Image.Resampling.LANCZOS)
-
-    # Get plating center pivot from registry
     plating = registry.get_plating(plating_name)
-    plating_center_x = plating.center_x * scale
-    plating_center_y = plating.center_y * scale
-
-    # Rotate plating around its pivot
-    rotated_plating, _ = _rotate_around_pivot(plating_img, orientation, plating_center_x, plating_center_y)
+    rotated_plating = rotate_plating(scale_image(plating_img, scale), plating, orientation, scale)
 
     # Apply team tint if specified
     if tint_color:
         rotated_plating = _apply_tint(rotated_plating, tint_color, tint_intensity)
 
-    # Load and position weapon if specified
-    if weapon_name:
-        weapon_img = load_image("weapons", weapon_name)
-        if weapon_img:
-            # Scale weapon
-            if scale != 1.0:
-                new_size = (int(weapon_img.width * scale), int(weapon_img.height * scale))
-                weapon_img = weapon_img.resize(new_size, Image.Resampling.LANCZOS)
+    weapon_img = load_image("weapons", weapon_name) if weapon_name else None
+    if not weapon_img:
+        return rotated_plating
 
-            # Get weapon mount point from component
-            component = registry.get_component(weapon_name)
-            weapon_mount_x = component.mount_x * scale
-            weapon_mount_y = component.mount_y * scale
+    component = registry.get_component(weapon_name)
+    rotated_weapon, weapon_offset = rotate_weapon(scale_image(weapon_img, scale), component, weapon_orientation, scale)
+    size, plating_pos, weapon_pos = layer_positions(rotated_plating, plating, rotated_weapon, weapon_offset, scale)
 
-            # Rotate weapon around its mount point
-            rotated_weapon, weapon_offset = _rotate_around_pivot(
-                weapon_img, weapon_orientation, weapon_mount_x, weapon_mount_y
+    # Paste plating first, then weapon on top
+    final = Image.new("RGBA", size, (0, 0, 0, 0))
+    final.paste(rotated_plating, plating_pos, rotated_plating)
+    final.paste(rotated_weapon, weapon_pos, rotated_weapon)
+    return final
+
+
+class SpriteCache:
+    """Draws bots onto battle frames, reusing work across frames.
+
+    Each part image is loaded and scaled once, and each turn angle is made once per whole
+    degree (a fraction of a degree is invisible at battle sprite size). Bots are laid out
+    exactly like render_bot_sprite(), but pasted straight onto the frame.
+    """
+
+    def __init__(self, registry: "PartsRegistry", scale: float):
+        self.registry = registry
+        self.scale = scale
+        self.images: dict[tuple[str, str], t.Optional[Image.Image]] = {}
+        self.platings: dict[tuple[str, int], t.Optional[Image.Image]] = {}
+        self.weapons: dict[tuple[str, int], t.Optional[tuple[Image.Image, tuple[int, int]]]] = {}
+
+    def scaled_image(self, folder: str, name: str) -> t.Optional[Image.Image]:
+        key = (folder, name)
+        if key not in self.images:
+            img = load_image(folder, name)
+            self.images[key] = scale_image(img, self.scale) if img else None
+        return self.images[key]
+
+    def plating(self, name: str, orientation: float) -> t.Optional[Image.Image]:
+        """The plating turned to the nearest whole degree, or None if it has no image."""
+        key = (name, round(orientation) % 360)
+        if key not in self.platings:
+            img = self.scaled_image("plating", name)
+            self.platings[key] = (
+                rotate_plating(img, self.registry.get_plating(name), key[1], self.scale) if img else None
             )
+        return self.platings[key]
 
-            # Determine the attachment point on the plating
-            # Use the plating's weapon mount point relative to its center
-            attachment_point_x = rotated_plating.width // 2 + int(plating.weapon_mount_x * scale)
-            attachment_point_y = rotated_plating.height // 2 + int(plating.weapon_mount_y * scale)
+    def weapon(self, name: str, orientation: float) -> t.Optional[tuple[Image.Image, tuple[int, int]]]:
+        """The weapon turned to the nearest whole degree with its mount offset, or None if it has no image."""
+        key = (name, round(orientation) % 360)
+        if key not in self.weapons:
+            img = self.scaled_image("weapons", name)
+            component = self.registry.get_component(name)
+            self.weapons[key] = rotate_weapon(img, component, key[1], self.scale) if img else None
+        return self.weapons[key]
 
-            # Calculate where weapon should be placed so its mount aligns with attachment point
-            # weapon_offset tells us how to adjust so the mount point stays at target position
-            weapon_paste_x = attachment_point_x - rotated_weapon.width // 2 + weapon_offset[0]
-            weapon_paste_y = attachment_point_y - rotated_weapon.height // 2 + weapon_offset[1]
+    def draw(
+        self,
+        frame: Image.Image,
+        x: int,
+        y: int,
+        plating_name: str,
+        weapon_name: t.Optional[str],
+        orientation: float,
+        weapon_orientation: float,
+    ) -> bool:
+        """Paste a bot centered on (x, y). Returns False if the plating has no image."""
+        rotated_plating = self.plating(plating_name, orientation)
+        if rotated_plating is None:
+            return False
 
-            # Determine canvas size needed to fit both
-            min_x = min(0, weapon_paste_x)
-            min_y = min(0, weapon_paste_y)
-            max_x = max(rotated_plating.width, weapon_paste_x + rotated_weapon.width)
-            max_y = max(rotated_plating.height, weapon_paste_y + rotated_weapon.height)
+        weapon = self.weapon(weapon_name, weapon_orientation) if weapon_name else None
+        if weapon is None:
+            frame.paste(
+                rotated_plating, (x - rotated_plating.width // 2, y - rotated_plating.height // 2), rotated_plating
+            )
+            return True
 
-            canvas_width = max_x - min_x
-            canvas_height = max_y - min_y
-
-            # Create final canvas
-            final = Image.new("RGBA", (canvas_width, canvas_height), (0, 0, 0, 0))
-
-            # Adjust positions for canvas offset
-            plating_paste_x = -min_x
-            plating_paste_y = -min_y
-            weapon_paste_x = weapon_paste_x - min_x
-            weapon_paste_y = weapon_paste_y - min_y
-
-            # Paste plating first, then weapon on top
-            final.paste(rotated_plating, (plating_paste_x, plating_paste_y), rotated_plating)
-            final.paste(rotated_weapon, (weapon_paste_x, weapon_paste_y), rotated_weapon)
-
-            return final
-
-    return rotated_plating
+        rotated_weapon, weapon_offset = weapon
+        plating = self.registry.get_plating(plating_name)
+        size, plating_pos, weapon_pos = layer_positions(
+            rotated_plating, plating, rotated_weapon, weapon_offset, self.scale
+        )
+        left = x - size[0] // 2
+        top = y - size[1] // 2
+        frame.paste(rotated_plating, (left + plating_pos[0], top + plating_pos[1]), rotated_plating)
+        frame.paste(rotated_weapon, (left + weapon_pos[0], top + weapon_pos[1]), rotated_weapon)
+        return True
 
 
 def render_bot_sprite_to_bytes(

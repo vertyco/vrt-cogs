@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1
+
+- Battle videos render about 5x faster. Part images, their turned angles and text labels are now made once per battle and reused for every frame, instead of being re-read and redrawn each frame. Videos look the same.
+
 ## 1.2.0
 
 - Added Challenges: seven puzzle battles opened from the new 🧩 Challenges button on the hub. You get a loaned squad and only pick each bot's stance and target. Two challenges are open from the start and the rest unlock as you beat campaign missions. Each pays credits on its first clear only, and challenge battles never count toward wins, losses, damage totals or leaderboards. The profile shows how many you've cleared.

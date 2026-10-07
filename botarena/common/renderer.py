@@ -17,7 +17,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-from .bot_sprite import render_bot_sprite, render_bot_sprite_to_bytes
+from .bot_sprite import SpriteCache, render_bot_sprite_to_bytes
 from .image_utils import SPRITE_SCALE
 
 try:
@@ -34,6 +34,8 @@ if t.TYPE_CHECKING:
     from .models import PartsRegistry
 
 log = logging.getLogger("red.vrt.botarena.renderer")
+
+Font = t.Union[ImageFont.FreeTypeFont, ImageFont.ImageFont]
 
 # Colors
 ARENA_BG = (30, 30, 35)
@@ -181,6 +183,12 @@ class BattleRenderer:
         self.team1_color = TEAM_COLORS.get(team1_color, DEFAULT_TEAM1_COLOR)
         self.team2_color = TEAM_COLORS.get(team2_color, DEFAULT_TEAM2_COLOR)
 
+        # Bot sprites drawn at base image scale * SPRITE_SCALE for visibility
+        # (shared with collision.py so the hitbox matches the visuals)
+        self.sprites = SpriteCache(parts_registry, scale * SPRITE_SCALE)
+        # (text, font) -> (glyph mask, bounding box), so each string is rasterized once per battle
+        self.text_masks: dict[tuple[str, Font], tuple[Image.Image, tuple[int, int, int, int]]] = {}
+
         # Load arena background if available
         self._arena_background: t.Optional[Image.Image] = None
         self._load_arena_background()
@@ -189,8 +197,6 @@ class BattleRenderer:
         # Font sizes scaled for visibility - larger for better readability
         main_font_size = int(32 * scale)  # Bot names
         small_font_size = int(24 * scale)  # Health/stats
-        self.font = None
-        self.small_font = None
         try:
             self.font = ImageFont.truetype("arial.ttf", main_font_size)
             self.small_font = ImageFont.truetype("arial.ttf", small_font_size)
@@ -227,7 +233,8 @@ class BattleRenderer:
                         img = Image.open(path).convert("RGB")
                         # Scale to output size
                         img = img.resize((self.output_width, self.output_height), Image.Resampling.LANCZOS)
-                        self._arena_background = img
+                        # Frames are drawn in RGBA, so convert once here instead of every frame
+                        self._arena_background = img.convert("RGBA")
                         return
                     except Exception as e:
                         log.warning("Failed to load arena background from %s", path, exc_info=e)
@@ -254,7 +261,7 @@ class BattleRenderer:
         """
         # Use arena background if available, otherwise solid color
         if self._arena_background:
-            img = self._arena_background.copy().convert("RGBA")
+            img = self._arena_background.copy()
         else:
             img = Image.new("RGBA", (self.output_width, self.output_height), ARENA_BG)
         draw = ImageDraw.Draw(img)
@@ -311,27 +318,9 @@ class BattleRenderer:
         radius = self._scale_size(32)
 
         if is_alive and plating_name:
-            # Use the unified bot sprite renderer (no tint - team color shown via name text)
-            # Scale factor: base image scale * SPRITE_SCALE for visibility
-            # (shared with collision.py so hitbox matches visuals)
-            sprite_scale = self.scale * SPRITE_SCALE
-
-            bot_sprite = render_bot_sprite(
-                plating_name=plating_name,
-                weapon_name=weapon_name,
-                orientation=orientation,
-                weapon_orientation=weapon_orientation,
-                scale=sprite_scale,
-                registry=self.parts_registry,
-            )
-
-            if not bot_sprite:
+            # No tint - team color shown via name text
+            if not self.sprites.draw(img, x, y, plating_name, weapon_name, orientation, weapon_orientation):
                 raise RuntimeError(f"Failed to render bot sprite for plating '{plating_name}', weapon '{weapon_name}'")
-
-            # Paste sprite centered on position
-            paste_x = x - bot_sprite.width // 2
-            paste_y = y - bot_sprite.height // 2
-            img.paste(bot_sprite, (paste_x, paste_y), bot_sprite)
         else:
             # Dead or no plating - draw simple shape (this is intentional, not a fallback)
             color = DEAD_COLOR if not is_alive else (self.team1_color if team == 1 else self.team2_color)
@@ -370,18 +359,32 @@ class BattleRenderer:
 
         # Bot name (colored by team)
         name = bot_data.get("name", "Bot")[:8]
-        text_bbox = draw.textbbox((0, 0), name, font=self.small_font)
-        text_width = text_bbox[2] - text_bbox[0]
+        text_width = self.text_width(name, self.small_font)
         if is_alive:
             name_color = self.team1_color if team == 1 else self.team2_color
         else:
             name_color = DEAD_COLOR
-        draw.text(
-            (x - text_width // 2, y + radius + self._scale_size(8)),
-            name,
-            fill=name_color,
-            font=self.small_font,
-        )
+        self.draw_text(draw, (x - text_width // 2, y + radius + self._scale_size(8)), name, self.small_font, name_color)
+
+    def text_mask(self, text: str, font: Font) -> tuple[Image.Image, tuple[int, int, int, int]]:
+        """The glyph mask and bounding box for a string, rasterized once and reused every frame."""
+        key = (text, font)
+        if key not in self.text_masks:
+            left, top, right, bottom = (int(v) for v in font.getbbox(text))
+            bbox = (left, top, right, bottom)
+            mask = Image.new("L", (max(1, right - left), max(1, bottom - top)))
+            ImageDraw.Draw(mask).text((-left, -top), text, fill=255, font=font)
+            self.text_masks[key] = (mask, bbox)
+        return self.text_masks[key]
+
+    def text_width(self, text: str, font: Font) -> int:
+        bbox = self.text_mask(text, font)[1]
+        return bbox[2] - bbox[0]
+
+    def draw_text(self, draw: ImageDraw.ImageDraw, xy: tuple[int, int], text: str, font: Font, fill: tuple):
+        """Same pixels as draw.text() at integer coordinates, without rasterizing the string again."""
+        mask, bbox = self.text_mask(text, font)
+        draw.bitmap((xy[0] + bbox[0], xy[1] + bbox[1]), mask, fill=fill)
 
     def _draw_bot_shape_with_turret(
         self,
@@ -601,7 +604,7 @@ class BattleRenderer:
         """Draw heads-up display with team info"""
         # Time display
         time_str = f"Time: {frame_data.get('time', 0):.1f}s"
-        draw.text((10, 10), time_str, fill=TEXT_COLOR, font=self.font)
+        self.draw_text(draw, (10, 10), time_str, self.font, TEXT_COLOR)
 
         # Team scores/counts
         bots = frame_data.get("bots", [])
@@ -612,17 +615,17 @@ class BattleRenderer:
 
         # Player (left side)
         team1_text = f"Player: {team1_alive}/{team1_total}"
-        draw.text((10, self.output_height - 30), team1_text, fill=self.team1_color, font=self.font)
+        self.draw_text(draw, (10, self.output_height - 30), team1_text, self.font, self.team1_color)
 
         # Opponent (right side)
         team2_text = f"Opponent: {team2_alive}/{team2_total}"
-        text_bbox = draw.textbbox((0, 0), team2_text, font=self.font)
-        text_width = text_bbox[2] - text_bbox[0]
-        draw.text(
+        text_width = self.text_width(team2_text, self.font)
+        self.draw_text(
+            draw,
             (self.output_width - text_width - 10, self.output_height - 30),
             team2_text,
-            fill=self.team2_color,
-            font=self.font,
+            self.font,
+            self.team2_color,
         )
 
     def render_to_video(
