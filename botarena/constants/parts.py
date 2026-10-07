@@ -292,6 +292,23 @@ SHRED_MK3 = Plating(
     weapon_mount_y=0.0,
 )
 
+# ═══════════════════════════════════════════════════════════════════════
+# PRIZE PLATING - Earned from challenges only (original BA3 "campaign prize")
+# Same shape as its shop version, so offsets are copied from it
+# ═══════════════════════════════════════════════════════════════════════
+PRIZE_OVERWATCH_R760 = Plating(
+    name="Prize Overwatch R760",
+    shielding=2000,
+    cost=OVERWATCH_R760.cost,
+    weight=9,
+    description="Gold-plated prize armor. Over twice the shielding of the shop R760 at the same weight.",
+    weapon_mount_x=OVERWATCH_R760.weapon_mount_x,
+    weapon_mount_y=OVERWATCH_R760.weapon_mount_y,
+    center_x=OVERWATCH_R760.center_x,
+    center_y=OVERWATCH_R760.center_y,
+    prize_only=True,
+)
+
 # Collect all plating into a list
 PLATING: list[Plating] = [
     SANTRIN,
@@ -304,6 +321,7 @@ PLATING: list[Plating] = [
     OVERWATCH_Z,
     GAIACORP_EG_SR,
     SHRED_MK3,
+    PRIZE_OVERWATCH_R760,
 ]
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -326,6 +344,7 @@ ZINTEK = Component(
     min_range=25,
     max_range=170,
     projectile_type=ProjectileType.LASER,
+    spread=2,
     description="Reliable starter weapon. High accuracy, moderate damage. DPM: 990",
     mount_x=-13.5,
     mount_y=-1.0,
@@ -341,6 +360,7 @@ KEDRON = Component(
     min_range=0,
     max_range=120,
     projectile_type=ProjectileType.BULLET,
+    spread=14,
     description="Spray-and-pray flare weapon. Low accuracy but devastating up close. DPM: 3386",
     mount_x=-21.0,
     mount_y=-0.2,
@@ -356,6 +376,7 @@ RAPTOR_DT_01 = Component(
     min_range=50,
     max_range=150,
     projectile_type=ProjectileType.BULLET,
+    spread=3,
     description="Solid mid-range blaster with good accuracy. DPM: 2772",
     mount_x=-23.8,
     mount_y=-1.5,
@@ -374,6 +395,7 @@ RAPTOR_DT_02 = Component(
     min_range=50,
     max_range=140,
     projectile_type=ProjectileType.BULLET,
+    spread=4,
     description="Upgraded Raptor with increased fire rate and damage. DPM: 4455",
     mount_x=-15.2,
     mount_y=-1.8,
@@ -404,6 +426,7 @@ DARSIJ = Component(
     min_range=25,
     max_range=130,
     projectile_type=ProjectileType.BULLET,
+    spread=8,
     description="High-volume fire weapon. Hug enemies to maximize hits. DPM: 7920",
     mount_x=-18.2,
     mount_y=-0.8,
@@ -419,6 +442,7 @@ TORRIKA_KR_2 = Component(
     min_range=30,
     max_range=140,
     projectile_type=ProjectileType.BULLET,
+    spread=6,
     description="Enhanced close-quarters weapon with extended range. DPM: 10692",
     mount_x=-18.5,
     mount_y=-2.0,
@@ -452,6 +476,7 @@ DARSIK_B301_1 = Component(
     min_range=30,
     max_range=140,
     projectile_type=ProjectileType.BULLET,
+    spread=10,
     description="Rapid-fire beast. Low accuracy, massive potential. DPM: 13306",
     mount_x=-15.8,
     mount_y=-1.5,
@@ -467,6 +492,7 @@ PORANTIS = Component(
     min_range=40,
     max_range=160,
     projectile_type=ProjectileType.CANNON,
+    spread=3,
     description="Heavy hitter with solid accuracy at medium range. DPM: 14355",
     mount_x=-25.2,
     mount_y=-0.8,
@@ -482,7 +508,9 @@ CIRCES = Component(
     min_range=50,
     max_range=200,
     projectile_type=ProjectileType.MISSILE,
-    description="Slow but devastating plasma gun. Each shot counts. DPM: 15444",
+    spread=3,
+    splash_radius=70,
+    description="Slow but devastating plasma gun. Each shot explodes on impact, hurting nearby enemies. DPM: 15444",
     mount_x=-28.2,
     mount_y=-1.8,
 )
@@ -515,6 +543,7 @@ DEVENGE = Component(
     min_range=70,
     max_range=200,
     projectile_type=ProjectileType.LASER,
+    spread=1,
     description="Precision strike rifle. High accuracy, massive damage. DPM: 19008",
     mount_x=-17.0,
     mount_y=-2.0,
@@ -530,6 +559,7 @@ DARSIK_R200 = Component(
     min_range=30,
     max_range=140,
     projectile_type=ProjectileType.BULLET,
+    spread=8,
     description="Massive fire rate weapon. Get close to maximize hits. DPM: 19305",
     mount_x=-15.8,
     mount_y=-3.0,
@@ -560,9 +590,32 @@ SCREAM_SHARD = Component(
     min_range=5,
     max_range=200,
     projectile_type=ProjectileType.MISSILE,
-    description="The ultimate laser weapon. Unmatched damage output. DPM: 24948",
+    spread=3,
+    splash_radius=55,
+    description="The ultimate missile launcher. Rapid shots explode on impact, hurting nearby enemies. DPM: 24948",
     mount_x=-12.5,
     mount_y=-1.0,
+)
+
+# ═══════════════════════════════════════════════════════════════════════
+# PRIZE WEAPONS - Earned from challenges only (original BA3 "campaign prize")
+# Same shape as its shop version, so mount offsets are copied from it
+# ═══════════════════════════════════════════════════════════════════════
+PRIZE_DARSIK_R200_Z = Component(
+    name="Prize Darsik R200-Z",
+    component_type=ComponentType.WEAPON,
+    cost=DARSIK_R200.cost,
+    weight=11,
+    shots_per_minute=317,
+    damage_per_shot=70,
+    min_range=20,
+    max_range=150,
+    projectile_type=ProjectileType.BULLET,
+    spread=5,
+    description="Gold prize machine gun. Half the weight of the Darsik R200, and it hits harder. DPM: 22190",
+    mount_x=DARSIK_R200.mount_x,
+    mount_y=DARSIK_R200.mount_y,
+    prize_only=True,
 )
 
 # Collect all components into a list
@@ -583,6 +636,7 @@ COMPONENTS: list[Component] = [
     DARSIK_R200,
     CEREBUS,
     SCREAM_SHARD,
+    PRIZE_DARSIK_R200_Z,
 ]
 
 

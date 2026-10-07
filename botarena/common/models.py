@@ -301,6 +301,7 @@ class Plating(ArenaBaseModel):
     cost: int
     weight: int
     description: str = ""
+    prize_only: bool = False  # Earned as a reward only: never sold in the shop and can't be sold back
 
     # ─── RENDER CENTER OVERRIDE ───────────────────────────────────────────────
     # By default, the center is assumed to be the middle of the image.
@@ -344,6 +345,9 @@ class Component(ArenaBaseModel):
     max_range: int
     projectile_type: ProjectileType = ProjectileType.BULLET
     description: str = ""
+    spread: float = 0.0  # Most degrees a shot can stray from where the turret points
+    splash_radius: int = 0  # Arena pixels; hits damage other enemies whose hull is this close to the impact
+    prize_only: bool = False  # Earned as a reward only: never sold in the shop and can't be sold back
 
     # ─── MOUNT POINT ──────────────────────────────────────────────────────────
     # The weapon rotates around its mount point, which is offset from image center.
@@ -358,6 +362,19 @@ class Component(ArenaBaseModel):
     @property
     def is_healer(self) -> bool:
         return self.component_type == ComponentType.HEALER or self.damage_per_shot < 0
+
+    @property
+    def accuracy_label(self) -> str:
+        """Player-facing word for how tightly shots group."""
+        if self.spread <= 1:
+            return "Pinpoint"
+        if self.spread <= 3:
+            return "High"
+        if self.spread <= 6:
+            return "Medium"
+        if self.spread <= 10:
+            return "Low"
+        return "Very low"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -614,6 +631,7 @@ class PlayerData(ArenaBaseModel):
     attempted_missions: list[str] = Field(default_factory=list)  # Missions attempted (enemy info revealed)
     mission_attempts: dict[str, int] = Field(default_factory=dict)  # Mission ID -> attempt count
     unlocked_parts: list[str] = Field(default_factory=list)  # Parts unlocked via campaign
+    completed_challenges: list[str] = Field(default_factory=list)  # Challenge IDs cleared (kept apart from missions)
 
     # PvE stats
     campaign_wins: int = 0

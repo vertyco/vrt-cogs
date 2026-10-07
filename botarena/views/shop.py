@@ -85,7 +85,7 @@ class ShopItemSelectRow(ui.ActionRow["ShopView"]):
                     desc = f"🛡️+{item.shielding} ⚖️{item.weight}wt | {humanize_number(item.cost)}💰"
                 else:
                     # DMG/ROF/Range/Weight - weapon stats
-                    desc = f"💥{item.damage_per_shot} 🔥{item.shots_per_minute:.0f}/m ↔️{item.min_range}-{item.max_range} ⚖️{item.weight}wt | {humanize_number(item.cost)}💰"
+                    desc = f"💥{item.damage_per_shot} 🔥{item.shots_per_minute:.0f}/m ↔️{item.min_range}-{item.max_range} 🎯{item.accuracy_label} ⚖️{item.weight}wt | {humanize_number(item.cost)}💰"
 
                 options.append(
                     discord.SelectOption(
@@ -335,8 +335,11 @@ class ShopView(BotArenaView):
                 f"├ **Damage:** {item.damage_per_shot}\n"
                 f"├ **Fire Rate:** {item.shots_per_minute}/min\n"
                 f"├ **Range:** {item.min_range}-{item.max_range}\n"
-                f"└ **Weight:** {item.weight}"
+                f"├ **Accuracy:** {item.accuracy_label}\n"
             )
+            if item.splash_radius:
+                stats_text += f"├ **Blast radius:** {item.splash_radius}\n"
+            stats_text += f"└ **Weight:** {item.weight}"
             section_items.append(ui.TextDisplay(f"**📊 Stats:**\n{stats_text}"))
 
         section_items.append(ui.TextDisplay(f"*{item.description}*"))

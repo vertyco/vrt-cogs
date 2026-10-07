@@ -12,6 +12,7 @@ import io
 import logging
 import typing as t
 from datetime import datetime, timezone
+from pathlib import Path
 
 import discord
 from discord import ui
@@ -35,10 +36,12 @@ from ..common.campaign import (
     get_replay_entry_fee,
     get_replay_reward,
 )
+from ..common.challenge_mode import CHALLENGES
 from ..common.image_utils import find_image_path, load_image
 from ..common.models import TEAM_COLOR_EMOJIS, TEAM_COLORS, Chassis, Component, Plating
 from ..constants import get_random_tip
 from .base import BotArenaView
+from .challenge_mode import ChallengeListLayout
 from .shop import _get_part_image_path
 
 log = logging.getLogger("red.vrt.botarena.hub")
@@ -129,6 +132,12 @@ def format_battle_stats(result: dict, winner_team: int) -> str:
 
     lines = []
 
+    awards = pick_awards(bot_stats)
+    if awards:
+        lines.append("**Awards:**")
+        lines.extend(awards)
+        lines.append("")
+
     # Find survivor(s)
     survivors = [(bid, s) for bid, s in bot_stats.items() if s.get("survived", False)]
 
@@ -139,7 +148,6 @@ def format_battle_stats(result: dict, winner_team: int) -> str:
             health = stats.get("final_health", 0)
             max_hp = stats.get("max_health", 100)
             health_pct = (health / max_hp * 100) if max_hp > 0 else 0
-            dmg_dealt = stats.get("damage_dealt", 0)
 
             # Health bar
             bar_len = 10
@@ -147,7 +155,7 @@ def format_battle_stats(result: dict, winner_team: int) -> str:
             bar = "▰" * filled + "▱" * (bar_len - filled)
 
             lines.append(f"• **{name}** `{bar}` {health:.0f}/{max_hp:.0f} HP ({health_pct:.0f}%)")
-            lines.append(f"  └ Dealt **{dmg_dealt:.0f}** damage")
+            lines.append(f"  └ {bot_contribution(stats)}")
 
     # Show destroyed bots
     destroyed = [(bid, s) for bid, s in bot_stats.items() if not s.get("survived", False)]
@@ -155,10 +163,48 @@ def format_battle_stats(result: dict, winner_team: int) -> str:
         lines.append("\n**Destroyed:**")
         for _, stats in destroyed:
             name = stats.get("name", "Unknown")
-            dmg_dealt = stats.get("damage_dealt", 0)
-            lines.append(f"• ~~{name}~~ (dealt {dmg_dealt:.0f} dmg before destruction)")
+            lines.append(f"• ~~{name}~~ ({bot_contribution(stats)} before destruction)")
 
     return "\n".join(lines)
+
+
+def bot_contribution(stats: dict) -> str:
+    """One-line summary of what a bot did: damage, kills, and healing if it healed."""
+    text = f"Dealt **{stats.get('damage_dealt', 0):.0f}** damage, {stats.get('kills', 0)} kills"
+    healed = stats.get("healing_done", 0)
+    if healed > 0:
+        text += f", {healed:.0f} healing"
+    return text
+
+
+def pick_awards(bot_stats: dict) -> list[str]:
+    """Award lines for the results screen. Every bot on both teams is eligible; empty awards are skipped."""
+    bots = list(bot_stats.values())
+    if not bots:
+        return []
+    awards = []
+
+    mvp = max(bots, key=lambda s: (s.get("damage_dealt", 0), s.get("kills", 0)))
+    if mvp.get("damage_dealt", 0) > 0:
+        awards.append(f"🏅 **MVP:** {mvp['name']} ({mvp['damage_dealt']:.0f} damage, {mvp.get('kills', 0)} kills)")
+
+    toughest = max(bots, key=lambda s: s.get("damage_taken", 0))
+    if toughest.get("damage_taken", 0) > 0:
+        awards.append(f"🛡️ **Toughest:** {toughest['name']} (took {toughest['damage_taken']:.0f} damage)")
+
+    low_survivors = [
+        s["name"]
+        for s in bots
+        if s.get("survived") and s.get("max_health", 0) > 0 and s.get("final_health", 0) / s["max_health"] < 0.10
+    ]
+    if low_survivors:
+        awards.append(f"❤️‍🩹 **Last stand:** {', '.join(low_survivors)} (survived under 10% health)")
+
+    healer = max(bots, key=lambda s: s.get("healing_done", 0))
+    if healer.get("healing_done", 0) > 0:
+        awards.append(f"💚 **Top healer:** {healer['name']} ({healer['healing_done']:.0f} healing)")
+
+    return awards
 
 
 class BattleResultLayout(BotArenaView):
@@ -266,6 +312,7 @@ def create_battle_result_view(
     chapter_name: t.Optional[str] = None,
     mission: t.Optional["Mission"] = None,
     retry_selected_bots: t.Optional[list[str]] = None,
+    actions_row: t.Optional[ui.ActionRow] = None,
 ) -> tuple[BattleResultLayout, list[discord.File]]:
     """
     Create a LayoutView for battle results with an embedded video.
@@ -283,6 +330,7 @@ def create_battle_result_view(
         user: The user who initiated the battle (for display in results)
         mission_name: Optional mission name for campaign battles
         chapter_name: Optional chapter name for campaign battles
+        actions_row: Optional button row that replaces the default result buttons
 
     Returns:
         Tuple of (LayoutView, list of files to attach)
@@ -326,7 +374,9 @@ def create_battle_result_view(
 
     # Add Return to Hub button if ctx and cog are provided
     if ctx and cog:
-        if mission:
+        if actions_row:
+            layout.add_item(actions_row)
+        elif mission:
             layout.add_item(CampaignBattleActionsRow())
         else:
             layout.add_item(BattleResultActionsRow())
@@ -822,6 +872,12 @@ class MainMenuRow(ui.ActionRow["GameHubLayout"]):
         from .shop import ShopView
 
         view = ShopView(self.view.ctx, self.view.cog.db, self.view.cog.registry, cog=self.view.cog, parent=self.view)
+        self.view.navigate_to_child(view)
+        await view.send(interaction)
+
+    @ui.button(label="Challenges", style=discord.ButtonStyle.primary, emoji="🧩")
+    async def challenges_button(self, interaction: discord.Interaction, button: ui.Button):
+        view = ChallengeListLayout(self.view.ctx, self.view.cog, parent=self.view)
         self.view.navigate_to_child(view)
         await view.send(interaction)
 
@@ -1815,135 +1871,118 @@ class MissionBriefingLayout(BotArenaView):
         chapter = get_chapter_for_mission(self.mission.id)
         chapter_name = f"Chapter {chapter.id}: {chapter.name}" if chapter else None
 
-        # Skip the video if it exceeds the guild's upload limit, but still show results
-        size_limit = self.ctx.guild.filesize_limit if self.ctx.guild else discord.utils.DEFAULT_FILE_SIZE_LIMIT_BYTES
-        video_size = video_path.stat().st_size
-        video_too_large = video_size > size_limit
-        if video_too_large:
-            log.warning(f"Battle video too large to upload ({video_size} bytes > {size_limit} byte limit)")
-            extra_fields.append(("📹 Video", "Battle video too large to upload"))
-
-        try:
-            file = None
-            if not video_too_large:
-                ext = video_path.suffix.lstrip(".")
-                file = discord.File(video_path, filename=f"battle.{ext}")
-
-            result_view, files = create_battle_result_view(
-                title=title,
-                description=description,
-                color=color,
-                duration=duration,
-                battle_stats=battle_stats,
-                extra_fields=extra_fields,
-                video_file=file,
-                ctx=self.ctx,
-                cog=self.cog,
-                user=self.ctx.author,
-                mission_name=self.mission.name,
-                chapter_name=chapter_name,
-                mission=self.mission,
-                retry_selected_bots=self.selected_bots,
-            )
-            result_view.message = self.message
-            await self.message.edit(view=result_view, embed=None, attachments=files)
-        except Exception as e:
-            # Video attachment failed - still show result but without video
-            # This is an acceptable degradation since the battle already happened
-            log.exception("Failed to attach battle video to result message", exc_info=e)
-
-            result_view, _ = create_battle_result_view(
-                title=title,
-                description=description,
-                color=color,
-                duration=duration,
-                battle_stats=battle_stats,
-                extra_fields=extra_fields,
-                ctx=self.ctx,
-                cog=self.cog,
-                user=self.ctx.author,
-                mission_name=self.mission.name,
-                chapter_name=chapter_name,
-                mission=self.mission,
-                retry_selected_bots=self.selected_bots,
-            )
-            result_view.message = self.message
-            await self.message.edit(view=result_view, embed=None)
-        finally:
-            # Clean up temp video file
-            video_path.unlink(missing_ok=True)
+        await send_battle_result(
+            self.message,
+            video_path,
+            title=title,
+            description=description,
+            color=color,
+            duration=duration,
+            battle_stats=battle_stats,
+            extra_fields=extra_fields,
+            ctx=self.ctx,
+            cog=self.cog,
+            user=self.ctx.author,
+            mission_name=self.mission.name,
+            chapter_name=chapter_name,
+            mission=self.mission,
+            retry_selected_bots=self.selected_bots,
+        )
 
         # Send separate ephemeral messages for each newly unlocked part
         if newly_unlocked_parts:
-            await self._send_unlock_notifications(interaction, newly_unlocked_parts)
+            await send_unlock_notifications(interaction, self.cog.registry, newly_unlocked_parts, "🔓 Unlocked")
 
         self.stop()
 
-    async def _send_unlock_notifications(self, interaction: discord.Interaction, part_names: list[str]):
-        """Send ephemeral messages for each unlocked part with images"""
-        for part_name in part_names:
-            # Try to find the part in the registry
-            part = None
-            part_type = None
-            image_folder = None
 
-            # Check chassis
-            chassis = self.cog.registry.get_chassis(part_name)
-            if chassis:
-                part = chassis
-                part_type = "Chassis"
-                image_folder = "chassis"
+async def send_battle_result(message: discord.Message, video_path: Path, **view_kwargs: t.Any) -> None:
+    """Replace message with the battle result, embedding the video when it fits the upload limit.
 
-            # Check plating
-            if not part:
-                plating = self.cog.registry.get_plating(part_name)
-                if plating:
-                    part = plating
-                    part_type = "Plating"
-                    image_folder = "plating"
+    view_kwargs go to create_battle_result_view. The temp video file is always deleted.
+    """
+    ctx: commands.Context = view_kwargs["ctx"]
+    extra_fields = list(view_kwargs.pop("extra_fields", None) or [])
+    # Skip the video if it exceeds the guild's upload limit, but still show results
+    size_limit = ctx.guild.filesize_limit if ctx.guild else discord.utils.DEFAULT_FILE_SIZE_LIMIT_BYTES
+    video_size = video_path.stat().st_size
+    video_too_large = video_size > size_limit
+    if video_too_large:
+        log.warning(f"Battle video too large to upload ({video_size} bytes > {size_limit} byte limit)")
+        extra_fields.append(("📹 Video", "Battle video too large to upload"))
 
-            # Check components (weapons)
-            if not part:
-                component = self.cog.registry.get_component(part_name)
-                if component:
-                    part = component
-                    part_type = "Weapon"
-                    image_folder = "weapons"
+    try:
+        file = None
+        if not video_too_large:
+            ext = video_path.suffix.lstrip(".")
+            file = discord.File(video_path, filename=f"battle.{ext}")
+        result_view, files = create_battle_result_view(extra_fields=extra_fields, video_file=file, **view_kwargs)
+        result_view.message = message
+        await message.edit(view=result_view, embed=None, attachments=files)
+    except Exception as e:
+        # Video attachment failed - still show result but without video
+        # This is an acceptable degradation since the battle already happened
+        log.exception("Failed to attach battle video to result message", exc_info=e)
+        result_view, _ = create_battle_result_view(extra_fields=extra_fields, **view_kwargs)
+        result_view.message = message
+        await message.edit(view=result_view, embed=None)
+    finally:
+        # Clean up temp video file
+        video_path.unlink(missing_ok=True)
 
-            if not part or not image_folder:
-                # Part not found in registry - this is a bug in campaign data!
-                raise ValueError(f"Part '{part_name}' not found in registry! Check campaign unlock_parts data.")
 
-            # Build embed with part info
-            embed = discord.Embed(
-                title=f"🔓 Unlocked: {part.name}", description=part.description, color=discord.Color.gold()
-            )
-            embed.add_field(name="Type", value=part_type, inline=True)
+def lookup_part(registry: "PartsRegistry", part_name: str) -> tuple[Chassis | Plating | Component, str, str]:
+    """Find a part by name. Returns (part, type label, image folder)."""
+    chassis = registry.get_chassis(part_name)
+    if chassis:
+        return chassis, "Chassis", "chassis"
+    plating = registry.get_plating(part_name)
+    if plating:
+        return plating, "Plating", "plating"
+    component = registry.get_component(part_name)
+    if component:
+        return component, "Weapon", "weapons"
+    # Part not found in registry - this is a bug in campaign or challenge data!
+    raise ValueError(f"Part '{part_name}' not found in registry! Check campaign unlock_parts data.")
 
-            # Add type-specific stats
-            if isinstance(part, Chassis):
-                embed.add_field(name="Shielding", value=f"{part.shielding}", inline=True)
-                embed.add_field(name="Weight", value=f"{part.self_weight}wt", inline=True)
-                embed.add_field(name="Capacity", value=f"{part.weight_capacity}wt", inline=True)
-            elif isinstance(part, Plating):
-                embed.add_field(name="Shielding", value=f"{part.shielding}", inline=True)
-                embed.add_field(name="Weight", value=f"{part.weight}wt", inline=True)
-            elif isinstance(part, Component):
-                embed.add_field(name="Damage", value=f"{part.damage_per_shot}", inline=True)
-                embed.add_field(name="Weight", value=f"{part.weight}wt", inline=True)
 
-            # Find image file using the same helper as shop
-            image_path = _get_part_image_path(image_folder, part.name)
+def part_embed(part: Chassis | Plating | Component, part_type: str, title: str) -> discord.Embed:
+    """Embed showing a part's key stats, titled like '🔓 Unlocked: <name>'."""
+    embed = discord.Embed(title=f"{title}: {part.name}", description=part.description, color=discord.Color.gold())
+    embed.add_field(name="Type", value=part_type, inline=True)
+    if isinstance(part, Chassis):
+        embed.add_field(name="Shielding", value=f"{part.shielding}", inline=True)
+        embed.add_field(name="Weight", value=f"{part.self_weight}wt", inline=True)
+        embed.add_field(name="Capacity", value=f"{part.weight_capacity}wt", inline=True)
+    elif isinstance(part, Plating):
+        embed.add_field(name="Shielding", value=f"{part.shielding}", inline=True)
+        embed.add_field(name="Weight", value=f"{part.weight}wt", inline=True)
+    elif isinstance(part, Component):
+        embed.add_field(name="Damage", value=f"{part.damage_per_shot}", inline=True)
+        embed.add_field(name="Accuracy", value=part.accuracy_label, inline=True)
+        embed.add_field(name="Weight", value=f"{part.weight}wt", inline=True)
+    return embed
 
-            if image_path and image_path.exists():
-                ext = image_path.suffix.lstrip(".")
-                safe_filename = part.name.lower().replace(" ", "_") + f".{ext}"
-                file = discord.File(image_path, filename=safe_filename)
-                embed.set_image(url=f"attachment://{safe_filename}")
-                await interaction.followup.send(embed=embed, file=file, ephemeral=True)
-            else:
-                # Send without image if file not found
-                await interaction.followup.send(embed=embed, ephemeral=True)
+
+async def send_unlock_notifications(
+    interaction: discord.Interaction, registry: "PartsRegistry", part_names: list[str], title: str
+):
+    """Send an ephemeral message with stats and picture for each part"""
+    for part_name in part_names:
+        part, part_type, image_folder = lookup_part(registry, part_name)
+        embed = part_embed(part, part_type, title)
+
+        # Find image file using the same helper as shop
+        image_path = _get_part_image_path(image_folder, part.name)
+        if image_path and image_path.exists():
+            ext = image_path.suffix.lstrip(".")
+            safe_filename = part.name.lower().replace(" ", "_") + f".{ext}"
+            file = discord.File(image_path, filename=safe_filename)
+            embed.set_image(url=f"attachment://{safe_filename}")
+            await interaction.followup.send(embed=embed, file=file, ephemeral=True)
+        else:
+            # Send without image if file not found
+            await interaction.followup.send(embed=embed, ephemeral=True)
 
 
 class ProfileColorSelectRow(ui.ActionRow["ProfileLayout"]):
@@ -2026,7 +2065,8 @@ class ProfileLayout(BotArenaView):
             f"**📖 Campaign**\n"
             f"Progress: {completed}/{total}\n"
             f"Wins: {player.campaign_wins}\n"
-            f"Losses: {player.campaign_losses}"
+            f"Losses: {player.campaign_losses}\n"
+            f"Challenges: {len(player.completed_challenges)}/{len(CHALLENGES)}"
         )
         container.add_item(ui.TextDisplay(col1_text))
 

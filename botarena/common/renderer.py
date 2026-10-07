@@ -110,6 +110,16 @@ PROJECTILE_STYLES = {
         "ring_width": 3,
         "glow_color": (255, 120, 40),  # Orange glow
     },
+    # EXPLOSION - Splash blast where a missile hit; drawn at the blast's real radius
+    "explosion": {
+        "color": (255, 230, 150),  # Pale yellow core
+        "radius": 40,  # Fallback when the frame carries no radius
+        "is_beam": False,
+        "is_shockwave": True,
+        "ring_color": (255, 110, 30),  # Deep orange ring
+        "ring_width": 4,
+        "glow_color": (255, 60, 20),  # Red-orange glow
+    },
 }
 
 # Team color options (same as models.py TEAM_COLORS)
@@ -443,7 +453,7 @@ class BattleRenderer:
             style = PROJECTILE_STYLES["heal"]
 
         color = style["color"]
-        radius = self._scale_size(style["radius"])
+        radius = self._scale_size(proj_data.get("radius") or style["radius"])
         is_beam = style.get("is_beam", False)
         has_trail = style.get("has_trail", False)
         has_glow = style.get("has_glow", False)

@@ -45,6 +45,7 @@ if t.TYPE_CHECKING:
 # Scale factor converts original ranges to meaningful distances
 # ─────────────────────────────────────────────────────────────────────────────
 RANGE_SCALE_FACTOR = 2.5  # Multiplier for weapon ranges (Smaller means shorter range)
+SPLASH_DAMAGE_FRACTION = 0.5  # Share of a splash weapon's hit damage dealt to other enemies in the blast
 
 
 class AIBehavior(str, Enum):
@@ -176,6 +177,8 @@ class BotRuntimeState:
     allows_point_blank: bool = False  # If True, can hit targets even when inside min_range
     projectile_type: str = "bullet"  # Type of projectile this weapon fires
     muzzle_offset: float = 92.0  # Distance from bot center to weapon muzzle (for projectile spawn)
+    spread: float = 0.0  # Most degrees a shot can stray from the turret direction
+    splash_radius: float = 0.0  # Blast reach (to enemy hulls) when a shot hits an enemy
 
     # AI behavior (derived from tactical orders or chassis default)
     behavior: AIBehavior = AIBehavior.TACTICAL
@@ -222,6 +225,7 @@ class BotRuntimeState:
     # Statistics
     damage_dealt: int = 0
     damage_taken: int = 0
+    healing_done: int = 0
     kills: int = 0
 
     def take_damage(self, damage: int, source_id: t.Optional[str] = None, current_time: float = 0.0) -> int:
@@ -360,6 +364,9 @@ class Projectile:
     alive: bool = True
     projectile_type: str = "bullet"  # Type of projectile for rendering
     ttl: float = -1.0  # Time-to-live in seconds (-1 = infinite, expires when <= 0)
+    visual_only: bool = False  # On-screen effect only: never moves, collides, or triggers dodges
+    splash_radius: float = 0.0  # Blast reach applied when this shot hits an enemy
+    radius: float = 0.0  # Drawn size for effects like explosions (0 = style default)
 
     def to_frame_data(self) -> dict:
         return {
@@ -372,6 +379,7 @@ class Projectile:
             "damage": self.damage,
             "is_heal": self.is_heal,
             "projectile_type": self.projectile_type,
+            "radius": self.radius,
         }
 
 
@@ -427,6 +435,7 @@ class BattleEngine:
         self.frame_number: int = 0
         self.dt: float = 1.0 / self.config.fps
         self.events: list[dict] = []  # Events for current frame
+        self.pending_effects: list[Projectile] = []  # Effects spawned mid-loop, added after it
 
         self.last_damage_time: float = 0.0  # For stalemate detection
 
@@ -462,6 +471,8 @@ class BattleEngine:
         projectile_type: str = "bullet",
         muzzle_offset: float = 50.0,
         turret_rotation_speed: float = 15.0,
+        spread: float = 0.0,
+        splash_radius: float = 0.0,
     ):
         """Add a bot to the simulation.
 
@@ -525,6 +536,8 @@ class BattleEngine:
             allows_point_blank=allows_point_blank,
             projectile_type=projectile_type,
             muzzle_offset=muzzle_offset,
+            spread=spread,
+            splash_radius=splash_radius,
             health=max_health,
             behavior=behavior,
             target_priority=target_priority or TargetPriority.CLOSEST,
@@ -579,18 +592,7 @@ class BattleEngine:
         max_frames = int(self.config.max_duration * self.config.fps)
 
         while self.frame_number < max_frames:
-            self.events = []
-
-            # Update all systems
-            self._update_ai()
-            self._update_stalemate_prevention()  # Check for stalemate and modify behaviors
-            self._update_movement()
-            self._update_weapon_orientation()
-            self._update_projectiles()
-            self._update_combat()
-
-            # Capture frame
-            self._capture_frame()
+            self.step()
 
             # Check for battle end
             if self._check_battle_end():
@@ -600,6 +602,17 @@ class BattleEngine:
             self.frame_number += 1
 
         return self._build_result()
+
+    def step(self):
+        """Advance every system by one tick and capture the frame."""
+        self.events = []
+        self._update_ai()
+        self._update_stalemate_prevention()  # Check for stalemate and modify behaviors
+        self._update_movement()
+        self._update_weapon_orientation()
+        self._update_projectiles()
+        self._update_combat()
+        self._capture_frame()
 
     def _get_stalemate_aggression_bonus(self) -> float:
         """Calculate how aggressive bots should become based on stalemate duration.
@@ -1116,8 +1129,8 @@ class BattleEngine:
         for proj in self.projectiles:
             if not proj.alive:
                 continue
-            if proj.is_heal:
-                continue  # Ignore healing projectiles
+            if proj.is_heal or proj.visual_only:
+                continue  # Ignore healing projectiles and on-screen effects
             if proj.shooter_id == bot.bot_id:
                 continue  # Ignore our own projectiles
 
@@ -1753,125 +1766,16 @@ class BattleEngine:
                     proj.alive = False
                     continue
 
+            # Effects (bursts) only show on screen; they never move or hit anything
+            if proj.visual_only:
+                continue
+
             # Move projectile
             proj.position = proj.position + proj.velocity * self.dt
 
-            # Check for collision with ANY bot (including teammates blocking shots)
-            hit_bot = None
-            for bot in self.bots.values():
-                if not bot.is_alive:
-                    continue
-                # Skip the shooter - can't hit yourself
-                if bot.bot_id == proj.shooter_id:
-                    continue
-
-                # Check collision - use pixel-perfect if available, otherwise circular hitbox
-                collision = False
-                if self.collision_manager is not None:
-                    # Pixel-perfect collision: check if projectile hits non-transparent pixel
-                    # Returns None if no mask is available for this bot
-                    pixel_collision = self.collision_manager.check_collision(
-                        proj.position.x,
-                        proj.position.y,
-                        bot.bot_id,
-                        bot.position.x,
-                        bot.position.y,
-                        bot.orientation,
-                    )
-                    if pixel_collision is not None:
-                        collision = pixel_collision
-                    else:
-                        # No mask available, fall back to circular collision
-                        collision = proj.position.distance_to(bot.position) < self.config.bot_radius
-                else:
-                    # No collision manager, use simple circular collision
-                    collision = proj.position.distance_to(bot.position) < self.config.bot_radius
-
-                if collision:
-                    hit_bot = bot
-                    break
-
+            hit_bot = self.find_projectile_collision(proj)
             if hit_bot:
-                # Determine if this is the intended target or a blocker
-                shooter = self.bots.get(proj.shooter_id)
-                is_friendly_fire = shooter and hit_bot.team == shooter.team
-
-                if proj.is_heal:
-                    # Heal projectiles only heal teammates (intended or not)
-                    if is_friendly_fire or hit_bot.bot_id == proj.target_id:
-                        actual = hit_bot.heal(abs(proj.damage))
-                        if proj.shooter_id in self.bots:
-                            self.bots[proj.shooter_id].damage_dealt += actual
-                        self.events.append(
-                            {
-                                "type": "heal",
-                                "shooter_id": proj.shooter_id,
-                                "target_id": hit_bot.bot_id,
-                                "amount": actual,
-                            }
-                        )
-                        proj.alive = False
-                    # Heal projectiles pass through enemies
-                else:
-                    # Damage projectiles hit ANY bot they touch (including teammates blocking)
-                    if is_friendly_fire:
-                        # Teammate blocked the shot - reduced friendly fire damage (25%)
-                        actual = hit_bot.take_damage(
-                            proj.damage // 4, source_id=proj.shooter_id, current_time=self.current_time
-                        )
-                        if actual > 0:
-                            self.last_damage_time = self.current_time
-                        self.events.append(
-                            {
-                                "type": "blocked",
-                                "shooter_id": proj.shooter_id,
-                                "blocker_id": hit_bot.bot_id,
-                                "target_id": proj.target_id,
-                            }
-                        )
-                        # If the teammate died from the blocked shot, emit the same
-                        # kill event as the normal damage path so stats/render stay in sync
-                        if not hit_bot.is_alive:
-                            if proj.shooter_id in self.bots:
-                                self.bots[proj.shooter_id].kills += 1
-                            self.events.append(
-                                {
-                                    "type": "kill",
-                                    "killer_id": proj.shooter_id,
-                                    "victim_id": hit_bot.bot_id,
-                                }
-                            )
-                    else:
-                        # Enemy hit - full damage with threat tracking
-                        actual = hit_bot.take_damage(
-                            proj.damage, source_id=proj.shooter_id, current_time=self.current_time
-                        )
-                        if actual > 0:
-                            self.last_damage_time = self.current_time
-                        if proj.shooter_id in self.bots:
-                            self.bots[proj.shooter_id].damage_dealt += actual
-                        self.events.append(
-                            {
-                                "type": "hit",
-                                "shooter_id": proj.shooter_id,
-                                "target_id": hit_bot.bot_id,
-                                "damage": actual,
-                            }
-                        )
-
-                        # Check for kill
-                        if not hit_bot.is_alive:
-                            if proj.shooter_id in self.bots:
-                                self.bots[proj.shooter_id].kills += 1
-                            self.events.append(
-                                {
-                                    "type": "kill",
-                                    "killer_id": proj.shooter_id,
-                                    "victim_id": hit_bot.bot_id,
-                                }
-                            )
-
-                    proj.alive = False
+                self.resolve_projectile_hit(proj, hit_bot)
 
             # Check if out of bounds
             if (
@@ -1882,8 +1786,126 @@ class BattleEngine:
             ):
                 proj.alive = False
 
-        # Remove dead projectiles
-        self.projectiles = [p for p in self.projectiles if p.alive]
+        # Remove dead projectiles, then add effects spawned during the loop
+        self.projectiles = [p for p in self.projectiles if p.alive] + self.pending_effects
+        self.pending_effects = []
+
+    def find_projectile_collision(self, proj: Projectile) -> t.Optional[BotRuntimeState]:
+        """Return the first living bot (teammates included) the projectile is touching, if any."""
+        for bot in self.bots.values():
+            if not bot.is_alive:
+                continue
+            # Skip the shooter - can't hit yourself
+            if bot.bot_id == proj.shooter_id:
+                continue
+
+            # Pixel-perfect collision when a mask is available, otherwise a circular hitbox
+            collision = None
+            if self.collision_manager is not None:
+                collision = self.collision_manager.check_collision(
+                    proj.position.x,
+                    proj.position.y,
+                    bot.bot_id,
+                    bot.position.x,
+                    bot.position.y,
+                    bot.orientation,
+                )
+            if collision is None:
+                collision = proj.position.distance_to(bot.position) < self.config.bot_radius
+
+            if collision:
+                return bot
+        return None
+
+    def resolve_projectile_hit(self, proj: Projectile, hit_bot: BotRuntimeState):
+        """Apply a projectile that touched a bot: heal, friendly block, or enemy damage."""
+        shooter = self.bots.get(proj.shooter_id)
+        is_friendly_fire = shooter is not None and hit_bot.team == shooter.team
+
+        if proj.is_heal:
+            # Heal projectiles only heal teammates (intended or not) and pass through enemies
+            if is_friendly_fire or hit_bot.bot_id == proj.target_id:
+                self.apply_heal(proj.shooter_id, hit_bot, abs(proj.damage))
+                proj.alive = False
+            return
+
+        if is_friendly_fire:
+            self.absorb_blocked_shot(proj, hit_bot)
+        else:
+            self.deal_damage(proj.shooter_id, hit_bot, proj.damage)
+            if proj.splash_radius > 0 and shooter is not None:
+                self.explode(proj, shooter, hit_bot)
+        proj.alive = False
+
+    def explode(self, proj: Projectile, shooter: BotRuntimeState, primary: BotRuntimeState):
+        """Splash part of the hit onto other enemies whose hull is within the blast, and show the blast."""
+        splash_damage = int(proj.damage * SPLASH_DAMAGE_FRACTION)
+        hits = 0
+        for bot in list(self.bots.values()):
+            if not bot.is_alive or bot.team == shooter.team or bot.bot_id == primary.bot_id:
+                continue
+            # Measured to the hull, not the center: bots never stand closer than ~70px apart
+            if proj.position.distance_to(bot.position) - self.config.bot_radius <= proj.splash_radius:
+                self.deal_damage(shooter.bot_id, bot, splash_damage)
+                hits += 1
+        self.events.append({"type": "splash", "shooter_id": shooter.bot_id, "hits": hits})
+        self.pending_effects.append(
+            Projectile(
+                shooter_id=shooter.bot_id,
+                target_id=primary.bot_id,
+                position=Vector2(proj.position.x, proj.position.y),
+                velocity=Vector2(0, 0),
+                damage=0,
+                projectile_type="explosion",
+                ttl=0.2,
+                visual_only=True,
+                radius=proj.splash_radius,
+            )
+        )
+
+    def absorb_blocked_shot(self, proj: Projectile, blocker: BotRuntimeState):
+        """A teammate blocked the shot: it takes reduced friendly fire damage (25%)."""
+        actual = blocker.take_damage(proj.damage // 4, source_id=proj.shooter_id, current_time=self.current_time)
+        if actual > 0:
+            self.last_damage_time = self.current_time
+        self.events.append(
+            {
+                "type": "blocked",
+                "shooter_id": proj.shooter_id,
+                "blocker_id": blocker.bot_id,
+                "target_id": proj.target_id,
+            }
+        )
+        # If the teammate died from the blocked shot, emit the same
+        # kill event as the normal damage path so stats/render stay in sync
+        if not blocker.is_alive:
+            if proj.shooter_id in self.bots:
+                self.bots[proj.shooter_id].kills += 1
+            self.events.append({"type": "kill", "killer_id": proj.shooter_id, "victim_id": blocker.bot_id})
+
+    def deal_damage(self, shooter_id: str, victim: BotRuntimeState, amount: int) -> int:
+        """Damage an enemy, credit the shooter, and log the hit (and kill). Returns damage actually dealt."""
+        actual = victim.take_damage(amount, source_id=shooter_id, current_time=self.current_time)
+        if actual > 0:
+            self.last_damage_time = self.current_time
+        shooter = self.bots.get(shooter_id)
+        if shooter:
+            shooter.damage_dealt += actual
+        self.events.append({"type": "hit", "shooter_id": shooter_id, "target_id": victim.bot_id, "damage": actual})
+        if actual > 0 and not victim.is_alive:
+            if shooter:
+                shooter.kills += 1
+            self.events.append({"type": "kill", "killer_id": shooter_id, "victim_id": victim.bot_id})
+        return actual
+
+    def apply_heal(self, healer_id: str, target: BotRuntimeState, amount: int) -> int:
+        """Heal a teammate, credit the healer's healing, and log it. Returns the amount actually healed."""
+        actual = target.heal(amount)
+        healer = self.bots.get(healer_id)
+        if healer:
+            healer.healing_done += actual
+        self.events.append({"type": "heal", "shooter_id": healer_id, "target_id": target.bot_id, "amount": actual})
+        return actual
 
     def _update_combat(self):
         """Handle weapon firing"""
@@ -1956,63 +1978,37 @@ class BattleEngine:
             if bot.allows_point_blank and distance < bot.muzzle_offset:
                 # Direct hit - no projectile needed
                 if bot.is_healer:
-                    actual = target.heal(abs(bot.damage_per_shot))
-                    bot.damage_dealt += actual
-                    self.events.append(
-                        {
-                            "type": "heal",
-                            "shooter_id": bot.bot_id,
-                            "target_id": target.bot_id,
-                            "amount": actual,
-                        }
-                    )
+                    self.apply_heal(bot.bot_id, target, abs(bot.damage_per_shot))
                 else:
-                    actual = target.take_damage(
-                        bot.damage_per_shot, source_id=bot.bot_id, current_time=self.current_time
-                    )
-                    if actual > 0:
-                        self.last_damage_time = self.current_time
-                    bot.damage_dealt += actual
-                    self.events.append(
-                        {
-                            "type": "hit",
-                            "shooter_id": bot.bot_id,
-                            "target_id": target.bot_id,
-                            "damage": actual,
-                        }
-                    )
-                    # Check for kill
-                    if not target.is_alive:
-                        bot.kills += 1
-                        self.events.append(
-                            {
-                                "type": "kill",
-                                "killer_id": bot.bot_id,
-                                "victim_id": target.bot_id,
-                            }
-                        )
-                # Spawn visual shockwave at target position with zero velocity (splash effect)
+                    self.deal_damage(bot.bot_id, target, bot.damage_per_shot)
+                # Stationary burst at the target, shown for its ttl (damage was already applied)
                 proj = Projectile(
                     shooter_id=bot.bot_id,
                     target_id=bot.target_id,
                     position=Vector2(target.position.x, target.position.y),
-                    velocity=Vector2(0, 0),  # Stationary burst effect
-                    damage=0,  # Damage already applied
+                    velocity=Vector2(0, 0),
+                    damage=0,
                     is_heal=bot.is_healer,
                     projectile_type=bot.projectile_type,
-                    ttl=0.15,  # Short-lived visual effect (150ms)
+                    ttl=0.15,
+                    visual_only=True,
                 )
                 self.projectiles.append(proj)
             else:
                 # Normal projectile
+                shot_direction = direction
+                if bot.spread > 0:
+                    stray = math.radians(bot.weapon_orientation + self.rng.triangular(-bot.spread, bot.spread, 0))
+                    shot_direction = Vector2(math.cos(stray), math.sin(stray))
                 proj = Projectile(
                     shooter_id=bot.bot_id,
                     target_id=bot.target_id,
                     position=muzzle_pos,
-                    velocity=direction * proj_speed,
+                    velocity=shot_direction * proj_speed,
                     damage=abs(bot.damage_per_shot),
                     is_heal=bot.is_healer,
                     projectile_type=bot.projectile_type,
+                    splash_radius=bot.splash_radius,
                 )
                 self.projectiles.append(proj)
 
@@ -2072,6 +2068,7 @@ class BattleEngine:
                     "max_health": bot.max_health,
                     "damage_dealt": bot.damage_dealt,
                     "damage_taken": bot.damage_taken,
+                    "healing_done": bot.healing_done,
                     "kills": bot.kills,
                     "survived": bot.is_alive,
                 }

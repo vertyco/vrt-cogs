@@ -20,9 +20,11 @@ if t.TYPE_CHECKING:
 
 from ..common.image_utils import find_image_path
 from ..common.models import (
+    Component,
     MovementStance,
     OwnedChassis,
     PartsRegistry,
+    Plating,
     TacticalOrders,
     TargetPriority,
 )
@@ -30,6 +32,13 @@ from .base import BotArenaView
 
 # Sell back percentage
 SELL_PERCENTAGE = 0.5
+
+
+def sell_line(part: Plating | Component) -> str:
+    """Inventory sub-line with the sell price, or a note that prize parts can't be sold."""
+    if part.prize_only:
+        return "-# 🏆 Prize part (can't be sold)"
+    return f"-# 💰 Sell: {humanize_number(int(part.cost * SELL_PERCENTAGE))}"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -157,7 +166,7 @@ class EquipWeaponRow(ui.ActionRow["ChassisEditorLayout"]):
                 c = self.registry.get_component(part.part_name)
                 # Only add if it's a valid component in the registry
                 if c:
-                    desc = f"💥{c.damage_per_shot}dmg | 🔥{c.shots_per_minute:.0f}/m | ⚖️{c.weight}wt | ↔️{c.min_range}-{c.max_range} | x{part.quantity}"
+                    desc = f"💥{c.damage_per_shot}dmg | 🔥{c.shots_per_minute:.0f}/m | ⚖️{c.weight}wt | ↔️{c.min_range}-{c.max_range} | 🎯{c.accuracy_label} | x{part.quantity}"
                     options.append(
                         discord.SelectOption(
                             label=part.part_name,
@@ -1018,11 +1027,8 @@ class InventoryLayout(BotArenaView):
                 if self.category == "plating":
                     p = self.cog.registry.get_plating(item.part_name)
                     if p:
-                        sell_price = int(p.cost * SELL_PERCENTAGE)
                         item_text = ui.TextDisplay(
-                            f"**{item.part_name}** x{item.quantity}\n"
-                            f"-# 🛡️ Shield: +{p.shielding}\n"
-                            f"-# 💰 Sell: {humanize_number(sell_price)}"
+                            f"**{item.part_name}** x{item.quantity}\n-# 🛡️ Shield: +{p.shielding}\n{sell_line(p)}"
                         )
                         # Try to add image thumbnail
                         image_path = find_image_path(folder, item.part_name)
@@ -1038,11 +1044,10 @@ class InventoryLayout(BotArenaView):
                 else:
                     c = self.cog.registry.get_component(item.part_name)
                     if c:
-                        sell_price = int(c.cost * SELL_PERCENTAGE)
                         item_text = ui.TextDisplay(
                             f"**{item.part_name}** x{item.quantity}\n"
                             f"-# ⚔️ DMG: {c.damage_per_shot} | ROF: {c.shots_per_minute}/min\n"
-                            f"-# 💰 Sell: {humanize_number(sell_price)}"
+                            f"{sell_line(c)}"
                         )
                         # Try to add image thumbnail
                         image_path = find_image_path(folder, item.part_name)
@@ -1067,7 +1072,7 @@ class InventoryLayout(BotArenaView):
                     if self.category == "plating"
                     else self.cog.registry.get_component(item.part_name)
                 )
-                if part:
+                if part and not part.prize_only:
                     sell_price = int(part.cost * SELL_PERCENTAGE)
                     options.append(
                         discord.SelectOption(

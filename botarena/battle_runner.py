@@ -197,6 +197,8 @@ def _add_bot_from_data(engine: BattleEngine, bot_data: dict, team: int):
         projectile_type=component.get("projectile_type", "bullet"),
         muzzle_offset=component.get("render_offset_x", 92.0),  # Use weapon's render offset as muzzle position
         turret_rotation_speed=chassis.get("turret_rotation_speed", 20.0),  # Turret rotation determined by chassis
+        spread=component.get("spread", 0.0),
+        splash_radius=component.get("splash_radius", 0),
     )
 
 
