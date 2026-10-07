@@ -159,6 +159,7 @@ tests/
 !tickets/tests/
 !paltools/tests/
 !swearjar/tests/
+!brickbreaker/tests/
 /levelup/data/backgrounds/Thumbs.db
 testcog/
 /reqbackup.txt
@@ -205,15 +206,16 @@ templates/
 references/
 makelocales.py
 .tmp/
-
-# WIP cogs
-arkadia/
-dungeon/
-design_docs/
-v2/
-scratch/
-inkblade/
 memories/
 docs/
 graphify-out/
 settings.local.json
+design_docs/
+v2/
+scratch/
+
+# WIP cogs
+arkadia/
+dungeon/
+inkblade/
+brickbreaker/
