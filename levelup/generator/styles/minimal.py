@@ -404,108 +404,20 @@ def generate_minimal_profile(
         card.save(buffer, format="WEBP", quality=90)
         return buffer.getvalue(), False
 
-    # --- Animated render (avatar animated, bg static) ---
-    if pfp_animated and not bg_animated:
-        card_base = prepare_background(bg.copy())
-        stats_layer = create_stats_layer()
-        card_base = Image.alpha_composite(card_base, stats_layer)
-
-        avg_duration = imgtools.get_avg_duration(pfp)
-        frames: t.List[Image.Image] = []
-
-        for frame_num in range(pfp.n_frames):
-            pfp.seek(frame_num)
-            frame = card_base.copy()
-            avatar_layer = create_avatar_layer(pfp.copy())
-            frame = Image.alpha_composite(frame, avatar_layer)
-            frames.append(frame)
-
-        buffer = BytesIO()
-        frames[0].save(
-            buffer,
-            format="GIF",
-            save_all=True,
-            append_images=frames[1:],
-            duration=avg_duration,
-            loop=0,
-            optimize=True,
-        )
-        buffer.seek(0)
-
-        if debug:
-            Image.open(buffer).show()
-
-        return buffer.getvalue(), True
-
-    # --- Animated render (bg animated, avatar static) ---
-    if bg_animated and not pfp_animated:
-        stats_layer = create_stats_layer()
-        avatar_layer = create_avatar_layer(pfp.copy())
-
-        avg_duration = imgtools.get_avg_duration(bg)
-        frames: t.List[Image.Image] = []
-
-        for frame_num in range(bg.n_frames):
-            bg.seek(frame_num)
-            frame = prepare_background(bg.copy())
-            frame = Image.alpha_composite(frame, stats_layer)
-            frame = Image.alpha_composite(frame, avatar_layer)
-            frames.append(frame)
-
-        buffer = BytesIO()
-        frames[0].save(
-            buffer,
-            format="GIF",
-            save_all=True,
-            append_images=frames[1:],
-            duration=avg_duration,
-            loop=0,
-            optimize=True,
-        )
-        buffer.seek(0)
-
-        if debug:
-            Image.open(buffer).show()
-
-        return buffer.getvalue(), True
-
-    # --- Both animated (favor avatar timing) ---
+    # --- Animated render ---
+    # Each source frame is prepared once, then the layers are lined up so both play at their own speed
     stats_layer = create_stats_layer()
-    pfp_duration = imgtools.get_avg_duration(pfp)
-    bg_duration = imgtools.get_avg_duration(bg)
+    bg_layer = imgtools.AnimationLayer(bg, prepare_background)
+    avatar_layer = imgtools.AnimationLayer(pfp, create_avatar_layer)
 
-    pfp_frames = pfp.n_frames
-    bg_frames = bg.n_frames
+    def render_frame(indexes: t.Tuple[int, int]) -> Image.Image:
+        frame = Image.alpha_composite(bg_layer.get(indexes[0]), stats_layer)
+        return Image.alpha_composite(frame, avatar_layer.get(indexes[1]))
 
-    # Use avatar frame count, cycle background
-    frames: t.List[Image.Image] = []
-    for frame_num in range(pfp_frames):
-        pfp.seek(frame_num)
-        bg_frame_idx = (frame_num * bg_duration // pfp_duration) % bg_frames
-        bg.seek(bg_frame_idx)
-
-        frame = prepare_background(bg.copy())
-        frame = Image.alpha_composite(frame, stats_layer)
-        avatar_layer = create_avatar_layer(pfp.copy())
-        frame = Image.alpha_composite(frame, avatar_layer)
-        frames.append(frame)
-
-    buffer = BytesIO()
-    frames[0].save(
-        buffer,
-        format="GIF",
-        save_all=True,
-        append_images=frames[1:],
-        duration=pfp_duration,
-        loop=0,
-        optimize=True,
-    )
-    buffer.seek(0)
-
+    result = imgtools.render_animation([bg_layer, avatar_layer], render_frame)
     if debug:
-        Image.open(buffer).show()
-
-    return buffer.getvalue(), True
+        Image.open(BytesIO(result)).show()
+    return result, True
 
 
 if __name__ == "__main__":

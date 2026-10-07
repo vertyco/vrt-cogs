@@ -1,12 +1,11 @@
 import importlib.util
 import logging
-import math
 import sys
 import typing as t
 from io import BytesIO
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont, ImageSequence, UnidentifiedImageError
+from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
 from redbot.core.i18n import Translator
 from redbot.core.utils.chat_formatting import humanize_number
 
@@ -107,9 +106,8 @@ def generate_default_profile(
 ) -> t.Tuple[bytes, bool]:
     """
     Generate a full profile image with customizable parameters.
-    If the avatar is animated and not the background, the avatar will be rendered as a gif.
-    If the background is animated and not the avatar, the background will be rendered as a gif.
-    If both are animated, the avatar will be rendered as a gif and the background will be rendered as a static image.
+    If render_gif is enabled and the avatar and/or background is animated, the profile is rendered as a gif.
+    When both are animated they are synced so each plays at its own speed and the gif loops seamlessly.
     To optimize performance, the profile will be generated in 3 layers, the background, the avatar, and the stats.
     The stats layer will be generated as a separate image and then pasted onto the background.
 
@@ -474,178 +472,33 @@ def generate_default_profile(
         card.close()
         return buffer.getvalue(), False
 
-    if pfp_animated and not bg_animated:
-        if card.mode != "RGBA":
-            log.debug(f"Converting card mode '{card.mode}' to RGBA")
-            card = card.convert("RGBA")
-        card = imgtools.fit_aspect_ratio(card, desired_card_size)
+    # ---------------- Animated render ----------------
+    # Each source frame is prepared once, then the layers are lined up so both play at their own speed
+    def prepare_card(frame: Image.Image) -> Image.Image:
+        frame = imgtools.fit_aspect_ratio(frame, desired_card_size)
         if blur:
-            blur_section = imgtools.blur_section(card, (blur_edge, 0, card.width, card.height))
-            # Paste onto the stats
-            card.paste(blur_section, (blur_edge, 0), blur_section)
+            blur_section = imgtools.blur_section(frame, (blur_edge, 0, frame.width, frame.height))
+            frame.paste(blur_section, (blur_edge, 0), blur_section)
+        return frame
 
-        card.paste(stats, (0, 0), stats)
+    def prepare_pfp(frame: Image.Image) -> Image.Image:
+        frame = frame.resize(desired_pfp_size, Image.Resampling.LANCZOS)
+        return imgtools.make_profile_circle(frame)
 
-        avg_duration = imgtools.get_avg_duration(pfp)
-        log.debug(f"Rendering pfp as gif with avg duration of {avg_duration}ms")
-        frames: t.List[Image.Image] = []
-        for frame in range(getattr(pfp, "n_frames", 1)):
-            pfp.seek(frame)
-            # Prepare copies of the card, stats, and pfp
-            card_frame = card.copy()
-            pfp_frame = pfp.copy()
-            if pfp_frame.mode != "RGBA":
-                pfp_frame = pfp_frame.convert("RGBA")
-            # Resize the profile image for each frame
-            pfp_frame = pfp_frame.resize(desired_pfp_size, Image.Resampling.NEAREST)
-            # Crop the profile image into a circle
-            pfp_frame = imgtools.make_profile_circle(pfp_frame, method=Image.Resampling.NEAREST)
-            # Paste the profile image onto the card
-            card_frame.paste(pfp_frame, (circle_x, circle_y), pfp_frame)
-            frames.append(card_frame)
+    card_layer = imgtools.AnimationLayer(card, prepare_card)
+    pfp_layer = imgtools.AnimationLayer(pfp, prepare_pfp)
 
-        buffer = BytesIO()
-        frames[0].save(
-            buffer,
-            format="GIF",
-            save_all=True,
-            append_images=frames[1:],
-            duration=avg_duration,
-            loop=0,
-            quality=75,
-            optimize=True,
-        )
-        buffer.seek(0)
-        if debug:
-            Image.open(buffer).show()
-        return buffer.getvalue(), True
-    elif bg_animated and not pfp_animated:
-        avg_duration = imgtools.get_avg_duration(card)
-        log.debug(f"Rendering card as gif with avg duration of {avg_duration}ms")
-        frames: t.List[Image.Image] = []
-
-        if pfp.mode != "RGBA":
-            log.debug(f"Converting pfp mode '{pfp.mode}' to RGBA")
-            pfp = pfp.convert("RGBA")
-        pfp = pfp.resize(desired_pfp_size, Image.Resampling.LANCZOS)
-        # Crop the profile image into a circle
-        pfp = imgtools.make_profile_circle(pfp)
-        for frame in range(getattr(card, "n_frames", 1)):
-            card.seek(frame)
-            # Prepare copies of the card and stats
-            card_frame = card.copy()
-            card_frame = imgtools.fit_aspect_ratio(card_frame, desired_card_size)
-            if card_frame.mode != "RGBA":
-                card_frame = card_frame.convert("RGBA")
-
-            # Paste items onto the card
-            if blur:
-                blur_section = imgtools.blur_section(card_frame, (blur_edge, 0, card_frame.width, card_frame.height))
-                card_frame.paste(blur_section, (blur_edge, 0), blur_section)
-
-            card_frame.paste(pfp, (circle_x, circle_y), pfp)
-            card_frame.paste(stats, (0, 0), stats)
-
-            frames.append(card_frame)
-
-        buffer = BytesIO()
-        frames[0].save(
-            buffer,
-            format="GIF",
-            save_all=True,
-            append_images=frames[1:],
-            duration=avg_duration,
-            loop=0,
-            quality=75,
-            optimize=True,
-        )
-        buffer.seek(0)
-        if debug:
-            Image.open(buffer).show()
-        return buffer.getvalue(), True
-
-    # If we're here, both the avatar and background are gifs
-    # Figure out how to merge the two frame counts and durations together
-    # Calculate frame durations based on the LCM
-    pfp_duration = imgtools.get_avg_duration(pfp)  # example: 50ms
-    card_duration = imgtools.get_avg_duration(card)  # example: 100ms
-    log.debug(f"PFP duration: {pfp_duration}ms, Card duration: {card_duration}ms")
-    # Figure out how to round the durations
-    # Favor the card's duration time over the pfp
-    # Round both durations to the nearest X ms based on what will get the closest to the LCM
-    pfp_duration = round(card_duration, -1)  # Round to the nearest 10ms
-    card_duration = round(card_duration, -1)  # Round to the nearest 10ms
-
-    log.debug(f"Modified PFP duration: {pfp_duration}ms, Card duration: {card_duration}ms")
-    combined_duration = math.lcm(pfp_duration, card_duration)  # example: 100ms would be the LCM of 50 and 100
-    log.debug(f"Combined duration: {combined_duration}ms")
-    # The combined duration should be no more than 20% offset from the image with the highest duration
-    max_duration = max(pfp_duration, card_duration)
-    if combined_duration > max_duration * 1.2:
-        log.debug(f"Combined duration is more than 20% offset from the max duration ({max_duration}ms)")
-        combined_duration = max_duration
-
-    pfp_frame_count = getattr(pfp, "n_frames", 1)
-    card_frame_count = getattr(card, "n_frames", 1)
-    total_pfp_duration = pfp_frame_count * pfp_duration  # example: 2250ms
-    total_card_duration = card_frame_count * card_duration  # example: 3300ms
-    # Total duration for the combined animation cycle (LCM of 2250 and 3300)
-    total_duration = math.lcm(total_pfp_duration, total_card_duration)  # example: 9900ms
-    num_combined_frames = total_duration // combined_duration
-
-    # The maximum frame count should be no more than 20% offset from the image with the highest frame count to avoid filesize bloat
-    max_frame_count = max(pfp_frame_count, card_frame_count) * 1.2
-    max_frame_count = min(round(max_frame_count), num_combined_frames)
-    log.debug(f"Max frame count: {max_frame_count}")
-    # Create a list to store the combined frames
-    combined_frames = []
-    for frame_num in range(max_frame_count):
-        time = frame_num * combined_duration
-
-        # Calculate the frame index for both the card and pfp
-        card_frame_index = (time // card_duration) % card_frame_count
-        pfp_frame_index = (time // pfp_duration) % pfp_frame_count
-
-        # Get the frames for the card and pfp
-        card_frame = ImageSequence.Iterator(card)[card_frame_index]
-        pfp_frame = ImageSequence.Iterator(pfp)[pfp_frame_index]
-
-        card_frame = imgtools.fit_aspect_ratio(card_frame, desired_card_size)
-        if card_frame.mode != "RGBA":
-            card_frame = card_frame.convert("RGBA")
-
-        if blur:
-            blur_section = imgtools.blur_section(card_frame, (blur_edge, 0, card_frame.width, card_frame.height))
-            # Paste onto the stats
-            card_frame.paste(blur_section, (blur_edge, 0), blur_section)
-        if pfp_frame.mode != "RGBA":
-            pfp_frame = pfp_frame.convert("RGBA")
-
-        pfp_frame = pfp_frame.resize(desired_pfp_size, Image.Resampling.NEAREST)
-        pfp_frame = imgtools.make_profile_circle(pfp_frame, method=Image.Resampling.NEAREST)
-
-        card_frame.paste(pfp_frame, (circle_x, circle_y), pfp_frame)
+    def render_frame(indexes: t.Tuple[int, int]) -> Image.Image:
+        card_frame = card_layer.get(indexes[0]).copy()
         card_frame.paste(stats, (0, 0), stats)
+        pfp_frame = pfp_layer.get(indexes[1])
+        card_frame.paste(pfp_frame, (circle_x, circle_y), pfp_frame)
+        return card_frame
 
-        combined_frames.append(card_frame)
-
-    buffer = BytesIO()
-    combined_frames[0].save(
-        buffer,
-        format="GIF",
-        save_all=True,
-        append_images=combined_frames[1:],
-        loop=0,
-        duration=combined_duration,
-        quality=75,
-        optimize=True,
-    )
-    buffer.seek(0)
-
+    result = imgtools.render_animation([card_layer, pfp_layer], render_frame)
     if debug:
-        Image.open(buffer).show()
-
-    return buffer.getvalue(), True
+        Image.open(BytesIO(result)).show()
+    return result, True
 
 
 if __name__ == "__main__":

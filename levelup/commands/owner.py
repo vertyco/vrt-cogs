@@ -347,6 +347,8 @@ class Owner(MixinMeta):
                 )
 
             img_bytes, animated = await asyncio.to_thread(_run)
-            img_bytes, animated, ext = imgtools.fit_discord_upload_limit(img_bytes, ctx.guild.filesize_limit)
+            img_bytes, animated, ext = await asyncio.to_thread(
+                imgtools.fit_discord_upload_limit, img_bytes, ctx.guild.filesize_limit
+            )
             file = discord.File(BytesIO(img_bytes), filename=f"levelup.{ext}")
             await ctx.send(file=file)

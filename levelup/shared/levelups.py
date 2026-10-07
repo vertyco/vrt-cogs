@@ -243,7 +243,9 @@ class LevelUps(MixinMeta):
 
                 img_bytes, animated = await asyncio.to_thread(_run)
 
-            img_bytes, animated, ext = imgtools.fit_discord_upload_limit(img_bytes, guild.filesize_limit)
+            img_bytes, animated, ext = await asyncio.to_thread(
+                imgtools.fit_discord_upload_limit, img_bytes, guild.filesize_limit
+            )
             if conf.notifydm:
                 file = discord.File(BytesIO(img_bytes), filename=f"levelup.{ext}")
                 with suppress(discord.HTTPException):

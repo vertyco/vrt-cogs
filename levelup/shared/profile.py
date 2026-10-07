@@ -363,7 +363,7 @@ class ProfileFormatting(MixinMeta):
                             data = await response.json()
                             img_b64, animated = data["b64"], data["animated"]
                             img_bytes = base64.b64decode(img_b64)
-                            return self.make_profile_file(member, img_bytes, animated)
+                            return await asyncio.to_thread(self.make_profile_file, member, img_bytes, animated)
                         log.error(f"Failed to fetch profile from API: {response.status}")
             except Exception as e:
                 log.error("Failed to fetch profile from API, falling back to subprocess", exc_info=e)
@@ -379,7 +379,7 @@ class ProfileFormatting(MixinMeta):
                 output_path.unlink()
             except Exception:
                 pass
-            return self.make_profile_file(member, img_bytes, animated)
+            return await asyncio.to_thread(self.make_profile_file, member, img_bytes, animated)
 
         # Final fallback - run in-process (should rarely happen)
         log.warning("Subprocess failed, falling back to in-process generation")

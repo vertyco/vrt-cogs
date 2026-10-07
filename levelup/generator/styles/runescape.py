@@ -172,36 +172,24 @@ def generate_runescape_profile(
     )
     # ---------------- Start finalizing the image ----------------
     if pfp_animated and render_gif:
-        avg_duration = imgtools.get_avg_duration(pfp)
-        frames: t.List[Image.Image] = []
-        for frame in range(pfp.n_frames):
-            pfp.seek(frame)
-            # Prep each frame
-            card_frame = card.copy()
-            pfp_frame = pfp.copy()
-            if pfp_frame.mode != "RGBA":
-                pfp_frame = pfp_frame.convert("RGBA")
-            pfp_frame = pfp_frame.resize((145, 145), Image.Resampling.NEAREST)
-            pfp_frame = imgtools.make_profile_circle(pfp_frame, Image.Resampling.NEAREST)
-            # Place the pfp
-            card_frame.paste(pfp_frame, (65, 9), pfp_frame)
-            # Place the template
-            card_frame.paste(template, (0, 0), template)
-            frames.append(card_frame)
 
-        buffer = BytesIO()
-        frames[0].save(
-            buffer,
-            format="GIF",
-            save_all=True,
-            append_images=frames[1:],
-            duration=avg_duration,
-            loop=0,
-        )
-        buffer.seek(0)
+        def prepare_pfp(frame: Image.Image) -> Image.Image:
+            frame = frame.resize((145, 145), Image.Resampling.LANCZOS)
+            return imgtools.make_profile_circle(frame)
+
+        pfp_layer = imgtools.AnimationLayer(pfp, prepare_pfp)
+
+        def render_frame(indexes: t.Tuple[int]) -> Image.Image:
+            card_frame = card.copy()
+            pfp_frame = pfp_layer.get(indexes[0])
+            card_frame.paste(pfp_frame, (65, 9), pfp_frame)
+            card_frame.paste(template, (0, 0), template)
+            return card_frame
+
+        result = imgtools.render_animation([pfp_layer], render_frame)
         if debug:
-            Image.open(buffer).show()
-        return buffer.getvalue(), True
+            Image.open(BytesIO(result)).show()
+        return result, True
 
     # Place the pfp
     if pfp.mode != "RGBA":

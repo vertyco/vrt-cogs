@@ -1,3 +1,20 @@
+# [5.2.10] (2026-10-07)
+
+## Bug Fixes
+
+- Animated profiles and level-up images with both an animated avatar and an animated background now play each one at its own speed and loop seamlessly. Before, one of them ran at the other's speed (up to several times too fast or slow) and the loop jumped partway through
+- Animated profiles keep each frame's own timing instead of averaging it, so GIFs that pause on some frames play correctly
+- GIF frames with a delay of 10ms or less now play at 100ms like they do in Discord, instead of breaking the timing
+- The minimal and gaming styles no longer cut an animated background short when the avatar is also animated
+- Animated level-up images no longer error out for some combinations of avatar and background speeds
+- Avatars keep their own transparency inside the profile circle
+- Shrinking an oversized image to fit the upload limit no longer freezes the bot while it works
+
+## Improvements
+
+- Animated profiles are smaller: frames where only the avatar moves store just the avatar, and very long or detailed animations get fewer frames instead of producing files of 20MB+
+- Animated avatars are resized smoothly instead of with jagged nearest neighbor scaling
+
 # [5.2.9] (2026-09-25)
 
 ## Removed
