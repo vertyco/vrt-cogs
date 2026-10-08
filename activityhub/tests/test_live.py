@@ -289,6 +289,30 @@ async def test_a_player_who_stops_answering_pings_is_dropped(client, hub, server
 
 
 @pytest.mark.asyncio
+async def test_a_page_that_answers_the_heartbeat_stays_even_when_pings_are_lost(client, hub, server, demo, monkeypatch):
+    monkeypatch.setattr(game_routes, "HEARTBEAT_SECONDS", 0.2)
+    # Like a proxy that drops WebSocket ping frames: only sdk.js's answer to the JSON ping gets through
+    ws = await client.ws_connect("/games/demo/ws", autoping=False)
+    await ws.send_json({"session": session_token(hub)})
+    loop = asyncio.get_running_loop()
+    end = loop.time() + 6 * 0.2
+    heartbeats = 0
+    while (left := end - loop.time()) > 0:
+        try:
+            msg = await ws.receive(timeout=left)
+        except asyncio.TimeoutError:
+            break
+        if msg.type == WSMsgType.TEXT and msg.json() == PING:
+            heartbeats += 1
+            await ws.send_json({"activityhub": "pong"})
+    assert heartbeats >= 3
+    assert len(server.rooms.all()) == 1 and ("leave", MEMBER_ID) not in demo.events
+    # The answer is the hub's own, so the game never sees it
+    assert not [event for event in demo.events if event[0] == "message"]
+    await ws.close()
+
+
+@pytest.mark.asyncio
 async def test_a_quiet_player_who_answers_pings_stays(client, hub, server, demo, monkeypatch):
     monkeypatch.setattr(game_routes, "HEARTBEAT_SECONDS", 0.2)
     ws = await joined(client, hub)

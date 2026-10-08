@@ -95,9 +95,10 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
             log.error("ActivityHub web server could not listen on %s:%s", host, port, exc_info=e)
 
     async def add_game(self, cog: commands.Cog) -> None:
-        await self.registry.add(cog)
-        # The cog may have unloaded while its activityhub_game() was running
+        # The cog may unload, or be replaced by a reloaded copy, while its activityhub_game() runs
+        await self.registry.add(cog, still_loaded=lambda: self.bot.get_cog(cog.qualified_name) is cog)
         if self.bot.get_cog(cog.qualified_name) is not cog:
+            # Also drops a refusal recorded for a copy that is gone
             self.registry.remove(cog)
 
     @commands.Cog.listener()

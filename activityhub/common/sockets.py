@@ -13,6 +13,9 @@ log = logging.getLogger("red.vrt.activityhub.sockets")
 # Hub messages on a live connection. sdk.js handles these itself and never passes them to the game
 READY = {"activityhub": "ready"}
 PING = {"activityhub": "ping"}
+# sdk.js answers PING with this. Some proxies drop WebSocket ping frames, so a page's reply that travels as an
+# ordinary message is what proves the player is still there. The hub never hands it to the game
+PONG = {"activityhub": "pong"}
 RESERVED_FIELD = "activityhub"
 
 CLOSE_GOING_AWAY = 1001

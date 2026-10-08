@@ -74,6 +74,15 @@ async def test_game_files_are_served_under_any_build(client, demo):
 
 
 @pytest.mark.asyncio
+async def test_a_link_to_index_html_gets_the_page_with_the_helper(client, demo):
+    # A "Play again" link to index.html, or a reload of it, would otherwise load the page without "activityhub"
+    resp = await client.get("/games/demo/anything/index.html")
+    text = await resp.text()
+    assert resp.status == 200 and resp.headers["Cache-Control"] == "no-cache"
+    assert '<base href="/games/demo/' in text and '<script type="importmap">' in text
+
+
+@pytest.mark.asyncio
 async def test_game_files_cannot_escape_web_dir(client, demo):
     for path in ("/games/demo/b/..%2Fsecret.txt", "/games/demo/b/..%5Csecret.txt", "/games/demo/b/", "/games/demo/b/x"):
         resp = await client.get(path)

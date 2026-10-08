@@ -30,6 +30,7 @@ from .sockets import (
     CLOSE_SESSION,
     CLOSE_TURNED_OFF,
     PING,
+    PONG,
     READY,
     Connection,
 )
@@ -140,6 +141,9 @@ class GameRoutes:
         if request.method not in READ_METHODS:
             raise web.HTTPMethodNotAllowed(request.method, READ_METHODS)
         target = resolve_inside(game.web_dir, path)
+        if target is not None and target == (game.web_dir / "index.html").resolve():
+            # A link or reload to index.html itself gets the page with the hub's tags, so the helper still loads
+            return await self.page(request, game)
         if target is not None:
             return file_response(target)
         if not is_page_load(request):
@@ -318,13 +322,13 @@ class GameRoutes:
                 msg = await conn.ws.receive(timeout=HEARTBEAT_SECONDS)
             except asyncio.TimeoutError as e:
                 if pinged:
-                    # Not even the browser's automatic answer to the last ping came back: the player is gone
-                    # (a phone that lost its network), so leave runs
+                    # Neither the browser's automatic answer to the last ping nor the page's came back: the player
+                    # is gone (a phone that lost its network), so leave runs
                     log.debug("No answer to a heartbeat on %s, closing: %r", conn.game.key, e)
                     conn.closing = CLOSE_GOING_AWAY
                     return
-                # The receive timeout is the heartbeat timer: nothing arrived, so send something.
-                # Browsers answer protocol pings by themselves; the JSON ping keeps proxies happy
+                # The receive timeout is the heartbeat timer: nothing arrived, so send something. Browsers answer
+                # protocol pings by themselves, and sdk.js answers the JSON ping, which also keeps proxies happy
                 log.debug("No message in %s seconds, sending a heartbeat: %r", HEARTBEAT_SECONDS, e)
                 pinged = True
                 await conn.write(conn.ws.ping())
@@ -346,6 +350,9 @@ class GameRoutes:
             data = json.loads(text)
         except ValueError as e:
             log.debug("Ignored a message that isn't JSON on %s: %s", conn.game.key, e)
+            return
+        if data == PONG:
+            # The page's answer to a heartbeat. Arriving at all was its whole job
             return
         try:
             await handler(conn.ctx, conn, data)

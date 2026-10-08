@@ -326,8 +326,11 @@ class GameRegistry:
         # Cog name to the key it was refused because another cog held it, so it can have another go once that frees
         self.clashes: dict[str, str] = {}
 
-    async def add(self, cog: t.Any) -> Game | None:
-        """Register a cog's game. Returns None when the cog has no game or its description was refused"""
+    async def add(self, cog: t.Any, still_loaded: t.Callable[[], bool] = lambda: True) -> Game | None:
+        """
+        Register a cog's game. Returns None when the cog has no game, its description was refused, or
+        still_loaded() says the cog unloaded (or was replaced by a reloaded copy) while it described itself
+        """
         if not hasattr(cog, "activityhub_game"):
             return None
         cog_name = cog.qualified_name
@@ -340,6 +343,10 @@ class GameRegistry:
         except Exception as e:
             log.error("activityhub_game() of %s raised", cog_name, exc_info=e)
             return self.refuse(cog, f"activityhub_game() raised {type(e).__name__}: {e}")
+        # Checked before anything changes: an old copy finishing after its reloaded copy registered would
+        # otherwise replace the new copy's game, and then be removed itself, leaving the cog with no game
+        if not still_loaded():
+            return None
         holder = self.games.get(game.key)
         if holder is not None and holder.cog.qualified_name != cog_name:
             self.clashes[cog_name] = game.key

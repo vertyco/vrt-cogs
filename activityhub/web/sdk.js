@@ -144,7 +144,11 @@ function openSocket(root, session) {
       if (data && data.activityhub === "ready") {
         ready = true;
         resolve(conn);
-      } else if (!(data && data.activityhub === "ping")) {
+      } else if (data && data.activityhub === "ping") {
+        // The hub's heartbeat. Answering it shows the hub this player is still here, even through a proxy that
+        // drops the browser's own WebSocket pings
+        ws.send(JSON.stringify({ activityhub: "pong" }));
+      } else {
         if (handlers.length) {
           handlers.forEach((handler) => handler(data));
         } else {

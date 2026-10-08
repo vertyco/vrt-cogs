@@ -227,3 +227,27 @@ async def test_add_game_drops_a_cog_that_unloaded_while_describing_itself(tmp_pa
     hub.bot = SimpleNamespace(get_cog=lambda name: cog if still_loaded else None)
     await ActivityHub.add_game(hub, cog)
     assert ("demo" in hub.registry.games) is still_loaded
+
+
+@pytest.mark.asyncio
+async def test_an_old_copy_finishing_after_its_reload_keeps_the_new_game(tmp_path):
+    web = write_demo_web(tmp_path / "demo")
+    release = asyncio.Event()
+
+    class SlowDemo(DemoCog):
+        async def activityhub_game(self):
+            await release.wait()
+            return await super().activityhub_game()
+
+    old, new = SlowDemo(web), DemoCog(web)
+    loaded = {"cog": old}
+    hub = make_hub()
+    hub.bot = SimpleNamespace(get_cog=lambda name: loaded["cog"])
+    describing = asyncio.create_task(ActivityHub.add_game(hub, old))
+    await asyncio.sleep(0)
+    # [p]reload: the new copy registers while the old one is still describing itself
+    loaded["cog"] = new
+    await ActivityHub.add_game(hub, new)
+    release.set()
+    await asyncio.wait_for(describing, 1)
+    assert hub.registry.games["demo"].cog is new
