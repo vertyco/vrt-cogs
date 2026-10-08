@@ -46,6 +46,77 @@ async def test_dm_instance_has_no_server():
     assert location == {"guild_id": None, "channel_id": 5, "users": [str(MEMBER_ID)]}
 
 
+SLASH = {"name": "activities", "description": "Open the menu", "type": 1}
+SAVED_ENTRY_POINT = {
+    "id": "5",
+    "application_id": str(APP_ID),
+    "version": "9",
+    "name": "play",
+    "description": "Custom launch",
+    "type": 4,
+    "handler": 2,
+}
+
+
+class SyncHttp:
+    """Global commands Discord already has, and what each bulk sync sent"""
+
+    def __init__(self, current: list[dict]):
+        self.current = current
+        self.synced = []
+
+    async def get_global_commands(self, application_id):
+        return self.current
+
+    async def bulk_upsert_global_commands(self, application_id, payload):
+        self.synced.append(payload)
+        return payload
+
+
+def sync_bot(current: list[dict], embedded: bool = True):
+    return SimpleNamespace(
+        application_id=APP_ID, http=SyncHttp(current), application_flags=SimpleNamespace(embedded=embedded)
+    )
+
+
+@pytest.mark.asyncio
+async def test_sync_carries_the_saved_entry_point_without_read_only_fields():
+    bot = sync_bot([SLASH, SAVED_ENTRY_POINT])
+    discord_api.keep_entry_point(bot)
+    await bot.http.bulk_upsert_global_commands(APP_ID, [SLASH])
+    entry = {"name": "play", "description": "Custom launch", "type": 4, "handler": 2}
+    assert bot.http.synced == [[SLASH, entry]]
+
+
+@pytest.mark.asyncio
+async def test_sync_adds_a_default_entry_point_when_none_exists():
+    bot = sync_bot([SLASH])
+    discord_api.keep_entry_point(bot)
+    await bot.http.bulk_upsert_global_commands(APP_ID, [SLASH])
+    assert bot.http.synced == [[SLASH, discord_api.DEFAULT_ENTRY_POINT]]
+
+
+@pytest.mark.asyncio
+async def test_sync_adds_nothing_without_activities():
+    bot = sync_bot([SLASH], embedded=False)
+
+    async def info():
+        return SimpleNamespace(flags=SimpleNamespace(embedded=False))
+
+    bot.application_info = info
+    discord_api.keep_entry_point(bot)
+    await bot.http.bulk_upsert_global_commands(APP_ID, [SLASH])
+    assert bot.http.synced == [[SLASH]]
+
+
+@pytest.mark.asyncio
+async def test_unload_restores_the_plain_sync():
+    bot = sync_bot([])
+    hook = discord_api.keep_entry_point(bot)
+    discord_api.drop_entry_point_hook(bot, hook)
+    assert "bulk_upsert_global_commands" not in bot.http.__dict__
+
+
 @pytest.mark.asyncio
 async def test_failed_instance_request_gets_none():
     error = discord.HTTPException(SimpleNamespace(status=404, reason="Not Found"), "x")

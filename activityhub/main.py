@@ -8,6 +8,7 @@ from .abc import CompositeMetaClass
 from .bundled.games import bundled_games
 from .bundled.scores import ScoreBoard
 from .commands import Commands
+from .common.discord_api import drop_entry_point_hook, keep_entry_point
 from .common.games import GameRegistry
 from .common.server import HubServer
 from .common.sessions import LaunchMemory, SessionStore
@@ -24,7 +25,7 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.1.0b"
+    __version__ = "0.1.4b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -56,6 +57,7 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
         self.launches.forget_user(user_id)
 
     async def cog_load(self) -> None:
+        self.entry_point_hook = keep_entry_point(self.bot)
         self.open_view = OpenView(self)
         self.bot.add_view(self.open_view)
         await self.start_server()
@@ -73,7 +75,9 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
             ]
         except BaseException:
             # discord.py never calls cog_unload when cog_load fails or is cancelled (at startup Red cancels a load
-            # that takes over 30 seconds), so without this the port would stay taken until the bot restarts
+            # that takes over 30 seconds), so without this the port would stay taken until the bot restarts, and
+            # slash syncs would keep going through this copy's hook
+            drop_entry_point_hook(self.bot, self.entry_point_hook)
             self.open_view.stop()
             await self.server.stop()
             raise
@@ -81,6 +85,7 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
     async def cog_unload(self) -> None:
         for task in self.scans:
             task.cancel()
+        drop_entry_point_hook(self.bot, self.entry_point_hook)
         self.open_view.stop()
         await self.server.stop()
 

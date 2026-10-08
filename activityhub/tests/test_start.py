@@ -56,6 +56,8 @@ def loading_hub(monkeypatch, loaded: dict) -> SimpleNamespace:
     hub = make_hub()
     hub.steps = []
     monkeypatch.setattr(main, "OpenView", lambda cog: SimpleNamespace(stop=lambda: hub.steps.append("view stopped")))
+    monkeypatch.setattr(main, "keep_entry_point", lambda bot: hub.steps.append("sync hook"))
+    monkeypatch.setattr(main, "drop_entry_point_hook", lambda bot, hook: hub.steps.append("sync hook dropped"))
     hub.bot = SimpleNamespace(cogs=loaded, add_view=lambda view: hub.steps.append("view"), get_cog=loaded.get)
 
     async def start_server():
@@ -85,7 +87,7 @@ async def test_cog_load_does_not_wait_for_game_cogs_describing_themselves(monkey
 
     hub.start_server = start_server
     await asyncio.wait_for(ActivityHub.cog_load(hub), 1)
-    assert hub.steps == ["view", "server"]
+    assert hub.steps == ["sync hook", "view", "server"]
     assert set(hub.registry.games) == {"snake", "2048", "brickbreaker"}
     # Only game cogs get a task
     assert len(hub.scans) == 1
@@ -103,7 +105,7 @@ async def test_cog_unload_cancels_a_scan_still_waiting(monkeypatch, tmp_path):
     with pytest.raises(asyncio.CancelledError):
         await asyncio.wait_for(hub.scans[0], 1)
     assert "demo" not in hub.registry.games
-    assert hub.steps == ["view", "server", "view stopped", "server stopped"]
+    assert hub.steps == ["sync hook", "view", "server", "sync hook dropped", "view stopped", "server stopped"]
 
 
 def free_port() -> int:
@@ -117,6 +119,8 @@ def free_port() -> int:
 async def test_a_failed_cog_load_releases_the_port(monkeypatch, hub, server, failure):
     stopped = []
     monkeypatch.setattr(main, "OpenView", lambda cog: SimpleNamespace(stop=lambda: stopped.append("view")))
+    monkeypatch.setattr(main, "keep_entry_point", lambda bot: "hook")
+    monkeypatch.setattr(main, "drop_entry_point_hook", lambda bot, hook: stopped.append(f"sync {hook}"))
     port = free_port()
     await hub.config.port.set(port)
     hub.bot.add_view = lambda view: None
@@ -130,7 +134,7 @@ async def test_a_failed_cog_load_releases_the_port(monkeypatch, hub, server, fai
     hub.registry.add = add
     with pytest.raises(type(failure)):
         await ActivityHub.cog_load(hub)
-    assert not server.running and stopped == ["view"]
+    assert not server.running and stopped == ["sync hook", "view"]
     with socket.socket() as sock:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind(("127.0.0.1", port))

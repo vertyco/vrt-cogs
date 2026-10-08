@@ -279,7 +279,10 @@ body[data-theme="orb"] .bar {
   padding: 18px max(16px, 3vw);
 }
 
+/* The padding gives the glow room inside the name's clipped box, and the margin puts the text back in place */
 body[data-theme="orb"] .who-name {
+  margin: -8px -12px;
+  padding: 8px 12px;
   color: var(--orb-bright);
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -404,7 +407,7 @@ body[data-theme="orb"] .notice {
 }
 
 /* The tab starts under its pod, so the pod looks plugged into it */
-.orb-menu .pill .tab {
+.orb-menu .pill .plate {
   display: flex;
   flex: 1;
   align-items: center;
@@ -427,12 +430,12 @@ body[data-theme="orb"] .notice {
     color 0.15s;
 }
 
-.orb-menu .pill:hover .tab {
+.orb-menu .pill:hover .plate {
   border-color: rgba(225, 255, 160, 0.75);
   color: var(--orb-text);
 }
 
-.orb-menu .pill.selected .tab {
+.orb-menu .pill.selected .plate {
   border-color: #f2ffc4;
   background: linear-gradient(180deg, #effca8 0%, #c6eb48 42%, #8cc51e 100%);
   box-shadow:
@@ -624,7 +627,7 @@ body[data-theme="orb"] .notice {
     flex-direction: column;
     gap: 10px;
     overflow: visible;
-    padding: 6px 12px 6px 0;
+    padding: 6px 0;
     pointer-events: auto;
   }
 
@@ -639,13 +642,18 @@ body[data-theme="orb"] .notice {
     display: none;
   }
 
-  .orb-menu .pill .tab {
+  .orb-menu .pill .plate {
     gap: 12px;
     height: auto;
     min-height: 54px;
     margin: 0;
     padding: 10px 16px;
     border-radius: 4px 18px 4px 18px;
+  }
+
+  /* A column has no ring to lean off of, so the picked tab stays in line with the rest */
+  .orb-menu .pill.selected .plate {
+    transform: none;
   }
 
   .orb-menu .pill .icon {

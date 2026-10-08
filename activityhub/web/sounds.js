@@ -70,7 +70,7 @@ const FILES = {
   menu: new URL("sounds/menu.mp3", import.meta.url).href,
   ambient: new URL("sounds/ambient.mp3", import.meta.url).href,
 };
-const VOLUME = 0.6;
+const VOLUME = 0.3;
 const AMBIENT_VOLUME = 0.45;
 
 function activated() {
