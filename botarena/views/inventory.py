@@ -651,24 +651,25 @@ STANCE_INFO: dict[MovementStance, dict] = {
     MovementStance.AGGRESSIVE: {
         "emoji": "⚔️",
         "title": "Aggressive",
-        "desc": "Close distance aggressively and stay in the enemy's face. Best for melee and close-range builds.",
+        "desc": "Charges in and holds its ground, slipping under long guns' minimum range. Best for short range.",
     },
     MovementStance.DEFENSIVE: {
         "emoji": "🛡️",
         "title": "Defensive",
-        "desc": "Maintain maximum effective range and retreat when approached. Best for ranged builds.",
+        "desc": "Stays out of reach, runs when chased, and stops to shoot accurately. Best for long range.",
     },
     MovementStance.TACTICAL: {
         "emoji": "⚖️",
         "title": "Tactical",
-        "desc": "Balanced behavior - maintain optimal range with smart repositioning. Good all-around choice.",
+        "desc": "Circles side-on at mid range and dodges slow shells and missiles, but aims worse on the move.",
     },
 }
 
 TARGET_INFO = {
-    TargetPriority.FOCUS_FIRE: ("🎯", "Attack what your team is attacking (coordinated)"),
-    TargetPriority.WEAKEST: ("💔", "Target enemies with lowest health (finish kills)"),
-    TargetPriority.CLOSEST: ("📍", "Target the nearest enemy (reactive)"),
+    TargetPriority.FOCUS_FIRE: ("🎯", "Your Focus Fire bots gang up on the enemy they can kill fastest together"),
+    TargetPriority.WEAKEST: ("💔", "Whoever this bot's weapon can finish off soonest"),
+    TargetPriority.CLOSEST: ("📍", "Whoever it can hit soonest, shooting back at whoever attacks it"),
+    TargetPriority.SUPPORT_FIRST: ("🩹", "Hunts enemy healers first, then the hardest-hitting enemy"),
 }
 
 
@@ -725,10 +726,11 @@ class EditorTacticsView(ui.LayoutView):
         container.add_item(ui.Separator(spacing=discord.SeparatorSpacing.small))
         container.add_item(
             ui.TextDisplay(
-                "💡 **Tip:** Tactics affect how your bot fights!\n"
-                "• **Snipers** work best with Defensive stance\n"
-                "• **Brawlers** excel with Aggressive + Closest\n"
-                "• **Team play** benefits from Focus Fire targeting"
+                "💡 **Tip:** Match the stance to the weapon!\n"
+                "• **Long guns** (snipers, cannons) work best Defensive\n"
+                "• **Short-range weapons** want Aggressive, to get in close\n"
+                "• **Tactical** dodges slow shells but aims worse on the move\n"
+                "• Bots shoot whatever they can reach while closing on their target"
             )
         )
 
