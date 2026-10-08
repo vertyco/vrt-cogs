@@ -43,7 +43,7 @@ The cog hosts the menu and every game on a small web server. Discord loads it ov
 4. **Point Discord at it.** In **Activities > URL Mappings**, set the root mapping `/` to your public host without `https://` (for example `games.example.com`).
 5. **Add the menu command.** `[p]slash enable activities`, then `[p]slash sync`.
 6. **Check it.** `[p]activityhub check games.example.com` goes through every step above and says which one is missing.
-7. **Add more games (optional).** The included games are ready to play. To add more, install and load any cog made for ActivityHub (`[p]cog install <repo> <cog>`, then `[p]load <cog>`). `[p]activityhub games` lists what is installed, and why a game cog was refused if one was.
+7. **Add more games (optional).** The included games are ready to play. To add more, install and load any cog made for ActivityHub (`[p]cog install <repo> <cog>`, then `[p]load <cog>`). `[p]activityhub games` lists what is installed with the Discord permissions (scopes) each game asks for, and why a game cog was refused if one was. Every game's scopes go into one Discord login, so a game asking for a scope Discord doesn't accept stops logins for every game: this list shows which game it is.
 
 The bot running this cog must be the same Discord application that has Activities turned on, because Discord only lets an app open its own Activity.
 
@@ -54,8 +54,8 @@ The bot running this cog must be the same Discord application that has Activitie
 | `[p]activityhub webserver <host> <port>` | Saves where the web server listens and restarts it. |
 | `[p]activityhub secret` | Opens a form for the client secret, checks it with Discord, saves it. |
 | `[p]activityhub check <public host>` | Checks every setup step and says what to fix. |
-| `[p]activityhub games` | Lists installed games (marking any you turned off), and refused game cogs with the reason. |
+| `[p]activityhub games` | Lists installed games (marking any you turned off) with the Discord scopes each asks for, and refused game cogs with the reason. |
 
 ## Making games
 
-Any cog can add a game to the menu. [DEVELOPERS.md](DEVELOPERS.md) walks through it with a complete example.
+Any cog can add a game to the menu. [DEVELOPERS.md](DEVELOPERS.md) walks through it with a complete example, and covers testing a game's Python without Discord, multiplayer, uploads and sharing your game.
