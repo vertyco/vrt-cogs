@@ -31,6 +31,7 @@ TARGET_TITLES = {
     TargetPriority.FOCUS_FIRE: "Focus Fire",
     TargetPriority.WEAKEST: "Weakest",
     TargetPriority.CLOSEST: "Closest",
+    TargetPriority.SUPPORT_FIRST: "Support First",
 }
 
 

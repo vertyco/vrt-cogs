@@ -504,7 +504,7 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                 unlock_parts=[ZENI_PRS.name],
                 briefing="Scraptoria 2059 - the healer is still the priority, but the escort bots are less oppressive than before.",
                 victory_text="Local Circuit complete! Zeni PRS healer is now available!",
-                defeat_text="That healer kept them alive too long. Focus fire on Scrap-2 first!",
+                defeat_text="That healer kept them alive too long. Set your bots to Support First to take out Scrap-2!",
             ),
         ],
     ),
@@ -566,7 +566,7 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                 unlock_parts=[GAIACORP_EG_PR.name, DARSIK_B301_1.name, PORANTIS.name],
                 briefing="The Colosseum - their support bot is lighter now, but the arena debuts EG-PR armor, Darsik B301-1, and Porantis weaponry.",
                 victory_text="Colosseum champion! Gaiacorp EG-PR, Darsik B301-1, and Porantis are now available!",
-                defeat_text="That healer kept them alive. Focus fire on the Medic!",
+                defeat_text="That healer kept them alive. Try Support First targeting to take out the Medic!",
             ),
             # Battle 10: Skirmesh
             # Weight: 95, Cost: 8000, Prize: 18000
@@ -708,7 +708,7 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                 unlock_parts=[GAIACORP_EG_SR.name, DEVENGE.name],
                 briefing="The Foundry - Forge debuts Gaiacorp EG-SR armor and the Devenge sniper. The healer still needs to be respected.",
                 victory_text="Foundry conquered! Gaiacorp EG-SR plating and Devenge sniper are now available!",
-                defeat_text="That healer is the key. Focus fire on it!",
+                defeat_text="Forge's Devenge can't hit anything right next to it. Go Aggressive and get in close!",
             ),
             # Battle 13: The Kamikaze-Dome
             # Weight: 120, Cost: 14000, Prize: 30000
@@ -745,7 +745,7 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                 unlock_parts=[DARSIK_R200.name, CEREBUS.name],
                 briefing="The Kamikaze-Dome - two assault bots, but now they preview Darsik R200 and Cerebus instead of piling on even more plasma.",
                 victory_text="Kamikaze-Dome mastered! Darsik R200 and Cerebus teslacoil are now available!",
-                defeat_text="Pure firepower required. Bring your best weapons.",
+                defeat_text="Two heavy hitters. Gang up on one at a time with Weakest or Focus Fire targeting.",
             ),
             # Battle 14: Execute 2059
             # Weight: 120, Cost: 16500, Prize: 35000
@@ -847,7 +847,7 @@ CAMPAIGN_CHAPTERS: list[Chapter] = [
                 unlock_parts=[SCREAM_SHARD.name],
                 briefing="The Final Hour - the Champion still wields the legendary Scream Shard, but the support line is less overloaded than before.",
                 victory_text="CHAMPION! You are the greatest bot arena fighter of all time! The legendary Scream Shard is yours!",
-                defeat_text="The Champion remains undefeated. Take out the Herald healer first, then focus the Guardian!",
+                defeat_text="The Champion remains undefeated. Use Support First to take out the Herald healer, then focus the Guardian!",
             ),
         ],
     ),

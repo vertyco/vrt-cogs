@@ -15,7 +15,6 @@ from ..constants.parts import (
     CIRCES,
     CLR_Z050,
     DARSIJ,
-    DARSIK_R200,
     DEVENGE,
     DLZ_250,
     DURICHAS,
@@ -105,9 +104,9 @@ CHALLENGES: list[Challenge] = [
             "Pick a stance that keeps the fight at long range."
         ),
         loaned_bots=[
-            npc("Ace", DLZ_250, OVERWATCH_R200, RAPTOR_DT_02),
-            npc("Blitz", DLZ_250, OVERWATCH_R200, RAPTOR_DT_02),
-            npc("Comet", DLZ_250, OVERWATCH_R200, RAPTOR_DT_02),
+            npc("Ace", DLZ_250, CHROMITREX, RAPTOR_DT_02),
+            npc("Blitz", DLZ_250, CHROMITREX, RAPTOR_DT_02),
+            npc("Comet", DLZ_250, CHROMITREX, RAPTOR_DT_02),
         ],
         enemies=[
             npc("Spray A", DLZ_250, OVERWATCH_R200, KEDRON),
@@ -123,20 +122,22 @@ CHALLENGES: list[Challenge] = [
     Challenge(
         id="c2",
         name="Evasion",
-        description="One sharpshooter against four brawlers.",
-        briefing="Puppy has the range, they have the numbers. Never let the brawlers catch you.",
+        description="One sharpshooter against three brawlers.",
+        briefing=(
+            "Puppy has the range and the speed, they have the numbers. "
+            "Never let the brawlers catch you: kite them around the arena."
+        ),
         loaned_bots=[npc("Puppy", DLZ_250, CHROMITREX, RAPTOR_DT_02)],
         enemies=[
-            npc("Brute 1", CLR_Z050, SANTRIN, TORRIKA_KJ_557),
-            npc("Brute 2", CLR_Z050, SANTRIN, TORRIKA_KJ_557),
-            npc("Brute 3", CLR_Z050, SANTRIN, TORRIKA_KJ_557),
-            npc("Brute 4", CLR_Z050, SANTRIN, TORRIKA_KJ_557),
+            npc("Brute 1", SMARTMOVE, SANTRIN, TORRIKA_KJ_557),
+            npc("Brute 2", SMARTMOVE, SANTRIN, TORRIKA_KJ_557),
+            npc("Brute 3", SMARTMOVE, SANTRIN, TORRIKA_KJ_557),
         ],
         solution=[orders(DEFENSIVE, CLOSEST)],
         credit_reward=1000,
         chapter=1,
         victory_text="Keep your distance and a short-range bot can never hurt you.",
-        defeat_text="The brawlers caught you. Keep Puppy at maximum range.",
+        defeat_text="The brawlers caught you. A defensive bot turns and runs, firing over its shoulder.",
     ),
     Challenge(
         id="c3",
@@ -174,7 +175,7 @@ CHALLENGES: list[Challenge] = [
         ],
         enemies=[
             npc("Brawl 1", SMARTMOVE, OVERWATCH_R760, DARSIJ),
-            npc("Brawl 2", CLR_Z050, OVERWATCH_R760, DARSIJ),
+            npc("Brawl 2", CLR_Z050, GAIACORP_SC_RS, DARSIJ),
             npc("Brawl 3", CLR_Z050, OVERWATCH_R760, DARSIJ),
         ],
         solution=[orders(DEFENSIVE, CLOSEST)] * 2,
@@ -221,7 +222,7 @@ CHALLENGES: list[Challenge] = [
             npc("Medic", CLR_Z050, GAIACORP_SC_RS, ZENI_PRZ_2),
         ],
         enemies=[
-            npc("Hunter 1", SMARTMOVE, OVERWATCH_R200, TORRIKA_KR_2, AGGRESSIVE, WEAKEST),
+            npc("Hunter 1", SMARTMOVE, OVERWATCH_R760, TORRIKA_KR_2, AGGRESSIVE, WEAKEST),
             npc("Hunter 2", SMARTMOVE, CHROMITREX, TORRIKA_KR_2, AGGRESSIVE, WEAKEST),
         ],
         solution=[orders(DEFENSIVE, CLOSEST), orders(AGGRESSIVE, CLOSEST), orders(AGGRESSIVE, CLOSEST)],
@@ -238,8 +239,8 @@ CHALLENGES: list[Challenge] = [
         name="Strategy",
         description="The final exam: a healer, a tank, and a sniper.",
         briefing=(
-            "Everything you've learned. Each of your bots needs a different stance: "
-            "one to brawl, one to hang back, one to hold the middle."
+            "Everything you've learned. Give each bot the stance its weapon wants, then make your "
+            "two long guns work together: shots split across three enemies won't outpace their healer."
         ),
         loaned_bots=[
             npc("Vanguard", DURICHAS, OVERWATCH_Z, DARSIJ),
@@ -248,16 +249,16 @@ CHALLENGES: list[Challenge] = [
         ],
         enemies=[
             npc("Mender", CLR_Z050, GAIACORP_SC_RS, ZENI_PRZ_2, DEFENSIVE, CLOSEST),
-            npc("Bastion", DURICHAS, OVERWATCH_Z, DARSIK_R200),
-            npc("Sniper", ELECTRON, GAIACORP_EG_PR, DEVENGE, DEFENSIVE, CLOSEST),
+            npc("Bastion", DURICHAS, OVERWATCH_Z, DARSIJ),
+            npc("Sniper", CLR_Z050, GAIACORP_SC_RS, DEVENGE, DEFENSIVE, CLOSEST),
         ],
-        solution=[orders(AGGRESSIVE, CLOSEST), orders(DEFENSIVE, CLOSEST), orders(TACTICAL, CLOSEST)],
+        solution=[orders(AGGRESSIVE, CLOSEST), orders(DEFENSIVE, FOCUS), orders(DEFENSIVE, FOCUS)],
         required_mission="5-1",
         credit_reward=15000,
         prize_part=PRIZE_DARSIK_R200_Z.name,
         chapter=5,
         victory_text="Graduated with honors. The prize machine gun is yours!",
-        defeat_text="One stance doesn't fit every bot. Match each bot's stance to its weapon's range.",
+        defeat_text="Match each bot's stance to its weapon, and have your long guns Focus Fire on one target at a time.",
     ),
 ]
 
