@@ -1018,7 +1018,7 @@ The hub's own tests (`activityhub/tests/fakes.py`) use the same kind of stand-in
 | `index.html isn't UTF-8 text ...` | Your editor saved it in another encoding. | Save it as UTF-8. |
 | `icon must be a file inside web_dir, written relative to it (like 'icon.png'): ...` (or `thumbnail`) | The picture's path is wrong, or points outside `web_dir`. | Use a path relative to `web_dir`, like `"art/icon.png"`. |
 | `icon has a name starting with a dot in its path, and the hub never serves those: ...` | The picture is in a folder like `.assets`. | Move it to a folder whose name doesn't start with a dot. |
-| `actions key 'x' must be ...`, `socket keys can only be ...` or `routes key 'x' must be "METHOD path" ...` | A name breaks the naming rule in [the table](#5-reference-activityhub_game). The message says the rule. | Rename it. |
+| `actions key 'x' must be ...`, `socket keys can only be ...` or `routes key 'x' must be "METHOD path": ...` | A name breaks the naming rule in [the table](#5-reference-activityhub_game). The message says the rule. | Rename it. |
 | `routes has 'x' twice (paths ignore leading and trailing /)` | Two routes differ only by a leading or trailing `/`. | Keep one. |
 | `actions handler 'x' must be an async def` | One of your handlers is a plain `def`. | Make it `async def`. |
 | `actions 'x' is a coroutine, not a method: write self.x without ()` | You wrote `self.click()` in the dict. | Write `self.click`. |
