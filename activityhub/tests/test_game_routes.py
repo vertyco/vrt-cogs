@@ -35,6 +35,12 @@ async def test_page_of_an_unloaded_game_leads_back_to_the_menu(client, demo):
     text = await resp.text()
     assert resp.status == 404 and "isn&#x27;t installed" in text
     assert 'id="back"' in text and '"activityhub": "/hub/' in text
+    # A frame that reloads on another address under the game, like a router path, gets the same way out
+    resp = await client.get("/games/nope/b/play", headers={"Sec-Fetch-Dest": "iframe"})
+    text = await resp.text()
+    assert resp.status == 404 and "isn&#x27;t installed" in text and 'id="back"' in text
+    resp = await client.get("/games/nope/b/game.js", headers={"Sec-Fetch-Dest": "script"})
+    assert resp.status == 404 and "installed" not in await resp.text()
 
 
 @pytest.mark.asyncio
@@ -70,6 +76,55 @@ async def test_game_files_cannot_escape_web_dir(client, demo):
         resp = await client.get(path)
         assert resp.status == 404
         assert "SECRET" not in await resp.text()
+
+
+@pytest.mark.asyncio
+async def test_hidden_files_are_never_served(client, demo):
+    (demo.web_dir / ".env").write_text("TOKEN=SECRET", encoding="utf-8")
+    (demo.web_dir / ".git").mkdir()
+    (demo.web_dir / ".git" / "config").write_text("SECRET", encoding="utf-8")
+    for path in ("/games/demo/b/.env", "/games/demo/b/.git/config", "/games/demo/b/x/..%2F.env"):
+        resp = await client.get(path)
+        assert resp.status == 404
+        assert "SECRET" not in await resp.text()
+    assert (await client.get("/games/demo/b/game.js")).status == 200
+
+
+@pytest.mark.asyncio
+async def test_a_page_that_cant_be_read_leads_back_to_the_menu(client, demo, caplog):
+    # A bundler rebuilding the page can leave index.html missing or half written for a moment
+    index = demo.web_dir / "index.html"
+    index.unlink()
+    resp = await client.get("/games/demo/")
+    text = await resp.text()
+    assert resp.status == 500 and "Something went wrong." in text and 'id="back"' in text
+    assert "Couldn't read index.html of demo" in caplog.text
+    index.write_bytes("<!doctype html><p>caf\u00e9</p>".encode("cp1252"))
+    resp = await client.get("/games/demo/")
+    assert resp.status == 500 and 'id="back"' in await resp.text()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "headers",
+    [{"Sec-Fetch-Dest": "iframe"}, {"Sec-Fetch-Dest": "document"}, {"Accept": "text/html,application/xhtml+xml"}],
+)
+async def test_the_frame_going_to_a_missing_page_leads_back_to_the_menu(client, demo, caplog, headers):
+    # A router path, a reload after pushState, or an href="#" link (which leads to the build folder itself)
+    for path in ("/games/demo/b/play", "/games/demo/b/"):
+        resp = await client.get(path, headers=headers)
+        text = await resp.text()
+        assert resp.status == 404 and "This page isn&#x27;t part of the game." in text
+        assert 'id="back"' in text and '"activityhub": "/hub/' in text
+        assert f"demo: the game frame went to {path!r}, which isn't a file in web_dir" in caplog.text
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("headers", [{}, {"Sec-Fetch-Dest": "script"}, {"Sec-Fetch-Dest": "empty", "Accept": "*/*"}])
+async def test_a_missing_file_for_the_page_is_a_plain_404(client, demo, caplog, headers):
+    resp = await client.get("/games/demo/b/missing.js", headers=headers)
+    assert resp.status == 404 and "Back to the menu" not in await resp.text()
+    assert "game frame" not in caplog.text
 
 
 @pytest.mark.asyncio

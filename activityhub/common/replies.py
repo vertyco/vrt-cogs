@@ -20,6 +20,7 @@ NO_SUCH_ACTION = "That action doesn't exist."
 NOT_ALLOWED = "You can't change these settings."
 SOMETHING_WRONG = "Something went wrong."
 NOT_INSTALLED = "This activity isn't installed on this bot anymore."
+PAGE_MISSING = "This page isn't part of the game."
 
 # Shown inside the game frame, so the menu link is a button that calls the SDK's backToMenu instead of a link
 NOTICE_PAGE = Template("""<!doctype html>

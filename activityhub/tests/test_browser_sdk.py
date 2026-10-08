@@ -90,6 +90,17 @@ def test_back_to_menu_closes_the_game_frame(driver, live):
     assert driver.execute_script("return document.body.classList.contains('playing')") is False
 
 
+def test_a_missing_page_in_the_frame_leads_back_to_the_menu(driver, live):
+    # A router path is gone after a reload, and a bare 404 would leave the player stuck in the frame
+    open_game_in_host(driver, live)
+    driver.execute_script("setTimeout(() => { history.pushState({}, '', 'play'); location.reload(); }, 0)")
+    wait_for(driver, "document.body.innerText.includes('part of the game.')")
+    driver.find_element(By.ID, "back").click()
+    driver.switch_to.default_content()
+    wait_for(driver, "document.body.dataset.closed === '1'")
+    assert driver.find_elements(By.ID, "game-frame") == []
+
+
 def test_game_page_alone_in_discord_goes_to_the_menu(driver, live):
     driver.get(f"{live.url}/games/demo/{DISCORD_QUERY}")
     wait_for(driver, "location.pathname === '/' && document.body.dataset.login === 'online'")

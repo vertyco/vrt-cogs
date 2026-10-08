@@ -594,6 +594,30 @@ async def test_a_huge_web_dir_is_warned_about(web_dir, caplog, monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_hidden_files_dont_make_web_dir_huge(web_dir, caplog, monkeypatch):
+    # A web_dir that is a git checkout: .git is never served or fingerprinted, so it isn't counted
+    monkeypatch.setattr(games, "MANY_FILES", 3)
+    (web_dir / ".git" / "objects").mkdir(parents=True)
+    for name in ("a", "b", "c"):
+        (web_dir / ".git" / "objects" / name).write_text("", encoding="utf-8")
+    await validate_game(GameCog(web_dir))
+    assert "web_dir has" not in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_a_hidden_picture_is_refused(web_dir):
+    # Hidden files are never served, so the menu couldn't show it
+    (web_dir / ".icons").mkdir()
+    (web_dir / ".icons" / "icon.svg").write_text("<svg/>", encoding="utf-8")
+    for icon in (".icons/icon.svg", web_dir / ".icons" / "icon.svg"):
+        with pytest.raises(GameError) as refused:
+            await validate_game(GameCog(web_dir, icon=icon))
+        assert str(refused.value) == (
+            f"icon has a name starting with a dot in its path, and the hub never serves those: {icon}"
+        )
+
+
+@pytest.mark.asyncio
 async def test_registry_remembers_which_key_a_refused_cog_wanted(web_dir):
     registry = GameRegistry()
     await registry.add(GameCog(web_dir, cog_name="First"))

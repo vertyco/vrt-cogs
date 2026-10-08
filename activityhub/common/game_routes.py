@@ -13,6 +13,7 @@ from .replies import (
     NO_CACHE,
     NO_SUCH_ACTION,
     NOT_INSTALLED,
+    PAGE_MISSING,
     SESSION_EXPIRED,
     SOMETHING_WRONG,
     TURNED_OFF,
@@ -33,6 +34,17 @@ AUTH_SECONDS = 5
 # Cloudflare drops a WebSocket after 100 seconds of silence
 HEARTBEAT_SECONDS = 30
 CLOSED_TYPES = (WSMsgType.CLOSE, WSMsgType.CLOSING, WSMsgType.CLOSED, WSMsgType.ERROR)
+# Sec-Fetch-Dest of a request that loads a whole page, which for a game means its frame went to that address
+PAGE_DESTINATIONS = ("iframe", "document")
+
+
+def is_page_load(request: web.Request) -> bool:
+    """Whether the browser is loading this address as a page, not fetching a file for one"""
+    destination = request.headers.get("Sec-Fetch-Dest")
+    if destination is not None:
+        return destination in PAGE_DESTINATIONS
+    # Browsers that don't send Sec-Fetch-Dest still ask for HTML first when they load a page
+    return request.headers.get("Accept", "").startswith("text/html")
 
 
 def action_reply(game: Game, name: str, result: t.Any) -> web.Response:
@@ -67,8 +79,9 @@ class GameRoutes:
         game = self.hub.registry.games.get(request.match_info["key"])
         tail = request.match_info["tail"]
         if game is None:
-            # The menu can still list a game whose cog was just unloaded, so its frame gets a way back
-            if not tail and request.method in READ_METHODS:
+            # The menu can still list a game whose cog was just unloaded, so its frame gets a way back.
+            # So does a frame that reloads after the cog unloads, on any address under the game
+            if request.method in READ_METHODS and (not tail or is_page_load(request)):
                 return self.notice(NOT_INSTALLED, 404)
             raise web.HTTPNotFound()
         head, rest = tail.split("/", 1) if "/" in tail else (tail, "")
@@ -97,8 +110,15 @@ class GameRoutes:
             raise web.HTTPMethodNotAllowed(request.method, READ_METHODS)
         if await self.turned_off_here(request, game):
             return self.notice(TURNED_OFF, 403)
-        tags = f'<base href="/games/{game.key}/{build_id(game.web_dir)}/" />{self.importmap_tag()}'
-        html = (game.web_dir / "index.html").read_text(encoding="utf-8")
+        try:
+            html = (game.web_dir / "index.html").read_text(encoding="utf-8")
+            build = build_id(game.web_dir)
+        except (OSError, UnicodeDecodeError) as e:
+            # A bundler rebuilding the page can leave index.html missing or half written for a moment.
+            # The notice page keeps the frame's button back to the menu, which aiohttp's own 500 page wouldn't
+            log.error("Couldn't read index.html of %s", game.key, exc_info=e)
+            return self.notice(SOMETHING_WRONG, 500)
+        tags = f'<base href="/games/{game.key}/{build}/" />{self.importmap_tag()}'
         return web.Response(text=inject_head(html, tags), content_type="text/html", headers=NO_CACHE)
 
     async def turned_off_here(self, request: web.Request, game: Game) -> bool:
@@ -111,9 +131,18 @@ class GameRoutes:
         if request.method not in READ_METHODS:
             raise web.HTTPMethodNotAllowed(request.method, READ_METHODS)
         target = resolve_inside(game.web_dir, path)
-        if target is None:
+        if target is not None:
+            return file_response(target)
+        if not is_page_load(request):
             raise web.HTTPNotFound()
-        return file_response(target)
+        # The game frame itself went to an address that isn't there. A bare 404 would leave the player stuck in it
+        log.warning(
+            "%s: the game frame went to %r, which isn't a file in web_dir. "
+            'Is it an href="#" link, a single-page app router path, or a typo?',
+            game.key,
+            request.path,
+        )
+        return self.notice(PAGE_MISSING, 404)
 
     async def action(self, request: web.Request, game: Game, name: str) -> web.Response:
         if request.method != "POST":

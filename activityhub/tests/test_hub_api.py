@@ -56,6 +56,13 @@ async def test_hub_files_cannot_escape_the_web_folder(client):
 
 
 @pytest.mark.asyncio
+async def test_hidden_hub_files_are_never_served(client, hub_web):
+    (hub_web / ".env").write_text("SECRET", encoding="utf-8")
+    resp = await client.get("/hub/x/.env")
+    assert resp.status == 404 and "SECRET" not in await resp.text()
+
+
+@pytest.mark.asyncio
 async def test_token_needs_the_client_secret(client, hub, discord_answers):
     hub.bot.tokens = {}
     resp = await client.post("/hub/api/token", json=TOKEN_BODY)

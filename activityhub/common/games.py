@@ -7,7 +7,7 @@ import typing as t
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .files import resolve_inside
+from .files import hidden, resolve_inside, served_files
 
 log = logging.getLogger("red.vrt.activityhub.games")
 
@@ -256,7 +256,14 @@ def check_picture(desc: dict, field_name: str, web_dir: Path) -> str | None:
             relative = Path(picture).resolve().relative_to(web_dir.resolve()).as_posix()
         except ValueError:
             raise refused
-    if not isinstance(relative, str) or resolve_inside(web_dir, relative) is None:
+    if not isinstance(relative, str):
+        raise refused
+    # resolve_inside refuses these too, but "must be a file inside web_dir" wouldn't say why
+    if hidden(Path(relative)) and ".." not in Path(relative).parts:
+        raise GameError(
+            f"{field_name} has a name starting with a dot in its path, and the hub never serves those: {picture}"
+        )
+    if resolve_inside(web_dir, relative) is None:
         raise refused
     return relative
 
@@ -275,9 +282,8 @@ def warn_about_page(key: str, web_dir: Path, html: str) -> None:
     if (web_dir / "node_modules").is_dir():
         crowded = "a node_modules folder"
     else:
-        # Counting stops past the limit, since walking a huge folder is the slow part
-        files = (path for path in web_dir.rglob("*") if path.is_file())
-        if sum(1 for _ in itertools.islice(files, MANY_FILES + 1)) > MANY_FILES:
+        # Counting stops past the limit, since walking a huge folder is the slow part. Hidden files never count
+        if sum(1 for _ in itertools.islice(served_files(web_dir), MANY_FILES + 1)) > MANY_FILES:
             crowded = f"more than {MANY_FILES} files"
     if crowded is not None:
         log.warning(
