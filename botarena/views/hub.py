@@ -405,7 +405,7 @@ TUTORIAL_STEPS = [
             "**What it determines:**\n"
             "• ⚡ **Speed** - How fast your bot moves\n"
             "• 📦 **Capacity** - How heavy your equipment can be\n"
-            "• 🧠 **Intelligence** - How smart the AI is in battle\n\n"
+            "• 🧠 **Intelligence** - How well it aims, reacts and picks its spots in battle\n\n"
             "**Your Goal:** Buy a **DLZ-100** chassis (3,000 credits)\n"
             "-# It's a great starter chassis with balanced stats!"
         ),

@@ -198,28 +198,27 @@ class ComponentType(str, Enum):
 # TACTICAL ORDERS - Pre-battle configuration for bot AI behavior
 # ─────────────────────────────────────────────────────────────────────────────
 class MovementStance(str, Enum):
-    """How the bot moves during combat - simplified to 3 core behaviors"""
+    """How the bot moves during combat (see common/ai.py)"""
 
-    AGGRESSIVE = "aggressive"  # Close distance, stay in enemy's face
-    DEFENSIVE = "defensive"  # Maintain max range, retreat when approached
-    TACTICAL = "tactical"  # Balanced - optimal range with repositioning
+    AGGRESSIVE = "aggressive"  # Charge in nose-first, get under long weapons' minimum range, hold ground
+    DEFENSIVE = "defensive"  # Stay just out of the enemy's reach, plant to shoot, turn and run when chased
+    TACTICAL = "tactical"  # Side-on strafing at mid range, flank, sidestep slow shots
 
 
 class TargetPriority(str, Enum):
-    """Who the bot targets - simplified to 3 meaningful options"""
+    """Who the bot targets (see common/ai.py)"""
 
-    FOCUS_FIRE = "focus_fire"  # Attack same target as teammates (coordinated)
-    WEAKEST = "weakest"  # Target lowest HP enemy (finish kills)
-    CLOSEST = "closest"  # Attack nearest enemy (reactive, default)
+    FOCUS_FIRE = "focus_fire"  # The team agrees on the enemy it can kill fastest together
+    WEAKEST = "weakest"  # Whoever this weapon can finish soonest
+    CLOSEST = "closest"  # Whoever it can shoot soonest, preferring whoever shoots it (default)
+    SUPPORT_FIRST = "support_first"  # Healers first, then the hardest hitter
 
 
 class TacticalOrders(ArenaBaseModel):
     """Pre-battle orders that control bot AI behavior.
 
     - Movement Stance: How the bot positions itself (3 options)
-    - Target Priority: Who the bot attacks (3 options)
-
-    Total combinations: 9 (manageable for players to understand)
+    - Target Priority: Who the bot attacks (4 options)
     """
 
     movement_stance: MovementStance = MovementStance.AGGRESSIVE
