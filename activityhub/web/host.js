@@ -9,7 +9,28 @@ export const GAME_FRAME_ID = "game-frame";
 const FADE_MS = 200;
 // A game whose page never finishes loading still shows after this long, so the screen never just stays empty
 const SHOW_ANYWAY_MS = 4000;
+// Discord answers the toolkit within a few seconds. The page warns after this long, but keeps waiting, since
+// Discord can be slow to start on a phone
+const DISCORD_WAIT_MS = 10000;
+const DISCORD_SILENT =
+  "Discord hasn't answered yet. This address only works inside Discord; for the browser preview, " +
+  "open / without the ?frame_id=... part.";
+// The message a Discord toolkit sends first, to the page around it: [HANDSHAKE, {..., frame_id}]
+const HANDSHAKE = 0;
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+function gamePath(key) {
+  return `/games/${encodeURIComponent(key)}/`;
+}
+
+// Whether the frame went somewhere other than the game's own pages. Another website's address can't be read
+function leftGame(frame, key) {
+  try {
+    return !frame.contentWindow.location.pathname.startsWith(gamePath(key));
+  } catch (e) {
+    return true;
+  }
+}
 
 // How long each loading step took, in the browser console, for finding what makes the menu slow to open
 export function mark(step) {
@@ -43,8 +64,11 @@ export class Host {
     this.sdk = null;
     this.scopes = ["identify"];
     this.login = null;
+    this.relogging = null;
     this.frame = null;
+    this.gameKey = null;
     this.showTimer = null;
+    window.addEventListener("message", (event) => this.checkGameMessage(event));
     // loggedIn is enough to show the menu. ready also waits for Discord to accept the login, which games need
     // before they use the toolkit, so the menu shows while that last step runs.
     this.loggedIn = this.start();
@@ -58,7 +82,13 @@ export class Host {
     const config = await loginConfig();
     this.scopes = config.scopes;
     this.sdk = new DiscordSDK(config.client_id);
-    await this.sdk.ready();
+    // Outside Discord nothing ever answers, like when a game frame's address is opened in a tab of its own
+    const warning = setTimeout(() => this.discordSilent(), DISCORD_WAIT_MS);
+    try {
+      await this.sdk.ready();
+    } finally {
+      clearTimeout(warning);
+    }
     mark("Discord toolkit ready");
     this.login = await getLogin(this.sdk, this.scopes);
     return this.login;
@@ -69,17 +99,59 @@ export class Host {
       return null;
     }
     await this.sdk.commands.authenticate({ access_token: login.accessToken });
+    // Game pages share this page's origin and read this.login, and nothing needs the Discord token again
+    delete login.accessToken;
     mark("Discord accepted the login");
     return login;
   }
 
+  discordSilent() {
+    console.warn(`ActivityHub: ${DISCORD_SILENT}`);
+    if (this.events.onDiscordSilent) {
+      this.events.onDiscordSilent(DISCORD_SILENT);
+    }
+  }
+
+  // A game that starts its own Discord toolkit sends the toolkit's handshake to this page, and nothing answers
+  // it, so the game's ready() never finishes. Only the game's own pages count: the menu loaded inside the frame
+  // by a link sends one too, and is reported when the frame loads.
+  checkGameMessage(event) {
+    const data = event.data;
+    if (
+      this.frame &&
+      event.source === this.frame.contentWindow &&
+      Array.isArray(data) &&
+      data[0] === HANDSHAKE &&
+      data[1] !== null &&
+      typeof data[1] === "object" &&
+      "frame_id" in data[1] &&
+      !leftGame(this.frame, this.gameKey)
+    ) {
+      console.error(
+        "ActivityHub: this game created its own DiscordSDK. Inside the hub only the menu talks to Discord, " +
+          "so its ready() never finishes. Use hub.discord from connect() instead.",
+      );
+    }
+  }
+
   // After a bot restart the hub has forgotten every session. The toolkit is still connected and
   // authenticated, so a fresh code is enough: no second handshake and no second authenticate.
-  async relogin() {
-    this.login = await getLogin(this.sdk, this.scopes);
-    this.loggedIn = Promise.resolve(this.login);
-    this.ready = Promise.resolve(this.login);
-    return this.login;
+  // Several requests can find the session expired at once, so they share one login.
+  relogin() {
+    if (!this.relogging) {
+      this.relogging = getLogin(this.sdk, this.scopes)
+        .then((login) => {
+          delete login.accessToken;
+          this.login = login;
+          this.loggedIn = Promise.resolve(login);
+          this.ready = Promise.resolve(login);
+          return login;
+        })
+        .finally(() => {
+          this.relogging = null;
+        });
+    }
+    return this.relogging;
   }
 
   // The menu fades out at once, and the game stays hidden until its page has loaded
@@ -90,8 +162,19 @@ export class Host {
     frame.className = "game-frame loading";
     frame.title = key;
     frame.allow = "autoplay; fullscreen";
-    frame.src = `/games/${encodeURIComponent(key)}/${location.search}`;
+    frame.src = `${gamePath(key)}${location.search}`;
     frame.addEventListener("load", () => {
+      // A link like href="/" would load a second menu, offline, inside the game frame
+      if (leftGame(frame, key)) {
+        console.warn(
+          "ActivityHub: the game left its page (a link to another address?). " +
+            "Use backToMenu() to go back to the menu.",
+        );
+        if (frame === this.frame) {
+          this.closeGame();
+        }
+        return;
+      }
       frame.focus();
       this.showGame(frame);
     });
@@ -99,6 +182,7 @@ export class Host {
     document.body.append(frame);
     document.body.classList.add("opening");
     this.frame = frame;
+    this.gameKey = key;
   }
 
   // A page's load waits for its scripts and stylesheets, so the game appears already built instead of
@@ -127,6 +211,7 @@ export class Host {
     clearTimeout(this.showTimer);
     this.frame.remove();
     this.frame = null;
+    this.gameKey = null;
     document.body.classList.remove("opening", "playing");
     if (notify && this.events.onGameClosed) {
       this.events.onGameClosed();

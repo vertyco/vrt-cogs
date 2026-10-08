@@ -56,6 +56,13 @@ async def test_hub_files_cannot_escape_the_web_folder(client):
 
 
 @pytest.mark.asyncio
+async def test_hidden_hub_files_are_never_served(client, hub_web):
+    (hub_web / ".env").write_text("SECRET", encoding="utf-8")
+    resp = await client.get("/hub/x/.env")
+    assert resp.status == 404 and "SECRET" not in await resp.text()
+
+
+@pytest.mark.asyncio
 async def test_token_needs_the_client_secret(client, hub, discord_answers):
     hub.bot.tokens = {}
     resp = await client.post("/hub/api/token", json=TOKEN_BODY)
@@ -91,6 +98,30 @@ async def test_token_fails_when_discord_times_out(client, hub, server, monkeypat
 
 
 @pytest.mark.asyncio
+async def test_a_rate_limited_login_pauses_logins(client, server, monkeypatch):
+    calls = []
+
+    async def limited(http, client_id, secret, code):
+        calls.append(code)
+        raise discord_api.RateLimited(30)
+
+    async def locate(instance_id):
+        return {"guild_id": GUILD_ID, "channel_id": 77, "users": [str(MEMBER_ID)]}
+
+    monkeypatch.setattr(discord_api, "exchange_code", limited)
+    monkeypatch.setattr(server, "locate", locate)
+    for _ in range(3):
+        resp = await client.post("/hub/api/token", json=TOKEN_BODY)
+        assert resp.status == 401
+        assert (await resp.json())["error"] == LOGIN_FAILED
+    # Only the first login reached Discord: the rest waited out the pause instead of collecting more 429s
+    assert calls == ["abc"]
+    server.logins_paused_until = 0.0
+    await client.post("/hub/api/token", json=TOKEN_BODY)
+    assert calls == ["abc", "abc"]
+
+
+@pytest.mark.asyncio
 async def test_token_fails_when_the_instance_lookup_fails(client, discord_answers):
     discord_answers["location"] = None
     assert (await client.post("/hub/api/token", json=TOKEN_BODY)).status == 502
@@ -103,6 +134,7 @@ async def test_token_logs_a_member_in(client, hub, discord_answers):
     assert resp.status == 200
     assert data["access_token"] == "access-token"
     assert data["player"]["id"] == str(MEMBER_ID)
+    assert data["player"]["username"] == "member" and data["player"]["displayName"] == "Member"
     assert data["player"]["guildId"] == str(GUILD_ID) and data["player"]["guildName"] == "Test Server"
     ctx = hub.sessions.get(data["session"]).ctx
     assert ctx.author.id == MEMBER_ID and ctx.channel_id == 77 and ctx.instance_id == "i-9"
@@ -134,6 +166,8 @@ async def test_token_in_a_dm_has_no_server(client, hub, discord_answers):
     discord_answers["location"] = {"guild_id": None, "channel_id": 5}
     data = await (await client.post("/hub/api/token", json=TOKEN_BODY)).json()
     assert data["player"]["guildId"] is None
+    # Outside a server there is no nickname, so it is the account's own display name
+    assert data["player"]["displayName"] == "member"
     ctx = hub.sessions.get(data["session"]).ctx
     assert ctx.guild is None and ctx.author.id == MEMBER_ID
 

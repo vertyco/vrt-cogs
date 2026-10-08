@@ -153,3 +153,29 @@ def test_menu_button_saves_the_round_and_leaves(driver, live):
     driver.switch_to.default_content()
     wait_for(driver, "document.body.dataset.closed === '1'")
     assert saved_best(live, "2048")["score"] > 0
+
+
+def test_a_save_that_fails_on_the_way_can_be_retried(driver, live, monkeypatch):
+    game = live.hub.registry.games["2048"]
+    real_finish = game.actions["finish"]
+    calls = []
+
+    async def flaky_finish(ctx, data):
+        calls.append(data["run"])
+        if len(calls) == 1:
+            raise RuntimeError("the bot hiccuped before reading the round")
+        return await real_finish(ctx, data)
+
+    monkeypatch.setitem(game.actions, "finish", flaky_finish)
+    open_game(driver, live, "2048")
+    click_screen_button(driver, "Play")
+    wait_for(driver, "document.querySelectorAll('.tile').length === 2")
+    press(driver, *[Keys.ARROW_LEFT, Keys.ARROW_UP, Keys.ARROW_RIGHT, Keys.ARROW_DOWN] * 4)
+    press(driver, Keys.ESCAPE)
+    click_screen_button(driver, "End round")
+    wait_for(driver, f"{SCREEN_TEXT}.includes('Something went wrong')")
+    assert saved_best(live, "2048") is None
+    click_screen_button(driver, "Retry save")
+    wait_for(driver, f"{SCREEN_TEXT}.includes('New best!')")
+    assert len(calls) == 2 and calls[0] == calls[1]
+    assert saved_best(live, "2048")["score"] > 0

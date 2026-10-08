@@ -86,11 +86,14 @@ def test_game_json():
 
 
 def test_player_json_in_a_server_and_in_a_dm():
-    user = SimpleNamespace(id=7, name="vert", display_avatar=SimpleNamespace(url="https://cdn/a.png"))
+    user = SimpleNamespace(
+        id=7, name="vert", display_name="Vert", display_avatar=SimpleNamespace(url="https://cdn/a.png")
+    )
     guild = SimpleNamespace(id=9, name="Vertyco", icon=SimpleNamespace(url="https://cdn/g.png"))
     assert player_json(SimpleNamespace(author=user, guild=guild)) == {
         "id": "7",
         "username": "vert",
+        "displayName": "Vert",
         "avatar": "https://cdn/a.png",
         "guildId": "9",
         "guildName": "Vertyco",
@@ -106,3 +109,7 @@ def test_merge_order_appends_saved_installed_keys_that_were_not_sent():
     assert merge_order([], ["b", "b", "gone"], installed) == ["b"]
     with pytest.raises(SettingsError):
         merge_order(["a"], "nope", installed)
+
+
+def test_merge_order_with_an_empty_list_resets_to_alphabetical():
+    assert merge_order(["c", "a", "b"], [], {"a", "b", "c"}) == []

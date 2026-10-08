@@ -1,7 +1,10 @@
 from types import SimpleNamespace
 
+import aiohttp
 import discord
 import pytest
+from aiohttp import web
+from aiohttp.test_utils import TestServer
 
 from activityhub.common import discord_api
 from activityhub.tests.fakes import APP_ID, GUILD_ID, MEMBER_ID, OUTSIDER_ID
@@ -119,3 +122,26 @@ async def test_failed_instance_request_gets_none():
     error = discord.HTTPException(SimpleNamespace(status=404, reason="Not Found"), "x")
     bot = fake_bot(error=error)
     assert await discord_api.instance_location(bot, "i-3") is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "headers, wait",
+    [({"Retry-After": "12"}, 12.0), ({}, discord_api.DEFAULT_RETRY_AFTER), ({"Retry-After": "soon"}, 5.0)],
+)
+async def test_a_rate_limited_code_exchange_says_how_long_to_wait(monkeypatch, headers, wait):
+    async def limited(request):
+        return web.json_response({"message": "You are being rate limited."}, status=429, headers=headers)
+
+    app = web.Application()
+    app.router.add_post("/token", limited)
+    server = TestServer(app)
+    await server.start_server()
+    monkeypatch.setattr(discord_api, "TOKEN_URL", str(server.make_url("/token")))
+    try:
+        async with aiohttp.ClientSession() as http:
+            with pytest.raises(discord_api.RateLimited) as caught:
+                await discord_api.exchange_code(http, str(APP_ID), "secret", "code")
+    finally:
+        await server.close()
+    assert caught.value.retry_after == wait

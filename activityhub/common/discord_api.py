@@ -28,12 +28,34 @@ DEFAULT_ENTRY_POINT = {
 }
 # Fields Discord adds to a fetched command that a bulk sync must not send back
 READ_ONLY_FIELDS = {"id", "application_id", "version", "guild_id"}
+# How long to wait after a 429 that doesn't say how long
+DEFAULT_RETRY_AFTER = 5.0
+
+
+class RateLimited(Exception):
+    """
+    Discord answered 429. Each 429 counts toward Discord's limit on refused requests, and reaching it bans the
+    bot's IP address from the whole API for a while, so the caller must wait retry_after seconds before asking again
+    """
+
+    def __init__(self, retry_after: float):
+        super().__init__(f"Rate limited, retry after {retry_after:.1f} seconds")
+        self.retry_after = retry_after
+
+
+def retry_after(resp: aiohttp.ClientResponse) -> float:
+    try:
+        return max(float(resp.headers.get("Retry-After", DEFAULT_RETRY_AFTER)), 0.0)
+    except ValueError:
+        return DEFAULT_RETRY_AFTER
 
 
 async def exchange_code(http: aiohttp.ClientSession, client_id: str, secret: str, code: str) -> tuple[str, int] | None:
     """Trade the one-time login code for an access token and the id of the Discord user it belongs to"""
     payload = {"client_id": client_id, "client_secret": secret, "grant_type": "authorization_code", "code": code}
     async with http.post(TOKEN_URL, data=payload) as resp:
+        if resp.status == 429:
+            raise RateLimited(retry_after(resp))
         if resp.status != 200:
             log.warning("Code exchange failed (%s): %s", resp.status, await resp.text())
             return None

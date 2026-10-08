@@ -18,11 +18,23 @@ log = logging.getLogger("red.vrt.activityhub.tests.browser")
 # The address Discord gives an Activity, minus the parts the hub doesn't read
 DISCORD_QUERY = f"?frame_id=f&instance_id=i-1&guild_id={GUILD_ID}&channel_id=77&platform=desktop"
 
-# Stands in for Discord's toolkit: every call answers at once, and window.fakeDiscord counts them
+# Stands in for Discord's toolkit: every call answers at once, and window.fakeDiscord counts them.
+# Its state is private, like a real class's, so a method called on anything but the toolkit itself throws.
+# With &silent=1 in the address, ready() waits until the test calls window.answerDiscord(), like a page
+# opened outside Discord. window.fakeDiscordBus plays Discord's events to the subscribed listeners.
 FAKE_SDK = """export class DiscordSDK {
+  #listeners = new Map();
+  #answered = new URLSearchParams(location.search).has("silent")
+    ? new Promise((resolve) => { window.answerDiscord = resolve; })
+    : Promise.resolve();
+
   constructor(clientId) {
     const calls = (window.fakeDiscord = window.fakeDiscord || { created: 0, authorize: 0, authenticate: 0 });
     calls.created += 1;
+    window.fakeDiscordBus = {
+      emit: (event, data) => (this.#listeners.get(event) || []).forEach((listener) => listener(data)),
+      count: (event) => (this.#listeners.get(event) || []).length,
+    };
     this.clientId = clientId;
     this.instanceId = new URLSearchParams(location.search).get("instance_id");
     this.commands = {
@@ -42,7 +54,17 @@ FAKE_SDK = """export class DiscordSDK {
     };
   }
 
-  async ready() {}
+  async ready() {
+    await this.#answered;
+  }
+
+  async subscribe(event, listener) {
+    this.#listeners.set(event, [...(this.#listeners.get(event) || []), listener]);
+  }
+
+  async unsubscribe(event, listener) {
+    this.#listeners.set(event, (this.#listeners.get(event) || []).filter((known) => known !== listener));
+  }
 }
 """
 
@@ -97,8 +119,26 @@ def start_chrome():
 
 
 def fresh(driver, live: "LiveHub") -> None:
-    """Start each test on a blank page of the test server"""
+    """Start each test on a blank page of the test server, with nothing left in the console from the last one"""
     driver.get(f"{live.url}/hub/api/ping")
+    console_lines(driver)
+
+
+def console_lines(driver) -> list[str]:
+    """The warnings and errors every frame wrote to the browser console since the last call"""
+    return [entry["message"] for entry in driver.get_log("browser")]
+
+
+def wait_for_console(driver, text: str, timeout: float = 10) -> list[str]:
+    """Wait until a console warning or error holds the text, and return every line seen"""
+    seen = []
+
+    def found(d) -> bool:
+        seen.extend(console_lines(d))
+        return any(text in line for line in seen)
+
+    WebDriverWait(driver, timeout).until(found)
+    return seen
 
 
 def wait_for(driver, script: str, timeout: float = 10):

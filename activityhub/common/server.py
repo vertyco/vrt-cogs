@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 import typing as t
 from pathlib import Path
 
@@ -30,6 +31,9 @@ class HubServer:
         self.rooms = Rooms()
         self.runner: web.AppRunner | None = None
         self.http: aiohttp.ClientSession | None = None
+        # The token endpoint is public, so a flood of fake codes could keep Discord answering 429. Logins pause
+        # until this time.monotonic() after one, instead of piling up 429s against the bot's IP address
+        self.logins_paused_until = 0.0
 
     @property
     def running(self) -> bool:
@@ -92,10 +96,16 @@ class HubServer:
         return key in await self.hub.config.guild_from_id(guild_id).disabled()
 
     async def exchange_code(self, code: str) -> tuple[str, int] | None:
+        if time.monotonic() < self.logins_paused_until:
+            return None
         tokens = await self.bot.get_shared_api_tokens("activityhub")
         client_id, secret = str(self.bot.application_id), tokens.get("client_secret", "")
         try:
             return await discord_api.exchange_code(self.http, client_id, secret, code)
+        except discord_api.RateLimited as e:
+            self.logins_paused_until = time.monotonic() + e.retry_after
+            log.warning("Discord is rate limiting logins, pausing them for %.1f seconds", e.retry_after)
+            return None
         except (aiohttp.ClientError, asyncio.TimeoutError, KeyError, ValueError) as e:
             log.error("Discord login exchange failed", exc_info=e)
             return None

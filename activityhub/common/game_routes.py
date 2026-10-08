@@ -12,15 +12,28 @@ from .replies import (
     MAX_BODY,
     NO_CACHE,
     NO_SUCH_ACTION,
-    OFF_PAGE,
+    NOT_INSTALLED,
+    PAGE_MISSING,
     SESSION_EXPIRED,
     SOMETHING_WRONG,
+    STRICT_DUMPS,
     TURNED_OFF,
     error,
+    notice_page,
     read_object,
 )
 from .sessions import ActivityContext
-from .sockets import CLOSE_GOING_AWAY, CLOSE_HANDLER_FAILED, CLOSE_SESSION, CLOSE_TURNED_OFF, PING, READY, Connection
+from .sockets import (
+    CLOSE_GOING_AWAY,
+    CLOSE_HANDLER_FAILED,
+    CLOSE_NO_SOCKET,
+    CLOSE_SESSION,
+    CLOSE_TURNED_OFF,
+    PING,
+    PONG,
+    READY,
+    Connection,
+)
 
 if t.TYPE_CHECKING:
     from .server import HubServer
@@ -32,22 +45,25 @@ AUTH_SECONDS = 5
 # Cloudflare drops a WebSocket after 100 seconds of silence
 HEARTBEAT_SECONDS = 30
 CLOSED_TYPES = (WSMsgType.CLOSE, WSMsgType.CLOSING, WSMsgType.CLOSED, WSMsgType.ERROR)
+# Sec-Fetch-Dest of a request that loads a whole page, which for a game means its frame went to that address
+PAGE_DESTINATIONS = ("iframe", "document")
+# Tells hub.fetch that the hub refused the login, not the game's raw route, so logging in again can fix it
+EXPIRED_HEADER = {"X-ActivityHub": "session-expired"}
 
 
-def action_reply(game: Game, name: str, result: t.Any) -> web.Response:
-    """Turn what an action handler returned into the page's reply"""
-    if result is None:
-        result = {}
-    if not isinstance(result, dict):
-        log.error("Action %s.%s returned %s instead of a dict", game.key, name, type(result).__name__)
-        return error(SOMETHING_WRONG, 500)
-    if "error" in result:
-        return error(str(result["error"]), 400)
-    try:
-        return web.json_response(result)
-    except (TypeError, ValueError) as e:
-        log.error("Action %s.%s returned something that isn't JSON", game.key, name, exc_info=e)
-        return error(SOMETHING_WRONG, 500)
+def is_page_load(request: web.Request) -> bool:
+    """Whether the browser is loading this address as a page, not fetching a file for one"""
+    destination = request.headers.get("Sec-Fetch-Dest")
+    if destination is not None:
+        return destination in PAGE_DESTINATIONS
+    # Browsers that don't send Sec-Fetch-Dest still ask for HTML first when they load a page
+    return request.headers.get("Accept", "").startswith("text/html")
+
+
+def describe(e: Exception) -> str:
+    """An exception in one line, like the last line of its traceback"""
+    text = str(e)
+    return f"{type(e).__name__}: {text}" if text else type(e).__name__
 
 
 class GameRoutes:
@@ -64,9 +80,13 @@ class GameRoutes:
 
     async def dispatch(self, request: web.Request) -> web.StreamResponse:
         game = self.hub.registry.games.get(request.match_info["key"])
-        if game is None:
-            raise web.HTTPNotFound()
         tail = request.match_info["tail"]
+        if game is None:
+            # The menu can still list a game whose cog was just unloaded, so its frame gets a way back.
+            # So does a frame that reloads after the cog unloads, on any address under the game
+            if request.method in READ_METHODS and (not tail or is_page_load(request)):
+                return self.notice(NOT_INSTALLED, 404)
+            raise web.HTTPNotFound()
         head, rest = tail.split("/", 1) if "/" in tail else (tail, "")
         if not head:
             return await self.page(request, game)
@@ -78,19 +98,37 @@ class GameRoutes:
             return await self.raw(request, game, rest)
         return await self.file(request, game, rest)
 
-    async def page(self, request: web.Request, game: Game) -> web.Response:
-        if request.method not in READ_METHODS:
-            raise web.HTTPMethodNotAllowed(request.method, READ_METHODS)
+    def importmap_tag(self) -> str:
         # "activityhub/..." reaches the hub's own files, which the bundled games share
         hub_root = f"/hub/{self.server.hub_build()}/"
         importmap = json.dumps({"imports": {"activityhub": f"{hub_root}sdk.js", "activityhub/": hub_root}})
-        importmap_tag = f'<script type="importmap">{importmap}</script>'
+        return f'<script type="importmap">{importmap}</script>'
+
+    def notice(self, message: str, status: int) -> web.Response:
+        text = inject_head(notice_page(message), self.importmap_tag())
+        return web.Response(text=text, content_type="text/html", status=status, headers=NO_CACHE)
+
+    async def something_wrong(self, ctx: ActivityContext | None, reason: str) -> web.Response:
+        """The "Something went wrong." reply, plus the reason for the bot owner, who is usually the one testing"""
+        if ctx is None or not await self.hub.bot.is_owner(ctx.author):
+            return error(SOMETHING_WRONG, 500)
+        note = f"Only you see this, as the bot owner: {reason.rstrip('.')}. The bot's log has the full error."
+        return error(f"{SOMETHING_WRONG} ({note})", 500)
+
+    async def page(self, request: web.Request, game: Game) -> web.Response:
+        if request.method not in READ_METHODS:
+            raise web.HTTPMethodNotAllowed(request.method, READ_METHODS)
         if await self.turned_off_here(request, game):
-            return web.Response(
-                text=inject_head(OFF_PAGE, importmap_tag), content_type="text/html", status=403, headers=NO_CACHE
-            )
-        tags = f'<base href="/games/{game.key}/{build_id(game.web_dir)}/" />{importmap_tag}'
-        html = (game.web_dir / "index.html").read_text(encoding="utf-8")
+            return self.notice(TURNED_OFF, 403)
+        try:
+            html = (game.web_dir / "index.html").read_text(encoding="utf-8")
+            build = build_id(game.web_dir)
+        except (OSError, UnicodeDecodeError) as e:
+            # A bundler rebuilding the page can leave index.html missing or half written for a moment.
+            # The notice page keeps the frame's button back to the menu, which aiohttp's own 500 page wouldn't
+            log.error("Couldn't read index.html of %s", game.key, exc_info=e)
+            return self.notice(SOMETHING_WRONG, 500)
+        tags = f'<base href="/games/{game.key}/{build}/" />{self.importmap_tag()}'
         return web.Response(text=inject_head(html, tags), content_type="text/html", headers=NO_CACHE)
 
     async def turned_off_here(self, request: web.Request, game: Game) -> bool:
@@ -103,9 +141,21 @@ class GameRoutes:
         if request.method not in READ_METHODS:
             raise web.HTTPMethodNotAllowed(request.method, READ_METHODS)
         target = resolve_inside(game.web_dir, path)
-        if target is None:
+        if target is not None and target == (game.web_dir / "index.html").resolve():
+            # A link or reload to index.html itself gets the page with the hub's tags, so the helper still loads
+            return await self.page(request, game)
+        if target is not None:
+            return file_response(target)
+        if not is_page_load(request):
             raise web.HTTPNotFound()
-        return file_response(target)
+        # The game frame itself went to an address that isn't there. A bare 404 would leave the player stuck in it
+        log.warning(
+            "%s: the game frame went to %r, which isn't a file in web_dir. "
+            'Is it an href="#" link, a single-page app router path, or a typo?',
+            game.key,
+            request.path,
+        )
+        return self.notice(PAGE_MISSING, 404)
 
     async def action(self, request: web.Request, game: Game, name: str) -> web.Response:
         if request.method != "POST":
@@ -117,7 +167,7 @@ class GameRoutes:
             return error(TURNED_OFF, 403)
         handler = game.actions.get(name)
         if handler is None:
-            return error(NO_SUCH_ACTION, 404)
+            return error(NO_SUCH_ACTION.format(name=name), 404)
         data = await read_object(request)
         if data is None:
             return error(BAD_REQUEST, 400)
@@ -125,14 +175,41 @@ class GameRoutes:
             result = await handler(ctx, data)
         except Exception as e:
             log.error("Action %s.%s failed", game.key, name, exc_info=e)
-            return error(SOMETHING_WRONG, 500)
-        return action_reply(game, name, result)
+            return await self.something_wrong(ctx, describe(e))
+        return await self.reply(ctx, game, name, result)
+
+    async def reply(self, ctx: ActivityContext, game: Game, name: str, result: t.Any) -> web.Response:
+        """Turn what an action handler returned into the page's reply"""
+        if result is None:
+            result = {}
+        if not isinstance(result, dict):
+            kind = type(result).__name__
+            log.error("Action %s.%s returned %s instead of a dict", game.key, name, kind)
+            return await self.something_wrong(ctx, f"returned {kind} instead of a dict")
+        message = result.get("error")
+        if isinstance(message, str) and message.strip():
+            return error(message, 400)
+        if message is not None:
+            # The player would see a Python repr, or an error with no words. {"error": None} is no error
+            problem = "an empty error" if isinstance(message, str) else "an error that isn't text"
+            log.error("Action %s.%s returned %s: %r", game.key, name, problem, message)
+            return await self.something_wrong(ctx, f"returned {problem}: {message!r}")
+        try:
+            return web.json_response(result, dumps=STRICT_DUMPS)
+        except (TypeError, ValueError) as e:
+            log.error("Action %s.%s returned something that isn't JSON", game.key, name, exc_info=e)
+            return await self.something_wrong(ctx, f"returned something that isn't JSON: {e}")
 
     async def raw(self, request: web.Request, game: Game, path: str) -> web.StreamResponse:
         handler = game.routes.get((request.method, path.strip("/")))
         if handler is None:
             raise web.HTTPNotFound()
         ctx = self.server.request_context(request)
+        if ctx is None and request.headers.get("Authorization", "").startswith("Bearer "):
+            # The page sent a login the hub no longer knows: a bot restart, an ActivityHub reload, or 12 hours
+            # passed. hub.fetch logs in again and retries, so a handler only sees ctx=None for requests with no
+            # login at all
+            return web.json_response({"error": SESSION_EXPIRED}, status=401, headers=EXPIRED_HEADER)
         if ctx is not None and await self.server.game_off(ctx.guild_id, game.key):
             return error(TURNED_OFF, 403)
         try:
@@ -142,16 +219,17 @@ class GameRoutes:
             raise
         except Exception as e:
             log.error("Raw route %s %s of %s failed", request.method, path, game.key, exc_info=e)
-            return error(SOMETHING_WRONG, 500)
+            return await self.something_wrong(ctx, describe(e))
         if not isinstance(response, web.StreamResponse):
             log.error("Raw route %s %s of %s returned %r, not a response", request.method, path, game.key, response)
-            return error(SOMETHING_WRONG, 500)
+            return await self.something_wrong(ctx, f"returned {type(response).__name__}, not a response")
         return response
 
     async def socket(self, request: web.Request, game: Game) -> web.StreamResponse:
         if not game.socket:
-            raise web.HTTPNotFound()
-        ws = web.WebSocketResponse(max_msg_size=MAX_BODY)
+            return await self.refuse_socket(request, game)
+        # Pings are answered in pump, which also needs to see the browser's pongs to notice a player who vanished
+        ws = web.WebSocketResponse(max_msg_size=MAX_BODY, autoping=False)
         await ws.prepare(request)
         ctx = await self.socket_context(ws)
         if ctx is None:
@@ -167,14 +245,28 @@ class GameRoutes:
         try:
             late_code = await self.late_close_code(conn)
             if late_code is not None:
-                await conn.close(late_code)
+                await conn.end(late_code)
             elif await self.run_handler(conn, "join"):
                 await self.pump(conn)
+                # Out of the room before leave runs, so a leave that finds no peers knows it was the last one
+                self.server.rooms.discard(conn)
                 await self.run_handler(conn, "leave")
         finally:
             self.server.rooms.discard(conn)
             if not ws.closed:
-                await ws.close(code=conn.closing or 1000)
+                await conn.end(conn.closing or 1000)
+        return ws
+
+    async def refuse_socket(self, request: web.Request, game: Game) -> web.WebSocketResponse:
+        """
+        Answer a live connection to a game that has no "socket" with close code 4004.
+        Refusing the upgrade would reach the page only as 1006, which looks like a network problem
+        """
+        ws = web.WebSocketResponse()
+        await ws.prepare(request)
+        # Only after the upgrade, so a plain request to this address isn't reported as a live connection
+        log.warning('%s: the page opened a live connection, but activityhub_game() has no "socket"', game.key)
+        await ws.close(code=CLOSE_NO_SOCKET, message=b"This game has no live connection")
         return ws
 
     async def late_close_code(self, conn: Connection) -> int | None:
@@ -215,23 +307,39 @@ class GameRoutes:
         except Exception as e:
             log.error("Live connection %s handler of %s failed", event, conn.game.key, exc_info=e)
             if event == "join":
-                await conn.close(CLOSE_HANDLER_FAILED)
+                await conn.end(CLOSE_HANDLER_FAILED)
             return False
         return True
 
     async def pump(self, conn: Connection) -> None:
-        """Hand each message to the game until the connection closes, with a heartbeat when it goes quiet"""
+        """
+        Hand each message to the game until the connection closes. A quiet connection gets a heartbeat,
+        and one that doesn't answer it is treated as closed
+        """
+        pinged = False
         while True:
             try:
                 msg = await conn.ws.receive(timeout=HEARTBEAT_SECONDS)
             except asyncio.TimeoutError as e:
-                # The receive timeout is the heartbeat timer: nothing arrived, so send something
-                log.debug("No message in %s seconds, sending a heartbeat: %s", HEARTBEAT_SECONDS, e)
+                if pinged:
+                    # Neither the browser's automatic answer to the last ping nor the page's came back: the player
+                    # is gone (a phone that lost its network), so leave runs
+                    log.debug("No answer to a heartbeat on %s, closing: %r", conn.game.key, e)
+                    conn.closing = CLOSE_GOING_AWAY
+                    return
+                # The receive timeout is the heartbeat timer: nothing arrived, so send something. Browsers answer
+                # protocol pings by themselves, and sdk.js answers the JSON ping, which also keeps proxies happy
+                log.debug("No message in %s seconds, sending a heartbeat: %r", HEARTBEAT_SECONDS, e)
+                pinged = True
+                await conn.write(conn.ws.ping())
                 await conn.send(PING)
                 continue
+            pinged = False
             if msg.type in CLOSED_TYPES:
                 return
-            if msg.type == WSMsgType.TEXT:
+            if msg.type == WSMsgType.PING:
+                await conn.write(conn.ws.pong(msg.data))
+            elif msg.type == WSMsgType.TEXT:
                 await self.deliver(conn, msg.data)
 
     async def deliver(self, conn: Connection, text: str) -> None:
@@ -242,6 +350,9 @@ class GameRoutes:
             data = json.loads(text)
         except ValueError as e:
             log.debug("Ignored a message that isn't JSON on %s: %s", conn.game.key, e)
+            return
+        if data == PONG:
+            # The page's answer to a heartbeat. Arriving at all was its whole job
             return
         try:
             await handler(conn.ctx, conn, data)

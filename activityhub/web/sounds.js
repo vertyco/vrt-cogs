@@ -164,8 +164,18 @@ export class MenuSounds {
   load(name) {
     if (!this.buffers[name]) {
       this.buffers[name] = fetch(FILES[name])
-        .then((resp) => resp.arrayBuffer())
-        .then((data) => this.ctx.decodeAudioData(data));
+        .then((resp) => {
+          if (!resp.ok) {
+            throw new Error(`Couldn't load the ${name} sound (${resp.status})`);
+          }
+          return resp.arrayBuffer();
+        })
+        .then((data) => this.ctx.decodeAudioData(data))
+        .catch((e) => {
+          // A failed load is tried again next time instead of silencing the sound for the whole visit
+          delete this.buffers[name];
+          throw e;
+        });
     }
     return this.buffers[name];
   }

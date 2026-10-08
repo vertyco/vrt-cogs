@@ -5,6 +5,7 @@ import typing as t
 from aiohttp import web
 
 from .games import Game
+from .replies import STRICT_DUMPS
 from .sessions import ActivityContext
 
 log = logging.getLogger("red.vrt.activityhub.sockets")
@@ -12,11 +13,35 @@ log = logging.getLogger("red.vrt.activityhub.sockets")
 # Hub messages on a live connection. sdk.js handles these itself and never passes them to the game
 READY = {"activityhub": "ready"}
 PING = {"activityhub": "ping"}
+# sdk.js answers PING with this. Some proxies drop WebSocket ping frames, so a page's reply that travels as an
+# ordinary message is what proves the player is still there. The hub never hands it to the game
+PONG = {"activityhub": "pong"}
+RESERVED_FIELD = "activityhub"
 
 CLOSE_GOING_AWAY = 1001
 CLOSE_HANDLER_FAILED = 1011
 CLOSE_SESSION = 4001
 CLOSE_TURNED_OFF = 4003
+CLOSE_NO_SOCKET = 4004
+# The hub's own close codes, kept apart from a game's so the page can always tell what a code means
+HUB_CLOSE_CODES = range(4000, 4100)
+
+# A player who can't take a message in this long is disconnected, so they can't hold up everyone's broadcasts
+SEND_SECONDS = 10
+
+
+def forget_failure(sending: asyncio.Future) -> None:
+    """Mark a send's error as seen, so asyncio doesn't log it. Its sender handled it, or stopped waiting for it"""
+    if not sending.cancelled():
+        sending.exception()
+
+
+def to_json(data: t.Any) -> str:
+    """The text of a message to the page. Refuses what the page couldn't read, and the hub's own field"""
+    if isinstance(data, dict) and RESERVED_FIELD in data and data is not READY and data is not PING:
+        # sdk.js would swallow it as one of the hub's own messages, so the game would never see it
+        raise ValueError("The 'activityhub' field is reserved for the hub's own messages. Use another field name.")
+    return STRICT_DUMPS(data)
 
 
 class Connection:
@@ -28,28 +53,64 @@ class Connection:
         self.game = game
         self.rooms = rooms
         self.closing: int | None = None
+        # Closes a player who stopped taking messages. Kept here so the task isn't garbage collected mid-close
+        self.closer: asyncio.Task | None = None
 
     async def send(self, data: t.Any) -> None:
-        """Send a JSON message to this ctx. Does nothing once the connection is closing"""
+        """
+        Send a JSON message to this ctx. Does nothing once the connection is closing.
+        NaN, Infinity and the reserved "activityhub" field raise ValueError, closing or not
+        """
+        await self.send_text(to_json(data))
+
+    async def send_text(self, text: str) -> None:
+        """Send a message to_json already made. Lets broadcast turn a message into text once for every peer"""
         if self.ws.closed:
             return
+        await self.write(self.ws.send_str(text))
+
+    async def write(self, sending: t.Awaitable[None]) -> None:
+        """Wait for one frame to go out, without letting a stalled or dropped player raise into the sender"""
+        # A send that takes too long keeps going in the background. Cancelling it would orphan aiohttp's own wait
+        # for the network, whose error when the connection finally drops would be logged as never retrieved
+        task = asyncio.ensure_future(sending)
+        task.add_done_callback(forget_failure)
         try:
-            await self.ws.send_json(data)
-        except ConnectionResetError as e:
+            await asyncio.wait_for(asyncio.shield(task), SEND_SECONDS)
+        except asyncio.TimeoutError as e:
+            log.debug("A player on %s couldn't take a message in %s seconds: %r", self.game.key, SEND_SECONDS, e)
+            if self.closer is None:
+                # end() marks the connection closed straight away, so later sends to it return at once,
+                # and its own pump sees the close and runs leave
+                self.closer = asyncio.create_task(self.end(CLOSE_GOING_AWAY))
+        except ConnectionError as e:
+            # The player dropped while this was on its way. Their own pump sees that and runs leave
             log.debug("Dropped a message to a closing connection on %s: %s", self.game.key, e)
 
     async def broadcast(self, data: t.Any, include_self: bool = False) -> None:
         """Send to everyone connected to this game in the same activity instance"""
+        text = to_json(data)
         targets = self.peers() + ([self] if include_self else [])
-        await asyncio.gather(*(conn.send(data) for conn in targets))
+        await asyncio.gather(*(conn.send_text(text) for conn in targets))
 
     def peers(self) -> list["Connection"]:
         """The other connections to this game in the same activity instance"""
         return [conn for conn in self.rooms.room(self) if conn is not self]
 
     async def close(self, code: int = 1000) -> None:
+        """Close the connection. Games use 1000, or their own 4100-4999"""
+        if code in HUB_CLOSE_CODES:
+            raise ValueError(
+                f"Close code {code} is reserved for ActivityHub. Use 1000, or 4100-4999 for your game's own reasons."
+            )
+        await self.end(code)
+
+    async def end(self, code: int) -> None:
+        """Close with any code. The hub's own closes use this"""
         self.closing = code
-        await self.ws.close(code=code)
+        # Waiting for the send buffer to empty would take forever for a player who stopped reading. The close still
+        # goes out after everything sent before it, and the wait for the page's answer to it has its own timeout
+        await self.ws.close(code=code, drain=False)
 
 
 class Rooms:
@@ -81,7 +142,7 @@ class Rooms:
 
     async def close_where(self, should_close: t.Callable[[Connection], bool], code: int) -> None:
         targets = [conn for conn in self.all() if should_close(conn)]
-        results = await asyncio.gather(*(conn.close(code) for conn in targets), return_exceptions=True)
+        results = await asyncio.gather(*(conn.end(code) for conn in targets), return_exceptions=True)
         for conn, result in zip(targets, results):
             if isinstance(result, BaseException):
                 log.warning("Couldn't close a live connection on %s", conn.game.key, exc_info=result)

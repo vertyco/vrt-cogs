@@ -6,7 +6,15 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.select import Select
 
-from activityhub.tests.browser import DISCORD_QUERY, LiveHub, fresh, hub_web_copy, start_chrome, wait_for
+from activityhub.tests.browser import (
+    DISCORD_QUERY,
+    LiveHub,
+    fresh,
+    hub_web_copy,
+    start_chrome,
+    wait_for,
+    wait_for_console,
+)
 from activityhub.tests.fakes import (
     GUILD_ID,
     MANAGER_ID,
@@ -166,6 +174,34 @@ def test_order_with_the_arrow_buttons(driver, live):
     assert driver.execute_script(f"return {CARDS}") == ["demo", "second"]
 
 
+def test_reset_order_saves_alphabetical(driver, live):
+    live.hub.config.user_from_id(MEMBER_ID).data["order"] = ["demo", "second"]
+    open_menu(driver, live, DISCORD_QUERY)
+    assert driver.execute_script(f"return {CARDS}") == ["demo", "second"]
+    open_settings(driver)
+    pick_tab(driver, "order")
+    driver.find_element(By.ID, "reset").click()
+    save(driver)
+    assert live.hub.config.users[MEMBER_ID]["order"] == []
+    driver.find_element(By.ID, "close").click()
+    assert driver.execute_script(f"return {CARDS}") == ["second", "demo"]
+
+
+def test_dropping_something_from_outside_leaves_the_order_alone(driver, live):
+    open_menu(driver, live, DISCORD_QUERY)
+    open_settings(driver)
+    pick_tab(driver, "order")
+    # A drop of text that isn't a row from the list, like a file or a dragged link
+    driver.execute_script("""
+        const row = document.querySelector('.order-row[data-key="demo"]');
+        const data = new DataTransfer();
+        data.setData('text/plain', '9');
+        row.dispatchEvent(new DragEvent('drop', { dataTransfer: data, bubbles: true, cancelable: true }));
+        """)
+    rows = "[...document.querySelectorAll('.order-row')].map((row) => row.dataset.key)"
+    assert driver.execute_script(f"return {rows}") == ["second", "demo"]
+
+
 def test_server_tab_turns_a_game_off(driver, live):
     live.user_id = MANAGER_ID
     open_menu(driver, live, DISCORD_QUERY)
@@ -225,13 +261,36 @@ def test_expired_session_logs_in_again_without_a_new_handshake(driver, live):
         driver,
         f"window.activityhubHost.login.session && window.activityhubHost.login.session !== '{old_session}'",
     )
-    wait_for(driver, "document.getElementById('game-frame') === null")
-    wait_for(driver, "window.fakeDiscord.authorize === 2 && document.querySelectorAll('#games .card').length > 0")
+    # The game logs in again by itself and keeps running
+    driver.switch_to.frame(driver.find_element(By.ID, "game-frame"))
+    wait_for(driver, "window.demo && window.demo.done")
+    assert driver.execute_script("return [window.demo.error, window.demo.echo.user]") == [None, MEMBER_ID]
+    driver.switch_to.default_content()
+    # The game can finish all that before its fade in does
+    wait_for(driver, "document.body.classList.contains('playing')")
     deadline = time.monotonic() + 10
     while len(live.hub.sessions.sessions) != 1 and time.monotonic() < deadline:
         time.sleep(0.05)
     assert driver.execute_script("return window.fakeDiscord") == {"created": 1, "authorize": 2, "authenticate": 1}
     assert len(live.hub.sessions.sessions) == 1
+
+
+def test_the_discord_token_is_dropped_once_discord_accepts_it(driver, live):
+    open_menu(driver, live, DISCORD_QUERY)
+    wait_for(driver, "window.fakeDiscord.authenticate === 1")
+    login = driver.execute_async_script("const done = arguments[0]; window.activityhubHost.ready.then(done);")
+    assert login["session"] and "accessToken" not in login
+
+
+def test_logins_needed_at_once_share_one_authorize(driver, live):
+    open_menu(driver, live, DISCORD_QUERY)
+    shared = driver.execute_async_script("""
+        const done = arguments[0];
+        const host = window.activityhubHost;
+        Promise.all([host.relogin(), host.relogin()]).then(([a, b]) => done(a === b && !("accessToken" in a)));
+        """)
+    assert shared is True
+    assert driver.execute_script("return window.fakeDiscord.authorize") == 2
 
 
 def test_restart_when_discord_refuses_a_second_authorize_shows_the_notice(driver, live):
@@ -241,9 +300,38 @@ def test_restart_when_discord_refuses_a_second_authorize_shows_the_notice(driver
     driver.find_element(By.CSS_SELECTOR, '.card[data-key="demo"]').click()
     wait_for(driver, "document.getElementById('notice').textContent.includes('Your session expired')")
     assert not driver.find_element(By.ID, "notice").get_attribute("hidden")
+    assert driver.find_elements(By.ID, "game-frame") == []
     assert driver.execute_script("return window.noReload") == "still here"
     assert driver.execute_script("return window.fakeDiscord.created") == 1
     assert len(live.hub.sessions.sessions) == 0
+
+
+def test_a_page_discord_never_answers_says_why(driver, tmp_path):
+    # Like the game frame's address opened in its own tab: the page waits for a Discord that isn't there
+    web = hub_web_copy(tmp_path)
+    host = web / "host.js"
+    text = host.read_text(encoding="utf-8")
+    assert "const DISCORD_WAIT_MS = 10000;" in text
+    host.write_text(text.replace("const DISCORD_WAIT_MS = 10000;", "const DISCORD_WAIT_MS = 300;"), encoding="utf-8")
+    hub = make_hub()
+    register(hub, DemoCog(write_demo_web(tmp_path / "demo")))
+    server = LiveHub(hub, web)
+    server.start()
+    try:
+        fresh(driver, server)
+        driver.get(f"{server.url}/{DISCORD_QUERY}&silent=1")
+        wait_for(driver, "document.getElementById('notice').textContent.includes('only works inside Discord')")
+        assert driver.find_element(By.ID, "notice").text == (
+            "Discord hasn't answered yet. This address only works inside Discord; for the browser preview, "
+            "open / without the ?frame_id=... part."
+        )
+        wait_for_console(driver, "ActivityHub: Discord hasn't answered yet.")
+        # It keeps waiting, so a Discord that is only slow still gets the menu
+        driver.execute_script("window.answerDiscord()")
+        wait_for(driver, "document.querySelectorAll('#games .card').length > 0")
+        assert driver.find_element(By.ID, "notice").get_attribute("hidden")
+    finally:
+        server.stop()
 
 
 def test_empty_state_points_admins_to_the_guide(driver, live):

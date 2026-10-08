@@ -1,6 +1,7 @@
 from abc import ABC, ABCMeta
 
 import discord
+from discord.ext import commands as dpy_commands
 from discord.ext.commands.cog import CogMeta
 from redbot.core import Config
 from redbot.core.bot import Red
@@ -31,5 +32,5 @@ class MixinMeta(ABC):
     async def start_server(self) -> None:
         raise NotImplementedError
 
-    async def launch(self, interaction: discord.Interaction, key: str | None = None) -> None:
+    async def launch(self, interaction: discord.Interaction | dpy_commands.Context, key: str | None = None) -> bool:
         raise NotImplementedError

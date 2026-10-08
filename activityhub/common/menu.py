@@ -30,9 +30,12 @@ def merge_order(saved: list[str], value: t.Any, installed: t.Collection[str]) ->
     A player's order to save: the sent keys of installed games, then the saved keys of installed games not sent.
 
     The menu only lists games that are on in the current server, so the positions of games that are off here
-    must survive a save and still apply in other servers.
+    must survive a save and still apply in other servers. An empty list is the menu's Reset: no saved order,
+    so every game, including ones installed later, sorts alphabetically.
     """
     sent = clean_order(value, installed)
+    if not value:
+        return []
     kept = [key for key in saved if key in installed]
     return list(dict.fromkeys(sent + kept))
 
@@ -81,6 +84,8 @@ def player_json(ctx: t.Any) -> dict:
     return {
         "id": str(ctx.author.id),
         "username": ctx.author.name,
+        # The name Discord shows for the player: their server nickname, else their display name, else username
+        "displayName": ctx.author.display_name,
         "avatar": ctx.author.display_avatar.url,
         "guildId": str(guild.id) if guild else None,
         "guildName": guild.name if guild else None,

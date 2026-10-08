@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 from redbot.core import Config, commands
@@ -24,7 +25,7 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.1.3b"
+    __version__ = "0.1.4b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -39,6 +40,8 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
         self.launches = LaunchMemory()
         self.scores = ScoreBoard(self.config)
         self.server = HubServer(self)
+        # The game cogs cog_load found already loaded, each describing itself in its own task
+        self.scans: list[asyncio.Task] = []
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -58,14 +61,30 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
         self.open_view = OpenView(self)
         self.bot.add_view(self.open_view)
         await self.start_server()
-        for game in bundled_games(self.scores):
-            await self.registry.add(game)
-        # Last, so a cog added during the server start isn't missed. This cog isn't in bot.cogs yet while it
-        # loads, so this sees every other cog that is already loaded
-        for cog in list(self.bot.cogs.values()):
-            await self.add_game(cog)
+        try:
+            for game in bundled_games(self.scores):
+                await self.registry.add(game)
+            # Last, so a cog added during the server start isn't missed. This cog isn't in bot.cogs yet while it
+            # loads, so this sees every other cog that is already loaded. Each game cog describes itself in its own
+            # task. Its activityhub_game() may wait on something (even the bot being ready, which happens only after
+            # every cog has loaded), and that must never hold up loading this cog or the other games
+            self.scans = [
+                asyncio.create_task(self.add_game(cog))
+                for cog in list(self.bot.cogs.values())
+                if hasattr(cog, "activityhub_game")
+            ]
+        except BaseException:
+            # discord.py never calls cog_unload when cog_load fails or is cancelled (at startup Red cancels a load
+            # that takes over 30 seconds), so without this the port would stay taken until the bot restarts, and
+            # slash syncs would keep going through this copy's hook
+            drop_entry_point_hook(self.bot, self.entry_point_hook)
+            self.open_view.stop()
+            await self.server.stop()
+            raise
 
     async def cog_unload(self) -> None:
+        for task in self.scans:
+            task.cancel()
         drop_entry_point_hook(self.bot, self.entry_point_hook)
         self.open_view.stop()
         await self.server.stop()
@@ -81,9 +100,10 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
             log.error("ActivityHub web server could not listen on %s:%s", host, port, exc_info=e)
 
     async def add_game(self, cog: commands.Cog) -> None:
-        await self.registry.add(cog)
-        # The cog may have unloaded while its activityhub_game() was running
+        # The cog may unload, or be replaced by a reloaded copy, while its activityhub_game() runs
+        await self.registry.add(cog, still_loaded=lambda: self.bot.get_cog(cog.qualified_name) is cog)
         if self.bot.get_cog(cog.qualified_name) is not cog:
+            # Also drops a refusal recorded for a copy that is gone
             self.registry.remove(cog)
 
     @commands.Cog.listener()
@@ -93,5 +113,12 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
 
     @commands.Cog.listener()
     async def on_cog_remove(self, cog: commands.Cog):
+        freed = [game.key for game in self.registry.games.values() if game.cog is cog]
         self.registry.remove(cog)
+        # First, so this game's players aren't kept waiting on another cog's activityhub_game() below
         await self.server.rooms.close_stale(self.registry.games)
+        # A loaded cog refused because this one held its key gets the key now, without needing a reload
+        for name, key in list(self.registry.clashes.items()):
+            refused = self.registry.failed.get(name)
+            if key in freed and refused is not None and self.bot.get_cog(name) is refused[0]:
+                await self.add_game(refused[0])

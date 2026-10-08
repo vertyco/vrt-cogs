@@ -91,6 +91,7 @@ class Arcade {
     this.playing = false;
     this.paused = false;
     this.run = null;
+    this.saving = null;
     this.best = null;
     this.audio = null;
     this.muted = readMuted();
@@ -130,7 +131,11 @@ class Arcade {
       el("span", { class: "arcade-stat" }, [el("small", { text: "Score" }), this.scoreText]),
       this.bestStat,
     ]);
-    document.body.prepend(el("header", { class: "arcade-bar" }, [back, name, stats, this.muteButton, this.pauseButton]));
+    const bar = el("header", { class: "arcade-bar" }, [back, name, stats, this.muteButton, this.pauseButton]);
+    // A clicked button would keep the keyboard, so the next Space or Enter meant for the game would press it again.
+    // Tab still reaches the buttons
+    bar.addEventListener("mousedown", (event) => event.preventDefault());
+    document.body.prepend(bar);
     this.showMute();
     this.showBest();
     this.pauseButton.hidden = true;
@@ -419,13 +424,23 @@ class Arcade {
     this.over(score, proof);
   }
 
+  // The bot keeps the round open until a finish reaches it. When the request got no answer (a dropped
+  // connection) or the bot failed, the round is kept so it can be sent again; any other answer closed it
   async save(proof) {
     const run = this.run;
-    this.run = null;
     if (!run) {
       return null;
     }
-    return this.hub.api("finish", { run, ...proof });
+    try {
+      const result = await this.hub.api("finish", { run, ...proof });
+      this.run = null;
+      return result;
+    } catch (e) {
+      if (e.status >= 400 && e.status < 500) {
+        this.run = null;
+      }
+      throw e;
+    }
   }
 
   countUp(node, value) {
@@ -467,15 +482,30 @@ class Arcade {
         : "Scores are only saved when you play in a server.";
       return;
     }
+    this.saving = this.finishSave(proof, status, again);
+    await this.saving;
+    this.focusPrimary();
+  }
+
+  async finishSave(proof, status, again) {
     again.disabled = true;
     try {
       this.showSaved(await this.save(proof), status);
     } catch (e) {
       status.textContent = e.message;
       status.classList.add("arcade-error");
+      if (this.run === null) {
+        return;
+      }
+      const retry = this.button("Retry save", () => {
+        status.classList.remove("arcade-error");
+        status.textContent = "Saving...";
+        this.saving = this.finishSave(proof, status, again);
+      });
+      status.append(" ", retry);
+    } finally {
+      again.disabled = false;
     }
-    again.disabled = false;
-    this.focusPrimary();
   }
 
   showSaved(result, status) {
@@ -498,6 +528,9 @@ class Arcade {
       if (score > 0) {
         await this.save(proof).catch((e) => console.warn("Arcade: couldn't save the round before leaving", e));
       }
+    } else if (this.saving) {
+      // Closing the game frame would cancel a save that is still on its way
+      await this.saving;
     }
     this.hub.backToMenu();
   }

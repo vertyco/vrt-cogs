@@ -34,7 +34,17 @@ const ACCENTS = ["#5865F2", "#57F287", "#FEE75C", "#EB459E", "#ED4245", "#00A8FC
 
 const $ = (id) => document.getElementById(id);
 const clamp = (value, low, high) => Math.min(Math.max(value, low), high);
-const page = { host: null, state: null, tab: null, staged: null, retried: false, selected: null, touch: false, orbScroll: 0 };
+const page = {
+  host: null,
+  state: null,
+  tab: null,
+  staged: null,
+  retried: false,
+  selected: null,
+  touch: false,
+  orbScroll: 0,
+  dragging: null,
+};
 const sounds = new MenuSounds();
 
 function el(tag, className, text) {
@@ -56,7 +66,12 @@ function initial(name) {
 
 async function start() {
   mark("menu script running");
-  page.host = startHost({ onGameClosed: gameClosed, onSessionExpired: sessionExpired });
+  page.host = startHost({
+    onGameClosed: gameClosed,
+    onSessionExpired: sessionExpired,
+    // Shown until the menu loads, which hides it, in case Discord answers after all
+    onDiscordSilent: (text) => showNotice(text),
+  });
   bindPanel();
   bindOrb();
   // The menu shows as soon as the bot has logged the player in; Discord accepting the login finishes after
@@ -765,13 +780,20 @@ function orderRow(key, name, index) {
   );
   row.addEventListener("dragstart", (event) => {
     event.dataTransfer.setData("text/plain", String(index));
+    page.dragging = index;
     row.classList.add("dragging");
   });
-  row.addEventListener("dragend", () => row.classList.remove("dragging"));
+  row.addEventListener("dragend", () => {
+    page.dragging = null;
+    row.classList.remove("dragging");
+  });
   row.addEventListener("dragover", (event) => event.preventDefault());
   row.addEventListener("drop", (event) => {
     event.preventDefault();
-    moveGame(Number(event.dataTransfer.getData("text/plain")), index);
+    // Only a row dragged from this list moves, not a file or text dropped from elsewhere
+    if (page.dragging !== null) {
+      moveGame(page.dragging, index);
+    }
   });
   return row;
 }
