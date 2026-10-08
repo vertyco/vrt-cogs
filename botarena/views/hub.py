@@ -268,15 +268,22 @@ class CampaignBattleActionsRow(ui.ActionRow["BattleResultLayout"]):
 
     @ui.button(label="Try Again", style=discord.ButtonStyle.primary, emoji="🔄")
     async def retry_button(self, interaction: discord.Interaction, button: ui.Button):
-        if not self.view.ctx or not self.view.cog or not self.view.retry_mission:
+        ctx, cog, mission = self.view.ctx, self.view.cog, self.view.retry_mission
+        if not ctx or not cog or not mission:
             await interaction.response.send_message("Cannot retry.", ephemeral=True)
             return
+        # Back from the briefing goes to the mission's chapter, then the hub
+        hub_view = GameHubLayout(ctx, cog)
+        campaign_view = CampaignLayout(ctx, cog, parent=hub_view)
+        campaign_view.selected_chapter = mission.chapter
         view = MissionBriefingLayout(
-            self.view.ctx, self.view.cog, self.view.retry_mission, selected_bots=self.view.retry_selected_bots
+            ctx, cog, mission, parent=campaign_view, selected_bots=self.view.retry_selected_bots
         )
-        await interaction.response.send_message(view=view)
-        msg = await interaction.original_response()
-        view.message = msg
+        # The briefing thumbnail points at attachment://arena.webp, so the image must be sent with it
+        await interaction.response.send_message(view=view, files=view.get_attachments())
+        hub_view.message = await interaction.original_response()
+        hub_view.navigate_to_child(campaign_view)
+        campaign_view.navigate_to_child(view)
         self.retry_button.disabled = True
         self.return_button.disabled = True
         await self.view.message.edit(view=self.view)
@@ -1885,7 +1892,8 @@ class MissionBriefingLayout(BotArenaView):
             user=self.ctx.author,
             mission_name=self.mission.name,
             chapter_name=chapter_name,
-            mission=self.mission,
+            # Skirmish is once a day, so it gets no Try Again button
+            mission=None if is_skirmish else self.mission,
             retry_selected_bots=self.selected_bots,
         )
 
