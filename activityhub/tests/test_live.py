@@ -1,9 +1,11 @@
 import asyncio
+import json
+import socket
 
 import pytest
-from aiohttp import WSMsgType, WSServerHandshakeError
+from aiohttp import WSMsgType
 
-from activityhub.common import game_routes
+from activityhub.common import game_routes, sockets
 from activityhub.tests.fakes import (
     ADMIN_ID,
     GUILD_ID,
@@ -11,11 +13,45 @@ from activityhub.tests.fakes import (
     MEMBER_ID,
     OWNER_ID,
     DemoCog,
+    register,
     session_headers,
     write_demo_web,
 )
 
 READY = {"activityhub": "ready"}
+PING = {"activityhub": "ping"}
+
+
+class RoomCog(DemoCog):
+    """Tidies up after the last player and tells the rest how many are left, like the guide's leave example"""
+
+    def __init__(self, web_dir):
+        super().__init__(web_dir)
+        self.cleanups = 0
+
+    async def on_message(self, ctx, conn, data):
+        if data == "slow":
+            # Keeps the connection's pump busy for several heartbeats
+            await asyncio.sleep(game_routes.HEARTBEAT_SECONDS * 6)
+            await conn.send({"done": "slow"})
+            return
+        await super().on_message(ctx, conn, data)
+
+    async def on_leave(self, ctx, conn):
+        await super().on_leave(ctx, conn)
+        if not conn.peers():
+            self.cleanups += 1
+            return
+        # Awaiting before the broadcast shows leave runs to its end after the page has gone
+        await asyncio.sleep(0.05)
+        await conn.broadcast({"players": len(conn.peers())})
+
+
+@pytest.fixture
+def room(hub, tmp_path):
+    cog = RoomCog(write_demo_web(tmp_path / "demo"))
+    assert register(hub, cog) is not None
+    return cog
 
 
 def session_token(hub, **kwargs) -> str:
@@ -38,6 +74,22 @@ async def close_code(ws) -> int:
     msg = await ws.receive(timeout=2)
     assert msg.type == WSMsgType.CLOSE, msg
     return msg.data
+
+
+def stalled_player(client, hub, **kwargs) -> socket.socket:
+    """A player who joins and then never reads again, like a phone that went to sleep with the connection open"""
+    raw = socket.create_connection((client.host, client.port))
+    raw.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 4096)
+    raw.sendall(
+        b"GET /games/demo/ws HTTP/1.1\r\nHost: localhost\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+        b"Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n\r\n"
+    )
+    # One masked text frame, the way a browser sends it
+    payload = json.dumps({"session": session_token(hub, **kwargs)}).encode()
+    assert len(payload) < 126
+    mask = b"\x01\x02\x03\x04"
+    raw.sendall(bytes([0x81, 0x80 | len(payload)]) + mask + bytes(c ^ mask[i % 4] for i, c in enumerate(payload)))
+    return raw
 
 
 async def joined(client, hub, **kwargs):
@@ -91,10 +143,22 @@ async def test_broadcast_stays_inside_the_instance(client, hub, demo):
 
 
 @pytest.mark.asyncio
-async def test_leave_runs_when_the_page_closes(client, hub, demo):
-    ws = await joined(client, hub)
-    await ws.close()
-    await eventually(lambda: ("leave", MEMBER_ID) in demo.events)
+async def test_leave_runs_to_its_end_when_the_page_closes(client, hub, room):
+    staying = await joined(client, hub)
+    leaving = await joined(client, hub, user_id=MANAGER_ID)
+    await leaving.close()
+    assert await next_json(staying) == {"players": 1}
+    assert ("leave", MANAGER_ID) in room.events and room.cleanups == 0
+    await staying.close()
+
+
+@pytest.mark.asyncio
+async def test_the_last_player_to_leave_finds_no_peers(client, hub, server, room):
+    players = [await joined(client, hub, user_id=user_id) for user_id in (MEMBER_ID, MANAGER_ID, ADMIN_ID)]
+    await asyncio.gather(*(ws.close() for ws in players))
+    await eventually(lambda: sum(event[0] == "leave" for event in room.events) == 3)
+    # Players leaving together each leave the room before their leave runs, so exactly one finds it empty
+    assert room.cleanups == 1 and not server.rooms.all()
 
 
 @pytest.mark.asyncio
@@ -158,13 +222,26 @@ async def test_game_unloaded_while_the_connection_joins_closes_1001(client, hub,
 
 
 @pytest.mark.asyncio
-async def test_game_without_socket_refuses_the_upgrade(client, hub, tmp_path):
+async def test_game_without_socket_closes_4004(client, hub, tmp_path, caplog):
+    # Refusing the upgrade would reach the page as 1006, the same as a network problem
     await hub.registry.add(
         DemoCog(write_demo_web(tmp_path / "quiet"), key="quiet", cog_name="Quiet", with_socket=False)
     )
-    with pytest.raises(WSServerHandshakeError) as caught:
-        await client.ws_connect("/games/quiet/ws")
-    assert caught.value.status == 404
+    # A plain request to the address isn't a live connection, so it isn't reported as one
+    assert (await client.get("/games/quiet/ws")).status == 400
+    assert "has no" not in caplog.text
+    ws = await client.ws_connect("/games/quiet/ws")
+    assert await close_code(ws) == 4004
+    assert 'quiet: the page opened a live connection, but activityhub_game() has no "socket"' in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_a_message_over_one_megabyte_closes_1009_and_leave_runs(client, hub, server, demo):
+    ws = await joined(client, hub)
+    await ws.send_str("x" * (1024 * 1024 + 1))
+    assert await close_code(ws) == 1009
+    await eventually(lambda: ("leave", MEMBER_ID) in demo.events)
+    assert not server.rooms.all()
 
 
 @pytest.mark.asyncio
@@ -192,6 +269,88 @@ async def test_quiet_connections_get_a_heartbeat(client, hub, demo, monkeypatch)
     monkeypatch.setattr(game_routes, "HEARTBEAT_SECONDS", 0.2)
     ws = await joined(client, hub)
     assert await next_json(ws) == {"activityhub": "ping"}
+    await ws.close()
+
+
+@pytest.mark.asyncio
+async def test_a_player_who_stops_answering_pings_is_dropped(client, hub, server, demo, monkeypatch):
+    monkeypatch.setattr(game_routes, "HEARTBEAT_SECONDS", 0.2)
+    # A browser answers pings by itself, even while the page is busy. This one never does, like a phone that lost
+    # its network without saying goodbye
+    ws = await client.ws_connect("/games/demo/ws", autoping=False)
+    await ws.send_json({"session": session_token(hub)})
+    await eventually(lambda: ("leave", MEMBER_ID) in demo.events)
+    assert not server.rooms.all()
+    seen = []
+    while (msg := await ws.receive(timeout=2)).type != WSMsgType.CLOSE:
+        seen.append(msg.json() if msg.type == WSMsgType.TEXT else msg.type)
+    assert msg.data == 1001
+    assert seen == [READY, {"joined": MEMBER_ID, "peers": 0}, WSMsgType.PING, PING]
+
+
+@pytest.mark.asyncio
+async def test_a_quiet_player_who_answers_pings_stays(client, hub, server, demo, monkeypatch):
+    monkeypatch.setattr(game_routes, "HEARTBEAT_SECONDS", 0.2)
+    ws = await joined(client, hub)
+    # aiohttp answers pings while receive() waits, as a browser always does
+    loop = asyncio.get_running_loop()
+    end = loop.time() + 5 * 0.2
+    heartbeats = 0
+    while (left := end - loop.time()) > 0:
+        try:
+            msg = await ws.receive(timeout=left)
+        except asyncio.TimeoutError:
+            break
+        assert msg.type == WSMsgType.TEXT and msg.json() == PING
+        heartbeats += 1
+    assert heartbeats >= 3
+    assert len(server.rooms.all()) == 1 and ("leave", MEMBER_ID) not in demo.events
+    await ws.close()
+
+
+@pytest.mark.asyncio
+async def test_a_player_who_stops_reading_is_let_go_without_holding_up_the_rest(client, hub, server, demo, monkeypatch):
+    monkeypatch.setattr(sockets, "SEND_SECONDS", 0.2)
+    finished = []
+    real_socket = game_routes.GameRoutes.socket
+
+    async def socket_handler(self, request, game):
+        ws = await real_socket(self, request, game)
+        finished.append(ws)
+        return ws
+
+    monkeypatch.setattr(game_routes.GameRoutes, "socket", socket_handler)
+    stalled = stalled_player(client, hub, user_id=MANAGER_ID)
+    try:
+        await eventually(lambda: len(server.rooms.all()) == 1)
+        ws = await joined(client, hub)
+        # Every shout goes to the stalled player, until the network between them is full
+        for attempt in range(500):
+            if ("leave", MANAGER_ID) in demo.events:
+                break
+            # A sender stuck behind the stalled player would stop reading this page, and this would wait forever
+            await asyncio.wait_for(ws.send_json({"shout": "x" * 100_000}), 2)
+        await eventually(lambda: ("leave", MANAGER_ID) in demo.events)
+        # The sender's own messages still get through, and the stalled connection's handler has finished,
+        # so unloading the cog won't wait on it
+        await ws.send_json({"after": True})
+        assert await next_json(ws) == {"echo": {"after": True}}
+        await eventually(lambda: len(finished) == 1)
+        assert [conn.ctx.author.id for conn in server.rooms.all()] == [MEMBER_ID]
+        await ws.close()
+    finally:
+        stalled.close()
+
+
+@pytest.mark.asyncio
+async def test_a_slow_message_handler_keeps_its_player(client, hub, server, room, monkeypatch):
+    monkeypatch.setattr(game_routes, "HEARTBEAT_SECONDS", 0.2)
+    ws = await joined(client, hub)
+    await ws.send_json("slow")
+    while (data := await next_json(ws)) == PING:
+        pass
+    assert data == {"done": "slow"}
+    assert len(server.rooms.all()) == 1 and ("leave", MEMBER_ID) not in room.events
     await ws.close()
 
 

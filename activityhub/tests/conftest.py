@@ -1,9 +1,22 @@
 import pytest
 import pytest_asyncio
 from aiohttp.test_utils import TestClient, TestServer
+from aiohttp.web_runner import BaseRunner
 
 from activityhub.common.server import HubServer
 from activityhub.tests.fakes import GUILD_ID, MEMBER_ID, DemoCog, make_hub, register, write_demo_web
+
+
+class ProductionLikeServer(TestServer):
+    """
+    A TestServer that lets a handler finish after its client hangs up, like the real server does. TestServer
+    cancels it at its next await instead, which would cut short every leave handler that awaits anything
+    """
+
+    async def _make_runner(self, **kwargs) -> BaseRunner:
+        # HubServer.start uses AppRunner's default. Passing this to TestServer itself is silently ignored
+        kwargs["handler_cancellation"] = False
+        return await super()._make_runner(**kwargs)
 
 
 @pytest.fixture
@@ -64,7 +77,7 @@ def discord_answers(server):
 
 @pytest_asyncio.fixture
 async def client(server):
-    test_client = TestClient(TestServer(server.make_app()))
+    test_client = TestClient(ProductionLikeServer(server.make_app()))
     await test_client.start_server()
     yield test_client
     await test_client.close()

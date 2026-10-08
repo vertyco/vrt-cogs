@@ -1,4 +1,6 @@
+import functools
 import html
+import json
 import logging
 from string import Template
 
@@ -8,6 +10,8 @@ log = logging.getLogger("red.vrt.activityhub.replies")
 
 MAX_BODY = 1024 * 1024
 NO_CACHE = {"Cache-Control": "no-cache"}
+# NaN and Infinity aren't JSON: browsers can't read a reply that has them
+STRICT_DUMPS = functools.partial(json.dumps, allow_nan=False)
 
 BAD_REQUEST = "Bad request."
 SESSION_EXPIRED = "Your session expired. Go back to the menu to log in again."
@@ -16,7 +20,7 @@ NOT_SET_UP = "The bot owner hasn't finished setting up Activities yet."
 LOGIN_FAILED = "Discord login failed. Try opening the activity again."
 INSTANCE_FAILED = "Discord couldn't confirm where this activity is running. Try opening it again."
 NOT_IN_SERVER = "You're not a member of the server this activity is running in."
-NO_SUCH_ACTION = "That action doesn't exist."
+NO_SUCH_ACTION = "That action doesn't exist: {name}."
 NOT_ALLOWED = "You can't change these settings."
 SOMETHING_WRONG = "Something went wrong."
 NOT_INSTALLED = "This activity isn't installed on this bot anymore."

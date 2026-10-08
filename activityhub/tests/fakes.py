@@ -265,6 +265,7 @@ class DemoCog:
         self.thumbnail = thumbnail
         self.events: list[tuple] = []
         self.join_error = False
+        self.result: t.Any = None  # what the "give" action returns
 
     async def activityhub_game(self) -> dict:
         desc = {
@@ -280,6 +281,7 @@ class DemoCog:
                 "crash": self.crash,
                 "list": self.give_list,
                 "weird": self.weird,
+                "give": self.give,
             },
             "routes": {
                 "GET hello": self.hello,
@@ -313,7 +315,11 @@ class DemoCog:
     async def weird(self, ctx, data):
         return {"when": object()}
 
+    async def give(self, ctx, data):
+        return self.result
+
     async def hello(self, request, ctx):
+        self.events.append(("hello", ctx.author.id if ctx else None))
         return web.json_response({"user": ctx.author.id if ctx else None})
 
     async def teapot(self, request, ctx):

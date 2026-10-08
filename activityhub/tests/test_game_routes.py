@@ -1,7 +1,10 @@
+import math
+
 import pytest
 
 from activityhub.common.files import build_id
-from activityhub.tests.fakes import GUILD_ID, MEMBER_ID, session_headers
+from activityhub.common.replies import SESSION_EXPIRED
+from activityhub.tests.fakes import GUILD_ID, MEMBER_ID, OWNER_ID, session_headers
 
 
 async def turn_off(hub, key="demo"):
@@ -158,7 +161,8 @@ async def test_dm_players_ignore_server_switches(client, hub, demo):
 @pytest.mark.asyncio
 async def test_unknown_action_and_bad_bodies(client, hub, demo):
     headers = session_headers(hub)
-    assert (await client.post("/games/demo/api/nope", json={}, headers=headers)).status == 404
+    nope = await client.post("/games/demo/api/nodata", json={}, headers=headers)
+    assert nope.status == 404 and await nope.json() == {"error": "That action doesn't exist: nodata."}
     assert (await client.post("/games/demo/api/echo", json=[1], headers=headers)).status == 400
     assert (await client.post("/games/demo/api/echo", data="x", headers=headers)).status == 400
     assert (await client.get("/games/demo/api/echo", headers=headers)).status == 405
@@ -181,6 +185,84 @@ async def test_action_results(client, hub, demo, caplog):
 
 
 @pytest.mark.asyncio
+async def test_an_error_must_be_words(client, hub, demo, caplog):
+    headers = session_headers(hub)
+
+    async def give(result):
+        demo.result = result
+        resp = await client.post("/games/demo/api/give", json={}, headers=headers)
+        return resp.status, await resp.json()
+
+    # A reply built as {"error": problem_or_none} is a normal reply when there is no problem
+    assert await give({"error": None, "x": 1}) == (200, {"error": None, "x": 1})
+    # Anything else would show the player a Python repr, or an error with no words
+    assert await give({"error": ""}) == (500, {"error": "Something went wrong."})
+    assert await give({"error": "  "}) == (500, {"error": "Something went wrong."})
+    assert "Action demo.give returned an empty error: '  '" in caplog.text
+    assert await give({"error": {"code": 1}}) == (500, {"error": "Something went wrong."})
+    assert await give({"error": 0}) == (500, {"error": "Something went wrong."})
+    assert "Action demo.give returned an error that isn't text: {'code': 1}" in caplog.text
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("number", [math.nan, math.inf, -math.inf])
+async def test_replies_with_numbers_json_cant_hold_are_refused(client, hub, demo, caplog, number):
+    # Python would write NaN or Infinity, and the page couldn't read the reply
+    demo.result = {"ratio": number}
+    resp = await client.post("/games/demo/api/give", json={}, headers=session_headers(hub))
+    assert resp.status == 500 and await resp.json() == {"error": "Something went wrong."}
+    assert "Action demo.give returned something that isn't JSON" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_the_bot_owner_sees_why_something_went_wrong(client, hub, demo):
+    owner, member = session_headers(hub, user_id=OWNER_ID), session_headers(hub)
+
+    async def call(name, headers, result=None):
+        demo.result = result
+        resp = await client.post(f"/games/demo/api/{name}", json={}, headers=headers)
+        assert resp.status == 500
+        return (await resp.json())["error"]
+
+    def owner_sees(reason):
+        return (
+            f"Something went wrong. (Only you see this, as the bot owner: {reason}. "
+            "The bot's log has the full error.)"
+        )
+
+    assert await call("crash", owner) == owner_sees("RuntimeError: action broke")
+    assert await call("list", owner) == owner_sees("returned list instead of a dict")
+    assert await call("weird", owner) == owner_sees(
+        "returned something that isn't JSON: Object of type object is not JSON serializable"
+    )
+    assert await call("give", owner, {"error": {"code": 1}}) == owner_sees(
+        "returned an error that isn't text: {'code': 1}"
+    )
+    # Every other player sees only the plain message
+    for name in ("crash", "list", "weird"):
+        assert await call(name, member) == "Something went wrong."
+    assert await call("give", member, {"error": {"code": 1}}) == "Something went wrong."
+
+
+@pytest.mark.asyncio
+async def test_the_bot_owner_sees_why_a_raw_route_went_wrong(client, hub, demo):
+    owner, member = session_headers(hub, user_id=OWNER_ID), session_headers(hub)
+    note = "Only you see this, as the bot owner: {}. The bot's log has the full error."
+
+    async def get(path, headers):
+        resp = await client.get(f"/games/demo/raw/{path}", headers=headers)
+        assert resp.status == 500
+        return (await resp.json())["error"]
+
+    assert await get("crash", owner) == f"Something went wrong. ({note.format('RuntimeError: raw broke')})"
+    not_a_response = note.format("returned dict, not a response")
+    assert await get("notaresponse", owner) == f"Something went wrong. ({not_a_response})"
+    for path in ("crash", "notaresponse"):
+        assert await get(path, member) == "Something went wrong."
+        assert await get(path, {}) == "Something went wrong."
+
+
+@pytest.mark.asyncio
 async def test_bodies_over_one_megabyte_are_refused(client, hub, demo):
     headers = {**session_headers(hub), "Content-Type": "application/json"}
     resp = await client.post("/games/demo/api/echo", data=b"x" * (1024 * 1024 + 1), headers=headers)
@@ -193,6 +275,21 @@ async def test_raw_routes_get_the_player_or_none(client, hub, demo):
     assert await with_session.json() == {"user": MEMBER_ID}
     without = await client.get("/games/demo/raw/hello")
     assert await without.json() == {"user": None}
+
+
+@pytest.mark.asyncio
+async def test_raw_routes_answer_an_expired_login_themselves(client, demo):
+    # The hub forgot this login (a restart, a reload, or 12 hours). The header tells hub.fetch to log in again
+    resp = await client.get("/games/demo/raw/hello", headers={"Authorization": "Bearer unknown"})
+    assert resp.status == 401 and resp.headers["X-ActivityHub"] == "session-expired"
+    assert await resp.json() == {"error": SESSION_EXPIRED}
+    assert demo.events == []
+    # Only a request with no login of the hub's reaches the handler with ctx None
+    for headers in ({}, {"Authorization": "Basic dXNlcjpwYXNz"}):
+        resp = await client.get("/games/demo/raw/hello", headers=headers)
+        assert resp.status == 200 and await resp.json() == {"user": None}
+        assert "X-ActivityHub" not in resp.headers
+    assert demo.events == [("hello", None), ("hello", None)]
 
 
 @pytest.mark.asyncio
