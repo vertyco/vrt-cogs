@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.3.0
+
+- Battle videos got a visual overhaul: muzzle flashes, glowing tracers and laser bolts, missile smoke trails, sparks where shots land, fireballs when missiles hit and bots blow up, and burning wrecks that smoke for the rest of the fight. Destroyed bots leave scorch marks on the arena floor.
+- Bots now cast a shadow, sit on a ring in their team's color, and flash white when hit. Health bars show the damage just taken draining away.
+- A scoreboard along the top shows the clock, how many bots each side has left and each team's total health, with recent kills listed under it. The video ends on a banner naming the winner. All text is outlined so it reads on every arena.
+- When both teams would get the same color (a red player against the red default enemy, or two PvP players with the same color), the enemy team now gets a different one.
+- Bots now speed up and brake smoothly, slide around each other and along walls instead of freezing on contact, and stand a little further apart when they touch.
+- Shots now leave from the tip of the drawn barrel, and are checked along their whole flight path so fast shots can't skip through a hull between frames.
+- Fixed bot bodies being drawn off-center and drifting as the turret turned. The drawn hull now matches where shots actually hit.
+- Hit detection no longer depends on numpy being installed. Without it, bots used to get a smaller round hitbox instead of their plating's real shape.
+
 ## 1.2.1
 
 - Battle videos render about 5x faster. Part images, their turned angles and text labels are now made once per battle and reused for every frame, instead of being re-read and redrawn each frame. Videos look the same.
