@@ -3,6 +3,10 @@ Bot Arena - Battle Renderer
 
 Renders battle frames to images and compiles them into a video file.
 Uses Pillow for drawing and ffmpeg for video encoding.
+
+Frames are drawn in order, because the renderer remembers things between frames:
+effects spawned by battle events (see effects.py), scorch marks burned into the floor,
+draining health bars, wrecks and the kill feed. reset() starts a fresh battle.
 """
 
 import itertools
@@ -13,11 +17,13 @@ import subprocess
 import sys
 import tempfile
 import typing as t
+from dataclasses import dataclass
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
 from .bot_sprite import SpriteCache, render_bot_sprite_to_bytes
+from .effects import AIR, GROUND, SCORCH_COLOR, BattleEffects, paste_centered
 from .image_utils import SPRITE_SCALE
 
 try:
@@ -42,87 +48,15 @@ ARENA_BG = (30, 30, 35)
 GRID_COLOR = (45, 45, 50)
 DEFAULT_TEAM1_COLOR = (66, 135, 245)  # Blue
 DEFAULT_TEAM2_COLOR = (245, 66, 66)  # Red
-TEAM1_HEALTH = (100, 200, 100)  # Green
-TEAM2_HEALTH = (100, 200, 100)
-PROJECTILE_COLOR = (255, 255, 100)  # Yellow (default fallback)
-HEAL_COLOR = (100, 255, 100)  # Green
-TEXT_COLOR = (220, 220, 220)
-DEAD_COLOR = (80, 80, 80)
-
-# Projectile style definitions for different weapon types
-# These are designed to match the visual feel of Bot Arena 3 weapons
-PROJECTILE_STYLES = {
-    # LASER - Thin, bright beams (Zintek, Devenge, Cerebus)
-    # Fast energy weapons with high accuracy
-    "laser": {
-        "color": (255, 60, 40),  # Bright red-orange core
-        "radius": 2,
-        "length": 30,  # Longer for that "pew pew" feel
-        "is_beam": True,
-        "glow_color": (255, 180, 100),  # Warm glow
-        "glow_radius": 4,
-    },
-    # CANNON - Large, heavy projectiles (Porantis)
-    # Slow-moving but powerful impact rounds
-    "cannon": {
-        "color": (80, 160, 255),  # Bright blue plasma core
-        "radius": 8,  # Bigger, chunkier projectiles
-        "is_beam": False,
-        "outline_color": (200, 230, 255),  # Light blue outline
-        "has_glow": True,
-        "glow_color": (100, 180, 255),
-    },
-    # MISSILE - Elongated with trails (Circes, Scream Shard)
-    # Plasma/energy missiles with visible exhaust
-    "missile": {
-        "color": (255, 120, 0),  # Orange plasma core
-        "radius": 5,
-        "length": 14,  # Elongated shape
-        "is_beam": False,
-        "has_trail": True,
-        "trail_color": (255, 200, 50),  # Yellow-orange exhaust
-        "trail_length": 3,
-    },
-    # BULLET - Standard rapid-fire rounds (Kedron, Raptor, Torrika, Darsik, etc.)
-    # Most common projectile type - quick and numerous
-    "bullet": {
-        "color": (255, 240, 180),  # Warm white/yellow tracer
-        "radius": 3,
-        "is_beam": False,
-        "outline_color": (255, 200, 100),  # Slight orange tint
-    },
-    # HEAL - Restorative energy beam (Zeni PRS, Zeni PRZ-2)
-    # Distinct green healing pulses
-    "heal": {
-        "color": (50, 255, 120),  # Bright green core
-        "radius": 5,
-        "length": 18,
-        "is_beam": True,
-        "glow_color": (100, 255, 180),  # Cyan-green glow
-        "glow_radius": 6,
-    },
-    # SHOCKWAVE - Close-range hydraulic burst (Torrika KJ-557)
-    # Short-range expanding ring effect
-    "shockwave": {
-        "color": (255, 200, 100),  # Orange-yellow core
-        "radius": 12,  # Large initial radius
-        "is_beam": False,
-        "is_shockwave": True,  # Special rendering flag
-        "ring_color": (255, 160, 60),  # Orange ring
-        "ring_width": 3,
-        "glow_color": (255, 120, 40),  # Orange glow
-    },
-    # EXPLOSION - Splash blast where a missile hit; drawn at the blast's real radius
-    "explosion": {
-        "color": (255, 230, 150),  # Pale yellow core
-        "radius": 40,  # Fallback when the frame carries no radius
-        "is_beam": False,
-        "is_shockwave": True,
-        "ring_color": (255, 110, 30),  # Deep orange ring
-        "ring_width": 4,
-        "glow_color": (255, 60, 20),  # Red-orange glow
-    },
-}
+TEXT_COLOR = (235, 235, 240)
+MUTED_TEXT = (170, 172, 180)
+OUTLINE_COLOR = (12, 12, 16)
+PANEL_COLOR = (12, 14, 20)
+DEAD_COLOR = (150, 150, 150)
+HEALTH_HIGH = (80, 220, 90)
+HEALTH_MID = (240, 205, 60)
+HEALTH_LOW = (230, 60, 50)
+HEALTH_CHIP = (255, 240, 205)  # Damage just taken, draining away
 
 # Team color options (same as models.py TEAM_COLORS)
 TEAM_COLORS = {
@@ -138,6 +72,56 @@ TEAM_COLORS = {
 
 # Path to data directory with part images
 DATA_DIR = Path(__file__).parent.parent / "data"
+
+FONT_FILES = {
+    False: ("arial.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "DejaVuSans.ttf"),
+    True: ("arialbd.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", "DejaVuSans-Bold.ttf"),
+}
+
+DEATH_BLAST_RADIUS = 75  # Arena units
+WRECK_BURN_TIME = 3.0  # Seconds a wreck burns before it only smolders
+KILL_FEED_TIME = 4.0  # Seconds a kill stays in the feed
+BANNER_FADE_TIME = 0.35
+
+
+def load_font(size: int, bold: bool = False) -> Font:
+    """The first available TrueType font at this size (Arial, then DejaVu), else Pillow's default."""
+    for candidate in FONT_FILES[bold] + FONT_FILES[False]:
+        try:
+            return ImageFont.truetype(candidate, size)
+        except OSError:
+            continue
+    try:
+        return ImageFont.load_default(size)
+    except TypeError:  # Pillow < 10.1 has no sized default font
+        return ImageFont.load_default()
+
+
+def blend(a: tuple, b: tuple, amount: float) -> tuple[int, int, int]:
+    return tuple(int(a[i] + (b[i] - a[i]) * amount) for i in range(3))
+
+
+def health_color(ratio: float) -> tuple[int, int, int]:
+    """Green when healthy, through yellow, to red when nearly destroyed."""
+    if ratio >= 0.5:
+        return blend(HEALTH_MID, HEALTH_HIGH, (ratio - 0.5) * 2)
+    return blend(HEALTH_LOW, HEALTH_MID, ratio * 2)
+
+
+def format_clock(seconds: float) -> str:
+    seconds = max(0, int(seconds))
+    return f"{seconds // 60}:{seconds % 60:02d}"
+
+
+@dataclass
+class BotVisual:
+    """What the renderer remembers about a bot between frames."""
+
+    shown_health: float  # Lags behind real health after a hit, drawing the draining damage chip
+    flash: float = 0.0  # Hit flash strength (1 right after a hit, fading out)
+    death_time: t.Optional[float] = None
+    wreck: t.Optional[tuple[Image.Image, tuple[int, int]]] = None
+    next_smoke: float = 0.0
 
 
 class BattleRenderer:
@@ -179,34 +163,39 @@ class BattleRenderer:
         self.chapter = chapter
         self.mission_id = mission_id
 
-        # Set team colors from color names
+        # Set team colors from color names. Both teams can pick the same color (a red player
+        # against the red default enemy, or two PvP players), so the enemy gets another one.
         self.team1_color = TEAM_COLORS.get(team1_color, DEFAULT_TEAM1_COLOR)
         self.team2_color = TEAM_COLORS.get(team2_color, DEFAULT_TEAM2_COLOR)
+        if self.team2_color == self.team1_color:
+            self.team2_color = TEAM_COLORS["blue"] if team1_color == "red" else TEAM_COLORS["red"]
 
         # Bot sprites drawn at base image scale * SPRITE_SCALE for visibility
         # (shared with collision.py so the hitbox matches the visuals)
         self.sprites = SpriteCache(parts_registry, scale * SPRITE_SCALE)
-        # (text, font) -> (glyph mask, bounding box), so each string is rasterized once per battle
-        self.text_masks: dict[tuple[str, Font], tuple[Image.Image, tuple[int, int, int, int]]] = {}
+        # (text, font, color) -> (outlined text sprite, bounding box), so each label is drawn once per battle
+        self.text_sprites: dict[tuple[str, Font, tuple], tuple[Image.Image, tuple[int, int, int, int]]] = {}
+        self.text_boxes: dict[tuple[str, Font], tuple[tuple[int, int, int, int], int]] = {}
 
         # Load arena background if available
         self._arena_background: t.Optional[Image.Image] = None
         self._load_arena_background()
 
-        # Try to load a font, fall back to default
-        # Font sizes scaled for visibility - larger for better readability
-        main_font_size = int(32 * scale)  # Bot names
-        small_font_size = int(24 * scale)  # Health/stats
-        try:
-            self.font = ImageFont.truetype("arial.ttf", main_font_size)
-            self.small_font = ImageFont.truetype("arial.ttf", small_font_size)
-        except OSError:
-            try:
-                self.font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", main_font_size)
-                self.small_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", small_font_size)
-            except OSError:
-                self.font = ImageFont.load_default()
-                self.small_font = ImageFont.load_default()
+        # Interface sizes are tuned for the default 500px video and grow with the output
+        self.ui = self.output_width / 500
+        self.font = load_font(round(15 * self.ui), bold=True)  # HUD
+        self.small_font = load_font(round(11 * self.ui), bold=True)  # Bot names, kill feed
+        self.tiny_font = load_font(round(10 * self.ui))
+        self.banner_font = load_font(round(38 * self.ui), bold=True)
+
+        self.team_rings = {1: self._team_ring(self.team1_color), 2: self._team_ring(self.team2_color)}
+
+        # Per-battle state, set up by reset() before the first frame
+        self.floor: t.Optional[Image.Image] = None
+        self.effects: t.Optional[BattleEffects] = None
+        self.visuals: dict[str, BotVisual] = {}
+        self.kill_feed: list[tuple[float, dict, dict]] = []
+        self.now = 0.0  # Effects clock (keeps running while the video holds on the final frame)
 
     def _load_arena_background(self):
         """Load and scale the arena background image if available.
@@ -231,10 +220,9 @@ class BattleRenderer:
                 if path.exists():
                     try:
                         img = Image.open(path).convert("RGB")
-                        # Scale to output size
-                        img = img.resize((self.output_width, self.output_height), Image.Resampling.LANCZOS)
-                        # Frames are drawn in RGBA, so convert once here instead of every frame
-                        self._arena_background = img.convert("RGBA")
+                        self._arena_background = img.resize(
+                            (self.output_width, self.output_height), Image.Resampling.LANCZOS
+                        )
                         return
                     except Exception as e:
                         log.warning("Failed to load arena background from %s", path, exc_info=e)
@@ -248,9 +236,122 @@ class BattleRenderer:
         """Scale a size value"""
         return max(1, int(size * self.scale))
 
+    def _team_ring(self, color: tuple[int, int, int]) -> Image.Image:
+        """A thin team-colored ring with a faint fill, drawn on the floor under each bot."""
+        ss = 4
+        radius = 48 * self.scale  # Just outside the plating
+        size = math.ceil(radius * 2 + 6)
+        c, r = size * ss / 2, radius * ss
+        mask = Image.new("L", (size * ss, size * ss), 0)
+        draw = ImageDraw.Draw(mask)
+        draw.ellipse((c - r, c - r, c + r, c + r), fill=34)
+        draw.ellipse((c - r, c - r, c + r, c + r), outline=200, width=round(2 * self.ui * ss))
+        ring = Image.new("RGBA", (size, size), color + (0,))
+        ring.putalpha(mask.resize((size, size), Image.Resampling.LANCZOS))
+        return ring
+
+    # ── Per-battle state ─────────────────────────────────────────────────────
+
+    def reset(self, seed: int = 0):
+        """Start a fresh battle: clean floor, no effects, no remembered bots."""
+        if self._arena_background:
+            self.floor = self._arena_background.copy()
+        else:
+            self.floor = Image.new("RGB", (self.output_width, self.output_height), ARENA_BG)
+            self._draw_grid(ImageDraw.Draw(self.floor))
+        self.effects = BattleEffects(self.scale, self.fps, seed)
+        self.visuals = {}
+        self.kill_feed = []
+        self.now = 0.0
+
+    def advance(self, frame_data: dict):
+        """Feed one simulation frame into the effects: spawn what its events caused, then step everything."""
+        if self.effects is None:
+            self.reset()
+        fx = self.effects
+        now = self.now = frame_data.get("time", 0.0)
+        bots = {b["id"]: b for b in frame_data.get("bots", []) if "id" in b}
+        for bot in bots.values():
+            if bot["id"] not in self.visuals:
+                self.visuals[bot["id"]] = BotVisual(shown_health=bot.get("health", 0))
+
+        for event in frame_data.get("events", []):
+            kind = event.get("type")
+            if "x" not in event:
+                continue
+            x, y = event["x"] * self.scale, event["y"] * self.scale
+            if kind == "shot":
+                fx.muzzle_flash(x, y, event.get("angle", 0.0), event.get("projectile_type", "bullet"))
+            elif kind == "hit":
+                if not event.get("splash"):
+                    fx.impact(x, y, event.get("projectile_type", "bullet"), event.get("damage", 0))
+                if event.get("damage", 0) > 0 and event.get("target_id") in self.visuals:
+                    self.visuals[event["target_id"]].flash = 1.0
+            elif kind == "blocked":
+                fx.impact(x, y, "bullet", event.get("damage", 0), blocked=True)
+                if event.get("blocker_id") in self.visuals:
+                    self.visuals[event["blocker_id"]].flash = 1.0
+            elif kind == "heal":
+                if event.get("amount", 0) > 0:
+                    fx.heal_burst(x, y)
+            elif kind == "splash":
+                # No scorch mark: rapid-fire missiles would burn a trail along a moving target's path
+                fx.explosion(x, y, event.get("radius", 40))
+            elif kind == "kill":
+                fx.explosion(x, y, DEATH_BLAST_RADIUS, big=True)
+                self._scorch(x, y, DEATH_BLAST_RADIUS * 0.8)
+                killer, victim = bots.get(event.get("killer_id")), bots.get(event.get("victim_id"))
+                if killer and victim:
+                    self.kill_feed.append((now, killer, victim))
+
+        for proj in frame_data.get("projectiles", []):
+            if proj.get("projectile_type") == "missile":
+                fx.missile_trail(
+                    proj["x"] * self.scale,
+                    proj["y"] * self.scale,
+                    proj.get("vx", 0.0) * self.scale,
+                    proj.get("vy", 0.0) * self.scale,
+                )
+
+        dt = 1.0 / self.fps
+        for bot_id, bot in bots.items():
+            visual = self.visuals[bot_id]
+            health = bot.get("health", 0)
+            # Damage drains away over about a quarter second; healing shows at once
+            if health < visual.shown_health:
+                visual.shown_health = max(health, visual.shown_health - max(1.0, visual.shown_health - health) * dt * 5)
+            else:
+                visual.shown_health = health
+            visual.flash = max(0.0, visual.flash - dt / 0.12)
+
+            if not bot.get("is_alive", True):
+                if visual.death_time is None:
+                    visual.death_time = now
+                    visual.wreck = self.sprites.wreck(
+                        bot.get("plating") or "",
+                        bot.get("component") or None,
+                        bot.get("orientation", 0),
+                        bot.get("weapon_orientation", 0),
+                    )
+                burning = now - visual.death_time < WRECK_BURN_TIME
+                if now >= visual.next_smoke:
+                    fx.wreck_smoke(bot["x"] * self.scale, bot["y"] * self.scale, burning)
+                    visual.next_smoke = now + (0.1 if burning else 0.4)
+
+        self.kill_feed = [entry for entry in self.kill_feed if now - entry[0] < KILL_FEED_TIME]
+        fx.update()
+
+    def _scorch(self, x: float, y: float, radius: float):
+        """Burn a dark mark into the arena floor (it stays for the rest of the battle)."""
+        paste_centered(self.floor, self.effects.sprites.blob("scorch", radius * self.scale, SCORCH_COLOR, 0.55), x, y)
+
+    # ── Frame drawing ────────────────────────────────────────────────────────
+
     def render_frame(self, frame_data: dict, battle_info: dict) -> Image.Image:
         """
-        Render a single frame.
+        Advance the effects by one frame and render it.
+
+        Frames must be rendered in order; call reset() before the first frame of a battle.
 
         Args:
             frame_data: Frame data dict with bots, projectiles, events
@@ -259,35 +360,42 @@ class BattleRenderer:
         Returns:
             PIL Image of the rendered frame
         """
-        # Use arena background if available, otherwise solid color
-        if self._arena_background:
-            img = self._arena_background.copy()
-        else:
-            img = Image.new("RGBA", (self.output_width, self.output_height), ARENA_BG)
-        draw = ImageDraw.Draw(img)
+        self.advance(frame_data)
+        return self.compose(frame_data)
 
-        # Draw grid (only if no background image, or make it subtle overlay)
-        if not self._arena_background:
-            self._draw_grid(draw)
+    def compose(self, frame_data: dict, banner: t.Optional[tuple[int, float, float]] = None) -> Image.Image:
+        """Draw the current state of the battle (call advance() for this frame first).
 
-        # Draw bots - dead bots first (underneath), then alive bots on top
+        banner: (winning team, battle duration, fade-in 0-1) to show the result over the arena.
+        """
+        img = self.floor.copy()
+        draw = ImageDraw.Draw(img, "RGBA")
+
+        self.effects.draw(img, draw, GROUND)
+
+        # Wrecks first (underneath), then living bots on top
         bots = frame_data.get("bots", [])
-        dead_bots = [b for b in bots if not b.get("is_alive", True)]
         alive_bots = [b for b in bots if b.get("is_alive", True)]
-
-        for bot_data in dead_bots:
-            self._draw_bot(img, draw, bot_data)
+        for bot_data in bots:
+            if not bot_data.get("is_alive", True):
+                self._draw_wreck(img, bot_data)
         for bot_data in alive_bots:
             self._draw_bot(img, draw, bot_data)
 
-        # Draw projectiles
         for proj_data in frame_data.get("projectiles", []):
-            self._draw_projectile(draw, proj_data)
+            x, y = proj_data["x"] * self.scale, proj_data["y"] * self.scale
+            self.effects.draw_projectile(img, proj_data, x, y)
 
-        # Draw HUD
-        self._draw_hud(draw, frame_data, battle_info)
+        self.effects.draw(img, draw, AIR)
 
-        return img.convert("RGB")
+        # Labels go over the smoke so they stay readable
+        for bot_data in bots:
+            self._draw_bot_labels(img, draw, bot_data)
+
+        self._draw_hud(img, draw, frame_data)
+        if banner:
+            self._draw_banner(img, draw, *banner)
+        return img
 
     def _draw_grid(self, draw: ImageDraw.ImageDraw):
         """Draw arena grid lines"""
@@ -300,91 +408,251 @@ class BattleRenderer:
             draw.line([(0, sy), (self.output_width, sy)], fill=GRID_COLOR, width=1)
 
     def _draw_bot(self, img: Image.Image, draw: ImageDraw.ImageDraw, bot_data: dict):
-        """Draw a single bot with separate body facing and weapon turret.
+        """Draw a living bot: shadow, team ring, plating, turret, and a white flash when it's hit."""
+        x, y = self._scale_pos(bot_data["x"], bot_data["y"])
+        team = bot_data.get("team", 1)
+        plating_name = bot_data.get("plating", "") or None
+        weapon_name = bot_data.get("component", "") or None
+        orientation = bot_data.get("orientation", 0)
+        weapon_orientation = bot_data.get("weapon_orientation", orientation)
 
-        Uses render_bot_sprite() for consistent rendering between battle and garage.
-        """
+        if not plating_name:
+            # No plating - draw simple shape (this is intentional, not a fallback)
+            color = self.team1_color if team == 1 else self.team2_color
+            self._draw_bot_shape_with_turret(draw, x, y, self._scale_size(32), orientation, weapon_orientation, color)
+            return
+
+        layers = self.sprites.layers(x, y, plating_name, weapon_name, orientation, weapon_orientation)
+        if not layers:
+            raise RuntimeError(f"Failed to render bot sprite for plating '{plating_name}', weapon '{weapon_name}'")
+
+        # Light comes from the top-left, so shadows fall down-right
+        shadow_dx, shadow_dy = round(7 * self.scale), round(10 * self.scale)
+        for image, (left, top) in layers:
+            shadow, pad = self.sprites.shadow(image)
+            img.paste((0, 0, 0), (left - pad + shadow_dx, top - pad + shadow_dy), shadow)
+        paste_centered(img, self.team_rings[team], x, y)
+
+        visual = self.visuals.get(bot_data.get("id"))
+        for image, position in layers:
+            img.paste(image, position, image)
+            if visual and visual.flash > 0:
+                img.paste((255, 255, 255), position, self.sprites.flash(image, visual.flash))
+
+    def _draw_wreck(self, img: Image.Image, bot_data: dict):
+        """Draw a destroyed bot as a scorched hulk, glowing while it still burns."""
+        x, y = self._scale_pos(bot_data["x"], bot_data["y"])
+        visual = self.visuals.get(bot_data.get("id"))
+        if not visual or not visual.wreck:
+            orientation = bot_data.get("orientation", 0)
+            self._draw_bot_shape(ImageDraw.Draw(img), x, y, self._scale_size(32), orientation, (80, 80, 80), False)
+            return
+        wreck, (dx, dy) = visual.wreck
+        shadow, pad = self.sprites.shadow(wreck)
+        img.paste((0, 0, 0), (x + dx - pad + round(4 * self.scale), y + dy - pad + round(6 * self.scale)), shadow)
+        img.paste(wreck, (x + dx, y + dy), wreck)
+
+    def _draw_bot_labels(self, img: Image.Image, draw: ImageDraw.ImageDraw, bot_data: dict):
+        """Health bar above a living bot, and its name (in its team's color) below it."""
         x, y = self._scale_pos(bot_data["x"], bot_data["y"])
         team = bot_data.get("team", 1)
         is_alive = bot_data.get("is_alive", True)
 
-        plating_name = bot_data.get("plating", "") or None
-        weapon_name = bot_data.get("component", "") or None
-
-        # Get orientations
-        orientation = bot_data.get("orientation", 0)
-        weapon_orientation = bot_data.get("weapon_orientation", orientation)
-
-        radius = self._scale_size(32)
-
-        if is_alive and plating_name:
-            # No tint - team color shown via name text
-            if not self.sprites.draw(img, x, y, plating_name, weapon_name, orientation, weapon_orientation):
-                raise RuntimeError(f"Failed to render bot sprite for plating '{plating_name}', weapon '{weapon_name}'")
-        else:
-            # Dead or no plating - draw simple shape (this is intentional, not a fallback)
-            color = DEAD_COLOR if not is_alive else (self.team1_color if team == 1 else self.team2_color)
-            self._draw_bot_shape_with_turret(draw, x, y, radius, orientation, weapon_orientation, color, is_alive)
-
         if is_alive:
-            # Health bar
-            health = bot_data.get("health", 0)
             max_health = bot_data.get("max_health", 100)
-            health_ratio = health / max_health if max_health > 0 else 0
+            ratio = bot_data.get("health", 0) / max_health if max_health > 0 else 0
+            visual = self.visuals.get(bot_data.get("id"))
+            shown = visual.shown_health / max_health if visual and max_health > 0 else ratio
 
-            bar_width = self._scale_size(50)
-            bar_height = self._scale_size(8)
-            bar_x = x - bar_width // 2
-            bar_y = y - radius - self._scale_size(18)
+            width = round(60 * self.scale)
+            height = max(3, round(9 * self.scale))
+            left = x - width // 2
+            top = y - round(66 * self.scale)
+            draw.rectangle((left - 1, top - 1, left + width, top + height), fill=PANEL_COLOR + (210,))
+            if shown > ratio:
+                chip_right = left + max(1, round(width * shown)) - 1
+                draw.rectangle((left, top, chip_right, top + height - 1), fill=HEALTH_CHIP + (235,))
+            if ratio > 0:
+                fill_right = left + max(1, round(width * ratio)) - 1
+                draw.rectangle((left, top, fill_right, top + height - 1), fill=health_color(ratio))
+                # A lighter top edge gives the bar a little depth
+                draw.line((left, top, fill_right, top), fill=(255, 255, 255, 70))
 
-            # Background
-            draw.rectangle(
-                [(bar_x, bar_y), (bar_x + bar_width, bar_y + bar_height)],
-                fill=(60, 60, 60),
-                outline=(100, 100, 100),
-            )
+        # A wreck keeps its name while it burns, then the name fades (the kill feed has the record)
+        opacity = 1.0
+        if not is_alive:
+            visual = self.visuals.get(bot_data.get("id"))
+            if visual and visual.death_time is not None:
+                opacity = min(1.0, (WRECK_BURN_TIME - (self.now - visual.death_time)) / 0.5)
+            if opacity <= 0:
+                return
 
-            # Health fill
-            health_width = int(bar_width * health_ratio)
-            if health_width > 0:
-                health_color = TEAM1_HEALTH if team == 1 else TEAM2_HEALTH
-                if health_ratio < 0.3:
-                    health_color = (200, 50, 50)
-                elif health_ratio < 0.6:
-                    health_color = (200, 200, 50)
-                draw.rectangle(
-                    [(bar_x, bar_y), (bar_x + health_width, bar_y + bar_height)],
-                    fill=health_color,
-                )
-
-        # Bot name (colored by team)
-        name = bot_data.get("name", "Bot")[:8]
+        name = bot_data.get("name", "Bot")[:10]
+        color = (self.team1_color if team == 1 else self.team2_color) if is_alive else DEAD_COLOR
         text_width = self.text_width(name, self.small_font)
-        if is_alive:
-            name_color = self.team1_color if team == 1 else self.team2_color
-        else:
-            name_color = DEAD_COLOR
-        self.draw_text(draw, (x - text_width // 2, y + radius + self._scale_size(8)), name, self.small_font, name_color)
+        self.draw_text(
+            img, (x - text_width // 2, y + round(52 * self.scale)), name, self.small_font, color, opacity=opacity
+        )
 
-    def text_mask(self, text: str, font: Font) -> tuple[Image.Image, tuple[int, int, int, int]]:
-        """The glyph mask and bounding box for a string, rasterized once and reused every frame."""
+    def _draw_hud(self, img: Image.Image, draw: ImageDraw.ImageDraw, frame_data: dict):
+        """Scoreboard along the top (each team either side of the clock), recent kills under it on the right."""
+        ui = self.ui
+        width = self.output_width
+        center = width // 2
+        top = round(3 * ui)
+        strip_h = round(24 * ui)
+        clock_w = round(54 * ui)
+        side_w = round(132 * ui)
+        gap = round(3 * ui)
+        pad = round(7 * ui)
+        radius = round(5 * ui)
+
+        clock = format_clock(frame_data.get("time", 0))
+        draw.rounded_rectangle(
+            (center - clock_w // 2, top, center + clock_w // 2, top + strip_h), radius=radius, fill=PANEL_COLOR + (205,)
+        )
+        clock_w_text = self.text_width(clock, self.font)
+        self.draw_text(img, (center - clock_w_text // 2, top + round(4 * ui)), clock, self.font, TEXT_COLOR)
+
+        # Each team's side: name, bots still standing, and a bar of the team's combined health
+        bots = frame_data.get("bots", [])
+        for team, label, color in ((1, "PLAYER", self.team1_color), (2, "OPPONENT", self.team2_color)):
+            members = [b for b in bots if b.get("team") == team]
+            alive = sum(1 for b in members if b.get("is_alive"))
+            health = sum(b.get("health", 0) for b in members)
+            max_health = sum(b.get("max_health", 0) for b in members) or 1
+            if team == 1:
+                left = center - clock_w // 2 - gap - side_w
+            else:
+                left = center + clock_w // 2 + gap
+            right = left + side_w
+            draw.rounded_rectangle((left, top, right, top + strip_h), radius=radius, fill=PANEL_COLOR + (175,))
+
+            count = f"{alive}/{len(members)}"
+            label_w = self.text_width(label, self.small_font)
+            count_w = self.text_width(count, self.small_font)
+            text_y = top + round(3 * ui)
+            # Mirrored around the clock: names on the outside, counts next to the clock
+            label_x = left + pad if team == 1 else right - pad - label_w
+            count_x = right - pad - count_w if team == 1 else left + pad
+            self.draw_text(img, (label_x, text_y), label, self.small_font, color)
+            self.draw_text(img, (count_x, text_y), count, self.small_font, TEXT_COLOR)
+
+            bar_h = max(2, round(4 * ui))
+            bar_top = top + strip_h - bar_h - round(4 * ui)
+            bar_left, bar_right = left + pad, right - pad
+            draw.rectangle((bar_left, bar_top, bar_right, bar_top + bar_h), fill=(255, 255, 255, 45))
+            fill_w = round((bar_right - bar_left) * health / max_health)
+            if fill_w > 0:
+                # Bars drain toward the clock
+                if team == 1:
+                    draw.rectangle((bar_left, bar_top, bar_left + fill_w, bar_top + bar_h), fill=color)
+                else:
+                    draw.rectangle((bar_right - fill_w, bar_top, bar_right, bar_top + bar_h), fill=color)
+
+        # Kill feed under the scoreboard on the right, newest at the bottom
+        line_h = round(18 * ui)
+        line_top = top + strip_h + round(5 * ui)
+        for killed_at, killer, victim in self.kill_feed[-4:]:
+            parts = [
+                (killer.get("name", "Bot")[:10], self.team1_color if killer.get("team") == 1 else self.team2_color),
+                ("  »  ", MUTED_TEXT),
+                (victim.get("name", "Bot")[:10], self.team1_color if victim.get("team") == 1 else self.team2_color),
+            ]
+            line_w = sum(self.text_width(text, self.small_font) for text, _ in parts) + pad * 2
+            left = width - line_w - round(6 * ui)
+            fade = max(0.0, min(1.0, (KILL_FEED_TIME - (self.now - killed_at)) / 0.5))
+            draw.rounded_rectangle(
+                (left, line_top, left + line_w, line_top + line_h - round(3 * ui)),
+                radius=round(4 * ui),
+                fill=PANEL_COLOR + (int(175 * fade),),
+            )
+            cursor = left + pad
+            for text, color in parts:
+                self.draw_text(img, (cursor, line_top + round(1 * ui)), text, self.small_font, color, opacity=fade)
+                cursor += self.text_width(text, self.small_font)
+            line_top += line_h
+
+    def _draw_banner(self, img: Image.Image, draw: ImageDraw.ImageDraw, winner: int, duration: float, fade: float):
+        """The result across the middle of the arena, shown while the video holds on the final frame."""
+        if winner == 1:
+            title, color = "PLAYER WINS", self.team1_color
+        elif winner == 2:
+            title, color = "OPPONENT WINS", self.team2_color
+        else:
+            title, color = "DRAW", TEXT_COLOR
+        band_h = round(86 * self.ui)
+        band_top = (self.output_height - band_h) // 2
+        draw.rectangle((0, band_top, self.output_width, band_top + band_h), fill=PANEL_COLOR + (int(185 * fade),))
+        accent = max(2, round(3 * self.ui))
+        draw.rectangle((0, band_top, self.output_width, band_top + accent), fill=color + (int(230 * fade),))
+        draw.rectangle(
+            (0, band_top + band_h - accent, self.output_width, band_top + band_h), fill=color + (int(230 * fade),)
+        )
+        title_w = self.text_width(title, self.banner_font)
+        self.draw_text(
+            img,
+            ((self.output_width - title_w) // 2, band_top + round(12 * self.ui)),
+            title,
+            self.banner_font,
+            color,
+            opacity=fade,
+        )
+        subtitle = f"Battle time {format_clock(duration)}"
+        sub_w = self.text_width(subtitle, self.tiny_font)
+        self.draw_text(
+            img,
+            ((self.output_width - sub_w) // 2, band_top + band_h - round(24 * self.ui)),
+            subtitle,
+            self.tiny_font,
+            MUTED_TEXT,
+            opacity=fade,
+        )
+
+    # ── Text ─────────────────────────────────────────────────────────────────
+
+    def text_box(self, text: str, font: Font) -> tuple[tuple[int, int, int, int], int]:
+        """The outlined string's bounding box and outline width (0 for bitmap fonts, which can't be outlined)."""
         key = (text, font)
-        if key not in self.text_masks:
-            left, top, right, bottom = (int(v) for v in font.getbbox(text))
-            bbox = (left, top, right, bottom)
-            mask = Image.new("L", (max(1, right - left), max(1, bottom - top)))
-            ImageDraw.Draw(mask).text((-left, -top), text, fill=255, font=font)
-            self.text_masks[key] = (mask, bbox)
-        return self.text_masks[key]
+        if key not in self.text_boxes:
+            stroke = max(1, round(self.ui))
+            try:
+                box = tuple(int(v) for v in font.getbbox(text, stroke_width=stroke))
+            except TypeError:
+                stroke = 0
+                box = tuple(int(v) for v in font.getbbox(text))
+            self.text_boxes[key] = (box, stroke)
+        return self.text_boxes[key]
+
+    def text_sprite(self, text: str, font: Font, fill: tuple) -> tuple[Image.Image, tuple[int, int, int, int]]:
+        """The string drawn once with a dark outline (readable on any arena), and its bounding box."""
+        key = (text, font, fill)
+        if key not in self.text_sprites:
+            (left, top, right, bottom), stroke = self.text_box(text, font)
+            sprite = Image.new("RGBA", (max(1, right - left), max(1, bottom - top)), fill + (0,))
+            text_draw = ImageDraw.Draw(sprite)
+            if stroke:
+                text_draw.text(
+                    (-left, -top), text, font=font, fill=fill, stroke_width=stroke, stroke_fill=OUTLINE_COLOR
+                )
+            else:
+                text_draw.text((-left, -top), text, font=font, fill=fill)
+            self.text_sprites[key] = (sprite, (left, top, right, bottom))
+        return self.text_sprites[key]
 
     def text_width(self, text: str, font: Font) -> int:
-        bbox = self.text_mask(text, font)[1]
-        return bbox[2] - bbox[0]
+        box = self.text_box(text, font)[0]
+        return box[2] - box[0]
 
-    def draw_text(self, draw: ImageDraw.ImageDraw, xy: tuple[int, int], text: str, font: Font, fill: tuple):
-        """Same pixels as draw.text() at integer coordinates, without rasterizing the string again."""
-        mask, bbox = self.text_mask(text, font)
-        draw.bitmap((xy[0] + bbox[0], xy[1] + bbox[1]), mask, fill=fill)
+    def draw_text(
+        self, img: Image.Image, xy: tuple[int, int], text: str, font: Font, fill: tuple, opacity: float = 1.0
+    ):
+        """Paste an outlined label with its top-left at xy, optionally faded."""
+        sprite, bbox = self.text_sprite(text, font, tuple(fill))
+        mask = sprite if opacity >= 1.0 else sprite.getchannel("A").point(lambda a: int(a * opacity))
+        img.paste(sprite, (xy[0] + bbox[0], xy[1] + bbox[1]), mask)
+
+    # ── Fallback shapes ──────────────────────────────────────────────────────
 
     def _draw_bot_shape_with_turret(
         self,
@@ -395,18 +663,15 @@ class BattleRenderer:
         orientation: float,
         weapon_orientation: float,
         color: tuple,
-        is_alive: bool,
     ):
-        """Draw a simple shape for dead bots or bots without plating."""
-        self._draw_bot_shape(draw, x, y, radius, orientation, color, is_alive)
-
-        if is_alive:
-            # Draw weapon turret line
-            weapon_rad = math.radians(weapon_orientation)
-            turret_length = self._scale_size(35)
-            tx = x + int(math.cos(weapon_rad) * turret_length)
-            ty = y + int(math.sin(weapon_rad) * turret_length)
-            draw.line([(x, y), (tx, ty)], fill=(255, 200, 100), width=self._scale_size(5))
+        """Draw a simple shape for bots without plating."""
+        self._draw_bot_shape(draw, x, y, radius, orientation, color, True)
+        # Draw weapon turret line
+        weapon_rad = math.radians(weapon_orientation)
+        turret_length = self._scale_size(35)
+        tx = x + int(math.cos(weapon_rad) * turret_length)
+        ty = y + int(math.sin(weapon_rad) * turret_length)
+        draw.line([(x, y), (tx, ty)], fill=(255, 200, 100), width=self._scale_size(5))
 
     def _draw_bot_shape(
         self, draw: ImageDraw.ImageDraw, x: int, y: int, radius: int, orientation: float, color: tuple, is_alive: bool
@@ -434,199 +699,6 @@ class BattleRenderer:
 
         # Draw bot
         draw.polygon(rotated, fill=color, outline=(255, 255, 255) if is_alive else DEAD_COLOR)
-
-    def _draw_projectile(self, draw: ImageDraw.ImageDraw, proj_data: dict):
-        """Draw a projectile with style based on weapon type, oriented along velocity vector"""
-        x, y = self._scale_pos(proj_data["x"], proj_data["y"])
-        vx = proj_data.get("vx", 1)  # Default to moving right if no velocity
-        vy = proj_data.get("vy", 0)
-        is_heal = proj_data.get("is_heal", False)
-        projectile_type = proj_data.get("projectile_type", "heal" if is_heal else "bullet")
-
-        # Calculate rotation angle from velocity vector (in radians)
-        # atan2 gives angle from positive x-axis
-        angle_rad = math.atan2(vy, vx)
-        angle_deg = math.degrees(angle_rad)
-
-        # Get style for this projectile type
-        style = PROJECTILE_STYLES.get(projectile_type, PROJECTILE_STYLES["bullet"])
-
-        # Override to heal style if is_heal flag is set
-        if is_heal and projectile_type != "heal":
-            style = PROJECTILE_STYLES["heal"]
-
-        color = style["color"]
-        radius = self._scale_size(proj_data.get("radius") or style["radius"])
-        is_beam = style.get("is_beam", False)
-        has_trail = style.get("has_trail", False)
-        has_glow = style.get("has_glow", False)
-        is_shockwave = style.get("is_shockwave", False)
-
-        if is_shockwave:
-            # Draw shockwave as expanding ring burst effect
-            # The shockwave "expands" based on distance traveled from shooter
-            ring_color = style.get("ring_color", (255, 160, 60))
-            ring_width = self._scale_size(style.get("ring_width", 3))
-            glow_color = style.get("glow_color", (255, 120, 40))
-
-            # Draw outer glow ring
-            outer_radius = radius + self._scale_size(4)
-            draw.ellipse(
-                [(x - outer_radius, y - outer_radius), (x + outer_radius, y + outer_radius)],
-                outline=glow_color,
-                width=max(1, int(ring_width * 1.5)),
-            )
-
-            # Draw main shockwave ring
-            draw.ellipse(
-                [(x - radius, y - radius), (x + radius, y + radius)],
-                outline=ring_color,
-                width=max(1, int(ring_width)),
-            )
-
-            # Draw inner bright core
-            core_radius = max(2, radius // 3)
-            draw.ellipse(
-                [(x - core_radius, y - core_radius), (x + core_radius, y + core_radius)],
-                fill=color,
-            )
-
-        elif is_beam:
-            # Draw as a beam/line - rotated along velocity
-            beam_length = self._scale_size(style.get("length", 20))
-            self._draw_oriented_ellipse(draw, x, y, beam_length, radius * 2, angle_deg, color, style.get("glow_color"))
-
-        elif has_trail:
-            # Draw missile with trail effect - rotated along velocity
-            trail_color = style.get("trail_color", (255, 200, 100))
-            trail_length = style.get("trail_length", 3)
-            proj_length = self._scale_size(style.get("length", 10))
-
-            # Draw trail (fading circles behind) - opposite direction of velocity
-            trail_dx = -math.cos(angle_rad)
-            trail_dy = -math.sin(angle_rad)
-            for i in range(trail_length):
-                trail_offset = (i + 1) * (proj_length // 3)
-                trail_x = x + trail_dx * trail_offset
-                trail_y = y + trail_dy * trail_offset
-                trail_radius = max(1, radius - i)
-                # Fade trail color progressively
-                fade = 1.0 - (i * 0.25)
-                faded_color = tuple(int(c * fade) for c in trail_color)
-                draw.ellipse(
-                    [
-                        (trail_x - trail_radius, trail_y - trail_radius),
-                        (trail_x + trail_radius, trail_y + trail_radius),
-                    ],
-                    fill=faded_color,
-                )
-
-            # Draw missile body (elongated ellipse oriented along velocity)
-            self._draw_oriented_ellipse(draw, x, y, radius * 3, radius * 2, angle_deg, color, None)
-
-        else:
-            # Standard round projectile - these stay circular (no rotation needed)
-            # Draw glow effect for cannons
-            if has_glow and "glow_color" in style:
-                glow_radius = radius + self._scale_size(3)
-                draw.ellipse(
-                    [(x - glow_radius, y - glow_radius), (x + glow_radius, y + glow_radius)],
-                    fill=style["glow_color"],
-                )
-
-            # Draw outline if specified
-            if "outline_color" in style:
-                outline_radius = radius + 1
-                draw.ellipse(
-                    [(x - outline_radius, y - outline_radius), (x + outline_radius, y + outline_radius)],
-                    fill=style["outline_color"],
-                )
-
-            draw.ellipse(
-                [(x - radius, y - radius), (x + radius, y + radius)],
-                fill=color,
-            )
-
-    def _draw_oriented_ellipse(
-        self,
-        draw: ImageDraw.ImageDraw,
-        cx: float,
-        cy: float,
-        width: float,
-        height: float,
-        angle_deg: float,
-        color,
-        glow_color=None,
-    ):
-        """Draw an ellipse rotated by angle_deg degrees.
-
-        Uses polygon approximation since PIL doesn't support rotated ellipses directly.
-        """
-        # Number of points to approximate the ellipse
-        num_points = 24
-
-        # Generate ellipse points rotated by angle
-        angle_rad = math.radians(angle_deg)
-        cos_a = math.cos(angle_rad)
-        sin_a = math.sin(angle_rad)
-
-        # Draw glow first (larger ellipse)
-        if glow_color:
-            glow_points = []
-            glow_width = width + 4
-            glow_height = height + 4
-            for i in range(num_points):
-                theta = 2 * math.pi * i / num_points
-                # Point on unrotated ellipse
-                ex = (glow_width / 2) * math.cos(theta)
-                ey = (glow_height / 2) * math.sin(theta)
-                # Rotate point
-                rx = ex * cos_a - ey * sin_a
-                ry = ex * sin_a + ey * cos_a
-                glow_points.append((cx + rx, cy + ry))
-            draw.polygon(glow_points, fill=glow_color)
-
-        # Draw main ellipse
-        points = []
-        for i in range(num_points):
-            theta = 2 * math.pi * i / num_points
-            # Point on unrotated ellipse
-            ex = (width / 2) * math.cos(theta)
-            ey = (height / 2) * math.sin(theta)
-            # Rotate point
-            rx = ex * cos_a - ey * sin_a
-            ry = ex * sin_a + ey * cos_a
-            points.append((cx + rx, cy + ry))
-
-        draw.polygon(points, fill=color)
-
-    def _draw_hud(self, draw: ImageDraw.ImageDraw, frame_data: dict, battle_info: dict):
-        """Draw heads-up display with team info"""
-        # Time display
-        time_str = f"Time: {frame_data.get('time', 0):.1f}s"
-        self.draw_text(draw, (10, 10), time_str, self.font, TEXT_COLOR)
-
-        # Team scores/counts
-        bots = frame_data.get("bots", [])
-        team1_alive = sum(1 for b in bots if b.get("team") == 1 and b.get("is_alive"))
-        team2_alive = sum(1 for b in bots if b.get("team") == 2 and b.get("is_alive"))
-        team1_total = sum(1 for b in bots if b.get("team") == 1)
-        team2_total = sum(1 for b in bots if b.get("team") == 2)
-
-        # Player (left side)
-        team1_text = f"Player: {team1_alive}/{team1_total}"
-        self.draw_text(draw, (10, self.output_height - 30), team1_text, self.font, self.team1_color)
-
-        # Opponent (right side)
-        team2_text = f"Opponent: {team2_alive}/{team2_total}"
-        text_width = self.text_width(team2_text, self.font)
-        self.draw_text(
-            draw,
-            (self.output_width - text_width - 10, self.output_height - 30),
-            team2_text,
-            self.font,
-            self.team2_color,
-        )
 
     def render_to_video(
         self,
@@ -656,16 +728,11 @@ class BattleRenderer:
         if not frames:
             raise ValueError("No frames to render")
 
-        battle_info = {
-            "arena_width": battle_result.get("arena_width", self.arena_width),
-            "arena_height": battle_result.get("arena_height", self.arena_height),
-        }
-
         # Frames are rendered lazily and streamed to the encoder one at a time
         # (a fresh generator is created per encoder attempt so fallbacks re-render)
         # Try PyAV directly first (best Discord compatibility)
         try:
-            frame_gen = self._iter_rendered_frames(frames, battle_info, freeze_duration, show_progress)
+            frame_gen = self._iter_rendered_frames(battle_result, freeze_duration, show_progress)
             self._write_video_pyav(frame_gen, output_path)
             return output_path
         except Exception as e:
@@ -674,7 +741,7 @@ class BattleRenderer:
 
         # Try ffmpeg subprocess
         try:
-            frame_gen = self._iter_rendered_frames(frames, battle_info, freeze_duration, show_progress)
+            frame_gen = self._iter_rendered_frames(battle_result, freeze_duration, show_progress)
             self._write_video_ffmpeg(frame_gen, output_path)
             return output_path
         except Exception as e:
@@ -688,30 +755,44 @@ class BattleRenderer:
 
     def _iter_rendered_frames(
         self,
-        frames: list[dict],
-        battle_info: dict,
+        battle_result: dict,
         freeze_duration: float,
         show_progress: bool,
+        frame_skip: int = 1,
     ) -> t.Iterator[Image.Image]:
-        """Yield rendered frames one at a time, ending with freeze frames of the final state.
+        """Yield rendered frames one at a time, then hold on the final state with the result banner.
+
+        Every simulation frame advances the effects, even frames a GIF skips, so explosions and
+        smoke play out the same at any frame rate. While the video holds on the end, the last
+        explosions and smoke keep playing out under the banner.
 
         Streaming frames to the encoder avoids materializing the whole battle
         (potentially thousands of images) in memory at once.
         """
-        last_img = None
+        frames = battle_result.get("frames", [])
+        self.reset(battle_result.get("seed") or 0)
         for i, frame in enumerate(frames):
             if show_progress and i % 30 == 0:
                 print(f"Rendering frame {i}/{len(frames)}", file=sys.stderr)
-            last_img = self.render_frame(frame, battle_info)
-            yield last_img
+            self.advance(frame)
+            if i % frame_skip == 0:
+                yield self.compose(frame)
 
-        # Freeze on the final frame to show the battle outcome
-        if last_img is not None and freeze_duration > 0:
-            freeze_frame_count = int(freeze_duration * self.fps)
-            if show_progress:
-                print(f"Adding {freeze_frame_count} freeze frames ({freeze_duration}s)...", file=sys.stderr)
-            for _ in range(freeze_frame_count):
-                yield last_img
+        if not frames or freeze_duration <= 0:
+            return
+        hold_count = int(freeze_duration * self.fps)
+        if show_progress:
+            print(f"Adding {hold_count} freeze frames ({freeze_duration}s)...", file=sys.stderr)
+        final = {**frames[-1], "events": [], "projectiles": []}
+        end_time = final.get("time", 0.0)
+        winner = battle_result.get("winner_team", 0)
+        duration = battle_result.get("duration", end_time)
+        for i in range(hold_count):
+            # The clock stays frozen on screen while the effects keep running
+            self.advance({**final, "time": end_time + (i + 1) / self.fps})
+            if i % frame_skip == 0:
+                fade = min(1.0, (i + 1) / (BANNER_FADE_TIME * self.fps))
+                yield self.compose(final, banner=(winner, duration, fade))
 
     def _write_video_pyav(self, frames: t.Iterable[Image.Image], output_path: Path):
         """Write video using PyAV directly with Discord-compatible settings."""
@@ -817,22 +898,8 @@ class BattleRenderer:
         if not frames:
             raise ValueError("No frames to render")
 
-        battle_info = {
-            "arena_width": battle_result.get("arena_width", self.arena_width),
-            "arena_height": battle_result.get("arena_height", self.arena_height),
-        }
-
-        # Render frames (skipping some for GIF size)
-        images = []
-        for i, frame in enumerate(frames):
-            if i % frame_skip != 0:
-                continue
-
-            if show_progress and i % 30 == 0:
-                print(f"Rendering frame {i}/{len(frames)}", file=sys.stderr)
-
-            img = self.render_frame(frame, battle_info)
-            images.append(img)
+        # Render frames (skipping some for GIF size), holding on the result for two seconds
+        images = list(self._iter_rendered_frames(battle_result, 2.0, show_progress, frame_skip=frame_skip))
 
         if not images:
             raise ValueError("No frames rendered")

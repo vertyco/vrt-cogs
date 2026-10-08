@@ -5,16 +5,22 @@ This module provides collision detection based on actual bot plating images rath
 than simple circular hitboxes. Projectiles only register hits when they touch
 non-transparent pixels of the target bot's plating.
 
+Masks are plain Pillow images read back as bytes, so hitboxes are identical on every
+install (no optional numpy dependency deciding between pixel masks and circles).
+
 Note: Weapons are NOT included in collision detection because they rotate
 independently from the chassis (weapon_orientation vs bot orientation).
 """
 
+import math
 import typing as t
 
-import numpy as np
 from PIL import Image
 
 from .image_utils import SPRITE_SCALE, load_image
+
+# Rotated masks are cached per this many degrees (a few source pixels at most at the plating's edge)
+ANGLE_STEP = 5
 
 
 class CollisionMask:
@@ -39,14 +45,16 @@ class CollisionMask:
         self.plating_name = plating_name
         self.weapon_name = weapon_name  # Stored but not used for collision
 
-        # Load plating-only mask
-        self._base_mask: t.Optional[np.ndarray] = None
-        self._base_size: tuple[int, int] = (0, 0)
+        # Solid pixels are 255, everything else 0
+        self._base_mask: t.Optional[Image.Image] = None
+        # Farthest solid pixel from the image center, in source pixels (for cheap broad-phase rejects)
+        self.radius: float = 0.0
+        # Typical distance from the center to the hull's edge, in source pixels (how close bots can touch)
+        self.hull_radius: float = 0.0
         self._load_mask()
 
-        # Cache of rotated masks (angle -> mask array)
-        # We quantize angles to 5-degree increments for performance
-        self._rotated_cache: dict[int, np.ndarray] = {}
+        # Cache of rotated masks: quantized angle -> (pixel bytes, width, height)
+        self._rotated_cache: dict[int, tuple[bytes, int, int]] = {}
 
     def _load_mask(self):
         """Load the plating image and create a collision mask.
@@ -62,41 +70,39 @@ class CollisionMask:
         if not plating_img:
             return
 
-        try:
-            # Extract alpha channel as numpy array
-            alpha = np.array(plating_img.split()[-1])
+        mask = plating_img.getchannel("A").point(lambda a: 255 if a > 128 else 0)
+        bbox = mask.getbbox()
+        if bbox is None:
+            return
+        self._base_mask = mask
+        cx, cy = mask.width / 2, mask.height / 2
+        self.radius = max(math.hypot(x - cx, y - cy) for x in (bbox[0], bbox[2]) for y in (bbox[1], bbox[3]))
 
-            # Create binary mask: 1 where alpha > threshold (128), 0 elsewhere
-            self._base_mask = (alpha > 128).astype(np.uint8)
-            self._base_size = plating_img.size
+        # Walk out from the center in every direction and average where the hull ends
+        data, width, height = mask.tobytes(), mask.width, mask.height
+        reaches = []
+        for step in range(36):
+            heading = math.radians(step * 10)
+            reach = 0
+            for dist in range(1, int(self.radius) + 1):
+                x, y = int(cx + math.cos(heading) * dist), int(cy + math.sin(heading) * dist)
+                if 0 <= x < width and 0 <= y < height and data[y * width + x]:
+                    reach = dist
+            reaches.append(reach)
+        self.hull_radius = sum(reaches) / len(reaches)
 
-        except (OSError, ValueError, IndexError):
-            # OSError: image file issues
-            # ValueError: invalid image mode
-            # IndexError: image has no alpha channel
-            self._base_mask = None
-
-    def _quantize_angle(self, angle: float) -> int:
-        """Quantize angle to nearest 5 degrees for caching."""
-        return int(round(angle / 5) * 5) % 360
-
-    def _get_rotated_mask(self, angle: float) -> t.Optional[np.ndarray]:
-        """Get the collision mask rotated to the given angle (degrees)."""
+    def _get_rotated_mask(self, angle: float) -> t.Optional[tuple[bytes, int, int]]:
+        """Get the collision mask rotated to the given angle (degrees), quantized for caching."""
         if self._base_mask is None:
             return None
 
-        quantized = self._quantize_angle(angle)
-
-        if quantized in self._rotated_cache:
-            return self._rotated_cache[quantized]
-
-        # Rotate the mask using PIL (it handles the expansion properly)
-        mask_img = Image.fromarray(self._base_mask * 255, mode="L")
-        rotated_img = mask_img.rotate(-angle, expand=True, resample=Image.Resampling.NEAREST)
-        rotated_mask = (np.array(rotated_img) > 128).astype(np.uint8)
-
-        self._rotated_cache[quantized] = rotated_mask
-        return rotated_mask
+        quantized = int(round(angle / ANGLE_STEP) * ANGLE_STEP) % 360
+        cached = self._rotated_cache.get(quantized)
+        if cached is None:
+            rotated = self._base_mask.rotate(-quantized, expand=True, resample=Image.Resampling.NEAREST)
+            cached = (rotated.tobytes(), rotated.width, rotated.height)
+            self._rotated_cache[quantized] = cached
+        return cached
 
     def check_point_collision(
         self,
@@ -121,32 +127,18 @@ class CollisionMask:
         Returns:
             True if the point is inside a non-transparent pixel of the bot
         """
-        if self._base_mask is None:
+        rotated = self._get_rotated_mask(bot_angle)
+        if rotated is None:
             return False
+        data, mask_w, mask_h = rotated
 
-        # Get the rotated mask
-        rotated_mask = self._get_rotated_mask(bot_angle)
-        if rotated_mask is None:
-            return False
+        # The mask center sits on (bot_x, bot_y) in world space
+        px = int(mask_w / 2 + (point_x - bot_x) / scale)
+        py = int(mask_h / 2 + (point_y - bot_y) / scale)
 
-        mask_h, mask_w = rotated_mask.shape
-        mask_cx, mask_cy = mask_w / 2, mask_h / 2
-
-        # Convert world coordinates to mask coordinates
-        # The mask center should be at (bot_x, bot_y) in world space
-        dx = (point_x - bot_x) / scale
-        dy = (point_y - bot_y) / scale
-
-        # Convert to mask pixel coordinates (center of mask is at mask_cx, mask_cy)
-        px = int(mask_cx + dx)
-        py = int(mask_cy + dy)
-
-        # Bounds check
         if px < 0 or px >= mask_w or py < 0 or py >= mask_h:
             return False
-
-        # Check if the pixel is solid
-        return rotated_mask[py, px] > 0
+        return data[py * mask_w + px] > 0
 
 
 class CollisionManager:
@@ -179,6 +171,20 @@ class CollisionManager:
             weapon_name: Name of the bot's weapon (optional)
         """
         self._masks[bot_id] = CollisionMask(plating_name, weapon_name)
+
+    def bounding_radius(self, bot_id: str) -> t.Optional[float]:
+        """How far the bot's hull reaches from its center in arena units, or None without a mask."""
+        mask = self._masks.get(bot_id)
+        if mask is None or mask._base_mask is None:
+            return None
+        return mask.radius * self._scale
+
+    def hull_radius(self, bot_id: str) -> t.Optional[float]:
+        """Typical distance from the bot's center to the edge of its hull in arena units, or None without a mask."""
+        mask = self._masks.get(bot_id)
+        if mask is None or mask._base_mask is None:
+            return None
+        return mask.hull_radius * self._scale
 
     def check_collision(
         self,

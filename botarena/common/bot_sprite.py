@@ -11,7 +11,7 @@ import io
 import math
 import typing as t
 
-from PIL import Image
+from PIL import Image, ImageFilter, ImageOps
 
 from .image_utils import load_image
 
@@ -92,6 +92,21 @@ def scale_image(img: Image.Image, scale: float) -> Image.Image:
     return img.resize((int(img.width * scale), int(img.height * scale)), Image.Resampling.LANCZOS)
 
 
+def barrel_length(weapon_name: str, mount_x: float) -> t.Optional[float]:
+    """How far the barrel tip reaches in front of the weapon's mount point, in source image pixels.
+
+    The tip is the frontmost solid column of the weapon image (weapons face right at 0 degrees).
+    Returns None if the weapon has no image.
+    """
+    img = load_image("weapons", weapon_name)
+    if img is None:
+        return None
+    bbox = img.getchannel("A").point(lambda a: 255 if a > 128 else 0).getbbox()
+    if bbox is None:
+        return None
+    return bbox[2] - (img.width / 2 + mount_x)
+
+
 def rotate_plating(img: Image.Image, plating: "Plating", orientation: float, scale: float) -> Image.Image:
     """Turn a scaled plating image around its pivot."""
     rotated, _ = _rotate_around_pivot(img, orientation, plating.center_x * scale, plating.center_y * scale)
@@ -108,20 +123,33 @@ def rotate_weapon(
     return _rotate_around_pivot(img, weapon_orientation, component.mount_x * scale, component.mount_y * scale)
 
 
+def mount_offset(plating: "Plating", orientation: float, scale: float) -> tuple[int, int]:
+    """Where the weapon mounts, measured from the plating's center once the plating has turned.
+
+    The mount point is a spot on the plating, so it turns with the chassis.
+    """
+    rad = math.radians(orientation)
+    cos_a, sin_a = math.cos(rad), math.sin(rad)
+    mx, my = plating.weapon_mount_x * scale, plating.weapon_mount_y * scale
+    return round(mx * cos_a - my * sin_a), round(mx * sin_a + my * cos_a)
+
+
 def layer_positions(
     rotated_plating: Image.Image,
     plating: "Plating",
     rotated_weapon: Image.Image,
     weapon_offset: tuple[int, int],
     scale: float,
+    orientation: float = 0.0,
 ) -> tuple[tuple[int, int], tuple[int, int], tuple[int, int]]:
     """Lay out the plating and weapon on one combined sprite.
 
     Returns (sprite size, plating position, weapon position), positions measured from the sprite's top-left.
     """
     # The weapon mounts on the plating's mount point, measured from the turned plating's center
-    attachment_x = rotated_plating.width // 2 + int(plating.weapon_mount_x * scale)
-    attachment_y = rotated_plating.height // 2 + int(plating.weapon_mount_y * scale)
+    mount_x, mount_y = mount_offset(plating, orientation, scale)
+    attachment_x = rotated_plating.width // 2 + mount_x
+    attachment_y = rotated_plating.height // 2 + mount_y
     weapon_x = attachment_x - rotated_weapon.width // 2 + weapon_offset[0]
     weapon_y = attachment_y - rotated_weapon.height // 2 + weapon_offset[1]
 
@@ -185,7 +213,9 @@ def render_bot_sprite(
 
     component = registry.get_component(weapon_name)
     rotated_weapon, weapon_offset = rotate_weapon(scale_image(weapon_img, scale), component, weapon_orientation, scale)
-    size, plating_pos, weapon_pos = layer_positions(rotated_plating, plating, rotated_weapon, weapon_offset, scale)
+    size, plating_pos, weapon_pos = layer_positions(
+        rotated_plating, plating, rotated_weapon, weapon_offset, scale, orientation
+    )
 
     # Paste plating first, then weapon on top
     final = Image.new("RGBA", size, (0, 0, 0, 0))
@@ -198,8 +228,9 @@ class SpriteCache:
     """Draws bots onto battle frames, reusing work across frames.
 
     Each part image is loaded and scaled once, and each turn angle is made once per whole
-    degree (a fraction of a degree is invisible at battle sprite size). Bots are laid out
-    exactly like render_bot_sprite(), but pasted straight onto the frame.
+    degree (a fraction of a degree is invisible at battle sprite size). The plating is
+    centered on the bot's position (where its hitbox is) and the weapon sits on the
+    plating's mount point, exactly like render_bot_sprite() lays them out.
     """
 
     def __init__(self, registry: "PartsRegistry", scale: float):
@@ -208,6 +239,8 @@ class SpriteCache:
         self.images: dict[tuple[str, str], t.Optional[Image.Image]] = {}
         self.platings: dict[tuple[str, int], t.Optional[Image.Image]] = {}
         self.weapons: dict[tuple[str, int], t.Optional[tuple[Image.Image, tuple[int, int]]]] = {}
+        self.shadows: dict[int, tuple[Image.Image, int]] = {}
+        self.flashes: dict[tuple[int, int], Image.Image] = {}
 
     def scaled_image(self, folder: str, name: str) -> t.Optional[Image.Image]:
         key = (folder, name)
@@ -235,6 +268,36 @@ class SpriteCache:
             self.weapons[key] = rotate_weapon(img, component, key[1], self.scale) if img else None
         return self.weapons[key]
 
+    def layers(
+        self,
+        x: int,
+        y: int,
+        plating_name: str,
+        weapon_name: t.Optional[str],
+        orientation: float,
+        weapon_orientation: float,
+    ) -> list[tuple[Image.Image, tuple[int, int]]]:
+        """The bot's turned part images and their top-left frame positions, bottom layer first.
+
+        Empty if the plating has no image.
+        """
+        rotated_plating = self.plating(plating_name, orientation)
+        if rotated_plating is None:
+            return []
+        left = x - rotated_plating.width // 2
+        top = y - rotated_plating.height // 2
+        layers = [(rotated_plating, (left, top))]
+
+        weapon = self.weapon(weapon_name, weapon_orientation) if weapon_name else None
+        if weapon is not None:
+            rotated_weapon, (offset_x, offset_y) = weapon
+            mount_x, mount_y = mount_offset(self.registry.get_plating(plating_name), orientation, self.scale)
+            # Center the turned weapon so its own mount point lands on the plating's mount point
+            weapon_left = x + mount_x - rotated_weapon.width // 2 + offset_x
+            weapon_top = y + mount_y - rotated_weapon.height // 2 + offset_y
+            layers.append((rotated_weapon, (weapon_left, weapon_top)))
+        return layers
+
     def draw(
         self,
         frame: Image.Image,
@@ -246,27 +309,53 @@ class SpriteCache:
         weapon_orientation: float,
     ) -> bool:
         """Paste a bot centered on (x, y). Returns False if the plating has no image."""
-        rotated_plating = self.plating(plating_name, orientation)
-        if rotated_plating is None:
-            return False
+        layers = self.layers(x, y, plating_name, weapon_name, orientation, weapon_orientation)
+        for image, position in layers:
+            frame.paste(image, position, image)
+        return bool(layers)
 
-        weapon = self.weapon(weapon_name, weapon_orientation) if weapon_name else None
-        if weapon is None:
-            frame.paste(
-                rotated_plating, (x - rotated_plating.width // 2, y - rotated_plating.height // 2), rotated_plating
-            )
-            return True
+    def shadow(self, image: Image.Image, blur: int = 2) -> tuple[Image.Image, int]:
+        """A soft drop shadow mask for a turned part image, and how far it spills past each edge."""
+        key = id(image)
+        if key not in self.shadows:
+            pad = blur * 2
+            mask = Image.new("L", (image.width + pad * 2, image.height + pad * 2), 0)
+            mask.paste(image.getchannel("A"), (pad, pad))
+            mask = mask.filter(ImageFilter.GaussianBlur(blur)).point(lambda a: a * 105 // 255)
+            # Keyed by the part image itself, which the caches above keep alive for the whole battle
+            self.shadows[key] = (mask, pad)
+        return self.shadows[key]
 
-        rotated_weapon, weapon_offset = weapon
-        plating = self.registry.get_plating(plating_name)
-        size, plating_pos, weapon_pos = layer_positions(
-            rotated_plating, plating, rotated_weapon, weapon_offset, self.scale
-        )
-        left = x - size[0] // 2
-        top = y - size[1] // 2
-        frame.paste(rotated_plating, (left + plating_pos[0], top + plating_pos[1]), rotated_plating)
-        frame.paste(rotated_weapon, (left + weapon_pos[0], top + weapon_pos[1]), rotated_weapon)
-        return True
+    def flash(self, image: Image.Image, strength: float) -> Image.Image:
+        """A white-out mask in the part's shape (hit flash), at one of a few strengths."""
+        level = max(1, min(4, round(strength * 4)))
+        key = (id(image), level)
+        if key not in self.flashes:
+            self.flashes[key] = image.getchannel("A").point(lambda a: a * level * 150 // (4 * 255))
+        return self.flashes[key]
+
+    def wreck(
+        self,
+        plating_name: str,
+        weapon_name: t.Optional[str],
+        orientation: float,
+        weapon_orientation: float,
+    ) -> t.Optional[tuple[Image.Image, tuple[int, int]]]:
+        """A burnt-out copy of the bot as one image, and where its top-left sits relative to the bot's center."""
+        layers = self.layers(0, 0, plating_name, weapon_name, orientation, weapon_orientation)
+        if not layers:
+            return None
+        left = min(pos[0] for _, pos in layers)
+        top = min(pos[1] for _, pos in layers)
+        right = max(pos[0] + img.width for img, pos in layers)
+        bottom = max(pos[1] + img.height for img, pos in layers)
+        combined = Image.new("RGBA", (right - left, bottom - top), (0, 0, 0, 0))
+        for img, pos in layers:
+            combined.alpha_composite(img, (pos[0] - left, pos[1] - top))
+        # Scorched metal: drop the paint, keep the shading, darken toward soot
+        charred = ImageOps.colorize(ImageOps.grayscale(combined), black=(14, 12, 11), white=(118, 104, 92))
+        charred.putalpha(combined.getchannel("A"))
+        return charred, (left, top)
 
 
 def render_bot_sprite_to_bytes(

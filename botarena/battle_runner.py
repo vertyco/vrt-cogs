@@ -44,12 +44,14 @@ if str(_PARENT_DIR) not in sys.path:
     sys.path.insert(0, str(_PARENT_DIR))
 
 # Now we can import from botarena package
+from botarena.common.bot_sprite import barrel_length  # noqa
 from botarena.common.engine import (  # noqa
     AIBehavior,
     BattleConfig,
     BattleEngine,
     TargetPriority,
 )
+from botarena.common.image_utils import SPRITE_SCALE  # noqa
 from botarena.common.renderer import BattleRenderer  # noqa
 from botarena.constants.parts import build_registry  # noqa
 
@@ -175,6 +177,15 @@ def _add_bot_from_data(engine: BattleEngine, bot_data: dict, team: int):
     if target_priority is None:
         target_priority = TargetPriority.CLOSEST
 
+    # Shots leave from the barrel tip as drawn: the turret sits on the plating's weapon mount,
+    # and the barrel reaches forward from the weapon's own mount point (both scaled like the sprites)
+    barrel = barrel_length(component.get("name", ""), component.get("mount_x", 0.0))
+    muzzle_offset = barrel * SPRITE_SCALE if barrel else 92.0
+    turret_offset = (
+        plating.get("weapon_mount_x", 0.0) * SPRITE_SCALE,
+        plating.get("weapon_mount_y", 0.0) * SPRITE_SCALE,
+    )
+
     engine.add_bot(
         bot_id=bot_data.get("id", ""),
         bot_name=bot_data.get("name", "Bot"),
@@ -195,7 +206,8 @@ def _add_bot_from_data(engine: BattleEngine, bot_data: dict, team: int):
         behavior=behavior,
         target_priority=target_priority,
         projectile_type=component.get("projectile_type", "bullet"),
-        muzzle_offset=component.get("render_offset_x", 92.0),  # Use weapon's render offset as muzzle position
+        muzzle_offset=muzzle_offset,
+        turret_offset=turret_offset,
         turret_rotation_speed=chassis.get("turret_rotation_speed", 20.0),  # Turret rotation determined by chassis
         spread=component.get("spread", 0.0),
         splash_radius=component.get("splash_radius", 0),

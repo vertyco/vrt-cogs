@@ -10,8 +10,13 @@ Range Scaling:
     This ensures weapons have meaningful engagement distances.
 
 Collision Detection:
-    Uses pixel-perfect collision detection when available (numpy installed).
-    Falls back to simple circular hitboxes otherwise.
+    Projectiles hit the actual plating pixels (see collision.py) and are swept along
+    their whole path each tick, so fast shots can't skip through a hull between frames.
+    A circular hitbox is only used for a plating without an image.
+
+Movement:
+    Bots drive like tanks: they accelerate and brake along their chassis heading,
+    slide around each other on contact, and slide along the arena walls.
 """
 
 import math
@@ -20,17 +25,7 @@ import typing as t
 from dataclasses import dataclass, field
 from enum import Enum
 
-if t.TYPE_CHECKING:
-    from .collision import CollisionManager
-
-# Try to import pixel-perfect collision (requires numpy)
-try:
-    from .collision import CollisionManager as _CollisionManager
-
-    HAS_PIXEL_COLLISION = True
-except ImportError:
-    HAS_PIXEL_COLLISION = False
-    _CollisionManager = None  # type: ignore
+from .collision import CollisionManager
 
 if t.TYPE_CHECKING:
     try:
@@ -46,6 +41,14 @@ if t.TYPE_CHECKING:
 # ─────────────────────────────────────────────────────────────────────────────
 RANGE_SCALE_FACTOR = 2.5  # Multiplier for weapon ranges (Smaller means shorter range)
 SPLASH_DAMAGE_FRACTION = 0.5  # Share of a splash weapon's hit damage dealt to other enemies in the blast
+
+# Drive train, as multiples of a bot's top speed per second (3.0 = full speed in a third of a second)
+ACCELERATION = 3.0
+BRAKING = 5.0
+# Longest step a projectile takes between collision checks, so fast shots can't skip over a thin hull edge
+PROJECTILE_SWEEP_STEP = 6.0
+# Weapons that can fire point-blank never miss a target whose center is this close (melee weapon reach)
+POINT_BLANK_REACH = 92.0
 
 
 class AIBehavior(str, Enum):
@@ -125,6 +128,17 @@ class Vector2:
         return self.x * other.x + self.y * other.y
 
 
+def distance_to_segment(point: Vector2, start: Vector2, end: Vector2) -> float:
+    """Shortest distance from a point to the line segment start-end."""
+    dx = end.x - start.x
+    dy = end.y - start.y
+    length_sq = dx * dx + dy * dy
+    if length_sq == 0:
+        return point.distance_to(start)
+    t_along = max(0.0, min(1.0, ((point.x - start.x) * dx + (point.y - start.y) * dy) / length_sq))
+    return math.hypot(point.x - (start.x + t_along * dx), point.y - (start.y + t_along * dy))
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # THREAT TRACKING
 # Tracks damage sources and enables smarter target prioritization
@@ -176,7 +190,9 @@ class BotRuntimeState:
     is_healer: bool
     allows_point_blank: bool = False  # If True, can hit targets even when inside min_range
     projectile_type: str = "bullet"  # Type of projectile this weapon fires
-    muzzle_offset: float = 92.0  # Distance from bot center to weapon muzzle (for projectile spawn)
+    muzzle_offset: float = 92.0  # Distance from the turret pivot to the barrel tip (for projectile spawn)
+    turret_offset_x: float = 0.0  # Turret pivot offset from the bot center, before the chassis turns
+    turret_offset_y: float = 0.0
     spread: float = 0.0  # Most degrees a shot can stray from the turret direction
     splash_radius: float = 0.0  # Blast reach (to enemy hulls) when a shot hits an enemy
 
@@ -195,7 +211,8 @@ class BotRuntimeState:
 
     # Runtime state
     position: Vector2 = field(default_factory=Vector2)
-    velocity: Vector2 = field(default_factory=Vector2)
+    velocity: Vector2 = field(default_factory=Vector2)  # How far the bot actually moved last tick, per second
+    current_speed: float = 0.0  # Speed along the chassis heading (ramps up and down, see ACCELERATION/BRAKING)
     orientation: float = 0.0  # Chassis facing direction (degrees, 0 = right, 90 = down)
     weapon_orientation: float = 0.0  # Weapon turret facing direction (independent of chassis)
     target_orientation: float = 0.0  # Desired orientation (for stop-turn-move)
@@ -212,10 +229,6 @@ class BotRuntimeState:
     dodge_timer: float = 0.0  # Cooldown until next dodge is allowed
     dodge_direction: int = 0  # Current dodge direction (0=none, 1=right, -1=left)
     dodge_duration: float = 0.0  # Time remaining in current dodge
-
-    # Wall collision state
-    wall_escape_timer: float = 0.0  # Time remaining in wall escape mode
-    last_wall_contact: float = 0.0  # Time of last wall contact
 
     # Threat tracking - for smarter target selection
     threat_map: dict[str, ThreatEntry] = field(default_factory=dict)  # enemy_id -> threat info
@@ -363,10 +376,8 @@ class Projectile:
     is_heal: bool = False
     alive: bool = True
     projectile_type: str = "bullet"  # Type of projectile for rendering
-    ttl: float = -1.0  # Time-to-live in seconds (-1 = infinite, expires when <= 0)
-    visual_only: bool = False  # On-screen effect only: never moves, collides, or triggers dodges
     splash_radius: float = 0.0  # Blast reach applied when this shot hits an enemy
-    radius: float = 0.0  # Drawn size for effects like explosions (0 = style default)
+    age: float = 0.0  # Seconds since it was fired
 
     def to_frame_data(self) -> dict:
         return {
@@ -379,7 +390,7 @@ class Projectile:
             "damage": self.damage,
             "is_heal": self.is_heal,
             "projectile_type": self.projectile_type,
-            "radius": self.radius,
+            "age": self.age,
         }
 
 
@@ -435,18 +446,13 @@ class BattleEngine:
         self.frame_number: int = 0
         self.dt: float = 1.0 / self.config.fps
         self.events: list[dict] = []  # Events for current frame
-        self.pending_effects: list[Projectile] = []  # Effects spawned mid-loop, added after it
 
         self.last_damage_time: float = 0.0  # For stalemate detection
 
-        # Wall collision constants
-        self.wall_margin: float = 50.0  # Distance from edge to consider "against wall"
-        self.wall_escape_duration: float = 0.5  # How long to stay in escape mode after wall contact
-
-        # Pixel-perfect collision detection (when numpy is available)
-        self.collision_manager: t.Optional["CollisionManager"] = None
-        if HAS_PIXEL_COLLISION and _CollisionManager is not None:
-            self.collision_manager = _CollisionManager()
+        # Pixel-perfect collision detection against each bot's plating
+        self.collision_manager = CollisionManager()
+        # How far each bot's hull reaches, so touching bots stop where their platings meet
+        self.hull_radii: dict[str, float] = {}
 
     def add_bot(
         self,
@@ -473,6 +479,7 @@ class BattleEngine:
         turret_rotation_speed: float = 15.0,
         spread: float = 0.0,
         splash_radius: float = 0.0,
+        turret_offset: tuple[float, float] = (0.0, 0.0),
     ):
         """Add a bot to the simulation.
 
@@ -482,7 +489,8 @@ class BattleEngine:
             behavior: AI movement behavior (from tactical orders or chassis default)
             target_priority: Who to target (from tactical orders)
             projectile_type: Visual type of projectile (bullet, laser, cannon, missile, heal)
-            muzzle_offset: Distance from bot center to weapon muzzle (for projectile spawn point)
+            muzzle_offset: Distance from the turret pivot to the barrel tip (for projectile spawn point)
+            turret_offset: Turret pivot offset from the bot center while the chassis faces right
         """
         shots_per_second = shots_per_minute / 60.0
 
@@ -536,6 +544,8 @@ class BattleEngine:
             allows_point_blank=allows_point_blank,
             projectile_type=projectile_type,
             muzzle_offset=muzzle_offset,
+            turret_offset_x=turret_offset[0],
+            turret_offset_y=turret_offset[1],
             spread=spread,
             splash_radius=splash_radius,
             health=max_health,
@@ -548,10 +558,9 @@ class BattleEngine:
         )
         self.bots[bot_id] = state
 
-        # Register collision mask for pixel-perfect collision detection
-        # Uses plating + weapon to match visual rendering
-        if self.collision_manager is not None:
-            self.collision_manager.register_bot(bot_id, plating_name, component_name)
+        # Register collision mask for pixel-perfect collision detection (plating shape)
+        self.collision_manager.register_bot(bot_id, plating_name, component_name)
+        self.hull_radii[bot_id] = self.collision_manager.hull_radius(bot_id) or self.config.bot_radius
 
     def setup_positions(self):
         """Place bots in starting positions"""
@@ -1129,8 +1138,8 @@ class BattleEngine:
         for proj in self.projectiles:
             if not proj.alive:
                 continue
-            if proj.is_heal or proj.visual_only:
-                continue  # Ignore healing projectiles and on-screen effects
+            if proj.is_heal:
+                continue  # Ignore healing projectiles
             if proj.shooter_id == bot.bot_id:
                 continue  # Ignore our own projectiles
 
@@ -1180,9 +1189,10 @@ class BattleEngine:
         distance_to_target = math.sqrt(dx * dx + dy * dy)
 
         if distance_to_target < 5.0:
-            # Close enough - just face the enemy
+            # Close enough - brake and face the enemy
             enemy_angle = bot.position.angle_to(target.position)
             self._rotate_chassis_towards(bot, enemy_angle)
+            self._drive(bot, 0.0)
             return
 
         # Normalize direction
@@ -1212,16 +1222,12 @@ class BattleEngine:
 
         # Minimum speed to prevent shuffling
         speed_mult = max(0.3, speed_mult)
+        # Ease off on arrival so the bot brakes onto its spot instead of overshooting it
+        speed_mult = min(speed_mult, self._arrival_speed_mult(bot, distance_to_target))
 
         # Rotate chassis toward movement direction
         self._rotate_chassis_towards(bot, desired_angle)
-
-        # Apply movement
-        move_vec = Vector2(
-            math.cos(math.radians(bot.orientation)) * bot.speed * speed_mult * self.dt,
-            math.sin(math.radians(bot.orientation)) * bot.speed * speed_mult * self.dt,
-        )
-        self._apply_movement(bot, move_vec)
+        self._drive(bot, speed_mult)
 
     def _wander_movement(self, bot: BotRuntimeState):
         """Wander toward arena center when no target.
@@ -1253,15 +1259,13 @@ class BattleEngine:
                 bot.target_orientation = (bot.orientation + self.rng.uniform(-45, 45)) % 360
                 bot.commitment_timer = self.rng.uniform(1.0, 2.0)
             self._rotate_chassis_towards(bot, bot.target_orientation)
+            self._drive(bot, 0.0)
             return
 
         # Move toward committed target
         desired_angle = math.degrees(math.atan2(dy, dx)) % 360
         self._rotate_chassis_towards(bot, desired_angle)
-
-        rad = math.radians(bot.orientation)
-        move_vec = Vector2(math.cos(rad), math.sin(rad)) * (bot.speed * 0.5 * self.dt)
-        self._apply_movement(bot, move_vec)
+        self._drive(bot, 0.5)
 
     def _find_lowest_health_ally(self, bot: BotRuntimeState) -> t.Optional[BotRuntimeState]:
         """Find the best ally to heal using triage logic.
@@ -1439,9 +1443,7 @@ class BattleEngine:
             bot.is_turning = False
 
             # Small movement to avoid being stationary
-            rad = math.radians(bot.orientation)
-            move_vec = Vector2(math.cos(rad), math.sin(rad)) * (bot.speed * 0.08 * self.dt)
-            self._apply_movement(bot, move_vec)
+            self._drive(bot, 0.08)
             return
 
         # Move toward target position
@@ -1467,9 +1469,7 @@ class BattleEngine:
 
         # Rotate and move
         self._rotate_chassis_towards(bot, desired_angle, speed_mult=1.2)
-        rad = math.radians(bot.orientation)
-        move_vec = Vector2(math.cos(rad), math.sin(rad)) * (bot.speed * effective_speed_mult * self.dt)
-        self._apply_movement(bot, move_vec)
+        self._drive(bot, effective_speed_mult)
 
     def _find_frontline_ally(self, bot: BotRuntimeState) -> t.Optional[BotRuntimeState]:
         """Find the ally closest to enemies (frontline) for proactive support.
@@ -1518,9 +1518,7 @@ class BattleEngine:
         self._rotate_chassis_towards(bot, desired_angle, speed_mult=1.5)
 
         # Move at max speed
-        rad = math.radians(bot.orientation)
-        move_vec = Vector2(math.cos(rad), math.sin(rad)) * (bot.speed * self.dt)
-        self._apply_movement(bot, move_vec)
+        self._drive(bot, 1.0)
 
     def _adjust_position_for_walls(self, pos: Vector2, margin: float) -> Vector2:
         """Adjust a position to avoid being too close to walls.
@@ -1573,125 +1571,90 @@ class BattleEngine:
         else:
             bot.orientation = (bot.orientation - max_rotation) % 360
 
-    def _rotate_towards(self, bot: BotRuntimeState, target_angle: float, speed_mult: float = 1.0):
-        """Deprecated - use _rotate_chassis_towards instead"""
-        self._rotate_chassis_towards(bot, target_angle, speed_mult)
+    def _arrival_speed_mult(self, bot: BotRuntimeState, distance: float) -> float:
+        """Top-speed fraction that still lets the bot brake to a stop within `distance`."""
+        if bot.speed <= 0:
+            return 0.0
+        return min(1.0, math.sqrt(2.0 * bot.speed * BRAKING * distance) / bot.speed)
 
-    def _is_against_wall(self, bot: BotRuntimeState) -> tuple[bool, list[str]]:
+    def _drive(self, bot: BotRuntimeState, speed_mult: float):
+        """Speed up or brake toward a fraction of top speed, then roll forward along the chassis heading.
+
+        Speed changes are rate-limited (ACCELERATION/BRAKING) so bots ease into motion and
+        coast to a stop instead of snapping between full speed and standing still.
         """
-        Check if bot is against a wall.
+        target_speed = bot.speed * max(0.0, speed_mult)
+        rate = bot.speed * (ACCELERATION if target_speed > bot.current_speed else BRAKING) * self.dt
+        bot.current_speed += max(-rate, min(rate, target_speed - bot.current_speed))
+        if bot.current_speed <= 0:
+            bot.current_speed = 0.0
+            bot.velocity = Vector2(0, 0)
+            return
 
-        Returns:
-            (is_against_wall, list of wall sides hit: 'left', 'right', 'top', 'bottom')
-        """
-        x, y = bot.position.x, bot.position.y
-        walls_hit: list[str] = []
+        rad = math.radians(bot.orientation)
+        move_vec = Vector2(math.cos(rad), math.sin(rad)) * (bot.current_speed * self.dt)
+        self._apply_movement(bot, move_vec)
 
-        # Arena edge buffer - matches the buffer in _apply_movement
-        # Reduced from 40 to 25 to minimize oscillation (total buffer becomes 75px instead of 90px)
-        arena_buffer = 25.0
+    def _contact_distance(self, bot: BotRuntimeState, other: BotRuntimeState) -> float:
+        """How close two bots' centers can get before their platings touch."""
+        radii = self.hull_radii.get(bot.bot_id, self.config.bot_radius) + self.hull_radii.get(
+            other.bot_id, self.config.bot_radius
+        )
+        # Kept inside the minimum weapon range floor (see add_bot) so a bot hugging an enemy still sits in
+        # its dead zone, and never closer than the original fixed spacing
+        return max(self.config.bot_radius * 2.2, min(radii, self.config.bot_radius * 2.5 - 2.0))
 
-        if x <= self.wall_margin + arena_buffer:
-            walls_hit.append("left")
-        elif x >= self.config.arena_width - self.wall_margin - arena_buffer:
-            walls_hit.append("right")
-        if y <= self.wall_margin + arena_buffer:
-            walls_hit.append("top")
-        elif y >= self.config.arena_height - self.wall_margin - arena_buffer:
-            walls_hit.append("bottom")
-
-        return len(walls_hit) > 0, walls_hit
-
-    def _get_wall_escape_vector(self, bot: BotRuntimeState, walls_hit: list[str]) -> tuple[float, float]:
-        """
-        Calculate the escape direction and speed multiplier when against a wall.
-
-        Returns:
-            (escape_angle, speed_multiplier)
-        """
-        escape_x = 0.0
-        escape_y = 0.0
-
-        # Build escape vector pointing away from walls
-        for wall in walls_hit:
-            if wall == "left":
-                escape_x += 1.0  # Move right
-            elif wall == "right":
-                escape_x -= 1.0  # Move left
-            elif wall == "top":
-                escape_y += 1.0  # Move down
-            elif wall == "bottom":
-                escape_y -= 1.0  # Move up
-
-        # Calculate escape angle
-        if escape_x == 0 and escape_y == 0:
-            return 0.0, 0.0
-
-        escape_angle = math.degrees(math.atan2(escape_y, escape_x)) % 360
-        return escape_angle, 0.85  # High speed to escape quickly
-
-    def _is_moving_towards_wall(self, bot: BotRuntimeState, desired_angle: float, walls_hit: list[str]) -> bool:
-        """
-        Check if the bot's desired movement direction would move it further into a wall.
-        """
-        rad = math.radians(desired_angle)
-        move_x = math.cos(rad)
-        move_y = math.sin(rad)
-
-        for wall in walls_hit:
-            if wall == "left" and move_x < -0.3:  # Moving left into left wall
-                return True
-            elif wall == "right" and move_x > 0.3:  # Moving right into right wall
-                return True
-            elif wall == "top" and move_y < -0.3:  # Moving up into top wall
-                return True
-            elif wall == "bottom" and move_y > 0.3:  # Moving down into bottom wall
-                return True
-
-        return False
+    def _bot_overlap(self, bot: BotRuntimeState, pos: Vector2) -> float:
+        """How deep a bot standing at `pos` would sink into the closest other bot (0 when clear)."""
+        deepest = 0.0
+        for other in self.bots.values():
+            if other.bot_id != bot.bot_id and other.is_alive:
+                deepest = max(deepest, self._contact_distance(bot, other) - pos.distance_to(other.position))
+        return deepest
 
     def _apply_movement(self, bot: BotRuntimeState, move_vec: Vector2):
-        """Apply movement vector with bounds, collision checking, and wall response"""
-        new_pos = bot.position + move_vec
+        """Move a bot, sliding along the arena walls and around other bots instead of stopping dead."""
+        old_pos = bot.position
+        step = move_vec.magnitude()
+        heading = Vector2(math.cos(math.radians(bot.orientation)), math.sin(math.radians(bot.orientation)))
 
-        # Track if we hit a wall boundary
-        hit_wall = False
+        # Bots slide around each other: drop the part of the move that pushes into a bot it touches
+        for other in self.bots.values():
+            if other.bot_id == bot.bot_id or not other.is_alive:
+                continue
+            offset = old_pos + move_vec - other.position
+            if offset.magnitude() >= self._contact_distance(bot, other):
+                continue
+            normal = offset.normalized() if offset.magnitude() > 0 else (old_pos - other.position).normalized()
+            pushing_in = move_vec.dot(normal)
+            if pushing_in < 0:
+                move_vec = move_vec - normal * pushing_in
+            if move_vec.magnitude() < step * 0.3:
+                # Nearly head-on: veer around the side the chassis already leans toward
+                tangent = Vector2(-normal.y, normal.x)
+                side = 1.0 if heading.dot(tangent) >= 0 else -1.0
+                move_vec = move_vec + tangent * (side * step * 0.6)
 
-        # Arena edge buffer - keeps bots away from the visual walls of the arena
-        # The arena background has visible walls, so bots shouldn't clip into them
-        arena_buffer = 40.0  # Pixels from edge where bots can't go
+        new_pos = old_pos + move_vec
 
-        # Bounds checking with wall hit detection (using buffer zone)
+        # Arena edge buffer - keeps bots away from the visual walls of the arena.
+        # Clamping each axis on its own lets bots slide along a wall they drive into.
+        arena_buffer = 40.0
         min_bound = self.config.bot_radius + arena_buffer
         max_x = self.config.arena_width - self.config.bot_radius - arena_buffer
         max_y = self.config.arena_height - self.config.bot_radius - arena_buffer
+        new_pos.x = max(min_bound, min(max_x, new_pos.x))
+        new_pos.y = max(min_bound, min(max_y, new_pos.y))
 
-        if new_pos.x < min_bound:
-            new_pos.x = min_bound
-            hit_wall = True
-        elif new_pos.x > max_x:
-            new_pos.x = max_x
-            hit_wall = True
+        # Never end a move sunk deeper into another bot than where it started
+        if self._bot_overlap(bot, new_pos) > max(0.0, self._bot_overlap(bot, old_pos)) + 0.01:
+            new_pos = old_pos
 
-        if new_pos.y < min_bound:
-            new_pos.y = min_bound
-            hit_wall = True
-        elif new_pos.y > max_y:
-            new_pos.y = max_y
-            hit_wall = True
-
-        # If we hit a wall, trigger escape mode
-        if hit_wall:
-            bot.wall_escape_timer = self.wall_escape_duration
-            bot.last_wall_contact = self.current_time
-
-        # Collision checking
-        for other in self.bots.values():
-            if other.bot_id != bot.bot_id and other.is_alive:
-                if new_pos.distance_to(other.position) < self.config.bot_radius * 2.2:
-                    return  # Collision, don't move
-
+        moved = new_pos - old_pos
         bot.position = new_pos
+        bot.velocity = moved * (1.0 / self.dt)
+        # Scraping along a wall or another bot bleeds off speed
+        bot.current_speed = min(bot.current_speed, moved.magnitude() / self.dt)
 
     def _friendly_in_line_of_fire(self, shooter: BotRuntimeState, target: BotRuntimeState) -> bool:
         """Check if any friendly bot is between shooter and target.
@@ -1754,28 +1717,21 @@ class BattleEngine:
         return False  # Clear to fire
 
     def _update_projectiles(self):
-        """Update projectile positions and check for hits"""
+        """Move projectiles, sweeping each one's path this tick for the first bot it touches"""
         for proj in self.projectiles:
             if not proj.alive:
                 continue
 
-            # Check TTL expiration
-            if proj.ttl > 0:
-                proj.ttl -= self.dt
-                if proj.ttl <= 0:
-                    proj.alive = False
-                    continue
-
-            # Effects (bursts) only show on screen; they never move or hit anything
-            if proj.visual_only:
-                continue
-
-            # Move projectile
-            proj.position = proj.position + proj.velocity * self.dt
-
-            hit_bot = self.find_projectile_collision(proj)
+            start = proj.position
+            end = start + proj.velocity * self.dt
+            # A fresh shot also checks its muzzle point, in case the barrel is already inside a hull
+            hit_bot, impact = self.sweep_projectile(proj, start, end, include_start=proj.age == 0)
+            proj.age += self.dt
             if hit_bot:
+                proj.position = impact
                 self.resolve_projectile_hit(proj, hit_bot)
+                continue
+            proj.position = end
 
             # Check if out of bounds
             if (
@@ -1786,36 +1742,47 @@ class BattleEngine:
             ):
                 proj.alive = False
 
-        # Remove dead projectiles, then add effects spawned during the loop
-        self.projectiles = [p for p in self.projectiles if p.alive] + self.pending_effects
-        self.pending_effects = []
+        self.projectiles = [p for p in self.projectiles if p.alive]
 
-    def find_projectile_collision(self, proj: Projectile) -> t.Optional[BotRuntimeState]:
-        """Return the first living bot (teammates included) the projectile is touching, if any."""
+    def sweep_projectile(
+        self, proj: Projectile, start: Vector2, end: Vector2, include_start: bool = False
+    ) -> tuple[t.Optional[BotRuntimeState], Vector2]:
+        """Find the first living bot (teammates included) a projectile touches between two points.
+
+        Returns (bot, impact point), or (None, end) when the path is clear. Heal shots pass
+        through enemies, so only teammates of the healer can stop them.
+        """
+        shooter = self.bots.get(proj.shooter_id)
+        candidates = []
         for bot in self.bots.values():
-            if not bot.is_alive:
+            if not bot.is_alive or bot.bot_id == proj.shooter_id:
                 continue
-            # Skip the shooter - can't hit yourself
-            if bot.bot_id == proj.shooter_id:
+            if proj.is_heal and shooter is not None and bot.team != shooter.team:
                 continue
+            # Broad phase: skip bots whose hull can't reach the path at all
+            reach = self.collision_manager.bounding_radius(bot.bot_id) or self.config.bot_radius
+            if distance_to_segment(bot.position, start, end) <= reach:
+                candidates.append(bot)
+        if not candidates:
+            return None, end
 
-            # Pixel-perfect collision when a mask is available, otherwise a circular hitbox
-            collision = None
-            if self.collision_manager is not None:
-                collision = self.collision_manager.check_collision(
-                    proj.position.x,
-                    proj.position.y,
-                    bot.bot_id,
-                    bot.position.x,
-                    bot.position.y,
-                    bot.orientation,
-                )
-            if collision is None:
-                collision = proj.position.distance_to(bot.position) < self.config.bot_radius
+        path = end - start
+        steps = max(1, math.ceil(path.magnitude() / PROJECTILE_SWEEP_STEP))
+        for i in range(0 if include_start else 1, steps + 1):
+            point = start + path * (i / steps)
+            for bot in candidates:
+                if self.point_touches_bot(point, bot):
+                    return bot, point
+        return None, end
 
-            if collision:
-                return bot
-        return None
+    def point_touches_bot(self, point: Vector2, bot: BotRuntimeState) -> bool:
+        """Pixel-perfect hull test when the plating has a mask, otherwise a circular hitbox."""
+        collision = self.collision_manager.check_collision(
+            point.x, point.y, bot.bot_id, bot.position.x, bot.position.y, bot.orientation
+        )
+        if collision is None:
+            return point.distance_to(bot.position) < self.config.bot_radius
+        return collision
 
     def resolve_projectile_hit(self, proj: Projectile, hit_bot: BotRuntimeState):
         """Apply a projectile that touched a bot: heal, friendly block, or enemy damage."""
@@ -1825,20 +1792,20 @@ class BattleEngine:
         if proj.is_heal:
             # Heal projectiles only heal teammates (intended or not) and pass through enemies
             if is_friendly_fire or hit_bot.bot_id == proj.target_id:
-                self.apply_heal(proj.shooter_id, hit_bot, abs(proj.damage))
+                self.apply_heal(proj.shooter_id, hit_bot, abs(proj.damage), impact=proj.position)
                 proj.alive = False
             return
 
         if is_friendly_fire:
             self.absorb_blocked_shot(proj, hit_bot)
         else:
-            self.deal_damage(proj.shooter_id, hit_bot, proj.damage)
+            self.deal_damage(proj.shooter_id, hit_bot, proj.damage, impact=proj.position)
             if proj.splash_radius > 0 and shooter is not None:
                 self.explode(proj, shooter, hit_bot)
         proj.alive = False
 
     def explode(self, proj: Projectile, shooter: BotRuntimeState, primary: BotRuntimeState):
-        """Splash part of the hit onto other enemies whose hull is within the blast, and show the blast."""
+        """Splash part of the hit onto other enemies whose hull is within the blast."""
         splash_damage = int(proj.damage * SPLASH_DAMAGE_FRACTION)
         hits = 0
         for bot in list(self.bots.values()):
@@ -1846,21 +1813,17 @@ class BattleEngine:
                 continue
             # Measured to the hull, not the center: bots never stand closer than ~70px apart
             if proj.position.distance_to(bot.position) - self.config.bot_radius <= proj.splash_radius:
-                self.deal_damage(shooter.bot_id, bot, splash_damage)
+                self.deal_damage(shooter.bot_id, bot, splash_damage, splash=True)
                 hits += 1
-        self.events.append({"type": "splash", "shooter_id": shooter.bot_id, "hits": hits})
-        self.pending_effects.append(
-            Projectile(
-                shooter_id=shooter.bot_id,
-                target_id=primary.bot_id,
-                position=Vector2(proj.position.x, proj.position.y),
-                velocity=Vector2(0, 0),
-                damage=0,
-                projectile_type="explosion",
-                ttl=0.2,
-                visual_only=True,
-                radius=proj.splash_radius,
-            )
+        self.events.append(
+            {
+                "type": "splash",
+                "shooter_id": shooter.bot_id,
+                "hits": hits,
+                "x": proj.position.x,
+                "y": proj.position.y,
+                "radius": proj.splash_radius,
+            }
         )
 
     def absorb_blocked_shot(self, proj: Projectile, blocker: BotRuntimeState):
@@ -1874,6 +1837,9 @@ class BattleEngine:
                 "shooter_id": proj.shooter_id,
                 "blocker_id": blocker.bot_id,
                 "target_id": proj.target_id,
+                "damage": actual,
+                "x": proj.position.x,
+                "y": proj.position.y,
             }
         )
         # If the teammate died from the blocked shot, emit the same
@@ -1881,31 +1847,84 @@ class BattleEngine:
         if not blocker.is_alive:
             if proj.shooter_id in self.bots:
                 self.bots[proj.shooter_id].kills += 1
-            self.events.append({"type": "kill", "killer_id": proj.shooter_id, "victim_id": blocker.bot_id})
+            self.events.append(self._kill_event(proj.shooter_id, blocker))
 
-    def deal_damage(self, shooter_id: str, victim: BotRuntimeState, amount: int) -> int:
-        """Damage an enemy, credit the shooter, and log the hit (and kill). Returns damage actually dealt."""
+    def deal_damage(
+        self,
+        shooter_id: str,
+        victim: BotRuntimeState,
+        amount: int,
+        impact: t.Optional[Vector2] = None,
+        splash: bool = False,
+    ) -> int:
+        """Damage an enemy, credit the shooter, and log the hit (and kill). Returns damage actually dealt.
+
+        `impact` is where the shot touched the hull (the victim's center if unknown), and
+        `splash` marks blast damage from a nearby explosion rather than a direct hit.
+        """
         actual = victim.take_damage(amount, source_id=shooter_id, current_time=self.current_time)
         if actual > 0:
             self.last_damage_time = self.current_time
         shooter = self.bots.get(shooter_id)
         if shooter:
             shooter.damage_dealt += actual
-        self.events.append({"type": "hit", "shooter_id": shooter_id, "target_id": victim.bot_id, "damage": actual})
+        impact = impact or victim.position
+        self.events.append(
+            {
+                "type": "hit",
+                "shooter_id": shooter_id,
+                "target_id": victim.bot_id,
+                "damage": actual,
+                "x": impact.x,
+                "y": impact.y,
+                "projectile_type": shooter.projectile_type if shooter else "bullet",
+                "splash": splash,
+            }
+        )
         if actual > 0 and not victim.is_alive:
             if shooter:
                 shooter.kills += 1
-            self.events.append({"type": "kill", "killer_id": shooter_id, "victim_id": victim.bot_id})
+            self.events.append(self._kill_event(shooter_id, victim))
         return actual
 
-    def apply_heal(self, healer_id: str, target: BotRuntimeState, amount: int) -> int:
+    def apply_heal(
+        self, healer_id: str, target: BotRuntimeState, amount: int, impact: t.Optional[Vector2] = None
+    ) -> int:
         """Heal a teammate, credit the healer's healing, and log it. Returns the amount actually healed."""
         actual = target.heal(amount)
         healer = self.bots.get(healer_id)
         if healer:
             healer.healing_done += actual
-        self.events.append({"type": "heal", "shooter_id": healer_id, "target_id": target.bot_id, "amount": actual})
+        impact = impact or target.position
+        self.events.append(
+            {
+                "type": "heal",
+                "shooter_id": healer_id,
+                "target_id": target.bot_id,
+                "amount": actual,
+                "x": impact.x,
+                "y": impact.y,
+            }
+        )
         return actual
+
+    def _kill_event(self, killer_id: str, victim: BotRuntimeState) -> dict:
+        return {
+            "type": "kill",
+            "killer_id": killer_id,
+            "victim_id": victim.bot_id,
+            "x": victim.position.x,
+            "y": victim.position.y,
+        }
+
+    def _turret_pivot(self, bot: BotRuntimeState) -> Vector2:
+        """Where the turret sits on the turned chassis (its mount point moves as the chassis turns)."""
+        rad = math.radians(bot.orientation)
+        cos_a, sin_a = math.cos(rad), math.sin(rad)
+        return Vector2(
+            bot.position.x + bot.turret_offset_x * cos_a - bot.turret_offset_y * sin_a,
+            bot.position.y + bot.turret_offset_x * sin_a + bot.turret_offset_y * cos_a,
+        )
 
     def _update_combat(self):
         """Handle weapon firing"""
@@ -1963,40 +1982,23 @@ class BattleEngine:
             weapon_rad = math.radians(bot.weapon_orientation)
             direction = Vector2(math.cos(weapon_rad), math.sin(weapon_rad))
 
-            # Calculate muzzle position - spawn projectile at weapon's barrel, not bot center
-            # muzzle_offset is the distance from bot center along the weapon's facing direction
-            # Clamp the spawn distance so the projectile never spawns past the target
-            # (a target inside the muzzle offset would otherwise be impossible to hit)
+            # Spawn the projectile at the barrel tip: the turret pivot (which turns with the chassis)
+            # plus muzzle_offset along the weapon's facing direction. Clamp the spawn distance so the
+            # projectile never spawns past the target (a target inside the muzzle offset would
+            # otherwise be impossible to hit)
             spawn_distance = min(bot.muzzle_offset, max(0.0, distance - 1.0))
-            muzzle_pos = Vector2(
-                bot.position.x + direction.x * spawn_distance,
-                bot.position.y + direction.y * spawn_distance,
-            )
+            muzzle_pos = self._turret_pivot(bot) + direction * spawn_distance
+            shot_direction = direction
 
-            # For point-blank weapons, check if target is closer than the muzzle offset
-            # If so, the shot would spawn PAST the target - apply damage directly instead
-            if bot.allows_point_blank and distance < bot.muzzle_offset:
-                # Direct hit - no projectile needed
+            # Point-blank weapons can't miss a target within reach (and the barrel would be inside it anyway)
+            if bot.allows_point_blank and distance < max(bot.muzzle_offset, POINT_BLANK_REACH):
+                # Direct hit - no projectile needed; the renderer shows the burst from the hit event
                 if bot.is_healer:
-                    self.apply_heal(bot.bot_id, target, abs(bot.damage_per_shot))
+                    self.apply_heal(bot.bot_id, target, abs(bot.damage_per_shot), impact=muzzle_pos)
                 else:
-                    self.deal_damage(bot.bot_id, target, bot.damage_per_shot)
-                # Stationary burst at the target, shown for its ttl (damage was already applied)
-                proj = Projectile(
-                    shooter_id=bot.bot_id,
-                    target_id=bot.target_id,
-                    position=Vector2(target.position.x, target.position.y),
-                    velocity=Vector2(0, 0),
-                    damage=0,
-                    is_heal=bot.is_healer,
-                    projectile_type=bot.projectile_type,
-                    ttl=0.15,
-                    visual_only=True,
-                )
-                self.projectiles.append(proj)
+                    self.deal_damage(bot.bot_id, target, bot.damage_per_shot, impact=muzzle_pos)
             else:
                 # Normal projectile
-                shot_direction = direction
                 if bot.spread > 0:
                     stray = math.radians(bot.weapon_orientation + self.rng.triangular(-bot.spread, bot.spread, 0))
                     shot_direction = Vector2(math.cos(stray), math.sin(stray))
@@ -2018,6 +2020,10 @@ class BattleEngine:
                     "shooter_id": bot.bot_id,
                     "target_id": target.bot_id,
                     "is_heal": bot.is_healer,
+                    "projectile_type": bot.projectile_type,
+                    "x": muzzle_pos.x,
+                    "y": muzzle_pos.y,
+                    "angle": math.degrees(math.atan2(shot_direction.y, shot_direction.x)) % 360,
                 }
             )
 
