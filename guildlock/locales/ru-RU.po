@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: vrt-cogs\n"
-"POT-Creation-Date: 2023-10-16 18:28-0400\n"
-"PO-Revision-Date: 2024-12-03 14:56\n"
+"POT-Creation-Date: 2026-05-06 22:10-0400\n"
+"PO-Revision-Date: 2026-06-24 13:20\n"
 "Last-Translator: \n"
 "Language-Team: Russian\n"
 "MIME-Version: 1.0\n"
@@ -17,72 +17,72 @@ msgstr ""
 "X-Crowdin-File-ID: 98\n"
 "Language: ru_RU\n"
 
-#: main.py:26
+#: guildlock\main.py:26
 #, docstring
 msgid "\n"
 "    Tools for managing guild joins and leaves.\n"
 "    "
 msgstr ""
 
-#: main.py:56
+#: guildlock\main.py:56
 msgid "Version: {}\n"
 "Author: {}"
 msgstr ""
 
-#: main.py:60
+#: guildlock\main.py:60
 #, docstring
 msgid "No data to delete"
 msgstr ""
 
-#: main.py:64
+#: guildlock\main.py:64
 msgid "I have left this server because it is blacklisted"
 msgstr ""
 
-#: main.py:65
+#: guildlock\main.py:65
 msgid "I have left this server because it is not whitelisted"
 msgstr ""
 
-#: main.py:66
+#: guildlock\main.py:66
 msgid "I have left this server because I am already at maximum capacity"
 msgstr ""
 
-#: main.py:67
+#: guildlock\main.py:67
 msgid "I have left this server because it has less than {} members"
 msgstr ""
 
-#: main.py:68
+#: guildlock\main.py:68
 msgid "I have left this server because {}% of its members are bots"
 msgstr ""
 
-#: main.py:76
+#: guildlock\main.py:76
 msgid "Guild is in the blacklist"
 msgstr ""
 
-#: main.py:77
+#: guildlock\main.py:77
 msgid "Guild is not in the whitelist"
 msgstr ""
 
-#: main.py:78
+#: guildlock\main.py:78
 msgid "Cannot surpass guild limit of {}"
 msgstr ""
 
-#: main.py:79
+#: guildlock\main.py:79
 msgid "Guild has less than {} members"
 msgstr ""
 
-#: main.py:80
+#: guildlock\main.py:80
 msgid "Guild exceeds bot threshold of {}% ({}%)"
 msgstr ""
 
-#: main.py:115
+#: guildlock\main.py:115
 msgid "Reason: {}"
 msgstr ""
 
-#: main.py:116
+#: guildlock\main.py:116
 msgid "Left {}"
 msgstr ""
 
-#: main.py:118
+#: guildlock\main.py:118
 msgid "Owner: {}"
 msgstr ""
 
