@@ -4,8 +4,10 @@ import asyncio
 import base64
 import logging
 import typing as t
+import zipfile
 from datetime import datetime, timezone
 from io import BytesIO, StringIO
+from pathlib import Path
 from time import perf_counter
 
 import aiohttp
@@ -39,6 +41,10 @@ _ = Translator("Cartographer", __file__)
 
 VOICE = t.Union[discord.VoiceChannel, discord.StageChannel]
 GuildChannels = t.Union[VOICE, discord.ForumChannel, discord.TextChannel, discord.CategoryChannel]
+
+# Layout of a backup archive
+BACKUP_MEMBER = "backup.json"
+ATTACHMENT_DIR = "attachments"
 
 
 class Role(Base):
@@ -396,19 +402,50 @@ class CategoryChannel(ChannelBase):
         return category
 
 
+class AttachmentStore:
+    """Streams message attachments into the backup archive, one at a time.
+
+    Attachments used to be base64-encoded onto the model and kept there until the
+    entire guild had been serialized, so a media-heavy server held gigabytes in
+    memory at once (roughly 4x the attachment size, before the JSON document was
+    even built). Writing each file into the archive as it arrives keeps the
+    high-water mark at a single attachment no matter how many there are.
+    """
+
+    def __init__(self, archive: zipfile.ZipFile) -> None:
+        self.archive = archive
+        self.count = 0
+
+    async def add(self, attachment: discord.Attachment) -> str:
+        """Download an attachment straight into the archive, returning its member name."""
+        self.count += 1
+        # Prefixed with a counter so duplicate filenames can't collide
+        safe_name = Path(attachment.filename).name
+        member = f"{ATTACHMENT_DIR}/{self.count}_{safe_name}"
+        data = await attachment.read()
+        # Attachments are already-compressed media as a rule, so storing beats deflating
+        await asyncio.to_thread(self.archive.writestr, member, data, zipfile.ZIP_STORED)
+        return member
+
+
 class FileBackup(Base):
     filename: str
-    filebytes: str  # base64 encoded file
+    filebytes: str = ""  # base64 encoded file, only set by backups made before v2.3.0
+    stored_name: str | None = None  # member name within the backup archive
 
     @classmethod
-    async def serialize(cls, attachment: discord.Attachment) -> FileBackup:
-        return cls(
-            filename=attachment.filename,
-            filebytes=base64.b64encode(await attachment.read()).decode(),
-        )
+    async def serialize(cls, attachment: discord.Attachment, store: AttachmentStore) -> FileBackup:
+        return cls(filename=attachment.filename, stored_name=await store.add(attachment))
 
-    async def restore(self) -> discord.File:
-        return discord.File(BytesIO(base64.b64decode(self.filebytes)), filename=self.filename)
+    async def restore(self, archive: zipfile.ZipFile | None = None) -> discord.File:
+        if self.stored_name is not None:
+            if archive is None:
+                raise ValueError(f"{self.filename} lives in a backup archive, but no archive was opened")
+            data = await asyncio.to_thread(archive.read, self.stored_name)
+        else:
+            # Legacy backup with the file inlined as base64
+            data = await asyncio.to_thread(base64.b64decode, self.filebytes)
+        return discord.File(BytesIO(data), filename=self.filename)
 
 
 class MessageBackup(Base):
@@ -421,15 +458,20 @@ class MessageBackup(Base):
     avatar_url: str
 
     @classmethod
-    async def serialize(cls, message: discord.Message) -> MessageBackup:
+    async def serialize(cls, message: discord.Message, store: AttachmentStore | None = None) -> MessageBackup:
         # Files larger than the guild's upload limit can't be re-uploaded on restore anyway
         max_size = message.guild.filesize_limit if message.guild else 8388608
+        files: list[FileBackup] = []
+        if store is not None:
+            for attachment in message.attachments:
+                if attachment.size < max_size:
+                    files.append(await FileBackup.serialize(attachment, store))
         return cls(
             channel_id=message.channel.id,
             channel_name=message.channel.name,
             content=message.content[:2000] if message.content else None,
             embeds=[i.to_dict() for i in message.embeds],
-            files=[await FileBackup.serialize(i) for i in message.attachments if i.size < max_size],
+            files=files,
             username=message.author.display_name,
             avatar_url=message.author.display_avatar.url,
         )
@@ -437,18 +479,26 @@ class MessageBackup(Base):
     async def embed_objects(self) -> list[discord.Embed]:
         return [discord.Embed.from_dict(i) for i in self.embeds]
 
-    async def attachment_objects(self) -> list[discord.File]:
-        return [await i.restore() for i in self.files]
+    async def attachment_objects(self, archive: zipfile.ZipFile | None = None) -> list[discord.File]:
+        return [await i.restore(archive) for i in self.files]
 
 
 async def restore_channel_messages(
-    channel: discord.TextChannel | discord.VoiceChannel, messages: list[MessageBackup]
+    channel: discord.TextChannel | discord.VoiceChannel,
+    messages: list[MessageBackup],
+    archive_path: Path | None = None,
 ) -> None:
+    # This runs as a detached task, so it owns its own handle on the archive rather
+    # than borrowing the caller's, which is long gone by the time messages restore.
+    needs_archive = any(f.stored_name for m in messages for f in m.files)
+    archive: zipfile.ZipFile | None = None
     try:
+        if needs_archive and archive_path is not None and archive_path.suffix == ".zip":
+            archive = await asyncio.to_thread(zipfile.ZipFile, archive_path)
         hook = await channel.create_webhook(name=_("Cartographer Restore"), reason=_("Restoring messages from backup"))
         for message in messages:
             embeds = await message.embed_objects()
-            files = await message.attachment_objects()
+            files = await message.attachment_objects(archive)
             if not any([embeds, files, message.content]):
                 continue
             await hook.send(
@@ -461,6 +511,9 @@ async def restore_channel_messages(
             await asyncio.sleep(1)
     except Exception as e:
         log.exception("Failed to restore messages for channel %s", channel.name, exc_info=e)
+    finally:
+        if archive is not None:
+            await asyncio.to_thread(archive.close)
 
 
 class TextChannel(ChannelBase):
@@ -489,14 +542,19 @@ class TextChannel(ChannelBase):
         return all(matches) and super().is_match(channel)
 
     @classmethod
-    async def serialize(cls, channel: discord.TextChannel, limit: int = 0) -> TextChannel:
+    async def serialize(
+        cls, channel: discord.TextChannel, limit: int = 0, store: AttachmentStore | None = None
+    ) -> TextChannel:
         messages: list[MessageBackup] = []
         if limit:
             try:
                 async for message in channel.history(limit=limit):
-                    messages.append(await MessageBackup.serialize(message))
+                    messages.append(await MessageBackup.serialize(message, store))
             except discord.HTTPException as e:
                 log.warning("Failed to fetch messages for text channel %s: %s", channel.name, e)
+            # history() returns newest first, but restore replays the list in order,
+            # which put the channel back in reverse. Store oldest first instead.
+            messages.reverse()
         return cls(
             id=channel.id,
             name=channel.name,
@@ -525,6 +583,7 @@ class TextChannel(ChannelBase):
         missing_overwrites: dict[str, list[str]] | None = None,
         only_missing: bool = False,
         restore_category: bool = True,
+        archive_path: Path | None = None,
     ) -> discord.TextChannel:
         existing: discord.TextChannel | None = guild.get_channel(self.id)
         if not existing:
@@ -578,7 +637,7 @@ class TextChannel(ChannelBase):
             )
             self.id = channel.id
             if self.messages:
-                asyncio.create_task(restore_channel_messages(channel, self.messages))
+                asyncio.create_task(restore_channel_messages(channel, self.messages, archive_path))
         return channel
 
 
@@ -812,14 +871,17 @@ class VoiceChannel(ChannelBase):
         return all(matches) and super().is_match(channel)
 
     @classmethod
-    async def serialize(cls, channel: VOICE, limit: int = 0) -> VoiceChannel:
+    async def serialize(cls, channel: VOICE, limit: int = 0, store: AttachmentStore | None = None) -> VoiceChannel:
         messages: list[MessageBackup] = []
         if limit:
             try:
                 async for message in channel.history(limit=limit):
-                    messages.append(await MessageBackup.serialize(message))
+                    messages.append(await MessageBackup.serialize(message, store))
             except discord.HTTPException as e:
                 log.warning("Failed to fetch messages for voice channel %s: %s", channel.name, e)
+            # history() returns newest first, but restore replays the list in order,
+            # which put the channel back in reverse. Store oldest first instead.
+            messages.reverse()
         kwargs = {
             "id": channel.id,
             "name": channel.name,
@@ -850,6 +912,7 @@ class VoiceChannel(ChannelBase):
         missing_overwrites: dict[str, list[str]] | None = None,
         only_missing: bool = False,
         restore_category: bool = True,
+        archive_path: Path | None = None,
     ) -> discord.VoiceChannel:
         existing: discord.VoiceChannel | None = guild.get_channel(self.id)
         if not existing:
@@ -899,7 +962,7 @@ class VoiceChannel(ChannelBase):
                 await channel.edit(slowmode_delay=self.slowmode_delay)
 
             if self.messages:
-                asyncio.create_task(restore_channel_messages(channel, self.messages))
+                asyncio.create_task(restore_channel_messages(channel, self.messages, archive_path))
 
         return channel
 
@@ -1066,6 +1129,7 @@ class GuildBackup(Base):
         backup_roles: bool = True,
         backup_emojis: bool = True,
         backup_stickers: bool = True,
+        store: AttachmentStore | None = None,
     ) -> GuildBackup:
         banner = await guild.banner.read() if guild.banner else None
         icon = await guild.icon.read() if guild.icon else None
@@ -1088,9 +1152,9 @@ class GuildBackup(Base):
                 indexes[channel.id] = index
                 index += 1
                 if isinstance(channel, discord.TextChannel):
-                    text_channels.append(await TextChannel.serialize(channel, limit))
+                    text_channels.append(await TextChannel.serialize(channel, limit, store))
                 elif isinstance(channel, (discord.VoiceChannel, discord.StageChannel)):
-                    voice_channels.append(await VoiceChannel.serialize(channel, limit))
+                    voice_channels.append(await VoiceChannel.serialize(channel, limit, store))
                 elif isinstance(channel, discord.ForumChannel):
                     forums.append(await ForumChannel.serialize(channel))
                 else:
@@ -1143,6 +1207,7 @@ class GuildBackup(Base):
         target_guild: discord.Guild,
         ctx: discord.TextChannel,
         options: RestoreOptions | None = None,
+        archive_path: Path | None = None,
     ) -> str:
         """Restore a guild backup to a target guild.
 
@@ -1150,6 +1215,7 @@ class GuildBackup(Base):
             target_guild: The guild to restore to
             ctx: The channel to send status updates to
             options: Granular restore options. If None, restores everything with delete_unmatched=True (legacy behavior)
+            archive_path: Path to the backup archive, needed to pull message attachments back out of it
         """
         # Import here to avoid circular import
         from .models import RestoreOptions
@@ -1433,12 +1499,15 @@ class GuildBackup(Base):
                     # Cant restore forums until community is enabled, try again after settings are restored
                     skipped_forums.append(channel)
                     continue
+                # Only message-bearing channels need the archive to pull attachments back out
+                extra = {"archive_path": archive_path} if isinstance(channel, (TextChannel, VoiceChannel)) else {}
                 await channel.restore(
                     target_guild,
                     results,
                     missing_overwrites,
                     only_missing=options.only_missing,
                     restore_category=options.categories,
+                    **extra,
                 )
 
         # ---------------------------- REMAINING SETTINGS ----------------------------
@@ -1550,3 +1619,15 @@ class GuildBackup(Base):
 
         await message.edit(embed=get_status_embed(_("Restoration complete!"), complete=True))
         return results.getvalue()
+
+
+def load_backup(path: Path) -> GuildBackup:
+    """Read a backup from disk.
+
+    Backups are zip archives as of v2.3.0; plain .json files written by earlier
+    versions are still loaded so existing backups keep working.
+    """
+    if path.suffix == ".zip":
+        with zipfile.ZipFile(path) as archive:
+            return GuildBackup.model_validate_json(archive.read(BACKUP_MEMBER))
+    return GuildBackup.model_validate_json(path.read_text(encoding="utf-8"))
