@@ -61,11 +61,18 @@ class OwnerCommands(MixinMeta):
 
     @activityhub_group.command(name="games")
     async def list_games(self, ctx: commands.Context):
-        """List the installed activities, and any game cog that was refused with the reason"""
+        """List the installed activities with the Discord scopes each asks for, and any game cog that was refused"""
         games = sorted(self.registry.games.values(), key=lambda game: game.key)
         blocked = await self.config.disabled()
-        off = _(" [turned off]")
-        lines = [f"{g.key}: {g.name} ({g.cog.qualified_name}){off if g.key in blocked else ''}" for g in games]
+        lines = []
+        for game in games:
+            line = f"{game.key}: {game.name} ({game.cog.qualified_name})"
+            if game.key in blocked:
+                line += _(" [turned off]")
+            # Every game's scopes go into one login, so this is how the owner finds the game behind a bad one
+            if game.scopes:
+                line += _(" scopes: {}").format(", ".join(game.scopes))
+            lines.append(line)
         if not lines:
             lines = [_("No activities installed yet.")]
         if self.registry.failed:

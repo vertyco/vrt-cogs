@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 from redbot.core import Config, commands
@@ -38,6 +39,8 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
         self.launches = LaunchMemory()
         self.scores = ScoreBoard(self.config)
         self.server = HubServer(self)
+        # The game cogs cog_load found already loaded, each describing itself in its own task
+        self.scans: list[asyncio.Task] = []
 
     def format_help_for_context(self, ctx: commands.Context):
         helpcmd = super().format_help_for_context(ctx)
@@ -56,14 +59,28 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
         self.open_view = OpenView(self)
         self.bot.add_view(self.open_view)
         await self.start_server()
-        for game in bundled_games(self.scores):
-            await self.registry.add(game)
-        # Last, so a cog added during the server start isn't missed. This cog isn't in bot.cogs yet while it
-        # loads, so this sees every other cog that is already loaded
-        for cog in list(self.bot.cogs.values()):
-            await self.add_game(cog)
+        try:
+            for game in bundled_games(self.scores):
+                await self.registry.add(game)
+            # Last, so a cog added during the server start isn't missed. This cog isn't in bot.cogs yet while it
+            # loads, so this sees every other cog that is already loaded. Each game cog describes itself in its own
+            # task. Its activityhub_game() may wait on something (even the bot being ready, which happens only after
+            # every cog has loaded), and that must never hold up loading this cog or the other games
+            self.scans = [
+                asyncio.create_task(self.add_game(cog))
+                for cog in list(self.bot.cogs.values())
+                if hasattr(cog, "activityhub_game")
+            ]
+        except BaseException:
+            # discord.py never calls cog_unload when cog_load fails or is cancelled (at startup Red cancels a load
+            # that takes over 30 seconds), so without this the port would stay taken until the bot restarts
+            self.open_view.stop()
+            await self.server.stop()
+            raise
 
     async def cog_unload(self) -> None:
+        for task in self.scans:
+            task.cancel()
         self.open_view.stop()
         await self.server.stop()
 
@@ -90,5 +107,12 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
 
     @commands.Cog.listener()
     async def on_cog_remove(self, cog: commands.Cog):
+        freed = [game.key for game in self.registry.games.values() if game.cog is cog]
         self.registry.remove(cog)
+        # First, so this game's players aren't kept waiting on another cog's activityhub_game() below
         await self.server.rooms.close_stale(self.registry.games)
+        # A loaded cog refused because this one held its key gets the key now, without needing a reload
+        for name, key in list(self.registry.clashes.items()):
+            refused = self.registry.failed.get(name)
+            if key in freed and refused is not None and self.bot.get_cog(name) is refused[0]:
+                await self.add_game(refused[0])
