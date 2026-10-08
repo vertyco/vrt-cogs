@@ -91,6 +91,30 @@ async def test_token_fails_when_discord_times_out(client, hub, server, monkeypat
 
 
 @pytest.mark.asyncio
+async def test_a_rate_limited_login_pauses_logins(client, server, monkeypatch):
+    calls = []
+
+    async def limited(http, client_id, secret, code):
+        calls.append(code)
+        raise discord_api.RateLimited(30)
+
+    async def locate(instance_id):
+        return {"guild_id": GUILD_ID, "channel_id": 77, "users": [str(MEMBER_ID)]}
+
+    monkeypatch.setattr(discord_api, "exchange_code", limited)
+    monkeypatch.setattr(server, "locate", locate)
+    for _ in range(3):
+        resp = await client.post("/hub/api/token", json=TOKEN_BODY)
+        assert resp.status == 401
+        assert (await resp.json())["error"] == LOGIN_FAILED
+    # Only the first login reached Discord: the rest waited out the pause instead of collecting more 429s
+    assert calls == ["abc"]
+    server.logins_paused_until = 0.0
+    await client.post("/hub/api/token", json=TOKEN_BODY)
+    assert calls == ["abc", "abc"]
+
+
+@pytest.mark.asyncio
 async def test_token_fails_when_the_instance_lookup_fails(client, discord_answers):
     discord_answers["location"] = None
     assert (await client.post("/hub/api/token", json=TOKEN_BODY)).status == 502
