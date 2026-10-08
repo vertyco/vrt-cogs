@@ -1,5 +1,9 @@
 # ActivityHub Changelog
 
+## 0.1.3
+
+- The Orb menu now fits phone screens. Game descriptions wrap inside their tabs instead of running off the edge and letting the whole menu slide sideways, the picked game stays lined up with the others, and the server name's glow no longer shows a box around it.
+
 ## 0.1.2
 
 - The Orb menu's sounds and background loop are half as loud, closer to the included games' sound effects.

@@ -329,14 +329,18 @@ def test_orb_wheel_and_arrows_scroll_a_long_list(driver, live, tmp_path):
     assert driver.execute_script(f"return {SELECTED}") == "extra6"
 
 
-def test_orb_theme_on_a_phone(driver, live):
+def test_orb_theme_on_a_phone(driver, live, tmp_path):
+    # A description too long for one line has to wrap inside its tab, not push the page sideways
+    long_name = "A game with a name long enough to wrap"
+    register(live.hub, DemoCog(write_demo_web(tmp_path / "long"), key="long", name=long_name, cog_name="Long"))
     live.hub.config.globals["look"] = {"theme": "orb"}
     driver.execute_cdp_cmd(
         "Emulation.setDeviceMetricsOverride", {"width": 375, "height": 740, "deviceScaleFactor": 1, "mobile": True}
     )
     try:
         open_menu(driver, live)
-        assert no_sideways_scroll(driver)
+        # A phone widens the page to fit whatever sticks out, so the page is checked against the phone's width
+        assert driver.execute_script("return document.documentElement.scrollWidth") <= 375
         assert not driver.find_element(By.ID, "orb-screen").is_displayed()
         pill = driver.find_element(By.CSS_SELECTOR, '#games .pill[data-key="demo"]')
         assert pill.find_element(By.CSS_SELECTOR, ".icon").is_displayed()

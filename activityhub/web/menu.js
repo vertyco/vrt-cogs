@@ -313,9 +313,9 @@ function orbPill(item) {
   const pill = el("button", item.key ? "card pill" : "pill settings-pill");
   pill.type = "button";
   pill.dataset.key = item.key;
-  const tab = el("span", "tab");
-  tab.append(item.key ? gameIcon(item) : el("span", "icon", "⚙"), cardText(item));
-  pill.append(el("span", "pod"), tab);
+  const plate = el("span", "plate");
+  plate.append(item.key ? gameIcon(item) : el("span", "icon", "⚙"), cardText(item));
+  pill.append(el("span", "pod"), plate);
   pill.addEventListener("pointerenter", (event) => {
     if (event.pointerType === "mouse") {
       pill.focus({ preventScroll: true });
