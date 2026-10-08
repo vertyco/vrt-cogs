@@ -66,7 +66,12 @@ function initial(name) {
 
 async function start() {
   mark("menu script running");
-  page.host = startHost({ onGameClosed: gameClosed, onSessionExpired: sessionExpired });
+  page.host = startHost({
+    onGameClosed: gameClosed,
+    onSessionExpired: sessionExpired,
+    // Shown until the menu loads, which hides it, in case Discord answers after all
+    onDiscordSilent: (text) => showNotice(text),
+  });
   bindPanel();
   bindOrb();
   // The menu shows as soon as the bot has logged the player in; Discord accepting the login finishes after

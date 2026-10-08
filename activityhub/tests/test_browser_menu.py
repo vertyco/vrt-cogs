@@ -6,7 +6,15 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.select import Select
 
-from activityhub.tests.browser import DISCORD_QUERY, LiveHub, fresh, hub_web_copy, start_chrome, wait_for
+from activityhub.tests.browser import (
+    DISCORD_QUERY,
+    LiveHub,
+    fresh,
+    hub_web_copy,
+    start_chrome,
+    wait_for,
+    wait_for_console,
+)
 from activityhub.tests.fakes import (
     GUILD_ID,
     MANAGER_ID,
@@ -253,8 +261,13 @@ def test_expired_session_logs_in_again_without_a_new_handshake(driver, live):
         driver,
         f"window.activityhubHost.login.session && window.activityhubHost.login.session !== '{old_session}'",
     )
-    wait_for(driver, "document.getElementById('game-frame') === null")
-    wait_for(driver, "window.fakeDiscord.authorize === 2 && document.querySelectorAll('#games .card').length > 0")
+    # The game logs in again by itself and keeps running
+    driver.switch_to.frame(driver.find_element(By.ID, "game-frame"))
+    wait_for(driver, "window.demo && window.demo.done")
+    assert driver.execute_script("return [window.demo.error, window.demo.echo.user]") == [None, MEMBER_ID]
+    driver.switch_to.default_content()
+    # The game can finish all that before its fade in does
+    wait_for(driver, "document.body.classList.contains('playing')")
     deadline = time.monotonic() + 10
     while len(live.hub.sessions.sessions) != 1 and time.monotonic() < deadline:
         time.sleep(0.05)
@@ -287,9 +300,38 @@ def test_restart_when_discord_refuses_a_second_authorize_shows_the_notice(driver
     driver.find_element(By.CSS_SELECTOR, '.card[data-key="demo"]').click()
     wait_for(driver, "document.getElementById('notice').textContent.includes('Your session expired')")
     assert not driver.find_element(By.ID, "notice").get_attribute("hidden")
+    assert driver.find_elements(By.ID, "game-frame") == []
     assert driver.execute_script("return window.noReload") == "still here"
     assert driver.execute_script("return window.fakeDiscord.created") == 1
     assert len(live.hub.sessions.sessions) == 0
+
+
+def test_a_page_discord_never_answers_says_why(driver, tmp_path):
+    # Like the game frame's address opened in its own tab: the page waits for a Discord that isn't there
+    web = hub_web_copy(tmp_path)
+    host = web / "host.js"
+    text = host.read_text(encoding="utf-8")
+    assert "const DISCORD_WAIT_MS = 10000;" in text
+    host.write_text(text.replace("const DISCORD_WAIT_MS = 10000;", "const DISCORD_WAIT_MS = 300;"), encoding="utf-8")
+    hub = make_hub()
+    register(hub, DemoCog(write_demo_web(tmp_path / "demo")))
+    server = LiveHub(hub, web)
+    server.start()
+    try:
+        fresh(driver, server)
+        driver.get(f"{server.url}/{DISCORD_QUERY}&silent=1")
+        wait_for(driver, "document.getElementById('notice').textContent.includes('only works inside Discord')")
+        assert driver.find_element(By.ID, "notice").text == (
+            "Discord hasn't answered yet. This address only works inside Discord; for the browser preview, "
+            "open / without the ?frame_id=... part."
+        )
+        wait_for_console(driver, "ActivityHub: Discord hasn't answered yet.")
+        # It keeps waiting, so a Discord that is only slow still gets the menu
+        driver.execute_script("window.answerDiscord()")
+        wait_for(driver, "document.querySelectorAll('#games .card').length > 0")
+        assert driver.find_element(By.ID, "notice").get_attribute("hidden")
+    finally:
+        server.stop()
 
 
 def test_empty_state_points_admins_to_the_guide(driver, live):

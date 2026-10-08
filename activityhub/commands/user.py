@@ -2,6 +2,7 @@ import logging
 
 import discord
 from discord import app_commands
+from discord.ext import commands as dpy_commands
 from redbot.core import commands
 from redbot.core.i18n import Translator
 
@@ -13,24 +14,44 @@ _ = Translator("ActivityHub", __file__)
 
 
 class UserCommands(MixinMeta):
-    async def launch(self, interaction: discord.Interaction, key: str | None = None) -> None:
+    async def launch(self, interaction: discord.Interaction | dpy_commands.Context, key: str | None = None) -> bool:
         """
         Open the Activity for whoever ran the command or pressed the button.
 
         With a game key, the menu opens that game right after login. Game cogs call this.
+        Takes the discord.Interaction, or a hybrid command's ctx when it ran as a slash command.
+        Returns True when the Activity opened, and False when it was refused or Discord failed.
         """
+        if isinstance(interaction, dpy_commands.Context):
+            if interaction.interaction is None:
+                raise TypeError(
+                    "hub.launch() needs the discord.Interaction from a button press or slash command. "
+                    "A text command has none: post a button that calls launch instead (DEVELOPERS.md section 13)."
+                )
+            interaction = interaction.interaction
+        # Opening the Activity is a reply to the interaction, and an interaction gets only one first reply
+        if interaction.response.is_done():
+            raise RuntimeError(
+                "hub.launch() must be the first reply to this interaction. "
+                "Remove the defer() or send_message() before it."
+            )
         # Discord voids the interaction when a launch is refused, so everything is checked first
         if not await activities_enabled(self.bot):
             await interaction.response.send_message(
                 _("Activities can't open yet. The bot owner needs to turn them on for this bot."), ephemeral=True
             )
-            return
+            return False
         if key is not None and not await self.launch_allowed(interaction, key):
-            return
+            return False
         try:
             await launch_activity(self.bot, interaction)
         except discord.HTTPException as e:
             log.error("Activity launch failed in %s", interaction.guild_id, exc_info=e)
+            if key is not None:
+                # Otherwise the game would open by itself the next time this player opens the menu
+                self.launches.forget_user(interaction.user.id)
+            return False
+        return True
 
     async def launch_allowed(self, interaction: discord.Interaction, key: str) -> bool:
         if key not in self.registry.games:

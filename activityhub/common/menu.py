@@ -84,6 +84,8 @@ def player_json(ctx: t.Any) -> dict:
     return {
         "id": str(ctx.author.id),
         "username": ctx.author.name,
+        # The name Discord shows for the player: their server nickname, else their display name, else username
+        "displayName": ctx.author.display_name,
         "avatar": ctx.author.display_avatar.url,
         "guildId": str(guild.id) if guild else None,
         "guildName": guild.name if guild else None,

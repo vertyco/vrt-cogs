@@ -134,6 +134,7 @@ async def test_token_logs_a_member_in(client, hub, discord_answers):
     assert resp.status == 200
     assert data["access_token"] == "access-token"
     assert data["player"]["id"] == str(MEMBER_ID)
+    assert data["player"]["username"] == "member" and data["player"]["displayName"] == "Member"
     assert data["player"]["guildId"] == str(GUILD_ID) and data["player"]["guildName"] == "Test Server"
     ctx = hub.sessions.get(data["session"]).ctx
     assert ctx.author.id == MEMBER_ID and ctx.channel_id == 77 and ctx.instance_id == "i-9"
@@ -165,6 +166,8 @@ async def test_token_in_a_dm_has_no_server(client, hub, discord_answers):
     discord_answers["location"] = {"guild_id": None, "channel_id": 5}
     data = await (await client.post("/hub/api/token", json=TOKEN_BODY)).json()
     assert data["player"]["guildId"] is None
+    # Outside a server there is no nickname, so it is the account's own display name
+    assert data["player"]["displayName"] == "member"
     ctx = hub.sessions.get(data["session"]).ctx
     assert ctx.guild is None and ctx.author.id == MEMBER_ID
 
