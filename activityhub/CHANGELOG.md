@@ -1,5 +1,9 @@
 # ActivityHub Changelog
 
+## 0.1.1
+
+- `[p]slash sync` no longer fails once Activities are on. Discord refuses a sync that leaves out the app's launch command (the one that starts the Activity from a voice channel), so the hub adds it to every sync. If the launch command is missing, the next sync creates it.
+
 ## 0.1.0
 
 Initial release.

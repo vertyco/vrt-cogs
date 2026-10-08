@@ -43,6 +43,7 @@ async def test_a_failed_start_closes_the_http_session(server):
 async def test_cog_load_adds_the_bundled_games_then_scans_loaded_cogs(monkeypatch):
     steps = []
     monkeypatch.setattr(main, "OpenView", lambda cog: SimpleNamespace(stop=lambda: None))
+    monkeypatch.setattr(main, "keep_entry_point", lambda bot: steps.append("sync hook"))
 
     async def start_server():
         await asyncio.sleep(0)
@@ -59,7 +60,7 @@ async def test_cog_load_adds_the_bundled_games_then_scans_loaded_cogs(monkeypatc
         scores=ScoreBoard(FakeConfig()),
     )
     await ActivityHub.cog_load(fake)
-    assert steps == ["view", "server", "scan cog-a"]
+    assert steps == ["sync hook", "view", "server", "scan cog-a"]
     assert set(fake.registry.games) == {"snake", "2048", "brickbreaker"}
 
 

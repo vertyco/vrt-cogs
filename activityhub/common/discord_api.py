@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import typing as t
 
 import aiohttp
 import discord
@@ -15,6 +16,18 @@ TOKEN_URL = f"{API_BASE}/oauth2/token"
 ME_URL = f"{API_BASE}/users/@me"
 # Interaction response type 12 opens the app's Activity for whoever ran the command or pressed the button
 LAUNCH_ACTIVITY = 12
+# Command type 4 is the app's Entry Point: what Discord runs when someone starts the Activity from a voice channel.
+# Handler 2 means Discord launches the Activity itself, without asking the bot
+ENTRY_POINT = 4
+DISCORD_LAUNCHES = 2
+DEFAULT_ENTRY_POINT = {
+    "name": "launch",
+    "description": "Open the games menu",
+    "type": ENTRY_POINT,
+    "handler": DISCORD_LAUNCHES,
+}
+# Fields Discord adds to a fetched command that a bulk sync must not send back
+READ_ONLY_FIELDS = {"id", "application_id", "version", "guild_id"}
 
 
 async def exchange_code(http: aiohttp.ClientSession, client_id: str, secret: str, code: str) -> tuple[str, int] | None:
@@ -74,6 +87,42 @@ async def activities_enabled(bot: Red) -> bool:
         log.warning("Couldn't fetch application info, trying the launch anyway", exc_info=e)
         return True
     return info.flags.embedded
+
+
+async def with_entry_point(bot: Red, application_id: int, payload: list[dict]) -> list[dict]:
+    """The global command list plus the app's Entry Point. Discord refuses a global sync that leaves the Entry
+    Point out, and discord.py doesn't know that command type, so without this every slash sync fails"""
+    if any(command.get("type") == ENTRY_POINT for command in payload):
+        return payload
+    current = await bot.http.get_global_commands(application_id)
+    kept = [
+        {key: value for key, value in command.items() if key not in READ_ONLY_FIELDS}
+        for command in current
+        if command.get("type") == ENTRY_POINT
+    ]
+    if kept:
+        return payload + kept
+    # Discord makes one when Activities are turned on, but it can go missing. Handler 2 only works with Activities on
+    if await activities_enabled(bot):
+        return payload + [DEFAULT_ENTRY_POINT]
+    return payload
+
+
+def keep_entry_point(bot: Red) -> t.Callable:
+    """Make the bot's global slash sync carry the Entry Point along. Returns the wrapper so unloading can remove it"""
+    original = bot.http.bulk_upsert_global_commands
+
+    async def bulk_upsert(application_id: int, payload: list[dict]) -> t.Any:
+        return await original(application_id, await with_entry_point(bot, application_id, payload))
+
+    bot.http.bulk_upsert_global_commands = bulk_upsert  # type: ignore[assignment]
+    return bulk_upsert
+
+
+def drop_entry_point_hook(bot: Red, hook: t.Callable) -> None:
+    # Only remove our own wrapper, never one another cog put on top of it
+    if bot.http.__dict__.get("bulk_upsert_global_commands") is hook:
+        del bot.http.bulk_upsert_global_commands
 
 
 async def launch_activity(bot: Red, interaction: discord.Interaction) -> None:
