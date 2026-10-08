@@ -173,6 +173,15 @@ async def test_save_my_order_keeps_the_places_of_games_that_are_off_here(client,
 
 
 @pytest.mark.asyncio
+async def test_reset_my_order_goes_back_to_alphabetical(client, hub, demo, second):
+    await hub.config.user_from_id(MEMBER_ID).order.set(["demo", "second"])
+    status, state = await save(client, session_headers(hub), {"tab": "order", "order": []})
+    # "Alpha Game" is the second game's name, so it sorts first
+    assert status == 200 and keys(state) == ["second", "demo"]
+    assert hub.config.users[MEMBER_ID]["order"] == []
+
+
+@pytest.mark.asyncio
 async def test_a_manager_who_left_the_server_loses_the_server_tab(client, hub, demo):
     headers = session_headers(hub, user_id=MANAGER_ID)
     assert (await menu(client, headers))[1]["tabs"] == ["look", "order", "server"]

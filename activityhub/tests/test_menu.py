@@ -106,3 +106,7 @@ def test_merge_order_appends_saved_installed_keys_that_were_not_sent():
     assert merge_order([], ["b", "b", "gone"], installed) == ["b"]
     with pytest.raises(SettingsError):
         merge_order(["a"], "nope", installed)
+
+
+def test_merge_order_with_an_empty_list_resets_to_alphabetical():
+    assert merge_order(["c", "a", "b"], [], {"a", "b", "c"}) == []

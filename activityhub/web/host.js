@@ -43,6 +43,7 @@ export class Host {
     this.sdk = null;
     this.scopes = ["identify"];
     this.login = null;
+    this.relogging = null;
     this.frame = null;
     this.showTimer = null;
     // loggedIn is enough to show the menu. ready also waits for Discord to accept the login, which games need
@@ -69,17 +70,30 @@ export class Host {
       return null;
     }
     await this.sdk.commands.authenticate({ access_token: login.accessToken });
+    // Game pages share this page's origin and read this.login, and nothing needs the Discord token again
+    delete login.accessToken;
     mark("Discord accepted the login");
     return login;
   }
 
   // After a bot restart the hub has forgotten every session. The toolkit is still connected and
   // authenticated, so a fresh code is enough: no second handshake and no second authenticate.
-  async relogin() {
-    this.login = await getLogin(this.sdk, this.scopes);
-    this.loggedIn = Promise.resolve(this.login);
-    this.ready = Promise.resolve(this.login);
-    return this.login;
+  // Several requests can find the session expired at once, so they share one login.
+  relogin() {
+    if (!this.relogging) {
+      this.relogging = getLogin(this.sdk, this.scopes)
+        .then((login) => {
+          delete login.accessToken;
+          this.login = login;
+          this.loggedIn = Promise.resolve(login);
+          this.ready = Promise.resolve(login);
+          return login;
+        })
+        .finally(() => {
+          this.relogging = null;
+        });
+    }
+    return this.relogging;
   }
 
   // The menu fades out at once, and the game stays hidden until its page has loaded

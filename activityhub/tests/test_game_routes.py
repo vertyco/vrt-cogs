@@ -23,8 +23,18 @@ async def test_game_page_gets_base_and_import_map(client, server, demo):
 
 @pytest.mark.asyncio
 async def test_unknown_games_are_404(client, demo):
-    assert (await client.get("/games/nope/")).status == 404
+    assert (await client.get("/games/nope/b/game.js")).status == 404
     assert (await client.post("/games/nope/api/echo", json={})).status == 404
+    assert (await client.post("/games/nope/")).status == 404
+
+
+@pytest.mark.asyncio
+async def test_page_of_an_unloaded_game_leads_back_to_the_menu(client, demo):
+    # The menu may still list a game whose cog unloaded a moment ago, so its frame needs a way out
+    resp = await client.get("/games/nope/?frame_id=f")
+    text = await resp.text()
+    assert resp.status == 404 and "isn&#x27;t installed" in text
+    assert 'id="back"' in text and '"activityhub": "/hub/' in text
 
 
 @pytest.mark.asyncio

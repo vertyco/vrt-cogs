@@ -12,11 +12,12 @@ from .replies import (
     MAX_BODY,
     NO_CACHE,
     NO_SUCH_ACTION,
-    OFF_PAGE,
+    NOT_INSTALLED,
     SESSION_EXPIRED,
     SOMETHING_WRONG,
     TURNED_OFF,
     error,
+    notice_page,
     read_object,
 )
 from .sessions import ActivityContext
@@ -64,9 +65,12 @@ class GameRoutes:
 
     async def dispatch(self, request: web.Request) -> web.StreamResponse:
         game = self.hub.registry.games.get(request.match_info["key"])
-        if game is None:
-            raise web.HTTPNotFound()
         tail = request.match_info["tail"]
+        if game is None:
+            # The menu can still list a game whose cog was just unloaded, so its frame gets a way back
+            if not tail and request.method in READ_METHODS:
+                return self.notice(NOT_INSTALLED, 404)
+            raise web.HTTPNotFound()
         head, rest = tail.split("/", 1) if "/" in tail else (tail, "")
         if not head:
             return await self.page(request, game)
@@ -78,18 +82,22 @@ class GameRoutes:
             return await self.raw(request, game, rest)
         return await self.file(request, game, rest)
 
-    async def page(self, request: web.Request, game: Game) -> web.Response:
-        if request.method not in READ_METHODS:
-            raise web.HTTPMethodNotAllowed(request.method, READ_METHODS)
+    def importmap_tag(self) -> str:
         # "activityhub/..." reaches the hub's own files, which the bundled games share
         hub_root = f"/hub/{self.server.hub_build()}/"
         importmap = json.dumps({"imports": {"activityhub": f"{hub_root}sdk.js", "activityhub/": hub_root}})
-        importmap_tag = f'<script type="importmap">{importmap}</script>'
+        return f'<script type="importmap">{importmap}</script>'
+
+    def notice(self, message: str, status: int) -> web.Response:
+        text = inject_head(notice_page(message), self.importmap_tag())
+        return web.Response(text=text, content_type="text/html", status=status, headers=NO_CACHE)
+
+    async def page(self, request: web.Request, game: Game) -> web.Response:
+        if request.method not in READ_METHODS:
+            raise web.HTTPMethodNotAllowed(request.method, READ_METHODS)
         if await self.turned_off_here(request, game):
-            return web.Response(
-                text=inject_head(OFF_PAGE, importmap_tag), content_type="text/html", status=403, headers=NO_CACHE
-            )
-        tags = f'<base href="/games/{game.key}/{build_id(game.web_dir)}/" />{importmap_tag}'
+            return self.notice(TURNED_OFF, 403)
+        tags = f'<base href="/games/{game.key}/{build_id(game.web_dir)}/" />{self.importmap_tag()}'
         html = (game.web_dir / "index.html").read_text(encoding="utf-8")
         return web.Response(text=inject_head(html, tags), content_type="text/html", headers=NO_CACHE)
 

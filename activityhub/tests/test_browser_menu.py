@@ -166,6 +166,34 @@ def test_order_with_the_arrow_buttons(driver, live):
     assert driver.execute_script(f"return {CARDS}") == ["demo", "second"]
 
 
+def test_reset_order_saves_alphabetical(driver, live):
+    live.hub.config.user_from_id(MEMBER_ID).data["order"] = ["demo", "second"]
+    open_menu(driver, live, DISCORD_QUERY)
+    assert driver.execute_script(f"return {CARDS}") == ["demo", "second"]
+    open_settings(driver)
+    pick_tab(driver, "order")
+    driver.find_element(By.ID, "reset").click()
+    save(driver)
+    assert live.hub.config.users[MEMBER_ID]["order"] == []
+    driver.find_element(By.ID, "close").click()
+    assert driver.execute_script(f"return {CARDS}") == ["second", "demo"]
+
+
+def test_dropping_something_from_outside_leaves_the_order_alone(driver, live):
+    open_menu(driver, live, DISCORD_QUERY)
+    open_settings(driver)
+    pick_tab(driver, "order")
+    # A drop of text that isn't a row from the list, like a file or a dragged link
+    driver.execute_script("""
+        const row = document.querySelector('.order-row[data-key="demo"]');
+        const data = new DataTransfer();
+        data.setData('text/plain', '9');
+        row.dispatchEvent(new DragEvent('drop', { dataTransfer: data, bubbles: true, cancelable: true }));
+        """)
+    rows = "[...document.querySelectorAll('.order-row')].map((row) => row.dataset.key)"
+    assert driver.execute_script(f"return {rows}") == ["second", "demo"]
+
+
 def test_server_tab_turns_a_game_off(driver, live):
     live.user_id = MANAGER_ID
     open_menu(driver, live, DISCORD_QUERY)
@@ -232,6 +260,24 @@ def test_expired_session_logs_in_again_without_a_new_handshake(driver, live):
         time.sleep(0.05)
     assert driver.execute_script("return window.fakeDiscord") == {"created": 1, "authorize": 2, "authenticate": 1}
     assert len(live.hub.sessions.sessions) == 1
+
+
+def test_the_discord_token_is_dropped_once_discord_accepts_it(driver, live):
+    open_menu(driver, live, DISCORD_QUERY)
+    wait_for(driver, "window.fakeDiscord.authenticate === 1")
+    login = driver.execute_async_script("const done = arguments[0]; window.activityhubHost.ready.then(done);")
+    assert login["session"] and "accessToken" not in login
+
+
+def test_logins_needed_at_once_share_one_authorize(driver, live):
+    open_menu(driver, live, DISCORD_QUERY)
+    shared = driver.execute_async_script("""
+        const done = arguments[0];
+        const host = window.activityhubHost;
+        Promise.all([host.relogin(), host.relogin()]).then(([a, b]) => done(a === b && !("accessToken" in a)));
+        """)
+    assert shared is True
+    assert driver.execute_script("return window.fakeDiscord.authorize") == 2
 
 
 def test_restart_when_discord_refuses_a_second_authorize_shows_the_notice(driver, live):
