@@ -354,6 +354,11 @@ stage.addEventListener("pointerdown", (event) => {
   state.swipe = { x: event.clientX, y: event.clientY };
 });
 
+// A swipe the browser took over (a scroll or a system gesture) must not finish as a move later
+window.addEventListener("pointercancel", () => {
+  state.swipe = null;
+});
+
 window.addEventListener("pointermove", (event) => {
   if (!state.swipe) {
     return;

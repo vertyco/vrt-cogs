@@ -6,11 +6,12 @@ from dataclasses import dataclass
 
 import discord
 
-from ..common.sessions import ActivityContext
+from ..common.sessions import SESSION_TTL, ActivityContext
 
 BOARD_SIZE = 10
-# A round left open longer than this is dropped, so a closed tab doesn't keep one forever
-RUN_TTL = 3 * 3600
+# A round left open longer than this is dropped, so a closed tab doesn't keep one forever. It matches the login,
+# since a round paused for hours (the game pauses itself when the player clicks away) is still a real round
+RUN_TTL = SESSION_TTL
 
 
 @dataclass

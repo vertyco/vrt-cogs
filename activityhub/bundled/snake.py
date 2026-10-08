@@ -69,7 +69,7 @@ def parse_turns(moves: t.Any) -> dict[int, str] | None:
         if not isinstance(move, list) or len(move) != 2:
             return None
         tick, heading = move
-        if type(tick) is not int or tick <= last or heading not in DIRECTIONS:
+        if type(tick) is not int or tick <= last or not isinstance(heading, str) or heading not in DIRECTIONS:
             return None
         turns[tick] = heading
         last = tick

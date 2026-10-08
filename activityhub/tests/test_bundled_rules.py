@@ -128,6 +128,8 @@ def test_snake_refuses_impossible_rounds():
     assert snake.replay(5, [], -1) is None
     assert snake.replay(5, [], True) is None
     assert snake.replay(5, [[True, "U"]], 5) is None
+    assert snake.replay(5, [[0, ["U"]]], 5) is None  # a crafted heading is refused, not a crash
+    assert snake.replay(5, [[0, {"U": 1}]], 5) is None
 
 
 def test_2048_refuses_impossible_rounds():
@@ -149,6 +151,13 @@ def test_2048_merges_each_tile_once():
 
 
 LEVELS = bricks.load_levels(WEB_DIR / "brickbreaker" / "levels.json")
+
+
+def test_brick_levels_only_use_characters_both_sides_agree_on():
+    # The page breaks any other character as a brick, but the bot only counts 1, 2 and 3, so a level with
+    # anything else would get every round that reaches it refused
+    for level in LEVELS:
+        assert set("".join(level)) <= set(".#123")
 
 
 def test_brick_rounds_need_matching_bricks_and_time():
