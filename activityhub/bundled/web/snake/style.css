@@ -1,0 +1,12 @@
+#stage {
+  padding: 12px;
+}
+
+canvas {
+  display: block;
+  border-radius: 14px;
+  box-shadow:
+    0 0 0 1px #2a3047,
+    0 0 0 4px rgba(72, 187, 120, 0.08),
+    0 18px 50px rgba(0, 0, 0, 0.5);
+}

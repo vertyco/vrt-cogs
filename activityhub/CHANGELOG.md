@@ -1,0 +1,20 @@
+# ActivityHub Changelog
+
+## 0.1.0
+
+Initial release.
+
+- Comes with three games: Snake, Brick Breaker (with power-ups) and 2048. Each keeps every player's best score per server and shows the server's top 10 on a leaderboard. The bot replays Snake and 2048 rounds from their moves, and checks Brick Breaker rounds against the levels and the clock, so a changed page can't fake a score. Brick Breaker replaces the separate BrickBreaker cog, without its credit payouts.
+- The included games share one frame: a title screen with the controls, pause (Esc or P, and by itself when a moving game loses focus), sound with a mute button, and a results screen with your rank.
+- One Discord Activity with a menu of games. Any loaded cog with an `activityhub_game()` method shows up in the menu by itself, and disappears when it unloads. No Developer Portal, tunnel or slash sync step per game.
+- The hub runs the web server, the Discord login and launching. Game cogs only bring their game page and their Python actions.
+- `/activities` and `[p]activities` (a button that survives restarts) open the menu. Game cogs can open their own game straight from a command.
+- Players pick their own look and game order, and they follow them to every server. The Standard theme looks like Discord, with a choice of layout, color and background. The Orb theme is a green glowing console-style menu: games sit on pods along a ring around a big orb, with a large preview of the selected game, arrow key and mouse wheel movement, and menu sounds that can be turned off. Server admins set a server look and turn games on or off; a game that is off can't be played in that server at all. The bot owner sets the defaults.
+- The bot owner's Defaults tab in the menu settings can turn games off in every server. A game the owner turned off leaves every menu, can't be opened, stops anyone playing it, and has no switch in the server settings. Each server's own on/off choice is kept for when the owner turns it back on.
+- Games can give a wide `thumbnail` picture as well as an `icon`. The menu shows it on grid and list cards and in the Orb theme's preview.
+- Game cogs describe themselves with an `async def activityhub_game()`. Their handlers get a `ctx` proven with Discord (`ctx.author`, `ctx.guild`, `ctx.channel` and the activity session), plus simple actions, live connections for multiplayer, and raw routes for uploads.
+- The menu opens faster: its scripts load together, the login settings come with the page, the first menu comes back with the login, and the bot checks the login and the activity session with Discord at the same time. The browser console shows how long each loading step took.
+- Picking a game fades the menu away and fades the game in once its page has fully loaded, so a game never shows up half built.
+- `[p]activityhub check <public host>` checks every setup step and says what to fix. `[p]activityhub games` lists installed games and why a game cog was refused.
+- File addresses carry a version code, so a caching service like Cloudflare never serves an old copy.
+- `DEVELOPERS.md` walks through building a game step by step, with a complete example, a full reference, and fixes for common problems.

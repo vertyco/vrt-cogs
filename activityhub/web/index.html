@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Activities</title>
+    <link rel="stylesheet" href="menu.css" />
+    <link rel="stylesheet" href="orb.css" />
+    <!-- Every script up front, so the browser fetches them together instead of one import at a time -->
+    <link rel="modulepreload" href="menu.js" />
+    <link rel="modulepreload" href="host.js" />
+    <link rel="modulepreload" href="sdk.js" />
+    <link rel="modulepreload" href="sounds.js" />
+    <link rel="modulepreload" href="vendor/discord-sdk.js" />
+  </head>
+  <body>
+    <div class="orb-scene" aria-hidden="true">
+      <div class="fog"></div>
+      <div class="web"></div>
+      <svg class="tubes" viewBox="0 0 1600 900" preserveAspectRatio="none">
+        <path d="M0 450 C 380 300, 700 140, 1600 110" />
+        <path d="M0 450 C 420 470, 900 560, 1600 540" />
+        <path d="M0 450 C 300 640, 640 820, 1300 900" />
+        <path d="M0 450 C 240 220, 460 60, 760 0" />
+      </svg>
+      <div class="orb-ring"></div>
+      <div class="orb-wrap">
+        <div class="orb-orbit"></div>
+        <div class="orb-shell"></div>
+        <div id="orb" class="orb"><span class="orb-core"></span></div>
+      </div>
+    </div>
+    <div id="menu" class="menu">
+      <header class="bar">
+        <div class="who">
+          <span class="badge"><img id="who-icon" alt="" hidden /><span id="who-letter">A</span></span>
+          <span id="who-name" class="who-name">Activities</span>
+        </div>
+        <button id="gear" class="icon-button gear" type="button" aria-label="Settings" hidden>&#9881;</button>
+      </header>
+      <div id="notice" class="notice" hidden></div>
+      <main id="games" class="games grid"></main>
+      <div id="scrim" class="scrim"></div>
+      <aside id="panel" class="panel" aria-label="Settings" aria-hidden="true">
+        <div class="panel-head">
+          <nav id="tabs" class="tabs" role="tablist" aria-label="Settings tabs"></nav>
+          <button id="close" class="icon-button" type="button" aria-label="Close settings">&#10005;</button>
+        </div>
+        <div id="tab-body" class="tab-body"></div>
+        <div class="panel-foot">
+          <p id="panel-status" class="panel-status" role="status"></p>
+          <button id="reset" class="secondary" type="button">Reset</button>
+          <button id="save" class="primary" type="button">Save</button>
+        </div>
+      </aside>
+    </div>
+    <script type="module" src="menu.js"></script>
+  </body>
+</html>

@@ -1,0 +1,249 @@
+import asyncio
+import json
+import logging
+import typing as t
+
+from aiohttp import WSMsgType, web
+
+from .files import build_id, file_response, inject_head, resolve_inside
+from .games import Game
+from .replies import (
+    BAD_REQUEST,
+    MAX_BODY,
+    NO_CACHE,
+    NO_SUCH_ACTION,
+    OFF_PAGE,
+    SESSION_EXPIRED,
+    SOMETHING_WRONG,
+    TURNED_OFF,
+    error,
+    read_object,
+)
+from .sessions import ActivityContext
+from .sockets import CLOSE_GOING_AWAY, CLOSE_HANDLER_FAILED, CLOSE_SESSION, CLOSE_TURNED_OFF, PING, READY, Connection
+
+if t.TYPE_CHECKING:
+    from .server import HubServer
+
+log = logging.getLogger("red.vrt.activityhub.game_routes")
+
+READ_METHODS = ("GET", "HEAD")
+AUTH_SECONDS = 5
+# Cloudflare drops a WebSocket after 100 seconds of silence
+HEARTBEAT_SECONDS = 30
+CLOSED_TYPES = (WSMsgType.CLOSE, WSMsgType.CLOSING, WSMsgType.CLOSED, WSMsgType.ERROR)
+
+
+def action_reply(game: Game, name: str, result: t.Any) -> web.Response:
+    """Turn what an action handler returned into the page's reply"""
+    if result is None:
+        result = {}
+    if not isinstance(result, dict):
+        log.error("Action %s.%s returned %s instead of a dict", game.key, name, type(result).__name__)
+        return error(SOMETHING_WRONG, 500)
+    if "error" in result:
+        return error(str(result["error"]), 400)
+    try:
+        return web.json_response(result)
+    except (TypeError, ValueError) as e:
+        log.error("Action %s.%s returned something that isn't JSON", game.key, name, exc_info=e)
+        return error(SOMETHING_WRONG, 500)
+
+
+class GameRoutes:
+    """Everything under /games/<key>/: the page, its files, actions, raw routes and the live connection"""
+
+    def __init__(self, server: "HubServer"):
+        self.server = server
+        self.hub = server.hub
+
+    def register(self, app: web.Application) -> None:
+        # Games come and go while the server runs, and aiohttp freezes its route list once it starts,
+        # so one catch-all route hands each request to whichever game owns the key
+        app.router.add_route("*", "/games/{key}/{tail:.*}", self.dispatch)
+
+    async def dispatch(self, request: web.Request) -> web.StreamResponse:
+        game = self.hub.registry.games.get(request.match_info["key"])
+        if game is None:
+            raise web.HTTPNotFound()
+        tail = request.match_info["tail"]
+        head, rest = tail.split("/", 1) if "/" in tail else (tail, "")
+        if not head:
+            return await self.page(request, game)
+        if head == "api":
+            return await self.action(request, game, rest)
+        if head == "ws":
+            return await self.socket(request, game)
+        if head == "raw":
+            return await self.raw(request, game, rest)
+        return await self.file(request, game, rest)
+
+    async def page(self, request: web.Request, game: Game) -> web.Response:
+        if request.method not in READ_METHODS:
+            raise web.HTTPMethodNotAllowed(request.method, READ_METHODS)
+        # "activityhub/..." reaches the hub's own files, which the bundled games share
+        hub_root = f"/hub/{self.server.hub_build()}/"
+        importmap = json.dumps({"imports": {"activityhub": f"{hub_root}sdk.js", "activityhub/": hub_root}})
+        importmap_tag = f'<script type="importmap">{importmap}</script>'
+        if await self.turned_off_here(request, game):
+            return web.Response(
+                text=inject_head(OFF_PAGE, importmap_tag), content_type="text/html", status=403, headers=NO_CACHE
+            )
+        tags = f'<base href="/games/{game.key}/{build_id(game.web_dir)}/" />{importmap_tag}'
+        html = (game.web_dir / "index.html").read_text(encoding="utf-8")
+        return web.Response(text=inject_head(html, tags), content_type="text/html", headers=NO_CACHE)
+
+    async def turned_off_here(self, request: web.Request, game: Game) -> bool:
+        # A page load carries no session, so this can only trust the address's guild_id. It is a courtesy:
+        # the real locks are on actions, raw routes and the live connection, which use the proven server
+        guild_id = request.query.get("guild_id", "")
+        return guild_id.isdigit() and await self.server.game_off(int(guild_id), game.key)
+
+    async def file(self, request: web.Request, game: Game, path: str) -> web.StreamResponse:
+        if request.method not in READ_METHODS:
+            raise web.HTTPMethodNotAllowed(request.method, READ_METHODS)
+        target = resolve_inside(game.web_dir, path)
+        if target is None:
+            raise web.HTTPNotFound()
+        return file_response(target)
+
+    async def action(self, request: web.Request, game: Game, name: str) -> web.Response:
+        if request.method != "POST":
+            raise web.HTTPMethodNotAllowed(request.method, ["POST"])
+        ctx = self.server.request_context(request)
+        if ctx is None:
+            return error(SESSION_EXPIRED, 401)
+        if await self.server.game_off(ctx.guild_id, game.key):
+            return error(TURNED_OFF, 403)
+        handler = game.actions.get(name)
+        if handler is None:
+            return error(NO_SUCH_ACTION, 404)
+        data = await read_object(request)
+        if data is None:
+            return error(BAD_REQUEST, 400)
+        try:
+            result = await handler(ctx, data)
+        except Exception as e:
+            log.error("Action %s.%s failed", game.key, name, exc_info=e)
+            return error(SOMETHING_WRONG, 500)
+        return action_reply(game, name, result)
+
+    async def raw(self, request: web.Request, game: Game, path: str) -> web.StreamResponse:
+        handler = game.routes.get((request.method, path.strip("/")))
+        if handler is None:
+            raise web.HTTPNotFound()
+        ctx = self.server.request_context(request)
+        if ctx is not None and await self.server.game_off(ctx.guild_id, game.key):
+            return error(TURNED_OFF, 403)
+        try:
+            response = await handler(request, ctx)
+        except web.HTTPException:
+            # aiohttp handlers send ready-made responses (redirects, 403s) by raising them
+            raise
+        except Exception as e:
+            log.error("Raw route %s %s of %s failed", request.method, path, game.key, exc_info=e)
+            return error(SOMETHING_WRONG, 500)
+        if not isinstance(response, web.StreamResponse):
+            log.error("Raw route %s %s of %s returned %r, not a response", request.method, path, game.key, response)
+            return error(SOMETHING_WRONG, 500)
+        return response
+
+    async def socket(self, request: web.Request, game: Game) -> web.StreamResponse:
+        if not game.socket:
+            raise web.HTTPNotFound()
+        ws = web.WebSocketResponse(max_msg_size=MAX_BODY)
+        await ws.prepare(request)
+        ctx = await self.socket_context(ws)
+        if ctx is None:
+            await ws.close(code=CLOSE_SESSION, message=b"Session missing or expired")
+            return ws
+        if await self.server.game_off(ctx.guild_id, game.key):
+            await ws.close(code=CLOSE_TURNED_OFF, message=b"Turned off in this server")
+            return ws
+        conn = Connection(ws, ctx, game, self.server.rooms)
+        # Ready goes out before join, so nothing join sends can reach the page ahead of it
+        await conn.send(READY)
+        self.server.rooms.add(conn)
+        try:
+            late_code = await self.late_close_code(conn)
+            if late_code is not None:
+                await conn.close(late_code)
+            elif await self.run_handler(conn, "join"):
+                await self.pump(conn)
+                await self.run_handler(conn, "leave")
+        finally:
+            self.server.rooms.discard(conn)
+            if not ws.closed:
+                await ws.close(code=conn.closing or 1000)
+        return ws
+
+    async def late_close_code(self, conn: Connection) -> int | None:
+        """
+        Why a connection that just joined its room must close: the game was unloaded or turned off while it waited.
+        Closing sweeps only reach connections already in a room, so the room is checked again after joining it
+        """
+        if self.hub.registry.games.get(conn.game.key) is not conn.game:
+            return CLOSE_GOING_AWAY
+        if await self.server.game_off(conn.ctx.guild_id, conn.game.key):
+            return CLOSE_TURNED_OFF
+        return None
+
+    async def socket_context(self, ws: web.WebSocketResponse) -> ActivityContext | None:
+        """The player named by the first message, which must carry the session pass in time"""
+        try:
+            msg = await ws.receive(timeout=AUTH_SECONDS)
+        except asyncio.TimeoutError as e:
+            log.debug("A live connection sent no session in time: %r", e)
+            return None
+        if msg.type != WSMsgType.TEXT:
+            return None
+        try:
+            data = json.loads(msg.data)
+        except ValueError as e:
+            log.debug("A live connection's first message isn't JSON: %s", e)
+            return None
+        session = data.get("session") if isinstance(data, dict) else None
+        return self.server.context_for(session if isinstance(session, str) else None)
+
+    async def run_handler(self, conn: Connection, event: str) -> bool:
+        """Call the game's join or leave handler. A raising join closes the connection with 1011"""
+        handler = conn.game.socket.get(event)
+        if handler is None:
+            return True
+        try:
+            await handler(conn.ctx, conn)
+        except Exception as e:
+            log.error("Live connection %s handler of %s failed", event, conn.game.key, exc_info=e)
+            if event == "join":
+                await conn.close(CLOSE_HANDLER_FAILED)
+            return False
+        return True
+
+    async def pump(self, conn: Connection) -> None:
+        """Hand each message to the game until the connection closes, with a heartbeat when it goes quiet"""
+        while True:
+            try:
+                msg = await conn.ws.receive(timeout=HEARTBEAT_SECONDS)
+            except asyncio.TimeoutError as e:
+                # The receive timeout is the heartbeat timer: nothing arrived, so send something
+                log.debug("No message in %s seconds, sending a heartbeat: %s", HEARTBEAT_SECONDS, e)
+                await conn.send(PING)
+                continue
+            if msg.type in CLOSED_TYPES:
+                return
+            if msg.type == WSMsgType.TEXT:
+                await self.deliver(conn, msg.data)
+
+    async def deliver(self, conn: Connection, text: str) -> None:
+        handler = conn.game.socket.get("message")
+        if handler is None:
+            return
+        try:
+            data = json.loads(text)
+        except ValueError as e:
+            log.debug("Ignored a message that isn't JSON on %s: %s", conn.game.key, e)
+            return
+        try:
+            await handler(conn.ctx, conn, data)
+        except Exception as e:
+            log.error("Live connection message handler of %s failed", conn.game.key, exc_info=e)

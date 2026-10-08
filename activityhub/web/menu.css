@@ -1,0 +1,595 @@
+:root {
+  color-scheme: dark;
+  --accent: #5865f2;
+  --on-accent: #ffffff;
+  --text: #dbdee1;
+  --muted: #949ba4;
+  --surface: #2b2d31;
+  --card: #313338;
+  --card-hover: #383a40;
+  --line: #3f4147;
+  --panel: #232428;
+  --radius: 12px;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  margin: 0;
+}
+
+body {
+  min-height: 100vh;
+  color: var(--text);
+  background: var(--surface);
+  -webkit-tap-highlight-color: transparent;
+}
+
+body[data-background="darker"] {
+  background: #111214;
+}
+
+body[data-background="gradient"] {
+  background-color: #111214;
+  background-image: linear-gradient(160deg, color-mix(in srgb, var(--accent) 40%, #111214) 0%, #111214 70%);
+  background-attachment: fixed;
+}
+
+button,
+select,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+button:focus-visible,
+select:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.badge {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 700;
+}
+
+.badge img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.who-name {
+  overflow: hidden;
+  font-size: 1.05rem;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.icon-button {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.icon-button:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 16px 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.games {
+  display: grid;
+  gap: 12px;
+  padding: 4px 16px 24px;
+}
+
+/* Two columns still fit on a phone; a wide Discord window gets more */
+.games.grid {
+  grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
+}
+
+.games.list,
+.games.compact {
+  grid-template-columns: 1fr;
+}
+
+.games.compact {
+  gap: 4px;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius);
+  background: var(--card);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s,
+    background-color 0.15s;
+}
+
+.card:hover {
+  border-color: var(--accent);
+  background: var(--card-hover);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  transform: translateY(-2px);
+}
+
+.card:active {
+  transform: translateY(0) scale(0.99);
+}
+
+.grid .card {
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  min-height: 150px;
+  overflow: hidden;
+  padding: 12px;
+  text-align: center;
+}
+
+.compact .card {
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--accent) 35%, #1e1f22);
+  font-weight: 700;
+}
+
+.grid .icon {
+  width: 48px;
+  height: 48px;
+}
+
+.compact .icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+}
+
+.icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.name {
+  font-weight: 600;
+}
+
+.desc {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.grid .desc {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.compact .desc,
+.no-details .desc {
+  display: none;
+}
+
+.empty {
+  grid-column: 1 / -1;
+  padding: 48px 16px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  width: min(420px, 100vw);
+  border-left: 1px solid var(--line);
+  background: var(--panel);
+  transform: translateX(100%);
+  transition: transform 0.2s ease;
+}
+
+body.panel-open .scrim {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+body.panel-open .panel {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu,
+  .panel,
+  .scrim,
+  .card,
+  .thumb {
+    transition: none;
+  }
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+/* Four tabs fit on a phone too; when they don't, they scroll sideways without a scrollbar in the way */
+.tabs {
+  display: flex;
+  flex: 1;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tab {
+  padding: 8px 9px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.tab[aria-selected="true"] {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+
+.tab-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 18px;
+  overflow-y: auto;
+  padding: 16px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-label {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+select {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+}
+
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.swatch {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.swatch.default {
+  border: 2px dashed var(--muted);
+}
+
+.swatch[aria-pressed="true"] {
+  border: 2px solid #ffffff;
+}
+
+input[type="color"] {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+input[type="color"]::-webkit-color-swatch {
+  border: 0;
+  border-radius: 50%;
+}
+
+.order {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.order-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--card);
+}
+
+.order-row.dragging {
+  opacity: 0.5;
+}
+
+.handle {
+  padding: 0 4px;
+  color: var(--muted);
+  cursor: grab;
+}
+
+.order-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.order-row .icon-button {
+  width: 32px;
+  height: 32px;
+  font-size: 1rem;
+}
+
+.order-row .icon-button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.switches {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.switches legend {
+  margin-bottom: 6px;
+  padding: 0;
+}
+
+.switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--card);
+  cursor: pointer;
+}
+
+.switch input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+.panel-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.panel-status {
+  flex: 1;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.primary,
+.secondary {
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.secondary {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.game-frame {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #000000;
+}
+
+/* Opening a game: the menu fades away at once, and host.js fades the game in once its page has loaded */
+.game-frame.loading {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.menu {
+  transition: opacity 0.15s ease-out;
+}
+
+body.opening .menu {
+  opacity: 0;
+  pointer-events: none;
+}
+
+body.playing .menu {
+  display: none;
+}
+
+/* ---------- Thumbnails ---------- */
+
+.thumb {
+  display: block;
+  flex: none;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #1e1f22;
+  transition: transform 0.25s ease;
+}
+
+/* The card clips it, so the picture zooms inside its frame */
+.grid .card:hover .thumb {
+  transform: scale(1.04);
+}
+
+.has-thumb .icon {
+  display: none;
+}
+
+.grid .card.has-thumb {
+  justify-content: flex-start;
+  gap: 0;
+  padding: 0;
+}
+
+.grid .has-thumb .thumb {
+  border-radius: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.grid .has-thumb .text {
+  width: 100%;
+  padding: 10px 12px 12px;
+}
+
+.list .thumb {
+  width: 86px;
+}
+
+.compact .thumb {
+  display: none;
+}
+
+.compact .has-thumb .icon {
+  display: grid;
+}

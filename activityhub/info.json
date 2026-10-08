@@ -1,0 +1,26 @@
+{
+  "author": ["Vertyco"],
+  "description": "A main menu for multiple Discord Activities within a single bot. ActivityHub turns your bot's one Activity into a main menu: every activity cog you install shows up in it by itself, and players pick what to open. 3rd party cogs add their own activities with one method and a folder of web files, while the hub handles the web server, the Discord login and launching. Snake, Brick Breaker and 2048 come built in, each with a per-server leaderboard. Server admins choose which activities their server can use, and players pick their own theme and menu order. Needs a public HTTPS address: see the README for setup and DEVELOPERS.md to build your own activity.",
+  "disabled": false,
+  "end_user_data_statement": "This cog stores each player's menu look and game order, and their best score in each included game per server. Login sessions are kept in memory only and are lost when the bot restarts.",
+  "hidden": true,
+  "install_msg": "Thank you for installing ActivityHub!\n\n**Disclaimer**\nThis cog is in BETA. Updates may change things in ways that wipe its config without warning.\n\nThis cog needs a one-time setup before it works. Follow the setup steps in the README: https://github.com/vertyco/vrt-cogs/blob/main/activityhub/README.md\n\nWant to make your own game for the hub? Read DEVELOPERS.md in the same folder.",
+  "min_bot_version": "3.5.0",
+  "min_python_version": [3, 10, 0],
+  "permissions": [
+    "read_messages",
+    "send_messages",
+    "embed_links"
+  ],
+  "required_cogs": {},
+  "requirements": [],
+  "short": "A main menu for multiple Discord Activities within a single bot",
+  "tags": [
+    "activity",
+    "games",
+    "fun",
+    "utility",
+    "vert"
+  ],
+  "type": "COG"
+}

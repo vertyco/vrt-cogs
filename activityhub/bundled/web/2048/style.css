@@ -1,0 +1,155 @@
+#stage {
+  padding: 12px;
+}
+
+/* --size is set from game.js to fit the stage; every tile position is worked out from it */
+.board {
+  --size: 320px;
+  --gap: calc(var(--size) * 0.03);
+  --cell: calc((var(--size) - var(--gap) * 5) / 4);
+  position: relative;
+  width: var(--size);
+  height: var(--size);
+  border-radius: 16px;
+  background: #1c2036;
+  box-shadow:
+    inset 0 2px 10px rgba(0, 0, 0, 0.35),
+    0 0 0 1px #2a3047,
+    0 18px 50px rgba(0, 0, 0, 0.5);
+  transition: filter 0.4s;
+}
+
+.board.over {
+  filter: saturate(0.4) brightness(0.7);
+}
+
+.cells,
+.tiles {
+  position: absolute;
+  inset: 0;
+}
+
+.cells span {
+  position: absolute;
+  width: var(--cell);
+  height: var(--cell);
+  border-radius: 10px;
+  background: #252a45;
+}
+
+.cells span,
+.tile {
+  left: calc(var(--gap) + var(--col) * (var(--cell) + var(--gap)));
+  top: calc(var(--gap) + var(--row) * (var(--cell) + var(--gap)));
+}
+
+.tile {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: var(--cell);
+  height: var(--cell);
+  border-radius: 10px;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-weight: 800;
+  font-size: calc(var(--cell) * 0.42);
+  font-variant-numeric: tabular-nums;
+  color: #1a202c;
+  box-shadow:
+    inset 0 -4px 0 rgba(0, 0, 0, 0.14),
+    inset 0 2px 0 rgba(255, 255, 255, 0.35);
+  transition:
+    left 100ms ease-out,
+    top 100ms ease-out;
+}
+
+.tile.long {
+  font-size: calc(var(--cell) * 0.32);
+}
+
+.tile.longer {
+  font-size: calc(var(--cell) * 0.25);
+}
+
+.tile.new {
+  animation: appear 150ms ease-out;
+}
+
+.tile.merged {
+  animation: pop 150ms ease-out;
+  z-index: 1;
+}
+
+@keyframes appear {
+  from {
+    transform: scale(0);
+  }
+}
+
+@keyframes pop {
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+.v2 { background: #e2e8f0; }
+.v4 { background: #c3dafe; }
+.v8 { background: #90cdf4; }
+.v16 { background: #63b3ed; }
+.v32 { background: #4fd1c5; }
+.v64 { background: #68d391; }
+.v128 { background: #f6e05e; }
+.v256 { background: #f6ad55; }
+.v512 { background: #fc8181; }
+.v1024 { background: #f687b3; color: #ffffff; }
+.v2048 { background: #b794f4; color: #ffffff; }
+.vbig { background: #805ad5; color: #ffffff; }
+
+/* The big tiles glow in their own color */
+.v128,
+.v256,
+.v512,
+.v1024,
+.v2048,
+.vbig {
+  box-shadow:
+    inset 0 -4px 0 rgba(0, 0, 0, 0.14),
+    inset 0 2px 0 rgba(255, 255, 255, 0.35),
+    0 0 calc(var(--cell) * 0.25) var(--glow);
+}
+
+.v128 { --glow: rgba(246, 224, 94, 0.35); }
+.v256 { --glow: rgba(246, 173, 85, 0.4); }
+.v512 { --glow: rgba(252, 129, 129, 0.45); }
+.v1024 { --glow: rgba(246, 135, 179, 0.5); }
+.v2048 { --glow: rgba(183, 148, 244, 0.6); }
+.vbig { --glow: rgba(128, 90, 213, 0.6); }
+
+.gain {
+  position: absolute;
+  top: -4px;
+  right: 10px;
+  color: #d6bcfa;
+  font-weight: 800;
+  font-size: 1.1rem;
+  pointer-events: none;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  animation: rise 0.8s ease-out forwards;
+}
+
+@keyframes rise {
+  to {
+    opacity: 0;
+    transform: translateY(-28px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile,
+  .tile.new,
+  .tile.merged,
+  .gain {
+    animation: none;
+    transition: none;
+  }
+}

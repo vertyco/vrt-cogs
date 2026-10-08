@@ -1,0 +1,22 @@
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #05060b;
+}
+
+/* The arcade's hint sits at the bottom of the stage, where this game's paddle is, so it moves up into the
+   empty space between the bricks and the paddle */
+#stage .arcade-hint {
+  bottom: 30%;
+}
+
+/* The pointer is the paddle while playing, so the arrow cursor would only cover the ball */
+canvas {
+  display: block;
+  cursor: none;
+  box-shadow:
+    0 0 0 1px #2d3348,
+    0 18px 60px rgba(0, 0, 0, 0.55);
+}
