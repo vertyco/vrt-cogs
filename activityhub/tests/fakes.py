@@ -94,7 +94,7 @@ class FakeConfig:
 def fake_user(user_id: int, name: str) -> SimpleNamespace:
     avatar = SimpleNamespace(url=f"https://cdn.discordapp.com/embed/avatars/{user_id % 5}.png")
     # A user with no display name of their own, so Discord shows the username
-    return SimpleNamespace(id=user_id, name=name, display_name=name, display_avatar=avatar)
+    return SimpleNamespace(id=user_id, name=name, display_name=name, global_name=None, display_avatar=avatar)
 
 
 def fake_member(user: SimpleNamespace, guild: "FakeGuild", manage: bool = False) -> SimpleNamespace:
@@ -102,6 +102,7 @@ def fake_member(user: SimpleNamespace, guild: "FakeGuild", manage: bool = False)
         id=user.id,
         name=user.name,
         display_name=user.name.title(),
+        global_name=user.global_name,
         display_avatar=user.display_avatar,
         guild=guild,
         guild_permissions=SimpleNamespace(manage_guild=manage),

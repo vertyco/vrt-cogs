@@ -1,5 +1,11 @@
 # ActivityHub Changelog
 
+## 0.1.10
+
+For game developers:
+
+- `DEVELOPERS.md` section 19 points at Marble Munch, a full multiplayer game cog in the same repo, with a table of which file shows which pattern: rooms, a locked update loop, seats, reconnects, computer players and smooth drawing.
+
 ## 0.1.9
 
 - A page that floods a live connection is cut off: more than 300 messages or 1 MB a second, on average over 5 seconds, closes it with code `4029`, and the bot's log names the player. Real games never get near it, but a page changed to flood the bot could otherwise keep it busy.

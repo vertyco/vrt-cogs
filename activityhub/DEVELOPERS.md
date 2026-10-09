@@ -1296,6 +1296,22 @@ The included pages also import `activityhub/arcade.js`, the hub's shared title, 
 
 Read them for ideas. Their internals are not part of the API and may change.
 
+### A multiplayer example: Marble Munch
+
+Marble Munch is a separate cog in the same repo (`marblemunch/`): a hungry-hippos game for up to four players, with computer hippos in empty seats. It is built on [live connections](#10-multiplayer-with-live-connections) and the [speed advice](#speed-and-fast-paced-games) in this guide, and is meant to be read. Each pattern lives in one place:
+
+| Pattern | Where |
+|---|---|
+| One match per window, holding `conn.room` | `marblemunch/main.py` (`match_for`), `common/match.py` (`Match`) |
+| A locked 30-a-second update loop | `common/match.py` (`run`, `tick`) |
+| Seats, and settling two taps on one seat | `common/match.py` (`sit`) |
+| Accepting only exact messages, applied on the next update | `common/match.py` (`message`, `steer`) |
+| Reconnecting into your seat, a grace period, and an NPC taking over | `common/match.py` (`join`, `leave`, `expire_drops`) |
+| Computer players that send the same inputs as people | `common/npc.py` |
+| Game rules with nothing about Discord in them, so tests drive them directly | `common/rules.py`, `tests/` |
+| Drawing two updates behind, and the player's own hippo answering at once | `web/scene.js` (`sample`, `drawMine`) |
+| The update rate in the hub's frame rate counter | `web/game.js` (`showRate`) |
+
 ## 20. Glossary
 
 | Word | What it means here |
