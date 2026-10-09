@@ -1,5 +1,18 @@
 # ActivityHub Changelog
 
+## 0.1.7
+
+- The bot's log gets a warning when the bot froze for a quarter of a second or more while players were in live games, at most once a minute. A frozen bot stalls every live game, so this points at a cog that needs fixing.
+- Replies and live messages are turned into JSON with orjson, which comes with Red: about ten times faster on the worker the whole bot shares, and a little smaller, since it leaves out spaces.
+
+For game developers:
+
+- Live connections reconnect by themselves after a restart, a player who fell behind or a dropped network, trying for up to a minute with growing, partly random waits. `conn.onReconnecting(handler)` and `conn.onReconnected(handler)` tell the page, `conn.onClose` now runs only once the connection is gone for good, and the page's `conn.send()` returns `false` instead of sending while it reconnects.
+- Replies and live messages can now hold dataclasses, datetimes, UUIDs and enums. Whole numbers bigger than 64 bits are refused.
+
+- `conn.send()` and `conn.broadcast()` on a live connection now queue the message and return right away. Each player's messages wait in their own queue and still arrive in order, so a player with a stalled network never holds up your code or the other players. Before, a broadcast could wait up to 10 seconds on one stalled player. A player who falls 4 million characters behind is disconnected, like one who can't take a message for 10 seconds. `conn.close()` now waits for the messages queued before it.
+- `DEVELOPERS.md` has a new part in section 10, speed and fast-paced games: keeping the bot's worker free, a steady update loop, small messages, measuring delay, surviving restarts, where the bot should run, and connecting to your own game server when the bot isn't enough. The reconnect example now waits a random few seconds.
+
 ## 0.1.6
 
 - A frame rate counter shows in the bottom left corner, over the menu and every game. Each player can hide it with **Frame rate** in **My look**. Server admins and the bot owner can change whether it starts on, like the other look settings. It is on by default.

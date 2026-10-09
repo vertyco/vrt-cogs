@@ -1,3 +1,4 @@
+import asyncio
 import shutil
 
 import pytest
@@ -256,6 +257,67 @@ def test_a_live_message_json_cant_send_is_refused(driver, live):
     )
     needs = "conn.send() needs a JSON value (an object, array, string, number, boolean or null), got"
     assert caught == [[["TypeError", f"{needs} undefined"], ["TypeError", f"{needs} function"]], {"echo": {"ok": 1}}]
+
+
+# Opens a live connection in the game frame and records everything that happens to it in window.live
+WATCH_LIVE = """
+    const conn = await hub.socket();
+    window.live = { conn, events: [], messages: [] };
+    conn.on((data) => window.live.messages.push(data));
+    conn.onReconnecting((code) => window.live.events.push(["reconnecting", code]));
+    conn.onReconnected(() => window.live.events.push(["reconnected"]));
+    conn.onClose((code) => window.live.events.push(["closed", code]));
+    done(true);
+"""
+
+
+def on_server(live, coro):
+    """Run something on the live hub's own thread, the way the bot would"""
+    return asyncio.run_coroutine_threadsafe(coro, live.loop).result(5)
+
+
+def test_a_dropped_live_connection_reconnects_by_itself(driver, live):
+    open_game_in_host(driver, live)
+    assert in_game(driver, WATCH_LIVE) is True
+    # What reloading ActivityHub or the game does to every live connection
+    on_server(live, live.server.rooms.close_all())
+    wait_for(driver, "window.live.events.length >= 2")
+    assert driver.execute_script("return window.live.events") == [["reconnecting", 1001], ["reconnected"]]
+    # The same conn works again, and the game's join ran for the new connection
+    assert driver.execute_script("return window.live.conn.send({ n: 2 })") is True
+    wait_for(driver, "window.live.messages.some((data) => data.echo && data.echo.n === 2)")
+    assert {"joined": MEMBER_ID, "peers": 1} in driver.execute_script("return window.live.messages")
+
+
+def test_a_reconnect_after_an_activityhub_reload_logs_in_again(driver, live):
+    open_game_in_host(driver, live)
+    assert in_game(driver, WATCH_LIVE) is True
+    # A reload of ActivityHub forgets every login as well as closing every live connection
+    live.hub.sessions.sessions.clear()
+    on_server(live, live.server.rooms.close_all())
+    wait_for(driver, "window.live.events.length >= 2")
+    assert driver.execute_script("return window.live.events") == [["reconnecting", 1001], ["reconnected"]]
+    assert driver.execute_script("return window.parent.fakeDiscord.authorize") == 2
+
+
+def test_a_live_connection_closed_for_good_does_not_reconnect(driver, live):
+    open_game_in_host(driver, live)
+    assert in_game(driver, WATCH_LIVE) is True
+    # The game was turned off everywhere, which reconnecting can't fix
+    on_server(live, live.server.rooms.close_games(["demo"]))
+    wait_for(driver, "window.live.events.length >= 1")
+    assert driver.execute_script("return window.live.events") == [["closed", 4003]]
+    assert driver.execute_script("return window.live.conn.send({ n: 3 })") is False
+
+
+def test_closing_a_live_connection_ends_it_once(driver, live):
+    open_game_in_host(driver, live)
+    assert in_game(driver, WATCH_LIVE) is True
+    driver.execute_script("window.live.conn.close()")
+    wait_for(driver, "window.live.events.length >= 1")
+    driver.execute_script("window.live.conn.close()")
+    assert driver.execute_script("return window.live.events") == [["closed", 1000]]
+    assert driver.execute_script("return window.live.conn.send({ n: 4 })") is False
 
 
 def test_listeners_a_game_added_to_discord_go_when_it_closes(driver, live):

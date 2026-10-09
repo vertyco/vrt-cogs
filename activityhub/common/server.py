@@ -19,6 +19,12 @@ from .sockets import Rooms
 log = logging.getLogger("red.vrt.activityhub.server")
 
 HUB_WEB_DIR = Path(__file__).parent.parent / "web"
+# How often the worker the whole bot shares is checked. A check that runs late means some code ran without reaching
+# an await for that long, and every live game stalled meanwhile
+LAG_CHECK_SECONDS = 0.5
+LAG_WARN_SECONDS = 0.25
+# At most one warning this often, so a bot that keeps freezing doesn't fill its log
+LAG_WARN_EVERY = 60
 
 
 class HubServer:
@@ -31,6 +37,8 @@ class HubServer:
         self.rooms = Rooms()
         self.runner: web.AppRunner | None = None
         self.http: aiohttp.ClientSession | None = None
+        self.watchdog: asyncio.Task | None = None
+        self.lag_quiet_until = 0.0
         # The token endpoint is public, so a flood of fake codes could keep Discord answering 429. Logins pause
         # until this time.monotonic() after one, instead of piling up 429s against the bot's IP address
         self.logins_paused_until = 0.0
@@ -64,15 +72,38 @@ class HubServer:
             self.http = None
             raise
         self.runner = runner
+        self.watchdog = asyncio.create_task(self.watch_lag())
         log.info("ActivityHub web server listening on %s:%s", host, port)
 
     async def stop(self) -> None:
+        if self.watchdog:
+            self.watchdog.cancel()
+            self.watchdog = None
         if self.runner:
             await self.runner.cleanup()
             self.runner = None
         if self.http:
             await self.http.close()
             self.http = None
+
+    async def watch_lag(self) -> None:
+        """Warn in the bot's log when the bot froze while players were in live games"""
+        loop = asyncio.get_running_loop()
+        while True:
+            due = loop.time() + LAG_CHECK_SECONDS
+            await asyncio.sleep(LAG_CHECK_SECONDS)
+            lag = loop.time() - due
+            players = len(self.rooms.all())
+            if lag < LAG_WARN_SECONDS or not players or loop.time() < self.lag_quiet_until:
+                continue
+            self.lag_quiet_until = loop.time() + LAG_WARN_EVERY
+            log.warning(
+                "The bot froze for %d ms while players were in live games (%d connected), so their games stalled. "
+                "Some code ran without reaching an await for that long. DEVELOPERS.md in ActivityHub's folder shows "
+                'how to find it, under "Keep the bot\'s worker free"',
+                lag * 1000,
+                players,
+            )
 
     def hub_build(self) -> str:
         return build_id(self.web_dir)

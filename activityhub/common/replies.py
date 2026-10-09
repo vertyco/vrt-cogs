@@ -1,17 +1,16 @@
-import functools
 import html
 import json
 import logging
+import typing as t
 from string import Template
 
+import orjson
 from aiohttp import web
 
 log = logging.getLogger("red.vrt.activityhub.replies")
 
 MAX_BODY = 1024 * 1024
 NO_CACHE = {"Cache-Control": "no-cache"}
-# NaN and Infinity aren't JSON: browsers can't read a reply that has them
-STRICT_DUMPS = functools.partial(json.dumps, allow_nan=False)
 
 BAD_REQUEST = "Bad request."
 SESSION_EXPIRED = "Your session expired. Go back to the menu to log in again."
@@ -70,6 +69,29 @@ def notice_page(message: str) -> str:
     return NOTICE_PAGE.substitute(message=html.escape(message))
 
 
+def dumps(data: t.Any) -> str:
+    """
+    The JSON text of a reply or live message. orjson (it comes with Red) is about ten times faster than the json
+    module, which matters on the worker the whole bot shares, and leaves out the spaces. Dict keys that are numbers
+    become strings, as with json. NaN and Infinity raise ValueError, as with json.dumps(allow_nan=False): orjson
+    would write them as null, so only text with a null in it is checked again the slow way
+    """
+    raw = orjson.dumps(data, option=orjson.OPT_NON_STR_KEYS)
+    if b"null" in raw:
+        json.dumps(data, allow_nan=False, default=str, skipkeys=True)
+    return raw.decode()
+
+
+def loads(text: str | bytes) -> t.Any:
+    """JSON from a page, read with orjson. Raises ValueError when it isn't JSON"""
+    try:
+        return orjson.loads(text)
+    except orjson.JSONDecodeError as e:
+        # orjson refuses a few things the json module reads, like half of an emoji that a page cut in two
+        log.debug("orjson couldn't read a page's JSON, trying the json module: %s", e)
+        return json.loads(text)
+
+
 def error(message: str, status: int) -> web.Response:
     return web.json_response({"error": message}, status=status)
 
@@ -77,7 +99,7 @@ def error(message: str, status: int) -> web.Response:
 async def read_object(request: web.Request) -> dict | None:
     """The JSON body if it is an object, else None. A body over MAX_BODY raises aiohttp's own 413"""
     try:
-        data = await request.json()
+        data = await request.json(loads=loads)
     except ValueError as e:
         log.debug("Ignored a request body that isn't JSON: %s", e)
         return None

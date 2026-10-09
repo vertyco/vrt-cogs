@@ -241,7 +241,7 @@ async def test_the_bot_owner_sees_why_something_went_wrong(client, hub, demo):
     assert await call("crash", owner) == owner_sees("RuntimeError: action broke")
     assert await call("list", owner) == owner_sees("returned list instead of a dict")
     assert await call("weird", owner) == owner_sees(
-        "returned something that isn't JSON: Object of type object is not JSON serializable"
+        "returned something that isn't JSON: Type is not JSON serializable: object"
     )
     assert await call("give", owner, {"error": {"code": 1}}) == owner_sees(
         "returned an error that isn't text: {'code': 1}"

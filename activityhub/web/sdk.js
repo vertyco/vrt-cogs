@@ -94,6 +94,13 @@ function offlineHub() {
 // Close codes the hub sends before a live connection is ready
 const CLOSE_SESSION = 4001;
 const CLOSE_NO_SOCKET = 4004;
+// Codes after which the helper opens a live connection again by itself: a restart of the bot, ActivityHub or the
+// game, or a player who fell behind (1001), a dropped network (1006), and what proxies send when the server behind
+// them restarts (1012 to 1014)
+const RECONNECT_CODES = new Set([1001, 1006, 1012, 1013, 1014]);
+// How long the helper keeps trying after a drop, and the longest wait between two tries
+const RECONNECT_FOR_MS = 60000;
+const RECONNECT_MAX_WAIT_MS = 15000;
 
 // Why a live connection closed before it was ready, for the game's catch
 function closedEarly(code) {
@@ -104,34 +111,13 @@ function closedEarly(code) {
   return new HubError(`The live connection closed (${code}).`, code);
 }
 
-function openSocket(root, session) {
+// One WebSocket to the hub. Resolves with it once the hub has checked the login, and hands every later message
+// and the close to `events`
+function openLink(root, session, events) {
   return new Promise((resolve, reject) => {
     const scheme = location.protocol === "https:" ? "wss" : "ws";
     const ws = new WebSocket(`${scheme}://${location.host}${root}ws`);
-    const handlers = [];
-    const closers = [];
-    const held = [];
     let ready = false;
-    const conn = {
-      send(data) {
-        const text = JSON.stringify(data);
-        // The socket would send the word "undefined", which the hub drops without telling anyone
-        if (text === undefined) {
-          throw new TypeError(
-            `conn.send() needs a JSON value (an object, array, string, number, boolean or null), got ${typeof data}`,
-          );
-        }
-        ws.send(text);
-      },
-      on(handler) {
-        handlers.push(handler);
-        held.splice(0).forEach((data) => handler(data));
-      },
-      onClose(handler) {
-        closers.push(handler);
-      },
-      close: () => ws.close(1000),
-    };
     ws.addEventListener("open", () => ws.send(JSON.stringify({ session })));
     ws.addEventListener("message", (event) => {
       let data;
@@ -143,17 +129,13 @@ function openSocket(root, session) {
       }
       if (data && data.activityhub === "ready") {
         ready = true;
-        resolve(conn);
+        resolve(ws);
       } else if (data && data.activityhub === "ping") {
         // The hub's heartbeat. Answering it shows the hub this player is still here, even through a proxy that
         // drops the browser's own WebSocket pings
         ws.send(JSON.stringify({ activityhub: "pong" }));
       } else {
-        if (handlers.length) {
-          handlers.forEach((handler) => handler(data));
-        } else {
-          held.push(data);
-        }
+        events.message(data);
       }
     });
     ws.addEventListener("close", (event) => {
@@ -161,9 +143,127 @@ function openSocket(root, session) {
         reject(closedEarly(event.code));
         return;
       }
-      closers.forEach((handler) => handler(event.code));
+      events.close(event.code);
     });
   });
+}
+
+// What hub.socket() resolves with. It stays the same object while the helper reconnects by itself, so the game's
+// handlers keep working. `open(events)` resolves with a ready WebSocket, logging the player in again when needed
+function liveConnection(open) {
+  const handlers = [];
+  const held = [];
+  const closers = [];
+  const reconnecting = [];
+  const reconnected = [];
+  let ws = null;
+  let closing = false;
+  let ended = false;
+
+  function end(code) {
+    if (!ended) {
+      ended = true;
+      closers.forEach((handler) => handler(code));
+    }
+  }
+
+  async function reconnect(code) {
+    reconnecting.forEach((handler) => handler(code));
+    const giveUpAt = performance.now() + RECONNECT_FOR_MS;
+    for (let attempt = 0; ; attempt += 1) {
+      // Longer waits after each failed try, with a random part, so a whole window doesn't reconnect at once
+      const wait = Math.min(RECONNECT_MAX_WAIT_MS, 1000 * 2 ** attempt);
+      await new Promise((resolve) => setTimeout(resolve, wait / 2 + (Math.random() * wait) / 2));
+      if (closing) {
+        return;
+      }
+      let link;
+      try {
+        link = await open(events);
+      } catch (e) {
+        if (!closing && RECONNECT_CODES.has(e.status) && performance.now() < giveUpAt) {
+          continue;
+        }
+        end(e.status ?? CLOSE_SESSION);
+        return;
+      }
+      if (closing) {
+        link.close(1000);
+        return;
+      }
+      ws = link;
+      reconnected.forEach((handler) => handler());
+      return;
+    }
+  }
+
+  const events = {
+    message(data) {
+      if (handlers.length) {
+        handlers.forEach((handler) => handler(data));
+      } else {
+        held.push(data);
+      }
+    },
+    close(code) {
+      ws = null;
+      if (closing || !RECONNECT_CODES.has(code)) {
+        end(code);
+      } else {
+        reconnect(code);
+      }
+    },
+  };
+
+  const conn = {
+    send(data) {
+      const text = JSON.stringify(data);
+      // The socket would send the word "undefined", which the hub drops without telling anyone
+      if (text === undefined) {
+        throw new TypeError(
+          `conn.send() needs a JSON value (an object, array, string, number, boolean or null), got ${typeof data}`,
+        );
+      }
+      // Nothing is kept for later while the helper reconnects: an old input would be stale by the time it arrived
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        return false;
+      }
+      ws.send(text);
+      return true;
+    },
+    on(handler) {
+      handlers.push(handler);
+      held.splice(0).forEach((data) => handler(data));
+    },
+    onClose(handler) {
+      closers.push(handler);
+    },
+    onReconnecting(handler) {
+      reconnecting.push(handler);
+    },
+    onReconnected(handler) {
+      reconnected.push(handler);
+    },
+    close() {
+      if (closing) {
+        return;
+      }
+      closing = true;
+      if (ws) {
+        // Its close event ends the connection
+        ws.close(1000);
+      } else {
+        end(1000);
+      }
+    },
+  };
+
+  return {
+    async start() {
+      ws = await open(events);
+      return conn;
+    },
+  };
 }
 
 // The menu's Discord toolkit as one game page sees it. The toolkit outlives this frame, so a listener left
@@ -232,6 +332,26 @@ function onlineHub(host, login) {
     }
   }
   const expiredFetch = (resp) => resp.status === 401 && resp.headers.get("X-ActivityHub") === "session-expired";
+  // A live connection, logging in again once if the hub has forgotten the login
+  async function openLive(events) {
+    const used = host.login.session;
+    try {
+      return await openLink(root, used, events);
+    } catch (e) {
+      if (e.status !== CLOSE_SESSION) {
+        throw e;
+      }
+    }
+    const session = await freshSession(used);
+    try {
+      return await openLink(root, session, events);
+    } catch (e) {
+      if (e.status === CLOSE_SESSION) {
+        host.sessionExpired();
+      }
+      throw e;
+    }
+  }
   return {
     player: login.player,
     discord: frameDiscord(host.sdk),
@@ -277,24 +397,8 @@ function onlineHub(host, login) {
       }
       return retried;
     },
-    async socket() {
-      const used = host.login.session;
-      try {
-        return await openSocket(root, used);
-      } catch (e) {
-        if (e.status !== CLOSE_SESSION) {
-          throw e;
-        }
-      }
-      const session = await freshSession(used);
-      try {
-        return await openSocket(root, session);
-      } catch (e) {
-        if (e.status === CLOSE_SESSION) {
-          host.sessionExpired();
-        }
-        throw e;
-      }
+    socket() {
+      return liveConnection(openLive).start();
     },
     backToMenu,
   };

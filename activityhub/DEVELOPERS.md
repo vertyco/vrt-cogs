@@ -23,7 +23,7 @@ There is a full [glossary](#20-glossary) at the end.
 7. [Reference: handlers](#7-reference-handlers)
 8. [Reference: the page side](#8-reference-the-page-side)
 9. [What to trust, and paying out](#9-what-to-trust-and-paying-out)
-10. [Multiplayer with live connections](#10-multiplayer-with-live-connections)
+10. [Multiplayer with live connections](#10-multiplayer-with-live-connections), and [speed and fast-paced games](#speed-and-fast-paced-games)
 11. [Uploads and other raw requests](#11-uploads-and-other-raw-requests)
 12. [Extra Discord permissions](#12-extra-discord-permissions)
 13. [Opening your game from a command or button](#13-opening-your-game-from-a-command-or-button)
@@ -441,6 +441,7 @@ Rules the hub enforces for you:
 - **Raw routes also run without a login.** `ctx` is then `None`.
 - **Errors stay private.** If a handler raises, or an action returns something that isn't a dict (or can't be turned into JSON), the hub logs it in the bot's log and the page gets "Something went wrong.". Your error text never reaches players. Only `{"error": "..."}` text does. When you test as the bot owner, the page also shows you the reason (see [Testing](#15-testing-and-debugging)).
 - **Size limit.** Actions refuse bodies of 1 MB or more (the page sees "Request failed (413)"), and a live message of 1 MB or more closes the connection with `1009`. In raw routes, the limit applies only to `request.read()`, `.json()`, `.text()` and `.post()`. `request.content` and `request.multipart()` aren't limited: check `ctx` first, count bytes as you read, and stop at your own limit, like the [streaming example](#11-uploads-and-other-raw-requests). That is also how to accept uploads bigger than 1 MB.
+- **What turns into JSON.** Replies and live messages are turned into JSON with orjson, a fast JSON library that comes with Red. Besides dicts, lists, text, numbers, booleans and `None`, it takes dataclasses, datetimes (as ISO 8601 text, like `"2026-01-02T00:00:00+00:00"`), UUIDs and enums. Dict keys that are numbers become text, like `{"1": ...}`. NaN, Infinity and whole numbers bigger than 64 bits are refused.
 
 **How your handlers run:**
 
@@ -454,10 +455,10 @@ Rules the hub enforces for you:
 
 | Member | Type | What it does |
 |---|---|---|
-| **`await`** `conn.send(data)` | `data`: any JSON value | Sends a message to this player. Does nothing once the connection has closed, and never fails because a player dropped. A player who can't receive for 10 seconds is disconnected (`1001`). Raises `ValueError` for NaN, Infinity or an `activityhub` field (see [multiplayer](#10-multiplayer-with-live-connections)). |
-| **`await`** `conn.broadcast(data, include_self=False)` | `data`: any JSON value | Sends to everyone connected to your game with the same `instance_id`. Pass `include_self=True` to send to this player too. Refuses the same values as `send`, even when no one else is connected. |
+| **`await`** `conn.send(data)` | `data`: any JSON value | Queues a message to this player and returns right away, so a player with a bad network never holds up your code. One player's messages arrive in the order you sent them. Does nothing once the connection has closed, and never fails because a player dropped. A player who can't take a message for 10 seconds, or falls 4 million characters behind, is disconnected (`1001`). Raises `ValueError` for NaN, Infinity or an `activityhub` field (see [multiplayer](#10-multiplayer-with-live-connections)). |
+| **`await`** `conn.broadcast(data, include_self=False)` | `data`: any JSON value | Queues a message to everyone connected to your game with the same `instance_id`, and returns right away, like `send`. Pass `include_self=True` to send to this player too. Refuses the same values as `send`, even when no one else is connected. |
 | `conn.peers()` | `list` of connections | The other connections to your game with the same `instance_id`. |
-| **`await`** `conn.close(code=1000)` | `code`: `int` | Closes the connection. Use `1000`, or your own codes from `4100` to `4999`. Codes `4000` to `4099` are ActivityHub's, and `close` refuses them with a `ValueError`. |
+| **`await`** `conn.close(code=1000)` | `code`: `int` | Closes the connection once the messages you queued before it have gone out. Use `1000`, or your own codes from `4100` to `4999`. Codes `4000` to `4099` are ActivityHub's, and `close` refuses them with a `ValueError`. |
 | `conn.ctx` | `ctx` | The same `ctx` the handlers get. |
 
 **Type hints.** Don't import from `activityhub` in your cog. Red loads cogs by folder name, so the import fails whenever your cog loads before ActivityHub, and `isinstance` checks go stale after ActivityHub reloads. For your editor, copy these descriptions of `ctx` and `conn` instead, and write `async def click(self, ctx: HubContext, data: dict) -> dict:`.
@@ -524,7 +525,7 @@ A red "400 (Bad Request)" line in the browser console is normal for `{"error"}` 
 | `hub.player` | object or `null` | `{ id, username, displayName, avatar, guildId, guildName, guildIcon }`, all strings. `displayName` is the name Discord shows for the player in that server; `username` is their account handle. The `guild` ones are `null` outside a server, and `guildIcon` is `null` for a server without an icon. `null` when offline. It's for showing, not for trusting. |
 | `hub.api(name, data)` | `Promise<object>` | Calls your action `name` with `data` (an object, default `{}`). Resolves with what the action returned. If the player's login expired (a bot restart, an ActivityHub reload), it logs in again and retries once by itself. |
 | `hub.fetch(path, options)` | `Promise<Response>` | Calls a raw route, like the browser's own `fetch`, with the player's login attached. `path` is the route path, for example `"avatar"` or `"item?id=7"`. When the hub says the login expired, it logs in again and sends the request once more (a streamed body can't be sent twice, so that one gets the 401). Works offline too, without a login. |
-| `hub.socket()` | `Promise<conn>` | Opens your game's live connection. Resolves once the hub has checked the login. If the login expired, it logs in again and retries once by itself. |
+| `hub.socket()` | `Promise<conn>` | Opens your game's live connection. Resolves once the hub has checked the login. If the login expired, it logs in again and retries once by itself. Once open, it reconnects by itself after a drop (see `conn.onReconnecting`). |
 | `hub.discord` | Discord toolkit or `null` | The menu's Discord Embedded App SDK object (the toolkit Discord gives Activity pages), for calls like `hub.discord.commands.openExternalLink(...)`. Listeners you add with `hub.discord.subscribe()` are removed for you when your game closes. Its participant list is everyone in the Activity, not your players: see [multiplayer](#10-multiplayer-with-live-connections). `null` outside Discord. |
 | `hub.backToMenu()` | function | Same as the `backToMenu` export. |
 
@@ -543,9 +544,11 @@ try {
 
 | Member | What it does |
 |---|---|
-| `conn.send(data)` | Sends any JSON value to your `message` handler. Throws a `TypeError` for something JSON can't hold, like `undefined` or a function. |
+| `conn.send(data)` | Sends any JSON value to your `message` handler, and returns `true`. Returns `false` without sending while the helper reconnects or after the connection closed, since an old input would be stale by the time it arrived. Throws a `TypeError` for something JSON can't hold, like `undefined` or a function. |
 | `conn.on(handler)` | Calls `handler(data)` for every message from your Python code. Messages that arrived before you called `on` are handed to the first handler, so none are lost. |
-| `conn.onClose(handler)` | Calls `handler(code)` when the connection closes. The [close codes](#10-multiplayer-with-live-connections) say why. |
+| `conn.onClose(handler)` | Calls `handler(code)` when the connection has closed for good: on purpose, for a reason reconnecting can't fix, or after a minute of failed tries to reconnect. The [close codes](#10-multiplayer-with-live-connections) say why. |
+| `conn.onReconnecting(handler)` | Calls `handler(code)` when the connection dropped and the helper starts reconnecting by itself: after `1001` (a restart, or a player who fell behind), `1006` (a dropped network), or `1012` to `1014` (a proxy restarting). It waits longer after each failed try, up to 15 seconds, with a random part so a whole window doesn't reconnect at the same instant, and gives up after a minute. |
+| `conn.onReconnected(handler)` | Calls `handler()` once the helper has reconnected. Your `join` ran again for the new connection, so it can send the full state. The same `conn` keeps working, with the same handlers. |
 | `conn.close()` | Closes it, with code `1000`. |
 
 ## 9. What to trust, and paying out
@@ -662,7 +665,6 @@ In the page, add `<p id="together"></p><button id="bump" type="button">Bump the 
 const together = document.getElementById("together");
 const bump = document.getElementById("bump");
 let shared = { total: 0, players: 1 };
-let drops = 0;
 
 function showShared() {
   together.textContent = `Together: ${shared.total} (${shared.players} playing)`;
@@ -676,28 +678,25 @@ const CLOSED_BECAUSE = {
   4004: "This game has no shared mode.",
 };
 
-function retry(code) {
-  // 1001: the bot or the game restarted. 1006: the network dropped, which is worth a few more tries
-  if (code === 1001 || (code === 1006 && ++drops <= 3)) {
-    together.textContent = "Reconnecting...";
-    setTimeout(goLive, 5000);
-    return;
-  }
+function closed(code) {
   together.textContent = CLOSED_BECAUSE[code] || "The shared game ended.";
 }
 
 async function goLive() {
   try {
     const conn = await hub.socket();
-    drops = 0;
     conn.on((data) => {
       shared = { ...shared, ...data };
       showShared();
     });
-    conn.onClose(retry);
+    // After a restart or a dropped network the helper reconnects by itself, and join sends the total again
+    conn.onReconnecting(() => {
+      together.textContent = "Reconnecting...";
+    });
+    conn.onClose(closed);
     bump.onclick = () => conn.send({ bump: true });
   } catch (e) {
-    retry(e.status);
+    closed(e.status);
   }
 }
 
@@ -717,8 +716,8 @@ Things to know:
   | Code | Why | Reconnect? |
   |---|---|---|
   | `1000` | Closed on purpose: your Python's `conn.close()` or the page's `conn.close()`. | No. |
-  | `1001` | Your cog or ActivityHub was unloaded or reloaded, the bot is stopping, or the player stopped answering or fell behind (see below). | Yes, after a few seconds. |
-  | `1006` | The connection dropped without a goodbye: the network, a proxy that blocks WebSockets, or your game isn't loaded. | Yes, but give up after a few in a row. |
+  | `1001` | Your cog or ActivityHub was unloaded or reloaded, the bot is stopping, or the player stopped answering or fell behind (see below). | The helper does it by itself. |
+  | `1006` | The connection dropped without a goodbye: the network, a proxy that blocks WebSockets, or your game isn't loaded. | The helper does it by itself, for up to a minute. |
   | `1009` | A message of 1 MB or more. The hub closes the whole connection, and `leave` still runs. | Not until you send less. |
   | `1011` | Your `join` handler raised. | No. |
   | `4001` | The login expired while connecting, and logging in again failed. The hub takes the player back to the menu by itself. | No. |
@@ -727,9 +726,9 @@ Things to know:
   | `4100`-`4999` | Your own codes, from `conn.close(code)` in your Python. | Your call. |
 
   Codes `4000` to `4099` are ActivityHub's, and `conn.close()` refuses them. Send a message saying why before you close, because the close code is all the page gets.
-- **Drops happen**: a proxy restart, a phone going to sleep. Reconnect from `conn.onClose`, like the example does, and give up after a few drops in a row.
+- **Drops happen**: a proxy restart, a phone going to sleep, a reload of your cog. The helper reconnects by itself, and your `join` runs again for the new connection. Show that it's reconnecting from `conn.onReconnecting`, like the example does. `conn.onClose` only runs once the connection is gone for good.
 - **Heartbeat:** when a connection has been quiet for 30 seconds, the hub pings it and sends a small message, which also stops proxies closing the quiet connection. The helper script answers that message by itself and never passes it to your code, and the hub never passes the answer to your `message` handler. A player whose page doesn't answer within another 30 seconds is disconnected, and your `leave` runs. Until then, `peers()` can still include a player whose network vanished.
-- **Slow players:** a player who can't take a message for 10 seconds is disconnected with `1001`, so one stalled phone never holds up everyone's broadcasts.
+- **Slow players:** each player's messages wait in their own queue, so one stalled phone never holds up your code or the other players. A player who can't take a message for 10 seconds, or falls 4 million characters behind, is disconnected with `1001`.
 - **Reserved field:** don't send objects with an `activityhub` field from Python. The hub uses that field for its own messages, and `conn.send()` and `conn.broadcast()` refuse it with a `ValueError`.
 - **Your game needs `"socket"` in its description,** or `hub.socket()` fails with `4004`.
 - **Who is in your game:** use `conn.peers()` in Python. Discord's own participant list (`hub.discord.commands.getInstanceConnectedParticipants()`, the `ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE` event) lists everyone in the Activity, including players in the menu or in other games.
@@ -756,6 +755,89 @@ Things to know:
               await conn.send({"poked_by": ctx.author.display_name})
       return {}
   ```
+
+### Speed and fast-paced games
+
+**In short:** a game in the hub is as quick as the same game on its own server. The page's live connection goes straight to the bot through Discord's proxy, like every Activity's does, and the hub's own work on a message takes microseconds. What sets the limit is that your Python runs inside the bot, on one worker shared with everything else, and that messages are JSON. Turn-based, card, party and casual real-time games never notice. A fast action game should be built with the tips below.
+
+**Keep the bot's worker free.** Your handlers, every other cog and the bot's Discord connection share one worker, the asyncio event loop. While any code runs without reaching an `await`, every game on the bot waits.
+
+- Slow calls that wait on something (the `requests` library, `time.sleep`, big file reads, `sqlite3`) block it. Use the async version, or `await asyncio.to_thread(function, ...)`.
+- Heavy number crunching (pathfinding on a big map, an AI search) blocks it too, and `to_thread` doesn't help, because Python runs one thread at a time. Use a process pool: `await asyncio.get_running_loop().run_in_executor(self.pool, function, ...)`, with `self.pool = concurrent.futures.ProcessPoolExecutor()` made in `__init__` and shut down in `cog_unload`.
+- The hub writes a warning in the bot's log when the bot froze for a quarter of a second or more while players were in live games: "The bot froze for ... ms while players were in live games". discord.py's "heartbeat blocked" warning means the same thing, for longer freezes.
+- To find which code froze it, the bot owner can start the bot with `--dev` and run `[p]eval bot.loop.set_debug(True); bot.loop.slow_callback_duration = 0.05`. The log then names anything that ran for more than 50 milliseconds, in a line like `Executing <Task ... coro=<MyCog.message()>> took 0.300 seconds`. Turn it off afterwards with `[p]eval bot.loop.set_debug(False)`, since debug mode slows everything down a little.
+
+**Run the game at a steady pace, and let the page smooth it.** Don't move things in Python 60 times a second. Update the game 10 to 30 times a second in Python, and let the page draw at full speed, sliding each thing smoothly from its last position to its newest one (this is called interpolation). Time each update from a fixed start, so small delays don't add up:
+
+```python
+import asyncio
+
+TICK = 1 / 20  # 20 updates a second
+
+
+async def run_room(self, instance_id):
+    loop = asyncio.get_running_loop()
+    next_tick = loop.time()
+    while self.rooms.get(instance_id):
+        self.step(instance_id)  # move everything one update forward, using the inputs players sent
+        anyone = next(iter(self.rooms[instance_id]))
+        # One broadcast reaches the whole window, and turns the state into JSON once
+        await anyone.broadcast(self.snapshot(instance_id), include_self=True)
+        next_tick += TICK
+        await asyncio.sleep(max(0.0, next_tick - loop.time()))
+```
+
+Start it with `asyncio.create_task()` when the first player joins a window, keep the task in a dict, and cancel it in `cog_unload`. It ends by itself once `leave` has emptied the window's set.
+
+**Send what the player pressed, not where they are.** The page sends inputs (`{"move": "left"}`) and moves the player's own character right away, without waiting for the bot. Python is the judge: it applies the inputs in its next update, and the page corrects itself from the snapshot if the two disagree. That is how the player's own movement feels instant on a slow connection (this is called client-side prediction).
+
+**Keep messages small.** Compression is already on. On top of that:
+
+- Send one message per window per update, not one per change.
+- Use arrays instead of named fields, and whole numbers instead of decimals: `{"p": [[12, 340, 220], [7, 90, 410]]}` (id, x, y) rather than a list of `{"id": 12, "x": 340.25, "y": 220.5}`.
+- Send only what changed since the last update, plus a full snapshot when a player joins.
+- Load big things (levels, images, sounds) as files from `web_dir`, not over the live connection, which refuses messages of 1 MB or more.
+
+**Keep `message` quick.** One player's messages reach `message` one at a time, so a slow handler holds up that player's next inputs. Store the input and return, and let the update loop use it:
+
+```python
+async def message(self, ctx, conn, data):
+    if isinstance(data, dict) and data.get("move") in ("left", "right", "up", "down"):
+        self.inputs[conn] = data["move"]
+```
+
+For slow side work, like saving to Config or calling Discord, start a task with `asyncio.create_task()` and keep a reference to it until it finishes, or Python can delete it halfway. Save scores when a round ends, not on every input.
+
+**Measure the delay players feel.** Browsers can't send WebSocket pings themselves, so time an ordinary message there and back. The number includes everything a player feels: the network, the proxies and a busy bot.
+
+```js
+const conn = await hub.socket();
+conn.on((data) => {
+  if (data && "pong" in data) {
+    console.log(`Round trip: ${Math.round(performance.now() - data.pong)} ms`);
+  }
+});
+setInterval(() => conn.send({ ping: performance.now() }), 2000);
+```
+
+```python
+async def message(self, ctx, conn, data):
+    if isinstance(data, dict) and "ping" in data:
+        await conn.send({"pong": data["ping"]})
+```
+
+**Survive restarts.** Reloading your cog or ActivityHub closes every live connection with `1001`. Keep the game's state in your cog, keyed by `ctx.instance_id`, never on `conn`, and send the full state in `join`. Then a page picks up where it was when the helper reconnects it, which it does by itself.
+
+**Tell your bot owner where the bot should run.** Discord's proxy runs close to each player, then carries the connection to wherever the bot is. Most of the delay is that distance, so a bot hosted near most of its players is fastest. The public address should go through one tunnel or one reverse proxy, not a chain of both: each one adds a step, and its own timer for closing quiet connections. The hub's heartbeat (every 30 seconds of silence) keeps connections open through common defaults like nginx's 60 seconds.
+
+**When the bot isn't enough.** A game that needs a dedicated server (in a faster language, or near its players) can still use the hub for its menu, login and launching, and connect to its own server for the fast part:
+
+1. The bot owner adds a URL mapping in the Developer Portal for a path like `/rt`, pointing at your game server. Discord tries mappings in order, so it goes above the hub's `/`.
+2. An action in your cog returns a ticket: the player's id, `ctx.instance_id`, an expiry about 60 seconds away and a random one-time value, signed with HMAC (a signature made with a secret only your cog and your game server know).
+3. The page opens a WebSocket to `/rt/...` and sends the ticket as its first message. Not in the address, since addresses end up in logs.
+4. Your game server checks the signature with `hmac.compare_digest`, and refuses expired or reused tickets.
+
+Your game server then does its own checks, which the hub did for you before: the hub's login and on/off switches don't reach it.
 
 ## 11. Uploads and other raw requests
 
@@ -1025,9 +1107,9 @@ The hub's own tests (`activityhub/tests/fakes.py`) use the same kind of stand-in
 **After changes:**
 
 - Web files: close your game and open it again.
-- Python: `[p]reload <yourcog>`. Players who are connected with a live connection get disconnected with code `1001` and should reconnect. Your `leave` still runs for each of them, on the old copy of your cog.
+- Python: `[p]reload <yourcog>`. Players who are connected with a live connection get disconnected with code `1001`, and the helper reconnects them by itself. Your `leave` still runs for each of them, on the old copy of your cog.
 
-**Restarts.** The hub keeps logins in memory only, so a bot restart, or a reload or update of ActivityHub, forgets them. `hub.api()`, `hub.fetch()` and `hub.socket()` then log the player in again by themselves and retry once, and the game keeps running. Live connections still close with `1001` and should reconnect. If Discord refuses the new login, the player is taken back to the menu, and if the menu can't log in either, it shows "Your session expired. Close this activity and open it again."
+**Restarts.** The hub keeps logins in memory only, so a bot restart, or a reload or update of ActivityHub, forgets them. `hub.api()`, `hub.fetch()` and `hub.socket()` then log the player in again by themselves and retry once, and the game keeps running. Live connections still close with `1001`, and the helper reconnects them by itself. If Discord refuses the new login, the player is taken back to the menu, and if the menu can't log in either, it shows "Your session expired. Close this activity and open it again."
 
 ## 16. Common problems
 
@@ -1149,7 +1231,7 @@ Discord runs Activities with some rules of its own. ActivityHub can't change the
 - [ ] Nothing secret is in `web_dir`.
 - [ ] `web_dir` holds only page files: not your cog's `.py` files, `.env` or `node_modules`.
 - [ ] Your page works on a phone-sized screen and with touch, since Activities run on Discord's phone apps too, and nothing you tap sits under Discord's buttons at the top ([safe areas](#17-discords-limits)).
-- [ ] If you use a live connection: the page reconnects after a drop, and gives up after a few in a row.
+- [ ] If you use a live connection: the page shows when it's reconnecting (`conn.onReconnecting`), `join` sends the full state, and the page says something useful in `conn.onClose`.
 - [ ] `info.json` has an `end_user_data_statement`, and your cog deletes a player's data when Red asks it to (`red_delete_data_for_user`).
 - [ ] `info.json`'s `install_msg` (or your README) says how to get ActivityHub.
 

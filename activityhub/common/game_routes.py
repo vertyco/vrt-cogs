@@ -8,6 +8,8 @@ from aiohttp import WSMsgType, web
 from .files import build_id, file_response, inject_head, resolve_inside
 from .games import Game
 from .replies import (
+    dumps,
+    loads,
     BAD_REQUEST,
     MAX_BODY,
     NO_CACHE,
@@ -16,7 +18,6 @@ from .replies import (
     PAGE_MISSING,
     SESSION_EXPIRED,
     SOMETHING_WRONG,
-    STRICT_DUMPS,
     TURNED_OFF,
     error,
     notice_page,
@@ -195,7 +196,7 @@ class GameRoutes:
             log.error("Action %s.%s returned %s: %r", game.key, name, problem, message)
             return await self.something_wrong(ctx, f"returned {problem}: {message!r}")
         try:
-            return web.json_response(result, dumps=STRICT_DUMPS)
+            return web.json_response(result, dumps=dumps)
         except (TypeError, ValueError) as e:
             log.error("Action %s.%s returned something that isn't JSON", game.key, name, exc_info=e)
             return await self.something_wrong(ctx, f"returned something that isn't JSON: {e}")
@@ -245,7 +246,7 @@ class GameRoutes:
         try:
             late_code = await self.late_close_code(conn)
             if late_code is not None:
-                await conn.end(late_code)
+                await conn.close_after_sends(late_code)
             elif await self.run_handler(conn, "join"):
                 await self.pump(conn)
                 # Out of the room before leave runs, so a leave that finds no peers knows it was the last one
@@ -290,7 +291,7 @@ class GameRoutes:
         if msg.type != WSMsgType.TEXT:
             return None
         try:
-            data = json.loads(msg.data)
+            data = loads(msg.data)
         except ValueError as e:
             log.debug("A live connection's first message isn't JSON: %s", e)
             return None
@@ -307,7 +308,8 @@ class GameRoutes:
         except Exception as e:
             log.error("Live connection %s handler of %s failed", event, conn.game.key, exc_info=e)
             if event == "join":
-                await conn.end(CLOSE_HANDLER_FAILED)
+                # After what join sent before it raised, like the reason it refused the player
+                await conn.close_after_sends(CLOSE_HANDLER_FAILED)
             return False
         return True
 
@@ -347,7 +349,7 @@ class GameRoutes:
         if handler is None:
             return
         try:
-            data = json.loads(text)
+            data = loads(text)
         except ValueError as e:
             log.debug("Ignored a message that isn't JSON on %s: %s", conn.game.key, e)
             return

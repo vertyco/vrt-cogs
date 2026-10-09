@@ -53,6 +53,13 @@ def make_game(key="demo"):
     return Game(key=key, name=key.title(), web_dir=Path("."), cog=None)
 
 
+async def delivered(*conns):
+    """Wait for the messages queued to these connections to go out, since sending only queues them"""
+    writers = [conn.writer for conn in conns if conn.writer is not None]
+    if writers:
+        await asyncio.wait(writers)
+
+
 def connect(rooms, game, user_id, instance="i-1", guild_id=9, ws=None):
     guild = SimpleNamespace(id=guild_id) if guild_id else None
     ctx = ActivityContext(author=SimpleNamespace(id=user_id), guild=guild, instance_id=instance)
@@ -78,9 +85,25 @@ async def test_broadcast_reaches_peers_and_optionally_self():
     rooms, demo = Rooms(), make_game()
     a, b, c = connect(rooms, demo, 1), connect(rooms, demo, 2), connect(rooms, demo, 3, instance="i-2")
     await a.broadcast({"hi": 1})
+    await delivered(a, b, c)
     assert b.ws.sent == [{"hi": 1}] and a.ws.sent == [] and c.ws.sent == []
     await a.broadcast({"hi": 2}, include_self=True)
+    await delivered(a, b)
     assert a.ws.sent == [{"hi": 2}]
+
+
+@pytest.mark.asyncio
+async def test_messages_to_one_player_arrive_in_the_order_they_were_sent():
+    rooms, demo = Rooms(), make_game()
+    a, b = connect(rooms, demo, 1), connect(rooms, demo, 2)
+    await a.broadcast({"n": 1}, include_self=True)
+    await a.send({"n": 2})
+    await b.broadcast({"n": 3})
+    await a.close(4100)
+    await a.send({"n": 4})
+    await delivered(a)
+    # The close waited for what was queued before it, and nothing after it went out
+    assert a.ws.sent == [{"n": 1}, {"n": 2}, {"n": 3}] and a.ws.close_code == 4100
 
 
 @pytest.mark.asyncio
@@ -89,6 +112,7 @@ async def test_sending_to_a_closed_connection_does_nothing():
     conn = connect(rooms, make_game(), 1)
     await conn.close(1000)
     await conn.send({"late": True})
+    await delivered(conn)
     assert conn.ws.sent == []
 
 
@@ -147,6 +171,7 @@ async def test_the_activityhub_field_is_the_hubs_own():
     await conn.send(READY)
     await conn.send(PING)
     await conn.send({"hub": 1})
+    await delivered(conn, peer)
     assert conn.ws.sent == [READY, PING, {"hub": 1}] and peer.ws.sent == []
 
 
@@ -169,9 +194,46 @@ async def test_a_player_who_dropped_never_breaks_the_sender():
     other = connect(rooms, demo, 3)
     await sender.broadcast({"hi": 1})
     await dropped.send({"hi": 2})
+    await delivered(dropped, other)
     assert other.ws.sent == [{"hi": 1}]
     # Their own pump sees the dropped connection and runs leave, so nothing is closed from here
     assert dropped.closer is None and not dropped.ws.closed
+
+
+@pytest.mark.asyncio
+async def test_a_stalled_player_never_holds_up_the_sender(monkeypatch):
+    monkeypatch.setattr(sockets, "SEND_SECONDS", 60)
+    rooms, demo = Rooms(), make_game()
+    sender, stalled = connect(rooms, demo, 1), connect(rooms, demo, 2, ws=StalledWebSocket())
+    other = connect(rooms, demo, 3)
+    for n in range(3):
+        await asyncio.wait_for(sender.broadcast({"n": n}), 0.5)
+        await asyncio.wait_for(stalled.send({"direct": n}), 0.5)
+    await asyncio.wait_for(delivered(other), 0.5)
+    assert other.ws.sent == [{"n": 0}, {"n": 1}, {"n": 2}]
+    assert not stalled.writer.done() and len(stalled.outbox) == 5
+    stalled.ws.network.set_result(None)
+    await asyncio.wait_for(delivered(stalled), 1)
+
+
+@pytest.mark.asyncio
+async def test_a_player_too_far_behind_is_let_go_and_their_messages_dropped(monkeypatch):
+    monkeypatch.setattr(sockets, "SEND_SECONDS", 60)
+    monkeypatch.setattr(sockets, "OUTBOX_SIZE", 100)
+    rooms, demo = Rooms(), make_game()
+    sender, stalled = connect(rooms, demo, 1), connect(rooms, demo, 2, ws=StalledWebSocket())
+    other = connect(rooms, demo, 3)
+    for n in range(10):
+        await sender.broadcast({"n": n, "pad": "x" * 20})
+        # The other player keeps up, so only the stalled player's messages pile up
+        await delivered(other)
+    await asyncio.wait_for(stalled.closer, 1)
+    assert stalled.closing == 1001 and stalled.ws.close_code == 1001
+    assert not stalled.outbox and stalled.outbox_size == 0
+    await delivered(other)
+    assert [message["n"] for message in other.ws.sent] == list(range(10))
+    stalled.ws.network.set_result(None)
+    await asyncio.wait_for(delivered(stalled), 1)
 
 
 @pytest.mark.asyncio
@@ -181,12 +243,15 @@ async def test_a_stalled_player_is_closed_without_holding_up_the_rest(monkeypatc
     sender, stalled = connect(rooms, demo, 1), connect(rooms, demo, 2, ws=StalledWebSocket())
     other = connect(rooms, demo, 3)
     await asyncio.wait_for(sender.broadcast({"hi": 1}), 1)
+    await delivered(other)
     assert other.ws.sent == [{"hi": 1}]
+    await asyncio.wait_for(delivered(stalled), 1)
     await asyncio.wait_for(stalled.closer, 1)
     assert stalled.closing == 1001 and stalled.ws.close_code == 1001
     # Closed now, so the next message to them returns at once instead of waiting out SEND_SECONDS again
     monkeypatch.setattr(sockets, "SEND_SECONDS", 60)
     await asyncio.wait_for(sender.broadcast({"hi": 2}), 1)
+    await asyncio.wait_for(delivered(stalled, other), 1)
     assert other.ws.sent == [{"hi": 1}, {"hi": 2}]
 
 
@@ -200,6 +265,7 @@ async def test_a_stalled_player_dropping_later_logs_nothing(monkeypatch):
     rooms = Rooms()
     sender, stalled = connect(rooms, make_game(), 1), connect(rooms, make_game(), 2, ws=StalledWebSocket())
     await sender.broadcast({"hi": 1})
+    await asyncio.wait_for(delivered(stalled), 1)
     await asyncio.wait_for(stalled.closer, 1)
     # Minutes later the phone's connection finally times out, and aiohttp lets go of its wait
     stalled.ws.network.set_exception(ConnectionError("Connection lost"))
