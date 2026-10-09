@@ -417,6 +417,23 @@ def test_orb_wheel_and_arrows_scroll_a_long_list(driver, live, tmp_path):
     assert driver.execute_script(f"return {SELECTED}") == "extra6"
 
 
+def test_frame_rate_counter_shows_by_default_and_each_player_can_hide_it(driver, live):
+    open_menu(driver, live, DISCORD_QUERY)
+    assert wait_for(driver, "/^\d+ FPS$/.test(document.querySelector('.fps').textContent)")
+    counter = driver.find_element(By.CSS_SELECTOR, ".fps")
+    # It stays in the corner while a game is open
+    driver.find_element(By.CSS_SELECTOR, '#games .card[data-key="demo"]').click()
+    wait_for(driver, "document.body.classList.contains('playing')")
+    assert counter.is_displayed()
+    driver.execute_script("window.activityhubHost.closeGame()")
+    open_settings(driver)
+    pick_tab(driver, "look")
+    Select(driver.find_element(By.ID, "field-fps")).select_by_value("false")
+    assert not counter.is_displayed()
+    save(driver)
+    assert live.hub.config.users[MEMBER_ID]["look"] == {"fps": False}
+
+
 @pytest.mark.parametrize("look", [{}, {"theme": "orb"}], ids=["standard", "orb"])
 def test_the_header_sits_below_discords_buttons_on_a_phone(driver, live, look):
     live.hub.config.globals["look"] = look
@@ -478,7 +495,7 @@ def test_orb_settings_pill_and_theme_fields(driver, live):
     wait_for(driver, "getComputedStyle(document.getElementById('panel')).transform === 'none'")
     assert driver.find_element(By.CSS_SELECTOR, "#orb-screen .screen-name").text.lower() == "settings"
     fields = "[...document.querySelectorAll('#tab-body [id^=field-]')].map((field) => field.id)"
-    assert driver.execute_script(f"return {fields}") == ["field-theme", "field-details", "field-sounds"]
+    assert driver.execute_script(f"return {fields}") == ["field-theme", "field-details", "field-sounds", "field-fps"]
     Select(driver.find_element(By.ID, "field-theme")).select_by_value("standard")
     assert driver.execute_script("return document.body.dataset.theme") == "standard"
 
@@ -488,6 +505,7 @@ def test_orb_settings_pill_and_theme_fields(driver, live):
         "field-accent",
         "field-background",
         "field-details",
+        "field-fps",
     ]
     save(driver)
     assert live.hub.config.users[MEMBER_ID]["look"] == {"theme": "standard"}

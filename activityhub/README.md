@@ -24,7 +24,7 @@ Server admins and the bot owner can turn these games off like any other game.
 
 - `/activities` opens the menu. `[p]activities` posts an **Open Activities** button that does the same thing, and works even if slash commands aren't synced.
 - Pick a game to play it. The game opens inside the menu, and its menu button brings you back.
-- The gear button opens settings. **My look** picks the theme and whether descriptions show. **My order** sets the order of the games. Both follow you to every server.
+- The gear button opens settings. **My look** picks the theme, whether descriptions show, and whether the frame rate counter shows in the corner (on by default). **My order** sets the order of the games. Both follow you to every server.
 - There are two themes. **Standard** looks like Discord, and you pick its layout, color and background. **Orb** is a green glowing console-style menu: the games sit on glowing pods along a ring around a big orb, with a preview of the selected game beside them and menu sounds (on by default, with a switch to turn them off). In the Orb theme the arrow keys or the mouse wheel move between games, a long list scrolls along the ring, and Settings is the last item instead of the gear button.
 
 ## For server admins

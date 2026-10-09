@@ -528,6 +528,28 @@ input[type="color"]::-webkit-color-swatch {
   background: rgba(255, 255, 255, 0.08);
 }
 
+/* The frame rate counter (fps.js): over the menu and over a game, which is why it needs a z-index */
+.fps {
+  position: fixed;
+  left: calc(8px + var(--safe-left));
+  bottom: calc(8px + var(--safe-bottom));
+  z-index: 1;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #ffffff;
+  font: 600 0.7rem/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+/* The settings panel takes the whole width of a phone, and the counter would sit on its buttons */
+@media (max-width: 420px) {
+  body.panel-open .fps {
+    display: none;
+  }
+}
+
 .game-frame {
   position: fixed;
   inset: 0;

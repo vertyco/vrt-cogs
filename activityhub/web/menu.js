@@ -1,5 +1,6 @@
 import { mark, startHost } from "./host.js";
 import { request } from "./sdk.js";
+import { FrameRate } from "./fps.js";
 import { MenuSounds } from "./sounds.js";
 
 const TAB_NAMES = { look: "My look", order: "My order", server: "This server", defaults: "Defaults" };
@@ -11,7 +12,7 @@ const SWITCHES = {
   server: { list: "switches", legend: "Activities in this server" },
   defaults: { list: "globalSwitches", legend: "Activities in every server" },
 };
-const FIELDS = ["theme", "layout", "accent", "background", "details", "sounds"];
+const FIELDS = ["theme", "layout", "accent", "background", "details", "sounds", "fps"];
 const FIELD_NAMES = {
   theme: "Theme",
   layout: "Layout",
@@ -19,6 +20,7 @@ const FIELD_NAMES = {
   background: "Background",
   details: "Descriptions",
   sounds: "Menu sounds",
+  fps: "Frame rate",
 };
 const CHOICES = {
   theme: [["standard", "Standard"], ["orb", "Orb"]],
@@ -26,8 +28,9 @@ const CHOICES = {
   background: [["dark", "Dark"], ["darker", "Darker"], ["gradient", "Gradient"]],
   details: [[true, "Show"], [false, "Hide"]],
   sounds: [[true, "On"], [false, "Off"]],
+  fps: [[true, "Show"], [false, "Hide"]],
 };
-const TRUE_FALSE = new Set(["details", "sounds"]);
+const TRUE_FALSE = new Set(["details", "sounds", "fps"]);
 // Settings is the orb theme's last pill, with an empty key, in place of the gear button
 const SETTINGS_ITEM = { key: "", name: "Settings", description: "Change how this menu looks and the order of your games." };
 const ACCENTS = ["#5865F2", "#57F287", "#FEE75C", "#EB459E", "#ED4245", "#00A8FC", "#F0B232", "#99AAB5"];
@@ -46,6 +49,7 @@ const page = {
   dragging: null,
 };
 const sounds = new MenuSounds();
+const frameRate = new FrameRate();
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -192,6 +196,7 @@ function applyLook(look) {
   document.body.dataset.background = look.background;
   document.body.dataset.theme = look.theme;
   sounds.setEnabled(look.theme === "orb" && look.sounds);
+  frameRate.setEnabled(look.fps);
   const games = $("games");
   games.className = `games ${look.theme === "orb" ? "orb-menu" : look.layout}`;
   games.classList.toggle("no-details", !look.details);
@@ -655,7 +660,12 @@ function status(text) {
 function lookEditor() {
   const base = inherited(page.tab);
   if (previewLook().theme === "orb") {
-    return [choiceField("theme", base), choiceField("details", base), choiceField("sounds", base)];
+    return [
+      choiceField("theme", base),
+      choiceField("details", base),
+      choiceField("sounds", base),
+      choiceField("fps", base),
+    ];
   }
   return [
     choiceField("theme", base),
@@ -663,6 +673,7 @@ function lookEditor() {
     accentField(base),
     choiceField("background", base),
     choiceField("details", base),
+    choiceField("fps", base),
   ];
 }
 

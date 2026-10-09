@@ -14,7 +14,7 @@ There is a full [glossary](#20-glossary) at the end.
 
 **Contents**
 
-1. [What you are building](#1-what-you-are-building)
+1. [What you are building](#1-what-you-are-building), and [how it compares with making your own Activity](#compared-with-making-your-own-activity)
 2. [Before you start](#2-before-you-start)
 3. [Quick start: Click Counter](#3-quick-start-click-counter)
 4. [How one click travels](#4-how-one-click-travels)
@@ -76,6 +76,37 @@ What your cog does **not** do:
 - It never touches the Discord login.
 
 The hub finds your game when your cog loads, and drops it when your cog unloads.
+
+### Compared with making your own Activity
+
+**In short:** a game cog is a web page plus a few Python methods. Everything that makes it an Activity (the Discord setup, the web server, the login, launching) is the hub's job, and it is done once for every game on the bot.
+
+If you have read Discord's own Activity guides, most of their steps don't apply here. This table shows who does each job:
+
+| Job | Your own Activity | A game cog in ActivityHub |
+| --- | --- | --- |
+| Discord setup | You create an application in the Developer Portal (Discord's site for bot settings), turn on Activities, and set its URL mapping and client secret. | The bot owner does this once for the hub (see [README.md](README.md)). Your cog needs no setup. |
+| How many games | One per application. A second game needs a second bot, or a menu you build yourself. | As many as you like, from any number of cogs. Each one is a tab in the hub's menu. |
+| Web server | You run one, reachable over HTTPS, and serve your files from it. | The hub serves your `web_dir`. You never start a server. |
+| Discord toolkit | Your page creates `DiscordSDK` and waits for `ready()`. | The menu already did. Your page calls `connect()` and uses `hub.discord`. Your own `DiscordSDK` would never finish its `ready()` inside the hub. |
+| Login | Your page asks Discord for a login code, your server trades it for an access token using the client secret, then checks which server and window the player is in. | Done before your game opens. `hub.player` says who is playing, and your Python gets a checked `ctx`. Neither side ever sees the access token. |
+| Your server's endpoints | You write each request handler, and check the login on every one. | You write `async def` methods and list them in `activityhub_game()`. The hub checks the login, and that your game is on in this server, before calling them. |
+| Multiplayer | You run your own WebSocket server and group players by window yourself. | List `socket` handlers. The hub groups connections by `ctx.instance_id` and gives you `conn.broadcast()` and `conn.peers()`. |
+| Discord permissions | You choose the scopes in your own login. | List them in `scopes`. They join the one login every game shares. |
+| Opening it | The Entry Point command (the Play button in Discord's App Launcher) or a launch reply to a command. | The Entry Point command opens the hub's menu, and players pick your game there. `hub.launch()` opens your game straight from your own button or slash command. |
+| Turning it off | Up to you. | Server admins can turn your game off in their server, and the bot owner in every server, from the menu's settings. The hub enforces it. |
+| Phone layout | Your page reads Discord's safe area sizes (the room Discord's own buttons take) from CSS. | The same, under the same names: the hub copies them into your frame. |
+
+What stays the same:
+
+- **It is still a web page in Discord's Activity window,** with the same limits: outside websites are blocked and service workers can't register. It runs on Discord's phone apps as well as desktop. See [Discord's limits](#17-discords-limits).
+- **Discord's toolkit commands still work** through `hub.discord`, like `openExternalLink` or `setActivity`.
+
+What you give up:
+
+- **Your page shares the window.** It runs in a frame inside the menu: leave with `backToMenu()`, never navigate the top page, and undo your changes to Discord when the game closes.
+- **Your game uses the bot's identity.** It shows in Discord as the bot's Activity, with the bot's name and art. URL mappings are the bot owner's to set.
+- **No direct Discord token.** If you need the player's token for your own calls to Discord's API, a game cog can't get it.
 
 ## 2. Before you start
 

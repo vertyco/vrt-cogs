@@ -1,5 +1,13 @@
 # ActivityHub Changelog
 
+## 0.1.6
+
+- A frame rate counter shows in the bottom left corner, over the menu and every game. Each player can hide it with **Frame rate** in **My look**. Server admins and the bot owner can change whether it starts on, like the other look settings. It is on by default.
+
+For game developers:
+
+- `DEVELOPERS.md` has a new part in section 1 comparing a game cog with making your own Activity: which jobs the hub does for you, what stays the same, and what you give up.
+
 ## 0.1.5
 
 - On phones, the menu's header, the settings panel and the included games' top bar now sit below Discord's own back button and **Leave** button instead of under them. The hub passes Discord's spacing on to every game: see `DEVELOPERS.md`.

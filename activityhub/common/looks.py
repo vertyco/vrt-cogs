@@ -12,6 +12,8 @@ BUILTIN_LOOK = {
     "background": "dark",
     "details": True,
     "sounds": True,
+    # The frame rate counter in the corner, over the menu and every game
+    "fps": True,
 }
 COLOR = re.compile(r"#[0-9A-Fa-f]{6}")
 
@@ -29,7 +31,7 @@ def value_ok(field: str, value: t.Any) -> bool:
         return isinstance(value, str) and value in BACKGROUNDS
     if field == "accent":
         return isinstance(value, str) and COLOR.fullmatch(value) is not None
-    if field in ("details", "sounds"):
+    if field in ("details", "sounds", "fps"):
         return isinstance(value, bool)
     return False
 

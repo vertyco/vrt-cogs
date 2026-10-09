@@ -53,6 +53,7 @@ async def test_member_state(client, hub, demo, second):
         "background": "dark",
         "details": True,
         "sounds": True,
+        "fps": True,
     }
     assert state["looks"]["guild"] == {"layout": "list"} and state["looks"]["user"] == {"layout": "compact"}
     assert state["tabs"] == ["look", "order"] and state["switches"] == []

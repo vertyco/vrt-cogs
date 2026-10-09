@@ -11,6 +11,7 @@ def test_valid_changes_are_saved():
         "background": "gradient",
         "details": False,
         "sounds": False,
+        "fps": False,
     }
     assert apply_look_change({}, change) == change
 
@@ -34,6 +35,8 @@ def test_null_clears_a_field_and_untouched_fields_stay():
         {"theme": True},
         {"sounds": "on"},
         {"sounds": 1},
+        {"fps": "show"},
+        {"fps": 0},
     ],
 )
 def test_bad_values_are_refused(change):
