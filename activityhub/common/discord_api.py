@@ -16,7 +16,8 @@ TOKEN_URL = f"{API_BASE}/oauth2/token"
 ME_URL = f"{API_BASE}/users/@me"
 # Interaction response type 12 opens the app's Activity for whoever ran the command or pressed the button
 LAUNCH_ACTIVITY = 12
-# Command type 4 is the app's Entry Point: what Discord runs when someone starts the Activity from a voice channel.
+# Command type 4 is the app's Entry Point: what Discord runs when someone starts the Activity from the app launcher,
+# in a voice channel, text channel or DM.
 # Handler 2 means Discord launches the Activity itself, without asking the bot
 ENTRY_POINT = 4
 DISCORD_LAUNCHES = 2

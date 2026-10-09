@@ -1,5 +1,11 @@
 # ActivityHub Changelog
 
+## 0.1.8
+
+For game developers:
+
+- A code comment on the launch command now says it runs from any channel the app launcher opens in (voice, text or DM), not only voice channels.
+
 ## 0.1.7
 
 - The bot's log gets a warning when the bot froze for a quarter of a second or more while players were in live games, at most once a minute. A frozen bot stalls every live game, so this points at a cog that needs fixing.
