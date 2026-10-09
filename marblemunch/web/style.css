@@ -1,0 +1,574 @@
+@font-face {
+  font-family: "Fredoka";
+  src: url("fonts/fredoka.woff2") format("woff2");
+  font-weight: 300 700;
+  font-display: swap;
+}
+
+:root {
+  --purple: #5b4bdb;
+  --purple-dot: #6a5be6;
+  --purple-deep: #3a2aa8;
+  --ink: #1f1747;
+  --ink-soft: #57527e;
+  --paper: #ffffff;
+  --paper-tint: #f3f1ff;
+  --yellow: #ffd23f;
+  --yellow-deep: #e0a800;
+  --yellow-tint: #fff4c7;
+  --seat-0: #ff8a3d;
+  --seat-1: #4c74ff;
+  --seat-2: #8fd43c;
+  --seat-3: #e04fa0;
+  --seat-0-deep: #9c3e0a;
+  --seat-1-deep: #1b3289;
+  --seat-2-deep: #3f7210;
+  --seat-3-deep: #7d1553;
+  /* Room taken by Discord's buttons and the phone's notch. The hub copies Discord's sizes into this frame */
+  --safe-top: var(--discord-safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --safe-right: var(--discord-safe-area-inset-right, env(safe-area-inset-right, 0px));
+  --safe-bottom: var(--discord-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --safe-left: var(--discord-safe-area-inset-left, env(safe-area-inset-left, 0px));
+  color-scheme: light;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: radial-gradient(var(--purple-dot) 22%, transparent 23%) 0 0 / 44px 44px, var(--purple);
+  color: var(--paper);
+  font-family: "Fredoka", "Trebuchet MS", "Segoe UI", sans-serif;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 3px solid var(--yellow);
+  outline-offset: 2px;
+}
+
+/* Wide screens: title and hint on the left, the board in the middle, scores on the right */
+.app {
+  box-sizing: border-box;
+  height: 100%;
+  padding: calc(var(--safe-top) + 12px) calc(var(--safe-right) + 12px) calc(var(--safe-bottom) + 12px)
+    calc(var(--safe-left) + 12px);
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(170px, 1fr) minmax(0, 2.6fr) minmax(210px, 1fr);
+  grid-template-areas: "intro play side";
+}
+
+.intro {
+  grid-area: intro;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 3.2rem);
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: 0 5px 0 var(--purple-deep);
+}
+
+.chip {
+  margin: 0;
+  align-self: flex-start;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.hint {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.14);
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.corner {
+  display: flex;
+  gap: 8px;
+}
+
+.icon-button {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.18);
+  color: var(--paper);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.icon-button svg {
+  width: 22px;
+  height: 22px;
+}
+
+.icon-button .off,
+.icon-button[aria-pressed="false"] .on {
+  display: none;
+}
+
+.icon-button[aria-pressed="false"] .off {
+  display: block;
+}
+
+.play {
+  grid-area: play;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.board {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+}
+
+.board canvas {
+  display: block;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 4px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.overlay .big {
+  margin: 0;
+  font-size: clamp(3rem, 10vmin, 7rem);
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: 0 6px 0 var(--purple-deep), 0 0 24px rgba(31, 23, 71, 0.4);
+}
+
+.overlay .small {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  text-shadow: 0 2px 0 var(--purple-deep);
+}
+
+.toast {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 4px 0 var(--purple-deep);
+}
+
+.side {
+  grid-area: side;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.scores {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.score {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 18px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 5px 0 var(--purple-deep);
+}
+
+.score.seat-0 {
+  --seat: var(--seat-0);
+  --seat-deep: var(--seat-0-deep);
+}
+
+.score.seat-1 {
+  --seat: var(--seat-1);
+  --seat-deep: var(--seat-1-deep);
+}
+
+.score.seat-2 {
+  --seat: var(--seat-2);
+  --seat-deep: var(--seat-2-deep);
+}
+
+.score.seat-3 {
+  --seat: var(--seat-3);
+  --seat-deep: var(--seat-3-deep);
+}
+
+.score[data-kind="empty"] {
+  opacity: 0.6;
+}
+
+.score.mine {
+  outline: 3px solid var(--yellow);
+  outline-offset: 2px;
+}
+
+.score .avatar {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--seat);
+  box-shadow: 0 0 0 3px var(--seat);
+}
+
+.score .name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.score .tag {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--paper-tint);
+  color: var(--purple-deep);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: 2px;
+}
+
+.score.leader .name::after {
+  content: "";
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  margin-left: 6px;
+  vertical-align: -3px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23F2A900' stroke-width='2.2' stroke-linejoin='round'%3E%3Cpath d='M3 18 L5 7 L10 12 L12 5 L14 12 L19 7 L21 18 Z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+.score .points {
+  display: inline-block;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--seat-deep);
+  font-variant-numeric: tabular-nums;
+}
+
+.score .points.bump {
+  animation: bump 0.3s ease-out;
+}
+
+@keyframes bump {
+  40% {
+    transform: scale(1.35);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .score .points.bump {
+    animation: none;
+  }
+}
+
+.watching {
+  margin: 0;
+  min-height: 1.2em;
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.button {
+  min-height: 44px;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  box-shadow: 0 4px 0 var(--purple-deep);
+  cursor: pointer;
+}
+
+.button.primary {
+  background: var(--yellow);
+  box-shadow: 0 4px 0 var(--yellow-deep);
+}
+
+.button:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 var(--purple-deep);
+}
+
+/* Only touch screens get the big button; keyboards and mice hold Space or the board */
+.munch {
+  position: fixed;
+  right: calc(var(--safe-right) + 18px);
+  bottom: calc(var(--safe-bottom) + 18px);
+  width: 128px;
+  height: 128px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--yellow);
+  color: var(--ink);
+  font: inherit;
+  font-size: 1.1rem;
+  font-weight: 700;
+  box-shadow: 0 6px 0 var(--yellow-deep);
+  touch-action: none;
+}
+
+.munch:active {
+  transform: translateY(3px);
+  box-shadow: 0 3px 0 var(--yellow-deep);
+}
+
+@media (pointer: fine) {
+  .munch {
+    display: none !important;
+  }
+}
+
+/* A phone held sideways: smaller score cards, so the munch button in the corner doesn't cover them */
+@media (orientation: landscape) and (pointer: coarse) {
+  .side {
+    justify-content: flex-start;
+  }
+
+  .scores {
+    gap: 6px;
+  }
+
+  .score {
+    gap: 8px;
+    padding: 6px 10px;
+  }
+
+  .score .avatar {
+    width: 28px;
+    height: 28px;
+  }
+
+  .score .points {
+    font-size: 1.25rem;
+  }
+
+  .munch {
+    width: 112px;
+    height: 112px;
+  }
+}
+
+.banner {
+  position: fixed;
+  top: calc(var(--safe-top) + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 600;
+}
+
+.leaderboard {
+  width: min(92vw, 460px);
+  border: 0;
+  border-radius: 24px;
+  padding: 22px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: inherit;
+  box-shadow: 0 8px 0 var(--purple-deep);
+}
+
+.leaderboard::backdrop {
+  background: rgba(31, 23, 71, 0.55);
+}
+
+.leaderboard h2 {
+  margin: 0 0 4px;
+  font-size: 1.6rem;
+}
+
+.leaderboard .dim {
+  margin: 0 0 14px;
+  color: var(--ink-soft);
+}
+
+.leaders {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.leaders li {
+  display: grid;
+  grid-template-columns: 3.5ch minmax(0, 1fr);
+  gap: 2px 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: var(--paper-tint);
+}
+
+.leaders li.mine {
+  background: var(--yellow-tint);
+}
+
+.leaders .place {
+  grid-row: span 2;
+  align-self: center;
+  font-weight: 700;
+  color: var(--purple-deep);
+}
+
+.leaders .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.leaders .numbers {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.you {
+  margin: 0 0 14px;
+  font-weight: 600;
+}
+
+/* A phone held upright: title row on top, the board, a strip of scores, then the munch button */
+@media (orientation: portrait) {
+  .app {
+    gap: 10px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    grid-template-areas: "intro" "play" "side" "munch";
+  }
+
+  .intro {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+    text-shadow: 0 3px 0 var(--purple-deep);
+  }
+
+  .hint {
+    order: 3;
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
+
+  .corner {
+    margin-left: auto;
+  }
+
+  .side {
+    justify-content: flex-start;
+  }
+
+  .scores {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .score {
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 4px;
+    text-align: center;
+  }
+
+  .score .avatar {
+    width: 30px;
+    height: 30px;
+  }
+
+  .score .name {
+    width: 100%;
+    font-size: 0.8rem;
+  }
+
+  .score .tag {
+    display: none;
+  }
+
+  .score .points {
+    font-size: 1.3rem;
+  }
+
+  .munch {
+    position: static;
+    grid-area: munch;
+    width: 100%;
+    height: 72px;
+    border-radius: 22px;
+  }
+}

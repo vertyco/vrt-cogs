@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Marble Munch</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app" id="app" data-stage="waiting">
+      <header class="intro">
+        <h1>Marble Munch</h1>
+        <p class="chip" id="left">20 marbles a round</p>
+        <p class="hint" id="hint">Tap an empty hippo to sit down.</p>
+        <nav class="corner" aria-label="Game controls">
+          <button type="button" class="icon-button" id="back" aria-label="Back to the menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5 L8 12 L15 19" /></svg>
+          </button>
+          <button type="button" class="icon-button" id="music" aria-label="Music" aria-pressed="true">
+            <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18 V5 L20 3 V16" /><circle cx="6.5" cy="18" r="2.5" /><circle cx="17.5" cy="16" r="2.5" /></svg>
+            <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18 V5 L20 3 V16" /><circle cx="6.5" cy="18" r="2.5" /><circle cx="17.5" cy="16" r="2.5" /><path d="M3 3 L21 21" /></svg>
+          </button>
+          <button type="button" class="icon-button" id="sfx" aria-label="Sound effects" aria-pressed="true">
+            <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9 H8 L13 5 V19 L8 15 H4 Z" /><path d="M16.5 8.5 A5 5 0 0 1 16.5 15.5" /><path d="M19 6 A8.5 8.5 0 0 1 19 18" /></svg>
+            <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9 H8 L13 5 V19 L8 15 H4 Z" /><path d="M17 9 L22 14" /><path d="M22 9 L17 14" /></svg>
+          </button>
+        </nav>
+      </header>
+
+      <main class="play">
+        <div class="board" id="board"></div>
+        <div class="overlay" id="overlay" hidden>
+          <p class="big" id="overlay-big"></p>
+          <p class="small" id="overlay-small"></p>
+        </div>
+        <p class="toast" id="toast" role="status" hidden></p>
+      </main>
+
+      <aside class="side">
+        <ol class="scores" id="scores" aria-label="Scores"></ol>
+        <p class="watching" id="watching"></p>
+        <div class="actions">
+          <button type="button" class="button primary" id="start" hidden>Start</button>
+          <button type="button" class="button" id="stand" hidden>Stand up</button>
+          <button type="button" class="button" id="open-leaderboard">Leaderboard</button>
+        </div>
+      </aside>
+
+      <button type="button" class="munch" id="munch" hidden>Hold to munch</button>
+      <p class="banner" id="banner" role="status" hidden>Reconnecting...</p>
+    </div>
+
+    <dialog class="leaderboard" id="leaderboard" aria-labelledby="leaderboard-title">
+      <h2 id="leaderboard-title">Leaderboard</h2>
+      <p class="dim">Wins across every server. Total marbles break ties.</p>
+      <ol class="leaders" id="leaders"></ol>
+      <p class="you" id="you"></p>
+      <button type="button" class="button" id="close-leaderboard">Close</button>
+    </dialog>
+
+    <script type="module" src="game.js"></script>
+  </body>
+</html>
