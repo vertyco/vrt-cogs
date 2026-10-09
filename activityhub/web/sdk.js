@@ -79,7 +79,14 @@ function unavailable() {
   return Promise.reject(new HubError("Open this activity from Discord to use this.", 0));
 }
 
-function offlineHub() {
+// Shows a game's own figure after the menu's frame rate, like "30 TPS". A page opened on its own has no counter
+function stat(host, text) {
+  if (host) {
+    host.setStat(text);
+  }
+}
+
+function offlineHub(host) {
   return {
     player: null,
     discord: null,
@@ -87,6 +94,7 @@ function offlineHub() {
     api: unavailable,
     socket: unavailable,
     fetch: (path, options = {}) => fetch(`${gameRoot()}raw/${path}`, options),
+    stat: (text) => stat(host, text),
     backToMenu,
   };
 }
@@ -101,6 +109,8 @@ const RECONNECT_CODES = new Set([1001, 1006, 1012, 1013, 1014]);
 // How long the helper keeps trying after a drop, and the longest wait between two tries
 const RECONNECT_FOR_MS = 60000;
 const RECONNECT_MAX_WAIT_MS = 15000;
+// How often the helper times a round trip to the bot and back, for conn.latency and the frame rate counter
+const ECHO_MS = 2000;
 
 // Why a live connection closed before it was ready, for the game's catch
 function closedEarly(code) {
@@ -134,6 +144,8 @@ function openLink(root, session, events) {
         // The hub's heartbeat. Answering it shows the hub this player is still here, even through a proxy that
         // drops the browser's own WebSocket pings
         ws.send(JSON.stringify({ activityhub: "pong" }));
+      } else if (data && data.activityhub === "echo") {
+        events.echo(data.t);
       } else {
         events.message(data);
       }
@@ -149,8 +161,9 @@ function openLink(root, session, events) {
 }
 
 // What hub.socket() resolves with. It stays the same object while the helper reconnects by itself, so the game's
-// handlers keep working. `open(events)` resolves with a ready WebSocket, logging the player in again when needed
-function liveConnection(open) {
+// handlers keep working. `open(events)` resolves with a ready WebSocket, logging the player in again when needed.
+// `showLatency(ms)` gets each round trip it times, and null while there is no connection
+function liveConnection(open, showLatency) {
   const handlers = [];
   const held = [];
   const closers = [];
@@ -159,10 +172,25 @@ function liveConnection(open) {
   let ws = null;
   let closing = false;
   let ended = false;
+  let latency = null;
+  let echoTimer = null;
+
+  function setLatency(ms) {
+    latency = ms;
+    showLatency(ms);
+  }
+
+  // The bot answers straight away, behind what it already queued to this player, so this is the delay they feel
+  function measure() {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ activityhub: "echo", t: performance.now() }));
+    }
+  }
 
   function end(code) {
     if (!ended) {
       ended = true;
+      clearInterval(echoTimer);
       closers.forEach((handler) => handler(code));
     }
   }
@@ -192,6 +220,7 @@ function liveConnection(open) {
         return;
       }
       ws = link;
+      measure();
       reconnected.forEach((handler) => handler());
       return;
     }
@@ -205,8 +234,14 @@ function liveConnection(open) {
         held.push(data);
       }
     },
+    echo(sent) {
+      if (typeof sent === "number") {
+        setLatency(Math.round(performance.now() - sent));
+      }
+    },
     close(code) {
       ws = null;
+      setLatency(null);
       if (closing || !RECONNECT_CODES.has(code)) {
         end(code);
       } else {
@@ -216,6 +251,9 @@ function liveConnection(open) {
   };
 
   const conn = {
+    get latency() {
+      return latency;
+    },
     send(data) {
       const text = JSON.stringify(data);
       // The socket would send the word "undefined", which the hub drops without telling anyone
@@ -261,6 +299,8 @@ function liveConnection(open) {
   return {
     async start() {
       ws = await open(events);
+      measure();
+      echoTimer = setInterval(measure, ECHO_MS);
       return conn;
     },
   };
@@ -398,8 +438,9 @@ function onlineHub(host, login) {
       return retried;
     },
     socket() {
-      return liveConnection(openLive).start();
+      return liveConnection(openLive, (ms) => host.setLatency(ms)).start();
     },
+    stat: (text) => stat(host, text),
     backToMenu,
   };
 }
@@ -408,12 +449,12 @@ export async function connect() {
   const host = findHost();
   if (host) {
     const login = await host.ready;
-    return login ? onlineHub(host, login) : offlineHub();
+    return login ? onlineHub(host, login) : offlineHub(host);
   }
   if (new URLSearchParams(location.search).has("frame_id")) {
     // Inside Discord only the menu may start the Discord toolkit, so a game opened on its own goes there
     location.replace(`/${location.search}`);
     return new Promise(() => {});
   }
-  return offlineHub();
+  return offlineHub(null);
 }

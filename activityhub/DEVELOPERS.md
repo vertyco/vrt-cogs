@@ -460,6 +460,15 @@ Rules the hub enforces for you:
 | `conn.peers()` | `list` of connections | The other connections to your game with the same `instance_id`. |
 | **`await`** `conn.close(code=1000)` | `code`: `int` | Closes the connection once the messages you queued before it have gone out. Use `1000`, or your own codes from `4100` to `4999`. Codes `4000` to `4099` are ActivityHub's, and `close` refuses them with a `ValueError`. |
 | `conn.ctx` | `ctx` | The same `ctx` the handlers get. |
+| `conn.room` | room | Everyone playing your game in the same window (the same `instance_id`), as one object their connections share. Keep it to reach them all from a timer, a loop or an action: see [multiplayer](#10-multiplayer-with-live-connections). |
+
+**`room`**, what `conn.room` gives you:
+
+| Member | Type | What it does |
+|---|---|---|
+| **`await`** `room.broadcast(data)` | `data`: any JSON value | Queues a message to everyone in the room and returns right away, like `send`. The message is turned into JSON once for all of them. Refuses the same values as `send`. |
+| `room.connections` | `list` of connections | Everyone in the room right now. A copy, so it's safe to loop over while players leave. Empty once everyone has left. |
+| `room.instance_id` | `str` | The window's id, the same as `ctx.instance_id`. |
 
 **Type hints.** Don't import from `activityhub` in your cog. Red loads cogs by folder name, so the import fails whenever your cog loads before ActivityHub, and `isinstance` checks go stale after ActivityHub reloads. For your editor, copy these descriptions of `ctx` and `conn` instead, and write `async def click(self, ctx: HubContext, data: dict) -> dict:`.
 
@@ -484,11 +493,25 @@ class HubContext(Protocol):
     def channel(self) -> discord.abc.GuildChannel | discord.Thread | None: ...
 
 
+class HubRoom(Protocol):
+    """Everyone playing your game in one Activity window"""
+
+    instance_id: str
+
+    @property
+    def connections(self) -> Sequence["HubConnection"]: ...
+
+    async def broadcast(self, data: Any) -> None: ...
+
+
 class HubConnection(Protocol):
     """A live connection, as socket handlers get it"""
 
     @property
     def ctx(self) -> HubContext: ...
+
+    @property
+    def room(self) -> HubRoom: ...
 
     async def send(self, data: Any) -> None: ...
 
@@ -527,6 +550,7 @@ A red "400 (Bad Request)" line in the browser console is normal for `{"error"}` 
 | `hub.fetch(path, options)` | `Promise<Response>` | Calls a raw route, like the browser's own `fetch`, with the player's login attached. `path` is the route path, for example `"avatar"` or `"item?id=7"`. When the hub says the login expired, it logs in again and sends the request once more (a streamed body can't be sent twice, so that one gets the 401). Works offline too, without a login. |
 | `hub.socket()` | `Promise<conn>` | Opens your game's live connection. Resolves once the hub has checked the login. If the login expired, it logs in again and retries once by itself. Once open, it reconnects by itself after a drop (see `conn.onReconnecting`). |
 | `hub.discord` | Discord toolkit or `null` | The menu's Discord Embedded App SDK object (the toolkit Discord gives Activity pages), for calls like `hub.discord.commands.openExternalLink(...)`. Listeners you add with `hub.discord.subscribe()` are removed for you when your game closes. Its participant list is everyone in the Activity, not your players: see [multiplayer](#10-multiplayer-with-live-connections). `null` outside Discord. |
+| `hub.stat(text)` | function | Adds a short text at the end of the hub's frame rate counter in the corner, like the `30 TPS` in `60 FPS · 85 ms · 30 TPS`, for a number like your update rate (see [measuring](#speed-and-fast-paced-games)). The `85 ms` is the hub's own: the delay of your live connection, shown while one is open. Up to 40 characters; longer text is cut. `hub.stat("")` removes it, and so does closing your game. Players who hid the counter (the menu's **Frame rate** setting) don't see it. Works in the preview too. |
 | `hub.backToMenu()` | function | Same as the `backToMenu` export. |
 
 Catching an error from an action looks like this:
@@ -549,6 +573,7 @@ try {
 | `conn.onClose(handler)` | Calls `handler(code)` when the connection has closed for good: on purpose, for a reason reconnecting can't fix, or after a minute of failed tries to reconnect. The [close codes](#10-multiplayer-with-live-connections) say why. |
 | `conn.onReconnecting(handler)` | Calls `handler(code)` when the connection dropped and the helper starts reconnecting by itself: after `1001` (a restart, or a player who fell behind), `1006` (a dropped network), or `1012` to `1014` (a proxy restarting). It waits longer after each failed try, up to 15 seconds, with a random part so a whole window doesn't reconnect at the same instant, and gives up after a minute. |
 | `conn.onReconnected(handler)` | Calls `handler()` once the helper has reconnected. Your `join` ran again for the new connection, so it can send the full state. The same `conn` keeps working, with the same handlers. |
+| `conn.latency` | The latest round trip to the bot and back, in whole milliseconds, or `null` before the first one and while reconnecting. The helper times one every 2 seconds, and the hub's frame rate counter shows it too, like `60 FPS · 85 ms`. |
 | `conn.close()` | Closes it, with code `1000`. |
 
 ## 9. What to trust, and paying out
@@ -723,12 +748,14 @@ Things to know:
   | `4001` | The login expired while connecting, and logging in again failed. The hub takes the player back to the menu by itself. | No. |
   | `4003` | Your game was turned off in this server, or by the bot owner for every server. | No. |
   | `4004` | Your `activityhub_game()` has no `"socket"`. | No. |
+  | `4029` | The page sent more than the [message limit](#10-multiplayer-with-live-connections) allows. The bot's log names the player. | No. |
   | `4100`-`4999` | Your own codes, from `conn.close(code)` in your Python. | Your call. |
 
   Codes `4000` to `4099` are ActivityHub's, and `conn.close()` refuses them. Send a message saying why before you close, because the close code is all the page gets.
 - **Drops happen**: a proxy restart, a phone going to sleep, a reload of your cog. The helper reconnects by itself, and your `join` runs again for the new connection. Show that it's reconnecting from `conn.onReconnecting`, like the example does. `conn.onClose` only runs once the connection is gone for good.
 - **Heartbeat:** when a connection has been quiet for 30 seconds, the hub pings it and sends a small message, which also stops proxies closing the quiet connection. The helper script answers that message by itself and never passes it to your code, and the hub never passes the answer to your `message` handler. A player whose page doesn't answer within another 30 seconds is disconnected, and your `leave` runs. Until then, `peers()` can still include a player whose network vanished.
 - **Slow players:** each player's messages wait in their own queue, so one stalled phone never holds up your code or the other players. A player who can't take a message for 10 seconds, or falls 4 million characters behind, is disconnected with `1001`.
+- **Message limit:** a page may send up to 300 messages and 1 MB a second, on average over 5 seconds, so a short burst is fine. That is far more than a game needs, even one that sends an input every frame on a 240 Hz screen. Only a page someone changed to flood the bot goes over it: it is disconnected with `4029`, without reconnecting, and the bot's log names the player.
 - **Reserved field:** don't send objects with an `activityhub` field from Python. The hub uses that field for its own messages, and `conn.send()` and `conn.broadcast()` refuse it with a `ValueError`.
 - **Your game needs `"socket"` in its description,** or `hub.socket()` fails with `4004`.
 - **Who is in your game:** use `conn.peers()` in Python. Discord's own participant list (`hub.discord.commands.getInstanceConnectedParticipants()`, the `ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE` event) lists everyone in the Activity, including players in the menu or in other games.
@@ -737,24 +764,26 @@ Things to know:
 - **Refusing a player** (the room is full, they were kicked): `await conn.send({"error": "This table is full."})`, then `await conn.close(4100)`. `leave` still runs for that connection, so only undo what `join` did.
 - **Key per-player state by `conn`,** or check `self.players.get(ctx.author.id) is conn` before deleting it in `leave`. A player who reconnects has a new `conn` before the old one's `leave` runs.
 - **When your cog unloads or reloads,** `leave` still runs for every connected player, after your `cog_unload`, on the old cog object. Keep what `leave` needs alive until then.
-- **To reach players from an action, a timer or a command,** keep your own record of each window's connections, updated in `join` and `leave`. For example, with `self.rooms = {}` in `__init__`:
+- **To reach everyone from an action, a timer or a command,** keep the window's room. `conn.room` is one object shared by everyone playing your game in that window: `await room.broadcast(data)` sends to all of them, and `room.connections` lists them. For example, with `self.rooms = {}` in `__init__`:
 
   ```python
   async def join(self, ctx, conn):
-      self.rooms.setdefault(ctx.instance_id, set()).add(conn)
+      self.rooms[ctx.instance_id] = conn.room
 
 
   async def leave(self, ctx, conn):
-      self.rooms.get(ctx.instance_id, set()).discard(conn)
+      if not conn.peers():
+          self.rooms.pop(ctx.instance_id, None)
 
 
   async def poke(self, ctx, data: dict) -> dict:
-      # A copy, since a player can leave while this sends
-      for conn in list(self.rooms.get(ctx.instance_id, ())):
-          if conn.ctx.author.id != ctx.author.id:
-              await conn.send({"poked_by": ctx.author.display_name})
+      room = self.rooms.get(ctx.instance_id)
+      if room:
+          await room.broadcast({"poked_by": ctx.author.display_name})
       return {}
   ```
+
+  A room stays the same object while anyone is in it. When everyone leaves and someone comes back, they get the same room again as long as your code still holds it, so a loop holding the room reaches them.
 
 ### Speed and fast-paced games
 
@@ -775,19 +804,23 @@ import asyncio
 TICK = 1 / 20  # 20 updates a second
 
 
-async def run_room(self, instance_id):
+async def run_room(self, room):
     loop = asyncio.get_running_loop()
     next_tick = loop.time()
-    while self.rooms.get(instance_id):
-        self.step(instance_id)  # move everything one update forward, using the inputs players sent
-        anyone = next(iter(self.rooms[instance_id]))
+    while room.connections:
+        self.step(room.instance_id)  # move everything one update forward, using the inputs players sent
         # One broadcast reaches the whole window, and turns the state into JSON once
-        await anyone.broadcast(self.snapshot(instance_id), include_self=True)
+        await room.broadcast(self.snapshot(room.instance_id))
         next_tick += TICK
         await asyncio.sleep(max(0.0, next_tick - loop.time()))
 ```
 
-Start it with `asyncio.create_task()` when the first player joins a window, keep the task in a dict, and cancel it in `cog_unload`. It ends by itself once `leave` has emptied the window's set.
+Start it in `join` when the window has no loop running yet, with `asyncio.create_task(self.run_room(conn.room))`. Keep the task in a dict keyed by `ctx.instance_id`, start a new one only when the old one is done (`task is None or task.done()`), and cancel them all in `cog_unload`. The loop ends by itself once its room is empty. A player who comes back before then gets the same room, so the loop simply keeps going for them.
+
+**Expect a little wobble.** The loop keeps its average pace, but single updates arrive a little early or late. The network adds its own jitter. On Windows with Python 3.11 or 3.12, the bot's clock also moves in steps of about 16 ms, so at 30 updates a second, single gaps range from about 15 to 48 ms. (Linux, and Python 3.13 or later on Windows, have a much finer clock.) Two habits hide it:
+
+- Draw about two updates behind the newest one, timed by when updates arrive, instead of sliding between only the last two.
+- Measure your update rate as an average over a second, like the [example below](#speed-and-fast-paced-games) does.
 
 **Send what the player pressed, not where they are.** The page sends inputs (`{"move": "left"}`) and moves the player's own character right away, without waiting for the bot. Python is the judge: it applies the inputs in its next update, and the page corrects itself from the snapshot if the two disagree. That is how the player's own movement feels instant on a slow connection (this is called client-side prediction).
 
@@ -808,22 +841,19 @@ async def message(self, ctx, conn, data):
 
 For slow side work, like saving to Config or calling Discord, start a task with `asyncio.create_task()` and keep a reference to it until it finishes, or Python can delete it halfway. Save scores when a round ends, not on every input.
 
-**Measure the delay players feel.** Browsers can't send WebSocket pings themselves, so time an ordinary message there and back. The number includes everything a player feels: the network, the proxies and a busy bot.
+**Measure the delay players feel.** The helper does this for you. While your game has a live connection open, it times a message to the bot and back every 2 seconds. The hub's frame rate counter shows the result, like `60 FPS · 85 ms`, and `conn.latency` holds the latest number in milliseconds. It includes everything a player feels: the network, the proxies, a busy bot, and your own messages queued ahead of it.
+
+**Show your update rate** with `hub.stat()`, to check your loop keeps its pace. This counts the updates that arrive each second, and the counter then shows `60 FPS · 85 ms · 30 TPS` (TPS: ticks, or updates, per second):
 
 ```js
-const conn = await hub.socket();
-conn.on((data) => {
-  if (data && "pong" in data) {
-    console.log(`Round trip: ${Math.round(performance.now() - data.pong)} ms`);
-  }
+let updates = 0;
+conn.on(() => {
+  updates += 1;
 });
-setInterval(() => conn.send({ ping: performance.now() }), 2000);
-```
-
-```python
-async def message(self, ctx, conn, data):
-    if isinstance(data, dict) and "ping" in data:
-        await conn.send({"pong": data["ping"]})
+setInterval(() => {
+  hub.stat(`${updates} TPS`);
+  updates = 0;
+}, 1000);
 ```
 
 **Survive restarts.** Reloading your cog or ActivityHub closes every live connection with `1001`. Keep the game's state in your cog, keyed by `ctx.instance_id`, never on `conn`, and send the full state in `join`. Then a page picks up where it was when the helper reconnects it, which it does by itself.
@@ -1052,23 +1082,34 @@ async def test_click_pays_one_credit(member_factory):
     assert (await cog.click(ctx, {}))["clicks"] == 1
 
 
+class FakeRoom:
+    """Stands in for conn.room: everyone in one window"""
+
+    def __init__(self, instance_id="test"):
+        self.instance_id, self.connections = instance_id, []
+
+    async def broadcast(self, data):
+        for conn in list(self.connections):
+            await conn.send(data)
+
+
 class FakeConn:
     """Stands in for a live connection. Keeps what was sent, and refuses what the hub would refuse"""
 
     def __init__(self, ctx, room):
         self.ctx, self.room, self.sent, self.closed = ctx, room, [], None
-        room.append(self)
+        room.connections.append(self)
 
     async def send(self, data):
         self.sent.append(json.loads(json.dumps(data, allow_nan=False)))
 
     async def broadcast(self, data, include_self=False):
-        for conn in list(self.room):
+        for conn in list(self.room.connections):
             if include_self or conn is not self:
                 await conn.send(data)
 
     def peers(self):
-        return [conn for conn in self.room if conn is not self]
+        return [conn for conn in self.room.connections if conn is not self]
 
     async def close(self, code=1000):
         if 4000 <= code <= 4099:
@@ -1085,7 +1126,7 @@ def player(user_id, instance_id="test"):
 
 @pytest.mark.asyncio
 async def test_a_bump_reaches_everyone():
-    cog, room = ClickCounter(bot=None), []
+    cog, room = ClickCounter(bot=None), FakeRoom()
     alice = FakeConn(player(1), room)
     await cog.join(alice.ctx, alice)
     bob = FakeConn(player(2), room)
@@ -1093,7 +1134,7 @@ async def test_a_bump_reaches_everyone():
     await cog.message(alice.ctx, alice, {"bump": True})
     assert alice.sent[-1] == bob.sent[-1] == {"total": 1, "by": "Player 1"}
     # The hub takes a closing connection out of its room before leave runs
-    room.remove(alice)
+    room.connections.remove(alice)
     await cog.leave(alice.ctx, alice)
     assert bob.sent[-1] == {"players": 1}
 ```
@@ -1267,6 +1308,7 @@ Read them for ideas. Their internals are not part of the API and may change.
 | **Instance** | One running Activity window. Everyone in the same window shares its `instance_id`. |
 | **Key** | Your game's short id, like `clickcounter`. It's in your game's address, `/games/<key>/`. |
 | **Live connection** | A WebSocket: a connection between the page and the bot that stays open, so both can send at any time. Used for multiplayer. |
+| **Room** | Everyone playing your game in one Activity window, as `conn.room`. Its `broadcast` reaches all of them. |
 | **Page** | Your game's web side: `index.html` and the files it loads. |
 | **Preview** | The menu and your game opened in a normal browser, outside Discord. `hub.offline` is `true` there. |
 | **Raw route** | A handler that gets the raw web request and returns any response. Used for uploads and anything actions can't do. |

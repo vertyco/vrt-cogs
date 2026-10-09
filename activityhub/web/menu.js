@@ -73,6 +73,8 @@ async function start() {
   page.host = startHost({
     onGameClosed: gameClosed,
     onSessionExpired: sessionExpired,
+    onStat: (text) => frameRate.setStat(text),
+    onLatency: (ms) => frameRate.setLatency(ms),
     // Shown until the menu loads, which hides it, in case Discord answers after all
     onDiscordSilent: (text) => showNotice(text),
   });

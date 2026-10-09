@@ -86,6 +86,8 @@ def test_game_opened_directly_in_a_browser_is_offline(driver, live):
     driver.get(f"{live.url}/games/demo/")
     wait_for(driver, "window.demo && window.demo.done")
     assert driver.execute_script("return [window.demo.offline, window.demo.player]") == [True, None]
+    # No menu around it shows a frame rate counter, so this does nothing, without an error
+    assert in_game(driver, "hub.stat('30 TPS'); done('ok');") == "ok"
     driver.find_element(By.ID, "back").click()
     wait_for(driver, "location.pathname === '/'")
 
@@ -115,6 +117,22 @@ def test_game_in_the_frame_borrows_the_login(driver, live):
     assert messages[1] == {"echo": {"ping": 1}}
     assert driver.execute_script("return window.fakeDiscord === undefined")
     assert driver.execute_script("return window.parent.fakeDiscord.created") == 1
+
+
+def test_a_live_connection_times_its_round_trip(driver, live):
+    open_game_in_host(driver, live)
+    latency = in_game(
+        driver,
+        "const conn = await hub.socket();"
+        "const before = conn.latency;"
+        "const until = performance.now() + 5000;"
+        "while (conn.latency === null && performance.now() < until) {"
+        "  await new Promise((resolve) => setTimeout(resolve, 20));"
+        "}"
+        "done([before, conn.latency]);",
+    )
+    assert latency[0] is None
+    assert isinstance(latency[1], int) and 0 <= latency[1] < 5000
 
 
 def test_back_to_menu_closes_the_game_frame(driver, live):

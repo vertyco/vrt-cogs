@@ -29,11 +29,14 @@ from .sockets import (
     CLOSE_HANDLER_FAILED,
     CLOSE_NO_SOCKET,
     CLOSE_SESSION,
+    CLOSE_TOO_MANY,
     CLOSE_TURNED_OFF,
+    LIMIT_SECONDS,
     PING,
     PONG,
     READY,
     Connection,
+    echo_reply,
 )
 
 if t.TYPE_CHECKING:
@@ -339,15 +342,21 @@ class GameRoutes:
             pinged = False
             if msg.type in CLOSED_TYPES:
                 return
+            if not conn.inbox.take(len(msg.data or "")):
+                log.warning(
+                    "Closed a live connection to %s: player %s sent more than the hub allows over %s seconds",
+                    conn.game.key,
+                    conn.ctx.author.id,
+                    LIMIT_SECONDS,
+                )
+                await conn.end(CLOSE_TOO_MANY)
+                return
             if msg.type == WSMsgType.PING:
                 await conn.write(conn.ws.pong(msg.data))
             elif msg.type == WSMsgType.TEXT:
                 await self.deliver(conn, msg.data)
 
     async def deliver(self, conn: Connection, text: str) -> None:
-        handler = conn.game.socket.get("message")
-        if handler is None:
-            return
         try:
             data = loads(text)
         except ValueError as e:
@@ -355,6 +364,14 @@ class GameRoutes:
             return
         if data == PONG:
             # The page's answer to a heartbeat. Arriving at all was its whole job
+            return
+        reply = echo_reply(data)
+        if reply is not None:
+            # Behind the messages already queued to this player, so the time it measures is the time they feel
+            conn.queue_text(reply)
+            return
+        handler = conn.game.socket.get("message")
+        if handler is None:
             return
         try:
             await handler(conn.ctx, conn, data)

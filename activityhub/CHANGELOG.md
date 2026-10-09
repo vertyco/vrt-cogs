@@ -1,5 +1,17 @@
 # ActivityHub Changelog
 
+## 0.1.9
+
+- A page that floods a live connection is cut off: more than 300 messages or 1 MB a second, on average over 5 seconds, closes it with code `4029`, and the bot's log names the player. Real games never get near it, but a page changed to flood the bot could otherwise keep it busy.
+- While a game has a live connection open, the frame rate counter also shows its delay, the round trip to the bot and back, like `60 FPS · 85 ms`.
+
+For game developers:
+
+- `conn.room` is everyone playing your game in that window, as one object: `room.broadcast(data)` reaches them all, and `room.connections` lists them. A timer or a loop no longer has to pick one player's connection to broadcast from, and a loop that holds the room keeps reaching players who leave and come back.
+- `hub.stat(text)` adds a short text at the end of the frame rate counter, like `60 FPS · 85 ms · 30 TPS`, so a live game can show its update rate. It goes away when the game closes, and players who hid the counter don't see it.
+- The page's `conn.latency` holds the latest round trip in milliseconds, timed by the helper every 2 seconds.
+- `DEVELOPERS.md`: the update loop example uses `conn.room`, a new note explains why single updates wobble (Windows' 16 ms clock steps and network jitter) and how to hide it, the speed section shows how to display your update rate, and the testing example has a stand-in for the room.
+
 ## 0.1.8
 
 For game developers:

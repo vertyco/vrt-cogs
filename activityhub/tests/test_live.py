@@ -245,6 +245,58 @@ async def test_a_message_over_one_megabyte_closes_1009_and_leave_runs(client, hu
 
 
 @pytest.mark.asyncio
+async def test_a_page_flooding_messages_closes_4029_and_leave_runs(client, hub, server, demo, monkeypatch, caplog):
+    monkeypatch.setattr(sockets, "MESSAGES_PER_SECOND", 10)
+    monkeypatch.setattr(sockets, "LIMIT_SECONDS", 1)
+    ws = await joined(client, hub)
+    for n in range(30):
+        await ws.send_json({"n": n})
+    while (msg := await ws.receive(timeout=2)).type == WSMsgType.TEXT:
+        pass
+    assert msg.type == WSMsgType.CLOSE and msg.data == 4029
+    # About LIMIT_SECONDS worth of messages reached the game first
+    assert 5 <= sum(event[0] == "message" for event in demo.events) <= 15
+    await eventually(lambda: ("leave", MEMBER_ID) in demo.events)
+    assert not server.rooms.all()
+    assert "sent more than" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_a_page_flooding_characters_closes_4029(client, hub, demo, monkeypatch):
+    monkeypatch.setattr(sockets, "CHARACTERS_PER_SECOND", 1000)
+    monkeypatch.setattr(sockets, "LIMIT_SECONDS", 1)
+    ws = await joined(client, hub)
+    await ws.send_json({"big": "x" * 800})
+    assert await next_json(ws) == {"echo": {"big": "x" * 800}}
+    await ws.send_json({"big": "x" * 800})
+    assert await close_code(ws) == 4029
+
+
+@pytest.mark.asyncio
+async def test_messages_under_the_limit_keep_the_connection(client, hub, demo, monkeypatch):
+    monkeypatch.setattr(sockets, "MESSAGES_PER_SECOND", 20)
+    monkeypatch.setattr(sockets, "LIMIT_SECONDS", 1)
+    ws = await joined(client, hub)
+    for n in range(30):
+        await ws.send_json({"n": n})
+        assert await next_json(ws) == {"echo": {"n": n}}
+        await asyncio.sleep(0.06)
+    await ws.close()
+
+
+@pytest.mark.asyncio
+async def test_the_hub_answers_a_round_trip_timing_itself(client, hub, demo):
+    ws = await joined(client, hub)
+    await ws.send_json({"activityhub": "echo", "t": 1234.5})
+    assert await next_json(ws) == {"activityhub": "echo", "t": 1234.5}
+    await ws.send_json({"after": True})
+    assert await next_json(ws) == {"echo": {"after": True}}
+    # The game never saw the timing message
+    assert ("message", MEMBER_ID, {"activityhub": "echo", "t": 1234.5}) not in demo.events
+    await ws.close()
+
+
+@pytest.mark.asyncio
 async def test_failed_join_closes_1011_without_leave(client, hub, demo):
     demo.join_error = True
     ws = await open_live(client, hub)
@@ -335,6 +387,8 @@ async def test_a_quiet_player_who_answers_pings_stays(client, hub, server, demo,
 @pytest.mark.asyncio
 async def test_a_player_who_stops_reading_is_let_go_without_holding_up_the_rest(client, hub, server, demo, monkeypatch):
     monkeypatch.setattr(sockets, "SEND_SECONDS", 0.2)
+    # The sender floods on purpose, to fill the network to the stalled player
+    monkeypatch.setattr(sockets, "CHARACTERS_PER_SECOND", 1024**3)
     finished = []
     real_socket = game_routes.GameRoutes.socket
 

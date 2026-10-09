@@ -19,6 +19,8 @@ const DISCORD_SILENT =
 const HANDSHAKE = 0;
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 const SAFE_SIDES = ["top", "right", "bottom", "left"];
+// The longest text a game can add to the frame rate counter, which is one small pill
+const STAT_MAX = 40;
 
 // An invisible box padded by the room Discord's own buttons (the back pill and Leave) and the phone's notch take
 // at each edge. Discord sets --discord-safe-area-inset-* on this page only; iOS gives only the browser's env()
@@ -243,9 +245,25 @@ export class Host {
     this.frame.remove();
     this.frame = null;
     this.gameKey = null;
+    this.setStat("");
+    this.setLatency(null);
     document.body.classList.remove("opening", "playing");
     if (notify && this.events.onGameClosed) {
       this.events.onGameClosed();
+    }
+  }
+
+  // A game's own figure after the frame rate, like "30 TPS". The next game starts without it
+  setStat(text) {
+    if (this.events.onStat) {
+      this.events.onStat(text === null || text === undefined ? "" : String(text).slice(0, STAT_MAX));
+    }
+  }
+
+  // The round trip of the open game's live connection, timed by sdk.js, or null. The next game starts without it
+  setLatency(ms) {
+    if (this.events.onLatency) {
+      this.events.onLatency(Number.isFinite(ms) ? Math.max(0, Math.round(ms)) : null);
     }
   }
 

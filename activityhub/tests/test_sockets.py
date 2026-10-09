@@ -2,6 +2,7 @@ import asyncio
 import gc
 import json
 import math
+import weakref
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -78,6 +79,53 @@ async def test_rooms_group_by_game_and_instance():
     assert b.peers() == [a]
     assert elsewhere.peers() == [] and other_game.peers() == []
     assert len(rooms.all()) == 4
+
+
+@pytest.mark.asyncio
+async def test_everyone_in_a_window_shares_one_room():
+    rooms, demo, other = Rooms(), make_game(), make_game("other")
+    a, b = connect(rooms, demo, 1), connect(rooms, demo, 2)
+    elsewhere, other_game = connect(rooms, demo, 3, instance="i-2"), connect(rooms, other, 4)
+    assert a.room is b.room and a.room.instance_id == "i-1"
+    assert a.room.connections == [a, b]
+    assert elsewhere.room is not a.room and other_game.room is not a.room
+    # A copy, so a loop over it can't trip over a player leaving
+    a.room.connections.clear()
+    assert a.room.connections == [a, b]
+
+
+@pytest.mark.asyncio
+async def test_a_room_broadcast_reaches_everyone_in_the_window():
+    rooms, demo = Rooms(), make_game()
+    a, b, c = connect(rooms, demo, 1), connect(rooms, demo, 2), connect(rooms, demo, 3, instance="i-2")
+    await a.room.broadcast({"tick": 1})
+    await delivered(a, b, c)
+    assert a.ws.sent == b.ws.sent == [{"tick": 1}] and c.ws.sent == []
+    with pytest.raises(ValueError, match="reserved"):
+        await a.room.broadcast({"activityhub": "x"})
+
+
+@pytest.mark.asyncio
+async def test_a_room_the_game_keeps_is_the_one_its_window_gets_back():
+    rooms, demo = Rooms(), make_game()
+    first = connect(rooms, demo, 1)
+    kept = first.room
+    rooms.discard(first)
+    assert kept.connections == []
+    # Everyone left and someone came back: a loop holding the room reaches them
+    back = connect(rooms, demo, 1)
+    assert back.room is kept and kept.connections == [back]
+
+
+@pytest.mark.asyncio
+async def test_a_room_nobody_keeps_is_forgotten():
+    rooms, demo = Rooms(), make_game()
+    conn = connect(rooms, demo, 1)
+    room = weakref.ref(conn.room)
+    rooms.discard(conn)
+    del conn
+    gc.collect()
+    assert room() is None
 
 
 @pytest.mark.asyncio

@@ -45,6 +45,17 @@ document.querySelector('.card[data-key="demo"]').click();
 const frame = document.getElementById('game-frame');
 return [getComputedStyle(frame).opacity, getComputedStyle(document.getElementById('menu')).display];
 """
+COUNTER = "document.querySelector('.fps').textContent"
+# Run in a game's frame: hub.stat() with the script's argument
+SHOW_STAT = """
+const text = arguments[0];
+const done = arguments[arguments.length - 1];
+import('activityhub').then(async ({ connect }) => {
+  const hub = await connect();
+  hub.stat(text);
+  done();
+});
+"""
 
 
 @pytest.fixture(scope="module")
@@ -432,6 +443,26 @@ def test_frame_rate_counter_shows_by_default_and_each_player_can_hide_it(driver,
     assert not counter.is_displayed()
     save(driver)
     assert live.hub.config.users[MEMBER_ID]["look"] == {"fps": False}
+
+
+def test_a_live_game_shows_its_delay_and_its_own_figure_after_the_frame_rate(driver, live):
+    open_menu(driver, live, DISCORD_QUERY)
+    driver.find_element(By.CSS_SELECTOR, '#games .card[data-key="demo"]').click()
+    # The demo game opens a live connection, so the hub times a round trip by itself
+    assert wait_for(driver, rf"/^\d+ FPS · \d+ ms$/.test({COUNTER})")
+    driver.switch_to.frame(driver.find_element(By.ID, "game-frame"))
+    wait_for(driver, "window.demo && window.demo.done")
+    driver.execute_async_script(SHOW_STAT, "30 TPS")
+    driver.switch_to.default_content()
+    assert wait_for(driver, rf"/^\d+ FPS · \d+ ms · 30 TPS$/.test({COUNTER})")
+    # The pill is small, so a long text is cut to fit
+    driver.switch_to.frame(driver.find_element(By.ID, "game-frame"))
+    driver.execute_async_script(SHOW_STAT, "x" * 100)
+    driver.switch_to.default_content()
+    assert wait_for(driver, rf"/^\d+ FPS · \d+ ms · x{{40}}$/.test({COUNTER})")
+    # The next game starts without either
+    driver.execute_script("window.activityhubHost.closeGame()")
+    assert wait_for(driver, rf"/^\d+ FPS$/.test({COUNTER})")
 
 
 @pytest.mark.parametrize("look", [{}, {"theme": "orb"}], ids=["standard", "orb"])
