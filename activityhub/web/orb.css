@@ -276,7 +276,7 @@ body[data-theme="orb"] .gear {
 }
 
 body[data-theme="orb"] .bar {
-  padding: 18px max(16px, 3vw);
+  padding: calc(18px + var(--safe-top)) max(16px, 3vw) 18px;
 }
 
 /* The padding gives the glow room inside the name's clipped box, and the margin puts the text back in place */

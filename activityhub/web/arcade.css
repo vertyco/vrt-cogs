@@ -13,6 +13,14 @@
   --arcade-good: #68d391;
   --arcade-bad: #fc8181;
   --arcade-bar-height: 48px;
+  /* The room Discord's own buttons (the back pill and Leave) and the phone's notch take at each edge. host.js
+     copies Discord's values into this frame, since a frame can't see the menu's */
+  --arcade-safe-top: var(--discord-safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --arcade-safe-right: var(--discord-safe-area-inset-right, env(safe-area-inset-right, 0px));
+  --arcade-safe-bottom: var(--discord-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --arcade-safe-left: var(--discord-safe-area-inset-left, env(safe-area-inset-left, 0px));
+  /* The bar reaches up under Discord's buttons, with its own buttons below them */
+  --arcade-top: calc(var(--arcade-bar-height) + var(--arcade-safe-top));
 }
 
 * {
@@ -77,8 +85,8 @@ button:focus-visible {
   display: flex;
   align-items: center;
   gap: 8px;
-  height: var(--arcade-bar-height);
-  padding: 0 8px;
+  height: var(--arcade-top);
+  padding: var(--arcade-safe-top) calc(8px + var(--arcade-safe-right)) 0 calc(8px + var(--arcade-safe-left));
   background: color-mix(in srgb, var(--arcade-bar) 88%, transparent);
   border-bottom: 1px solid var(--arcade-line);
 }
@@ -177,11 +185,13 @@ button:focus-visible {
 
 /* ---------- Playfield ---------- */
 
-/* Clipped, so a playfield bigger than a tiny window can never push the bar out of view */
+/* Clipped, so a playfield bigger than a tiny window can never push the bar out of view. Margins, not padding,
+   keep it off the screen's edges: the games size themselves to its clientWidth, which counts padding */
 #stage {
   position: relative;
   flex: 1;
   min-height: 0;
+  margin: 0 var(--arcade-safe-right) var(--arcade-safe-bottom) var(--arcade-safe-left);
   overflow: hidden;
   display: grid;
   place-items: center;
@@ -284,10 +294,11 @@ button:focus-visible {
 
 .arcade-screen {
   position: fixed;
-  inset: var(--arcade-bar-height) 0 0 0;
+  inset: var(--arcade-top) 0 0 0;
   display: grid;
   place-items: center;
-  padding: 16px;
+  padding: 16px calc(16px + var(--arcade-safe-right)) calc(16px + var(--arcade-safe-bottom))
+    calc(16px + var(--arcade-safe-left));
   background: rgba(5, 6, 11, 0.62);
   z-index: 10;
 }

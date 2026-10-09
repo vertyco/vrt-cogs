@@ -10,6 +10,12 @@
   --line: #3f4147;
   --panel: #232428;
   --radius: 12px;
+  /* The room Discord's own buttons (the back pill and Leave) and the phone's notch take at each edge. Discord
+     sets its values on phones; iOS gives only the browser's own */
+  --safe-top: var(--discord-safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --safe-right: var(--discord-safe-area-inset-right, env(safe-area-inset-right, 0px));
+  --safe-bottom: var(--discord-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --safe-left: var(--discord-safe-area-inset-left, env(safe-area-inset-left, 0px));
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
 }
 
@@ -62,7 +68,12 @@ input:focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 16px;
+  padding: calc(12px + var(--safe-top)) 16px 12px;
+}
+
+/* The bar's padding keeps it below Discord's buttons, and this keeps the rest off the other edges */
+.menu {
+  padding: 0 var(--safe-right) var(--safe-bottom) var(--safe-left);
 }
 
 .who {
@@ -274,6 +285,7 @@ input:focus-visible {
   display: flex;
   flex-direction: column;
   width: min(420px, 100vw);
+  padding: var(--safe-top) var(--safe-right) var(--safe-bottom) 0;
   border-left: 1px solid var(--line);
   background: var(--panel);
   transform: translateX(100%);

@@ -537,7 +537,9 @@ async def test_web_dir_cannot_hold_the_cogs_code(cog_folder):
 
 @pytest.mark.asyncio
 async def test_web_dir_expands_the_home_folder(web_dir, monkeypatch):
+    # Windows reads the home folder from USERPROFILE, everything else from HOME
     monkeypatch.setenv("HOME", str(web_dir.parent))
+    monkeypatch.setenv("USERPROFILE", str(web_dir.parent))
     assert (await validate_game(GameCog(f"~/{web_dir.name}"))).web_dir == web_dir
 
 

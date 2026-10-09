@@ -235,8 +235,7 @@ async def test_the_bot_owner_sees_why_something_went_wrong(client, hub, demo):
 
     def owner_sees(reason):
         return (
-            f"Something went wrong. (Only you see this, as the bot owner: {reason}. "
-            "The bot's log has the full error.)"
+            f"Something went wrong. (Only you see this, as the bot owner: {reason}. The bot's log has the full error.)"
         )
 
     assert await call("crash", owner) == owner_sees("RuntimeError: action broke")

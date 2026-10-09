@@ -1081,6 +1081,14 @@ Discord runs Activities with some rules of its own. ActivityHub can't change the
 - **Open links** with `hub.discord.commands.openExternalLink({ url })`.
 - **Networking:** use `hub.api()`, `hub.fetch()` and `hub.socket()`. WebRTC and WebTransport (other ways browsers connect) are switched off inside Activities.
 - **WebAssembly and engine builds work** (Godot, Unity). Put the whole export in `web_dir`, with the page named `index.html` (Godot names it `<project>.html` by default: rename it). For Godot 4, export with Thread Support turned off, because Activities can't turn on the browser isolation that threads need. Unity's Gzip, Brotli and uncompressed builds work as exported, without Decompression Fallback: the hub sends files ending in `.gz` or `.br` with `Content-Encoding`, so the browser unpacks them. That also means your code never sees those files packed: if you unpack a file yourself (with `DecompressionStream`, say), give it another extension, like `.bin`. From a script that isn't a module (an engine loader, a Unity `.jslib`, Godot's `JavaScriptBridge`), reach the helper inside an async function with `const { connect } = await import("activityhub");`, and set `window.hub = await connect();` if the engine needs a global.
+- **Discord's buttons cover the top of the screen on phones.** Discord's back button and **Leave** button float over the top of your page, and a phone's notch can cover an edge too. Discord gives the room they take as `--discord-safe-area-inset-top`, `-right`, `-bottom` and `-left`, and the hub copies them into your page, so pad your top bar and anything else along an edge the way Discord's own guide does. The included games do this (`activityhub/web/arcade.css`):
+
+  ```css
+  .top-bar {
+    padding-top: var(--discord-safe-area-inset-top, env(safe-area-inset-top, 0px));
+  }
+  ```
+
 - **Service workers can't register.** (A service worker is a background script some web apps use for offline caching.)
 - **Clean up when your game closes.** Your page is removed when the player goes back to the menu, and `pagehide` is the last event it gets. Listeners you added with `hub.discord.subscribe()` are removed for you. Undo anything else you changed on Discord there, like `setActivity` or `setOrientationLockState`, so it doesn't carry into the next game.
 - **Pause when the game loses the keyboard.** Clicking Discord's chat or another window takes the keyboard away from your game. Pause real-time games when the window loses focus and when the page is hidden. The included games do this (`activityhub/web/arcade.js`, `listen()`):
@@ -1109,7 +1117,7 @@ Discord runs Activities with some rules of its own. ActivityHub can't change the
 - [ ] Every file the page needs is inside `web_dir`, loaded with a relative path.
 - [ ] Nothing secret is in `web_dir`.
 - [ ] `web_dir` holds only page files: not your cog's `.py` files, `.env` or `node_modules`.
-- [ ] Your page works on a phone-sized screen and with touch, since Activities run on Discord's phone apps too.
+- [ ] Your page works on a phone-sized screen and with touch, since Activities run on Discord's phone apps too, and nothing you tap sits under Discord's buttons at the top ([safe areas](#17-discords-limits)).
 - [ ] If you use a live connection: the page reconnects after a drop, and gives up after a few in a row.
 - [ ] `info.json` has an `end_user_data_statement`, and your cog deletes a player's data when Red asks it to (`red_delete_data_for_user`).
 - [ ] `info.json`'s `install_msg` (or your README) says how to get ActivityHub.

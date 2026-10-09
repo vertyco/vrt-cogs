@@ -1,5 +1,14 @@
 # ActivityHub Changelog
 
+## 0.1.5
+
+- On phones, the menu's header, the settings panel and the included games' top bar now sit below Discord's own back button and **Leave** button instead of under them. The hub passes Discord's spacing on to every game: see `DEVELOPERS.md`.
+- **Retry save** in the included games now works when the save failed on the bot, and when the bot saved the score but its answer never arrived. Before, the retry was told the round wasn't found.
+- Saving **My order** in a server with every game turned off no longer wipes the order you set for other servers.
+- Reloading a game cog keeps its key. Before, another cog that wanted the same key could take it during the reload.
+- A cog load that Red cancels while the web server starts no longer leaves parts of the cog running.
+- A game cog whose old copy fails late during a reload no longer hides why its new copy was refused in `[p]activityhub games`.
+
 ## 0.1.4
 
 - Logins pause when Discord rate limits them, instead of asking again. The login address is public, so a flood of fake logins could otherwise get the bot's address banned from Discord for a while.

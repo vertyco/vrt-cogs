@@ -58,17 +58,23 @@ class BundledGame:
     async def finish(self, ctx: ActivityContext, data: dict) -> dict:
         if ctx.guild is None:
             return {"error": PRACTICE}
-        opened = self.scores.close_run(ctx, self.key, data.get("run"))
+        opened = self.scores.find_run(ctx, self.key, data.get("run"))
         if opened is None:
             return {"error": NO_ROUND}
         run, elapsed = opened
+        # The page's Retry save after an answer that never arrived: the score was already saved
+        if run.result is not None:
+            return run.result
         score = self.score(run, data, elapsed)
         if score is None:
+            self.scores.close_run(data["run"])
             log.warning("Refused a %s round from %s after %.0f seconds", self.key, ctx.author.id, elapsed)
             return {"error": NOT_SAVED}
+        # A save that raises leaves the round open, so the page's Retry save can send it again
         best, new_best = await self.scores.save(ctx.author, self.key, score)
         board = await self.scores.board(ctx.guild, ctx.author, self.key)
-        return {"score": score, "best": best, "newBest": new_best, "board": board}
+        run.result = {"score": score, "best": best, "newBest": new_best, "board": board}
+        return run.result
 
     async def board(self, ctx: ActivityContext, data: dict) -> dict:
         if ctx.guild is None:

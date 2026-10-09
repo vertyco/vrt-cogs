@@ -18,6 +18,18 @@ const DISCORD_SILENT =
 // The message a Discord toolkit sends first, to the page around it: [HANDSHAKE, {..., frame_id}]
 const HANDSHAKE = 0;
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+const SAFE_SIDES = ["top", "right", "bottom", "left"];
+
+// An invisible box padded by the room Discord's own buttons (the back pill and Leave) and the phone's notch take
+// at each edge. Discord sets --discord-safe-area-inset-* on this page only; iOS gives only the browser's env()
+function safeAreaProbe() {
+  const probe = document.createElement("div");
+  probe.setAttribute("aria-hidden", "true");
+  const padding = SAFE_SIDES.map((side) => `var(--discord-safe-area-inset-${side}, env(safe-area-inset-${side}, 0px))`);
+  probe.style.cssText = `position: fixed; top: 0; left: 0; visibility: hidden; pointer-events: none; padding: ${padding.join(" ")}`;
+  document.body.append(probe);
+  return probe;
+}
 
 function gamePath(key) {
   return `/games/${encodeURIComponent(key)}/`;
@@ -68,6 +80,10 @@ export class Host {
     this.frame = null;
     this.gameKey = null;
     this.showTimer = null;
+    this.safeArea = safeAreaProbe();
+    // Padding changes resize the empty probe, and a phone turning sideways resizes the window
+    new ResizeObserver(() => this.shareSafeArea()).observe(this.safeArea, { box: "border-box" });
+    window.addEventListener("resize", () => this.shareSafeArea());
     window.addEventListener("message", (event) => this.checkGameMessage(event));
     // loggedIn is enough to show the menu. ready also waits for Discord to accept the login, which games need
     // before they use the toolkit, so the menu shows while that last step runs.
@@ -134,6 +150,19 @@ export class Host {
     }
   }
 
+  // A frame can't see this page's CSS, so the game's page gets the safe area sizes under Discord's own names,
+  // and a game padded the way Discord's guide says (var(--discord-safe-area-inset-top, ...)) works unchanged
+  shareSafeArea() {
+    const root = this.frame?.contentDocument?.documentElement;
+    if (!root) {
+      return;
+    }
+    const sizes = getComputedStyle(this.safeArea);
+    for (const side of SAFE_SIDES) {
+      root.style.setProperty(`--discord-safe-area-inset-${side}`, sizes.getPropertyValue(`padding-${side}`));
+    }
+  }
+
   // After a bot restart the hub has forgotten every session. The toolkit is still connected and
   // authenticated, so a fresh code is enough: no second handshake and no second authenticate.
   // Several requests can find the session expired at once, so they share one login.
@@ -175,6 +204,8 @@ export class Host {
         }
         return;
       }
+      // Each page the frame loads is a new document, without the sizes the last one had
+      this.shareSafeArea();
       frame.focus();
       this.showGame(frame);
     });

@@ -417,6 +417,15 @@ def test_orb_wheel_and_arrows_scroll_a_long_list(driver, live, tmp_path):
     assert driver.execute_script(f"return {SELECTED}") == "extra6"
 
 
+@pytest.mark.parametrize("look", [{}, {"theme": "orb"}], ids=["standard", "orb"])
+def test_the_header_sits_below_discords_buttons_on_a_phone(driver, live, look):
+    live.hub.config.globals["look"] = look
+    open_menu(driver, live, DISCORD_QUERY)
+    # Discord's phone app sets this on the menu's page, for the room its back pill and Leave button take
+    driver.execute_script("document.documentElement.style.setProperty('--discord-safe-area-inset-top', '40px')")
+    assert driver.execute_script("return document.getElementById('who-name').getBoundingClientRect().top") >= 40
+
+
 def test_orb_theme_on_a_phone(driver, live, tmp_path):
     # A description too long for one line has to wrap inside its tab, not push the page sideways
     long_name = "A game with a name long enough to wrap"

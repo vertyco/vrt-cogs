@@ -16,6 +16,9 @@ from .views.launch import OpenView
 
 log = logging.getLogger("red.vrt.activityhub")
 
+# Seconds a freed game key waits for its cog to come back from a reload before a refused cog gets it
+HANDOVER_DELAY = 10
+
 
 class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
     """
@@ -25,7 +28,7 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.1.4b"
+    __version__ = "0.1.5b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -60,8 +63,8 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
         self.entry_point_hook = keep_entry_point(self.bot)
         self.open_view = OpenView(self)
         self.bot.add_view(self.open_view)
-        await self.start_server()
         try:
+            await self.start_server()
             for game in bundled_games(self.scores):
                 await self.registry.add(game)
             # Last, so a cog added during the server start isn't missed. This cog isn't in bot.cogs yet while it
@@ -117,8 +120,12 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
         self.registry.remove(cog)
         # First, so this game's players aren't kept waiting on another cog's activityhub_game() below
         await self.server.rooms.close_stale(self.registry.games)
-        # A loaded cog refused because this one held its key gets the key now, without needing a reload
+        if not freed:
+            return
+        # Red's reload unloads a cog and then loads it again, so the holder gets a moment to come back and keep
+        # its key. After that, a loaded cog refused because this one held its key gets the key, without a reload
+        await asyncio.sleep(HANDOVER_DELAY)
         for name, key in list(self.registry.clashes.items()):
             refused = self.registry.failed.get(name)
-            if key in freed and refused is not None and self.bot.get_cog(name) is refused[0]:
+            if key in freed and key not in self.registry.games and refused and self.bot.get_cog(name) is refused[0]:
                 await self.add_game(refused[0])

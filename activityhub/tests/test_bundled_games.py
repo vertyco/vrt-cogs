@@ -111,6 +111,9 @@ async def test_changed_moves_are_refused(client, hub, clock):
     status, result = await finish(client, hub, {"run": opened["run"], "moves": moves + "X"})
     assert status == 400 and result["error"] == NOT_SAVED
     assert hub.config.members.get(GUILD_ID, {}).get(MEMBER_ID, {}).get("best", {}) == {}
+    # A refused round is closed, so it can't be sent again with other moves
+    body = {"run": opened["run"], "moves": moves}
+    assert (await finish(client, hub, body)) == (400, {"error": NO_ROUND})
 
 
 @pytest.mark.asyncio
@@ -128,8 +131,28 @@ async def test_a_round_is_saved_once_and_only_by_its_player(client, hub, clock):
     clock.now += 60
     assert (await finish(client, hub, body, user_id=OWNER_ID)) == (400, {"error": NO_ROUND})
     assert (await finish(client, hub, body, key="snake")) == (400, {"error": NO_ROUND})
-    assert (await finish(client, hub, body))[0] == 200
-    assert (await finish(client, hub, body)) == (400, {"error": NO_ROUND})
+    saved = await finish(client, hub, body)
+    assert saved[0] == 200
+    # Sent again by Retry save because the answer never arrived: the same answer, so the player isn't told the
+    # saved round was lost
+    assert (await finish(client, hub, body)) == saved
+
+
+@pytest.mark.asyncio
+async def test_a_failed_save_keeps_the_round_for_retry_save(client, hub, clock, monkeypatch):
+    opened = await start(client, hub)
+    body = {"run": opened["run"], "moves": moves_2048(opened["seed"])}
+    clock.now += 60
+    real_save = hub.scores.save
+
+    async def broken_save(*args):
+        monkeypatch.setattr(hub.scores, "save", real_save)
+        raise OSError("the disk is full")
+
+    monkeypatch.setattr(hub.scores, "save", broken_save)
+    assert (await finish(client, hub, body))[0] == 500
+    status, result = await finish(client, hub, body)
+    assert status == 200 and result["newBest"]
 
 
 @pytest.mark.asyncio

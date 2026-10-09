@@ -16,6 +16,12 @@ def hub_with_server(server):
     return hub
 
 
+@pytest.fixture(autouse=True)
+def no_handover_delay(monkeypatch):
+    # A freed key waits a moment in case its cog is being reloaded. These tests don't reload unless they say so
+    monkeypatch.setattr(main, "HANDOVER_DELAY", 0)
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "host,port",
@@ -182,6 +188,31 @@ async def test_a_cog_refused_for_a_taken_key_gets_it_when_the_holder_unloads(tmp
 
 
 @pytest.mark.asyncio
+async def test_reloading_the_holder_keeps_its_key(tmp_path, monkeypatch):
+    monkeypatch.setattr(main, "HANDOVER_DELAY", 0.05)
+    holder_web = write_demo_web(tmp_path / "a")
+    holder = DemoCog(holder_web, key="tetris", cog_name="TetrisA")
+    waiting = CountingCog(write_demo_web(tmp_path / "b"), key="tetris", cog_name="TetrisB")
+    loaded = {"TetrisA": holder, "TetrisB": waiting}
+    hub = make_hub()
+    hub.bot = SimpleNamespace(get_cog=loaded.get)
+    hub.server = SimpleNamespace(rooms=Rooms())
+    hub.add_game = lambda cog: ActivityHub.add_game(hub, cog)
+    for cog in (holder, waiting):
+        await ActivityHub.add_game(hub, cog)
+    # [p]reload TetrisA: Red unloads the cog, then loads a new copy of it
+    del loaded["TetrisA"]
+    removing = asyncio.create_task(ActivityHub.on_cog_remove(hub, holder))
+    await asyncio.sleep(0)
+    reloaded = DemoCog(holder_web, key="tetris", cog_name="TetrisA")
+    loaded["TetrisA"] = reloaded
+    await ActivityHub.on_cog_add(hub, reloaded)
+    await asyncio.wait_for(removing, 1)
+    assert hub.registry.games["tetris"].cog is reloaded
+    assert waiting.asked == 1 and "TetrisB" in hub.registry.failed
+
+
+@pytest.mark.asyncio
 async def test_a_refused_cog_that_unloaded_is_not_retried(tmp_path):
     holder = DemoCog(write_demo_web(tmp_path / "a"), key="tetris", cog_name="TetrisA")
     waiting = CountingCog(write_demo_web(tmp_path / "b"), key="tetris", cog_name="TetrisB")
@@ -224,6 +255,28 @@ async def test_the_holders_players_are_let_go_before_the_waiting_cog_takes_the_k
 
 
 @pytest.mark.asyncio
+async def test_a_cog_load_cancelled_while_the_server_starts_cleans_up(monkeypatch, hub):
+    stopped = []
+    monkeypatch.setattr(main, "OpenView", lambda cog: SimpleNamespace(stop=lambda: stopped.append("view")))
+    monkeypatch.setattr(main, "keep_entry_point", lambda bot: "hook")
+    monkeypatch.setattr(main, "drop_entry_point_hook", lambda bot, hook: stopped.append(f"sync {hook}"))
+    hub.bot.add_view = lambda view: None
+
+    async def start_server():
+        # Red cancels a cog_load that takes over 30 seconds at startup
+        raise asyncio.CancelledError()
+
+    async def stop():
+        stopped.append("server")
+
+    hub.start_server = start_server
+    hub.server = SimpleNamespace(stop=stop)
+    with pytest.raises(asyncio.CancelledError):
+        await ActivityHub.cog_load(hub)
+    assert stopped == ["sync hook", "view", "server"]
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("still_loaded", [True, False])
 async def test_add_game_drops_a_cog_that_unloaded_while_describing_itself(tmp_path, still_loaded):
     cog = DemoCog(write_demo_web(tmp_path / "demo"))
@@ -255,3 +308,27 @@ async def test_an_old_copy_finishing_after_its_reload_keeps_the_new_game(tmp_pat
     release.set()
     await asyncio.wait_for(describing, 1)
     assert hub.registry.games["demo"].cog is new
+
+
+@pytest.mark.asyncio
+async def test_an_old_copy_failing_after_its_reload_keeps_the_new_refusal(tmp_path):
+    web = write_demo_web(tmp_path / "demo")
+    release = asyncio.Event()
+
+    class SlowBroken(DemoCog):
+        async def activityhub_game(self):
+            await release.wait()
+            raise RuntimeError("the old code broke")
+
+    old, new = SlowBroken(web), DemoCog(web, key="Not A Key")
+    loaded = {"cog": old}
+    hub = make_hub()
+    hub.bot = SimpleNamespace(get_cog=lambda name: loaded["cog"])
+    describing = asyncio.create_task(ActivityHub.add_game(hub, old))
+    await asyncio.sleep(0)
+    loaded["cog"] = new
+    await ActivityHub.add_game(hub, new)
+    release.set()
+    await asyncio.wait_for(describing, 1)
+    refused, reason = hub.registry.failed[new.qualified_name]
+    assert refused is new and "Not A Key" in reason

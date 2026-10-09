@@ -21,6 +21,9 @@ class Run:
     key: str
     seed: int
     started: float
+    # The finish's answer, kept so a finish sent again (its answer was lost on the way back) gets it instead of
+    # an error. A round stays open until the player starts the next one of that game, or RUN_TTL passes
+    result: dict | None = None
 
 
 class ScoreBoard:
@@ -44,13 +47,15 @@ class ScoreBoard:
         self.runs[run_id] = Run(ctx.author.id, ctx.guild_id, key, seed, now)
         return run_id
 
-    def close_run(self, ctx: ActivityContext, key: str, run_id: t.Any) -> tuple[Run, float] | None:
-        """The player's open round with this id and how long it ran, or None when there is no such round"""
+    def find_run(self, ctx: ActivityContext, key: str, run_id: t.Any) -> tuple[Run, float] | None:
+        """The player's open round with this id and how long it has run, or None when there is no such round"""
         run = self.runs.get(run_id) if isinstance(run_id, str) else None
         if run is None or run.user_id != ctx.author.id or run.key != key or run.guild_id != ctx.guild_id:
             return None
-        del self.runs[run_id]
         return run, self.clock() - run.started
+
+    def close_run(self, run_id: str) -> None:
+        self.runs.pop(run_id, None)
 
     async def save(self, member: discord.Member, key: str, score: int) -> tuple[int, bool]:
         """Keep the score if it beats the member's best here. Returns their best and whether this was it"""

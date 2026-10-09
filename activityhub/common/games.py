@@ -336,17 +336,20 @@ class GameRegistry:
         cog_name = cog.qualified_name
         self.failed.pop(cog_name, None)
         self.clashes.pop(cog_name, None)
+        game, reason = None, ""
         try:
             game = await validate_game(cog)
         except GameError as e:
-            return self.refuse(cog, str(e))
+            reason = str(e)
         except Exception as e:
             log.error("activityhub_game() of %s raised", cog_name, exc_info=e)
-            return self.refuse(cog, f"activityhub_game() raised {type(e).__name__}: {e}")
+            reason = f"activityhub_game() raised {type(e).__name__}: {e}"
         # Checked before anything changes: an old copy finishing after its reloaded copy registered would
-        # otherwise replace the new copy's game, and then be removed itself, leaving the cog with no game
+        # otherwise replace the new copy's game or refusal, and then be removed itself, leaving neither
         if not still_loaded():
             return None
+        if game is None:
+            return self.refuse(cog, reason)
         holder = self.games.get(game.key)
         if holder is not None and holder.cog.qualified_name != cog_name:
             self.clashes[cog_name] = game.key

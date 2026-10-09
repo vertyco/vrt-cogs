@@ -856,8 +856,9 @@ function switchEditor() {
 function saveBody() {
   const body = { tab: page.tab };
   if (page.tab === "order") {
-    // After Reset an empty order means "alphabetical", so games installed later also land in order
-    body.order = page.staged.cleared ? [] : page.staged.order;
+    // After Reset no order means "alphabetical", so games installed later also land in order. An empty list
+    // can't mean that: it is what a server with every game off sends
+    body.order = page.staged.cleared ? null : page.staged.order;
   } else {
     body.look = Object.fromEntries(FIELDS.map((name) => [name, name in page.staged.look ? page.staged.look[name] : null]));
   }

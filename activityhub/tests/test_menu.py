@@ -111,5 +111,10 @@ def test_merge_order_appends_saved_installed_keys_that_were_not_sent():
         merge_order(["a"], "nope", installed)
 
 
-def test_merge_order_with_an_empty_list_resets_to_alphabetical():
-    assert merge_order(["c", "a", "b"], [], {"a", "b", "c"}) == []
+def test_merge_order_with_none_resets_to_alphabetical():
+    assert merge_order(["c", "a", "b"], None, {"a", "b", "c"}) == []
+
+
+def test_merge_order_with_an_empty_list_keeps_the_saved_order():
+    # What the menu sends from a server with every game off: the order still applies in other servers
+    assert merge_order(["c", "a", "b"], [], {"a", "b", "c"}) == ["c", "a", "b"]

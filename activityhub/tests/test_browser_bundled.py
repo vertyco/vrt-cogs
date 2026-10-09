@@ -179,3 +179,29 @@ def test_a_save_that_fails_on_the_way_can_be_retried(driver, live, monkeypatch):
     wait_for(driver, f"{SCREEN_TEXT}.includes('New best!')")
     assert len(calls) == 2 and calls[0] == calls[1]
     assert saved_best(live, "2048")["score"] > 0
+
+
+def set_safe_area(driver, **sides):
+    """Set the safe area sizes the way Discord's phone app does: on the menu's page, never inside the game frame"""
+    driver.switch_to.default_content()
+    for side, size in sides.items():
+        driver.execute_script(
+            f"document.documentElement.style.setProperty('--discord-safe-area-inset-{side}', '{size}')"
+        )
+    driver.switch_to.frame(driver.find_element(By.ID, "game-frame"))
+
+
+def test_the_bar_sits_below_discords_buttons_on_a_phone(driver, live):
+    driver.get(f"{live.url}/{DISCORD_QUERY}")
+    assert wait_for(driver, "document.body.dataset.login") == "online"
+    driver.execute_script("document.documentElement.style.setProperty('--discord-safe-area-inset-top', '40px')")
+    driver.execute_script("window.testHost.openGame('snake')")
+    wait_for(driver, "document.body.classList.contains('playing')")
+    driver.switch_to.frame(driver.find_element(By.ID, "game-frame"))
+    back = "document.querySelector('.arcade-back').getBoundingClientRect()"
+    assert wait_for(driver, f"document.querySelector('.arcade-back') && {back}.top >= 40")
+    # Turning the phone sideways moves Discord's buttons while the game is open
+    set_safe_area(driver, top="0px", right="30px")
+    assert wait_for(driver, f"{back}.top < 40")
+    bar = "getComputedStyle(document.querySelector('.arcade-bar'))"
+    assert driver.execute_script(f"return {bar}.paddingRight") == "38px"
