@@ -91,6 +91,8 @@ class Arcade {
     this.playing = false;
     this.paused = false;
     this.run = null;
+    // The last saved round, which can be cashed in until the next one starts
+    this.cashRun = null;
     this.saving = null;
     this.best = null;
     this.audio = null;
@@ -392,6 +394,7 @@ class Arcade {
       return;
     }
     this.run = round.run;
+    this.cashRun = null;
     this.hide();
     this.playing = true;
     this.paused = false;
@@ -434,6 +437,7 @@ class Arcade {
     try {
       const result = await this.hub.api("finish", { run, ...proof });
       this.run = null;
+      this.cashRun = run;
       return result;
     } catch (e) {
       if (e.status >= 400 && e.status < 500) {
@@ -517,7 +521,48 @@ class Arcade {
     } else {
       status.textContent = result.best ? `Your best ${fmt(result.best)}` : "Score some points to get on the board.";
     }
-    status.after(this.boardList(result.board));
+    status.after(...this.offer(result.offer), this.boardList(result.board));
+  }
+
+  // ---------- Cashing in ----------
+
+  // Where the server pays for scores: what this round is worth, and a button to cash it in. Playing again gives
+  // it up, so players save their few cash-ins a day for their best rounds
+  offer(offer) {
+    if (!offer) {
+      return [];
+    }
+    if (offer.left <= 0) {
+      return [this.note("No cash-ins left for this game today. They come back at midnight UTC.")];
+    }
+    if (offer.worth <= 0) {
+      return [this.note(`Score more to earn ${offer.currency}.`)];
+    }
+    const text = this.note(
+      `Worth ${fmt(offer.worth)} ${offer.currency} · ${offer.left} of ${offer.plays} cash-ins left today`,
+    );
+    const button = this.button(`Cash in ${fmt(offer.worth)}`, () => this.cashIn(box, button), true);
+    button.classList.add("arcade-cash");
+    const box = el("div", { class: "arcade-offer" }, [text, button]);
+    return [box];
+  }
+
+  async cashIn(box, button) {
+    button.disabled = true;
+    button.textContent = "Cashing in...";
+    try {
+      const paid = await this.hub.api("cashin", { run: this.cashRun });
+      const left = paid.left === 1 ? "1 cash-in" : `${paid.left} cash-ins`;
+      box.replaceChildren(
+        el("span", { class: "arcade-paid", text: `+${fmt(paid.paid)} ${paid.currency}` }),
+        this.note(`${left} left for this game today.`),
+      );
+      this.tune([784, 988, 1175, 1568], 0.06);
+      this.focusPrimary();
+    } catch (e) {
+      box.replaceChildren(this.note(e.message, "arcade-note arcade-error"));
+      this.focusPrimary();
+    }
   }
 
   // Leaving mid-round still saves the score so far

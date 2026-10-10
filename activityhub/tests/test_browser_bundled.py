@@ -32,7 +32,7 @@ def driver():
 @pytest.fixture
 def live(tmp_path, driver):
     hub = make_hub()
-    for game in bundled_games(hub.scores):
+    for game in bundled_games(hub.scores, hub.payouts):
         register(hub, game)
     server = LiveHub(hub, hub_web_copy(tmp_path, index=TEST_HOST_PAGE))
     server.start()
@@ -70,6 +70,23 @@ def press(driver, *keys):
 
 def saved_best(live, key):
     return live.hub.config.members.get(GUILD_ID, {}).get(MEMBER_ID, {}).get("best", {}).get(key)
+
+
+def test_a_finished_round_cashes_in_once(driver, live):
+    live.hub.config.guild_from_id(GUILD_ID).data["payouts"] = {"2048": {"on": True, "rate": 1, "cap": 50, "plays": 3}}
+    open_game(driver, live, "2048")
+    click_screen_button(driver, "Play")
+    wait_for(driver, "document.querySelectorAll('.tile').length === 2")
+    press(driver, *[Keys.ARROW_LEFT, Keys.ARROW_UP, Keys.ARROW_RIGHT, Keys.ARROW_DOWN] * 6)
+    press(driver, Keys.ESCAPE)
+    click_screen_button(driver, "End round")
+    wait_for(driver, f"{SCREEN_TEXT}.includes('3 of 3 cash-ins left today')")
+    worth = min(int(driver.execute_script("return document.querySelector('.arcade-final').dataset.value")), 50)
+    click_screen_button(driver, f"Cash in {worth}")
+    wait_for(driver, "document.querySelector('.arcade-paid')")
+    assert driver.execute_script("return document.querySelector('.arcade-paid').innerText") == f"+{worth} credits"
+    assert "2 cash-ins left" in driver.execute_script(f"return {SCREEN_TEXT}")
+    assert live.hub.payouts.bank.balances[MEMBER_ID] == worth
 
 
 def test_2048_round_is_saved_and_shows_the_board(driver, live):

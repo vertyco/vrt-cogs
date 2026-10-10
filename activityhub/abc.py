@@ -8,6 +8,7 @@ from redbot.core.bot import Red
 
 from .bundled.scores import ScoreBoard
 from .common.games import GameRegistry
+from .common.payouts import Payouts
 from .common.server import HubServer
 from .common.sessions import LaunchMemory, SessionStore
 
@@ -26,6 +27,7 @@ class MixinMeta(ABC):
         self.sessions: SessionStore
         self.launches: LaunchMemory
         self.scores: ScoreBoard
+        self.payouts: Payouts
         self.server: HubServer
 
     async def start_server(self) -> None:

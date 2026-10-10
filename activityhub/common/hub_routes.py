@@ -139,6 +139,7 @@ class HubRoutes:
             "tabs": [],
             "switches": [],
             "globalSwitches": [],
+            "payouts": None,
             "launch": None,
         }
 
@@ -158,6 +159,9 @@ class HubRoutes:
             "tabs": tabs,
             "switches": switches if "server" in tabs else [],
             "globalSwitches": await self.global_switches() if "defaults" in tabs else [],
+            "payouts": await self.hub.payouts.state(ctx.guild, [g.key for g in installed])
+            if "payouts" in tabs
+            else None,
             "launch": None,
         }
 
@@ -182,7 +186,8 @@ class HubRoutes:
 
     async def player_tabs(self, ctx: ActivityContext) -> list[str]:
         is_owner = await self.bot.is_owner(ctx.author)
-        return allowed_tabs(ctx.guild is not None, await self.can_manage(ctx), is_owner)
+        global_bank = await self.hub.payouts.bank.is_global()
+        return allowed_tabs(ctx.guild is not None, await self.can_manage(ctx), is_owner, global_bank)
 
     async def can_manage(self, ctx: ActivityContext) -> bool:
         """
@@ -235,6 +240,8 @@ class HubRoutes:
             await group.order.set(merge_order(await group.order(), body.get("order"), self.hub.registry.games))
         elif tab == "server":
             await self.save_server(ctx.guild, body)
+        elif tab == "payouts":
+            await self.hub.payouts.save(ctx.guild, body.get("payouts"))
         else:
             await self.save_defaults(body)
 

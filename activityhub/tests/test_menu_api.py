@@ -113,10 +113,10 @@ async def test_dm_player_sees_every_game_and_no_server_tab(client, hub, demo, se
 @pytest.mark.parametrize(
     "user_id, tabs",
     [
-        (MANAGER_ID, ["look", "order", "server"]),
-        (ADMIN_ID, ["look", "order", "server"]),
-        (GUILD_OWNER_ID, ["look", "order", "server"]),
-        (OWNER_ID, ["look", "order", "server", "defaults"]),
+        (MANAGER_ID, ["look", "order", "server", "payouts"]),
+        (ADMIN_ID, ["look", "order", "server", "payouts"]),
+        (GUILD_OWNER_ID, ["look", "order", "server", "payouts"]),
+        (OWNER_ID, ["look", "order", "server", "payouts", "defaults"]),
     ],
 )
 async def test_tabs_and_switches_by_permission(client, hub, demo, second, user_id, tabs):
@@ -195,7 +195,7 @@ async def test_reset_my_order_goes_back_to_alphabetical(client, hub, demo, secon
 @pytest.mark.asyncio
 async def test_a_manager_who_left_the_server_loses_the_server_tab(client, hub, demo):
     headers = session_headers(hub, user_id=MANAGER_ID)
-    assert (await menu(client, headers))[1]["tabs"] == ["look", "order", "server"]
+    assert (await menu(client, headers))[1]["tabs"] == ["look", "order", "server", "payouts"]
     del hub.bot.guilds[GUILD_ID].members[MANAGER_ID]
     assert (await menu(client, headers))[1]["tabs"] == ["look", "order"]
     assert (await save(client, headers, {"tab": "server", "disabled": ["demo"]}))[0] == 403
@@ -206,7 +206,7 @@ async def test_the_server_owner_always_gets_the_server_tab(client, hub, demo):
     # Even when the member cache doesn't have them, like a bot without the members intent
     del hub.bot.guilds[GUILD_ID].members[GUILD_OWNER_ID]
     headers = session_headers(hub, user_id=GUILD_OWNER_ID)
-    assert (await menu(client, headers))[1]["tabs"] == ["look", "order", "server"]
+    assert (await menu(client, headers))[1]["tabs"] == ["look", "order", "server", "payouts"]
     assert (await save(client, headers, {"tab": "server", "look": {"theme": "standard"}}))[0] == 200
     assert hub.config.guilds[GUILD_ID]["look"] == {"theme": "standard"}
 
@@ -253,7 +253,7 @@ async def test_manager_saves_server_look_and_switches(client, hub, demo, second)
     headers = session_headers(hub, user_id=MANAGER_ID)
     status, state = await save(client, headers, {"tab": "server", "look": LOOK_LIST, "disabled": ["demo"]})
     assert status == 200
-    assert hub.config.guilds[GUILD_ID] == {"look": {"layout": "list"}, "disabled": ["demo"]}
+    assert hub.config.guilds[GUILD_ID] == {"look": {"layout": "list"}, "disabled": ["demo"], "payouts": {}}
     assert keys(state) == ["second"]
 
 
@@ -288,7 +288,7 @@ async def test_bad_server_save_changes_nothing(client, hub, demo):
     headers = session_headers(hub, user_id=MANAGER_ID)
     status, body = await save(client, headers, {"tab": "server", "look": {"layout": "x"}, "disabled": ["demo"]})
     assert status == 400
-    assert hub.config.guilds[GUILD_ID] == {"look": {}, "disabled": []}
+    assert hub.config.guilds[GUILD_ID] == {"look": {}, "disabled": [], "payouts": {}}
 
 
 @pytest.mark.asyncio

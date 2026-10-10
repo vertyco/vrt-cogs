@@ -24,6 +24,8 @@ class Run:
     # The finish's answer, kept so a finish sent again (its answer was lost on the way back) gets it instead of
     # an error. A round stays open until the player starts the next one of that game, or RUN_TTL passes
     result: dict | None = None
+    # Set while a cash-in is on its way and once it paid, so a round pays out once
+    cashed: bool = False
 
 
 class ScoreBoard:

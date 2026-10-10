@@ -6,6 +6,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.select import Select
 
+from activityhub.bundled.games import bundled_games
 from activityhub.tests.browser import (
     DISCORD_QUERY,
     LiveHub,
@@ -237,6 +238,45 @@ def test_server_tab_turns_a_game_off(driver, live):
     assert live.hub.config.guilds[GUILD_ID]["disabled"] == ["demo"]
     driver.find_element(By.ID, "close").click()
     assert driver.execute_script(f"return {CARDS}") == ["second"]
+
+
+def test_payouts_tab_turns_a_game_on_with_its_own_rate(driver, live):
+    for game in bundled_games(live.hub.scores, live.hub.payouts):
+        register(live.hub, game)
+    live.hub.config.globals["look"] = {"theme": "standard"}
+    live.user_id = MANAGER_ID
+    open_menu(driver, live, DISCORD_QUERY)
+    open_settings(driver)
+    pick_tab(driver, "payouts")
+    card = '.payout[data-key="snake"]'
+    assert "credits per apple" in driver.find_element(By.CSS_SELECTOR, card).text.lower()
+    driver.find_element(By.CSS_SELECTOR, f"{card} .switch input").click()
+    rate = driver.find_element(By.CSS_SELECTOR, f'{card} input[data-field="rate"]')
+    rate.send_keys(Keys.BACKSPACE, Keys.BACKSPACE, "2.5")
+    save(driver)
+    assert live.hub.config.guilds[GUILD_ID]["payouts"]["snake"] == {"on": True, "rate": 2.5, "cap": 1000, "plays": 3}
+    driver.execute_cdp_cmd(
+        "Emulation.setDeviceMetricsOverride", {"width": 375, "height": 740, "deviceScaleFactor": 1, "mobile": True}
+    )
+    assert no_sideways_scroll(driver)
+    driver.execute_cdp_cmd("Emulation.clearDeviceMetricsOverride", {})
+
+
+def test_a_bad_payout_number_says_what_is_wrong(driver, live):
+    for game in bundled_games(live.hub.scores, live.hub.payouts):
+        register(live.hub, game)
+    live.hub.config.globals["look"] = {"theme": "standard"}
+    live.user_id = MANAGER_ID
+    open_menu(driver, live, DISCORD_QUERY)
+    open_settings(driver)
+    pick_tab(driver, "payouts")
+    # Typed away like a player would, since clear() skips the input event the page listens for
+    driver.find_element(By.CSS_SELECTOR, '.payout[data-key="snake"] input[data-field="plays"]').send_keys(
+        Keys.BACKSPACE
+    )
+    driver.find_element(By.ID, "save").click()
+    wait_for(driver, "document.getElementById('panel-status').textContent.includes('cash-ins a day')")
+    assert live.hub.config.guilds.get(GUILD_ID, {}).get("payouts", {}) == {}
 
 
 def test_defaults_tab_turns_a_game_off_everywhere(driver, live):

@@ -12,6 +12,7 @@
   --arcade-line: #2a3047;
   --arcade-good: #68d391;
   --arcade-bad: #fc8181;
+  --arcade-gold: #f6c744;
   --arcade-bar-height: 48px;
   /* The room Discord's own buttons (the back pill and Leave) and the phone's notch take at each edge. host.js
      copies Discord's values into this frame, since a frame can't see the menu's */
@@ -402,6 +403,56 @@ button:focus-visible {
   color: var(--arcade-good);
   font-weight: 800;
   box-shadow: 0 0 18px color-mix(in srgb, var(--arcade-good) 35%, transparent);
+}
+
+.arcade-offer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 10px 0 4px;
+  padding: 10px 12px 12px;
+  border: 1px solid color-mix(in srgb, var(--arcade-gold) 40%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--arcade-gold) 8%, transparent);
+}
+
+.arcade-offer .arcade-note {
+  margin: 2px 0;
+  font-size: 0.9rem;
+}
+
+.arcade-cash {
+  min-width: 160px;
+  padding: 10px 18px;
+  border: 1px solid var(--arcade-gold);
+  border-radius: 12px;
+  background: var(--arcade-gold);
+  color: #1d1600;
+  font-weight: 800;
+  transition:
+    filter 0.12s,
+    transform 0.12s;
+}
+
+.arcade-cash:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.arcade-cash:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.arcade-cash:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.arcade-paid {
+  color: var(--arcade-gold);
+  font-size: 1.5rem;
+  font-weight: 800;
+  text-shadow: 0 0 16px color-mix(in srgb, var(--arcade-gold) 55%, transparent);
 }
 
 .arcade-actions {

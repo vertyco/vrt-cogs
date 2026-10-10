@@ -646,6 +646,16 @@ Use `BucketType.user` or `BucketType.member`. `BucketType.channel` needs `ctx.ch
 
 For a stronger check, see how the included games [replay the player's moves](#19-bigger-examples-the-included-games).
 
+### Paying for scores, Neopets style
+
+Your cog keeps its own payout settings and pays from its own code; the hub doesn't pay for you. For a game with a score, the way Neopets pays for its games works well, and it's what the included games and Marble Munch do:
+
+- **The player chooses.** After a round, the page shows what the score is worth and a **Cash in** button. Playing another round first gives that score up, so players spend their cash-ins on their best rounds.
+- **Every cash-in is capped.** Each point pays a rate, up to a most-per-cash-in, and each player gets a few cash-ins a day. A faked score can't earn more than a strong honest round, and admins can balance their economy because the most a game can pay a day is known.
+- **Admins set the numbers.** The rate, the cap and the cash-ins a day are settings, with payouts off until an admin turns them on.
+
+Marble Munch is a full example to copy. `common/payouts.py` holds the settings, the daily count and the bank deposit. `main.py` offers each player their last round and lets it cash in only once. Its page has a settings dialog that only server admins see. With a global bank every server shares one balance, so it lets only the bot owner change the settings, and counts each player's cash-ins across servers.
+
 ## 10. Multiplayer with live connections
 
 A live connection (a WebSocket: a connection that stays open, so both sides can send at any time) lets players see each other. Use it when one player's action must reach other players right away.

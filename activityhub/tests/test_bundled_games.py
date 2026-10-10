@@ -1,7 +1,17 @@
 import pytest
 
 from activityhub.bundled import bricks, snake, twenty48
-from activityhub.bundled.games import NO_BOARD, NO_ROUND, NOT_SAVED, PRACTICE, WEB_DIR, bundled_games
+from activityhub.bundled.games import (
+    ALREADY_CASHED,
+    NO_BOARD,
+    NO_ROUND,
+    NOT_FINISHED,
+    NOT_SAVED,
+    PRACTICE,
+    WEB_DIR,
+    bundled_games,
+)
+from activityhub.common.payouts import PAYOUTS_OFF
 from activityhub.bundled.scores import BOARD_SIZE, RUN_TTL, ScoreBoard
 from activityhub.tests.fakes import (
     ADMIN_ID,
@@ -28,7 +38,7 @@ class Clock:
 def clock(hub):
     clock = Clock()
     hub.scores = ScoreBoard(hub.config, clock=clock)
-    for game in bundled_games(hub.scores):
+    for game in bundled_games(hub.scores, hub.payouts):
         assert register(hub, game) is not None
     return clock
 
@@ -68,7 +78,8 @@ def test_bundled_games_register(hub, clock):
     game = hub.registry.games["snake"]
     assert game.icon == "icon.svg" and game.thumbnail == "thumb.svg"
     assert game.cog.qualified_name == "ActivityHub Snake"
-    assert set(game.actions) == {"start", "finish", "board"}
+    assert set(game.actions) == {"start", "finish", "board", "cashin"}
+    assert hub.payouts.games["snake"].unit == "apple" and hub.payouts.games["snake"].rate == 25
 
 
 @pytest.mark.asyncio
@@ -256,3 +267,60 @@ async def test_a_zero_score_isnt_saved(hub, clock):
     member = hub.bot.get_guild(GUILD_ID).get_member(MEMBER_ID)
     assert await hub.scores.save(member, "2048", 0) == (0, False)
     assert hub.config.member(member).data["best"] == {}
+
+
+# ---------- Cashing in ----------
+
+
+async def turn_on(hub, key="2048"):
+    await hub.config.guild_from_id(GUILD_ID).payouts.set({key: {"on": True, "rate": 1, "cap": 1000, "plays": 3}})
+
+
+async def finished_2048(client, hub, clock, **who) -> tuple[str, dict]:
+    opened = await start(client, hub, **who)
+    clock.now += 60
+    status, result = await finish(client, hub, {"run": opened["run"], "moves": moves_2048(opened["seed"])}, **who)
+    assert status == 200
+    return opened["run"], result
+
+
+async def cash(client, hub, run, key="2048", **who):
+    resp = await client.post(f"/games/{key}/api/cashin", json={"run": run}, headers=session_headers(hub, **who))
+    return resp.status, await resp.json()
+
+
+@pytest.mark.asyncio
+async def test_a_finished_round_offers_and_cashes_in_once(client, hub, clock):
+    await turn_on(hub)
+    run, result = await finished_2048(client, hub, clock)
+    assert result["offer"] == {"worth": min(result["score"], 1000), "left": 3, "plays": 3, "currency": "credits"}
+    status, paid = await cash(client, hub, run)
+    assert status == 200 and paid["paid"] == result["offer"]["worth"] and paid["left"] == 2
+    assert await cash(client, hub, run) == (400, {"error": ALREADY_CASHED})
+
+
+@pytest.mark.asyncio
+async def test_playing_again_gives_up_the_unsent_score(client, hub, clock):
+    await turn_on(hub)
+    run, _ = await finished_2048(client, hub, clock)
+    await start(client, hub)
+    assert await cash(client, hub, run) == (400, {"error": NOT_FINISHED})
+
+
+@pytest.mark.asyncio
+async def test_only_a_finished_round_of_your_own_cashes_in(client, hub, clock):
+    await turn_on(hub)
+    opened = await start(client, hub)
+    assert await cash(client, hub, opened["run"]) == (400, {"error": NOT_FINISHED})
+    run, _ = await finished_2048(client, hub, clock)
+    assert await cash(client, hub, run, user_id=MANAGER_ID) == (400, {"error": NOT_FINISHED})
+    assert await cash(client, hub, run, guild_id=None) == (400, {"error": PRACTICE})
+
+
+@pytest.mark.asyncio
+async def test_a_refused_cash_in_can_be_tried_again(client, hub, clock):
+    run, result = await finished_2048(client, hub, clock)
+    assert result["offer"] is None
+    assert await cash(client, hub, run) == (400, {"error": PAYOUTS_OFF})
+    await turn_on(hub)
+    assert (await cash(client, hub, run))[0] == 200

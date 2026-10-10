@@ -47,7 +47,7 @@ def field(embed: discord.Embed, name: str) -> str:
 async def test_games_lists_the_scopes_each_game_asks_for(tmp_path):
     hub = make_hub()
     await hub.registry.add(DemoCog(write_demo_web(tmp_path / "demo")))
-    await hub.registry.add(Snake(hub.scores))
+    await hub.registry.add(Snake(hub.scores, hub.payouts))
     await hub.config.disabled.set(["demo"])
     ctx = fake_ctx()
     await OwnerCommands.list_games.callback(HubCog(hub), ctx)
@@ -60,7 +60,7 @@ async def test_games_lists_the_scopes_each_game_asks_for(tmp_path):
 async def test_view_shows_the_address_the_default_and_what_is_missing(tmp_path):
     hub = make_hub()
     await hub.registry.add(DemoCog(write_demo_web(tmp_path / "demo")))
-    await hub.registry.add(Snake(hub.scores))
+    await hub.registry.add(Snake(hub.scores, hub.payouts))
     await hub.config.host.set("0.0.0.0")
     await hub.config.port.set(9000)
     await hub.config.disabled.set(["demo", "gone"])

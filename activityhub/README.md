@@ -20,6 +20,14 @@ Players can't fake a score by changing the game page. For Snake and 2048 the bot
 
 Server admins and the bot owner can turn these games off like any other game.
 
+## Payouts
+
+The included games can pay players in your bot's currency for their scores, the way Neopets pays for its games. Game cogs that pay out (like Marble Munch) keep their own payout settings.
+
+After a round, the player sees what their score is worth and a **Cash in** button. Each point pays a set rate, up to a most-per-cash-in, and each player gets a few cash-ins per game per day. Playing another round first gives that score up, so players save their cash-ins for their best rounds. Because every cash-in is capped, a player who fakes a score can't earn more than a strong honest player.
+
+Server admins set this up in the menu's **Payouts** settings tab. For each included game they pick the credits one point pays, the most one cash-in pays, and the cash-ins a day. Payouts start off, so no game pays until an admin turns it on. Cash-ins come back at midnight UTC. With a global bank every server shares one balance, so only the bot owner sees the Payouts tab, the owner's settings apply in every server, and the daily cash-ins count across servers.
+
 ## For players
 
 - `/activities` opens the menu. `[p]activities` posts an **Open Activities** button that does the same thing, and works even if slash commands aren't synced.
@@ -29,7 +37,7 @@ Server admins and the bot owner can turn these games off like any other game.
 
 ## For server admins
 
-The server owner, and members with the Manage Server permission (or Red's admin role), see a **This server** tab in the settings. It sets the server's default look, theme included, which every member sees until they pick their own in **My look**, and turns games on or off. A game that is off can't be played in this server at all, and anyone playing it is stopped. Games the bot owner turned off for every server don't show up here.
+The server owner, and members with the Manage Server permission (or Red's admin role), see a **This server** tab in the settings, and a **Payouts** tab (see [Payouts](#payouts)). It sets the server's default look, theme included, which every member sees until they pick their own in **My look**, and turns games on or off. A game that is off can't be played in this server at all, and anyone playing it is stopped. Games the bot owner turned off for every server don't show up here.
 
 They can also put the **Open Activities** button on any message the bot sent in their server, like a welcome or rules message: `[p]activities pin <message link>` adds it, and `[p]activities unpin <message link>` takes it off. The message keeps its text, embeds and other buttons, and the button keeps working after the bot restarts. To give the button its own label, emoji or color, type them after the link: `[p]activities pin <message link> Play games emoji: 🎮 color: blurple` (colors: blurple, grey, green, red). Pin again with new ones to change a button that's already there; only the parts you type change. Add `game:` to pin a button that opens one game instead of the menu, like `[p]activities pin <message link> game: Snake`. It works for the bundled games and for games from other cogs, and `[p]activities unpin <message link> Snake` takes just that button off. If the cog that posted the message redraws its own buttons later, the pinned button goes away and needs pinning again.
 

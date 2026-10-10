@@ -10,6 +10,7 @@ from .bundled.scores import ScoreBoard
 from .commands import Commands
 from .common.discord_api import drop_entry_point_hook, keep_entry_point
 from .common.games import GameRegistry
+from .common.payouts import Payouts
 from .common.server import DEFAULT_HOST, DEFAULT_PORT, HubServer
 from .common.sessions import LaunchMemory, SessionStore
 from .views.launch import LaunchButton
@@ -28,20 +29,21 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.3.0"
+    __version__ = "0.4.0"
 
     def __init__(self, bot: Red):
         super().__init__()
         self.bot: Red = bot
         self.config = Config.get_conf(self, identifier=117, force_registration=True)
-        self.config.register_global(host=DEFAULT_HOST, port=DEFAULT_PORT, look={}, disabled=[])
-        self.config.register_guild(look={}, disabled=[])
-        self.config.register_user(look={}, order=[])
-        self.config.register_member(best={})
+        self.config.register_global(host=DEFAULT_HOST, port=DEFAULT_PORT, look={}, disabled=[], payouts={})
+        self.config.register_guild(look={}, disabled=[], payouts={})
+        self.config.register_user(look={}, order=[], cashed={})
+        self.config.register_member(best={}, cashed={})
         self.registry = GameRegistry()
         self.sessions = SessionStore()
         self.launches = LaunchMemory()
         self.scores = ScoreBoard(self.config)
+        self.payouts = Payouts(self.config)
         self.server = HubServer(self)
         # The game cogs cog_load found already loaded, each describing itself in its own task
         self.scans: list[asyncio.Task] = []
@@ -64,7 +66,7 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
         self.bot.add_dynamic_items(LaunchButton)
         try:
             await self.start_server()
-            for game in bundled_games(self.scores):
+            for game in bundled_games(self.scores, self.payouts):
                 await self.registry.add(game)
             # Last, so a cog added during the server start isn't missed. This cog isn't in bot.cogs yet while it
             # loads, so this sees every other cog that is already loaded. Each game cog describes itself in its own

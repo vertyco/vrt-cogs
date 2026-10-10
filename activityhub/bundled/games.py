@@ -2,6 +2,7 @@ import logging
 import secrets
 from pathlib import Path
 
+from ..common.payouts import Payouts
 from ..common.sessions import ActivityContext
 from . import bricks, snake, twenty48
 from .scores import Run, ScoreBoard
@@ -16,6 +17,8 @@ PRACTICE = "Scores are only saved when you play in a server."
 NO_BOARD = "Leaderboards are kept per server. Open this in a server to see one."
 NO_ROUND = "That round wasn't found, so it wasn't saved."
 NOT_SAVED = "That round didn't add up, so it wasn't saved."
+NOT_FINISHED = "That round isn't finished, or you already played another one."
+ALREADY_CASHED = "That round was already cashed in."
 
 
 class BundledGame:
@@ -23,15 +26,20 @@ class BundledGame:
     A game that comes with the hub. It plugs into the menu the same way a game cog does.
 
     Every bundled game keeps each server's best scores. The page starts a round on the bot's clock, then sends
-    what it needs to prove the round when it ends, and the bot works out the score itself.
+    what it needs to prove the round when it ends, and the bot works out the score itself. Where payouts are on,
+    the finished round can then be cashed in once, until the player starts another round of that game.
     """
 
     key = ""
     name = ""
     description = ""
+    # What one point is called, and what it pays until a server changes it
+    unit = "point"
+    rate = 1
 
-    def __init__(self, scores: ScoreBoard):
+    def __init__(self, scores: ScoreBoard, payouts: Payouts):
         self.scores = scores
+        self.payouts = payouts
 
     @property
     def qualified_name(self) -> str:
@@ -46,7 +54,7 @@ class BundledGame:
             "web_dir": WEB_DIR / self.key,
             "icon": "icon.svg",
             "thumbnail": "thumb.svg",
-            "actions": {"start": self.start, "finish": self.finish, "board": self.board},
+            "actions": {"start": self.start, "finish": self.finish, "board": self.board, "cashin": self.cash_in},
         }
 
     async def start(self, ctx: ActivityContext, data: dict) -> dict:
@@ -73,8 +81,27 @@ class BundledGame:
         # A save that raises leaves the round open, so the page's Retry save can send it again
         best, new_best = await self.scores.save(ctx.author, self.key, score)
         board = await self.scores.board(ctx.guild, ctx.author, self.key)
-        run.result = {"score": score, "best": best, "newBest": new_best, "board": board}
+        offer = await self.payouts.offer(ctx.author, self.key, score)
+        run.result = {"score": score, "best": best, "newBest": new_best, "board": board, "offer": offer}
         return run.result
+
+    async def cash_in(self, ctx: ActivityContext, data: dict) -> dict:
+        if ctx.guild is None:
+            return {"error": PRACTICE}
+        opened = self.scores.find_run(ctx, self.key, data.get("run"))
+        if opened is None or opened[0].result is None:
+            return {"error": NOT_FINISHED}
+        run = opened[0]
+        if run.cashed:
+            return {"error": ALREADY_CASHED}
+        # Set before the wait, so a double click can't pay twice. Kept only when the cash-in paid
+        run.cashed, paid = True, False
+        try:
+            result = await self.payouts.cash_in(ctx.author, self.key, run.result["score"])
+            paid = "error" not in result
+            return result
+        finally:
+            run.cashed = paid
 
     async def board(self, ctx: ActivityContext, data: dict) -> dict:
         if ctx.guild is None:
@@ -90,6 +117,8 @@ class Snake(BundledGame):
     key = "snake"
     name = "Snake"
     description = "Eat apples, grow longer, and don't run into yourself"
+    unit = "apple"
+    rate = 25
 
     def score(self, run: Run, data: dict, elapsed: float) -> int | None:
         ticks = data.get("ticks")
@@ -108,6 +137,7 @@ class Twenty48(BundledGame):
     key = "2048"
     name = "2048"
     description = "Slide matching tiles together to build bigger numbers"
+    rate = 0.1
 
     def score(self, run: Run, data: dict, elapsed: float) -> int | None:
         moves = data.get("moves")
@@ -121,9 +151,10 @@ class BrickBreaker(BundledGame):
     key = "brickbreaker"
     name = "Brick Breaker"
     description = "Break every brick and clear as many levels as you can"
+    rate = 0.5
 
-    def __init__(self, scores: ScoreBoard):
-        super().__init__(scores)
+    def __init__(self, scores: ScoreBoard, payouts: Payouts):
+        super().__init__(scores, payouts)
         self.levels = bricks.load_levels(WEB_DIR / self.key / "levels.json")
 
     def score(self, run: Run, data: dict, elapsed: float) -> int | None:
@@ -133,5 +164,7 @@ class BrickBreaker(BundledGame):
         return bricks.run_score(broken, cleared)
 
 
-def bundled_games(scores: ScoreBoard) -> list[BundledGame]:
-    return [Snake(scores), BrickBreaker(scores), Twenty48(scores)]
+def bundled_games(scores: ScoreBoard, payouts: Payouts) -> list[BundledGame]:
+    games = [Snake(scores, payouts), BrickBreaker(scores, payouts), Twenty48(scores, payouts)]
+    payouts.games = {game.key: game for game in games}
+    return games

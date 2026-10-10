@@ -51,11 +51,17 @@ def merge_disabled(saved: list[str], value: t.Any, installed: t.Collection[str])
     return list(dict.fromkeys(kept + sent))
 
 
-def allowed_tabs(in_guild: bool, can_manage: bool, is_owner: bool) -> list[str]:
-    """Settings panel tabs a player may see and save"""
+def allowed_tabs(in_guild: bool, can_manage: bool, is_owner: bool, global_bank: bool = False) -> list[str]:
+    """
+    Settings panel tabs a player may see and save. A global bank's balances are shared by every server, so only
+    the bot owner sets its payouts
+    """
     tabs = ["look", "order"]
-    if in_guild and (can_manage or is_owner):
+    server_admin = in_guild and (can_manage or is_owner)
+    if server_admin:
         tabs.append("server")
+    if is_owner if global_bank else server_admin:
+        tabs.append("payouts")
     if is_owner:
         tabs.append("defaults")
     return tabs

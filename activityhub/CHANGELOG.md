@@ -1,5 +1,14 @@
 # ActivityHub Changelog
 
+## 0.4.0
+
+The included games can now pay players in the bot's currency for their scores, the way Neopets pays for its games.
+
+- After a round of Snake, Brick Breaker or 2048, the results show what the score is worth and a **Cash in** button. Each point pays a set rate, up to a most-per-cash-in, and each player gets a few cash-ins per game per day. Playing another round first gives that score up, so players save their cash-ins for their best rounds. Since every cash-in is capped, a faked score can't earn more than a strong honest round.
+- Server admins set it up in a new **Payouts** settings tab: for each game, the credits one point pays, the most one cash-in pays (1,000 by default) and the cash-ins a day (3 by default). Payouts start off, so no game pays until an admin turns it on. Cash-ins come back at midnight UTC.
+- With a global bank every server shares one balance, so only the bot owner sees the Payouts tab. The owner's settings apply in every server, and the daily cash-ins count across servers.
+- A cash-in that can't pay (none left today, a score worth nothing yet, or a balance already at the bank's maximum) doesn't use one up. A cash-in that would go over the maximum pays up to it.
+
 ## 0.3.0
 
 - A pinned **Open Activities** button can have its own label, emoji and color. Type them after the message link: `[p]activities pin <message link> Play games emoji: 🎮 color: blurple`. The color can be blurple, grey, green or red, and the emoji can be a normal emoji or one of the server's own. Anything left out keeps the usual look: "Open Activities" in green, with no emoji.

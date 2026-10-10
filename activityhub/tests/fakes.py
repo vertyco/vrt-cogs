@@ -8,7 +8,10 @@ import discord
 from aiohttp import web
 
 from activityhub.bundled.scores import ScoreBoard
+from redbot.core.errors import BalanceTooHigh
+
 from activityhub.common.games import GameRegistry
+from activityhub.common.payouts import Payouts
 from activityhub.common.sessions import ActivityContext, LaunchMemory, SessionStore
 
 APP_ID = 1000
@@ -58,7 +61,7 @@ class FakeConfig:
     """Dict-backed stand-in for Red's Config with ActivityHub's defaults"""
 
     def __init__(self):
-        self.globals = {"host": "127.0.0.1", "port": 8742, "look": {}, "disabled": []}
+        self.globals = {"host": "127.0.0.1", "port": 8742, "look": {}, "disabled": [], "payouts": {}}
         self.guilds: dict[int, dict] = {}
         self.users: dict[int, dict] = {}
         self.members: dict[int, dict[int, dict]] = {}
@@ -69,19 +72,19 @@ class FakeConfig:
         return FakeValue(self.globals, name)
 
     def guild_from_id(self, guild_id: int) -> FakeGroup:
-        return FakeGroup(self.guilds.setdefault(guild_id, {"look": {}, "disabled": []}))
+        return FakeGroup(self.guilds.setdefault(guild_id, {"look": {}, "disabled": [], "payouts": {}}))
 
     def guild(self, guild) -> FakeGroup:
         return self.guild_from_id(guild.id)
 
     def user_from_id(self, user_id: int) -> FakeGroup:
-        return FakeGroup(self.users.setdefault(user_id, {"look": {}, "order": []}))
+        return FakeGroup(self.users.setdefault(user_id, {"look": {}, "order": [], "cashed": {}}))
 
     def user(self, user) -> FakeGroup:
         return self.user_from_id(user.id)
 
     def member_from_ids(self, guild_id: int, user_id: int) -> FakeGroup:
-        return FakeGroup(self.members.setdefault(guild_id, {}).setdefault(user_id, {"best": {}}))
+        return FakeGroup(self.members.setdefault(guild_id, {}).setdefault(user_id, {"best": {}, "cashed": {}}))
 
     def member(self, member) -> FakeGroup:
         return self.member_from_ids(member.guild.id, member.id)
@@ -170,6 +173,43 @@ class FakeBot:
         return dict(self.tokens) if service == "activityhub" else {}
 
 
+class FakeBank:
+    """Red's bank functions the payouts use, keyed by user id. One balance per user, global or not"""
+
+    def __init__(self):
+        self.global_bank = False
+        self.balances: dict[int, int] = {}
+        self.max_balance = 1_000_000
+
+    async def is_global(self) -> bool:
+        return self.global_bank
+
+    async def get_currency_name(self, guild=None) -> str:
+        return "credits"
+
+    async def get_balance(self, member) -> int:
+        return self.balances.get(member.id, 0)
+
+    async def deposit_credits(self, member, amount: int) -> int:
+        balance = self.balances.get(member.id, 0) + amount
+        if balance > self.max_balance:
+            raise BalanceTooHigh(member, self.max_balance, "credits")
+        self.balances[member.id] = balance
+        return balance
+
+    async def set_balance(self, member, amount: int) -> int:
+        self.balances[member.id] = amount
+        return amount
+
+
+class Today:
+    def __init__(self):
+        self.day = "2026-10-10"
+
+    def __call__(self) -> str:
+        return self.day
+
+
 def make_hub() -> SimpleNamespace:
     config = FakeConfig()
     return SimpleNamespace(
@@ -179,6 +219,7 @@ def make_hub() -> SimpleNamespace:
         sessions=SessionStore(),
         launches=LaunchMemory(),
         scores=ScoreBoard(config),
+        payouts=Payouts(config, money=FakeBank(), today=Today()),
     )
 
 
