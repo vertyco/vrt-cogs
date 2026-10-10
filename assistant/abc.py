@@ -1,6 +1,5 @@
 import asyncio
 from abc import ABC, ABCMeta, abstractmethod
-from multiprocessing.pool import Pool
 from typing import Any, Callable, Dict, List, Optional, Union
 
 import discord
@@ -26,7 +25,6 @@ class MixinMeta(ABC):
     def __init__(self, *_args):
         self.bot: Red
         self.db: DB
-        self.mp_pool: Pool
         self.registry: Dict[str, Dict[str, dict]]
         self.context_registry: Dict[str, Dict[str, dict]]
         self.embedding_store: EmbeddingStore

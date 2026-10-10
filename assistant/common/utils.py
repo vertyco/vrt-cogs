@@ -32,7 +32,7 @@ def wildcard_to_regex(pattern: str) -> str:
     everything else is escaped via ``re.escape``. This means staff of a public bot can
     paste arbitrary text — including real regex like ``(a+)+`` — and it can never inject
     catastrophic backtracking (ReDoS): the output contains only literals, ``.*`` and ``\\b``,
-    which the engine matches in linear time, so no multiprocessing timeout guard is needed.
+    which the engine matches in linear time, so no timeout guard is needed.
 
     A phrase with no leading/trailing ``*`` is anchored on word boundaries, so ``idiot``
     hits the whole word ``idiot`` but not ``idiotic``. Add ``*`` to loosen it:

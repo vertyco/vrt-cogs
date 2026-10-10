@@ -1,9 +1,7 @@
 import asyncio
 import base64
-import functools
 import html
 import logging
-import multiprocessing as mp
 import re
 import traceback
 from contextlib import suppress
@@ -17,6 +15,7 @@ import httpx
 import openai
 import orjson
 import pytz
+import regex
 from openai.types.chat.chat_completion_message import (
     ChatCompletionMessage,
     FunctionCall,
@@ -1501,11 +1500,11 @@ class ChatHandler(MixinMeta):
 
         block = False
         if reply:
-            for regex in conf.regex_blacklist:
+            for pattern in conf.regex_blacklist:
                 try:
-                    reply = await self.safe_regex(regex, reply)
-                except (asyncio.TimeoutError, mp.TimeoutError):
-                    log.error(f"Regex {regex} in {guild.name} took too long to process. Skipping...")
+                    reply = await self.safe_regex(pattern, reply)
+                except TimeoutError:
+                    log.error(f"Regex {pattern} in {guild.name} took too long to process. Skipping...")
                     if conf.block_failed_regex:
                         block = True
                 except Exception as e:
@@ -1527,20 +1526,12 @@ class ChatHandler(MixinMeta):
 
         return append_reasoning_block(reply, reply_reasoning, conf)
 
-    async def safe_regex(self, regex: str, content: str):
-        process = self.mp_pool.apply_async(
-            re.sub,
-            args=(
-                regex,
-                "",
-                content,
-            ),
-        )
-        task = functools.partial(process.get, timeout=2)
-        loop = asyncio.get_running_loop()
-        new_task = loop.run_in_executor(None, task)
-        subbed = await asyncio.wait_for(new_task, timeout=5)
-        return subbed
+    async def safe_regex(self, pattern: str, content: str) -> str:
+        """Strip a user-supplied regex from content, raising TimeoutError after 2 seconds.
+
+        The regex module's timeout stops runaway patterns, and concurrent=True releases the GIL while matching.
+        """
+        return await asyncio.to_thread(regex.sub, pattern, "", content, timeout=2, concurrent=True)
 
     async def prepare_messages(
         self,

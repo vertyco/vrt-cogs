@@ -1,5 +1,9 @@
 # Assistant Changelog
 
+## v8.24.3
+
+- **Fix**: Unloading or reloading the cog could freeze the whole bot. The regex safety check used a helper process, and shutting that process down could get stuck waiting on a lock forever. The helper process is gone: trigger phrases and the reply regex blacklist now use the `regex` package's built-in 2-second timeout instead, which stops a runaway pattern the same way without a second Python process. It also saves the memory that process used and a round trip to it for every trigger phrase on every message.
+
 ## v8.24.1
 
 - **Fix**: Attachments the assistant cannot read (videos, archives, any type outside the image and readable-file lists) are now mentioned in the prompt as `[unsupported file type, contents could not be read]` instead of being dropped silently. Before, a message that was only a video reached the model as an empty turn, the model answered with nothing three times, and the assistant went quiet with no reply.

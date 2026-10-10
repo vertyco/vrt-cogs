@@ -1,13 +1,11 @@
 import asyncio
-import functools
 import logging
-import multiprocessing as mp
-import re
 import typing as t
 from collections import deque
 from dataclasses import dataclass, field
 
 import discord
+import regex
 from redbot.core import commands
 from redbot.core.i18n import Translator
 
@@ -35,19 +33,17 @@ class AssistantListener(MixinMeta):
         self._response_state: dict[tuple[int, int, int], _ResponseState] = {}
 
     async def safe_regex_search(self, pattern: str, content: str) -> bool:
-        """Safely check if a regex pattern matches content using multiprocessing pool for timeout."""
+        """Check if a user-supplied regex pattern matches content, giving up after 2 seconds.
+
+        The regex module's timeout stops runaway (catastrophic backtracking) patterns, and
+        concurrent=True releases the GIL while matching so the bot keeps running meanwhile.
+        """
         try:
-            # Use re.findall which returns a list (picklable) instead of re.search which returns a Match (not picklable)
-            process = self.mp_pool.apply_async(
-                re.findall,
-                args=(pattern, content, re.IGNORECASE),
+            result = await asyncio.to_thread(
+                regex.findall, pattern, content, flags=regex.IGNORECASE, timeout=2, concurrent=True
             )
-            task = functools.partial(process.get, timeout=2)
-            loop = asyncio.get_running_loop()
-            new_task = loop.run_in_executor(None, task)
-            result = await asyncio.wait_for(new_task, timeout=5)
             return len(result) > 0
-        except (asyncio.TimeoutError, mp.TimeoutError):
+        except TimeoutError:
             log.warning(f"Regex pattern '{pattern}' took too long to process")
             return False
         except Exception as e:
