@@ -1,5 +1,18 @@
 # ActivityHub Changelog
 
+## 0.2.1
+
+The Orb theme on a phone held upright is laid out again, and sliding works on real phones.
+
+- Sliding a finger on the ring works on phones. Discord's buttons and the phone's home bar made the page taller than the screen, so the phone scrolled the page under the finger instead of moving between games. The menu is now exactly the size of the screen, and a slide holds the page still itself.
+- The panel for the selected game hangs at the top under the server's name, from an arm reaching in from the top right corner, like on a big screen. The ring of pods fills the space below it, where a thumb reaches. Before, the panel sat at the bottom, where it covered the arrow under the ring and the arm crossed the bottom tabs.
+- Everything fits between Discord's buttons at the top and the home bar at the bottom, and moves down when a notice shows under the header.
+- The orb grows to fill the space under the panel, and the pods spread out along the ring when they all fit. Short phones show more games at once.
+- The panel is the same height for every game, so the ring never jumps when the selection moves.
+- The frame rate counter moves to the bottom right corner, clear of the pods and the arrow.
+- The "No games" message sits under the panel instead of on top of it.
+- Text on the ring and the header can't be picked out by a long press.
+
 ## 0.2.0
 
 The Orb theme is rebuilt to look and move more like the console dashboard it copies.

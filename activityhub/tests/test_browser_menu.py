@@ -464,6 +464,72 @@ def test_orb_swipes_move_along_the_ring_on_an_upright_phone(driver, live):
         plain_device(driver)
 
 
+# Where the Orb menu draws things on the screen, each as [left, top, right, bottom]
+ORB_LAYOUT = """
+const box = (node) => { const r = node.getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; };
+const pills = [...document.querySelectorAll('#games .pill:not(.off-ring)')];
+const down = document.querySelector('.orb-arrow.down');
+const middle = box(down);
+return {
+  page: [document.documentElement.scrollHeight, innerHeight],
+  bar: box(document.querySelector('.bar')),
+  panel: box(document.getElementById('orb-screen')),
+  arm: box(document.querySelector('#orb-screen .screen-arm')),
+  ring: pills.flatMap((pill) => [box(pill.querySelector('.pod')), box(pill.querySelector('.plate'))]),
+  down: down.hidden ? null : middle,
+  downOnTop: document.elementFromPoint((middle[0] + middle[2]) / 2, (middle[1] + middle[3]) / 2) === down,
+};
+"""
+
+
+def test_orb_upright_phone_fits_between_discords_buttons(driver, live, tmp_path):
+    # Enough games that the ring scrolls, so the arrow under it shows
+    for i in range(5):
+        register(
+            live.hub, DemoCog(write_demo_web(tmp_path / f"x{i}"), key=f"x{i}", name=f"Extra {i}", cog_name=f"X{i}")
+        )
+    touch_device(driver, 390, 844)
+    try:
+        open_menu(driver, live, DISCORD_QUERY)
+        # Discord's phone app covers the top with its back pill and Leave button, and the bottom with the home bar
+        driver.execute_script(
+            "document.documentElement.style.setProperty('--discord-safe-area-inset-top', '100px');"
+            "document.documentElement.style.setProperty('--discord-safe-area-inset-bottom', '34px');"
+            "window.dispatchEvent(new Event('resize'));"
+        )
+        wait_for(driver, SETTLED)
+        layout = driver.execute_script(ORB_LAYOUT)
+        # The page is exactly the screen, so a finger can't scroll it or bounce it
+        assert layout["page"][0] == layout["page"][1]
+        # The panel hangs under the header, its arm stays above it, and the ring and its arrow fit between the
+        # panel and the home bar, with nothing over the arrow
+        bar, panel = layout["bar"], layout["panel"]
+        assert panel[1] >= bar[3] and layout["arm"][3] < panel[3]
+        assert layout["down"] is not None and layout["downOnTop"]
+        for box in [*layout["ring"], layout["down"]]:
+            assert panel[3] <= box[1] and box[3] <= 844 - 34
+    finally:
+        plain_device(driver)
+
+
+def test_orb_slides_hold_the_page_still_and_work_from_anywhere(driver, live):
+    touch_device(driver, 390, 844)
+    try:
+        open_menu(driver, live, DISCORD_QUERY)
+        # The menu's own listener runs first; this one hears whether the slide kept the page from scrolling
+        driver.execute_script(
+            "window.heldStill = [];"
+            "window.addEventListener('touchmove', (event) => window.heldStill.push(event.defaultPrevented));"
+        )
+        # A slide that starts on the orb, away from every tab, still moves along the ring
+        slide(driver, (30, 600), (30, 540))
+        wait_for(driver, f"{SELECTED} === 'demo'")
+        assert driver.execute_script("return window.heldStill.length > 0 && window.heldStill.every(Boolean)")
+        assert driver.find_elements(By.ID, "game-frame") == []
+    finally:
+        plain_device(driver)
+
+
 def test_orb_theme_menu_moves_with_the_arrow_keys(driver, live):
     live.hub.config.globals["look"] = {"theme": "orb"}
     open_menu(driver, live, DISCORD_QUERY)
@@ -572,11 +638,13 @@ def test_orb_theme_on_a_phone(driver, live, tmp_path):
         assert driver.execute_script("return document.documentElement.scrollWidth") <= 375
         rights = "[...document.querySelectorAll('#games .pill')].map((pill) => pill.getBoundingClientRect().right)"
         assert max(driver.execute_script(f"return {rights}")) <= 375
-        # The pods hold the icons, and the panel docked at the bottom shows the selected game's description
+        # The pods hold the icons, and the panel above the ring shows the selected game's description
         pill = driver.find_element(By.CSS_SELECTOR, '#games .pill[data-key="demo"]')
         assert pill.find_element(By.CSS_SELECTOR, ".pod .icon").is_displayed()
+        layout = driver.execute_script(ORB_LAYOUT)
+        assert driver.find_element(By.ID, "orb-screen").is_displayed()
+        assert all(layout["panel"][3] <= box[1] for box in layout["ring"])
         screen = driver.find_element(By.ID, "orb-screen")
-        assert screen.is_displayed() and screen.rect["y"] > 740 / 2
         wait_for(driver, "document.querySelector('#orb-screen .screen-desc').textContent.length > 0")
         assert screen.find_element(By.CSS_SELECTOR, ".screen-desc").is_displayed()
     finally:

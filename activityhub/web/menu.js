@@ -173,10 +173,12 @@ function showNotice(text, retry) {
     box.append(button);
   }
   box.hidden = false;
+  layoutOrb();
 }
 
 function hideNotice() {
   $("notice").hidden = true;
+  layoutOrb();
 }
 
 function openGame(key) {
@@ -416,20 +418,29 @@ function placePills() {
   if (!orbTheme() || !pills.length) {
     return;
   }
+  // On a phone held upright the panel and the orb sit below the header (orb.css), so they move with it
+  const header = [document.querySelector(".bar"), $("notice")].filter((node) => !node.hidden);
+  const head = Math.max(...header.map((node) => node.getBoundingClientRect().bottom));
+  document.body.style.setProperty("--head", `${head}px`);
   const ring = document.querySelector(".orb-ring");
   const box = ring.getBoundingClientRect();
   const [cx, cy] = [box.left + box.width / 2, box.top + box.height / 2];
   // The pods sit on the middle of the tube, not its outer edge
   const radius = box.width / 2 - parseFloat(getComputedStyle(ring).borderTopWidth) / 2;
   const pod = pills[0].querySelector(".pod").offsetWidth;
-  const row = pod * ROW_SPACING;
-  // A phone held upright keeps the bottom of the screen for the panel. The rows leave room past their ends for
-  // the arrows
-  const room = parseFloat(getComputedStyle(document.body).getPropertyValue("--screen-room")) || 0;
-  const top = document.querySelector(".bar").getBoundingClientRect().bottom + row / 2;
-  const bottom = window.innerHeight - room - row * 0.8;
+  let row = pod * ROW_SPACING;
+  // The rows stay clear of the header, of the panel where it sits above the ring (a phone held upright) and of
+  // the bottom edge, with room past their ends for the arrows
+  const screen = $("orb-screen").getBoundingClientRect();
+  const top = screen.height && screen.bottom < cy ? screen.bottom + row * 0.9 : head + row / 2;
+  const bottom = window.innerHeight - parseFloat(getComputedStyle($("menu")).paddingBottom) - row * 0.9;
   const reach = Math.max(0, Math.min(radius * 0.85, cy - top, bottom - cy));
   const rows = Math.min(pills.length, Math.floor((2 * reach) / row) + 1);
+  // When every pill fits, the rows spread out along the ring, as far as the layout allows (orb.css)
+  const spread = parseFloat(getComputedStyle(document.body).getPropertyValue("--row-spread"));
+  if (rows === pills.length && rows > 1 && spread) {
+    row = Math.min(pod * spread, (2 * reach) / (rows - 1));
+  }
   const index = Math.max(0, pills.findIndex((pill) => pill.dataset.key === page.selected));
   page.orbScroll = clamp(clamp(page.orbScroll, index - rows + 1, index), 0, pills.length - rows);
   const spot = (at) => {
@@ -624,14 +635,17 @@ function bindOrb() {
     },
     { passive: false },
   );
-  // Behind a game the scene is hidden and has no size, so the menu waits to be shown again, which places it
-  window.addEventListener("resize", () => {
-    if (orbTheme() && page.state && !page.host.frame) {
-      placePills();
-      drawOrbWeb();
-    }
-  });
+  window.addEventListener("resize", layoutOrb);
   bindSwipe();
+}
+
+// The screen's size and the header place the ring and the panel. Behind a game the scene is hidden and has no
+// size, so the menu waits to be shown again, which places it
+function layoutOrb() {
+  if (orbTheme() && page.state && !page.host.frame) {
+    placePills();
+    drawOrbWeb();
+  }
 }
 
 // On a touch screen, sliding a finger up or down along the ring, or left and right across the screen, moves one
@@ -661,6 +675,17 @@ function bindSwipe() {
       moveSelection(-steps);
     }
   });
+  // Some phones still scroll or bounce the page under a finger, which would take the slide away from the ring,
+  // so a slide holds the page still itself
+  document.addEventListener(
+    "touchmove",
+    (event) => {
+      if (swipe) {
+        event.preventDefault();
+      }
+    },
+    { passive: false },
+  );
   for (const type of ["pointerup", "pointercancel"]) {
     document.addEventListener(type, () => (swipe = null));
   }

@@ -97,11 +97,25 @@ body.playing .orb-scene {
   display: none;
 }
 
-/* The ring takes swipes itself (menu.js), so the browser mustn't scroll or zoom the menu under a finger. Game
-   frames sit outside the menu and keep their own touch handling */
+/* The menu is the whole screen and never scrolls: everything on it has its own place. Positioned, so it draws
+   over the scene */
 body[data-theme="orb"] .menu {
-  position: relative;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* The ring takes slides itself (menu.js), so the browser mustn't scroll or zoom the menu under a finger, or pick
+   out text. Settings scrolls the usual way while it is open. Game frames keep their own touch handling */
+body[data-theme="orb"]:not(.panel-open) .menu {
   touch-action: none;
+}
+
+body[data-theme="orb"] .bar,
+.games.orb-menu {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 /* orb.js draws the web of cells around the orb */
@@ -399,7 +413,6 @@ body[data-theme="orb"] .notice {
 
 .games.orb-menu {
   display: block;
-  min-height: calc(100vh - 90px);
   padding: 0;
 }
 
@@ -999,37 +1012,61 @@ body[data-theme="orb"] .notice {
 
 /* ---------- Phones held upright ---------- */
 
-/* The orb rises from the left edge with the ring of pods curving around it, and the panel docks at the bottom on
-   an arm that reaches in from the right */
+/* The selected item's panel hangs at the top from an arm reaching in from the top right, like on a big screen,
+   and the orb rises from the left edge below it with the ring of pods curving around it, where a thumb reaches.
+   menu.js sets --head to the bottom of the header, which grows when a notice shows */
 @media (max-aspect-ratio: 4/5) {
   body[data-theme="orb"] {
-    --orb-size: min(86vw, 54vh);
-    --orb-x: calc(var(--orb-size) * -0.08);
-    --orb-y: calc(var(--safe-top) + (100vh - var(--safe-top) - var(--screen-room)) / 2 + 55px);
-    --ring-gap: calc(var(--orb-size) * 0.11);
+    --screen-top: calc(var(--head, calc(72px + var(--safe-top))) + 6px);
+    --screen-h: 150px;
+    --band-top: calc(var(--screen-top) + var(--screen-h));
+    --band-bottom: calc(100vh - var(--safe-bottom));
+    /* The orb grows to fill the space below the panel, up to the screen's width, and sits far enough left that
+       the middle pod is 40% of the way across, which leaves the tabs their room. The pods hug it, and spread
+       apart along the ring when they all fit */
+    --orb-size: min(100vw, calc((var(--band-bottom) - var(--band-top)) * 1.1 - 80px));
+    --orb-x: calc(40vw - var(--orb-size) * 0.58);
+    --orb-y: calc((var(--band-top) + var(--band-bottom)) / 2);
+    --ring-gap: calc(var(--orb-size) * 0.08);
+    --row-spread: 1.45;
     --pod: clamp(36px, 11.6vw, 54px);
     --tab-width: 440px;
-    --screen-room: 200px;
-    --arm-size: min(58vw, 300px);
-    --arm-at: 86%;
+    --arm-size: min(60vw, 280px);
+    --arm-at: 82%;
   }
 
+  /* The server's name ends before the arm */
+  body[data-theme="orb"] .who {
+    max-width: 66%;
+  }
+
+  /* A tablet's panel keeps a phone's width, on the arm's side */
   .orb-screen {
-    top: auto;
+    top: var(--screen-top);
     right: calc(14px + var(--safe-right));
-    bottom: calc(14px + var(--safe-bottom));
-    left: calc(14px + var(--safe-left));
-    width: auto;
+    width: min(100vw - 28px - var(--safe-left) - var(--safe-right), 520px);
     transform: none;
   }
 
-  /* The picture's width is capped so the panel stays as short on a tablet as on a phone */
+  /* The arm fades in from the top edge, under Discord's own buttons */
+  .screen-arm {
+    mask-image: linear-gradient(180deg, transparent, #000 40%);
+  }
+
+  /* Every panel is the same height, so the ring never moves between items */
   .screen-face {
     display: grid;
-    grid-template-columns: min(42%, 210px) 1fr;
-    align-items: start;
+    grid-template-columns: min(40%, 200px) 1fr;
+    align-items: center;
     gap: 12px;
-    padding: 20px 14px 14px;
+    height: var(--screen-h);
+    padding: 18px 14px 12px;
+  }
+
+  /* The text leaves the bottom right corner to the Select prompt */
+  .screen-text {
+    align-self: stretch;
+    padding-bottom: 36px;
   }
 
   .screen-name {
@@ -1039,7 +1076,6 @@ body[data-theme="orb"] .notice {
   .screen-desc {
     display: -webkit-box;
     overflow: hidden;
-    padding-bottom: 36px;
     font-size: 0.85rem;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
@@ -1049,7 +1085,7 @@ body[data-theme="orb"] .notice {
     font-size: 2.6rem;
   }
 
-  /* On a phone the prompt sits in the panel's corner, and the cable would run off the screen */
+  /* The prompt sits in the panel's corner, and the cable would run off the screen */
   .screen-select {
     top: auto;
     right: 14px;
@@ -1066,17 +1102,18 @@ body[data-theme="orb"] .notice {
     height: 30px;
   }
 
+  /* Under the panel, which shows Settings when there are no games */
   .orb-menu > .empty {
+    top: calc(var(--band-top) + 12px);
     right: calc(14px + var(--safe-right));
-    bottom: calc(var(--screen-room) + 8px);
-    width: 60vw;
+    bottom: auto;
+    width: min(100vw - 28px, 520px);
   }
-}
 
-/* The frame rate counter sits in the bottom left corner, so the docked panel leaves room for it */
-@media (max-aspect-ratio: 4/5) {
-  body[data-theme="orb"]:has(> .fps:not([hidden])) .orb-screen {
-    bottom: calc(36px + var(--safe-bottom));
+  /* The frame rate counter moves to the empty corner under the tabs, clear of the pods and the arrow below them */
+  body[data-theme="orb"]:not(.playing) .fps {
+    right: calc(8px + var(--safe-right));
+    left: auto;
   }
 }
 
