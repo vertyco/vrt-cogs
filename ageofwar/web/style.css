@@ -1,0 +1,650 @@
+@font-face {
+  font-family: "AoW Arial";
+  src: url("fonts/arial12.ttf") format("truetype");
+  font-weight: bold;
+}
+
+:root {
+  /* The original's sky, at the top of its background */
+  --sky: #3db2ff;
+  --ink: #000000;
+  --paper: #ffffff;
+  /* The original's menu screens: a pale blue see-through panel with black Bookman letters */
+  --panel: rgba(214, 238, 255, 0.82);
+  --panel-edge: rgba(255, 255, 255, 0.9);
+  --yellow: #ffff00;
+  --red: #cc0000;
+  --hud-text: "AoW Arial", Arial, Helvetica, sans-serif;
+  /* The original's menus use Bookman Old Style. Its embedded copy only holds the letters those screens needed */
+  --menu-text: "Bookman Old Style", "URW Bookman", "Bookman", Georgia, serif;
+  /* Room taken by Discord's buttons and the phone's notch. The hub copies Discord's sizes into this frame */
+  --safe-top: var(--discord-safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --safe-right: var(--discord-safe-area-inset-right, env(safe-area-inset-right, 0px));
+  --safe-bottom: var(--discord-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --safe-left: var(--discord-safe-area-inset-left, env(safe-area-inset-left, 0px));
+  color-scheme: light;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--sky);
+  color: var(--ink);
+  font-family: var(--menu-text);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 3px solid var(--yellow);
+  outline-offset: 2px;
+}
+
+.app {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ---------- The field ---------- */
+
+.play {
+  position: absolute;
+  inset: 0;
+}
+
+.field {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.field canvas {
+  display: block;
+}
+
+/* ---------- The original's menu strip ---------- */
+
+.hud {
+  position: absolute;
+  top: var(--safe-top);
+  left: var(--safe-left);
+  right: var(--safe-right);
+  height: 0;
+  pointer-events: none;
+}
+
+.strip {
+  position: absolute;
+  top: 0;
+  height: 120px;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  transform-origin: 0 0;
+}
+
+.strip.left {
+  left: 0;
+  width: 410px;
+  transform: scale(var(--left-scale, 1));
+}
+
+.strip.right {
+  right: 0;
+  width: 240px;
+  transform-origin: 100% 0;
+  transform: scale(var(--right-scale, 1));
+}
+
+.strip > *,
+.strip .row > *,
+.special > * {
+  position: absolute;
+}
+
+.strip button,
+.strip .special {
+  pointer-events: auto;
+}
+
+.row,
+.special {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+button.art {
+  padding: 0;
+  border: 0;
+  background-color: transparent;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+button.art:hover,
+button.art:active {
+  background-image: var(--over) !important;
+}
+
+.shadow {
+  font: bold 12px var(--hud-text);
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+/* The original draws these twice: black, then colored one pixel up and left */
+.shadow.cash {
+  color: var(--yellow);
+  text-shadow: 1px 1px 0 #000;
+}
+
+.shadow.xp {
+  color: #ff0000;
+  text-shadow: 1px 1px 0 #000;
+}
+
+.progress {
+  left: 128px;
+  top: 7px;
+  width: 217px;
+  height: 5px;
+  overflow: hidden;
+}
+
+.progress .fill {
+  height: 100%;
+  width: 0;
+  background: #ff0000;
+}
+
+.training {
+  left: 129px;
+  top: 14px;
+  margin: 0;
+  font: 10px Arial, Helvetica, sans-serif;
+  color: #ff0000;
+  white-space: nowrap;
+}
+
+.desc {
+  left: 129px;
+  top: 32px;
+  width: 280px;
+  margin: 0;
+  font: bold 14px Arial, Helvetica, sans-serif;
+  color: var(--yellow);
+  text-shadow: 1px 1px 0 #000;
+}
+
+.title {
+  font: bold 14px Arial, Helvetica, sans-serif;
+  color: var(--yellow);
+  text-shadow: 1px 1px 0 #000;
+  white-space: nowrap;
+}
+
+.special .art {
+  filter: grayscale(0.6) brightness(0.7);
+}
+
+.special.ready .art {
+  filter: none;
+}
+
+/* The special's wait: the dark part shrinks like a clock hand going round */
+.cooldown {
+  pointer-events: none;
+  background: conic-gradient(rgba(0, 0, 0, 0.55) var(--left, 360deg), transparent 0);
+}
+
+.special-frame {
+  pointer-events: none;
+}
+
+/* People watching see who plays each base */
+.sides {
+  position: absolute;
+  top: calc(var(--safe-top) + 8px);
+  left: calc(var(--safe-left) + 10px);
+  right: calc(var(--safe-right) + 10px);
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.side-tag {
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.45);
+  color: var(--paper);
+  font: bold 14px Arial, Helvetica, sans-serif;
+}
+
+/* ---------- The corner buttons ---------- */
+
+.corner {
+  position: absolute;
+  top: calc(var(--safe-top) + 6px);
+  /* Centered in the gap between the two menu strips */
+  left: calc((410px * var(--left-scale, 1) + 100% - 240px * var(--right-scale, 1)) / 2);
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  z-index: 5;
+}
+
+.app[data-corner="small"] .corner {
+  gap: 4px;
+}
+
+.app[data-corner="small"] .icon-button {
+  width: 30px;
+  height: 30px;
+}
+
+.app[data-corner="below"] .corner {
+  top: calc(var(--safe-top) + 75px * var(--left-scale, 1) + 6px);
+  left: 50%;
+}
+
+.app[data-layout="tall"] .corner {
+  left: 50%;
+}
+
+.app[data-stage="setup"] .corner,
+.app[data-stage="results"] .corner {
+  top: calc(var(--safe-top) + 6px);
+  left: calc(var(--safe-left) + 10px);
+  transform: none;
+}
+
+.app[data-stage="setup"] .icon-button,
+.app[data-stage="results"] .icon-button {
+  width: 36px;
+  height: 36px;
+}
+
+.icon-button {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--paper);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.icon-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+.icon-button .off,
+.icon-button[aria-pressed="false"] .on {
+  display: none;
+}
+
+.icon-button[aria-pressed="false"] .off {
+  display: block;
+}
+
+/* ---------- The menu panels ---------- */
+
+/* Centered in the room under the corner buttons' row */
+.panel {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  top: calc(var(--safe-top) + 48px + (100% - var(--safe-top) - 48px - var(--safe-bottom)) / 2);
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+  width: min(560px, calc(100% - 24px));
+  max-height: calc(100% - var(--safe-top) - var(--safe-bottom) - 60px);
+  overflow-y: auto;
+  padding: 18px 22px;
+  border: 2px solid var(--panel-edge);
+  border-radius: 26px;
+  background: var(--panel);
+  text-align: center;
+  font-weight: bold;
+}
+
+.logo {
+  display: block;
+  width: min(420px, 90%);
+  margin: 0 auto 8px;
+}
+
+.seats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.seat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.55);
+  min-width: 0;
+}
+
+.side-name {
+  font-size: 0.85rem;
+  color: #333;
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1.05rem;
+}
+
+.who img {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+}
+
+.who.cpu {
+  color: #555;
+}
+
+.difficulty h2 {
+  margin: 14px 0 6px;
+  font-size: 1.4rem;
+}
+
+.difficulty.off {
+  opacity: 0.45;
+}
+
+.choices {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.choice {
+  border: 0;
+  background: none;
+  padding: 6px 12px;
+  font: bold 1.05rem var(--menu-text);
+  color: var(--ink);
+  cursor: pointer;
+  border-radius: 10px;
+}
+
+.choice.on {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+/* The original marks a line with a white sword */
+.choice.on::before {
+  content: "";
+  display: inline-block;
+  height: 7px;
+  aspect-ratio: var(--sword-ratio, 6);
+  margin-right: 8px;
+  vertical-align: middle;
+  background: var(--sword) center / contain no-repeat;
+  filter: brightness(0) invert(1) drop-shadow(0 0 1px rgba(0, 0, 0, 0.5));
+}
+
+.choice:disabled {
+  cursor: default;
+}
+
+.hint {
+  margin: 12px 0 0;
+  font-size: 0.95rem;
+  color: #222;
+}
+
+.watching {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  color: #333;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.button {
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--ink);
+  font: bold 1rem var(--menu-text);
+  cursor: pointer;
+}
+
+.button.primary {
+  background: #1d6f2b;
+  color: var(--paper);
+}
+
+.headline {
+  margin: 4px 0 10px;
+  font-size: 2.4rem;
+}
+
+.time {
+  font-size: 1.1rem;
+}
+
+.dim {
+  color: #333;
+  font-weight: normal;
+}
+
+/* ---------- Overlays and notices ---------- */
+
+.overlay {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  padding: 16px 26px;
+  border-radius: 22px;
+  background: var(--panel);
+  text-align: center;
+  font-weight: bold;
+}
+
+.overlay .big {
+  margin: 0;
+  font-size: 2.2rem;
+}
+
+.overlay .small {
+  margin: 6px 0 0;
+}
+
+.toast {
+  position: absolute;
+  z-index: 6;
+  left: 50%;
+  bottom: calc(var(--safe-bottom) + 14px);
+  transform: translateX(-50%);
+  max-width: calc(100% - 40px);
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.7);
+  color: var(--paper);
+  font: bold 0.95rem Arial, Helvetica, sans-serif;
+  text-align: center;
+}
+
+.banner {
+  position: absolute;
+  z-index: 7;
+  top: calc(var(--safe-top) + 50px);
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 6px 14px;
+  border-radius: 10px;
+  background: #a33;
+  color: var(--paper);
+  font: bold 0.95rem Arial, Helvetica, sans-serif;
+}
+
+/* ---------- Dialogs ---------- */
+
+.sheet {
+  width: min(520px, calc(100% - 32px));
+  max-height: calc(100% - 40px);
+  padding: 18px 22px;
+  border: 2px solid var(--panel-edge);
+  border-radius: 22px;
+  background: #d6eeff;
+  color: var(--ink);
+  font-family: var(--menu-text);
+}
+
+.sheet::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.sheet h2 {
+  margin: 0 0 6px;
+}
+
+.sheet p {
+  line-height: 1.35;
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.tab {
+  flex: 1;
+  border: 0;
+  padding: 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.5);
+  font: bold 0.95rem var(--menu-text);
+  cursor: pointer;
+}
+
+.tab[aria-selected="true"] {
+  background: #fff;
+}
+
+.leaders {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.leaders li {
+  display: grid;
+  grid-template-columns: 3em 1fr auto auto;
+  gap: 10px;
+  padding: 6px 4px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  font-variant-numeric: tabular-nums;
+}
+
+.leaders li.me {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.leaders .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leaders .wins {
+  color: #444;
+  font-weight: normal;
+}
+
+/* ---------- Upright phones: the field with the menu strips under it, bigger ---------- */
+
+.app[data-layout="tall"] .play {
+  display: flex;
+  flex-direction: column;
+  /* The field and menu sit at the bottom, near the thumbs, under open sky */
+  justify-content: flex-end;
+}
+
+.app[data-layout="tall"] .field {
+  position: relative;
+  inset: auto;
+  flex: none;
+  width: 100%;
+  aspect-ratio: 650 / 450;
+}
+
+.app[data-layout="tall"] .hud {
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 10px 0 var(--safe-bottom);
+}
+
+.app[data-layout="tall"] .strip {
+  position: relative;
+  flex: none;
+  transform-origin: 0 0;
+}
+
+.app[data-layout="tall"] .strip.left {
+  margin-left: var(--left-pad);
+  margin-bottom: calc(120px * (var(--left-scale) - 1) - 40px * var(--left-scale));
+}
+
+.app[data-layout="tall"] .strip.right {
+  right: auto;
+  margin-left: var(--right-pad);
+  margin-bottom: calc(120px * (var(--right-scale) - 1));
+  transform-origin: 0 0;
+}

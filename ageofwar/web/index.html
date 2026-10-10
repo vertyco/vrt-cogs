@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Age of War</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app" id="app" data-stage="setup" data-layout="wide">
+      <main class="play" id="play">
+        <div class="field" id="field"></div>
+        <div class="hud" id="hud" hidden></div>
+        <div class="sides" id="sides" hidden>
+          <span class="side-tag" id="side-1"></span>
+          <span class="side-tag" id="side-2"></span>
+        </div>
+        <div class="overlay" id="overlay" hidden>
+          <p class="big" id="overlay-big"></p>
+          <p class="small" id="overlay-small"></p>
+          <div class="actions">
+            <button type="button" class="button primary" id="resume" hidden>Resume</button>
+          </div>
+        </div>
+        <p class="toast" id="toast" role="status" hidden></p>
+      </main>
+
+      <nav class="corner" aria-label="Game controls">
+        <button type="button" class="icon-button" id="back" aria-label="Back to the menu" title="Back to the menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5 L8 12 L15 19" /></svg>
+        </button>
+        <button type="button" class="icon-button" id="sound" aria-label="Sound effects" title="Sound effects" aria-pressed="true">
+          <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9 H8 L13 5 V19 L8 15 H4 Z" /><path d="M16.5 8.5 A5 5 0 0 1 16.5 15.5" /><path d="M19 6 A8.5 8.5 0 0 1 19 18" /></svg>
+          <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9 H8 L13 5 V19 L8 15 H4 Z" /><path d="M17 9 L22 14" /><path d="M22 9 L17 14" /></svg>
+        </button>
+        <button type="button" class="icon-button" id="music" aria-label="Music" title="Music" aria-pressed="true">
+          <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18 V5 L20 3 V16" /><circle cx="6.5" cy="18" r="2.5" /><circle cx="17.5" cy="16" r="2.5" /></svg>
+          <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18 V5 L20 3 V16" /><circle cx="6.5" cy="18" r="2.5" /><circle cx="17.5" cy="16" r="2.5" /><path d="M3 3 L21 21" /></svg>
+        </button>
+        <button type="button" class="icon-button" id="pause" aria-label="Pause" title="Pause (space)" hidden>
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
+        </button>
+        <button type="button" class="icon-button" id="give-up" aria-label="Give up" title="Give up" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21 V4" /><path d="M5 4 H17 L14.5 8 L17 12 H5" /></svg>
+        </button>
+      </nav>
+
+      <section class="panel" id="setup" aria-label="Setup">
+        <img class="logo" id="logo" alt="Age of War" />
+        <ol class="seats" id="seats"></ol>
+        <div class="difficulty" id="difficulty-box">
+          <h2>Difficulty:</h2>
+          <div class="choices" role="radiogroup" aria-label="Difficulty">
+            <button type="button" class="choice" data-difficulty="normal" role="radio">Normal</button>
+            <button type="button" class="choice" data-difficulty="harder" role="radio">Harder</button>
+            <button type="button" class="choice" data-difficulty="impossible" role="radio">Impossible</button>
+          </div>
+        </div>
+        <p class="hint" id="hint"></p>
+        <div class="actions">
+          <button type="button" class="button primary" id="start" hidden>Play</button>
+          <button type="button" class="button" id="stand" hidden>Stand up</button>
+          <button type="button" class="button" id="open-help">Instructions</button>
+          <button type="button" class="button" id="open-leaderboard">Fastest wins</button>
+        </div>
+        <p class="watching" id="watching"></p>
+      </section>
+
+      <section class="panel" id="results" aria-label="Results" hidden>
+        <h2 class="headline" id="results-title"></h2>
+        <p id="results-text"></p>
+        <p class="time" id="results-time"></p>
+        <p class="dim" id="results-note"></p>
+        <div class="actions">
+          <button type="button" class="button primary" id="continue" hidden>Play again?</button>
+        </div>
+      </section>
+
+      <p class="banner" id="banner" role="status" hidden>Reconnecting...</p>
+    </div>
+
+    <dialog class="sheet" id="leaderboard" aria-labelledby="leaderboard-title">
+      <h2 id="leaderboard-title">Fastest wins</h2>
+      <p class="dim">The quickest wins against the computer, in game time, across every server.</p>
+      <div class="tabs" role="tablist" aria-label="Difficulty">
+        <button type="button" class="tab" role="tab" data-board="normal">Normal</button>
+        <button type="button" class="tab" role="tab" data-board="harder">Harder</button>
+        <button type="button" class="tab" role="tab" data-board="impossible">Impossible</button>
+      </div>
+      <ol class="leaders" id="leaders"></ol>
+      <p class="you" id="you"></p>
+      <button type="button" class="button" id="close-leaderboard">Close</button>
+    </dialog>
+
+    <dialog class="sheet" id="quit" aria-labelledby="quit-title">
+      <h2 id="quit-title">Give up this game?</h2>
+      <p class="dim">Your base falls and the other side wins.</p>
+      <div class="actions">
+        <button type="button" class="button primary" id="quit-yes">Give up</button>
+        <button type="button" class="button" id="quit-no">Keep playing</button>
+      </div>
+    </dialog>
+
+    <dialog class="sheet" id="help" aria-labelledby="help-title">
+      <h2 id="help-title">Instructions</h2>
+      <p>The goal of the game is to survive and destroy the ennemy base.</p>
+      <p>The game is divided in 5 ages. To move to the next age, you need Xp points. To gain these points, you have to kill ennemy units. You also gain Xp points when one of your units is killed. You can also build defences. Finding the balance between defence and offence is the key.</p>
+      <p>You will also be able to use a special attack. This attack will need time to be available again after you use it. Each age have its own special attack.</p>
+      <p>You cannot repair your base, but it will gain health points everytime you evolve to the next age. Protect your base at all cost!</p>
+      <p class="dim" id="help-controls">Drag the field, or use the arrow keys, to look along it. Space pauses a game against the computer.</p>
+      <button type="button" class="button" id="close-help">Close</button>
+    </dialog>
+
+    <script type="module" src="game.js"></script>
+  </body>
+</html>

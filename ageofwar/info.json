@@ -1,0 +1,16 @@
+{
+  "author": ["Vertyco"],
+  "description": "Age of War for ActivityHub, ported from Louissi's Flash game, with its original art, sounds and music. Defend your base and destroy the enemy's through five ages, from cavemen to super soldiers: train units, build and sell turrets, add turret spots, evolve with experience, and call down each age's special attack. Play the original's computer on Normal, Harder or Impossible, or a friend in the same Activity, while others watch. The bot runs every battle, and a global leaderboard keeps each player's fastest win on each difficulty. Works on desktop and on phones held either way. Needs ActivityHub 0.1.9 or later.",
+  "disabled": false,
+  "end_user_data_statement": "This cog stores each player's Discord user ID, Discord display name, and their fastest Age of War win and win count on each difficulty, for the global leaderboard.",
+  "hidden": true,
+  "install_msg": "Thank you for installing Age of War!\n\nAge of War is a game for ActivityHub, which must be installed and set up first:\n`[p]repo add vrt-cogs https://github.com/vertyco/vrt-cogs`\n`[p]cog install vrt-cogs activityhub`\n`[p]load activityhub`\nThen follow ActivityHub's README: https://github.com/vertyco/vrt-cogs/blob/main/activityhub/README.md\n\nOnce both are loaded, Age of War shows up in the hub's menu.",
+  "min_bot_version": "3.5.0",
+  "min_python_version": [3, 10, 0],
+  "permissions": [],
+  "required_cogs": {},
+  "requirements": [],
+  "short": "Defend your base through five ages, an ActivityHub port of the Flash game Age of War",
+  "tags": ["activity", "games", "fun", "multiplayer", "vert"],
+  "type": "COG"
+}
