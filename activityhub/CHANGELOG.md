@@ -1,5 +1,13 @@
 # ActivityHub Changelog
 
+## 0.3.0
+
+- A pinned **Open Activities** button can have its own label, emoji and color. Type them after the message link: `[p]activities pin <message link> Play games emoji: 🎮 color: blurple`. The color can be blurple, grey, green or red, and the emoji can be a normal emoji or one of the server's own. Anything left out keeps the usual look: "Open Activities" in green, with no emoji.
+- Pinning again on a message that already has the button changes its look instead of saying it's already there. Only the parts you type change, so `[p]activities pin <message link> color: red` keeps the label and emoji.
+- Each pinned button keeps its own look, so different messages can have different buttons.
+- A pinned button can open one game instead of the menu: `[p]activities pin <message link> game: Snake`. It works for the bundled games and for any game cog that adds itself to the hub. The game can be typed by its name or its key, with no quotes needed even when the name has spaces, and the button reads "Play Snake" unless you give it a label. Pressing it opens the Activity straight into that game, and like the menu button it keeps working after the bot restarts.
+- A message can carry the menu button and a button for each game. `[p]activities unpin <message link> Snake` takes off just that game's button, and leaving out the game takes off the menu button. A game's button can still be taken off after its cog is uninstalled, by typing the game's key.
+
 ## 0.2.2
 
 - In the Orb theme on a computer, the mouse wheel scrolls through the whole list of games with the mouse resting on the ring. Before, once the ring had to scroll, the game sliding under the mouse took the selection back, so the wheel never got past the games already showing. A game now takes the selection only when the mouse moves onto it, and the wheel and the arrow keys keep it until the mouse moves away.

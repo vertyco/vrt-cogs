@@ -968,7 +968,7 @@ Things to know:
 
 ## 13. Opening your game from a command or button
 
-Players open your game from the Activity menu, so you don't need a command. If you want a shortcut anyway, the hub can open your game straight from a button or a slash command:
+Players open your game from the Activity menu, so you don't need a command. Server admins can also pin a button that opens your game on any message the bot sent, with `[p]activities pin <message link> game: <your key or name>`, and that needs no code from you. If you want a shortcut of your own anyway, the hub can open your game straight from a button or a slash command:
 
 ```python
 import discord

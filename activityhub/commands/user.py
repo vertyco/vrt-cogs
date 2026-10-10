@@ -8,10 +8,58 @@ from redbot.core.i18n import Translator
 
 from ..abc import MixinMeta
 from ..common.discord_api import activities_enabled, launch_activity
-from ..views.launch import add_button, editable_view, has_button, launch_view, remove_button
+from ..common.games import Game
+from ..views.launch import (
+    STYLES,
+    LaunchButton,
+    add_button,
+    custom_id_for,
+    editable_view,
+    has_button,
+    launch_view,
+    remove_button,
+    restyle_button,
+)
 
 log = logging.getLogger("red.vrt.activityhub.commands")
 _ = Translator("ActivityHub", __file__)
+
+
+# Phones type curly quotes
+QUOTES = {'"': '"', "'": "'", "“": "”"}
+
+
+def unquote(text: str) -> str:
+    """Text without the quotes around it, since people quote names with spaces out of habit"""
+    text = text.strip()
+    if len(text) > 1 and QUOTES.get(text[0]) == text[-1]:
+        return text[1:-1].strip()
+    return text
+
+
+class PinOptions(commands.FlagConverter, case_insensitive=True):
+    label: str | None = commands.flag(default=None, positional=True, converter=unquote)
+    game: str | None = commands.flag(default=None, converter=unquote)
+    emoji: str | None = None
+    color: str | None = None
+
+
+def read_look(look: PinOptions) -> tuple[str | None, discord.PartialEmoji | None, discord.ButtonStyle | None]:
+    """The parts of the look that were given. Raises ValueError with a message for the user when one is wrong"""
+    if look.label is not None and len(look.label) > 80:
+        raise ValueError(_("A button's label can be at most 80 characters."))
+    emoji = None
+    if look.emoji is not None:
+        emoji = discord.PartialEmoji.from_str(look.emoji.strip())
+        # Every emoji is outside plain ASCII, so plain text like "smile" is a typo, not an emoji
+        if emoji.id is None and emoji.name.isascii():
+            raise ValueError(_("`{}` isn't an emoji.").format(look.emoji))
+    style = None
+    if look.color is not None:
+        style = STYLES.get(look.color.strip().lower())
+        if style is None:
+            raise ValueError(_("The color can be blurple, grey, green or red."))
+    return look.label, emoji, style
 
 
 class UserCommands(MixinMeta):
@@ -81,44 +129,109 @@ class UserCommands(MixinMeta):
 
     @activities_text.command(name="pin")
     @commands.admin_or_permissions(manage_guild=True)
-    async def pin_button(self, ctx: commands.Context, message: discord.Message):
+    async def pin_button(self, ctx: commands.Context, message: discord.Message, *, options: PinOptions = None):
         """
-        Add the Open Activities button to a message the bot sent
+        Add an activities button to a message the bot sent, or change how it looks
 
         `message` is a message link, or the message's ID when it is in this channel.
         The message keeps its text, embeds and other buttons.
+
+        The button opens the activities menu. Add `game:` with a game's name to make a button that opens that game
+        instead. A message can have the menu button and a button for each game.
+
+        After the message, you can also give the button its own label, an `emoji:` and a `color:` (blurple, grey,
+        green or red). Pin again with new ones to change a button that's already there.
+
+        **Examples:**
+        - `[p]activities pin <message link>`
+        - `[p]activities pin <message link> Play games emoji: 🎮 color: blurple`
+        - `[p]activities pin <message link> game: Snake`
+        - `[p]activities pin <message link> Snake time! game: Snake color: red`
         """
         if not await self.check_editable(ctx, message):
             return
-        view = editable_view(message)
-        if has_button(view):
-            await ctx.send(_("That message already has the button."))
-            return
         try:
-            add_button(view)
+            game = self.find_game(options.game) if options and options.game else None
+            look = read_look(options) if options else (None, None, None)
+        except ValueError as e:
+            await ctx.send(str(e))
+            return
+        name = game.name if game else _("Open Activities")
+        custom_id = custom_id_for(game.key if game else None)
+        view = editable_view(message)
+        if has_button(view, custom_id):
+            await self.restyle_pinned(ctx, message, view, custom_id, name, look)
+            return
+        label, emoji, style = look
+        if game is not None and label is None:
+            label = _("Play {}").format(game.name)[:80]
+        try:
+            add_button(view, LaunchButton(game.key if game else None, label, emoji, style))
         except ValueError:
             await ctx.send(_("That message has no room for another button."))
             return
         if await self.edit_buttons(ctx, message, view):
-            await ctx.send(_("Added the Open Activities button to that message."))
+            await ctx.send(_("Added the {} button to that message.").format(name))
+
+    async def restyle_pinned(
+        self,
+        ctx: commands.Context,
+        message: discord.Message,
+        view: discord.ui.View | discord.ui.LayoutView,
+        custom_id: str,
+        name: str,
+        look: tuple[str | None, discord.PartialEmoji | None, discord.ButtonStyle | None],
+    ) -> None:
+        if look == (None, None, None):
+            await ctx.send(_("That message already has the {} button.").format(name))
+            return
+        restyle_button(view, custom_id, *look)
+        if await self.edit_buttons(ctx, message, view):
+            await ctx.send(_("Changed the {} button on that message.").format(name))
+
+    def find_game(self, text: str) -> Game:
+        """A game by its key or name. Raises ValueError with a message for the user when none matches"""
+        wanted = text.strip().casefold()
+        for game in self.registry.games.values():
+            if wanted in (game.key, game.name.casefold()):
+                return game
+        names = ", ".join(sorted(game.name for game in self.registry.games.values()))
+        raise ValueError(_("No game called `{}` is installed. The games are: {}").format(text.strip(), names))
 
     @activities_text.command(name="unpin")
     @commands.admin_or_permissions(manage_guild=True)
-    async def unpin_button(self, ctx: commands.Context, message: discord.Message):
+    async def unpin_button(self, ctx: commands.Context, message: discord.Message, *, game: str = None):
         """
-        Take the Open Activities button off a message the bot sent
+        Take an activities button off a message the bot sent
 
         `message` is a message link, or the message's ID when it is in this channel.
+        Add a game's name to take off that game's button instead of the menu button.
+
+        **Examples:**
+        - `[p]activities unpin <message link>`
+        - `[p]activities unpin <message link> Snake`
         """
         if not await self.check_editable(ctx, message):
             return
+        if game is not None:
+            game = unquote(game)
+        if not game:
+            key, name = None, _("Open Activities")
+        else:
+            try:
+                found = self.find_game(game)
+                key, name = found.key, found.name
+            except ValueError:
+                # The game's cog may be gone, and its button can still come off by the game's key
+                key, name = game.strip().casefold(), game.strip()
+        custom_id = custom_id_for(key)
         view = editable_view(message)
-        if not has_button(view):
-            await ctx.send(_("That message doesn't have the button."))
+        if not has_button(view, custom_id):
+            await ctx.send(_("That message doesn't have the {} button.").format(name))
             return
-        remove_button(view)
+        remove_button(view, custom_id)
         if await self.edit_buttons(ctx, message, view):
-            await ctx.send(_("Took the Open Activities button off that message."))
+            await ctx.send(_("Took the {} button off that message.").format(name))
 
     async def check_editable(self, ctx: commands.Context, message: discord.Message) -> bool:
         if message.author.id != self.bot.user.id:
