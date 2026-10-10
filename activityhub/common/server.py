@@ -19,6 +19,9 @@ from .sockets import Rooms
 log = logging.getLogger("red.vrt.activityhub.server")
 
 HUB_WEB_DIR = Path(__file__).parent.parent / "web"
+# Where the web server listens until the owner picks another address
+DEFAULT_HOST = "127.0.0.1"
+DEFAULT_PORT = 8742
 # How often the worker the whole bot shares is checked. A check that runs late means some code ran without reaching
 # an await for that long, and every live game stalled meanwhile
 LAG_CHECK_SECONDS = 0.5

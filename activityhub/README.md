@@ -37,9 +37,11 @@ The bot owner also sees a **Defaults** tab. It sets the look every server starts
 
 The cog hosts the menu and every game on a small web server. Discord loads it over HTTPS, so it needs a public address.
 
+`[p]activityhub setup` walks through these same steps inside Discord, filled in with your bot's own address. `[p]activityhub view` shows the current settings at any time.
+
 1. **Turn on Activities.** In the [Discord Developer Portal](https://discord.com/developers/applications), open your bot's application, go to **Activities > Settings** and enable Activities. Under **OAuth2**, add any redirect URL (for example `https://127.0.0.1`), since Discord requires one to exist.
 2. **Give the bot its client secret.** Copy the client secret from the **OAuth2** page, run `[p]activityhub secret`, press **Set secret** and paste it in. The bot checks it with Discord before saving it. (`[p]set api activityhub client_secret,YOUR_SECRET` does the same without the check.)
-3. **Expose the web server.** The cog listens on `127.0.0.1:8742` by default. Change it with `[p]activityhub webserver <host> <port>`. Put an HTTPS reverse proxy (nginx, Caddy) or a tunnel (cloudflared) in front of it, for example `https://games.example.com` pointing at `127.0.0.1:8742`. WebSockets must be allowed through it.
+3. **Expose the web server.** The cog listens on `127.0.0.1:8742` by default. Change it with `[p]activityhub webserver <host> <port>`. Put a tunnel (Cloudflare Tunnel) or an HTTPS reverse proxy (Caddy, nginx) in front of it, for example `https://games.example.com` pointing at `127.0.0.1:8742`. WebSockets must be allowed through it. [Getting a public HTTPS address](#getting-a-public-https-address) below walks through each way.
 4. **Point Discord at it.** In **Activities > URL Mappings**, set the root mapping `/` to your public host without `https://` (for example `games.example.com`).
 5. **Add the menu command.** `[p]slash enable activities`, then `[p]slash sync`.
 6. **Check it.** `[p]activityhub check games.example.com` goes through every step above and says which one is missing.
@@ -47,11 +49,88 @@ The cog hosts the menu and every game on a small web server. Discord loads it ov
 
 The bot running this cog must be the same Discord application that has Activities turned on, because Discord only lets an app open its own Activity.
 
+### Getting a public HTTPS address
+
+Discord only opens the menu from a public `https://` address. Something has to take visits to that address and pass them to the bot's web server. Pick one of these four ways. The examples use `games.example.com` as the public host and the default `127.0.0.1:8742` as the bot's address: swap in your own.
+
+Whatever you pick must let WebSockets through, since games use them for live play. All four ways below do.
+
+**Bot in Docker?** Inside a container, `127.0.0.1` can't be reached from outside it. If the tunnel or proxy runs outside the container, run `[p]activityhub webserver 0.0.0.0 8742` and publish port 8742.
+
+#### A. Cloudflare Tunnel (easiest to keep running)
+
+A tunnel is a small program on the bot's machine that connects out to Cloudflare. Players reach Cloudflare, and Cloudflare passes them down the tunnel to the bot. Nothing on your network has to be opened, and Cloudflare handles HTTPS. You need a free Cloudflare account and a domain you own.
+
+1. Make a free account at [Cloudflare](https://dash.cloudflare.com) and add your domain to it, so Cloudflare runs the domain's DNS.
+2. In the Cloudflare dashboard, go to **Networking > Tunnels** and press **Create a tunnel**. Name it, like `activityhub`.
+3. Pick your operating system. Cloudflare shows an install command: run it on the machine the bot runs on. It installs the tunnel and starts it with the machine.
+4. Once the tunnel shows as connected, open its **Routes** tab, press **Add route** and pick **Published application**.
+5. Subdomain: `games`. Domain: yours. Service URL: `http://127.0.0.1:8742`. Press **Add route**.
+
+Your public host is now your subdomain plus domain, like `games.example.com`.
+
+#### B. Quick test tunnel (no account, no domain)
+
+Good for a first test only.
+
+1. Install `cloudflared` from [Cloudflare's download page](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/downloads/).
+2. Run this on the machine the bot runs on:
+
+   ```
+   cloudflared tunnel --url http://127.0.0.1:8742
+   ```
+
+3. It prints an address like `https://some-random-words.trycloudflare.com`. The part after `https://` is your public host.
+
+The address only works while that command runs. You get a new one every time it starts, and then the URL mapping (setup step 4) has to change too. For something that stays up, use A, C or D.
+
+#### C. Caddy
+
+Caddy is a web server that gets and renews its HTTPS certificate by itself.
+
+1. Where your domain's DNS is managed, add an `A` record for `games.example.com` pointing at the bot machine's public IP address.
+2. Open ports 80 and 443 to that machine (port forwarding on the router, and the firewall).
+3. [Install Caddy](https://caddyserver.com/docs/install).
+4. Put this in your Caddyfile:
+
+   ```
+   games.example.com {
+       reverse_proxy 127.0.0.1:8742
+   }
+   ```
+
+5. Start or reload Caddy. It passes WebSockets through on its own.
+
+#### D. nginx
+
+1. Point your domain's DNS at the bot's machine and open ports 80 and 443, like for Caddy.
+2. Add a site like this:
+
+   ```nginx
+   server {
+       listen 80;
+       server_name games.example.com;
+
+       location / {
+           proxy_pass http://127.0.0.1:8742;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+           proxy_set_header Host $host;
+       }
+   }
+   ```
+
+   The `Upgrade` and `Connection` lines are what let WebSockets through. Without them, live games can't connect.
+3. Get a certificate with `sudo certbot --nginx -d games.example.com`. Certbot adds the HTTPS part to the site.
+
 ## Owner commands
 
 | Command | Does |
 |---|---|
-| `[p]activityhub webserver <host> <port>` | Saves where the web server listens and restarts it. |
+| `[p]activityhub view` | Shows where the web server listens (and the default), whether it is running, whether a client secret is saved, and how many games are installed. |
+| `[p]activityhub setup` | Walks through the whole setup page by page, including Cloudflare Tunnel, Caddy and nginx, filled in with your bot's own address. |
+| `[p]activityhub webserver <host> <port>` | Saves where the web server listens and restarts it. The default is `127.0.0.1 8742`. |
 | `[p]activityhub secret` | Opens a form for the client secret, checks it with Discord, saves it. |
 | `[p]activityhub check <public host>` | Checks every setup step and says what to fix. |
 | `[p]activityhub games` | Lists installed games (marking any you turned off) with the Discord scopes each asks for, and refused game cogs with the reason. |

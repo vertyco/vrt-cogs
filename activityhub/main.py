@@ -10,7 +10,7 @@ from .bundled.scores import ScoreBoard
 from .commands import Commands
 from .common.discord_api import drop_entry_point_hook, keep_entry_point
 from .common.games import GameRegistry
-from .common.server import HubServer
+from .common.server import DEFAULT_HOST, DEFAULT_PORT, HubServer
 from .common.sessions import LaunchMemory, SessionStore
 from .views.launch import OpenView
 
@@ -28,13 +28,13 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.1.11b"
+    __version__ = "0.1.12b"
 
     def __init__(self, bot: Red):
         super().__init__()
         self.bot: Red = bot
         self.config = Config.get_conf(self, identifier=117, force_registration=True)
-        self.config.register_global(host="127.0.0.1", port=8742, look={}, disabled=[])
+        self.config.register_global(host=DEFAULT_HOST, port=DEFAULT_PORT, look={}, disabled=[])
         self.config.register_guild(look={}, disabled=[])
         self.config.register_user(look={}, order=[])
         self.config.register_member(best={})

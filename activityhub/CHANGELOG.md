@@ -1,5 +1,11 @@
 # ActivityHub Changelog
 
+## 0.1.12
+
+- `[p]activityhub view` shows where the web server listens, the default address (`127.0.0.1:8742`), whether it is running, whether a client secret is saved, and how many games are installed.
+- `[p]activityhub setup` (or `setuphelp`) walks the bot owner through the whole setup, one page per step: the Developer Portal, the client secret, giving the web server a public HTTPS address (Cloudflare Tunnel, a quick test tunnel, Caddy or nginx), the URL mapping and the final check. The steps are filled in with the bot's own address.
+- The README has the same walk-through for each way of getting a public HTTPS address.
+
 ## 0.1.11
 
 For game developers:
