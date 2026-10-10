@@ -54,9 +54,11 @@ SHIELDS = (WEAK_SHIELD, SHIELD, STRONG_SHIELD, SUPER_SHIELD)
 SHIELD_STRENGTH = {WEAK_SHIELD: 100, SHIELD: 200, STRONG_SHIELD: 400, SUPER_SHIELD: 600}
 
 START_MONEY = 5000
-# The original's starting kit was a test loadout (100 volcano bombs, 8 of every shield). The port starts lean
+# The original's starting kit was a test loadout (100 volcano bombs, 8 of every shield). The port starts lean.
+# Fuel is the original's 250 stock: its setup also sets fuel to 500, but every round start refills fuel from the
+# stock before anyone drives, so 500 never reaches the field. 250 fuel is 125 pixels of driving for the whole round
 START_MISSILES = 99
-START_FUEL = 500
+START_FUEL = 250
 REPAIR_AMOUNT = 10
 ENERGY_PER_UPGRADE = 10
 

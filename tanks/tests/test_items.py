@@ -19,10 +19,10 @@ def test_the_shop_has_the_originals_14_weapons_and_12_extras():
     assert (EXTRAS[UP_ENERGY].name, EXTRAS[UP_ENERGY].price) == ("Upgrade energy", 5000)
 
 
-def test_every_seat_starts_with_99_missiles_500_fuel_and_5000():
+def test_every_seat_starts_with_99_missiles_250_fuel_and_5000():
     kit = Kit()
     assert kit.guns == [99] + [0] * 13
-    assert kit.extras[FUEL] == 500 and sum(kit.extras) == 500
+    assert kit.extras[FUEL] == 250 and sum(kit.extras) == 250
     assert kit.money == 5000 and kit.score == 0 and kit.kills == 0
     assert kit.max_energy == 100
 

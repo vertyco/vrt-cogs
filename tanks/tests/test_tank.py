@@ -128,10 +128,10 @@ def test_driving_moves_half_a_pixel_a_frame_and_burns_fuel():
     me = tank_at(0, 100, field)
     for _ in range(10):
         drive_frame(me, field, [me], 1)
-    assert me.x == pytest.approx(105) and me.fuel == 490
+    assert me.x == pytest.approx(105) and me.fuel == 240
     me.kit.extras[UP_ENGINE] = 1
     drive_frame(me, field, [me], -1)
-    assert me.fuel == 489.5
+    assert me.fuel == 239.5
 
 
 def test_driving_stops_at_the_edges_and_when_fuel_runs_out():

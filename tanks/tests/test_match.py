@@ -258,7 +258,7 @@ async def test_a_round_starts_with_every_tank_on_the_ground_and_the_lowest_seat_
     assert len(state["field"]["ground"]) == 550
     for number in (0, 1):
         tank = state["tanks"][number]
-        assert tank["alive"] and tank["health"] == 100 and tank["fuel"] == 500
+        assert tank["alive"] and tank["health"] == 100 and tank["fuel"] == 250
 
 
 @pytest.mark.asyncio
@@ -288,7 +288,7 @@ async def test_only_the_turns_player_aims_drives_and_fires():
     x = tank.x
     await game.match.message(first, {"drive": 1})
     await run_for(game, 1)
-    assert tank.x == pytest.approx(x + 25 * 0.5) and tank.fuel == 475
+    assert tank.x == pytest.approx(x + 25 * 0.5) and tank.fuel == 225
     await game.match.message(first, {"drive": 0})
     await game.match.message(first, {"fire": True})
     await run_ticks(game, 1)
@@ -304,7 +304,7 @@ async def test_the_turns_tank_is_sent_in_a_small_live_update():
     await run_ticks(game, 1)
     tank = game.match.tanks[0]
     # One person against a computer: no clock, so its place is empty
-    assert host.sent[-1] == {"t": [0, round(tank.x, 1), round(tank.y, 1), 100, 40, 500, 0, None]}
+    assert host.sent[-1] == {"t": [0, round(tank.x, 1), round(tank.y, 1), 100, 40, 250, 0, None]}
 
 
 @pytest.mark.asyncio
