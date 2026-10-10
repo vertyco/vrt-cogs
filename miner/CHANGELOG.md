@@ -1,5 +1,9 @@
 # Miner Changelog
 
+## 1.11.3
+
+- **Change**: The cog now keeps the list of mining channels in memory instead of asking the database "is this a mining channel?" on every chat message in every server. Same behavior, one less database query per message.
+
 ## 1.11.2
 
 - **Fix**: Clicking **Mine** right as a rock breaks no longer shows "This interaction failed". Clicks that land while the results are still loading now get a reply.

@@ -4,7 +4,6 @@ import discord
 from redbot.core import commands
 
 from ..abc import MixinMeta
-from ..db.tables import ActiveChannel
 
 log = logging.getLogger("red.vrt.miner.listeners.messages")
 
@@ -23,9 +22,7 @@ class MessageListener(MixinMeta):
 
         channel: discord.TextChannel | discord.Thread = message.channel
 
-        # Check if this is an active mining channel
-        is_mining_channel = await ActiveChannel.exists().where(ActiveChannel.id == channel.id)
-        if not is_mining_channel:
+        if channel.id not in self.active_channels:
             return
 
         # Track the user in the channel's chat cache for rock quality scaling

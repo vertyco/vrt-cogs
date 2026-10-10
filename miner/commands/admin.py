@@ -28,9 +28,11 @@ class Admin(MixinMeta):
         existing = await ActiveChannel.objects().get(ActiveChannel.id == channel.id)
         if existing:
             await ActiveChannel.delete().where(ActiveChannel.id == channel.id)
+            self.active_channels.discard(channel.id)
             await ctx.send(f"Mining in {channel.mention} has been disabled.")
         else:
             await ActiveChannel.insert(ActiveChannel(id=channel.id, guild=ctx.guild.id))
+            self.active_channels.add(channel.id)
             await ctx.send(f"Mining in {channel.mention} has been enabled.")
 
     @miner_set.command(name="view")
@@ -44,6 +46,7 @@ class Admin(MixinMeta):
         if invalid_channels:
             await ctx.send("Some channels are no longer valid, removing them from the list.")
             await ActiveChannel.delete().where(ActiveChannel.id.is_in(invalid_channels))
+            self.active_channels.difference_update(invalid_channels)
             active_channels = [i for i in active_channels if i not in invalid_channels]
 
         embed = discord.Embed(title="Miner Settings", color=await self.bot.get_embed_color(ctx.channel))

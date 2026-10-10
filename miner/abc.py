@@ -24,6 +24,7 @@ class MixinMeta(ABC):
         self.db_utils: DBUtils
 
         self.chat_cache: tracker.ChannelChatCache
+        self.active_channels: set[int]
         self.guild_spawn_cooldowns: dict[int, float]
         self.guild_spawn_locks: dict[int, asyncio.Lock]
 

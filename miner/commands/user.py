@@ -10,7 +10,7 @@ from redbot.core.utils.chat_formatting import humanize_number
 
 from ..abc import MixinMeta
 from ..common import achievement_progress, achievements, constants, perks, spawn_pings
-from ..db.tables import ActiveChannel, Player, ensure_db_connection
+from ..db.tables import Player, ensure_db_connection
 from ..views import achievement_menu
 from ..views.achievement_menu import AchievementMenu, CategoryCard
 from ..views.leaderboard_menu import LeaderboardView
@@ -600,8 +600,7 @@ class User(MixinMeta):
         the average tool tier and player count of recent chatters.
         """
         # Check if this is an active mining channel
-        is_mining_channel = await ActiveChannel.exists().where(ActiveChannel.id == ctx.channel.id)
-        if not is_mining_channel:
+        if ctx.channel.id not in self.active_channels:
             return await ctx.send(
                 "Rocks cannot spawn in this channel. Ask an admin to enable it with `/minerset toggle`.",
                 ephemeral=True,

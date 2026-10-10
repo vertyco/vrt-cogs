@@ -17,6 +17,7 @@ from .commands import Commands
 from .common import achievements, constants, spawn_pings, tracker
 from .db.tables import (
     TABLES,
+    ActiveChannel,
     GuildSettings,
     Player,
     PlayerAchievement,
@@ -35,7 +36,7 @@ class Miner(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMet
     """Pickaxe in hand, fortune awaits"""
 
     __author__ = "Vertyco"
-    __version__ = "1.11.2"
+    __version__ = "1.11.3"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -44,6 +45,8 @@ class Miner(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMet
         self.db_utils = DBUtils()
 
         self.chat_cache = tracker.ChannelChatCache()
+        # Mirror of the ActiveChannel table, so per-message checks skip a database query
+        self.active_channels: set[int] = set()
         self.guild_spawn_cooldowns: dict[int, float] = {}  # {guild_id: last_spawn_timestamp}
         self.guild_spawn_locks: dict[int, asyncio.Lock] = {}
         self._durability_warning_state: dict[int, float] = {}
@@ -107,6 +110,7 @@ class Miner(Commands, Listeners, TaskLoops, commands.Cog, metaclass=CompositeMet
                 WHERE durability = 0
             """
             await Player.raw(textwrap.dedent(sql))
+            self.active_channels = set(await ActiveChannel.select(ActiveChannel.id).output(as_list=True))
         except Exception as e:
             log.error("Failed to connect to database", exc_info=e)
             self.db = None
