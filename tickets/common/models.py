@@ -708,16 +708,15 @@ def get_server_stats_for_timespan(
 # =============================================================================
 
 
-async def run_migrations(data: dict[str, t.Any], config: Config) -> tuple[DB, bool]:
+def run_migrations(data: dict[str, t.Any]) -> tuple[DB, bool]:
     """
-    Run migrations on config data and return validated DB model.
+    Run migrations on raw saved data and return validated DB model.
 
     Args:
-        data: Raw config data dict from Config.db()
-        config: The Red Config instance (for saving if migrations occur)
+        data: Raw data dict loaded from the cog's db.json (or Red Config on first load)
 
     Returns:
-        Tuple of (validated DB model, whether migrations occurred)
+        Tuple of (validated DB model, whether migrations occurred). The caller saves when migrations occurred.
     """
     if not data:
         data = {"configs": {}, "migrations": []}
@@ -838,10 +837,6 @@ async def run_migrations(data: dict[str, t.Any], config: Config) -> tuple[DB, bo
         data["migrations"].append("3.0.0")
         migrated = True
 
-    # Save if migrations were performed
-    if migrated:
-        await config.db.set(data)
-
     # Pydantic handles all default values automatically
     return DB.load(data), migrated
 
@@ -882,4 +877,4 @@ async def migrate_from_old_config(config: Config) -> tuple[DB, bool]:
     await config.clear_all_guilds()
 
     # Run standard migrations and return DB model
-    return await run_migrations(new_data, config)
+    return run_migrations(new_data)

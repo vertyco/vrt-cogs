@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import re
 import typing as t
 import zipfile
@@ -8,6 +9,7 @@ from contextlib import suppress
 from datetime import datetime, time
 from io import BytesIO, StringIO
 from pathlib import Path
+from uuid import uuid4
 
 import chat_exporter
 import discord
@@ -30,6 +32,25 @@ _ = Translator("Tickets", __file__)
 
 
 DM_FILESIZE_LIMIT = 8 * 1024 * 1024
+
+
+def write_file_atomic(path: Path, text: str) -> None:
+    """Write text to path so a crash mid-write never leaves a half-written file.
+
+    Same approach as Red's JSON driver: write a temp file, fsync it, swap it in, fsync the directory.
+    """
+    tmp_path = path.parent / f"{path.stem}-{uuid4().fields[0]}.tmp"
+    with tmp_path.open(encoding="utf-8", mode="w") as fs:
+        fs.write(text)
+        fs.flush()
+        os.fsync(fs.fileno())
+    tmp_path.replace(path)
+    if hasattr(os, "O_DIRECTORY"):
+        fd = os.open(path.parent, os.O_DIRECTORY)
+        try:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
 
 
 def add_ticket_answer_fields(

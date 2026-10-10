@@ -5,9 +5,11 @@ import typing as t
 from time import perf_counter
 
 import discord
+import orjson
 from discord.ext import tasks
 from redbot.core import Config, commands
 from redbot.core.bot import Red
+from redbot.core.data_manager import cog_data_path
 from redbot.core.i18n import Translator, cog_i18n
 
 from .abc import CompositeMetaClass
@@ -18,7 +20,7 @@ from .common.analytics import (
     record_user_message,
 )
 from .common.functions import Functions
-from .common.models import DB, GuildSettings, migrate_from_old_config, run_migrations
+from .common.models import DB, GuildSettings, migrate_from_old_config, prune_old_events, run_migrations
 from .common.utils import (
     close_ticket,
     get_ticket_owner,
@@ -26,6 +28,7 @@ from .common.utils import (
     record_response_time,
     ticket_owner_hastyped,
     update_active_overview,
+    write_file_atomic,
 )
 from .common.views import CloseView, LogView, PanelView
 
@@ -41,7 +44,7 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "3.8.0"
+    __version__ = "3.8.1"
 
     def format_help_for_context(self, ctx):
         helpcmd = super().format_help_for_context(ctx)
@@ -63,8 +66,11 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
         self.config = Config.get_conf(self, 117117, force_registration=True)
         self.config.register_global(db={})
 
-        # Pydantic DB
+        # Pydantic DB, saved to its own file instead of Red Config so a save skips Config's deep copy
         self.db: DB = DB()
+        self.db_file = cog_data_path(self) / "db.json"
+        self.last_prune: float | None = None
+        self.db_loaded: bool = False  # Never write before load, or an empty DB would replace the saved one
         self.saving: bool = False
         self.initialized: bool = False
 
@@ -86,7 +92,7 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
         """Mark the DB dirty; flush is debounced via a background task.
 
         Callers can keep `await self.save()` semantics; the awaited coroutine
-        only schedules a flush. The actual Config write happens at most once
+        only schedules a flush. The actual file write happens at most once
         per `save_debounce_seconds`, on a background task.
         """
         self.save_dirty = True
@@ -101,15 +107,35 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
             raise
 
     async def _flush_save(self) -> None:
-        if not self.save_dirty or self.saving:
+        if not self.save_dirty or self.saving or not self.db_loaded:
             return
         try:
             self.saving = True
             self.save_dirty = False
-            dump = self.db.model_dump(mode="json")
-            await self.config.db.set(dump)
+            await self.write_db()
         finally:
             self.saving = False
+
+    async def write_db(self) -> None:
+        # Serialize on the loop so nothing mutates the models mid-dump; only the disk write goes to a thread
+        dump = self.db.model_dump_json()
+        await asyncio.to_thread(write_file_atomic, self.db_file, dump)
+
+    async def load_db(self) -> tuple[DB, bool]:
+        """Load the DB from db.json, or from Red Config on the first load after the move to file storage.
+
+        Returns the DB and whether it needs writing to db.json right away.
+        """
+        if self.db_file.exists():
+            raw = await asyncio.to_thread(self.db_file.read_bytes)
+            return run_migrations(orjson.loads(raw))
+        data = await self.config.db()
+        if data:
+            db = run_migrations(data)[0]
+        else:
+            log.info("No data or first load, checking for old config to migrate from")
+            db = (await migrate_from_old_config(self.config))[0]
+        return db, True
 
     async def rpc_close_ticket(
         self,
@@ -189,21 +215,15 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
 
         t1 = perf_counter()
 
-        # Load data from Config
-        data = await self.config.db()
-        migrated = False
-
-        if not data:
-            # No data in new format, check for old per-guild config data
-            log.info("No data or first load, checking for old config to migrate from")
-            self.db, migrated = await migrate_from_old_config(self.config)
-        else:
-            # Data exists, run any pending migrations
-            self.db, migrated = await run_migrations(data, self.config)
-
-        if migrated:
-            log.info("Migration completed, saving config")
-            await self.save()
+        moving_from_config = not self.db_file.exists()
+        self.db, needs_write = await self.load_db()
+        self.db_loaded = True
+        if needs_write:
+            await self.write_db()
+        if moving_from_config:
+            # db.json now holds everything, so drop Red Config's copy (Red keeps it parsed in memory otherwise)
+            await self.config.db.clear()
+            log.info(f"Moved ticket data from Red Config to {self.db_file}")
 
         for gid, guild_conf in self.db.configs.items():
             guild = self.bot.get_guild(gid)
@@ -336,6 +356,13 @@ class Tickets(TicketCommands, Functions, commands.Cog, metaclass=CompositeMetaCl
     async def auto_close(self):
         if not self.initialized:
             return
+        if self.last_prune is None or perf_counter() - self.last_prune > 86400:
+            # Enforce each server's stats retention setting once a day
+            self.last_prune = perf_counter()
+            removed = sum(prune_old_events(conf) for conf in self.db.configs.values())
+            if removed:
+                log.info(f"Pruned {removed} analytics events past their retention period")
+                await self.save()
         actasks = []
         for gid, conf in self.db.configs.items():
             guild = self.bot.get_guild(gid)

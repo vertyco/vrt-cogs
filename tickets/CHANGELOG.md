@@ -1,5 +1,10 @@
 # Tickets Changelog
 
+## v3.8.1
+
+- **Fix**: The stats retention setting (`[p]ticketstats retention`, default 90 days) now actually deletes old stats. Before, nothing ever ran the cleanup, so stats history grew forever. The cleanup now runs once a day.
+- **Change**: Ticket data now saves to its own `db.json` file in the cog's data folder instead of Red's settings storage. Saves are much faster (about 20x on a large server), so busy servers stop seeing the bot hitch every time a ticket changes. Existing data moves over automatically the first time the cog loads.
+
 ## v3.8.0
 
 - **New**: `[p]ticketpings` lets each staff member turn on (or off) being pinged when a new ticket opens. You are only pinged for tickets you can see, and never for a ticket you opened yourself. Only ticket staff (global or any panel support role) or admins can turn it on; anyone can turn it off.
