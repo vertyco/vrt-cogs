@@ -58,14 +58,14 @@ class Match:
     def __init__(
         self,
         room: t.Any,
-        record: t.Callable[[list[Result]], None],
+        record: t.Callable[["Match", list[Result]], None],
         ended: t.Callable[["Match"], None],
         rng: random.Random | None = None,
         clock: t.Callable[[], float] | None = None,
     ):
         """
-        `room` is the window's ActivityHub room. `record(results)` gets each finished round's results for the
-        leaderboard, and `ended(match)` is called once the update loop has stopped
+        `room` is the window's ActivityHub room. `record(match, results)` gets each finished round's results for
+        the leaderboard and payouts, and `ended(match)` is called once the update loop has stopped
         """
         self.room = room
         self.record = record
@@ -206,8 +206,8 @@ class Match:
         best = max(scores)
         # A win needs at least one marble, so a round where nobody ate anything has no winner
         self.winners = [number for number, score in enumerate(scores) if best > 0 and score == best]
-        # Idle alt accounts in the other seats would hand one player every win. Fine with no credits paid;
-        # an NPC taking over idle seats closes that gap if credits are ever added
+        # Idle alt accounts in the other seats would hand one player every win and more marbles. Payouts are
+        # capped per cash-in and per day, so that can't earn more than a strong player does
         results = [
             Result(
                 user_id,
@@ -218,7 +218,7 @@ class Match:
             for number, (user_id, name) in self.round_players.items()
         ]
         if results:
-            self.record(results)
+            self.record(self, results)
         self.stage, self.stage_left, self.dirty = RESULTS, RESULTS_SECONDS * TICK_RATE, True
 
     def tick_results(self) -> None:

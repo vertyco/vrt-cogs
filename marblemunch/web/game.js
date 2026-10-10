@@ -24,6 +24,8 @@ const page = {
   left: null,
   flashTimer: null,
   toastTimer: null,
+  // The payout settings, for server admins only
+  payouts: null,
 };
 
 function $(id) {
@@ -59,6 +61,7 @@ async function start() {
   }
   bindInput();
   setInterval(showRate, 1000);
+  loadPayouts();
   await goLive();
 }
 
@@ -106,8 +109,100 @@ function receive(data) {
     applyState(data.state);
   } else if ("f" in data) {
     applyFrame(data);
+  } else if ("offer" in data) {
+    showOffer(data.offer);
+  } else if (data.cashed) {
+    showCashed(data.cashed);
   } else if (data.notice) {
+    // A cash-in that didn't pay can be tried again
+    $("cashin-button").disabled = false;
     toast(data.notice);
+  }
+}
+
+// ---------- Cashing in ----------
+
+// What the player's last round is worth where this server pays for marbles. The next round they finish
+// replaces it, so they choose which rounds to spend their few cash-ins a day on
+function showOffer(offer) {
+  const box = $("cashin");
+  const button = $("cashin-button");
+  box.hidden = !offer;
+  if (!offer) {
+    return;
+  }
+  button.disabled = false;
+  button.hidden = offer.left <= 0 || offer.worth <= 0;
+  if (offer.left <= 0) {
+    $("cashin-text").textContent = "No cash-ins left today. They come back at midnight UTC.";
+  } else if (offer.worth <= 0) {
+    $("cashin-text").textContent = `Munch some marbles to earn ${offer.currency}.`;
+  } else {
+    $("cashin-text").textContent = `Last round is worth ${offer.worth.toLocaleString()} ${offer.currency} · ${offer.left} of ${offer.plays} cash-ins left today`;
+    button.textContent = `Cash in ${offer.worth.toLocaleString()}`;
+  }
+}
+
+function showCashed(paid) {
+  $("cashin").hidden = true;
+  toast(`+${paid.paid.toLocaleString()} ${paid.currency}! ${plural(paid.left, "cash-in")} left today`);
+  sound.play("win");
+}
+
+// ---------- Payout settings (server admins) ----------
+
+async function loadPayouts() {
+  try {
+    showPayouts(await page.hub.api("payouts"));
+  } catch (e) {
+    console.warn("Marble Munch: couldn't load the payout settings", e);
+  }
+}
+
+// Players who can't change the settings get none, and never see the button
+function showPayouts(state) {
+  page.payouts = state.settings ? state : null;
+  $("open-payouts").hidden = !page.payouts;
+  if (!page.payouts) {
+    return;
+  }
+  $("payouts-global").hidden = !state.global;
+  $("payouts-rate-label").textContent = `${state.currency[0].toUpperCase()}${state.currency.slice(1)} per marble`;
+  fillPayouts(state.settings);
+}
+
+function fillPayouts(settings) {
+  $("payouts-on").checked = settings.on;
+  for (const name of ["rate", "cap", "plays"]) {
+    $(`payouts-${name}`).value = String(settings[name]);
+  }
+}
+
+// An empty box goes as null, which the bot refuses with a message saying what it needs
+function numberIn(id) {
+  const value = $(id).value;
+  return value === "" ? null : Number(value);
+}
+
+async function savePayouts() {
+  const settings = {
+    on: $("payouts-on").checked,
+    rate: numberIn("payouts-rate"),
+    cap: numberIn("payouts-cap"),
+    plays: numberIn("payouts-plays"),
+  };
+  $("payouts-status").textContent = "Saving...";
+  try {
+    showPayouts(await page.hub.api("save_payouts", { settings }));
+    $("payouts-status").textContent = "Saved.";
+  } catch (e) {
+    $("payouts-status").textContent = e.message;
+  }
+}
+
+function cashIn() {
+  if (send({ cashin: true })) {
+    $("cashin-button").disabled = true;
   }
 }
 
@@ -336,6 +431,14 @@ function bindButtons() {
   click("start", () => send({ start: true }));
   click("stand", () => send({ stand: true }));
   click("open-leaderboard", openLeaderboard);
+  click("cashin-button", cashIn);
+  click("open-payouts", () => $("payouts").showModal());
+  click("close-payouts", () => $("payouts").close());
+  click("save-payouts", savePayouts);
+  click("reset-payouts", () => {
+    fillPayouts(page.payouts.defaults);
+    $("payouts-status").textContent = "Reset. Save to keep it.";
+  });
   click("close-leaderboard", () => $("leaderboard").close());
   click("music", () => {
     sound.setMusic(!sound.musicOn);

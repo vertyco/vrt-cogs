@@ -13,6 +13,9 @@
         <p class="chip" id="left">20 marbles a round</p>
         <p class="hint" id="hint">Tap an empty hippo to sit down.</p>
         <nav class="corner" aria-label="Game controls">
+          <button type="button" class="icon-button" id="open-payouts" aria-label="Payout settings" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
+          </button>
           <button type="button" class="icon-button" id="back" aria-label="Back to the menu">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5 L8 12 L15 19" /></svg>
           </button>
@@ -39,6 +42,10 @@
       <aside class="side">
         <ol class="scores" id="scores" aria-label="Scores"></ol>
         <p class="watching" id="watching"></p>
+        <div class="cashin" id="cashin" hidden>
+          <p class="cashin-text" id="cashin-text"></p>
+          <button type="button" class="button primary" id="cashin-button">Cash in</button>
+        </div>
         <div class="actions">
           <button type="button" class="button primary" id="start" hidden>Start</button>
           <button type="button" class="button" id="stand" hidden>Stand up</button>
@@ -56,6 +63,24 @@
       <ol class="leaders" id="leaders"></ol>
       <p class="you" id="you"></p>
       <button type="button" class="button" id="close-leaderboard">Close</button>
+    </dialog>
+
+    <dialog class="leaderboard payouts" id="payouts" aria-labelledby="payouts-title">
+      <h2 id="payouts-title">Payouts</h2>
+      <p class="dim">After a round, players can cash in their marbles: each marble pays the rate, up to the most per cash-in. Their next round replaces an unsent one, so players save their cash-ins for their best rounds. Cash-ins come back at midnight UTC.</p>
+      <p class="dim" id="payouts-global" hidden>The bank is global, so these payouts apply in every server, and cash-ins count across servers.</p>
+      <label class="payout-switch"><input type="checkbox" id="payouts-on" /> Marble Munch pays out</label>
+      <div class="payout-numbers">
+        <label><span id="payouts-rate-label">Credits per marble</span><input type="number" id="payouts-rate" min="0" step="any" /></label>
+        <label><span>Most per cash-in</span><input type="number" id="payouts-cap" min="1" step="1" /></label>
+        <label><span>Cash-ins a day</span><input type="number" id="payouts-plays" min="1" step="1" /></label>
+      </div>
+      <p class="payout-status" id="payouts-status" role="status"></p>
+      <div class="actions">
+        <button type="button" class="button primary" id="save-payouts">Save</button>
+        <button type="button" class="button" id="reset-payouts">Reset</button>
+        <button type="button" class="button" id="close-payouts">Close</button>
+      </div>
     </dialog>
 
     <script type="module" src="game.js"></script>

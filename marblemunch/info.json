@@ -1,6 +1,6 @@
 {
   "author": ["Vertyco"],
-  "description": "A hungry-hippos style marble game for ActivityHub. Up to four players stretch their hippos out to munch the most marbles, computer hippos fill the empty seats so one player can start a round alone, and a global leaderboard ranks everyone by wins. Works on desktop and on phones held either way. It is also the worked multiplayer example for ActivityHub's DEVELOPERS.md. Needs ActivityHub 0.1.9 or later.",
+  "description": "A hungry-hippos style marble game for ActivityHub. Up to four players stretch their hippos out to munch the most marbles, computer hippos fill the empty seats so one player can start a round alone, and a global leaderboard ranks everyone by wins. Works on desktop and on phones held either way. It is also the worked multiplayer example for ActivityHub's DEVELOPERS.md. Server admins can turn on Neopets-style payouts from inside the game, so players cash in their marbles for credits. Needs ActivityHub 0.1.9 or later.",
   "disabled": false,
   "end_user_data_statement": "This cog stores each player's Discord user ID, Discord display name, and their Marble Munch wins, marbles eaten and rounds played, for the global leaderboard.",
   "hidden": true,

@@ -324,6 +324,36 @@ h1 {
   font-weight: 600;
 }
 
+.cashin {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: var(--yellow-tint);
+  color: var(--ink);
+}
+
+.cashin[hidden] {
+  display: none;
+}
+
+.cashin-text {
+  margin: 0;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.cashin .button[hidden] {
+  display: none;
+}
+
+.cashin .button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -434,6 +464,55 @@ h1 {
   color: var(--ink);
   font-family: inherit;
   box-shadow: 0 8px 0 var(--purple-deep);
+}
+
+.payout-switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+  font-weight: 600;
+}
+
+.payout-switch input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--purple);
+}
+
+.payout-numbers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.payout-numbers label {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.payout-numbers input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 2px solid var(--paper-tint);
+  border-radius: 12px;
+  background: var(--paper-tint);
+  color: var(--ink);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.payout-status {
+  min-height: 1.3em;
+  margin: 10px 0;
+  font-weight: 600;
 }
 
 .leaderboard::backdrop {

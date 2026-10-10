@@ -24,7 +24,9 @@ from marblemunch.tests.fakes import Clock, FakeConn, FakeRoom
 
 def make_game():
     room, recorded, ended, clock = FakeRoom(), [], [], Clock()
-    match = Match(room, recorded.append, ended.append, rng=random.Random(7), clock=clock)
+    match = Match(
+        room, lambda match, results: recorded.append(results), ended.append, rng=random.Random(7), clock=clock
+    )
     return SimpleNamespace(match=match, room=room, clock=clock, recorded=recorded, ended=ended)
 
 

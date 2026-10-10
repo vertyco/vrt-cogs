@@ -508,6 +508,8 @@ export async function createScene(host) {
     resolution: Math.min(window.devicePixelRatio || 1, 2),
   });
   host.append(app.canvas);
+  // resizeTo only follows the window, but the board's box also changes when the panel under it grows on a phone
+  new ResizeObserver(() => app.resize()).observe(host);
   const [textures] = await Promise.all([loadArt(), loadFont()]);
   return new Scene(app, textures);
 }
