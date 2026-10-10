@@ -7,12 +7,14 @@ import re
 import sys
 import typing as t
 from datetime import datetime, timedelta
-from io import StringIO
+from io import BytesIO, StringIO
+from pathlib import Path
 
 import aiohttp
 import discord
 import plotly.graph_objects as go
 from aiocache import cached
+from PIL import Image
 from redbot.core import commands
 from redbot.core.i18n import Translator
 from redbot.core.utils.predicates import MessagePredicate
@@ -354,3 +356,53 @@ def plot_levels(
     except Exception as e:
         log.error("Failed to plot levels", exc_info=e)
         return buffer.getvalue(), None
+
+
+# Uploaded profile backgrounds live as image files in the cog's user_backgrounds folder,
+# and the profile stores "upload:<filename>" instead of the image itself
+UPLOAD_PREFIX = "upload:"
+# Twice the largest profile card (1050x450), so a shrunk upload still looks sharp on every style
+UPLOAD_COVER_SIZE = (2100, 900)
+UPLOAD_EXTENSIONS = {"JPEG": "jpg", "PNG": "png", "WEBP": "webp", "GIF": "gif"}
+
+
+def shrink_background(image_bytes: bytes) -> t.Tuple[bytes, str]:
+    """Downscale a still image that is far bigger than any profile card, keeping its format.
+
+    Animated images, formats other than JPEG/PNG/WebP, and images already near card size come back unchanged.
+    Returns the image bytes and a file extension for them.
+    """
+    try:
+        with Image.open(BytesIO(image_bytes)) as img:
+            fmt = img.format or ""
+            ext = UPLOAD_EXTENSIONS.get(fmt, "img")
+            scale = max(UPLOAD_COVER_SIZE[0] / img.width, UPLOAD_COVER_SIZE[1] / img.height)
+            if scale >= 1 or getattr(img, "is_animated", False) or fmt not in ("JPEG", "PNG", "WEBP"):
+                return image_bytes, ext
+            resized = img.resize((round(img.width * scale), round(img.height * scale)), Image.Resampling.LANCZOS)
+            buffer = BytesIO()
+            if fmt == "PNG":
+                resized.save(buffer, format=fmt, optimize=True)
+            else:
+                resized.save(buffer, format=fmt, quality=90)
+    except Exception as e:
+        log.warning("Could not shrink an uploaded background, storing it unchanged", exc_info=e)
+        return image_bytes, "img"
+    shrunk = buffer.getvalue()
+    return (shrunk, ext) if len(shrunk) < len(image_bytes) else (image_bytes, ext)
+
+
+def delete_background(folder: Path, guild_id: int, user_id: int) -> None:
+    """Remove a member's uploaded background file for one server."""
+    for path in folder.glob(f"{guild_id}-{user_id}.*"):
+        path.unlink(missing_ok=True)
+
+
+def store_background(folder: Path, guild_id: int, user_id: int, image_bytes: bytes) -> str:
+    """Save an uploaded background as an image file and return the profile.background value that points at it."""
+    image_bytes, ext = shrink_background(image_bytes)
+    folder.mkdir(parents=True, exist_ok=True)
+    delete_background(folder, guild_id, user_id)
+    path = folder / f"{guild_id}-{user_id}.{ext}"
+    path.write_bytes(image_bytes)
+    return UPLOAD_PREFIX + path.name

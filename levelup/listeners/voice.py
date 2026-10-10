@@ -243,8 +243,8 @@ class VoiceListener(MixinMeta):
                     user_data.not_gaining_xp = True
                     user_data.stopped_gaining_xp_at = perf
 
-        # Save the changes
-        self.save()
+        # Save the changes (throttled, like message XP, so voice traffic doesn't rewrite the whole file each time)
+        self.save(False)
         # Check for levelups
         await self.check_levelups(member.guild, member, profile, conf, channel=channel)
 

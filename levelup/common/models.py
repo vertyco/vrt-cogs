@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import logging
 import math
 import os
@@ -14,7 +15,7 @@ import orjson
 from pydantic import VERSION, BaseModel, Field
 from redbot.core.bot import Red
 
-from .utils import get_twemoji
+from .utils import get_twemoji, store_background
 
 log = logging.getLogger("red.vrt.levelup.models")
 
@@ -128,7 +129,7 @@ class Profile(Base):
 
     # Profile customization
     style: str = "default"  # Can be default, minimal, gaming, or runescape
-    background: str = "default"  # Can be default, random, filename, URL, or b64:<data>
+    background: str = "default"  # Can be default, random, filename, URL, or upload:<file in user_backgrounds>
     namecolor: t.Union[str, None] = None  # Hex color
     statcolor: t.Union[str, None] = None  # Hex color
     barcolor: t.Union[str, None] = None  # Hex color
@@ -389,6 +390,31 @@ class DB(Base):
     def get_conf(self, guild: t.Union[discord.Guild, int]) -> GuildSettings:
         gid = guild if isinstance(guild, int) else guild.id
         return self.configs.setdefault(gid, GuildSettings())
+
+    def move_stored_backgrounds(self, folder: Path) -> int:
+        """Move backgrounds stored as base64 inside the settings file out to image files.
+
+        Returns how many were moved. Each one shrinks the settings file, which is rewritten in full on every save.
+        """
+        moved = 0
+        for guild_id, conf in self.configs.items():
+            for user_id, profile in conf.users.items():
+                if not profile.background.startswith("b64:"):
+                    continue
+                try:
+                    image_bytes = base64.b64decode(profile.background[4:])
+                except ValueError as e:
+                    log.warning(f"Dropping unreadable stored background for {user_id} in {guild_id}", exc_info=e)
+                    profile.background = "default"
+                    continue
+                try:
+                    profile.background = store_background(folder, guild_id, user_id, image_bytes)
+                except OSError as e:
+                    # Keep the stored copy so the next load can retry
+                    log.error(f"Failed to write background file for {user_id} in {guild_id}", exc_info=e)
+                    continue
+                moved += 1
+        return moved
 
 
 def run_migrations(settings: t.Dict[str, t.Any]) -> DB:

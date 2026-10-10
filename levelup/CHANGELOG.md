@@ -1,3 +1,16 @@
+# [5.2.11] (2026-10-09)
+
+## Improvements
+
+- Profile backgrounds that members upload are now saved as image files in the cog's `user_backgrounds` data folder instead of inside the LevelUp data file. A few uploaded pictures could make that file 10 times bigger, and the whole file is rewritten on every save. Existing uploads move over automatically the first time the cog loads
+- Uploaded still images much larger than a profile card are shrunk once when saved (to at least twice the biggest card size, same file format), so profiles with uploaded backgrounds also render faster. Animated backgrounds are kept as they are
+
+## Bug Fixes
+
+- Joining, leaving, muting or deafening in voice no longer forces a full save of the LevelUp data file every time. Voice changes now save on the same 30-second throttle as message XP, so busy voice channels stop making the bot hitch
+- The size check when setting a profile background now measures the finished profile image. Before, it measured a tiny Python object instead, so it could never fail
+- Backgrounds set from a Discord attachment link are now checked against the server's upload size limit, the same as attached files
+
 # [5.2.10] (2026-10-07)
 
 ## Bug Fixes

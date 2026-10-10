@@ -82,7 +82,7 @@ class LevelUp(
     """
 
     __author__ = "[vertyco](https://github.com/vertyco/vrt-cogs)"
-    __version__ = "5.2.10"
+    __version__ = "5.2.11"
     __contributors__ = [
         "[aikaterna](https://github.com/aikaterna/aikaterna-cogs)",
         "[AAA3A](https://github.com/AAA3A-AAA3A/AAA3A-cogs)",
@@ -111,6 +111,7 @@ class LevelUp(
         # Custom Paths
         self.custom_fonts = self.cog_path / "fonts"
         self.custom_backgrounds = self.cog_path / "backgrounds"
+        self.user_backgrounds = self.cog_path / "user_backgrounds"  # Uploaded profile backgrounds
         # Bundled Paths
         self.stock = self.bundled_path / "stock"
         self.fonts = self.bundled_path / "fonts"
@@ -499,6 +500,10 @@ class LevelUp(
                 except Exception as e:
                     log.error("Failed to migrate old settings.json", exc_info=e)
                     return
+
+        if moved := await asyncio.to_thread(self.db.move_stored_backgrounds, self.user_backgrounds):
+            log.info(f"Moved {moved} uploaded backgrounds out of the settings file into {self.user_backgrounds}")
+            migrated = True
 
         log.info("Config initialized")
         self.initialized = True

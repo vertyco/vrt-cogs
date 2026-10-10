@@ -1,5 +1,4 @@
 import asyncio
-import base64
 import logging
 import typing as t
 from contextlib import suppress
@@ -289,8 +288,8 @@ class User(MixinMeta):
         """View your profile settings"""
         conf = self.db.get_conf(ctx.guild)
         profile = conf.get_profile(ctx.author)
-        # Display "Stored Image" for base64 backgrounds
-        bg_display = _("Stored Image") if profile.background.startswith("b64:") else profile.background
+        # Display "Stored Image" for uploaded backgrounds
+        bg_display = _("Stored Image") if profile.background.startswith(utils.UPLOAD_PREFIX) else profile.background
         if not conf.use_embeds:
             desc = _(
                 "`Profile Style:   `{}\n"
@@ -320,11 +319,11 @@ class User(MixinMeta):
         if not conf.use_embeds:
             if bg.startswith("http"):
                 embed.set_image(url=bg)
-            elif bg.startswith("b64:"):
-                # Decode base64 and attach as file
-                image_data = base64.b64decode(bg[4:])
-                file = discord.File(BytesIO(image_data), filename="background.png")
-                embed.set_image(url="attachment://background.png")
+            elif bg.startswith(utils.UPLOAD_PREFIX):
+                path = self.user_backgrounds / bg.removeprefix(utils.UPLOAD_PREFIX)
+                if path.exists():
+                    file = discord.File(str(path), filename=path.name)
+                    embed.set_image(url=f"attachment://{path.name}")
             elif bg not in ("default", "random"):
                 available = list(self.backgrounds.iterdir()) + list(self.custom_backgrounds.iterdir())
                 for path in available:
@@ -775,17 +774,21 @@ class User(MixinMeta):
         if url is None:
             if attachments[0].size > ctx.guild.filesize_limit:
                 return await ctx.send(_("That image is too large for this server's upload limit!"))
-            # Discord attachment URLs expire, so download and store as base64
+            # Discord attachment URLs expire, so download and store as a file
             image_bytes = await attachments[0].read()
 
-            profile.background = "b64:" + base64.b64encode(image_bytes).decode("utf-8")
+            profile.background = await asyncio.to_thread(
+                utils.store_background, self.user_backgrounds, ctx.guild.id, ctx.author.id, image_bytes
+            )
             try:
                 file: discord.File = await self.get_user_profile(ctx.author, reraise=True)
-                if file.__sizeof__() > ctx.guild.filesize_limit:
+                if isinstance(file, discord.File) and file.fp.getbuffer().nbytes > ctx.guild.filesize_limit:
                     profile.background = "default"
+                    utils.delete_background(self.user_backgrounds, ctx.guild.id, ctx.author.id)
                     return await ctx.send(_("That image is too large for this server's upload limit!"))
             except Exception as e:
                 profile.background = "default"
+                utils.delete_background(self.user_backgrounds, ctx.guild.id, ctx.author.id)
                 return await ctx.send(_("That image is not a valid profile background!\n{}").format(str(e)))
             self.save()
             txt = _("Your profile background has been set!")
@@ -809,18 +812,24 @@ class User(MixinMeta):
                 image_bytes = await utils.get_content_from_url(url)
                 if not image_bytes:
                     return await ctx.send(_("Failed to download the image from that URL!"))
+                if len(image_bytes) > ctx.guild.filesize_limit:
+                    return await ctx.send(_("That image is too large for this server's upload limit!"))
 
-                profile.background = "b64:" + base64.b64encode(image_bytes).decode("utf-8")
+                profile.background = await asyncio.to_thread(
+                    utils.store_background, self.user_backgrounds, ctx.guild.id, ctx.author.id, image_bytes
+                )
             else:
                 profile.background = url
 
             try:
                 file: discord.File = await self.get_user_profile(ctx.author, reraise=True)
-                if file.__sizeof__() > ctx.guild.filesize_limit:
+                if isinstance(file, discord.File) and file.fp.getbuffer().nbytes > ctx.guild.filesize_limit:
                     profile.background = "default"
+                    utils.delete_background(self.user_backgrounds, ctx.guild.id, ctx.author.id)
                     return await ctx.send(_("That image is too large for this server's upload limit!"))
             except Exception as e:
                 profile.background = "default"
+                utils.delete_background(self.user_backgrounds, ctx.guild.id, ctx.author.id)
                 return await ctx.send(_("That image is not a valid profile background!\n{}").format(str(e)))
             self.save()
             txt = _("Your profile background has been set!")

@@ -36,6 +36,7 @@ class MixinMeta(ABC):
         # Custom
         self.custom_fonts: Path
         self.custom_backgrounds: Path
+        self.user_backgrounds: Path
         # Bundled
         self.stock: Path
         self.fonts: Path

@@ -96,7 +96,7 @@ class ProfileFormatting(MixinMeta):
     ) -> t.Union[bytes, str]:
         """
         Get a background for a user's profile in the following priority:
-        - Stored background (base64 with b64: prefix)
+        - Uploaded background (file in user_backgrounds, upload: prefix)
         - Custom background selected by user
         - Banner of user's Discord profile
         - Guild default background
@@ -107,9 +107,10 @@ class ProfileFormatting(MixinMeta):
         if guild_id is not None:
             guild_conf = self.db.get_conf(guild_id)
 
-        # Check for base64 stored background (prefixed with "b64:")
-        if profile.background.startswith("b64:"):
-            return base64.b64decode(profile.background[4:])
+        if profile.background.startswith(utils.UPLOAD_PREFIX):
+            path = self.user_backgrounds / profile.background.removeprefix(utils.UPLOAD_PREFIX)
+            if path.exists():
+                return await asyncio.to_thread(path.read_bytes)
 
         if profile.background == "default":
             if banner_url := await self.get_banner(user_id):
