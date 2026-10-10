@@ -1,5 +1,11 @@
 # ActivityHub Changelog
 
+## 0.1.11
+
+For game developers:
+
+- `DEVELOPERS.md` section 19 also points at Tanks, a turn-based game cog in the same repo: one player's turn on a slow live loop, and whole shots worked out at once and played back on every screen.
+
 ## 0.1.10
 
 For game developers:

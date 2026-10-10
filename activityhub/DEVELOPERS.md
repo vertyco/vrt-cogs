@@ -1312,6 +1312,20 @@ Marble Munch is a separate cog in the same repo (`marblemunch/`): a hungry-hippo
 | Drawing two updates behind, and the player's own hippo answering at once | `web/scene.js` (`sample`, `drawMine`) |
 | The update rate in the hub's frame rate counter | `web/game.js` (`showRate`) |
 
+### A turn-based example: Tanks
+
+Tanks is another cog in the same repo (`tanks/`): turn-based artillery for up to five players and computer tanks, ported from a Flash game. Where Marble Munch streams every update, Tanks shows the other common shape: one player acts at a time, and the slow, exact part (a shot) is worked out by the bot all at once and played back on every screen.
+
+| Pattern | Where |
+|---|---|
+| A 20-a-second loop that runs one player's turn, with a turn clock | `tanks/common/match.py` (`run`, `tick_playing`) |
+| Small live updates sent only when the turn's numbers change | `common/match.py` (`live`, `tick`) |
+| A host who sets up the match, and handing the host on | `common/match.py` (`fix_host`, `set_cpu`, `start_match`) |
+| Working a whole shot out at once and sending it as a script | `common/physics.py` (`Shot.run`, `script`), `common/match.py` (`shoot`) |
+| Holding every snapshot back until a shot has played | `common/match.py` (`tick`), `web/game.js` (`receive`, `runShot`) |
+| Playing a script back on a fixed clock | `web/playback.js` |
+| A browser preview recorded from the real match code | `tests/demo.py`, `web/demo.json` |
+
 ## 20. Glossary
 
 | Word | What it means here |
