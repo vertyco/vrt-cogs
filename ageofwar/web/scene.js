@@ -21,8 +21,12 @@ const STALL_FRAMES = 8;
 // How fast the drawing's delay shrinks back after a late update, in milliseconds per update
 const OFFSET_DRIFT = 2;
 export const FIELD = { width: 1000, height: 450, ground: 425 };
-// The original's view was 650 wide. Below this scale the whole field gets too small, so the view scrolls instead
-const FIT_ALL_SCALE = 0.75;
+// The original's view was 650 wide, so the field always scrolled. A wide window may cut off the top of the sky, at
+// most down to this height, rather than show more of the field
+const VIEW_WIDTH = 650;
+const MIN_VIEW_HEIGHT = 390;
+// The original only scrolled with the mouse below its 120 tall menu
+const MENU_HEIGHT = 120;
 const SKY = 0x3db2ff;
 const STATES = ["idle", "walk", "attack", "die", "shoot", "shootwalk"];
 const SHOT_KINDS = [
@@ -282,7 +286,12 @@ export class Scene {
 
   push(frame) {
     const newest = this.frames[this.frames.length - 1];
-    if (newest && frame.f <= newest.f) {
+    // A pause stops the clock, but the original's training carries on, so a paused update replaces the last one
+    if (newest && frame.f === newest.f) {
+      this.frames[this.frames.length - 1] = frame;
+      return;
+    }
+    if (newest && frame.f < newest.f) {
       if (frame.f < newest.f - 40) {
         // A new battle started: its frames count from zero again
         this.clear();
@@ -616,12 +625,14 @@ export class Scene {
       const point = this.world.toLocal(event.global);
       this.cursor.position.set(point.x, point.y);
       this.cursor.visible = mouse && this.mode.kind === "place";
-      if (mouse) {
+      if (mouse && point.y > MENU_HEIGHT) {
         const x = event.global.x;
         const width = this.app.screen.width;
         // The original scrolled when the mouse was within 100 of its 650 wide view's edges
         const edge = 100 * this.scale;
         this.camera.edge = x < edge ? -(edge - x) / edge : x > width - edge ? (x - (width - edge)) / edge : 0;
+      } else {
+        this.camera.edge = 0;
       }
       if (this.camera.drag) {
         const drag = this.camera.drag;
@@ -653,8 +664,7 @@ export class Scene {
       return;
     }
     this.size = { width, height };
-    const all = Math.min(width / FIELD.width, height / FIELD.height);
-    const scale = all >= FIT_ALL_SCALE ? all : Math.min(height / FIELD.height, width / 650);
+    const scale = Math.min(width / VIEW_WIDTH, height / MIN_VIEW_HEIGHT);
     this.scale = scale;
     this.world.scale.set(scale);
     const viewWidth = width / scale;

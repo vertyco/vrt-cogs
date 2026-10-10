@@ -250,6 +250,15 @@ class Battle:
         self.tidy()
         self.check_bases()
 
+    def paused_step(self) -> None:
+        """One frame of a pause. The original's menu kept training a player's units through a pause, while the rest of
+        the battle, the computer's base and the special's cooldown stood still. The new units wait at the base"""
+        if self.winner is not None:
+            return
+        for side in self.sides.values():
+            if side.cpu is None:
+                self.tick_training(side)
+
     def tidy(self) -> None:
         for shot in self.shots:
             if not shot.alive:

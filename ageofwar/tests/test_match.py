@@ -125,6 +125,21 @@ async def test_each_update_runs_two_of_the_originals_frames():
 
 
 @pytest.mark.asyncio
+async def test_training_carries_on_through_a_pause_as_in_the_original():
+    table, (host,) = await seated(1)
+    await table.send(host, {"start": True})
+    await table.send(host, {"buy": 1})
+    await table.send(host, {"pause": True})
+    battle = table.match.battle
+    frame, units = battle.frame, len(battle.units)
+    for _ in range(UNITS[1].train // STEPS + 1):
+        await table.tick()
+    assert battle.frame == frame
+    assert len(battle.units) == units + 1
+    assert battle.sides[1].training == 0
+
+
+@pytest.mark.asyncio
 async def test_only_a_game_against_the_computer_can_pause():
     table, (host,) = await seated(1)
     await table.send(host, {"start": True})

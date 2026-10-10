@@ -147,6 +147,10 @@ class Match:
                 await self.room.broadcast({"f": frame})
                 frame = None
                 self.finish()
+        elif self.stage == PLAYING and self.paused and not self.waiting_for_solo():
+            for _ in range(STEPS):
+                self.battle.paused_step()
+            frame = self.last_frame = self.battle.view()
         for message in self.outbox:
             await self.room.broadcast(message)
         self.outbox = []
@@ -157,8 +161,7 @@ class Match:
             await self.room.broadcast({"f": frame})
 
     def running(self) -> bool:
-        """The battle stands still while paused, and while the only person playing is away. The original kept
-        training units through a pause; here everything stops, so pausing can't help a fastest-win time"""
+        """The battle stands still while paused, and while the only person playing is away"""
         return not self.paused and not self.waiting_for_solo()
 
     def waiting_for_solo(self) -> bool:

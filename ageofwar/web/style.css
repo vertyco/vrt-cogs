@@ -113,8 +113,7 @@ body {
   position: absolute;
 }
 
-.strip button,
-.strip .special {
+.strip button {
   pointer-events: auto;
 }
 
