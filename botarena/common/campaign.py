@@ -885,7 +885,7 @@ def get_available_missions(completed_missions: set[str], include_replays: bool =
     Get missions that are available based on completed missions.
 
     Uncompleted-but-unlocked missions come first; if include_replays is True,
-    completed missions are appended after them (replayable at reduced fee/reward).
+    completed missions are appended after them (replayable at a reduced fee).
     """
     available = []
     replays = []
@@ -904,7 +904,7 @@ def get_available_missions(completed_missions: set[str], include_replays: bool =
 # REPLAY & SKIRMISH SUPPORT
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# Replays cost/pay 25% of the original mission values
+# Replays cost 25% of the original entry fee and pay the full credit reward
 REPLAY_RATE = 0.25
 
 SKIRMISH_MISSION_ID = "skirmish"
@@ -913,11 +913,6 @@ SKIRMISH_MISSION_ID = "skirmish"
 def get_replay_entry_fee(mission: Mission) -> int:
     """Entry fee when replaying an already-completed mission (25% of original)"""
     return round(mission.entry_fee * REPLAY_RATE)
-
-
-def get_replay_reward(mission: Mission) -> int:
-    """Credit reward when replaying an already-completed mission (25% of original)"""
-    return round(mission.credit_reward * REPLAY_RATE)
 
 
 def build_skirmish_mission(registry: PartsRegistry, team_weight: int) -> Mission:

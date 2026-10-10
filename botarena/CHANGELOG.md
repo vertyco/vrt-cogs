@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.1
+
+- Replaying a campaign mission you already beat now pays the full credit reward, the same as the first win. Replays used to pay only 25%. The replay entry fee stays at 25%.
+
 ## 1.4.0
 
 - The battle AI was rewritten so tactics and chassis intelligence matter. Before, shots almost never missed, dodges barely moved a bot, and a Defensive squad won most fights whatever the matchup.

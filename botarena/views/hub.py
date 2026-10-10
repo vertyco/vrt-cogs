@@ -34,7 +34,6 @@ from ..common.campaign import (
     get_chapter_progress,
     get_mission_by_id,
     get_replay_entry_fee,
-    get_replay_reward,
 )
 from ..common.challenge_mode import CHALLENGES
 from ..common.image_utils import find_image_path, load_image
@@ -1051,7 +1050,7 @@ class GameHubLayout(BotArenaView):
             container.add_item(
                 ui.TextDisplay(
                     "## 🎯 Campaign Complete!\nYou've conquered all missions! "
-                    "Replay missions for 25% rewards, fight the daily 🗡️ Skirmish, or challenge other players in PvP!"
+                    "Replay missions for full rewards, fight the daily 🗡️ Skirmish, or challenge other players in PvP!"
                 )
             )
 
@@ -1103,9 +1102,9 @@ class MissionSelectRow(ui.ActionRow["CampaignLayout"]):
             is_completed = mission.id in completed_set
             is_available = mission.required_mission is None or mission.required_mission in completed_set
 
-            # Completed missions are replayable at 25% fee/reward
+            # Completed missions are replayable at 25% fee for the full reward
             entry_fee = get_replay_entry_fee(mission) if is_completed else mission.entry_fee
-            reward = get_replay_reward(mission) if is_completed else mission.credit_reward
+            reward = mission.credit_reward
             can_afford = player_credits >= entry_fee
 
             if is_completed:
@@ -1231,7 +1230,7 @@ class CampaignLayout(BotArenaView):
             is_completed = mission.id in completed_set
             is_available = mission.required_mission is None or mission.required_mission in completed_set
 
-            # Completed missions are replayable at 25% fee/reward
+            # Completed missions are replayable at 25% fee for the full reward
             entry_fee = get_replay_entry_fee(mission) if is_completed else mission.entry_fee
             can_afford = player.credits >= entry_fee
 
@@ -1251,7 +1250,7 @@ class CampaignLayout(BotArenaView):
             fee_text = ""
             if is_completed:
                 fee_parts = [f"💰 {humanize_number(entry_fee)}"] if entry_fee > 0 else []
-                fee_parts.append(f"🏆 {humanize_number(get_replay_reward(mission))}")
+                fee_parts.append(f"🏆 {humanize_number(mission.credit_reward)}")
                 fee_text = f" | Replay: {' / '.join(fee_parts)}"
             elif mission.entry_fee > 0:
                 fee_text = f" | 💰 {humanize_number(mission.entry_fee)}"
@@ -1465,8 +1464,6 @@ class MissionBriefingLayout(BotArenaView):
 
         if self.is_skirmish:
             reward_line = "🏆 **Reward:** 15% of your squad's total value (min 500 credits)"
-        elif self.is_replay(player):
-            reward_line = f"🏆 **Reward:** {humanize_number(get_replay_reward(self.mission))} credits (🔁 replay rate)"
         else:
             reward_line = f"🏆 **Reward:** {humanize_number(self.mission.credit_reward)} credits"
 
@@ -1482,7 +1479,7 @@ class MissionBriefingLayout(BotArenaView):
             f"{reward_line}"
         )
         if self.is_replay(player):
-            mission_info = "🔁 **Replay Mission** - 25% entry fee and reward\n" + mission_info
+            mission_info = "🔁 **Replay Mission** - 25% entry fee, full reward\n" + mission_info
         if self.mission.unlock_parts:
             if self.is_replay(player):
                 mission_info += f"\n🔓 **Unlocks:** {', '.join(self.mission.unlock_parts)} (already unlocked)"
@@ -1687,12 +1684,10 @@ class MissionBriefingLayout(BotArenaView):
             await interaction.response.send_message("❌ Could not load enemy bots!", ephemeral=True)
             return
 
-        # Compute reward: skirmish pays 15% of the squad's total value (min 500), replays pay 25%
+        # Compute reward: skirmish pays 15% of the squad's total value (min 500), missions and replays pay in full
         is_skirmish = self.is_skirmish
         if is_skirmish:
             credit_reward = max(500, round(sum(bot.total_cost for bot in my_bots) * 0.15))
-        elif self.is_replay(player):
-            credit_reward = get_replay_reward(self.mission)
         else:
             credit_reward = self.mission.credit_reward
 
