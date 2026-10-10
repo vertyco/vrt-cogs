@@ -7,7 +7,7 @@ moves to the next age every 200 seconds, until the last one.
 
 import typing as t
 
-from .data import AGES, EVOLVE_HEALTH, UNITS
+from .data import AGES, UNITS
 
 if t.TYPE_CHECKING:
     from .battle import Battle, Side
@@ -69,9 +69,7 @@ class Computer:
         elif self.unit_level == 2 and self.age_timer == THIRD_UNIT:
             self.unit_level = 3
         if self.age_timer == AGE_FRAMES and side.age != AGES:
-            side.age += 1
-            side.base.health += EVOLVE_HEALTH * side.age
-            side.base.max_health += EVOLVE_HEALTH * side.age
+            battle.advance_age(side)
             self.unit_level = 1
             self.age_timer = 0
         for step in PLAN[side.age].get(self.age_timer, ()):
@@ -83,7 +81,8 @@ class Computer:
         if step[0] == "sell":
             side.turrets[step[1] - 1] = None
         elif step[0] == "spots":
-            side.addons = step[1]
+            # Never fewer: standing in for a person, it keeps the spots they bought and the turrets on them
+            side.addons = max(side.addons, step[1])
         elif side.turrets[step[1] - 1] is None:
             battle.place_turret(side.number, step[2], step[1])
 

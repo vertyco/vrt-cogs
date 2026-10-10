@@ -4,6 +4,7 @@ import time
 import pytest
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 
 from ageofwar.main import AgeOfWar
@@ -82,6 +83,54 @@ def test_a_bought_unit_trains_and_the_cash_drops(driver, live):
     assert browser.wait_for(driver, "/\\d+ TPS$/.test(document.querySelector('.fps').textContent)", timeout=5)
     problems = [line for line in browser.console_lines(driver) if "Uncaught" in line or "Age of War" in line]
     assert not problems, problems
+
+
+def first_spot(driver):
+    """The canvas, and where on it the left base's first turret spot button is, from the canvas's center. The view
+    starts on the left base, and the field sits on the canvas's bottom edge"""
+    canvas = driver.find_element(By.CSS_SELECTOR, "#field canvas")
+    width, height = driver.execute_script(
+        "const r = arguments[0].getBoundingClientRect(); return [r.width, r.height];", canvas
+    )
+    scale = min(width / 650, height / 390)
+    x = 54 * scale
+    y = height - 450 * scale + (425 - 78.75) * scale
+    return canvas, x - width / 2, y - height / 2
+
+
+def cash_is(amount: int) -> str:
+    return f"document.querySelector('#hud .shadow.cash').textContent === '{amount}'"
+
+
+def test_a_turret_picked_in_the_menu_goes_on_the_spot_clicked(driver, live):
+    start_against_the_computer(driver, live)
+    browser.wait_for(driver, cash_is(175))
+    # Build turrets, then the first age's first turret: the Rock slingshot, for 100
+    press(driver, 1)
+    press(driver, 0)
+    canvas, x, y = first_spot(driver)
+    # A real mouse, so the turret the original shows under the pointer is there too
+    ActionChains(driver).move_to_element_with_offset(canvas, x, y).pause(0.3).click().perform()
+    browser.wait_for(driver, cash_is(75), timeout=5)
+
+
+def test_dragging_the_field_from_a_spot_button_does_not_press_it(driver, live):
+    start_against_the_computer(driver, live)
+    browser.wait_for(driver, cash_is(175))
+    press(driver, 1)
+    press(driver, 0)
+    canvas, x, y = first_spot(driver)
+    ActionChains(driver).move_to_element_with_offset(canvas, x, y).pause(0.3).click().perform()
+    browser.wait_for(driver, cash_is(75), timeout=5)
+    # Sell a turret: the spot's sell button sits where its build button was
+    press(driver, 2)
+    drag = ActionChains(driver).move_to_element_with_offset(canvas, x, y).pause(0.3).click_and_hold()
+    drag.move_by_offset(-20, 0).move_by_offset(-20, 0).pause(0.3).release().perform()
+    time.sleep(0.5)
+    assert driver.execute_script(f"return {cash_is(75)}")
+    # The view slid back to the base, and a plain press still sells, for half the price
+    ActionChains(driver).move_to_element_with_offset(canvas, x, y).pause(0.3).click().perform()
+    browser.wait_for(driver, cash_is(125), timeout=5)
 
 
 def test_giving_up_shows_the_originals_defeat_screen(driver, live):

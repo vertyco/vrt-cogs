@@ -129,6 +129,12 @@ class Match:
         except Exception as e:
             # Logged once and stopped, so a bug can't fill the log 20 times a second
             log.error("Age of War stopped a match in window %s", self.room.instance_id, exc_info=e)
+            # The pages go back to an empty setup, where the next message starts a new match, rather than staying
+            # on a battle that no longer runs
+            for seat in self.seats:
+                seat.clear()
+            self.back_to_setup()
+            await self.room.broadcast(self.state())
             await self.room.broadcast({"notice": LOOP_FAILED})
         finally:
             self.ended(self)
@@ -375,9 +381,9 @@ class Match:
     # ---------- Orders from a player ----------
 
     def my_side(self, conn: t.Any) -> int | None:
-        """The side this connection commands: its own base, while a person plays it and the battle runs"""
+        """The side this connection commands: its own base, while a person plays it. The menu works through a pause"""
         number = self.number_of(conn)
-        if self.stage != PLAYING or number is None or self.seats[number].stand_in or not self.running():
+        if self.stage != PLAYING or number is None or self.seats[number].stand_in or self.waiting_for_solo():
             return None
         return number + 1
 

@@ -86,6 +86,11 @@ function el(tag, className, parent) {
   return node;
 }
 
+// The kind of turret on each spot of a side's update, 0 for none
+function turretKinds(view) {
+  return view[10].map((turret) => (turret ? turret[0] : 0)).join();
+}
+
 // A button made from one of the original's button characters: its up picture, and its over picture on hover
 function artButton(parent, pictures, x, y, scale = 1) {
   const { up, over } = pictures;
@@ -377,7 +382,8 @@ export class Hud {
     this.cooldown.style.setProperty("--left", `${(1 - special / SPECIAL_COOLDOWN) * 360}deg`);
     this.cooldown.hidden = ready;
     this.special.classList.toggle("ready", ready);
-    if (!before || before[2] !== age || before[3] !== view[3] || String(before[10]) !== String(view[10])) {
+    // Only a new age, spot or turret changes the menu and the spot buttons, not a turret turning or firing
+    if (!before || before[2] !== age || before[3] !== view[3] || turretKinds(before) !== turretKinds(view)) {
       if (this.menu === "place" || this.menu === "sell") {
         this.scene.setMode(this.menu, this.scene.mode.turret, view);
       }
@@ -391,7 +397,6 @@ export class Hud {
   render() {
     const age = this.view ? this.view[2] : 1;
     this.title.textContent = TITLES[this.menu];
-    this.title.dataset.text = TITLES[this.menu];
     this.rows.main.hidden = this.menu !== "main";
     this.unitRows.forEach((row, index) => {
       row.hidden = !(this.menu === "units" && index === age - 1);

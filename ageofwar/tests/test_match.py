@@ -4,6 +4,7 @@ import pytest
 
 from ageofwar.common.data import DIFFICULTIES, UNITS
 from ageofwar.common.match import (
+    LOOP_FAILED,
     PLAYING,
     RESULTS,
     SEAT_TAKEN,
@@ -140,6 +141,19 @@ async def test_training_carries_on_through_a_pause_as_in_the_original():
 
 
 @pytest.mark.asyncio
+async def test_the_menu_works_through_a_pause():
+    table, (host,) = await seated(1)
+    await table.send(host, {"start": True})
+    await table.send(host, {"pause": True})
+    side = table.match.battle.sides[1]
+    await table.send(host, {"buy": 1})
+    await table.send(host, {"build": [1, 1]})
+    assert side.tray[0] == 1
+    assert side.cash < 175 - UNITS[1].cost
+    assert table.match.paused
+
+
+@pytest.mark.asyncio
 async def test_only_a_game_against_the_computer_can_pause():
     table, (host,) = await seated(1)
     await table.send(host, {"start": True})
@@ -147,8 +161,6 @@ async def test_only_a_game_against_the_computer_can_pause():
     frame = table.match.battle.frame
     await table.tick()
     assert table.match.paused and table.match.battle.frame == frame
-    await table.send(host, {"buy": 1})
-    assert table.match.battle.sides[1].tray[0] == 0
     duo, (left, right) = await seated(1, 2)
     await duo.send(left, {"start": True})
     await duo.send(right, {"pause": True})
@@ -309,3 +321,19 @@ async def test_the_last_frame_goes_out_before_the_results():
         if "f" in message or "state" in message
     ]
     assert kinds[-2:] == ["f", RESULTS]
+
+
+@pytest.mark.asyncio
+async def test_a_match_that_breaks_sends_every_page_back_to_an_empty_setup(monkeypatch):
+    table, (host,) = await seated(1)
+    await table.send(host, {"start": True})
+    await table.tick()
+
+    def broken():
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(table.match.battle, "step", broken)
+    await table.match.run()
+    state = last_state(host)
+    assert state["stage"] == SETUP and all(seat["kind"] == "empty" for seat in state["seats"])
+    assert {"notice": LOOP_FAILED} in host.sent

@@ -61,3 +61,16 @@ def test_the_computers_training_shows_on_its_bar():
         if training:
             seen.add(progress)
     assert min(seen) < 20 and max(seen) > 80
+
+
+def test_standing_in_for_a_person_keeps_the_spots_they_bought():
+    fight = Battle(random.Random(2))
+    side = fight.sides[2]
+    side.age, side.addons = 2, 3
+    fight.place_turret(2, 4, 4)
+    side.cpu = Computer(side)
+    fight.sides[1].base.health = 1e9
+    # The second age's plan sets the computer's own spots to two at this point
+    for _ in range(4000):
+        fight.step()
+    assert side.addons == 3 and side.turrets[3] is not None

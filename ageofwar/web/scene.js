@@ -83,18 +83,23 @@ function inner(clip) {
 }
 
 export class Scene {
-  constructor(app, lib, host) {
+  constructor(app, lib) {
     this.app = app;
     this.lib = lib;
-    this.host = host;
     this.font = "AoW Arial, Arial, sans-serif";
     this.sky = new Graphics();
+    this.sky.eventMode = "none";
     this.world = new Container();
     app.stage.addChild(this.sky, this.world);
     this.layers = {};
     for (const name of ["back", "bases", "units", "shots", "fx", "specials", "ui"]) {
       this.layers[name] = new Container();
       this.world.addChild(this.layers[name]);
+    }
+    // Only the spot buttons and the units answer the pointer. Pixi stops at the first picture under it, so anything
+    // else drawn over a spot button would take its clicks: the turret shown under the pointer, a shot, some smoke
+    for (const name of ["back", "shots", "fx", "specials", "ui"]) {
+      this.layers[name].eventMode = "none";
     }
     this.bg = lib.makeExported("bg");
     this.layers.back.addChild(this.bg);
@@ -111,6 +116,10 @@ export class Scene {
     this.scale = 1;
     this.view = { x: 0, width: FIELD.width, max: 0 };
     this.camera = { x: 0, keys: 0, edge: 0, drag: null };
+    // Whether the last press dragged the field, so letting go over a spot button doesn't also press it
+    this.dragged = false;
+    // Where the pointer is on the screen, so the turret under it stays there while the field scrolls
+    this.pointer = { x: 0, y: 0 };
     this.mySide = null;
     this.mode = { kind: "none", turret: 0 };
     this.shake = 0;
@@ -189,7 +198,11 @@ export class Scene {
           button.show("u");
           this.onSpotHover?.(kind, null);
         });
-        button.on("pointertap", () => this.onSpot?.({ [kind]: spot }));
+        button.on("pointertap", () => {
+          if (!this.dragged) {
+            this.onSpot?.({ [kind]: spot });
+          }
+        });
         node.addChild(button);
         spots[kind].push(button);
       });
@@ -622,7 +635,8 @@ export class Scene {
     this.cursor.visible = false;
     stage.on("pointermove", (event) => {
       const mouse = event.pointerType === "mouse";
-      const point = this.world.toLocal(event.global);
+      this.pointer = { x: event.global.x, y: event.global.y };
+      const point = this.world.toLocal(this.pointer);
       this.cursor.position.set(point.x, point.y);
       this.cursor.visible = mouse && this.mode.kind === "place";
       if (mouse && point.y > MENU_HEIGHT) {
@@ -645,7 +659,9 @@ export class Scene {
         this.camera.drag = { x: event.global.x, camera: this.camera.x, moved: false };
       }
     });
+    // Pixi tells the stage the pointer went up before it sends the tap, so the tap can see this
     const end = () => {
+      this.dragged = Boolean(this.camera.drag?.moved);
       this.camera.drag = null;
     };
     stage.on("pointerup", end);
@@ -688,6 +704,9 @@ export class Scene {
       this.camera.x += (this.camera.keys * 12 + this.camera.edge * 10) * frames;
     }
     this.lookAt(this.camera.x);
+    if (this.cursor.visible) {
+      this.cursor.position.copyFrom(this.world.toLocal(this.pointer));
+    }
   }
 
   lookAt(x) {
@@ -700,10 +719,6 @@ export class Scene {
       offset += (Math.random() * 2 - 1) * this.shake * this.scale;
     }
     this.world.x = offset;
-  }
-
-  scrolls() {
-    return this.view.max > 0;
   }
 
   // ---------- Pictures for the page's own buttons ----------
@@ -749,5 +764,5 @@ export async function createScene(host) {
     resolution: Math.min(window.devicePixelRatio || 1, 2),
   });
   host.appendChild(app.canvas);
-  return new Scene(app, lib, host);
+  return new Scene(app, lib);
 }
