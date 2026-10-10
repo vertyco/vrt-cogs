@@ -2,6 +2,7 @@ import { mark, startHost } from "./host.js";
 import { request } from "./sdk.js";
 import { FrameRate } from "./fps.js";
 import { MenuSounds } from "./sounds.js";
+import { applyGlow, buildArm, buildOrbParts, drawWeb, gearIcon, introPills, turnArm, turnPanels } from "./orb.js";
 
 const TAB_NAMES = { look: "My look", order: "My order", server: "This server", defaults: "Defaults" };
 // Each look tab edits one saved level and falls back to the levels before it
@@ -12,11 +13,12 @@ const SWITCHES = {
   server: { list: "switches", legend: "Activities in this server" },
   defaults: { list: "globalSwitches", legend: "Activities in every server" },
 };
-const FIELDS = ["theme", "layout", "accent", "background", "details", "sounds", "fps"];
+const FIELDS = ["theme", "layout", "accent", "glow", "background", "details", "sounds", "fps"];
 const FIELD_NAMES = {
   theme: "Theme",
   layout: "Layout",
   accent: "Accent color",
+  glow: "Glow color",
   background: "Background",
   details: "Descriptions",
   sounds: "Menu sounds",
@@ -46,6 +48,13 @@ const page = {
   selected: null,
   touch: false,
   orbScroll: 0,
+  // The first look at the menu, and each return from a game, plays the menu's opening
+  intro: true,
+  // How far the fins around the orb have turned, in degrees
+  finTurn: 0,
+  // The Orb theme's tones from orb.js, and the size and color the web behind the orb was last drawn at
+  tones: null,
+  webDrawn: "",
   dragging: null,
 };
 const sounds = new MenuSounds();
@@ -79,6 +88,7 @@ async function start() {
     onDiscordSilent: (text) => showNotice(text),
   });
   bindPanel();
+  buildOrbParts();
   bindOrb();
   // The menu shows as soon as the bot has logged the player in; Discord accepting the login finishes after
   page.host.ready.catch((e) => {
@@ -178,6 +188,7 @@ function openGame(key) {
 
 function gameClosed() {
   sounds.setInMenu(true);
+  page.intro = true;
   render();
   sounds.play("back");
   sounds.playFile("menu");
@@ -197,6 +208,9 @@ function applyLook(look) {
   root.setProperty("--on-accent", readableOn(look.accent));
   document.body.dataset.background = look.background;
   document.body.dataset.theme = look.theme;
+  if (look.theme === "orb") {
+    page.tones = applyGlow(look.glow);
+  }
   sounds.setEnabled(look.theme === "orb" && look.sounds);
   frameRate.setEnabled(look.fps);
   const games = $("games");
@@ -304,22 +318,24 @@ function gameIcon(game) {
 
 // ---------- The orb theme ----------
 
-// The pills sit like pods on a ring around the orb, this far apart. A phone gets a plain list instead
-const ORB_ROW = 60;
+// How far apart the pods sit along the ring, for a pod of size 1
+const ROW_SPACING = 1.24;
 // How far the scroll wheel turns before the selection moves one pill
 const WHEEL_STEP = 50;
 // How far a finger slides before the selection moves one pill, and before a touch counts as a slide at all
 const SWIPE_STEP = 44;
 const SWIPE_START = 10;
-const phoneSize = window.matchMedia("(max-width: 640px)");
+// How far the fins around the orb turn, in degrees, for each pill the selection moves, and when a menu opens
+const FIN_NOTCH = 14;
+const FIN_TURN = 70;
 
 function renderOrb(games) {
   const items = page.state.tabs.length > 0 ? [...games, SETTINGS_ITEM] : games;
   const list = el("div", "orb-list");
   list.id = "orb-list";
   list.append(...items.map(orbPill));
-  const screen = el("div", "orb-screen");
-  screen.id = "orb-screen";
+  const screen = orbScreen();
+  screen.hidden = items.length === 0;
   $("games").replaceChildren(list, orbArrow(-1), orbArrow(1), screen, ...(games.length ? [] : [emptyState()]));
   const keys = items.map((item) => item.key);
   if (!keys.includes(page.selected)) {
@@ -330,17 +346,27 @@ function renderOrb(games) {
     selectPill(pill, true);
   }
   placePills();
+  drawOrbWeb();
+  if (page.intro && pill) {
+    page.intro = false;
+    introPills([...list.children]);
+    turnPanels(null, screen.querySelector(".screen-face"), true);
+    turnArm(screen.querySelector(".screen-arm"), true);
+  }
   // The pills glide between places from now on, but not into their first ones
   requestAnimationFrame(() => list.classList.add("placed"));
 }
 
+// The pod holds the game's icon, or a cog for Settings, and the tab holds its name
 function orbPill(item) {
   const pill = el("button", item.key ? "card pill" : "pill settings-pill");
   pill.type = "button";
   pill.dataset.key = item.key;
+  const pod = el("span", "pod");
+  pod.append(item.key ? gameIcon(item) : gearIcon());
   const plate = el("span", "plate");
-  plate.append(item.key ? gameIcon(item) : el("span", "icon", "⚙"), cardText(item));
-  pill.append(el("span", "pod"), plate);
+  plate.append(cardText(item));
+  pill.append(pod, plate);
   pill.addEventListener("pointerenter", (event) => {
     if (event.pointerType === "mouse") {
       pill.focus({ preventScroll: true });
@@ -368,19 +394,26 @@ function orbArrow(step) {
   return arrow;
 }
 
+// The selected item's panel, hanging from its arm, with the console's Select prompt under it. Keyboard players
+// have Enter on the focused pill, so the prompt stays out of the tab order
+function orbScreen() {
+  const screen = el("div", "orb-screen");
+  screen.id = "orb-screen";
+  const select = el("button", "screen-select");
+  select.type = "button";
+  select.tabIndex = -1;
+  select.append(el("span", "select-button"), el("span", "", "Select"));
+  select.addEventListener("click", () => selectedPill()?.click());
+  screen.append(buildArm(), el("div", "screen-faces"), select);
+  return screen;
+}
+
 // Rows are evenly spaced around the orb's middle, and each pod sits on the ring at its row's height, so the
-// list curves around the orb. With more pills than rows, the rows scroll to keep the selected pill in view
+// list curves around the orb. With more pills than rows, the rows scroll to keep the selected pill in view.
+// Each tab ends before the edge of the screen
 function placePills() {
   const pills = [...document.querySelectorAll("#games .pill")];
   if (!orbTheme() || !pills.length) {
-    return;
-  }
-  if (phoneSize.matches) {
-    pills.forEach((pill) => {
-      pill.style.transform = "";
-      pill.classList.remove("off-ring");
-    });
-    document.querySelectorAll(".orb-arrow").forEach((arrow) => (arrow.hidden = true));
     return;
   }
   const ring = document.querySelector(".orb-ring");
@@ -388,38 +421,58 @@ function placePills() {
   const [cx, cy] = [box.left + box.width / 2, box.top + box.height / 2];
   // The pods sit on the middle of the tube, not its outer edge
   const radius = box.width / 2 - parseFloat(getComputedStyle(ring).borderTopWidth) / 2;
-  const top = document.querySelector(".bar").getBoundingClientRect().bottom + ORB_ROW / 2;
-  const reach = Math.max(0, Math.min(radius * 0.85, cy - top, window.innerHeight - ORB_ROW / 2 - cy));
-  const rows = Math.min(pills.length, Math.floor((2 * reach) / ORB_ROW) + 1);
+  const pod = pills[0].querySelector(".pod").offsetWidth;
+  const row = pod * ROW_SPACING;
+  // A phone held upright keeps the bottom of the screen for the panel. The rows leave room past their ends for
+  // the arrows
+  const room = parseFloat(getComputedStyle(document.body).getPropertyValue("--screen-room")) || 0;
+  const top = document.querySelector(".bar").getBoundingClientRect().bottom + row / 2;
+  const bottom = window.innerHeight - room - row * 0.8;
+  const reach = Math.max(0, Math.min(radius * 0.85, cy - top, bottom - cy));
+  const rows = Math.min(pills.length, Math.floor((2 * reach) / row) + 1);
   const index = Math.max(0, pills.findIndex((pill) => pill.dataset.key === page.selected));
   page.orbScroll = clamp(clamp(page.orbScroll, index - rows + 1, index), 0, pills.length - rows);
-  const spot = (row) => {
-    const dy = (row - (rows - 1) / 2) * ORB_ROW;
+  const spot = (at) => {
+    const dy = (at - (rows - 1) / 2) * row;
     return [cx + Math.sqrt(Math.max(0, radius ** 2 - dy ** 2)), cy + dy];
   };
+  // The selected tab leans out a little further than the rest, so it gets that much room too
+  const edge = window.innerWidth - parseFloat(getComputedStyle($("menu")).paddingRight) - 22;
   pills.forEach((pill, i) => {
-    const row = i - page.orbScroll;
-    const [x, y] = spot(row);
+    const at = i - page.orbScroll;
+    const [x, y] = spot(at);
     pill.style.transform = `translate(${x}px, ${y}px)`;
-    pill.classList.toggle("off-ring", row < 0 || row >= rows);
+    pill.style.maxWidth = `${edge - x + pod / 2}px`;
+    pill.classList.toggle("off-ring", at < 0 || at >= rows);
   });
   // Each arrow sits just past the end pod it leads from
-  placeArrow("up", spot(0), -1, page.orbScroll > 0);
-  placeArrow("down", spot(rows - 1), 1, page.orbScroll + rows < pills.length);
+  placeArrow("up", spot(0), -1, page.orbScroll > 0, row);
+  placeArrow("down", spot(rows - 1), 1, page.orbScroll + rows < pills.length, row);
 }
 
-function placeArrow(name, [x, y], side, show) {
+function placeArrow(name, [x, y], side, show, row) {
   const arrow = document.querySelector(`.orb-arrow.${name}`);
   arrow.hidden = !show;
-  arrow.style.transform = `translate(${x}px, ${y + side * ORB_ROW * 0.62}px)`;
+  arrow.style.transform = `translate(${x}px, ${y + side * row * 0.62}px)`;
+}
+
+// The web is drawn around the orb in the glow color, again only when the screen's size or the color changes
+function drawOrbWeb() {
+  const ring = document.querySelector(".orb-ring").getBoundingClientRect();
+  const drawn = [window.innerWidth, window.innerHeight, ring.left, ring.top, ring.width, page.tones.main].join();
+  if (drawn === page.webDrawn) {
+    return;
+  }
+  page.webDrawn = drawn;
+  const center = [ring.left + ring.width / 2, ring.top + ring.height / 2];
+  drawWeb($("orb-web"), center, ring.width * 0.36, page.tones.main);
 }
 
 function moveSelection(step) {
   const pills = [...document.querySelectorAll("#games .pill")];
   const next = pills[clamp(pills.indexOf(selectedPill()) + step, 0, pills.length - 1)];
-  // On a phone the list is a plain page that scrolls, so the page follows the selection there
   if (next) {
-    next.focus({ preventScroll: !phoneSize.matches });
+    next.focus({ preventScroll: true });
   }
 }
 
@@ -435,20 +488,42 @@ function selectPill(pill, quiet) {
   if (pill === before) {
     return;
   }
+  const pills = [...document.querySelectorAll("#games .pill")];
+  const step = Math.sign(pills.indexOf(pill) - pills.indexOf(before));
   if (before) {
     before.classList.remove("selected");
   }
   pill.classList.add("selected");
   page.selected = pill.dataset.key;
-  showOnScreen(page.state.games.find((game) => game.key === page.selected) || SETTINGS_ITEM);
+  showOnScreen(page.state.games.find((game) => game.key === page.selected) || SETTINGS_ITEM, !quiet);
   placePills();
   if (!quiet) {
     sounds.play("move");
     pulseOrb();
+    turnFins(step * FIN_NOTCH);
   }
 }
 
-function showOnScreen(item) {
+// The panel shows the new item at once, so the page always says what is selected. With a turn, the old panel
+// turns away on the arm while the new one turns in
+function showOnScreen(item, turn) {
+  const faces = document.querySelector("#orb-screen .screen-faces");
+  const face = screenFace(item);
+  faces.querySelectorAll(".leaving").forEach((node) => node.remove());
+  const old = faces.querySelector(".screen-face");
+  if (!old || !turn) {
+    faces.replaceChildren(face);
+    return;
+  }
+  old.classList.add("leaving");
+  old.setAttribute("aria-hidden", "true");
+  faces.prepend(face);
+  turnPanels(old, face, false);
+  turnArm(document.querySelector("#orb-screen .screen-arm"), false);
+}
+
+function screenFace(item) {
+  const face = el("div", "screen-face");
   const picture = el("div", "screen-picture");
   if (item.thumbnail) {
     picture.append(thumbnail(item, () => picture.append(screenIcon(item))));
@@ -460,11 +535,15 @@ function showOnScreen(item) {
   if (item.description) {
     text.append(el("p", "screen-desc", item.description));
   }
-  $("orb-screen").replaceChildren(picture, text);
+  face.append(picture, text);
+  return face;
 }
 
 function screenIcon(item) {
-  const letter = el("span", "screen-letter", item.key ? initial(item.name) : "⚙");
+  const letter = el("span", "screen-letter", item.key ? initial(item.name) : undefined);
+  if (!item.key) {
+    letter.append(gearIcon());
+  }
   if (!item.icon) {
     return letter;
   }
@@ -481,6 +560,25 @@ function pulseOrb() {
   orb.classList.remove("pulse");
   void orb.offsetWidth;
   orb.classList.add("pulse");
+}
+
+// The fins around the orb turn and stay turned, so a long scroll winds them round like a dial
+function turnFins(degrees) {
+  page.finTurn += degrees;
+  $("orb-fins").style.setProperty("--fin-turn", `${page.finTurn}deg`);
+}
+
+// Settings opening or closing turns the whole frame, and the arm swings round with it. Closing brings the panel
+// back round on the arm, from behind where Settings stood
+function turnMenu(step) {
+  if (!orbTheme()) {
+    return;
+  }
+  turnFins(step * FIN_TURN);
+  turnArm(document.querySelector("#orb-screen .screen-arm"), true);
+  if (step < 0) {
+    turnPanels(null, document.querySelector("#orb-screen .screen-face"), true);
+  }
 }
 
 function focusSelected() {
@@ -513,7 +611,7 @@ function bindOrb() {
   document.addEventListener(
     "wheel",
     (event) => {
-      if (!orbTheme() || page.staged !== null || page.host.frame || phoneSize.matches) {
+      if (!orbTheme() || page.staged !== null || page.host.frame) {
         return;
       }
       event.preventDefault();
@@ -526,17 +624,22 @@ function bindOrb() {
     },
     { passive: false },
   );
-  window.addEventListener("resize", placePills);
+  // Behind a game the scene is hidden and has no size, so the menu waits to be shown again, which places it
+  window.addEventListener("resize", () => {
+    if (orbTheme() && page.state && !page.host.frame) {
+      placePills();
+      drawOrbWeb();
+    }
+  });
   bindSwipe();
 }
 
-// On a touch screen showing the ring, sliding a finger up or down along it, or left and right across the screen,
-// moves one pill per step. The pills follow the finger, so sliding up or left brings the next one in. A phone
-// held upright shows a plain list instead, which scrolls like any page
+// On a touch screen, sliding a finger up or down along the ring, or left and right across the screen, moves one
+// pill per step. The pills follow the finger, so sliding up or left brings the next one in
 function bindSwipe() {
   let swipe = null;
   document.addEventListener("pointerdown", (event) => {
-    const ring = orbTheme() && !phoneSize.matches && page.staged === null && !page.host.frame;
+    const ring = orbTheme() && page.staged === null && !page.host.frame;
     swipe = ring && event.pointerType === "touch" ? { id: event.pointerId, x: event.clientX, y: event.clientY } : null;
   });
   document.addEventListener("pointermove", (event) => {
@@ -601,6 +704,7 @@ function closeByPlayer() {
 
 function openPanel() {
   selectTab(page.state.tabs[0]);
+  turnMenu(1);
   document.body.classList.add("panel-open");
   $("panel").inert = false;
   $("panel").setAttribute("aria-hidden", "false");
@@ -617,6 +721,7 @@ function closePanel() {
   page.tab = null;
   page.staged = null;
   render();
+  turnMenu(-1);
 }
 
 function selectTab(tab) {
@@ -695,12 +800,14 @@ function status(text) {
 
 // ---------- Look fields ----------
 
-// The orb theme has its own colors, background and layout, and only it has menu sounds
+// The orb theme has its own background and layout, its glow color in place of the accent, and only it has menu
+// sounds
 function lookEditor() {
   const base = inherited(page.tab);
   if (previewLook().theme === "orb") {
     return [
       choiceField("theme", base),
+      colorField("glow", base),
       choiceField("details", base),
       choiceField("sounds", base),
       choiceField("fps", base),
@@ -709,7 +816,7 @@ function lookEditor() {
   return [
     choiceField("theme", base),
     choiceField("layout", base),
-    accentField(base),
+    colorField("accent", base),
     choiceField("background", base),
     choiceField("details", base),
     choiceField("fps", base),
@@ -762,28 +869,30 @@ function sameColor(a, b) {
   return Boolean(a) && a.toLowerCase() === b.toLowerCase();
 }
 
-function accentField(base) {
+// The accent color in the Standard theme and the glow color in the Orb theme: a default, the preset colors and
+// a picker for any other
+function colorField(name, base) {
   const row = el("div", "swatches");
-  row.id = "field-accent";
-  const current = page.staged.look.accent;
-  row.append(swatch(null, base.accent, current === undefined));
+  row.id = `field-${name}`;
+  const current = page.staged.look[name];
+  row.append(swatch(name, null, base[name], current === undefined));
   for (const color of ACCENTS) {
-    row.append(swatch(color, color, sameColor(current, color)));
+    row.append(swatch(name, color, color, sameColor(current, color)));
   }
   const picker = el("input");
   picker.type = "color";
-  picker.setAttribute("aria-label", "Custom accent color");
-  picker.value = (current || base.accent).toLowerCase();
+  picker.setAttribute("aria-label", `Custom ${FIELD_NAMES[name].toLowerCase()}`);
+  picker.value = (current || base[name]).toLowerCase();
   picker.addEventListener("input", () => {
-    page.staged.look.accent = picker.value;
+    page.staged.look[name] = picker.value;
     preview();
   });
   picker.addEventListener("change", renderPanel);
   row.append(picker);
-  return field("accent", row);
+  return field(name, row);
 }
 
-function swatch(value, color, pressed) {
+function swatch(name, value, color, pressed) {
   const button = el("button", value === null ? "swatch default" : "swatch");
   button.type = "button";
   button.dataset.swatch = value === null ? "default" : value;
@@ -793,9 +902,9 @@ function swatch(value, color, pressed) {
   button.setAttribute("aria-pressed", String(pressed));
   button.addEventListener("click", () => {
     if (value === null) {
-      delete page.staged.look.accent;
+      delete page.staged.look[name];
     } else {
-      page.staged.look.accent = value;
+      page.staged.look[name] = value;
     }
     renderPanel();
     refocus(`.swatch[data-swatch="${button.dataset.swatch}"]`);

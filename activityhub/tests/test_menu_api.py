@@ -58,6 +58,7 @@ async def test_member_state(client, hub, demo, second):
         "theme": "orb",
         "layout": "compact",
         "accent": "#111111",
+        "glow": "#8FDC26",
         "background": "dark",
         "details": True,
         "sounds": True,

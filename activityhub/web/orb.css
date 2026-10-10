@@ -1,5 +1,9 @@
-/* The orb theme: a green glowing console dashboard. A big orb sits on the left, and the menu runs as a column
-   of pods on a ring around it, each pod holding a tab. Everything here only applies with body[data-theme="orb"]. */
+/* The orb theme: a glowing console dashboard. A big orb sits on the left inside a frame of fins, the menu runs
+   as a column of pods on a ring around it, each pod holding a tab, and a robot arm holds the selected item's
+   panel. Everything here only applies with body[data-theme="orb"].
+
+   Every color comes from the glow color: orb.js turns it into the tones below, as "r g b", on the page's root.
+   These are the tones of the default green, for the moment before the script sets them. */
 
 @font-face {
   font-family: "Exo 2";
@@ -9,29 +13,64 @@
   src: url("fonts/exo2.woff2") format("woff2");
 }
 
+/* The blocky lettering on the tabs and titles */
+@font-face {
+  font-family: "Tektur";
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+  src: url("fonts/tektur.woff2") format("woff2");
+}
+
+:root {
+  --orb-ink: 3 12 2;
+  --orb-deep: 12 38 6;
+  --orb-dark: 30 95 10;
+  --orb-mid: 60 154 18;
+  --orb-main: 143 220 38;
+  --orb-light: 200 247 90;
+  --orb-pale: 235 255 170;
+  --orb-white: 251 255 224;
+  --orb-text: 232 248 184;
+  --orb-dim: 180 216 128;
+}
+
 body[data-theme="orb"] {
-  --orb-text: #e8f8b8;
-  --orb-dim: #b4d880;
-  --orb-bright: #c8f75a;
-  --orb-deep: #0c2606;
-  --accent: #8fdc26;
-  --on-accent: #0b1a05;
-  --text: var(--orb-text);
-  --muted: var(--orb-dim);
-  --card: #12300a;
-  --card-hover: #1a4210;
-  --line: rgba(170, 235, 80, 0.25);
-  --panel: #0a1c05;
-  /* The orb's center and size place the orb, the ring of pods around it and the tubes. menu.js reads the
-     ring's size and place to put the pods on it */
-  --orb-size: min(56vh, 32vw);
-  --orb-x: 18vw;
+  --accent: rgb(var(--orb-main));
+  --on-accent: rgb(var(--orb-ink));
+  --text: rgb(var(--orb-text));
+  --muted: rgb(var(--orb-dim));
+  --card: rgb(var(--orb-deep));
+  --card-hover: rgb(var(--orb-dark) / 0.6);
+  --line: rgb(var(--orb-light) / 0.22);
+  --panel: rgb(var(--orb-ink));
+  --display: "Tektur", "Exo 2", system-ui, sans-serif;
+  /* Where things sit. The orb's center and size place the orb, its frame and the ring of pods; menu.js reads the
+     ring's size and place, and a pod's size, to put each pod on the ring */
+  --orb-size: min(52vh, 29vw);
+  --orb-x: 22vw;
   --orb-y: 52vh;
-  --ring-gap: clamp(56px, 10vh, 110px);
-  --tab-width: clamp(170px, 21vw, 290px);
-  background: radial-gradient(ellipse at 25% 50%, #164a08 0%, #072005 50%, #020801 100%) fixed;
+  --ring-gap: calc(var(--orb-size) * 0.22);
+  --pod: clamp(36px, 7vh, 62px);
+  --plate-h: calc(var(--pod) * 0.68);
+  --tab-width: clamp(170px, 20vw, 320px);
+  --screen-w: clamp(190px, 28vw, 480px);
+  --screen-right: max(20px, 3.5vw);
+  /* The arm's size, and where along the panel's top edge its wrist holds on */
+  --arm-size: calc(var(--screen-w) * 0.78);
+  --arm-at: 50%;
+  background: radial-gradient(
+      ellipse 75% 85% at var(--orb-x) var(--orb-y),
+      rgb(var(--orb-deep)) 0%,
+      rgb(var(--orb-ink)) 62%,
+      #010300 100%
+    )
+    fixed;
+  background-color: #010300;
   font-family: "Exo 2", system-ui, sans-serif;
 }
+
+/* ---------- The scene behind the menu ---------- */
 
 .orb-scene {
   display: none;
@@ -43,9 +82,17 @@ body[data-theme="orb"] .orb-scene {
   display: block;
   overflow: hidden;
   pointer-events: none;
+  transition:
+    opacity 0.25s ease-out,
+    transform 0.4s ease-in;
 }
 
-/* Nothing animates behind a game */
+/* Opening a game dives toward the orb as the menu fades; nothing animates behind a game */
+body.opening .orb-scene {
+  opacity: 0;
+  transform: scale(1.12);
+}
+
 body.playing .orb-scene {
   display: none;
 }
@@ -57,42 +104,29 @@ body[data-theme="orb"] .menu {
   touch-action: none;
 }
 
+/* orb.js draws the web of cells around the orb */
+.web {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
 .fog {
   position: absolute;
   inset: -20%;
   background:
-    radial-gradient(circle at 30% 40%, rgba(130, 215, 45, 0.16), transparent 38%),
-    radial-gradient(circle at 70% 70%, rgba(90, 180, 30, 0.12), transparent 42%),
-    radial-gradient(circle at 80% 20%, rgba(150, 230, 60, 0.08), transparent 35%);
+    radial-gradient(circle at 30% 45%, rgb(var(--orb-main) / 0.14), transparent 36%),
+    radial-gradient(circle at 72% 70%, rgb(var(--orb-mid) / 0.12), transparent 40%),
+    radial-gradient(circle at 82% 18%, rgb(var(--orb-light) / 0.07), transparent 34%);
   animation: fog-drift 26s ease-in-out infinite alternate;
   will-change: transform;
 }
 
-/* A faint web of rings and spokes around the orb, fading out toward the edges */
-.web {
+.vignette {
   position: absolute;
   inset: 0;
-  background:
-    repeating-radial-gradient(circle at var(--orb-x) var(--orb-y), transparent 0 71px, rgba(160, 235, 70, 0.08) 72px 73px),
-    repeating-conic-gradient(from 4deg at var(--orb-x) var(--orb-y), rgba(160, 235, 70, 0.07) 0deg 0.3deg, transparent 0.3deg 15deg);
-  -webkit-mask-image: radial-gradient(ellipse at var(--orb-x) var(--orb-y), #000 25%, transparent 80%);
-  mask-image: radial-gradient(ellipse at var(--orb-x) var(--orb-y), #000 25%, transparent 80%);
-}
-
-.tubes {
-  position: absolute;
-  left: var(--orb-x);
-  top: calc(var(--orb-y) - 50vh);
-  width: calc(100vw - var(--orb-x));
-  height: 100vh;
-  fill: none;
-}
-
-.tubes path {
-  stroke: rgba(150, 230, 55, 0.08);
-  stroke-width: 16px;
-  stroke-linecap: round;
-  vector-effect: non-scaling-stroke;
+  background: radial-gradient(ellipse 90% 90% at var(--orb-x) var(--orb-y), transparent 55%, rgb(0 0 0 / 0.55) 100%);
 }
 
 /* The tube the pods hang on. The pods sit on the middle of its border */
@@ -102,29 +136,29 @@ body[data-theme="orb"] .menu {
   top: calc(var(--orb-y) - var(--orb-size) / 2 - var(--ring-gap));
   width: calc(var(--orb-size) + var(--ring-gap) * 2);
   height: calc(var(--orb-size) + var(--ring-gap) * 2);
-  border: 16px solid rgba(130, 215, 45, 0.2);
+  border: calc(var(--pod) * 0.24) solid rgb(var(--orb-main) / 0.1);
   border-radius: 50%;
   box-shadow:
-    0 0 28px rgba(150, 235, 60, 0.18),
-    inset 0 0 28px rgba(150, 235, 60, 0.18);
+    0 0 24px rgb(var(--orb-main) / 0.12),
+    inset 0 0 24px rgb(var(--orb-main) / 0.12);
 }
 
 /* The tube's lit edges */
 .orb-ring::before,
 .orb-ring::after {
   position: absolute;
-  border: 1px solid rgba(215, 255, 150, 0.35);
+  border: 1px solid rgb(var(--orb-pale) / 0.28);
   border-radius: 50%;
   content: "";
 }
 
 .orb-ring::before {
-  inset: -16px;
+  inset: calc(var(--pod) * -0.24);
 }
 
 .orb-ring::after {
   inset: 0;
-  border-color: rgba(215, 255, 150, 0.22);
+  border-color: rgb(var(--orb-pale) / 0.16);
 }
 
 .orb-wrap {
@@ -136,37 +170,83 @@ body[data-theme="orb"] .menu {
   animation: orb-float 9s ease-in-out infinite;
 }
 
-/* A tilted band circling the orb, half hidden behind it */
-.orb-orbit {
+/* The fins and the goo are drawn twice the orb's size, around it */
+.orb-fins,
+.orb-goo {
   position: absolute;
-  left: -24%;
-  right: -24%;
-  top: 36%;
-  bottom: 36%;
-  border: 3px solid rgba(190, 250, 100, 0.22);
-  border-radius: 50%;
-  box-shadow: 0 0 14px rgba(160, 240, 60, 0.2);
-  transform: rotate(-24deg);
+  inset: -50%;
 }
 
-/* Glowing goo swirling around the orb's surface */
-.orb-shell {
+.orb-fins svg,
+.orb-goo svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* The fins turn a notch with every move (menu.js sets the angle) on top of their own slow turn */
+.orb-fins {
+  transform: rotate(var(--fin-turn, 0deg));
+  transition: transform 0.9s cubic-bezier(0.3, 1.35, 0.5, 1);
+}
+
+.fins-shape {
+  animation: orb-spin 90s linear infinite;
+}
+
+.fin {
+  fill: url(#fin-light);
+  stroke: rgb(var(--orb-light) / 0.42);
+  stroke-width: 0.6;
+}
+
+.fin-near {
+  stop-color: rgb(var(--orb-main) / 0.42);
+}
+
+.fin-far {
+  stop-color: rgb(var(--orb-deep) / 0.7);
+}
+
+.fin.thin {
+  fill: rgb(var(--orb-mid) / 0.22);
+}
+
+.fin-line {
+  fill: rgb(var(--orb-light) / 0.18);
+}
+
+.goo-shape {
+  mix-blend-mode: screen;
+  animation: orb-spin 34s linear infinite reverse;
+}
+
+.goo {
+  fill: rgb(var(--orb-main) / 0.26);
+  stroke: rgb(var(--orb-pale) / 0.5);
+  stroke-width: 0.5;
+}
+
+/* A flat band circling the orb, its back half behind it and its front half across it */
+.orb-orbit {
   position: absolute;
-  inset: -13%;
+  left: -48%;
+  right: -8%;
+  top: 45%;
+  bottom: 45%;
+  border: 2px solid rgb(var(--orb-light) / 0.42);
   border-radius: 50%;
-  background: conic-gradient(
-    rgba(150, 235, 60, 0),
-    rgba(150, 235, 60, 0.45) 50deg,
-    rgba(150, 235, 60, 0) 115deg,
-    rgba(210, 250, 120, 0.38) 205deg,
-    rgba(150, 235, 60, 0) 265deg,
-    rgba(120, 210, 40, 0.42) 320deg,
-    rgba(150, 235, 60, 0)
-  );
-  -webkit-mask-image: radial-gradient(circle, transparent 62%, #000 67%, #000 71%, transparent 76%);
-  mask-image: radial-gradient(circle, transparent 62%, #000 67%, #000 71%, transparent 76%);
-  animation: orb-spin 24s linear infinite reverse;
-  will-change: transform;
+  box-shadow: 0 0 12px rgb(var(--orb-main) / 0.25);
+  transform: rotate(-8deg);
+}
+
+.orb-orbit.back {
+  clip-path: inset(0 0 50% 0);
+  opacity: 0.6;
+}
+
+.orb-orbit.front {
+  clip-path: inset(50% 0 0 0);
 }
 
 .orb {
@@ -175,18 +255,19 @@ body[data-theme="orb"] .menu {
   height: 100%;
   border-radius: 50%;
   background: radial-gradient(
-    circle at 38% 34%,
-    #f6ffc2 0%,
-    #d8f765 10%,
-    #8fdc2a 28%,
-    #3c9a12 50%,
-    #15460a 74%,
-    #061a03 100%
+    circle at 44% 42%,
+    rgb(var(--orb-white)) 0%,
+    rgb(var(--orb-pale)) 12%,
+    rgb(var(--orb-light)) 30%,
+    rgb(var(--orb-main)) 50%,
+    rgb(var(--orb-mid)) 70%,
+    rgb(var(--orb-dark)) 88%,
+    rgb(var(--orb-deep)) 100%
   );
   box-shadow:
-    0 0 80px 14px rgba(140, 225, 40, 0.32),
-    inset -18px -28px 60px rgba(0, 0, 0, 0.55),
-    inset 12px 14px 40px rgba(240, 255, 170, 0.25);
+    0 0 90px 16px rgb(var(--orb-main) / 0.28),
+    inset calc(var(--orb-size) * -0.06) calc(var(--orb-size) * -0.09) calc(var(--orb-size) * 0.16) rgb(0 0 0 / 0.55),
+    inset calc(var(--orb-size) * 0.03) calc(var(--orb-size) * 0.04) calc(var(--orb-size) * 0.1) rgb(var(--orb-white) / 0.2);
   animation: orb-breathe 6s ease-in-out infinite;
 }
 
@@ -195,7 +276,7 @@ body[data-theme="orb"] .menu {
   position: absolute;
   inset: -32%;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(150, 235, 50, 0.32) 0%, rgba(150, 235, 50, 0.1) 38%, transparent 66%);
+  background: radial-gradient(circle, rgb(var(--orb-main) / 0.3) 0%, rgb(var(--orb-main) / 0.09) 38%, transparent 66%);
   content: "";
 }
 
@@ -203,31 +284,32 @@ body[data-theme="orb"] .menu {
   animation: orb-flash 0.45s ease-out;
 }
 
-/* The glossy highlight */
+/* The glossy highlight, small and sharp like light on glass */
 .orb::after {
   position: absolute;
-  left: 20%;
-  top: 9%;
-  width: 44%;
-  height: 28%;
+  left: 24%;
+  top: 11%;
+  width: 30%;
+  height: 17%;
   border-radius: 50%;
-  background: radial-gradient(ellipse at 50% 40%, rgba(255, 255, 230, 0.55), rgba(255, 255, 230, 0) 70%);
+  background: radial-gradient(ellipse at 50% 45%, rgb(255 255 245 / 0.7), rgb(255 255 245 / 0) 70%);
+  transform: rotate(-24deg);
   content: "";
 }
 
 /* The slow swirl inside */
 .orb-core {
   position: absolute;
-  inset: 16%;
+  inset: 14%;
   border-radius: 50%;
   background: conic-gradient(
-    rgba(220, 255, 120, 0),
-    rgba(220, 255, 120, 0.22),
-    rgba(220, 255, 120, 0) 30%,
-    rgba(220, 255, 120, 0.16) 55%,
-    rgba(220, 255, 120, 0) 75%,
-    rgba(220, 255, 120, 0.2) 90%,
-    rgba(220, 255, 120, 0)
+    rgb(var(--orb-pale) / 0),
+    rgb(var(--orb-pale) / 0.24),
+    rgb(var(--orb-pale) / 0) 30%,
+    rgb(var(--orb-pale) / 0.16) 55%,
+    rgb(var(--orb-pale) / 0) 75%,
+    rgb(var(--orb-pale) / 0.2) 90%,
+    rgb(var(--orb-pale) / 0)
   );
   filter: blur(6px);
   mix-blend-mode: screen;
@@ -273,12 +355,16 @@ body[data-theme="orb"] .menu {
   }
 }
 
+/* ---------- The header ---------- */
+
 /* Settings is the last pill instead */
 body[data-theme="orb"] .gear {
   display: none;
 }
 
+/* Positioned, so it draws over the scene like everything after it */
 body[data-theme="orb"] .bar {
+  position: relative;
   padding: calc(18px + var(--safe-top)) max(16px, 3vw) 18px;
 }
 
@@ -286,26 +372,27 @@ body[data-theme="orb"] .bar {
 body[data-theme="orb"] .who-name {
   margin: -8px -12px;
   padding: 8px 12px;
-  color: var(--orb-bright);
-  letter-spacing: 0.12em;
+  color: rgb(var(--orb-light));
+  font-family: var(--display);
+  font-weight: 700;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  text-shadow: 0 0 10px rgba(160, 240, 60, 0.5);
+  text-shadow: 0 0 10px rgb(var(--orb-main) / 0.5);
 }
 
 body[data-theme="orb"] .badge {
-  background: var(--orb-deep);
+  background: rgb(var(--orb-deep));
   box-shadow:
-    0 0 0 2px rgba(200, 247, 90, 0.5),
-    0 0 14px rgba(160, 240, 60, 0.4);
-  color: var(--orb-bright);
-}
-
-body[data-theme="orb"] select {
-  background: #10260a;
+    0 0 0 2px rgb(var(--orb-light) / 0.5),
+    0 0 14px rgb(var(--orb-main) / 0.4);
+  color: rgb(var(--orb-light));
+  font-family: var(--display);
 }
 
 body[data-theme="orb"] .notice {
-  background: rgba(150, 230, 55, 0.08);
+  position: relative;
+  border: 1px solid rgb(var(--orb-light) / 0.2);
+  background: rgb(var(--orb-deep) / 0.8);
 }
 
 /* ---------- The menu: pods on the ring ---------- */
@@ -332,18 +419,19 @@ body[data-theme="orb"] .notice {
   box-shadow: none;
 }
 
-/* The pill's place is its pod's center */
+/* The pill's place is its pod's center. menu.js sets its width, which ends before the edge of the screen */
 .orb-menu .pill {
   position: absolute;
   left: 0;
   top: 0;
   display: flex;
   align-items: center;
-  width: calc(var(--tab-width) + 40px);
-  height: 48px;
-  margin: -24px 0 0 -20px;
+  width: calc(var(--tab-width) + var(--pod));
+  height: var(--pod);
+  margin: calc(var(--pod) / -2) 0 0 calc(var(--pod) / -2);
   padding: 0;
-  color: var(--orb-dim);
+  overflow: visible;
+  color: rgb(var(--orb-light) / 0.92);
   text-align: left;
   pointer-events: auto;
   cursor: pointer;
@@ -365,111 +453,209 @@ body[data-theme="orb"] .notice {
   outline: none;
 }
 
+/* A glass bubble with the game's icon inside, in a dark socket with a lit rim */
 .pod {
   position: relative;
   z-index: 1;
+  display: grid;
   flex: none;
-  width: 40px;
-  height: 40px;
+  place-items: center;
+  width: var(--pod);
+  height: var(--pod);
   border-radius: 50%;
   background: radial-gradient(
-    circle at 36% 30%,
-    rgba(240, 255, 190, 0.85) 0 7%,
-    rgba(150, 225, 60, 0.5) 20%,
-    rgba(30, 95, 10, 0.78) 55%,
-    rgba(8, 30, 3, 0.92) 78%,
-    rgba(140, 225, 55, 0.6) 100%
+    circle,
+    rgb(var(--orb-ink)) 0 66%,
+    rgb(var(--orb-dark) / 0.9) 76%,
+    rgb(var(--orb-main) / 0.75) 92%,
+    rgb(var(--orb-pale) / 0.8) 100%
   );
   box-shadow:
-    0 0 0 3px rgba(10, 34, 4, 0.9),
-    0 0 0 4px rgba(170, 240, 70, 0.4),
-    0 0 16px rgba(140, 230, 50, 0.3);
+    0 0 0 2px rgb(var(--orb-ink) / 0.85),
+    0 0 0 3px rgb(var(--orb-light) / 0.3),
+    0 0 18px rgb(var(--orb-main) / 0.28);
   transition:
+    transform 0.2s cubic-bezier(0.3, 1.5, 0.5, 1),
     box-shadow 0.15s,
     filter 0.15s;
 }
 
+/* The glass: a highlight up top, a glint low down and a tint over the picture */
+.pod::after {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse 46% 30% at 38% 24%, rgb(255 255 255 / 0.55), transparent 70%),
+    radial-gradient(ellipse 30% 14% at 62% 82%, rgb(var(--orb-pale) / 0.3), transparent 70%),
+    radial-gradient(circle, rgb(var(--orb-main) / 0.12) 0 52%, transparent 62%);
+  box-shadow: inset 0 0 calc(var(--pod) * 0.14) rgb(var(--orb-main) / 0.5);
+  content: "";
+  pointer-events: none;
+}
+
+.orb-menu .pod .icon {
+  width: 74%;
+  height: 74%;
+  border-radius: 50%;
+  background: rgb(var(--orb-deep));
+  color: rgb(var(--orb-light));
+  font-family: var(--display);
+  font-size: calc(var(--pod) * 0.34);
+  filter: brightness(0.78) saturate(0.85);
+  transition: filter 0.15s;
+}
+
+.gear-icon {
+  width: 60%;
+  height: 60%;
+  fill: rgb(var(--orb-light) / 0.85);
+}
+
+.gear-icon .gear-hole {
+  fill: rgb(var(--orb-ink));
+}
+
 .orb-menu .pill:hover .pod {
-  filter: brightness(1.25);
+  filter: brightness(1.2);
 }
 
 .orb-menu .pill.selected .pod {
-  background: radial-gradient(circle at 36% 30%, #fbffe0 0 8%, #d8f765 24%, #8fd423 52%, #2f7a0c 78%, #b9f04a 100%);
+  background: radial-gradient(
+    circle,
+    rgb(var(--orb-deep)) 0 66%,
+    rgb(var(--orb-main)) 78%,
+    rgb(var(--orb-pale)) 92%,
+    rgb(var(--orb-white)) 100%
+  );
   box-shadow:
-    0 0 0 3px rgba(10, 34, 4, 0.9),
-    0 0 0 4px rgba(235, 255, 170, 0.85),
-    0 0 26px rgba(190, 245, 80, 0.75);
-  animation: pod-glow 1.4s ease-in-out infinite;
+    0 0 0 2px rgb(var(--orb-ink) / 0.9),
+    0 0 0 3px rgb(var(--orb-white) / 0.85),
+    0 0 28px 4px rgb(var(--orb-light) / 0.7);
+  transform: scale(1.14);
 }
 
-@keyframes pod-glow {
-  50% {
-    filter: brightness(1.2);
-    transform: scale(1.1);
-  }
+.orb-menu .pill.selected .pod .icon {
+  filter: none;
 }
 
-/* The tab starts under its pod, so the pod looks plugged into it */
+.orb-menu .pill.selected .gear-icon {
+  fill: rgb(var(--orb-white));
+}
+
+/* The tab, cut like a folder tab with a raised strip on its top left and chamfered corners. Its own color is
+   the edge, and the fill sits 1px inside it. It starts under its pod, so the pod looks plugged into it */
 .orb-menu .pill .plate {
+  --shape: polygon(
+    0 10px,
+    8px 2px,
+    10px 2px,
+    14px 0,
+    44% 0,
+    calc(44% + 6px) 6px,
+    calc(100% - 12px) 6px,
+    100% 18px,
+    100% 100%,
+    10px 100%,
+    0 calc(100% - 10px)
+  );
+  position: relative;
+  isolation: isolate;
   display: flex;
   flex: 1;
   align-items: center;
-  gap: 10px;
   min-width: 0;
-  height: 36px;
-  margin-left: -16px;
-  padding: 0 16px 0 26px;
-  border: 1px solid rgba(190, 245, 100, 0.42);
-  border-radius: 2px 12px 2px 12px;
-  background: linear-gradient(180deg, rgba(70, 130, 25, 0.62) 0%, rgba(20, 60, 8, 0.86) 55%, rgba(10, 36, 4, 0.94) 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(220, 255, 150, 0.28),
-    inset 0 -2px 4px rgba(0, 0, 0, 0.35),
-    0 4px 12px rgba(0, 0, 0, 0.3);
+  height: var(--plate-h);
+  margin-left: calc(var(--pod) * -0.22);
+  padding: 5px 16px 0 calc(var(--pod) * 0.22 + 12px);
+  background: rgb(var(--orb-light) / 0.42);
+  clip-path: var(--shape);
   transition:
     transform 0.15s ease,
-    border-color 0.15s,
-    box-shadow 0.15s,
+    background-color 0.15s,
     color 0.15s;
 }
 
+.orb-menu .pill .plate::before {
+  position: absolute;
+  inset: 1px;
+  z-index: -1;
+  background: linear-gradient(
+    180deg,
+    rgb(var(--orb-dark) / 0.85) 0%,
+    rgb(var(--orb-deep) / 0.92) 55%,
+    rgb(var(--orb-ink) / 0.95) 100%
+  );
+  clip-path: var(--shape);
+  content: "";
+  transition: opacity 0.15s;
+}
+
 .orb-menu .pill:hover .plate {
-  border-color: rgba(225, 255, 160, 0.75);
-  color: var(--orb-text);
+  background: rgb(var(--orb-pale) / 0.7);
+  color: rgb(var(--orb-text));
+}
+
+/* A small clamp holds the tab to its pod, across the pod's rim */
+.orb-menu .pill::after {
+  position: absolute;
+  left: calc(var(--pod) * 0.74);
+  top: calc(50% - var(--plate-h) / 2 + 1px);
+  z-index: 2;
+  width: calc(var(--pod) * 0.42);
+  height: 5px;
+  border: 1px solid rgb(var(--orb-light) / 0.55);
+  border-radius: 1px 4px 1px 4px;
+  background: rgb(var(--orb-deep));
+  content: "";
+  pointer-events: none;
+}
+
+.orb-menu .pill.selected::after {
+  border-color: rgb(var(--orb-white) / 0.9);
+  background: rgb(var(--orb-mid));
+}
+
+/* The glow sits on the pill, since the tab's cut would clip a glow of its own */
+.orb-menu .pill.selected {
+  filter: drop-shadow(0 0 10px rgb(var(--orb-main) / 0.45));
 }
 
 .orb-menu .pill.selected .plate {
-  border-color: #f2ffc4;
-  background: linear-gradient(180deg, #effca8 0%, #c6eb48 42%, #8cc51e 100%);
-  box-shadow:
-    0 0 22px rgba(190, 240, 70, 0.55),
-    inset 0 1px 0 rgba(255, 255, 235, 0.9),
-    inset 0 -2px 4px rgba(40, 90, 0, 0.35);
-  color: #142a04;
+  background: linear-gradient(
+    180deg,
+    rgb(var(--orb-pale)) 0%,
+    rgb(var(--orb-light)) 30%,
+    rgb(var(--orb-main)) 78%,
+    rgb(var(--orb-mid)) 100%
+  );
+  color: rgb(var(--orb-ink));
   transform: translateX(8px);
+}
+
+.orb-menu .pill.selected .plate::before {
+  opacity: 0;
 }
 
 .orb-menu .pill .name {
   overflow: hidden;
+  font-family: var(--display);
+  font-size: clamp(0.8rem, calc(var(--plate-h) * 0.5), 1.5rem);
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-/* On wide screens the screen panel shows the picture and description instead */
-.orb-menu .pill .icon,
+/* The panel shows the description; screen readers still read it on the pill */
 .orb-menu .pill .desc {
-  display: none;
-}
-
-.orb-menu .pill .icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--orb-deep);
-  color: var(--orb-bright);
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* Shown when there are pills above or below the ones on the ring; a click moves one pill */
@@ -491,7 +677,7 @@ body[data-theme="orb"] .notice {
   display: block;
   width: 100%;
   height: 100%;
-  background: linear-gradient(180deg, #effca8, #8cc51e);
+  background: linear-gradient(180deg, rgb(var(--orb-pale)), rgb(var(--orb-main)));
   clip-path: polygon(50% 0, 100% 100%, 0 100%);
   content: "";
   animation: nudge-up 1.2s ease-in-out infinite;
@@ -514,33 +700,127 @@ body[data-theme="orb"] .notice {
   }
 }
 
-/* The info panel for the selected pill, level with the orb */
+/* ---------- The panel for the selected item, on its arm ---------- */
+
 .orb-screen {
   position: fixed;
   top: var(--orb-y);
-  right: max(16px, 3vw);
+  right: var(--screen-right);
+  width: var(--screen-w);
+  transform: translateY(-50%);
+}
+
+/* The arm hangs the panel from its top edge; it is a faint ghost until a turn lights it up */
+.screen-arm {
+  position: absolute;
+  left: var(--arm-at);
+  top: 0;
+  width: var(--arm-size);
+  overflow: visible;
+  opacity: 0.4;
+  filter: drop-shadow(0 0 5px rgb(var(--orb-main) / 0.55));
+  transform: translate(-16.67%, -92.86%);
+  pointer-events: none;
+}
+
+.screen-arm path {
+  fill: none;
+  stroke-linecap: round;
+  transform-box: view-box;
+}
+
+/* The arm is built like the fins: dark see-through plates with lit edges and holes punched through */
+.screen-arm .arm-plate {
+  fill: rgb(var(--orb-deep) / 0.7);
+  fill-rule: evenodd;
+  stroke: rgb(var(--orb-light) / 0.75);
+  stroke-width: 2;
+}
+
+.screen-arm .arm-line {
+  stroke: rgb(var(--orb-light) / 0.45);
+  stroke-width: 2;
+}
+
+.screen-arm .arm-piston {
+  stroke: rgb(var(--orb-pale) / 0.6);
+  stroke-width: 4;
+  stroke-dasharray: 60 6 30 6;
+}
+
+.screen-arm .arm-cable {
+  stroke: rgb(var(--orb-main) / 0.55);
+  stroke-width: 2;
+  stroke-dasharray: 3 4;
+}
+
+.screen-arm .arm-wrist,
+.screen-arm .arm-chain {
+  transform-box: view-box;
+}
+
+.screen-arm .arm-wrist {
+  transform-origin: 0 -24px;
+}
+
+/* The panels turn in 3D on the arm's wrist; while one turns away the next turns in, in the same place */
+.screen-faces {
+  display: grid;
+  perspective: 1100px;
+}
+
+.screen-face {
+  --shape: polygon(
+    0 16px,
+    16px 0,
+    38% 0,
+    calc(38% + 9px) 9px,
+    calc(100% - 22px) 9px,
+    100% 31px,
+    100% calc(100% - 16px),
+    calc(100% - 16px) 100%,
+    26px 100%,
+    0 calc(100% - 26px)
+  );
+  position: relative;
+  isolation: isolate;
   display: flex;
+  grid-area: 1 / 1;
   flex-direction: column;
   gap: 12px;
-  width: min(380px, 28vw);
-  padding: 14px;
-  border: 1px solid rgba(200, 247, 90, 0.35);
-  border-radius: 4px 22px 4px 22px;
-  background: linear-gradient(160deg, rgba(40, 90, 15, 0.5), rgba(5, 18, 3, 0.88));
-  box-shadow:
-    0 0 30px rgba(120, 220, 40, 0.16),
-    inset 0 0 30px rgba(0, 0, 0, 0.5);
-  transform: translateY(-50%);
+  padding: 22px 16px 18px;
+  background: rgb(var(--orb-light) / 0.45);
+  clip-path: var(--shape);
+  backface-visibility: hidden;
+}
+
+/* The fill lets the web show through, like a projection, with faint scan lines over it */
+.screen-face::before,
+.screen-face::after {
+  position: absolute;
+  inset: 1px;
+  z-index: -1;
+  clip-path: var(--shape);
+  content: "";
+}
+
+.screen-face::before {
+  background: linear-gradient(160deg, rgb(var(--orb-dark) / 0.55), rgb(var(--orb-ink) / 0.9) 70%);
+}
+
+.screen-face::after {
+  background: repeating-linear-gradient(180deg, rgb(var(--orb-main) / 0.06) 0 1px, transparent 1px 4px);
 }
 
 .screen-picture {
   display: grid;
+  flex: none;
   place-items: center;
   aspect-ratio: 16 / 9;
   overflow: hidden;
   border-radius: 3px 14px 3px 14px;
-  background: radial-gradient(circle at 50% 40%, #1f5a0c, #071603);
-  box-shadow: inset 0 0 0 1px rgba(200, 247, 90, 0.25);
+  background: radial-gradient(circle at 50% 40%, rgb(var(--orb-dark)), rgb(var(--orb-ink)));
+  box-shadow: inset 0 0 0 1px rgb(var(--orb-light) / 0.25);
 }
 
 .screen-picture .thumb {
@@ -553,139 +833,317 @@ body[data-theme="orb"] .notice {
   width: 34%;
   aspect-ratio: 1;
   object-fit: contain;
-  filter: drop-shadow(0 0 12px rgba(170, 240, 60, 0.5));
+  filter: drop-shadow(0 0 12px rgb(var(--orb-main) / 0.5));
 }
 
 .screen-letter {
-  color: var(--orb-bright);
+  display: grid;
+  width: 34%;
+  aspect-ratio: 1;
+  place-items: center;
+  color: rgb(var(--orb-light));
+  font-family: var(--display);
   font-size: 4rem;
   font-weight: 700;
-  text-shadow: 0 0 18px rgba(170, 240, 60, 0.7);
+  text-shadow: 0 0 18px rgb(var(--orb-main) / 0.7);
+}
+
+.screen-letter .gear-icon {
+  width: 80%;
+  height: 80%;
+  fill: rgb(var(--orb-light));
+  filter: drop-shadow(0 0 12px rgb(var(--orb-main) / 0.6));
+}
+
+.screen-letter .gear-icon .gear-hole {
+  fill: rgb(var(--orb-deep));
 }
 
 .screen-text {
-  padding: 0 4px 4px;
+  min-width: 0;
+  padding: 0 4px;
 }
 
 .screen-name {
-  margin: 0 0 4px;
-  color: var(--orb-text);
-  font-size: 1.2rem;
-  letter-spacing: 0.08em;
+  margin: 0 0 6px;
+  overflow: hidden;
+  color: rgb(var(--orb-light));
+  font-family: var(--display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: 0 0 10px rgb(var(--orb-main) / 0.45);
 }
 
 .screen-desc {
   margin: 0;
-  color: var(--orb-dim);
+  color: rgb(var(--orb-dim));
+  line-height: 1.35;
 }
 
 .no-details .screen-desc {
   display: none;
 }
 
+/* The console's button prompt: a glossy round button with its word beside it, and a cable curving away. It
+   opens the selected item, like Enter or a click on its tab */
+.screen-select {
+  position: absolute;
+  top: calc(100% + 18px);
+  right: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: rgb(var(--orb-text));
+  font-family: var(--display);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.select-button {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 38% 30%,
+    rgb(var(--orb-white)) 0 8%,
+    rgb(var(--orb-light)) 28%,
+    rgb(var(--orb-mid)) 72%,
+    rgb(var(--orb-dark)) 100%
+  );
+  box-shadow:
+    0 0 0 2px rgb(var(--orb-ink)),
+    0 0 0 3px rgb(var(--orb-light) / 0.6),
+    0 0 14px rgb(var(--orb-main) / 0.5);
+  transition: transform 0.12s;
+}
+
+.select-button::before {
+  width: 11px;
+  height: 13px;
+  margin-left: 3px;
+  background: rgb(var(--orb-ink) / 0.85);
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  content: "";
+}
+
+.screen-select::after {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  width: 70px;
+  height: 90px;
+  margin-left: 8px;
+  border-top: 1.5px solid rgb(var(--orb-light) / 0.35);
+  border-right: 1.5px solid rgb(var(--orb-light) / 0.35);
+  border-top-right-radius: 70px 90px;
+  content: "";
+  pointer-events: none;
+}
+
+.screen-select:hover .select-button {
+  transform: scale(1.1);
+}
+
+.screen-select:active .select-button {
+  transform: scale(0.94);
+}
+
 .orb-menu > .empty {
   position: fixed;
-  right: max(16px, 3vw);
+  right: var(--screen-right);
   bottom: 24px;
-  width: min(380px, 28vw);
+  width: var(--screen-w);
   padding: 12px;
 }
 
+/* A small screen held sideways: the orb rises from the left edge, which leaves room for the panel */
+@media (max-width: 900px) and (min-aspect-ratio: 4/5) {
+  body[data-theme="orb"] {
+    --orb-x: calc(var(--orb-size) * 0.3);
+  }
+
+  .screen-face {
+    gap: 8px;
+    padding: 18px 12px 12px;
+  }
+
+  .screen-name {
+    font-size: 1rem;
+  }
+
+  .screen-desc {
+    font-size: 0.85rem;
+  }
+}
+
 /* Too narrow for the panel beside the ring */
-@media (max-width: 760px) {
+@media (max-width: 560px) and (min-aspect-ratio: 4/5) {
   .orb-screen {
     display: none;
   }
 }
 
-/* Phones: the orb becomes a glow in the corner, and the menu a plain column of tabs, each with its own icon
-   and description */
-@media (max-width: 640px) {
+/* ---------- Phones held upright ---------- */
+
+/* The orb rises from the left edge with the ring of pods curving around it, and the panel docks at the bottom on
+   an arm that reaches in from the right */
+@media (max-aspect-ratio: 4/5) {
   body[data-theme="orb"] {
-    --orb-size: 240px;
-    --orb-x: calc(100vw - 30px);
-    --orb-y: 40px;
+    --orb-size: min(86vw, 54vh);
+    --orb-x: calc(var(--orb-size) * -0.08);
+    --orb-y: calc(var(--safe-top) + (100vh - var(--safe-top) - var(--screen-room)) / 2 + 55px);
+    --ring-gap: calc(var(--orb-size) * 0.11);
+    --pod: clamp(36px, 11.6vw, 54px);
+    --tab-width: 440px;
+    --screen-room: 200px;
+    --arm-size: min(58vw, 300px);
+    --arm-at: 86%;
   }
 
-  body[data-theme="orb"] .menu {
-    touch-action: auto;
-  }
-
-  .orb-scene .orb-wrap {
-    opacity: 0.55;
-  }
-
-  .tubes,
-  .orb-ring,
-  .orb-arrow,
-  .orb-orbit {
-    display: none;
-  }
-
-  .games.orb-menu {
-    min-height: 0;
-    padding: 4px 16px 24px;
-  }
-
-  .orb-list {
-    position: static;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    overflow: visible;
-    padding: 6px 0;
-    pointer-events: auto;
-  }
-
-  .orb-menu .pill {
-    position: static;
-    width: 100%;
-    height: auto;
-    margin: 0;
-  }
-
-  .orb-menu .pill .pod {
-    display: none;
-  }
-
-  .orb-menu .pill .plate {
-    gap: 12px;
-    height: auto;
-    min-height: 54px;
-    margin: 0;
-    padding: 10px 16px;
-    border-radius: 4px 18px 4px 18px;
-  }
-
-  /* A column has no ring to lean off of, so the picked tab stays in line with the rest */
-  .orb-menu .pill.selected .plate {
+  .orb-screen {
+    top: auto;
+    right: calc(14px + var(--safe-right));
+    bottom: calc(14px + var(--safe-bottom));
+    left: calc(14px + var(--safe-left));
+    width: auto;
     transform: none;
   }
 
-  .orb-menu .pill .icon {
+  /* The picture's width is capped so the panel stays as short on a tablet as on a phone */
+  .screen-face {
     display: grid;
+    grid-template-columns: min(42%, 210px) 1fr;
+    align-items: start;
+    gap: 12px;
+    padding: 20px 14px 14px;
   }
 
-  .orb-menu .pill .desc {
-    display: block;
-    color: inherit;
-    font-size: 0.8rem;
-    opacity: 0.8;
+  .screen-name {
+    font-size: 1.05rem;
   }
 
-  .orb-menu.no-details .pill .desc {
+  .screen-desc {
+    display: -webkit-box;
+    overflow: hidden;
+    padding-bottom: 36px;
+    font-size: 0.85rem;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+  }
+
+  .screen-letter {
+    font-size: 2.6rem;
+  }
+
+  /* On a phone the prompt sits in the panel's corner, and the cable would run off the screen */
+  .screen-select {
+    top: auto;
+    right: 14px;
+    bottom: 12px;
+    font-size: 0.9rem;
+  }
+
+  .screen-select::after {
     display: none;
   }
 
-  .orb-menu .pill .name {
-    white-space: normal;
+  .select-button {
+    width: 30px;
+    height: 30px;
   }
 
   .orb-menu > .empty {
-    position: static;
-    width: auto;
+    right: calc(14px + var(--safe-right));
+    bottom: calc(var(--screen-room) + 8px);
+    width: 60vw;
   }
+}
+
+/* The frame rate counter sits in the bottom left corner, so the docked panel leaves room for it */
+@media (max-aspect-ratio: 4/5) {
+  body[data-theme="orb"]:has(> .fps:not([hidden])) .orb-screen {
+    bottom: calc(36px + var(--safe-bottom));
+  }
+}
+
+/* ---------- Settings ---------- */
+
+/* The settings panel swings in on the arm's side of the screen like another panel, cut and lit like one */
+body[data-theme="orb"] .panel {
+  border-left: 1px solid rgb(var(--orb-light) / 0.35);
+  background:
+    repeating-linear-gradient(180deg, rgb(var(--orb-main) / 0.04) 0 1px, transparent 1px 4px),
+    linear-gradient(160deg, rgb(var(--orb-deep) / 0.96), rgb(var(--orb-ink) / 0.98) 60%);
+  box-shadow: -12px 0 48px rgb(var(--orb-main) / 0.14);
+  opacity: 0;
+  transform: perspective(1400px) translateX(60%) rotateY(-40deg);
+  transform-origin: 100% 50%;
+  transition:
+    transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.3s;
+}
+
+body[data-theme="orb"].panel-open .panel {
+  opacity: 1;
+  transform: none;
+}
+
+body[data-theme="orb"] .panel-head,
+body[data-theme="orb"] .panel-foot {
+  border-color: rgb(var(--orb-light) / 0.2);
+}
+
+/* Small text stays in Exo 2: the blocky lettering's Y reads as a V at this size */
+body[data-theme="orb"] .tab,
+body[data-theme="orb"] .field-label,
+body[data-theme="orb"] .primary,
+body[data-theme="orb"] .secondary {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+body[data-theme="orb"] .tab[aria-selected="true"] {
+  background: rgb(var(--orb-light) / 0.16);
+  box-shadow: inset 0 -2px 0 rgb(var(--orb-light));
+  color: rgb(var(--orb-pale));
+}
+
+body[data-theme="orb"] select,
+body[data-theme="orb"] .order-row,
+body[data-theme="orb"] .switch {
+  border: 1px solid rgb(var(--orb-light) / 0.2);
+  background: rgb(var(--orb-deep) / 0.85);
+}
+
+body[data-theme="orb"] .primary {
+  background: linear-gradient(180deg, rgb(var(--orb-pale)), rgb(var(--orb-light)) 45%, rgb(var(--orb-main)));
+  color: rgb(var(--orb-ink));
+  clip-path: polygon(0 8px, 8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+}
+
+body[data-theme="orb"] .secondary {
+  background: rgb(var(--orb-light) / 0.12);
+  clip-path: polygon(0 8px, 8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+}
+
+body[data-theme="orb"] .swatch[aria-pressed="true"] {
+  border-color: rgb(var(--orb-white));
+  box-shadow: 0 0 10px rgb(var(--orb-main) / 0.7);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -693,15 +1151,19 @@ body[data-theme="orb"] .notice {
   .orb,
   .orb-wrap,
   .orb-core,
-  .orb-shell,
+  .fins-shape,
+  .goo-shape,
   .orb.pulse::before,
-  .orb-menu .pill.selected .pod,
   .orb-arrow::before {
     animation: none;
   }
 
   .orb-list.placed .pill,
-  .orb-arrow {
+  .orb-arrow,
+  .orb-fins,
+  .orb-scene,
+  .pod,
+  body[data-theme="orb"] .panel {
     transition: none;
   }
 }

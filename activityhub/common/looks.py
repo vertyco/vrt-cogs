@@ -4,11 +4,13 @@ import typing as t
 THEMES = ("standard", "orb")
 LAYOUTS = ("grid", "list", "compact")
 BACKGROUNDS = ("dark", "darker", "gradient")
-# The orb theme brings its own colors, background and layout, and menu sounds only play in it
+# The orb theme brings its own background and layout, colors everything from its glow color instead of the
+# accent, and is the only theme with menu sounds
 BUILTIN_LOOK = {
     "theme": "orb",
     "layout": "grid",
     "accent": "#5865F2",
+    "glow": "#8FDC26",
     "background": "dark",
     "details": True,
     "sounds": True,
@@ -29,7 +31,7 @@ def value_ok(field: str, value: t.Any) -> bool:
         return isinstance(value, str) and value in LAYOUTS
     if field == "background":
         return isinstance(value, str) and value in BACKGROUNDS
-    if field == "accent":
+    if field in ("accent", "glow"):
         return isinstance(value, str) and COLOR.fullmatch(value) is not None
     if field in ("details", "sounds", "fps"):
         return isinstance(value, bool)

@@ -1,5 +1,20 @@
 # ActivityHub Changelog
 
+## 0.2.0
+
+The Orb theme is rebuilt to look and move more like the console dashboard it copies.
+
+- Each game's icon sits inside its pod, a glass bubble in a lit socket, on desktop and on phones. Settings gets a cog.
+- The tabs are cut like the original's, with a raised strip on top and chamfered corners, in blocky lettering.
+- A see-through robot arm holds the panel for the selected game. Every move turns the old panel away on the arm and the new one in, while the arm lights up and its wrist spins in place. The panel gains a **Select** button that opens the selected game.
+- The orb sits in a frame of see-through fins with holes punched through them, which turn a notch with every move and swing round when Settings opens or closes. Glowing goo slides over the orb, and a flat band circles it.
+- The background is a web of uneven cells curving around the orb, like the inside of a sphere.
+- Settings swings in like another panel, in the theme's colors.
+- **Glow color** in **My look** (and the server and default tabs) colors the whole Orb theme: the orb, pods, tabs, web and panels. It has the same color choices as the Standard theme's accent, and keeps its own setting, so each theme keeps its own color. Green is the default, and a gray glow gives a silver theme.
+- On a phone held upright the Orb theme keeps its ring: the orb rises from the left edge with the pods curving around it, and the panel docks at the bottom with the arm reaching in from the side. Sliding a finger up and down moves between games, like on a phone held sideways. Before, it was a plain list.
+- Small screens held sideways show the panel too, with the orb partly off the left edge to make room.
+- The menu opens with the pods popping onto the ring one after another, and does again on coming back from a game. Opening a game dives into the orb as the menu fades.
+
 ## 0.1.14
 
 - Orb is now the default theme, for every server and player that hasn't picked one.

@@ -12,24 +12,22 @@
     <link rel="modulepreload" href="host.js" />
     <link rel="modulepreload" href="sdk.js" />
     <link rel="modulepreload" href="sounds.js" />
+    <link rel="modulepreload" href="orb.js" />
     <link rel="modulepreload" href="fps.js" />
     <link rel="modulepreload" href="vendor/discord-sdk.js" />
   </head>
   <body>
     <div class="orb-scene" aria-hidden="true">
+      <canvas id="orb-web" class="web"></canvas>
       <div class="fog"></div>
-      <div class="web"></div>
-      <svg class="tubes" viewBox="0 0 1600 900" preserveAspectRatio="none">
-        <path d="M0 450 C 380 300, 700 140, 1600 110" />
-        <path d="M0 450 C 420 470, 900 560, 1600 540" />
-        <path d="M0 450 C 300 640, 640 820, 1300 900" />
-        <path d="M0 450 C 240 220, 460 60, 760 0" />
-      </svg>
+      <div class="vignette"></div>
       <div class="orb-ring"></div>
       <div class="orb-wrap">
-        <div class="orb-orbit"></div>
-        <div class="orb-shell"></div>
+        <div class="orb-orbit back"></div>
+        <div id="orb-fins" class="orb-fins"></div>
         <div id="orb" class="orb"><span class="orb-core"></span></div>
+        <div id="orb-goo" class="orb-goo"></div>
+        <div class="orb-orbit front"></div>
       </div>
     </div>
     <div id="menu" class="menu">

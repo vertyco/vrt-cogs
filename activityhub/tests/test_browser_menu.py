@@ -9,6 +9,7 @@ from selenium.webdriver.support.select import Select
 from activityhub.tests.browser import (
     DISCORD_QUERY,
     LiveHub,
+    console_lines,
     fresh,
     hub_web_copy,
     start_chrome,
@@ -46,6 +47,10 @@ const frame = document.getElementById('game-frame');
 return [getComputedStyle(frame).opacity, getComputedStyle(document.getElementById('menu')).display];
 """
 COUNTER = "document.querySelector('.fps').textContent"
+# True once the Orb menu's opening and turns are over; only the endless background loops still run
+SETTLED = """document.getAnimations().every(
+  (animation) => animation.effect.getComputedTiming().endTime === Infinity || animation.playState !== "running"
+)"""
 # Run in a game's frame: hub.stat() with the script's argument
 SHOW_STAT = """
 const text = arguments[0];
@@ -446,13 +451,15 @@ def test_orb_swipes_move_along_the_ring_on_a_phone_held_sideways(driver, live, t
         plain_device(driver)
 
 
-def test_orb_swipes_leave_the_upright_phone_list_alone(driver, live):
+def test_orb_swipes_move_along_the_ring_on_an_upright_phone(driver, live):
     touch_device(driver, 375, 740)
     try:
         open_menu(driver, live, DISCORD_QUERY)
-        slide(driver, (180, 600), (180, 450))
-        time.sleep(0.3)
-        assert driver.execute_script(f"return {SELECTED}") == "second"
+        slide(driver, (300, 560), (300, 510))
+        wait_for(driver, f"{SELECTED} === 'demo'")
+        assert driver.find_element(By.CSS_SELECTOR, "#orb-screen .screen-name").text.lower() == "demo"
+        assert driver.execute_script("return window.scrollY") == 0
+        assert driver.find_elements(By.ID, "game-frame") == []
     finally:
         plain_device(driver)
 
@@ -551,8 +558,8 @@ def test_the_header_sits_below_discords_buttons_on_a_phone(driver, live, look):
 
 
 def test_orb_theme_on_a_phone(driver, live, tmp_path):
-    # A description too long for one line has to wrap inside its tab, not push the page sideways
-    long_name = "A game with a name long enough to wrap"
+    # A name too long for its tab is cut short inside it, not pushed off the side of the screen
+    long_name = "A game with a name long enough to run off the screen"
     register(live.hub, DemoCog(write_demo_web(tmp_path / "long"), key="long", name=long_name, cog_name="Long"))
     live.hub.config.globals["look"] = {"theme": "orb"}
     driver.execute_cdp_cmd(
@@ -560,12 +567,18 @@ def test_orb_theme_on_a_phone(driver, live, tmp_path):
     )
     try:
         open_menu(driver, live)
+        wait_for(driver, SETTLED)
         # A phone widens the page to fit whatever sticks out, so the page is checked against the phone's width
         assert driver.execute_script("return document.documentElement.scrollWidth") <= 375
-        assert not driver.find_element(By.ID, "orb-screen").is_displayed()
+        rights = "[...document.querySelectorAll('#games .pill')].map((pill) => pill.getBoundingClientRect().right)"
+        assert max(driver.execute_script(f"return {rights}")) <= 375
+        # The pods hold the icons, and the panel docked at the bottom shows the selected game's description
         pill = driver.find_element(By.CSS_SELECTOR, '#games .pill[data-key="demo"]')
-        assert pill.find_element(By.CSS_SELECTOR, ".icon").is_displayed()
-        assert pill.find_element(By.CSS_SELECTOR, ".desc").is_displayed()
+        assert pill.find_element(By.CSS_SELECTOR, ".pod .icon").is_displayed()
+        screen = driver.find_element(By.ID, "orb-screen")
+        assert screen.is_displayed() and screen.rect["y"] > 740 / 2
+        wait_for(driver, "document.querySelector('#orb-screen .screen-desc').textContent.length > 0")
+        assert screen.find_element(By.CSS_SELECTOR, ".screen-desc").is_displayed()
     finally:
         driver.execute_cdp_cmd("Emulation.clearDeviceMetricsOverride", {})
 
@@ -602,7 +615,13 @@ def test_orb_settings_pill_and_theme_fields(driver, live):
     wait_for(driver, "getComputedStyle(document.getElementById('panel')).transform === 'none'")
     assert driver.find_element(By.CSS_SELECTOR, "#orb-screen .screen-name").text.lower() == "settings"
     fields = "[...document.querySelectorAll('#tab-body [id^=field-]')].map((field) => field.id)"
-    assert driver.execute_script(f"return {fields}") == ["field-theme", "field-details", "field-sounds", "field-fps"]
+    assert driver.execute_script(f"return {fields}") == [
+        "field-theme",
+        "field-glow",
+        "field-details",
+        "field-sounds",
+        "field-fps",
+    ]
     Select(driver.find_element(By.ID, "field-theme")).select_by_value("standard")
     assert driver.execute_script("return document.body.dataset.theme") == "standard"
 
@@ -616,6 +635,54 @@ def test_orb_settings_pill_and_theme_fields(driver, live):
     ]
     save(driver)
     assert live.hub.config.users[MEMBER_ID]["look"] == {"theme": "standard"}
+
+
+def test_orb_glow_color_recolors_the_theme_and_saves(driver, live):
+    live.hub.config.globals["look"] = {"theme": "orb"}
+    open_menu(driver, live, DISCORD_QUERY)
+    tone = "getComputedStyle(document.documentElement).getPropertyValue('--orb-main').trim()"
+    assert driver.execute_script(f"return {tone}") == "143 220 38"
+    driver.find_element(By.CSS_SELECTOR, "#games .settings-pill").click()
+    wait_for(driver, "getComputedStyle(document.getElementById('panel')).transform === 'none'")
+    driver.find_element(By.CSS_SELECTOR, '#field-glow .swatch[data-swatch="#ED4245"]').click()
+    # The preview turns the theme red at once: red stays the strongest of the three
+    red, green, blue = (int(v) for v in driver.execute_script(f"return {tone}").split())
+    assert red > green and red > blue
+    save(driver)
+    assert live.hub.config.users[MEMBER_ID]["look"] == {"glow": "#ED4245"}
+    # The Standard theme's accent is its own color, and the glow doesn't change it
+    Select(driver.find_element(By.ID, "field-theme")).select_by_value("standard")
+    assert (
+        driver.find_element(By.CSS_SELECTOR, '#field-accent .swatch[data-swatch="default"]').get_attribute(
+            "aria-pressed"
+        )
+        == "true"
+    )
+
+
+def test_orb_select_prompt_opens_the_selected_game(driver, live):
+    live.hub.config.globals["look"] = {"theme": "orb"}
+    open_menu(driver, live, DISCORD_QUERY)
+    press(driver, Keys.ARROW_DOWN)
+    assert driver.execute_script(f"return {SELECTED}") == "demo"
+    driver.find_element(By.CSS_SELECTOR, "#orb-screen .screen-select").click()
+    src = wait_for(driver, "document.getElementById('game-frame') && document.getElementById('game-frame').src")
+    assert "/games/demo/" in src
+
+
+def test_orb_menu_survives_a_resize_behind_a_game(driver, live):
+    live.hub.config.globals["look"] = {"theme": "orb"}
+    open_menu(driver, live, DISCORD_QUERY)
+    driver.find_element(By.CSS_SELECTOR, '#games .pill[data-key="demo"]').click()
+    wait_for(driver, "document.body.classList.contains('playing')")
+    console_lines(driver)
+    # Behind a game the scene is hidden and has no size; the menu lays itself out again once it shows
+    driver.set_window_size(1000, 700)
+    driver.execute_script("window.activityhubHost.closeGame()")
+    wait_for(driver, f"{SELECTED} === 'demo'")
+    assert [line for line in console_lines(driver) if "Error" in line] == []
+    pill = driver.find_element(By.CSS_SELECTOR, '#games .pill[data-key="demo"]').rect
+    assert 0 < pill["x"] < driver.execute_script("return innerWidth")
 
 
 def test_orb_settings_close_button_closes_the_panel(driver, live):
