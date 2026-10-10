@@ -1,0 +1,16 @@
+{
+  "author": ["Vertyco"],
+  "description": "Blackjack, craps, war and six more casino games for ActivityHub, played inside Discord's Activity window on a Classic Vegas casino floor. Friends in the same voice channel share the tables, and every game still plays solo. Server admins tune each game's bets, payouts, cooldowns and access levels, design membership tiers, and hold big wins for review, from the casino's settings panel or with chat commands. Rebuilt for ActivityHub from Redjumpman's Casino: https://github.com/Redjumpman/Jumper-Plugins. Needs ActivityHub 0.1.13 or later.",
+  "disabled": false,
+  "end_user_data_statement": "This cog stores Discord user IDs with each player's casino stats, cooldowns, membership tier and any winnings held for review.",
+  "hidden": true,
+  "install_msg": "Thank you for installing Casino!\n\nCasino is a game for ActivityHub, which must be installed and set up first:\n`[p]repo add vrt-cogs https://github.com/vertyco/vrt-cogs`\n`[p]cog install vrt-cogs activityhub`\n`[p]load activityhub`\nThen follow ActivityHub's README: https://github.com/vertyco/vrt-cogs/blob/main/activityhub/README.md\n\nOnce both are loaded, the casino shows up in the hub's menu, and `[p]casino` posts a Play button. Unload Redjumpman's Casino first if it is loaded: both use the name Casino.\n\nRebuilt for ActivityHub from Redjumpman's Casino: https://github.com/Redjumpman/Jumper-Plugins",
+  "min_bot_version": "3.5.3",
+  "min_python_version": [3, 10, 0],
+  "permissions": [],
+  "required_cogs": {},
+  "requirements": ["piccolo", "piccolo[sqlite]", "aiosqlite"],
+  "short": "Casino games for ActivityHub on a Vegas floor, rebuilt from Redjumpman's Casino",
+  "tags": ["activity", "games", "casino", "economy", "blackjack", "multiplayer", "vert"],
+  "type": "COG"
+}

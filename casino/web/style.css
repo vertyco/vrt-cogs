@@ -1,0 +1,1103 @@
+@font-face {
+  font-family: "Playfair Display";
+  src: url("fonts/playfair.woff2") format("woff2");
+  font-weight: 400 900;
+  font-display: swap;
+}
+
+/* Classic Vegas: green felt, polished wood, burgundy, gold trim and cream text */
+:root {
+  --night: #120a06;
+  --wood: #3a1d0e;
+  --wood-light: #5a2f17;
+  --felt: #0b4424;
+  --felt-light: #13643a;
+  --burgundy: #6b0f1a;
+  --burgundy-light: #8e1a28;
+  --gold: #d4af37;
+  --gold-light: #f3d77a;
+  --gold-deep: #8a6a14;
+  --cream: #f6ecd2;
+  --cream-dim: #c9b98f;
+  --ink: #1a0f08;
+  --win: #3ddc84;
+  --lose: #ff6b6b;
+  --chip-1: #f4f1ea;
+  --chip-5: #c8202f;
+  --chip-10: #1f5fbf;
+  --chip-25: #1d8a4a;
+  --chip-100: #1b1b1b;
+  --chip-500: #6c2bb3;
+  --chip-1000: #e8a317;
+  --chip-5000: #8a5a2b;
+  --chip-10000: #e45aa5;
+  --chip-50000: #2bb3b3;
+  --chip-100000: #d9c36a;
+  --bar-height: 56px;
+  /* Room taken by Discord's buttons and the phone's notch. The hub copies Discord's sizes into this frame */
+  --safe-top: var(--discord-safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --safe-right: var(--discord-safe-area-inset-right, env(safe-area-inset-right, 0px));
+  --safe-bottom: var(--discord-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --safe-left: var(--discord-safe-area-inset-left, env(safe-area-inset-left, 0px));
+  color-scheme: dark;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--night);
+  color: var(--cream);
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 3px solid var(--gold-light);
+  outline-offset: 2px;
+}
+
+h1,
+h2,
+h3,
+.amount,
+.purse b,
+.result .big {
+  font-family: "Playfair Display", Georgia, serif;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ---------- Buttons ---------- */
+
+.button {
+  appearance: none;
+  border: 2px solid var(--gold-deep);
+  border-radius: 10px;
+  padding: 9px 16px;
+  background: linear-gradient(var(--wood-light), var(--wood));
+  color: var(--cream);
+  font: 600 15px/1.1 "Segoe UI", system-ui, sans-serif;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.button:hover:not(:disabled) {
+  border-color: var(--gold);
+}
+
+.button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.button.primary {
+  border-color: var(--gold-light);
+  background: linear-gradient(var(--gold-light), var(--gold));
+  color: var(--ink);
+}
+
+.button.danger {
+  border-color: #ff8a8a;
+  background: linear-gradient(var(--burgundy-light), var(--burgundy));
+}
+
+.button.small {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.button[aria-pressed="true"] {
+  border-color: var(--gold-light);
+  background: linear-gradient(var(--felt-light), var(--felt));
+  box-shadow: 0 0 0 2px var(--gold) inset;
+}
+
+.icon-button {
+  appearance: none;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  border-radius: 10px;
+  background: rgba(26, 15, 8, 0.55);
+  color: var(--gold-light);
+  cursor: pointer;
+  flex: none;
+}
+
+.icon-button svg {
+  width: 22px;
+  height: 22px;
+}
+
+.icon-button .off,
+.icon-button[aria-pressed="false"] .on {
+  display: none;
+}
+
+.icon-button[aria-pressed="false"] .off {
+  display: block;
+}
+
+/* ---------- Top bar ---------- */
+
+.top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--bar-height);
+  padding: calc(8px + var(--safe-top)) calc(12px + var(--safe-right)) 8px calc(12px + var(--safe-left));
+  box-sizing: border-box;
+  background: linear-gradient(var(--burgundy), #3d0710);
+  border-bottom: 2px solid var(--gold);
+  flex: none;
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.brand h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--gold-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+.tier {
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--tier-color, var(--cream-dim));
+}
+
+.purse {
+  margin: 0;
+  padding: 5px 12px;
+  border: 1px solid var(--gold);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--cream-dim);
+}
+
+.purse b {
+  font-size: 17px;
+  color: var(--gold-light);
+}
+
+.tools {
+  display: flex;
+  gap: 6px;
+}
+
+/* Narrow screens: the tools take a second row under the name and balance */
+@media (max-width: 560px) {
+  .top {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+
+  .tools {
+    order: 3;
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .brand h1 {
+    font-size: 19px;
+  }
+}
+
+/* ---------- Lobby ---------- */
+
+.lobby {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: none;
+  background: #0d0805;
+}
+
+.lobby::-webkit-scrollbar {
+  display: none;
+}
+
+.floor {
+  position: relative;
+  margin: 0 auto;
+}
+
+.floor-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.station {
+  position: absolute;
+  appearance: none;
+  padding: 0;
+  border: 0;
+  border-radius: 18px;
+  background: transparent;
+  cursor: pointer;
+  color: var(--cream);
+}
+
+/* The table lights up under the cursor or a finger */
+.station::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(closest-side, rgba(243, 215, 122, 0.35), transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.station:hover::before,
+.station:focus-visible::before,
+.station.lit::before {
+  opacity: 1;
+}
+
+.medallion {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  animation: bob 2.6s ease-in-out infinite;
+  animation-delay: var(--bob-delay, 0s);
+  filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.6));
+}
+
+.medallion img {
+  display: block;
+  width: 100%;
+  height: auto;
+  transition: transform 0.2s;
+}
+
+.station:hover .medallion img,
+.station:focus-visible .medallion img,
+.station.lit .medallion img {
+  transform: scale(1.18);
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -8px;
+  }
+}
+
+/* A soft dark spot on the floor under each medallion, smaller and fainter while the medallion is up */
+.medallion-shadow {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  filter: blur(2px);
+  pointer-events: none;
+  animation: medallion-shadow 2.6s ease-in-out infinite;
+  animation-delay: var(--bob-delay, 0s);
+}
+
+@keyframes medallion-shadow {
+  0%,
+  100% {
+    opacity: 0.9;
+    scale: 1 1;
+  }
+  50% {
+    opacity: 0.5;
+    scale: 0.77 0.9;
+  }
+}
+
+/* Warm light pulsing over the All In slot machine. It only lights the picture, so taps pass through */
+.jackpot {
+  position: absolute;
+  border-radius: 30% 30% 4% 4%;
+  background: radial-gradient(closest-side, rgba(255, 220, 120, 0.35), transparent);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: jackpot 1.6s ease-in-out infinite;
+}
+
+@keyframes jackpot {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+/* Under a floor wider than the screen: stays put while the floor pans above it */
+.swipe-hint {
+  position: sticky;
+  left: 0;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  padding: 8px 8px calc(8px + var(--safe-bottom));
+  border-top: 1px solid #3a2a1a;
+  background: #1a0d06;
+  font: 600 12px/1.2 "Segoe UI", system-ui, sans-serif;
+  color: var(--cream-dim);
+  text-align: center;
+  pointer-events: none;
+}
+
+.station .label {
+  position: absolute;
+  left: 50%;
+  bottom: 6%;
+  transform: translateX(-50%);
+  padding: 4px 10px;
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  background: rgba(18, 10, 6, 0.85);
+  font: 700 14px/1.2 "Playfair Display", Georgia, serif;
+  color: var(--gold-light);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+.station:hover .label,
+.station:focus-visible .label,
+.station.lit .label,
+.station.blocked .label {
+  opacity: 1;
+}
+
+.station .note {
+  display: block;
+  font: 600 11px/1.2 "Segoe UI", system-ui, sans-serif;
+  color: var(--cream-dim);
+}
+
+.station.blocked .medallion {
+  filter: grayscale(0.85) brightness(0.7) drop-shadow(0 6px 6px rgba(0, 0, 0, 0.6));
+}
+
+.count {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  border: 2px solid #0b2a17;
+  border-radius: 999px;
+  background: var(--win);
+  color: #062312;
+  font: 800 13px/18px "Segoe UI", system-ui, sans-serif;
+  text-align: center;
+}
+
+/* ---------- A table ---------- */
+
+.table {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  /* The dock pads itself clear of the right inset, so it grows by that much to keep its room */
+  grid-template-columns: minmax(0, 1fr) calc(320px + var(--safe-right));
+  background: radial-gradient(ellipse at 50% 40%, var(--felt-light), var(--felt) 60%, #062814);
+}
+
+.scene-box {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.scene {
+  position: absolute;
+  inset: 0;
+}
+
+.scene canvas {
+  display: block;
+}
+
+.dock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px calc(12px + var(--safe-right)) calc(12px + var(--safe-bottom)) 12px;
+  overflow-y: auto;
+  background: linear-gradient(90deg, var(--wood), #2a1409);
+  border-left: 2px solid var(--gold-deep);
+}
+
+/* Upright screens: the scene on top, the dock under it */
+@media (max-aspect-ratio: 1/1) {
+  .table {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(240px, 1fr) auto;
+  }
+
+  .dock {
+    max-height: 56vh;
+    padding-left: calc(12px + var(--safe-left));
+    border-left: 0;
+    border-top: 2px solid var(--gold-deep);
+  }
+}
+
+/* Short sideways phones: a narrower dock so the scene keeps its room */
+@media (min-aspect-ratio: 1/1) and (max-height: 500px) {
+  .table {
+    grid-template-columns: minmax(0, 1fr) calc(280px + var(--safe-right));
+  }
+
+  .dock {
+    gap: 6px;
+    padding-top: 8px;
+  }
+}
+
+.status {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--cream);
+}
+
+.clock {
+  color: var(--gold-light);
+  font-variant-numeric: tabular-nums;
+}
+
+.moves,
+.seat-buttons,
+.choices,
+.place-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.moves .button {
+  flex: 1;
+  min-width: 90px;
+  font-size: 17px;
+}
+
+.tray {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--gold-deep);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.tray.blocked .chips,
+.tray.blocked .bet-line,
+.tray.blocked .choices,
+.tray.blocked .multiplier {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.choices .button {
+  flex: 1;
+}
+
+.multiplier {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The number box gives up width first, so the + button stays inside a narrow dock */
+.multiplier input {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 90px;
+  text-align: center;
+  font: 800 22px "Playfair Display", Georgia, serif;
+  color: var(--gold-light);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A casino chip: a colored disc, white edge spots and an inner ring with the value */
+.chip {
+  --chip: var(--chip-1);
+  position: relative;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, var(--chip) 0 52%, transparent 53%),
+    repeating-conic-gradient(var(--chip) 0 22.5deg, #fff 22.5deg 45deg);
+  box-shadow:
+    0 3px 0 rgba(0, 0, 0, 0.45),
+    0 0 0 2px rgba(0, 0, 0, 0.35) inset;
+  color: #fff;
+  font: 800 12px/46px "Segoe UI", system-ui, sans-serif;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.7);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.chip::after {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  border: 2px dashed rgba(255, 255, 255, 0.75);
+  border-radius: 50%;
+}
+
+.chip:active:not(:disabled) {
+  transform: translateY(2px);
+}
+
+.chip:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.chip[data-value="1"] {
+  --chip: var(--chip-1);
+  color: var(--ink);
+  text-shadow: none;
+}
+
+.chip[data-value="5"] {
+  --chip: var(--chip-5);
+}
+
+.chip[data-value="10"] {
+  --chip: var(--chip-10);
+}
+
+.chip[data-value="25"] {
+  --chip: var(--chip-25);
+}
+
+.chip[data-value="100"] {
+  --chip: var(--chip-100);
+}
+
+.chip[data-value="500"] {
+  --chip: var(--chip-500);
+}
+
+.chip[data-value="1000"] {
+  --chip: var(--chip-1000);
+}
+
+.chip[data-value="5000"] {
+  --chip: var(--chip-5000);
+}
+
+.chip[data-value="10000"] {
+  --chip: var(--chip-10000);
+}
+
+.chip[data-value="50000"] {
+  --chip: var(--chip-50000);
+}
+
+.chip[data-value="100000"] {
+  --chip: var(--chip-100000);
+  color: var(--ink);
+  text-shadow: none;
+}
+
+.bet-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.amount {
+  flex-basis: 100%;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--gold-light);
+}
+
+.place-line .button {
+  flex: 1;
+  font-size: 17px;
+}
+
+.why {
+  margin: 0;
+  font-size: 13px;
+  color: var(--gold-light);
+}
+
+.players {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.players button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--cream);
+  font: 600 14px "Segoe UI", system-ui, sans-serif;
+  text-align: left;
+  cursor: pointer;
+}
+
+.players .me button {
+  border-color: var(--gold);
+}
+
+.players .away {
+  opacity: 0.55;
+}
+
+.players .name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.players .bet {
+  color: var(--gold-light);
+  font-variant-numeric: tabular-nums;
+}
+
+.players .win {
+  color: var(--win);
+}
+
+.players .lose {
+  color: var(--lose);
+}
+
+.avatar {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--wood-light);
+  flex: none;
+}
+
+@media (max-aspect-ratio: 1/1) {
+  .players {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .players li {
+    flex: 1 1 150px;
+  }
+}
+
+/* ---------- Results ---------- */
+
+/* A compact card along the bottom of the scene, so the dice, coin, cups or reels in the middle stay in view */
+.result {
+  position: absolute;
+  left: calc(12px + var(--safe-left));
+  right: 12px;
+  bottom: calc(12px + var(--safe-bottom));
+  width: fit-content;
+  min-width: 180px;
+  max-width: calc(100% - 24px - var(--safe-left));
+  margin: 0 auto;
+  box-sizing: border-box;
+  padding: 6px 18px 8px;
+  border: 2px solid var(--gold);
+  border-radius: 14px;
+  background: rgba(18, 10, 6, 0.88);
+  text-align: center;
+  pointer-events: none;
+  animation: pop 0.25s ease-out;
+}
+
+.result .big {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.result .small {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--cream-dim);
+}
+
+.result.win .big {
+  color: var(--win);
+}
+
+.result.lose .big {
+  color: var(--lose);
+}
+
+.result.even .big {
+  color: var(--gold-light);
+}
+
+/* Upright screens: the scene spans the width, and the dock under it already keeps clear of the bottom inset */
+@media (max-aspect-ratio: 1/1) {
+  .result {
+    right: calc(12px + var(--safe-right));
+    bottom: 10px;
+    max-width: calc(100% - 24px - var(--safe-left) - var(--safe-right));
+  }
+}
+
+@keyframes pop {
+  from {
+    transform: translateY(8px) scale(0.85);
+    opacity: 0;
+  }
+}
+
+/* ---------- Messages ---------- */
+
+.toast,
+.banner {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100% - 32px);
+  margin: 0;
+  padding: 10px 16px;
+  border: 1px solid var(--gold);
+  border-radius: 12px;
+  background: rgba(18, 10, 6, 0.94);
+  color: var(--cream);
+  font-size: 15px;
+  text-align: center;
+  z-index: 10;
+}
+
+.toast {
+  bottom: calc(18px + var(--safe-bottom));
+}
+
+.banner {
+  top: calc(var(--bar-height) + var(--safe-top) + 12px);
+}
+
+/* ---------- Panels ---------- */
+
+dialog {
+  padding: 0;
+  border: 2px solid var(--gold);
+  border-radius: 16px;
+  background: linear-gradient(#24120a, var(--night));
+  color: var(--cream);
+}
+
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.panel {
+  width: min(760px, calc(100% - 24px));
+  max-height: calc(100% - 24px - var(--safe-top) - var(--safe-bottom));
+  margin-top: calc(12px + var(--safe-top));
+}
+
+.panel[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--gold-deep);
+}
+
+.panel-head h2 {
+  flex: 1;
+  margin: 0;
+  font-size: 22px;
+  color: var(--gold-light);
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 10px 0;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--gold-deep);
+}
+
+.tabs button {
+  appearance: none;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 8px 8px 0 0;
+  background: transparent;
+  color: var(--cream-dim);
+  font: 600 14px "Segoe UI", system-ui, sans-serif;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.tabs button[aria-selected="true"] {
+  background: var(--burgundy);
+  color: var(--gold-light);
+}
+
+.panel-body {
+  padding: 14px;
+  overflow-y: auto;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.panel-body h3 {
+  margin: 18px 0 8px;
+  font-size: 18px;
+  color: var(--gold-light);
+}
+
+.panel-body h3:first-child {
+  margin-top: 0;
+}
+
+.panel-body p {
+  margin: 6px 0;
+  line-height: 1.45;
+}
+
+.dim {
+  color: var(--cream-dim);
+}
+
+.grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.grid th,
+.grid td {
+  padding: 6px 8px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.grid th {
+  color: var(--gold-light);
+  font-weight: 700;
+}
+
+.grid .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.scroll-x {
+  overflow-x: auto;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 14px;
+  margin: 0;
+}
+
+.facts dt {
+  color: var(--cream-dim);
+}
+
+.facts dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.tier-card {
+  margin: 10px 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  border-left: 6px solid var(--tier-color, var(--cream-dim));
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.tier-card h4 {
+  margin: 0 0 6px;
+  font: 800 18px "Playfair Display", Georgia, serif;
+  color: var(--tier-color, var(--cream));
+}
+
+.form {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px;
+  margin: 8px 0;
+}
+
+.form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--cream-dim);
+}
+
+.form .switch {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  color: var(--cream);
+  font-size: 15px;
+}
+
+input,
+select {
+  padding: 7px 9px;
+  border: 1px solid var(--gold-deep);
+  border-radius: 8px;
+  background: #1c0f08;
+  color: var(--cream);
+  font: 15px "Segoe UI", system-ui, sans-serif;
+}
+
+input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--gold);
+}
+
+.grid input {
+  width: 80px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.warn {
+  color: var(--gold-light);
+  font-size: 13px;
+}
+
+.error {
+  color: var(--lose);
+  font-size: 14px;
+}
+
+.found {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.found button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--cream);
+  font: 600 14px "Segoe UI", system-ui, sans-serif;
+  text-align: left;
+  cursor: pointer;
+}
+
+.confirm {
+  width: min(420px, calc(100% - 32px));
+  padding: 18px;
+}
+
+.confirm p {
+  margin: 0 0 6px;
+  line-height: 1.45;
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.who .avatar {
+  width: 44px;
+  height: 44px;
+}
+
+.who b {
+  font-size: 18px;
+}

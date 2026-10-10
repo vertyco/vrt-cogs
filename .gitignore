@@ -163,6 +163,7 @@ tests/
 !marblemunch/tests/
 !tanks/tests/
 !ageofwar/tests/
+!casino/tests/
 /levelup/data/backgrounds/Thumbs.db
 testcog/
 /reqbackup.txt

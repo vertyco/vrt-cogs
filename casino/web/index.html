@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Casino</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app" id="app" data-view="lobby">
+      <header class="top">
+        <button type="button" class="icon-button" id="back" aria-label="Back to the menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5 L8 12 L15 19" /></svg>
+        </button>
+        <div class="brand">
+          <h1 id="casino-name">Casino</h1>
+          <span class="tier" id="tier"></span>
+        </div>
+        <p class="purse" id="purse" aria-label="Your balance"><b id="balance">-</b> <span id="currency"></span></p>
+        <nav class="tools" aria-label="Casino">
+          <button type="button" class="icon-button" id="open-rules" aria-label="House rules" title="House rules">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4 H17 A2 2 0 0 1 19 6 V20 H7 A2 2 0 0 1 5 18 Z" /><path d="M5 18 A2 2 0 0 1 7 16 H19" /><path d="M9 8 H15 M9 11 H13" /></svg>
+          </button>
+          <button type="button" class="icon-button" id="open-stats" aria-label="My stats" title="My stats">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M5 20 V12 M12 20 V5 M19 20 V15" /></svg>
+          </button>
+          <button type="button" class="icon-button" id="open-tiers" aria-label="Memberships" title="Memberships">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 L14.6 8.6 L20.6 9.3 L16.1 13.4 L17.3 19.4 L12 16.4 L6.7 19.4 L7.9 13.4 L3.4 9.3 L9.4 8.6 Z" /></svg>
+          </button>
+          <button type="button" class="icon-button" id="open-settings" aria-label="Settings" title="Settings" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2" /><path d="M12 2.5 V5 M12 19 V21.5 M2.5 12 H5 M19 12 H21.5 M5.3 5.3 L7.1 7.1 M16.9 16.9 L18.7 18.7 M5.3 18.7 L7.1 16.9 M16.9 7.1 L18.7 5.3" /></svg>
+          </button>
+          <button type="button" class="icon-button" id="music" aria-label="Music" title="Music" aria-pressed="true">
+            <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18 V5 L20 3 V16" /><circle cx="6.5" cy="18" r="2.5" /><circle cx="17.5" cy="16" r="2.5" /></svg>
+            <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18 V5 L20 3 V16" /><circle cx="6.5" cy="18" r="2.5" /><circle cx="17.5" cy="16" r="2.5" /><path d="M3 3 L21 21" /></svg>
+          </button>
+          <button type="button" class="icon-button" id="sfx" aria-label="Sound effects" title="Sound effects" aria-pressed="true">
+            <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9 H8 L13 5 V19 L8 15 H4 Z" /><path d="M16.5 8.5 A5 5 0 0 1 16.5 15.5" /><path d="M19 6 A8.5 8.5 0 0 1 19 18" /></svg>
+            <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9 H8 L13 5 V19 L8 15 H4 Z" /><path d="M17 9 L22 14" /><path d="M22 9 L17 14" /></svg>
+          </button>
+        </nav>
+      </header>
+
+      <main class="lobby" id="lobby">
+        <div class="floor" id="floor">
+          <img class="floor-art" src="art/lobby.jpg" alt="" draggable="false" />
+        </div>
+        <p class="swipe-hint" hidden>&larr; swipe to look around &rarr;</p>
+      </main>
+
+      <main class="table" id="table" hidden>
+        <div class="scene-box">
+          <div class="scene" id="scene"></div>
+          <div class="result" id="result" hidden>
+            <p class="big" id="result-big"></p>
+            <p class="small" id="result-small"></p>
+          </div>
+        </div>
+        <aside class="dock" aria-label="Your table">
+          <p class="status" id="status"><span id="status-text"></span> <b class="clock" id="clock"></b></p>
+          <div class="moves" id="moves" hidden></div>
+          <div class="seat-buttons" id="seat-buttons" hidden>
+            <button type="button" class="button" id="sit">Take a seat</button>
+            <button type="button" class="button" id="stand">Stand up</button>
+          </div>
+          <section class="tray" id="tray" aria-label="Your bet">
+            <div class="choices" id="choices"></div>
+            <div class="multiplier" id="multiplier" hidden>
+              <span>Multiplier</span>
+              <button type="button" class="button small" id="mult-down" aria-label="Lower multiplier">&minus;</button>
+              <input type="number" id="mult-value" min="2" step="1" value="2" inputmode="numeric" aria-label="Multiplier" />
+              <button type="button" class="button small" id="mult-up" aria-label="Higher multiplier">+</button>
+            </div>
+            <ol class="chips" id="chips" aria-label="Chips"></ol>
+            <div class="bet-line" id="bet-line">
+              <output class="amount" id="amount">0</output>
+              <button type="button" class="button small" id="clear">Clear</button>
+              <button type="button" class="button small" id="min">Min</button>
+              <button type="button" class="button small" id="max">Max</button>
+              <button type="button" class="button small" id="repeat">Repeat</button>
+            </div>
+            <div class="place-line">
+              <button type="button" class="button primary" id="place">Bet</button>
+              <button type="button" class="button" id="go" hidden>Go</button>
+            </div>
+            <p class="why" id="why" hidden></p>
+          </section>
+          <ol class="players" id="players" aria-label="Players at this table"></ol>
+        </aside>
+      </main>
+
+      <p class="toast" id="toast" role="status" hidden></p>
+      <p class="banner" id="banner" role="status" hidden>Reconnecting...</p>
+    </div>
+
+    <dialog class="panel" id="panel" aria-labelledby="panel-title">
+      <header class="panel-head">
+        <h2 id="panel-title"></h2>
+        <button type="button" class="icon-button" id="panel-close" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6 L18 18 M18 6 L6 18" /></svg>
+        </button>
+      </header>
+      <nav class="tabs" id="panel-tabs" hidden></nav>
+      <div class="panel-body" id="panel-body"></div>
+    </dialog>
+
+    <dialog class="confirm" id="confirm" aria-labelledby="confirm-text">
+      <p id="confirm-text"></p>
+      <div class="actions">
+        <button type="button" class="button danger" id="confirm-yes">Yes</button>
+        <button type="button" class="button" id="confirm-no">No</button>
+      </div>
+    </dialog>
+
+    <script type="module" src="main.js"></script>
+  </body>
+</html>
