@@ -161,6 +161,7 @@ tests/
 !swearjar/tests/
 !activityhub/tests/
 !marblemunch/tests/
+!tanks/tests/
 /levelup/data/backgrounds/Thumbs.db
 testcog/
 /reqbackup.txt

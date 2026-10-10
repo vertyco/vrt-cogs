@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Tanks</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app" id="app" data-stage="setup">
+      <header class="top">
+        <nav class="corner" aria-label="Game controls">
+          <button type="button" class="icon-button" id="back" aria-label="Back to the menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5 L8 12 L15 19" /></svg>
+          </button>
+          <button type="button" class="icon-button" id="sound" aria-label="Sound" aria-pressed="true">
+            <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9 H8 L13 5 V19 L8 15 H4 Z" /><path d="M16.5 8.5 A5 5 0 0 1 16.5 15.5" /><path d="M19 6 A8.5 8.5 0 0 1 19 18" /></svg>
+            <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9 H8 L13 5 V19 L8 15 H4 Z" /><path d="M17 9 L22 14" /><path d="M22 9 L17 14" /></svg>
+          </button>
+        </nav>
+        <h1>Tanks</h1>
+        <p class="hint" id="hint">Tap an empty seat to sit down.</p>
+        <p class="watching" id="watching"></p>
+      </header>
+
+      <main class="play">
+        <div class="info" id="info" hidden>
+          <span class="turn" id="info-turn"></span>
+          <span>Angle <b id="info-angle"></b></span>
+          <span>Power <b id="info-power"></b></span>
+          <span>Health <b id="info-health"></b></span>
+          <span>Fuel <b id="info-fuel"></b></span>
+          <span class="weapon" id="info-weapon"></span>
+          <span>Wind <b id="info-wind"></b></span>
+          <span class="clock" id="info-clock"></span>
+        </div>
+        <div class="field-box" id="field-box">
+          <div class="field" id="field"></div>
+          <div class="picking" id="picking" hidden>
+            <p id="picking-text"></p>
+            <button type="button" class="button" id="flip" hidden>Flip</button>
+            <button type="button" class="button" id="cancel-pick">Cancel</button>
+          </div>
+          <div class="overlay" id="overlay" hidden>
+            <p class="big" id="overlay-big"></p>
+            <p class="small" id="overlay-small"></p>
+          </div>
+          <p class="toast" id="toast" role="status" hidden></p>
+        </div>
+      </main>
+
+      <aside class="side">
+        <ol class="cards" id="cards" aria-label="Tanks"></ol>
+      </aside>
+
+      <section class="controls" id="controls" aria-label="Your turn" hidden>
+        <label class="slider">Angle <input type="range" id="angle" min="0" max="180" step="1" /></label>
+        <label class="slider">Power <input type="range" id="power" min="0" max="100" step="1" /></label>
+        <div class="row">
+          <button type="button" class="button hold" id="drive-left" aria-label="Drive left">&#9664;</button>
+          <button type="button" class="button hold" id="drive-right" aria-label="Drive right">&#9654;</button>
+          <select class="button" id="weapon" aria-label="Weapon"></select>
+          <span class="items" id="items"></span>
+          <button type="button" class="button fire" id="fire">Fire</button>
+        </div>
+      </section>
+
+      <section class="panel" id="setup" aria-label="Setup">
+        <h2>New match</h2>
+        <ol class="seats" id="seats"></ol>
+        <div class="settings">
+          <label>Rounds <select id="rounds"><option value="3">3</option><option value="5">5</option><option value="10">10</option></select></label>
+          <label>Landscape <select id="landscape"><option value="random">Random</option><option value="1">Snow</option><option value="2">Grass</option><option value="3">Desert</option></select></label>
+          <label>Time limit <select id="timer"><option value="30">30 seconds</option><option value="60">1 minute</option><option value="90">90 seconds</option><option value="120">2 minutes</option><option value="off">No limit</option></select></label>
+        </div>
+        <div class="actions">
+          <button type="button" class="button primary" id="start" hidden>Start</button>
+          <button type="button" class="button" id="stand" hidden>Stand up</button>
+          <button type="button" class="button" id="open-leaderboard">Leaderboard</button>
+        </div>
+      </section>
+
+      <section class="panel" id="shop" aria-label="Shop" hidden>
+        <h2>Shop <span class="clock" id="shop-clock"></span></h2>
+        <p class="money" id="money"></p>
+        <ol class="seats shoppers" id="shoppers" hidden></ol>
+        <div id="store">
+          <h3>Weapons</h3>
+          <ul class="goods" id="weapons"></ul>
+          <h3>Extras</h3>
+          <ul class="goods" id="extras"></ul>
+        </div>
+        <div class="actions">
+          <button type="button" class="button primary" id="done">Done</button>
+        </div>
+      </section>
+
+      <section class="panel" id="results" aria-label="Results" hidden>
+        <h2 id="results-title">Match over</h2>
+        <ol class="standings" id="standings"></ol>
+        <div class="actions">
+          <button type="button" class="button primary" id="continue" hidden>Continue</button>
+        </div>
+      </section>
+
+      <p class="banner" id="banner" role="status" hidden>Reconnecting...</p>
+    </div>
+
+    <dialog class="leaderboard" id="leaderboard" aria-labelledby="leaderboard-title">
+      <h2 id="leaderboard-title">Leaderboard</h2>
+      <p class="dim">Match wins across every server. Kills break ties.</p>
+      <ol class="leaders" id="leaders"></ol>
+      <p class="you" id="you"></p>
+      <button type="button" class="button" id="close-leaderboard">Close</button>
+    </dialog>
+
+    <script type="module" src="game.js"></script>
+  </body>
+</html>
