@@ -47,6 +47,9 @@ const page = {
   retried: false,
   selected: null,
   touch: false,
+  // Where the mouse last was, and where it was when the wheel or the arrow keys last took the selection from it
+  pointer: null,
+  hoverHeld: null,
   orbScroll: 0,
   // The first look at the menu, and each return from a game, plays the menu's opening
   intro: true,
@@ -324,6 +327,8 @@ function gameIcon(game) {
 const ROW_SPACING = 1.24;
 // How far the scroll wheel turns before the selection moves one pill
 const WHEEL_STEP = 50;
+// How far the mouse moves, after the wheel or the arrow keys moved the selection, before pointing picks a pill again
+const HOVER_SLACK = 12;
 // How far a finger slides before the selection moves one pill, and before a touch counts as a slide at all
 const SWIPE_STEP = 44;
 const SWIPE_START = 10;
@@ -369,8 +374,10 @@ function orbPill(item) {
   const plate = el("span", "plate");
   plate.append(cardText(item));
   pill.append(pod, plate);
-  pill.addEventListener("pointerenter", (event) => {
-    if (event.pointerType === "mouse") {
+  // Pointing at a pill selects it once the mouse moves. When the list scrolls, the pills glide along the ring under
+  // a still mouse, and that isn't the player pointing
+  pill.addEventListener("pointermove", (event) => {
+    if (event.pointerType === "mouse" && !page.hoverHeld) {
       pill.focus({ preventScroll: true });
     }
   });
@@ -609,6 +616,21 @@ function bindOrb() {
     },
     { capture: true },
   );
+  // Runs before the pill's own listener, so the move that ends a hold also selects the pill under the mouse
+  document.addEventListener(
+    "pointermove",
+    (event) => {
+      if (event.pointerType !== "mouse") {
+        return;
+      }
+      page.pointer = [event.clientX, event.clientY];
+      const held = page.hoverHeld;
+      if (held && Math.hypot(event.clientX - held[0], event.clientY - held[1]) >= HOVER_SLACK) {
+        holdHover(null);
+      }
+    },
+    { capture: true },
+  );
   document.addEventListener("keydown", (event) => {
     page.touch = false;
     const step = { ArrowDown: 1, ArrowUp: -1 }[event.key];
@@ -616,6 +638,7 @@ function bindOrb() {
       return;
     }
     event.preventDefault();
+    holdHover(page.pointer);
     moveSelection(step);
   });
   let turned = 0;
@@ -626,6 +649,7 @@ function bindOrb() {
         return;
       }
       event.preventDefault();
+      holdHover([event.clientX, event.clientY]);
       // A mouse wheel moves one pill per notch; a touchpad's many small turns add up to the same
       turned += event.deltaMode === WheelEvent.DOM_DELTA_LINE ? event.deltaY * 33 : event.deltaY;
       if (Math.abs(turned) >= WHEEL_STEP) {
@@ -637,6 +661,13 @@ function bindOrb() {
   );
   window.addEventListener("resize", layoutOrb);
   bindSwipe();
+}
+
+// The wheel and the arrow keys keep the selection until the mouse moves away from where it was, so a hand resting
+// on the mouse can scroll the whole list. Meanwhile the pill under the mouse doesn't light up, only the selected one
+function holdHover(at) {
+  page.hoverHeld = at;
+  document.body.classList.toggle("hover-held", Boolean(at));
 }
 
 // The screen's size and the header place the ring and the panel. Behind a game the scene is hidden and has no

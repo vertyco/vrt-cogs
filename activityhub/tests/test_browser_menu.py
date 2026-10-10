@@ -576,6 +576,47 @@ def test_orb_wheel_and_arrows_scroll_a_long_list(driver, live, tmp_path):
     assert driver.execute_script(f"return {SELECTED}") == "extra6"
 
 
+def mouse(driver, kind, x, y, **extra):
+    """A real mouse event, so the browser also works out what's under the pointer, like with a hand on the mouse"""
+    driver.execute_cdp_cmd("Input.dispatchMouseEvent", {"type": kind, "x": x, "y": y, **extra})
+
+
+# The middle of a pill's tab, and its key
+PILL_SPOT = """
+const pill = document.querySelector(arguments[0]);
+const plate = pill.querySelector('.plate').getBoundingClientRect();
+return [pill.dataset.key, plate.left + 30, plate.top + plate.height / 2];
+"""
+
+
+def test_orb_wheel_scrolls_the_whole_list_with_the_mouse_on_the_ring(driver, live, tmp_path):
+    for i in range(10):
+        folder = write_demo_web(tmp_path / f"extra{i}")
+        register(live.hub, DemoCog(folder, key=f"extra{i}", name=f"Extra {i}", cog_name=f"Extra{i}"))
+    open_menu(driver, live, DISCORD_QUERY)
+    wait_for(driver, SETTLED)
+    pills = driver.execute_script(f"return {PILLS}")
+    # Pointing at a pill selects it
+    key, x, y = driver.execute_script(PILL_SPOT, "#games .pill:nth-child(3)")
+    mouse(driver, "mouseMoved", x, y)
+    wait_for(driver, f"{SELECTED} === {key!r}")
+    # Each notch moves one pill to the end of the list, though the ring scrolls other pills under the still mouse
+    for key in pills[3:]:
+        mouse(driver, "mouseWheel", x, y, deltaX=0, deltaY=100)
+        wait_for(driver, SETTLED)
+        assert driver.execute_script(f"return {SELECTED}") == key
+    assert driver.execute_script("return document.body.classList.contains('hover-held')")
+    # A nudge of the hand on the mouse leaves the selection alone
+    mouse(driver, "mouseMoved", x + 4, y)
+    wait_for(driver, SETTLED)
+    assert driver.execute_script(f"return {SELECTED}") == pills[-1]
+    # Moving the mouse onto a pill selects it again
+    key, x, y = driver.execute_script(PILL_SPOT, "#games .pill:not(.off-ring)")
+    mouse(driver, "mouseMoved", x, y)
+    wait_for(driver, f"{SELECTED} === {key!r}")
+    assert not driver.execute_script("return document.body.classList.contains('hover-held')")
+
+
 def test_frame_rate_counter_shows_by_default_and_each_player_can_hide_it(driver, live):
     live.hub.config.globals["look"] = {"theme": "standard"}
     open_menu(driver, live, DISCORD_QUERY)

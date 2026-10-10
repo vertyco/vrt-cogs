@@ -1,5 +1,10 @@
 # ActivityHub Changelog
 
+## 0.2.2
+
+- In the Orb theme on a computer, the mouse wheel scrolls through the whole list of games with the mouse resting on the ring. Before, once the ring had to scroll, the game sliding under the mouse took the selection back, so the wheel never got past the games already showing. A game now takes the selection only when the mouse moves onto it, and the wheel and the arrow keys keep it until the mouse moves away.
+- While the wheel or the arrow keys have the selection, the game under the mouse no longer lights up, so only the selected game does.
+
 ## 0.2.1
 
 The Orb theme on a phone held upright is laid out again, and sliding works on real phones.

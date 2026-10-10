@@ -529,7 +529,8 @@ body[data-theme="orb"] .notice {
   fill: rgb(var(--orb-ink));
 }
 
-.orb-menu .pill:hover .pod {
+/* The pill under the mouse lights up, except while the wheel or the arrow keys have the selection (menu.js) */
+:where(body:not(.hover-held)) .orb-menu .pill:hover .pod {
   filter: brightness(1.2);
 }
 
@@ -604,7 +605,7 @@ body[data-theme="orb"] .notice {
   transition: opacity 0.15s;
 }
 
-.orb-menu .pill:hover .plate {
+:where(body:not(.hover-held)) .orb-menu .pill:hover .plate {
   background: rgb(var(--orb-pale) / 0.7);
   color: rgb(var(--orb-text));
 }
