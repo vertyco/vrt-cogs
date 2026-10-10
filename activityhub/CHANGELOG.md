@@ -1,5 +1,10 @@
 # ActivityHub Changelog
 
+## 0.1.13
+
+- `[p]activities pin <message>` puts the **Open Activities** button on any message the bot sent in the server, keeping the message's text, embeds and other buttons. `[p]activities unpin <message>` takes it off. Both need the Manage Server permission or Red's admin role.
+- The button works on any message by its ID alone, so it keeps working after restarts without the bot saving which messages have one. Buttons posted before this update keep working too.
+
 ## 0.1.12
 
 - `[p]activityhub view` shows where the web server listens, the default address (`127.0.0.1:8742`), whether it is running, whether a client secret is saved, and how many games are installed.

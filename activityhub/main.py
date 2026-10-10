@@ -12,7 +12,7 @@ from .common.discord_api import drop_entry_point_hook, keep_entry_point
 from .common.games import GameRegistry
 from .common.server import DEFAULT_HOST, DEFAULT_PORT, HubServer
 from .common.sessions import LaunchMemory, SessionStore
-from .views.launch import OpenView
+from .views.launch import LaunchButton
 
 log = logging.getLogger("red.vrt.activityhub")
 
@@ -28,7 +28,7 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.1.12b"
+    __version__ = "0.1.13b"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -61,8 +61,7 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
 
     async def cog_load(self) -> None:
         self.entry_point_hook = keep_entry_point(self.bot)
-        self.open_view = OpenView(self)
-        self.bot.add_view(self.open_view)
+        self.bot.add_dynamic_items(LaunchButton)
         try:
             await self.start_server()
             for game in bundled_games(self.scores):
@@ -81,7 +80,7 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
             # that takes over 30 seconds), so without this the port would stay taken until the bot restarts, and
             # slash syncs would keep going through this copy's hook
             drop_entry_point_hook(self.bot, self.entry_point_hook)
-            self.open_view.stop()
+            self.bot.remove_dynamic_items(LaunchButton)
             await self.server.stop()
             raise
 
@@ -89,7 +88,7 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
         for task in self.scans:
             task.cancel()
         drop_entry_point_hook(self.bot, self.entry_point_hook)
-        self.open_view.stop()
+        self.bot.remove_dynamic_items(LaunchButton)
         await self.server.stop()
 
     async def start_server(self) -> None:

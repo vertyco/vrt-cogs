@@ -27,7 +27,6 @@ class MixinMeta(ABC):
         self.launches: LaunchMemory
         self.scores: ScoreBoard
         self.server: HubServer
-        self.open_view: discord.ui.View
 
     async def start_server(self) -> None:
         raise NotImplementedError

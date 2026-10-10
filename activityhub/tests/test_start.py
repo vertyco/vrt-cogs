@@ -61,10 +61,14 @@ def loading_hub(monkeypatch, loaded: dict) -> SimpleNamespace:
     """Just enough of the cog to run cog_load and cog_unload, with `loaded` as the cogs already loaded"""
     hub = make_hub()
     hub.steps = []
-    monkeypatch.setattr(main, "OpenView", lambda cog: SimpleNamespace(stop=lambda: hub.steps.append("view stopped")))
     monkeypatch.setattr(main, "keep_entry_point", lambda bot: hub.steps.append("sync hook"))
     monkeypatch.setattr(main, "drop_entry_point_hook", lambda bot, hook: hub.steps.append("sync hook dropped"))
-    hub.bot = SimpleNamespace(cogs=loaded, add_view=lambda view: hub.steps.append("view"), get_cog=loaded.get)
+    hub.bot = SimpleNamespace(
+        cogs=loaded,
+        get_cog=loaded.get,
+        add_dynamic_items=lambda *items: hub.steps.append("button"),
+        remove_dynamic_items=lambda *items: hub.steps.append("button dropped"),
+    )
 
     async def start_server():
         await asyncio.sleep(0)
@@ -93,7 +97,7 @@ async def test_cog_load_does_not_wait_for_game_cogs_describing_themselves(monkey
 
     hub.start_server = start_server
     await asyncio.wait_for(ActivityHub.cog_load(hub), 1)
-    assert hub.steps == ["sync hook", "view", "server"]
+    assert hub.steps == ["sync hook", "button", "server"]
     assert set(hub.registry.games) == {"snake", "2048", "brickbreaker"}
     # Only game cogs get a task
     assert len(hub.scans) == 1
@@ -111,7 +115,7 @@ async def test_cog_unload_cancels_a_scan_still_waiting(monkeypatch, tmp_path):
     with pytest.raises(asyncio.CancelledError):
         await asyncio.wait_for(hub.scans[0], 1)
     assert "demo" not in hub.registry.games
-    assert hub.steps == ["sync hook", "view", "server", "sync hook dropped", "view stopped", "server stopped"]
+    assert hub.steps == ["sync hook", "button", "server", "sync hook dropped", "button dropped", "server stopped"]
 
 
 def free_port() -> int:
@@ -124,12 +128,12 @@ def free_port() -> int:
 @pytest.mark.parametrize("failure", [RuntimeError("registry broke"), asyncio.CancelledError()])
 async def test_a_failed_cog_load_releases_the_port(monkeypatch, hub, server, failure):
     stopped = []
-    monkeypatch.setattr(main, "OpenView", lambda cog: SimpleNamespace(stop=lambda: stopped.append("view")))
     monkeypatch.setattr(main, "keep_entry_point", lambda bot: "hook")
     monkeypatch.setattr(main, "drop_entry_point_hook", lambda bot, hook: stopped.append(f"sync {hook}"))
     port = free_port()
     await hub.config.port.set(port)
-    hub.bot.add_view = lambda view: None
+    hub.bot.add_dynamic_items = lambda *items: None
+    hub.bot.remove_dynamic_items = lambda *items: stopped.append("button")
     hub.server = server
     hub.start_server = lambda: ActivityHub.start_server(hub)
 
@@ -140,7 +144,7 @@ async def test_a_failed_cog_load_releases_the_port(monkeypatch, hub, server, fai
     hub.registry.add = add
     with pytest.raises(type(failure)):
         await ActivityHub.cog_load(hub)
-    assert not server.running and stopped == ["sync hook", "view"]
+    assert not server.running and stopped == ["sync hook", "button"]
     with socket.socket() as sock:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind(("127.0.0.1", port))
@@ -257,10 +261,10 @@ async def test_the_holders_players_are_let_go_before_the_waiting_cog_takes_the_k
 @pytest.mark.asyncio
 async def test_a_cog_load_cancelled_while_the_server_starts_cleans_up(monkeypatch, hub):
     stopped = []
-    monkeypatch.setattr(main, "OpenView", lambda cog: SimpleNamespace(stop=lambda: stopped.append("view")))
     monkeypatch.setattr(main, "keep_entry_point", lambda bot: "hook")
     monkeypatch.setattr(main, "drop_entry_point_hook", lambda bot, hook: stopped.append(f"sync {hook}"))
-    hub.bot.add_view = lambda view: None
+    hub.bot.add_dynamic_items = lambda *items: None
+    hub.bot.remove_dynamic_items = lambda *items: stopped.append("button")
 
     async def start_server():
         # Red cancels a cog_load that takes over 30 seconds at startup
@@ -273,7 +277,7 @@ async def test_a_cog_load_cancelled_while_the_server_starts_cleans_up(monkeypatc
     hub.server = SimpleNamespace(stop=stop)
     with pytest.raises(asyncio.CancelledError):
         await ActivityHub.cog_load(hub)
-    assert stopped == ["sync hook", "view", "server"]
+    assert stopped == ["sync hook", "button", "server"]
 
 
 @pytest.mark.asyncio

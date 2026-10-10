@@ -8,6 +8,7 @@ from redbot.core.i18n import Translator
 
 from ..abc import MixinMeta
 from ..common.discord_api import activities_enabled, launch_activity
+from ..views.launch import add_button, editable_view, has_button, launch_view, remove_button
 
 log = logging.getLogger("red.vrt.activityhub.commands")
 _ = Translator("ActivityHub", __file__)
@@ -72,8 +73,70 @@ class UserCommands(MixinMeta):
         """Open the activities menu"""
         await self.launch(interaction)
 
-    @commands.command(name="activities")
+    @commands.group(name="activities", invoke_without_command=True)
     @commands.guild_only()
     async def activities_text(self, ctx: commands.Context):
         """Post a button that opens the activities menu"""
-        await ctx.send(_("Pick a game to play together."), view=self.open_view)
+        await ctx.send(_("Pick a game to play together."), view=launch_view())
+
+    @activities_text.command(name="pin")
+    @commands.admin_or_permissions(manage_guild=True)
+    async def pin_button(self, ctx: commands.Context, message: discord.Message):
+        """
+        Add the Open Activities button to a message the bot sent
+
+        `message` is a message link, or the message's ID when it is in this channel.
+        The message keeps its text, embeds and other buttons.
+        """
+        if not await self.check_editable(ctx, message):
+            return
+        view = editable_view(message)
+        if has_button(view):
+            await ctx.send(_("That message already has the button."))
+            return
+        try:
+            add_button(view)
+        except ValueError:
+            await ctx.send(_("That message has no room for another button."))
+            return
+        if await self.edit_buttons(ctx, message, view):
+            await ctx.send(_("Added the Open Activities button to that message."))
+
+    @activities_text.command(name="unpin")
+    @commands.admin_or_permissions(manage_guild=True)
+    async def unpin_button(self, ctx: commands.Context, message: discord.Message):
+        """
+        Take the Open Activities button off a message the bot sent
+
+        `message` is a message link, or the message's ID when it is in this channel.
+        """
+        if not await self.check_editable(ctx, message):
+            return
+        view = editable_view(message)
+        if not has_button(view):
+            await ctx.send(_("That message doesn't have the button."))
+            return
+        remove_button(view)
+        if await self.edit_buttons(ctx, message, view):
+            await ctx.send(_("Took the Open Activities button off that message."))
+
+    async def check_editable(self, ctx: commands.Context, message: discord.Message) -> bool:
+        if message.author.id != self.bot.user.id:
+            await ctx.send(_("I can only change messages I sent."))
+            return False
+        # A message link can point into any server the bot is in
+        if message.guild is None or message.guild.id != ctx.guild.id:
+            await ctx.send(_("That message isn't in this server."))
+            return False
+        return True
+
+    async def edit_buttons(
+        self, ctx: commands.Context, message: discord.Message, view: discord.ui.View | discord.ui.LayoutView
+    ) -> bool:
+        try:
+            await message.edit(view=view)
+        except discord.HTTPException as e:
+            log.error("Couldn't change the buttons on message %s in %s", message.id, message.channel.id, exc_info=e)
+            await ctx.send(_("Discord wouldn't let me change that message's buttons."))
+            return False
+        return True

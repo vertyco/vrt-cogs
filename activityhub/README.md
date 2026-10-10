@@ -31,6 +31,8 @@ Server admins and the bot owner can turn these games off like any other game.
 
 Members with the Manage Server permission (or Red's admin role) see a **This server** tab in the settings. It sets the server's default look and turns games on or off. A game that is off can't be played in this server at all, and anyone playing it is stopped. Games the bot owner turned off for every server don't show up here.
 
+They can also put the **Open Activities** button on any message the bot sent in their server, like a welcome or rules message: `[p]activities pin <message link>` adds it, and `[p]activities unpin <message link>` takes it off. The message keeps its text, embeds and other buttons, and the button keeps working after the bot restarts. If the cog that posted the message redraws its own buttons later, the pinned button goes away and needs pinning again.
+
 The bot owner also sees a **Defaults** tab. It sets the look every server starts from, and turns games on or off in every server at once. A game the owner turns off leaves every menu, can't be played anywhere, and server admins can't turn it back on.
 
 ## Setup (bot owner)
