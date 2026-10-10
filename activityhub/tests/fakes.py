@@ -19,6 +19,7 @@ ADMIN_ID = 4
 OUTSIDER_ID = 5  # a Discord user who isn't in the test server
 GUILD_ID = 500
 UNKNOWN_GUILD_ID = 600  # a server the bot isn't in
+GUILD_OWNER_ID = 6  # owns the test server, with no Manage Server role permission or Red admin role
 
 
 def not_found(what: str) -> discord.NotFound:
@@ -114,6 +115,7 @@ class FakeGuild:
         self.id = guild_id
         self.name = name
         self.icon = None
+        self.owner_id = GUILD_OWNER_ID
         self.members: dict[int, SimpleNamespace] = {}
 
     def get_member(self, user_id: int):
@@ -136,10 +138,11 @@ class FakeBot:
                 (MANAGER_ID, "manager"),
                 (ADMIN_ID, "admin"),
                 (OUTSIDER_ID, "outsider"),
+                (GUILD_OWNER_ID, "guildowner"),
             ]
         }
         guild = FakeGuild(GUILD_ID, "Test Server")
-        for user_id in (OWNER_ID, MEMBER_ID, ADMIN_ID):
+        for user_id in (OWNER_ID, MEMBER_ID, ADMIN_ID, GUILD_OWNER_ID):
             guild.members[user_id] = fake_member(self.users[user_id], guild)
         guild.members[MANAGER_ID] = fake_member(self.users[MANAGER_ID], guild, manage=True)
         self.guilds = {GUILD_ID: guild}

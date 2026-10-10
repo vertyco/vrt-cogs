@@ -62,6 +62,10 @@ def test_a_refused_change_leaves_the_saved_look_alone():
     assert saved == {"layout": "list"}
 
 
+def test_orb_is_the_default_theme():
+    assert effective_look()["theme"] == "orb"
+
+
 def test_effective_look_falls_back_to_builtin():
     assert effective_look() == BUILTIN_LOOK
     assert effective_look({}, {}, {}) == BUILTIN_LOOK

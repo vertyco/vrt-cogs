@@ -38,7 +38,7 @@ OscillatorNode.prototype.start = function (...args) {
   return realStart.apply(this, args);
 };
 """
-MOVE, SELECT, BACK = 2665, 431, 345
+MOVE, SELECT, BACK = 1700, 880, 1175
 # The game frame's opacity and the menu's display, straight after clicking the demo card
 OPEN_DEMO = """
 document.querySelector('.card[data-key="demo"]').click();
@@ -106,6 +106,8 @@ def no_sideways_scroll(driver):
 def test_preview_on_desktop_and_phone(driver, live):
     open_menu(driver, live)
     assert driver.execute_script(f"return {CARDS}") == ["second", "demo"]
+    # With nothing set anywhere, the menu uses the Orb theme
+    assert driver.execute_script("return document.body.dataset.theme") == "orb"
     assert "Preview" in driver.find_element(By.ID, "notice").text
     assert not driver.find_element(By.ID, "gear").is_displayed()
     assert no_sideways_scroll(driver)
@@ -123,7 +125,7 @@ def test_preview_on_desktop_and_phone(driver, live):
 
 @pytest.mark.parametrize("layout", ["grid", "list", "compact"])
 def test_each_layout(driver, live, layout):
-    live.hub.config.globals["look"] = {"layout": layout}
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": layout}
     open_menu(driver, live)
     assert driver.execute_script(f"return document.getElementById('games').classList.contains('{layout}')")
     card = driver.find_element(By.CSS_SELECTOR, "#games .card")
@@ -143,6 +145,7 @@ def test_details_off_hides_descriptions(driver, live):
 
 
 def test_in_discord_header_and_member_tabs(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard"}
     open_menu(driver, live, DISCORD_QUERY)
     assert driver.find_element(By.ID, "who-name").text == "Test Server"
     assert driver.find_element(By.ID, "who-letter").text == "T"
@@ -153,6 +156,7 @@ def test_in_discord_header_and_member_tabs(driver, live):
 
 
 def test_look_previews_live_and_saves(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard"}
     open_menu(driver, live, DISCORD_QUERY)
     open_settings(driver)
     Select(driver.find_element(By.ID, "field-layout")).select_by_value("list")
@@ -163,6 +167,7 @@ def test_look_previews_live_and_saves(driver, live):
 
 
 def test_reset_is_staged_until_saved(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard"}
     live.hub.config.user_from_id(MEMBER_ID).data["look"] = {"layout": "list"}
     open_menu(driver, live, DISCORD_QUERY)
     open_settings(driver)
@@ -175,6 +180,7 @@ def test_reset_is_staged_until_saved(driver, live):
 
 
 def test_order_with_the_arrow_buttons(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard"}
     open_menu(driver, live, DISCORD_QUERY)
     open_settings(driver)
     pick_tab(driver, "order")
@@ -186,6 +192,7 @@ def test_order_with_the_arrow_buttons(driver, live):
 
 
 def test_reset_order_saves_alphabetical(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard"}
     live.hub.config.user_from_id(MEMBER_ID).data["order"] = ["demo", "second"]
     open_menu(driver, live, DISCORD_QUERY)
     assert driver.execute_script(f"return {CARDS}") == ["demo", "second"]
@@ -199,6 +206,7 @@ def test_reset_order_saves_alphabetical(driver, live):
 
 
 def test_dropping_something_from_outside_leaves_the_order_alone(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard"}
     open_menu(driver, live, DISCORD_QUERY)
     open_settings(driver)
     pick_tab(driver, "order")
@@ -214,6 +222,7 @@ def test_dropping_something_from_outside_leaves_the_order_alone(driver, live):
 
 
 def test_server_tab_turns_a_game_off(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard"}
     live.user_id = MANAGER_ID
     open_menu(driver, live, DISCORD_QUERY)
     open_settings(driver)
@@ -226,6 +235,7 @@ def test_server_tab_turns_a_game_off(driver, live):
 
 
 def test_defaults_tab_turns_a_game_off_everywhere(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard"}
     live.user_id = OWNER_ID
     open_menu(driver, live, DISCORD_QUERY)
     open_settings(driver)
@@ -382,6 +392,71 @@ def add_thumbnail_game(live, tmp_path):
     return folder
 
 
+def touch_device(driver, width, height):
+    driver.execute_cdp_cmd(
+        "Emulation.setDeviceMetricsOverride", {"width": width, "height": height, "deviceScaleFactor": 1, "mobile": True}
+    )
+    driver.execute_cdp_cmd("Emulation.setTouchEmulationEnabled", {"enabled": True, "maxTouchPoints": 5})
+
+
+def plain_device(driver):
+    driver.execute_cdp_cmd("Emulation.setTouchEmulationEnabled", {"enabled": False})
+    driver.execute_cdp_cmd("Emulation.clearDeviceMetricsOverride", {})
+
+
+def slide(driver, start, end, steps=8):
+    """One finger from start to end, in small moves like a real swipe"""
+    (x0, y0), (x1, y1) = start, end
+    driver.execute_cdp_cmd("Input.dispatchTouchEvent", {"type": "touchStart", "touchPoints": [{"x": x0, "y": y0}]})
+    for i in range(1, steps + 1):
+        point = {"x": x0 + (x1 - x0) * i / steps, "y": y0 + (y1 - y0) * i / steps}
+        driver.execute_cdp_cmd("Input.dispatchTouchEvent", {"type": "touchMove", "touchPoints": [point]})
+    driver.execute_cdp_cmd("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []})
+
+
+def test_orb_swipes_move_along_the_ring_on_a_phone_held_sideways(driver, live, tmp_path, sound_spy):
+    for i in range(4):
+        folder = write_demo_web(tmp_path / f"extra{i}")
+        register(live.hub, DemoCog(folder, key=f"extra{i}", name=f"Extra {i}", cog_name=f"Extra{i}"))
+    touch_device(driver, 844, 390)
+    try:
+        open_menu(driver, live, DISCORD_QUERY)
+        assert driver.execute_script("return document.body.dataset.theme") == "orb"
+        assert driver.execute_script(f"return {PILLS}")[:3] == ["second", "demo", "extra0"]
+        # Up along the ring brings the next game in, one per step
+        slide(driver, (420, 300), (420, 200))
+        wait_for(driver, f"{SELECTED} === 'extra0'")
+        # Browsers keep a page quiet until the first touch ends, so the move sound comes from the next slide on
+        slide(driver, (420, 200), (420, 250))
+        wait_for(driver, f"{SELECTED} === 'demo'")
+        wait_for(driver, f"window.soundLog.includes({MOVE})")
+        # Left and right work too, and a slide that starts on a pill doesn't open its game
+        slide(driver, (600, 200), (500, 200))
+        wait_for(driver, f"{SELECTED} === 'extra1'")
+        pill = driver.find_element(By.CSS_SELECTOR, '#games .pill[data-key="extra1"]').rect
+        x, y = pill["x"] + pill["width"] / 2, pill["y"] + pill["height"] / 2
+        slide(driver, (x, y), (x + 50, y))
+        wait_for(driver, f"{SELECTED} === 'extra0'")
+        assert driver.find_elements(By.ID, "game-frame") == []
+        # A fast slide that arrives in one big move goes as far as a slow one, here three steps
+        slide(driver, (420, 340), (420, 340 - 3 * 44 - 10), steps=1)
+        wait_for(driver, f"{SELECTED} === 'extra3'")
+        assert driver.execute_script("return window.scrollY") == 0
+    finally:
+        plain_device(driver)
+
+
+def test_orb_swipes_leave_the_upright_phone_list_alone(driver, live):
+    touch_device(driver, 375, 740)
+    try:
+        open_menu(driver, live, DISCORD_QUERY)
+        slide(driver, (180, 600), (180, 450))
+        time.sleep(0.3)
+        assert driver.execute_script(f"return {SELECTED}") == "second"
+    finally:
+        plain_device(driver)
+
+
 def test_orb_theme_menu_moves_with_the_arrow_keys(driver, live):
     live.hub.config.globals["look"] = {"theme": "orb"}
     open_menu(driver, live, DISCORD_QUERY)
@@ -429,6 +504,7 @@ def test_orb_wheel_and_arrows_scroll_a_long_list(driver, live, tmp_path):
 
 
 def test_frame_rate_counter_shows_by_default_and_each_player_can_hide_it(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard"}
     open_menu(driver, live, DISCORD_QUERY)
     assert wait_for(driver, "/^\d+ FPS$/.test(document.querySelector('.fps').textContent)")
     counter = driver.find_element(By.CSS_SELECTOR, ".fps")
@@ -465,7 +541,7 @@ def test_a_live_game_shows_its_delay_and_its_own_figure_after_the_frame_rate(dri
     assert wait_for(driver, rf"/^\d+ FPS$/.test({COUNTER})")
 
 
-@pytest.mark.parametrize("look", [{}, {"theme": "orb"}], ids=["standard", "orb"])
+@pytest.mark.parametrize("look", [{"theme": "standard"}, {"theme": "orb"}], ids=["standard", "orb"])
 def test_the_header_sits_below_discords_buttons_on_a_phone(driver, live, look):
     live.hub.config.globals["look"] = look
     open_menu(driver, live, DISCORD_QUERY)
@@ -555,7 +631,7 @@ def test_orb_settings_close_button_closes_the_panel(driver, live):
 @pytest.mark.parametrize("layout", ["grid", "list", "compact"])
 def test_thumbnail_by_layout(driver, live, tmp_path, layout):
     add_thumbnail_game(live, tmp_path)
-    live.hub.config.globals["look"] = {"layout": layout}
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": layout}
     open_menu(driver, live)
     card = driver.find_element(By.CSS_SELECTOR, '#games .card[data-key="third"]')
     thumb = card.find_element(By.CSS_SELECTOR, ".thumb")
@@ -570,6 +646,7 @@ def test_thumbnail_by_layout(driver, live, tmp_path, layout):
 
 
 def test_missing_thumbnail_falls_back_to_the_icon(driver, live, tmp_path):
+    live.hub.config.globals["look"] = {"theme": "standard"}
     folder = add_thumbnail_game(live, tmp_path)
     (folder / "thumb.svg").unlink()
     open_menu(driver, live)

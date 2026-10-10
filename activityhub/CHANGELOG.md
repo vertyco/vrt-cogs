@@ -1,5 +1,16 @@
 # ActivityHub Changelog
 
+## 0.1.14
+
+- Orb is now the default theme, for every server and player that hasn't picked one.
+- The server owner always sees the **This server** settings tab, even without a role that has Manage Server. The tab's theme is the default every member sees until they pick their own in **My look**.
+- In the Orb theme on a phone held sideways, sliding a finger up and down the ring or across the screen moves between games, one per step, with the ring gliding along. A tap still opens a game.
+- New Orb menu sounds: a soft tick when moving, two rising bell notes when opening a game or Settings, and two quieter falling notes when going back.
+- `[p]activityhub check` tests the URL mapping through Discord's own proxy, the same way players load the menu, and names the address the mapping points at. The public host is now optional.
+- When a public host is given and the bot can't reach it, the check says why: the name doesn't resolve, nothing accepted the connection, the HTTPS certificate isn't valid, nothing answered within 10 seconds, it answered with an error status, or something other than ActivityHub answered.
+- If Discord still reaches the hub, a failed public host is a warning instead of a failure, since players can play. A name that doesn't resolve then gets a note: the bot's DNS server probably remembered a "no such name" answer from before the record existed, which clears by itself.
+- The checks that go over the network run at the same time, so the check finishes sooner.
+
 ## 0.1.13
 
 - `[p]activities pin <message>` puts the **Open Activities** button on any message the bot sent in the server, keeping the message's text, embeds and other buttons. `[p]activities unpin <message>` takes it off. Both need the Manage Server permission or Red's admin role.

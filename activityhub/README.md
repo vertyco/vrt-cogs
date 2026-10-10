@@ -24,12 +24,12 @@ Server admins and the bot owner can turn these games off like any other game.
 
 - `/activities` opens the menu. `[p]activities` posts an **Open Activities** button that does the same thing, and works even if slash commands aren't synced.
 - Pick a game to play it. The game opens inside the menu, and its menu button brings you back.
-- The gear button opens settings. **My look** picks the theme, whether descriptions show, and whether the frame rate counter shows in the corner (on by default). **My order** sets the order of the games. Both follow you to every server.
-- There are two themes. **Standard** looks like Discord, and you pick its layout, color and background. **Orb** is a green glowing console-style menu: the games sit on glowing pods along a ring around a big orb, with a preview of the selected game beside them and menu sounds (on by default, with a switch to turn them off). In the Orb theme the arrow keys or the mouse wheel move between games, a long list scrolls along the ring, and Settings is the last item instead of the gear button.
+- **Settings** is the last item in the Orb theme's list, or the gear button in the Standard theme. **My look** picks the theme, whether descriptions show, and whether the frame rate counter shows in the corner (on by default). **My order** sets the order of the games. Both follow you to every server.
+- There are two themes. **Orb**, the default, is a green glowing console-style menu: the games sit on glowing pods along a ring around a big orb, with a preview of the selected game beside them and menu sounds (on by default, with a switch to turn them off). In the Orb theme the arrow keys or the mouse wheel move between games, and on a phone held sideways so does sliding a finger up and down the ring or across the screen. A long list scrolls along the ring, and Settings is the last item instead of the gear button. **Standard** looks like Discord, and you pick its layout, color and background.
 
 ## For server admins
 
-Members with the Manage Server permission (or Red's admin role) see a **This server** tab in the settings. It sets the server's default look and turns games on or off. A game that is off can't be played in this server at all, and anyone playing it is stopped. Games the bot owner turned off for every server don't show up here.
+The server owner, and members with the Manage Server permission (or Red's admin role), see a **This server** tab in the settings. It sets the server's default look, theme included, which every member sees until they pick their own in **My look**, and turns games on or off. A game that is off can't be played in this server at all, and anyone playing it is stopped. Games the bot owner turned off for every server don't show up here.
 
 They can also put the **Open Activities** button on any message the bot sent in their server, like a welcome or rules message: `[p]activities pin <message link>` adds it, and `[p]activities unpin <message link>` takes it off. The message keeps its text, embeds and other buttons, and the button keeps working after the bot restarts. If the cog that posted the message redraws its own buttons later, the pinned button goes away and needs pinning again.
 
@@ -46,7 +46,7 @@ The cog hosts the menu and every game on a small web server. Discord loads it ov
 3. **Expose the web server.** The cog listens on `127.0.0.1:8742` by default. Change it with `[p]activityhub webserver <host> <port>`. Put a tunnel (Cloudflare Tunnel) or an HTTPS reverse proxy (Caddy, nginx) in front of it, for example `https://games.example.com` pointing at `127.0.0.1:8742`. WebSockets must be allowed through it. [Getting a public HTTPS address](#getting-a-public-https-address) below walks through each way.
 4. **Point Discord at it.** In **Activities > URL Mappings**, set the root mapping `/` to your public host without `https://` (for example `games.example.com`).
 5. **Add the menu command.** `[p]slash enable activities`, then `[p]slash sync`.
-6. **Check it.** `[p]activityhub check games.example.com` goes through every step above and says which one is missing.
+6. **Check it.** `[p]activityhub check` goes through every step above and says which one is missing. It tests the URL mapping through Discord's own proxy, the same way players load the menu. Add your public host (`[p]activityhub check games.example.com`) to also test that address directly: it then says whether the name doesn't resolve, the connection is refused, or something else answers.
 7. **Add more games (optional).** The included games are ready to play. To add more, install and load any cog made for ActivityHub (`[p]cog install <repo> <cog>`, then `[p]load <cog>`). `[p]activityhub games` lists what is installed with the Discord permissions (scopes) each game asks for, and why a game cog was refused if one was. Every game's scopes go into one Discord login, so a game asking for a scope Discord doesn't accept stops logins for every game: this list shows which game it is.
 
 The bot running this cog must be the same Discord application that has Activities turned on, because Discord only lets an app open its own Activity.
@@ -134,7 +134,7 @@ Caddy is a web server that gets and renews its HTTPS certificate by itself.
 | `[p]activityhub setup` | Walks through the whole setup page by page, including Cloudflare Tunnel, Caddy and nginx, filled in with your bot's own address. |
 | `[p]activityhub webserver <host> <port>` | Saves where the web server listens and restarts it. The default is `127.0.0.1 8742`. |
 | `[p]activityhub secret` | Opens a form for the client secret, checks it with Discord, saves it. |
-| `[p]activityhub check <public host>` | Checks every setup step and says what to fix. |
+| `[p]activityhub check [public host]` | Checks every setup step, including the URL mapping through Discord, and says what to fix. |
 | `[p]activityhub games` | Lists installed games (marking any you turned off) with the Discord scopes each asks for, and refused game cogs with the reason. |
 
 ## Making games

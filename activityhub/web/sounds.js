@@ -1,12 +1,13 @@
-// Menu sounds for the Orb theme. Move, select and back are built from tones and noise on the fly; the menu
-// whoosh and the background loop are files.
+// Menu sounds for the Orb theme. Move, select and back are soft bell tones built on the fly; the menu whoosh
+// and the background loop are files.
 
-function envelope(ctx, when, attack, hold, release, peak) {
+// A level that jumps up at once and dies away smoothly, the way a struck bell does
+function strike(ctx, out, when, peak, length) {
   const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0, when);
-  gain.gain.linearRampToValueAtTime(peak, when + attack);
-  gain.gain.setValueAtTime(peak, when + attack + hold);
-  gain.gain.linearRampToValueAtTime(0, when + attack + hold + release);
+  gain.gain.setValueAtTime(0.0001, when);
+  gain.gain.exponentialRampToValueAtTime(peak, when + 0.004);
+  gain.gain.exponentialRampToValueAtTime(0.0001, when + length);
+  gain.connect(out);
   return gain;
 }
 
@@ -17,54 +18,43 @@ function tone(ctx, out, frequency, level, when, length) {
   gain.gain.value = level;
   osc.connect(gain).connect(out);
   osc.start(when);
-  osc.stop(when + length);
-  return gain;
+  osc.stop(when + length + 0.02);
+  return osc;
 }
 
-// A short bright tick: three close tones that beat against each other, opened by a burst of hiss
+// A pure note with two faint overtones, so it rings like a small glass bell instead of beeping
+function bell(ctx, out, frequency, when, peak, length) {
+  const body = strike(ctx, out, when, peak, length);
+  tone(ctx, body, frequency, 1, when, length);
+  tone(ctx, body, frequency * 2, 0.2, when, length);
+  tone(ctx, body, frequency * 3, 0.05, when, length);
+}
+
+// A droplet tick: one high note that slides down a little as it dies away, quick enough to scroll through
 function move(ctx, out, when) {
-  const body = envelope(ctx, when, 0.002, 0.009, 0.022, 0.5);
-  body.connect(out);
-  tone(ctx, body, 2665, 0.6, when, 0.04);
-  tone(ctx, body, 2518, 0.25, when, 0.04);
-  tone(ctx, body, 2214, 0.15, when, 0.04);
-  const noise = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * 0.005), ctx.sampleRate);
-  const samples = noise.getChannelData(0);
-  for (let i = 0; i < samples.length; i++) {
-    samples[i] = Math.random() * 2 - 1;
-  }
-  const hiss = ctx.createBufferSource();
-  hiss.buffer = noise;
-  const filter = ctx.createBiquadFilter();
-  filter.type = "highpass";
-  filter.frequency.value = 500;
-  const click = envelope(ctx, when, 0.0005, 0.001, 0.0035, 0.2);
-  hiss.connect(filter).connect(click).connect(out);
-  hiss.start(when);
+  const body = strike(ctx, out, when, 0.3, 0.07);
+  const osc = tone(ctx, body, 1700, 1, when, 0.07);
+  osc.detune.setValueAtTime(500, when);
+  osc.detune.setTargetAtTime(0, when, 0.012);
 }
 
-// A steady round tone over a soft wobbling undertone, then a quick fade. Back is the same, a third lower.
-function chime(ctx, out, when, pitch) {
-  const body = envelope(ctx, when, 0.005, 0.235, 0.105, 1);
-  body.connect(out);
-  tone(ctx, body, 431 * pitch, 0.5, when, 0.36);
-  tone(ctx, body, 703 * pitch, 0.008, when, 0.36);
-  tone(ctx, body, 896 * pitch, 0.008, when, 0.36);
-  const under = tone(ctx, body, 158 * pitch, 0.1, when, 0.36);
-  const wobble = ctx.createOscillator();
-  const depth = ctx.createGain();
-  wobble.frequency.value = 33;
-  depth.gain.value = 0.04;
-  wobble.connect(depth).connect(under.gain);
-  wobble.start(when);
-  wobble.stop(when + 0.36);
+// Two bell notes going up, over a soft low thump that gives a launch some weight
+function select(ctx, out, when) {
+  const thump = strike(ctx, out, when, 0.35, 0.18);
+  const low = tone(ctx, thump, 110, 1, when, 0.18);
+  low.detune.setValueAtTime(1200, when);
+  low.detune.setTargetAtTime(0, when, 0.03);
+  bell(ctx, out, 880, when, 0.28, 0.45);
+  bell(ctx, out, 1318.5, when + 0.075, 0.24, 0.6);
 }
 
-export const SOUNDS = {
-  move,
-  select: (ctx, out, when) => chime(ctx, out, when, 1),
-  back: (ctx, out, when) => chime(ctx, out, when, 0.8),
-};
+// Two quieter, shorter notes going down
+function back(ctx, out, when) {
+  bell(ctx, out, 1174.7, when, 0.3, 0.3);
+  bell(ctx, out, 784, when + 0.07, 0.26, 0.4);
+}
+
+export const SOUNDS = { move, select, back };
 
 const FILES = {
   menu: new URL("sounds/menu.mp3", import.meta.url).href,

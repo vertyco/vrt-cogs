@@ -22,7 +22,8 @@ TOKEN_BODY = {"code": "abc", "instance_id": "i-9"}
 async def test_ping_names_the_bot(client):
     resp = await client.get("/hub/api/ping")
     assert resp.status == 200
-    assert await resp.json() == {"application_id": str(APP_ID)}
+    data = await resp.json()
+    assert data["application_id"] == str(APP_ID) and data["host"].startswith("127.0.0.1:")
 
 
 @pytest.mark.asyncio

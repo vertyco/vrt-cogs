@@ -180,8 +180,9 @@ def finish_page(prefix: str) -> discord.Embed:
     text = _(
         "1. Run `{prefix}slash enable activities`, then `{prefix}slash sync`. Players open the menu with "
         "`/activities`, and `{prefix}activities` posts a button that does the same.\n"
-        "2. Run `{prefix}activityhub check` with your public host, like `{prefix}activityhub check {example}`. It "
-        "tests every step and says which one is missing.\n\n"
+        "2. Run `{prefix}activityhub check`. It tests every step, including the URL mapping through Discord's own "
+        "proxy, and says which one is missing. Add your public host, like `{prefix}activityhub check {example}`, to "
+        "also test that address directly.\n\n"
         "**Handy later**\n"
         "`{prefix}activityhub view` shows the current settings.\n"
         "`{prefix}activityhub webserver <host> <port>` moves the web server (the default is `{host} {port}`). If you "

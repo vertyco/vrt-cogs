@@ -6,7 +6,7 @@ LAYOUTS = ("grid", "list", "compact")
 BACKGROUNDS = ("dark", "darker", "gradient")
 # The orb theme brings its own colors, background and layout, and menu sounds only play in it
 BUILTIN_LOOK = {
-    "theme": "standard",
+    "theme": "orb",
     "layout": "grid",
     "accent": "#5865F2",
     "background": "dark",

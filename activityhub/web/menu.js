@@ -308,6 +308,9 @@ function gameIcon(game) {
 const ORB_ROW = 60;
 // How far the scroll wheel turns before the selection moves one pill
 const WHEEL_STEP = 50;
+// How far a finger slides before the selection moves one pill, and before a touch counts as a slide at all
+const SWIPE_STEP = 44;
+const SWIPE_START = 10;
 const phoneSize = window.matchMedia("(max-width: 640px)");
 
 function renderOrb(games) {
@@ -487,8 +490,8 @@ function focusSelected() {
   }
 }
 
-// Up and down, or the scroll wheel, move between the pills like a controller. A tap opens a game without the
-// move sound.
+// Up and down, the scroll wheel, or a swipe move between the pills like a controller. A tap opens a game without
+// the move sound.
 function bindOrb() {
   document.addEventListener(
     "pointerdown",
@@ -524,6 +527,40 @@ function bindOrb() {
     { passive: false },
   );
   window.addEventListener("resize", placePills);
+  bindSwipe();
+}
+
+// On a touch screen showing the ring, sliding a finger up or down along it, or left and right across the screen,
+// moves one pill per step. The pills follow the finger, so sliding up or left brings the next one in. A phone
+// held upright shows a plain list instead, which scrolls like any page
+function bindSwipe() {
+  let swipe = null;
+  document.addEventListener("pointerdown", (event) => {
+    const ring = orbTheme() && !phoneSize.matches && page.staged === null && !page.host.frame;
+    swipe = ring && event.pointerType === "touch" ? { id: event.pointerId, x: event.clientX, y: event.clientY } : null;
+  });
+  document.addEventListener("pointermove", (event) => {
+    if (!swipe || event.pointerId !== swipe.id) {
+      return;
+    }
+    const [dx, dy] = [event.clientX - swipe.x, event.clientY - swipe.y];
+    // The first clear direction holds for the rest of the slide, so a thumb's curve doesn't switch it
+    if (!swipe.axis && Math.hypot(dx, dy) >= SWIPE_START) {
+      swipe.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+    }
+    const steps = Math.trunc(({ x: dx, y: dy }[swipe.axis] || 0) / SWIPE_STEP);
+    if (steps) {
+      // Every whole step counts and the rest carries over, so a fast slide that arrives in a few big moves goes as
+      // far as a slow one
+      swipe[swipe.axis] += steps * SWIPE_STEP;
+      // A slide sounds like the arrow keys, unlike a tap on a pill, which opens it with the select sound
+      page.touch = false;
+      moveSelection(-steps);
+    }
+  });
+  for (const type of ["pointerup", "pointercancel"]) {
+    document.addEventListener(type, () => (swipe = null));
+  }
 }
 
 // The included games are always installed, so an empty menu usually means games were turned off

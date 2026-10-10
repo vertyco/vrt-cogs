@@ -1,5 +1,7 @@
 import asyncio
+import json
 import logging
+import socket
 import typing as t
 
 import aiohttp
@@ -31,6 +33,20 @@ DEFAULT_ENTRY_POINT = {
 READ_ONLY_FIELDS = {"id", "application_id", "version", "guild_id"}
 # How long to wait after a 429 that doesn't say how long
 DEFAULT_RETRY_AFTER = 5.0
+PING_TIMEOUT = aiohttp.ClientTimeout(total=10)
+# Discord's proxy serves this page, with status 200, when the app has no URL mapping or Activities are off
+NO_ACTIVITY_PAGE = "Discord Activity not available"
+# Ways a ping to the hub can fail
+DNS, REFUSED, TLS, TIMEOUT, DROPPED, STATUS, NOT_HUB, NO_MAPPING = (
+    "dns",
+    "refused",
+    "tls",
+    "timeout",
+    "dropped",
+    "status",
+    "not_hub",
+    "no_mapping",
+)
 
 
 class RateLimited(Exception):
@@ -42,6 +58,16 @@ class RateLimited(Exception):
     def __init__(self, retry_after: float):
         super().__init__(f"Rate limited, retry after {retry_after:.1f} seconds")
         self.retry_after = retry_after
+
+
+class PingFailed(Exception):
+    """A ping didn't reach this bot's hub. reason is one of DNS, REFUSED, TLS, TIMEOUT, DROPPED, STATUS, NOT_HUB or
+    NO_MAPPING, and status is the HTTP status for STATUS"""
+
+    def __init__(self, reason: str, status: int = 0):
+        super().__init__(reason if not status else f"{reason} {status}")
+        self.reason = reason
+        self.status = status
 
 
 def retry_after(resp: aiohttp.ClientResponse) -> float:
@@ -159,17 +185,56 @@ async def launch_activity(bot: Red, interaction: discord.Interaction) -> None:
     await bot.http.request(route, json={"type": LAUNCH_ACTIVITY})
 
 
-async def ping_public(http: aiohttp.ClientSession, base_url: str, application_id: int) -> str | None:
-    """None when <base_url>/hub/api/ping answers with this bot's application id, else what went wrong"""
+def proxy_url(application_id: int) -> str:
+    """Discord's own address for this bot's Activity. Requests to it go through the URL mapping, like a player's do"""
+    return f"https://{application_id}.discordsays.com"
+
+
+async def resolves(host: str) -> bool:
+    try:
+        await asyncio.wait_for(asyncio.get_running_loop().getaddrinfo(host, None), timeout=5)
+    except (socket.gaierror, asyncio.TimeoutError):
+        return False
+    return True
+
+
+async def connect_failure(e: aiohttp.ClientConnectorError) -> str:
+    if isinstance(e.os_error, ConnectionRefusedError):
+        return REFUSED
+    # aiodns hides its lookup errors behind a plain OSError, so a fresh lookup tells a missing name from the rest
+    if isinstance(e.os_error, socket.gaierror) or not await resolves(e.host):
+        return DNS
+    return DROPPED
+
+
+async def ping_hub(http: aiohttp.ClientSession, base_url: str, application_id: int) -> str:
+    """
+    The host this bot's hub saw the ping arrive on, from <base_url>/hub/api/ping.
+    Raises PingFailed when nothing answers, or something other than this bot's hub does
+    """
     url = f"{base_url.rstrip('/')}/hub/api/ping"
     try:
-        async with http.get(url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
-            if resp.status != 200:
-                return f"{url} answered with status {resp.status}."
-            data = await resp.json(content_type=None)
-    except (aiohttp.ClientError, asyncio.TimeoutError, ValueError) as e:
-        log.info("Public ping to %s failed: %r", url, e)
-        return f"Couldn't reach {url} ({type(e).__name__})."
+        async with http.get(url, timeout=PING_TIMEOUT) as resp:
+            status, text = resp.status, await resp.text(errors="replace")
+    except aiohttp.ClientSSLError as e:
+        log.info("Ping to %s failed: %r", url, e)
+        raise PingFailed(TLS) from e
+    except aiohttp.ClientConnectorError as e:
+        log.info("Ping to %s failed: %r", url, e)
+        raise PingFailed(await connect_failure(e)) from e
+    except asyncio.TimeoutError as e:
+        raise PingFailed(TIMEOUT) from e
+    except aiohttp.ClientError as e:
+        log.info("Ping to %s failed: %r", url, e)
+        raise PingFailed(DROPPED) from e
+    if status != 200:
+        raise PingFailed(STATUS, status)
+    if NO_ACTIVITY_PAGE in text:
+        raise PingFailed(NO_MAPPING)
+    try:
+        data = json.loads(text)
+    except ValueError as e:
+        raise PingFailed(NOT_HUB) from e
     if not isinstance(data, dict) or data.get("application_id") != str(application_id):
-        return f"{url} is answered by something other than this bot's ActivityHub."
-    return None
+        raise PingFailed(NOT_HUB)
+    return str(data.get("host") or "")

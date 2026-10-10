@@ -74,7 +74,8 @@ class HubRoutes:
         return web.json_response(self.client_config())
 
     async def ping(self, request: web.Request) -> web.Response:
-        return web.json_response({"application_id": str(self.bot.application_id)})
+        # The host tells the setup check which address Discord's URL mapping points at
+        return web.json_response({"application_id": str(self.bot.application_id), "host": request.host})
 
     async def token(self, request: web.Request) -> web.Response:
         body = await read_object(request) or {}
@@ -185,11 +186,14 @@ class HubRoutes:
 
     async def can_manage(self, ctx: ActivityContext) -> bool:
         """
-        Manage Server permission or Red's admin role in the activity's server, checked fresh each time.
-        Someone who is no longer in the server (not in the member cache) has no rights there.
+        The server's owner, Manage Server permission or Red's admin role in the activity's server, checked fresh
+        each time. Someone who is no longer in the server (not in the member cache) has no rights there.
         """
         if ctx.guild is None:
             return False
+        # The owner can't leave without handing the server over, so they need no member cache lookup
+        if ctx.author.id == ctx.guild.owner_id:
+            return True
         member = ctx.guild.get_member(ctx.author.id)
         if member is None:
             return False

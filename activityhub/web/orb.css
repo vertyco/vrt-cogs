@@ -50,8 +50,11 @@ body.playing .orb-scene {
   display: none;
 }
 
+/* The ring takes swipes itself (menu.js), so the browser mustn't scroll or zoom the menu under a finger. Game
+   frames sit outside the menu and keep their own touch handling */
 body[data-theme="orb"] .menu {
   position: relative;
+  touch-action: none;
 }
 
 .fog {
@@ -603,6 +606,10 @@ body[data-theme="orb"] .notice {
     --orb-size: 240px;
     --orb-x: calc(100vw - 30px);
     --orb-y: 40px;
+  }
+
+  body[data-theme="orb"] .menu {
+    touch-action: auto;
   }
 
   .orb-scene .orb-wrap {

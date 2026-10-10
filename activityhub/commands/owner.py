@@ -5,7 +5,7 @@ from redbot.core.utils.chat_formatting import box, pagify
 
 from ..abc import MixinMeta
 from ..common.server import DEFAULT_HOST, DEFAULT_PORT
-from ..common.setup_check import ICONS, normalize_host, run_checks
+from ..common.setup_check import ICONS, run_checks
 from ..common.setup_guide import setup_pages
 from ..views.dynamic_menu import DynamicMenu
 from ..views.secret import SetSecretView
@@ -61,7 +61,7 @@ class OwnerCommands(MixinMeta):
             name=_("Public address"),
             value=_(
                 "The bot doesn't store it. It's the HTTPS address your tunnel or proxy serves, and the one set in the "
-                "Developer Portal under Activities > URL Mappings. Test it with `{}activityhub check <public host>`."
+                "Developer Portal under Activities > URL Mappings. Test it with `{}activityhub check`."
             ).format(prefix),
             inline=False,
         )
@@ -117,21 +117,17 @@ class OwnerCommands(MixinMeta):
         await SetSecretView(self, ctx).start()
 
     @activityhub_group.command(name="check")
-    async def check_setup(self, ctx: commands.Context, public_host: str):
+    async def check_setup(self, ctx: commands.Context, public_host: str | None = None):
         """
         Check every setup step and say which one is missing
 
-        `public_host` is the address Discord loads the activities from, like `games.example.com`.
+        Tests the URL mapping through Discord's own proxy, the way players load the activities.
+        `public_host` is optional: the address your tunnel or proxy serves, like `games.example.com`. When given, the
+        bot also tests it directly and says why it can't reach it.
         """
         async with ctx.typing():
             results = await run_checks(self, public_host, ctx.clean_prefix)
         lines = [f"{ICONS[status]} {text}" for status, text in results]
-        lines.append(
-            _(
-                "Last step, which bots can't check: in the Developer Portal under Activities > URL Mappings, "
-                "the root mapping `/` must point to `{}`."
-            ).format(normalize_host(public_host))
-        )
         for page in pagify("\n".join(lines)):
             await ctx.send(page)
 

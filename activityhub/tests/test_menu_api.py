@@ -2,7 +2,15 @@ import logging
 
 import pytest
 
-from activityhub.tests.fakes import ADMIN_ID, GUILD_ID, MANAGER_ID, MEMBER_ID, OWNER_ID, session_headers
+from activityhub.tests.fakes import (
+    ADMIN_ID,
+    GUILD_ID,
+    GUILD_OWNER_ID,
+    MANAGER_ID,
+    MEMBER_ID,
+    OWNER_ID,
+    session_headers,
+)
 
 LOOK_LIST = {"layout": "list", "accent": None, "background": None, "details": None}
 
@@ -47,7 +55,7 @@ async def test_member_state(client, hub, demo, second):
     assert status == 200
     assert state["player"]["id"] == str(MEMBER_ID)
     assert state["look"] == {
-        "theme": "standard",
+        "theme": "orb",
         "layout": "compact",
         "accent": "#111111",
         "background": "dark",
@@ -106,6 +114,7 @@ async def test_dm_player_sees_every_game_and_no_server_tab(client, hub, demo, se
     [
         (MANAGER_ID, ["look", "order", "server"]),
         (ADMIN_ID, ["look", "order", "server"]),
+        (GUILD_OWNER_ID, ["look", "order", "server"]),
         (OWNER_ID, ["look", "order", "server", "defaults"]),
     ],
 )
@@ -189,6 +198,31 @@ async def test_a_manager_who_left_the_server_loses_the_server_tab(client, hub, d
     del hub.bot.guilds[GUILD_ID].members[MANAGER_ID]
     assert (await menu(client, headers))[1]["tabs"] == ["look", "order"]
     assert (await save(client, headers, {"tab": "server", "disabled": ["demo"]}))[0] == 403
+
+
+@pytest.mark.asyncio
+async def test_the_server_owner_always_gets_the_server_tab(client, hub, demo):
+    # Even when the member cache doesn't have them, like a bot without the members intent
+    del hub.bot.guilds[GUILD_ID].members[GUILD_OWNER_ID]
+    headers = session_headers(hub, user_id=GUILD_OWNER_ID)
+    assert (await menu(client, headers))[1]["tabs"] == ["look", "order", "server"]
+    assert (await save(client, headers, {"tab": "server", "look": {"theme": "standard"}}))[0] == 200
+    assert hub.config.guilds[GUILD_ID]["look"] == {"theme": "standard"}
+
+
+@pytest.mark.asyncio
+async def test_the_server_theme_applies_to_members_who_kept_the_default(client, hub, demo):
+    await hub.config.look.set({"theme": "orb"})
+    await save(client, session_headers(hub, user_id=MANAGER_ID), {"tab": "server", "look": {"theme": "standard"}})
+    # A member who changed another field still gets the server's theme
+    await hub.config.user_from_id(MEMBER_ID).look.set({"fps": False})
+    assert (await menu(client, session_headers(hub)))[1]["look"]["theme"] == "standard"
+    # A member's own pick wins over the server's
+    await hub.config.user_from_id(MEMBER_ID).look.set({"theme": "orb"})
+    assert (await menu(client, session_headers(hub)))[1]["look"]["theme"] == "orb"
+    # Back on Default, the server's theme applies again
+    await save(client, session_headers(hub), {"tab": "look", "look": {"theme": None}})
+    assert (await menu(client, session_headers(hub)))[1]["look"]["theme"] == "standard"
 
 
 @pytest.mark.asyncio
