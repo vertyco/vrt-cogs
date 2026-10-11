@@ -78,7 +78,7 @@ def test_bundled_games_register(hub, clock):
     game = hub.registry.games["snake"]
     assert game.icon == "icon.svg" and game.thumbnail == "thumb.svg"
     assert game.cog.qualified_name == "ActivityHub Snake"
-    assert set(game.actions) == {"start", "finish", "board", "cashin"}
+    assert set(game.actions) == {"start", "finish", "board", "cashin", "payouts", "save_payouts"}
     assert hub.payouts.games["snake"].unit == "apple" and hub.payouts.games["snake"].rate == 25
 
 

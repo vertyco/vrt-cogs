@@ -13,13 +13,14 @@ export class HubError extends Error {
   }
 }
 
-// Internal: host.js and menu.js use this. Games use hub.api()
-export async function request(path, { body, session } = {}) {
+// Internal: host.js and menu.js use this. Games use hub.api(). With keepalive the browser finishes the request even
+// after the page is gone
+export async function request(path, { body, session, keepalive = false } = {}) {
   const headers = {};
   if (session) {
     headers.Authorization = `Bearer ${session}`;
   }
-  const options = { method: body === undefined ? "GET" : "POST", headers };
+  const options = { method: body === undefined ? "GET" : "POST", headers, keepalive };
   if (body !== undefined) {
     headers["Content-Type"] = "application/json";
     options.body = JSON.stringify(body);
@@ -462,12 +463,14 @@ function onlineHub(host, login) {
     player: login.player,
     discord: frameDiscord(host.sdk),
     offline: false,
-    async api(name, data) {
+    // { keepalive: true } lets a save sent on pagehide reach the bot after the game's frame is gone
+    async api(name, data, options) {
+      const keepalive = options?.keepalive === true;
       const path = `${root}api/${encodeURIComponent(name)}`;
       const body = data ?? {};
       const used = host.login.session;
       try {
-        return await request(path, { body, session: used });
+        return await request(path, { body, session: used, keepalive });
       } catch (e) {
         if (e.status !== 401) {
           throw e;
@@ -476,7 +479,7 @@ function onlineHub(host, login) {
       // Actions answer 401 before any handler runs, so sending it again can't run the action twice
       const session = await freshSession(host, used);
       try {
-        return await request(path, { body, session });
+        return await request(path, { body, session, keepalive });
       } catch (e) {
         if (e.status === 401) {
           host.sessionExpired();

@@ -2,7 +2,8 @@ import logging
 import secrets
 from pathlib import Path
 
-from ..common.payouts import Payouts
+from ..common.looks import SettingsError
+from ..common.payouts import NOT_AN_ADMIN, Payouts
 from ..common.sessions import ActivityContext
 from . import bricks, snake, twenty48
 from .scores import Run, ScoreBoard
@@ -27,7 +28,8 @@ class BundledGame:
 
     Every bundled game keeps each server's best scores. The page starts a round on the bot's clock, then sends
     what it needs to prove the round when it ends, and the bot works out the score itself. Where payouts are on,
-    the finished round can then be cashed in once, until the player starts another round of that game.
+    the finished round can then be cashed in once, until the player starts another round of that game. Server
+    admins set the game's payouts from a settings dialog in its page.
     """
 
     key = ""
@@ -54,7 +56,14 @@ class BundledGame:
             "web_dir": WEB_DIR / self.key,
             "icon": "icon.svg",
             "thumbnail": "thumb.svg",
-            "actions": {"start": self.start, "finish": self.finish, "board": self.board, "cashin": self.cash_in},
+            "actions": {
+                "start": self.start,
+                "finish": self.finish,
+                "board": self.board,
+                "cashin": self.cash_in,
+                "payouts": self.payout_settings,
+                "save_payouts": self.save_payouts,
+            },
         }
 
     async def start(self, ctx: ActivityContext, data: dict) -> dict:
@@ -107,6 +116,23 @@ class BundledGame:
         if ctx.guild is None:
             return {"error": NO_BOARD}
         return await self.scores.board(ctx.guild, ctx.author, self.key)
+
+    async def payout_settings(self, ctx: ActivityContext, data: dict) -> dict:
+        """The settings dialog's numbers, or {"settings": None} for players who can't change them"""
+        if not await self.payouts.can_change(ctx):
+            return {"settings": None}
+        return await self.payouts.dialog(ctx.guild, self)
+
+    async def save_payouts(self, ctx: ActivityContext, data: dict) -> dict:
+        # Checked on every save: a hidden button in the page is not the only lock
+        if not await self.payouts.can_change(ctx):
+            return {"error": NOT_AN_ADMIN}
+        try:
+            await self.payouts.save(ctx.guild, self, data.get("settings"))
+        except SettingsError as e:
+            log.debug("Refused a %s payout save: %s", self.key, e)
+            return {"error": str(e)}
+        return await self.payout_settings(ctx, {})
 
     def score(self, run: Run, data: dict, elapsed: float) -> int | None:
         """The round's real score, or None when what the page sent can't have happened"""

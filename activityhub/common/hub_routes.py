@@ -24,7 +24,7 @@ from .replies import (
     error,
     read_object,
 )
-from .sessions import ActivityContext
+from .sessions import ActivityContext, server_admin
 from .sockets import CLOSE_SESSION, READY, Connection
 
 if t.TYPE_CHECKING:
@@ -169,7 +169,6 @@ class HubRoutes:
             "tabs": [],
             "switches": [],
             "globalSwitches": [],
-            "payouts": None,
             "launch": None,
         }
 
@@ -189,9 +188,6 @@ class HubRoutes:
             "tabs": tabs,
             "switches": switches if "server" in tabs else [],
             "globalSwitches": await self.global_switches() if "defaults" in tabs else [],
-            "payouts": await self.hub.payouts.state(ctx.guild, [g.key for g in installed])
-            if "payouts" in tabs
-            else None,
             "launch": None,
         }
 
@@ -215,24 +211,7 @@ class HubRoutes:
         }
 
     async def player_tabs(self, ctx: ActivityContext) -> list[str]:
-        is_owner = await self.bot.is_owner(ctx.author)
-        global_bank = await self.hub.payouts.bank.is_global()
-        return allowed_tabs(ctx.guild is not None, await self.can_manage(ctx), is_owner, global_bank)
-
-    async def can_manage(self, ctx: ActivityContext) -> bool:
-        """
-        The server's owner, Manage Server permission or Red's admin role in the activity's server, checked fresh
-        each time. Someone who is no longer in the server (not in the member cache) has no rights there.
-        """
-        if ctx.guild is None:
-            return False
-        # The owner can't leave without handing the server over, so they need no member cache lookup
-        if ctx.author.id == ctx.guild.owner_id:
-            return True
-        member = ctx.guild.get_member(ctx.author.id)
-        if member is None:
-            return False
-        return member.guild_permissions.manage_guild or await self.bot.is_admin(member)
+        return allowed_tabs(await server_admin(self.bot, ctx), await self.bot.is_owner(ctx.author))
 
     async def take_launch(self, ctx: ActivityContext) -> str | None:
         key = self.hub.launches.take(ctx.author.id)
@@ -270,8 +249,6 @@ class HubRoutes:
             await group.order.set(merge_order(await group.order(), body.get("order"), self.hub.registry.games))
         elif tab == "server":
             await self.save_server(ctx.guild, body)
-        elif tab == "payouts":
-            await self.hub.payouts.save(ctx.guild, body.get("payouts"))
         else:
             await self.save_defaults(body)
 

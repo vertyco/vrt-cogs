@@ -8,7 +8,8 @@
 //   pause()     stop moving until resume() is called
 //   resume()    carry on after a pause
 //   stop()      end the round now and return { score, proof } for it
-// and calls arcade.over(score, proof) when a round ends by itself.
+// It calls arcade.begin() when the player's first move gets the round going (until then a new round waits, and
+// counts as between rounds), and arcade.over(score, proof) when a round ends by itself.
 import { connect } from "activityhub";
 
 const MUTE_KEY = "activityhub-arcade-muted";
@@ -21,6 +22,8 @@ const PASS_MS = 1600;
 const PASS_MERGE_MS = 1000;
 const STRIP_MAX = 5;
 const STRIP_MAX_PHONE = 3;
+// A long name in the strip is cut to this many visible characters, the last of them "…"
+const NAME_MAX = 12;
 // The mark beside someone mid-round. A Map, since the state is another player's word and a plain object would
 // answer to names like "constructor"
 const MARKS = new Map([
@@ -30,6 +33,10 @@ const MARKS = new Map([
 // A narrow window gets a smaller strip: fewer entries, and only the player's own name
 const phone = window.matchMedia("(max-width: 520px)");
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+// What a person sees as single characters, so a flag or a joined emoji is never split. Older browsers have no
+// segmenter and count code points instead
+const segmenter =
+  typeof Intl.Segmenter === "function" ? new Intl.Segmenter(undefined, { granularity: "grapheme" }) : null;
 
 // Static markup only, never player text
 const ICONS = {
@@ -37,7 +44,13 @@ const ICONS = {
   sound: '<path class="fill" d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/>',
   muted: '<path class="fill" d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9.5l5 5M22 9.5l-5 5"/>',
   pause: '<rect class="fill" x="6" y="5" width="4" height="14" rx="1"/><rect class="fill" x="14" y="5" width="4" height="14" rx="1"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
 };
+// The browser refuses a keepalive request over 64 KB. This leaves room for the round's id next to its proof
+const KEEPALIVE_PROOF_MAX = 63 * 1024;
+const GLOBAL_NOTE = "The bank is global, so these payouts apply in every server, and cash-ins count across servers.";
+const CASH_IN_NOTE =
+  "A cash-in pays the score times the rate, up to the most per cash-in. Cash-ins come back at midnight UTC.";
 
 // Added as soon as this file loads, so the page never shows unstyled while the game sets up
 document.head.append(el("link", { rel: "stylesheet", href: new URL("./arcade.css", import.meta.url).href }));
@@ -67,6 +80,11 @@ function icon(name) {
 
 function fmt(n) {
   return Number(n).toLocaleString();
+}
+
+function cutName(name) {
+  const letters = segmenter ? Array.from(segmenter.segment(name), (part) => part.segment) : Array.from(name);
+  return letters.length > NAME_MAX ? `${letters.slice(0, NAME_MAX - 1).join("")}…` : name;
 }
 
 function ordinal(n) {
@@ -108,6 +126,8 @@ class Arcade {
     this.game = options;
     this.inServer = !hub.offline && Boolean(hub.player && hub.player.guildId);
     this.playing = false;
+    // Whether the player's first move has got this round going
+    this.underway = false;
     this.paused = false;
     this.run = null;
     // The last saved round, which can be cashed in until the next one starts
@@ -153,7 +173,15 @@ class Arcade {
     phone.addEventListener("change", () => this.showLive());
     this.bannerNode = null;
     document.body.append(this.screen);
+    // This game's payout settings, only for those who may change them, and their dialog once it has opened.
+    // Asked for once: the bot checks again on every save
+    this.payouts = null;
+    this.payoutDialog = null;
     this.listen(options.autoPause !== false);
+    window.addEventListener("pagehide", () => this.saveOnExit());
+    if (!hub.offline) {
+      this.loadPayouts();
+    }
   }
 
   // ---------- Top bar ----------
@@ -161,7 +189,10 @@ class Arcade {
   buildBar() {
     this.scoreText = el("b", { class: "arcade-score", text: "0" });
     this.bestText = el("b", { class: "arcade-best" });
-    this.bestStat = el("span", { class: "arcade-stat" }, [el("small", { text: "Best" }), this.bestText]);
+    // Best sits in a room of its own, the part of the bar that gives way on a crowded phone
+    this.bestStat = el("span", { class: "arcade-best-room" }, [
+      el("span", { class: "arcade-stat" }, [el("small", { text: "Best" }), this.bestText]),
+    ]);
     this.muteButton = el("button", { type: "button", class: "arcade-icon", onclick: () => this.toggleMute() });
     this.pauseButton = el("button", { type: "button", class: "arcade-icon", "aria-label": "Pause" }, [icon("pause")]);
     this.pauseButton.addEventListener("click", () => this.pause());
@@ -178,7 +209,15 @@ class Arcade {
       this.bestStat,
     ]);
     const people = this.hub.peopleButton();
-    const bar = el("header", { class: "arcade-bar" }, [back, name, stats, people, this.muteButton, this.pauseButton]);
+    this.gearButton = el(
+      "button",
+      { type: "button", class: "arcade-icon arcade-payouts-open", "aria-label": "Payout settings" },
+      [icon("gear")],
+    );
+    this.gearButton.addEventListener("click", () => this.openPayouts());
+    this.gearButton.hidden = true;
+    const buttons = [people, this.gearButton, this.muteButton, this.pauseButton];
+    const bar = el("header", { class: "arcade-bar" }, [back, name, stats, ...buttons]);
     // A clicked button would keep the keyboard, so the next Space or Enter meant for the game would press it again.
     // Tab still reaches the buttons
     bar.addEventListener("mousedown", (event) => event.preventDefault());
@@ -225,7 +264,8 @@ class Arcade {
 
   // ---------- Who's here ----------
 
-  // What everyone else in the window sees this player doing, and whether leaving now would cost them a round
+  // What everyone else in the window sees this player doing, and whether leaving now would cost them a round. A
+  // round waiting for its first move costs nothing to leave, so it isn't busy yet
   report() {
     let text = "Getting ready";
     let data = { state: "idle" };
@@ -238,7 +278,7 @@ class Arcade {
       data = { state: "over", score: this.score };
     }
     this.hub.status(text, data);
-    this.hub.busy(this.playing);
+    this.hub.busy(this.playing && this.underway);
   }
 
   // The others in this game with a score this session
@@ -330,7 +370,7 @@ class Arcade {
       entry.item.children[1].replaceWith(this.liveAvatar(row));
     }
     entry.rank.textContent = String(rank);
-    entry.name.textContent = row.name;
+    entry.name.textContent = cutName(row.name);
     entry.points.textContent = fmt(row.score);
     const mark = MARKS.get(row.state);
     if (mark) {
@@ -649,8 +689,10 @@ class Arcade {
     this.cashRun = null;
     this.hide();
     this.playing = true;
+    this.underway = false;
     this.paused = false;
     this.pauseButton.hidden = false;
+    this.showGear();
     this.score = 0;
     this.scored = true;
     this.ahead.clear();
@@ -659,6 +701,15 @@ class Arcade {
     this.followRivals();
     this.showLive();
     this.game.play(round.seed);
+  }
+
+  // The game's call when the player's first move gets the round going
+  begin() {
+    if (this.playing && !this.underway) {
+      this.underway = true;
+      this.showGear();
+      this.report();
+    }
   }
 
   pause() {
@@ -688,14 +739,18 @@ class Arcade {
   }
 
   // The bot keeps the round open until a finish reaches it. When the request got no answer (a dropped
-  // connection) or the bot failed, the round is kept so it can be sent again; any other answer closed it
+  // connection) or the bot failed, the round is kept so it can be sent again; any other answer closed it.
+  // A keepalive request still reaches the bot when the frame closes on the way, as it does when a friend's Join
+  // takes the player elsewhere. The browser refuses one over 64 KB, a size only a very long Snake round's turns
+  // reach, so those go as a normal request and can still be cut off by a Join
   async save(proof) {
     const run = this.run;
     if (!run) {
       return null;
     }
+    const keepalive = JSON.stringify(proof).length <= KEEPALIVE_PROOF_MAX;
     try {
-      const result = await this.hub.api("finish", { run, ...proof });
+      const result = await this.hub.api("finish", { run, ...proof }, { keepalive });
       this.run = null;
       this.cashRun = run;
       return result;
@@ -733,6 +788,7 @@ class Arcade {
     this.playing = false;
     this.paused = false;
     this.pauseButton.hidden = true;
+    this.showGear();
     this.hint("");
     this.score = score;
     this.report();
@@ -832,6 +888,133 @@ class Arcade {
     }
   }
 
+  // ---------- Payout settings (server admins) ----------
+
+  // Players who can't change the settings get none, and never see the gear
+  async loadPayouts() {
+    try {
+      this.showPayouts(await this.hub.api("payouts"));
+    } catch (e) {
+      console.warn("Arcade: couldn't load the payout settings", e);
+    }
+  }
+
+  showPayouts(state) {
+    this.payouts = state.settings ? state : null;
+    this.showGear();
+  }
+
+  // The gear only shows between rounds: before a round's first move and after its end. Once the first move has got a
+  // round going it stays hidden until the end, paused or not, so mid-round an admin's bar is the same as everyone's.
+  // A round paused before its first move (as clicking away does) is still between rounds
+  showGear() {
+    this.gearButton.hidden = !this.payouts || (this.playing && this.underway);
+  }
+
+  // Made the first time it opens. It only ever shows this game's settings
+  buildPayoutDialog() {
+    const number = (field, min, step) => el("input", { type: "number", "data-field": field, min, step });
+    this.payoutFields = {
+      on: el("input", { type: "checkbox", "data-field": "on" }),
+      rate: number("rate", "0", "any"),
+      cap: number("cap", "1", "1"),
+      plays: number("plays", "1", "1"),
+    };
+    this.payoutText = {
+      title: el("h2", { id: "arcade-payouts-title" }),
+      on: el("span"),
+      rate: el("span"),
+      global: this.note(GLOBAL_NOTE),
+    };
+    this.payoutStatus = el("p", { class: "arcade-payouts-status", role: "status" });
+    this.payoutSave = this.button("Save", () => this.savePayouts(), true);
+    const { on, rate, cap, plays } = this.payoutFields;
+    const numbers = el("div", { class: "arcade-payout-numbers" }, [
+      el("label", {}, [this.payoutText.rate, rate]),
+      el("label", {}, [el("span", { text: "Most per cash-in" }), cap]),
+      el("label", {}, [el("span", { text: "Cash-ins a day" }), plays]),
+    ]);
+    this.payoutDialog = el("dialog", { class: "arcade-payouts", "aria-labelledby": "arcade-payouts-title" }, [
+      this.payoutText.title,
+      el("label", { class: "arcade-switch" }, [on, this.payoutText.on]),
+      numbers,
+      this.note(CASH_IN_NOTE),
+      this.payoutText.global,
+      this.payoutStatus,
+      this.actions([
+        this.payoutSave,
+        this.button("Reset to defaults", () => this.resetPayouts()),
+        this.button("Close", () => this.payoutDialog.close()),
+      ]),
+    ]);
+    document.body.append(this.payoutDialog);
+  }
+
+  // The words that come from the bot: the game's name, the bank's currency and what one point is called
+  namePayouts() {
+    const { name, currency, unit } = this.payouts;
+    this.payoutText.title.textContent = `${name} payouts`;
+    this.payoutText.on.textContent = `${name} pays out`;
+    this.payoutText.rate.textContent = `${currency.charAt(0).toUpperCase()}${currency.slice(1)} per ${unit}`;
+    this.payoutText.global.hidden = !this.payouts.global;
+  }
+
+  fillPayouts(settings) {
+    this.payoutFields.on.checked = settings.on;
+    for (const name of ["rate", "cap", "plays"]) {
+      this.payoutFields[name].value = String(settings[name]);
+    }
+  }
+
+  // Only between rounds, when the gear shows. Nothing reaches the game while it is open (see listen), so a round
+  // waiting for its first move can't start behind it
+  openPayouts() {
+    if (this.gearButton.hidden) {
+      return;
+    }
+    if (!this.payoutDialog) {
+      this.buildPayoutDialog();
+    }
+    this.namePayouts();
+    this.fillPayouts(this.payouts.settings);
+    this.payoutStatus.textContent = "";
+    // A swipe already under way (a second finger tapped the gear) is dropped, the way the games drop a swipe the
+    // browser takes over, so it can't finish as a first move behind the dialog or after it closes
+    window.dispatchEvent(new PointerEvent("pointercancel"));
+    this.payoutDialog.showModal();
+  }
+
+  async savePayouts() {
+    const fields = this.payoutFields;
+    // An empty box goes as null, which the bot refuses with a message saying what it needs
+    const number = (input) => (input.value === "" ? null : Number(input.value));
+    const settings = {
+      on: fields.on.checked,
+      rate: number(fields.rate),
+      cap: number(fields.cap),
+      plays: number(fields.plays),
+    };
+    // One save at a time, so a second click can't send the same save again
+    this.payoutSave.disabled = true;
+    this.payoutStatus.textContent = "Saving...";
+    try {
+      this.showPayouts(await this.hub.api("save_payouts", { settings }));
+      this.namePayouts();
+      this.fillPayouts(this.payouts.settings);
+      this.payoutStatus.textContent = "Saved.";
+    } catch (e) {
+      this.payoutStatus.textContent = e.message;
+    } finally {
+      this.payoutSave.disabled = false;
+    }
+  }
+
+  // Shows the defaults without saving them, like the menu's settings
+  resetPayouts() {
+    this.fillPayouts(this.payouts.defaults);
+    this.payoutStatus.textContent = "Reset. Save to keep it.";
+  }
+
   // Leaving mid-round still saves the score so far
   async leave() {
     if (this.playing) {
@@ -841,16 +1024,48 @@ class Arcade {
         await this.save(proof).catch((e) => console.warn("Arcade: couldn't save the round before leaving", e));
       }
     } else if (this.saving) {
-      // Closing the game frame would cancel a save that is still on its way
+      // Closing the game frame can cancel a save still on its way, when it was too big to go as keepalive
       await this.saving;
     }
     this.hub.backToMenu();
+  }
+
+  // Join and closing the Activity remove the game's frame without leave(), so the round in play is saved here, the
+  // same as the Menu button saves it. save() sends a keepalive request, which gets out after the frame is gone.
+  // Nothing waits for it: the page is going away. A round that ended, by itself or by the Menu button, has playing
+  // false already, so it is never sent twice
+  saveOnExit() {
+    if (!this.playing) {
+      return;
+    }
+    const { score, proof } = this.game.stop();
+    this.playing = false;
+    if (score > 0) {
+      this.save(proof).catch((e) => console.warn("Arcade: couldn't save the round on the way out", e));
+    }
   }
 
   // ---------- Input ----------
 
   listen(autoPause) {
     window.addEventListener("pointerdown", () => this.unlockAudio());
+    // While the payout settings are open, no key, press or swipe reaches the game, so a round waiting for its first
+    // move can't start behind them. The games listen on the window too, so this runs first and stops the event there.
+    // Typing, Tab and the dialog's buttons still work. Escape closes it here, before the browser would, so the
+    // arcade's pause key never sees it
+    const guard = (event) => {
+      if (!this.payoutDialog?.open) {
+        return;
+      }
+      event.stopPropagation();
+      if (event.key === "Escape") {
+        event.preventDefault();
+        this.payoutDialog.close();
+      }
+    };
+    for (const name of ["keydown", "pointerdown", "pointermove", "pointerup"]) {
+      window.addEventListener(name, guard, true);
+    }
     window.addEventListener("keydown", (event) => {
       this.unlockAudio();
       if (PAUSE_KEYS.includes(event.key) && this.playing) {

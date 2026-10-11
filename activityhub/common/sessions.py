@@ -31,6 +31,23 @@ class ActivityContext:
         return self.guild.get_channel_or_thread(self.channel_id)
 
 
+async def server_admin(bot: t.Any, ctx: ActivityContext) -> bool:
+    """
+    The bot owner, the server's owner, and members with Manage Server or Red's admin role in the activity's
+    server, checked fresh each time. Nobody outside a server. Anyone else who is no longer in the server (not in
+    the member cache) has no rights there.
+    """
+    if ctx.guild is None:
+        return False
+    # The server's owner can't leave without handing the server over, so neither owner needs a member cache lookup
+    if ctx.author.id == ctx.guild.owner_id or await bot.is_owner(ctx.author):
+        return True
+    member = ctx.guild.get_member(ctx.author.id)
+    if member is None:
+        return False
+    return member.guild_permissions.manage_guild or await bot.is_admin(member)
+
+
 @dataclass
 class Session:
     ctx: ActivityContext

@@ -2,6 +2,8 @@
 // question before Join takes a player out of a round, and the pieces the menu reuses (rows, avatars, the button's
 // face). Names and status lines come from players, so they only ever go in as text.
 const NOTE_MS = 3000;
+// The space an arrival note leaves between itself and the edge of the screen
+const NOTE_GUTTER = 16;
 // Arrivals this close together share one note
 const MERGE_MS = 1000;
 // A game page that never calls connect() still gets the floating button this long after it loads
@@ -299,7 +301,11 @@ export function showNote(wrap, text) {
   const note = make(doc, "span", "hub-note");
   note.setAttribute("role", "status");
   const box = wrap.getBoundingClientRect();
-  note.classList.add(box.left + box.width / 2 < view.innerWidth / 2 ? "start" : "end");
+  const start = box.left + box.width / 2 < view.innerWidth / 2;
+  note.classList.add(start ? "start" : "end");
+  // The note runs from the button's edge toward the far side of the screen, so it gets the room on that side
+  const room = start ? view.innerWidth - box.left : box.right;
+  note.style.maxWidth = `${Math.max(0, room - NOTE_GUTTER)}px`;
   wrap.append(note);
   // Screen readers often skip a live region that already has its words when it appears, so they go in a frame later
   view.requestAnimationFrame(() => {
@@ -368,7 +374,8 @@ export class PeopleUI {
     box.hidden = true;
     this.confirmText = make(document, "p", "hub-confirm-text");
     this.confirmText.id = "hub-confirm-text";
-    box.setAttribute("aria-describedby", this.confirmText.id);
+    // The question names the dialog. It isn't its description too, or screen readers would read it twice
+    box.setAttribute("aria-labelledby", this.confirmText.id);
     this.leaveButton = make(document, "button", "hub-confirm-leave", "Leave");
     this.leaveButton.type = "button";
     this.stayButton = make(document, "button", "hub-confirm-stay primary", "Stay");
@@ -466,8 +473,11 @@ export class PeopleUI {
     if (shown === this.shown) {
       return;
     }
-    // The list redraws as status lines change, so keyboard focus on a Join button is put back after
-    const focused = document.activeElement?.dataset?.join;
+    // The list redraws as status lines change, so keyboard focus on a button in it is put back after: on the Join for
+    // the same person, or on the button with the same first class, such as Invite friends
+    const active = this.body.contains(document.activeElement) ? document.activeElement : null;
+    const joinId = active?.dataset.join;
+    const refocus = joinId === undefined ? active && `.${active.classList[0]}` : `[data-join="${CSS.escape(joinId)}"]`;
     const { here, games, menu } = groups(people, myGame);
     const alone = !people.some((person) => !person.you);
     const join = (person) => this.host.join(person);
@@ -490,8 +500,8 @@ export class PeopleUI {
     }
     this.body.replaceChildren(...sections);
     this.shown = shown;
-    if (focused) {
-      this.body.querySelector(`[data-join="${CSS.escape(focused)}"]`)?.focus();
+    if (refocus) {
+      this.body.querySelector(refocus)?.focus();
     }
   }
 

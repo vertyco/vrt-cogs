@@ -6,8 +6,9 @@ to a most-per-cash-in, and each player gets a few cash-ins per game per day. Pla
 unsent score, so players save their cash-ins for their best rounds. A cheater can't earn more than an honest
 player, since every cash-in is capped.
 
-With a per-server bank each server sets its own payouts. With a global bank one balance is shared by every
-server, so only the bot owner sets them, once for everywhere, and the daily cash-ins count across servers.
+With a per-server bank each server's admins set its payouts, from a settings dialog in each game. With a global
+bank one balance is shared by every server, so only the bot owner sets them, once for everywhere, and the daily
+cash-ins count across servers.
 
 Game cogs keep their own payout settings; this only covers the games that come with the hub.
 """
@@ -21,6 +22,7 @@ from redbot.core import bank
 from redbot.core.errors import BalanceTooHigh
 
 from .looks import SettingsError
+from .sessions import ActivityContext, server_admin
 
 DEFAULT_CAP = 1000
 MAX_RATE = 1_000_000
@@ -33,6 +35,7 @@ NO_SERVER = "Cash-ins only work in a server."
 NONE_LEFT = "You've used every cash-in for this game today. They come back at midnight UTC."
 NOTHING_EARNED = "That score isn't worth anything yet. Score more to earn some."
 BALANCE_FULL = "Your balance is already at the maximum."
+NOT_AN_ADMIN = "Only server admins can change payouts."
 
 
 def utc_today() -> str:
@@ -80,66 +83,63 @@ def clean_game(value: t.Any, name: str) -> dict:
     return {"on": value["on"], "rate": value["rate"], "cap": value["cap"], "plays": value["plays"]}
 
 
-def merge_payouts(saved: dict, value: t.Any, games: list[t.Any]) -> dict:
-    """The payouts to save: the sent games checked, plus the saved settings of games that weren't sent"""
-    if not isinstance(value, dict):
-        raise SettingsError("Expected payouts by activity key.")
-    by_key = {game.key: game for game in games}
-    merged = dict(saved)
-    for key, settings in value.items():
-        if key not in by_key:
-            raise SettingsError(f"{key} doesn't pay out.")
-        merged[key] = clean_game(settings, by_key[key].name)
-    return merged
-
-
 class Payouts:
     """
-    Each scope's payout settings, each player's cash-ins today, and the bank deposits. `games` holds the included
-    games by key, each with a key, name, unit (what one point is called) and rate (what one point pays by default)
+    Each scope's payout settings, who may change them, each player's cash-ins today, and the bank deposits.
+    `games` holds the included games by key, each with a key, name, unit (what one point is called) and rate (what
+    one point pays by default)
     """
 
-    def __init__(self, config: t.Any, money: t.Any = bank, today: t.Callable[[], str] = utc_today):
+    def __init__(self, config: t.Any, bot: t.Any, money: t.Any = bank, today: t.Callable[[], str] = utc_today):
         self.config = config
+        self.bot = bot
         self.bank = money
         self.today = today
         self.games: dict[str, t.Any] = {}
         self.lock = asyncio.Lock()
 
-    async def saved(self, guild: t.Any) -> dict:
-        if await self.bank.is_global():
-            return await self.config.payouts()
-        return await self.config.guild(guild).payouts()
+    async def group(self, guild: t.Any) -> t.Any:
+        """Where the settings are saved: once for every server when they share one balance"""
+        return self.config if await self.bank.is_global() else self.config.guild(guild)
 
-    async def save(self, guild: t.Any, value: t.Any) -> None:
-        group = self.config if await self.bank.is_global() else self.config.guild(guild)
-        await group.payouts.set(merge_payouts(await group.payouts(), value, list(self.games.values())))
+    async def saved(self, guild: t.Any) -> dict:
+        return await (await self.group(guild)).payouts()
+
+    async def can_change(self, ctx: ActivityContext) -> bool:
+        """
+        Server admins set their server's payouts. With a global bank one balance is shared by every server, so
+        only the bot owner does, for every server at once
+        """
+        if await self.bank.is_global():
+            return await self.bot.is_owner(ctx.author)
+        return await server_admin(self.bot, ctx)
+
+    async def dialog(self, guild: t.Any, game: t.Any) -> dict:
+        """What a game's payout settings dialog shows"""
+        return {
+            "settings": game_settings(await self.saved(guild), game),
+            "defaults": default_settings(game),
+            "global": await self.bank.is_global(),
+            "currency": await self.bank.get_currency_name(guild),
+            "unit": game.unit,
+            "name": game.name,
+        }
+
+    async def save(self, guild: t.Any, game: t.Any, value: t.Any) -> None:
+        """Save one game's settings. Every other game's saved settings stay as they are"""
+        settings = clean_game(value, game.name)
+        # Held so two games saved at once can't each write back the other's old settings
+        async with self.lock:
+            group = await self.group(guild)
+            saved = await group.payouts()
+            saved[game.key] = settings
+            await group.payouts.set(saved)
 
     async def ledger(self, member: t.Any) -> t.Any:
         """Where a player's cash-ins today are counted: across servers when they share one balance"""
         if await self.bank.is_global():
             return self.config.user(member).cashed
         return self.config.member(member).cashed
-
-    async def state(self, guild: t.Any, keys: t.Collection[str]) -> dict:
-        """What the Payouts tab shows for the included games among these keys"""
-        saved = await self.saved(guild)
-        rows = [
-            {
-                "key": game.key,
-                "name": game.name,
-                "unit": game.unit,
-                **game_settings(saved, game),
-                "defaults": default_settings(game),
-            }
-            for game in self.games.values()
-            if game.key in keys
-        ]
-        return {
-            "global": await self.bank.is_global(),
-            "currency": await self.bank.get_currency_name(guild),
-            "games": rows,
-        }
 
     async def used(self, member: t.Any, key: str) -> int:
         cashed = await (await self.ledger(member))()

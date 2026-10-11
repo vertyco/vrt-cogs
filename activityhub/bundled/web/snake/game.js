@@ -331,6 +331,7 @@ function steer(heading) {
     state.mode = "running";
     state.wait = 0;
     arcade.hint("");
+    arcade.begin();
   } else if (state.mode !== "running" || state.queue.length >= QUEUE_LIMIT) {
     return;
   }

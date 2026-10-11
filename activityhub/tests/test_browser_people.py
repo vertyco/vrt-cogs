@@ -293,12 +293,14 @@ def test_escape_and_a_tap_outside_close_the_panel(driver, live):
     assert driver.execute_script("return document.querySelector('.hub-people-scrim').hidden") is True
 
 
-def test_escape_on_the_question_stays_and_the_dialog_is_described(driver, live):
+def test_escape_on_the_question_stays_and_the_dialog_is_named(driver, live):
     ask_to_leave(driver, live)
     driver.execute_script(f"{PANEL}.querySelector('[data-join=\"{ADMIN_ID}\"]').click()")
     wait_for(driver, f"!{CONFIRM}.hidden")
-    described = f"document.getElementById({CONFIRM}.getAttribute('aria-describedby'))"
-    assert driver.execute_script(f"return {described} === document.querySelector('.hub-confirm-text')")
+    # The question is the dialog's name, read out once
+    named = f"document.getElementById({CONFIRM}.getAttribute('aria-labelledby'))"
+    assert driver.execute_script(f"return {named} === document.querySelector('.hub-confirm-text')")
+    assert driver.execute_script(f"return {CONFIRM}.getAttribute('aria-describedby')") is None
     ActionChains(driver).send_keys(Keys.ESCAPE).perform()
     wait_for(driver, f"{CONFIRM}.hidden")
     # The panel stays open, and focus is back on the Join that asked
@@ -356,6 +358,26 @@ def test_a_long_note_stays_on_the_screen(driver, live):
         }});"""
     )
     assert shown == [400, True, True, "ellipsis"]
+
+
+@pytest.mark.parametrize("left", ["30%", "55%"])
+def test_a_long_note_from_a_button_mid_screen_stays_on_the_screen(driver, live, left):
+    open_game(driver, live)
+    wait_for(driver, f"!{FLOATING}.hidden")
+    # A game can put its button anywhere, such as the middle of its bar. The note opens toward the far side
+    shown = driver.execute_async_script(
+        f"""const done = arguments[arguments.length - 1];
+        Object.assign({FLOATING}.style, {{ left: '{left}', right: 'auto', top: '40%' }});
+        import('./people.js').then(({{ showNote }}) => {{
+          showNote({FLOATING}, 'x'.repeat(400));
+          const note = {FLOATING}.querySelector('.hub-note');
+          requestAnimationFrame(() => requestAnimationFrame(() => {{
+            const box = note.getBoundingClientRect();
+            done([box.left >= 0, box.right <= innerWidth, getComputedStyle(note).textOverflow]);
+          }}));
+        }});"""
+    )
+    assert shown == [True, True, "ellipsis"]
 
 
 def test_outside_discord_the_panel_says_where_to_go(driver, live):
@@ -444,6 +466,15 @@ def test_a_space_press_on_join_survives_a_list_arriving(driver, live):
     finally:
         ActionChains(driver).key_up(Keys.SPACE).perform()
     wait_for(driver, "window.testHost.gameKey === 'placed'")
+
+
+def test_keyboard_focus_on_invite_stays_through_a_redraw(driver, live):
+    conn = with_a_status_to_change(driver, live)
+    driver.execute_script(f"{PANEL}.querySelector('.hub-invite-button').focus()")
+    live.update_person(conn, where="demo", status="two")
+    wait_for(driver, f"{PANEL}.innerText.includes('two')")
+    assert driver.execute_script("return document.activeElement.classList.contains('hub-invite-button')")
+    assert driver.execute_script(f"return {PANEL}.contains(document.activeElement)")
 
 
 def test_moving_focus_ends_a_held_space_press(driver, live):

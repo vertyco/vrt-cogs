@@ -1,19 +1,29 @@
 import pytest
 
 from activityhub.bundled.games import bundled_games
-from activityhub.common.looks import SettingsError
 from activityhub.common.payouts import (
     BALANCE_FULL,
     NONE_LEFT,
+    NOT_AN_ADMIN,
     NOTHING_EARNED,
     PAYOUTS_OFF,
-    merge_payouts,
     worth,
 )
-from activityhub.tests.fakes import GUILD_ID, MANAGER_ID, MEMBER_ID, OWNER_ID, context_for, register, session_headers
+from activityhub.tests.fakes import (
+    ADMIN_ID,
+    GUILD_ID,
+    GUILD_OWNER_ID,
+    MANAGER_ID,
+    MEMBER_ID,
+    OWNER_ID,
+    context_for,
+    register,
+    session_headers,
+)
 
 
 SNAKE = {"on": True, "rate": 25, "cap": 1000, "plays": 3}
+SNAKE_DEFAULTS = {"on": False, "rate": 25, "cap": 1000, "plays": 3}
 
 
 @pytest.fixture
@@ -42,23 +52,6 @@ def test_worth_is_score_times_rate_up_to_the_cap():
     # 2.3 * 100 is 229.99999999999997 in floats
     assert worth(100, {"rate": 2.3, "cap": 1000}) == 230
     assert worth(9, {"rate": 0.1, "cap": 1000}) == 0
-
-
-def test_saving_checks_every_number(hub, games):
-    payout_games = list(hub.payouts.games.values())
-    assert merge_payouts({"gone": SNAKE}, {"snake": SNAKE}, payout_games) == {"gone": SNAKE, "snake": SNAKE}
-    for bad in (
-        {"snake": {**SNAKE, "rate": 0}},
-        {"snake": {**SNAKE, "rate": None}},
-        {"snake": {**SNAKE, "cap": 1.5}},
-        {"snake": {**SNAKE, "plays": 0}},
-        {"snake": {**SNAKE, "on": 1}},
-        {"snake": {"on": True}},
-        {"nope": SNAKE},
-        ["snake"],
-    ):
-        with pytest.raises(SettingsError):
-            merge_payouts({}, bad, payout_games)
 
 
 # ---------- Offers and cash-ins ----------
@@ -118,63 +111,137 @@ async def test_a_game_cog_must_send_a_real_score(hub, games):
         await hub.payouts.offer(member(hub), "snake", 1.5)
 
 
-# ---------- The Payouts tab ----------
+# ---------- Each game's settings dialog ----------
 
 
-async def menu(client, headers):
-    resp = await client.get("/hub/api/menu", headers=headers)
+async def dialog(client, hub, key="snake", **who):
+    resp = await client.post(f"/games/{key}/api/payouts", json={}, headers=session_headers(hub, **who))
+    assert resp.status == 200
     return await resp.json()
 
 
-async def save(client, headers, payouts):
-    resp = await client.post("/hub/api/settings", json={"tab": "payouts", "payouts": payouts}, headers=headers)
+async def save(client, hub, settings, key="snake", **who):
+    body = {"settings": settings}
+    resp = await client.post(f"/games/{key}/api/save_payouts", json=body, headers=session_headers(hub, **who))
     return resp.status, await resp.json()
 
 
+def saved_here(hub) -> dict:
+    return hub.config.guilds.get(GUILD_ID, {}).get("payouts", {})
+
+
 @pytest.mark.asyncio
-async def test_a_manager_sees_and_saves_this_servers_payouts(client, hub, games):
-    headers = session_headers(hub, user_id=MANAGER_ID)
-    state = await menu(client, headers)
-    rows = {row["key"]: row for row in state["payouts"]["games"]}
-    assert set(rows) == {"snake", "2048", "brickbreaker"} and state["payouts"]["global"] is False
-    assert rows["snake"] == {
-        "key": "snake",
-        "name": "Snake",
+async def test_a_manager_sees_the_games_own_settings(client, hub, games):
+    assert await dialog(client, hub, user_id=MANAGER_ID) == {
+        "settings": SNAKE_DEFAULTS,
+        "defaults": SNAKE_DEFAULTS,
+        "global": False,
+        "currency": "credits",
         "unit": "apple",
-        "on": False,
-        "rate": 25,
-        "cap": 1000,
-        "plays": 3,
-        "defaults": {"on": False, "rate": 25, "cap": 1000, "plays": 3},
+        "name": "Snake",
     }
-    status, state = await save(client, headers, {"snake": {**SNAKE, "rate": 5}})
-    assert status == 200
-    assert hub.config.guilds[GUILD_ID]["payouts"] == {"snake": {**SNAKE, "rate": 5}}
-    assert next(row for row in state["payouts"]["games"] if row["key"] == "snake")["rate"] == 5
+    state = await dialog(client, hub, key="2048", user_id=MANAGER_ID)
+    assert state["unit"] == "point" and state["name"] == "2048" and state["defaults"]["rate"] == 0.1
 
 
 @pytest.mark.asyncio
-async def test_a_bad_payout_save_changes_nothing(client, hub, games):
-    headers = session_headers(hub, user_id=MANAGER_ID)
-    status, body = await save(client, headers, {"snake": SNAKE, "2048": {**SNAKE, "plays": 0}})
-    assert status == 400 and "cash-ins a day" in body["error"]
-    assert hub.config.guilds.get(GUILD_ID, {}).get("payouts", {}) == {}
+@pytest.mark.parametrize("user_id", [MANAGER_ID, ADMIN_ID, GUILD_OWNER_ID, OWNER_ID])
+async def test_server_admins_and_the_bot_owner_set_payouts(client, hub, games, user_id):
+    assert (await dialog(client, hub, user_id=user_id))["settings"] == SNAKE_DEFAULTS
+    status, state = await save(client, hub, {**SNAKE, "rate": 5}, user_id=user_id)
+    assert status == 200 and state["settings"] == {**SNAKE, "rate": 5} and state["name"] == "Snake"
+    assert saved_here(hub) == {"snake": {**SNAKE, "rate": 5}}
 
 
 @pytest.mark.asyncio
-async def test_members_cant_set_payouts(client, hub, games):
-    headers = session_headers(hub)
-    assert (await menu(client, headers))["payouts"] is None
-    assert (await save(client, headers, {"snake": SNAKE}))[0] == 403
+async def test_the_server_owner_counts_without_the_member_cache(client, hub, games):
+    del hub.bot.guilds[GUILD_ID].members[GUILD_OWNER_ID]
+    assert (await dialog(client, hub, user_id=GUILD_OWNER_ID))["settings"] == SNAKE_DEFAULTS
+    assert (await save(client, hub, SNAKE, user_id=GUILD_OWNER_ID))[0] == 200
+
+
+@pytest.mark.asyncio
+async def test_members_cant_see_or_save_payouts(client, hub, games):
+    assert await dialog(client, hub) == {"settings": None}
+    assert await save(client, hub, SNAKE) == (400, {"error": NOT_AN_ADMIN})
+    assert saved_here(hub) == {}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("user_id", [MANAGER_ID, OWNER_ID])
+async def test_nobody_sets_payouts_from_a_dm(client, hub, games, user_id):
+    assert await dialog(client, hub, user_id=user_id, guild_id=None) == {"settings": None}
+    assert await save(client, hub, SNAKE, user_id=user_id, guild_id=None) == (400, {"error": NOT_AN_ADMIN})
 
 
 @pytest.mark.asyncio
 async def test_with_a_global_bank_only_the_owner_sets_payouts(client, hub, games):
     hub.payouts.bank.global_bank = True
-    manager = session_headers(hub, user_id=MANAGER_ID)
-    assert "payouts" not in (await menu(client, manager))["tabs"]
-    assert (await save(client, manager, {"snake": SNAKE}))[0] == 403
-    owner = session_headers(hub, user_id=OWNER_ID)
-    assert (await menu(client, owner))["payouts"]["global"] is True
-    assert (await save(client, owner, {"snake": SNAKE}))[0] == 200
-    assert hub.config.globals["payouts"] == {"snake": SNAKE}
+    assert await dialog(client, hub, user_id=MANAGER_ID) == {"settings": None}
+    assert await save(client, hub, SNAKE, user_id=MANAGER_ID) == (400, {"error": NOT_AN_ADMIN})
+    assert (await dialog(client, hub, user_id=OWNER_ID))["global"] is True
+    status, state = await save(client, hub, SNAKE, user_id=OWNER_ID)
+    assert status == 200 and state["settings"] == SNAKE and state["global"] is True
+    assert hub.config.globals["payouts"] == {"snake": SNAKE} and saved_here(hub) == {}
+
+
+@pytest.mark.asyncio
+async def test_with_a_global_bank_the_owner_sets_payouts_from_a_dm(client, hub, games):
+    # The settings apply in every server, so the owner needs no server to change them
+    hub.payouts.bank.global_bank = True
+    state = await dialog(client, hub, user_id=OWNER_ID, guild_id=None)
+    assert state["settings"] == SNAKE_DEFAULTS and state["global"] is True and state["currency"] == "credits"
+    status, state = await save(client, hub, {**SNAKE, "cap": 400}, user_id=OWNER_ID, guild_id=None)
+    assert status == 200 and state["settings"] == {**SNAKE, "cap": 400}
+    assert hub.config.globals["payouts"] == {"snake": {**SNAKE, "cap": 400}}
+    # Anyone else in a DM still gets nothing
+    assert await dialog(client, hub, user_id=MANAGER_ID, guild_id=None) == {"settings": None}
+
+
+@pytest.mark.asyncio
+async def test_each_save_checks_again(client, hub, games):
+    assert (await dialog(client, hub, user_id=MANAGER_ID))["settings"] is not None
+    hub.bot.guilds[GUILD_ID].members[MANAGER_ID].guild_permissions.manage_guild = False
+    assert await save(client, hub, SNAKE, user_id=MANAGER_ID) == (400, {"error": NOT_AN_ADMIN})
+    assert saved_here(hub) == {}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "bad, says",
+    [
+        ({**SNAKE, "rate": 0}, "the rate must be more than 0"),
+        ({**SNAKE, "rate": None}, "the rate must be more than 0"),
+        ({**SNAKE, "cap": 1.5}, "the most per cash-in must be a whole number"),
+        ({**SNAKE, "plays": 0}, "cash-ins a day must be a whole number"),
+        ({**SNAKE, "on": 1}, "on must be true or false"),
+        ({"on": True}, "expected on, rate, cap and plays"),
+        (["snake"], "expected on, rate, cap and plays"),
+        (None, "expected on, rate, cap and plays"),
+    ],
+)
+async def test_a_bad_number_is_refused_and_nothing_is_saved(client, hub, games, bad, says):
+    status, body = await save(client, hub, bad, user_id=MANAGER_ID)
+    assert status == 400 and body["error"].startswith("Snake: ") and says in body["error"]
+    assert saved_here(hub) == {}
+
+
+@pytest.mark.asyncio
+async def test_saving_one_game_leaves_the_others_alone(client, hub, games):
+    twenty48 = {"on": True, "rate": 0.5, "cap": 200, "plays": 5}
+    await hub.config.guild_from_id(GUILD_ID).payouts.set({"2048": twenty48, "gone": SNAKE})
+    assert (await save(client, hub, {**SNAKE, "plays": 9}, user_id=MANAGER_ID))[0] == 200
+    assert saved_here(hub) == {"2048": twenty48, "gone": SNAKE, "snake": {**SNAKE, "plays": 9}}
+
+
+@pytest.mark.asyncio
+async def test_settings_saved_before_are_read_back_unchanged(client, hub, games):
+    # Stored the same way since payouts began: per server, by game key, with on, rate, cap and plays
+    earlier = {"snake": {"on": True, "rate": 2.5, "cap": 500, "plays": 7}}
+    await hub.config.guild_from_id(GUILD_ID).payouts.set(earlier)
+    assert (await dialog(client, hub, user_id=MANAGER_ID))["settings"] == earlier["snake"]
+    assert (await dialog(client, hub, key="2048", user_id=MANAGER_ID))["settings"]["on"] is False
+    hub.payouts.bank.global_bank = True
+    await hub.config.payouts.set({"2048": {"on": True, "rate": 3, "cap": 90, "plays": 2}})
+    owner = await dialog(client, hub, key="2048", user_id=OWNER_ID)
+    assert owner["settings"] == {"on": True, "rate": 3, "cap": 90, "plays": 2}

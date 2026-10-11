@@ -1041,6 +1041,7 @@ While busy is on, Join asks the player before taking them out of your game, and 
 
 - `onPeople` doesn't call `fn` straight away. Draw once from `hub.people`, then again in `onPeople`, like the example below.
 - A new list doesn't always change what you show: someone in another game may only have changed their data. If drawing is costly, check what changed first.
+- Don't rebuild buttons on every list. A click whose press and release land on different elements is lost. Change the parts in place, or skip a redraw that would show the same thing. The strip example below rebuilds its rows each time only because nothing in it can be clicked.
 - Right after `connect()`, the list can still be empty or a moment old, for example when a Play button opened your game straight away. `onPeople` brings the next one.
 - The list can also go empty later: when the menu loses its connection to the bot for more than a minute, everyone leaves the list until it's back. Your page should cope with an empty list at any time.
 - The hub removes your listeners when your game closes.
@@ -1169,6 +1170,8 @@ if (friend && friend.here && friend.data && friend.data.room) {
 ```
 
 `friend.data.room` comes from Ann's page. So it says where to go, not that the player may go there: your Python still decides that.
+
+Join also closes the game the player was in, by removing its frame, and that cancels any request the page hadn't finished. To keep a player's progress, save on `pagehide` (the browser's event for a page going away) with `hub.api(name, data, { keepalive: true })`, the way the included games save a round. `keepalive` tells the browser to finish sending the request even after the page is gone. Mark the round as over before you save it, so a round your own Menu button (the one that calls `backToMenu()`) already saved isn't saved a second time when the page goes away.
 
 ### A full example
 

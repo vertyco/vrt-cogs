@@ -126,12 +126,15 @@ class Presence:
             return
         window, person = found
         where = await self.clean_where(conn.ctx, data.get("where"))
+        state = (where, clean_status(data.get("status")), data.get("busy") is True, data.get("away") is True)
+        new_data = clean_data(data.get("data"))
+        # A message that changes nothing sends no list, which would go to everyone in the window. Data is compared
+        # as JSON, where 1 and true differ
+        if state == (person.where, person.status, person.busy, person.away) and dumps(new_data) == dumps(person.data):
+            return
         moved = where != person.where
-        person.where = where
-        person.status = clean_status(data.get("status"))
-        person.data = clean_data(data.get("data"))
-        person.busy = data.get("busy") is True
-        person.away = data.get("away") is True
+        person.where, person.status, person.busy, person.away = state
+        person.data = new_data
         self.changed(window, moved)
 
     async def clean_where(self, ctx: ActivityContext, value: t.Any) -> str | None:

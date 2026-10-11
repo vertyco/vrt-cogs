@@ -1,5 +1,26 @@
 # ActivityHub Changelog
 
+## 0.6.0
+
+- The menu's **Payouts** settings tab is gone. Server admins now set each included game's payouts from a gear button in that game's own top bar, the way Marble Munch does it. The gear sits in the bar between rounds: before a round's first move, and on the results screen. During a round, paused or not, an admin's bar is the same as everyone's. Only people who can change the payouts see the gear: server admins, or only the bot owner when the bank is global.
+- The gear opens that game's settings: whether it pays out, what one point pays, the most one cash-in pays, and the cash-ins a day. While it is open, no key, tap or swipe reaches the game, so a round can't start behind it.
+- Payout settings saved before carry over unchanged.
+- On phones the games' top bar packs its buttons a little closer, and your score always shows whole. On small phones with friends in the same game there may not be room for your best score too, so it steps out of the bar (it still shows on the title and results screens).
+- In the included games, a round waiting for your first move no longer counts as busy, so a friend's Join takes you along without asking first. Your first move makes it busy.
+- Leaving a round of an included game by Join, or by closing the Activity, now saves its score so far, the same as the Menu button.
+- The included games' score strip cuts long names the way every other game does: 11 characters and "…", never splitting an emoji.
+- In the people panel, keyboard focus on **Invite friends** stays there when the list changes, and screen readers name the question Join asks before taking you out of a round. An arrival note from a people button in the middle of a game's screen stays on the screen.
+- In the menu, the list of who's playing a game keeps clear of a phone's notch and Discord's buttons at the sides too. When it closes with keyboard focus in it (Escape, or its last player leaving), focus goes back to that game's card.
+- The bot no longer sends everyone in the window a new people list when a player's game reports nothing new.
+
+For game developers:
+
+- The reference (every field of `activityhub_game()`, `ctx`, the handlers and the page side) moved out of `DEVELOPERS.md` into its own page, `REFERENCE.md`. `DEVELOPERS.md` keeps the tutorial and the topics, and its later sections are each numbered four lower.
+- `REFERENCE.md` has type declarations for the page side (`activityhub.d.ts`), so editors like VS Code autocomplete `hub.` calls and flag typos in plain JavaScript.
+- `DEVELOPERS.md` is now written for someone who has never made an Activity. It opens with a "Start here" part: who the guide is for, a table of which section answers which question, the words used everywhere, and ten rules that prevent the most common mistakes. The quick start explains what each piece of code does and says what to check when a step doesn't give what it should. The pay-at-the-end example is a whole cog you can copy, and the multiplayer and common problems sections are split into smaller parts. Section numbers stay the same.
+- `DEVELOPERS.md`'s "Who's here" warns against rebuilding buttons on every people list, which loses clicks.
+- `hub.api(name, data, options)` takes an optional third argument. With `{ keepalive: true }` the request still reaches the bot after your page is gone, so your game can save a player's progress on `pagehide` when Join or closing the Activity removes its frame. `REFERENCE.md` and the Join part of `DEVELOPERS.md`'s "Who's here" explain it.
+
 ## 0.5.0
 
 You can now see who's playing what. Everyone who opened the Activity from the same voice channel shows up in the menu and in every game.

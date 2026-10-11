@@ -146,12 +146,13 @@ button:focus-visible {
   flex: 1;
   display: flex;
   justify-content: flex-end;
-  gap: 18px;
   padding-right: 6px;
   white-space: nowrap;
 }
 
+/* The score always shows whole: it never shrinks, and nothing clips it */
 .arcade-stat {
+  flex: none;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -164,6 +165,31 @@ button:focus-visible {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+/* Best's room is the part of the bar that gives way. It takes no room of its own, only what the bar has spare, up to
+   Best's width. It is one stat tall, and an empty first item as tall as the room sits before Best, so when a crowded
+   phone bar leaves the room narrower than Best, Best wraps onto a second row below it, out of sight. Best is never
+   shown cut in half, and the buttons after it are never pushed off */
+.arcade-best-room {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  flex-grow: 1;
+  width: 0;
+  max-width: max-content;
+  height: 1.9rem;
+  overflow: hidden;
+}
+
+.arcade-best-room::before {
+  content: "";
+  height: 100%;
+}
+
+/* The gap before Best goes with it, so a Best out of sight leaves no gap behind */
+.arcade-best-room .arcade-stat {
+  padding-left: 18px;
 }
 
 .arcade-stat b {
@@ -590,8 +616,16 @@ button:focus-visible {
     display: none;
   }
 
-  .arcade-stats {
-    gap: 12px;
+  .arcade-bar {
+    gap: 4px;
+  }
+
+  .arcade-back {
+    padding: 0 6px;
+  }
+
+  .arcade-best-room .arcade-stat {
+    padding-left: 12px;
   }
 }
 
@@ -687,10 +721,10 @@ button:focus-visible {
   font-weight: 700;
 }
 
-/* Names are other players' words: kept apart from the text around them, whichever way they are written */
+/* Names are other players' words: kept apart from the text around them, whichever way they are written. arcade.js
+   cuts a long one short; the ellipsis here only shows if the strip itself runs out of room */
 .arcade-live .name {
   min-width: 0;
-  max-width: 9ch;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -749,10 +783,170 @@ button:focus-visible {
   }
 }
 
-/* The people button takes the bar's last spare room on the narrowest phones, where the game's logo would be crushed
-   under the score */
+/* The score and the people button take the bar's last spare room on the narrowest phones, where the game's logo would
+   be crushed under the score */
 @media (max-width: 340px) {
   .arcade-bar-logo {
     display: none;
+  }
+
+  .arcade-icon {
+    width: 32px;
+  }
+}
+
+/* ---------- Payout settings ---------- */
+
+/* Server admins' settings for this game's payouts, over everything, inside Discord's buttons and the notch */
+.arcade-payouts {
+  inset: var(--arcade-safe-top) var(--arcade-safe-right) var(--arcade-safe-bottom) var(--arcade-safe-left);
+  width: min(420px, calc(100% - var(--arcade-safe-left) - var(--arcade-safe-right) - 24px));
+  max-width: none;
+  max-height: calc(100% - var(--arcade-safe-top) - var(--arcade-safe-bottom) - 24px);
+  padding: 20px 20px 18px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-top: 3px solid var(--arcade-accent);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #1c2034, var(--arcade-card) 60%);
+  color: var(--arcade-text);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+  scrollbar-width: thin;
+  scrollbar-color: var(--arcade-line) transparent;
+}
+
+.arcade-payouts::backdrop {
+  background: rgba(5, 6, 11, 0.62);
+}
+
+.arcade-payouts h2 {
+  margin: 0 0 14px;
+  font-size: 1.35rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.arcade-switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.arcade-switch input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--arcade-accent);
+}
+
+.arcade-payout-numbers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.arcade-payout-numbers label {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 6px;
+  color: var(--arcade-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.arcade-payout-numbers input {
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  padding: 0 10px;
+  border: 1px solid var(--arcade-line);
+  border-radius: 10px;
+  background: var(--arcade-back);
+  color: var(--arcade-text);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.arcade-payout-numbers input:focus-visible {
+  outline: 2px solid var(--arcade-accent);
+  outline-offset: 1px;
+}
+
+.arcade-payouts .arcade-note {
+  margin: 12px 0 0;
+  font-size: 0.85rem;
+}
+
+.arcade-payouts-status {
+  min-height: 1.3em;
+  margin: 10px 0 0;
+  color: var(--arcade-muted);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.arcade-payouts .arcade-actions {
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.arcade-payouts .arcade-actions button {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 42px;
+}
+
+/* Upright phones: one setting per row, its box beside its name */
+@media (max-width: 460px) {
+  .arcade-payout-numbers {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .arcade-payout-numbers label {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .arcade-payout-numbers input {
+    flex: none;
+    width: 128px;
+  }
+}
+
+/* Sideways phones: less room above and below everything */
+@media (max-height: 520px) {
+  .arcade-payouts {
+    padding: 12px 16px;
+  }
+
+  .arcade-payouts h2 {
+    margin-bottom: 8px;
+    font-size: 1.15rem;
+  }
+
+  .arcade-payout-numbers {
+    margin-top: 8px;
+  }
+
+  .arcade-payouts .arcade-note {
+    margin-top: 8px;
+  }
+
+  .arcade-payouts-status {
+    margin-top: 4px;
+  }
+
+  .arcade-payouts .arcade-actions {
+    margin-top: 4px;
   }
 }

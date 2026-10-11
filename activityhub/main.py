@@ -29,7 +29,7 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.5.0"
+    __version__ = "0.6.0"
 
     def __init__(self, bot: Red):
         super().__init__()
@@ -43,7 +43,7 @@ class ActivityHub(Commands, commands.Cog, metaclass=CompositeMetaClass):
         self.sessions = SessionStore()
         self.launches = LaunchMemory()
         self.scores = ScoreBoard(self.config)
-        self.payouts = Payouts(self.config)
+        self.payouts = Payouts(self.config, bot)
         self.server = HubServer(self)
         # The game cogs cog_load found already loaded, each describing itself in its own task
         self.scans: list[asyncio.Task] = []

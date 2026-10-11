@@ -206,7 +206,7 @@ A red "400 (Bad Request)" line in the browser console is normal for `{"error"}` 
 |---|---|---|
 | `hub.offline` | `boolean` | `true` outside Discord, for example in the browser preview. `hub.api()` and `hub.socket()` then throw "Open this activity from Discord to use this." |
 | `hub.player` | object or `null` | `{ id, username, displayName, avatar, guildId, guildName, guildIcon }`, all strings. `displayName` is the name Discord shows for the player in that server; `username` is their account handle. The `guild` ones are `null` outside a server, and `guildIcon` is `null` for a server without an icon. `null` when offline. It's for showing, not for trusting. |
-| `hub.api(name, data)` | `Promise<object>` | Calls your action `name` with `data` (an object, default `{}`). Resolves with what the action returned. If the player's login expired (a bot restart, an ActivityHub reload), it logs in again and retries once by itself. |
+| `hub.api(name, data, options)` | `Promise<object>` | Calls your action `name` with `data` (an object, default `{}`). Resolves with what the action returned. If the player's login expired (a bot restart, an ActivityHub reload), it logs in again and retries once by itself. `options` is optional: `{ keepalive: true }` lets the request reach the bot even after your page is gone, for saving on `pagehide` (the browser's event for a page going away) when Join or closing the Activity removes your game's frame. Once the page is gone, the log-in-again retry can't run. A keepalive request can carry at most 64 KB of data: the browser refuses a bigger one. |
 | `hub.fetch(path, options)` | `Promise<Response>` | Calls a raw route, like the browser's own `fetch`, with the player's login attached. `path` is the route path, for example `"avatar"` or `"item?id=7"`. When the hub says the login expired, it logs in again and sends the request once more (a streamed body can't be sent twice, so that one gets the 401). Works offline too, without a login. |
 | `hub.socket()` | `Promise<conn>` | Opens your game's live connection. Resolves once the hub has checked the login. If the login expired, it logs in again and retries once by itself. Once open, it reconnects by itself after a drop (see `conn.onReconnecting`). |
 | `hub.discord` | Discord toolkit or `null` | The menu's Discord Embedded App SDK object (the toolkit Discord gives Activity pages), for calls like `hub.discord.commands.openExternalLink(...)`. Listeners you add with `hub.discord.subscribe()` are removed for you when your game closes. Its participant list is everyone in the Activity, not your players: see [multiplayer](DEVELOPERS.md#6-multiplayer-with-live-connections). `null` outside Discord. |
@@ -304,7 +304,15 @@ declare module "activityhub" {
     readonly follow: { id: string; name: string } | null;
     /** Everyone in the window, the player included. A new array on each read. */
     readonly people: HubPerson[];
-    api(name: string, data?: object): Promise<any>;
+    /** Calls your action `name` with `data`. */
+    api(
+      name: string,
+      data?: object,
+      options?: {
+        /** The request still reaches the bot after the page is gone, for a save on pagehide. At most 64 KB. */
+        keepalive?: boolean;
+      },
+    ): Promise<any>;
     fetch(path: string, options?: RequestInit): Promise<Response>;
     socket(): Promise<HubConnection>;
     stat(text: string): void;

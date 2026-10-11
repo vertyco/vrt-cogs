@@ -497,54 +497,6 @@ input[type="color"]::-webkit-color-swatch {
   accent-color: var(--accent);
 }
 
-.payout-note {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.85rem;
-  line-height: 1.45;
-}
-
-.payout {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.payout-numbers {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.payout.off .payout-numbers {
-  opacity: 0.5;
-}
-
-.payout-field {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 6px;
-}
-
-.payout-field .field-label {
-  font-size: 0.7rem;
-}
-
-.payout-field input {
-  width: 100%;
-  min-width: 0;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--card);
-  color: var(--text);
-  font: inherit;
-}
-
 .panel-foot {
   display: flex;
   align-items: center;

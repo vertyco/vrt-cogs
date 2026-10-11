@@ -5,7 +5,7 @@ import { MenuSounds } from "./sounds.js";
 import { applyGlow, buildArm, buildOrbParts, drawWeb, gearIcon, introPills, turnArm, turnPanels } from "./orb.js";
 import { PressHold, avatar, elsewhereLine, icon, personRow, statusText } from "./people.js";
 
-const TAB_NAMES = { look: "My look", order: "My order", server: "This server", payouts: "Payouts", defaults: "Defaults" };
+const TAB_NAMES = { look: "My look", order: "My order", server: "This server", defaults: "Defaults" };
 // Each look tab edits one saved level and falls back to the levels before it
 const LEVELS = ["global", "guild", "user"];
 const TAB_LEVEL = { defaults: "global", server: "guild", look: "user" };
@@ -36,12 +36,6 @@ const CHOICES = {
 const TRUE_FALSE = new Set(["details", "sounds", "fps"]);
 // Settings is the orb theme's last pill, with an empty key, in place of the gear button
 const SETTINGS_ITEM = { key: "", name: "Settings", description: "Change how this menu looks and the order of your games." };
-// The Payouts tab's number boxes: the saved setting, its label and what one step is
-const PAYOUT_FIELDS = [
-  ["rate", (game, currency) => `${currency} per ${game.unit}`, "any"],
-  ["cap", () => "Most per cash-in", "1"],
-  ["plays", () => "Cash-ins a day", "1"],
-];
 const ACCENTS = ["#5865F2", "#57F287", "#FEE75C", "#EB459E", "#ED4245", "#00A8FC", "#F0B232", "#99AAB5"];
 // How long the mouse rests on a card (or the keyboard on it) before its players show
 const HOVER_MS = 250;
@@ -1024,24 +1018,39 @@ function showHover(key, card = document.querySelector(`#games .card[data-key="${
 }
 
 // Under the card, or above it when there is no room below. The list is never taller than the screen: with more
-// players than fit it scrolls, so the last Join stays reachable
+// players than fit it scrolls, so the last Join stays reachable. It keeps clear of the notch and Discord's buttons
+// on every side
 function placeHover(box, card) {
   const safe = getComputedStyle(page.host.safeArea);
   const low = EDGE + parseFloat(safe.paddingTop);
   const high = window.innerHeight - EDGE - parseFloat(safe.paddingBottom);
+  const left = EDGE + parseFloat(safe.paddingLeft);
+  const right = window.innerWidth - EDGE - parseFloat(safe.paddingRight);
   box.style.maxHeight = `${Math.max(0, high - low)}px`;
+  box.style.maxWidth = `${Math.max(0, right - left)}px`;
   const height = box.offsetHeight;
   const at = card.getBoundingClientRect();
   const below = at.bottom + 6;
   const top = below + height > high ? at.top - height - 6 : below;
-  box.style.left = `${clamp(at.left, EDGE, window.innerWidth - box.offsetWidth - EDGE)}px`;
+  box.style.left = `${clamp(at.left, left, Math.max(left, right - box.offsetWidth))}px`;
   box.style.top = `${clamp(top, low, Math.max(low, high - height))}px`;
 }
 
 function hideHover() {
   clearTimeout(page.hoverTimer);
+  const box = $("hover-people");
+  const key = page.hoverKey;
+  const hadFocus = !box.hidden && box.contains(document.activeElement);
   page.hoverKey = null;
-  $("hover-people").hidden = true;
+  box.hidden = true;
+  // Focus in a list that goes (Escape, or its last player leaving) goes back to its card, or the browser would drop
+  // it to the page and a keyboard player would start over
+  const card = hadFocus && key ? document.querySelector(`#games .card[data-key="${CSS.escape(key)}"]`) : null;
+  if (card) {
+    card.focus({ preventScroll: true });
+    // Focus on a card shows its list after a moment, and this one was just put away
+    clearTimeout(page.hoverTimer);
+  }
 }
 
 // How wide the header row's button is with this many faces. With none it is only the count
@@ -1282,9 +1291,6 @@ function stagedFrom(tab) {
   if (tab === "order") {
     return { order: state.games.map((game) => game.key), cleared: false };
   }
-  if (tab === "payouts") {
-    return { payouts: Object.fromEntries(state.payouts.games.map((game) => [game.key, payoutSettings(game)])) };
-  }
   const staged = { look: { ...state.looks[TAB_LEVEL[tab]] } };
   if (tab in SWITCHES) {
     staged.disabled = state[SWITCHES[tab].list].filter((game) => !game.on).map((game) => game.key);
@@ -1305,10 +1311,7 @@ function previewLook() {
 }
 
 function preview() {
-  if (page.tab === "payouts") {
-    applyLook(page.state.look);
-    renderGames(page.state.games);
-  } else if (page.tab === "order") {
+  if (page.tab === "order") {
     applyLook(page.state.look);
     const byKey = new Map(page.state.games.map((game) => [game.key, game]));
     renderGames(page.staged.order.map((key) => byKey.get(key)).filter(Boolean));
@@ -1323,8 +1326,6 @@ function renderPanel() {
   const body = $("tab-body");
   if (page.tab === "order") {
     body.replaceChildren(orderEditor());
-  } else if (page.tab === "payouts") {
-    body.replaceChildren(...payoutEditor());
   } else {
     body.replaceChildren(...lookEditor(), ...(page.tab in SWITCHES ? [switchEditor()] : []));
   }
@@ -1564,68 +1565,10 @@ function switchEditor() {
   return box;
 }
 
-// ---------- Payouts ----------
-
-function payoutSettings(game) {
-  return { on: game.on, rate: game.rate, cap: game.cap, plays: game.plays };
-}
-
-function payoutEditor() {
-  const { games, currency } = page.state.payouts;
-  const notes = [
-    "After a round, players can cash in their score: each point pays the rate, up to the most per cash-in. Playing again first gives up the score, so players save their cash-ins for their best rounds. Cash-ins come back at midnight UTC.",
-  ];
-  if (page.state.payouts.global) {
-    notes.push("The bank is global, so these payouts apply in every server, and cash-ins count across servers.");
-  }
-  if (!games.length) {
-    notes.push("No installed game pays out yet.");
-  }
-  return [...notes.map((text) => el("p", "payout-note", text)), ...games.map((game) => payoutCard(game, currency))];
-}
-
-function payoutCard(game, currency) {
-  const staged = page.staged.payouts[game.key];
-  const box = el("fieldset", "payout");
-  box.dataset.key = game.key;
-  const toggle = el("input");
-  toggle.type = "checkbox";
-  toggle.checked = staged.on;
-  toggle.addEventListener("change", () => {
-    staged.on = toggle.checked;
-    box.classList.toggle("off", !staged.on);
-  });
-  const label = el("label", "switch");
-  label.append(toggle, el("span", "", `${game.name} pays out`));
-  const numbers = el("div", "payout-numbers");
-  for (const [name, text, step] of PAYOUT_FIELDS) {
-    const input = el("input");
-    input.type = "number";
-    input.min = step === "any" ? "0" : "1";
-    input.step = step;
-    input.value = String(staged[name]);
-    input.dataset.field = name;
-    // An empty box goes as null, which the bot refuses with a message saying what it needs
-    input.addEventListener("input", () => {
-      staged[name] = input.value === "" ? null : Number(input.value);
-    });
-    const field = el("label", "payout-field");
-    field.append(el("span", "field-label", text(game, currency)), input);
-    numbers.append(field);
-  }
-  box.classList.toggle("off", !staged.on);
-  box.append(label, numbers);
-  return box;
-}
-
 // ---------- Save and reset ----------
 
 function saveBody() {
   const body = { tab: page.tab };
-  if (page.tab === "payouts") {
-    body.payouts = page.staged.payouts;
-    return body;
-  }
   if (page.tab === "order") {
     // After Reset no order means "alphabetical", so games installed later also land in order. An empty list
     // can't mean that: it is what a server with every game off sends
@@ -1663,11 +1606,7 @@ async function save() {
 
 // Reset is staged like any other edit: it shows the level above and saves nothing until Save
 function reset() {
-  if (page.tab === "payouts") {
-    page.staged.payouts = Object.fromEntries(
-      page.state.payouts.games.map((game) => [game.key, { ...game.defaults }]),
-    );
-  } else if (page.tab === "order") {
+  if (page.tab === "order") {
     const games = [...page.state.games].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
     page.staged.order = games.map((game) => game.key);
     page.staged.cleared = true;

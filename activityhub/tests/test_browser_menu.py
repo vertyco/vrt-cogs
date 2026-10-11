@@ -6,7 +6,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.select import Select
 
-from activityhub.bundled.games import bundled_games
 from activityhub.tests.browser import (
     DISCORD_QUERY,
     LiveHub,
@@ -239,45 +238,6 @@ def test_server_tab_turns_a_game_off(driver, live):
     assert live.hub.config.guilds[GUILD_ID]["disabled"] == ["demo"]
     driver.find_element(By.ID, "close").click()
     assert driver.execute_script(f"return {CARDS}") == ["second"]
-
-
-def test_payouts_tab_turns_a_game_on_with_its_own_rate(driver, live):
-    for game in bundled_games(live.hub.scores, live.hub.payouts):
-        register(live.hub, game)
-    live.hub.config.globals["look"] = {"theme": "standard"}
-    live.user_id = MANAGER_ID
-    open_menu(driver, live, DISCORD_QUERY)
-    open_settings(driver)
-    pick_tab(driver, "payouts")
-    card = '.payout[data-key="snake"]'
-    assert "credits per apple" in driver.find_element(By.CSS_SELECTOR, card).text.lower()
-    driver.find_element(By.CSS_SELECTOR, f"{card} .switch input").click()
-    rate = driver.find_element(By.CSS_SELECTOR, f'{card} input[data-field="rate"]')
-    rate.send_keys(Keys.BACKSPACE, Keys.BACKSPACE, "2.5")
-    save(driver)
-    assert live.hub.config.guilds[GUILD_ID]["payouts"]["snake"] == {"on": True, "rate": 2.5, "cap": 1000, "plays": 3}
-    driver.execute_cdp_cmd(
-        "Emulation.setDeviceMetricsOverride", {"width": 375, "height": 740, "deviceScaleFactor": 1, "mobile": True}
-    )
-    assert no_sideways_scroll(driver)
-    driver.execute_cdp_cmd("Emulation.clearDeviceMetricsOverride", {})
-
-
-def test_a_bad_payout_number_says_what_is_wrong(driver, live):
-    for game in bundled_games(live.hub.scores, live.hub.payouts):
-        register(live.hub, game)
-    live.hub.config.globals["look"] = {"theme": "standard"}
-    live.user_id = MANAGER_ID
-    open_menu(driver, live, DISCORD_QUERY)
-    open_settings(driver)
-    pick_tab(driver, "payouts")
-    # Typed away like a player would, since clear() skips the input event the page listens for
-    driver.find_element(By.CSS_SELECTOR, '.payout[data-key="snake"] input[data-field="plays"]').send_keys(
-        Keys.BACKSPACE
-    )
-    driver.find_element(By.ID, "save").click()
-    wait_for(driver, "document.getElementById('panel-status').textContent.includes('cash-ins a day')")
-    assert live.hub.config.guilds.get(GUILD_ID, {}).get("payouts", {}) == {}
 
 
 def test_defaults_tab_turns_a_game_off_everywhere(driver, live):
@@ -1302,6 +1262,12 @@ def test_the_header_row_is_never_clipped_when_there_is_no_room_for_a_face(driver
         assert driver.execute_script(
             "return !!document.querySelector('#people-row .people-stack.count-only .hub-icon')"
         )
+        if theme == "standard":
+            # The row stops short of the settings gear beside it
+            row, gear = driver.execute_script(
+                "return ['people-row', 'gear'].map((id) => document.getElementById(id).getBoundingClientRect().toJSON())"
+            )
+            assert gear["width"] > 0 and row["right"] <= gear["left"] + 0.5, (row, gear)
     finally:
         plain_device(driver)
 
@@ -1469,6 +1435,29 @@ def test_a_touch_on_a_bubble_opens_the_list_and_not_the_game(driver, live, layou
         plain_device(driver)
 
 
+@pytest.mark.parametrize("side", ["left", "right"])
+def test_the_hover_list_keeps_clear_of_the_safe_area_at_the_sides(driver, live, side):
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "list"}
+    viewport(driver, 390, 844)
+    try:
+        open_menu(driver, live, DISCORD_QUERY)
+        # A phone's notch, or Discord's own buttons, take this much room at one side
+        driver.execute_script(
+            f"document.documentElement.style.setProperty('--discord-safe-area-inset-{side}', '100px');"
+            "window.dispatchEvent(new Event('resize'));"
+        )
+        live.add_person(MANAGER_ID, where="demo")
+        wait_for(driver, BUBBLE)
+        driver.execute_script(f"{BUBBLE}.click()")
+        wait_for(driver, f"!{HOVER}.hidden")
+        left, _, right, _ = driver.execute_script(BOX_RECT)
+        # 8 px from the screen's edge, and from the safe area's
+        low, high = (108, 382) if side == "left" else (8, 282)
+        assert left >= low - 0.5 and right <= high + 0.5, (left, right)
+    finally:
+        plain_device(driver)
+
+
 def test_a_header_badge_falls_back_to_the_games_first_letter(driver, live, tmp_path):
     live.hub.config.globals["look"] = {"theme": "standard"}
     register(live.hub, NoIconCog(write_demo_web(tmp_path / "quiet"), key="quiet", name="Quiet Game", cog_name="Quiet"))
@@ -1526,6 +1515,31 @@ def test_focus_stays_on_a_hover_join_when_the_list_is_drawn_again(driver, live):
     time.sleep(0.5)
     assert driver.execute_script("return document.activeElement.dataset.join") == str(MANAGER_ID)
     assert driver.execute_script(f"return !{HOVER}.hidden")
+
+
+def test_escape_in_the_list_puts_focus_back_on_its_card(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "grid"}
+    open_menu(driver, live, DISCORD_QUERY)
+    live.add_person(MANAGER_ID, where="demo", status="Clicking")
+    wait_for(driver, BUBBLE)
+    tab_to_a_hover_join(driver)
+    ActionChains(driver).send_keys(Keys.ESCAPE).perform()
+    wait_for(driver, f"{HOVER}.hidden")
+    assert driver.execute_script("return document.activeElement.dataset.key") == "demo"
+    # Back on its card, the list Escape closed stays closed
+    time.sleep(0.6)
+    assert driver.execute_script(f"return {HOVER}.hidden")
+
+
+def test_focus_goes_back_to_the_card_when_the_last_player_in_its_list_leaves(driver, live):
+    live.hub.config.globals["look"] = {"theme": "standard", "layout": "grid"}
+    open_menu(driver, live, DISCORD_QUERY)
+    conn = live.add_person(MANAGER_ID, where="demo", status="Clicking")
+    wait_for(driver, BUBBLE)
+    tab_to_a_hover_join(driver)
+    live.update_person(conn, where=None)
+    wait_for(driver, f"{HOVER}.hidden")
+    assert driver.execute_script("return document.activeElement.dataset.key") == "demo"
 
 
 def test_focus_goes_to_the_list_when_the_person_it_was_on_leaves(driver, live):

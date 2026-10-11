@@ -194,6 +194,29 @@ async def test_a_status_change_stays_in_its_own_window(hub, presence):
 
 
 @pytest.mark.asyncio
+async def test_an_update_that_changes_nothing_sends_nothing(hub, presence):
+    ann, bo = link(hub), link(hub, MANAGER_ID)
+    for conn in (ann, bo):
+        await presence.connect(conn)
+    state = {"where": "snake", "status": "Playing · 9", "data": {"score": 9, "on": 1}, "busy": True, "away": False}
+    await presence.update(ann, state)
+    await settle(ann, bo)
+    sent = len(bo.ws.sent)
+    await presence.update(ann, dict(state))
+    # What the bot cleans to the same state is the same too
+    await presence.update(ann, {**state, "status": " Playing · 9\n"})
+    await settle(ann, bo)
+    assert len(bo.ws.sent) == sent
+    # Data whose JSON differs is a change, even where Python calls the values equal
+    await presence.update(ann, {**state, "data": {"score": 9, "on": True}})
+    await settle(ann, bo)
+    assert len(bo.ws.sent) == sent + 1 and last(bo)["people"][0]["data"] == {"score": 9, "on": True}
+    await presence.update(ann, {**state, "away": True})
+    await settle(ann, bo)
+    assert len(bo.ws.sent) == sent + 2 and last(bo)["people"][0]["away"] is True
+
+
+@pytest.mark.asyncio
 async def test_sends_are_merged(hub, presence, monkeypatch):
     monkeypatch.setattr(presence_module, "SEND_EVERY", 0.2)
     ann = link(hub)

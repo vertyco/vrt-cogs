@@ -211,6 +211,7 @@ function launch() {
   ball.vy = -ballSpeed() * Math.cos(angle);
   game.mode = "playing";
   arcade.hint("");
+  arcade.begin();
   sounds.launch();
   wake();
 }

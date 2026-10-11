@@ -66,19 +66,11 @@ def test_merge_disabled_refuses_bad_input():
 
 
 def test_tabs_for_each_kind_of_player():
-    assert allowed_tabs(in_guild=True, can_manage=False, is_owner=False) == ["look", "order"]
-    assert allowed_tabs(in_guild=True, can_manage=True, is_owner=False) == ["look", "order", "server", "payouts"]
-    owner_here = ["look", "order", "server", "payouts", "defaults"]
-    assert allowed_tabs(in_guild=True, can_manage=False, is_owner=True) == owner_here
-    assert allowed_tabs(in_guild=False, can_manage=False, is_owner=True) == ["look", "order", "defaults"]
-    assert allowed_tabs(in_guild=False, can_manage=True, is_owner=False) == ["look", "order"]
-
-
-def test_a_global_bank_leaves_payouts_to_the_owner():
-    manager = allowed_tabs(in_guild=True, can_manage=True, is_owner=False, global_bank=True)
-    assert manager == ["look", "order", "server"]
-    owner_in_dm = allowed_tabs(in_guild=False, can_manage=False, is_owner=True, global_bank=True)
-    assert owner_in_dm == ["look", "order", "payouts", "defaults"]
+    assert allowed_tabs(server_admin=False, is_owner=False) == ["look", "order"]
+    assert allowed_tabs(server_admin=True, is_owner=False) == ["look", "order", "server"]
+    assert allowed_tabs(server_admin=True, is_owner=True) == ["look", "order", "server", "defaults"]
+    # The bot owner in a DM
+    assert allowed_tabs(server_admin=False, is_owner=True) == ["look", "order", "defaults"]
 
 
 def test_game_json():

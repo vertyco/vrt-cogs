@@ -110,6 +110,8 @@ function move(direction) {
     return;
   }
   state.moves += direction;
+  // The board waits for the first slide, so that is when the round gets going
+  arcade.begin();
   arcade.setScore(state.board.score);
   animate(result);
   if (result.merged.length) {

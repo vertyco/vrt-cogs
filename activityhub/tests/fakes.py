@@ -212,14 +212,15 @@ class Today:
 
 def make_hub() -> SimpleNamespace:
     config = FakeConfig()
+    bot = FakeBot()
     return SimpleNamespace(
-        bot=FakeBot(),
+        bot=bot,
         config=config,
         registry=GameRegistry(),
         sessions=SessionStore(),
         launches=LaunchMemory(),
         scores=ScoreBoard(config),
-        payouts=Payouts(config, money=FakeBank(), today=Today()),
+        payouts=Payouts(config, bot, money=FakeBank(), today=Today()),
     )
 
 
