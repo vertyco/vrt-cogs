@@ -66,7 +66,13 @@ const LAUGH_EVERY = [20000, 30000];
 const FLYOVER_MS = 450 * 33;
 const FLYOVER_EVERY = [15000, 25000];
 const CAMEO_MS = 2000;
-const MASCOT_HOME = [150, 472];
+// Spots on the menu backdrop, given where they are when the picture fills the stage exactly: the ledge the mascot
+// stands on, the cliff face it head-butts, the cave paintings that hide the cameo, and where the caveman pops out
+const MASCOT_HOME = [140, 515];
+const CLIFF_X = 440;
+const PAINTINGS = [700, 393];
+const PAINTINGS_REACH = 45;
+const CAVEMAN_HOME = [700, 417];
 const MAMMOTH_HOME = [150, 600];
 const SHUFFLE_FLYER_Y = 260;
 const FLAP_MS = 140;
@@ -500,21 +506,56 @@ class Scene {
     }
     this.world.scale.set(scale);
     this.world.position.set(x, y);
-    this.placeBackdrop(playing ? [STAGE_W / 2, LEDGE_Y] : tall ? MASCOT_HOME : [STAGE_W / 2, STAGE_H / 2], scale);
+    this.placeBackdrop(playing ? [STAGE_W / 2, LEDGE_Y] : tall ? MASCOT_HOME : null, scale);
+    if (!playing) {
+      this.placeCast();
+    }
     this.showCast();
   }
 
-  // The backdrop lines up with the stage at one point (the boards' ledge in play) and grows until it covers the screen
-  placeBackdrop([ax, ay], scale) {
+  // The backdrop covers the screen. In play and on an upright phone it lines up with the stage at one point (the
+  // boards' ledge, or the mascot's spot). Other menus show the bottom of the picture, where the mascot's ledge is,
+  // and crop the sky
+  placeBackdrop(anchor, scale) {
     const texture = this.screen === "play" ? this.art.play : this.art.menu;
     this.backdrop.texture = texture;
     const width = this.app.screen.width;
     const height = this.app.screen.height;
-    const sx = this.world.x + ax * scale;
-    const sy = this.world.y + ay * scale;
-    const cover = Math.max(scale, sx / ax, (width - sx) / (STAGE_W - ax), sy / ay, (height - sy) / (STAGE_H - ay));
-    this.backdrop.scale.set((cover * STAGE_W) / texture.width);
-    this.backdrop.position.set(sx - ax * cover, sy - ay * cover);
+    if (anchor) {
+      const [ax, ay] = anchor;
+      const sx = this.world.x + ax * scale;
+      const sy = this.world.y + ay * scale;
+      this.cover = Math.max(scale, sx / ax, (width - sx) / (STAGE_W - ax), sy / ay, (height - sy) / (STAGE_H - ay));
+      this.backdrop.position.set(sx - ax * this.cover, sy - ay * this.cover);
+    } else {
+      this.cover = Math.max(width / STAGE_W, height / STAGE_H);
+      this.backdrop.position.set((width - STAGE_W * this.cover) / 2, height - STAGE_H * this.cover);
+    }
+    this.backdrop.scale.set((this.cover * STAGE_W) / texture.width);
+  }
+
+  // Where a spot on the backdrop is on the stage, given where it is when the picture fills the stage exactly
+  onBackdrop([x, y]) {
+    const scale = this.world.scale.x;
+    return [
+      (this.backdrop.x + x * this.cover - this.world.x) / scale,
+      (this.backdrop.y + y * this.cover - this.world.y) / scale,
+    ];
+  }
+
+  // The menu characters follow the backdrop, which grows to cover screens of other shapes than the stage. The
+  // mascot moves right if the screen's edge would cut it off, and its leap stops at the screen's edge
+  placeCast() {
+    const scale = this.world.scale.x;
+    const left = -this.world.x / scale;
+    const right = (this.app.screen.width - this.world.x) / scale;
+    const half = (this.art.triceratops.width * this.mascot.scale.x) / 2;
+    const [x, y] = this.onBackdrop(MASCOT_HOME);
+    this.mascotHome = [Math.max(x, left + half), y];
+    this.cliffX = Math.min(this.onBackdrop([CLIFF_X, 0])[0], right - half);
+    this.paintings = this.onBackdrop(PAINTINGS);
+    this.paintingsReach = (PAINTINGS_REACH * this.cover) / scale;
+    this.caveman.position.set(...this.onBackdrop(CAVEMAN_HOME));
   }
 
   toStage(event) {
@@ -523,7 +564,8 @@ class Scene {
 
   pointer(event) {
     const point = this.toStage(event);
-    if (this.screen === "title" && Math.hypot(point.x - 510, point.y - 379) < 34) {
+    const [px, py] = this.paintings;
+    if (this.screen === "title" && Math.hypot(point.x - px, point.y - py) < this.paintingsReach) {
       this.onCameo();
       return;
     }
@@ -913,6 +955,10 @@ class Scene {
     this.mascot = sprite(art.triceratops, 0.5, 1);
     this.mascot.scale.set(0.9);
     this.mascot.position.set(...MASCOT_HOME);
+    this.mascotHome = MASCOT_HOME;
+    this.cliffX = CLIFF_X;
+    this.paintings = PAINTINGS;
+    this.paintingsReach = PAINTINGS_REACH;
     this.mascotLaughUntil = 0;
     this.nextLaugh = performance.now() + between(LAUGH_EVERY);
     this.entranceStart = null;
@@ -935,7 +981,7 @@ class Scene {
     this.nextFlyover = performance.now() + between(FLYOVER_EVERY);
     this.caveman = sprite(art.caveman, 0.5, 1);
     this.caveman.scale.set(0.45);
-    this.caveman.position.set(557, 300);
+    this.caveman.position.set(...CAVEMAN_HOME);
     this.caveman.visible = false;
     this.cameoStart = null;
     this.shake = 0;
@@ -970,8 +1016,10 @@ class Scene {
   }
 
   animateMascot(now) {
-    let x = MASCOT_HOME[0];
-    let y = MASCOT_HOME[1];
+    const [homeX, homeY] = this.mascotHome;
+    const cliff = this.cliffX;
+    let x = homeX;
+    let y = homeY;
     let turn = 0;
     if (this.entranceStart !== null) {
       const frame = (now - this.entranceStart) / ENTRANCE_FRAME_MS;
@@ -980,7 +1028,7 @@ class Scene {
       } else if (frame < CRASH_FRAME) {
         // Crouch, then leap at the cliff
         const t = Math.max(0, (frame - 3) / (CRASH_FRAME - 3));
-        x += (440 - x) * t;
+        x += (cliff - x) * t;
         y -= Math.sin(t * Math.PI * 0.8) * 120;
         turn = t * 0.3;
       } else {
@@ -991,8 +1039,8 @@ class Scene {
         }
         // Bounce back down to the ledge, a little dizzy
         const t = (frame - CRASH_FRAME) / (ENTRANCE_FRAMES - CRASH_FRAME);
-        x = 440 + (MASCOT_HOME[0] - 440) * t;
-        y = MASCOT_HOME[1] - 120 * Math.sin((1 - t) * Math.PI * 0.6) * (1 - t);
+        x = cliff + (homeX - cliff) * t;
+        y = homeY - 120 * Math.sin((1 - t) * Math.PI * 0.6) * (1 - t);
         turn = 0.3 * (1 - t) * Math.cos(frame);
       }
     } else if (this.mascot.visible && now >= this.nextLaugh) {
