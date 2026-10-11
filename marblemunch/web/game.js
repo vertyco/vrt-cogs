@@ -11,6 +11,10 @@ const CLOSED_BECAUSE = {
   4029: "This page sent too many messages, so the bot disconnected it.",
 };
 const CLOSED_OTHERWISE = "The game ended. Go back to the menu and open it again.";
+const SEAT_COLORS = ["Orange", "Blue", "Green", "Pink"];
+const WATCHER_FACES = 6;
+// Longer names are cut to this many characters on the board, where four tags share the walls
+const TAG_NAME_MAX = 12;
 const touchScreen = window.matchMedia("(pointer: coarse)");
 const sound = new Sound();
 const page = {
@@ -24,6 +28,11 @@ const page = {
   left: null,
   flashTimer: null,
   toastTimer: null,
+  // What the watcher row last showed, so an identical list leaves its faces alone
+  watchLook: null,
+  // The status last given to the hub, and whether the game's connection has closed for good
+  reported: null,
+  closed: false,
   // The payout settings, for server admins only
   payouts: null,
 };
@@ -34,6 +43,15 @@ function $(id) {
 
 function plural(count, word) {
   return `${count} ${count === 1 ? word : `${word}s`}`;
+}
+
+// What a person sees as single characters, so a flag or a joined emoji is never split. Older browsers have no
+// segmenter and count code points instead
+const segmenter =
+  typeof Intl.Segmenter === "function" ? new Intl.Segmenter(undefined, { granularity: "grapheme" }) : null;
+
+function characters(text) {
+  return segmenter ? Array.from(segmenter.segment(text), (part) => part.segment) : Array.from(text);
 }
 
 // ---------- Starting ----------
@@ -55,6 +73,11 @@ async function start() {
     showMessage(e.message);
     return;
   }
+  // Older hubs have no people button
+  if (page.hub.peopleButton) {
+    $("watching").after(page.hub.peopleButton());
+  }
+  page.hub.onPeople?.(renderWatchers);
   if (page.hub.offline) {
     showPreview();
     return;
@@ -70,6 +93,7 @@ async function goLive() {
     page.conn = await page.hub.socket();
   } catch (e) {
     showMessage(CLOSED_BECAUSE[e.status] || e.message);
+    leaveRound();
     return;
   }
   page.conn.on(receive);
@@ -83,6 +107,7 @@ async function goLive() {
   page.conn.onClose((code) => {
     $("banner").hidden = true;
     showMessage(CLOSED_BECAUSE[code] || CLOSED_OTHERWISE);
+    leaveRound();
   });
 }
 
@@ -90,7 +115,7 @@ function showPreview() {
   page.scene.startDemo();
   showOverlay("Preview", "Open Marble Munch in Discord to play.");
   $("hint").textContent = "This is the browser preview. Open Marble Munch in Discord to play.";
-  const empty = { kind: "empty", id: null, name: "", avatar: "", away: false };
+  const empty = { kind: "empty", id: null, name: "", avatar: "", away: false, played: false };
   renderScores({ seats: [empty, empty, empty, empty], board: null });
 }
 
@@ -224,6 +249,9 @@ function applyState(state) {
   }
   renderScores(state);
   renderStatus(state);
+  page.scene.setNames(state.seats.map(tagFor));
+  renderWatchers();
+  report(state);
   if (state.stage !== "playing") {
     letGo();
   }
@@ -234,6 +262,9 @@ function applyFrame(frame) {
   page.updates += 1;
   page.scene.push(frame);
   renderPoints(frame.s);
+  if (page.state) {
+    report({ ...page.state, board: frame });
+  }
   showLeft(frame);
   noteLeft(frame);
 }
@@ -279,6 +310,125 @@ function effect(kind, seat) {
 function showRate() {
   page.hub.stat(page.state?.stage === "playing" ? `${page.updates} TPS` : "");
   page.updates = 0;
+}
+
+// ---------- Who's here ----------
+
+// A name tag over a hippo. Long names are cut so a tag stays near its own hippo, and "(away)" goes under the name
+function tagFor(seat) {
+  if (seat.kind === "empty") {
+    return "";
+  }
+  const letters = characters(seat.name);
+  const name = letters.length > TAG_NAME_MAX ? `${letters.slice(0, TAG_NAME_MAX - 1).join("")}…` : seat.name;
+  return seat.away ? `${name}\n(away)` : name;
+}
+
+// What the rest of the window sees this player doing, and whether a round is on for them
+function activity(state) {
+  const seat = page.mySeat;
+  if (seat === null) {
+    return ["Watching", null, false];
+  }
+  const marbles = state.board ? state.board.s[seat] : 0;
+  const live = state.stage === "playing" || state.stage === "starting";
+  let text = "Waiting for a round";
+  if (live) {
+    text = `${SEAT_COLORS[seat]} hippo · ${plural(marbles, "marble")}`;
+  } else if (state.stage === "results" && state.seats[seat].played) {
+    // A seat taken during the results still holds the last player's marbles, but this player didn't play the round
+    text = state.winners.includes(seat) ? `Won with ${plural(marbles, "marble")}` : `Ate ${plural(marbles, "marble")}`;
+  }
+  return [text, { seat, marbles }, live];
+}
+
+// The hub passes on whatever it is told, even when nothing changed, so only changes go to it
+function tell(text, data, busy) {
+  const look = JSON.stringify([text, data, busy]);
+  if (look === page.reported) {
+    return;
+  }
+  page.reported = look;
+  page.hub.status(text, data);
+  page.hub.busy(busy);
+}
+
+function report(state) {
+  if (page.hub.status && state && !page.closed) {
+    tell(...activity(state));
+  }
+}
+
+// The game's connection is gone for good, so a friend's Join has nothing to interrupt
+function leaveRound() {
+  page.closed = true;
+  if (page.hub.status) {
+    tell("Not connected", null, false);
+  }
+}
+
+// The people here who aren't at the board, from the hub's list
+function renderWatchers() {
+  const state = page.state;
+  if (!state) {
+    return;
+  }
+  const people = page.hub.people || [];
+  const seated = new Set(state.seats.filter((seat) => seat.kind === "human").map((seat) => seat.id));
+  const watchers = people.filter((person) => person.here && !seated.has(person.id));
+  // The hub's list counts people. The bot's number counts connections, so someone with the game open on two
+  // devices is two there. It stands in only while the hub has no list
+  const count = people.length ? watchers.length : state.watching;
+  const shown = watchers.slice(0, WATCHER_FACES);
+  // Lists arrive several times a second, and a face rebuilt between a press and its release loses the tap
+  const faceKeys = shown.map((person) => [person.id, person.name, person.avatar, person.you, person.away]);
+  const look = JSON.stringify([count, faceKeys]);
+  if (look === page.watchLook) {
+    return;
+  }
+  page.watchLook = look;
+  const box = $("watching");
+  box.hidden = !count;
+  if (!count) {
+    box.replaceChildren();
+    return;
+  }
+  const faces = shown.map(watcherFace);
+  const label = document.createElement("span");
+  label.className = "label";
+  label.textContent = `${count} watching`;
+  const more = count - faces.length;
+  if (more > 0 && faces.length) {
+    const extra = document.createElement("span");
+    extra.className = "more";
+    extra.textContent = `+${more}`;
+    faces.push(extra);
+  }
+  box.replaceChildren(...faces, label);
+}
+
+// A watcher's picture. Hovering shows their name; tapping says it, for phones
+function watcherFace(person) {
+  const face = document.createElement("button");
+  face.type = "button";
+  face.className = "face";
+  const name = person.you ? "You" : person.name;
+  face.title = name;
+  face.setAttribute("aria-label", name);
+  face.classList.toggle("away", Boolean(person.away));
+  const letter = document.createTextNode(characters(name)[0]?.toUpperCase() ?? "");
+  if (person.avatar) {
+    const img = document.createElement("img");
+    img.alt = "";
+    img.addEventListener("error", () => img.replaceWith(letter));
+    img.src = person.avatar;
+    face.append(img);
+  } else {
+    face.append(letter);
+  }
+  // The name sits between marks that keep a right-to-left name from turning the sentence around
+  face.addEventListener("click", () => toast(person.you ? "That's you." : `\u2068${person.name}\u2069 is watching.`));
+  return face;
 }
 
 // ---------- The screen ----------
@@ -345,7 +495,6 @@ function renderStatus(state) {
   $("stand").hidden = !(seated && (stage === "waiting" || stage === "results"));
   $("munch").hidden = !(seated && stage === "playing");
   $("open-leaderboard").hidden = stage !== "waiting";
-  $("watching").textContent = state.watching ? `${state.watching} watching` : "";
   $("hint").textContent = hintFor(state);
   showLeft(state.board);
   const [big, small] = overlayText(state);

@@ -25,7 +25,7 @@ class MarbleMunch(commands.Cog):
     """
 
     __author__ = "Vertyco"
-    __version__ = "0.2.0"
+    __version__ = "0.3.0"
 
     def __init__(self, bot: Red):
         super().__init__()

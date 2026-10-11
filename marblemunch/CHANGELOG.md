@@ -1,5 +1,14 @@
 # Marble Munch Changelog
 
+## 0.3.0
+
+Needs ActivityHub 0.5.0 or later.
+
+- Each hippo has a name tag on the board, so people watching know who's who. Computer hippos show their own names.
+- "3 watching" is now a row of the watchers' pictures. Hover one (or tap it on a phone) to see who it is. Watchers who are away are dimmed.
+- The hub's people button sits in the side panel, and the menu and people panel show what you're doing: "Blue hippo · 12 marbles", "Won with 14 marbles" or "Watching".
+- Join from the hub's people list asks first while you're in a round.
+
 ## 0.2.0
 
 - Marble Munch can pay players in the bot's currency for their marbles, the way Neopets pays for its games. After a round, a box beside the scores shows what it's worth, how many cash-ins are left today, and a **Cash in** button. The next round a player finishes replaces an unsent one. A player who comes back after a dropped connection still sees their round.

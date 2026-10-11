@@ -97,6 +97,7 @@ async def test_tapping_an_empty_hippo_sits_you_and_starts_the_countdown():
         "name": "Player 1",
         "avatar": "https://cdn.discordapp.com/avatars/1/a.png",
         "away": False,
+        "played": False,
     }
     assert state["countdown"] == COUNTDOWN_SECONDS and state["watching"] == 0
 
@@ -314,6 +315,41 @@ async def test_after_results_the_same_seats_wait_again_without_npcs():
     assert state["stage"] == WAITING and state["board"] is None
     assert [seat["kind"] for seat in state["seats"]] == ["human", "empty", "empty", "empty"]
     assert state["countdown"] == COUNTDOWN_SECONDS
+
+
+def played(game):
+    return [seat["played"] for seat in game.match.state()["state"]["seats"]]
+
+
+@pytest.mark.asyncio
+async def test_a_seat_says_whether_its_player_played_the_round():
+    game = make_game()
+    first, second = await playing(game, user_ids=(1, 2), seats=(0, 1))
+    # The computer hippos fill the other seats, and nobody played those
+    assert played(game) == [True, True, False, False]
+    board = game.match.board
+    keep_going(board)
+    for hippo, score in zip(board.hippos, (0, 3, 0, 0)):
+        hippo.score = score
+    board.marbles = []
+    await game.match.tick()
+    assert game.match.stage == RESULTS
+    # A player who ate nothing still played
+    assert played(game) == [True, True, False, False]
+    # Standing up and sitting back in the same seat keeps the round's result
+    await game.match.message(first, {"stand": True})
+    await game.match.message(first, {"sit": 0})
+    assert played(game) == [True, True, False, False]
+    await game.match.message(second, {"stand": True})
+    assert played(game) == [True, False, False, False]
+    # Someone sitting down in the seat that player left didn't play, though the seat still holds 3 marbles
+    late = await arrive(game, 3)
+    await game.match.message(late, {"sit": 1})
+    assert game.match.seats[1].user_id == 3
+    assert played(game) == [True, False, False, False]
+    assert game.match.state()["state"]["board"]["s"][1] == 3
+    await run_for(game, RESULTS_SECONDS)
+    assert played(game) == [False, False, False, False]
 
 
 @pytest.mark.asyncio

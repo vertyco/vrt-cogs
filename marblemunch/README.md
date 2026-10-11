@@ -9,7 +9,7 @@ A hungry-hippos style marble game for [ActivityHub](../activityhub/README.md). U
 
 ## Setup
 
-Marble Munch needs ActivityHub 0.1.9 or later, loaded and set up (see its README). Then:
+Marble Munch needs ActivityHub 0.5.0 or later, loaded and set up (see its README). Then:
 
 ```
 [p]cog install vrt-cogs marblemunch
@@ -37,4 +37,4 @@ The background music, "Toy Box", was made with Google's Lyria 3. The font is Fre
 
 ## For developers
 
-Marble Munch is the worked multiplayer example for ActivityHub's [DEVELOPERS.md](../activityhub/DEVELOPERS.md#19-bigger-examples-the-included-games). Section 19 there lists which file shows which pattern.
+Marble Munch is the worked multiplayer example for ActivityHub's [DEVELOPERS.md](../activityhub/DEVELOPERS.md#20-bigger-examples-the-included-games). Section 20 there lists which file shows which pattern.

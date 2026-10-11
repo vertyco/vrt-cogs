@@ -1,4 +1,6 @@
 import asyncio
+import time
+from types import SimpleNamespace
 
 import pytest
 from selenium import webdriver
@@ -6,6 +8,7 @@ from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
 
 from marblemunch.main import MarbleMunch
 
@@ -19,6 +22,8 @@ CARD = '#games .card[data-key="marblemunch"]'
 def driver():
     options = webdriver.ChromeOptions()
     options.add_argument("--headless=new")
+    # Headless Chrome still plays the games' sounds through the computer's speakers
+    options.add_argument("--mute-audio")
     options.add_argument("--window-size=1280,800")
     # PixiJS needs WebGL. Headless Chrome may have no graphics card to use, and this lets it draw in software
     options.add_argument("--enable-unsafe-swiftshader")
@@ -119,3 +124,174 @@ def test_a_server_admin_sets_payouts_from_the_game(driver, live):
     driver.find_element(By.ID, "payouts-plays").send_keys(Keys.BACKSPACE)
     driver.find_element(By.ID, "save-payouts").click()
     browser.wait_for(driver, "document.getElementById('payouts-status').textContent.includes('Cash-ins a day')")
+
+
+def test_watchers_show_as_faces_and_the_player_says_watching(driver, live):
+    open_game(driver, live)
+    live.add_person(fakes.MANAGER_ID, where="marblemunch")
+    browser.wait_for(driver, "document.querySelectorAll('#watching .face').length === 2")
+    assert driver.execute_script("return document.querySelector('.side .hub-people') !== null")
+    me = live.server.presence.windows["i-1"].people[fakes.MEMBER_ID]
+    assert me.status == "Watching" and me.busy is False
+
+
+def test_a_seated_player_alone_has_no_watching_row_and_a_round_marks_them_busy(driver, live):
+    open_game(driver, live)
+    me = live.server.presence.windows["i-1"].people[fakes.MEMBER_ID]
+    tap_bottom_hippo(driver)
+    browser.wait_for(driver, "!document.getElementById('stand').hidden")
+    assert driver.find_element(By.ID, "watching").get_attribute("hidden")
+    WebDriverWait(driver, 10).until(lambda _: me.status == "Waiting for a round")
+    assert me.busy is False
+    driver.find_element(By.ID, "start").click()
+    WebDriverWait(driver, 10).until(lambda _: me.busy)
+    assert me.status.startswith("Orange hippo · ")
+
+
+def test_a_new_people_list_that_changes_nothing_leaves_the_faces_alone(driver, live):
+    open_game(driver, live)
+    other = live.add_person(fakes.MANAGER_ID, where="marblemunch")
+    browser.wait_for(driver, "document.querySelectorAll('#watching .face').length === 2")
+    # A face redrawn between a press and its release would lose the tap, and lists arrive several times a second
+    driver.execute_script(
+        "window.redrawn = 0;"
+        "new MutationObserver((list) => { window.redrawn += list.length; })"
+        ".observe(document.getElementById('watching'), { childList: true });"
+    )
+    live.update_person(other, where="marblemunch", status="Reading the rules")
+    time.sleep(1.2)
+    assert driver.execute_script("return window.redrawn") == 0
+    # The same observer does see a real change
+    live.update_person(other)
+    browser.wait_for(driver, "document.querySelectorAll('#watching .face').length === 1")
+    assert driver.execute_script("return window.redrawn") > 0
+
+
+def test_an_unchanged_status_is_not_sent_again_while_a_round_streams(driver, live):
+    open_game(driver, live)
+    me = live.server.presence.windows["i-1"].people[fakes.MEMBER_ID]
+    tap_bottom_hippo(driver)
+    browser.wait_for(driver, "!document.getElementById('stand').hidden")
+    driver.find_element(By.ID, "start").click()
+    browser.wait_for(driver, "document.getElementById('app').dataset.stage === 'playing'", timeout=10)
+    WebDriverWait(driver, 10).until(lambda _: me.busy)
+    # The player eats nothing, so nothing about their status changes for the rest of the round. The hub would
+    # still pass on every call, and the bot would send the window's list again each time
+    time.sleep(0.6)
+    sent = []
+    original = live.server.presence.update
+
+    async def counting(conn, data):
+        sent.append(data)
+        await original(conn, data)
+
+    live.server.presence.update = counting
+    time.sleep(1.5)
+    assert sent == []
+
+
+def test_tapping_a_watcher_face_says_who_it_is(driver, live):
+    open_game(driver, live)
+    live.add_person(fakes.MANAGER_ID, where="marblemunch")
+    browser.wait_for(driver, "document.querySelectorAll('#watching .face').length === 2")
+    driver.find_element(By.CSS_SELECTOR, '#watching .face[title="Manager"]').click()
+    toast = driver.find_element(By.ID, "toast")
+    browser.wait_for(driver, "!document.getElementById('toast').hidden")
+    assert "Manager" in toast.text and toast.text.endswith("is watching.")
+
+
+def play_a_round_to_its_end(driver, live, mine, other):
+    """Seat the player at the bottom hippo, start a round and end it with these scores for them and the top hippo"""
+    open_game(driver, live)
+    tap_bottom_hippo(driver)
+    browser.wait_for(driver, "!document.getElementById('stand').hidden")
+    driver.find_element(By.ID, "start").click()
+    browser.wait_for(driver, "document.getElementById('app').dataset.stage === 'playing'", timeout=10)
+    match = next(iter(live.cog.matches.values()))
+    # These rounds are ended by hand, so their results stay out of the leaderboard the other tests share
+    match.record = lambda match, results: None
+
+    async def finish():
+        for hippo, score in zip(match.board.hippos, (mine, 0, other, 0)):
+            hippo.score = score
+        match.end_round()
+        # Long enough that the next round's wait doesn't start while the test looks at the results
+        match.stage_left = 30 * 30
+
+    run(live, finish())
+    browser.wait_for(driver, "document.getElementById('app').dataset.stage === 'results'")
+    return live.server.presence.windows["i-1"].people[fakes.MEMBER_ID]
+
+
+@pytest.mark.parametrize(
+    "mine,other,said",
+    [(5, 3, "Won with 5 marbles"), (3, 5, "Ate 3 marbles"), (0, 5, "Ate 0 marbles")],
+)
+def test_the_results_say_how_the_player_did(driver, live, mine, other, said):
+    me = play_a_round_to_its_end(driver, live, mine, other)
+    WebDriverWait(driver, 10).until(lambda _: me.status == said)
+    assert me.busy is False
+
+
+def test_a_player_who_sits_in_a_seat_vacated_during_the_results_is_waiting_for_a_round(driver, live):
+    open_game(driver, live)
+    me = live.server.presence.windows["i-1"].people[fakes.MEMBER_ID]
+    match = next(iter(live.cog.matches.values()))
+    mine = match.room.connections[0]
+    # Another player's seat, so this page watches the round
+    other = SimpleNamespace(ctx=SimpleNamespace(guild=None, author=SimpleNamespace(id=1001)))
+    match.record = lambda match, results: None
+
+    async def seat_other():
+        seat = match.seats[1]
+        seat.user_id, seat.name, seat.board_name, seat.conn = 1001, "Ann", "Ann", other
+        match.countdown = 1
+
+    run(live, seat_other())
+    browser.wait_for(driver, "document.getElementById('app').dataset.stage === 'playing'", timeout=10)
+
+    async def finish():
+        match.board.hippos[1].score = 4
+        match.end_round()
+        match.stage_left = 30 * 30
+        # Ann leaves during the results, and this player sits where she was, with her 4 marbles still on the seat
+        match.stand(other)
+        assert match.sit(mine, 1) is None
+
+    run(live, finish())
+    WebDriverWait(driver, 10).until(lambda _: me.status != "Watching")
+    assert me.status == "Waiting for a round"
+
+
+def test_a_closed_connection_clears_the_status_and_busy_flag(driver, live):
+    open_game(driver, live)
+    me = live.server.presence.windows["i-1"].people[fakes.MEMBER_ID]
+    tap_bottom_hippo(driver)
+    browser.wait_for(driver, "!document.getElementById('stand').hidden")
+    driver.find_element(By.ID, "start").click()
+    WebDriverWait(driver, 10).until(lambda _: me.busy)
+    conn = next(iter(live.cog.matches.values())).room.connections[0]
+    run(live, conn.close(4100))
+    WebDriverWait(driver, 10).until(lambda _: me.status == "Not connected")
+    assert me.busy is False
+
+
+def test_an_away_watcher_is_dimmed(driver, live):
+    open_game(driver, live)
+    other = live.add_person(fakes.MANAGER_ID, where="marblemunch")
+    browser.wait_for(driver, "document.querySelectorAll('#watching .face').length === 2")
+    assert driver.execute_script("return document.querySelectorAll('#watching .face.away').length") == 0
+    live.update_person(other, where="marblemunch", away=True)
+    browser.wait_for(driver, "document.querySelectorAll('#watching .face.away').length === 1")
+
+
+def test_the_watching_count_is_people_not_connections(driver, live):
+    open_game(driver, live)
+    live.add_person(fakes.MANAGER_ID, where="marblemunch")
+    browser.wait_for(driver, "document.querySelectorAll('#watching .face').length === 2")
+    match = next(iter(live.cog.matches.values()))
+    # The bot counts connections, so one person with the game open on two devices is two to it
+    match.watching = lambda: 5
+    match.dirty = True
+    time.sleep(0.6)
+    assert driver.find_element(By.CSS_SELECTOR, "#watching .label").text == "2 watching"

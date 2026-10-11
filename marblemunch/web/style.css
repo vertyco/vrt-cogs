@@ -318,12 +318,6 @@ h1 {
   }
 }
 
-.watching {
-  margin: 0;
-  min-height: 1.2em;
-  font-weight: 600;
-}
-
 .cashin {
   display: flex;
   flex-direction: column;
@@ -650,4 +644,67 @@ h1 {
     height: 72px;
     border-radius: 22px;
   }
+}
+
+/* ---------- Who's here ---------- */
+
+/* The watchers, then the hub's people button at the end of the row */
+.people {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.people .hub-people {
+  margin-left: auto;
+}
+
+.watching {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  font-weight: 600;
+}
+
+.watching .face {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  background: var(--seat-1);
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.watching .face.away {
+  opacity: 0.45;
+  filter: grayscale(0.6);
+}
+
+.watching .face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.watching .more,
+.watching .label {
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.watching .label {
+  margin-left: 4px;
 }

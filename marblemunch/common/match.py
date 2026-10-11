@@ -347,21 +347,24 @@ class Match:
                 "stage": self.stage,
                 "countdown": None if self.countdown is None else math.ceil(self.countdown / TICK_RATE),
                 "left": math.ceil(self.stage_left / TICK_RATE) if self.stage in (STARTING, RESULTS) else None,
-                "seats": [self.seat_state(seat) for seat in self.seats],
+                "seats": [self.seat_state(number, seat) for number, seat in enumerate(self.seats)],
                 "watching": self.watching(),
                 "board": board,
                 "winners": self.winners,
             }
         }
 
-    @staticmethod
-    def seat_state(seat: Seat) -> dict:
+    def seat_state(self, number: int, seat: Seat) -> dict:
         if seat.npc is not None:
             kind = "npc"
         elif seat.human:
             kind = "human"
         else:
             kind = "empty"
+        # Whoever sits here now was seated when this round began. Someone who sat down in a seat a player stood up
+        # from during the results didn't play the round, though the seat still holds that player's marbles
+        began = self.round_players.get(number)
+        played = self.board is not None and seat.human and began is not None and began[0] == seat.user_id
         return {
             "kind": kind,
             # Discord ids go out as text, since JavaScript rounds whole numbers this big
@@ -369,6 +372,7 @@ class Match:
             "name": seat.name,
             "avatar": seat.avatar,
             "away": seat.dropped_at is not None,
+            "played": played,
         }
 
     def watching(self) -> int:

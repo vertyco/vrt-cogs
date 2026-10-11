@@ -35,6 +35,19 @@ const PLUS_STYLE = {
   fill: "#ffffff",
   stroke: { color: "#3a2aa8", width: 6 },
 };
+const TAG_STYLE = {
+  fontFamily: "Fredoka",
+  fontSize: 22,
+  fontWeight: "700",
+  fill: "#ffffff",
+  stroke: { color: "#1d1a33", width: 5 },
+  align: "center",
+};
+// How far in from its own wall each hippo's name tag sits, in the bot's board units
+const TAG_DEPTH = 40;
+// A hippo on the screen's left or right wall is turned on its side, so its tag sits this far (in board art
+// pixels) above its middle, clear of the body and head
+const TAG_LIFT = 92;
 
 // Where a mouth `depth` units out from its wall is on the board. Seats are 0 bottom, 1 left, 2 top, 3 right
 function mouthPosition(seat, depth) {
@@ -183,6 +196,14 @@ class Scene {
       hippo.root.on("pointertap", () => this.onSeatTap(seat));
       this.world.addChild(hippo.root);
     });
+    // Each seat's name at its wall, kept upright however the board turns
+    this.tagLayer = new Container();
+    this.tags = COLORS.map(() => {
+      const tag = new Text({ text: "", style: TAG_STYLE });
+      this.tagLayer.addChild(tag);
+      return tag;
+    });
+    this.world.addChild(this.tagLayer);
     this.effectLayer = new Container();
     this.world.addChild(this.effectLayer);
     this.marbleTexture = textures.hippo_marble;
@@ -205,6 +226,12 @@ class Scene {
   setSeats(kinds) {
     this.hippos.forEach((hippo, seat) => {
       hippo.root.alpha = kinds[seat] === "empty" ? 0.5 : 1;
+    });
+  }
+
+  setNames(names) {
+    this.tags.forEach((tag, seat) => {
+      tag.text = names[seat] || "";
     });
   }
 
@@ -299,6 +326,7 @@ class Scene {
   draw(dt) {
     this.fit();
     this.drawTurn(performance.now());
+    this.drawTags();
     if (this.demo) {
       this.stepDemo(dt);
     } else {
@@ -328,6 +356,25 @@ class Scene {
     const t = reducedMotion.matches ? 1 : Math.min(1, (now - start) / TURN_MS);
     const eased = t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
     this.world.rotation = from + (to - from) * eased;
+  }
+
+  // Tags stay upright as the board turns. One on the screen's left or right wall hugs it and sits above its
+  // hippo, so a longer name runs into the board instead of off the edge or over the hippo's face
+  drawTags() {
+    const turn = this.world.rotation;
+    const sin = Math.sin(turn);
+    const cos = Math.cos(turn);
+    const reach = ART / 2 - TAG_DEPTH * SCALE;
+    this.tags.forEach((tag, seat) => {
+      const [boardX, boardY] = mouthPosition(seat, TAG_DEPTH);
+      const [x, y] = [boardX * SCALE, boardY * SCALE];
+      // How far toward the screen's right the tag's wall is: -1 on the left, 1 on the right, 0 at the top and bottom
+      const side = ((x - ART / 2) * cos - (y - ART / 2) * sin) / reach;
+      const lift = TAG_LIFT * Math.abs(side);
+      tag.rotation = -turn;
+      tag.position.set(x - lift * sin, y - lift * cos);
+      tag.anchor.set(0.5 + side / 2, 0.5 + Math.abs(side) / 2);
+    });
   }
 
   // The board two updates behind the newest, timed from when updates arrive
