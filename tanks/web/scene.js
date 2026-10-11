@@ -1,6 +1,7 @@
 // Tanks' field, drawn with PixiJS in the original's 550 x 400 pixels and scaled to fit the screen. Things stack
-// as the original stacked them: the landscape, tanks, shells and blasts, then trees, then the ground in front.
-import { Application, Assets, Container, Graphics, Sprite } from "./vendor/pixi.min.mjs";
+// as the original stacked them: the landscape, tanks, shells and blasts, then trees, then the ground in front, and
+// the tanks' names over all of it.
+import { Application, Assets, Container, Graphics, Sprite, Text } from "./vendor/pixi.min.mjs";
 
 // The same numbers as tanks/common (tests/test_page.py checks they match)
 const WIDTH = 550;
@@ -28,6 +29,29 @@ const BLAST_ART = {
 const UPRIGHT_FROM = 4;
 const BIG_BOOMS = new Set(["nuke", "death", "hroller"]);
 const MEDIUM_BOOMS = new Set(["bnuke", "mirv", "roller", "strike"]);
+// Each tank's name, in the field's own pixels. Names sit in a layer above the ground and trees, so a hill beside a
+// tank never hides part of its name. When the field is scaled down to fit a phone, a name is drawn bigger so it
+// stays NAME_MIN_PX on screen, and cut shorter so five of them still fit along the field (see sizeNames)
+const NAME_FONT = 8;
+const NAME_STYLE = {
+  fontFamily: "system-ui, sans-serif",
+  fontSize: NAME_FONT,
+  fontWeight: "700",
+  fill: "#ffffff",
+  stroke: { color: "#000000", width: 2 },
+};
+const NAME_ABOVE = 17;
+const NAME_MIN_PX = 10;
+// Longer names are cut to this many characters, and to NAME_MAX_SMALL on a field scaled below SMALL_FIELD
+const NAME_MAX = 12;
+const NAME_MAX_SMALL = 8;
+const SMALL_FIELD = 0.9;
+// Names keep at least this many pixels apart sideways, and go up a row where they would be closer, at most
+// NAME_ROWS - 1 rows. Five rows is one for each seat, so a name finds a free one unless the tanks are packed together
+const NAME_GAP = 2;
+const NAME_ROWS = 5;
+// A raised name is tied to its tank by a line that ends this far above the tank's ground point, clear of its barrel
+const TICK_END = 13;
 // The original's tank colors, one per seat
 const COLORS = [0xf02400, 0x00cc33, 0x0033ff, 0xf0df0f, 0xea9300];
 const GROUND_COLORS = { 1: 0xffffff, 2: 0x78ab00, 3: 0xeaddb5 };
@@ -41,6 +65,55 @@ const TELEPORT_SHOW = 41;
 const FOLLOW_RATE = 15;
 // Your own driving runs ahead of the bot by at most this many pixels
 const MAX_LEAD = 4;
+
+// What a person sees as single characters, so a flag or a joined emoji is never split. Older browsers have no
+// segmenter and count code points instead
+const segmenter =
+  typeof Intl.Segmenter === "function" ? new Intl.Segmenter(undefined, { granularity: "grapheme" }) : null;
+
+export function characters(text) {
+  return segmenter ? Array.from(segmenter.segment(text), (part) => part.segment) : Array.from(text);
+}
+
+// The name as it shows over a tank, cut with an ellipsis when it is longer than `max` characters
+export function fieldName(name, max = NAME_MAX) {
+  const letters = characters(name);
+  return letters.length > max ? `${letters.slice(0, max - 1).join("")}…` : name;
+}
+
+// How much of rectangle `a` lies on rectangle `b`, counting the gap beside it as covered. Rectangles are
+// { left, top, width, height }
+function nameCovered(a, b) {
+  const across = Math.min(a.left + a.width, b.left + b.width) - Math.max(a.left, b.left) + NAME_GAP;
+  const down = Math.min(a.top + a.height, b.top + b.height) - Math.max(a.top, b.top);
+  return across > 0 && down > 0 ? across * down : 0;
+}
+
+// Where each name goes, for boxes of { x, y, width, height } centered on x with y the top edge: pulled inside the
+// field's edges, and raised up to NAME_ROWS - 1 rows (a row is a name's height and a pixel) to the first place that
+// touches no name already placed, or to the one that covers least when there is none. Names are placed from left
+// to right. Gives { x, rise } for each box, in the order they came in
+export function layoutNames(boxes) {
+  const order = boxes.map((box, index) => index).sort((a, b) => boxes[a].x - boxes[b].x);
+  const taken = [];
+  const placed = [];
+  for (const index of order) {
+    const { x, y, width, height } = boxes[index];
+    const left = Math.min(WIDTH - width, Math.max(0, x - width / 2));
+    let best = null;
+    for (let row = 0; row < NAME_ROWS && (best === null || best.covered > 0); row += 1) {
+      const rise = row * (height + 1);
+      const rect = { left, top: y - rise, width, height };
+      const covered = taken.reduce((sum, other) => sum + nameCovered(rect, other), 0);
+      if (best === null || covered < best.covered) {
+        best = { rise, rect, covered };
+      }
+    }
+    taken.push(best.rect);
+    placed[index] = { x: left + width / 2, rise: best.rise };
+  }
+  return placed;
+}
 
 // An animation's frames, named prefix_01, prefix_02 and so on
 function frameNames(art, prefix) {
@@ -59,7 +132,7 @@ function place(art, name, x = 0, y = 0) {
 
 // One tank: its shield and parachute behind it, its tracks, its body in the seat's color, and its barrel
 class TankView {
-  constructor(art, seat, layer) {
+  constructor(art, seat, layer, tickLayer, nameLayer, nameSize) {
     this.root = new Container();
     this.shields = Object.fromEntries(Object.entries(SHIELD_ART).map(([kind, name]) => [kind, place(art, name)]));
     this.parachute = place(art, "parachute");
@@ -70,8 +143,21 @@ class TankView {
     this.barrelFrames = frameNames(art, "barrel").map((name) => art.texture(name));
     this.barrel = place(art, "barrel_01");
     this.recoil = -1;
+    // Made once and only given new text, since a new Text each frame would cost a texture each time
+    this.label = new Text({ text: "", style: NAME_STYLE });
+    this.label.anchor.set(0.5, 1);
+    // The line from a raised name down to this tank, drawn in the seat's color with a black edge, under every name. One
+    // Graphics, cleared and redrawn when it is needed
+    this.seat = seat;
+    this.tick = new Graphics();
+    this.tick.visible = false;
+    // The name as the bot sent it. The label shows it cut to the field's size
+    this.name = "";
+    this.sizeName(...nameSize);
     this.root.addChild(...Object.values(this.shields), this.parachute, this.body, this.barrel);
     layer.addChild(this.root);
+    tickLayer.addChild(this.tick);
+    nameLayer.addChild(this.label);
     this.shown = null;
     this.target = { x: 0, y: 0, angle: 90 };
     this.view = null;
@@ -92,10 +178,50 @@ class TankView {
     this.recoil = 0;
   }
 
+  setName(name) {
+    if (name !== this.name) {
+      this.name = name;
+      this.label.text = fieldName(name, this.nameMax);
+    }
+  }
+
+  // Puts the name where the layout says. A name raised above its tank gets a line down to the tank, so it is clear
+  // whose name it is
+  placeName({ x, rise }) {
+    const { label, tick } = this;
+    label.x = x;
+    label.y -= rise;
+    tick.visible = rise > 0;
+    if (rise > 0) {
+      const { x: tankX, y: tankY } = this.shown;
+      const length = tankY - TICK_END - label.y;
+      tick
+        .clear()
+        .rect(tankX - 1.5, label.y, 3, length)
+        .fill(0x000000)
+        .rect(tankX - 0.5, label.y, 1, length)
+        .fill(COLORS[this.seat]);
+    }
+  }
+
+  // The label at `scale` times its size, drawn at `resolution`, with the name cut to `max` characters
+  sizeName(scale, resolution, max) {
+    this.nameMax = max;
+    this.label.scale.set(scale);
+    // Pixi redraws the text on every set, even to the same number
+    if (this.label.resolution !== resolution) {
+      this.label.resolution = resolution;
+    }
+    this.label.text = fieldName(this.name, max);
+  }
+
   draw(dt) {
     const view = this.view;
     this.root.visible = Boolean(view && view.alive && !this.hidden);
+    // The name goes with the tank, whether it is destroyed or for a moment gone while it teleports
+    this.label.visible = this.root.visible;
     if (!this.root.visible) {
+      this.tick.visible = false;
       return;
     }
     const follow = 1 - Math.exp(-dt * FOLLOW_RATE);
@@ -109,6 +235,7 @@ class TankView {
     this.barrel.angle = angle;
     this.parachute.visible = view.chute;
     this.parachute.position.set(x, y - 7.5);
+    this.label.position.set(x, y - NAME_ABOVE);
     for (const [kind, sprite] of Object.entries(this.shields)) {
       sprite.visible = view.shield === Number(kind);
       sprite.position.set(x, y);
@@ -166,7 +293,7 @@ class Scene {
     this.world.addChild(mask);
     this.world.mask = mask;
     this.layers = {};
-    for (const name of ["land", "tanks", "effects", "shells", "trees", "ground", "marks"]) {
+    for (const name of ["land", "tanks", "effects", "shells", "trees", "ground", "ticks", "names", "marks"]) {
       this.layers[name] = new Container();
       this.world.addChild(this.layers[name]);
     }
@@ -193,6 +320,10 @@ class Scene {
     this.cursor.visible = false;
     this.target.visible = false;
     this.size = { width: 0, height: 0 };
+    // The labels' scale, resolution and longest name for the field's current size, set by sizeNames
+    this.nameSize = [1, 2, NAME_MAX];
+    this.shownNames = "";
+    this.shownTicks = "";
     this.onEvent = () => {};
     this.onPointer = () => {};
     this.onFrame = null;
@@ -226,6 +357,8 @@ class Scene {
         this.tanks.get(seat).view = null;
       }
     });
+    state.seats.forEach((seat, number) => this.tanks.get(number)?.setName(seat.kind === "empty" ? "" : seat.name));
+    this.publishNames();
     const turn = state.stage === "playing" ? state.turn : null;
     if (turn !== null && turn !== this.turn && state.tanks[turn]) {
       this.blink(state.tanks[turn]);
@@ -278,7 +411,8 @@ class Scene {
 
   tank(seat) {
     if (!this.tanks.has(seat)) {
-      this.tanks.set(seat, new TankView(this.art, seat, this.layers.tanks));
+      const { tanks, ticks, names } = this.layers;
+      this.tanks.set(seat, new TankView(this.art, seat, tanks, ticks, names, this.nameSize));
     }
     return this.tanks.get(seat);
   }
@@ -504,6 +638,7 @@ class Scene {
     for (const tank of this.tanks.values()) {
       tank.draw(dt);
     }
+    this.stackNames();
     this.drawAimLine();
     this.flipbooks = this.flipbooks.filter((book) => book.step(dt));
   }
@@ -529,6 +664,47 @@ class Scene {
     const scale = Math.min(width / WIDTH, height / HEIGHT);
     this.world.scale.set(scale);
     this.world.position.set((width - WIDTH * scale) / 2, (height - HEIGHT * scale) / 2);
+    this.sizeNames(scale);
+  }
+
+  // Names stay at least NAME_MIN_PX on screen however far the field is scaled down, so on a small field they are
+  // drawn bigger and cut shorter. Their text is drawn at the resolution it shows at, which is only redone here
+  sizeNames(scale) {
+    const grow = Math.max(1, NAME_MIN_PX / (NAME_FONT * scale));
+    const resolution = Math.max(1, Math.ceil(this.app.renderer.resolution * scale * grow));
+    this.nameSize = [grow, resolution, scale < SMALL_FIELD ? NAME_MAX_SMALL : NAME_MAX];
+    for (const tank of this.tanks.values()) {
+      tank.sizeName(...this.nameSize);
+    }
+    this.publishNames();
+  }
+
+  // Names that would touch go up a row, and none is left half outside the field, where its mask would cut it. A label's
+  // y is its bottom edge
+  stackNames() {
+    const tanks = [...this.tanks.values()].filter((tank) => tank.label.visible);
+    const boxes = tanks.map(({ label: { x, y, width, height } }) => ({ x, y: y - height, width, height }));
+    const placed = layoutNames(boxes);
+    tanks.forEach((tank, index) => tank.placeName(placed[index]));
+    this.publishTicks();
+  }
+
+  // The seats whose names are raised on a line to their tank, for the page's tests
+  publishTicks() {
+    const shown = JSON.stringify([...this.tanks.values()].filter((tank) => tank.tick.visible).map((tank) => tank.seat));
+    if (shown !== this.shownTicks) {
+      this.shownTicks = shown;
+      this.app.canvas.dataset.ticks = shown;
+    }
+  }
+
+  // The name each seat's tank shows, for the page's tests: the scene is drawn, so there is no text to read
+  publishNames() {
+    const shown = JSON.stringify(Object.fromEntries([...this.tanks].map(([seat, tank]) => [seat, tank.label.text])));
+    if (shown !== this.shownNames) {
+      this.shownNames = shown;
+      this.app.canvas.dataset.names = shown;
+    }
   }
 
   // Presses on the field reach the page in field pixels

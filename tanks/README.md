@@ -10,7 +10,7 @@ Turn-based artillery for [ActivityHub](../activityhub/README.md), ported from 2D
 
 ## Setup
 
-Tanks needs ActivityHub 0.1.9 or later, loaded and set up (see its README). Then:
+Tanks needs ActivityHub 0.5.0 or later, loaded and set up (see its README). Then:
 
 ```
 [p]cog install vrt-cogs tanks
@@ -32,4 +32,4 @@ Tanks is a port of 2DPlay's Flash game "Tanks", and uses its art and sounds. Dra
 
 ## For developers
 
-Tanks shows ActivityHub's turn-based pattern: a slow live loop for one player's turn, and whole shots worked out at once and sent to every page as a script to play back. See section 19 of ActivityHub's [DEVELOPERS.md](../activityhub/DEVELOPERS.md#19-bigger-examples-the-included-games).
+Tanks shows ActivityHub's turn-based pattern: a slow live loop for one player's turn, and whole shots worked out at once and sent to every page as a script to play back. See section 20 of ActivityHub's [DEVELOPERS.md](../activityhub/DEVELOPERS.md#20-bigger-examples-the-included-games).

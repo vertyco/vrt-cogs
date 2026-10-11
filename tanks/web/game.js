@@ -3,7 +3,7 @@
 import { backToMenu, connect } from "activityhub";
 import * as panels from "./panels.js";
 import { Playback } from "./playback.js";
-import { createScene } from "./scene.js";
+import { characters, createScene } from "./scene.js";
 import { Sound } from "./sound.js";
 
 const CLOSED_BECAUSE = {
@@ -23,6 +23,7 @@ const POWER_STEP = 1;
 const SEND_MS = 1000 / TICK_RATE;
 // How close to your own tank a press has to start to aim by dragging, in field pixels
 const GRAB_DISTANCE = 30;
+const WATCHER_FACES = 6;
 const touchScreen = window.matchMedia("(pointer: coarse)");
 const sound = new Sound();
 const page = {
@@ -47,10 +48,21 @@ const page = {
   updates: 0,
   toastTimer: null,
   preview: false,
+  // What the watcher row last showed, so an identical list leaves its faces alone
+  watchLook: null,
+  // The status last given to the hub, and whether the game's connection has closed for good
+  reported: null,
+  closed: false,
 };
 
 function $(id) {
   return document.getElementById(id);
+}
+
+function ordinal(n) {
+  const tens = n % 100;
+  const suffix = tens >= 11 && tens <= 13 ? "th" : { 1: "st", 2: "nd", 3: "rd" }[n % 10] || "th";
+  return `${n}${suffix}`;
 }
 
 // ---------- Starting ----------
@@ -71,6 +83,11 @@ async function start() {
     showMessage(e.message);
     return;
   }
+  // Older hubs have no people button
+  if (page.hub.peopleButton) {
+    $("watching").after(page.hub.peopleButton());
+  }
+  page.hub.onPeople?.(renderWatchers);
   if (page.hub.offline) {
     await showPreview();
     return;
@@ -87,6 +104,7 @@ async function goLive() {
     page.conn = await page.hub.socket();
   } catch (e) {
     showMessage(CLOSED_BECAUSE[e.status] || e.message);
+    leaveMatch();
     return;
   }
   page.conn.on(receive);
@@ -100,6 +118,7 @@ async function goLive() {
   page.conn.onClose((code) => {
     $("banner").hidden = true;
     showMessage(CLOSED_BECAUSE[code] || CLOSED_OTHERWISE);
+    leaveMatch();
   });
 }
 
@@ -282,7 +301,8 @@ function render() {
   panels.renderResults(state, page.mySeat);
   panels.renderInfo(state, page.live, shownAim());
   renderControls();
-  $("watching").textContent = state.watching ? `${state.watching} watching` : "";
+  renderWatchers();
+  report(state);
   $("hint").textContent = hintFor(state);
 }
 
@@ -337,6 +357,133 @@ function hintFor(state) {
       : "Your turn! Arrows aim and drive, Page Up and Down set power, Space fires. Or drag from your tank.";
   }
   return seated ? "Waiting for your turn." : "You're watching this match.";
+}
+
+// ---------- Who's here ----------
+
+// What the rest of the window sees this player doing: a status line, its data, and whether a match is on for them
+function activity(state) {
+  const seat = page.mySeat;
+  if (seat === null) {
+    return ["Watching", null, false];
+  }
+  const data = { seat };
+  if (state.stage === "setup") {
+    return ["Setting up", data, false];
+  }
+  if (state.stage === "results") {
+    return [finishedText(state, seat), data, false];
+  }
+  if (state.stage === "shop") {
+    // The shop opens before each round, so it is for the next one
+    return [`Shopping · round ${state.round + 1} of ${state.rounds}`, data, true];
+  }
+  // A computer plays an away player's tank, so its turn isn't the player's to aim
+  const aiming = state.turn === seat && !state.seats[seat].standIn;
+  const round = `${state.round} of ${state.rounds}`;
+  return [aiming ? `Aiming · round ${round}` : `Round ${round}`, data, true];
+}
+
+function finishedText(state, seat) {
+  const results = state.results || [];
+  const mine = results.find((row) => row.seat === seat);
+  if (!mine) {
+    return "Finished";
+  }
+  return `Finished ${ordinal(1 + results.filter((row) => row.score > mine.score).length)}`;
+}
+
+// The hub passes on whatever it is told, even when nothing changed, so only changes go to it
+function tell(text, data, busy) {
+  const look = JSON.stringify([text, data, busy]);
+  if (look === page.reported) {
+    return;
+  }
+  page.reported = look;
+  page.hub.status(text, data);
+  page.hub.busy(busy);
+}
+
+function report(state) {
+  if (page.hub?.status && !page.closed) {
+    tell(...activity(state));
+  }
+}
+
+// The game's connection is gone for good, so a friend's Join has nothing to interrupt
+function leaveMatch() {
+  page.closed = true;
+  if (page.hub?.status) {
+    tell("Not connected", null, false);
+  }
+}
+
+// The people here who aren't in a tank, from the hub's list
+function renderWatchers() {
+  const state = page.state;
+  if (!state) {
+    return;
+  }
+  const people = page.hub?.people || [];
+  const seated = new Set(state.seats.filter((seat) => seat.kind === "human").map((seat) => seat.id));
+  const watchers = people.filter((person) => person.here && !seated.has(person.id));
+  // The hub's list counts people. The bot's number counts connections, so someone with the game open on two
+  // devices is two there. It stands in only while the hub has no list
+  const count = people.length ? watchers.length : state.watching;
+  const shown = watchers.slice(0, WATCHER_FACES);
+  // Lists arrive several times a second, and a face rebuilt between a press and its release loses the tap
+  const faceKeys = shown.map((person) => [person.id, person.name, person.avatar, person.you, person.away]);
+  const look = JSON.stringify([count, faceKeys]);
+  if (look === page.watchLook) {
+    return;
+  }
+  page.watchLook = look;
+  const box = $("watching");
+  box.hidden = !count;
+  if (!count) {
+    box.replaceChildren();
+    return;
+  }
+  const faces = shown.map(watcherFace);
+  const label = document.createElement("span");
+  label.className = "label";
+  label.textContent = `${count} watching`;
+  const more = count - faces.length;
+  if (more > 0 && faces.length) {
+    const extra = document.createElement("span");
+    extra.className = "more";
+    extra.textContent = `+${more}`;
+    faces.push(extra);
+  }
+  box.replaceChildren(...faces, label);
+}
+
+// A watcher's picture. Hovering shows their name; tapping says it, for phones
+function watcherFace(person) {
+  const face = document.createElement("button");
+  face.type = "button";
+  face.className = "face";
+  const name = person.you ? "You" : person.name;
+  face.title = name;
+  face.setAttribute("aria-label", name);
+  face.classList.toggle("away", Boolean(person.away));
+  const letter = document.createTextNode(characters(name)[0]?.toUpperCase() ?? "");
+  if (person.avatar) {
+    const img = document.createElement("img");
+    img.alt = "";
+    img.addEventListener("error", () => img.replaceWith(letter));
+    img.src = person.avatar;
+    face.append(img);
+  } else {
+    face.append(letter);
+  }
+  face.addEventListener("click", () => {
+    // A focused button would also take the Space key that fires
+    face.blur();
+    // The name sits between marks that keep a right-to-left name from turning the sentence around
+    toast(person.you ? "That's you." : `⁨${person.name}⁩ is watching.`);
+  });
+  return face;
 }
 
 function showOverlay(big, small) {

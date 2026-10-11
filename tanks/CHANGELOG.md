@@ -1,5 +1,14 @@
 # Tanks Changelog
 
+## 0.2.0
+
+Needs ActivityHub 0.5.0 or later.
+
+- Each tank has its name floating over it, so everyone can tell whose tank is whose. On a phone the names are drawn bigger so they can be read, cut shorter, and names that would touch stack above each other, with a thin line down to the tank of each one that moved up.
+- "2 watching" is now a row of the watchers' pictures. Hover one (or tap it on a phone) to see who it is.
+- The hub's people button sits in the header, and the menu and people panel show what you're doing: "Aiming · round 2 of 5", "Shopping · round 2 of 5", "Finished 1st" or "Watching".
+- Join from the hub's people list asks first while you're in a match.
+
 ## 0.1.1
 
 - Tanks start each round with 250 fuel, as in the original, instead of 500. That is 125 pixels of driving for the whole round, so a tank can no longer drive right up to an enemy and fire point blank.

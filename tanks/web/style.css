@@ -105,6 +105,10 @@ h1 {
 }
 
 .watching {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
   margin: 0;
   font-size: 0.9rem;
   white-space: nowrap;
@@ -860,5 +864,63 @@ select.button {
 
   .button.fire {
     min-width: 96px;
+  }
+}
+
+/* ---------- Who's here ---------- */
+
+.watching .face {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  overflow: hidden;
+  border: 1.5px solid rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  background: #3b4a2a;
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.watching .face.away {
+  opacity: 0.45;
+  filter: grayscale(0.6);
+}
+
+.watching .face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.watching .more,
+.watching .label {
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+.top .hub-people {
+  --hub-people-size: 32px;
+}
+
+/* On a phone the header has no room for the faces beside its buttons: the people button moves up to the first row,
+   at the right, and the faces get the row below */
+@media (orientation: portrait), (orientation: landscape) and (max-height: 500px) {
+  .top {
+    flex-wrap: wrap;
+  }
+
+  .top .hub-people {
+    order: 1;
+    margin-left: auto;
+  }
+
+  .watching {
+    order: 2;
+    flex-basis: 100%;
   }
 }
