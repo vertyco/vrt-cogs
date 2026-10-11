@@ -39,8 +39,11 @@ export const TURRETS = {
   15: ["IonRay", 100000],
 };
 export const EVOLVE_XP = [4000, 14000, 45000, 200000];
+export const EVOLVE_HEALTH = 300;
 export const SPOT_PRICES = [1000, 3000, 7500];
 export const SPECIAL_COOLDOWN = 2000;
+// An order the bot never counted (sent as the battle ended, say) stops being shown after this long
+const GIVE_UP_MS = 3000;
 
 // The original's button characters: each age's unit and turret buttons, the main menu, back and cancel
 const UNIT_BUTTONS = [
@@ -86,6 +89,112 @@ function el(tag, className, parent) {
   return node;
 }
 
+// A side's view copied deep enough for an order to change it: its queue and its turrets
+function copyView(view) {
+  return view.map((part) => (Array.isArray(part) ? [...part] : part));
+}
+
+// What each order does to the player's side, as the bot will do it, so the page can show it at once. An order the
+// bot would refuse changes nothing. view: [cash, xp, age, spots, health, most, training, progress, queue, special,
+// turrets, healing, orders]
+const CHANGES = {
+  buy: (kind) => (view) => {
+    const slot = view[8].indexOf(0);
+    if (view[0] < UNITS[kind][1] || slot === -1) {
+      return view;
+    }
+    view[0] -= UNITS[kind][1];
+    view[8][slot] = kind;
+    if (slot === 0) {
+      view[6] = kind;
+      view[7] = 0;
+    }
+    return view;
+  },
+  build: (kind, spot, side) => (view) => {
+    if (view[0] < TURRETS[kind][1] || spot > view[3] + 1 || view[10][spot - 1]) {
+      return view;
+    }
+    view[0] -= TURRETS[kind][1];
+    view[10][spot - 1] = [kind, side === 2 ? -180 : 0, 1];
+    return view;
+  },
+  sell: (spot) => (view) => {
+    const turret = view[10][spot - 1];
+    if (turret) {
+      view[0] += Math.floor(TURRETS[turret[0]][1] / 2 + 0.5);
+      view[10][spot - 1] = 0;
+    }
+    return view;
+  },
+  spot: () => (view) => {
+    if (view[3] < SPOT_PRICES.length && view[0] >= SPOT_PRICES[view[3]]) {
+      view[0] -= SPOT_PRICES[view[3]];
+      view[3] += 1;
+    }
+    return view;
+  },
+  evolve: () => (view) => {
+    if (view[2] < EVOLVE_XP.length + 1 && view[1] >= EVOLVE_XP[view[2] - 1]) {
+      view[2] += 1;
+      view[4] += EVOLVE_HEALTH * view[2];
+      view[5] += EVOLVE_HEALTH * view[2];
+    }
+    return view;
+  },
+  special: () => (view) => {
+    if (view[9] >= SPECIAL_COOLDOWN) {
+      view[9] = 0;
+    }
+    return view;
+  },
+};
+
+// The orders this page sent that the bot hasn't counted yet. The menu and the player's base show them right away,
+// like the original answered a click on the same frame, instead of waiting for the bot's next update
+export class Orders {
+  constructor() {
+    this.list = [];
+    // The highest count of this side's orders the bot has sent
+    this.counted = 0;
+  }
+
+  reset() {
+    this.list = [];
+    this.counted = 0;
+  }
+
+  // The bot counts every order it gets from this side, so the next one is numbered after everything counted or sent
+  add(change) {
+    const last = this.list.length ? this.list[this.list.length - 1].number : 0;
+    this.list.push({ number: Math.max(this.counted, last) + 1, change, at: performance.now() });
+  }
+
+  seen(count) {
+    this.counted = Math.max(this.counted, count);
+  }
+
+  // A side's view from the bot, with the orders it hadn't counted yet done on top
+  apply(view) {
+    if (!view) {
+      return view;
+    }
+    let result = view;
+    for (const order of this.list) {
+      if (order.number > view[12]) {
+        result = order.change(result === view ? copyView(view) : result);
+      }
+    }
+    return result;
+  }
+
+  // The drawn field shows orders up to this count from the bot's own numbers, so those are done
+  drop(count) {
+    const now = performance.now();
+    this.list = this.list.filter((order) => order.number > count && now - order.at < GIVE_UP_MS);
+  }
+}
+
 // The kind of turret on each spot of a side's update, 0 for none
 function turretKinds(view) {
   return view[10].map((turret) => (turret ? turret[0] : 0)).join();
@@ -111,7 +220,11 @@ export class Hud {
     this.scene = scene;
     this.send = send;
     this.menu = "main";
+    // The side's latest numbers from the bot, and the same with the player's uncounted orders done on top
+    this.botView = null;
     this.view = null;
+    this.orders = new Orders();
+    this.side = null;
     this.hoverText = "";
     this.pressedText = "";
     this.pressedTimer = null;
@@ -215,7 +328,7 @@ export class Hud {
     this.special = el("div", "special", this.right);
     this.specialButtons = SPECIAL_BUTTONS.map((id) => {
       const button = artButton(this.special, this.buttonPictures(id), SPECIAL_AT[0] - SPLIT, SPECIAL_AT[1]);
-      this.wire(button, () => this.send({ special: true }), () => "");
+      this.wire(button, () => this.order({ special: true }, CHANGES.special()), () => "");
       return button;
     });
     const frame = this.picture(SPECIAL_FRAME, null);
@@ -298,9 +411,9 @@ export class Hud {
     } else if (index === 2) {
       this.setMenu("sell");
     } else if (index === 3) {
-      this.send({ spot: true });
+      this.order({ spot: true }, CHANGES.spot());
     } else {
-      this.send({ evolve: true });
+      this.order({ evolve: true }, CHANGES.evolve());
     }
   }
 
@@ -327,7 +440,16 @@ export class Hud {
   }
 
   buyUnit(kind) {
-    this.send({ buy: kind });
+    this.order({ buy: kind }, CHANGES.buy(kind));
+  }
+
+  // Send an order and show what it does right away
+  order(message, change) {
+    this.orders.add(change);
+    this.send(message);
+    if (this.botView) {
+      this.show();
+    }
   }
 
   pickTurret(kind) {
@@ -339,10 +461,11 @@ export class Hud {
   // A spot on the base was pressed, in the turret or the selling menu
   spot(press) {
     if (this.menu === "place" && press.build) {
-      this.send({ build: [this.scene.mode.turret, press.build] });
+      const kind = this.scene.mode.turret;
+      this.order({ build: [kind, press.build] }, CHANGES.build(kind, press.build, this.side));
       this.setMenu("main");
     } else if (this.menu === "sell" && press.sell) {
-      this.send({ sell: press.sell });
+      this.order({ sell: press.sell }, CHANGES.sell(press.sell));
       this.setMenu("main");
     }
   }
@@ -362,9 +485,17 @@ export class Hud {
 
   // ---------- Updates ----------
 
-  // The player's side, from the bot: [cash, xp, age, spots, health, most, training, progress, queue, special, turrets]
+  // The player's side, from the bot: [cash, xp, age, spots, health, most, training, progress, queue, special, turrets,
+  // healing, orders counted]
   update(view) {
+    this.botView = view;
+    this.orders.seen(view[12]);
+    this.show();
+  }
+
+  show() {
     const before = this.view;
+    const view = this.orders.apply(this.botView);
     this.view = view;
     const [cash, xp, age, , , , training, progress, tray, special] = view;
     this.cash.textContent = String(cash);
@@ -411,7 +542,11 @@ export class Hud {
     });
   }
 
-  reset() {
+  // A new battle, played from `side` (null for watchers)
+  reset(side = null) {
+    this.side = side;
+    this.botView = null;
+    this.orders.reset();
     this.view = null;
     this.hoverText = "";
     this.pressedText = "";

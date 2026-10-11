@@ -56,6 +56,12 @@ body {
   overflow: hidden;
 }
 
+/* In a battle the original's own arrow replaces the computer's pointer, over the menus too (scene.js draws it) */
+.app[data-stage="playing"],
+.app[data-stage="playing"] button {
+  cursor: var(--battle-cursor, auto);
+}
+
 /* ---------- The field ---------- */
 
 .play {

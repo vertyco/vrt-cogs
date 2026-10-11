@@ -36,6 +36,7 @@ def test_the_menus_show_the_bots_names_and_prices():
     assert js_table(hud, "UNITS") == {k: (u.name, u.cost) for k, u in data.UNITS.items()}
     assert js_table(hud, "TURRETS") == {k: (u.name, u.cost) for k, u in data.TURRETS.items()}
     assert js_list(hud, "EVOLVE_XP") == list(data.EVOLVE_XP)
+    assert re.search(rf"^export const EVOLVE_HEALTH = {data.EVOLVE_HEALTH};$", hud, re.M)
     assert js_list(hud, "SPOT_PRICES") == list(data.SPOT_PRICES)
     assert re.search(rf"^export const SPECIAL_COOLDOWN = {data.SPECIAL_COOLDOWN};$", hud, re.M)
 
@@ -77,7 +78,17 @@ def test_the_art_and_sounds_are_all_there():
         assert (WEB / "sounds" / f"{sound}.mp3").is_file(), sound
     for sprite in art["sprites"].values():
         for sound in (sprite.get("a") or {}).values():
-            assert sound in sounds, sound
+            # [id] at full volume, or [id, [[seconds, volume], ...]] as the original set it
+            assert sound[0] in sounds, sound
+            for at, volume in sound[1] if len(sound) > 1 else []:
+                assert at >= 0 and 0 <= volume <= 1, sound
+
+
+def test_sounds_keep_the_volume_the_original_gave_them():
+    art = json.loads(read("art/flash.json"))
+    # The original plays its explosion at about a quarter of full volume
+    blast = art["sprites"][str(art["exports"]["part7"])]["a"]["1"]
+    assert blast[0] == 591 and blast[1] == [[0.0, pytest.approx(0.26, abs=0.01)]]
 
 
 @pytest.mark.parametrize("name", SCRIPTS)

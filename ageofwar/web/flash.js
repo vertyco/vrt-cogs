@@ -81,7 +81,11 @@ export class Library {
     }
     this.frameCache = new Map();
     this.random = Math.random;
-    // Called with a sound id when a timeline reaches a frame that starts one
+    // Set while the page steps a unit: picks which of a timeline's frames a random jump goes to (the one the bot
+    // picked), or null to pick at random
+    this.choose = null;
+    // Called with a sound id, and the volume the original set on it ([[seconds, volume], ...] or nothing for full),
+    // when a timeline reaches a frame that starts one
     this.onSound = null;
   }
 
@@ -282,7 +286,7 @@ export class Clip extends Container {
     this.show(frame);
     const sound = this.def.a?.[frame];
     if (sound && this.lib.onSound) {
-      this.lib.onSound(sound);
+      this.lib.onSound(sound[0], sound[1]);
     }
     const actions = this.def.s?.[frame];
     if (actions) {
@@ -308,7 +312,7 @@ export class Clip extends Container {
         return true;
       case "pick":
         this.playing = true;
-        this.enter(a[Math.floor(this.lib.random() * a.length)]);
+        this.enter(this.lib.choose?.(a) ?? a[Math.floor(this.lib.random() * a.length)]);
         return true;
       case "rstop":
         this.playing = false;

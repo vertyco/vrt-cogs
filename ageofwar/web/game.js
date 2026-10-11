@@ -54,10 +54,11 @@ async function start() {
     showOverlay("Sorry!", "This device couldn't start the game's graphics.");
     return;
   }
-  page.scene.lib.onSound = (id) => sound.play(id);
+  page.scene.lib.onSound = (id, points) => sound.play(id, points);
   page.scene.setBattle(false);
   page.scene.onFit = layout;
   page.hud = new Hud($("hud"), page.scene, send);
+  page.scene.orders = page.hud.orders;
   page.scene.onSpot = (press) => page.hud.spot(press);
   page.scene.onSpotHover = (kind, spot) => page.hud.spotHover(kind, spot);
   $("logo").src = page.scene.picture(1013, null, 2).url;
@@ -183,7 +184,7 @@ function applyState(state) {
   if (state.stage === "playing" && before !== "playing") {
     // A new battle: everything on the field starts over
     page.scene.clear();
-    page.hud.reset();
+    page.hud.reset(mySide());
     page.scene.mySide = mySide();
     page.scene.focus(mySide() || 1);
   }
@@ -415,7 +416,8 @@ function layout(scale) {
     left = Math.min(width / SPLIT, 1.5);
     right = Math.min(width / (STRIP.width - SPLIT), 1.8);
   } else {
-    left = right = Math.max(0.7, Math.min(scale || 1, 1.6));
+    // At the field's own zoom, the menu covers the top of the view as it did over the original's 650 wide field
+    left = right = scale || 1;
   }
   app.style.setProperty("--left-scale", String(left));
   app.style.setProperty("--right-scale", String(right));
@@ -523,6 +525,7 @@ function bindInput() {
   window.addEventListener("blur", () => {
     keys.clear();
     scroll();
+    page.scene.camera.edge = 0;
     autoPause();
   });
   document.addEventListener("visibilitychange", () => {

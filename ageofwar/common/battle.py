@@ -142,6 +142,8 @@ class Side:
         # The computer's units are this much stronger
         self.strength = 1.0
         self.cpu: "Computer | None" = None
+        # Orders the bot has taken from this side's player, so their page knows which of its own it has seen
+        self.orders = 0
 
 
 class Special:
@@ -561,4 +563,5 @@ class Battle:
             side.special_timer,
             turrets,
             side.healing > 0,
+            side.orders,
         ]

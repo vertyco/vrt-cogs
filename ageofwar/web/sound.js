@@ -1,7 +1,8 @@
 // Age of War's sound: the original's effects, started by the animation frames that started them in the original,
 // and its battle music. Effects play through the Web Audio API so many can overlap.
 const VOLUME = 0.6;
-const MUSIC_VOLUME = 0.45;
+// The original played its music at full volume and set most effects lower, so both share one main volume
+const MUSIC_VOLUME = VOLUME;
 // Every game on the hub shares one storage, so the keys carry the game's name
 const SOUND_KEY = "ageofwar:sound";
 const MUSIC_KEY = "ageofwar:music";
@@ -122,7 +123,9 @@ export class Sound {
     this.updateMusic();
   }
 
-  play(id) {
+  // points: the volume the original set on this start, [[seconds, volume], ...] with straight ramps between them,
+  // or nothing for full volume
+  play(id, points = null) {
     if (!this.on || !this.ctx || this.ctx.state !== "running") {
       return;
     }
@@ -139,7 +142,18 @@ export class Sound {
     this.playing.set(id, recent);
     const source = this.ctx.createBufferSource();
     source.buffer = buffer;
-    source.connect(this.out);
+    if (points && points.length) {
+      const gain = this.ctx.createGain();
+      const start = this.ctx.currentTime;
+      gain.gain.setValueAtTime(points[0][1], start);
+      for (const [at, volume] of points) {
+        gain.gain.linearRampToValueAtTime(volume, start + at);
+      }
+      source.connect(gain);
+      gain.connect(this.out);
+    } else {
+      source.connect(this.out);
+    }
     source.start();
   }
 

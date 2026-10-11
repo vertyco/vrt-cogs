@@ -287,6 +287,24 @@ async def test_orders_reach_the_battle():
 
 
 @pytest.mark.asyncio
+async def test_each_sides_orders_are_counted_done_or_not():
+    table, (host, guest) = await seated(1, 2)
+    watcher = table.conn(3)
+    await table.match.join(watcher)
+    await table.send(host, {"start": True})
+    battle = table.match.battle
+    # Affordable, too dear, and refused outright: the page counts every order it sends, so the bot does too
+    for message in ({"buy": 1}, {"buy": 3}, {"build": [1, 4]}, {"evolve": True}, {"pause": True}):
+        await table.send(host, message)
+    await table.send(guest, {"special": True})
+    await table.send(watcher, {"buy": 1})
+    assert battle.sides[1].orders == 4 and battle.sides[2].orders == 1
+    await table.tick()
+    frame = next(message["f"] for message in reversed(host.sent) if "f" in message)
+    assert frame["s"][0][-1] == 4 and frame["s"][1][-1] == 1
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("bad", [[], {}, 1, None, "easy"])
 async def test_odd_difficulties_are_ignored(bad):
     table, (host,) = await seated(1)

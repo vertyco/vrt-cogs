@@ -37,6 +37,8 @@ LOOP_FAILED = "Something went wrong, so the match was stopped."
 EVERYONE_LEFT = "Every player left, so the match was stopped."
 YOU_LEFT = "You were away too long, so the match was stopped."
 TOOK_BACK = "The computer played your base while you were away."
+# The messages that command a base. The bot counts them for each side, done or not
+ORDERS = ("buy", "build", "sell", "spot", "evolve", "special")
 
 
 @dataclass
@@ -275,6 +277,10 @@ class Match:
         handler = self.handlers().get(kind)
         if handler is None:
             return
+        if kind in ORDERS:
+            side = self.my_side(conn)
+            if side is not None:
+                self.battle.sides[side].orders += 1
         notice = handler(conn, value)
         if notice:
             await conn.send({"notice": notice})

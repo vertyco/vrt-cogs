@@ -1,6 +1,6 @@
-// The battlefield: the original's art played by flash.js, placed from the bot's updates. The page draws about two
-// updates behind the newest, sliding units and shots between updates, and steps every animation 40 times a second
-// like the original did.
+// The battlefield: the original's art played by flash.js, placed from the bot's updates. The page draws a few frames
+// behind the newest update on a steady battle clock, sliding units and shots between updates, and steps every
+// animation on that same clock, so legs and positions move together like the original's one step per frame.
 import {
   Application,
   Assets,
@@ -14,12 +14,24 @@ import { Particles } from "./particles.js";
 
 export const FPS = 40;
 const FRAME_MS = 1000 / FPS;
-// Updates come every second frame. Drawing stays this many frames behind the newest, so one late update doesn't stall
-const BUFFER_FRAMES = 4;
-// Drawn this far past the newest update, the battle is taken as stopped (paused, or waiting for a player)
-const STALL_FRAMES = 8;
-// How fast the drawing's delay shrinks back after a late update, in milliseconds per update
-const OFFSET_DRIFT = 2;
+// Updates come every second frame. The drawing stays behind the earliest an update could arrive by the gap to the next
+// update, a margin, and how unevenly updates have been arriving, kept between these
+const UPDATE_GAP = 2;
+const MARGIN = 2;
+const MIN_DELAY = 4;
+const MAX_DELAY = 12;
+// How many recent updates that unevenness is judged on: two seconds of them
+const LATENESS_WINDOW = 40;
+// The battle clock runs up to a tenth faster or slower to keep its delay. It never goes back, and only jumps ahead
+// when this many frames behind (the page was hidden, say)
+const STEER = 0.05;
+const MIN_RATE = 0.9;
+const MAX_RATE = 1.1;
+const JUMP_FRAMES = 20;
+// An update this many frames later than any recent one means the battle stood still: a pause, or the bot froze
+const RESTART_FRAMES = 10;
+// After a jump, only this many of the skipped frames are stepped
+const MAX_STEPS = 8;
 export const FIELD = { width: 1000, height: 450, ground: 425 };
 // The original's view was 650 wide, so the field always scrolled. A wide window may cut off the top of the sky, at
 // most down to this height, rather than show more of the field
@@ -27,6 +39,8 @@ const VIEW_WIDTH = 650;
 const MIN_VIEW_HEIGHT = 390;
 // The original only scrolled with the mouse below its 120 tall menu
 const MENU_HEIGHT = 120;
+// The biggest pointer picture browsers take, in pixels
+const POINTER_MOST = 128;
 const SKY = 0x3db2ff;
 const STATES = ["idle", "walk", "attack", "die", "shoot", "shootwalk"];
 const SHOT_KINDS = [
@@ -74,6 +88,17 @@ function lerpAngle(a, b, t) {
   return a + d * t;
 }
 
+// Which of an animation's random swings holds a frame: the last one starting at or before it
+function branch(starts, frame) {
+  let found = null;
+  for (const start of starts) {
+    if (start <= frame && (found === null || start > found)) {
+      found = start;
+    }
+  }
+  return found;
+}
+
 // The only part a clip shows at its current frame, like a unit's animation inside its "anims" holder
 function inner(clip) {
   for (const slot of clip.slots.values()) {
@@ -109,11 +134,21 @@ export class Scene {
     this.specials = new Map();
     this.particles = new Particles(lib, this.layers.fx, this.font);
     this.frames = [];
-    this.offset = 0;
+    // How late each recent update arrived, in milliseconds past where its frame would sit on a steady clock
+    this.lateness = [];
+    // The battle clock: the frame being drawn, with a fraction between updates. Null until the first update
+    this.clock = null;
+    // Holding the clock still while its delay builds up again after the battle stood still
+    this.waiting = false;
+    // The last whole frame the field's animations stepped to
+    this.stepped = null;
     this.applied = 0;
-    this.drawnAt = 0;
     this.carry = 0;
+    // The player's orders the bot hasn't counted yet (hud.js), shown on their own base right away
+    this.orders = null;
     this.scale = 1;
+    // Where the field's top sits on the screen, before any shake
+    this.groundY = 0;
     this.view = { x: 0, width: FIELD.width, max: 0 };
     this.camera = { x: 0, keys: 0, edge: 0, drag: null };
     // Whether the last press dragged the field, so letting go over a spot button doesn't also press it
@@ -131,6 +166,8 @@ export class Scene {
     this.onFit = null;
     this.size = { width: 0, height: 0 };
     this.cursor = null;
+    // Which picture the page's pointer shows during a battle, so it is only drawn again when that changes
+    this.pointerKey = null;
     this.setupPointer();
     app.ticker.add((ticker) => this.draw(ticker.deltaMS));
   }
@@ -165,6 +202,8 @@ export class Scene {
       node,
       label,
       bars,
+      // Where each of those sits in the original, before fit() moves them under the menu
+      barY: bars.map((bar) => (bar ? bar.y : 0)),
       turrets: [null, null, null, null],
       spots: this.makeSpots(node, side),
       age: 0,
@@ -188,7 +227,8 @@ export class Scene {
         }
         button.visible = false;
         button.eventMode = "static";
-        button.cursor = "pointer";
+        // The page's own pointer (the original's arrow) shows over the spots too
+        button.cursor = "inherit";
         const spot = index + 1;
         button.on("pointerover", () => {
           button.show("o");
@@ -210,8 +250,13 @@ export class Scene {
     return spots;
   }
 
-  // view is the side's part of an update, and next the same from the update after it, for the turrets' aim
+  // view is the side's part of an update, and next the same from the update after it, for the turrets' aim. The
+  // player's own base also shows the orders they just gave
   showBase(base, view, next = null, f = null) {
+    if (base.side === this.mySide && this.orders) {
+      view = this.orders.apply(view);
+      next = this.orders.apply(next);
+    }
     const [, , age, addons, health, maxHealth, , , , , turrets] = view;
     const node = base.node;
     if (age !== base.age) {
@@ -281,6 +326,7 @@ export class Scene {
     }
     if (!on) {
       this.clear();
+      this.camera.edge = 0;
       for (const base of Object.values(this.bases)) {
         this.showBase(base, [0, 0, 1, 0, 500, 500, 0, 0, [0, 0, 0, 0, 0], 0, [0, 0, 0, 0], false]);
       }
@@ -291,10 +337,11 @@ export class Scene {
 
   reset(frame) {
     this.frames = frame ? [frame] : [];
+    this.lateness = frame ? [performance.now() - frame.f * FRAME_MS] : [];
+    this.clock = null;
+    this.waiting = false;
+    this.stepped = null;
     this.applied = 0;
-    if (frame) {
-      this.offset = performance.now() - frame.f * FRAME_MS;
-    }
   }
 
   push(frame) {
@@ -312,8 +359,16 @@ export class Scene {
       }
       return;
     }
-    const arrival = performance.now() - frame.f * FRAME_MS;
-    this.offset = this.frames.length ? Math.max(arrival, this.offset - OFFSET_DRIFT) : arrival;
+    const late = performance.now() - frame.f * FRAME_MS;
+    if (this.lateness.length && late > Math.max(...this.lateness) + RESTART_FRAMES * FRAME_MS) {
+      // The battle stood still for a while: judge the delay afresh, and hold the clock until it has built up again
+      this.lateness = [];
+      this.waiting = this.clock !== null;
+    }
+    this.lateness.push(late);
+    if (this.lateness.length > LATENESS_WINDOW) {
+      this.lateness.shift();
+    }
     this.frames.push(frame);
     if (this.frames.length > 40) {
       this.frames.shift();
@@ -337,47 +392,62 @@ export class Scene {
       }
       base.turrets = [null, null, null, null];
     }
-    this.frames = [];
-    this.applied = 0;
+    this.reset(null);
     this.shake = 0;
   }
 
-  // The update just at or before the drawn moment, the one after it, and how far between them
-  sample(now) {
-    const frames = this.frames;
-    if (!frames.length) {
-      return null;
+  // Move the battle clock on by the time since the last drawing. It aims a few frames behind the newest update, by
+  // how unevenly updates have been arriving, and steers toward that gently rather than jumping back and forth
+  moveClock(deltaMS, now) {
+    const base = Math.min(...this.lateness);
+    const spread = (Math.max(...this.lateness) - base) / FRAME_MS;
+    const delay = Math.max(MIN_DELAY, Math.min(MAX_DELAY, UPDATE_GAP + MARGIN + spread));
+    const target = (now - base) / FRAME_MS - delay;
+    if (this.clock === null || target - this.clock > JUMP_FRAMES) {
+      this.clock = target;
+      this.waiting = false;
+    } else if (this.waiting) {
+      this.waiting = target < this.clock;
+    } else {
+      const rate = Math.max(MIN_RATE, Math.min(MAX_RATE, 1 + (target - this.clock) * STEER));
+      this.clock += (Math.min(deltaMS, 250) / FRAME_MS) * rate;
     }
-    const at = (now - this.offset) / FRAME_MS - BUFFER_FRAMES;
-    let index = frames.findIndex((frame) => frame.f > at);
+    // With nothing newer to show, the battle holds still at the newest update instead of guessing ahead
+    this.clock = Math.min(this.clock, this.frames[this.frames.length - 1].f);
+  }
+
+  // The update just at or before the clock, the one after it, and how far between them
+  sample(clock) {
+    const frames = this.frames;
+    const index = frames.findIndex((frame) => frame.f > clock);
     if (index === -1) {
-      return { a: frames[frames.length - 1], b: null, t: 0, at };
+      return { a: frames[frames.length - 1], b: null, t: 0 };
     }
     if (index === 0) {
-      return { a: frames[0], b: null, t: 0, at };
+      return { a: frames[0], b: null, t: 0 };
     }
     const a = frames[index - 1];
     const b = frames[index];
-    return { a, b, t: (at - a.f) / (b.f - a.f), at };
+    return { a, b, t: (clock - a.f) / (b.f - a.f) };
   }
 
   // ---------- Drawing ----------
 
   draw(deltaMS) {
     this.fit();
-    const now = performance.now();
-    const sample = this.sample(now);
-    let stopped = false;
-    if (sample) {
+    if (this.frames.length) {
+      this.moveClock(deltaMS, performance.now());
+      this.stepTo(Math.floor(this.clock));
+      const sample = this.sample(this.clock);
       this.catchUp(sample.a);
       this.place(sample);
-      stopped = sample.b === null && sample.at > sample.a.f + STALL_FRAMES;
     }
-    // The original's animations run at 40 frames a second, whatever the screen's rate
+    // The background and the cursor keep the original's 40 frames a second on their own, battle or not
     this.carry += Math.min(deltaMS, 250);
     while (this.carry >= FRAME_MS) {
       this.carry -= FRAME_MS;
-      this.tick(stopped);
+      this.bg.advance();
+      this.cursor?.advance();
     }
     this.moveCamera(deltaMS);
   }
@@ -394,15 +464,32 @@ export class Scene {
     this.applied = Math.max(this.applied, a.f);
   }
 
-  // While the battle stands still its fighters, shots and bits hold still too, as in the original's pause
-  tick(stopped) {
-    this.bg.advance();
-    this.cursor?.advance();
-    if (stopped) {
+  // Step the field's animations once for each whole frame the clock has passed. A clock standing still (a pause,
+  // or no updates) leaves the fighters, shots and bits standing still too, as in the original's pause
+  stepTo(whole) {
+    if (this.stepped === null || whole < this.stepped) {
+      this.stepped = whole;
       return;
     }
+    this.stepped = Math.max(this.stepped, whole - MAX_STEPS);
+    while (this.stepped < whole) {
+      this.stepped += 1;
+      this.tick(this.stepped);
+    }
+  }
+
+  // One frame of the battle clock. Units then take the bot's own animation frame from this frame's update, if
+  // there is one, so the page's animations can't wander from the bot's
+  tick(frame) {
     for (const unit of this.units.values()) {
-      unit.node.advance();
+      this.stepUnit(unit, frame);
+    }
+    const update = this.frames.find((candidate) => candidate.f === frame);
+    for (const view of update ? update.u : []) {
+      const unit = this.units.get(view[0]);
+      if (unit) {
+        this.setState(unit, STATES[view[4]], view[5]);
+      }
     }
     for (const node of this.shots.values()) {
       node.advance?.();
@@ -418,7 +505,30 @@ export class Scene {
     this.particles.step();
   }
 
+  stepUnit(unit, frame) {
+    // A random swing picks what the bot picked, seen in an update the page already holds
+    this.lib.choose = (starts) => this.botSwing(unit, frame, starts);
+    unit.node.advance();
+    this.lib.choose = null;
+  }
+
+  // The swing the bot picked for a unit's animation at this frame: the one holding its frame in the next update
+  botSwing(unit, frame, starts) {
+    for (const update of this.frames) {
+      if (update.f < frame) {
+        continue;
+      }
+      const view = update.u.find((candidate) => candidate[0] === unit.uid);
+      return view && STATES[view[4]] === unit.state ? branch(starts, view[5]) : null;
+    }
+    return null;
+  }
+
   place({ a, b, t }) {
+    // Orders the drawn update already counts show from the bot's own numbers now
+    if (this.mySide && this.orders) {
+      this.orders.drop(a.s[this.mySide - 1][12]);
+    }
     this.placeUnits(a, b, t);
     this.placeShots(a, b, t);
     this.placeSpecials(a, b, t);
@@ -443,12 +553,16 @@ export class Scene {
       let unit = this.units.get(uid);
       if (!unit) {
         unit = this.makeUnit(uid, kind, side);
+        this.setState(unit, STATES[stateIndex], frame);
+        // The clock may already have stepped past this update: the new unit catches up
+        for (let step = a.f + 1; step <= this.stepped; step += 1) {
+          this.stepUnit(unit, step);
+        }
       }
       const next = later.get(uid);
       unit.node.x = next ? lerp(x10, next[3], t) / 10 : x10 / 10;
-      this.setState(unit, STATES[stateIndex], frame);
       unit.health = health;
-      unit.aura.visible = healing[side - 1] && STATES[stateIndex] !== "die";
+      unit.aura.visible = healing[side - 1] && unit.state !== "die";
       if (unit.bar.visible) {
         this.showHealth(unit);
       }
@@ -469,6 +583,13 @@ export class Scene {
     holder.gotoAndStop(kind);
     if (side === 2) {
       holder.scale.x = -1;
+    }
+    // A new clip waits a frame before stepping its parts. The bot's timing only has the animation itself, so the
+    // layers holding it step their parts straight away
+    for (const layer of [node, holder, holder.child("anims")]) {
+      if (layer) {
+        layer.fresh = false;
+      }
     }
     const bar = node.child("hb");
     bar.visible = false;
@@ -513,32 +634,32 @@ export class Scene {
     }
   }
 
-  // A new state starts its animation, at the frame the bot is on. Afterwards the page keeps the animation going
-  // itself, and only jumps when it has drifted away from the bot's (a random second swing, say)
+  // The unit shows the bot's state and animation frame. A new state starts its animation on the bot's frame (and
+  // its swing, if it picks one). Otherwise the page only moves to the bot's frame when its own stepping ended up
+  // elsewhere, so each frame's sound plays once
   setState(unit, state, frame) {
     const anims = unit.holder.child("anims");
     if (!anims) {
       return;
     }
+    let anim = inner(anims);
     if (state !== unit.state) {
       unit.state = state;
+      this.lib.choose = (starts) => branch(starts, frame);
       anims.gotoAndStop(state);
-      const anim = inner(anims);
-      if (anim && frame > 1) {
-        anim.gotoAndPlay(frame);
+      this.lib.choose = null;
+      anim = inner(anims);
+      if (anim) {
+        // The bot's frame already counts the first frame's wait
+        anim.fresh = false;
       }
       if (state === "die") {
         unit.bar.visible = false;
       }
-      return;
     }
-    const anim = inner(anims);
-    if (anim && anim.totalFrames > 1) {
-      const n = anim.totalFrames;
-      const drift = Math.abs(((anim.frame - frame + n + n / 2) % n) - n / 2);
-      if (drift > 3 && anim.playing) {
-        anim.gotoAndPlay(frame);
-      }
+    if (anim && anim.frame !== frame) {
+      anim.playing = true;
+      anim.enter(frame);
     }
   }
 
@@ -621,6 +742,42 @@ export class Scene {
         }
       }
     }
+    this.updatePointer();
+  }
+
+  // The original hides the computer's pointer in a battle and draws its own arrow, with a sell sign while selling.
+  // The page turns that into a pointer picture at the field's zoom (a CSS cursor, so it never lags), which the
+  // stylesheet uses while a battle is on. The turret being placed is drawn on the field as before
+  updatePointer() {
+    const kind = this.mode.kind === "sell" ? "sell" : "arrow";
+    const zoom = Math.max(1, Math.round(this.scale * 4) / 4);
+    const key = `${kind}:${zoom}`;
+    if (key === this.pointerKey) {
+      return;
+    }
+    this.pointerKey = key;
+    const prepare = (clip) => {
+      for (const [name, on] of [
+        ["tu", false],
+        ["se", kind === "sell"],
+      ]) {
+        const part = clip.child(name);
+        if (part) {
+          part.visible = on;
+        }
+      }
+    };
+    const id = this.lib.exported("cursor");
+    let picture = this.picture(id, null, zoom, prepare);
+    // Browsers ignore pointer pictures bigger than 128 pixels
+    const most = POINTER_MOST / Math.max(picture.width, picture.height);
+    const fitted = Math.min(zoom, most);
+    if (fitted < zoom) {
+      picture = this.picture(id, null, fitted, prepare);
+    }
+    const hotX = Math.max(0, Math.round(-picture.x * fitted));
+    const hotY = Math.max(0, Math.round(-picture.y * fitted));
+    document.documentElement.style.setProperty("--battle-cursor", `url(${picture.url}) ${hotX} ${hotY}, auto`);
   }
 
   setupPointer() {
@@ -639,15 +796,6 @@ export class Scene {
       const point = this.world.toLocal(this.pointer);
       this.cursor.position.set(point.x, point.y);
       this.cursor.visible = mouse && this.mode.kind === "place";
-      if (mouse && point.y > MENU_HEIGHT) {
-        const x = event.global.x;
-        const width = this.app.screen.width;
-        // The original scrolled when the mouse was within 100 of its 650 wide view's edges
-        const edge = 100 * this.scale;
-        this.camera.edge = x < edge ? -(edge - x) / edge : x > width - edge ? (x - (width - edge)) / edge : 0;
-      } else {
-        this.camera.edge = 0;
-      }
       if (this.camera.drag) {
         const drag = this.camera.drag;
         this.camera.x = drag.camera - (event.global.x - drag.x) / this.scale;
@@ -667,9 +815,29 @@ export class Scene {
     stage.on("pointerup", end);
     stage.on("pointerupoutside", end);
     stage.on("pointerleave", () => {
-      this.camera.edge = 0;
       this.cursor.visible = false;
     });
+    // Edge scrolling follows the mouse over the whole page, menus included. When the mouse leaves the page no more
+    // moves come, so it keeps its last speed, as the original kept the last mouse position
+    window.addEventListener("pointermove", (event) => this.edgeScroll(event));
+  }
+
+  edgeScroll(event) {
+    if (event.pointerType !== "mouse" || document.querySelector("dialog[open]")) {
+      this.camera.edge = 0;
+      return;
+    }
+    const box = this.app.canvas.getBoundingClientRect();
+    const x = event.clientX - box.left;
+    const point = this.world.toLocal({ x, y: event.clientY - box.top });
+    if (point.y <= MENU_HEIGHT) {
+      this.camera.edge = 0;
+      return;
+    }
+    // The original scrolled when the mouse was within 100 of its 650 wide view's edges
+    const edge = 100 * this.scale;
+    this.camera.edge = x < edge ? -(edge - x) / edge : x > box.width - edge ? (x - (box.width - edge)) / edge : 0;
+    this.camera.edge = Math.max(-1, Math.min(1, this.camera.edge));
   }
 
   // ---------- The view ----------
@@ -686,9 +854,20 @@ export class Scene {
     const viewWidth = width / scale;
     this.view = { width: viewWidth, max: Math.max(0, FIELD.width - viewWidth) };
     // The field sits on the bottom edge. Any room above is more sky, where the menus go
-    this.world.y = height - FIELD.height * scale;
+    this.groundY = height - FIELD.height * scale;
     this.sky.clear().rect(0, 0, width, height).fill(SKY);
+    // A wide window cuts off some of the original's sky, where its menu sat with the bases' health bars just under
+    // it. The bars move down by what was cut, so on screen they still sit just under the full-size menu
+    const cut = Math.max(0, FIELD.height - height / scale);
+    for (const base of Object.values(this.bases)) {
+      base.bars.forEach((bar, index) => {
+        if (bar) {
+          bar.y = base.barY[index] + cut;
+        }
+      });
+    }
     this.lookAt(this.camera.x);
+    this.updatePointer();
     this.onFit?.(scale);
   }
 
@@ -715,10 +894,14 @@ export class Scene {
     if (this.view.width > FIELD.width) {
       offset = ((this.view.width - FIELD.width) / 2) * this.scale;
     }
+    let lift = 0;
+    // The original's specials shook the field both ways
     if (this.shake && !reducedMotion.matches) {
       offset += (Math.random() * 2 - 1) * this.shake * this.scale;
+      lift = (Math.random() * 2 - 1) * this.shake * this.scale;
     }
     this.world.x = offset;
+    this.world.y = this.groundY + lift;
   }
 
   // ---------- Pictures for the page's own buttons ----------

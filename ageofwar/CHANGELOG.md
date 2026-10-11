@@ -1,5 +1,18 @@
 # Age of War Changelog
 
+## 0.2.0
+
+Changes to make the game feel like the original Flash game:
+
+- Movement is smooth now. Before, the field jumped back a little whenever an update from the bot came in late, then sped up to catch up, dozens of times a minute. Now it plays at a steady speed and never goes back.
+- Each unit's animation now matches the bot's frame for frame. That includes which of its two swings a swordsman uses, which used to snap halfway through a swing about half the time.
+- Sounds play at the volumes the original gave them. Most effects are quieter, explosions are a quarter of their old volume, and the music is as loud next to them as it was in the original.
+- Buying a unit, building or selling a turret, adding a spot, evolving and using the special show right away, instead of waiting for the bot to answer.
+- During a battle the pointer is the original's own arrow, with its dollar sign while selling.
+- On wide windows the menu is drawn at the same size as the field, so it covers the top of the view like the original's. The round buttons move just under it, and the bases' health bars sit just under it as in the original.
+- Special attacks shake the field up and down too, not just sideways.
+- Moving the mouse off the side of the game keeps the field scrolling, like the original did.
+
 ## 0.1.2
 
 - Fixed turrets not going onto the base when placed with a mouse. The see-through turret that follows the pointer was catching the click meant for the spot.
