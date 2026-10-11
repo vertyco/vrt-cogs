@@ -114,10 +114,12 @@ class Money:
         return self.locks.setdefault(user_id, asyncio.Lock())
 
     async def ready_in(self, scope: int, user_id: int, key: str) -> int:
-        """Whole seconds until the player may play the game again, after their membership's reduction"""
+        """Whole seconds until the player may play the game again, after their membership's reduction. Uses the
+        game's cooldown as set now, so a changed cooldown reaches players already waiting"""
         row = await self.store.player_game(scope, user_id, key)
+        game = await self.store.game(scope, key)
         perks = await perks_for(self.store, scope, user_id)
-        return max(0, math.ceil(row.ready_at - perks.reduction - self.clock()))
+        return max(0, math.ceil(row.played_at + game.cooldown - perks.reduction - self.clock()))
 
     async def problem(self, scope: int, member, key: str, amount: int, choice_problem: str | None = None) -> str | None:
         """Why the bet can't be placed, checked in the original's order, or None when it can"""
@@ -160,9 +162,8 @@ class Money:
                 return problem
             await self.bank.withdraw(member, amount)
             row = await self.store.player_game(scope, member.id, key)
-            game = await self.store.game(scope, key)
             row.played += 1
-            row.ready_at = self.clock() + game.cooldown
+            row.played_at = self.clock()
             await row.save()
         return None
 

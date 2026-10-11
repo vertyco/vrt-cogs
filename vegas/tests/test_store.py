@@ -50,11 +50,11 @@ async def test_deleting_a_membership_makes_its_players_basic(store):
 @pytest.mark.asyncio
 async def test_player_resets_clear_only_what_was_asked(store):
     games = await store.player_games(GUILD, 7)
-    games["dice"].played, games["dice"].won, games["dice"].ready_at = 4, 2, 999.0
+    games["dice"].played, games["dice"].won, games["dice"].played_at = 4, 2, 999.0
     await games["dice"].save()
     await store.reset_player(GUILD, 7, "cooldowns")
     row = await store.player_game(GUILD, 7, "dice")
-    assert (row.played, row.won, row.ready_at) == (4, 2, 0.0)
+    assert (row.played, row.won, row.played_at) == (4, 2, 0.0)
     await store.reset_player(GUILD, 7, "stats")
     row = await store.player_game(GUILD, 7, "dice")
     assert (row.played, row.won) == (0, 0)
@@ -68,13 +68,13 @@ async def test_resetting_the_casino_keeps_player_stats(store):
     await store.save_casino(GUILD, name="Lucky")
     await store.save_game(GUILD, "dice", max_bet=900)
     row = await store.player_game(GUILD, 7, "dice")
-    row.played, row.ready_at = 3, 999.0
+    row.played, row.played_at = 3, 999.0
     await row.save()
     await store.reset_casino(GUILD, "all")
     assert (await store.casino(GUILD)).name == "Redjumpman's"
     assert (await store.game(GUILD, "dice")).max_bet == 100
     row = await store.player_game(GUILD, 7, "dice")
-    assert (row.played, row.ready_at) == (3, 0.0)
+    assert (row.played, row.played_at) == (3, 0.0)
 
 
 @pytest.mark.asyncio

@@ -43,10 +43,22 @@ async def test_a_stake_is_taken_counted_and_starts_the_cooldown(money, store):
     assert await money.stake(GUILD, sam, "dice", 50) is None
     assert await money.bank.balance(sam) == 950
     row = await store.player_game(GUILD, 7, "dice")
-    assert row.played == 1 and row.ready_at == money.clock.now + 5
+    assert row.played == 1 and row.played_at == money.clock.now
     assert await money.stake(GUILD, sam, "dice", 50) == "Dice is ready again in 5 seconds."
     money.clock.now += 5
     assert await money.stake(GUILD, sam, "dice", 50) is None
+
+
+@pytest.mark.asyncio
+async def test_a_cooldown_change_reaches_players_already_waiting(money, store):
+    sam = member(7)
+    await store.save_game(GUILD, "allin", cooldown=43200)
+    assert await money.stake(GUILD, sam, "allin", 1000) is None
+    money.clock.now += 100
+    await store.save_game(GUILD, "allin", cooldown=0)
+    assert await money.ready_in(GUILD, 7, "allin") == 0
+    await store.save_game(GUILD, "allin", cooldown=600)
+    assert await money.ready_in(GUILD, 7, "allin") == 500
 
 
 @pytest.mark.asyncio

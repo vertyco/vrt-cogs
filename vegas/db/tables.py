@@ -60,7 +60,7 @@ class PlayerGame(Table):
     game = Varchar(length=16)
     played = Integer(default=0)
     won = Integer(default=0)
-    ready_at = Real(default=0.0, help_text="Unix time the cooldown ends, before any membership reduction")
+    played_at = Real(default=0.0, help_text="Unix time of the last bet; the game's current cooldown counts from here")
 
 
 TABLES: list[type[Table]] = sort_table_classes([BotState, CasinoSettings, GameSettings, Membership, Player, PlayerGame])

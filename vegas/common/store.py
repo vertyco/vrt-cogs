@@ -101,7 +101,7 @@ class Store:
             rows = {row.game: row for row in await PlayerGame.objects().where(where)}
             for key in GAMES:
                 if key not in rows:
-                    row = PlayerGame(scope=scope, user_id=user_id, game=key, played=0, won=0, ready_at=0.0)
+                    row = PlayerGame(scope=scope, user_id=user_id, game=key, played=0, won=0, played_at=0.0)
                     await row.save()
                     rows[key] = row
         return {key: rows[key] for key in GAMES}
@@ -187,7 +187,7 @@ class Store:
     async def reset_player(self, scope: int, user_id: int, what: str) -> None:
         where = (PlayerGame.scope == scope) & (PlayerGame.user_id == user_id)
         if what == "cooldowns":
-            await PlayerGame.update({PlayerGame.ready_at: 0.0}).where(where)
+            await PlayerGame.update({PlayerGame.played_at: 0.0}).where(where)
         elif what == "stats":
             await PlayerGame.update({PlayerGame.played: 0, PlayerGame.won: 0}).where(where)
         elif what == "all":
@@ -205,7 +205,7 @@ class Store:
         if what in ("games", "all"):
             await GameSettings.delete().where(GameSettings.scope == scope)
         if what in ("cooldowns", "all"):
-            await PlayerGame.update({PlayerGame.ready_at: 0.0}).where(PlayerGame.scope == scope)
+            await PlayerGame.update({PlayerGame.played_at: 0.0}).where(PlayerGame.scope == scope)
         if what in ("memberships", "all"):
             async with self.lock:
                 await Player.update({Player.membership: None, Player.by_hand: False}).where(Player.scope == scope)

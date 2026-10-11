@@ -1,5 +1,10 @@
 # Vegas Changelog
 
+## 0.2.2
+
+- Changing a game's cooldown now reaches players already waiting on it. Lowering All In's cooldown to 0 frees everyone at once instead of leaving them on the old 12 hour wait, and raising it makes everyone's wait longer.
+- Updating clears every player's current cooldowns once, so each game is ready for everyone right after the update.
+
 ## 0.2.1
 
 - All In makes it plain that a pull bets your whole balance. The tray says how much in red, along with the chance and what a win pays, the button reads "Bet all 1,000" instead of "Pull", and every pull, from the button or the machine's lever, asks first.
